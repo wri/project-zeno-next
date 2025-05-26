@@ -1,6 +1,5 @@
 import Map from "@/app/components/Map"
-import { Box, Flex, Grid, Heading } from "@chakra-ui/react"
-import { useColorModeValue } from "./components/ui/color-mode";
+import { Box, Grid } from "@chakra-ui/react"
 
 export default function Home() {
   return (
