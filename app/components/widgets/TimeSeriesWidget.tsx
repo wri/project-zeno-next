@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import Markdown from "react-markdown";
 
-interface TimeSeriesDataPoint {
+export interface TimeSeriesDataPoint {
   year: number;
   [key: string]: number;
 }
@@ -17,7 +17,7 @@ interface TimeSeriesWidgetProps {
   analysis?: string;
 }
 
-export default function TimeSeriesWidget({ data, xlabel, ylabel, title, description, analysis }: TimeSeriesWidgetProps) {
+export default function TimeSeriesWidget({ data, xlabel, ylabel, description, analysis }: TimeSeriesWidgetProps) {
   const chartRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -47,8 +47,7 @@ export default function TimeSeriesWidget({ data, xlabel, ylabel, title, descript
   }, [containerRef]);
 
   // If every value in the rest of the keys is null, exclude the object.
-  // eslint-disable-next-line no-unused-vars
-  const filteredData = data.filter(({ year, ...rest }) =>
+  const filteredData = data.filter(({ ...rest }) =>
     !Object.values(rest).every(value => Number.isNaN(value))
   );
 
@@ -145,7 +144,7 @@ export default function TimeSeriesWidget({ data, xlabel, ylabel, title, descript
       .attr("y2", height - margin.top - margin.bottom)
       .style("display", "none");
 
-    const formatTooltipValue = (v: any) => typeof v === "number" ? d3.format(",.0f")(v) : v;
+    const formatTooltipValue = (v: string | number) => typeof v === "number" ? d3.format(",.0f")(v) : v;
 
     svg.append("rect")
       .attr("width", width - margin.left - margin.right)

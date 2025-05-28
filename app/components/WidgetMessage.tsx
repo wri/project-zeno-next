@@ -3,7 +3,7 @@ import { InsightWidget } from "@/app/types/chat";
 import TextWidget from "./widgets/TextWidget";
 import ChartWidget from "./widgets/BarChartWidget";
 import TableWidget from "./widgets/TableWidget";
-import TimeSeriesWidget from "./widgets/TimeSeriesWidget";
+import TimeSeriesWidget, { TimeSeriesDataPoint } from "./widgets/TimeSeriesWidget";
 
 interface WidgetMessageProps {
   widgets: InsightWidget[];
@@ -24,21 +24,28 @@ export default function WidgetMessage({ widgets }: WidgetMessageProps) {
           </Box>
           
           {widget.type === 'text' && (
-            <TextWidget data={widget.data} />
+            <TextWidget data={widget.data as string} />
           )}
           
           {widget.type === 'chart' && (
-            <ChartWidget data={widget.data} />
+            <ChartWidget data={widget.data as { categories: string[]; values: number[]; unit?: string }} />
           )}
           
           {widget.type === 'table' && (
             <Box overflowX="auto" maxW="100%">
-              <TableWidget data={widget.data} />
+              <TableWidget data={widget.data as Record<string, string | number | boolean>[]} />
             </Box>
           )}
           
           {widget.type === 'timeseries' && (
-            <TimeSeriesWidget {...widget.data} />
+            <TimeSeriesWidget 
+              data={(widget.data as Record<string, unknown>)?.data as TimeSeriesDataPoint[] || []} 
+              xlabel={(widget.data as Record<string, unknown>)?.xlabel as string}
+              ylabel={(widget.data as Record<string, unknown>)?.ylabel as string}
+              title={(widget.data as Record<string, unknown>)?.title as string}
+              description={(widget.data as Record<string, unknown>)?.description as string}
+              analysis={(widget.data as Record<string, unknown>)?.analysis as string}
+            />
           )}
         </Box>
       ))}

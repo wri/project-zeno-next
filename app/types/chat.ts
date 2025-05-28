@@ -11,7 +11,15 @@ export interface InsightWidget {
   type: 'text' | 'chart' | 'table' | 'timeseries';
   title: string;
   description: string;
-  data: any;
+  data: unknown;
+}
+
+// Raw insight data from API (before conversion to InsightWidget)
+export interface RawInsightData {
+  type: string;
+  title: string;
+  description: string;
+  data: unknown;
 }
 
 export interface ChatPrompt {
@@ -30,18 +38,18 @@ export interface ChatAPIRequest {
 export interface StreamMessage {
   type: 'text' | 'tool' | 'other' | 'error';
   text?: string;
-  tool?: any;
-  other?: any;
+  tool?: Record<string, unknown>;
+  other?: Record<string, unknown>;
   name?: string;
   content?: string;
-  artifact?: any;
+  artifact?: unknown;
   timestamp: number;
 }
 
 // LangChain content structure (for internal API use)
 export interface LangChainContent {
   text?: string;
-  [key: string]: any; // Allow other properties
+  [key: string]: unknown; // Allow other properties
 }
 
 // LangChain-based API response structure (for internal API use)
@@ -52,14 +60,14 @@ export interface LangChainResponse {
     type: string;
     id: string[];
     kwargs: {
-      content: LangChainContent | any;
-      response_metadata: any;
+      content: LangChainContent | unknown;
+      response_metadata: Record<string, unknown>;
       type: string;
       id: string;
-      usage_metadata: any;
-      tool_calls: any[];
-      invalid_tool_calls: any[];
-      artifact?: any;
+      usage_metadata: Record<string, unknown>;
+      tool_calls: unknown[];
+      invalid_tool_calls: unknown[];
+      artifact?: unknown;
       name?: string;
       status?: string; // For tool error detection
     };

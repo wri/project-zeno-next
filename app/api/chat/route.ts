@@ -19,7 +19,7 @@ function parseStreamMessage(langChainMessage: LangChainResponse): StreamMessage 
       return {
         type: 'error',
         name: kwargs.name,
-        content: content,
+        content: typeof content === 'string' ? content : String(content),
         timestamp: Date.now()
       };
     }
@@ -28,7 +28,7 @@ function parseStreamMessage(langChainMessage: LangChainResponse): StreamMessage 
     return {
       type: 'tool',
       name: kwargs.name,
-      content: content,
+      content: typeof content === 'string' ? content : String(content),
       artifact: artifact,
       timestamp: Date.now()
     };
@@ -40,13 +40,15 @@ function parseStreamMessage(langChainMessage: LangChainResponse): StreamMessage 
       // Content is a direct string
       textContent = content;
     } else if (content && typeof content === 'object') {
-      if (content.text) {
+      const contentObj = content as Record<string, unknown>;
+      if (contentObj.text && typeof contentObj.text === 'string') {
         // Content is an object with text property
-        textContent = content.text;
+        textContent = contentObj.text;
       } else if (Array.isArray(content) && content.length > 0) {
         // Content is an array of objects
-        if (content[0].text) {
-          textContent = content[0].text;
+        const firstItem = content[0] as Record<string, unknown>;
+        if (firstItem.text && typeof firstItem.text === 'string') {
+          textContent = firstItem.text;
         } else if (typeof content[0] === 'string') {
           textContent = content[0];
         }

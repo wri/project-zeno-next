@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import JSON5 from 'json5';
-import { ChatMessage, ChatPrompt, StreamMessage, QueryType, InsightWidget } from '@/app/types/chat';
+import { ChatMessage, ChatPrompt, StreamMessage, QueryType, InsightWidget, RawInsightData } from '@/app/types/chat';
 import useMapStore from './mapStore';
 
 interface ChatState {
@@ -47,8 +47,8 @@ function processStreamMessage(
           : streamMessage.content;
         console.log('Artifact data:', artifactData);
         // Convert insights to widgets
-        const widgets: InsightWidget[] = artifactData.insights.map((insight: any) => ({
-          type: insight.type,
+        const widgets: InsightWidget[] = artifactData.insights.map((insight: RawInsightData) => ({
+          type: insight.type as InsightWidget['type'], // Type assertion to convert string to specific union type
           title: insight.title,
           description: insight.description,
           data: insight.data
@@ -111,7 +111,8 @@ function processStreamMessage(
         const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();
         
         // Parse the GeoJSON from the artifact
-        const artifact = streamMessage.artifact[0];
+        const artifactArray = Array.isArray(streamMessage.artifact) ? streamMessage.artifact : [streamMessage.artifact];
+        const artifact = artifactArray[0];
         const geoJsonData = typeof artifact === 'string' 
           ? JSON.parse(artifact) 
           : artifact;

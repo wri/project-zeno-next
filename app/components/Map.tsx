@@ -8,7 +8,7 @@ import MapGl, {
   ScaleControl,
   MapRef
 } from "react-map-gl/maplibre";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
