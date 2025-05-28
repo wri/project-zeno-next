@@ -1,5 +1,7 @@
 import Map from "@/app/components/Map"
 import { Box, Grid } from "@chakra-ui/react"
+import ChatMessages from "./components/ChatMessages";
+import ChatInput from "./components/ChatInput";
 
 export default function Home() {
   return (
@@ -20,8 +22,10 @@ export default function Home() {
           minH="100%"
         >
           <Box overflowY="auto" height="100%" mx="-4" px="4">
+            <ChatMessages />
           </Box>
           <Box>
+            <ChatInput />
           </Box>
         </Grid>
         <Grid templateRows="1fr" gap="2">
