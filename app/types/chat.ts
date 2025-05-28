@@ -1,6 +1,6 @@
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'assistant' | 'system' | 'widget';
+  type: 'user' | 'assistant' | 'system' | 'widget' | 'error';
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
@@ -28,7 +28,7 @@ export interface ChatAPIRequest {
 
 // Simplified message that our API sends to the client
 export interface StreamMessage {
-  type: 'text' | 'tool' | 'other';
+  type: 'text' | 'tool' | 'other' | 'error';
   text?: string;
   tool?: any;
   other?: any;
@@ -61,6 +61,7 @@ export interface LangChainResponse {
       invalid_tool_calls: any[];
       artifact?: any;
       name?: string;
+      status?: string; // For tool error detection
     };
   };
 }

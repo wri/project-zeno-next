@@ -14,6 +14,16 @@ function parseStreamMessage(langChainMessage: LangChainResponse): StreamMessage 
   const kwargsType = kwargs.type;
   
   if (kwargsType === 'tool') {
+    // Check if this is an error from a tool
+    if (kwargs.status === 'error' || (typeof content === 'string' && content.includes('Error:'))) {
+      return {
+        type: 'error',
+        name: kwargs.name,
+        content: content,
+        timestamp: Date.now()
+      };
+    }
+    
     // For tool messages, extract artifact and content
     return {
       type: 'tool',
@@ -83,17 +93,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch("https://api.zeno-staging.ds.io/zeno/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        query,
-        query_type,
-        thread_id
-      }),
-    });
+    // Check if we should use test error endpoint instead of real API
+    const testErrorType = process.env.TEST_ERROR;
+    let response;
+
+    if (testErrorType) {
+      console.log('TEST_ERROR mode enabled, using mock endpoint with type:', testErrorType);
+      
+      // Call our local test-error endpoint instead of the real API
+      const testUrl = new URL('/api/test-error', request.url);
+      testUrl.searchParams.set('type', testErrorType);
+      
+      response = await fetch(testUrl.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } else {
+      // Normal flow - call the real Zeno API
+      response = await fetch("https://api.zeno-staging.ds.io/zeno/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          query_type,
+          thread_id
+        }),
+      });
+    }
     
     console.log('External API response status:', response.status);
 

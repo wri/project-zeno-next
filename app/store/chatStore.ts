@@ -18,7 +18,14 @@ function processStreamMessage(
   streamMessage: StreamMessage, 
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void
 ) {
-  if (streamMessage.type === 'text' && streamMessage.text) {
+  if (streamMessage.type === 'error') {
+    // Handle error messages from LangChain tools
+    addMessage({
+      type: 'error',
+      message: 'I encountered an error while processing your request. Please try rephrasing your question or try again.'
+    });
+    return;
+  } else if (streamMessage.type === 'text' && streamMessage.text) {
     addMessage({
       type: 'assistant',
       message: streamMessage.text

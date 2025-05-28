@@ -1,5 +1,5 @@
 "use client";
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Text, Badge } from "@chakra-ui/react";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
@@ -12,6 +12,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const isUser = message.type === 'user';
   const isSystem = message.type === 'system';
   const isWidget = message.type === 'widget';
+  const isError = message.type === 'error';
 
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
@@ -30,20 +31,23 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
     >
       <Box
         maxW="80%"
-        bg={isUser ? "blue.500" : isSystem ? "gray.100" : "white"}
-        color={isUser ? "white" : "black"}
+        bg={isError ? "red.50" : isUser ? "blue.500" : isSystem ? "gray.100" : "white"}
+        color={isError ? "red.800" : isUser ? "white" : "black"}
         px={4}
         py={3}
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
         shadow={isSystem ? "none" : "sm"}
-        border={isUser ? "none" : "1px solid"}
-        borderColor={isUser ? "transparent" : "gray.200"}
+        border={isError ? "1px solid" : isUser ? "none" : "1px solid"}
+        borderColor={isError ? "red.200" : isUser ? "transparent" : "gray.200"}
       >
-        <Text fontSize="sm" lineHeight="tall" whiteSpace="pre-wrap">
-          <Markdown>{message.message}</Markdown>
-        </Text>
+        {isError && (
+          <Badge colorPalette="red" >
+            Error
+          </Badge>
+        )}
+        <Markdown>{message.message}</Markdown>
         <Text
           fontSize="xs"
           opacity={0.7}
