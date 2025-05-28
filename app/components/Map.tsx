@@ -8,16 +8,28 @@ import MapGl, {
   ScaleControl,
   MapRef
 } from "react-map-gl/maplibre";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
+import useMapStore from "@/app/store/mapStore";
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
+  const { geoJsonFeatures, setMapRef } = useMapStore();
 
   const onMapLoad = () => {
+    if (mapRef.current) {
+      const map = mapRef.current.getMap();
+      setMapCenter([map.getCenter().lng, map.getCenter().lat]);
+      // Set the map ref in the store for other components to use
+      setMapRef(mapRef.current);
+    }
+  };
+
+  // Update map center when map moves
+  const onMapMove = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
       setMapCenter([map.getCenter().lng, map.getCenter().lat]);
@@ -67,6 +79,7 @@ function Map() {
           zoom: 0
         }}
         onLoad={onMapLoad}
+        onMove={onMapMove}
         attributionControl={false}
       >
         <Source
@@ -80,6 +93,50 @@ function Map() {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
+        
+        {/* Render GeoJSON features */}
+        {geoJsonFeatures.map((feature) => (
+          <Source
+            key={feature.id}
+            id={`geojson-source-${feature.id}`}
+            type="geojson"
+            data={feature.data}
+          >
+            {/* Fill layer for polygons */}
+            <Layer
+              id={`geojson-fill-${feature.id}`}
+              type="fill"
+              paint={{
+                'fill-color': '#3b82f6',
+                'fill-opacity': 0.3
+              }}
+              filter={['==', ['geometry-type'], 'Polygon']}
+            />
+            {/* Line layer for polygon outlines and linestrings */}
+            <Layer
+              id={`geojson-line-${feature.id}`}
+              type="line"
+              paint={{
+                'line-color': '#1d4ed8',
+                'line-width': 2
+              }}
+              filter={['in', ['geometry-type'], ['literal', ['Polygon', 'LineString']]]}
+            />
+            {/* Circle layer for points */}
+            <Layer
+              id={`geojson-circle-${feature.id}`}
+              type="circle"
+              paint={{
+                'circle-color': '#1d4ed8',
+                'circle-radius': 6,
+                'circle-stroke-color': '#ffffff',
+                'circle-stroke-width': 2
+              }}
+              filter={['==', ['geometry-type'], 'Point']}
+            />
+          </Source>
+        ))}
+        
         <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
         <ScaleControl />
         <AbsoluteCenter fontSize="sm">

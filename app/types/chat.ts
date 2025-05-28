@@ -19,11 +19,13 @@ export interface ChatAPIRequest {
 
 // Simplified message that our API sends to the client
 export interface StreamMessage {
-  type: 'text' | 'artifact' | 'tool_call' | 'other';
+  type: 'text' | 'tool' | 'other';
   text?: string;
-  artifact?: any;
-  tool_calls?: any[];
+  tool?: any;
+  other?: any;
   name?: string;
+  content?: string;
+  artifact?: any;
   timestamp: number;
 }
 

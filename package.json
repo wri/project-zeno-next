@@ -14,6 +14,9 @@
     "@fontsource/ibm-plex-mono": "^5.2.5",
     "@fontsource/ibm-plex-sans": "^5.2.5",
     "@phosphor-icons/react": "^2.1.9",
+    "@turf/bbox": "^7.2.0",
+    "@turf/center": "^7.2.0",
+    "@turf/helpers": "^7.2.0",
     "@types/uuid": "^10.0.0",
     "maplibre-gl": "^5.5.0",
     "next": "15.3.2",
@@ -27,6 +30,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

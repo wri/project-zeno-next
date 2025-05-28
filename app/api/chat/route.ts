@@ -16,12 +16,10 @@ function parseStreamMessage(langChainMessage: LangChainResponse): StreamMessage 
   if (kwargsType === 'tool') {
     // For tool messages, extract artifact and content
     return {
-      type: 'artifact',
-      artifact: {
-        content: content,
-        artifact: artifact,
-        name: kwargs.name
-      },
+      type: 'tool',
+      name: kwargs.name,
+      content: content,
+      artifact: artifact,
       timestamp: Date.now()
     };
   } else if (kwargsType === 'ai') {

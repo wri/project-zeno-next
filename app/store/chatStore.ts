@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, ChatPrompt, StreamMessage, QueryType } from '@/app/types/chat';
+import useMapStore from './mapStore';
 
 interface ChatState {
   messages: ChatMessage[];
@@ -22,30 +23,49 @@ function processStreamMessage(
       type: 'assistant',
       message: streamMessage.text
     });
-  } else if (streamMessage.type === 'artifact' && streamMessage.artifact) {
+  } else if (streamMessage.type === 'tool' && streamMessage.artifact) {
     // Handle tool/artifact messages with better formatting
-    const artifactData = streamMessage.artifact;
-    let artifactText = `Tool: ${artifactData.name || 'Unknown'}`;
+    let artifactText = `Tool: ${streamMessage.name || 'Unknown'}`;
     
-    if (artifactData.content) {
-      artifactText += `\nContent: ${typeof artifactData.content === 'string' ? artifactData.content : JSON.stringify(artifactData.content)}`;
+    console.log('Artifact text:', streamMessage.content);
+    console.log('Artifact data:', streamMessage.artifact);
+    
+    // Special handling for location-tool
+    if (streamMessage.name === 'location-tool' && streamMessage.artifact) {
+      try {
+        // Get map store instance to add GeoJSON and fly to location
+        const { addGeoJsonFeature, flyToGeoJson } = useMapStore.getState();
+        
+        // Parse the GeoJSON from the artifact
+        const artifact = streamMessage.artifact[0];
+        const geoJsonData = typeof artifact === 'string' 
+          ? JSON.parse(artifact) 
+          : artifact;
+        
+        // Generate a unique ID for this feature
+        const featureId = `location-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Add the GeoJSON feature to the map
+        addGeoJsonFeature({
+          id: featureId,
+          name: streamMessage.content || 'Location',
+          data: geoJsonData
+        });
+        
+        // Fly to the GeoJSON location
+        flyToGeoJson(geoJsonData);
+        
+        artifactText = `Location found and displayed on map: ${streamMessage.content || 'Unknown location'}`;
+        
+      } catch (error) {
+        console.error('Error processing location-tool artifact:', error);
+        artifactText = `Location tool executed but failed to display on map: ${streamMessage.content || 'Unknown location'}`;
+      }
     }
-    
-    if (artifactData.artifact) {
-      artifactText += `\nData: ${JSON.stringify(artifactData.artifact)}`;
-    }
-    
-    console.log('Artifact text:', artifactText);
-    console.log('Artifact data:', artifactData);
     
     addMessage({
       type: 'assistant',
       message: artifactText
-    });
-  } else if (streamMessage.type === 'tool_call' && streamMessage.tool_calls) {
-    addMessage({
-      type: 'assistant',
-      message: `Tool calls: ${JSON.stringify(streamMessage.tool_calls)}`
     });
   }
 }
