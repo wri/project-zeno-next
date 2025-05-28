@@ -8,7 +8,7 @@ export interface ChatMessage {
 
 // Widget types for insights
 export interface InsightWidget {
-  type: 'text' | 'chart' | 'table';
+  type: 'text' | 'chart' | 'table' | 'timeseries';
   title: string;
   description: string;
   data: any;

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+import JSON5 from 'json5';
 import { ChatMessage, ChatPrompt, StreamMessage, QueryType, InsightWidget } from '@/app/types/chat';
 import useMapStore from './mapStore';
 
@@ -42,7 +43,7 @@ function processStreamMessage(
       try {
         // Parse the insights data
         const artifactData = typeof streamMessage.content === 'string' 
-          ? JSON.parse(streamMessage.content) 
+          ? JSON5.parse(streamMessage.content) 
           : streamMessage.content;
         console.log('Artifact data:', artifactData);
         // Convert insights to widgets
@@ -67,6 +68,40 @@ function processStreamMessage(
       } catch (error) {
         console.error('Error processing kba-insights-tool artifact:', error);
         artifactText = `KBA insights tool executed but failed to parse data: ${streamMessage.content || 'Unknown insights'}`;
+      }
+    }
+    // Special handling for kba-timeseries-tool
+    else if (streamMessage.name === 'kba-timeseries-tool' && streamMessage.content) {
+      try {
+        // Parse the timeseries data using JSON5 to handle NaN values
+        const timeseriesData = typeof streamMessage.content === 'string' 
+          ? JSON5.parse(streamMessage.content) 
+          : streamMessage.content;
+        
+        console.log('Timeseries data:', timeseriesData);
+        
+        // Convert timeseries data to widget format
+        const widget: InsightWidget = {
+          type: timeseriesData.type || 'timeseries',
+          title: timeseriesData.title || 'Time Series Analysis',
+          description: timeseriesData.description || 'Time series data analysis',
+          data: timeseriesData
+        };
+
+        console.log('Timeseries widget:', widget);
+        
+        // Add widget message
+        addMessage({
+          type: 'widget',
+          message: timeseriesData.title || 'Time Series Analysis',
+          widgets: [widget]
+        });
+        
+        return; // Early return to avoid adding the text message below
+        
+      } catch (error) {
+        console.error('Error processing kba-timeseries-tool artifact:', error);
+        artifactText = `KBA timeseries tool executed but failed to parse data: ${streamMessage.content || 'Unknown timeseries data'}`;
       }
     }
     // Special handling for location-tool

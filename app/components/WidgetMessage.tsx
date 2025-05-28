@@ -3,6 +3,7 @@ import { InsightWidget } from "@/app/types/chat";
 import TextWidget from "./widgets/TextWidget";
 import ChartWidget from "./widgets/BarChartWidget";
 import TableWidget from "./widgets/TableWidget";
+import TimeSeriesWidget from "./widgets/TimeSeriesWidget";
 
 interface WidgetMessageProps {
   widgets: InsightWidget[];
@@ -34,6 +35,10 @@ export default function WidgetMessage({ widgets }: WidgetMessageProps) {
             <Box overflowX="auto" maxW="100%">
               <TableWidget data={widget.data} />
             </Box>
+          )}
+          
+          {widget.type === 'timeseries' && (
+            <TimeSeriesWidget {...widget.data} />
           )}
         </Box>
       ))}
