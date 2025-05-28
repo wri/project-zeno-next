@@ -18,6 +18,7 @@ interface MapState {
   clearGeoJsonFeatures: () => void;
   flyToGeoJson: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature) => void;
   flyToCenter: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature, zoom?: number) => void;
+  flyToGeoJsonWithRetry: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature, maxRetries?: number) => void;
 }
 
 const useMapStore = create<MapState>((set, get) => ({
@@ -25,6 +26,7 @@ const useMapStore = create<MapState>((set, get) => ({
   geoJsonFeatures: [],
   
   setMapRef: (mapRef) => {
+    console.log('Setting map ref:', !!mapRef);
     set({ mapRef });
   },
   
@@ -70,6 +72,25 @@ const useMapStore = create<MapState>((set, get) => ({
     } catch (error) {
       console.error('Error flying to GeoJSON bounds:', error);
     }
+  },
+
+  flyToGeoJsonWithRetry: (geoJson, maxRetries = 5) => {
+    const { mapRef, flyToGeoJson } = get();
+    
+    if (mapRef) {
+      flyToGeoJson(geoJson);
+      return;
+    }
+    
+    if (maxRetries <= 0) {
+      console.warn('Max retries reached, map ref still not available');
+      return;
+    }
+    
+    console.log(`Map ref not ready, retrying in 200ms (${maxRetries} retries left)`);
+    setTimeout(() => {
+      get().flyToGeoJsonWithRetry(geoJson, maxRetries - 1);
+    }, 200);
   },
   
   flyToCenter: (geoJson, zoom = 12) => {

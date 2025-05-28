@@ -34,7 +34,7 @@ function processStreamMessage(
     if (streamMessage.name === 'location-tool' && streamMessage.artifact) {
       try {
         // Get map store instance to add GeoJSON and fly to location
-        const { addGeoJsonFeature, flyToGeoJson } = useMapStore.getState();
+        const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();
         
         // Parse the GeoJSON from the artifact
         const artifact = streamMessage.artifact[0];
@@ -52,14 +52,46 @@ function processStreamMessage(
           data: geoJsonData
         });
         
-        // Fly to the GeoJSON location
-        flyToGeoJson(geoJsonData);
+        // Use retry mechanism to handle HMR issues
+        flyToGeoJsonWithRetry(geoJsonData);
         
         artifactText = `Location found and displayed on map: ${streamMessage.content || 'Unknown location'}`;
         
       } catch (error) {
         console.error('Error processing location-tool artifact:', error);
         artifactText = `Location tool executed but failed to display on map: ${streamMessage.content || 'Unknown location'}`;
+      }
+    }
+    // Special handling for kba-data-tool
+    else if (streamMessage.name === 'kba-data-tool' && streamMessage.artifact) {
+      try {
+        // Get map store instance to add GeoJSON and fly to location
+        const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();
+        
+        // Parse the GeoJSON from the artifact
+        const artifact = streamMessage.artifact;
+        const geoJsonData = typeof artifact === 'string' 
+          ? JSON.parse(artifact) 
+          : artifact;
+        
+        // Generate a unique ID for this feature with kba prefix for different styling
+        const featureId = `kba-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Add the GeoJSON feature to the map with KBA-specific naming
+        addGeoJsonFeature({
+          id: featureId,
+          name: streamMessage.content || 'KBA Data',
+          data: geoJsonData
+        });
+        
+        // Use retry mechanism to handle HMR issues
+        flyToGeoJsonWithRetry(geoJsonData);
+        
+        artifactText = streamMessage.content || 'KBA data found and displayed on map';
+        
+      } catch (error) {
+        console.error('Error processing kba-data-tool artifact:', error);
+        artifactText = `KBA data tool executed but failed to display on map: ${streamMessage.content || 'Unknown KBA data'}`;
       }
     }
     
