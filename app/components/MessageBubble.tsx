@@ -1,7 +1,8 @@
 "use client";
 import { Box, Text } from "@chakra-ui/react";
 import { ChatMessage } from "@/app/types/chat";
-
+import WidgetMessage from "./WidgetMessage";
+import Markdown from "react-markdown";
 interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
@@ -10,6 +11,16 @@ interface MessageBubbleProps {
 function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const isUser = message.type === 'user';
   const isSystem = message.type === 'system';
+  const isWidget = message.type === 'widget';
+
+  // For widget messages, render them in a full-width container
+  if (isWidget && message.widgets) {
+    return (
+      <Box mb={4}>
+        <WidgetMessage widgets={message.widgets} />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -31,7 +42,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
         borderColor={isUser ? "transparent" : "gray.200"}
       >
         <Text fontSize="sm" lineHeight="tall" whiteSpace="pre-wrap">
-          {message.message}
+          <Markdown>{message.message}</Markdown>
         </Text>
         <Text
           fontSize="xs"

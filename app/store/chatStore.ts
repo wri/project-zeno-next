@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage, ChatPrompt, StreamMessage, QueryType } from '@/app/types/chat';
+import { ChatMessage, ChatPrompt, StreamMessage, QueryType, InsightWidget } from '@/app/types/chat';
 import useMapStore from './mapStore';
 
 interface ChatState {
@@ -23,15 +23,47 @@ function processStreamMessage(
       type: 'assistant',
       message: streamMessage.text
     });
-  } else if (streamMessage.type === 'tool' && streamMessage.artifact) {
+  } else if (streamMessage.type === 'tool') {
     // Handle tool/artifact messages with better formatting
     let artifactText = `Tool: ${streamMessage.name || 'Unknown'}`;
     
     console.log('Artifact text:', streamMessage.content);
     console.log('Artifact data:', streamMessage.artifact);
     
+    // Special handling for kba-insights-tool
+    if (streamMessage.name === 'kba-insights-tool' && streamMessage.content) {
+      try {
+        // Parse the insights data
+        const artifactData = typeof streamMessage.content === 'string' 
+          ? JSON.parse(streamMessage.content) 
+          : streamMessage.content;
+        console.log('Artifact data:', artifactData);
+        // Convert insights to widgets
+        const widgets: InsightWidget[] = artifactData.insights.map((insight: any) => ({
+          type: insight.type,
+          title: insight.title,
+          description: insight.description,
+          data: insight.data
+        }));
+
+        console.log('Widgets:', widgets);
+        
+        // Add widget message
+        addMessage({
+          type: 'widget',
+          message: streamMessage.content || 'KBA Insights Analysis',
+          widgets: widgets
+        });
+        
+        return; // Early return to avoid adding the text message below
+        
+      } catch (error) {
+        console.error('Error processing kba-insights-tool artifact:', error);
+        artifactText = `KBA insights tool executed but failed to parse data: ${streamMessage.content || 'Unknown insights'}`;
+      }
+    }
     // Special handling for location-tool
-    if (streamMessage.name === 'location-tool' && streamMessage.artifact) {
+    else if (streamMessage.name === 'location-tool' && streamMessage.artifact) {
       try {
         // Get map store instance to add GeoJSON and fly to location
         const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();

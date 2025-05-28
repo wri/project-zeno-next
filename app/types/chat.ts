@@ -1,8 +1,17 @@
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'assistant' | 'system';
+  type: 'user' | 'assistant' | 'system' | 'widget';
   message: string;
   timestamp: string;
+  widgets?: InsightWidget[]; // For widget messages
+}
+
+// Widget types for insights
+export interface InsightWidget {
+  type: 'text' | 'chart' | 'table';
+  title: string;
+  description: string;
+  data: any;
 }
 
 export interface ChatPrompt {
