@@ -17,7 +17,23 @@ export interface ChatAPIRequest {
   thread_id: string;
 }
 
-// LangChain-based API response structure
+// Simplified message that our API sends to the client
+export interface StreamMessage {
+  type: 'text' | 'artifact' | 'tool_call' | 'other';
+  text?: string;
+  artifact?: any;
+  tool_calls?: any[];
+  name?: string;
+  timestamp: number;
+}
+
+// LangChain content structure (for internal API use)
+export interface LangChainContent {
+  text?: string;
+  [key: string]: any; // Allow other properties
+}
+
+// LangChain-based API response structure (for internal API use)
 export interface LangChainResponse {
   node: string;
   update: {
@@ -25,21 +41,17 @@ export interface LangChainResponse {
     type: string;
     id: string[];
     kwargs: {
-      content: string;
+      content: LangChainContent | any;
       response_metadata: any;
       type: string;
       id: string;
       usage_metadata: any;
       tool_calls: any[];
       invalid_tool_calls: any[];
+      artifact?: any;
+      name?: string;
     };
   };
-}
-
-export interface ChatAPIResponse {
-  response: string;
-  thread_id?: string;
-  // Add other response fields as needed
 }
 
 export type QueryType = 'query' | 'human_input'; 

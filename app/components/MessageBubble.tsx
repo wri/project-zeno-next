@@ -4,9 +4,10 @@ import { ChatMessage } from "@/app/types/chat";
 
 interface MessageBubbleProps {
   message: ChatMessage;
+  isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
 }
 
-function MessageBubble({ message }: MessageBubbleProps) {
+function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const isUser = message.type === 'user';
   const isSystem = message.type === 'system';
 
@@ -14,7 +15,7 @@ function MessageBubble({ message }: MessageBubbleProps) {
     <Box
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
-      mb={4}
+      mb={isConsecutive ? 1 : 4} // Reduced margin for consecutive messages
     >
       <Box
         maxW="80%"
@@ -25,11 +26,11 @@ function MessageBubble({ message }: MessageBubbleProps) {
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
-        shadow={!isSystem ? "sm" : undefined}
-        border={isSystem ? "1px solid" : undefined}
-        borderColor={isSystem ? "gray.200" : undefined}
+        shadow={isSystem ? "none" : "sm"}
+        border={isUser ? "none" : "1px solid"}
+        borderColor={isUser ? "transparent" : "gray.200"}
       >
-        <Text fontSize="sm" whiteSpace="pre-wrap">
+        <Text fontSize="sm" lineHeight="tall" whiteSpace="pre-wrap">
           {message.message}
         </Text>
         <Text

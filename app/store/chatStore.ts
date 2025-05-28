@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage, ChatPrompt, ChatAPIResponse, QueryType } from '@/app/types/chat';
+import { ChatMessage, ChatPrompt, StreamMessage, QueryType } from '@/app/types/chat';
 
 interface ChatState {
   messages: ChatMessage[];
@@ -10,6 +10,44 @@ interface ChatState {
   sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
+}
+
+// Helper function to process stream messages and add them to chat
+function processStreamMessage(
+  streamMessage: StreamMessage, 
+  addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void
+) {
+  if (streamMessage.type === 'text' && streamMessage.text) {
+    addMessage({
+      type: 'assistant',
+      message: streamMessage.text
+    });
+  } else if (streamMessage.type === 'artifact' && streamMessage.artifact) {
+    // Handle tool/artifact messages with better formatting
+    const artifactData = streamMessage.artifact;
+    let artifactText = `Tool: ${artifactData.name || 'Unknown'}`;
+    
+    if (artifactData.content) {
+      artifactText += `\nContent: ${typeof artifactData.content === 'string' ? artifactData.content : JSON.stringify(artifactData.content)}`;
+    }
+    
+    if (artifactData.artifact) {
+      artifactText += `\nData: ${JSON.stringify(artifactData.artifact)}`;
+    }
+    
+    console.log('Artifact text:', artifactText);
+    console.log('Artifact data:', artifactData);
+    
+    addMessage({
+      type: 'assistant',
+      message: artifactText
+    });
+  } else if (streamMessage.type === 'tool_call' && streamMessage.tool_calls) {
+    addMessage({
+      type: 'assistant',
+      message: `Tool calls: ${JSON.stringify(streamMessage.tool_calls)}`
+    });
+  }
 }
 
 const useChatStore = create<ChatState>((set, get) => ({
@@ -27,7 +65,7 @@ const useChatStore = create<ChatState>((set, get) => ({
   addMessage: (message) => {
     const newMessage: ChatMessage = {
       ...message,
-      id: Date.now().toString(),
+      id: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
       timestamp: new Date().toISOString()
     };
     
@@ -74,18 +112,55 @@ const useChatStore = create<ChatState>((set, get) => ({
       if (!response.ok) {
         throw new Error('Failed to send message');
       }
-      
-      const data: ChatAPIResponse = await response.json();
-      
-      // Add assistant response
-      addMessage({
-        type: 'assistant',
-        message: data.response || 'Sorry, I could not process your request.'
-      });
-      
-      // Update thread ID if provided in response
-      if (data.thread_id && data.thread_id !== threadId) {
-        set({ currentThreadId: data.thread_id });
+
+      if (!response.body) {
+        throw new Error('No response body received');
+      }
+
+      // Process the simplified streaming response
+      const utf8Decoder = new TextDecoder("utf-8");
+      const reader = response.body.getReader();
+      let { value: chunk, done: readerDone } = await reader.read();
+      let decodedChunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
+
+      let buffer = ""; // Accumulate partial chunks
+
+      while (!readerDone) {
+        buffer += decodedChunk; // Append current chunk to buffer
+
+        let lineBreakIndex;
+        while ((lineBreakIndex = buffer.indexOf("\n")) >= 0) {
+          const line = buffer.slice(0, lineBreakIndex).trim(); // Extract the line
+          buffer = buffer.slice(lineBreakIndex + 1); // Remove processed line
+
+          if (line) {
+            try {
+              const streamMessage: StreamMessage = JSON.parse(line);
+              console.log('Received simplified message:', streamMessage);
+              
+              processStreamMessage(streamMessage, addMessage);
+              
+            } catch (err) {
+              console.error("Failed to parse simplified message", line, err);
+            }
+          }
+        }
+
+        // Read next chunk
+        ({ value: chunk, done: readerDone } = await reader.read());
+        decodedChunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
+      }
+
+      // Handle any remaining data in the buffer
+      if (buffer.trim()) {
+        try {
+          const streamMessage: StreamMessage = JSON.parse(buffer);
+          console.log('Final simplified message:', streamMessage);
+          
+          processStreamMessage(streamMessage, addMessage);
+        } catch (err) {
+          console.error("Failed to parse final simplified message", buffer, err);
+        }
       }
       
     } catch (error) {

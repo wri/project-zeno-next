@@ -37,9 +37,19 @@ function ChatMessages() {
 
   return (
     <Box ref={containerRef} fontSize="sm">
-      {messages.map((message) => (
-        <MessageBubble key={message.id} message={message} />
-      ))}
+      {messages.map((message, index) => {
+        // Check if this message is consecutive to the previous one of the same type
+        const previousMessage = index > 0 ? messages[index - 1] : null;
+        const isConsecutive = previousMessage?.type === message.type;
+        
+        return (
+          <MessageBubble 
+            key={message.id} 
+            message={message} 
+            isConsecutive={isConsecutive}
+          />
+        );
+      })}
     </Box>
   );
 }
