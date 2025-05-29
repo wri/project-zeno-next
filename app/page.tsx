@@ -11,7 +11,7 @@ export default function Home() {
       templateRows="min-content minmax(0, 1fr)"
       bg="bg"
     >
-      <Grid templateColumns="28rem 1fr" p="4" pt="0" gap="2">
+      <Grid templateColumns="36rem 1fr" p="4" pt="0" gap="2">
         <Grid
           gap="4"
           templateRows="1fr max-content"
