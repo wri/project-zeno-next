@@ -137,6 +137,27 @@ function processStreamMessage(
         artifactText = `Location tool executed but failed to display on map: ${streamMessage.content || 'Unknown location'}`;
       }
     }
+    // Special handling for dist-alerts-tool
+    else if (streamMessage.name === 'dist-alerts-tool' && streamMessage.content) {
+      try {
+        // Parse the disturbances data
+        const alertsData = typeof streamMessage.content === 'string' 
+          ? JSON.parse(streamMessage.content) 
+          : streamMessage.content;
+        
+        console.log('Alerts data:', alertsData);
+        
+        // Extract the number of disturbances
+        const numAlerts = alertsData.disturbances || 0;
+        
+        // Format the message
+        artifactText = `Found ${numAlerts.toLocaleString()} alerts in the area of interest`;
+        
+      } catch (error) {
+        console.error('Error processing dist-alerts-tool:', error);
+        artifactText = `Disturbance alerts tool executed but failed to parse data: ${streamMessage.content || 'Unknown alerts count'}`;
+      }
+    }
     // Special handling for kba-data-tool
     else if (streamMessage.name === 'kba-data-tool' && streamMessage.artifact) {
       try {
