@@ -4,16 +4,22 @@ import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
-import { ArrowsCounterClockwiseIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from "@phosphor-icons/react";
+import {
+  ArrowsCounterClockwiseIcon,
+  CopyIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+} from "@phosphor-icons/react";
+import LclLogo from "./LclLogo";
 interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
 }
 
 function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
-  const isUser = message.type === 'user';
-  const isWidget = message.type === 'widget';
-  const isError = message.type === 'error';
+  const isUser = message.type === "user";
+  const isWidget = message.type === "widget";
+  const isError = message.type === "error";
 
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
@@ -44,31 +50,38 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
         border={isError ? "1px solid" : "none"}
         borderColor={isError ? "red.200" : "transparent"}
       >
-        {isError && (
-          <Badge colorPalette="red" >
-            Error
-          </Badge>
-        )}
+        {isError && <Badge colorPalette="red">Error</Badge>}
         <Markdown>{message.message}</Markdown>
-        <Flex alignItems="center" justifyContent="space-between" gap="2" maxH="1px" opacity="0" overflow="hidden" _groupHover={{ maxH: "24", opacity: 1 }} transition="all 0.32s ease-in-out">
+        <Flex
+          alignItems="center"
+          justifyContent="space-between"
+          gap="2"
+          maxH="1px"
+          opacity="0"
+          overflow="hidden"
+          _groupHover={{ maxH: "24", opacity: 1 }}
+          transition="all 0.32s ease-in-out"
+        >
+          {!isUser && <LclLogo width={11} avatarOnly />}
           <Text
             fontSize="xs"
             opacity={0.7}
             mt={1}
             textAlign={isUser ? "right" : "left"}
-            >
+            mr="auto"
+          >
             {new Date(message.timestamp).toLocaleString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-            {" "}on{" "}
+              hour: "2-digit",
+              minute: "2-digit",
+            })}{" "}
+            on{" "}
             {new Date(message.timestamp).toLocaleDateString([], {
               year: "numeric",
-              day: '2-digit',
-              month: 'short',
+              day: "2-digit",
+              month: "short",
             })}
           </Text>
-          {!isUser && 
+          {!isUser && (
             <Flex>
               <Tooltip content="Copy response">
                 <IconButton variant="ghost" size="xs">
@@ -91,11 +104,11 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
                 </IconButton>
               </Tooltip>
             </Flex>
-          }
+          )}
         </Flex>
       </Box>
     </Box>
   );
 }
 
-export default MessageBubble; 
+export default MessageBubble;

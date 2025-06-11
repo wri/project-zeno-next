@@ -48,6 +48,9 @@ function ChatInput() {
         onChange={(e) => setInputValue(e.target.value)}
         onKeyUp={handleKeyUp}
         disabled={disabled}
+        _disabled={{
+          opacity: 1
+        }}
       />
       <Button
         position="absolute"

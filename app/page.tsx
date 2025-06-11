@@ -9,6 +9,7 @@ import {
 } from "@chakra-ui/react";
 import { Sidebar } from "./sidebar";
 import ChatPanel from "./ChatPanel";
+import LclLogo from "./components/LclLogo";
 
 export default function Home() {
   return (
@@ -27,9 +28,12 @@ export default function Home() {
         bg="blue.700"
         color="fg.inverted"
       >
-        <Heading size="sm" as="h1">
-          Zeno
-        </Heading>
+        <Flex gap="2">
+          <LclLogo width={16} avatarOnly />
+          <Heading size="md" as="h1">
+            Zeno
+          </Heading>
+        </Flex>
       </Flex>
       <Grid
         templateColumns="auto 36rem 1fr"
