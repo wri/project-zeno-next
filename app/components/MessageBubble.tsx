@@ -35,7 +35,6 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
       mb={isConsecutive ? 1 : 4} // Reduced margin for consecutive messages
-      className="group"
     >
       <Box
         w={isUser ? "fit-content" : "100%"}
@@ -56,11 +55,9 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
           alignItems="center"
           justifyContent="space-between"
           gap="2"
-          maxH="1px"
-          opacity="0"
-          overflow="hidden"
-          _groupHover={{ maxH: "24", opacity: 1 }}
           transition="all 0.32s ease-in-out"
+          opacity={0.5}
+          _hover={{ opacity: 1 }}
         >
           {!isUser && <LclLogo width={11} avatarOnly />}
           <Text
