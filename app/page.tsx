@@ -36,7 +36,7 @@ export default function Home() {
         </Flex>
       </Flex>
       <Grid
-        templateColumns="auto 36rem 1fr"
+        templateColumns="auto auto 1fr"
         templateAreas="'sidebar chat map'"
         templateRows="1fr"
         maxH="calc(100vh - 3rem)"
