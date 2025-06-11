@@ -1,36 +1,50 @@
-import Map from "@/app/components/Map"
-import { Box, Grid } from "@chakra-ui/react"
-import ChatMessages from "./components/ChatMessages";
-import ChatInput from "./components/ChatInput";
+"use client";
+
+import Map from "@/app/components/Map";
+import {
+  Box,
+  Flex,
+  Grid,
+  Heading,
+} from "@chakra-ui/react";
+import { Sidebar } from "./sidebar";
+import ChatPanel from "./ChatPanel";
+import LclLogo from "./components/LclLogo";
 
 export default function Home() {
   return (
     <Grid
-      maxH="vh"
-      h="vh"
-      templateRows="min-content minmax(0, 1fr)"
+      maxH="100vh"
+      h="100vh"
+      templateRows="min-content minmax(0px, 1fr)"
       bg="bg"
     >
-      <Grid templateColumns="36rem 1fr" p="4" pt="0" gap="2">
-        <Grid
-          gap="4"
-          templateRows="1fr max-content"
-          borderRadius="lg"
-          shadow="md"
-          p="4"
-          pb="2"
-          height="vh"
-          minH="100%"
-        >
-          <Box overflowY="auto" height="100%" mx="-4" px="4">
-            <ChatMessages />
-          </Box>
-          <Box>
-            <ChatInput />
-          </Box>
-        </Grid>
-        <Grid templateRows="1fr" gap="2">
-          <Box borderRadius="lg" shadow="md" overflow="hidden">
+      <Flex
+        alignItems="center"
+        justifyContent="space-between"
+        px="5"
+        py="2"
+        h="12"
+        bg="blue.700"
+        color="fg.inverted"
+      >
+        <Flex gap="2">
+          <LclLogo width={16} avatarOnly />
+          <Heading size="md" as="h1">
+            Zeno
+          </Heading>
+        </Flex>
+      </Flex>
+      <Grid
+        templateColumns="auto 36rem 1fr"
+        templateAreas="'sidebar chat map'"
+        templateRows="1fr"
+        maxH="calc(100vh - 3rem)"
+      >
+        <Sidebar />
+        <ChatPanel />
+        <Grid templateRows="1fr" gridArea="map">
+          <Box overflow="hidden">
             <Map />
           </Box>
         </Grid>
