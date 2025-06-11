@@ -1,8 +1,10 @@
 "use client";
-import { Box, Text, Badge } from "@chakra-ui/react";
+import { Box, Text, Badge, Flex, IconButton } from "@chakra-ui/react";
+import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
+import { ArrowsCounterClockwiseIcon, CopyIcon, ThumbsDownIcon, ThumbsUpIcon } from "@phosphor-icons/react";
 interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
@@ -10,7 +12,6 @@ interface MessageBubbleProps {
 
 function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const isUser = message.type === 'user';
-  const isSystem = message.type === 'system';
   const isWidget = message.type === 'widget';
   const isError = message.type === 'error';
 
@@ -28,19 +29,20 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
       mb={isConsecutive ? 1 : 4} // Reduced margin for consecutive messages
+      className="group"
     >
       <Box
-        maxW="80%"
-        bg={isError ? "red.50" : isUser ? "blue.500" : isSystem ? "gray.100" : "white"}
-        color={isError ? "red.800" : isUser ? "white" : "black"}
-        px={4}
-        py={3}
+        w={isUser ? "fit-content" : "100%"}
+        maxW={isUser ? "80%" : "none"}
+        bg={isError ? "red.50" : isUser ? "gray.100" : "transparent"}
+        color={isError ? "red.800" : "fg"}
+        px={isUser ? 4 : 0}
+        py={isUser ? 3 : 0}
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
-        shadow={isSystem ? "none" : "sm"}
-        border={isError ? "1px solid" : isUser ? "none" : "1px solid"}
-        borderColor={isError ? "red.200" : isUser ? "transparent" : "gray.200"}
+        border={isError ? "1px solid" : "none"}
+        borderColor={isError ? "red.200" : "transparent"}
       >
         {isError && (
           <Badge colorPalette="red" >
@@ -48,17 +50,49 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
           </Badge>
         )}
         <Markdown>{message.message}</Markdown>
-        <Text
-          fontSize="xs"
-          opacity={0.7}
-          mt={1}
-          textAlign={isUser ? "right" : "left"}
-        >
-          {new Date(message.timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
-        </Text>
+        <Flex alignItems="center" justifyContent="space-between" gap="2" maxH="1px" opacity="0" overflow="hidden" _groupHover={{ maxH: "24", opacity: 1 }} transition="all 0.32s ease-in-out">
+          <Text
+            fontSize="xs"
+            opacity={0.7}
+            mt={1}
+            textAlign={isUser ? "right" : "left"}
+            >
+            {new Date(message.timestamp).toLocaleString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+            {" "}on{" "}
+            {new Date(message.timestamp).toLocaleDateString([], {
+              year: "numeric",
+              day: '2-digit',
+              month: 'short',
+            })}
+          </Text>
+          {!isUser && 
+            <Flex>
+              <Tooltip content="Copy response">
+                <IconButton variant="ghost" size="xs">
+                  <CopyIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip content="Good response">
+                <IconButton variant="ghost" size="xs">
+                  <ThumbsUpIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip content="Bad response">
+                <IconButton variant="ghost" size="xs">
+                  <ThumbsDownIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip content="Regenerate response">
+                <IconButton variant="ghost" size="xs">
+                  <ArrowsCounterClockwiseIcon />
+                </IconButton>
+              </Tooltip>
+            </Flex>
+          }
+        </Flex>
       </Box>
     </Box>
   );
