@@ -1,6 +1,6 @@
 import { Flex, IconButton, Menu, Button, Portal } from "@chakra-ui/react";
 import { Tooltip } from "./components/ui/tooltip";
-import { useSidebarContext } from "./sidebar-context";
+import useSidebarStore from "./store/sidebarStore";
 import {
   SidebarIcon,
   CaretDownIcon,
@@ -12,7 +12,7 @@ import { useId } from "react";
 
 function ChatPanelHeader() {
   const triggerId = useId();
-  const { sideBarVisible, toggleSidebar } = useSidebarContext();
+  const { sideBarVisible, toggleSidebar } = useSidebarStore();
   return (
     <Flex
       alignItems="center"
