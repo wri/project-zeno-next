@@ -95,9 +95,9 @@ function ChatInput() {
       />
       <Flex justifyContent="space-between" alignItems="center" w="full">
         <Flex gap="2">
-          <ContextButton contextType="area" />
-          <ContextButton contextType="layer" />
-          <ContextButton contextType="date" />
+          <ContextMenu contextType="layer" />
+          <ContextMenu contextType="area" />
+          <ContextMenu contextType="date" />
         </Flex>
         <Button
           p="0"
