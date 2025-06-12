@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import JSON5 from 'json5';
 import { ChatMessage, ChatPrompt, StreamMessage, QueryType, InsightWidget, RawInsightData } from '@/app/types/chat';
 import useMapStore from './mapStore';
+import useContextStore from './contextStore';
 
 interface ChatState {
   messages: ChatMessage[];
@@ -35,9 +36,6 @@ function processStreamMessage(
     // Handle tool/artifact messages with better formatting
     let artifactText = `Tool: ${streamMessage.name || 'Unknown'}`;
     
-    console.log('Artifact text:', streamMessage.content);
-    console.log('Artifact data:', streamMessage.artifact);
-    
     // Special handling for kba-insights-tool
     if (streamMessage.name === 'kba-insights-tool' && streamMessage.content) {
       try {
@@ -45,7 +43,6 @@ function processStreamMessage(
         const artifactData = typeof streamMessage.content === 'string' 
           ? JSON5.parse(streamMessage.content) 
           : streamMessage.content;
-        console.log('Artifact data:', artifactData);
         // Convert insights to widgets
         const widgets: InsightWidget[] = artifactData.insights.map((insight: RawInsightData) => ({
           type: insight.type as InsightWidget['type'], // Type assertion to convert string to specific union type
@@ -54,8 +51,6 @@ function processStreamMessage(
           data: insight.data
         }));
 
-        console.log('Widgets:', widgets);
-        
         // Add widget message
         addMessage({
           type: 'widget',
@@ -78,8 +73,6 @@ function processStreamMessage(
           ? JSON5.parse(streamMessage.content) 
           : streamMessage.content;
         
-        console.log('Timeseries data:', timeseriesData);
-        
         // Convert timeseries data to widget format
         const widget: InsightWidget = {
           type: timeseriesData.type || 'timeseries',
@@ -88,8 +81,6 @@ function processStreamMessage(
           data: timeseriesData
         };
 
-        console.log('Timeseries widget:', widget);
-        
         // Add widget message
         addMessage({
           type: 'widget',
@@ -109,6 +100,7 @@ function processStreamMessage(
       try {
         // Get map store instance to add GeoJSON and fly to location
         const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();
+        const { addContext } = useContextStore.getState();
         
         // Parse the GeoJSON from the artifact
         const artifactArray = Array.isArray(streamMessage.artifact) ? streamMessage.artifact : [streamMessage.artifact];
@@ -130,7 +122,35 @@ function processStreamMessage(
         // Use retry mechanism to handle HMR issues
         flyToGeoJsonWithRetry(geoJsonData);
         
-        artifactText = `Location found and displayed on map: ${streamMessage.content || 'Unknown location'}`;
+        // Add the location to the context store
+
+        // location is a string in the format "[[CountryName, GADM type, GADM Id]]"
+        // we need to extract the country name or return 'Unknown location' if the format is not correct
+        let countryName: string | undefined;
+
+        if (streamMessage.content && typeof streamMessage.content === 'string') {
+          try {
+            // The content is a string representation of a list of lists, e.g., "[['Indonesia', ...]]"
+            // Python's string representation might use single quotes, so we replace them for valid JSON.
+            const parsedContent = JSON.parse(streamMessage.content.replace(/'/g, '"'));
+            if (Array.isArray(parsedContent) && parsedContent.length > 0 && Array.isArray(parsedContent[0]) && parsedContent[0].length > 0) {
+              countryName = parsedContent[0][0];
+            }
+          } catch (error) {
+            console.error('Error parsing location-tool content:', streamMessage.content, error);
+            // Fallback for safety, though it may not be correct
+            countryName = streamMessage.content?.split(',')[0].replace(/\[|'|"/g, '').trim();
+          }
+        }
+        
+        if (countryName) {
+          addContext({
+            contextType: 'area',
+            content: countryName
+          });
+        }
+
+        artifactText = `Location found and displayed on map: ${countryName || 'Unknown location'}`;
         
       } catch (error) {
         console.error('Error processing location-tool artifact:', error);
@@ -144,8 +164,6 @@ function processStreamMessage(
         const alertsData = typeof streamMessage.content === 'string' 
           ? JSON.parse(streamMessage.content) 
           : streamMessage.content;
-        
-        console.log('Alerts data:', alertsData);
         
         // Extract the number of disturbances
         const numAlerts = alertsData.disturbances || 0;
@@ -230,6 +248,7 @@ const useChatStore = create<ChatState>((set, get) => ({
   
   sendMessage: async (message: string, queryType: QueryType = "query") => {
     const { addMessage, setLoading, currentThreadId, generateNewThread } = get();
+    const { context } = useContextStore.getState();
     
     // Generate thread ID if this is the first message
     const threadId = currentThreadId || generateNewThread();
@@ -237,7 +256,8 @@ const useChatStore = create<ChatState>((set, get) => ({
     // Add user message
     addMessage({
       type: 'user',
-      message
+      message,
+      context,
     });
     
     setLoading(true);
@@ -284,7 +304,6 @@ const useChatStore = create<ChatState>((set, get) => ({
           if (line) {
             try {
               const streamMessage: StreamMessage = JSON.parse(line);
-              console.log('Received simplified message:', streamMessage);
               
               processStreamMessage(streamMessage, addMessage);
               
@@ -303,7 +322,6 @@ const useChatStore = create<ChatState>((set, get) => ({
       if (buffer.trim()) {
         try {
           const streamMessage: StreamMessage = JSON.parse(buffer);
-          console.log('Final simplified message:', streamMessage);
           
           processStreamMessage(streamMessage, addMessage);
         } catch (err) {

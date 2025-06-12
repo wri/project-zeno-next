@@ -14,6 +14,8 @@ import {
 import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
 import { ChatContextType } from "./ContextButton";
+import { ContextItem } from "../store/contextStore";
+
 interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
@@ -23,14 +25,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
   const isError = message.type === "error";
-  const hasContext = isUser && true; // placeholder
-  const sampleContext = [ //placholder
-    { contextType: "area", content: "Beirut, Lebanon" },
-    { contextType: "date", content: "2025/01/01 - 2025/03/19" },
-    { contextType: "layer", content: "FIRMS" },
-    { contextType: "area", content: "Svalbard" },
-    { contextType: "layer", content: "Fire alerts (VIRS)" },
-  ];
+  const hasContext = isUser && message.context && message.context.length > 0;
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
     return (
@@ -68,8 +63,8 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             <Flex gap="1" fontSize="xs" color="fg.muted">
               <ArrowBendDownRightIcon /> Context:
             </Flex>
-            {sampleContext.map((c) => (
-              <ContextTag key={c.content} contextType={c.contextType as ChatContextType} content={c.content} />
+            {message.context?.map((c: ContextItem) => (
+              <ContextTag key={c.id} contextType={c.contextType as ChatContextType} content={c.content} />
             ))}
           </Flex>}
         <Markdown>{message.message}</Markdown>

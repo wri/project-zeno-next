@@ -5,10 +5,12 @@ import { ArrowUpIcon } from "@phosphor-icons/react";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
+import useContextStore from "../store/contextStore";
 
 function ChatInput() {
   const [inputValue, setInputValue] = useState("");
   const { sendMessage, isLoading } = useChatStore();
+  const { context, removeContext } = useContextStore();
 
   const submitPrompt = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -35,13 +37,7 @@ function ChatInput() {
 
   const { disabled, message } = getInputState();
   const isButtonDisabled = disabled || !inputValue?.trim();
-  const hasContext = true; // placeholder
-  const sampleContext = [
-    //placholder
-    { contextType: "date", content: "2023/11/21 - 2024/07/02" },
-    { contextType: "layer", content: "DIST Alerts" },
-    { contextType: "area", content: "Indonesia" },
-  ];
+  const hasContext = context.length > 0;
   return (
     <Flex
       flexDir="column"
@@ -64,11 +60,12 @@ function ChatInput() {
     >
       {hasContext && (
         <Flex gap="2" wrap="wrap">
-          {sampleContext.map((c) => (
+          {context.map((c) => (
             <ContextTag
-              key={c.content}
+              key={c.id}
               contextType={c.contextType as ChatContextType}
               content={c.content}
+              onClose={() => removeContext(c.id)}
               closeable
             />
           ))}
