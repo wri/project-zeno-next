@@ -15,6 +15,7 @@ import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
 import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
+import { useEffect, useState } from "react";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -22,6 +23,22 @@ interface MessageBubbleProps {
 }
 
 function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
+  const [formattedTimestamp, setFormattedTimestamp] = useState("");
+
+  useEffect(() => {
+    const date = new Date(message.timestamp);
+    const time = date.toLocaleString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const day = date.toLocaleDateString([], {
+      year: "numeric",
+      day: "2-digit",
+      month: "short",
+    });
+    setFormattedTimestamp(`${time} on ${day}`);
+  }, [message.timestamp]);
+
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
   const isError = message.type === "error";
@@ -85,16 +102,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             textAlign={isUser ? "right" : "left"}
             >
             <LclLogo width={11} avatarOnly />
-            {new Date(message.timestamp).toLocaleString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}{" "}
-            on{" "}
-            {new Date(message.timestamp).toLocaleDateString([], {
-              year: "numeric",
-              day: "2-digit",
-              month: "short",
-            })}
+            {formattedTimestamp}
           </Flex>
           <Flex>
             <Tooltip content="Copy response">
