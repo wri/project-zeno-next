@@ -15,15 +15,188 @@ import {
   ButtonGroup,
   AbsoluteCenter,
 } from "@chakra-ui/react";
-import ContextButton, { ChatContextType } from "./ContextButton";
-import {
-  CalendarBlankIcon,
-  InfoIcon,
-  MagnifyingGlassIcon,
-  PolygonIcon,
-  StackSimpleIcon,
-} from "@phosphor-icons/react";
+import ContextButton, {
+  ChatContextType,
+  ChatContextOptions,
+} from "./ContextButton";
+import { InfoIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useState } from "react";
+
+// Constants for navigation and dummy content
+const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
+  (type) => ({
+    type,
+    label: ChatContextOptions[type].label,
+    icon: ChatContextOptions[type].icon,
+  })
+);
+
+const LAYER_TAGS = [
+  { label: "Recent", selected: true },
+  { label: "Forest Change" },
+  { label: "Land Cover" },
+  { label: "Land Use" },
+  { label: "Climate" },
+  { label: "Biodiversity" },
+];
+
+const LAYER_CARDS = [
+  {
+    title: "Fire alerts (VIIRS)",
+    description: "daily, 375 m, global, NASA",
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
+    selected: true,
+  },
+  {
+    title: "Integrated deforestation alerts",
+    description:
+      "Integrated layer of tropical alerts: GLAD-L/GLAD-S2/RADD. Data from UMD and...",
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
+  },
+  {
+    title: "Tree Cover Gain",
+    description:
+      "20 years, 30 m, global, Hansen/UMD/Google/USGS/NASA",
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
+  },
+];
+
+const AREA_TAGS = [
+  { label: "In this conversation", selected: true },
+  { label: "From past conversations" },
+];
+
+const AREA_CARDS = [
+  {
+    title: "Areas at risk of fire in northern Australia woodlands",
+    description: "Custom area",
+    selected: true,
+  },
+  {
+    title: "Pará, Brazil",
+    description: "Political boundaries",
+  },
+  {
+    title: "Serra dos Carajás",
+    description: "Key biodiversity areas",
+  },
+  {
+    title: "Japurá-Solimões-Negro moist forests",
+    description: "Terrestrial ecorregions",
+  },
+  {
+    title: "Amazon",
+    description: "River Basins",
+  },
+];
+
+function ContextNav({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (type: ChatContextType) => void;
+}) {
+  return (
+    <Stack
+      direction="column"
+      bg="bg"
+      flexShrink={0}
+      gap={2}
+      p={3}
+      py={4}
+      w="10rem"
+      borderRight="1px solid"
+      borderColor="border"
+      overflowY="auto"
+    >
+      {CONTEXT_NAV.map((nav) => (
+        <Button
+          key={nav.type}
+          size="xs"
+          variant={selected === nav.type ? "subtle" : "ghost"}
+          color={selected === nav.type ? "inherit" : "gray.500"}
+          justifyContent="flex-start"
+          onClick={() => onSelect(nav.type)}
+        >
+          {nav.icon}
+          {nav.label}
+        </Button>
+      ))}
+    </Stack>
+  );
+}
+
+function CardList({
+  cards,
+  showImage = false,
+}: {
+  cards: {
+    title: string;
+    description: string;
+    img?: string;
+    selected?: boolean;
+  }[];
+  showImage?: boolean;
+}) {
+  return (
+    <Stack>
+      {cards.map((card) => (
+        <Card.Root
+          key={card.title}
+          size="sm"
+          flexDirection="row"
+          overflow="hidden"
+          maxW="xl"
+          border={card.selected ? "2px solid" : undefined}
+          borderColor={card.selected ? "blue.800" : undefined}
+        >
+          {showImage && card.img && (
+            <Image
+              objectFit="cover"
+              maxW="5rem"
+              src={card.img}
+              alt={card.title}
+            />
+          )}
+          <Card.Body>
+            <Card.Title
+              display="flex"
+              gap="1"
+              alignItems="center"
+              fontSize="sm"
+            >
+              {card.title}
+              <InfoIcon />
+            </Card.Title>
+            <Card.Description fontSize="xs" color="fg.muted">
+              {card.description}
+            </Card.Description>
+          </Card.Body>
+        </Card.Root>
+      ))}
+    </Stack>
+  );
+}
+
+function TagList({ tags }: { tags: { label: string; selected?: boolean }[] }) {
+  return (
+    <Flex gap="2" maxW="100%" overflow="auto">
+      {tags.map((tag) => (
+        <Button
+          key={tag.label}
+          size="xs"
+          h={6}
+          borderRadius="full"
+          colorPalette={tag.selected ? "blue" : undefined}
+          variant={tag.selected ? undefined : "outline"}
+        >
+          {tag.label}
+        </Button>
+      ))}
+    </Flex>
+  );
+}
 
 function ContextMenu({ contextType }: { contextType: ChatContextType }) {
   const [selectedContextType, setSelectedContextType] = useState(contextType);
@@ -32,7 +205,7 @@ function ContextMenu({ contextType }: { contextType: ChatContextType }) {
   const renderContent = (): React.ReactElement => {
     if (selectedContextType === "layer") {
       return (
-        <Stack bg="bg.subtle" py={3} w="full" maxW="100%" overflow="hidden">
+        <Stack bg="bg.subtle" py={3} w="full" maxW="100%" maxH="100%" overflow="scroll">
           <Box px={4}>
             <InputGroup endElement={<MagnifyingGlassIcon />}>
               <Input
@@ -44,97 +217,20 @@ function ContextMenu({ contextType }: { contextType: ChatContextType }) {
             </InputGroup>
           </Box>
           <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
-            <Flex gap="2" maxW="100%" overflow="auto">
-              <Button size="xs" borderRadius="full" colorPalette="blue">{/* Selected */}
-                Recent
-              </Button>
-              <Button size="xs" borderRadius="full" variant="outline">
-                Forest Change
-              </Button>
-              <Button size="xs" borderRadius="full" variant="outline">
-                Land Cover
-              </Button>
-              <Button size="xs" borderRadius="full" variant="outline">
-                Land Use
-              </Button>
-              <Button size="xs" borderRadius="full" variant="outline">
-                Climate
-              </Button>
-              <Button size="xs" borderRadius="full" variant="outline">
-                Biodiversity
-              </Button>
-            </Flex>
-            <Stack>
-              <Card.Root
-                size="sm"
-                flexDirection="row"
-                overflow="hidden"
-                maxW="xl"
-                border="2px solid"
-                borderColor="blue.800"
-              >
-                <Image
-                  objectFit="cover"
-                  maxW="5rem"
-                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png"
-                  alt="Caffe Latte"
-                />
-                <Card.Body>
-                  <Card.Title
-                    display="flex"
-                    gap="1"
-                    alignItems="center"
-                    fontSize="sm"
-                  >
-                    Fire alerts (VIIRS)
-                    <InfoIcon />
-                  </Card.Title>
-                  <Card.Description fontSize="xs" color="fg.muted">
-                    daily, 375 m, global, NASA
-                  </Card.Description>
-                </Card.Body>
-              </Card.Root>
-              <Card.Root
-                size="sm"
-                flexDirection="row"
-                overflow="hidden"
-                maxW="xl"
-              >
-                <Image
-                  objectFit="cover"
-                  maxW="5rem"
-                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png"
-                  alt="Caffe Latte"
-                />
-                <Card.Body>
-                  <Card.Title
-                    display="flex"
-                    gap="1"
-                    alignItems="center"
-                    fontSize="sm"
-                  >
-                    Integrated deforestation alerts
-                    <InfoIcon />
-                  </Card.Title>
-                  <Card.Description fontSize="xs" color="fg.muted">
-                    Integrated layer of tropical alerts: GLAD-L/GLAD-S2/RADD. Data from UMD and...
-                  </Card.Description>
-                </Card.Body>
-              </Card.Root>
-            </Stack>
+            <TagList tags={LAYER_TAGS} />
+            <CardList cards={LAYER_CARDS} showImage />
           </Stack>
         </Stack>
       );
     }
     if (selectedContextType === "area") {
       return (
-        <Stack bg="bg.subtle" py={3} w="full">
+        <Stack bg="bg.subtle" py={3} w="full" maxH="100%" overflow="scroll">
           <Flex px={4} gap={2}>
             <InputGroup endElement={<MagnifyingGlassIcon />}>
               <Input size="sm" bg="bg" type="text" placeholder="Find area" />
             </InputGroup>
             <NativeSelect.Root size="xs" alignSelf="stretch" w="16rem">
-              {/* TODO: explore replacing with Chakra UI Select, requiring more composition than NativeSelect. NB Portal requirements */}
               <NativeSelect.Field
                 placeholder="Political Boundaries"
                 bg="bg"
@@ -148,46 +244,8 @@ function ContextMenu({ contextType }: { contextType: ChatContextType }) {
             </NativeSelect.Root>
           </Flex>
           <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
-            <Flex gap="2">
-              <Button size="xs" borderRadius="full" colorPalette="blue">
-                In this conversation
-              </Button>
-              <Button size="xs" borderRadius="full" variant="outline">
-                From past conversations
-              </Button>
-            </Flex>
-            <Stack>
-              <Card.Root
-                size="sm"
-                flexDirection="row"
-                overflow="hidden"
-                maxW="xl"
-                border="2px solid"
-                borderColor="blue.800"
-              >
-                <Card.Body>
-                  <Card.Title fontSize="sm">
-                    Areas at risk of fire in northern Australia woodlands
-                  </Card.Title>
-                  <Card.Description fontSize="sm" color="fg.muted">
-                    Custom area
-                  </Card.Description>
-                </Card.Body>
-              </Card.Root>
-              <Card.Root
-                size="sm"
-                flexDirection="row"
-                overflow="hidden"
-                maxW="xl"
-              >
-                <Card.Body>
-                  <Card.Title fontSize="sm">Pará, Brazil</Card.Title>
-                  <Card.Description fontSize="sm" color="fg.muted">
-                    Political boundaries
-                  </Card.Description>
-                </Card.Body>
-              </Card.Root>
-            </Stack>
+            <TagList tags={AREA_TAGS} />
+            <CardList cards={AREA_CARDS} />
           </Stack>
         </Stack>
       );
@@ -228,6 +286,7 @@ function ContextMenu({ contextType }: { contextType: ChatContextType }) {
                 min="2024-03"
                 value="2024-03"
                 maxW="8rem"
+                readOnly // Placeholder
               />
             </Field.Root>
             <Field.Root>
@@ -243,6 +302,7 @@ function ContextMenu({ contextType }: { contextType: ChatContextType }) {
                 max="2025-05"
                 value="2025-05"
                 maxW="8rem"
+                readOnly // Placeholder
               />
             </Field.Root>
           </AbsoluteCenter>
@@ -259,58 +319,13 @@ function ContextMenu({ contextType }: { contextType: ChatContextType }) {
       </Dialog.Trigger>
       <Portal>
         <Dialog.Positioner>
-          <Dialog.Content minH="36rem" overflow="hidden">
-            <Flex flex="1">
+          <Dialog.Content h="30rem" maxH="75vh" overflow="hidden">
+            <Flex flex="1" maxH="100%" overflow="hidden">
               {/* Modal Navigation */}
-              <Stack
-                direction="column"
-                bg="bg"
-                flexShrink={0}
-                gap={2}
-                p={3}
-                py={4}
-                w="10rem"
-                borderRight="1px solid"
-                borderColor="border"
-                overflowY="auto"
-              >
-                <Button
-                  size="xs"
-                  variant={selectedContextType === "layer" ? "subtle" : "ghost"}
-                  color={
-                    selectedContextType === "layer" ? "inherit" : "gray.500"
-                  }
-                  justifyContent="flex-start"
-                  onClick={() => setSelectedContextType("layer")}
-                >
-                  <StackSimpleIcon />
-                  Data Layers
-                </Button>
-                <Button
-                  size="xs"
-                  variant={selectedContextType === "area" ? "subtle" : "ghost"}
-                  color={
-                    selectedContextType === "area" ? "inherit" : "gray.500"
-                  }
-                  justifyContent="flex-start"
-                  onClick={() => setSelectedContextType("area")}
-                >
-                  <PolygonIcon />
-                  Area
-                </Button>
-                <Button
-                  size="xs"
-                  variant={selectedContextType === "date" ? "subtle" : "ghost"}
-                  color={
-                    selectedContextType === "date" ? "inherit" : "gray.500"
-                  }
-                  justifyContent="flex-start"
-                  onClick={() => setSelectedContextType("date")}
-                >
-                  <CalendarBlankIcon />
-                  Date
-                </Button>
-              </Stack>
+              <ContextNav
+                selected={selectedContextType}
+                onSelect={setSelectedContextType}
+              />
               {/* Modal Body */}
               {renderContent()}
             </Flex>

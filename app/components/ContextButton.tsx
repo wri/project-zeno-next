@@ -6,8 +6,8 @@ import {
 } from "@phosphor-icons/react";
 
 export const ChatContextOptions = {
-  area: { icon: <PolygonIcon />, label: "Area" },
   layer: { icon: <StackSimpleIcon />, label: "Data Layer" },
+  area: { icon: <PolygonIcon />, label: "Area" },
   date: { icon: <CalendarBlankIcon />, label: "Date" },
 } as const;
 
