@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
 import { Button, Flex, Textarea } from "@chakra-ui/react";
-import { ArrowUpIcon } from "@phosphor-icons/react";
+import { ArrowBendRightUpIcon } from "@phosphor-icons/react";
 import useChatStore from "@/app/store/chatStore";
-import ContextButton, { ChatContextType } from "./ContextButton";
+import { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
+import ContextMenu from "./ContextMenu";
 
 function ChatInput() {
   const [inputValue, setInputValue] = useState("");
@@ -29,7 +30,7 @@ function ChatInput() {
   const getInputState = () => {
     return {
       disabled: isLoading,
-      message: isLoading ? "Sending..." : "Ask Zeno a question",
+      message: isLoading ? "Sending..." : "Ask Zeno a question...",
     };
   };
 
@@ -53,13 +54,14 @@ function ChatInput() {
       borderRadius="md"
       borderWidth="1px"
       className="group"
+      transition="all 0.32s ease-in-out"
       _active={{
         bg: "white",
-        borderColor: "blue"
+        borderColor: "blue.900"
       }}
       _focusWithin={{
         bg: "white",
-        borderColor: "blue"
+        borderColor: "blue.900"
       }}
     >
       {hasContext && (
@@ -75,7 +77,7 @@ function ChatInput() {
         </Flex>
       )}
       <Textarea
-        aria-label="Ask Zeno a question"
+        aria-label="Ask Zeno a question..."
         placeholder={message}
         fontSize="sm"
         autoresize
@@ -104,6 +106,7 @@ function ChatInput() {
           ml="auto"
           borderRadius="full"
           colorPalette="blue"
+          bg="blue.900"
           _disabled={{
             opacity: 0.75,
           }}
@@ -113,7 +116,7 @@ function ChatInput() {
           disabled={isButtonDisabled}
           loading={isLoading}
         >
-          <ArrowUpIcon />
+          <ArrowBendRightUpIcon />
         </Button>
       </Flex>
     </Flex>
