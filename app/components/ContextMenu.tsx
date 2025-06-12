@@ -15,10 +15,7 @@ import {
   ButtonGroup,
   AbsoluteCenter,
 } from "@chakra-ui/react";
-import ContextButton, {
-  ChatContextType,
-  ChatContextOptions,
-} from "./ContextButton";
+import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { InfoIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
@@ -55,8 +52,7 @@ const LAYER_CARDS = [
   },
   {
     title: "Tree Cover Gain",
-    description:
-      "20 years, 30 m, global, Hansen/UMD/Google/USGS/NASA",
+    description: "20 years, 30 m, global, Hansen/UMD/Google/USGS/NASA",
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
   },
 ];
@@ -198,14 +194,30 @@ function TagList({ tags }: { tags: { label: string; selected?: boolean }[] }) {
   );
 }
 
-function ContextMenu({ contextType }: { contextType: ChatContextType }) {
+function ContextMenu({
+  contextType,
+  open,
+  onOpenChange,
+}: {
+  contextType: ChatContextType;
+  open: boolean;
+  onOpenChange: (e: { open: boolean }) => void;
+}) {
+  // const [open, setOpen] = useState(false)
   const [selectedContextType, setSelectedContextType] = useState(contextType);
   const selectedItems = 0;
 
   const renderContent = (): React.ReactElement => {
     if (selectedContextType === "layer") {
       return (
-        <Stack bg="bg.subtle" py={3} w="full" maxW="100%" maxH="100%" overflow="scroll">
+        <Stack
+          bg="bg.subtle"
+          py={3}
+          w="full"
+          maxW="100%"
+          maxH="100%"
+          overflow="scroll"
+        >
           <Box px={4}>
             <InputGroup endElement={<MagnifyingGlassIcon />}>
               <Input
@@ -313,10 +325,13 @@ function ContextMenu({ contextType }: { contextType: ChatContextType }) {
   };
 
   return (
-    <Dialog.Root placement="bottom" motionPreset="slide-in-bottom" size="lg">
-      <Dialog.Trigger>
-        <ContextButton contextType={contextType} />
-      </Dialog.Trigger>
+    <Dialog.Root
+      placement="bottom"
+      motionPreset="slide-in-bottom"
+      size="lg"
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <Portal>
         <Dialog.Positioner>
           <Dialog.Content h="30rem" maxH="75vh" overflow="hidden">

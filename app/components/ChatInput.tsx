@@ -3,12 +3,25 @@ import { useState } from "react";
 import { Button, Flex, Textarea } from "@chakra-ui/react";
 import { ArrowBendRightUpIcon } from "@phosphor-icons/react";
 import useChatStore from "@/app/store/chatStore";
-import { ChatContextType } from "./ContextButton";
+import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 
 function ChatInput() {
   const [inputValue, setInputValue] = useState("");
+  const [open, setOpen] = useState(false);
+  const [selectedContextType, setSelectedContextType] = useState<ChatContextType | null>(null);
+
+  const openContextMenu = (type: ChatContextType) => {
+    setSelectedContextType(type);
+    setOpen(true);
+  };
+
+  const handleOpenChange = (e: { open: boolean }) => {
+    setOpen(e.open);
+    if (!e.open) setSelectedContextType(null);
+  };
+
   const { sendMessage, isLoading } = useChatStore();
 
   const submitPrompt = async () => {
@@ -97,10 +110,17 @@ function ChatInput() {
       />
       <Flex justifyContent="space-between" alignItems="center" w="full">
         <Flex gap="2">
-          <ContextMenu contextType="layer" />
-          <ContextMenu contextType="area" />
-          <ContextMenu contextType="date" />
+          <ContextButton contextType="layer" onClick={() => openContextMenu("layer")} />
+          <ContextButton contextType="area" onClick={() => openContextMenu("area")} />
+          <ContextButton contextType="date" onClick={() => openContextMenu("date")} />
         </Flex>
+        {selectedContextType && (
+          <ContextMenu
+            contextType={selectedContextType}
+            open={open}
+            onOpenChange={handleOpenChange}
+          />
+        )}
         <Button
           p="0"
           ml="auto"

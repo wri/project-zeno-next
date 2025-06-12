@@ -1,4 +1,4 @@
-import { Button } from "@chakra-ui/react";
+import { Button, ButtonProps } from "@chakra-ui/react";
 import {
   CalendarBlankIcon,
   PolygonIcon,
@@ -13,13 +13,13 @@ export const ChatContextOptions = {
 
 export type ChatContextType = keyof typeof ChatContextOptions;
 
-interface ContextButtonProps {
+interface ContextButtonProps extends ButtonProps{
   contextType?: ChatContextType;
 }
 
-function ContextButton({ contextType = "area" }: ContextButtonProps) {
+function ContextButton({ contextType = "area", ...props }: ContextButtonProps) {
   return (
-    <Button size="xs" variant="surface" borderRadius="full" py="1" h="auto">
+    <Button size="xs" variant="surface" borderRadius="full" py="1" h="auto" {...props} >
       {ChatContextOptions[contextType].icon}
       {ChatContextOptions[contextType].label}
     </Button>
