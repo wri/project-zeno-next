@@ -1,15 +1,11 @@
 "use client";
 
 import Map from "@/app/components/Map";
-import {
-  Box,
-  Flex,
-  Grid,
-  Heading,
-} from "@chakra-ui/react";
+import { Box, Flex, Grid, Heading } from "@chakra-ui/react";
 import { Sidebar } from "./sidebar";
 import ChatPanel from "./ChatPanel";
 import LclLogo from "./components/LclLogo";
+import LoginOverlay from "./components/LoginOverlay";
 
 export default function Home() {
   return (
@@ -19,6 +15,7 @@ export default function Home() {
       templateRows="min-content minmax(0px, 1fr)"
       bg="bg"
     >
+      <LoginOverlay />
       <Flex
         alignItems="center"
         justifyContent="space-between"

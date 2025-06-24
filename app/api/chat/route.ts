@@ -1,96 +1,115 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ChatAPIRequest, LangChainResponse, StreamMessage } from '@/app/types/chat';
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import {
+  ChatAPIRequest,
+  LangChainResponse,
+  StreamMessage,
+} from "@/app/types/chat";
 
 // Function to parse LangChain message into simplified format
-function parseStreamMessage(langChainMessage: LangChainResponse): StreamMessage | null {
+function parseStreamMessage(
+  langChainMessage: LangChainResponse
+): StreamMessage | null {
   // Validate input structure
   if (!langChainMessage?.update?.kwargs) {
     return null;
   }
-  
+
   const kwargs = langChainMessage.update.kwargs;
   const content = kwargs.content;
   const artifact = kwargs.artifact;
   const kwargsType = kwargs.type;
-  
-  if (kwargsType === 'tool') {
+
+  if (kwargsType === "tool") {
     // Check if this is an error from a tool
-    if (kwargs.status === 'error' || (typeof content === 'string' && content.includes('Error:'))) {
+    if (
+      kwargs.status === "error" ||
+      (typeof content === "string" && content.includes("Error:"))
+    ) {
       return {
-        type: 'error',
+        type: "error",
         name: kwargs.name,
-        content: typeof content === 'string' ? content : String(content),
-        timestamp: Date.now()
+        content: typeof content === "string" ? content : String(content),
+        timestamp: Date.now(),
       };
     }
-    
+
     // For tool messages, extract artifact and content
     return {
-      type: 'tool',
+      type: "tool",
       name: kwargs.name,
-      content: typeof content === 'string' ? content : String(content),
+      content: typeof content === "string" ? content : String(content),
       artifact: artifact,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
-  } else if (kwargsType === 'ai') {
+  } else if (kwargsType === "ai") {
     // For AI messages, handle different content formats
     let textContent = null;
-    
-    if (typeof content === 'string') {
+
+    if (typeof content === "string") {
       // Content is a direct string
       textContent = content;
-    } else if (content && typeof content === 'object') {
+    } else if (content && typeof content === "object") {
       const contentObj = content as Record<string, unknown>;
-      if (contentObj.text && typeof contentObj.text === 'string') {
+      if (contentObj.text && typeof contentObj.text === "string") {
         // Content is an object with text property
         textContent = contentObj.text;
       } else if (Array.isArray(content) && content.length > 0) {
         // Content is an array of objects
         const firstItem = content[0] as Record<string, unknown>;
-        if (firstItem.text && typeof firstItem.text === 'string') {
+        if (firstItem.text && typeof firstItem.text === "string") {
           textContent = firstItem.text;
-        } else if (typeof content[0] === 'string') {
+        } else if (typeof content[0] === "string") {
           textContent = content[0];
         }
       }
     }
-    
+
     // Only return a message if we have valid text content
-    if (textContent && typeof textContent === 'string' && textContent.trim()) {
+    if (textContent && typeof textContent === "string" && textContent.trim()) {
       return {
-        type: 'text',
+        type: "text",
         text: textContent.trim(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     }
   }
-  
+
   // Return null if we couldn't parse the message
   return null;
 }
 
+const TOKEN_NAME = "auth_token";
+
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(TOKEN_NAME)?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body: ChatAPIRequest = await request.json();
     const { query, query_type, thread_id } = body;
-    
-    if (!query || typeof query !== 'string') {
+
+    if (!query || typeof query !== "string") {
       return NextResponse.json(
-        { error: 'Query is required and must be a string' },
+        { error: "Query is required and must be a string" },
         { status: 400 }
       );
     }
 
-    if (!query_type || typeof query_type !== 'string') {
+    if (!query_type || typeof query_type !== "string") {
       return NextResponse.json(
-        { error: 'Query type is required and must be a string' },
+        { error: "Query type is required and must be a string" },
         { status: 400 }
       );
     }
 
-    if (!thread_id || typeof thread_id !== 'string') {
+    if (!thread_id || typeof thread_id !== "string") {
       return NextResponse.json(
-        { error: 'Thread ID is required and must be a string' },
+        { error: "Thread ID is required and must be a string" },
         { status: 400 }
       );
     }
@@ -100,12 +119,15 @@ export async function POST(request: NextRequest) {
     let response;
 
     if (testErrorType) {
-      console.log('TEST_ERROR mode enabled, using mock endpoint with type:', testErrorType);
-      
+      console.log(
+        "TEST_ERROR mode enabled, using mock endpoint with type:",
+        testErrorType
+      );
+
       // Call our local test-error endpoint instead of the real API
-      const testUrl = new URL('/api/test-error', request.url);
-      testUrl.searchParams.set('type', testErrorType);
-      
+      const testUrl = new URL("/api/test-error", request.url);
+      testUrl.searchParams.set("type", testErrorType);
+
       response = await fetch(testUrl.toString(), {
         method: "POST",
         headers: {
@@ -114,20 +136,21 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Normal flow - call the real Zeno API
-      response = await fetch("https://api.zeno-staging.ds.io/zeno/api/chat", {
+      response = await fetch("https://api.zeno-staging.ds.io/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           query,
           query_type,
-          thread_id
+          thread_id,
         }),
       });
     }
-    
-    console.log('External API response status:', response.status);
+
+    console.log("External API response status:", response.status);
 
     if (!response.ok) {
       throw new Error(`External API responded with status: ${response.status}`);
@@ -136,7 +159,7 @@ export async function POST(request: NextRequest) {
     // Check if the response is streaming
     if (!response.body) {
       return NextResponse.json(
-        { error: 'No response body received' },
+        { error: "No response body received" },
         { status: 500 }
       );
     }
@@ -148,7 +171,9 @@ export async function POST(request: NextRequest) {
         const encoder = new TextEncoder();
         const reader = response.body!.getReader();
         let { value: chunk, done: readerDone } = await reader.read();
-        let decodedChunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
+        let decodedChunk = chunk
+          ? utf8Decoder.decode(chunk, { stream: true })
+          : "";
 
         let buffer = ""; // Accumulate partial chunks
 
@@ -164,25 +189,24 @@ export async function POST(request: NextRequest) {
               if (line) {
                 try {
                   const langChainMessage: LangChainResponse = JSON.parse(line);
-                  console.log('Raw LangChain message:', langChainMessage);
-                  
+                  console.log("Raw LangChain message:", langChainMessage);
+
                   // Parse LangChain response and extract useful information
                   const streamMessage = parseStreamMessage(langChainMessage);
-                  
+
                   // Send simplified message to client if we have something useful
                   if (streamMessage) {
                     controller.enqueue(
-                      encoder.encode(JSON.stringify(streamMessage) + '\n')
+                      encoder.encode(JSON.stringify(streamMessage) + "\n")
                     );
                   } else {
                     // Log unhandled content for debugging
                     const kwargs = langChainMessage.update?.kwargs;
-                    console.log('Unhandled message type:', kwargs?.type, { 
-                      content: kwargs?.content, 
-                      artifact: kwargs?.artifact 
+                    console.log("Unhandled message type:", kwargs?.type, {
+                      content: kwargs?.content,
+                      artifact: kwargs?.artifact,
                     });
                   }
-                  
                 } catch (err) {
                   console.error("Failed to parse line", line, err);
                 }
@@ -191,49 +215,49 @@ export async function POST(request: NextRequest) {
 
             // Read next chunk
             ({ value: chunk, done: readerDone } = await reader.read());
-            decodedChunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
+            decodedChunk = chunk
+              ? utf8Decoder.decode(chunk, { stream: true })
+              : "";
           }
 
           // Handle any remaining data in the buffer
           if (buffer.trim()) {
             try {
               const langChainMessage: LangChainResponse = JSON.parse(buffer);
-              console.log('Final LangChain message:', langChainMessage);
-              
+              console.log("Final LangChain message:", langChainMessage);
+
               // Same parsing logic for final message
               const streamMessage = parseStreamMessage(langChainMessage);
-              
+
               if (streamMessage) {
                 controller.enqueue(
-                  encoder.encode(JSON.stringify(streamMessage) + '\n')
+                  encoder.encode(JSON.stringify(streamMessage) + "\n")
                 );
               }
-              
             } catch (err) {
               console.error("Failed to parse final buffer", buffer, err);
             }
           }
         } catch (error) {
-          console.error('Streaming error:', error);
+          console.error("Streaming error:", error);
           controller.error(error);
         } finally {
           controller.close();
         }
-      }
+      },
     });
 
     return new NextResponse(stream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked',
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked",
       },
     });
-    
   } catch (error) {
-    console.error('Chat API error:', error);
+    console.error("Chat API error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
-} 
+}
