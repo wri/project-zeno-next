@@ -203,7 +203,6 @@ function ContextMenu({
   open: boolean;
   onOpenChange: (e: { open: boolean }) => void;
 }) {
-  // const [open, setOpen] = useState(false)
   const [selectedContextType, setSelectedContextType] = useState(contextType);
   const selectedItems = 0;
 
