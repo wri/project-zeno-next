@@ -1,9 +1,12 @@
+import { ContextItem } from "../store/contextStore";
+
 export interface ChatMessage {
   id: string;
   type: 'user' | 'assistant' | 'system' | 'widget' | 'error';
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
+  context?: ContextItem[];
 }
 
 // Widget types for insights
@@ -74,4 +77,4 @@ export interface LangChainResponse {
   };
 }
 
-export type QueryType = 'query' | 'human_input'; 
+export type QueryType = 'query' | 'human_input' ; 

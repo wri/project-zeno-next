@@ -13,11 +13,11 @@ import {
 } from "@chakra-ui/react";
 import { Tooltip } from "./components/ui/tooltip";
 
-import { useSidebarContext } from "./sidebar-context";
 import { NotePencilIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
+import useSidebarStore from "./store/sidebarStore";
 
 export function Sidebar() {
-  const { sideBarVisible, toggleSidebar } = useSidebarContext();
+  const { sideBarVisible, toggleSidebar } = useSidebarStore();
   return (
     <Flex
       flexDir="column"

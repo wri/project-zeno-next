@@ -6,11 +6,13 @@ import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
+import useContextStore from "../store/contextStore";
 
 function ChatInput() {
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);
-  const [selectedContextType, setSelectedContextType] = useState<ChatContextType | null>(null);
+  const [selectedContextType, setSelectedContextType] =
+    useState<ChatContextType | null>(null);
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -23,13 +25,14 @@ function ChatInput() {
   };
 
   const { sendMessage, isLoading } = useChatStore();
+  const { context, removeContext } = useContextStore();
 
   const submitPrompt = async () => {
     if (!inputValue.trim() || isLoading) return;
 
     const message = inputValue.trim();
     setInputValue("");
-    
+
     await sendMessage(message);
   };
 
@@ -49,13 +52,7 @@ function ChatInput() {
 
   const { disabled, message } = getInputState();
   const isButtonDisabled = disabled || !inputValue?.trim();
-  const hasContext = true; // placeholder
-  const sampleContext = [
-    //placholder
-    { contextType: "date", content: "2023/11/21 - 2024/07/02" },
-    { contextType: "layer", content: "DIST Alerts" },
-    { contextType: "area", content: "Indonesia" },
-  ];
+  const hasContext = context.length > 0;
   return (
     <Flex
       flexDir="column"
@@ -70,20 +67,21 @@ function ChatInput() {
       transition="all 0.32s ease-in-out"
       _active={{
         bg: "white",
-        borderColor: "blue.900"
+        borderColor: "blue.900",
       }}
       _focusWithin={{
         bg: "white",
-        borderColor: "blue.900"
+        borderColor: "blue.900",
       }}
     >
       {hasContext && (
         <Flex gap="2" wrap="wrap">
-          {sampleContext.map((c) => (
+          {context.map((c) => (
             <ContextTag
-              key={c.content}
+              key={c.id}
               contextType={c.contextType as ChatContextType}
               content={c.content}
+              onClose={() => removeContext(c.id)}
               closeable
             />
           ))}
@@ -110,9 +108,18 @@ function ChatInput() {
       />
       <Flex justifyContent="space-between" alignItems="center" w="full">
         <Flex gap="2">
-          <ContextButton contextType="layer" onClick={() => openContextMenu("layer")} />
-          <ContextButton contextType="area" onClick={() => openContextMenu("area")} />
-          <ContextButton contextType="date" onClick={() => openContextMenu("date")} />
+          <ContextButton
+            contextType="layer"
+            onClick={() => openContextMenu("layer")}
+          />
+          <ContextButton
+            contextType="area"
+            onClick={() => openContextMenu("area")}
+          />
+          <ContextButton
+            contextType="date"
+            onClick={() => openContextMenu("date")}
+          />
         </Flex>
         {selectedContextType && (
           <ContextMenu

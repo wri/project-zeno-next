@@ -5,12 +5,14 @@ interface ContextTagProps {
   contextType?: ChatContextType;
   content?: string;
   closeable?: boolean;
+  onClose?: () => void;
 }
 
 function ContextTag({
   contextType = "area",
   content = "Beirut, Lebanon",
   closeable = false,
+  onClose,
 }: ContextTagProps) {
   return (
     <Tag.Root
@@ -24,7 +26,7 @@ function ContextTag({
       <Tag.Label>{content}</Tag.Label>
       {closeable && (
         <Tag.EndElement>
-          <Tag.CloseTrigger />
+          <Tag.CloseTrigger onClick={onClose} />
         </Tag.EndElement>
       )}
     </Tag.Root>
