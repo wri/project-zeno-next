@@ -2,7 +2,7 @@ import { ContextItem } from "../store/contextStore";
 
 export interface ChatMessage {
   id: string;
-  type: 'user' | 'assistant' | 'system' | 'widget' | 'error';
+  type: "user" | "assistant" | "system" | "widget" | "error";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
@@ -11,7 +11,7 @@ export interface ChatMessage {
 
 // Widget types for insights
 export interface InsightWidget {
-  type: 'text' | 'chart' | 'table' | 'timeseries';
+  type: "text" | "chart" | "table" | "timeseries";
   title: string;
   description: string;
   data: unknown;
@@ -39,7 +39,7 @@ export interface ChatAPIRequest {
 
 // Simplified message that our API sends to the client
 export interface StreamMessage {
-  type: 'text' | 'tool' | 'other' | 'error';
+  type: "text" | "tool" | "other" | "error";
   text?: string;
   tool?: Record<string, unknown>;
   other?: Record<string, unknown>;
@@ -55,26 +55,33 @@ export interface LangChainContent {
   [key: string]: unknown; // Allow other properties
 }
 
-// LangChain-based API response structure (for internal API use)
 export interface LangChainResponse {
   node: string;
-  update: {
-    lc: number;
-    type: string;
-    id: string[];
-    kwargs: {
-      content: LangChainContent | unknown;
-      response_metadata: Record<string, unknown>;
-      type: string;
-      id: string;
-      usage_metadata: Record<string, unknown>;
-      tool_calls: unknown[];
-      invalid_tool_calls: unknown[];
-      artifact?: unknown;
-      name?: string;
-      status?: string; // For tool error detection
-    };
-  };
+  update: string;
 }
 
-export type QueryType = 'query' | 'human_input' ; 
+// LangChain-based API response structure (for internal API use)
+export interface LangChainUpdate {
+  dataset: object;
+  messages: [
+    {
+      lc: number;
+      type: string;
+      id: string[];
+      kwargs: {
+        content: LangChainContent | unknown;
+        response_metadata: Record<string, unknown>;
+        type: string;
+        id: string;
+        usage_metadata: Record<string, unknown>;
+        tool_calls: unknown[];
+        invalid_tool_calls: unknown[];
+        artifact?: unknown;
+        name?: string;
+        status?: string; // For tool error detection
+      };
+    }
+  ];
+}
+
+export type QueryType = "query" | "human_input";

@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import JSON5 from "json5";
 import {
   ChatAPIRequest,
   LangChainResponse,
+  LangChainUpdate,
   StreamMessage,
 } from "@/app/types/chat";
 
 // Function to parse LangChain message into simplified format
 function parseStreamMessage(
-  langChainMessage: LangChainResponse
+  langChainMessage: LangChainUpdate
 ): StreamMessage | null {
   // Validate input structure
-  if (!langChainMessage?.update?.kwargs) {
+  if (!langChainMessage?.messages[0]?.kwargs) {
     return null;
   }
 
-  const kwargs = langChainMessage.update.kwargs;
+  const kwargs = langChainMessage.messages[0].kwargs;
   const content = kwargs.content;
   const artifact = kwargs.artifact;
   const kwargsType = kwargs.type;
@@ -191,8 +193,14 @@ export async function POST(request: NextRequest) {
                   const langChainMessage: LangChainResponse = JSON.parse(line);
                   console.log("Raw LangChain message:", langChainMessage);
 
+                  // The langChainMessages is now a string of a python object
+                  // in the update field.
+
+                  const update = langChainMessage.update;
+                  const updateObject = JSON5.parse(update);
+
                   // Parse LangChain response and extract useful information
-                  const streamMessage = parseStreamMessage(langChainMessage);
+                  const streamMessage = parseStreamMessage(updateObject);
 
                   // Send simplified message to client if we have something useful
                   if (streamMessage) {
@@ -201,11 +209,7 @@ export async function POST(request: NextRequest) {
                     );
                   } else {
                     // Log unhandled content for debugging
-                    const kwargs = langChainMessage.update?.kwargs;
-                    console.log("Unhandled message type:", kwargs?.type, {
-                      content: kwargs?.content,
-                      artifact: kwargs?.artifact,
-                    });
+                    console.log("Unhandled message type:", updateObject);
                   }
                 } catch (err) {
                   console.error("Failed to parse line", line, err);
@@ -227,7 +231,9 @@ export async function POST(request: NextRequest) {
               console.log("Final LangChain message:", langChainMessage);
 
               // Same parsing logic for final message
-              const streamMessage = parseStreamMessage(langChainMessage);
+              const update = langChainMessage.update;
+              const updateObject = JSON5.parse(update);
+              const streamMessage = parseStreamMessage(updateObject);
 
               if (streamMessage) {
                 controller.enqueue(
