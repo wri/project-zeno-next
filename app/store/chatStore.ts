@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import JSON5 from "json5";
+import { FeatureCollection } from "geojson";
 import {
   ChatMessage,
   ChatPrompt,
@@ -8,6 +9,7 @@ import {
   QueryType,
   InsightWidget,
   RawInsightData,
+  AOI,
 } from "@/app/types/chat";
 import useMapStore from "./mapStore";
 import useContextStore from "./contextStore";
@@ -28,7 +30,17 @@ function processStreamMessage(
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
 ) {
   if (streamMessage.type === "error") {
-    // Handle error messages from LangChain tools
+    // Handle timeout errors specifically
+    if (streamMessage.name === "timeout") {
+      addMessage({
+        type: "error",
+        message:
+          streamMessage.content || "Request timed out. Please try again.",
+      });
+      return;
+    }
+
+    // Handle other error messages from LangChain tools
     addMessage({
       type: "error",
       message:
@@ -100,18 +112,14 @@ function processStreamMessage(
       }
     }
     // Special handling for pick-aoi tool (previously location-tool)
-    else if (streamMessage.name === "pick-aoi" && streamMessage.artifact) {
+    else if (streamMessage.name === "pick-aoi" && streamMessage.aoi) {
       try {
         const { addGeoJsonFeature, flyToGeoJsonWithRetry } =
           useMapStore.getState();
         const { addContext } = useContextStore.getState();
 
-        const artifactArray = Array.isArray(streamMessage.artifact)
-          ? streamMessage.artifact
-          : [streamMessage.artifact];
-        const artifact = artifactArray[0];
-        const geoJsonData =
-          typeof artifact === "string" ? JSON.parse(artifact) : artifact;
+        const geoJsonData = (streamMessage.aoi as AOI)
+          .geometry as FeatureCollection;
 
         const featureId = `location-${Date.now()}-${Math.random()
           .toString(36)
@@ -124,47 +132,19 @@ function processStreamMessage(
         });
 
         flyToGeoJsonWithRetry(geoJsonData);
+        console.log(streamMessage);
+        const aoiName = (streamMessage.aoi as AOI).name as string;
+        console.log(streamMessage.aoi);
 
-        let countryName: string | undefined;
-
-        if (
-          streamMessage.content &&
-          typeof streamMessage.content === "string"
-        ) {
-          try {
-            const parsedContent = JSON.parse(
-              streamMessage.content.replace(/'/g, '"')
-            );
-            if (
-              Array.isArray(parsedContent) &&
-              parsedContent.length > 0 &&
-              Array.isArray(parsedContent[0]) &&
-              parsedContent[0].length > 0
-            ) {
-              countryName = parsedContent[0][0];
-            }
-          } catch (error) {
-            console.error(
-              "Error parsing pick-aoi content:",
-              streamMessage.content,
-              error
-            );
-            countryName = streamMessage.content
-              ?.split(",")[0]
-              .replace(/\[|'|"/g, "")
-              .trim();
-          }
-        }
-
-        if (countryName) {
+        if (aoiName) {
           addContext({
             contextType: "area",
-            content: countryName,
+            content: aoiName,
           });
         }
 
         artifactText = `Location found and displayed on map: ${
-          countryName || "Unknown location"
+          aoiName || "Unknown location"
         }`;
       } catch (error) {
         console.error("Error processing pick-aoi artifact:", error);
@@ -253,6 +233,15 @@ const useChatStore = create<ChatState>((set, get) => ({
       thread_id: threadId,
     };
 
+    // Set up abort controller for client-side timeout
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log(
+        "CLIENT TIMEOUT: Request exceeded 5 minutes 10 seconds - aborting request"
+      );
+      abortController.abort();
+    }, 310000); // 5 minutes 10 seconds (slightly longer than server timeout)
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -260,6 +249,7 @@ const useChatStore = create<ChatState>((set, get) => ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify(prompt),
+        signal: abortController.signal,
       });
 
       if (!response.ok) {
@@ -280,7 +270,7 @@ const useChatStore = create<ChatState>((set, get) => ({
 
       let buffer = ""; // Accumulate partial chunks
 
-      while (!readerDone) {
+      while (!readerDone && !abortController.signal.aborted) {
         buffer += decodedChunk; // Append current chunk to buffer
 
         let lineBreakIndex;
@@ -304,8 +294,15 @@ const useChatStore = create<ChatState>((set, get) => ({
         decodedChunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
       }
 
+      // Log why the loop ended
+      if (readerDone) {
+        console.log("FRONTEND: Stream ended normally (readerDone = true)");
+      } else if (abortController.signal.aborted) {
+        console.log("FRONTEND: Stream ended due to abort signal");
+      }
+
       // Handle any remaining data in the buffer
-      if (buffer.trim()) {
+      if (buffer.trim() && !abortController.signal.aborted) {
         try {
           const streamMessage: StreamMessage = JSON.parse(buffer);
 
@@ -320,12 +317,24 @@ const useChatStore = create<ChatState>((set, get) => ({
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      addMessage({
-        type: "assistant",
-        message:
-          "Sorry, there was an error processing your request. Please try again.",
-      });
+
+      // Check if error was due to abort/timeout
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log("FRONTEND: Request aborted due to timeout");
+        addMessage({
+          type: "error",
+          message:
+            "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
+        });
+      } else {
+        addMessage({
+          type: "assistant",
+          message:
+            "Sorry, there was an error processing your request. Please try again.",
+        });
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
   },

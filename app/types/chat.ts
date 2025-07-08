@@ -1,4 +1,5 @@
 import { ContextItem } from "../store/contextStore";
+import { FeatureCollection } from "geojson";
 
 export interface ChatMessage {
   id: string;
@@ -42,11 +43,16 @@ export interface StreamMessage {
   type: "text" | "tool" | "other" | "error";
   text?: string;
   tool?: Record<string, unknown>;
-  other?: Record<string, unknown>;
   name?: string;
   content?: string;
-  artifact?: unknown;
+  dataset?: object;
+  aoi?: object;
   timestamp: number;
+}
+
+export interface AOI {
+  name: string;
+  geometry: FeatureCollection;
 }
 
 // LangChain content structure (for internal API use)
@@ -63,6 +69,7 @@ export interface LangChainResponse {
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
+  aoi: object;
   messages: [
     {
       lc: number;
@@ -76,7 +83,6 @@ export interface LangChainUpdate {
         usage_metadata: Record<string, unknown>;
         tool_calls: unknown[];
         invalid_tool_calls: unknown[];
-        artifact?: unknown;
         name?: string;
         status?: string; // For tool error detection
       };

@@ -9,8 +9,10 @@ import {
 } from "@/app/types/chat";
 
 // Function to parse LangChain message into simplified format
+// messageType is either "agent" or "tools"
 function parseStreamMessage(
-  langChainMessage: LangChainUpdate
+  langChainMessage: LangChainUpdate,
+  messageType: "agent" | "tools"
 ): StreamMessage | null {
   // Validate input structure
   if (!langChainMessage?.messages[0]?.kwargs) {
@@ -19,10 +21,8 @@ function parseStreamMessage(
 
   const kwargs = langChainMessage.messages[0].kwargs;
   const content = kwargs.content;
-  const artifact = kwargs.artifact;
-  const kwargsType = kwargs.type;
 
-  if (kwargsType === "tool") {
+  if (messageType === "tools") {
     // Check if this is an error from a tool
     if (
       kwargs.status === "error" ||
@@ -41,10 +41,11 @@ function parseStreamMessage(
       type: "tool",
       name: kwargs.name,
       content: typeof content === "string" ? content : String(content),
-      artifact: artifact,
+      dataset: langChainMessage.dataset || undefined,
+      aoi: langChainMessage.aoi || undefined,
       timestamp: Date.now(),
     };
-  } else if (kwargsType === "ai") {
+  } else if (messageType === "agent") {
     // For AI messages, handle different content formats
     let textContent = null;
 
@@ -116,6 +117,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create AbortController for timeout and cleanup
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log(
+        "SERVER TIMEOUT: Request exceeded 5 minutes - aborting stream"
+      );
+      abortController.abort();
+    }, 300000); // 5 minute timeout
+
     // Check if we should use test error endpoint instead of real API
     const testErrorType = process.env.TEST_ERROR;
     let response;
@@ -135,6 +145,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
         },
+        signal: abortController.signal,
       });
     } else {
       // Normal flow - call the real Zeno API
@@ -149,17 +160,20 @@ export async function POST(request: NextRequest) {
           query_type,
           thread_id,
         }),
+        signal: abortController.signal,
       });
     }
 
     console.log("External API response status:", response.status);
 
     if (!response.ok) {
+      clearTimeout(timeoutId);
       throw new Error(`External API responded with status: ${response.status}`);
     }
 
     // Check if the response is streaming
     if (!response.body) {
+      clearTimeout(timeoutId);
       return NextResponse.json(
         { error: "No response body received" },
         { status: 500 }
@@ -180,7 +194,51 @@ export async function POST(request: NextRequest) {
         let buffer = ""; // Accumulate partial chunks
 
         try {
-          while (!readerDone) {
+          // Set up cleanup for abort signal
+          const onAbort = () => {
+            console.log(
+              "ABORT TRIGGERED: Stream aborted - cleaning up and sending timeout message"
+            );
+
+            // Send timeout message to frontend before closing
+            try {
+              const timeoutMessage: StreamMessage = {
+                type: "error",
+                name: "timeout",
+                content:
+                  "Request timed out after 5 minutes. Please try a simpler query or try again later.",
+                timestamp: Date.now(),
+              };
+
+              controller.enqueue(
+                encoder.encode(JSON.stringify(timeoutMessage) + "\n")
+              );
+              console.log("TIMEOUT MESSAGE SENT to frontend");
+            } catch (error) {
+              console.error("Failed to send timeout message:", error);
+            }
+
+            reader.cancel().catch(console.error);
+
+            // Small delay to ensure message is sent before closing
+            setTimeout(() => {
+              try {
+                controller.close();
+                console.log("CONTROLLER CLOSED after timeout");
+              } catch {
+                console.log("Controller already closed");
+              }
+            }, 100);
+          };
+
+          if (abortController.signal.aborted) {
+            onAbort();
+            return;
+          }
+
+          abortController.signal.addEventListener("abort", onAbort);
+
+          while (!readerDone && !abortController.signal.aborted) {
             buffer += decodedChunk; // Append current chunk to buffer
 
             let lineBreakIndex;
@@ -191,16 +249,16 @@ export async function POST(request: NextRequest) {
               if (line) {
                 try {
                   const langChainMessage: LangChainResponse = JSON.parse(line);
-                  console.log("Raw LangChain message:", langChainMessage);
 
-                  // The langChainMessages is now a string of a python object
-                  // in the update field.
-
-                  const update = langChainMessage.update;
-                  const updateObject = JSON5.parse(update);
+                  const messageType = langChainMessage.node;
+                  const message = langChainMessage.update;
+                  const updateObject = JSON5.parse(message);
 
                   // Parse LangChain response and extract useful information
-                  const streamMessage = parseStreamMessage(updateObject);
+                  const streamMessage = parseStreamMessage(
+                    updateObject,
+                    messageType as "agent" | "tools"
+                  );
 
                   // Send simplified message to client if we have something useful
                   if (streamMessage) {
@@ -209,7 +267,10 @@ export async function POST(request: NextRequest) {
                     );
                   } else {
                     // Log unhandled content for debugging
-                    console.log("Unhandled message type:", updateObject);
+                    console.log(
+                      "Unhandled message type:",
+                      JSON.stringify(updateObject)
+                    );
                   }
                 } catch (err) {
                   console.error("Failed to parse line", line, err);
@@ -225,7 +286,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Handle any remaining data in the buffer
-          if (buffer.trim()) {
+          if (buffer.trim() && !abortController.signal.aborted) {
             try {
               const langChainMessage: LangChainResponse = JSON.parse(buffer);
               console.log("Final LangChain message:", langChainMessage);
@@ -233,7 +294,7 @@ export async function POST(request: NextRequest) {
               // Same parsing logic for final message
               const update = langChainMessage.update;
               const updateObject = JSON5.parse(update);
-              const streamMessage = parseStreamMessage(updateObject);
+              const streamMessage = parseStreamMessage(updateObject, "agent");
 
               if (streamMessage) {
                 controller.enqueue(
@@ -246,9 +307,21 @@ export async function POST(request: NextRequest) {
           }
         } catch (error) {
           console.error("Streaming error:", error);
-          controller.error(error);
+          if (!abortController.signal.aborted) {
+            controller.error(error);
+          }
         } finally {
-          controller.close();
+          clearTimeout(timeoutId);
+          if (!controller.desiredSize || controller.desiredSize === 0) {
+            // Controller already closed
+            return;
+          }
+          try {
+            controller.close();
+          } catch {
+            // Controller might already be closed, ignore the error
+            console.log("Controller already closed");
+          }
         }
       },
     });
