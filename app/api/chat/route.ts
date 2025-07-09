@@ -190,6 +190,10 @@ export async function POST(request: NextRequest) {
         try {
           // Set up cleanup for abort signal
           const onAbort = () => {
+            // cleanup
+            abortController.signal.removeEventListener("abort", onAbort);
+            clearTimeout(timeoutId);
+
             console.log(
               "ABORT TRIGGERED: Stream aborted - cleaning up and sending timeout message"
             );
@@ -289,6 +293,8 @@ export async function POST(request: NextRequest) {
               }
             },
           });
+
+          abortController.signal.removeEventListener("abort", onAbort);
         } catch (error) {
           console.error("Streaming error:", error);
           if (!abortController.signal.aborted) {
