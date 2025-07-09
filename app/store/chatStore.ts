@@ -124,7 +124,7 @@ function processStreamMessage(
 
         const featureId = `location-${Date.now()}-${Math.random()
           .toString(36)
-          .substr(2, 9)}`;
+          .slice(2, 11)}`;
 
         addGeoJsonFeature({
           id: featureId,
