@@ -6,6 +6,7 @@ import { Sidebar } from "./sidebar";
 import ChatPanel from "./ChatPanel";
 import LclLogo from "./components/LclLogo";
 import LoginOverlay from "./components/LoginOverlay";
+import MapTools from "./components/MapTools";
 
 export default function Home() {
   return (
@@ -41,7 +42,10 @@ export default function Home() {
         <Sidebar />
         <ChatPanel />
         <Grid templateRows="1fr" gridArea="map">
-          <Box overflow="hidden">
+          <Box overflow="hidden" position="relative">
+            <Box position="absolute" top="4" left="50%" transform="translate(-50%, 0)" zIndex="1000">
+              <MapTools />
+            </Box>
             <Map />
           </Box>
         </Grid>
