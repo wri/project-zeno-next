@@ -1,19 +1,17 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
-import JSON5 from "json5";
-import { FeatureCollection } from "geojson";
 import {
   ChatMessage,
   ChatPrompt,
   StreamMessage,
   QueryType,
-  InsightWidget,
-  RawInsightData,
-  AOI,
 } from "@/app/types/chat";
-import useMapStore from "./mapStore";
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/chat/read-data-stream";
+import { generateInsightsTool } from "./chat-tools/generateInsights";
+import { pickAoiTool } from "./chat-tools/pickAoi";
+import { pickDatasetTool } from "./chat-tools/pickDataset";
+import { pullDataTool } from "./chat-tools/pullData";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -38,145 +36,41 @@ function processStreamMessage(
         message:
           streamMessage.content || "Request timed out. Please try again.",
       });
-      return;
+    } else {
+      // Handle other error messages from LangChain tools
+      addMessage({
+        type: "error",
+        message:
+          "I encountered an error while processing your request. Please try rephrasing your question or try again.",
+      });
     }
-
-    // Handle other error messages from LangChain tools
-    addMessage({
-      type: "error",
-      message:
-        "I encountered an error while processing your request. Please try rephrasing your question or try again.",
-    });
-    return;
   } else if (streamMessage.type === "text" && streamMessage.text) {
     addMessage({
       type: "assistant",
       message: streamMessage.text,
     });
   } else if (streamMessage.type === "tool") {
-    // Handle tool/artifact messages with better formatting
-    let artifactText = `Tool: ${streamMessage.name || "Unknown"}`;
-
     // Special handling for generate-insights tool
     if (streamMessage.name === "generate-insights" && streamMessage.content) {
-      try {
-        const artifactData =
-          typeof streamMessage.content === "string"
-            ? JSON5.parse(streamMessage.content)
-            : streamMessage.content;
-
-        // Handle generic insights (previously kba-insights-tool)
-        if (artifactData.insights && Array.isArray(artifactData.insights)) {
-          const widgets: InsightWidget[] = artifactData.insights.map(
-            (insight: RawInsightData) => ({
-              type: insight.type as InsightWidget["type"],
-              title: insight.title,
-              description: insight.description,
-              data: insight.data,
-            })
-          );
-
-          addMessage({
-            type: "widget",
-            message: "Insights generated",
-            widgets: widgets,
-          });
-          return;
-        }
-        // Handle timeseries insights (previously kba-timeseries-tool)
-        else if (artifactData.type === "timeseries") {
-          const widget: InsightWidget = {
-            type: "timeseries",
-            title: artifactData.title || "Time Series Analysis",
-            description:
-              artifactData.description || "Time series data analysis",
-            data: artifactData,
-          };
-          addMessage({
-            type: "widget",
-            message: artifactData.title || "Time Series Analysis",
-            widgets: [widget],
-          });
-          return;
-        } else {
-          console.error(
-            "Unknown insight format for generate-insights tool:",
-            artifactData
-          );
-          artifactText = `Insights generated, but format not recognized.`;
-        }
-      } catch (error) {
-        console.error("Error processing generate-insights artifact:", error);
-        artifactText = `Generate insights tool executed but failed to parse data: ${
-          streamMessage.content || "Unknown insights"
-        }`;
-      }
+      return generateInsightsTool(streamMessage, addMessage);
     }
     // Special handling for pick-aoi tool (previously location-tool)
     else if (streamMessage.name === "pick-aoi" && streamMessage.aoi) {
-      try {
-        const { addGeoJsonFeature, flyToGeoJsonWithRetry } =
-          useMapStore.getState();
-        const { addContext } = useContextStore.getState();
-
-        const geoJsonData = (streamMessage.aoi as AOI)
-          .geometry as FeatureCollection;
-
-        const featureId = `location-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 11)}`;
-
-        addGeoJsonFeature({
-          id: featureId,
-          name: streamMessage.content || "Location",
-          data: geoJsonData,
-        });
-
-        flyToGeoJsonWithRetry(geoJsonData);
-        console.log(streamMessage);
-        const aoiName = (streamMessage.aoi as AOI).name as string;
-        console.log(streamMessage.aoi);
-
-        if (aoiName) {
-          addContext({
-            contextType: "area",
-            content: aoiName,
-          });
-        }
-
-        artifactText = `Location found and displayed on map: ${
-          aoiName || "Unknown location"
-        }`;
-      } catch (error) {
-        console.error("Error processing pick-aoi artifact:", error);
-        artifactText = `AOI tool executed but failed to display on map: ${
-          streamMessage.content || "Unknown location"
-        }`;
-      }
+      return pickAoiTool(streamMessage, addMessage);
     }
     // Handling for pick-dataset tool
     else if (streamMessage.name === "pick-dataset") {
-      artifactText = `Dataset picker tool executed.`;
-      addMessage({
-        type: "assistant",
-        message: artifactText,
-      });
-      return;
+      return pickDatasetTool(streamMessage, addMessage);
     }
     // Handling for pull-data tool
     else if (streamMessage.name === "pull-data") {
-      artifactText = `Data pull tool executed.`;
+      return pullDataTool(streamMessage, addMessage);
+    } else {
       addMessage({
         type: "assistant",
-        message: artifactText,
+        message: `Tool: ${streamMessage.name || "Unknown"}`,
       });
-      return;
     }
-
-    addMessage({
-      type: "assistant",
-      message: artifactText,
-    });
   }
 }
 
@@ -270,7 +164,6 @@ const useChatStore = create<ChatState>((set, get) => ({
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
             processStreamMessage(streamMessage, addMessage);
-
           } catch (err) {
             if (isFinal) {
               console.error(
