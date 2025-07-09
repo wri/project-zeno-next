@@ -7,6 +7,7 @@ import {
   LangChainUpdate,
   StreamMessage,
 } from "@/app/types/chat";
+import { readDataStream } from "./read-data-stream";
 
 // Function to parse LangChain message into simplified format
 // messageType is either "agent" or "tools"
@@ -183,15 +184,8 @@ export async function POST(request: NextRequest) {
     // Create a streaming response that parses LangChain and sends simplified messages
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        const utf8Decoder = new TextDecoder("utf-8");
         const encoder = new TextEncoder();
         const reader = response.body!.getReader();
-        let { value: chunk, done: readerDone } = await reader.read();
-        let decodedChunk = chunk
-          ? utf8Decoder.decode(chunk, { stream: true })
-          : "";
-
-        let buffer = ""; // Accumulate partial chunks
 
         try {
           // Set up cleanup for abort signal
@@ -238,17 +232,34 @@ export async function POST(request: NextRequest) {
 
           abortController.signal.addEventListener("abort", onAbort);
 
-          while (!readerDone && !abortController.signal.aborted) {
-            buffer += decodedChunk; // Append current chunk to buffer
-
-            let lineBreakIndex;
-            while ((lineBreakIndex = buffer.indexOf("\n")) >= 0) {
-              const line = buffer.slice(0, lineBreakIndex).trim(); // Extract the line
-              buffer = buffer.slice(lineBreakIndex + 1); // Remove processed line
-
-              if (line) {
+          await readDataStream({
+            abortController,
+            reader,
+            onData: (data: string, isFinal: boolean) => {
+              if (isFinal) {
                 try {
-                  const langChainMessage: LangChainResponse = JSON.parse(line);
+                  const langChainMessage: LangChainResponse = JSON.parse(data);
+                  console.log("Final LangChain message:", langChainMessage);
+
+                  // Same parsing logic for final message
+                  const update = langChainMessage.update;
+                  const updateObject = JSON5.parse(update);
+                  const streamMessage = parseStreamMessage(
+                    updateObject,
+                    "agent"
+                  );
+
+                  if (streamMessage) {
+                    controller.enqueue(
+                      encoder.encode(JSON.stringify(streamMessage) + "\n")
+                    );
+                  }
+                } catch (err) {
+                  console.error("Failed to parse final buffer", data, err);
+                }
+              } else {
+                try {
+                  const langChainMessage: LangChainResponse = JSON.parse(data);
 
                   const messageType = langChainMessage.node;
                   const message = langChainMessage.update;
@@ -273,38 +284,11 @@ export async function POST(request: NextRequest) {
                     );
                   }
                 } catch (err) {
-                  console.error("Failed to parse line", line, err);
+                  console.error("Failed to parse line", data, err);
                 }
               }
-            }
-
-            // Read next chunk
-            ({ value: chunk, done: readerDone } = await reader.read());
-            decodedChunk = chunk
-              ? utf8Decoder.decode(chunk, { stream: true })
-              : "";
-          }
-
-          // Handle any remaining data in the buffer
-          if (buffer.trim() && !abortController.signal.aborted) {
-            try {
-              const langChainMessage: LangChainResponse = JSON.parse(buffer);
-              console.log("Final LangChain message:", langChainMessage);
-
-              // Same parsing logic for final message
-              const update = langChainMessage.update;
-              const updateObject = JSON5.parse(update);
-              const streamMessage = parseStreamMessage(updateObject, "agent");
-
-              if (streamMessage) {
-                controller.enqueue(
-                  encoder.encode(JSON.stringify(streamMessage) + "\n")
-                );
-              }
-            } catch (err) {
-              console.error("Failed to parse final buffer", buffer, err);
-            }
-          }
+            },
+          });
         } catch (error) {
           console.error("Streaming error:", error);
           if (!abortController.signal.aborted) {
