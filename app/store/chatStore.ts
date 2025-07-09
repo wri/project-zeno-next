@@ -13,6 +13,7 @@ import {
 } from "@/app/types/chat";
 import useMapStore from "./mapStore";
 import useContextStore from "./contextStore";
+import { readDataStream } from "../api/chat/read-data-stream";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -260,60 +261,36 @@ const useChatStore = create<ChatState>((set, get) => ({
         throw new Error("No response body received");
       }
 
-      // Process the simplified streaming response
-      const utf8Decoder = new TextDecoder("utf-8");
       const reader = response.body.getReader();
-      let { value: chunk, done: readerDone } = await reader.read();
-      let decodedChunk = chunk
-        ? utf8Decoder.decode(chunk, { stream: true })
-        : "";
 
-      let buffer = ""; // Accumulate partial chunks
+      await readDataStream({
+        abortController,
+        reader,
+        onData: (data, isFinal) => {
+          try {
+            const streamMessage: StreamMessage = JSON.parse(data);
+            processStreamMessage(streamMessage, addMessage);
 
-      while (!readerDone && !abortController.signal.aborted) {
-        buffer += decodedChunk; // Append current chunk to buffer
-
-        let lineBreakIndex;
-        while ((lineBreakIndex = buffer.indexOf("\n")) >= 0) {
-          const line = buffer.slice(0, lineBreakIndex).trim(); // Extract the line
-          buffer = buffer.slice(lineBreakIndex + 1); // Remove processed line
-
-          if (line) {
-            try {
-              const streamMessage: StreamMessage = JSON.parse(line);
-
-              processStreamMessage(streamMessage, addMessage);
-            } catch (err) {
-              console.error("Failed to parse simplified message", line, err);
+          } catch (err) {
+            if (isFinal) {
+              console.error(
+                "Failed to parse final simplified message",
+                data,
+                err
+              );
+            } else {
+              console.error("Failed to parse simplified message", data, err);
             }
           }
-        }
+        },
+      });
 
-        // Read next chunk
-        ({ value: chunk, done: readerDone } = await reader.read());
-        decodedChunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
-      }
-
+      const { done: readerDone } = await reader.read();
       // Log why the loop ended
       if (readerDone) {
         console.log("FRONTEND: Stream ended normally (readerDone = true)");
       } else if (abortController.signal.aborted) {
         console.log("FRONTEND: Stream ended due to abort signal");
-      }
-
-      // Handle any remaining data in the buffer
-      if (buffer.trim() && !abortController.signal.aborted) {
-        try {
-          const streamMessage: StreamMessage = JSON.parse(buffer);
-
-          processStreamMessage(streamMessage, addMessage);
-        } catch (err) {
-          console.error(
-            "Failed to parse final simplified message",
-            buffer,
-            err
-          );
-        }
       }
     } catch (error) {
       console.error("Error sending message:", error);
