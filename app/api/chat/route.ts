@@ -37,12 +37,15 @@ function parseStreamMessage(
       };
     }
 
-    // For tool messages, extract artifact and content
+    // For tool messages, extract state updates
     return {
       type: "tool",
       name: kwargs.name,
       content: typeof content === "string" ? content : String(content),
       dataset: langChainMessage.dataset || undefined,
+      insights: langChainMessage.insights || [],
+      charts_data: langChainMessage.charts_data || [],
+      insight_count: langChainMessage.insight_count || 0,
       aoi: langChainMessage.aoi || undefined,
       timestamp: Date.now(),
     };
