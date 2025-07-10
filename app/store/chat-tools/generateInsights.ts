@@ -8,7 +8,6 @@ interface ChartData {
   data: unknown;
   xAxis: string;
   yAxis: string;
-  colorField: string;
 }
 
 export function generateInsightsTool(
@@ -38,11 +37,13 @@ export function generateInsightsTool(
       });
     }
   } catch (error) {
-    console.error("Error processing generate-insights:", error);
+    console.error("Error processing generate_insights:", error);
 
     addMessage({
       type: "assistant",
-      message: `Generate insights tool executed but failed to parse data: ${error}`,
+      message: `Generate insights tool executed but failed to parse data: ${
+        error instanceof Error ? error.message : JSON.stringify(error)
+      }}`,
     });
   }
 }
