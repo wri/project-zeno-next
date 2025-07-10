@@ -13,16 +13,13 @@ import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
-<<<<<<< HEAD
 import MapAreaControls from "./MapAreaControls";
-=======
 import SelectAreaLayer from "./SelectAreaLayer";
->>>>>>> 4cd4232 (Add select-area layer to map)
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const { geoJsonFeatures, setMapRef } = useMapStore();
+  const { geoJsonFeatures, setMapRef, selectAreaLayer } = useMapStore();
 
   const onMapLoad = () => {
     if (mapRef.current) {
@@ -150,6 +147,7 @@ function Map() {
         })}
 
         <MapAreaControls />
+        {selectAreaLayer && <SelectAreaLayer layerId={selectAreaLayer} />}
 
         <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
         <ScaleControl />
