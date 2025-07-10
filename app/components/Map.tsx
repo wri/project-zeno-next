@@ -13,7 +13,11 @@ import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
+<<<<<<< HEAD
 import MapAreaControls from "./MapAreaControls";
+=======
+import SelectAreaLayer from "./SelectAreaLayer";
+>>>>>>> 4cd4232 (Add select-area layer to map)
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
@@ -94,14 +98,14 @@ function Map() {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        
+
         {/* Render GeoJSON features */}
         {geoJsonFeatures.map((feature) => {
           // Determine if this is a KBA feature
           const isKBA = feature.id.startsWith('kba-');
           const fillColor = isKBA ? '#10b981' : '#3b82f6'; // Green for KBA, blue for others
           const strokeColor = isKBA ? '#047857' : '#1d4ed8'; // Dark green for KBA, dark blue for others
-          
+
           return (
             <Source
               key={feature.id}
@@ -144,7 +148,9 @@ function Map() {
             </Source>
           );
         })}
+
         <MapAreaControls />
+
         <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
         <ScaleControl />
         <AbsoluteCenter fontSize="sm">

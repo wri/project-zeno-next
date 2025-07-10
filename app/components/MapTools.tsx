@@ -1,9 +1,14 @@
 import { Button, Menu, Portal } from "@chakra-ui/react";
 import { CaretDownIcon, HandPointingIcon } from "@phosphor-icons/react";
 
+import { LayerId, selectLayerOptions } from "../types/map";
+import useMapStore from "@/app/store/mapStore";
+
 function MapTools() {
+  const { setSelectAreaLayer } = useMapStore();
+
   return (
-    <Menu.Root>
+    <Menu.Root onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}>
       <Menu.Trigger asChild>
         <Button size="xs" variant="outline" bgColor="white" aria-label="Select layer">
           <HandPointingIcon />
@@ -13,18 +18,11 @@ function MapTools() {
       <Portal>
         <Menu.Positioner>
           <Menu.Content>
-            <Menu.Item value="new-txt-a">
-              Administrative Areas
-            </Menu.Item>
-            <Menu.Item value="new-txt-b">
-              Key Biodiversity Areas
-            </Menu.Item>
-            <Menu.Item value="new-txt-c">
-              Indigenous Lands
-            </Menu.Item>
-            <Menu.Item value="new-txt-d">
-              Protected Areas
-            </Menu.Item>
+            {selectLayerOptions.map(({ id, name }) => (
+              <Menu.Item key={id} value={id}>
+                {name}
+              </Menu.Item>
+            ))}
           </Menu.Content>
         </Menu.Positioner>
       </Portal>
