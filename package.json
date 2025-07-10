@@ -10,6 +10,7 @@
     "analyze": "ANALYZE=true next build --turbopack"
   },
   "dependencies": {
+    "@chakra-ui/charts": "^3.22.0",
     "@chakra-ui/react": "^3.19.1",
     "@fontsource/ibm-plex-mono": "^5.2.5",
     "@fontsource/ibm-plex-sans": "^5.2.5",
@@ -30,6 +31,7 @@
     "react-dom": "^19.0.0",
     "react-map-gl": "^8.0.4",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.1.0",
     "uuid": "^11.1.0",
     "zustand": "^5.0.5"
   },

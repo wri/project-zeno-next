@@ -50,8 +50,8 @@ function processStreamMessage(
       message: streamMessage.text,
     });
   } else if (streamMessage.type === "tool") {
-    // Special handling for generate-insights tool
-    if (streamMessage.name === "generate-insights" && streamMessage.content) {
+    // Special handling for generate_insights tool
+    if (streamMessage.name === "generate_insights" && streamMessage.insights) {
       return generateInsightsTool(streamMessage, addMessage);
     }
     // Special handling for pick-aoi tool (previously location-tool)

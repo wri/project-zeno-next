@@ -12,10 +12,12 @@ export interface ChatMessage {
 
 // Widget types for insights
 export interface InsightWidget {
-  type: "text" | "chart" | "table" | "timeseries";
+  type: "line" | "bar" | "table";
   title: string;
   description: string;
   data: unknown;
+  xAxis: string;
+  yAxis: string;
 }
 
 // Raw insight data from API (before conversion to InsightWidget)
@@ -47,6 +49,9 @@ export interface StreamMessage {
   content?: string;
   dataset?: object;
   aoi?: object;
+  insights?: object[];
+  charts_data?: object[];
+  insight_count?: number;
   timestamp: number;
 }
 
@@ -70,6 +75,9 @@ export interface LangChainResponse {
 export interface LangChainUpdate {
   dataset: object;
   aoi: object;
+  insights: object[];
+  charts_data: object[];
+  insight_count: number;
   messages: [
     {
       lc: number;
