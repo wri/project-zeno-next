@@ -20,7 +20,6 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
     if (map) {
       const onMouseMove = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
-          console.log(e.features[0])
           if (hoverId !== undefined) {
             map.setFeatureState(
                 { source: sourceId, sourceLayer, id: hoverId },
@@ -45,12 +44,20 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
         hoverId = undefined;
       }
 
+      const onClick = (e: MapMouseEvent) => {
+        if (e.features && e.features.length > 0) {
+          console.log(e.features[0].id);
+        }
+      }
+
       map.on("mousemove", fillLayerName, onMouseMove);
       map.on("mouseleave", fillLayerName, onMouseLeave);
+      map.on("click", fillLayerName, onClick)
 
       return () => {
         map.off("mousemove", fillLayerName, onMouseMove);
         map.off("mouseleave", fillLayerName, onMouseLeave);
+        map.off("click", fillLayerName, onClick)
       }
     }
   }, [map, fillLayerName, sourceId, sourceLayer]);
