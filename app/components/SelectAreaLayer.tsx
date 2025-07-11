@@ -1,15 +1,17 @@
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { LayerId, selectLayerOptions } from "../types/map";
 import { useEffect } from "react";
+import useContextStore from "../store/contextStore";
 
 interface SourceLayerProps {
   layerId: LayerId;
 }
 
 function SelectAreaLayer({ layerId }: SourceLayerProps) {
+  const { addContext } = useContextStore();
   const {current: map} = useMap();
   const selectAreaLayerConfig = selectLayerOptions.find(({ id }) => id === layerId);
-  const { id, url, sourceLayer } = selectAreaLayerConfig!;
+  const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
 
   const sourceId = `select-layer-source-${id}`
   const fillLayerName = `select-layer-fill-${id}`;
@@ -22,14 +24,14 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
         if (e.features && e.features.length > 0) {
           if (hoverId !== undefined) {
             map.setFeatureState(
-                { source: sourceId, sourceLayer, id: hoverId },
-                { hover: false }
+              { source: sourceId, sourceLayer, id: hoverId },
+              { hover: false }
             );
           }
           hoverId = e.features[0].id;
           map.setFeatureState(
-              { source: sourceId, sourceLayer, id: hoverId },
-              { hover: true }
+            { source: sourceId, sourceLayer, id: hoverId },
+            { hover: true }
           );
         }
       }
@@ -37,8 +39,8 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
       const onMouseLeave = () => {
         if (hoverId !== undefined) {
             map.setFeatureState(
-                { source: sourceId, sourceLayer, id: hoverId },
-                { hover: false }
+              { source: sourceId, sourceLayer, id: hoverId },
+              { hover: false }
             );
         }
         hoverId = undefined;
@@ -46,7 +48,17 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
 
       const onClick = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
-          console.log(e.features[0].id);
+          // Depending on the layer, the name property has a different key.
+          // Using nameKeys of the layer config to find the right value.
+          const aoiName = nameKeys.reduce(
+            (acc: string, key: string) => e.features![0].properties[key] || acc,
+            ""
+          );
+
+          addContext({
+            contextType: "area",
+            content: aoiName,
+          });
         }
       }
 
