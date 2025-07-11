@@ -13,6 +13,7 @@ import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
+import MapAreaControls from "./MapAreaControls";
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
@@ -143,7 +144,7 @@ function Map() {
             </Source>
           );
         })}
-        
+        <MapAreaControls />
         <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
         <ScaleControl />
         <AbsoluteCenter fontSize="sm">
