@@ -1,15 +1,31 @@
-import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
+import { useEffect, useState } from "react";
+import { Layer, MapMouseEvent, Popup, Source, useMap } from "react-map-gl/maplibre";
+
 import { LayerId, selectLayerOptions } from "../types/map";
-import { useEffect } from "react";
 import useContextStore from "../store/contextStore";
 
 interface SourceLayerProps {
   layerId: LayerId;
 }
 
+interface HoverInfo {
+  lng: number;
+  lat: number;
+  name: string;
+}
+
+function getAoiName(nameKeys: readonly string[], properties: {[key: string]: string}) {
+  return nameKeys.reduce(
+    (acc: string, key: string) => properties[key] || acc,
+    ""
+  );
+}
+
 function SelectAreaLayer({ layerId }: SourceLayerProps) {
   const { addContext } = useContextStore();
   const {current: map} = useMap();
+  const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
+
   const selectAreaLayerConfig = selectLayerOptions.find(({ id }) => id === layerId);
   const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
 
@@ -22,6 +38,14 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
     if (map) {
       const onMouseMove = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
+          const { lat, lng } = e.lngLat;
+          const aoiName = getAoiName(nameKeys, e.features![0].properties);
+          setHoverInfo({
+            lat,
+            lng,
+            name: aoiName
+          });
+
           if (hoverId !== undefined) {
             map.setFeatureState(
               { source: sourceId, sourceLayer, id: hoverId },
@@ -37,6 +61,7 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
       }
 
       const onMouseLeave = () => {
+        setHoverInfo(undefined);
         if (hoverId !== undefined) {
             map.setFeatureState(
               { source: sourceId, sourceLayer, id: hoverId },
@@ -50,10 +75,7 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
         if (e.features && e.features.length > 0) {
           // Depending on the layer, the name property has a different key.
           // Using nameKeys of the layer config to find the right value.
-          const aoiName = nameKeys.reduce(
-            (acc: string, key: string) => e.features![0].properties[key] || acc,
-            ""
-          );
+          const aoiName = getAoiName(nameKeys, e.features![0].properties);
 
           addContext({
             contextType: "area",
@@ -72,40 +94,54 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
         map.off("click", fillLayerName, onClick)
       }
     }
-  }, [map, fillLayerName, sourceId, sourceLayer]);
+  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, addContext]);
 
   return (
-    <Source
-      id={sourceId}
-      key={sourceId}
-      type="vector"
-      tiles={[url]}
-      promoteId="gfw_fid"
-    >
-      <Layer
-        id={fillLayerName}
-        type="fill"
-        source-layer={sourceLayer}
-        paint={{
-          'fill-color': '#fff',
-          'fill-opacity': 0
-        }}
-      />
-      <Layer
-        id={`select-layer-line-${id}`}
-        type="line"
-        source-layer={sourceLayer}
-        paint={{
-          'line-color': [
-            'case',
-            ['boolean', ['feature-state', 'hover'], false],
-              "#4B88D8",
-            "#BBC5EB",
-          ],
-          'line-width': 2
-        }}
-      />
-    </Source>
+    <>
+      <Source
+        id={sourceId}
+        key={sourceId}
+        type="vector"
+        tiles={[url]}
+        promoteId="gfw_fid"
+      >
+        <Layer
+          id={fillLayerName}
+          type="fill"
+          source-layer={sourceLayer}
+          paint={{
+            'fill-color': '#fff',
+            'fill-opacity': 0
+          }}
+        />
+        <Layer
+          id={`select-layer-line-${id}`}
+          type="line"
+          source-layer={sourceLayer}
+          paint={{
+            'line-color': [
+              'case',
+              ['boolean', ['feature-state', 'hover'], false],
+                "#4B88D8",
+              "#BBC5EB",
+            ],
+            'line-width': 2
+          }}
+        />
+      </Source>
+      {hoverInfo && (
+        <Popup
+          longitude={hoverInfo.lng}
+          latitude={hoverInfo.lat}
+          offset={[0, -10] as [number, number]}
+          closeButton={false}
+          className="county-info"
+        >
+          <p style={{  margin: 0 }}><b>{hoverInfo.name}</b></p>
+          <p style={{  margin: 0 }}>Click to select admin area. Esc to exit.</p>
+        </Popup>
+      )}
+    </>
   );
 }
 
