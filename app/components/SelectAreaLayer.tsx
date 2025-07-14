@@ -25,6 +25,7 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
   const { addContext } = useContextStore();
   const {current: map} = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
+  const [selectedArea, setSelectedArea] = useState<string|number>();
 
   const selectAreaLayerConfig = selectLayerOptions.find(({ id }) => id === layerId);
   const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
@@ -75,23 +76,33 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
         if (e.features && e.features.length > 0) {
           // Depending on the layer, the name property has a different key.
           // Using nameKeys of the layer config to find the right value.
-          const aoiName = getAoiName(nameKeys, e.features![0].properties);
+          const aoiName = getAoiName(nameKeys, e.features[0].properties);
 
+          const selectedId = e.features[0].id;
+          setSelectedArea(selectedId);
+          map.setFeatureState(
+            { source: sourceId, sourceLayer, id: selectedId },
+            { selected: true }
+          );
           addContext({
             contextType: "area",
             content: aoiName,
           });
+
+          map.off("mousemove", fillLayerName, onMouseMove);
+          map.off("mouseleave", fillLayerName, onMouseLeave);
+          map.off("click", fillLayerName, onClick);
         }
       }
 
       map.on("mousemove", fillLayerName, onMouseMove);
       map.on("mouseleave", fillLayerName, onMouseLeave);
-      map.on("click", fillLayerName, onClick)
+      map.on("click", fillLayerName, onClick);
 
       return () => {
         map.off("mousemove", fillLayerName, onMouseMove);
         map.off("mouseleave", fillLayerName, onMouseLeave);
-        map.off("click", fillLayerName, onClick)
+        map.off("click", fillLayerName, onClick);
       }
     }
   }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, addContext]);
@@ -118,11 +129,18 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
           id={`select-layer-line-${id}`}
           type="line"
           source-layer={sourceLayer}
+          filter={
+            selectedArea
+            ? ['match', ['get', 'gfw_fid'], selectedArea, true, false]
+            : ['boolean', true]
+          }
           paint={{
             'line-color': [
               'case',
               ['boolean', ['feature-state', 'hover'], false],
-                "#4B88D8",
+              "#4B88D8",
+              ['boolean', ['feature-state', 'selected'], false],
+              "#4B88D8",
               "#BBC5EB",
             ],
             'line-width': 2
