@@ -39,8 +39,9 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
     if (map) {
       const onMouseMove = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
+          const feature = e.features.at(-1);
           const { lat, lng } = e.lngLat;
-          const aoiName = getAoiName(nameKeys, e.features![0].properties);
+          const aoiName = getAoiName(nameKeys, feature!.properties);
           setHoverInfo({
             lat,
             lng,
@@ -53,7 +54,7 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
               { hover: false }
             );
           }
-          hoverId = e.features[0].id;
+          hoverId = feature!.id;
           map.setFeatureState(
             { source: sourceId, sourceLayer, id: hoverId },
             { hover: true }
@@ -76,9 +77,9 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
         if (e.features && e.features.length > 0) {
           // Depending on the layer, the name property has a different key.
           // Using nameKeys of the layer config to find the right value.
-          const aoiName = getAoiName(nameKeys, e.features[0].properties);
+          const aoiName = getAoiName(nameKeys, e.features.at(-1)!.properties);
 
-          const selectedId = e.features[0].id;
+          const selectedId = e.features.at(-1)!.id;
           setSelectedArea(selectedId);
           map.setFeatureState(
             { source: sourceId, sourceLayer, id: selectedId },
