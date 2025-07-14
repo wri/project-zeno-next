@@ -147,7 +147,7 @@ function Map() {
         })}
 
         <MapAreaControls />
-        {selectAreaLayer && <SelectAreaLayer layerId={selectAreaLayer} />}
+        {selectAreaLayer && <SelectAreaLayer key={selectAreaLayer} layerId={selectAreaLayer} />}
 
         <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
         <ScaleControl />
