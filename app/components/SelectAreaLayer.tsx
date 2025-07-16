@@ -16,7 +16,9 @@ interface HoverInfo {
 
 function getAoiName(nameKeys: readonly string[], properties: {[key: string]: string}) {
   return nameKeys.reduce(
-    (acc: string, key: string) => properties[key] || acc,
+    (acc: string, key: string, idx: number) => properties[key]
+      ? `${properties[key]}${ idx > 0 ? ", ": ""}${acc}`
+      : acc,
     ""
   );
 }
