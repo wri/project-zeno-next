@@ -17,11 +17,33 @@ interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
+  currentThreadName: string;
+}
+
+interface ChatActions {
+  reset: () => void;
+  setThreadName: (name: string) => void;
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
   sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
+  fetchThread: (threadId: string) => Promise<void>;
 }
+
+const initialState: ChatState = {
+  messages: [
+    {
+      id: "1",
+      type: "system",
+      message:
+        "Hi! I'm Land & Carbon Lab's alert explorer. I can help you find and investigate disturbances in your area of interest using the Land Disturbance Alert Classification System and other contextual data. \nStart by asking me what I can do.",
+      timestamp: new Date().toISOString(),
+    },
+  ],
+  isLoading: false,
+  currentThreadId: null,
+  currentThreadName: "New Conversation",
+};
 
 // Helper function to process stream messages and add them to chat
 function processStreamMessage(
@@ -74,18 +96,16 @@ function processStreamMessage(
   }
 }
 
-const useChatStore = create<ChatState>((set, get) => ({
-  messages: [
-    {
-      id: "1",
-      type: "system",
-      message:
-        "Hi! I'm Land & Carbon Lab's alert explorer. I can help you find and investigate disturbances in your area of interest using the Land Disturbance Alert Classification System and other contextual data. \nStart by asking me what I can do.",
-      timestamp: new Date().toISOString(),
-    },
-  ],
-  isLoading: false,
-  currentThreadId: null,
+const useChatStore = create<ChatState & ChatActions>((set, get) => ({
+  ...initialState,
+
+  reset: () => set(initialState),
+
+  setThreadName: (name: string) => {
+    set(() => ({
+      currentThreadName: name,
+    }));
+  },
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
@@ -210,6 +230,84 @@ const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  fetchThread: async (threadId: string) => {
+    const { setLoading, addMessage } = get();
+
+    setLoading(true);
+    set({ currentThreadName: "Loading Thread..." });
+    // Set up abort controller for client-side timeout
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log(
+        "CLIENT TIMEOUT: Request exceeded 5 minutes 10 seconds - aborting request"
+      );
+      abortController.abort();
+    }, 310000); // 5 minutes 10 seconds (slightly longer than server timeout)
+
+    try {
+      const response = await fetch(`/api/threads/${threadId}`, {
+        signal: abortController.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+
+      if (!response.body) {
+        throw new Error("No response body received");
+      }
+
+      const reader = response.body.getReader();
+
+      await readDataStream({
+        abortController,
+        reader,
+        onData: (data, isFinal) => {
+          try {
+            const streamMessage: StreamMessage = JSON.parse(data);
+
+            if (streamMessage.type === "human") {
+              // Add user message
+              addMessage({
+                type: "user",
+                message: streamMessage.text!,
+              });
+              return;
+            }
+
+            console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
+            processStreamMessage(streamMessage, addMessage);
+          } catch (err) {
+            if (isFinal) {
+              console.error(
+                "Failed to parse final simplified message",
+                data,
+                err
+              );
+            } else {
+              console.error("Failed to parse simplified message", data, err);
+            }
+          }
+        },
+      });
+
+      const { done: readerDone } = await reader.read();
+      // Log why the loop ended
+      if (readerDone) {
+        console.log("FRONTEND: Stream ended normally (readerDone = true)");
+      } else if (abortController.signal.aborted) {
+        console.log("FRONTEND: Stream ended due to abort signal");
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      set({ currentThreadName: threadId });
+      set({ currentThreadId: threadId });
+      clearTimeout(timeoutId);
+      setLoading(false);
+    }
+  },
 }));
 
 export default useChatStore;
