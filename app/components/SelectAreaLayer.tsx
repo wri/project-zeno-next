@@ -133,7 +133,14 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
           source-layer={sourceLayer}
           paint={{
             'fill-color': '#fff',
-            'fill-opacity': 0
+            'fill-opacity': [
+              'case',
+              ['boolean', ['feature-state', 'hover'], false],
+              0.16,
+              ['boolean', ['feature-state', 'selected'], false],
+              0.08,
+              0,
+            ],
           }}
         />
         <Layer
