@@ -6,7 +6,12 @@ import {
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
 
+import { LayerId, selectLayerOptions } from "../types/map";
+import useMapStore from "../store/mapStore";
+
 function MapAreaControls() {
+  const { setSelectAreaLayer } = useMapStore();
+
   return (
     <Box
       display="flex"
@@ -37,7 +42,7 @@ function MapAreaControls() {
           >
             <HandPointingIcon />
           </IconButton>
-          <Menu.Root positioning={{ placement: "bottom-end" }}>
+          <Menu.Root positioning={{ placement: "bottom-end" }} onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}>
             <Menu.Trigger asChild>
               <IconButton
                 minW="0"
@@ -53,14 +58,11 @@ function MapAreaControls() {
             <Portal>
               <Menu.Positioner>
                 <Menu.Content>
-                  <Menu.Item value="admin-areas">
-                    Administrative Areas
-                  </Menu.Item>
-                  <Menu.Item value="kba">Key Biodiversity Areas</Menu.Item>
-                  <Menu.Item value="indigenous-lands">
-                    Indigenous Lands
-                  </Menu.Item>
-                  <Menu.Item value="protected-areas">Protected Areas</Menu.Item>
+                  {selectLayerOptions.map(({ id, name }) => (
+                    <Menu.Item key={id} value={id}>
+                      {name}
+                    </Menu.Item>
+                  ))}
                 </Menu.Content>
               </Menu.Positioner>
             </Portal>
