@@ -30,3 +30,4 @@ export const selectLayerOptions = Object.freeze([
 ] as const);
 
 export type LayerId = typeof selectLayerOptions[number]['id'];
+export type LayerName = typeof selectLayerOptions[number]['name'];

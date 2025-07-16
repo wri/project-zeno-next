@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Layer, MapMouseEvent, Popup, Source, useMap } from "react-map-gl/maplibre";
 
-import { LayerId, selectLayerOptions } from "../types/map";
+import { LayerId, LayerName, selectLayerOptions } from "../types/map";
 import useContextStore from "../store/contextStore";
 
 interface SourceLayerProps {
@@ -14,13 +14,21 @@ interface HoverInfo {
   name: string;
 }
 
-function getAoiName(nameKeys: readonly string[], properties: {[key: string]: string}) {
+function getAoiName(nameKeys: readonly string[], properties: {[key: string]: string}): string {
   return nameKeys.reduce(
     (acc: string, key: string, idx: number) => properties[key]
       ? `${properties[key]}${ idx > 0 ? ", ": ""}${acc}`
       : acc,
     ""
   );
+}
+
+function singularizeDatasetName(name: LayerName): string {
+  if (name.endsWith("s")) {
+    return name.slice(0, -1);
+  }
+
+  return name;
 }
 
 function SelectAreaLayer({ layerId }: SourceLayerProps) {
@@ -30,7 +38,7 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
   const [selectedArea, setSelectedArea] = useState<string|number>();
 
   const selectAreaLayerConfig = selectLayerOptions.find(({ id }) => id === layerId);
-  const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
+  const { id, url, sourceLayer, name: datasetName, nameKeys } = selectAreaLayerConfig!;
 
   const sourceId = `select-layer-source-${id}`
   const fillLayerName = `select-layer-fill-${id}`;
@@ -159,7 +167,7 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
           className="county-info"
         >
           <p style={{  margin: 0 }}><b>{hoverInfo.name}</b></p>
-          <p style={{  margin: 0 }}>Click to select admin area. Esc to exit.</p>
+          <p style={{  margin: 0 }}>{`Click to select ${singularizeDatasetName(datasetName)}. Esc to exit.`}</p>
         </Popup>
       )}
     </>
