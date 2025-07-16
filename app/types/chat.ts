@@ -42,7 +42,7 @@ export interface ChatAPIRequest {
 
 // Simplified message that our API sends to the client
 export interface StreamMessage {
-  type: "text" | "tool" | "other" | "error";
+  type: "text" | "tool" | "other" | "error" | "human";
   text?: string;
   tool?: Record<string, unknown>;
   name?: string;
