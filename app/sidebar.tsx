@@ -1,23 +1,66 @@
+import { useEffect } from "react";
 import {
   Button,
   Circle,
   Flex,
   HStack,
   IconButton,
-  Link,
+  LinkProps,
   Menu,
   Portal,
   Separator,
   Stack,
   Text,
+  Link as ChLink,
 } from "@chakra-ui/react";
-import { Tooltip } from "./components/ui/tooltip";
+import Link from "next/link";
 
+import { Tooltip } from "./components/ui/tooltip";
 import { NotePencilIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
+import useChatStore from "./store/chatStore";
+
+function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
+  const { isActive, href, children, ...rest } = props;
+  return (
+    <ChLink
+      fontSize="sm"
+      _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
+      p="2"
+      px="1"
+      mx="2"
+      borderRadius="sm"
+      whiteSpace="nowrap"
+      overflow="hidden"
+      textOverflow="ellipsis"
+      display="block"
+      {...(isActive
+        ? {
+            bg: "bg",
+            color: "blue.fg",
+          }
+        : {})}
+      {...rest}
+      asChild
+    >
+      <Link href={href}>{children}</Link>
+    </ChLink>
+  );
+}
 
 export function Sidebar() {
-  const { sideBarVisible, toggleSidebar } = useSidebarStore();
+  const { sideBarVisible, toggleSidebar, threadGroups, fetchThreads } =
+    useSidebarStore();
+  const { currentThreadId } = useChatStore();
+
+  useEffect(() => {
+    fetchThreads();
+  }, [fetchThreads]);
+
+  const hasTodayThreads = threadGroups.today.length > 0;
+  const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
+  const hasOlderThreads = threadGroups.older.length > 0;
+
   return (
     <Flex
       flexDir="column"
@@ -49,10 +92,17 @@ export function Sidebar() {
           <Portal>
             <Menu.Positioner>
               <Menu.Content>
-                <Menu.Item value="New blank conversation" color="fg.muted">
-                  Blank Conversation
+                <Menu.Item
+                  value="New blank conversation"
+                  color="fg.muted"
+                  asChild
+                >
+                  <Link href="/">Blank Conversation</Link>
                 </Menu.Item>
-                <Menu.Item value="New conversation from template" color="fg.muted">
+                <Menu.Item
+                  value="New conversation from template"
+                  color="fg.muted"
+                >
                   From Template
                 </Menu.Item>
               </Menu.Content>
@@ -69,110 +119,68 @@ export function Sidebar() {
           </IconButton>
         </Tooltip>
       </Flex>
-      <Stack flex="1" py="2" overflow="auto">
-        <Stack gap="0" flex="1" mt="2">
-          <Text fontSize="xs" color="fg.muted" px="3">
-            Today
-          </Text>
-          <Link
-            href="#"
-            fontSize="sm"
-            color="blue.fg"
-            _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-            p="2"
-            px="1"
-            mx="2"
-            borderRadius="sm"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-            display="block"
-            bg="bg"
-          >
-            KBA&apos;s in Brazil
-          </Link>
-          <Link
-            href="#"
-            fontSize="sm"
-            _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-            p="2"
-            px="1"
-            mx="2"
-            borderRadius="sm"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-            display="block"
-          >
-            Another conversation
-          </Link>
-          <Link
-            href="#"
-            fontSize="sm"
-            _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-            p="2"
-            px="1"
-            mx="2"
-            borderRadius="sm"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-            display="block"
-          >
-            Yet another one
-          </Link>
-          <Separator my="4" />
-          <Text fontSize="xs" px="3">
-            Previous 7 days
-          </Text>
-          <Link
-            href="#"
-            fontSize="sm"
-            _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-            p="2"
-            px="1"
-            mx="2"
-            borderRadius="sm"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-            display="block"
-          >
-            Past conversation
-          </Link>
-          <Link
-            href="#"
-            fontSize="sm"
-            _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-            p="2"
-            px="1"
-            mx="2"
-            borderRadius="sm"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-            display="block"
-          >
-            Conversation with a looong name that gets truncated
-          </Link>
-          <Link
-            href="#"
-            fontSize="sm"
-            _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-            p="2"
-            px="1"
-            mx="2"
-            borderRadius="sm"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-            display="block"
-          >
-            Yet another one
-          </Link>
-        </Stack>
+      <Stack
+        flex="1"
+        py="2"
+        overflow="auto"
+        css={{
+          '& > [role="separator"]:first-child': {
+            display: "none",
+          },
+        }}
+      >
+        {hasTodayThreads && (
+          <Stack gap="1" flex="1" mt="2">
+            <Text fontSize="xs" color="fg.muted" px="3">
+              Today
+            </Text>
+            {threadGroups.today.map((thread) => (
+              <ThreadLink
+                key={thread.id}
+                href={`/threads/${thread.id}`}
+                isActive={currentThreadId === thread.id}
+              >
+                {thread.id}
+              </ThreadLink>
+            ))}
+          </Stack>
+        )}
+        <Separator my="4" />
+        {hasPreviousWeekThreads && (
+          <Stack gap="1" flex="1" mt="2">
+            <Text fontSize="xs" color="fg.muted" px="3">
+              Previous 7 days
+            </Text>
+            {threadGroups.previousWeek.map((thread) => (
+              <ThreadLink
+                key={thread.id}
+                href={`/threads/${thread.id}`}
+                isActive={currentThreadId === thread.id}
+              >
+                {thread.id}
+              </ThreadLink>
+            ))}
+          </Stack>
+        )}
+        <Separator my="4" />
+        {hasOlderThreads && (
+          <Stack gap="1" flex="1" mt="2">
+            <Text fontSize="xs" color="fg.muted" px="3">
+              Older Conversations
+            </Text>
+            {threadGroups.older.map((thread) => (
+              <ThreadLink
+                key={thread.id}
+                href={`/threads/${thread.id}`}
+                isActive={currentThreadId === thread.id}
+              >
+                {thread.id}
+              </ThreadLink>
+            ))}
+          </Stack>
+        )}
 
-        <Link
+        <ChLink
           href="#"
           _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
           borderRadius="lg"
@@ -188,7 +196,7 @@ export function Sidebar() {
               </Text>
             </Stack>
           </HStack>
-        </Link>
+        </ChLink>
       </Stack>
     </Flex>
   );
