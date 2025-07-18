@@ -37,7 +37,7 @@ function singularizeDatasetName(name: LayerName): string {
 
 function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
   const { addContext } = useContextStore();
-  const { addSelectedArea } = useMapStore();
+  const { addSelectedArea, setSelectAreaLayer } = useMapStore();
   const {current: map} = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
 
@@ -120,17 +120,25 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
         }
       }
 
+      const onKeyUp = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          setSelectAreaLayer(null);
+        }
+      }
+
       map.on("mousemove", fillLayerName, onMouseMove);
       map.on("mouseleave", fillLayerName, onMouseLeave);
       map.on("click", fillLayerName, onClick);
+      document.addEventListener("keyup", onKeyUp);
 
       return () => {
         map.off("mousemove", fillLayerName, onMouseMove);
         map.off("mouseleave", fillLayerName, onMouseLeave);
         map.off("click", fillLayerName, onClick);
+        document.removeEventListener("keyup", onKeyUp);
       }
     }
-  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, addContext, addSelectedArea]);
+  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, addContext, addSelectedArea, setSelectAreaLayer]);
 
   return (
     <>

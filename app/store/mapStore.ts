@@ -16,7 +16,7 @@ interface MapState {
   selectAreaLayer: LayerId | null;
   selectedAreas: GeoJSON.Feature[];
   setMapRef: (mapRef: MapRef) => void;
-  setSelectAreaLayer: (layerId: LayerId) => void;
+  setSelectAreaLayer: (layerId: LayerId | null) => void;
   addSelectedArea: (area: GeoJSON.Feature) => void;
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
