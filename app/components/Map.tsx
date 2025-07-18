@@ -8,18 +8,24 @@ import MapGl, {
   ScaleControl,
   MapRef
 } from "react-map-gl/maplibre";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import SelectAreaLayer from "./SelectAreaLayer";
+import { FeatureCollection } from "geojson";
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const { geoJsonFeatures, setMapRef, selectAreaLayer } = useMapStore();
+  const { geoJsonFeatures, setMapRef, selectAreaLayer, selectedAreas } = useMapStore();
+
+  const selectedAreasCollection: FeatureCollection = useMemo(() => ({
+    type: "FeatureCollection",
+    features: selectedAreas
+  }), [selectedAreas]);
 
   const onMapLoad = () => {
     if (mapRef.current) {
@@ -146,8 +152,29 @@ function Map() {
           );
         })}
 
+        {selectedAreas.length > 0 && (
+          <Source
+            id="selectedareas-source"
+            type="geojson"
+            data={selectedAreasCollection}
+          >
+            <Layer
+              id="selectedareas-line"
+              type="line"
+              paint={{
+                'line-color': "#4B88D8",
+                'line-width': 2
+              }}
+            />
+          </Source>
+        )}
+        {selectAreaLayer && (
+          <SelectAreaLayer
+            key={selectAreaLayer}
+            layerId={selectAreaLayer}
+            beforeId={selectedAreas.length > 0 ? "selectedareas-line" : undefined}
+        />)}
         <MapAreaControls />
-        {selectAreaLayer && <SelectAreaLayer key={selectAreaLayer} layerId={selectAreaLayer} />}
 
         <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
         <ScaleControl />

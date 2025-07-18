@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { Layer, MapMouseEvent, Popup, Source, useMap } from "react-map-gl/maplibre";
+import { union } from "@turf/union";
 
 import { LayerId, LayerName, selectLayerOptions } from "../types/map";
 import useContextStore from "../store/contextStore";
+import useMapStore from "../store/mapStore";
+import { Feature, FeatureCollection, GeoJsonProperties, MultiPolygon, Polygon } from "geojson";
 
 interface SourceLayerProps {
   layerId: LayerId;
+  beforeId?: string;
 }
 
 interface HoverInfo {
@@ -31,11 +35,11 @@ function singularizeDatasetName(name: LayerName): string {
   return name;
 }
 
-function SelectAreaLayer({ layerId }: SourceLayerProps) {
+function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
   const { addContext } = useContextStore();
+  const { addSelectedArea } = useMapStore();
   const {current: map} = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
-  const [selectedArea, setSelectedArea] = useState<string|number>();
 
   const selectAreaLayerConfig = selectLayerOptions.find(({ id }) => id === layerId);
   const { id, url, sourceLayer, name: datasetName, nameKeys } = selectAreaLayerConfig!;
@@ -89,20 +93,30 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
           // Using nameKeys of the layer config to find the right value.
           const aoiName = getAoiName(nameKeys, e.features.at(-1)!.properties);
 
-          const selectedId = e.features.at(-1)!.id;
-          setSelectedArea(selectedId);
-          map.setFeatureState(
-            { source: sourceId, sourceLayer, id: selectedId },
-            { selected: true }
-          );
-          addContext({
-            contextType: "area",
-            content: aoiName,
-          });
+          const feature = e.features.at(-1);
 
-          map.off("mousemove", fillLayerName, onMouseMove);
-          map.off("mouseleave", fillLayerName, onMouseLeave);
-          map.off("click", fillLayerName, onClick);
+          if (feature) {
+            const sourceFeatures = map.querySourceFeatures(sourceId, {
+              sourceLayer: sourceLayer,
+              filter: ['in', 'gfw_fid', feature.properties?.gfw_fid]
+            });
+            if (sourceFeatures.length === 1) {
+              addSelectedArea(sourceFeatures[0]);
+            } else if (sourceFeatures.length > 1) {
+              const collection: FeatureCollection<Polygon | MultiPolygon, GeoJsonProperties> = {
+                type: "FeatureCollection",
+                features: sourceFeatures as Feature<Polygon | MultiPolygon, GeoJsonProperties>[]
+              };
+              const f = union(collection);
+              if (f) {
+                addSelectedArea(f);
+              }
+            }
+            addContext({
+              contextType: "area",
+              content: aoiName,
+            });
+          }
         }
       }
 
@@ -116,7 +130,7 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
         map.off("click", fillLayerName, onClick);
       }
     }
-  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, addContext]);
+  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, addContext, addSelectedArea]);
 
   return (
     <>
@@ -147,22 +161,16 @@ function SelectAreaLayer({ layerId }: SourceLayerProps) {
           id={`select-layer-line-${id}`}
           type="line"
           source-layer={sourceLayer}
-          filter={
-            selectedArea
-            ? ['match', ['get', 'gfw_fid'], selectedArea, true, false]
-            : ['boolean', true]
-          }
           paint={{
             'line-color': [
               'case',
               ['boolean', ['feature-state', 'hover'], false],
               "#4B88D8",
-              ['boolean', ['feature-state', 'selected'], false],
-              "#4B88D8",
               "#BBC5EB",
             ],
             'line-width': 2
           }}
+          beforeId={beforeId}
         />
       </Source>
       {hoverInfo && (

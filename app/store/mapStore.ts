@@ -14,8 +14,10 @@ interface MapState {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
+  selectedAreas: GeoJSON.Feature[];
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId) => void;
+  addSelectedArea: (area: GeoJSON.Feature) => void;
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
   clearGeoJsonFeatures: () => void;
@@ -28,6 +30,7 @@ const useMapStore = create<MapState>((set, get) => ({
   mapRef: null,
   geoJsonFeatures: [],
   selectAreaLayer: null,
+  selectedAreas: [],
 
   setMapRef: (mapRef) => {
     console.log('Setting map ref:', !!mapRef);
@@ -35,7 +38,11 @@ const useMapStore = create<MapState>((set, get) => ({
   },
 
   setSelectAreaLayer: (layerId) => {
-    set({ selectAreaLayer: layerId })
+    set({ selectAreaLayer: layerId });
+  },
+
+  addSelectedArea: (area: GeoJSON.Feature) => {
+    set((state) => ({ selectedAreas: [...state.selectedAreas, area]}));
   },
 
   addGeoJsonFeature: (feature) => {
