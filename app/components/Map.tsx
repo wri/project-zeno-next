@@ -8,16 +8,24 @@ import MapGl, {
   ScaleControl,
   MapRef
 } from "react-map-gl/maplibre";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
+import MapAreaControls from "./MapAreaControls";
+import SelectAreaLayer from "./SelectAreaLayer";
+import { FeatureCollection } from "geojson";
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const { geoJsonFeatures, setMapRef } = useMapStore();
+  const { geoJsonFeatures, setMapRef, selectAreaLayer, selectedAreas } = useMapStore();
+
+  const selectedAreasCollection: FeatureCollection = useMemo(() => ({
+    type: "FeatureCollection",
+    features: selectedAreas
+  }), [selectedAreas]);
 
   const onMapLoad = () => {
     if (mapRef.current) {
@@ -93,14 +101,14 @@ function Map() {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        
+
         {/* Render GeoJSON features */}
         {geoJsonFeatures.map((feature) => {
           // Determine if this is a KBA feature
           const isKBA = feature.id.startsWith('kba-');
           const fillColor = isKBA ? '#10b981' : '#3b82f6'; // Green for KBA, blue for others
           const strokeColor = isKBA ? '#047857' : '#1d4ed8'; // Dark green for KBA, dark blue for others
-          
+
           return (
             <Source
               key={feature.id}
@@ -143,7 +151,31 @@ function Map() {
             </Source>
           );
         })}
-        
+
+        {selectedAreas.length > 0 && (
+          <Source
+            id="selectedareas-source"
+            type="geojson"
+            data={selectedAreasCollection}
+          >
+            <Layer
+              id="selectedareas-line"
+              type="line"
+              paint={{
+                'line-color': "#4B88D8",
+                'line-width': 2
+              }}
+            />
+          </Source>
+        )}
+        {selectAreaLayer && (
+          <SelectAreaLayer
+            key={selectAreaLayer}
+            layerId={selectAreaLayer}
+            beforeId={selectedAreas.length > 0 ? "selectedareas-line" : undefined}
+        />)}
+        <MapAreaControls />
+
         <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
         <ScaleControl />
         <AbsoluteCenter fontSize="sm">

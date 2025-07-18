@@ -41,7 +41,7 @@ export default function Home() {
         <Sidebar />
         <ChatPanel />
         <Grid templateRows="1fr" gridArea="map">
-          <Box overflow="hidden">
+          <Box overflow="hidden" position="relative">
             <Map />
           </Box>
         </Grid>
