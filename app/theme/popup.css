@@ -1,0 +1,19 @@
+.maplibregl-popup-content {
+  padding: var(--chakra-spacing-2);
+  font-family: var(--chakra-fonts-body);
+  line-height: 1.3;
+  margin-left: var(--chakra-spacing-2);
+
+  .area-name {
+    font-weight: bold;
+    margin-bottom: var(--chakra-spacing-1);
+  }
+
+  .hint {
+    color: var(--chakra-colors-gray-600);
+  }
+}
+
+.maplibregl-popup-tip {
+  display: none;
+}

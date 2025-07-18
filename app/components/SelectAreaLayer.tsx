@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Layer, MapMouseEvent, Popup, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
+import "../theme/popup.css"
 
 import { LayerId, LayerName, selectLayerOptions } from "../types/map";
 import useContextStore from "../store/contextStore";
@@ -187,10 +188,10 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
           latitude={hoverInfo.lat}
           offset={[0, -10] as [number, number]}
           closeButton={false}
-          className="county-info"
+          anchor="left"
         >
-          <p style={{  margin: 0 }}><b>{hoverInfo.name}</b></p>
-          <p style={{  margin: 0 }}>{`Click to select ${singularizeDatasetName(datasetName)}. Esc to exit.`}</p>
+          <p className="area-name"><b>{hoverInfo.name}</b></p>
+          <p className="hint">{`Click to select ${singularizeDatasetName(datasetName)}. Esc to exit.`}</p>
         </Popup>
       )}
     </>
