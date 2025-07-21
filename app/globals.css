@@ -24,3 +24,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+.select-area-popup * {
+  pointer-events: none !important;
+}
