@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { MapRef } from 'react-map-gl/maplibre';
-import bbox from '@turf/bbox';
-import center from '@turf/center';
+import { create } from "zustand";
+import { MapRef } from "react-map-gl/maplibre";
+import bbox from "@turf/bbox";
+import center from "@turf/center";
 
 interface GeoJsonFeature {
   id: string;
@@ -12,44 +12,63 @@ interface GeoJsonFeature {
 interface MapState {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
+}
+
+interface MapActions {
+  reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
   clearGeoJsonFeatures: () => void;
   flyToGeoJson: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature) => void;
-  flyToCenter: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature, zoom?: number) => void;
-  flyToGeoJsonWithRetry: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature, maxRetries?: number) => void;
+  flyToCenter: (
+    geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
+    zoom?: number
+  ) => void;
+  flyToGeoJsonWithRetry: (
+    geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
+    maxRetries?: number
+  ) => void;
 }
 
-const useMapStore = create<MapState>((set, get) => ({
+const initialState: MapState = {
   mapRef: null,
   geoJsonFeatures: [],
-  
+};
+
+const useMapStore = create<MapState & MapActions>((set, get) => ({
+  ...initialState,
+
+  reset: () => set(initialState),
+
   setMapRef: (mapRef) => {
-    console.log('Setting map ref:', !!mapRef);
+    console.log("Setting map ref:", !!mapRef);
     set({ mapRef });
   },
-  
+
   addGeoJsonFeature: (feature) => {
     set((state) => ({
-      geoJsonFeatures: [...state.geoJsonFeatures.filter(f => f.id !== feature.id), feature]
+      geoJsonFeatures: [
+        ...state.geoJsonFeatures.filter((f) => f.id !== feature.id),
+        feature,
+      ],
     }));
   },
-  
+
   removeGeoJsonFeature: (id) => {
     set((state) => ({
-      geoJsonFeatures: state.geoJsonFeatures.filter(f => f.id !== id)
+      geoJsonFeatures: state.geoJsonFeatures.filter((f) => f.id !== id),
     }));
   },
-  
+
   clearGeoJsonFeatures: () => {
     set({ geoJsonFeatures: [] });
   },
-  
+
   flyToGeoJson: (geoJson) => {
     const { mapRef } = get();
     if (!mapRef) {
-      console.warn('Map ref not available for flying to GeoJSON');
+      console.warn("Map ref not available for flying to GeoJSON");
       return;
     }
 
@@ -59,44 +78,46 @@ const useMapStore = create<MapState>((set, get) => ({
       // bbox returns [minX, minY, maxX, maxY] which is [west, south, east, north]
       const bounds: [[number, number], [number, number]] = [
         [bboxArray[0], bboxArray[1]], // southwest
-        [bboxArray[2], bboxArray[3]]  // northeast
+        [bboxArray[2], bboxArray[3]], // northeast
       ];
-      
+
       const map = mapRef.getMap();
-      
+
       // Fit the map to the bounds with some padding
       map.fitBounds(bounds, {
         padding: { top: 50, bottom: 50, left: 50, right: 50 },
-        maxZoom: 16 // Prevent zooming in too much for very small areas
+        maxZoom: 16, // Prevent zooming in too much for very small areas
       });
     } catch (error) {
-      console.error('Error flying to GeoJSON bounds:', error);
+      console.error("Error flying to GeoJSON bounds:", error);
     }
   },
 
   flyToGeoJsonWithRetry: (geoJson, maxRetries = 5) => {
     const { mapRef, flyToGeoJson } = get();
-    
+
     if (mapRef) {
       flyToGeoJson(geoJson);
       return;
     }
-    
+
     if (maxRetries <= 0) {
-      console.warn('Max retries reached, map ref still not available');
+      console.warn("Max retries reached, map ref still not available");
       return;
     }
-    
-    console.log(`Map ref not ready, retrying in 200ms (${maxRetries} retries left)`);
+
+    console.log(
+      `Map ref not ready, retrying in 200ms (${maxRetries} retries left)`
+    );
     setTimeout(() => {
       get().flyToGeoJsonWithRetry(geoJson, maxRetries - 1);
     }, 200);
   },
-  
+
   flyToCenter: (geoJson, zoom = 12) => {
     const { mapRef } = get();
     if (!mapRef) {
-      console.warn('Map ref not available for flying to center');
+      console.warn("Map ref not available for flying to center");
       return;
     }
 
@@ -104,19 +125,19 @@ const useMapStore = create<MapState>((set, get) => ({
       // Use Turf.js center function to calculate center point
       const centerPoint = center(geoJson);
       const [lng, lat] = centerPoint.geometry.coordinates;
-      
+
       const map = mapRef.getMap();
-      
+
       // Fly to the center point
       map.flyTo({
         center: [lng, lat],
         zoom: zoom,
-        essential: true // This animation is considered essential for accessibility
+        essential: true, // This animation is considered essential for accessibility
       });
     } catch (error) {
-      console.error('Error flying to GeoJSON center:', error);
+      console.error("Error flying to GeoJSON center:", error);
     }
-  }
+  },
 }));
 
-export default useMapStore; 
+export default useMapStore;

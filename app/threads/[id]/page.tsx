@@ -1,18 +1,20 @@
 "use client";
-
-import Map from "@/app/components/Map";
 import { Box, Flex, Grid, Heading } from "@chakra-ui/react";
-import { Sidebar } from "./sidebar";
-import ChatPanel from "./ChatPanel";
-import LclLogo from "./components/LclLogo";
-import LoginOverlay from "./components/LoginOverlay";
-import useChatStore from "./store/chatStore";
-import useMapStore from "./store/mapStore";
-import useContextStore from "./store/contextStore";
-import { useEffect } from "react";
+import { useParams } from "next/navigation";
 
-export default function Home() {
-  const { reset: resetChatStore } = useChatStore();
+import ChatPanel from "@/app/ChatPanel";
+import LclLogo from "@/app/components/LclLogo";
+import LoginOverlay from "@/app/components/LoginOverlay";
+import Map from "@/app/components/Map";
+import { Sidebar } from "@/app/sidebar";
+import useChatStore from "@/app/store/chatStore";
+import { useEffect } from "react";
+import useMapStore from "@/app/store/mapStore";
+import useContextStore from "@/app/store/contextStore";
+
+export default function SingleThread() {
+  const { id } = useParams();
+  const { reset: resetChatStore, fetchThread } = useChatStore();
   const { reset: resetMapStore } = useMapStore();
   const { reset: resetContextStore } = useContextStore();
 
@@ -21,6 +23,12 @@ export default function Home() {
     resetMapStore();
     resetContextStore();
   }, [resetChatStore, resetMapStore, resetContextStore]);
+
+  useEffect(() => {
+    if (id) {
+      fetchThread(id as string);
+    }
+  }, [id, fetchThread]);
 
   return (
     <Grid

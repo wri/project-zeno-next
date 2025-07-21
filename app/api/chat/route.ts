@@ -11,7 +11,7 @@ import { readDataStream } from "./read-data-stream";
 
 // Function to parse LangChain message into simplified format
 // messageType is either "agent" or "tools"
-function parseStreamMessage(
+export function parseStreamMessage(
   langChainMessage: LangChainUpdate,
   messageType: "agent" | "tools"
 ): StreamMessage | null {
