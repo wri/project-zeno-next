@@ -10,6 +10,7 @@ import {
 import useUploadAreaStore from "../store/uploadAreaStore";
 import { useRef, useState } from "react";
 import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE_MB } from "../constants/upload";
+import { UploadSimpleIcon } from "@phosphor-icons/react";
 
 function UploadAreaDialog() {
   const {
@@ -56,13 +57,18 @@ function UploadAreaDialog() {
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline" colorPalette="gray">
+                  Cancel
+                </Button>
               </Dialog.ActionTrigger>
               <Button
                 onClick={handleUpload}
                 disabled={!isFileSelected || isUploading}
+                loading={isUploading}
+                loadingText="Uploading..."
+                colorPalette="blue"
               >
-                {isUploading ? "Uploading..." : "Upload"}
+                <UploadSimpleIcon /> Upload
               </Button>
             </Dialog.Footer>
             <Dialog.CloseTrigger asChild>
