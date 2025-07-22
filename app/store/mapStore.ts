@@ -10,6 +10,11 @@ interface GeoJsonFeature {
   data: GeoJSON.FeatureCollection | GeoJSON.Feature;
 }
 
+interface SelectionMode {
+  type: "Selecting" | "Drawing" | "Uploading" | undefined;
+  name?: string;
+}
+
 interface MapState {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
@@ -24,6 +29,8 @@ interface MapState {
   flyToGeoJson: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature) => void;
   flyToCenter: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature, zoom?: number) => void;
   flyToGeoJsonWithRetry: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature, maxRetries?: number) => void;
+  selectionMode: SelectionMode | undefined;
+  setSelectionMode: (mode: SelectionMode | undefined) => void;
 }
 
 const useMapStore = create<MapState>((set, get) => ({
@@ -31,6 +38,7 @@ const useMapStore = create<MapState>((set, get) => ({
   geoJsonFeatures: [],
   selectAreaLayer: null,
   selectedAreas: [],
+  selectionMode: undefined,
 
   setMapRef: (mapRef) => {
     console.log('Setting map ref:', !!mapRef);
@@ -41,8 +49,12 @@ const useMapStore = create<MapState>((set, get) => ({
     set({ selectAreaLayer: layerId });
   },
 
+  setSelectionMode: (selectionMode) => {
+    set({ selectionMode: selectionMode});
+  },
+
   addSelectedArea: (area: GeoJSON.Feature) => {
-    set((state) => ({ selectedAreas: [...state.selectedAreas, area]}));
+    set((state) => ({ selectedAreas: [...state.selectedAreas, area], selectionMode: undefined}));
   },
 
   addGeoJsonFeature: (feature) => {

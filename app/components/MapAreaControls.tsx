@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Box, ButtonGroup, IconButton, Menu, Portal } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -10,14 +9,9 @@ import {
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
 
-interface SelectionMode {
-  type: "Selecting" | "Drawing" | "Uploading" | undefined;
-  name?: string;
-}
-
 function MapAreaControls() {
-  const { setSelectAreaLayer } = useMapStore();
-  const [ selectionMode, setSelectionMode ] = useState<SelectionMode | undefined>(undefined);
+  const { setSelectAreaLayer, selectionMode, setSelectionMode } = useMapStore();
+
   return (
     <Box
       display="flex"
