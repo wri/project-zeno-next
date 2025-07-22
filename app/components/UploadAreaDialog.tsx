@@ -116,13 +116,8 @@ function DropFileZone() {
       bgGradient="to-br"
       gradientFrom={isDragOver ? "blue.100" : "blue.50"}
       gradientTo={isDragOver ? "lime.100" : "lime.50"}
-      }
-      border={isDragOver? "1px solid" : "1px dashed"}
-      borderColor={
-        isDragOver
-          ? "lime.400"
-          : "lime.700"
-      }
+      border={isDragOver ? "1px solid" : "1px dashed"}
+      borderColor={isDragOver ? "lime.400" : "lime.700"}
       borderRadius="lg"
       gap="8px"
       padding="4"
