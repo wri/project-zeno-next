@@ -35,6 +35,7 @@ function MapAreaControls() {
             <UploadSimpleIcon />
           </IconButton>
         </Tooltip>
+        <ButtonGroup attached variant="subtle" size="sm">
           <IconButton
             bg="bg"
             _hover={{ bg: "bg.emphasized" }}
@@ -42,7 +43,10 @@ function MapAreaControls() {
           >
             <HandPointingIcon />
           </IconButton>
-          <Menu.Root positioning={{ placement: "bottom-end" }} onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}>
+          <Menu.Root
+            positioning={{ placement: "bottom-end" }}
+            onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}
+          >
             <Menu.Trigger asChild>
               <IconButton
                 minW="0"

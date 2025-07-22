@@ -1,16 +1,29 @@
-import {
-  Box,
-  Stack,
-  Flex,
-  Dialog,
-  Portal,
-  Button,
-  Field,
-} from "@chakra-ui/react";
+import { Dialog, Portal, Button, CloseButton } from "@chakra-ui/react";
 import useUploadAreaStore from "../store/uploadAreaStore";
+import { useRef } from "react";
+import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE_MB } from "../constants/upload";
 
 function UploadAreaDialog() {
-  const { dialogVisible, toggleUploadAreaDialog } = useUploadAreaStore();
+  const {
+    dialogVisible,
+    toggleUploadAreaDialog,
+    handleFileChange,
+    uploadFile,
+    isUploading,
+    errorType,
+    errorMessage,
+    isFileSelected,
+    filename,
+  } = useUploadAreaStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const triggerFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleUpload = async () => {
+    await uploadFile();
+  };
 
   return (
     <Dialog.Root
@@ -21,50 +34,43 @@ function UploadAreaDialog() {
     >
       <Portal>
         <Dialog.Positioner>
-          <Dialog.Content h="30rem" maxH="75vh" overflow="hidden">
-            <Flex flex="1" maxH="100%" overflow="hidden">
-              {/* Modal Body */}
-              <Stack
-                bg="bg.subtle"
-                py={3}
-                w="full"
-                maxW="100%"
-                maxH="100%"
-                overflow="scroll"
-                p={4}
-              >
-                <Box>
-                  <Field.Root>
-                    <Field.Label>Upload Area</Field.Label>
-                  </Field.Root>
-                </Box>
-              </Stack>
-            </Flex>
-            <Dialog.Footer
-              justifyContent="space-between"
-              borderTop="1px solid"
-              borderColor="border"
-              py={2}
-              px={3}
-            >
-              <Button
-                size="xs"
-                variant="ghost"
-                borderRadius="full"
-                onClick={toggleUploadAreaDialog}
-              >
-                Cancel
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>Upload Area</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body>
+              <p>Drag and drop a file here or click to upload.</p>
+              <p>Recommended file size &lt; {MAX_FILE_SIZE_MB} MB</p>
+              <p>Accepted file types: {ACCEPTED_FILE_TYPES.join(", ")}</p>
+              {isFileSelected && <p>Selected: {filename}</p>}
+              {errorType !== "none" && (
+                <p style={{ color: "red" }}>{errorMessage}</p>
+              )}
+              <Button variant="outline" onClick={triggerFileSelect}>
+                Select file
               </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+                accept={ACCEPTED_FILE_TYPES.join(",")}
+              />
+            </Dialog.Body>
+            <Dialog.Footer>
+              <Dialog.ActionTrigger asChild>
+                <Button variant="outline">Cancel</Button>
+              </Dialog.ActionTrigger>
               <Button
-                size="xs"
-                variant="solid"
-                colorPalette="blue"
-                borderRadius="full"
-                ml="auto"
+                onClick={handleUpload}
+                disabled={!isFileSelected || isUploading}
               >
-                Upload
+                {isUploading ? "Uploading..." : "Upload"}
               </Button>
             </Dialog.Footer>
+            <Dialog.CloseTrigger asChild>
+              <CloseButton size="sm" />
+            </Dialog.CloseTrigger>
           </Dialog.Content>
         </Dialog.Positioner>
       </Portal>
