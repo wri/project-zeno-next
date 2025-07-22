@@ -10,7 +10,11 @@ import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
 
 function MapAreaControls() {
-  const { setSelectAreaLayer } = useMapStore();
+  const { setSelectAreaLayer, isDrawingMode, setDrawingMode } = useMapStore();
+
+  const handleDrawClick = () => {
+    setDrawingMode(!isDrawingMode);
+  };
 
   return (
     <Box
@@ -30,11 +34,7 @@ function MapAreaControls() {
         >
           <UploadSimpleIcon />
         </IconButton>
-        <ButtonGroup
-          attached
-          variant="subtle"
-          size="sm"
-        >
+        <ButtonGroup attached variant="subtle" size="sm">
           <IconButton
             bg="bg"
             _hover={{ bg: "bg.emphasized" }}
@@ -42,7 +42,10 @@ function MapAreaControls() {
           >
             <HandPointingIcon />
           </IconButton>
-          <Menu.Root positioning={{ placement: "bottom-end" }} onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}>
+          <Menu.Root
+            positioning={{ placement: "bottom-end" }}
+            onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}
+          >
             <Menu.Trigger asChild>
               <IconButton
                 minW="0"
@@ -72,6 +75,8 @@ function MapAreaControls() {
           bg="bg"
           _hover={{ bg: "bg.emphasized" }}
           aria-label="Draw area bounds"
+          onClick={handleDrawClick}
+          data-active={isDrawingMode}
         >
           <SelectionPlusIcon />
         </IconButton>

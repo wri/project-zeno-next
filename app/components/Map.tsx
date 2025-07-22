@@ -6,9 +6,11 @@ import MapGl, {
   AttributionControl,
   NavigationControl,
   ScaleControl,
-  MapRef
+  MapRef,
 } from "react-map-gl/maplibre";
 import { useState, useRef, useMemo } from "react";
+import { TerraDraw, TerraDrawFreehandMode } from "terra-draw";
+import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
@@ -20,12 +22,21 @@ import { FeatureCollection } from "geojson";
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const { geoJsonFeatures, setMapRef, selectAreaLayer, selectedAreas } = useMapStore();
+  const {
+    geoJsonFeatures,
+    setMapRef,
+    selectAreaLayer,
+    selectedAreas,
+    setTerraDraw,
+  } = useMapStore();
 
-  const selectedAreasCollection: FeatureCollection = useMemo(() => ({
-    type: "FeatureCollection",
-    features: selectedAreas
-  }), [selectedAreas]);
+  const selectedAreasCollection: FeatureCollection = useMemo(
+    () => ({
+      type: "FeatureCollection",
+      features: selectedAreas,
+    }),
+    [selectedAreas]
+  );
 
   const onMapLoad = () => {
     if (mapRef.current) {
@@ -33,6 +44,16 @@ function Map() {
       setMapCenter([map.getCenter().lng, map.getCenter().lat]);
       // Set the map ref in the store for other components to use
       setMapRef(mapRef.current);
+
+      // Initialize TerraDraw
+      const terraDraw = new TerraDraw({
+        adapter: new TerraDrawMapLibreGLAdapter({ map }),
+        modes: [new TerraDrawFreehandMode()],
+      });
+
+      terraDraw.start();
+      terraDraw.setMode("freehand");
+      setTerraDraw(terraDraw);
     }
   };
 
@@ -72,7 +93,7 @@ function Map() {
               },
               "& .maplibregl-ctrl-icon": {
                 filter: "invert(1)",
-              }
+              },
             },
           },
         },
@@ -84,7 +105,7 @@ function Map() {
         initialViewState={{
           longitude: 0,
           latitude: 0,
-          zoom: 0
+          zoom: 0,
         }}
         onLoad={onMapLoad}
         onMove={onMapMove}
@@ -94,8 +115,12 @@ function Map() {
           id="background"
           type="raster"
           tiles={useColorModeValue(
-            ["https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q"],
-            ["https://api.mapbox.com/styles/v1/devseed/clz35cbi302l701qo2snhdx9x/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q"]
+            [
+              "https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q",
+            ],
+            [
+              "https://api.mapbox.com/styles/v1/devseed/clz35cbi302l701qo2snhdx9x/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q",
+            ]
           )}
           tileSize={256}
         >
@@ -105,9 +130,9 @@ function Map() {
         {/* Render GeoJSON features */}
         {geoJsonFeatures.map((feature) => {
           // Determine if this is a KBA feature
-          const isKBA = feature.id.startsWith('kba-');
-          const fillColor = isKBA ? '#10b981' : '#3b82f6'; // Green for KBA, blue for others
-          const strokeColor = isKBA ? '#047857' : '#1d4ed8'; // Dark green for KBA, dark blue for others
+          const isKBA = feature.id.startsWith("kba-");
+          const fillColor = isKBA ? "#10b981" : "#3b82f6"; // Green for KBA, blue for others
+          const strokeColor = isKBA ? "#047857" : "#1d4ed8"; // Dark green for KBA, dark blue for others
 
           return (
             <Source
@@ -121,32 +146,36 @@ function Map() {
                 id={`geojson-fill-${feature.id}`}
                 type="fill"
                 paint={{
-                  'fill-color': fillColor,
-                  'fill-opacity': 0.3
+                  "fill-color": fillColor,
+                  "fill-opacity": 0.3,
                 }}
-                filter={['==', ['geometry-type'], 'Polygon']}
+                filter={["==", ["geometry-type"], "Polygon"]}
               />
               {/* Line layer for polygon outlines and linestrings */}
               <Layer
                 id={`geojson-line-${feature.id}`}
                 type="line"
                 paint={{
-                  'line-color': strokeColor,
-                  'line-width': 2
+                  "line-color": strokeColor,
+                  "line-width": 2,
                 }}
-                filter={['in', ['geometry-type'], ['literal', ['Polygon', 'LineString']]]}
+                filter={[
+                  "in",
+                  ["geometry-type"],
+                  ["literal", ["Polygon", "LineString"]],
+                ]}
               />
               {/* Circle layer for points */}
               <Layer
                 id={`geojson-circle-${feature.id}`}
                 type="circle"
                 paint={{
-                  'circle-color': strokeColor,
-                  'circle-radius': 6,
-                  'circle-stroke-color': '#ffffff',
-                  'circle-stroke-width': 2
+                  "circle-color": strokeColor,
+                  "circle-radius": 6,
+                  "circle-stroke-color": "#ffffff",
+                  "circle-stroke-width": 2,
                 }}
-                filter={['==', ['geometry-type'], 'Point']}
+                filter={["==", ["geometry-type"], "Point"]}
               />
             </Source>
           );
@@ -162,8 +191,8 @@ function Map() {
               id="selectedareas-line"
               type="line"
               paint={{
-                'line-color': "#4B88D8",
-                'line-width': 2
+                "line-color": "#4B88D8",
+                "line-width": 2,
               }}
             />
           </Source>
@@ -172,11 +201,17 @@ function Map() {
           <SelectAreaLayer
             key={selectAreaLayer}
             layerId={selectAreaLayer}
-            beforeId={selectedAreas.length > 0 ? "selectedareas-line" : undefined}
-        />)}
+            beforeId={
+              selectedAreas.length > 0 ? "selectedareas-line" : undefined
+            }
+          />
+        )}
         <MapAreaControls />
 
-        <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
+        <AttributionControl
+          customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
+          position="bottom-left"
+        />
         <ScaleControl />
         <AbsoluteCenter fontSize="sm">
           <PlusIcon />
