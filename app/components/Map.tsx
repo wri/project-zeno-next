@@ -9,7 +9,7 @@ import MapGl, {
   MapRef,
 } from "react-map-gl/maplibre";
 import { useState, useRef, useMemo } from "react";
-import { TerraDraw, TerraDrawFreehandMode } from "terra-draw";
+import { TerraDraw, TerraDrawPolygonMode } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
@@ -48,12 +48,14 @@ function Map() {
       // Initialize TerraDraw
       const terraDraw = new TerraDraw({
         adapter: new TerraDrawMapLibreGLAdapter({ map }),
-        modes: [new TerraDrawFreehandMode()],
+        modes: [new TerraDrawPolygonMode()],
       });
 
       terraDraw.start();
-      terraDraw.setMode("freehand");
+      terraDraw.setMode("polygon");
       setTerraDraw(terraDraw);
+
+      console.log("snapshot:", terraDraw.getSnapshot());
     }
   };
 
