@@ -6,6 +6,7 @@ import { Sidebar } from "./sidebar";
 import ChatPanel from "./ChatPanel";
 import LclLogo from "./components/LclLogo";
 import LoginOverlay from "./components/LoginOverlay";
+import UploadAreaDialog from "./components/UploadAreaDialog";
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
       bg="bg"
     >
       <LoginOverlay />
+      <UploadAreaDialog />
       <Flex
         alignItems="center"
         justifyContent="space-between"

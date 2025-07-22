@@ -8,10 +8,12 @@ import {
 
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
+import useUploadStore from "../store/uploadAreaStore";
+import { Tooltip } from "./ui/tooltip";
 
 function MapAreaControls() {
   const { setSelectAreaLayer } = useMapStore();
-
+  const { toggleUploadAreaDialog } = useUploadStore();
   return (
     <Box
       display="flex"
@@ -23,18 +25,17 @@ function MapAreaControls() {
       zIndex={100}
     >
       <ButtonGroup size="sm" variant="subtle">
-        <IconButton
-          aria-label="Upload area"
-          bg="bg"
-          _hover={{ bg: "bg.emphasized" }}
-        >
-          <UploadSimpleIcon />
-        </IconButton>
-        <ButtonGroup
-          attached
-          variant="subtle"
-          size="sm"
-        >
+        <Tooltip content="Upload area from file">
+          <IconButton
+            aria-label="Upload area"
+            bg="bg"
+            _hover={{ bg: "bg.emphasized" }}
+            onClick={toggleUploadAreaDialog}
+          >
+            <UploadSimpleIcon />
+          </IconButton>
+        </Tooltip>
+        <ButtonGroup attached variant="subtle" size="sm">
           <IconButton
             bg="bg"
             _hover={{ bg: "bg.emphasized" }}
@@ -42,7 +43,10 @@ function MapAreaControls() {
           >
             <HandPointingIcon />
           </IconButton>
-          <Menu.Root positioning={{ placement: "bottom-end" }} onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}>
+          <Menu.Root
+            positioning={{ placement: "bottom-end" }}
+            onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}
+          >
             <Menu.Trigger asChild>
               <IconButton
                 minW="0"
