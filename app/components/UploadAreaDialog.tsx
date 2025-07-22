@@ -1,4 +1,12 @@
-import { Dialog, Portal, Button, CloseButton } from "@chakra-ui/react";
+import {
+  Dialog,
+  Portal,
+  Button,
+  CloseButton,
+  Text,
+  Box,
+  Link,
+} from "@chakra-ui/react";
 import useUploadAreaStore from "../store/uploadAreaStore";
 import { useRef } from "react";
 import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE_MB } from "../constants/upload";
@@ -7,19 +15,10 @@ function UploadAreaDialog() {
   const {
     dialogVisible,
     toggleUploadAreaDialog,
-    handleFileChange,
     uploadFile,
     isUploading,
-    errorType,
-    errorMessage,
     isFileSelected,
-    filename,
   } = useUploadAreaStore();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const triggerFileSelect = () => {
-    fileInputRef.current?.click();
-  };
 
   const handleUpload = async () => {
     await uploadFile();
@@ -41,23 +40,12 @@ function UploadAreaDialog() {
               </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
-              <p>Drag and drop a file here or click to upload.</p>
-              <p>Recommended file size &lt; {MAX_FILE_SIZE_MB} MB</p>
-              <p>Accepted file types: {ACCEPTED_FILE_TYPES.join(", ")}</p>
-              {isFileSelected && <p>Selected: {filename}</p>}
-              {errorType !== "none" && (
-                <p style={{ color: "red" }}>{errorMessage}</p>
-              )}
-              <Button variant="outline" onClick={triggerFileSelect}>
-                Select file
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
-                accept={ACCEPTED_FILE_TYPES.join(",")}
-              />
+              {!isFileSelected ? <DropFileZone /> : <SelectedFileBox />}
+              <Text>Accepted file types: {ACCEPTED_FILE_TYPES.join(", ")}</Text>
+              <Text>
+                By uploading data you agree to the{" "}
+                <Link href="/terms">terms of service</Link>.
+              </Text>
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
@@ -81,3 +69,60 @@ function UploadAreaDialog() {
 }
 
 export default UploadAreaDialog;
+
+function DropFileZone() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { errorType, errorMessage, handleFileChange } = useUploadAreaStore();
+  return (
+    <Box
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      background="linear-gradient(106.8deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)"
+      border="1px dashed var(--Lime-Lime-70, #8E9954)"
+      borderRadius="md"
+      gap="8px"
+      padding="4"
+    >
+      <Text lineHeight="20px">
+        Drag and drop a <strong>polygon data file</strong> here or click to
+        upload.
+      </Text>
+      <Text fontSize="xs" lineHeight="16px">
+        Recommended file size &lt; {MAX_FILE_SIZE_MB} MB
+      </Text>
+      {errorType !== "none" && <p style={{ color: "red" }}>{errorMessage}</p>}
+      <Button
+        variant="solid"
+        size="2xs"
+        colorPalette="blue"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        Select File
+      </Button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+        accept={ACCEPTED_FILE_TYPES.join(",")}
+      />
+    </Box>
+  );
+}
+
+function SelectedFileBox() {
+  const { filename } = useUploadAreaStore();
+  return (
+    <Box
+      border="1px dashed var(--Lime-Lime-70, #8E9954)"
+      borderRadius="md"
+      padding="4"
+      gap="8px"
+      display="flex"
+      alignItems="center"
+    >
+      <Text>📂 {filename}</Text>
+    </Box>
+  );
+}
