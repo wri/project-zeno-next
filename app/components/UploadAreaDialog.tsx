@@ -36,7 +36,9 @@ function UploadAreaDialog() {
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header>
-              <Dialog.Title>Upload Area</Dialog.Title>
+              <Dialog.Title>
+                {isUploading ? "Uploading Area..." : "Upload Area"}
+              </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <p>Drag and drop a file here or click to upload.</p>
