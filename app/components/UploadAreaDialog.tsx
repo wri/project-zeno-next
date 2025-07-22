@@ -163,7 +163,7 @@ function DropFileZone() {
 }
 
 function SelectedFileBox() {
-  const { filename } = useUploadAreaStore();
+  const { filename, clearFileState } = useUploadAreaStore();
   return (
     <Box
       border="1px dashed var(--Lime-Lime-70, #8E9954)"
@@ -172,8 +172,17 @@ function SelectedFileBox() {
       gap="8px"
       display="flex"
       alignItems="center"
+      justifyContent="space-between"
     >
       <Text>📂 {filename}</Text>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={clearFileState}
+        colorPalette="red"
+      >
+        Clear
+      </Button>
     </Box>
   );
 }
