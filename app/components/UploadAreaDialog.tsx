@@ -118,10 +118,11 @@ function DropFileZone() {
           ? "linear-gradient(106.8deg, #B3D4FF 5.2%, #CCE8F0 14.44%, #F0F8D8 69.9%)"
           : "linear-gradient(106.8deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)"
       }
-      border={
+      border={isDragOver? "1px solid" : "1px dashed"}
+      borderColor={
         isDragOver
-          ? "2px dashed var(--Lime-Lime-60, #A4B85C)"
-          : "1px dashed var(--Lime-Lime-70, #8E9954)"
+          ? "lime.400"
+          : "lime.700"
       }
       borderRadius="lg"
       gap="8px"
