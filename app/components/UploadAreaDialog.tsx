@@ -39,13 +39,23 @@ function UploadAreaDialog() {
                 {isUploading ? "Uploading Area..." : "Upload Area"}
               </Dialog.Title>
             </Dialog.Header>
-            <Dialog.Body>
+            <Dialog.Body
+              spaceY="2"
+              paddingTop="2"
+              paddingRight="6"
+              paddingBottom="4"
+              paddingLeft="6"
+            >
               {!isFileSelected ? <DropFileZone /> : <SelectedFileBox />}
-              <Text>Accepted file types: {ACCEPTED_FILE_TYPES.join(", ")}</Text>
-              <Text>
-                By uploading data you agree to the{" "}
-                <Link href="/terms">terms of service</Link>.
-              </Text>
+              <Box color="fg.muted" fontSize="xs">
+                <Text>
+                  Accepted file types: {ACCEPTED_FILE_TYPES.join(", ")}
+                </Text>
+                <Text>
+                  By uploading data you agree to the{" "}
+                  <Link href="/terms">terms of service</Link>.
+                </Text>
+              </Box>
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
