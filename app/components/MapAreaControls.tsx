@@ -8,10 +8,11 @@ import {
 
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
+import useUploadStore from "../store/uploadAreaStore";
 
 function MapAreaControls() {
   const { setSelectAreaLayer } = useMapStore();
-
+  const { toggleUploadAreaDialog } = useUploadStore();
   return (
     <Box
       display="flex"
@@ -27,6 +28,7 @@ function MapAreaControls() {
           aria-label="Upload area"
           bg="bg"
           _hover={{ bg: "bg.emphasized" }}
+          onClick={toggleUploadAreaDialog}
         >
           <UploadSimpleIcon />
         </IconButton>
