@@ -49,9 +49,6 @@ function UploadAreaDialog() {
               {!isFileSelected ? <DropFileZone /> : <SelectedFileBox />}
               <Box color="fg.muted" fontSize="xs">
                 <Text>
-                  Accepted file types: {ACCEPTED_FILE_TYPES.join(", ")}
-                </Text>
-                <Text>
                   By uploading data you agree to the{" "}
                   <Link href="/terms">terms of service</Link>.
                 </Text>
@@ -99,7 +96,8 @@ function DropFileZone() {
         upload.
       </Text>
       <Text fontSize="xs" lineHeight="16px">
-        Recommended file size &lt; {MAX_FILE_SIZE_MB} MB
+        Files with extension {ACCEPTED_FILE_TYPES.join(", ")} up to{" "}
+        {MAX_FILE_SIZE_MB} MB
       </Text>
       {errorType !== "none" && <p style={{ color: "red" }}>{errorMessage}</p>}
       <Button
