@@ -8,7 +8,7 @@ import {
   Link,
 } from "@chakra-ui/react";
 import useUploadAreaStore from "../store/uploadAreaStore";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE_MB } from "../constants/upload";
 
 function UploadAreaDialog() {
@@ -43,7 +43,7 @@ function UploadAreaDialog() {
               spaceY="2"
               paddingTop="2"
               paddingRight="6"
-              paddingBottom="4"
+              paddingBottom="2"
               paddingLeft="6"
             >
               {!isFileSelected ? <DropFileZone /> : <SelectedFileBox />}
@@ -79,17 +79,53 @@ export default UploadAreaDialog;
 
 function DropFileZone() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { errorType, errorMessage, handleFileChange } = useUploadAreaStore();
+  const { errorType, errorMessage, handleFile } = useUploadAreaStore();
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFile(files[0]);
+    }
+  };
+
   return (
     <Box
       display="flex"
       flexDirection="column"
       alignItems="center"
-      background="linear-gradient(106.8deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)"
-      border="1px dashed var(--Lime-Lime-70, #8E9954)"
-      borderRadius="md"
+      background={
+        isDragOver
+          ? "linear-gradient(106.8deg, #B3D4FF 5.2%, #CCE8F0 14.44%, #F0F8D8 69.9%)"
+          : "linear-gradient(106.8deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)"
+      }
+      border={
+        isDragOver
+          ? "2px dashed var(--Lime-Lime-60, #A4B85C)"
+          : "1px dashed var(--Lime-Lime-70, #8E9954)"
+      }
+      borderRadius="lg"
       gap="8px"
       padding="4"
+      transition="all 0.2s ease"
+      cursor="pointer"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onClick={() => fileInputRef.current?.click()}
     >
       <Text lineHeight="20px">
         Drag and drop a <strong>polygon data file</strong> here or click to
@@ -99,7 +135,11 @@ function DropFileZone() {
         Files with extension {ACCEPTED_FILE_TYPES.join(", ")} up to{" "}
         {MAX_FILE_SIZE_MB} MB
       </Text>
-      {errorType !== "none" && <p style={{ color: "red" }}>{errorMessage}</p>}
+      {errorType !== "none" && (
+        <Text color="red.500" fontSize="sm">
+          {errorMessage}
+        </Text>
+      )}
       <Button
         variant="solid"
         size="2xs"
@@ -112,7 +152,10 @@ function DropFileZone() {
         ref={fileInputRef}
         type="file"
         style={{ display: "none" }}
-        onChange={handleFileChange}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+        }}
         accept={ACCEPTED_FILE_TYPES.join(",")}
       />
     </Box>

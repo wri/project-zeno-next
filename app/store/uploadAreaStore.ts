@@ -23,7 +23,7 @@ interface UploadStoreState {
   selectedFile: File | null;
   setError: (errorType: UploadErrorType, message?: string) => void;
   clearError: () => void;
-  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleFile: (file: File) => void;
   uploadFile: () => Promise<void>;
   clearFileState: () => void;
 }
@@ -46,11 +46,7 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
   setError: (errorType: UploadErrorType, message = "") =>
     set({ errorType, errorMessage: message }),
   clearError: () => set({ errorType: "none", errorMessage: "" }),
-  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
+  handleFile: (file: File) => {
     const { clearError } = get();
 
     clearError();
@@ -103,6 +99,7 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
       errorMessage: "",
     });
   },
+
   uploadFile: async () => {
     const { selectedFile, setError } = get();
 
