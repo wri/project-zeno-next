@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Box, ButtonGroup, IconButton, Menu, Portal } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -9,32 +10,40 @@ import {
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
 
+interface SelectionMode {
+  type: "Selecting" | "Drawing" | "Uploading" | undefined;
+  name?: string;
+}
+
 function MapAreaControls() {
   const { setSelectAreaLayer } = useMapStore();
-
+  const [ selectionMode, setSelectionMode ] = useState<SelectionMode | undefined>(undefined);
   return (
     <Box
       display="flex"
+      flexDirection="column"
       position="absolute"
-      top={2}
+      pt={2}
       gap={2}
       width="100%"
-      justifyContent="center"
+      height="100%"
+      pointerEvents="none"
+      justifyContent="flex-start"
+      alignItems="center"
       zIndex={100}
+      borderWidth="4px"
+      borderColor={selectionMode ? "lime.400" : "transparent"}
     >
-      <ButtonGroup size="sm" variant="subtle">
+      <ButtonGroup size="sm" variant="subtle" pointerEvents="initial">
         <IconButton
           aria-label="Upload area"
           bg="bg"
           _hover={{ bg: "bg.emphasized" }}
+          onClick={() => setSelectionMode({type: "Uploading", name:  undefined})}
         >
           <UploadSimpleIcon />
         </IconButton>
-        <ButtonGroup
-          attached
-          variant="subtle"
-          size="sm"
-        >
+        <ButtonGroup attached variant="subtle" size="sm">
           <IconButton
             bg="bg"
             _hover={{ bg: "bg.emphasized" }}
@@ -42,7 +51,13 @@ function MapAreaControls() {
           >
             <HandPointingIcon />
           </IconButton>
-          <Menu.Root positioning={{ placement: "bottom-end" }} onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}>
+          <Menu.Root
+            positioning={{ placement: "bottom-end" }}
+            onSelect={({ value }) => {
+              setSelectAreaLayer(value as LayerId);
+              // setSelectionMode(undefined);
+            }}
+          >
             <Menu.Trigger asChild>
               <IconButton
                 minW="0"
@@ -59,7 +74,7 @@ function MapAreaControls() {
               <Menu.Positioner>
                 <Menu.Content>
                   {selectLayerOptions.map(({ id, name }) => (
-                    <Menu.Item key={id} value={id}>
+                    <Menu.Item key={id} value={id} onClick={() => setSelectionMode({type: "Selecting", name: name})}>
                       {name}
                     </Menu.Item>
                   ))}
@@ -72,10 +87,24 @@ function MapAreaControls() {
           bg="bg"
           _hover={{ bg: "bg.emphasized" }}
           aria-label="Draw area bounds"
+          onClick={() => setSelectionMode({type: "Drawing", name:  undefined})}
         >
           <SelectionPlusIcon />
         </IconButton>
       </ButtonGroup>
+      {selectionMode && (
+        <Box
+          px={3}
+          py={1}
+          bg="bg"
+          borderRadius="md"
+          boxShadow="sm"
+          color="blackAlpha.700"
+        >
+          {selectionMode.type}{" "}
+          {selectionMode.type === "Selecting" ? selectionMode.name : "AOI"}
+        </Box>
+      )}
     </Box>
   );
 }
