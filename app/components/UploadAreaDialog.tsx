@@ -113,10 +113,9 @@ function DropFileZone() {
       display="flex"
       flexDirection="column"
       alignItems="center"
-      background={
-        isDragOver
-          ? "linear-gradient(106.8deg, #B3D4FF 5.2%, #CCE8F0 14.44%, #F0F8D8 69.9%)"
-          : "linear-gradient(106.8deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)"
+      bgGradient="to-br"
+      gradientFrom={isDragOver ? "blue.100" : "blue.50"}
+      gradientTo={isDragOver ? "lime.100" : "lime.50"}
       }
       border={isDragOver? "1px solid" : "1px dashed"}
       borderColor={
