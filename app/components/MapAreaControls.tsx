@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Box, ButtonGroup, IconButton, Menu, Portal } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -12,6 +13,18 @@ import useMapStore from "../store/mapStore";
 function MapAreaControls() {
   const { setSelectAreaLayer, selectionMode, setSelectionMode } = useMapStore();
 
+  useEffect(() => {
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectionMode(undefined);
+      }
+    };
+    document.addEventListener("keyup", onKeyUp);
+    return () => {
+      document.removeEventListener("keyup", onKeyUp);
+    };
+  }, [setSelectionMode]);
+  
   return (
     <Box
       display="flex"
@@ -33,7 +46,9 @@ function MapAreaControls() {
           aria-label="Upload area"
           bg="bg"
           _hover={{ bg: "bg.emphasized" }}
-          onClick={() => setSelectionMode({type: "Uploading", name:  undefined})}
+          onClick={() =>
+            setSelectionMode({ type: "Uploading", name: undefined })
+          }
         >
           <UploadSimpleIcon />
         </IconButton>
@@ -68,7 +83,13 @@ function MapAreaControls() {
               <Menu.Positioner>
                 <Menu.Content>
                   {selectLayerOptions.map(({ id, name }) => (
-                    <Menu.Item key={id} value={id} onClick={() => setSelectionMode({type: "Selecting", name: name})}>
+                    <Menu.Item
+                      key={id}
+                      value={id}
+                      onClick={() =>
+                        setSelectionMode({ type: "Selecting", name: name })
+                      }
+                    >
                       {name}
                     </Menu.Item>
                   ))}
@@ -81,7 +102,7 @@ function MapAreaControls() {
           bg="bg"
           _hover={{ bg: "bg.emphasized" }}
           aria-label="Draw area bounds"
-          onClick={() => setSelectionMode({type: "Drawing", name:  undefined})}
+          onClick={() => setSelectionMode({ type: "Drawing", name: undefined })}
         >
           <SelectionPlusIcon />
         </IconButton>
