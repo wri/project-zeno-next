@@ -3,7 +3,7 @@ import { MapRef } from "react-map-gl/maplibre";
 import bbox from "@turf/bbox";
 import center from "@turf/center";
 import { LayerId } from "../types/map";
-import { createDrawAreaSlice, DrawAreaSlice } from "./drawAreaSlice";
+import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { StateCreator } from "zustand";
 
 interface GeoJsonFeature {
@@ -17,6 +17,7 @@ interface MapSlice {
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
   selectedAreas: GeoJSON.Feature[];
+  reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
   addSelectedArea: (area: GeoJSON.Feature) => void;
@@ -44,6 +45,14 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   geoJsonFeatures: [],
   selectAreaLayer: null,
   selectedAreas: [],
+
+  reset: () =>
+    set({
+      mapRef: null,
+      geoJsonFeatures: [],
+      selectAreaLayer: null,
+      selectedAreas: [],
+    }),
 
   setMapRef: (mapRef) => {
     console.log("Setting map ref:", !!mapRef);
