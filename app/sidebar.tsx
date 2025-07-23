@@ -168,11 +168,10 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
-        <Badge colorPalette="green">
-          <Status.Root colorPalette="green">
-            <Status.Indicator />
-          </Status.Root>
-        </Badge>
+        <Status.Root colorPalette="green" m="4">
+          <Status.Indicator />
+          API Status: Good
+        </Status.Root>
         <Separator my="4" />
         {hasOlderThreads && (
           <Stack gap="1" flex="1" mt="2">
