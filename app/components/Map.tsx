@@ -8,34 +8,23 @@ import MapGl, {
   ScaleControl,
   MapRef,
 } from "react-map-gl/maplibre";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef } from "react";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import SelectAreaLayer from "./SelectAreaLayer";
+import useContextStore from "@/app/store/contextStore";
 import CustomAreasLayer from "./map/layers/CustomAreasLayer";
-import { FeatureCollection } from "geojson";
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const {
-    geoJsonFeatures,
-    setMapRef,
-    selectAreaLayer,
-    selectedAreas,
-    initializeTerraDraw,
-  } = useMapStore();
-
-  const selectedAreasCollection: FeatureCollection = useMemo(
-    () => ({
-      type: "FeatureCollection",
-      features: selectedAreas,
-    }),
-    [selectedAreas]
-  );
+  const { geoJsonFeatures, setMapRef, selectAreaLayer, initializeTerraDraw } =
+    useMapStore();
+  const { context } = useContextStore();
+  const areas = context.filter((c) => c.contextType === "area");
 
   const onMapLoad = () => {
     if (mapRef.current) {
@@ -120,10 +109,9 @@ function Map() {
 
         {/* Render GeoJSON features */}
         {geoJsonFeatures.map((feature) => {
-          // Determine if this is a KBA feature
-          const isKBA = feature.id.startsWith("kba-");
-          const fillColor = isKBA ? "#10b981" : "#3b82f6"; // Green for KBA, blue for others
-          const strokeColor = isKBA ? "#047857" : "#1d4ed8"; // Dark green for KBA, dark blue for others
+          const fillColor = areas.find((a) => a.content === feature.id)
+            ? "#3b82f6"
+            : "#555";
 
           return (
             <Source
@@ -142,59 +130,15 @@ function Map() {
                 }}
                 filter={["==", ["geometry-type"], "Polygon"]}
               />
-              {/* Line layer for polygon outlines and linestrings */}
-              <Layer
-                id={`geojson-line-${feature.id}`}
-                type="line"
-                paint={{
-                  "line-color": strokeColor,
-                  "line-width": 2,
-                }}
-                filter={[
-                  "in",
-                  ["geometry-type"],
-                  ["literal", ["Polygon", "LineString"]],
-                ]}
-              />
-              {/* Circle layer for points */}
-              <Layer
-                id={`geojson-circle-${feature.id}`}
-                type="circle"
-                paint={{
-                  "circle-color": strokeColor,
-                  "circle-radius": 6,
-                  "circle-stroke-color": "#ffffff",
-                  "circle-stroke-width": 2,
-                }}
-                filter={["==", ["geometry-type"], "Point"]}
-              />
             </Source>
           );
         })}
 
-        {selectedAreas.length > 0 && (
-          <Source
-            id="selectedareas-source"
-            type="geojson"
-            data={selectedAreasCollection}
-          >
-            <Layer
-              id="selectedareas-line"
-              type="line"
-              paint={{
-                "line-color": "#4B88D8",
-                "line-width": 2,
-              }}
-            />
-          </Source>
-        )}
         {selectAreaLayer && (
           <SelectAreaLayer
             key={selectAreaLayer}
             layerId={selectAreaLayer}
-            beforeId={
-              selectedAreas.length > 0 ? "selectedareas-line" : undefined
-            }
+            beforeId={undefined}
           />
         )}
         <CustomAreasLayer />

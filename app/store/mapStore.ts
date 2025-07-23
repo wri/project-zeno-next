@@ -16,11 +16,9 @@ interface MapSlice {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
-  selectedAreas: GeoJSON.Feature[];
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
-  addSelectedArea: (area: GeoJSON.Feature) => void;
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
   clearGeoJsonFeatures: () => void;
@@ -61,7 +59,6 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       mapRef: null,
       geoJsonFeatures: [],
       selectAreaLayer: null,
-      selectedAreas: [],
     }),
 
   setMapRef: (mapRef) => {
@@ -71,10 +68,6 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   setSelectAreaLayer: (layerId) => {
     set({ selectAreaLayer: layerId });
-  },
-
-  addSelectedArea: (area) => {
-    set((state) => ({ selectedAreas: [...state.selectedAreas, area] }));
   },
 
   addGeoJsonFeature: (feature) => {
