@@ -9,10 +9,12 @@ import {
 
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
+import useUploadStore from "../store/uploadAreaStore";
+import { Tooltip } from "./ui/tooltip";
 
 function MapAreaControls() {
   const { setSelectAreaLayer, selectionMode, setSelectionMode } = useMapStore();
-
+  const { toggleUploadAreaDialog } = useUploadStore();
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -24,7 +26,7 @@ function MapAreaControls() {
       document.removeEventListener("keyup", onKeyUp);
     };
   }, [setSelectionMode]);
-  
+
   return (
     <Box
       display="flex"
@@ -41,17 +43,17 @@ function MapAreaControls() {
       borderWidth="4px"
       borderColor={selectionMode ? "lime.400" : "transparent"}
     >
-      <ButtonGroup size="sm" variant="subtle" pointerEvents="initial">
-        <IconButton
-          aria-label="Upload area"
-          bg="bg"
-          _hover={{ bg: "bg.emphasized" }}
-          onClick={() =>
-            setSelectionMode({ type: "Uploading", name: undefined })
-          }
-        >
-          <UploadSimpleIcon />
-        </IconButton>
+      <ButtonGroup size="sm" variant="subtle"  pointerEvents="initial">
+        <Tooltip content="Upload area from file">
+          <IconButton
+            aria-label="Upload area"
+            bg="bg"
+            _hover={{ bg: "bg.emphasized" }}
+            onClick={() => {toggleUploadAreaDialog(); setSelectionMode({ type: "Uploading", name: undefined })}}
+          >
+            <UploadSimpleIcon />
+          </IconButton>
+        </Tooltip>
         <ButtonGroup attached variant="subtle" size="sm">
           <IconButton
             bg="bg"
@@ -60,13 +62,7 @@ function MapAreaControls() {
           >
             <HandPointingIcon />
           </IconButton>
-          <Menu.Root
-            positioning={{ placement: "bottom-end" }}
-            onSelect={({ value }) => {
-              setSelectAreaLayer(value as LayerId);
-              // setSelectionMode(undefined);
-            }}
-          >
+          <Menu.Root positioning={{ placement: "bottom-end" }} onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}>
             <Menu.Trigger asChild>
               <IconButton
                 minW="0"
