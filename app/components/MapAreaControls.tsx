@@ -43,13 +43,16 @@ function MapAreaControls() {
       borderWidth="4px"
       borderColor={selectionMode ? "lime.400" : "transparent"}
     >
-      <ButtonGroup size="sm" variant="subtle"  pointerEvents="initial">
+      <ButtonGroup size="sm" variant="subtle" pointerEvents="initial">
         <Tooltip content="Upload area from file">
           <IconButton
             aria-label="Upload area"
             bg="bg"
             _hover={{ bg: "bg.emphasized" }}
-            onClick={() => {toggleUploadAreaDialog(); setSelectionMode({ type: "Uploading", name: undefined })}}
+            onClick={() => {
+              toggleUploadAreaDialog();
+              setSelectionMode({ type: "Uploading", name: undefined });
+            }}
           >
             <UploadSimpleIcon />
           </IconButton>
@@ -62,7 +65,10 @@ function MapAreaControls() {
           >
             <HandPointingIcon />
           </IconButton>
-          <Menu.Root positioning={{ placement: "bottom-end" }} onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}>
+          <Menu.Root
+            positioning={{ placement: "bottom-end" }}
+            onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}
+          >
             <Menu.Trigger asChild>
               <IconButton
                 minW="0"
