@@ -3,7 +3,8 @@ import { MapRef } from "react-map-gl/maplibre";
 import bbox from "@turf/bbox";
 import center from "@turf/center";
 import { LayerId } from "../types/map";
-import { TerraDraw } from "terra-draw";
+import { createDrawAreaSlice, DrawAreaSlice } from "./drawAreaSlice";
+import { StateCreator } from "zustand";
 
 interface GeoJsonFeature {
   id: string;
@@ -11,13 +12,11 @@ interface GeoJsonFeature {
   data: GeoJSON.FeatureCollection | GeoJSON.Feature;
 }
 
-interface MapState {
+interface MapSlice {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
   selectedAreas: GeoJSON.Feature[];
-  terraDraw: TerraDraw | null;
-  isDrawingMode: boolean;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
   addSelectedArea: (area: GeoJSON.Feature) => void;
@@ -33,17 +32,18 @@ interface MapState {
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
     maxRetries?: number
   ) => void;
-  setTerraDraw: (terraDraw: TerraDraw | null) => void;
-  setDrawingMode: (isDrawing: boolean) => void;
 }
 
-const useMapStore = create<MapState>((set, get) => ({
+export type MapState = MapSlice & DrawAreaSlice;
+
+const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
+  set,
+  get
+) => ({
   mapRef: null,
   geoJsonFeatures: [],
   selectAreaLayer: null,
   selectedAreas: [],
-  terraDraw: null,
-  isDrawingMode: false,
 
   setMapRef: (mapRef) => {
     console.log("Setting map ref:", !!mapRef);
@@ -54,7 +54,7 @@ const useMapStore = create<MapState>((set, get) => ({
     set({ selectAreaLayer: layerId });
   },
 
-  addSelectedArea: (area: GeoJSON.Feature) => {
+  addSelectedArea: (area) => {
     set((state) => ({ selectedAreas: [...state.selectedAreas, area] }));
   },
 
@@ -126,22 +126,6 @@ const useMapStore = create<MapState>((set, get) => ({
     }, 200);
   },
 
-  setTerraDraw: (terraDraw: TerraDraw | null) => {
-    set({ terraDraw });
-  },
-
-  setDrawingMode: (isDrawing: boolean) => {
-    const { terraDraw } = get();
-    if (!terraDraw) return;
-
-    if (isDrawing) {
-      terraDraw.start();
-    } else {
-      terraDraw.stop();
-    }
-    set({ isDrawingMode: isDrawing });
-  },
-
   flyToCenter: (geoJson, zoom = 12) => {
     const { mapRef } = get();
     if (!mapRef) {
@@ -166,6 +150,11 @@ const useMapStore = create<MapState>((set, get) => ({
       console.error("Error flying to GeoJSON center:", error);
     }
   },
+});
+
+const useMapStore = create<MapState>()((...a) => ({
+  ...createMapSlice(...a),
+  ...createDrawAreaSlice(...a),
 }));
 
 export default useMapStore;
