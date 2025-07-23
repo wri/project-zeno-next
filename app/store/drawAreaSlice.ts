@@ -7,7 +7,9 @@ export interface DrawAreaSlice {
   terraDraw: TerraDraw | null;
   isDrawingMode: boolean;
   setTerraDraw: (terraDraw: TerraDraw | null) => void;
-  setDrawingMode: (isDrawing: boolean) => void;
+  startDrawing: () => void;
+  confirmDrawing: () => void;
+  cancelDrawing: () => void;
   initializeTerraDraw: (map: Map) => void;
 }
 
@@ -24,16 +26,25 @@ export const createDrawAreaSlice: StateCreator<
     set({ terraDraw });
   },
 
-  setDrawingMode: (isDrawing) => {
+  startDrawing: () => {
     const { terraDraw } = get();
     if (!terraDraw) return;
+    terraDraw.start();
+    set({ isDrawingMode: true });
+  },
 
-    if (isDrawing) {
-      terraDraw.start();
-    } else {
-      terraDraw.stop();
-    }
-    set({ isDrawingMode: isDrawing });
+  confirmDrawing: () => {
+    const { terraDraw } = get();
+    if (!terraDraw) return;
+    terraDraw.stop();
+    set({ isDrawingMode: false });
+  },
+
+  cancelDrawing: () => {
+    const { terraDraw } = get();
+    if (!terraDraw) return;
+    terraDraw.stop();
+    set({ isDrawingMode: false });
   },
 
   initializeTerraDraw: (map) => {
