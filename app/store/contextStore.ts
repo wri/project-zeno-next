@@ -4,7 +4,7 @@ import { ChatContextType } from "@/app/components/ContextButton";
 export interface ContextItem {
   id: string;
   contextType: ChatContextType;
-  content: string;
+  content: string | object;
 }
 
 interface ContextState {
@@ -25,12 +25,25 @@ const initialState: ContextState = {
 const useContextStore = create<ContextState & ContextActions>((set) => ({
   ...initialState,
   addContext: (item) =>
-    set((state) => ({
-      context: [
-        ...state.context,
-        { ...item, id: `${item.contextType}-${Date.now()}` },
-      ],
-    })),
+    set((state) => {
+      // Check if item with same contextType and content already exists
+      const exists = state.context.some(
+        (existingItem) =>
+          existingItem.contextType === item.contextType &&
+          JSON.stringify(existingItem.content) === JSON.stringify(item.content)
+      );
+
+      if (exists) {
+        return state; // Don't add if it already exists
+      }
+
+      return {
+        context: [
+          ...state.context,
+          { ...item, id: `${item.contextType}-${Date.now()}` },
+        ],
+      };
+    }),
   removeContext: (id) =>
     set((state) => ({
       context: state.context.filter((c) => c.id !== id),
