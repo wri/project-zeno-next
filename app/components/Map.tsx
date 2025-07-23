@@ -16,11 +16,13 @@ import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import SelectAreaLayer from "./SelectAreaLayer";
 import useContextStore from "@/app/store/contextStore";
+import CustomAreasLayer from "./map/layers/CustomAreasLayer";
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const { geoJsonFeatures, setMapRef, selectAreaLayer } = useMapStore();
+  const { geoJsonFeatures, setMapRef, selectAreaLayer, initializeTerraDraw } =
+    useMapStore();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
 
@@ -30,6 +32,8 @@ function Map() {
       setMapCenter([map.getCenter().lng, map.getCenter().lat]);
       // Set the map ref in the store for other components to use
       setMapRef(mapRef.current);
+
+      initializeTerraDraw(map);
     }
   };
 
@@ -137,6 +141,7 @@ function Map() {
             beforeId={undefined}
           />
         )}
+        <CustomAreasLayer />
         <MapAreaControls />
 
         <AttributionControl
