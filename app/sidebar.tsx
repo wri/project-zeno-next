@@ -12,11 +12,17 @@ import {
   Stack,
   Text,
   Link as ChLink,
+  Badge,
+  Status,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
 import { Tooltip } from "./components/ui/tooltip";
-import { NotePencilIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
+import {
+  NotePencilIcon,
+  SidebarSimpleIcon,
+  LightningIcon,
+} from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
 
@@ -162,6 +168,11 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
+        <Badge colorPalette="green">
+          <Status.Root colorPalette="green">
+            <Status.Indicator />
+          </Status.Root>
+        </Badge>
         <Separator my="4" />
         {hasOlderThreads && (
           <Stack gap="1" flex="1" mt="2">
@@ -179,7 +190,6 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
-
         <ChLink
           href="#"
           _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
