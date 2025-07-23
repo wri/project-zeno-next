@@ -3,7 +3,6 @@
 import {
   Box,
   Toaster as ChakraToaster,
-  Icon,
   Portal,
   Spinner,
   Stack,
@@ -32,7 +31,9 @@ export const Toaster = () => {
             bg={toast.type === "error" ? "white" : undefined}
           >
             <Stack gap="12px" maxWidth="100%">
-              {toast.type === "error" ? (
+              {toast.type === "loading" ? (
+                <Spinner size="sm" color="blue.solid" />
+              ) : toast.type === "error" ? (
                 <Box
                   bg="#FEE2E2"
                   rounded="full"
@@ -44,8 +45,6 @@ export const Toaster = () => {
                 >
                   <WarningIcon weight="fill" width="16px" color="red" />
                 </Box>
-              ) : toast.type === "loading" ? (
-                <Spinner size="sm" color="blue.solid" />
               ) : (
                 <Toast.Indicator />
               )}
