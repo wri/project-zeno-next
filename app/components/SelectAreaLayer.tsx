@@ -155,11 +155,11 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
           type="fill"
           source-layer={sourceLayer}
           paint={{
-            'fill-color': '#fff',
+            'fill-color': '#4B88D8',
             'fill-opacity': [
               'case',
               ['boolean', ['feature-state', 'hover'], false],
-              0.16,
+              0.48,
               ['boolean', ['feature-state', 'selected'], false],
               0.08,
               0,
@@ -171,12 +171,7 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
           type="line"
           source-layer={sourceLayer}
           paint={{
-            'line-color': [
-              'case',
-              ['boolean', ['feature-state', 'hover'], false],
-              "#4B88D8",
-              "#BBC5EB",
-            ],
+            'line-color': "#BBC5EB",
             'line-width': 2
           }}
           beforeId={beforeId}

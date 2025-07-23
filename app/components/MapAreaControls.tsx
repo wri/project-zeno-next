@@ -8,9 +8,12 @@ import {
 
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
+import useUploadStore from "../store/uploadAreaStore";
+import { Tooltip } from "./ui/tooltip";
 
 function MapAreaControls() {
   const { setSelectAreaLayer, isDrawingMode, setDrawingMode } = useMapStore();
+  const { toggleUploadAreaDialog } = useUploadStore();
 
   const handleDrawClick = () => {
     setDrawingMode(!isDrawingMode);
@@ -27,13 +30,16 @@ function MapAreaControls() {
       zIndex={100}
     >
       <ButtonGroup size="sm" variant="subtle">
-        <IconButton
-          aria-label="Upload area"
-          bg="bg"
-          _hover={{ bg: "bg.emphasized" }}
-        >
-          <UploadSimpleIcon />
-        </IconButton>
+        <Tooltip content="Upload area from file">
+          <IconButton
+            aria-label="Upload area"
+            bg="bg"
+            _hover={{ bg: "bg.emphasized" }}
+            onClick={toggleUploadAreaDialog}
+          >
+            <UploadSimpleIcon />
+          </IconButton>
+        </Tooltip>
         <ButtonGroup attached variant="subtle" size="sm">
           <IconButton
             bg="bg"
