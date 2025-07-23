@@ -280,7 +280,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         });
       } else {
         addMessage({
-          type: "assistant",
+          type: "error",
           message:
             "Sorry, there was an error processing your request. Please try again.",
         });
