@@ -9,8 +9,6 @@ import MapGl, {
   MapRef,
 } from "react-map-gl/maplibre";
 import { useState, useRef, useMemo } from "react";
-import { TerraDraw, TerraDrawPolygonMode } from "terra-draw";
-import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
@@ -27,7 +25,7 @@ function Map() {
     setMapRef,
     selectAreaLayer,
     selectedAreas,
-    setTerraDraw,
+    initializeTerraDraw,
   } = useMapStore();
 
   const selectedAreasCollection: FeatureCollection = useMemo(
@@ -45,17 +43,7 @@ function Map() {
       // Set the map ref in the store for other components to use
       setMapRef(mapRef.current);
 
-      // Initialize TerraDraw
-      const terraDraw = new TerraDraw({
-        adapter: new TerraDrawMapLibreGLAdapter({ map }),
-        modes: [new TerraDrawPolygonMode()],
-      });
-
-      terraDraw.start();
-      terraDraw.setMode("polygon");
-      setTerraDraw(terraDraw);
-
-      console.log("snapshot:", terraDraw.getSnapshot());
+      initializeTerraDraw(map);
     }
   };
 

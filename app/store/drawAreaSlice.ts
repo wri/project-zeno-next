@@ -1,11 +1,14 @@
-import { TerraDraw } from "terra-draw";
+import { TerraDraw, TerraDrawPolygonMode } from "terra-draw";
+import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { StateCreator } from "zustand";
+import type { Map } from "maplibre-gl";
 
 export interface DrawAreaSlice {
   terraDraw: TerraDraw | null;
   isDrawingMode: boolean;
   setTerraDraw: (terraDraw: TerraDraw | null) => void;
   setDrawingMode: (isDrawing: boolean) => void;
+  initializeTerraDraw: (map: Map) => void;
 }
 
 export const createDrawAreaSlice: StateCreator<
@@ -31,5 +34,14 @@ export const createDrawAreaSlice: StateCreator<
       terraDraw.stop();
     }
     set({ isDrawingMode: isDrawing });
+  },
+
+  initializeTerraDraw: (map) => {
+    const terraDraw = new TerraDraw({
+      adapter: new TerraDrawMapLibreGLAdapter({ map }),
+      modes: [new TerraDrawPolygonMode()],
+    });
+
+    set({ terraDraw });
   },
 });
