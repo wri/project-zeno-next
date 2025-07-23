@@ -33,6 +33,9 @@ interface MapSlice {
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
     maxRetries?: number
   ) => void;
+
+  customAreas: GeoJSON.Feature[];
+  addCustomArea: (area: GeoJSON.Feature) => void;
 }
 
 export type MapState = MapSlice & DrawAreaSlice;
@@ -45,6 +48,13 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   geoJsonFeatures: [],
   selectAreaLayer: null,
   selectedAreas: [],
+  customAreas: [],
+
+  addCustomArea: (area) => {
+    set((state) => ({
+      customAreas: [...state.customAreas, area],
+    }));
+  },
 
   reset: () =>
     set({

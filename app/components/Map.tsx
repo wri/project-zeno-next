@@ -15,6 +15,7 @@ import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import SelectAreaLayer from "./SelectAreaLayer";
+import CustomAreasLayer from "./map/layers/CustomAreasLayer";
 import { FeatureCollection } from "geojson";
 
 function Map() {
@@ -196,6 +197,7 @@ function Map() {
             }
           />
         )}
+        <CustomAreasLayer />
         <MapAreaControls />
 
         <AttributionControl

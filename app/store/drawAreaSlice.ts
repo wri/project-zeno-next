@@ -3,6 +3,16 @@ import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { StateCreator } from "zustand";
 import type { Map } from "maplibre-gl";
 
+// Type for polygon features from TerraDraw
+type PolygonFeature = {
+  id: string | number;
+  geometry: {
+    type: "Polygon";
+    coordinates: number[][][];
+  };
+  properties?: Record<string, unknown>;
+};
+
 export interface DrawAreaSlice {
   terraDraw: TerraDraw | null;
   isDrawingMode: boolean;
@@ -12,8 +22,13 @@ export interface DrawAreaSlice {
   initializeTerraDraw: (map: Map) => void;
 }
 
+// Combined state interface for accessing other slice methods
+interface DrawAreaWithMapState extends DrawAreaSlice {
+  addCustomArea: (area: GeoJSON.Feature) => void;
+}
+
 // This ensures TerraDraw is initialized before use
-function getTerraDraw(get: () => DrawAreaSlice) {
+function getTerraDraw(get: () => DrawAreaWithMapState) {
   const { terraDraw } = get();
   if (!terraDraw) {
     throw new Error("TerraDraw not initialized");
@@ -22,7 +37,7 @@ function getTerraDraw(get: () => DrawAreaSlice) {
 }
 
 export const createDrawAreaSlice: StateCreator<
-  DrawAreaSlice,
+  DrawAreaWithMapState,
   [],
   [],
   DrawAreaSlice
@@ -48,7 +63,44 @@ export const createDrawAreaSlice: StateCreator<
   },
 
   confirmDrawing: () => {
-    getTerraDraw(get).stop();
+    const terraDraw = getTerraDraw(get);
+    const drawnFeatures = terraDraw.getSnapshot();
+
+    // No polygons drawn
+    if (drawnFeatures.length === 0) {
+      terraDraw.stop();
+      set({ isDrawingMode: false });
+      return;
+    }
+
+    // Filter for polygon features and cast to our type
+    const polygons = drawnFeatures.filter(
+      (feature) => feature.geometry.type === "Polygon"
+    ) as PolygonFeature[];
+
+    // Safeguard against no valid polygons found
+    if (polygons.length === 0) {
+      terraDraw.stop();
+      set({ isDrawingMode: false });
+      return;
+    }
+
+    const coordinates = polygons.map((polygon) => polygon.geometry.coordinates);
+    const firstPolygonId = polygons[0].id || "polygon-1";
+
+    const newArea: GeoJSON.Feature = {
+      type: "Feature",
+      id: firstPolygonId,
+      geometry: {
+        type: "MultiPolygon",
+        coordinates,
+      },
+      properties: {},
+    };
+
+    get().addCustomArea(newArea);
+
+    terraDraw.stop();
     set({ isDrawingMode: false });
   },
 
