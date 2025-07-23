@@ -9,13 +9,21 @@ export interface ContextItem {
 
 interface ContextState {
   context: ContextItem[];
+}
+
+interface ContextActions {
+  reset: () => void;
   addContext: (item: Omit<ContextItem, "id">) => void;
   removeContext: (id: string) => void;
   clearContext: () => void;
 }
 
-const useContextStore = create<ContextState>((set) => ({
+const initialState: ContextState = {
   context: [],
+};
+
+const useContextStore = create<ContextState & ContextActions>((set) => ({
+  ...initialState,
   addContext: (item) =>
     set((state) => ({
       context: [
@@ -28,6 +36,7 @@ const useContextStore = create<ContextState>((set) => ({
       context: state.context.filter((c) => c.id !== id),
     })),
   clearContext: () => set({ context: [] }),
+  reset: () => set(initialState),
 }));
 
-export default useContextStore; 
+export default useContextStore;

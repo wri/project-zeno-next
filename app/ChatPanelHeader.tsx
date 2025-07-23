@@ -1,6 +1,5 @@
+import { useId } from "react";
 import { Flex, IconButton, Menu, Button, Portal } from "@chakra-ui/react";
-import { Tooltip } from "./components/ui/tooltip";
-import useSidebarStore from "./store/sidebarStore";
 import {
   SidebarIcon,
   CaretDownIcon,
@@ -8,11 +7,18 @@ import {
   TrashIcon,
   NotePencilIcon,
 } from "@phosphor-icons/react";
-import { useId } from "react";
+import Link from "next/link";
+
+import { Tooltip } from "./components/ui/tooltip";
+import useSidebarStore from "./store/sidebarStore";
+import useChatStore from "./store/chatStore";
 
 function ChatPanelHeader() {
   const triggerId = useId();
   const { sideBarVisible, toggleSidebar } = useSidebarStore();
+
+  const { currentThreadName } = useChatStore();
+
   return (
     <Flex
       alignItems="center"
@@ -31,7 +37,12 @@ function ChatPanelHeader() {
           positioning={{ placement: "right" }}
           showArrow
         >
-          <IconButton size="sm" variant="ghost" color="fg.muted" onClick={toggleSidebar}>
+          <IconButton
+            size="sm"
+            variant="ghost"
+            color="fg.muted"
+            onClick={toggleSidebar}
+          >
             <SidebarIcon />
           </IconButton>
         </Tooltip>
@@ -39,7 +50,7 @@ function ChatPanelHeader() {
       <Menu.Root>
         <Menu.Trigger asChild>
           <Button variant="ghost" size="sm" mr="auto">
-            Conversation Name
+            {currentThreadName}
             <CaretDownIcon />
           </Button>
         </Menu.Trigger>
@@ -64,7 +75,11 @@ function ChatPanelHeader() {
       </Menu.Root>
       {!sideBarVisible && (
         <Menu.Root ids={{ trigger: triggerId }}>
-          <Tooltip content="New conversation" showArrow ids={{ trigger: triggerId }}>
+          <Tooltip
+            content="New conversation"
+            showArrow
+            ids={{ trigger: triggerId }}
+          >
             <Menu.Trigger asChild>
               <IconButton variant="ghost" size="sm">
                 <NotePencilIcon />
@@ -74,10 +89,17 @@ function ChatPanelHeader() {
           <Portal>
             <Menu.Positioner>
               <Menu.Content>
-                <Menu.Item value="New blank conversation" color="fg.muted">
-                  Blank Conversation
+                <Menu.Item
+                  value="New blank conversation"
+                  color="fg.muted"
+                  asChild
+                >
+                  <Link href="/">Blank Conversation</Link>
                 </Menu.Item>
-                <Menu.Item value="New conversation from template" color="fg.muted">
+                <Menu.Item
+                  value="New conversation from template"
+                  color="fg.muted"
+                >
                   From Template
                 </Menu.Item>
               </Menu.Content>
