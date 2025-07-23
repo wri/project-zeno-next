@@ -1,7 +1,8 @@
 "use client";
 
-import { Flex, Box, Text, Link as ChLink } from "@chakra-ui/react";
+import { Flex, Box, Text, Link as ChLink, Button } from "@chakra-ui/react";
 import Link from "next/link";
+import { Toaster, toaster } from "@/app/components/ui/toaster";
 
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
@@ -25,7 +26,23 @@ function ChatPanel() {
         height="100%"
         overflow="auto"
       >
-        <Box flex="1" overflowY="auto" height="100%" px="4" pb="8">
+        <Toaster />
+        <Button
+          variant="outline"
+          onClick={() =>
+            toaster.create({
+              title: "This is a description of the problem",
+              description:
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquid pariatur, ipsum dolor.",
+              type: "error",
+              closable: true,
+              duration: 600000,
+            })
+          }
+        >
+          Hello
+        </Button>
+        <Box flex="1" overflowY="auto" height="100%" mx="-4" px="4" pb="8">
           <ChatMessages />
         </Box>
         <Box mt="auto" position="sticky" bottom="2">
