@@ -6,6 +6,7 @@ import { Sidebar } from "./sidebar";
 import ChatPanel from "./ChatPanel";
 import LclLogo from "./components/LclLogo";
 import LoginOverlay from "./components/LoginOverlay";
+import UploadAreaDialog from "./components/UploadAreaDialog";
 import useChatStore from "./store/chatStore";
 import useMapStore from "./store/mapStore";
 import useContextStore from "./store/contextStore";
@@ -30,6 +31,7 @@ export default function Home() {
       bg="bg"
     >
       <LoginOverlay />
+      <UploadAreaDialog />
       <Flex
         alignItems="center"
         justifyContent="space-between"
@@ -55,7 +57,7 @@ export default function Home() {
         <Sidebar />
         <ChatPanel />
         <Grid templateRows="1fr" gridArea="map">
-          <Box overflow="hidden">
+          <Box overflow="hidden" position="relative">
             <Map />
           </Box>
         </Grid>

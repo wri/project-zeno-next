@@ -35,8 +35,7 @@ const globalCss = {
       bg: "gray.800",
       color: "blue.200",
       _dark: { bg: "blue.200", color: "gray.800" },
-    },
+    }
   };
 
 export default globalCss;
-  

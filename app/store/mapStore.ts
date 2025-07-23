@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { MapRef } from "react-map-gl/maplibre";
 import bbox from "@turf/bbox";
 import center from "@turf/center";
+import { LayerId } from "../types/map";
 
 interface GeoJsonFeature {
   id: string;
@@ -12,11 +13,15 @@ interface GeoJsonFeature {
 interface MapState {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
+  selectAreaLayer: LayerId | null;
+  selectedAreas: GeoJSON.Feature[];
 }
 
 interface MapActions {
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
+  setSelectAreaLayer: (layerId: LayerId | null) => void;
+  addSelectedArea: (area: GeoJSON.Feature) => void;
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
   clearGeoJsonFeatures: () => void;
@@ -34,6 +39,8 @@ interface MapActions {
 const initialState: MapState = {
   mapRef: null,
   geoJsonFeatures: [],
+  selectAreaLayer: null,
+  selectedAreas: [],
 };
 
 const useMapStore = create<MapState & MapActions>((set, get) => ({
@@ -44,6 +51,14 @@ const useMapStore = create<MapState & MapActions>((set, get) => ({
   setMapRef: (mapRef) => {
     console.log("Setting map ref:", !!mapRef);
     set({ mapRef });
+  },
+
+  setSelectAreaLayer: (layerId) => {
+    set({ selectAreaLayer: layerId });
+  },
+
+  addSelectedArea: (area: GeoJSON.Feature) => {
+    set((state) => ({ selectedAreas: [...state.selectedAreas, area] }));
   },
 
   addGeoJsonFeature: (feature) => {
