@@ -106,7 +106,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
         >
           <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
         </Box>
-        {!isUser && (
+        {!isUser && !isConsecutive && (
           <Flex
             alignItems="center"
             w="full"
