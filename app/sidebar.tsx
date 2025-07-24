@@ -187,7 +187,17 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
-        <Status.Root colorPalette={apiStatus === "OK" ? "green" : "red"} m="4">
+        <Status.Root
+          colorPalette={apiStatus === "OK" ? "green" : "red"}
+          m="3"
+          size="sm"
+          px="2"
+          py="1"
+          rounded="sm"
+          bg="whiteAlpha.600"
+          borderColor="bg"
+          borderWidth="1px"
+        >
           <Status.Indicator />
           API Status: {apiStatus}
         </Status.Root>
