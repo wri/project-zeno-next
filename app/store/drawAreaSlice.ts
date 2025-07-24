@@ -2,6 +2,9 @@ import { TerraDraw, TerraDrawPolygonMode } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { StateCreator } from "zustand";
 import type { Map } from "maplibre-gl";
+import { AOI } from "../types/chat";
+import { generateRandomName } from "../utils/generateRandomName";
+import type { MapState } from "./mapStore";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -23,14 +26,8 @@ export interface DrawAreaSlice {
   endDrawing: () => void;
 }
 
-// Combined state interface for accessing other slice methods
-interface DrawAreaWithMapState extends DrawAreaSlice {
-  addCustomArea: (area: GeoJSON.Feature) => void;
-  clearSelectionMode: () => void;
-}
-
 // This ensures TerraDraw is initialized before use
-function getTerraDraw(get: () => DrawAreaWithMapState) {
+function getTerraDraw(get: () => MapState) {
   const { terraDraw } = get();
   if (!terraDraw) {
     throw new Error("TerraDraw not initialized");
@@ -39,7 +36,7 @@ function getTerraDraw(get: () => DrawAreaWithMapState) {
 }
 
 export const createDrawAreaSlice: StateCreator<
-  DrawAreaWithMapState,
+  MapState,
   [],
   [],
   DrawAreaSlice
@@ -76,7 +73,7 @@ export const createDrawAreaSlice: StateCreator<
     const drawnFeatures = terraDraw.getSnapshot();
 
     // No polygons drawn
-    if (drawnFeatures.length === 0) {      
+    if (drawnFeatures.length === 0) {
       get().endDrawing();
       return;
     }
@@ -92,17 +89,24 @@ export const createDrawAreaSlice: StateCreator<
       return;
     }
 
-    const coordinates = polygons.map((polygon) => polygon.geometry.coordinates);
-    const firstPolygonId = polygons[0].id || "polygon-1";
-
-    const newArea: GeoJSON.Feature = {
+    const features: GeoJSON.Feature[] = polygons.map((polygon) => ({
       type: "Feature",
-      id: firstPolygonId,
+      id: polygon.id,
       geometry: {
-        type: "MultiPolygon",
-        coordinates,
+        type: "Polygon",
+        coordinates: polygon.geometry.coordinates,
       },
       properties: {},
+    }));
+
+    const featureCollection: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features,
+    };
+
+    const newArea: AOI = {
+      name: generateRandomName(),
+      geometry: featureCollection,
     };
 
     get().addCustomArea(newArea);

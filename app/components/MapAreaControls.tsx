@@ -18,7 +18,6 @@ import {
 
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
-import useUploadStore from "../store/uploadAreaStore";
 import { Tooltip } from "./ui/tooltip";
 
 function Wrapper({
@@ -56,8 +55,8 @@ function MapAreaControls() {
     clearSelectionMode,
     cancelDrawing,
     confirmDrawing,
+    toggleUploadAreaDialog,
   } = useMapStore();
-  const { toggleUploadAreaDialog } = useUploadStore();
 
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {

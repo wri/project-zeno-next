@@ -4,7 +4,9 @@ import bbox from "@turf/bbox";
 import center from "@turf/center";
 import { LayerId } from "../types/map";
 import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
+import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
+import { AOI } from "../types/chat";
 
 interface GeoJsonFeature {
   id: string;
@@ -36,14 +38,16 @@ interface MapSlice {
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
     maxRetries?: number
   ) => void;
+
+  customAreas: AOI[];
+  addCustomArea: (area: AOI) => void;
+
   selectionMode: SelectionMode | undefined;
   setSelectionMode: (mode: SelectionMode | undefined) => void;
   clearSelectionMode: () => void;
-  customAreas: GeoJSON.Feature[];
-  addCustomArea: (area: GeoJSON.Feature) => void;
 }
 
-export type MapState = MapSlice & DrawAreaSlice;
+export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice;
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   set,
@@ -80,11 +84,11 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   setSelectAreaLayer: (layerId) => {
     set({ selectAreaLayer: layerId });
   },
-  
+
   setSelectionMode: (selectionMode) => {
-    set({ selectionMode: selectionMode});
+    set({ selectionMode: selectionMode });
   },
-  
+
   addGeoJsonFeature: (feature) => {
     set((state) => ({
       geoJsonFeatures: [
@@ -188,6 +192,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 const useMapStore = create<MapState>()((...a) => ({
   ...createMapSlice(...a),
   ...createDrawAreaSlice(...a),
+  ...createUploadAreaSlice(...a),
 }));
 
 export default useMapStore;
