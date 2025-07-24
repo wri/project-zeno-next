@@ -1,7 +1,7 @@
 "use client";
 
 import Map from "@/app/components/Map";
-import { Box, Flex, Grid, Heading } from "@chakra-ui/react";
+import { Box, Flex, Grid, Heading, Button, Progress } from "@chakra-ui/react";
 import { Sidebar } from "./sidebar";
 import ChatPanel from "./ChatPanel";
 import LclLogo from "./components/LclLogo";
@@ -11,6 +11,8 @@ import useChatStore from "./store/chatStore";
 import useMapStore from "./store/mapStore";
 import useContextStore from "./store/contextStore";
 import { useEffect } from "react";
+
+import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
 
 export default function Home() {
   const { reset: resetChatStore } = useChatStore();
@@ -46,6 +48,31 @@ export default function Home() {
           <Heading size="md" as="h1">
             Zeno
           </Heading>
+        </Flex>
+        <Flex gap="6">
+          <Button variant="ghost" color="bg">
+            <LifebuoyIcon />
+            <Heading size="md">Help</Heading>
+          </Button>
+
+          <Progress.Root
+            size="xs"
+            gap="20px"
+            min={0}
+            max={100}
+            value={40}
+            colorPalette="red"
+          >
+            <Progress.Label>40 / 100 Prompts</Progress.Label>
+            <Progress.Track>
+              <Progress.Range />
+            </Progress.Track>
+          </Progress.Root>
+
+          <Button variant="ghost" color="bg">
+            <UserIcon />
+            <Heading size="md">User Name</Heading>
+          </Button>
         </Flex>
       </Flex>
       <Grid
