@@ -5,6 +5,8 @@ import {
   MAX_FILE_SIZE_MB,
 } from "../constants/upload";
 import type { MapState } from "./mapStore";
+import { generateRandomName } from "../utils/generateRandonName";
+import { AOI } from "../types/chat";
 
 type UploadErrorType =
   | "none"
@@ -121,15 +123,74 @@ export const createUploadAreaSlice: StateCreator<
     set({ isUploading: true });
 
     try {
-      // TODO: Implement actual file upload logic here
-      // For now, simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const fileContent = await selectedFile.text();
+      let geoJsonData: GeoJSON.GeoJSON;
+
+      try {
+        geoJsonData = JSON.parse(fileContent);
+      } catch {
+        setError("file-format-invalid", "Invalid JSON format");
+        return;
+      }
+
+      if (!geoJsonData || typeof geoJsonData !== "object") {
+        setError("file-format-invalid", "Invalid GeoJSON format");
+        return;
+      }
+
+      const features: GeoJSON.Feature[] = [];
+
+      if (geoJsonData.type === "Feature") {
+        const feature = geoJsonData as GeoJSON.Feature;
+        if (
+          feature.geometry?.type === "Polygon" ||
+          feature.geometry?.type === "MultiPolygon"
+        ) {
+          features.push(feature);
+        }
+      } else if (geoJsonData.type === "FeatureCollection") {
+        const featureCollection = geoJsonData as GeoJSON.FeatureCollection;
+        features.push(
+          ...featureCollection.features.filter(
+            (feature) =>
+              feature.geometry?.type === "Polygon" ||
+              feature.geometry?.type === "MultiPolygon"
+          )
+        );
+      } else if (
+        geoJsonData.type === "Polygon" ||
+        geoJsonData.type === "MultiPolygon"
+      ) {
+        features.push({
+          type: "Feature",
+          geometry: geoJsonData as GeoJSON.Polygon | GeoJSON.MultiPolygon,
+          properties: {},
+        });
+      }
+
+      if (features.length === 0) {
+        setError(
+          "file-format-invalid",
+          "No valid Polygon or MultiPolygon features found"
+        );
+        return;
+      }
+
+      const newArea: AOI = {
+        name: generateRandomName(),
+        geometry: {
+          type: "FeatureCollection",
+          features: features,
+        },
+      };
+      get().addCustomArea(newArea);
 
       // Reset state on successful upload
       get().clearFileState();
       set({ dialogVisible: false });
-    } catch {
-      setError("failed-to-send", "Failed to upload file. Please try again.");
+    } catch (error) {
+      console.error("Upload error:", error);
+      setError("failed-to-send", "Failed to process file. Please try again.");
     } finally {
       set({ isUploading: false });
     }
@@ -145,4 +206,4 @@ export const createUploadAreaSlice: StateCreator<
       isUploading: false,
     });
   },
-}); 
+});
