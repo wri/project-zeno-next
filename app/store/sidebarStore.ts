@@ -22,7 +22,7 @@ interface SidebarState {
   // Function to toggle the sidebar visibility
   toggleSidebar: () => void;
   fetchApiStatus: () => Promise<void>;
-  apiStatus: "idle" | "OK" | "error";
+  apiStatus: "Idle" | "OK" | "Error";
 }
 
 const useSidebarStore = create<SidebarState>((set) => ({
@@ -33,7 +33,7 @@ const useSidebarStore = create<SidebarState>((set) => ({
     previousWeek: [],
     older: [],
   },
-  apiStatus: "idle",
+  apiStatus: "Idle",
   toggleSidebar: () =>
     set((state) => ({ sideBarVisible: !state.sideBarVisible })),
 
@@ -64,14 +64,14 @@ const useSidebarStore = create<SidebarState>((set) => ({
 
   fetchApiStatus: async () => {
     try {
-      const response = await fetch("https://api.zeno-staging.ds.io/docs"); // shouldn't hard code this
+      const response = await fetch("https://api.zeno-staging.ds.io/docss"); // shouldn't hard code this
       if (response.status === 200) {
         set({ apiStatus: "OK" });
       } else {
-        set({ apiStatus: "error" });
+        set({ apiStatus: "Error" });
       }
     } catch {
-      set({ apiStatus: "error" });
+      set({ apiStatus: "Error" });
     }
   },
 }));
