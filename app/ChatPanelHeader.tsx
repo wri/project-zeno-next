@@ -230,7 +230,7 @@ function ThreadRenameDialog(props: ThreadRenameDialogProps) {
               <Dialog.ActionTrigger asChild>
                 <Button variant="outline">Cancel</Button>
               </Dialog.ActionTrigger>
-              <Button colorPalette="blue" disabled={!threadName}>
+              <Button colorPalette="blue" disabled={!threadName} type="submit">
                 Save
               </Button>
             </Dialog.Footer>
