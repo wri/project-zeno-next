@@ -9,7 +9,7 @@ function CustomAreasLayer() {
     return null;
   }
 
-  const allFeatures = customAreas.flatMap((collection) => collection.features);
+  const allFeatures = customAreas.flatMap((aoi) => aoi.geometry.features);
 
   const customAreasCollection: FeatureCollection = {
     type: "FeatureCollection",

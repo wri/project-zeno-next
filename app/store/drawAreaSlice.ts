@@ -2,6 +2,8 @@ import { TerraDraw, TerraDrawPolygonMode } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { StateCreator } from "zustand";
 import type { Map } from "maplibre-gl";
+import { AOI } from "../types/chat";
+import { generateRandomName } from "../utils/generateRandonName";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -24,7 +26,7 @@ export interface DrawAreaSlice {
 
 // Combined state interface for accessing other slice methods
 interface DrawAreaWithMapState extends DrawAreaSlice {
-  addCustomArea: (area: GeoJSON.FeatureCollection) => void;
+  addCustomArea: (area: AOI) => void;
 }
 
 // This ensures TerraDraw is initialized before use
@@ -95,9 +97,14 @@ export const createDrawAreaSlice: StateCreator<
       properties: {},
     }));
 
-    const newArea: GeoJSON.FeatureCollection = {
+    const featureCollection: GeoJSON.FeatureCollection = {
       type: "FeatureCollection",
       features,
+    };
+
+    const newArea: AOI = {
+      name: generateRandomName(),
+      geometry: featureCollection,
     };
 
     get().addCustomArea(newArea);

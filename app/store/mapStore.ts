@@ -5,6 +5,7 @@ import center from "@turf/center";
 import { LayerId } from "../types/map";
 import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { StateCreator } from "zustand";
+import { AOI } from "../types/chat";
 
 interface GeoJsonFeature {
   id: string;
@@ -32,8 +33,8 @@ interface MapSlice {
     maxRetries?: number
   ) => void;
 
-  customAreas: GeoJSON.FeatureCollection[];
-  addCustomArea: (area: GeoJSON.FeatureCollection) => void;
+  customAreas: AOI[];
+  addCustomArea: (area: AOI) => void;
 }
 
 export type MapState = MapSlice & DrawAreaSlice;
