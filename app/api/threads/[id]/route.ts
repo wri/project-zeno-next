@@ -3,11 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import JSON5 from "json5";
 import { parseStreamMessage } from "../../chat/route";
 import { readDataStream } from "../../chat/read-data-stream";
-import { LangChainResponse } from "@/app/types/chat";
+import { LangChainResponse, StreamMessage } from "@/app/types/chat";
 
 const TOKEN_NAME = "auth_token";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const { id } = await params;
     const cookieStore = await cookies();
@@ -17,7 +20,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Create AbortController for timeout and cleanup
     const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log(
+        "SERVER TIMEOUT: Request exceeded 60 seconds - aborting stream"
+      );
+      abortController.abort();
+    }, 60000); // 60 second timeout
 
     const response = await fetch(
       `https://api.zeno-staging.ds.io/api/threads/${id}`,
@@ -31,11 +41,16 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     );
 
     if (!response.ok) {
-      throw new Error(`External API responded with status: ${response.status}`);
+      clearTimeout(timeoutId);
+      return NextResponse.json(
+        { error: "External API error" },
+        { status: response.status }
+      );
     }
 
     // Check if the response is streaming
     if (!response.body) {
+      clearTimeout(timeoutId);
       return NextResponse.json(
         { error: "No response body received" },
         { status: 500 }
@@ -47,6 +62,54 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       async start(controller) {
         const encoder = new TextEncoder();
         const reader = response.body!.getReader();
+
+        // Set up cleanup for abort signal
+        const onAbort = () => {
+          clearTimeout(timeoutId);
+
+          console.log(
+            "ABORT TRIGGERED: Stream aborted - cleaning up and sending timeout message"
+          );
+
+          // Send timeout message to frontend before closing.
+          try {
+            const timeoutMessage: StreamMessage = {
+              type: "error",
+              name: "timeout",
+              content:
+                "Request timed out. Try again later.",
+              timestamp: Date.now(),
+            };
+
+            controller.enqueue(
+              encoder.encode(JSON.stringify(timeoutMessage) + "\n")
+            );
+            console.log("TIMEOUT MESSAGE SENT to frontend");
+          } catch (error) {
+            console.error("Failed to send timeout message:", error);
+          }
+
+          reader.cancel().catch(console.error);
+
+          // Small delay to ensure message is sent before closing
+          setTimeout(() => {
+            try {
+              controller.close();
+              console.log("CONTROLLER CLOSED after timeout");
+            } catch {
+              console.log("Controller already closed");
+            }
+          }, 100);
+        };
+
+        if (abortController.signal.aborted) {
+          onAbort();
+          return;
+        }
+
+        abortController.signal.addEventListener("abort", onAbort, {
+          once: true,
+        });
 
         try {
           await readDataStream({
@@ -60,37 +123,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
                 const message = langChainMessage.update;
                 const updateObject = JSON5.parse(message);
 
-                if (messageType === "human") {
-                  controller.enqueue(
-                    encoder.encode(
-                      JSON.stringify({
-                        type: "human",
-                        text: updateObject.messages[0].kwargs.content,
-                        timestamp: Date.now(),
-                      }) + "\n"
-                    )
-                  );
-                  return;
-                }
-
                 // Parse LangChain response and extract useful information
                 const streamMessage = parseStreamMessage(
                   updateObject,
-                  messageType as "agent" | "tools"
+                  messageType as "agent" | "tools" | "human"
                 );
 
-                // Send simplified message to client if we have something useful
-                if (streamMessage) {
-                  controller.enqueue(
-                    encoder.encode(JSON.stringify(streamMessage) + "\n")
-                  );
-                } else {
+                if (!streamMessage) {
                   // Log unhandled content for debugging
                   console.log(
                     "Unhandled message type:",
                     JSON.stringify(updateObject)
                   );
+                  return;
                 }
+
+                // Send simplified message to client if we have something useful
+                controller.enqueue(
+                  encoder.encode(JSON.stringify(streamMessage) + "\n")
+                );
               } catch (err) {
                 console.error("Failed to parse line", data, err);
               }
@@ -101,17 +152,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           if (!abortController.signal.aborted) {
             controller.error(error);
           }
-        } finally {
-          if (!controller.desiredSize || controller.desiredSize === 0) {
-            // Controller already closed
-            return;
-          }
-          try {
-            controller.close();
-          } catch {
-            // Controller might already be closed, ignore the error
-            console.log("Controller already closed");
-          }
+        }
+
+        try {
+          controller.close();
+        } catch {
+          // Controller might already be closed, ignore the error
+          console.log("Controller already closed");
         }
       },
     });
@@ -124,5 +171,83 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     });
   } catch (error) {
     console.log("error", error);
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = await params;
+    const cookieStore = await cookies();
+    const token = cookieStore.get(TOKEN_NAME)?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    const response = await fetch(
+      `https://api.zeno-staging.ds.io/api/threads/${id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`External API responded with status: ${response.status}`);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error in PATCH request:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = await params;
+    const cookieStore = await cookies();
+    const token = cookieStore.get(TOKEN_NAME)?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const response = await fetch(
+      `https://api.zeno-staging.ds.io/api/threads/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`External API responded with status: ${response.status}`);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error in DELETE request:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
