@@ -170,10 +170,6 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
-        <Status.Root colorPalette={apiStatus === "OK" ? "green" : "red"} m="4">
-          <Status.Indicator />
-          API Status: {apiStatus}
-        </Status.Root>
         <Separator my="4" />
         {hasOlderThreads && (
           <Stack gap="1" flex="1" mt="2">
@@ -191,6 +187,10 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
+        <Status.Root colorPalette={apiStatus === "OK" ? "green" : "red"} m="4">
+          <Status.Indicator />
+          API Status: {apiStatus}
+        </Status.Root>
         <ChLink
           href="#"
           _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
