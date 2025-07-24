@@ -64,7 +64,7 @@ const useSidebarStore = create<SidebarState>((set) => ({
 
   fetchApiStatus: async () => {
     try {
-      const response = await fetch("https://api.zeno-staging.ds.io/docss"); // shouldn't hard code this
+      const response = await fetch("https://api.zeno-staging.ds.io/docs"); // shouldn't hard code this
       if (response.status === 200) {
         set({ apiStatus: "OK" });
       } else {
