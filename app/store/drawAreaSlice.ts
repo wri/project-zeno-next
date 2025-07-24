@@ -4,6 +4,7 @@ import { StateCreator } from "zustand";
 import type { Map } from "maplibre-gl";
 import { AOI } from "../types/chat";
 import { generateRandomName } from "../utils/generateRandonName";
+import type { MapState } from "./mapStore";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -24,13 +25,8 @@ export interface DrawAreaSlice {
   initializeTerraDraw: (map: Map) => void;
 }
 
-// Combined state interface for accessing other slice methods
-interface DrawAreaWithMapState extends DrawAreaSlice {
-  addCustomArea: (area: AOI) => void;
-}
-
 // This ensures TerraDraw is initialized before use
-function getTerraDraw(get: () => DrawAreaWithMapState) {
+function getTerraDraw(get: () => MapState) {
   const { terraDraw } = get();
   if (!terraDraw) {
     throw new Error("TerraDraw not initialized");
@@ -39,7 +35,7 @@ function getTerraDraw(get: () => DrawAreaWithMapState) {
 }
 
 export const createDrawAreaSlice: StateCreator<
-  DrawAreaWithMapState,
+  MapState,
   [],
   [],
   DrawAreaSlice
