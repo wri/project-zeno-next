@@ -9,9 +9,11 @@ function CustomAreasLayer() {
     return null;
   }
 
+  const allFeatures = customAreas.flatMap((collection) => collection.features);
+
   const customAreasCollection: FeatureCollection = {
     type: "FeatureCollection",
-    features: customAreas,
+    features: allFeatures,
   };
 
   return (

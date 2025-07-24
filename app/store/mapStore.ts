@@ -32,8 +32,8 @@ interface MapSlice {
     maxRetries?: number
   ) => void;
 
-  customAreas: GeoJSON.Feature[];
-  addCustomArea: (area: GeoJSON.Feature) => void;
+  customAreas: GeoJSON.FeatureCollection[];
+  addCustomArea: (area: GeoJSON.FeatureCollection) => void;
 }
 
 export type MapState = MapSlice & DrawAreaSlice;

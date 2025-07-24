@@ -24,7 +24,7 @@ export interface DrawAreaSlice {
 
 // Combined state interface for accessing other slice methods
 interface DrawAreaWithMapState extends DrawAreaSlice {
-  addCustomArea: (area: GeoJSON.Feature) => void;
+  addCustomArea: (area: GeoJSON.FeatureCollection) => void;
 }
 
 // This ensures TerraDraw is initialized before use
@@ -85,17 +85,19 @@ export const createDrawAreaSlice: StateCreator<
       return;
     }
 
-    const coordinates = polygons.map((polygon) => polygon.geometry.coordinates);
-    const firstPolygonId = polygons[0].id || "polygon-1";
-
-    const newArea: GeoJSON.Feature = {
+    const features: GeoJSON.Feature[] = polygons.map((polygon) => ({
       type: "Feature",
-      id: firstPolygonId,
+      id: polygon.id,
       geometry: {
-        type: "MultiPolygon",
-        coordinates,
+        type: "Polygon",
+        coordinates: polygon.geometry.coordinates,
       },
       properties: {},
+    }));
+
+    const newArea: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features,
     };
 
     get().addCustomArea(newArea);
