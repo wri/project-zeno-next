@@ -38,6 +38,7 @@ interface MapSlice {
   ) => void;
   selectionMode: SelectionMode | undefined;
   setSelectionMode: (mode: SelectionMode | undefined) => void;
+  clearSelectionMode: () => void;
   customAreas: GeoJSON.Feature[];
   addCustomArea: (area: GeoJSON.Feature) => void;
 }
@@ -58,17 +59,18 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   addCustomArea: (area) => {
     set((state) => ({
       customAreas: [...state.customAreas, area],
-      selectionMode: undefined,
     }));
+    get().clearSelectionMode();
   },
 
-  reset: () =>
+  reset: () => {
     set({
       mapRef: null,
       geoJsonFeatures: [],
       selectAreaLayer: null,
-      selectionMode: undefined,
-    }),
+    });
+    get().clearSelectionMode();
+  },
 
   setMapRef: (mapRef) => {
     console.log("Setting map ref:", !!mapRef);
@@ -90,6 +92,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
         feature,
       ],
     }));
+    get().clearSelectionMode();
   },
 
   removeGeoJsonFeature: (id) => {
@@ -100,6 +103,10 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   clearGeoJsonFeatures: () => {
     set({ geoJsonFeatures: [] });
+  },
+
+  clearSelectionMode: () => {
+    set({ selectionMode: undefined });
   },
 
   flyToGeoJson: (geoJson) => {

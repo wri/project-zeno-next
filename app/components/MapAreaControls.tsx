@@ -154,10 +154,10 @@ function MapAreaControls() {
 export default MapAreaControls;
 
 function DrawAreaControls() {
-  const { cancelDrawing, confirmDrawing } = useMapStore();
+  const { cancelDrawing, confirmDrawing, selectionMode } = useMapStore();
 
   return (
-    <Wrapper>
+    <Wrapper borderColor={selectionMode ? "lime.400" : "transparent" }>
       <ButtonGroup size="sm" variant="subtle" pointerEvents="initial">
         <Tooltip content="Cancel drawing">
           <IconButton
@@ -180,6 +180,19 @@ function DrawAreaControls() {
           </IconButton>
         </Tooltip>
       </ButtonGroup>
+      {selectionMode && (
+        <Box
+          px={3}
+          py={1}
+          bg="bg"
+          borderRadius="md"
+          boxShadow="sm"
+          color="blackAlpha.700"
+        >
+          {selectionMode.type}{" "}
+          {selectionMode.type === "Selecting" ? selectionMode.name : "AOI"}
+        </Box>
+      )}
     </Wrapper>
   );
 }
