@@ -23,6 +23,7 @@ export interface DrawAreaSlice {
   confirmDrawing: () => void;
   cancelDrawing: () => void;
   initializeTerraDraw: (map: Map) => void;
+  endDrawing: () => void;
 }
 
 // This ensures TerraDraw is initialized before use
@@ -60,14 +61,20 @@ export const createDrawAreaSlice: StateCreator<
     set({ isDrawingMode: true });
   },
 
+  endDrawing: () => {
+    const terraDraw = getTerraDraw(get);
+    terraDraw.stop();
+    set({ isDrawingMode: false });
+    get().clearSelectionMode();
+  },
+
   confirmDrawing: () => {
     const terraDraw = getTerraDraw(get);
     const drawnFeatures = terraDraw.getSnapshot();
 
     // No polygons drawn
     if (drawnFeatures.length === 0) {
-      terraDraw.stop();
-      set({ isDrawingMode: false });
+      get().endDrawing();
       return;
     }
 
@@ -78,8 +85,7 @@ export const createDrawAreaSlice: StateCreator<
 
     // Safeguard against no valid polygons found
     if (polygons.length === 0) {
-      terraDraw.stop();
-      set({ isDrawingMode: false });
+      get().endDrawing();
       return;
     }
 
@@ -105,12 +111,10 @@ export const createDrawAreaSlice: StateCreator<
 
     get().addCustomArea(newArea);
 
-    terraDraw.stop();
-    set({ isDrawingMode: false });
+    get().endDrawing();
   },
 
   cancelDrawing: () => {
-    getTerraDraw(get).stop();
-    set({ isDrawingMode: false });
+    get().endDrawing();
   },
 });

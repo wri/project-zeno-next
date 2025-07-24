@@ -149,7 +149,7 @@ function Map() {
           position="bottom-left"
         />
         <ScaleControl />
-        <AbsoluteCenter fontSize="sm">
+        <AbsoluteCenter fontSize="sm" opacity={0.375}>
           <PlusIcon />
         </AbsoluteCenter>
         <NavigationControl showCompass={false} position="bottom-left" />

@@ -14,6 +14,11 @@ interface GeoJsonFeature {
   data: GeoJSON.FeatureCollection | GeoJSON.Feature;
 }
 
+interface SelectionMode {
+  type: "Selecting" | "Drawing" | "Uploading" | undefined;
+  name?: string;
+}
+
 interface MapSlice {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
@@ -36,6 +41,10 @@ interface MapSlice {
 
   customAreas: AOI[];
   addCustomArea: (area: AOI) => void;
+
+  selectionMode: SelectionMode | undefined;
+  setSelectionMode: (mode: SelectionMode | undefined) => void;
+  clearSelectionMode: () => void;
 }
 
 export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice;
@@ -49,19 +58,23 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   selectAreaLayer: null,
   selectedAreas: [],
   customAreas: [],
+  selectionMode: undefined,
 
   addCustomArea: (area) => {
     set((state) => ({
       customAreas: [...state.customAreas, area],
     }));
+    get().clearSelectionMode();
   },
 
-  reset: () =>
+  reset: () => {
     set({
       mapRef: null,
       geoJsonFeatures: [],
       selectAreaLayer: null,
-    }),
+    });
+    get().clearSelectionMode();
+  },
 
   setMapRef: (mapRef) => {
     console.log("Setting map ref:", !!mapRef);
@@ -72,13 +85,19 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     set({ selectAreaLayer: layerId });
   },
 
+  setSelectionMode: (selectionMode) => {
+    set({ selectionMode: selectionMode });
+  },
+
   addGeoJsonFeature: (feature) => {
     set((state) => ({
       geoJsonFeatures: [
         ...state.geoJsonFeatures.filter((f) => f.id !== feature.id),
         feature,
       ],
+      selectAreaLayer: null,
     }));
+    get().clearSelectionMode();
   },
 
   removeGeoJsonFeature: (id) => {
@@ -89,6 +108,10 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   clearGeoJsonFeatures: () => {
     set({ geoJsonFeatures: [] });
+  },
+
+  clearSelectionMode: () => {
+    set({ selectionMode: undefined });
   },
 
   flyToGeoJson: (geoJson) => {
