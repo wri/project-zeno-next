@@ -3,7 +3,7 @@ import {
   ACCEPTED_FILE_TYPES,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_MB,
-} from "../constants/upload";
+} from "../constants/custom-areas";
 import type { MapState } from "./mapStore";
 import { generateRandomName } from "../utils/generateRandomName";
 import { AOI } from "../types/chat";
@@ -47,6 +47,7 @@ export const createUploadAreaSlice: StateCreator<
 
   toggleUploadAreaDialog: () =>
     set((state) => {
+      get().clearValidationError?.();
       if (state.dialogVisible) {
         get().clearFileState();
       }

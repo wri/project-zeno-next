@@ -81,6 +81,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   },
 
   setSelectAreaLayer: (layerId) => {
+    get().clearValidationError?.();
     set({ selectAreaLayer: layerId });
   },
 

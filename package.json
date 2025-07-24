@@ -15,6 +15,7 @@
     "@fontsource/ibm-plex-mono": "^5.2.5",
     "@fontsource/ibm-plex-sans": "^5.2.5",
     "@phosphor-icons/react": "^2.1.9",
+    "@turf/area": "^7.2.0",
     "@turf/bbox": "^7.2.0",
     "@turf/center": "^7.2.0",
     "@turf/helpers": "^7.2.0",
