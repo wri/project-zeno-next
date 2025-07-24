@@ -50,28 +50,29 @@ export default function Home() {
           </Heading>
         </Flex>
         <Flex gap="6">
-          <Button variant="ghost" color="bg">
+          <Button variant="solid" colorPalette="blue" size="sm">
             <LifebuoyIcon />
-            <Heading size="md">Help</Heading>
+            Help
           </Button>
 
           <Progress.Root
             size="xs"
-            gap="20px"
             min={0}
             max={100}
             value={40}
-            colorPalette="red"
+            variant="subtle"
+            colorPalette="blue"
+            // className="dark"
           >
-            <Progress.Label>40 / 100 Prompts</Progress.Label>
+            <Progress.Label mb="1">40 / 100 Prompts</Progress.Label>
             <Progress.Track>
               <Progress.Range />
             </Progress.Track>
           </Progress.Root>
 
-          <Button variant="ghost" color="bg">
+          <Button variant="solid" colorPalette="blue" size="sm">
             <UserIcon />
-            <Heading size="md">User Name</Heading>
+            User Name
           </Button>
         </Flex>
       </Flex>
