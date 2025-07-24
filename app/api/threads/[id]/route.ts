@@ -76,8 +76,7 @@ export async function GET(
             const timeoutMessage: StreamMessage = {
               type: "error",
               name: "timeout",
-              content:
-                "Request timed out. Try again later.",
+              content: "Request timed out. Try again later.",
               timestamp: Date.now(),
             };
 
@@ -119,15 +118,25 @@ export async function GET(
               try {
                 const langChainMessage: LangChainResponse = JSON.parse(data);
 
-                const messageType = langChainMessage.node;
-                const message = langChainMessage.update;
-                const updateObject = JSON5.parse(message);
+                const updateObject = JSON5.parse(langChainMessage.update);
+                const type = updateObject.messages[0]?.kwargs.type as
+                  | "ai"
+                  | "tool"
+                  | "human"
+                  | null;
+                // Remap messages.
+                const messageType = type
+                  ? ({
+                      ai: "agent",
+                      tool: "tools",
+                      human: "human",
+                    }[type] as "agent" | "tools" | "human")
+                  : null;
 
                 // Parse LangChain response and extract useful information
-                const streamMessage = parseStreamMessage(
-                  updateObject,
-                  messageType as "agent" | "tools" | "human"
-                );
+                const streamMessage = messageType
+                  ? parseStreamMessage(updateObject, messageType)
+                  : null;
 
                 if (!streamMessage) {
                   // Log unhandled content for debugging

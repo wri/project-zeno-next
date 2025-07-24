@@ -12,6 +12,7 @@ import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
+import useSidebarStore from "./sidebarStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -217,6 +218,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
+      useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
     }
   },
 

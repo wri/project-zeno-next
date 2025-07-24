@@ -29,7 +29,11 @@ interface SidebarState {
   toggleSidebar: () => void;
 }
 
-const computeThreadGroups = (threads: ThreadEntry[]): ThreadGroups => {
+const computeThreadGroups = (data: ThreadEntry[]): ThreadGroups => {
+  const threads = data.sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
   // Group threads by date
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
