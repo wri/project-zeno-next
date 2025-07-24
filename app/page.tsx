@@ -70,9 +70,11 @@ export default function Home() {
             </Progress.Track>
           </Progress.Root>
 
-          <Button variant="solid" colorPalette="blue" size="sm">
-            <UserIcon />
-            User Name
+          <Button asChild variant="solid" colorPalette="blue" size="sm">
+            <Flex>
+              <UserIcon />
+              <a href="#">User Name</a>
+            </Flex>
           </Button>
         </Flex>
       </Flex>
