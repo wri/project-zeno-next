@@ -91,6 +91,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
         ...state.geoJsonFeatures.filter((f) => f.id !== feature.id),
         feature,
       ],
+      selectAreaLayer: null,
     }));
     get().clearSelectionMode();
   },
