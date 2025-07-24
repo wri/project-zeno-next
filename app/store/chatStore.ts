@@ -12,17 +12,16 @@ import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
+import useSidebarStore from "./sidebarStore";
 
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
-  currentThreadName: string;
 }
 
 interface ChatActions {
   reset: () => void;
-  setThreadName: (name: string) => void;
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
   sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
   setLoading: (loading: boolean) => void;
@@ -41,8 +40,7 @@ const initialState: ChatState = {
     },
   ],
   isLoading: false,
-  currentThreadId: null,
-  currentThreadName: "New Conversation",
+  currentThreadId: null
 };
 
 // Helper function to process stream messages and add them to chat
@@ -100,12 +98,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   ...initialState,
 
   reset: () => set(initialState),
-
-  setThreadName: (name: string) => {
-    set(() => ({
-      currentThreadName: name,
-    }));
-  },
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
@@ -226,6 +218,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
+      useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
     }
   },
 
@@ -235,7 +228,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const { setLoading, addMessage } = get();
 
     setLoading(true);
-    set({ currentThreadName: "Loading Thread..." });
     // Set up abort controller for client-side timeout
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => {
@@ -302,7 +294,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
-      set({ currentThreadName: threadId });
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
       setLoading(false);
