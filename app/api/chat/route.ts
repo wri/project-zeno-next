@@ -13,7 +13,7 @@ import { readDataStream } from "./read-data-stream";
 // messageType is either "agent" or "tools"
 export function parseStreamMessage(
   langChainMessage: LangChainUpdate,
-  messageType: "agent" | "tools"
+  messageType: "agent" | "tools" | "human"
 ): StreamMessage | null {
   // Validate input structure
   if (!langChainMessage?.messages[0]?.kwargs) {
@@ -23,7 +23,13 @@ export function parseStreamMessage(
   const kwargs = langChainMessage.messages[0].kwargs;
   const content = kwargs.content;
 
-  if (messageType === "tools") {
+  if (messageType === "human") {
+    return {
+      type: "human",
+      text: content as string,
+      timestamp: Date.now(),
+    };
+  } else if (messageType === "tools") {
     // Check if this is an error from a tool
     if (
       kwargs.status === "error" ||

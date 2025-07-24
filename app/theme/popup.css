@@ -17,3 +17,7 @@
 .maplibregl-popup-tip {
   display: none;
 }
+
+.select-area-popup * {
+  pointer-events: none !important;
+}

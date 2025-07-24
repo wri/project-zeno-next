@@ -148,7 +148,7 @@ export function Sidebar() {
                 href={`/threads/${thread.id}`}
                 isActive={currentThreadId === thread.id}
               >
-                {thread.id}
+                {thread.name}
               </ThreadLink>
             ))}
           </Stack>
@@ -165,7 +165,7 @@ export function Sidebar() {
                 href={`/threads/${thread.id}`}
                 isActive={currentThreadId === thread.id}
               >
-                {thread.id}
+                {thread.name}
               </ThreadLink>
             ))}
           </Stack>
@@ -182,7 +182,7 @@ export function Sidebar() {
                 href={`/threads/${thread.id}`}
                 isActive={currentThreadId === thread.id}
               >
-                {thread.id}
+                {thread.name}
               </ThreadLink>
             ))}
           </Stack>

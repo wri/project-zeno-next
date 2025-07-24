@@ -1,9 +1,12 @@
-import { create } from "zustand";
+import { StateCreator } from "zustand";
 import {
   ACCEPTED_FILE_TYPES,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_MB,
 } from "../constants/upload";
+import type { MapState } from "./mapStore";
+import { generateRandomName } from "../utils/generateRandomName";
+import { AOI } from "../types/chat";
 
 type UploadErrorType =
   | "none"
@@ -12,7 +15,7 @@ type UploadErrorType =
   | "file-format-invalid"
   | "failed-to-send";
 
-interface UploadStoreState {
+export interface UploadAreaSlice {
   dialogVisible: boolean;
   toggleUploadAreaDialog: () => void;
   isUploading: boolean;
@@ -28,7 +31,12 @@ interface UploadStoreState {
   clearFileState: () => void;
 }
 
-const useUploadStore = create<UploadStoreState>((set, get) => ({
+export const createUploadAreaSlice: StateCreator<
+  MapState,
+  [],
+  [],
+  UploadAreaSlice
+> = (set, get) => ({
   dialogVisible: false,
   isUploading: false,
   isFileSelected: false,
@@ -36,6 +44,7 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
   errorMessage: "",
   filename: "",
   selectedFile: null,
+
   toggleUploadAreaDialog: () =>
     set((state) => {
       if (state.dialogVisible) {
@@ -43,9 +52,12 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
       }
       return { dialogVisible: !state.dialogVisible };
     }),
+
   setError: (errorType: UploadErrorType, message = "") =>
     set({ errorType, errorMessage: message }),
+
   clearError: () => set({ errorType: "none", errorMessage: "" }),
+
   handleFile: (file: File) => {
     const { clearError } = get();
 
@@ -111,19 +123,79 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
     set({ isUploading: true });
 
     try {
-      // TODO: Implement actual file upload logic here
-      // For now, simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const fileContent = await selectedFile.text();
+      let geoJsonData: GeoJSON.GeoJSON;
+
+      try {
+        geoJsonData = JSON.parse(fileContent);
+      } catch {
+        setError("file-format-invalid", "Invalid JSON format");
+        return;
+      }
+
+      if (!geoJsonData || typeof geoJsonData !== "object") {
+        setError("file-format-invalid", "Invalid GeoJSON format");
+        return;
+      }
+
+      const features: GeoJSON.Feature[] = [];
+
+      if (geoJsonData.type === "Feature") {
+        const feature = geoJsonData as GeoJSON.Feature;
+        if (
+          feature.geometry?.type === "Polygon" ||
+          feature.geometry?.type === "MultiPolygon"
+        ) {
+          features.push(feature);
+        }
+      } else if (geoJsonData.type === "FeatureCollection") {
+        const featureCollection = geoJsonData as GeoJSON.FeatureCollection;
+        features.push(
+          ...featureCollection.features.filter(
+            (feature) =>
+              feature.geometry?.type === "Polygon" ||
+              feature.geometry?.type === "MultiPolygon"
+          )
+        );
+      } else if (
+        geoJsonData.type === "Polygon" ||
+        geoJsonData.type === "MultiPolygon"
+      ) {
+        features.push({
+          type: "Feature",
+          geometry: geoJsonData as GeoJSON.Polygon | GeoJSON.MultiPolygon,
+          properties: {},
+        });
+      }
+
+      if (features.length === 0) {
+        setError(
+          "file-format-invalid",
+          "No valid Polygon or MultiPolygon features found"
+        );
+        return;
+      }
+
+      const newArea: AOI = {
+        name: generateRandomName(),
+        geometry: {
+          type: "FeatureCollection",
+          features: features,
+        },
+      };
+      get().addCustomArea(newArea);
 
       // Reset state on successful upload
       get().clearFileState();
       set({ dialogVisible: false });
-    } catch {
-      setError("failed-to-send", "Failed to upload file. Please try again.");
+    } catch (error) {
+      console.error("Upload error:", error);
+      setError("failed-to-send", "Failed to process file. Please try again.");
     } finally {
       set({ isUploading: false });
     }
   },
+
   clearFileState: () => {
     set({
       selectedFile: null,
@@ -134,6 +206,4 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
       isUploading: false,
     });
   },
-}));
-
-export default useUploadStore;
+});

@@ -16,13 +16,21 @@ import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import SelectAreaLayer from "./SelectAreaLayer";
 import useContextStore from "@/app/store/contextStore";
+import CustomAreasLayer from "./map/layers/CustomAreasLayer";
+import MapFeature from "./MapFeature";
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const { geoJsonFeatures, setMapRef, selectAreaLayer } = useMapStore();
+  const { geoJsonFeatures, setMapRef, selectAreaLayer, initializeTerraDraw } =
+    useMapStore();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
+
+  // Color mode values - moved outside callback
+  const markerBg =
+    useColorModeValue("whiteAlpha.900", "blackAlpha.900") || "white";
+  const markerBorderColor = useColorModeValue("gray.200", "gray.600") || "gray";
 
   const onMapLoad = () => {
     if (mapRef.current) {
@@ -30,6 +38,8 @@ function Map() {
       setMapCenter([map.getCenter().lng, map.getCenter().lat]);
       // Set the map ref in the store for other components to use
       setMapRef(mapRef.current);
+
+      initializeTerraDraw(map);
     }
   };
 
@@ -104,31 +114,15 @@ function Map() {
         </Source>
 
         {/* Render GeoJSON features */}
-        {geoJsonFeatures.map((feature) => {
-          const fillColor = areas.find((a) => a.content === feature.id)
-            ? "#3b82f6"
-            : "#555";
-
-          return (
-            <Source
-              key={feature.id}
-              id={`geojson-source-${feature.id}`}
-              type="geojson"
-              data={feature.data}
-            >
-              {/* Fill layer for polygons */}
-              <Layer
-                id={`geojson-fill-${feature.id}`}
-                type="fill"
-                paint={{
-                  "fill-color": fillColor,
-                  "fill-opacity": 0.3,
-                }}
-                filter={["==", ["geometry-type"], "Polygon"]}
-              />
-            </Source>
-          );
-        })}
+        {geoJsonFeatures.map((feature) => (
+          <MapFeature
+            key={feature.id}
+            feature={feature}
+            areas={areas}
+            markerBg={markerBg}
+            markerBorderColor={markerBorderColor}
+          />
+        ))}
 
         {selectAreaLayer && (
           <SelectAreaLayer
@@ -137,6 +131,7 @@ function Map() {
             beforeId={undefined}
           />
         )}
+        <CustomAreasLayer />
         <MapAreaControls />
 
         <AttributionControl
@@ -144,7 +139,7 @@ function Map() {
           position="bottom-left"
         />
         <ScaleControl />
-        <AbsoluteCenter fontSize="sm">
+        <AbsoluteCenter fontSize="sm" opacity={0.375}>
           <PlusIcon />
         </AbsoluteCenter>
         <NavigationControl showCompass={false} position="bottom-left" />

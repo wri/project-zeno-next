@@ -1,17 +1,18 @@
-import fs from "fs";
-import path from "path";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import JSON5 from "json5";
 import { parseStreamMessage } from "../../chat/route";
+import { readDataStream } from "../../chat/read-data-stream";
+import { LangChainResponse, StreamMessage } from "@/app/types/chat";
 
 const TOKEN_NAME = "auth_token";
 
-const fauxData = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), "single-thread-stream.json"), "utf-8")
-);
-
-export async function GET() {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
+    const { id } = await params;
     const cookieStore = await cookies();
     const token = cookieStore.get(TOKEN_NAME)?.value;
 
@@ -19,50 +20,155 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Create AbortController for timeout and cleanup
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log(
+        "SERVER TIMEOUT: Request exceeded 60 seconds - aborting stream"
+      );
+      abortController.abort();
+    }, 60000); // 60 second timeout
+
+    const response = await fetch(
+      `https://api.zeno-staging.ds.io/api/threads/${id}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        signal: abortController.signal,
+      }
+    );
+
+    if (!response.ok) {
+      clearTimeout(timeoutId);
+      return NextResponse.json(
+        { error: "External API error" },
+        { status: response.status }
+      );
+    }
+
+    // Check if the response is streaming
+    if (!response.body) {
+      clearTimeout(timeoutId);
+      return NextResponse.json(
+        { error: "No response body received" },
+        { status: 500 }
+      );
+    }
+
     // Create a streaming response that parses LangChain and sends simplified messages
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        for (const data of fauxData) {
-          const encoder = new TextEncoder();
+        const encoder = new TextEncoder();
+        const reader = response.body!.getReader();
 
-          const langChainMessage = data;
+        // Set up cleanup for abort signal
+        const onAbort = () => {
+          clearTimeout(timeoutId);
 
-          const messageType = langChainMessage.node;
-          const updateObject = langChainMessage.update;
-
-          if (messageType === "human") {
-            controller.enqueue(
-              encoder.encode(
-                JSON.stringify({
-                  type: "human",
-                  text: updateObject.messages[0].kwargs.content,
-                  timestamp: Date.now(),
-                }) + "\n"
-              )
-            );
-            continue;
-          }
-
-          // Parse LangChain response and extract useful information
-          const streamMessage = parseStreamMessage(
-            updateObject,
-            messageType as "agent" | "tools"
+          console.log(
+            "ABORT TRIGGERED: Stream aborted - cleaning up and sending timeout message"
           );
 
-          // Send simplified message to client if we have something useful
-          if (streamMessage) {
+          // Send timeout message to frontend before closing.
+          try {
+            const timeoutMessage: StreamMessage = {
+              type: "error",
+              name: "timeout",
+              content: "Request timed out. Try again later.",
+              timestamp: Date.now(),
+            };
+
             controller.enqueue(
-              encoder.encode(JSON.stringify(streamMessage) + "\n")
+              encoder.encode(JSON.stringify(timeoutMessage) + "\n")
             );
-          } else {
-            // Log unhandled content for debugging
-            console.log(
-              "Unhandled message type:",
-              JSON.stringify(updateObject)
-            );
+            console.log("TIMEOUT MESSAGE SENT to frontend");
+          } catch (error) {
+            console.error("Failed to send timeout message:", error);
+          }
+
+          reader.cancel().catch(console.error);
+
+          // Small delay to ensure message is sent before closing
+          setTimeout(() => {
+            try {
+              controller.close();
+              console.log("CONTROLLER CLOSED after timeout");
+            } catch {
+              console.log("Controller already closed");
+            }
+          }, 100);
+        };
+
+        if (abortController.signal.aborted) {
+          onAbort();
+          return;
+        }
+
+        abortController.signal.addEventListener("abort", onAbort, {
+          once: true,
+        });
+
+        try {
+          await readDataStream({
+            abortController,
+            reader,
+            onData: (data: string) => {
+              try {
+                const langChainMessage: LangChainResponse = JSON.parse(data);
+
+                const updateObject = JSON5.parse(langChainMessage.update);
+                const type = updateObject.messages[0]?.kwargs.type as
+                  | "ai"
+                  | "tool"
+                  | "human"
+                  | null;
+                // Remap messages.
+                const messageType = type
+                  ? ({
+                      ai: "agent",
+                      tool: "tools",
+                      human: "human",
+                    }[type] as "agent" | "tools" | "human")
+                  : null;
+
+                // Parse LangChain response and extract useful information
+                const streamMessage = messageType
+                  ? parseStreamMessage(updateObject, messageType)
+                  : null;
+
+                if (!streamMessage) {
+                  // Log unhandled content for debugging
+                  console.log(
+                    "Unhandled message type:",
+                    JSON.stringify(updateObject)
+                  );
+                  return;
+                }
+
+                // Send simplified message to client if we have something useful
+                controller.enqueue(
+                  encoder.encode(JSON.stringify(streamMessage) + "\n")
+                );
+              } catch (err) {
+                console.error("Failed to parse line", data, err);
+              }
+            },
+          });
+        } catch (error) {
+          console.error("Streaming error:", error);
+          if (!abortController.signal.aborted) {
+            controller.error(error);
           }
         }
-        controller.close();
+
+        try {
+          controller.close();
+        } catch {
+          // Controller might already be closed, ignore the error
+          console.log("Controller already closed");
+        }
       },
     });
 
@@ -74,5 +180,83 @@ export async function GET() {
     });
   } catch (error) {
     console.log("error", error);
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = await params;
+    const cookieStore = await cookies();
+    const token = cookieStore.get(TOKEN_NAME)?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    const response = await fetch(
+      `https://api.zeno-staging.ds.io/api/threads/${id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`External API responded with status: ${response.status}`);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error in PATCH request:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = await params;
+    const cookieStore = await cookies();
+    const token = cookieStore.get(TOKEN_NAME)?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const response = await fetch(
+      `https://api.zeno-staging.ds.io/api/threads/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`External API responded with status: ${response.status}`);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error in DELETE request:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

@@ -3,6 +3,10 @@ import { MapRef } from "react-map-gl/maplibre";
 import bbox from "@turf/bbox";
 import center from "@turf/center";
 import { LayerId } from "../types/map";
+import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
+import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
+import { StateCreator } from "zustand";
+import { AOI } from "../types/chat";
 
 interface GeoJsonFeature {
   id: string;
@@ -10,13 +14,15 @@ interface GeoJsonFeature {
   data: GeoJSON.FeatureCollection | GeoJSON.Feature;
 }
 
-interface MapState {
+interface SelectionMode {
+  type: "Selecting" | "Drawing" | "Uploading" | undefined;
+  name?: string;
+}
+
+interface MapSlice {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
-}
-
-interface MapActions {
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
@@ -32,18 +38,43 @@ interface MapActions {
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
     maxRetries?: number
   ) => void;
+
+  customAreas: AOI[];
+  addCustomArea: (area: AOI) => void;
+
+  selectionMode: SelectionMode | undefined;
+  setSelectionMode: (mode: SelectionMode | undefined) => void;
+  clearSelectionMode: () => void;
 }
 
-const initialState: MapState = {
+export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice;
+
+const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
+  set,
+  get
+) => ({
   mapRef: null,
   geoJsonFeatures: [],
   selectAreaLayer: null,
-};
+  selectedAreas: [],
+  customAreas: [],
+  selectionMode: undefined,
 
-const useMapStore = create<MapState & MapActions>((set, get) => ({
-  ...initialState,
+  addCustomArea: (area) => {
+    set((state) => ({
+      customAreas: [...state.customAreas, area],
+    }));
+    get().clearSelectionMode();
+  },
 
-  reset: () => set(initialState),
+  reset: () => {
+    set({
+      mapRef: null,
+      geoJsonFeatures: [],
+      selectAreaLayer: null,
+    });
+    get().clearSelectionMode();
+  },
 
   setMapRef: (mapRef) => {
     console.log("Setting map ref:", !!mapRef);
@@ -54,13 +85,19 @@ const useMapStore = create<MapState & MapActions>((set, get) => ({
     set({ selectAreaLayer: layerId });
   },
 
+  setSelectionMode: (selectionMode) => {
+    set({ selectionMode: selectionMode });
+  },
+
   addGeoJsonFeature: (feature) => {
     set((state) => ({
       geoJsonFeatures: [
         ...state.geoJsonFeatures.filter((f) => f.id !== feature.id),
         feature,
       ],
+      selectAreaLayer: null,
     }));
+    get().clearSelectionMode();
   },
 
   removeGeoJsonFeature: (id) => {
@@ -71,6 +108,10 @@ const useMapStore = create<MapState & MapActions>((set, get) => ({
 
   clearGeoJsonFeatures: () => {
     set({ geoJsonFeatures: [] });
+  },
+
+  clearSelectionMode: () => {
+    set({ selectionMode: undefined });
   },
 
   flyToGeoJson: (geoJson) => {
@@ -146,6 +187,12 @@ const useMapStore = create<MapState & MapActions>((set, get) => ({
       console.error("Error flying to GeoJSON center:", error);
     }
   },
+});
+
+const useMapStore = create<MapState>()((...a) => ({
+  ...createMapSlice(...a),
+  ...createDrawAreaSlice(...a),
+  ...createUploadAreaSlice(...a),
 }));
 
 export default useMapStore;
