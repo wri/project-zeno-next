@@ -1,9 +1,10 @@
-import { create } from "zustand";
+import { StateCreator } from "zustand";
 import {
   ACCEPTED_FILE_TYPES,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_MB,
 } from "../constants/upload";
+import type { MapState } from "./mapStore";
 
 type UploadErrorType =
   | "none"
@@ -12,7 +13,7 @@ type UploadErrorType =
   | "file-format-invalid"
   | "failed-to-send";
 
-interface UploadStoreState {
+export interface UploadAreaSlice {
   dialogVisible: boolean;
   toggleUploadAreaDialog: () => void;
   isUploading: boolean;
@@ -28,7 +29,12 @@ interface UploadStoreState {
   clearFileState: () => void;
 }
 
-const useUploadStore = create<UploadStoreState>((set, get) => ({
+export const createUploadAreaSlice: StateCreator<
+  MapState,
+  [],
+  [],
+  UploadAreaSlice
+> = (set, get) => ({
   dialogVisible: false,
   isUploading: false,
   isFileSelected: false,
@@ -36,6 +42,7 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
   errorMessage: "",
   filename: "",
   selectedFile: null,
+
   toggleUploadAreaDialog: () =>
     set((state) => {
       if (state.dialogVisible) {
@@ -43,9 +50,12 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
       }
       return { dialogVisible: !state.dialogVisible };
     }),
+
   setError: (errorType: UploadErrorType, message = "") =>
     set({ errorType, errorMessage: message }),
+
   clearError: () => set({ errorType: "none", errorMessage: "" }),
+
   handleFile: (file: File) => {
     const { clearError } = get();
 
@@ -124,6 +134,7 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
       set({ isUploading: false });
     }
   },
+
   clearFileState: () => {
     set({
       selectedFile: null,
@@ -134,6 +145,4 @@ const useUploadStore = create<UploadStoreState>((set, get) => ({
       isUploading: false,
     });
   },
-}));
-
-export default useUploadStore;
+}); 

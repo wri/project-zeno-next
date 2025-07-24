@@ -10,7 +10,6 @@ import {
 
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
-import useUploadStore from "../store/uploadAreaStore";
 import { Tooltip } from "./ui/tooltip";
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -30,8 +29,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 }
 
 function MapAreaControls() {
-  const { setSelectAreaLayer, isDrawingMode, startDrawing } = useMapStore();
-  const { toggleUploadAreaDialog } = useUploadStore();
+  const { setSelectAreaLayer, isDrawingMode, startDrawing, toggleUploadAreaDialog } = useMapStore();
 
   if (isDrawingMode) {
     return <DrawAreaControls />;

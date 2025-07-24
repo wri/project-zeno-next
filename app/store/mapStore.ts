@@ -4,6 +4,7 @@ import bbox from "@turf/bbox";
 import center from "@turf/center";
 import { LayerId } from "../types/map";
 import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
+import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
 import { AOI } from "../types/chat";
 
@@ -37,7 +38,7 @@ interface MapSlice {
   addCustomArea: (area: AOI) => void;
 }
 
-export type MapState = MapSlice & DrawAreaSlice;
+export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice;
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   set,
@@ -168,6 +169,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 const useMapStore = create<MapState>()((...a) => ({
   ...createMapSlice(...a),
   ...createDrawAreaSlice(...a),
+  ...createUploadAreaSlice(...a),
 }));
 
 export default useMapStore;

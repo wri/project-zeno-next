@@ -7,7 +7,7 @@ import {
   Box,
   Link,
 } from "@chakra-ui/react";
-import useUploadAreaStore from "../store/uploadAreaStore";
+import useMapStore from "../store/mapStore";
 import { useRef, useState } from "react";
 import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE_MB } from "../constants/upload";
 import { UploadSimpleIcon } from "@phosphor-icons/react";
@@ -19,7 +19,7 @@ function UploadAreaDialog() {
     uploadFile,
     isUploading,
     isFileSelected,
-  } = useUploadAreaStore();
+  } = useMapStore();
 
   const handleUpload = async () => {
     await uploadFile();
@@ -85,7 +85,7 @@ export default UploadAreaDialog;
 
 function DropFileZone() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { errorType, errorMessage, handleFile } = useUploadAreaStore();
+  const { errorType, errorMessage, handleFile } = useMapStore();
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -164,7 +164,7 @@ function DropFileZone() {
 }
 
 function SelectedFileBox() {
-  const { filename, clearFileState } = useUploadAreaStore();
+  const { filename, clearFileState } = useMapStore();
   return (
     <Box
       border="1px dashed var(--Lime-Lime-70, #8E9954)"
