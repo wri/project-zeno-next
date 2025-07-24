@@ -88,7 +88,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
         <Box css={{ "& > p:not(:last-of-type)": {mb: 2}, "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": { borderBottom: "1px solid", borderColor: "bg.muted", pb: 2 } }}>
           <Markdown remarkPlugins={[ remarkBreaks ]}>{message.message}</Markdown>
         </Box>
-        {!isUser && (
+        {!isUser && !isConsecutive &&(
         <Flex
           alignItems="center"
           w="full"
