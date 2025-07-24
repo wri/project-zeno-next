@@ -50,13 +50,20 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
 }
 
 export function Sidebar() {
-  const { sideBarVisible, toggleSidebar, threadGroups, fetchThreads } =
-    useSidebarStore();
+  const {
+    sideBarVisible,
+    toggleSidebar,
+    threadGroups,
+    fetchThreads,
+    apiStatus,
+    fetchApiStatus,
+  } = useSidebarStore();
   const { currentThreadId } = useChatStore();
 
   useEffect(() => {
     fetchThreads();
-  }, [fetchThreads]);
+    fetchApiStatus();
+  }, [fetchThreads, fetchApiStatus]);
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -163,9 +170,9 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
-        <Status.Root colorPalette="green" m="4">
+        <Status.Root colorPalette={apiStatus === "OK" ? "green" : "red"} m="4">
           <Status.Indicator />
-          API Status: Good
+          API Status: {apiStatus}
         </Status.Root>
         <Separator my="4" />
         {hasOlderThreads && (

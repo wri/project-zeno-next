@@ -21,6 +21,8 @@ interface SidebarState {
   fetchThreads: () => Promise<void>;
   // Function to toggle the sidebar visibility
   toggleSidebar: () => void;
+  fetchApiStatus: () => Promise<void>;
+  apiStatus: "idle" | "OK" | "error";
 }
 
 const useSidebarStore = create<SidebarState>((set) => ({
@@ -31,6 +33,7 @@ const useSidebarStore = create<SidebarState>((set) => ({
     previousWeek: [],
     older: [],
   },
+  apiStatus: "idle",
   toggleSidebar: () =>
     set((state) => ({ sideBarVisible: !state.sideBarVisible })),
 
@@ -56,6 +59,19 @@ const useSidebarStore = create<SidebarState>((set) => ({
       };
 
       set({ threadGroups: groupedThreads, threads: data });
+    }
+  },
+
+  fetchApiStatus: async () => {
+    try {
+      const response = await fetch("https://api.zeno-staging.ds.io/docs"); // shouldn't hard code this
+      if (response.status === 200) {
+        set({ apiStatus: "OK" });
+      } else {
+        set({ apiStatus: "error" });
+      }
+    } catch {
+      set({ apiStatus: "error" });
     }
   },
 }));
