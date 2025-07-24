@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Source,
   Layer,
@@ -6,10 +6,12 @@ import {
   useMap,
   MapMouseEvent,
 } from "react-map-gl/maplibre";
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Text, IconButton } from "@chakra-ui/react";
 import { ChatContextOptions } from "./ContextButton";
 import { Feature, Polygon, GeoJsonProperties, GeoJSON } from "geojson";
 import { ContextItem } from "@/app/store/contextStore";
+import useContextStore from "@/app/store/contextStore";
+import { XIcon } from "@phosphor-icons/react";
 import bbox from "@turf/bbox";
 
 interface MapFeatureProps {
@@ -52,6 +54,9 @@ function MapFeature({
   markerBorderColor,
 }: MapFeatureProps) {
   const { current: map } = useMap();
+  const { addContext, removeContext } = useContextStore();
+  const [isHovered, setIsHovered] = useState(false);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const fillColor = areas.find((a) => a.content === feature.id)
     ? "#3b82f6"
@@ -73,62 +78,127 @@ function MapFeature({
     console.warn(`Failed to calculate bbox for feature ${feature.id}:`, error);
   }
 
-  // Set up hover event listeners using featureState
+  const setHoverState = useCallback(
+    (hovered: boolean) => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        setHoverTimeout(null);
+      }
+
+      if (hovered) {
+        setIsHovered(true);
+      } else {
+        // Add small delay before hiding to allow moving between polygon and label
+        const timeout = setTimeout(() => {
+          setIsHovered(false);
+        }, 100);
+        setHoverTimeout(timeout);
+      }
+    },
+    [hoverTimeout]
+  );
+
+  const handleLabelMouseEnter = () => {
+    setHoverState(true);
+  };
+
+  const handleLabelMouseLeave = () => {
+    setHoverState(false);
+  };
+
+  // Set up hover and click event listeners
   useEffect(() => {
     if (!map) return;
 
     let hoverId: string | number | undefined;
 
+    // Helper function to set feature hover state on both sources
+    const setFeatureHoverState = (id: string | number, hovered: boolean) => {
+      map.setFeatureState({ source: sourceId, id }, { hover: hovered });
+      map.setFeatureState({ source: bboxSourceId, id }, { hover: hovered });
+    };
+
+    // Helper function to clear all hover states
+    const clearHoverState = () => {
+      if (hoverId !== undefined) {
+        setFeatureHoverState(hoverId, false);
+        hoverId = undefined;
+      }
+      setHoverState(false);
+    };
+
     const handleMouseEnter = (e: MapMouseEvent) => {
       if (e.features && e.features.length > 0) {
         const feature = e.features[0];
+
+        // Clear previous hover if exists
         if (hoverId !== undefined) {
-          map.setFeatureState(
-            { source: sourceId, id: hoverId },
-            { hover: false }
-          );
-          // Also set state on bbox source
-          map.setFeatureState(
-            { source: bboxSourceId, id: hoverId },
-            { hover: false }
-          );
+          setFeatureHoverState(hoverId, false);
         }
+
+        // Set new hover
         hoverId = feature.id || 0;
-        map.setFeatureState({ source: sourceId, id: hoverId }, { hover: true });
-        // Also set state on bbox source
-        map.setFeatureState(
-          { source: bboxSourceId, id: hoverId },
-          { hover: true }
-        );
+        setFeatureHoverState(hoverId, true);
+        setHoverState(true);
       }
     };
 
     const handleMouseLeave = () => {
-      if (hoverId !== undefined) {
-        map.setFeatureState(
-          { source: sourceId, id: hoverId },
-          { hover: false }
-        );
-        // Also set state on bbox source
-        map.setFeatureState(
-          { source: bboxSourceId, id: hoverId },
-          { hover: false }
-        );
-        hoverId = undefined;
+      clearHoverState();
+    };
+
+    const handleClick = () => {
+      // Only add to context if not already in context
+      const isInContext = areas.find((a) => a.content === feature.id);
+      if (!isInContext) {
+        addContext({
+          contextType: "area",
+          content: feature.id,
+        });
       }
+    };
+
+    // Reset hover state on map zoom/move to prevent stuck states
+    const handleMapTransform = () => {
+      clearHoverState();
     };
 
     map.on("mouseenter", fillLayerId, handleMouseEnter);
     map.on("mouseleave", fillLayerId, handleMouseLeave);
+    map.on("click", fillLayerId, handleClick);
+    map.on("zoom", handleMapTransform);
+    map.on("move", handleMapTransform);
 
     return () => {
       map.off("mouseenter", fillLayerId, handleMouseEnter);
       map.off("mouseleave", fillLayerId, handleMouseLeave);
+      map.off("click", fillLayerId, handleClick);
+      map.off("zoom", handleMapTransform);
+      map.off("move", handleMapTransform);
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
     };
-  }, [map, fillLayerId, sourceId, bboxSourceId]);
+  }, [
+    map,
+    fillLayerId,
+    sourceId,
+    bboxSourceId,
+    feature.id,
+    areas,
+    addContext,
+    hoverTimeout,
+    setHoverState,
+  ]);
 
   // Get area context item for display
   const areaContext = areas.find((a) => a.content === feature.id);
+
+  const handleRemoveFromContext = () => {
+    if (areaContext) {
+      removeContext(areaContext.id);
+    }
+  };
 
   return (
     <>
@@ -208,6 +278,8 @@ function MapFeature({
             display="flex"
             alignItems="center"
             gap={1}
+            onMouseEnter={handleLabelMouseEnter}
+            onMouseLeave={handleLabelMouseLeave}
           >
             {areaContext ? (
               <>
@@ -215,6 +287,18 @@ function MapFeature({
                 <Text fontSize="xs" fontWeight="medium" color={fillColor}>
                   {feature.id}
                 </Text>
+                {/* Show X button on hover if in context */}
+                {isHovered && (
+                  <IconButton
+                    size="xs"
+                    variant="ghost"
+                    color={fillColor}
+                    onClick={handleRemoveFromContext}
+                    aria-label="Remove from context"
+                  >
+                    <XIcon size={12} />
+                  </IconButton>
+                )}
               </>
             ) : (
               <Text fontSize="xs" fontWeight="medium" color={fillColor}>
