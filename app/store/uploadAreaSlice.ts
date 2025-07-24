@@ -1,18 +1,23 @@
 import { StateCreator } from "zustand";
 import {
   ACCEPTED_FILE_TYPES,
+  MAX_AREA_KM2,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_MB,
+  MIN_AREA_KM2,
 } from "../constants/custom-areas";
 import type { MapState } from "./mapStore";
 import { generateRandomName } from "../utils/generateRandomName";
 import { AOI } from "../types/chat";
+import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
 
 type UploadErrorType =
   | "none"
   | "file-too-large"
   | "file-empty"
   | "file-format-invalid"
+  | "file-area-too-small"
+  | "file-area-too-large"
   | "failed-to-send";
 
 export interface UploadAreaSlice {
@@ -24,6 +29,7 @@ export interface UploadAreaSlice {
   errorMessage: string;
   filename: string;
   selectedFile: File | null;
+  validatedGeoJson: GeoJSON.FeatureCollection | null;
   setError: (errorType: UploadErrorType, message?: string) => void;
   clearError: () => void;
   handleFile: (file: File) => void;
@@ -44,6 +50,7 @@ export const createUploadAreaSlice: StateCreator<
   errorMessage: "",
   filename: "",
   selectedFile: null,
+  validatedGeoJson: null,
 
   toggleUploadAreaDialog: () =>
     set((state) => {
@@ -59,7 +66,7 @@ export const createUploadAreaSlice: StateCreator<
 
   clearError: () => set({ errorType: "none", errorMessage: "" }),
 
-  handleFile: (file: File) => {
+  handleFile: async (file: File) => {
     const { clearError } = get();
 
     clearError();
@@ -104,38 +111,29 @@ export const createUploadAreaSlice: StateCreator<
       return;
     }
 
-    set({
-      selectedFile: file,
-      filename: file.name,
-      isFileSelected: true,
-      errorType: "none",
-      errorMessage: "",
-    });
-  },
-
-  uploadFile: async () => {
-    const { selectedFile, setError } = get();
-
-    if (!selectedFile) {
-      setError("file-empty", "No file selected");
-      return;
-    }
-
-    set({ isUploading: true });
-
     try {
-      const fileContent = await selectedFile.text();
+      const fileContent = await file.text();
       let geoJsonData: GeoJSON.GeoJSON;
 
       try {
         geoJsonData = JSON.parse(fileContent);
       } catch {
-        setError("file-format-invalid", "Invalid JSON format");
+        get().setError("file-format-invalid", "Invalid JSON format");
+        set({
+          selectedFile: null,
+          filename: "",
+          isFileSelected: false,
+        });
         return;
       }
 
       if (!geoJsonData || typeof geoJsonData !== "object") {
-        setError("file-format-invalid", "Invalid GeoJSON format");
+        get().setError("file-format-invalid", "Invalid GeoJSON format");
+        set({
+          selectedFile: null,
+          filename: "",
+          isFileSelected: false,
+        });
         return;
       }
 
@@ -170,23 +168,88 @@ export const createUploadAreaSlice: StateCreator<
       }
 
       if (features.length === 0) {
-        setError(
+        get().setError(
           "file-format-invalid",
           "No valid Polygon or MultiPolygon features found"
         );
+        set({
+          selectedFile: null,
+          filename: "",
+          isFileSelected: false,
+        });
         return;
       }
 
+      const areaFeatureCollection: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features,
+      };
+
+      const areaSizeKm2 = calculateAreaKm2(areaFeatureCollection);
+
+      if (areaSizeKm2 < MIN_AREA_KM2) {
+        get().setError(
+          "file-area-too-small",
+          `Area is too small (${areaSizeKm2.toLocaleString()} km²). Minimum area is ${MIN_AREA_KM2.toLocaleString()} km².`
+        );
+        set({
+          selectedFile: null,
+          filename: "",
+          isFileSelected: false,
+        });
+        return;
+      }
+
+      if (areaSizeKm2 > MAX_AREA_KM2) {
+        get().setError(
+          "file-area-too-large",
+          `Area is too large (${areaSizeKm2.toLocaleString()} km²). Maximum area is ${MAX_AREA_KM2.toLocaleString()} km².`
+        );
+        set({
+          selectedFile: null,
+          filename: "",
+          isFileSelected: false,
+        });
+        return;
+      }
+
+      // All validations passed
+      set({
+        selectedFile: file,
+        filename: file.name,
+        isFileSelected: true,
+        errorType: "none",
+        errorMessage: "",
+        validatedGeoJson: areaFeatureCollection,
+      });
+    } catch (error) {
+      console.error("File validation error:", error);
+      get().setError("file-format-invalid", "Failed to read file content");
+      set({
+        selectedFile: null,
+        filename: "",
+        isFileSelected: false,
+      });
+    }
+  },
+
+  uploadFile: async () => {
+    const { validatedGeoJson, setError } = get();
+
+    if (!validatedGeoJson) {
+      setError("file-empty", "No validated file data available");
+      return;
+    }
+
+    set({ isUploading: true });
+
+    try {
       const newArea: AOI = {
         name: generateRandomName(),
-        geometry: {
-          type: "FeatureCollection",
-          features: features,
-        },
+        geometry: validatedGeoJson,
       };
-      get().addCustomArea(newArea);
 
-      // Reset state on successful upload
+      get().addCustomArea(newArea);
       get().clearFileState();
       set({ dialogVisible: false });
     } catch (error) {
@@ -205,6 +268,7 @@ export const createUploadAreaSlice: StateCreator<
       errorType: "none",
       errorMessage: "",
       isUploading: false,
+      validatedGeoJson: null,
     });
   },
 });

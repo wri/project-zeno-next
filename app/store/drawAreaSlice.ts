@@ -5,7 +5,7 @@ import type { Map } from "maplibre-gl";
 import { AOI } from "../types/chat";
 import { generateRandomName } from "../utils/generateRandomName";
 import type { MapState } from "./mapStore";
-import calculateArea from "@turf/area";
+import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
 import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../constants/custom-areas";
 
 // Type for polygon features from TerraDraw
@@ -116,8 +116,7 @@ export const createDrawAreaSlice: StateCreator<
       features,
     };
 
-    const areaSizeM2 = calculateArea(featureCollection);
-    const areaSizeKm2 = areaSizeM2 / 1000000; // Convert m² to km²
+    const areaSizeKm2 = calculateAreaKm2(featureCollection);
 
     if (areaSizeKm2 < MIN_AREA_KM2 || areaSizeKm2 > MAX_AREA_KM2) {
       set({
