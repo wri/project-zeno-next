@@ -3,6 +3,8 @@ import { MapRef } from "react-map-gl/maplibre";
 import bbox from "@turf/bbox";
 import center from "@turf/center";
 import { LayerId } from "../types/map";
+import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
+import { StateCreator } from "zustand";
 
 interface GeoJsonFeature {
   id: string;
@@ -10,18 +12,13 @@ interface GeoJsonFeature {
   data: GeoJSON.FeatureCollection | GeoJSON.Feature;
 }
 
-interface MapState {
+interface MapSlice {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
-  selectedAreas: GeoJSON.Feature[];
-}
-
-interface MapActions {
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
-  addSelectedArea: (area: GeoJSON.Feature) => void;
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
   clearGeoJsonFeatures: () => void;
@@ -34,19 +31,35 @@ interface MapActions {
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
     maxRetries?: number
   ) => void;
+
+  customAreas: GeoJSON.Feature[];
+  addCustomArea: (area: GeoJSON.Feature) => void;
 }
 
-const initialState: MapState = {
+export type MapState = MapSlice & DrawAreaSlice;
+
+const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
+  set,
+  get
+) => ({
   mapRef: null,
   geoJsonFeatures: [],
   selectAreaLayer: null,
   selectedAreas: [],
-};
+  customAreas: [],
 
-const useMapStore = create<MapState & MapActions>((set, get) => ({
-  ...initialState,
+  addCustomArea: (area) => {
+    set((state) => ({
+      customAreas: [...state.customAreas, area],
+    }));
+  },
 
-  reset: () => set(initialState),
+  reset: () =>
+    set({
+      mapRef: null,
+      geoJsonFeatures: [],
+      selectAreaLayer: null,
+    }),
 
   setMapRef: (mapRef) => {
     console.log("Setting map ref:", !!mapRef);
@@ -55,10 +68,6 @@ const useMapStore = create<MapState & MapActions>((set, get) => ({
 
   setSelectAreaLayer: (layerId) => {
     set({ selectAreaLayer: layerId });
-  },
-
-  addSelectedArea: (area: GeoJSON.Feature) => {
-    set((state) => ({ selectedAreas: [...state.selectedAreas, area] }));
   },
 
   addGeoJsonFeature: (feature) => {
@@ -153,6 +162,11 @@ const useMapStore = create<MapState & MapActions>((set, get) => ({
       console.error("Error flying to GeoJSON center:", error);
     }
   },
+});
+
+const useMapStore = create<MapState>()((...a) => ({
+  ...createMapSlice(...a),
+  ...createDrawAreaSlice(...a),
 }));
 
 export default useMapStore;

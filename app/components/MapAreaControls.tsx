@@ -4,6 +4,8 @@ import {
   HandPointingIcon,
   SelectionPlusIcon,
   UploadSimpleIcon,
+  XIcon,
+  CheckIcon,
 } from "@phosphor-icons/react";
 
 import { LayerId, selectLayerOptions } from "../types/map";
@@ -11,9 +13,7 @@ import useMapStore from "../store/mapStore";
 import useUploadStore from "../store/uploadAreaStore";
 import { Tooltip } from "./ui/tooltip";
 
-function MapAreaControls() {
-  const { setSelectAreaLayer } = useMapStore();
-  const { toggleUploadAreaDialog } = useUploadStore();
+function Wrapper({ children }: { children: React.ReactNode }) {
   return (
     <Box
       display="flex"
@@ -24,6 +24,21 @@ function MapAreaControls() {
       justifyContent="center"
       zIndex={100}
     >
+      {children}
+    </Box>
+  );
+}
+
+function MapAreaControls() {
+  const { setSelectAreaLayer, isDrawingMode, startDrawing } = useMapStore();
+  const { toggleUploadAreaDialog } = useUploadStore();
+
+  if (isDrawingMode) {
+    return <DrawAreaControls />;
+  }
+
+  return (
+    <Wrapper>
       <ButtonGroup size="sm" variant="subtle">
         <Tooltip content="Upload area from file">
           <IconButton
@@ -76,12 +91,45 @@ function MapAreaControls() {
           bg="bg"
           _hover={{ bg: "bg.emphasized" }}
           aria-label="Draw area bounds"
+          onClick={startDrawing}
+          data-active={isDrawingMode}
         >
           <SelectionPlusIcon />
         </IconButton>
       </ButtonGroup>
-    </Box>
+    </Wrapper>
   );
 }
 
 export default MapAreaControls;
+
+function DrawAreaControls() {
+  const { cancelDrawing, confirmDrawing } = useMapStore();
+
+  return (
+    <Wrapper>
+      <ButtonGroup size="sm" variant="subtle">
+        <Tooltip content="Cancel drawing">
+          <IconButton
+            bg="bg"
+            _hover={{ bg: "bg.emphasized" }}
+            aria-label="Cancel drawing"
+            onClick={cancelDrawing}
+          >
+            <XIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip content="Confirm area">
+          <IconButton
+            bg="bg"
+            _hover={{ bg: "bg.emphasized" }}
+            aria-label="Confirm area"
+            onClick={confirmDrawing}
+          >
+            <CheckIcon />
+          </IconButton>
+        </Tooltip>
+      </ButtonGroup>
+    </Wrapper>
+  );
+}
