@@ -5,7 +5,7 @@ import {
   MAX_FILE_SIZE_MB,
 } from "../constants/upload";
 import type { MapState } from "./mapStore";
-import { generateRandomName } from "../utils/generateRandonName";
+import { generateRandomName } from "../utils/generateRandomName";
 import { AOI } from "../types/chat";
 
 type UploadErrorType =

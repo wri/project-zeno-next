@@ -3,7 +3,7 @@ import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { StateCreator } from "zustand";
 import type { Map } from "maplibre-gl";
 import { AOI } from "../types/chat";
-import { generateRandomName } from "../utils/generateRandonName";
+import { generateRandomName } from "../utils/generateRandomName";
 import type { MapState } from "./mapStore";
 
 // Type for polygon features from TerraDraw
