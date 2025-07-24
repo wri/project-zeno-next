@@ -16,6 +16,7 @@ import ContextTag from "./ContextTag";
 import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
 import { useEffect, useState } from "react";
+import remarkBreaks from "remark-breaks";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -93,7 +94,18 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             ))}
           </Flex>
         )}
-        <Markdown>{message.message}</Markdown>
+        <Box
+          css={{
+            "& > p:not(:last-of-type)": { mb: 2 },
+            "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
+              borderBottom: "1px solid",
+              borderColor: "bg.muted",
+              pb: 2,
+            },
+          }}
+        >
+          <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+        </Box>
         {!isUser && (
           <Flex
             alignItems="center"
