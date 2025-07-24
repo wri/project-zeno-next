@@ -12,6 +12,7 @@ import {
   Stack,
   Text,
   Link as ChLink,
+  Status,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -49,13 +50,20 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
 }
 
 export function Sidebar() {
-  const { sideBarVisible, toggleSidebar, threadGroups, fetchThreads } =
-    useSidebarStore();
+  const {
+    sideBarVisible,
+    toggleSidebar,
+    threadGroups,
+    fetchThreads,
+    apiStatus,
+    fetchApiStatus,
+  } = useSidebarStore();
   const { currentThreadId } = useChatStore();
 
   useEffect(() => {
     fetchThreads();
-  }, [fetchThreads]);
+    fetchApiStatus();
+  }, [fetchThreads, fetchApiStatus]);
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -179,7 +187,20 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
-
+        <Status.Root
+          colorPalette={apiStatus === "OK" ? "green" : "red"}
+          m="3"
+          size="sm"
+          px="2"
+          py="1"
+          rounded="sm"
+          bg="whiteAlpha.600"
+          borderColor="bg"
+          borderWidth="1px"
+        >
+          <Status.Indicator />
+          API Status: {apiStatus}
+        </Status.Root>
         <ChLink
           href="#"
           _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
