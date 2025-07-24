@@ -14,20 +14,15 @@ export function pickAoiTool(
     const geoJsonData = (streamMessage.aoi as AOI)
       .geometry as FeatureCollection;
 
-    const featureId = `location-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 11)}`;
+    const aoiName = (streamMessage.aoi as AOI).name as string;
 
     addGeoJsonFeature({
-      id: featureId,
-      name: streamMessage.content || "Location",
+      id: aoiName,
+      name: aoiName,
       data: geoJsonData,
     });
 
     flyToGeoJsonWithRetry(geoJsonData);
-    console.log(streamMessage);
-    const aoiName = (streamMessage.aoi as AOI).name as string;
-    console.log(streamMessage.aoi);
 
     if (aoiName) {
       addContext({
