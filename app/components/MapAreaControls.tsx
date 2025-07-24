@@ -205,10 +205,10 @@ function MapAreaControls() {
               : "Area is too large"}
           </Box>
           <Box fontSize="xs">
-            Your area: {validationError.area.toFixed(2)} km²
+            Your area: {validationError.area.toLocaleString()} km²
             <br />
-            Valid range: {MIN_AREA_KM2.toFixed(2)} - {MAX_AREA_KM2.toFixed(2)}{" "}
-            km²
+            Valid range: {MIN_AREA_KM2.toLocaleString()} -{" "}
+            {MAX_AREA_KM2.toLocaleString()} km²
           </Box>
         </Box>
       )}
