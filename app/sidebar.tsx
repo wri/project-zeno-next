@@ -12,17 +12,12 @@ import {
   Stack,
   Text,
   Link as ChLink,
-  Badge,
   Status,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
 import { Tooltip } from "./components/ui/tooltip";
-import {
-  NotePencilIcon,
-  SidebarSimpleIcon,
-  LightningIcon,
-} from "@phosphor-icons/react";
+import { NotePencilIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
 
