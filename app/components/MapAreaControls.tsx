@@ -19,6 +19,8 @@ import {
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
 import { Tooltip } from "./ui/tooltip";
+import { MAX_AREA_KM2, MIN_AREA_KM2 } from "../constants/custom-areas";
+import { formatAreaWithUnits } from "../utils/formatArea";
 
 function Wrapper({
   children,
@@ -56,6 +58,7 @@ function MapAreaControls() {
     cancelDrawing,
     confirmDrawing,
     toggleUploadAreaDialog,
+    validationError,
   } = useMapStore();
 
   useEffect(() => {
@@ -183,6 +186,31 @@ function MapAreaControls() {
         >
           {selectionMode.type}{" "}
           {selectionMode.type === "Selecting" ? selectionMode.name : "AOI"}
+        </Box>
+      )}
+      {validationError && (
+        <Box
+          px={3}
+          py={2}
+          bg="red.50"
+          borderColor="red.200"
+          borderWidth="1px"
+          borderRadius="sm"
+          boxShadow="sm"
+          color="red.700"
+          fontSize="sm"
+        >
+          <Box fontWeight="bold" mb={1}>
+            {validationError.code === "too-small"
+              ? "Area is too small"
+              : "Area is too large"}
+          </Box>
+          <Box fontSize="xs">
+            Your area: {formatAreaWithUnits(validationError.area)}
+            <br />
+            Valid range: {formatAreaWithUnits(MIN_AREA_KM2)} -{" "}
+            {formatAreaWithUnits(MAX_AREA_KM2)}
+          </Box>
         </Box>
       )}
     </Wrapper>
