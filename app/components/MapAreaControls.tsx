@@ -194,7 +194,7 @@ function MapAreaControls() {
           bg="red.50"
           borderColor="red.200"
           borderWidth="1px"
-          borderRadius="md"
+          borderRadius="sm"
           boxShadow="sm"
           color="red.700"
           fontSize="sm"
