@@ -1,7 +1,7 @@
 "use client";
 
 import Map from "@/app/components/Map";
-import { Box, Flex, Grid, Heading } from "@chakra-ui/react";
+import { Box, Flex, Grid, Heading, Button, Progress } from "@chakra-ui/react";
 import { Sidebar } from "./sidebar";
 import ChatPanel from "./ChatPanel";
 import LclLogo from "./components/LclLogo";
@@ -11,6 +11,8 @@ import useChatStore from "./store/chatStore";
 import useMapStore from "./store/mapStore";
 import useContextStore from "./store/contextStore";
 import { useEffect } from "react";
+
+import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
 
 export default function Home() {
   const { reset: resetChatStore } = useChatStore();
@@ -38,14 +40,43 @@ export default function Home() {
         px="5"
         py="2"
         h="12"
-        bg="blue.700"
+        bg="blue.900"
         color="fg.inverted"
       >
         <Flex gap="2">
           <LclLogo width={16} avatarOnly />
-          <Heading size="md" as="h1">
-            Zeno
+          <Heading as="h1" size="sm">
+            NatureWATCH
           </Heading>
+        </Flex>
+        <Flex gap="6" alignItems="center">
+          <Button variant="solid" bg="blue.900" _hover={{ bg: "blue.800" }} size="sm">
+            <LifebuoyIcon />
+            Help
+          </Button>
+
+          <Progress.Root
+            size="xs"
+            min={0}
+            max={100}
+            value={40}
+            minW="6rem"
+            textAlign="center"
+            rounded="full"
+            colorPalette="blue"
+          >
+            <Progress.Label mb="0.5" fontSize="xs" fontWeight="normal" color="blue.100">40/100 Prompts</Progress.Label>
+            <Progress.Track bg="blue.950" maxH="4px">
+              <Progress.Range bg="white" />
+            </Progress.Track>
+          </Progress.Root>
+
+          <Button asChild variant="solid" bg="blue.900" _hover={{ bg: "blue.800" }} size="sm">
+            <Flex>
+              <UserIcon />
+              <a href="#">User Name</a>
+            </Flex>
+          </Button>
         </Flex>
       </Flex>
       <Grid

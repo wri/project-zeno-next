@@ -146,7 +146,7 @@ function ChatInput() {
           disabled={isButtonDisabled}
           loading={isLoading}
         >
-          <ArrowBendRightUpIcon />
+          <ArrowBendRightUpIcon weight="bold" />
         </Button>
       </Flex>
     </Flex>
