@@ -50,7 +50,7 @@ export default function SingleThread() {
         <Flex gap="2">
           <LclLogo width={16} avatarOnly />
           <Heading size="md" as="h1">
-            Zeno
+            NatureWATCH
           </Heading>
         </Flex>
       </Flex>
