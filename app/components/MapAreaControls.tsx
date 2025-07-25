@@ -189,32 +189,45 @@ function MapAreaControls() {
         </Box>
       )}
       {validationError && (
-        <Box
-          px={3}
-          py={2}
-          bg="red.50"
-          borderColor="red.200"
-          borderWidth="1px"
-          borderRadius="sm"
-          boxShadow="sm"
-          color="red.700"
-          fontSize="sm"
-        >
-          <Box fontWeight="bold" mb={1}>
-            {validationError.code === "too-small"
-              ? "Area is too small"
-              : "Area is too large"}
-          </Box>
-          <Box fontSize="xs">
-            Your area: {formatAreaWithUnits(validationError.area)}
-            <br />
-            Valid range: {formatAreaWithUnits(MIN_AREA_KM2)} -{" "}
-            {formatAreaWithUnits(MAX_AREA_KM2)}
-          </Box>
-        </Box>
+        <ValidationErrorDisplay validationError={validationError} />
       )}
     </Wrapper>
   );
 }
 
 export default MapAreaControls;
+
+function ValidationErrorDisplay({
+  validationError,
+}: {
+  validationError: {
+    code: "too-small" | "too-large";
+    area: number;
+  };
+}) {
+  return (
+    <Box
+      px={3}
+      py={2}
+      bg="red.50"
+      borderColor="red.200"
+      borderWidth="1px"
+      borderRadius="sm"
+      boxShadow="sm"
+      color="red.700"
+      fontSize="sm"
+    >
+      <Box fontWeight="bold" mb={1}>
+        {validationError.code === "too-small"
+          ? "Area is too small"
+          : "Area is too large"}
+      </Box>
+      <Box fontSize="xs">
+        Your area: {formatAreaWithUnits(validationError.area)}
+        <br />
+        Valid range: {formatAreaWithUnits(MIN_AREA_KM2)} -{" "}
+        {formatAreaWithUnits(MAX_AREA_KM2)}
+      </Box>
+    </Box>
+  );
+}
