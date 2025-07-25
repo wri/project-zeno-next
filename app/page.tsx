@@ -13,11 +13,13 @@ import useContextStore from "./store/contextStore";
 import { useEffect } from "react";
 
 import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
+import useAuthStore from "./store/authStore";
 
 export default function Home() {
   const { reset: resetChatStore } = useChatStore();
   const { reset: resetMapStore } = useMapStore();
   const { reset: resetContextStore } = useContextStore();
+  const { userEmail } = useAuthStore();
 
   useEffect(() => {
     resetChatStore();
@@ -74,7 +76,7 @@ export default function Home() {
           <Button asChild variant="solid" bg="blue.900" _hover={{ bg: "blue.800" }} size="sm">
             <Flex>
               <UserIcon />
-              <a href="#">User Name</a>
+              <a href="#">{userEmail || "User name"}</a>
             </Flex>
           </Button>
         </Flex>
