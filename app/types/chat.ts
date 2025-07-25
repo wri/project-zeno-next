@@ -28,10 +28,15 @@ export interface RawInsightData {
   data: unknown;
 }
 
+export interface UIContext {
+  aoi: AOI;
+}
+
 export interface ChatPrompt {
   query: string;
   query_type: string;
   thread_id: string;
+  ui_context: UIContext;
 }
 
 export interface ChatAPIRequest {
