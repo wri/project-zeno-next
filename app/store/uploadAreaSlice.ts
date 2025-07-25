@@ -10,6 +10,7 @@ import type { MapState } from "./mapStore";
 import { generateRandomName } from "../utils/generateRandomName";
 import { AOI } from "../types/chat";
 import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
+import { formatAreaWithUnits } from "../utils/formatArea";
 
 type UploadErrorType =
   | "none"
@@ -190,7 +191,9 @@ export const createUploadAreaSlice: StateCreator<
       if (areaSizeKm2 < MIN_AREA_KM2) {
         get().setError(
           "file-area-too-small",
-          `Area is too small (${areaSizeKm2.toLocaleString()} km²). Minimum area is ${MIN_AREA_KM2.toLocaleString()} km².`
+          `Area is too small (${formatAreaWithUnits(
+            areaSizeKm2
+          )}). Minimum area is ${formatAreaWithUnits(MIN_AREA_KM2)}.`
         );
         set({
           selectedFile: null,
@@ -203,7 +206,9 @@ export const createUploadAreaSlice: StateCreator<
       if (areaSizeKm2 > MAX_AREA_KM2) {
         get().setError(
           "file-area-too-large",
-          `Area is too large (${areaSizeKm2.toLocaleString()} km²). Maximum area is ${MAX_AREA_KM2.toLocaleString()} km².`
+          `Area is too large (${formatAreaWithUnits(
+            areaSizeKm2
+          )}). Maximum area is ${formatAreaWithUnits(MAX_AREA_KM2)}.`
         );
         set({
           selectedFile: null,
