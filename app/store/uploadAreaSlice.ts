@@ -58,6 +58,7 @@ export const createUploadAreaSlice: StateCreator<
       get().clearValidationError?.();
       if (state.dialogVisible) {
         get().clearFileState();
+        get().clearSelectionMode();
       }
       return { dialogVisible: !state.dialogVisible };
     }),

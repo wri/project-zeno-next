@@ -71,6 +71,7 @@ export const createDrawAreaSlice: StateCreator<
 
   endDrawing: () => {
     const terraDraw = getTerraDraw(get);
+    terraDraw.setMode("static");
     terraDraw.stop();
     set({ isDrawingMode: false });
     get().clearSelectionMode();
