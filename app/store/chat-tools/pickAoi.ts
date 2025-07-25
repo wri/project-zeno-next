@@ -16,8 +16,10 @@ export function pickAoiTool(
 
     const aoiName = (streamMessage.aoi as AOI).name as string;
 
+    // TODO: Get the source layer name from the AOI
     addGeoJsonFeature({
       id: aoiName,
+      sourceLayerName: "Administrative Areas",
       name: aoiName,
       data: geoJsonData,
     });

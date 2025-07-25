@@ -128,6 +128,7 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
               addGeoJsonFeature({
                 id: id,
                 name: aoiName,
+                sourceLayerName: datasetName,
                 data: sourceFeatures[0],
               });
               addContext({
@@ -154,6 +155,7 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
                 addGeoJsonFeature({
                   id: id,
                   name: aoiName,
+                  sourceLayerName: datasetName,
                   data: f,
                 });
                 addContext({

@@ -7,10 +7,12 @@ import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
 import { AOI } from "../types/chat";
+import { LayerName } from "../types/map";
 
 interface GeoJsonFeature {
   id: string;
   name?: string;
+  sourceLayerName: LayerName;
   data: GeoJSON.FeatureCollection | GeoJSON.Feature;
 }
 
