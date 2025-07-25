@@ -58,7 +58,6 @@ function MapAreaControls() {
     cancelDrawing,
     confirmDrawing,
     toggleUploadAreaDialog,
-    validationError,
   } = useMapStore();
 
   useEffect(() => {
@@ -188,23 +187,17 @@ function MapAreaControls() {
           {selectionMode.type === "Selecting" ? selectionMode.name : "AOI"}
         </Box>
       )}
-      {validationError && (
-        <ValidationErrorDisplay validationError={validationError} />
-      )}
+      <ValidationErrorDisplay />
     </Wrapper>
   );
 }
 
 export default MapAreaControls;
 
-function ValidationErrorDisplay({
-  validationError,
-}: {
-  validationError: {
-    code: "too-small" | "too-large";
-    area: number;
-  };
-}) {
+function ValidationErrorDisplay() {
+  const { validationError, clearValidationError } = useMapStore();
+
+  if (!validationError) return null;
   return (
     <Box
       px={3}
@@ -216,7 +209,26 @@ function ValidationErrorDisplay({
       boxShadow="sm"
       color="red.700"
       fontSize="sm"
+      position="relative"
     >
+      <Tooltip content="Close validation error">
+        <IconButton
+          position="absolute"
+          top={1}
+          right={1}
+          w="16px"
+          h="16px"
+          minW="16px"
+          minH="16px"
+          bg="red.100"
+          _hover={{ bg: "red.200" }}
+          aria-label="Close validation error"
+          onClick={clearValidationError}
+          pointerEvents="auto"
+        >
+          <XIcon size={10} />
+        </IconButton>
+      </Tooltip>
       <Box fontWeight="bold" mb={1}>
         {validationError.code === "too-small"
           ? "Area is too small"
