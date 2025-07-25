@@ -1,35 +1,29 @@
 "use client";
+
 import { Box, Grid } from "@chakra-ui/react";
-import { useParams } from "next/navigation";
+import { useEffect } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
 import LoginOverlay from "@/app/components/LoginOverlay";
-import UploadAreaDialog from "../../components/UploadAreaDialog";
+import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
-import useChatStore from "@/app/store/chatStore";
-import { useEffect } from "react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import PageHeader from "@/app/components/PageHeader";
 
-export default function SingleThread() {
-  const { id } = useParams();
-  const { reset: resetChatStore, fetchThread } = useChatStore();
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { reset: resetMapStore } = useMapStore();
   const { reset: resetContextStore } = useContextStore();
 
   useEffect(() => {
-    resetChatStore();
     resetMapStore();
     resetContextStore();
-  }, [resetChatStore, resetMapStore, resetContextStore]);
-
-  useEffect(() => {
-    if (id) {
-      fetchThread(id as string);
-    }
-  }, [id, fetchThread]);
+  }, [resetMapStore, resetContextStore]);
 
   return (
     <Grid
@@ -55,6 +49,7 @@ export default function SingleThread() {
           </Box>
         </Grid>
       </Grid>
+      {children}
     </Grid>
   );
 }
