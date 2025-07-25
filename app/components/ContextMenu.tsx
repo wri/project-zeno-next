@@ -18,6 +18,8 @@ import {
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { InfoIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useState } from "react";
+import useMapStore from "../store/mapStore";
+import useContextStore from "../store/contextStore";
 
 // Constants for navigation and dummy content
 const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
@@ -60,30 +62,6 @@ const LAYER_CARDS = [
 const AREA_TAGS = [
   { label: "In this conversation", selected: true },
   { label: "From past conversations" },
-];
-
-const AREA_CARDS = [
-  {
-    title: "Areas at risk of fire in northern Australia woodlands",
-    description: "Custom area",
-    selected: true,
-  },
-  {
-    title: "Pará, Brazil",
-    description: "Political boundaries",
-  },
-  {
-    title: "Serra dos Carajás",
-    description: "Key biodiversity areas",
-  },
-  {
-    title: "Japurá-Solimões-Negro moist forests",
-    description: "Terrestrial ecorregions",
-  },
-  {
-    title: "Amazon",
-    description: "River Basins",
-  },
 ];
 
 function ContextNav({
@@ -135,6 +113,9 @@ function CardList({
   }[];
   showImage?: boolean;
 }) {
+  const { addContext, removeContext } = useContextStore();
+  const { geoJsonFeatures } = useMapStore();
+
   return (
     <Stack>
       {cards.map((card) => (
@@ -144,8 +125,24 @@ function CardList({
           flexDirection="row"
           overflow="hidden"
           maxW="xl"
-          border={card.selected ? "2px solid" : undefined}
+          border={card.selected ? "1px solid" : undefined}
           borderColor={card.selected ? "blue.800" : undefined}
+          cursor="pointer"
+          onClick={() => {
+            const feature = geoJsonFeatures.find((f) => f.id === card.title);
+            if (card.selected) {
+              removeContext(feature?.id || "Unknown area");
+            } else {
+              addContext({
+                id: feature?.id || "Unknown area",
+                contextType: "area",
+                content: {
+                  name: feature?.name || "Unknown area",
+                  geometry: feature?.data,
+                },
+              });
+            }
+          }}
         >
           {showImage && card.img && (
             <Image
@@ -204,7 +201,16 @@ function ContextMenu({
   onOpenChange: (e: { open: boolean }) => void;
 }) {
   const [selectedContextType, setSelectedContextType] = useState(contextType);
-  const selectedItems = 0;
+  const { geoJsonFeatures } = useMapStore();
+  const { context, removeContext } = useContextStore();
+  const areas = context.filter((c) => c.contextType === "area");
+  const area_cards = geoJsonFeatures.map((f) => ({
+    title: f.name || "Unknown area",
+    description: f.sourceLayerName,
+    selected: areas.some((a) => a.id === f.id),
+  }));
+
+  const selectedItems = area_cards.filter((c) => c.selected).length;
 
   const renderContent = (): React.ReactElement => {
     if (selectedContextType === "layer") {
@@ -256,7 +262,7 @@ function ContextMenu({
           </Flex>
           <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
             <TagList tags={AREA_TAGS} />
-            <CardList cards={AREA_CARDS} />
+            <CardList cards={area_cards} />
           </Stack>
         </Stack>
       );
@@ -361,6 +367,9 @@ function ContextMenu({
                 colorPalette="blue"
                 ml="auto"
                 disabled={!selectedItems}
+                onClick={() => {
+                  areas.forEach((a) => removeContext(a.id));
+                }}
               >
                 Clear all
               </Button>

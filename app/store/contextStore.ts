@@ -68,9 +68,11 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
       };
     }),
   removeContext: (id) =>
-    set((state) => ({
-      context: state.context.filter((c) => c.id !== id),
-    })),
+    set((state) => {
+      return {
+        context: state.context.filter((c) => c.id !== id),
+      };
+    }),
   clearContext: () => set({ context: [] }),
   reset: () => set(initialState),
 }));
