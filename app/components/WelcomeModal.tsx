@@ -42,6 +42,7 @@ const WelcomeModal = () => {
               </Dialog.Description>
               <Textarea
                 height="92px"
+                bg="white"
                 placeholder="Ask a question..."
               ></Textarea>
               <HStack>
