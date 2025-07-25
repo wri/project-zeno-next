@@ -3,9 +3,11 @@ import {
   Box,
   type BoxProps,
   ButtonGroup,
+  Flex,
   IconButton,
   Menu,
   Portal,
+  Text
 } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -202,26 +204,24 @@ function ValidationErrorDisplay() {
     <Box
       px={3}
       py={2}
-      bg="red.50"
-      borderColor="red.200"
+      bg="bg"
+      minW="14rem"
+      borderColor="red.muted"
       borderWidth="1px"
-      borderRadius="sm"
+      borderRadius="md"
       boxShadow="sm"
-      color="red.700"
-      fontSize="sm"
       position="relative"
     >
-      <Tooltip content="Close validation error">
+      <Tooltip content="Close area validation error">
         <IconButton
           position="absolute"
+          colorPalette="red"
+          variant="ghost"
           top={1}
           right={1}
-          w="16px"
-          h="16px"
-          minW="16px"
-          minH="16px"
-          bg="red.100"
-          _hover={{ bg: "red.200" }}
+          size="xs"
+          h="initial"
+          minW="initial"
           aria-label="Close validation error"
           onClick={clearValidationError}
           pointerEvents="auto"
@@ -229,17 +229,25 @@ function ValidationErrorDisplay() {
           <XIcon size={10} />
         </IconButton>
       </Tooltip>
-      <Box fontWeight="bold" mb={1}>
+      <Text fontWeight="semibold" fontSize="sm" mb={1}>
         {validationError.code === "too-small"
-          ? "Area is too small"
-          : "Area is too large"}
-      </Box>
-      <Box fontSize="xs">
-        Your area: {formatAreaWithUnits(validationError.area)}
-        <br />
-        Valid range: {formatAreaWithUnits(MIN_AREA_KM2)} -{" "}
-        {formatAreaWithUnits(MAX_AREA_KM2)}
-      </Box>
+          ? "Error: Area too small"
+          : "Error: Area too large"}
+      </Text>
+      <Flex fontSize="xs" color="fg.muted" justifyContent="space-between">
+        <Text>
+          {validationError.code === "too-small" ? "Minimum" : "Maximum"} area
+        </Text>
+        <Text>
+          {validationError.code === "too-small"
+            ? formatAreaWithUnits(MIN_AREA_KM2)
+            : formatAreaWithUnits(MAX_AREA_KM2)}
+        </Text>
+      </Flex>
+      <Flex fontSize="xs" color="fg.muted" justifyContent="space-between">
+        <Text>Your area</Text>
+        <Text>{formatAreaWithUnits(validationError.area)}</Text>
+      </Flex>
     </Box>
   );
 }
