@@ -6,7 +6,7 @@ import {
   StreamMessage,
   QueryType,
 } from "@/app/types/chat";
-import useContextStore from "./contextStore";
+import useContextStore, { generateUIContext } from "./contextStore";
 import { readDataStream } from "../api/chat/read-data-stream";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
@@ -40,7 +40,7 @@ const initialState: ChatState = {
     },
   ],
   isLoading: false,
-  currentThreadId: null
+  currentThreadId: null,
 };
 
 // Helper function to process stream messages and add them to chat
@@ -121,6 +121,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const { addMessage, setLoading, currentThreadId, generateNewThread } =
       get();
     const { context } = useContextStore.getState();
+    const uiContext = generateUIContext(context);
 
     // Generate thread ID if this is the first message
     const threadId = currentThreadId || generateNewThread();
@@ -138,6 +139,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       query: message,
       query_type: queryType,
       thread_id: threadId,
+      ui_context: uiContext,
     };
 
     // Set up abort controller for client-side timeout

@@ -1,10 +1,18 @@
 import { create } from "zustand";
 import { ChatContextType } from "@/app/components/ContextButton";
+import { AOI, UIContext } from "@/app/types/chat";
+import bbox from "@turf/bbox";
+import bboxPolygon from "@turf/bbox-polygon";
 
 export interface ContextItem {
   id: string;
   contextType: ChatContextType;
   content: string | object;
+}
+
+export interface AOIContextItem extends ContextItem {
+  contextType: "area";
+  content: AOI;
 }
 
 interface ContextState {
@@ -13,7 +21,7 @@ interface ContextState {
 
 interface ContextActions {
   reset: () => void;
-  addContext: (item: Omit<ContextItem, "id">) => void;
+  addContext: (item: ContextItem) => void;
   removeContext: (id: string) => void;
   clearContext: () => void;
 }
@@ -21,6 +29,24 @@ interface ContextActions {
 const initialState: ContextState = {
   context: [],
 };
+
+export function generateUIContext(context: ContextItem[]): UIContext {
+  // for now simplify the geometry of the AOI to the bounds
+  const aoi = context.find((c) => c.contextType === "area") as AOIContextItem;
+  const bounds = bbox(aoi.content.geometry);
+  const boundsPolygon = bboxPolygon(bounds);
+  const simplifiedAOI = {
+    name: aoi.content.name,
+    geometry: {
+      type: "FeatureCollection",
+      features: [boundsPolygon],
+    },
+  } as AOI;
+
+  return {
+    aoi: simplifiedAOI,
+  } as UIContext;
+}
 
 const useContextStore = create<ContextState & ContextActions>((set) => ({
   ...initialState,
@@ -38,10 +64,7 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
       }
 
       return {
-        context: [
-          ...state.context,
-          { ...item, id: `${item.contextType}-${Date.now()}` },
-        ],
+        context: [...state.context, { ...item }],
       };
     }),
   removeContext: (id) =>

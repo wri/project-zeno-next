@@ -85,11 +85,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
               <ContextTag
                 key={c.id}
                 contextType={c.contextType as ChatContextType}
-                content={
-                  typeof c.content === "string"
-                    ? c.content
-                    : JSON.stringify(c.content)
-                }
+                content={c.content}
               />
             ))}
           </Flex>
