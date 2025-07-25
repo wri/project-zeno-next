@@ -1,25 +1,22 @@
 "use client";
 
 import Map from "@/app/components/Map";
-import { Box, Flex, Grid, Heading, Button, Progress } from "@chakra-ui/react";
+import { Box, Grid } from "@chakra-ui/react";
 import { Sidebar } from "./sidebar";
 import ChatPanel from "./ChatPanel";
-import LclLogo from "./components/LclLogo";
 import LoginOverlay from "./components/LoginOverlay";
 import UploadAreaDialog from "./components/UploadAreaDialog";
 import useChatStore from "./store/chatStore";
 import useMapStore from "./store/mapStore";
 import useContextStore from "./store/contextStore";
 import { useEffect } from "react";
-
-import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
-import useAuthStore from "./store/authStore";
+import PageHeader from "./components/PageHeader";
 
 export default function Home() {
   const { reset: resetChatStore } = useChatStore();
   const { reset: resetMapStore } = useMapStore();
   const { reset: resetContextStore } = useContextStore();
-  const { userEmail } = useAuthStore();
+
 
   useEffect(() => {
     resetChatStore();
@@ -36,51 +33,7 @@ export default function Home() {
     >
       <LoginOverlay />
       <UploadAreaDialog />
-      <Flex
-        alignItems="center"
-        justifyContent="space-between"
-        px="5"
-        py="2"
-        h="12"
-        bg="blue.900"
-        color="fg.inverted"
-      >
-        <Flex gap="2">
-          <LclLogo width={16} avatarOnly />
-          <Heading as="h1" size="sm">
-            NatureWATCH
-          </Heading>
-        </Flex>
-        <Flex gap="6" alignItems="center">
-          <Button variant="solid" bg="blue.900" _hover={{ bg: "blue.800" }} size="sm">
-            <LifebuoyIcon />
-            Help
-          </Button>
-
-          <Progress.Root
-            size="xs"
-            min={0}
-            max={100}
-            value={40}
-            minW="6rem"
-            textAlign="center"
-            rounded="full"
-            colorPalette="blue"
-          >
-            <Progress.Label mb="0.5" fontSize="xs" fontWeight="normal" color="blue.100">40/100 Prompts</Progress.Label>
-            <Progress.Track bg="blue.950" maxH="4px">
-              <Progress.Range bg="white" />
-            </Progress.Track>
-          </Progress.Root>
-
-          <Button asChild variant="solid" bg="blue.900" _hover={{ bg: "blue.800" }} size="sm">
-            <Flex>
-              <UserIcon />
-              <a href="#">{userEmail || "User name"}</a>
-            </Flex>
-          </Button>
-        </Flex>
-      </Flex>
+      <PageHeader />
       <Grid
         templateColumns="auto 36rem 1fr"
         templateAreas="'sidebar chat map'"

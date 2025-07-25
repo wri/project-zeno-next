@@ -1,16 +1,17 @@
 "use client";
-import { Box, Flex, Grid, Heading } from "@chakra-ui/react";
+import { Box, Grid } from "@chakra-ui/react";
 import { useParams } from "next/navigation";
 
 import ChatPanel from "@/app/ChatPanel";
-import LclLogo from "@/app/components/LclLogo";
 import LoginOverlay from "@/app/components/LoginOverlay";
+import UploadAreaDialog from "../../components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import useChatStore from "@/app/store/chatStore";
 import { useEffect } from "react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
+import PageHeader from "@/app/components/PageHeader";
 
 export default function SingleThread() {
   const { id } = useParams();
@@ -38,22 +39,8 @@ export default function SingleThread() {
       bg="bg"
     >
       <LoginOverlay />
-      <Flex
-        alignItems="center"
-        justifyContent="space-between"
-        px="5"
-        py="2"
-        h="12"
-        bg="blue.700"
-        color="fg.inverted"
-      >
-        <Flex gap="2">
-          <LclLogo width={16} avatarOnly />
-          <Heading size="md" as="h1">
-            NatureWATCH
-          </Heading>
-        </Flex>
-      </Flex>
+      <UploadAreaDialog />
+      <PageHeader />
       <Grid
         templateColumns="auto 36rem 1fr"
         templateAreas="'sidebar chat map'"
