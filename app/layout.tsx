@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
 
 export const metadata: Metadata = {
-  title: "Project Zeno",
-  description: "Project Zeno",
+  title: "NatureWATCH",
+  description: "NatureWATCH",
 };
 
 export default function RootLayout({
