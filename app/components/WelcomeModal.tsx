@@ -24,9 +24,9 @@ const WelcomeModal = () => {
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content bg="bg.muted">
+          <Dialog.Content bg="bg.muted" padding="2">
             <Dialog.Header justifyContent="center" alignItems="center">
-              <Dialog.Title fontWeight="500">
+              <Dialog.Title fontWeight="500" fontSize="xl">
                 Welcome to <strong>NatureWATCH</strong>
               </Dialog.Title>
             </Dialog.Header>
