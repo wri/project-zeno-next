@@ -9,7 +9,10 @@ import {
 } from "@chakra-ui/react";
 import useMapStore from "../store/mapStore";
 import { useRef, useState } from "react";
-import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE_MB } from "../constants/upload";
+import {
+  ACCEPTED_FILE_TYPES,
+  MAX_FILE_SIZE_MB,
+} from "../constants/custom-areas";
 import { UploadSimpleIcon } from "@phosphor-icons/react";
 
 function UploadAreaDialog() {

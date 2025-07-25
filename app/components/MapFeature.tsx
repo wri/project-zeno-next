@@ -6,12 +6,10 @@ import {
   useMap,
   MapMouseEvent,
 } from "react-map-gl/maplibre";
-import { Box, Text, IconButton } from "@chakra-ui/react";
+import { Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "./ContextButton";
 import { Feature, Polygon, GeoJsonProperties, GeoJSON } from "geojson";
-import { ContextItem } from "@/app/store/contextStore";
-import useContextStore from "@/app/store/contextStore";
-import { XIcon } from "@phosphor-icons/react";
+import useContextStore, { ContextItem } from "@/app/store/contextStore";
 import bbox from "@turf/bbox";
 import bboxPolygon from "@turf/bbox-polygon";
 import { AOI } from "@/app/types/chat";
@@ -22,15 +20,11 @@ interface MapFeatureProps {
     data: GeoJSON;
   };
   areas: ContextItem[];
-  markerBg: string;
-  markerBorderColor: string;
 }
 
 function MapFeature({
   feature,
   areas,
-  markerBg,
-  markerBorderColor,
 }: MapFeatureProps) {
   const { current: map } = useMap();
   const { addContext, removeContext } = useContextStore();
@@ -251,43 +245,34 @@ function MapFeature({
           latitude={bboxCoords[3]}
           anchor="bottom-left"
         >
-          <Box
-            bg={markerBg}
-            px={1}
+          <Tag.Root
+            colorPalette={areaContext ? "blue" : "gray"}
+            px={2}
             py={1}
-            mb={1}
-            borderColor={markerBorderColor}
-            display="flex"
-            alignItems="center"
-            gap={1}
+            size="md"
+            variant={isHovered ? "surface" : "subtle"}
+            roundedBottom="none"
             onMouseEnter={handleLabelMouseEnter}
             onMouseLeave={handleLabelMouseLeave}
           >
-            {areaContext ? (
-              <>
-                <Box color={fillColor}>{ChatContextOptions.area.icon}</Box>
-                <Text fontSize="xs" fontWeight="medium" color={fillColor}>
-                  {feature.id}
-                </Text>
-                {/* Show X button on hover if in context */}
-                {isHovered && (
-                  <IconButton
-                    size="xs"
-                    variant="ghost"
-                    color={fillColor}
-                    onClick={handleRemoveFromContext}
-                    aria-label="Remove from context"
-                  >
-                    <XIcon size={12} />
-                  </IconButton>
-                )}
-              </>
-            ) : (
-              <Text fontSize="xs" fontWeight="medium" color={fillColor}>
-                {feature.id}
-              </Text>
+            {areaContext && (
+              <Tag.StartElement>
+                {ChatContextOptions.area.icon}
+              </Tag.StartElement>
             )}
-          </Box>
+            <Tag.Label fontWeight="medium">{feature.id}</Tag.Label>
+            {/* Show X button on hover if in context */}
+            {areaContext && (
+              <Tag.EndElement>
+                <Tag.CloseTrigger
+                  opacity={isHovered ? 1 : 0.25}
+                  cursor="pointer"
+                  onClick={handleRemoveFromContext}
+                  aria-label="Remove from context"
+                />
+              </Tag.EndElement>
+            )}
+          </Tag.Root>
         </Marker>
       )}
     </>

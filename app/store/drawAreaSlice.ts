@@ -5,6 +5,8 @@ import type { Map } from "maplibre-gl";
 import { AOI } from "../types/chat";
 import { generateRandomName } from "../utils/generateRandomName";
 import type { MapState } from "./mapStore";
+import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
+import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../constants/custom-areas";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -19,11 +21,16 @@ type PolygonFeature = {
 export interface DrawAreaSlice {
   terraDraw: TerraDraw | null;
   isDrawingMode: boolean;
+  validationError: {
+    code: "too-small" | "too-large";
+    area: number;
+  } | null;
   startDrawing: () => void;
   confirmDrawing: () => void;
   cancelDrawing: () => void;
   initializeTerraDraw: (map: Map) => void;
   endDrawing: () => void;
+  clearValidationError: () => void;
 }
 
 // This ensures TerraDraw is initialized before use
@@ -43,6 +50,7 @@ export const createDrawAreaSlice: StateCreator<
 > = (set, get) => ({
   terraDraw: null,
   isDrawingMode: false,
+  validationError: null,
 
   initializeTerraDraw: (map) => {
     const terraDraw = new TerraDraw({
@@ -58,7 +66,7 @@ export const createDrawAreaSlice: StateCreator<
     terraDraw.start();
     terraDraw.setMode("polygon");
 
-    set({ isDrawingMode: true });
+    set({ isDrawingMode: true, validationError: null });
   },
 
   endDrawing: () => {
@@ -66,6 +74,10 @@ export const createDrawAreaSlice: StateCreator<
     terraDraw.stop();
     set({ isDrawingMode: false });
     get().clearSelectionMode();
+  },
+
+  clearValidationError: () => {
+    set({ validationError: null });
   },
 
   confirmDrawing: () => {
@@ -104,6 +116,20 @@ export const createDrawAreaSlice: StateCreator<
       features,
     };
 
+    const areaSizeKm2 = calculateAreaKm2(featureCollection);
+
+    if (areaSizeKm2 < MIN_AREA_KM2 || areaSizeKm2 > MAX_AREA_KM2) {
+      set({
+        validationError: {
+          code: areaSizeKm2 < MIN_AREA_KM2 ? "too-small" : "too-large",
+          area: areaSizeKm2,
+        },
+      });
+      terraDraw.clear();
+      get().endDrawing();
+      return;
+    }
+
     const newArea: AOI = {
       name: generateRandomName(),
       geometry: featureCollection,
@@ -115,6 +141,7 @@ export const createDrawAreaSlice: StateCreator<
   },
 
   cancelDrawing: () => {
+    get().clearValidationError();
     get().endDrawing();
   },
 });

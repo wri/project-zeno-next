@@ -27,11 +27,6 @@ function Map() {
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
 
-  // Color mode values - moved outside callback
-  const markerBg =
-    useColorModeValue("whiteAlpha.900", "blackAlpha.900") || "white";
-  const markerBorderColor = useColorModeValue("gray.200", "gray.600") || "gray";
-
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -119,8 +114,6 @@ function Map() {
             key={feature.id}
             feature={feature}
             areas={areas}
-            markerBg={markerBg}
-            markerBorderColor={markerBorderColor}
           />
         ))}
 

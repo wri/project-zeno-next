@@ -6,12 +6,11 @@ import {
   HStack,
   IconButton,
   LinkProps,
-  Menu,
-  Portal,
   Separator,
   Stack,
   Text,
   Link as ChLink,
+  Status,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -49,13 +48,20 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
 }
 
 export function Sidebar() {
-  const { sideBarVisible, toggleSidebar, threadGroups, fetchThreads } =
-    useSidebarStore();
+  const {
+    sideBarVisible,
+    toggleSidebar,
+    threadGroups,
+    fetchThreads,
+    apiStatus,
+    fetchApiStatus,
+  } = useSidebarStore();
   const { currentThreadId } = useChatStore();
 
   useEffect(() => {
     fetchThreads();
-  }, [fetchThreads]);
+    fetchApiStatus();
+  }, [fetchThreads, fetchApiStatus]);
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -82,33 +88,12 @@ export function Sidebar() {
         bg="bg.muted"
         boxShadow="xs"
       >
-        <Menu.Root>
-          <Menu.Trigger asChild>
-            <Button variant="solid" colorPalette="blue" size="sm">
-              New Conversation
-              <NotePencilIcon />
-            </Button>
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item
-                  value="New blank conversation"
-                  color="fg.muted"
-                  asChild
-                >
-                  <Link href="/">Blank Conversation</Link>
-                </Menu.Item>
-                <Menu.Item
-                  value="New conversation from template"
-                  color="fg.muted"
-                >
-                  From Template
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
+        <Button asChild variant="solid" colorPalette="blue" size="sm">
+          <Link href="/">
+            New Conversation
+            <NotePencilIcon />
+          </Link>
+        </Button>
         <Tooltip
           content="Close sidebar"
           positioning={{ placement: "right" }}
@@ -179,7 +164,20 @@ export function Sidebar() {
             ))}
           </Stack>
         )}
-
+        <Status.Root
+          colorPalette={apiStatus === "OK" ? "green" : "red"}
+          m="3"
+          size="sm"
+          px="2"
+          py="1"
+          rounded="sm"
+          bg="whiteAlpha.600"
+          borderColor="bg"
+          borderWidth="1px"
+        >
+          <Status.Indicator />
+          API Status: {apiStatus}
+        </Status.Root>
         <ChLink
           href="#"
           _hover={{ textDecor: "none", layerStyle: "fill.muted" }}

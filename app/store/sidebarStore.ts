@@ -27,6 +27,8 @@ interface SidebarState {
   ) => ThreadEntry | undefined;
   // Function to toggle the sidebar visibility
   toggleSidebar: () => void;
+  fetchApiStatus: () => Promise<void>;
+  apiStatus: "Idle" | "OK" | "Error";
 }
 
 const computeThreadGroups = (data: ThreadEntry[]): ThreadGroups => {
@@ -60,6 +62,7 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
     previousWeek: [],
     older: [],
   },
+  apiStatus: "Idle",
   toggleSidebar: () =>
     set((state) => ({ sideBarVisible: !state.sideBarVisible })),
 
@@ -118,6 +121,19 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
       });
     } else {
       throw new Error("Failed to delete thread");
+    }
+  },
+
+  fetchApiStatus: async () => {
+    try {
+      const response = await fetch("https://api.zeno-staging.ds.io/docs"); // shouldn't hard code this
+      if (response.status === 200) {
+        set({ apiStatus: "OK" });
+      } else {
+        set({ apiStatus: "Error" });
+      }
+    } catch {
+      set({ apiStatus: "Error" });
     }
   },
 }));
