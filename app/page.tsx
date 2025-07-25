@@ -12,6 +12,8 @@ import useMapStore from "./store/mapStore";
 import useContextStore from "./store/contextStore";
 import { useEffect } from "react";
 
+import WelcomeModal from "./components/WelcomeModal";
+
 export default function Home() {
   const { reset: resetChatStore } = useChatStore();
   const { reset: resetMapStore } = useMapStore();
@@ -30,7 +32,8 @@ export default function Home() {
       templateRows="min-content minmax(0px, 1fr)"
       bg="bg"
     >
-      <LoginOverlay />
+      {/* <LoginOverlay /> LoginOverlay was causing WelcomeModal to close */}
+      <WelcomeModal />
       <UploadAreaDialog />
       <Flex
         alignItems="center"
