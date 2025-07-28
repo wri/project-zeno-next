@@ -130,6 +130,14 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
                 name: aoiName,
                 data: sourceFeatures[0],
               });
+              addContext({
+                id: aoiName,
+                contextType: "area",
+                content: {
+                  name: aoiName,
+                  geometry: sourceFeatures[0].geometry,
+                },
+              });
             } else if (sourceFeatures.length > 1) {
               const collection: FeatureCollection<
                 Polygon | MultiPolygon,
@@ -148,12 +156,16 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
                   name: aoiName,
                   data: f,
                 });
+                addContext({
+                  id: aoiName,
+                  contextType: "area",
+                  content: {
+                    name: aoiName,
+                    geometry: f.geometry,
+                  },
+                });
               }
             }
-            addContext({
-              contextType: "area",
-              content: aoiName,
-            });
           }
         }
       };

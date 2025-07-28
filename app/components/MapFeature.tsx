@@ -11,6 +11,8 @@ import { ChatContextOptions } from "./ContextButton";
 import { Feature, Polygon, GeoJsonProperties, GeoJSON } from "geojson";
 import useContextStore, { ContextItem } from "@/app/store/contextStore";
 import bbox from "@turf/bbox";
+import bboxPolygon from "@turf/bbox-polygon";
+import { AOI } from "@/app/types/chat";
 
 interface MapFeatureProps {
   feature: {
@@ -18,29 +20,6 @@ interface MapFeatureProps {
     data: GeoJSON;
   };
   areas: ContextItem[];
-}
-
-// Create a rectangle polygon from bbox coordinates
-function createBboxPolygon(
-  bboxCoords: [number, number, number, number]
-): Feature<Polygon, GeoJsonProperties> {
-  const [minLng, minLat, maxLng, maxLat] = bboxCoords;
-  return {
-    type: "Feature",
-    properties: {},
-    geometry: {
-      type: "Polygon",
-      coordinates: [
-        [
-          [minLng, minLat],
-          [maxLng, minLat],
-          [maxLng, maxLat],
-          [minLng, maxLat],
-          [minLng, minLat],
-        ],
-      ],
-    },
-  };
 }
 
 function MapFeature({
@@ -52,9 +31,7 @@ function MapFeature({
   const [isHovered, setIsHovered] = useState(false);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  const fillColor = areas.find((a) => a.content === feature.id)
-    ? "#3b82f6"
-    : "#555";
+  const fillColor = areas.find((a) => a.id === feature.id) ? "#3b82f6" : "#555";
 
   const sourceId = `geojson-source-${feature.id}`;
   const bboxSourceId = `bbox-source-${feature.id}`;
@@ -63,11 +40,11 @@ function MapFeature({
 
   // Calculate bounding box
   let bboxCoords: [number, number, number, number] | null = null;
-  let bboxPolygon: Feature<Polygon, GeoJsonProperties> | null = null;
+  let perimeter: Feature<Polygon, GeoJsonProperties> | null = null;
 
   try {
     bboxCoords = bbox(feature.data) as [number, number, number, number];
-    bboxPolygon = createBboxPolygon(bboxCoords);
+    perimeter = bboxPolygon(bboxCoords);
   } catch (error) {
     console.warn(`Failed to calculate bbox for feature ${feature.id}:`, error);
   }
@@ -143,11 +120,15 @@ function MapFeature({
 
     const handleClick = () => {
       // Only add to context if not already in context
-      const isInContext = areas.find((a) => a.content === feature.id);
+      const isInContext = areas.find((a) => a.id === feature.id);
       if (!isInContext) {
         addContext({
+          id: feature.id,
           contextType: "area",
-          content: feature.id,
+          content: {
+            name: feature.id,
+            geometry: feature.data,
+          },
         });
       }
     };
@@ -183,10 +164,11 @@ function MapFeature({
     addContext,
     hoverTimeout,
     setHoverState,
+    feature,
   ]);
 
   // Get area context item for display
-  const areaContext = areas.find((a) => a.content === feature.id);
+  const areaContext = areas.find((a) => (a.content as AOI).name === feature.id);
 
   const handleRemoveFromContext = () => {
     if (areaContext) {
@@ -215,11 +197,11 @@ function MapFeature({
       </Source>
 
       {/* Dashed rectangle around the feature */}
-      {bboxPolygon && (
+      {perimeter && (
         <Source
           id={bboxSourceId}
           type="geojson"
-          data={bboxPolygon}
+          data={perimeter}
           generateId={true}
         >
           {/* Dashed line layer (default) */}

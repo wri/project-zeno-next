@@ -26,8 +26,9 @@ export function pickAoiTool(
 
     if (aoiName) {
       addContext({
+        id: aoiName,
         contextType: "area",
-        content: aoiName,
+        content: streamMessage.aoi as AOI,
       });
     }
 
