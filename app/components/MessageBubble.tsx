@@ -17,6 +17,7 @@ import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
 import { useEffect, useState } from "react";
 import remarkBreaks from "remark-breaks";
+import MarkdownTypewriter from "./MarkdownTypewriter";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -104,6 +105,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             },
           }}
         >
+          {/* <MarkdownTypewriter message={message} /> */}
           <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
         </Box>
         {!isUser && !isConsecutive && (
