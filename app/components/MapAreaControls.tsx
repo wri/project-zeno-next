@@ -66,11 +66,8 @@ function MapAreaControls() {
   const { createArea, isCreating } = useCustomAreas();
 
   const handleConfirmDrawing = async () => {
-    // For now, we'll call the original confirmDrawing
-    // TODO: Modify the store to return the created area data so we can send it to the API
     confirmDrawing();
 
-    // Fixed area data for testing
     const fixedArea = {
       type: "FeatureCollection",
       features: [
