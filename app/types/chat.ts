@@ -12,7 +12,7 @@ export interface ChatMessage {
 
 // Widget types for insights
 export interface InsightWidget {
-  type: "line" | "bar" | "table";
+  type: "line" | "bar" | "table" | "dataset-card";
   title: string;
   description: string;
   data: unknown;
@@ -58,6 +58,15 @@ export interface StreamMessage {
 export interface AOI {
   name: string;
   geometry: FeatureCollection;
+}
+
+export interface DatasetInfo {
+  dataset_id: number;
+  source: string;
+  data_layer: string;
+  tile_url: string;
+  context_layer: string;
+  threshold: number | null;
 }
 
 // LangChain content structure (for internal API use)

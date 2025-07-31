@@ -18,6 +18,7 @@ import SelectAreaLayer from "./SelectAreaLayer";
 import useContextStore from "@/app/store/contextStore";
 import CustomAreasLayer from "./map/layers/CustomAreasLayer";
 import MapFeature from "./MapFeature";
+import DynamicTileLayers from "./map/layers/DynamicTileLayers";
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
@@ -110,11 +111,7 @@ function Map() {
 
         {/* Render GeoJSON features */}
         {geoJsonFeatures.map((feature) => (
-          <MapFeature
-            key={feature.id}
-            feature={feature}
-            areas={areas}
-          />
+          <MapFeature key={feature.id} feature={feature} areas={areas} />
         ))}
 
         {selectAreaLayer && (
@@ -125,6 +122,7 @@ function Map() {
           />
         )}
         <CustomAreasLayer />
+        <DynamicTileLayers />
         <MapAreaControls />
 
         <AttributionControl

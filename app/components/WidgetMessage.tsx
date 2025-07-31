@@ -1,8 +1,9 @@
 import { Box, Text, Heading } from "@chakra-ui/react";
-import { InsightWidget } from "@/app/types/chat";
+import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import ChakraLineChart from "./widgets/ChakraLineChart";
 import ChakraBarChart from "./widgets/ChakraBarChart";
+import DatasetCardWidget from "./widgets/DatasetCardWidget";
 
 interface WidgetMessageProps {
   widgets: InsightWidget[];
@@ -65,6 +66,12 @@ export default function WidgetMessage({ widgets }: WidgetMessageProps) {
               xAxis={widget.xAxis}
               yAxis={widget.yAxis}
             />
+          )}
+
+          {widget.type === "dataset-card" && (
+            <Box p={4}>
+              <DatasetCardWidget dataset={widget.data as DatasetInfo} />
+            </Box>
           )}
         </Box>
       ))}
