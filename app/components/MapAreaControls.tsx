@@ -7,7 +7,7 @@ import {
   IconButton,
   Menu,
   Portal,
-  Text
+  Text,
 } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -23,6 +23,7 @@ import useMapStore from "../store/mapStore";
 import { Tooltip } from "./ui/tooltip";
 import { MAX_AREA_KM2, MIN_AREA_KM2 } from "../constants/custom-areas";
 import { formatAreaWithUnits } from "../utils/formatArea";
+import { useCustomAreas } from "../hooks/useCustomAreas";
 
 function Wrapper({
   children,
@@ -62,6 +63,47 @@ function MapAreaControls() {
     toggleUploadAreaDialog,
   } = useMapStore();
 
+  const { createArea, isCreating } = useCustomAreas();
+
+  const handleConfirmDrawing = async () => {
+    // For now, we'll call the original confirmDrawing
+    // TODO: Modify the store to return the created area data so we can send it to the API
+    confirmDrawing();
+
+    // Fixed area data for testing
+    const fixedArea = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: {},
+          geometry: {
+            coordinates: [
+              [
+                [-54.067785341147925, 0.6429207538929234],
+                [-54.067785341147925, 0.5293895678403828],
+                [-53.97489240245906, 0.5293895678403828],
+                [-53.97489240245906, 0.6429207538929234],
+                [-54.067785341147925, 0.6429207538929234],
+              ],
+            ],
+            type: "Polygon",
+          },
+        },
+      ],
+    };
+
+    const requestData = {
+      name: "Test Area",
+      geometry: {
+        type: "Polygon",
+        coordinates: fixedArea.features[0].geometry.coordinates,
+      },
+    };
+
+    createArea(requestData);
+  };
+
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -97,7 +139,8 @@ function MapAreaControls() {
                 bg="bg"
                 _hover={{ bg: "bg.emphasized" }}
                 aria-label="Confirm area"
-                onClick={confirmDrawing}
+                onClick={handleConfirmDrawing}
+                disabled={isCreating}
               >
                 <CheckIcon />
               </IconButton>
