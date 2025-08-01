@@ -92,10 +92,12 @@ function MapAreaControls() {
 
     const requestData = {
       name: "Test Area",
-      geometry: {
-        type: "Polygon",
-        coordinates: fixedArea.features[0].geometry.coordinates,
-      },
+      geometries: [
+        {
+          type: "Polygon",
+          coordinates: fixedArea.features[0].geometry.coordinates,
+        },
+      ],
     };
 
     createArea(requestData);
