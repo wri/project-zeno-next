@@ -26,6 +26,7 @@ export function useCustomAreasCreate() {
 
   const {
     mutate: createArea,
+    mutateAsync: createAreaAsync,
     isPending: isCreating,
     error,
   } = useMutation({
@@ -37,6 +38,7 @@ export function useCustomAreasCreate() {
 
   return {
     createArea,
+    createAreaAsync,
     isCreating,
     error,
   };
