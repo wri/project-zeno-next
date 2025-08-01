@@ -1,15 +1,28 @@
 import { Layer, Source } from "react-map-gl/maplibre";
-import useMapStore from "@/app/store/mapStore";
-import { FeatureCollection } from "geojson";
+import { FeatureCollection, Polygon } from "geojson";
+import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
 
 function CustomAreasLayer() {
-  const { customAreas } = useMapStore();
+  const { customAreas, isLoading, error } = useCustomAreasList();
 
-  if (customAreas.length === 0) {
+  if (isLoading) {
     return null;
   }
 
-  const allFeatures = customAreas.flatMap((aoi) => aoi.geometry.features);
+  if (error || !customAreas || customAreas.length === 0) {
+    return null;
+  }
+
+  const allFeatures = customAreas.flatMap(({ id, name, geometries }) =>
+    geometries.map((geometry: Polygon) => ({
+      type: "Feature" as const,
+      geometry,
+      properties: {
+        id,
+        name,
+      },
+    }))
+  );
 
   const customAreasCollection: FeatureCollection = {
     type: "FeatureCollection",

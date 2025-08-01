@@ -8,12 +8,13 @@ import {
   Link,
 } from "@chakra-ui/react";
 import useMapStore from "../store/mapStore";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   ACCEPTED_FILE_TYPES,
   MAX_FILE_SIZE_MB,
 } from "../constants/custom-areas";
 import { UploadSimpleIcon } from "@phosphor-icons/react";
+import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 
 function UploadAreaDialog() {
   const {
@@ -22,7 +23,14 @@ function UploadAreaDialog() {
     uploadFile,
     isUploading,
     isFileSelected,
+    setCreateAreaFn,
   } = useMapStore();
+
+  const { createAreaAsync, isCreating } = useCustomAreasCreate();
+
+  useEffect(() => {
+    setCreateAreaFn(createAreaAsync);
+  }, [setCreateAreaFn, createAreaAsync]);
 
   const handleUpload = async () => {
     await uploadFile();
@@ -40,7 +48,9 @@ function UploadAreaDialog() {
           <Dialog.Content>
             <Dialog.Header>
               <Dialog.Title>
-                {isUploading ? "Uploading Area..." : "Upload Area"}
+                {isUploading || isCreating
+                  ? "Uploading Area..."
+                  : "Upload Area"}
               </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body
@@ -66,8 +76,8 @@ function UploadAreaDialog() {
               </Dialog.ActionTrigger>
               <Button
                 onClick={handleUpload}
-                disabled={!isFileSelected || isUploading}
-                loading={isUploading}
+                disabled={!isFileSelected || isUploading || isCreating}
+                loading={isUploading || isCreating}
                 loadingText="Uploading..."
                 colorPalette="blue"
               >

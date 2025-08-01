@@ -7,7 +7,7 @@ import {
   IconButton,
   Menu,
   Portal,
-  Text
+  Text,
 } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -23,6 +23,7 @@ import useMapStore from "../store/mapStore";
 import { Tooltip } from "./ui/tooltip";
 import { MAX_AREA_KM2, MIN_AREA_KM2 } from "../constants/custom-areas";
 import { formatAreaWithUnits } from "../utils/formatArea";
+import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 
 function Wrapper({
   children,
@@ -60,7 +61,14 @@ function MapAreaControls() {
     cancelDrawing,
     confirmDrawing,
     toggleUploadAreaDialog,
+    setCreateAreaFn,
   } = useMapStore();
+
+  const { createAreaAsync, isCreating } = useCustomAreasCreate();
+
+  useEffect(() => {
+    setCreateAreaFn(createAreaAsync);
+  }, [createAreaAsync, setCreateAreaFn]);
 
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {
@@ -98,6 +106,7 @@ function MapAreaControls() {
                 _hover={{ bg: "bg.emphasized" }}
                 aria-label="Confirm area"
                 onClick={confirmDrawing}
+                disabled={isCreating}
               >
                 <CheckIcon />
               </IconButton>

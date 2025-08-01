@@ -65,7 +65,7 @@ async function proxyRequest(
  */
 export async function handler(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ): Promise<NextResponse> {
   try {
     const token = await getAuthToken();
@@ -74,7 +74,8 @@ export async function handler(
     }
 
     const method = request.method.toUpperCase();
-    const targetUrl = buildTargetUrl(params.path);
+    const resolvedParams = await params;
+    const targetUrl = buildTargetUrl(resolvedParams.path);
 
     return await proxyRequest(method, targetUrl, token, request);
   } catch (error) {
