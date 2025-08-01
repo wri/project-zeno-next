@@ -7,7 +7,10 @@ import { generateRandomName } from "../utils/generateRandomName";
 import type { MapState } from "./mapStore";
 import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
 import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../constants/custom-areas";
-import type { CreateCustomAreaRequest } from "../schemas/api/custom_areas/post";
+import type {
+  CreateCustomAreaRequest,
+  CreateCustomAreaResponse,
+} from "../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
 
 // Type for polygon features from TerraDraw
@@ -27,7 +30,9 @@ export interface DrawAreaSlice {
     code: "too-small" | "too-large";
     area: number;
   } | null;
-  createAreaFn: ((data: CreateCustomAreaRequest) => Promise<void>) | null;
+  createAreaFn:
+    | ((data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>)
+    | null;
   startDrawing: () => void;
   confirmDrawing: () => void;
   cancelDrawing: () => void;
@@ -35,7 +40,7 @@ export interface DrawAreaSlice {
   endDrawing: () => void;
   clearValidationError: () => void;
   setCreateAreaFn: (
-    fn: (data: CreateCustomAreaRequest) => Promise<void>
+    fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>
   ) => void;
 }
 

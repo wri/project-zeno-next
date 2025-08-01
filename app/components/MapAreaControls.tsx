@@ -64,11 +64,11 @@ function MapAreaControls() {
     setCreateAreaFn,
   } = useMapStore();
 
-  const { createArea, isCreating } = useCustomAreasCreate();
+  const { createAreaAsync, isCreating } = useCustomAreasCreate();
 
   useEffect(() => {
-    setCreateAreaFn(createArea);
-  }, [createArea, setCreateAreaFn]);
+    setCreateAreaFn(createAreaAsync);
+  }, [createAreaAsync, setCreateAreaFn]);
 
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {

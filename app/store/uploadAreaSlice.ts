@@ -10,7 +10,10 @@ import type { MapState } from "./mapStore";
 import { generateRandomName } from "../utils/generateRandomName";
 import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
 import { formatAreaWithUnits } from "../utils/formatArea";
-import type { CreateCustomAreaRequest } from "../schemas/api/custom_areas/post";
+import type {
+  CreateCustomAreaRequest,
+  CreateCustomAreaResponse,
+} from "../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
 
 type UploadErrorType =
@@ -32,14 +35,16 @@ export interface UploadAreaSlice {
   filename: string;
   selectedFile: File | null;
   validatedGeoJson: Polygon[] | null;
-  createAreaFn: ((data: CreateCustomAreaRequest) => Promise<void>) | null;
+  createAreaFn:
+    | ((data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>)
+    | null;
   setError: (errorType: UploadErrorType, message?: string) => void;
   clearError: () => void;
   handleFile: (file: File) => void;
   uploadFile: () => Promise<void>;
   clearFileState: () => void;
   setCreateAreaFn: (
-    fn: (data: CreateCustomAreaRequest) => Promise<void>
+    fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>
   ) => void;
 }
 
