@@ -1,8 +1,8 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   type CreateCustomAreaRequest,
   type CreateCustomAreaResponse,
-} from "../schemas/CustomAreas";
+} from "../schemas/api/custom_areas/post";
 
 async function createCustomArea(
   data: CreateCustomAreaRequest
@@ -21,18 +21,17 @@ async function createCustomArea(
   return res.json();
 }
 
-export function useCustomAreas() {
+export function useCustomAreasCreate() {
+  const queryClient = useQueryClient();
+
   const {
     mutate: createArea,
     isPending: isCreating,
     error,
   } = useMutation({
     mutationFn: createCustomArea,
-    onSuccess: (data) => {
-      console.log("Custom area created:", data);
-    },
-    onError: (err) => {
-      console.error("Failed to create custom area:", err);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customAreas"] });
     },
   });
 

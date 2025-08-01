@@ -7,6 +7,7 @@ import { generateRandomName } from "../utils/generateRandomName";
 import type { MapState } from "./mapStore";
 import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
 import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../constants/custom-areas";
+import type { CreateCustomAreaRequest } from "../schemas/api/custom_areas/post";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -25,12 +26,14 @@ export interface DrawAreaSlice {
     code: "too-small" | "too-large";
     area: number;
   } | null;
+  createAreaFn: ((data: CreateCustomAreaRequest) => void) | null;
   startDrawing: () => void;
   confirmDrawing: () => void;
   cancelDrawing: () => void;
   initializeTerraDraw: (map: Map) => void;
   endDrawing: () => void;
   clearValidationError: () => void;
+  setCreateAreaFn: (fn: (data: CreateCustomAreaRequest) => void) => void;
 }
 
 // This ensures TerraDraw is initialized before use
@@ -51,6 +54,7 @@ export const createDrawAreaSlice: StateCreator<
   terraDraw: null,
   isDrawingMode: false,
   validationError: null,
+  createAreaFn: null,
 
   initializeTerraDraw: (map) => {
     const terraDraw = new TerraDraw({
@@ -136,7 +140,19 @@ export const createDrawAreaSlice: StateCreator<
       geometry: featureCollection,
     };
 
-    get().addCustomArea(newArea);
+    const requestData: CreateCustomAreaRequest = {
+      name: newArea.name,
+      geometries: featureCollection.features.map((feature) => ({
+        type: feature.geometry.type,
+        coordinates: (feature.geometry as import("geojson").Polygon)
+          .coordinates,
+      })),
+    };
+
+    const createAreaFn = get().createAreaFn;
+    if (createAreaFn) {
+      createAreaFn(requestData);
+    }
 
     get().endDrawing();
   },
@@ -144,5 +160,9 @@ export const createDrawAreaSlice: StateCreator<
   cancelDrawing: () => {
     get().clearValidationError();
     get().endDrawing();
+  },
+
+  setCreateAreaFn: (fn) => {
+    set({ createAreaFn: fn });
   },
 });

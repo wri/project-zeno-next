@@ -23,7 +23,7 @@ import useMapStore from "../store/mapStore";
 import { Tooltip } from "./ui/tooltip";
 import { MAX_AREA_KM2, MIN_AREA_KM2 } from "../constants/custom-areas";
 import { formatAreaWithUnits } from "../utils/formatArea";
-import { useCustomAreas } from "../hooks/useCustomAreas";
+import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 
 function Wrapper({
   children,
@@ -61,47 +61,14 @@ function MapAreaControls() {
     cancelDrawing,
     confirmDrawing,
     toggleUploadAreaDialog,
+    setCreateAreaFn,
   } = useMapStore();
 
-  const { createArea, isCreating } = useCustomAreas();
+  const { createArea, isCreating } = useCustomAreasCreate();
 
-  const handleConfirmDrawing = async () => {
-    confirmDrawing();
-
-    const fixedArea = {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: {},
-          geometry: {
-            coordinates: [
-              [
-                [-54.067785341147925, 0.6429207538929234],
-                [-54.067785341147925, 0.5293895678403828],
-                [-53.97489240245906, 0.5293895678403828],
-                [-53.97489240245906, 0.6429207538929234],
-                [-54.067785341147925, 0.6429207538929234],
-              ],
-            ],
-            type: "Polygon",
-          },
-        },
-      ],
-    };
-
-    const requestData = {
-      name: "Test Area",
-      geometries: [
-        {
-          type: "Polygon",
-          coordinates: fixedArea.features[0].geometry.coordinates,
-        },
-      ],
-    };
-
-    createArea(requestData);
-  };
+  useEffect(() => {
+    setCreateAreaFn(createArea);
+  }, [createArea, setCreateAreaFn]);
 
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {
@@ -138,7 +105,7 @@ function MapAreaControls() {
                 bg="bg"
                 _hover={{ bg: "bg.emphasized" }}
                 aria-label="Confirm area"
-                onClick={handleConfirmDrawing}
+                onClick={confirmDrawing}
                 disabled={isCreating}
               >
                 <CheckIcon />
