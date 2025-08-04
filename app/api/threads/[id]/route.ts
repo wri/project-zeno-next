@@ -4,6 +4,7 @@ import JSON5 from "json5";
 import { parseStreamMessage } from "../../chat/route";
 import { readDataStream } from "../../chat/read-data-stream";
 import { LangChainResponse, StreamMessage } from "@/app/types/chat";
+import { API_CONFIG } from "@/app/config/api";
 
 const TOKEN_NAME = "auth_token";
 
@@ -30,7 +31,7 @@ export async function GET(
     }, 60000); // 60 second timeout
 
     const response = await fetch(
-      `https://api.zeno-staging.ds.io/api/threads/${id}`,
+      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
       {
         headers: {
           "Content-Type": "application/json",
@@ -199,7 +200,7 @@ export async function PATCH(
     const body = await request.json();
 
     const response = await fetch(
-      `https://api.zeno-staging.ds.io/api/threads/${id}`,
+      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
       {
         method: "PATCH",
         headers: {
@@ -238,7 +239,7 @@ export async function DELETE(
     }
 
     const response = await fetch(
-      `https://api.zeno-staging.ds.io/api/threads/${id}`,
+      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
       {
         method: "DELETE",
         headers: {

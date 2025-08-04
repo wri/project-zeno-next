@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { API_CONFIG } from "@/app/config/api";
 
 const TOKEN_NAME = "auth_token";
-const BASE_URL = "https://api.zeno-staging.ds.io/api";
+const BASE_URL = API_CONFIG.API_BASE_URL;
 const METHODS_WITH_BODY = ["POST", "PUT"];
 
 async function getAuthToken(): Promise<string | null> {

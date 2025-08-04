@@ -8,6 +8,7 @@ import {
   StreamMessage,
 } from "@/app/types/chat";
 import { readDataStream } from "./read-data-stream";
+import { API_CONFIG } from "@/app/config/api";
 
 // Function to parse LangChain message into simplified format
 // messageType is either "agent" or "tools"
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body: ChatAPIRequest = await request.json();
-    const { query, query_type, thread_id } = body;
+    const { query, query_type, thread_id, ui_context } = body;
 
     if (!query || typeof query !== "string") {
       return NextResponse.json(
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Normal flow - call the real Zeno API
-      response = await fetch("https://api.zeno-staging.ds.io/api/chat", {
+      response = await fetch(API_CONFIG.ENDPOINTS.CHAT, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -169,6 +170,7 @@ export async function POST(request: NextRequest) {
           query,
           query_type,
           thread_id,
+          ...(ui_context && { ui_context }),
         }),
         signal: abortController.signal,
       });
