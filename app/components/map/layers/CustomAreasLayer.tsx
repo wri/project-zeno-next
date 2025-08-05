@@ -1,9 +1,49 @@
-import { Layer, Source } from "react-map-gl/maplibre";
+import { Layer, Source, MapMouseEvent } from "react-map-gl/maplibre";
 import { FeatureCollection, Polygon } from "geojson";
 import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
+import { useEffect } from "react";
+import useMapStore from "@/app/store/mapStore";
+
+const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
 
 function CustomAreasLayer() {
   const { customAreas, isLoading, error } = useCustomAreasList();
+  const { mapRef } = useMapStore();
+
+  const handleClick = (e: MapMouseEvent) => {
+    if (e.features && e.features.length > 0) {
+      const feature = e.features.find(
+        (f) => f.source === CUSTOM_AREAS_SOURCE_ID
+      );
+      if (feature) {
+        console.log("Clicked custom area:", feature.properties);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!mapRef) return;
+
+    const map = mapRef.getMap();
+
+    const handleMouseEnter = () => {
+      map.getCanvas().style.cursor = "pointer";
+    };
+
+    const handleMouseLeave = () => {
+      map.getCanvas().style.cursor = "";
+    };
+
+    map.on("click", "custom-areas-fill", handleClick);
+    map.on("mouseenter", "custom-areas-fill", handleMouseEnter);
+    map.on("mouseleave", "custom-areas-fill", handleMouseLeave);
+
+    return () => {
+      map.off("click", "custom-areas-fill", handleClick);
+      map.off("mouseenter", "custom-areas-fill", handleMouseEnter);
+      map.off("mouseleave", "custom-areas-fill", handleMouseLeave);
+    };
+  }, [mapRef]);
 
   if (isLoading) {
     return null;
@@ -31,7 +71,7 @@ function CustomAreasLayer() {
 
   return (
     <Source
-      id="custom-areas-source"
+      id={CUSTOM_AREAS_SOURCE_ID}
       type="geojson"
       data={customAreasCollection}
     >

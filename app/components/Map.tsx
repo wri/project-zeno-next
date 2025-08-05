@@ -115,14 +115,14 @@ function Map() {
           <MapFeature key={feature.id} feature={feature} areas={areas} />
         ))}
 
-        {selectAreaLayer && (
+        {selectAreaLayer && selectAreaLayer !== "Custom" && (
           <SelectAreaLayer
             key={selectAreaLayer}
             layerId={selectAreaLayer}
             beforeId={undefined}
           />
         )}
-        <CustomAreasLayer />
+        {selectAreaLayer === "Custom" && <CustomAreasLayer />}
         <MapAreaControls />
 
         <AttributionControl
