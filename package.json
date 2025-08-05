@@ -39,6 +39,7 @@
     "terra-draw": "^1.10.0",
     "terra-draw-maplibre-gl-adapter": "^1.1.1",
     "uuid": "^11.1.0",
+    "zod": "^4.0.14",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
