@@ -125,12 +125,17 @@ function CustomAreasLayer() {
           id="custom-areas-fill"
           type="fill"
           paint={{
-            "fill-color": "#f59e0b",
+            "fill-color": [
+              "case",
+              ["boolean", ["feature-state", "hover"], false],
+              "#fbbf24",
+              "#f59e0b",
+            ],
             "fill-opacity": [
               "case",
               ["boolean", ["feature-state", "hover"], false],
-              0.6,
-              0.4,
+              0.7,
+              0.2,
             ],
           }}
           filter={["==", ["geometry-type"], "Polygon"]}
@@ -139,25 +144,26 @@ function CustomAreasLayer() {
           id="custom-areas-line"
           type="line"
           paint={{
-            "line-color": "#d97706",
-            "line-width": 3,
+            "line-color": [
+              "case",
+              ["boolean", ["feature-state", "hover"], false],
+              "#f59e0b",
+              "#d97706",
+            ],
+            "line-width": [
+              "case",
+              ["boolean", ["feature-state", "hover"], false],
+              4,
+              3,
+            ],
+            "line-opacity": [
+              "case",
+              ["boolean", ["feature-state", "hover"], false],
+              1,
+              0.8,
+            ],
           }}
-          filter={[
-            "in",
-            ["geometry-type"],
-            ["literal", ["Polygon", "LineString"]],
-          ]}
-        />
-        <Layer
-          id="custom-areas-circle"
-          type="circle"
-          paint={{
-            "circle-color": "#d97706",
-            "circle-radius": 8,
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 2,
-          }}
-          filter={["==", ["geometry-type"], "Point"]}
+          filter={["==", ["geometry-type"], "Polygon"]}
         />
       </Source>
       {hoverInfo && <AreaTooltip hoverInfo={hoverInfo} />}
