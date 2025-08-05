@@ -24,7 +24,29 @@ export const config = defineConfig({
           900: { value: "#0049a8" }, //primary
           950: { value: "#062d65" },
         },
-
+        primary: {
+          200: { value: "#EDF7D7" },
+          300: { value: "#D4E4AF" },
+          500: { value: "#9FC642" },
+          600: { value: "#568F00" },
+          700: { value: "#417A00" },
+          800: { value: "#2F6400" },
+          900: { value: "#1F4D00" },
+          950: { value: "#0F2A00" },
+        },
+        neutral: {
+          50: {},
+          100: { value: "#FFFFFF" },
+          200: { value: "#FCF9F6" },
+          300: { value: "#F4EEE9" },
+          400: { value: "#DED5CE" },
+          500: { value: "#C5BCB5" },
+          600: { value: "#ABA29C" },
+          700: { value: "#3C3632" },
+          800: { value: "#221F1D" },
+          900: { value: "#0F0E0D" },
+          950: { value: "#212529" },
+        },
         lime: {
           50: { value: "#fcfee7" },
           100: { value: "#f7fbcc" },

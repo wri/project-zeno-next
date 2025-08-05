@@ -1,3 +1,4 @@
+"use client";
 import {
   Box,
   Button,
@@ -11,9 +12,16 @@ import {
   Text,
   Card,
   Tabs,
+  Badge,
 } from "@chakra-ui/react";
-import { CaretRightIcon } from "@phosphor-icons/react";
+import {
+  ArrowsClockwiseIcon,
+  CaretRightIcon,
+  PencilRulerIcon,
+} from "@phosphor-icons/react";
+import { Tooltip } from "@/components/ui/tooltip";
 import Link from "next/link";
+import { Button as WRIButton } from "@worldresources/wri-design-systems";
 
 const SAMPLE_PROMPTS = [
   "Tell me about wild fires in the Brazilian Amazon Rainforest",
@@ -107,6 +115,8 @@ export default function LandingPage() {
           height="100%"
           overflow="hidden"
           width="100%"
+          bg="hsla(225, 52%, 11%, 1)"
+          backgroundImage="radial-gradient(circle at 80% 80%, hsl(225deg 70% 15%) 0%, hsl(224deg 65% 11%) 50%)"
           _after={{
             bgGradient:
               "linear(180deg, rgba(6, 0, 11, 0.29) 70.65%, #06000B 100%)",
@@ -122,7 +132,7 @@ export default function LandingPage() {
             width="100%"
             height="100%"
             position="absolute"
-            objectFit="cover"
+            top={28}
             zIndex="0"
             pointerEvents="none"
             css={{
@@ -130,11 +140,12 @@ export default function LandingPage() {
                 height: "100%",
                 width: "100%",
                 objectFit: "cover",
+                objectPosition: "top",
               },
             }}
           >
             <video autoPlay loop muted playsInline preload="auto">
-              <source src="https://videos.pexels.com/video-files/27034712/12052397_2560_1440_30fps.mp4" />
+              <source src={"/landing-hero-bg.mp4"} type="video/mp4" />
             </video>
           </Box>
 
@@ -147,6 +158,7 @@ export default function LandingPage() {
             color="fg.inverted"
             py="2"
             zIndex="10"
+            backdropBlur="10px"
           >
             <Flex
               divideColor={"whiteAlpha.300"}
@@ -194,7 +206,7 @@ export default function LandingPage() {
           {/* Hero Container */}
           <Box py="20" zIndex="10">
             <Container textAlign="center" maxW="2xl" color="fg.inverted">
-              <Heading size="5xl">
+              <Heading size={{ base: "4xl", md: "5xl" }}>
                 Tackle nature&rsquo;s toughest monitoring challenges
               </Heading>
               <Text fontSize="lg">
@@ -203,7 +215,7 @@ export default function LandingPage() {
                 leading researchers.
               </Text>
             </Container>
-            <Container rounded="md" bg="bg" p="4" mt="8" maxW="xl" zIndex="10">
+            <Container rounded="md" bg="bg" p="4" mt="8" maxW={{base: "lg", md: "xl"}} zIndex="10">
               <Input
                 p="0"
                 outline="none"
@@ -217,17 +229,33 @@ export default function LandingPage() {
                 mt="4"
               >
                 <Flex gap="2" alignItems="flex-start" flexDirection="column">
-                  <Button variant="solid" bg="lime.400" color="fg">
+                  <Button
+                    variant="outline"
+                    _after={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      content: "''",
+                      zIndex: -1,
+                      width: "40%",
+                      height: "100%",
+                      bg: "lime.100",
+                    }}
+                  >
+                    <ArrowsClockwiseIcon />
                     New Suggestion
                   </Button>
                   <Text fontSize="xs" color="fg.subtle">
                     Automatically updating in 4s
                   </Text>
                 </Flex>
-                <Button variant="solid" colorPalette="blue">
-                  Go
-                  {/* <CaretRightIcon weight="bold" /> TODO - fix */}
-                </Button>
+                <WRIButton
+                  variant="primary"
+                  rightIcon={<CaretRightIcon weight="bold" />}
+                  label="Go"
+                />
               </Flex>
             </Container>
             <Container
@@ -239,19 +267,31 @@ export default function LandingPage() {
               fontSize="xs"
               color="fg.inverted"
               zIndex="10"
-              maxW="xl"
+              maxW={{base: "lg", md: "xl"}} 
               mt="3"
               px="2"
               py="1"
             >
-              <Text>NatureWATCH is in open Beta</Text>
-              <ChakraLink
-                asChild
-                color="fg.inverted"
-                textDecoration="underline"
-              >
-                <Link href="#">Capped at 100 prompts</Link>
-              </ChakraLink>
+              <Text>
+                <Badge size="xs" fontSize="8px" rounded="none" mr="1">
+                  BETA
+                </Badge>
+                NatureWATCH is in open Beta
+              </Text>
+              <Tooltip content="While NatureWATCH is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all.">
+                <Box
+                  color="fg.inverted"
+                  textDecoration="underline"
+                  textDecorationStyle="dotted"
+                  cursor="pointer"
+                  display="flex"
+                  gap="1"
+                  alignItems="center"
+                >
+                  <PencilRulerIcon />
+                  Capped at 100 prompts
+                </Box>
+              </Tooltip>
             </Container>
           </Box>
         </Box>
@@ -259,8 +299,9 @@ export default function LandingPage() {
       {/* Sliding prompts section */}
       <Box
         py="8"
+        bg="neutral.300"
         borderBlockEnd="1px solid"
-        borderColor="bg.emphasized"
+        borderColor="neutral.400"
         gap="4"
         overflow="hidden"
         display="flex"
@@ -270,13 +311,14 @@ export default function LandingPage() {
           {SAMPLE_PROMPTS.map((prompt, i) => (
             <Box
               key={i}
-              bg="lime.100"
+              bg="neutral.200"
               borderWidth="1px"
-              borderColor="lime.400"
+              borderColor="neutral.400"
               p="3"
               rounded="md"
               maxW="18rem"
               flexShrink="0"
+              fontSize="sm"
             >
               {prompt}
             </Box>
@@ -308,7 +350,7 @@ export default function LandingPage() {
       >
         <Container>
           <Container textAlign="center" maxW="3xl">
-            <Heading size="4xl">
+            <Heading size={{ base: "3xl", md: "4xl" }}>
               Building upon the legacy of World Resources Institute&rsquo;s
               trusted platforms
             </Heading>
@@ -363,7 +405,7 @@ export default function LandingPage() {
       >
         <Container>
           <Container textAlign="center" maxW="3xl">
-            <Heading size="4xl">
+            <Heading size={{ base: "3xl", md: "4xl" }}>
               Get answers to your toughest questions about natural landscapes
             </Heading>
             <Text fontSize="lg">
@@ -374,7 +416,7 @@ export default function LandingPage() {
             <Button asChild variant="solid" colorPalette="blue" mt="4">
               <Link href="/">
                 Launch the Preview
-                {/* <CaretRightIcon weight="bold" /> TODO: Fix icon import */}
+                <CaretRightIcon weight="bold" />
               </Link>
             </Button>
           </Container>
@@ -426,10 +468,10 @@ export default function LandingPage() {
         pb="28"
         borderBlockEnd="1px solid"
         borderColor="bg.emphasized"
-        bg="green.fg"
+        bg="url(/landing-bg-image2.png)"
       >
-        <Container textAlign="center" maxW="2xl" rounded="md">
-          <Heading size="3xl">
+        <Container textAlign="center" maxW="2xl" rounded="md" color="fg.inverted">
+          <Heading size={{ base: "3xl", md: "4xl" }}>
             See how monitoring intelligence can support your work
           </Heading>
           <Text fontSize="md" mb="4">
@@ -544,7 +586,7 @@ export default function LandingPage() {
         borderColor="bg.emphasized"
       >
         <Container textAlign="center" maxW="2xl">
-          <Heading size="3xl">How it works</Heading>
+          <Heading size={{ base: "4xl", md: "5xl" }}>How it works</Heading>
         </Container>
         <Container maxW="2xl">
           {HOW_STEPS.map((step, index) => (
@@ -564,7 +606,7 @@ export default function LandingPage() {
       >
         <Container>
           <Container textAlign="center" maxW="2xl">
-            <Heading size="3xl">Latest Updates</Heading>
+            <Heading size={{ base: "3xl", md: "4xl" }}>Latest Updates</Heading>
             <Text fontSize="lg" mb="4">
               We combine cutting-edge geospatial research from Land & Carbon Lab
               with the latest advances in technology.
@@ -620,9 +662,9 @@ export default function LandingPage() {
       >
         <Container>
           <Container textAlign="center" maxW="2xl">
-            <Heading size="3xl">The future of monitoring</Heading>
+            <Heading size={{ base: "3xl", md: "4xl" }}>The future of monitoring</Heading>
             <Text fontSize="lg" mb="4">
-              We’re making geospatial data more accessible, easier to use and
+              We&rsquo;re making geospatial data more accessible, easier to use and
               more impactful for everyone working to protect the planet.{" "}
             </Text>
           </Container>
@@ -724,90 +766,90 @@ export default function LandingPage() {
         borderBlockEnd="1px solid"
         borderColor="bg.emphasized"
       >
-        <Container>
+        <Container display="flex" flexDir="column" gap="24">
           <Container textAlign="center" maxW="2xl">
-            <Heading size="3xl">The team behind Nature Watch</Heading>
+            <Heading size={{ base: "3xl", md: "4xl" }}>The team behind Nature Watch</Heading>
             <Text fontSize="lg" mb="4">
               Nature Watch is the work of World Resources Institute and Land &
               Carbon Lab, in collaboration with other teams working to shape the
               future of monitoring research, data and analysis.
             </Text>
           </Container>
-          <Flex gap="4" wrap="wrap" justifyContent="center">
-            {/* Team org logos */}
-            {["WRI", "LCL", "BEF", "GFW"].map((name) => (
-              <Link
-                key={name}
-                href={`https://www.${name.toLowerCase()}.org`}
-                target="_blank"
-              >
-                <Image
-                  src={`/images/${name.toLowerCase()}-logo.png`}
-                  alt={`${name} logo`}
-                  maxW="10rem"
-                />
-              </Link>
-            ))}
+          <Flex
+            gap="12"
+            alignItems="center"
+            flexWrap="wrap"
+            justifyContent="center"
+          >
+            <ChakraLink href="https://www.wri.org/">
+              <Image src="/WRI-logo.svg" alt="WRI Logo" height="64px" />
+            </ChakraLink>
+            <ChakraLink href="https://www.bezosearthfund.org/">
+              <Image src="/BEF-logo.png" alt="BEF Logo" height="64px" />
+            </ChakraLink>
+            <ChakraLink href="https://www.globalforestwatch.org/">
+              <Image src="/GFW-logo.svg" alt="GFW Logo" height="64px" />
+            </ChakraLink>
+            <ChakraLink href="https://landcarbonlab.org/">
+              <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
+            </ChakraLink>
           </Flex>
         </Container>
       </Box>
+      {/* New Era Quote Section - hidden on mobile */}
       <Box
         py="24"
         pb="28"
         borderBlockEnd="1px solid"
         borderColor="bg.emphasized"
+        hideBelow={"sm"}
       >
-        <Container>
-          <Container maxW="2xl">
-            <Heading textAlign="center" size="3xl">
-              The marker of a new era
-            </Heading>
-            <Text fontSize="lg" mb="4">
-              World Resources Institute tools have been transforming global
-              geospatial analysis for over 14 years, with Global Forest Watch
-              having particularly successful impact over forest monitoring
-              across the tropics.
-            </Text>
-            <Text fontSize="lg" mb="4">
-              However, as we look to the latest advances in technology, AI
-              unlocks an opportunity for us to shift from global-first,
-              fixed-structure outputs to highly-targeted, actionable insights in
-              the language, terminology and regions that matter most to our
-              users.
-            </Text>
-            <Text fontSize="lg" mb="4">
-              Nature Watch marks a new chapter in our monitoring research, data
-              and tools. We step away from simply watching ecosystems, and
-              toward empowering intelligence-backed action.
-            </Text>
-          </Container>
-          <Container
-            bg="bg.subtle"
-            shadow="md"
-            border="1px solid"
-            borderColor="blackAlpha.200"
-            rounded="md"
-            p="6"
-            mt="8"
-            maxW="2xl"
+        <Container maxW="2xl">
+          <Heading textAlign="center" size="4xl">
+            The marker of a new era
+          </Heading>
+          <Text fontSize="lg" mb="4">
+            World Resources Institute tools have been transforming global
+            geospatial analysis for over 14 years, with Global Forest Watch
+            having particularly successful impact over forest monitoring across
+            the tropics.
+          </Text>
+          <Text fontSize="lg" mb="4">
+            However, as we look to the latest advances in technology, AI unlocks
+            an opportunity for us to shift from global-first, fixed-structure
+            outputs to highly-targeted, actionable insights in the language,
+            terminology and regions that matter most to our users.
+          </Text>
+          <Text fontSize="lg" mb="4">
+            Nature Watch marks a new chapter in our monitoring research, data
+            and tools. We step away from simply watching ecosystems, and toward
+            empowering intelligence-backed action.
+          </Text>
+        </Container>
+        <Container
+          bg="neutral.200"
+          rounded="xl"
+          p="6"
+          mt="8"
+          maxW="2xl"
+          display="flex"
+          flexDir="column"
+          gap="2"
+        >
+          <Heading
+            borderStart="2px solid"
+            borderColor="blue.700"
+            pl="4"
+            size="xl"
+            as="blockquote"
           >
-            <Heading
-              borderStart="2px solid"
-              borderColor="pink.400"
-              pl="4"
-              size="lg"
-              as="blockquote"
-            >
-              “Meaningful change doesn’t come from simply watching, it comes
-              from taking action”
-            </Heading>
-            <Text as="cite" fontSize="sm">
-              Craig Mills, Land & Carbon Lab
-            </Text>
-          </Container>
+            “Meaningful change doesn&rsquo;t come from simply watching, it comes
+            from taking action”
+          </Heading>
+          <Text as="cite">Craig Mills, Land & Carbon Lab</Text>
         </Container>
       </Box>
-      {/* Footer Section */}
+      {/* Final CTA */}
       <Box
         py="24"
         pb="28"
@@ -818,14 +860,17 @@ export default function LandingPage() {
           <Container
             maxW="4xl"
             mt="8"
-            p="4"
+            py="4"
+            px="5"
             rounded="md"
-            bg="bg"
+            bg={{ base: "bg.emphasized", md: "lime.200" }}
             display="flex"
-            alignItems="center"
+            flexDirection={{ base: "column", md: "row" }}
+            alignItems={{ base: "flex-start", md: "center" }}
+            gap={3}
             justifyContent="space-between"
           >
-            <Box>
+            <Box display="flex" flexDir="column" gap="2">
               <Heading size="md" as="p">
                 How will you use monitoring intelligence?{" "}
               </Heading>
@@ -835,32 +880,92 @@ export default function LandingPage() {
               </Text>
             </Box>
             <Button asChild variant="solid" colorPalette="blue">
-              <Link href="/">Try the preview</Link>
-              {/* <CaretRightIcon weight="bold" /> TODO - fix */}
+              <Link href="/">
+                Try the preview
+                <CaretRightIcon weight="bold" />
+              </Link>
             </Button>
           </Container>
         </Container>
       </Box>
-      <Box as="footer" p="12" pb="0">
-        <Container display="flex" flexDirection="column" gap={8}>
-          <Flex justifyContent="space-between" alignItems="center" gap={4}>
-            <Heading size="3xl">NatureWATCH</Heading>
-            <Flex>
-              {PARTNER_ORGS.map((org) =>
-                <Image key={org.name} src={org.logo} alt={`${org.name} logo`} />
-              )}
+      {/* Footer Section */}
+      <Box
+        as="footer"
+        p="12"
+        pb="0"
+        bg="linear-gradient(98deg, #1D84BE -1.78%, #42A1DD 4.02%, #6ABFFF 20.15%, #C1E23E 78.8%, #E3F37F 99.99%)"
+      >
+        <Container display="flex" flexDirection="column" gap={16}>
+          <Flex
+            justifyContent="space-between"
+            alignItems="center"
+            gap={4}
+            flexDir={{ base: "column", md: "row" }}
+          >
+            <Heading size={{ base: "4xl", md: "5xl" }} fontWeight="semibold">
+              NatureWATCH
+            </Heading>
+            <Flex gap="12" alignItems="center" flexWrap="wrap">
+              <ChakraLink href="https://www.wri.org/">
+                <Image src="/WRI-logo-mono.svg" alt="WRI Logo" height="64px" />
+              </ChakraLink>
+              <ChakraLink href="https://www.bezosearthfund.org/">
+                <Image src="/BEF-logo-mono.svg" alt="BEF Logo" height="64px" />
+              </ChakraLink>
+              <ChakraLink href="https://www.globalforestwatch.org/">
+                <Image src="/GFW-logo-mono.svg" alt="GFW Logo" height="64px" />
+              </ChakraLink>
+              <ChakraLink href="https://landcarbonlab.org/">
+                <Image src="/LCL-logo-mono.svg" alt="LCL Logo" height="64px" />
+              </ChakraLink>
             </Flex>
           </Flex>
-          <Flex justifyContent="space-between" alignItems="center" gap={4}>
-            <Flex alignItems="center" gap={4}>
-              <Text>{Date.now()} © NatureWATCH</Text>
-              <Link href="#">Privacy Policy</Link>
-              <Link href="#">Cookie Preferences</Link>
+          <Flex
+            justifyContent="space-between"
+            alignItems={{ base: "flex-start", md: "center" }}
+            gap={4}
+            pb="12"
+            flexDir={{ base: "column", md: "row" }}
+          >
+            <Flex alignItems="center" gap={6} flexWrap="wrap">
+              <Text>{new Date().getFullYear()} © NatureWATCH</Text>
+              <ChakraLink
+                textDecoration="underline"
+                textDecorationStyle="dotted"
+                asChild
+              >
+                <Link href="#">Privacy Policy</Link>
+              </ChakraLink>
+              <ChakraLink
+                textDecoration="underline"
+                textDecorationStyle="dotted"
+                asChild
+              >
+                <Link href="#">Cookie Preferences</Link>
+              </ChakraLink>
             </Flex>
-            <Flex alignItems="center" gap={4}>
-              <Link href="#">Instagram</Link>
-              <Link href="#">Linkedin</Link>
-              <Link href="#">Twitter</Link>
+            <Flex alignItems="center" gap={6} flexWrap="wrap">
+              <ChakraLink
+                textDecoration="underline"
+                textDecorationStyle="dotted"
+                href="#"
+              >
+                Instagram
+              </ChakraLink>
+              <ChakraLink
+                textDecoration="underline"
+                textDecorationStyle="dotted"
+                href="#"
+              >
+                Linkedin
+              </ChakraLink>
+              <ChakraLink
+                textDecoration="underline"
+                textDecorationStyle="dotted"
+                href="#"
+              >
+                Twitter
+              </ChakraLink>
             </Flex>
           </Flex>
         </Container>
