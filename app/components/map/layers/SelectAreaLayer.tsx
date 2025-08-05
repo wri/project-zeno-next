@@ -9,10 +9,16 @@ import {
 import { union } from "@turf/union";
 import "../../../theme/popup.css";
 
-import { LayerId, LayerName, selectLayerOptions } from "../../../types/map";
+import { LayerId, selectLayerOptions } from "../../../types/map";
 import useContextStore from "../../../store/contextStore";
 import useMapStore from "../../../store/mapStore";
 import { API_CONFIG } from "../../../config/api";
+import {
+  getAoiName,
+  getSrcId,
+  getSubtype,
+  singularizeDatasetName,
+} from "../../../utils/areaHelpers";
 import {
   Feature,
   FeatureCollection,
@@ -32,75 +38,10 @@ interface HoverInfo {
   name: string;
 }
 
-function getAoiName(
-  nameKeys: readonly string[],
-  properties: { [key: string]: string }
-): string {
-  return nameKeys.reduce(
-    (acc: string, key: string, idx: number) =>
-      properties[key] ? `${properties[key]}${idx > 0 ? ", " : ""}${acc}` : acc,
-    ""
-  );
-}
-
-function singularizeDatasetName(name: LayerName): string {
-  if (name.endsWith("s")) {
-    return name.slice(0, -1);
-  }
-
-  return name;
-}
-
-// Helper function to get src_id based on metadata
-function getSrcId(
-  layerId: LayerId,
-  featureProps: any,
-  metadata: any
-): string | undefined {
-  const layerKey = layerId.toLowerCase();
-
-  if (layerKey === "gadm") {
-    // Special case for GADM: use gid{adm_level}
-    const admLevel = featureProps?.adm_level;
-    if (admLevel !== undefined && admLevel !== null) {
-      const gidKey = `gid_${admLevel}`;
-      return featureProps?.[gidKey] || featureProps?.gadm_id || "";
-    }
-    return featureProps?.gadm_id;
-  }
-
-  // For other layers, use the mapping from metadata
-  const idField = metadata.layer_id_mapping[layerKey];
-  if (idField && featureProps?.[idField]) {
-    return featureProps[idField];
-  }
-}
-
-// Helper function to get subtype based on metadata
-function getSubtype(
-  layerId: LayerId,
-  featureProps: any,
-  metadata: any
-): string | undefined {
-  const layerKey = layerId.toLowerCase();
-
-  if (layerKey === "gadm") {
-    // Special case for GADM: use adm_level to determine subtype
-    const admLevel = featureProps?.adm_level;
-    if (
-      admLevel !== undefined &&
-      admLevel !== null &&
-      metadata.gadm_subtype_mapping
-    ) {
-      const gidKey = `GID_${admLevel}`;
-      return metadata.gadm_subtype_mapping[gidKey];
-    }
-  }
-
-  // For other layers, use subregion_to_subtype_mapping
-  if (metadata.subregion_to_subtype_mapping?.[layerKey]) {
-    return metadata.subregion_to_subtype_mapping[layerKey];
-  }
+interface Metadata {
+  layer_id_mapping: Record<string, string>;
+  gadm_subtype_mapping?: Record<string, string>;
+  subregion_to_subtype_mapping?: Record<string, string>;
 }
 
 function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
@@ -108,7 +49,7 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
   const { addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
-  const [metadata, setMetadata] = useState<any>(null);
+  const [metadata, setMetadata] = useState<Metadata | null>(null);
 
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
