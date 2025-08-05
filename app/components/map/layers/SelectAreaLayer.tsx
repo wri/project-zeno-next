@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Layer,
-  MapMouseEvent,
-  Popup,
-  Source,
-  useMap,
-} from "react-map-gl/maplibre";
+import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
 import "../../../theme/popup.css";
 
@@ -26,16 +20,11 @@ import {
   MultiPolygon,
   Polygon,
 } from "geojson";
+import AreaTooltip, { HoverInfo } from "../../ui/AreaTooltip";
 
 interface SourceLayerProps {
   layerId: LayerId;
   beforeId?: string;
-}
-
-interface HoverInfo {
-  lng: number;
-  lat: number;
-  name: string;
 }
 
 interface Metadata {
@@ -253,20 +242,10 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
         />
       </Source>
       {hoverInfo && (
-        <Popup
-          longitude={hoverInfo.lng}
-          latitude={hoverInfo.lat}
-          offset={[0, -20] as [number, number]}
-          closeButton={false}
-          anchor="left"
-        >
-          <p className="area-name">
-            <b>{hoverInfo.name}</b>
-          </p>
-          <p className="hint">{`Click to select ${singularizeDatasetName(
-            datasetName
-          )}. Esc to exit.`}</p>
-        </Popup>
+        <AreaTooltip
+          hoverInfo={hoverInfo}
+          areaName={singularizeDatasetName(datasetName)}
+        />
       )}
     </>
   );
