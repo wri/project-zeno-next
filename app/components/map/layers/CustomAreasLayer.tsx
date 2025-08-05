@@ -1,7 +1,7 @@
 import { Layer, Source, MapMouseEvent } from "react-map-gl/maplibre";
 import { FeatureCollection, Polygon } from "geojson";
 import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
@@ -14,24 +14,27 @@ function CustomAreasLayer() {
   const { addContext } = useContextStore();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
 
-  const handleClick = (e: MapMouseEvent) => {
-    if (e.features && e.features.length > 0) {
-      const feature = e.features.find(
-        (f) => f.source === CUSTOM_AREAS_SOURCE_ID
-      );
-      if (feature) {
-        const { name } = feature.properties;
-        addContext({
-          contextType: "area",
-          content: name,
-          aoiData: {
-            name,
-            source: "custom",
-          },
-        });
+  const handleClick = useCallback(
+    (e: MapMouseEvent) => {
+      if (e.features && e.features.length > 0) {
+        const feature = e.features.find(
+          (f) => f.source === CUSTOM_AREAS_SOURCE_ID
+        );
+        if (feature) {
+          const { name } = feature.properties;
+          addContext({
+            contextType: "area",
+            content: name,
+            aoiData: {
+              name,
+              source: "custom",
+            },
+          });
+        }
       }
-    }
-  };
+    },
+    [addContext]
+  );
 
   useEffect(() => {
     if (!mapRef) return;
@@ -86,7 +89,7 @@ function CustomAreasLayer() {
       map.off("mouseenter", "custom-areas-fill", handleMouseEnter);
       map.off("mouseleave", "custom-areas-fill", handleMouseLeave);
     };
-  }, [mapRef]);
+  }, [mapRef, handleClick]);
 
   if (isLoading) {
     return null;

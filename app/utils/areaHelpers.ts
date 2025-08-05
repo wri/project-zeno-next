@@ -1,5 +1,17 @@
 import { LayerId, LayerName } from "../types/map";
 
+interface FeatureProperties {
+  [key: string]: unknown;
+  adm_level?: number;
+  gadm_id?: string;
+}
+
+interface Metadata {
+  layer_id_mapping: Record<string, string>;
+  gadm_subtype_mapping?: Record<string, string>;
+  subregion_to_subtype_mapping?: Record<string, string>;
+}
+
 export function getAoiName(
   nameKeys: readonly string[],
   properties: { [key: string]: string }
@@ -20,8 +32,8 @@ export function singularizeDatasetName(name: LayerName): string {
 
 export function getSrcId(
   layerId: LayerId,
-  featureProps: any,
-  metadata: any
+  featureProps: FeatureProperties,
+  metadata: Metadata
 ): string | undefined {
   const layerKey = layerId.toLowerCase();
 
@@ -36,14 +48,14 @@ export function getSrcId(
 
   const idField = metadata.layer_id_mapping[layerKey];
   if (idField && featureProps?.[idField]) {
-    return featureProps[idField];
+    return String(featureProps[idField]);
   }
 }
 
 export function getSubtype(
   layerId: LayerId,
-  featureProps: any,
-  metadata: any
+  featureProps: FeatureProperties,
+  metadata: Metadata
 ): string | undefined {
   const layerKey = layerId.toLowerCase();
 

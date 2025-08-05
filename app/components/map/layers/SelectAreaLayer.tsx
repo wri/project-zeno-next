@@ -203,6 +203,10 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
     nameKeys,
     setSelectAreaLayer,
     metadata,
+    addContext,
+    addGeoJsonFeature,
+    layerId,
+    url,
   ]);
 
   return (
