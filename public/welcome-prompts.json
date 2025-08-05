@@ -1,0 +1,9 @@
+{
+  "prompts": [
+    "A short prompt.",
+    "Another short prompt.",
+    "This is an example of a medium-length prompt.",
+    "Here, you will find an example containing a longer prompt that could be selected by the user.",
+    "Here, you will find an example containing an extremely long prompt that could be selected by the user which would be provided for them to input to the chat. It would contain many details and be very descriptive."
+  ]
+}

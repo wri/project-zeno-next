@@ -8,14 +8,20 @@ import {
   Text,
   Textarea,
   ButtonGroup,
-  Flex,
 } from "@chakra-ui/react";
-
+import { useEffect } from "react";
+import { usePromptStore } from "@/app/store/promptStore";
 import { SparkleIcon } from "@phosphor-icons/react";
 
 const WelcomeModal = () => {
+  const { prompts, fetchPrompts } = usePromptStore();
+
+  useEffect(() => {
+    fetchPrompts();
+  }, [fetchPrompts]);
+
   return (
-    <Dialog.Root defaultOpen="true" placement="center" size="lg">
+    <Dialog.Root defaultOpen={true} placement="center" size="lg">
       {/* <Dialog.Trigger asChild>
         <Button variant="outline" size="sm">
           Open Dialog
@@ -66,31 +72,12 @@ const WelcomeModal = () => {
                 maxHeight="272px"
                 size="sm"
               >
-                <Button bg="white" _hover={{ bg: "blue.100" }}>
-                  <SparkleIcon />A short prompt.
-                </Button>
-                <Button>
-                  <SparkleIcon />A short prompt.
-                </Button>
-                <Button>
-                  <SparkleIcon />A short prompt.
-                </Button>
-                <Button>
-                  <SparkleIcon />
-                  This is an example of a medium-length prompt.
-                </Button>
-                <Button>
-                  <SparkleIcon />
-                  Here, you will find an example containing a longer prompt that
-                  could be selected by the user.
-                </Button>
-                <Button>
-                  <SparkleIcon />
-                  Here, you will find an example containing an extremely long
-                  prompt that could be selected by the user which would be
-                  provided for them to input to the chat. It would contain many
-                  details and be very descriptive.
-                </Button>
+                {prompts.map((prompt, index) => (
+                  <Button key={index} bg="white" _hover={{ bg: "blue.100" }}>
+                    <SparkleIcon />
+                    {prompt}
+                  </Button>
+                ))}
               </ButtonGroup>
             </Dialog.Body>
             <Dialog.Footer>
