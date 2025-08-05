@@ -295,6 +295,7 @@ export const createUploadAreaSlice: StateCreator<
 
       await createAreaFn(requestData);
       get().clearFileState();
+      get().clearSelectionMode();
       set({ dialogVisible: false });
     } catch (error) {
       console.error("Upload error:", error);
