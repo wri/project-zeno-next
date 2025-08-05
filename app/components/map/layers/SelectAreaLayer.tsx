@@ -7,12 +7,12 @@ import {
   useMap,
 } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
-import "../theme/popup.css";
+import "../../../theme/popup.css";
 
-import { LayerId, LayerName, selectLayerOptions } from "../types/map";
-import useContextStore from "../store/contextStore";
-import useMapStore from "../store/mapStore";
-import { API_CONFIG } from "../config/api";
+import { LayerId, LayerName, selectLayerOptions } from "../../../types/map";
+import useContextStore from "../../../store/contextStore";
+import useMapStore from "../../../store/mapStore";
+import { API_CONFIG } from "../../../config/api";
 import {
   Feature,
   FeatureCollection,
@@ -52,9 +52,13 @@ function singularizeDatasetName(name: LayerName): string {
 }
 
 // Helper function to get src_id based on metadata
-function getSrcId(layerId: LayerId, featureProps: any, metadata: any): string | undefined {
+function getSrcId(
+  layerId: LayerId,
+  featureProps: any,
+  metadata: any
+): string | undefined {
   const layerKey = layerId.toLowerCase();
-  
+
   if (layerKey === "gadm") {
     // Special case for GADM: use gid{adm_level}
     const admLevel = featureProps?.adm_level;
@@ -64,7 +68,7 @@ function getSrcId(layerId: LayerId, featureProps: any, metadata: any): string | 
     }
     return featureProps?.gadm_id;
   }
-  
+
   // For other layers, use the mapping from metadata
   const idField = metadata.layer_id_mapping[layerKey];
   if (idField && featureProps?.[idField]) {
@@ -73,18 +77,26 @@ function getSrcId(layerId: LayerId, featureProps: any, metadata: any): string | 
 }
 
 // Helper function to get subtype based on metadata
-function getSubtype(layerId: LayerId, featureProps: any, metadata: any): string | undefined {
+function getSubtype(
+  layerId: LayerId,
+  featureProps: any,
+  metadata: any
+): string | undefined {
   const layerKey = layerId.toLowerCase();
-  
+
   if (layerKey === "gadm") {
     // Special case for GADM: use adm_level to determine subtype
     const admLevel = featureProps?.adm_level;
-    if (admLevel !== undefined && admLevel !== null && metadata.gadm_subtype_mapping) {
+    if (
+      admLevel !== undefined &&
+      admLevel !== null &&
+      metadata.gadm_subtype_mapping
+    ) {
       const gidKey = `GID_${admLevel}`;
       return metadata.gadm_subtype_mapping[gidKey];
     }
   }
-  
+
   // For other layers, use subregion_to_subtype_mapping
   if (metadata.subregion_to_subtype_mapping?.[layerKey]) {
     return metadata.subregion_to_subtype_mapping[layerKey];
@@ -121,10 +133,10 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
         setMetadata(data);
         console.log("Fetched metadata:", data);
       } catch (error) {
-        console.error('Failed to fetch metadata:', error);
+        console.error("Failed to fetch metadata:", error);
       }
     };
-    
+
     fetchMetadata();
   }, []);
 
@@ -210,14 +222,16 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
             }
             // Extract AOI data for ui_context
             const featureProps = feature.properties;
-            const layerConfig = selectLayerOptions.find(opt => opt.id === layerId);
-            
+            const layerConfig = selectLayerOptions.find(
+              (opt) => opt.id === layerId
+            );
+
             // Get dynamic src_id and subtype using metadata
             const dynamicSrcId = getSrcId(layerId, featureProps, metadata);
             const dynamicSubtype = getSubtype(layerId, featureProps, metadata);
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
-            
+
             addContext({
               contextType: "area",
               content: aoiName,
@@ -251,7 +265,15 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
         document.removeEventListener("keyup", onKeyUp);
       };
     }
-  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, setSelectAreaLayer, metadata]);
+  }, [
+    map,
+    fillLayerName,
+    sourceId,
+    sourceLayer,
+    nameKeys,
+    setSelectAreaLayer,
+    metadata,
+  ]);
 
   return (
     <>
