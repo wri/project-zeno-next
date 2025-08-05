@@ -9,24 +9,34 @@ import {
   Textarea,
   ButtonGroup,
 } from "@chakra-ui/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePromptStore } from "@/app/store/promptStore";
+import useChatStore from "@/app/store/chatStore";
 import { SparkleIcon } from "@phosphor-icons/react";
 
 const WelcomeModal = () => {
   const { prompts, fetchPrompts } = usePromptStore();
+  const { sendMessage } = useChatStore();
+  const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
     fetchPrompts();
   }, [fetchPrompts]);
 
+  const handlePromptClick = (prompt: string) => {
+    sendMessage(prompt);
+    setIsOpen(false);
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <Dialog.Root defaultOpen={true} placement="center" size="lg">
-      {/* <Dialog.Trigger asChild>
-        <Button variant="outline" size="sm">
-          Open Dialog
-        </Button>
-      </Dialog.Trigger> */}
+    <Dialog.Root
+      open={isOpen}
+      onOpenChange={(e) => setIsOpen(e.open)}
+      placement="center"
+      size="lg"
+    >
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
@@ -73,7 +83,12 @@ const WelcomeModal = () => {
                 size="sm"
               >
                 {prompts.map((prompt, index) => (
-                  <Button key={index} bg="white" _hover={{ bg: "blue.100" }}>
+                  <Button
+                    key={index}
+                    bg="white"
+                    _hover={{ bg: "blue.100" }}
+                    onClick={() => handlePromptClick(prompt)}
+                  >
                     <SparkleIcon />
                     {prompt}
                   </Button>
