@@ -3,12 +3,14 @@ import { FeatureCollection, Polygon } from "geojson";
 import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
 import { useEffect } from "react";
 import useMapStore from "@/app/store/mapStore";
+import useContextStore from "@/app/store/contextStore";
 
 const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
 
 function CustomAreasLayer() {
   const { customAreas, isLoading, error } = useCustomAreasList();
   const { mapRef } = useMapStore();
+  const { addContext } = useContextStore();
 
   const handleClick = (e: MapMouseEvent) => {
     if (e.features && e.features.length > 0) {
@@ -16,7 +18,15 @@ function CustomAreasLayer() {
         (f) => f.source === CUSTOM_AREAS_SOURCE_ID
       );
       if (feature) {
-        console.log("Clicked custom area:", feature.properties);
+        const { name } = feature.properties;
+        addContext({
+          contextType: "area",
+          content: name,
+          aoiData: {
+            name,
+            source: "custom",
+          },
+        });
       }
     }
   };
