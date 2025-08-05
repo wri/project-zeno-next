@@ -6,7 +6,6 @@ import { LayerId } from "../types/map";
 import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
-import { AOI } from "../types/chat";
 
 interface GeoJsonFeature {
   id: string;
@@ -39,9 +38,6 @@ interface MapSlice {
     maxRetries?: number
   ) => void;
 
-  customAreas: AOI[];
-  addCustomArea: (area: AOI) => void;
-
   selectionMode: SelectionMode | undefined;
   setSelectionMode: (mode: SelectionMode | undefined) => void;
   clearSelectionMode: () => void;
@@ -57,15 +53,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   geoJsonFeatures: [],
   selectAreaLayer: null,
   selectedAreas: [],
-  customAreas: [],
   selectionMode: undefined,
-
-  addCustomArea: (area) => {
-    set((state) => ({
-      customAreas: [...state.customAreas, area],
-    }));
-    get().clearSelectionMode();
-  },
 
   reset: () => {
     set({
