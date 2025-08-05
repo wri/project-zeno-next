@@ -35,13 +35,35 @@ function CustomAreasLayer() {
     if (!mapRef) return;
 
     const map = mapRef.getMap();
+    let hoverId: string | number | undefined;
 
-    const handleMouseEnter = () => {
+    const handleMouseEnter = (e: MapMouseEvent) => {
       map.getCanvas().style.cursor = "pointer";
+
+      if (e.features && e.features.length > 0) {
+        const feature = e.features.find(
+          (f) => f.source === CUSTOM_AREAS_SOURCE_ID
+        );
+        if (feature) {
+          hoverId = feature.id;
+          map.setFeatureState(
+            { source: CUSTOM_AREAS_SOURCE_ID, id: hoverId },
+            { hover: true }
+          );
+        }
+      }
     };
 
     const handleMouseLeave = () => {
       map.getCanvas().style.cursor = "";
+
+      if (hoverId !== undefined) {
+        map.setFeatureState(
+          { source: CUSTOM_AREAS_SOURCE_ID, id: hoverId },
+          { hover: false }
+        );
+        hoverId = undefined;
+      }
     };
 
     map.on("click", "custom-areas-fill", handleClick);
@@ -66,6 +88,7 @@ function CustomAreasLayer() {
   const allFeatures = customAreas.flatMap(({ id, name, geometries }) =>
     geometries.map((geometry: Polygon) => ({
       type: "Feature" as const,
+      id,
       geometry,
       properties: {
         id,
@@ -84,13 +107,19 @@ function CustomAreasLayer() {
       id={CUSTOM_AREAS_SOURCE_ID}
       type="geojson"
       data={customAreasCollection}
+      generateId={true}
     >
       <Layer
         id="custom-areas-fill"
         type="fill"
         paint={{
           "fill-color": "#f59e0b",
-          "fill-opacity": 0.4,
+          "fill-opacity": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            0.6,
+            0.4,
+          ],
         }}
         filter={["==", ["geometry-type"], "Polygon"]}
       />
