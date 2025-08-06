@@ -3,6 +3,7 @@ import {
   CloseButton,
   Dialog,
   Portal,
+  Flex,
   Separator,
   HStack,
   Text,
@@ -12,16 +13,43 @@ import {
 import { useEffect, useState } from "react";
 import { usePromptStore } from "@/app/store/promptStore";
 import useChatStore from "@/app/store/chatStore";
-import { SparkleIcon } from "@phosphor-icons/react";
+import { ArrowBendRightUpIcon, SparkleIcon } from "@phosphor-icons/react";
 
 const WelcomeModal = () => {
   const { prompts, fetchPrompts } = usePromptStore();
-  const { sendMessage } = useChatStore();
+  const { sendMessage, isLoading } = useChatStore();
   const [isOpen, setIsOpen] = useState(true);
+  const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
     fetchPrompts();
   }, [fetchPrompts]);
+
+  const submitPrompt = async () => {
+    if (!inputValue.trim() || isLoading) return;
+
+    const message = inputValue.trim();
+    setInputValue("");
+
+    await sendMessage(message);
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && inputValue?.trim().length > 0 && !isLoading) {
+      e.preventDefault();
+      setIsOpen(false);
+      submitPrompt();
+    }
+  };
+
+  const getInputState = () => {
+    return {
+      disabled: isLoading,
+    };
+  };
+
+  const { disabled } = getInputState();
+  const isButtonDisabled = disabled || !inputValue?.trim();
 
   const handlePromptClick = async (prompt: string) => {
     setIsOpen(false);
@@ -32,6 +60,7 @@ const WelcomeModal = () => {
 
   return (
     <Dialog.Root
+      lazyMount
       open={isOpen}
       onOpenChange={() => setIsOpen(isOpen)}
       placement="center"
@@ -56,11 +85,62 @@ const WelcomeModal = () => {
                 we&apos;ll help you find the right data and make sense of it,
                 too.
               </Dialog.Description>
-              <Textarea
-                height="92px"
-                bg="white"
-                placeholder="Ask a question..."
-              ></Textarea>
+              <Flex
+                flexDir="column"
+                position="relative"
+                m={0}
+                p={4}
+                bg="bg.subtle"
+                borderRadius="md"
+                borderWidth="1px"
+                className="group"
+                transition="all 0.32s ease-in-out"
+                _active={{
+                  bg: "white",
+                  borderColor: "blue.900",
+                }}
+                _focusWithin={{
+                  bg: "white",
+                  borderColor: "blue.900",
+                }}
+              >
+                <Textarea
+                  aria-label="Ask a question..."
+                  placeholder="Ask a question..."
+                  fontSize="sm"
+                  autoresize
+                  maxH="10lh"
+                  border="none"
+                  p={0}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyUp={handleKeyUp}
+                  disabled={disabled}
+                  _disabled={{
+                    opacity: 1,
+                  }}
+                  _focus={{
+                    outline: "none",
+                  }}
+                />
+                <Button
+                  p="0"
+                  ml="auto"
+                  borderRadius="full"
+                  colorPalette="blue"
+                  bg="blue.900"
+                  _disabled={{
+                    opacity: 0.75,
+                  }}
+                  type="button"
+                  size="xs"
+                  onClick={submitPrompt}
+                  disabled={isButtonDisabled}
+                  loading={isLoading}
+                >
+                  <ArrowBendRightUpIcon />
+                </Button>
+              </Flex>
               <HStack>
                 <Separator flex="1" />
                 <Text
