@@ -6,7 +6,7 @@ import {
   LangChainResponse,
   StreamMessage,
 } from "@/app/types/chat";
-import { readDataStream } from "./read-data-stream";
+import { readDataStream } from "../shared/read-data-stream";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../shared/parse-stream-message";
 

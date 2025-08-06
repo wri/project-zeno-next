@@ -7,7 +7,7 @@ import {
   QueryType,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
-import { readDataStream } from "../api/chat/read-data-stream";
+import { readDataStream } from "../api/shared/read-data-stream";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";

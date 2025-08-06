@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import JSON5 from "json5";
-import { readDataStream } from "../../chat/read-data-stream";
+import { readDataStream } from "../../shared/read-data-stream";
 import { LangChainResponse, StreamMessage } from "@/app/types/chat";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../../shared/parse-stream-message";
