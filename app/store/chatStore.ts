@@ -1,10 +1,13 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
+import { format } from "date-fns";
+
 import {
   ChatMessage,
   ChatPrompt,
   StreamMessage,
   QueryType,
+  ChatAPIRequest,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/chat/read-data-stream";
@@ -40,7 +43,7 @@ const initialState: ChatState = {
     },
   ],
   isLoading: false,
-  currentThreadId: null
+  currentThreadId: null,
 };
 
 // Helper function to process stream messages and add them to chat
@@ -135,10 +138,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     setLoading(true);
 
     // Build ui_context from current context
-    const ui_context: any = {};
-    
+    const ui_context: ChatAPIRequest["ui_context"] = {};
+
     // Find area context and convert to aoi_selected format
-    const areaContext = context.find(ctx => ctx.contextType === "area" && ctx.aoiData);
+    const areaContext = context.find(
+      (ctx) => ctx.contextType === "area" && ctx.aoiData
+    );
     if (areaContext && areaContext.aoiData) {
       ui_context.aoi_selected = {
         aoi: {
@@ -151,6 +156,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         subregion_aois: null,
         subregion: null,
         subtype: areaContext.aoiData.subtype,
+      };
+    }
+
+    const dateContext = context.find((ctx) => ctx.contextType === "date");
+    if (dateContext && dateContext.dateRange) {
+      ui_context.daterange_selected = {
+        start_date: format(dateContext.dateRange.start, "yyyy-MM-dd"),
+        end_date: format(dateContext.dateRange.end, "yyyy-MM-dd"),
       };
     }
 

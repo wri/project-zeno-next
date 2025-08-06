@@ -52,7 +52,10 @@ export interface ChatAPIRequest {
       subtype?: string;
     };
     dataset_selected?: object;
-    daterange_selected?: object;
+    daterange_selected?: {
+      start_date: string;
+      end_date: string;
+    };
   };
 }
 
