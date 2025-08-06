@@ -12,6 +12,7 @@ import "../theme/popup.css";
 import { LayerId, LayerName, selectLayerOptions } from "../types/map";
 import useContextStore from "../store/contextStore";
 import useMapStore from "../store/mapStore";
+import { API_CONFIG } from "../config/api";
 import {
   Feature,
   FeatureCollection,
@@ -50,11 +51,52 @@ function singularizeDatasetName(name: LayerName): string {
   return name;
 }
 
+// Helper function to get src_id based on metadata
+function getSrcId(layerId: LayerId, featureProps: any, metadata: any): string | undefined {
+  const layerKey = layerId.toLowerCase();
+  
+  if (layerKey === "gadm") {
+    // Special case for GADM: use gid{adm_level}
+    const admLevel = featureProps?.adm_level;
+    if (admLevel !== undefined && admLevel !== null) {
+      const gidKey = `gid_${admLevel}`;
+      return featureProps?.[gidKey] || featureProps?.gadm_id || "";
+    }
+    return featureProps?.gadm_id;
+  }
+  
+  // For other layers, use the mapping from metadata
+  const idField = metadata.layer_id_mapping[layerKey];
+  if (idField && featureProps?.[idField]) {
+    return featureProps[idField];
+  }
+}
+
+// Helper function to get subtype based on metadata
+function getSubtype(layerId: LayerId, featureProps: any, metadata: any): string | undefined {
+  const layerKey = layerId.toLowerCase();
+  
+  if (layerKey === "gadm") {
+    // Special case for GADM: use adm_level to determine subtype
+    const admLevel = featureProps?.adm_level;
+    if (admLevel !== undefined && admLevel !== null && metadata.gadm_subtype_mapping) {
+      const gidKey = `GID_${admLevel}`;
+      return metadata.gadm_subtype_mapping[gidKey];
+    }
+  }
+  
+  // For other layers, use subregion_to_subtype_mapping
+  if (metadata.subregion_to_subtype_mapping?.[layerKey]) {
+    return metadata.subregion_to_subtype_mapping[layerKey];
+  }
+}
+
 function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
   const { addContext } = useContextStore();
   const { addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
+  const [metadata, setMetadata] = useState<any>(null);
 
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
@@ -69,6 +111,22 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
+
+  // Fetch metadata on component mount
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const response = await fetch(API_CONFIG.ENDPOINTS.METADATA);
+        const data = await response.json();
+        setMetadata(data);
+        console.log("Fetched metadata:", data);
+      } catch (error) {
+        console.error('Failed to fetch metadata:', error);
+      }
+    };
+    
+    fetchMetadata();
+  }, []);
 
   useEffect(() => {
     let hoverId: string | number | undefined;
@@ -150,9 +208,26 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
                 });
               }
             }
+            // Extract AOI data for ui_context
+            const featureProps = feature.properties;
+            const layerConfig = selectLayerOptions.find(opt => opt.id === layerId);
+            
+            // Get dynamic src_id and subtype using metadata
+            const dynamicSrcId = getSrcId(layerId, featureProps, metadata);
+            const dynamicSubtype = getSubtype(layerId, featureProps, metadata);
+
+            const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
+            
             addContext({
               contextType: "area",
               content: aoiName,
+              aoiData: {
+                name: aoiName,
+                ...(idField ? { [idField]: dynamicSrcId } : {}),
+                src_id: dynamicSrcId,
+                subtype: dynamicSubtype,
+                source: layerConfig?.id.toLowerCase(),
+              },
             });
           }
         }
@@ -176,7 +251,7 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
         document.removeEventListener("keyup", onKeyUp);
       };
     }
-  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, setSelectAreaLayer]);
+  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, setSelectAreaLayer, metadata]);
 
   return (
     <>

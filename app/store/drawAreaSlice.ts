@@ -5,6 +5,13 @@ import type { Map } from "maplibre-gl";
 import { AOI } from "../types/chat";
 import { generateRandomName } from "../utils/generateRandomName";
 import type { MapState } from "./mapStore";
+import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
+import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../constants/custom-areas";
+import type {
+  CreateCustomAreaRequest,
+  CreateCustomAreaResponse,
+} from "../schemas/api/custom_areas/post";
+import { Polygon } from "geojson";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -19,11 +26,22 @@ type PolygonFeature = {
 export interface DrawAreaSlice {
   terraDraw: TerraDraw | null;
   isDrawingMode: boolean;
+  validationError: {
+    code: "too-small" | "too-large";
+    area: number;
+  } | null;
+  createAreaFn:
+    | ((data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>)
+    | null;
   startDrawing: () => void;
   confirmDrawing: () => void;
   cancelDrawing: () => void;
   initializeTerraDraw: (map: Map) => void;
   endDrawing: () => void;
+  clearValidationError: () => void;
+  setCreateAreaFn: (
+    fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>
+  ) => void;
 }
 
 // This ensures TerraDraw is initialized before use
@@ -43,6 +61,8 @@ export const createDrawAreaSlice: StateCreator<
 > = (set, get) => ({
   terraDraw: null,
   isDrawingMode: false,
+  validationError: null,
+  createAreaFn: null,
 
   initializeTerraDraw: (map) => {
     const terraDraw = new TerraDraw({
@@ -58,14 +78,19 @@ export const createDrawAreaSlice: StateCreator<
     terraDraw.start();
     terraDraw.setMode("polygon");
 
-    set({ isDrawingMode: true });
+    set({ isDrawingMode: true, validationError: null });
   },
 
   endDrawing: () => {
     const terraDraw = getTerraDraw(get);
+    terraDraw.setMode("static");
     terraDraw.stop();
     set({ isDrawingMode: false });
     get().clearSelectionMode();
+  },
+
+  clearValidationError: () => {
+    set({ validationError: null });
   },
 
   confirmDrawing: () => {
@@ -104,17 +129,46 @@ export const createDrawAreaSlice: StateCreator<
       features,
     };
 
+    const areaSizeKm2 = calculateAreaKm2(featureCollection);
+
+    if (areaSizeKm2 < MIN_AREA_KM2 || areaSizeKm2 > MAX_AREA_KM2) {
+      set({
+        validationError: {
+          code: areaSizeKm2 < MIN_AREA_KM2 ? "too-small" : "too-large",
+          area: areaSizeKm2,
+        },
+      });
+      terraDraw.clear();
+      get().endDrawing();
+      return;
+    }
+
     const newArea: AOI = {
       name: generateRandomName(),
       geometry: featureCollection,
     };
 
-    get().addCustomArea(newArea);
+    const requestData: CreateCustomAreaRequest = {
+      name: newArea.name,
+      geometries: featureCollection.features
+        .map((feature) => feature.geometry)
+        .filter((geometry): geometry is Polygon => geometry.type === "Polygon"),
+    };
+
+    const createAreaFn = get().createAreaFn;
+    if (createAreaFn) {
+      createAreaFn(requestData);
+    }
 
     get().endDrawing();
   },
 
   cancelDrawing: () => {
+    get().clearValidationError();
     get().endDrawing();
+  },
+
+  setCreateAreaFn: (fn) => {
+    set({ createAreaFn: fn });
   },
 });

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { API_CONFIG } from "@/app/config/api";
 
 interface ThreadEntry {
   agent_id: "UniGuana";
@@ -126,7 +127,7 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
 
   fetchApiStatus: async () => {
     try {
-      const response = await fetch("https://api.zeno-staging.ds.io/docs"); // shouldn't hard code this
+      const response = await fetch(`${API_CONFIG.API_HOST}/docs`);
       if (response.status === 200) {
         set({ apiStatus: "OK" });
       } else {

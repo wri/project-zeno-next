@@ -77,11 +77,11 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   },
 
   setMapRef: (mapRef) => {
-    console.log("Setting map ref:", !!mapRef);
     set({ mapRef });
   },
 
   setSelectAreaLayer: (layerId) => {
+    get().clearValidationError?.();
     set({ selectAreaLayer: layerId });
   },
 

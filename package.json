@@ -15,6 +15,8 @@
     "@fontsource/ibm-plex-mono": "^5.2.5",
     "@fontsource/ibm-plex-sans": "^5.2.5",
     "@phosphor-icons/react": "^2.1.9",
+    "@tanstack/react-query": "^5.83.1",
+    "@turf/area": "^7.2.0",
     "@turf/bbox": "^7.2.0",
     "@turf/center": "^7.2.0",
     "@turf/helpers": "^7.2.0",
@@ -37,12 +39,12 @@
     "terra-draw": "^1.10.0",
     "terra-draw-maplibre-gl-adapter": "^1.1.1",
     "uuid": "^11.1.0",
+    "zod": "^4.0.14",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/cookie": "^1.0.0",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^20",
     "@types/react": "^19",

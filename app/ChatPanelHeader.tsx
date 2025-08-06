@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Flex,
   IconButton,
@@ -23,7 +23,6 @@ import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
 
 function ChatPanelHeader() {
-  const triggerId = useId();
   const router = useRouter();
   const {
     sideBarVisible,
@@ -126,38 +125,16 @@ function ChatPanelHeader() {
         </Button>
       )}
       {!sideBarVisible && (
-        <Menu.Root ids={{ trigger: triggerId }}>
-          <Tooltip
-            content="New conversation"
-            showArrow
-            ids={{ trigger: triggerId }}
-          >
-            <Menu.Trigger asChild>
-              <IconButton variant="ghost" size="sm">
-                <NotePencilIcon />
-              </IconButton>
-            </Menu.Trigger>
-          </Tooltip>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item
-                  value="New blank conversation"
-                  color="fg.muted"
-                  asChild
-                >
-                  <Link href="/">Blank Conversation</Link>
-                </Menu.Item>
-                <Menu.Item
-                  value="New conversation from template"
-                  color="fg.muted"
-                >
-                  From Template
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
+        <Tooltip
+          content="New conversation"
+          showArrow
+        >
+          <IconButton asChild variant="ghost" size="sm">
+            <Link href="/">
+              <NotePencilIcon />
+            </Link>
+          </IconButton>
+        </Tooltip>
       )}
 
       <ThreadRenameDialog

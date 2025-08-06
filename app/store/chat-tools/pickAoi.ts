@@ -2,8 +2,9 @@ import { FeatureCollection } from "geojson";
 import { ChatMessage, StreamMessage, AOI } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import useContextStore from "../contextStore";
+import { fetchGeometry } from "@/app/utils/geometryClient";
 
-export function pickAoiTool(
+export async function pickAoiTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
 ) {
@@ -11,10 +12,24 @@ export function pickAoiTool(
     const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();
     const { addContext } = useContextStore.getState();
 
-    const geoJsonData = (streamMessage.aoi as AOI)
-      .geometry as FeatureCollection;
+    const aoiData = streamMessage.aoi as AOI;
+    const aoiName = aoiData.name;
 
-    const aoiName = (streamMessage.aoi as AOI).name as string;
+    // Check if geometry is already included, otherwise fetch it
+    let geoJsonData: FeatureCollection;
+    
+    if (aoiData.geometry) {
+      // Geometry already provided (backward compatibility)
+      geoJsonData = aoiData.geometry;
+    } else {
+      // Fetch geometry using src_id and source
+      if (!aoiData.src_id || !aoiData.source) {
+        throw new Error("Missing src_id or source in AOI data");
+      }
+      
+      const geometryResponse = await fetchGeometry(aoiData.source, aoiData.src_id);
+      geoJsonData = geometryResponse.geometry;
+    }
 
     addGeoJsonFeature({
       id: aoiName,
@@ -44,7 +59,7 @@ export function pickAoiTool(
       type: "assistant",
       message: `AOI tool executed but failed to display on map: ${
         streamMessage.content || "Unknown location"
-      }`,
+      }. Error: ${error instanceof Error ? error.message : "Unknown error"}`,
     });
   }
 }

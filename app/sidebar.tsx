@@ -6,8 +6,6 @@ import {
   HStack,
   IconButton,
   LinkProps,
-  Menu,
-  Portal,
   Separator,
   Stack,
   Text,
@@ -90,33 +88,12 @@ export function Sidebar() {
         bg="bg.muted"
         boxShadow="xs"
       >
-        <Menu.Root>
-          <Menu.Trigger asChild>
-            <Button variant="solid" colorPalette="blue" size="sm">
-              New Conversation
-              <NotePencilIcon />
-            </Button>
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item
-                  value="New blank conversation"
-                  color="fg.muted"
-                  asChild
-                >
-                  <Link href="/">Blank Conversation</Link>
-                </Menu.Item>
-                <Menu.Item
-                  value="New conversation from template"
-                  color="fg.muted"
-                >
-                  From Template
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
+        <Button asChild variant="solid" colorPalette="blue" size="sm">
+          <Link href="/">
+            New Conversation
+            <NotePencilIcon />
+          </Link>
+        </Button>
         <Tooltip
           content="Close sidebar"
           positioning={{ placement: "right" }}

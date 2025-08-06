@@ -24,18 +24,6 @@ const globalCss = {
       marginTop: 4,
       marginBottom: 4,
     },
-    "*::placeholder": {
-      opacity: 1,
-      color: "fg.subtle",
-      _dark: {
-        color: "gray.400",
-      },
-    },
-    "*::selection": {
-      bg: "gray.800",
-      color: "blue.200",
-      _dark: { bg: "blue.200", color: "gray.800" },
-    }
   };
 
 export default globalCss;

@@ -46,7 +46,7 @@ function ChatInput() {
   const getInputState = () => {
     return {
       disabled: isLoading,
-      message: isLoading ? "Sending..." : "Ask Zeno a question...",
+      message: isLoading ? "Sending..." : "Ask NatureWATCH a question...",
     };
   };
 
@@ -91,7 +91,7 @@ function ChatInput() {
         </Flex>
       )}
       <Textarea
-        aria-label="Ask Zeno a question..."
+        aria-label="Ask NatureWATCH a question..."
         placeholder={message}
         fontSize="sm"
         autoresize
@@ -146,7 +146,7 @@ function ChatInput() {
           disabled={isButtonDisabled}
           loading={isLoading}
         >
-          <ArrowBendRightUpIcon />
+          <ArrowBendRightUpIcon weight="bold" />
         </Button>
       </Flex>
     </Flex>

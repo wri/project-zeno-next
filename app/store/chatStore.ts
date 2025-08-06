@@ -44,7 +44,7 @@ const initialState: ChatState = {
 };
 
 // Helper function to process stream messages and add them to chat
-function processStreamMessage(
+async function processStreamMessage(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
 ) {
@@ -76,7 +76,7 @@ function processStreamMessage(
     }
     // Special handling for pick-aoi tool (previously location-tool)
     else if (streamMessage.name === "pick-aoi" && streamMessage.aoi) {
-      return pickAoiTool(streamMessage, addMessage);
+      return await pickAoiTool(streamMessage, addMessage);
     }
     // Handling for pick-dataset tool
     else if (streamMessage.name === "pick-dataset") {
@@ -134,6 +134,26 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     setLoading(true);
 
+    // Build ui_context from current context
+    const ui_context: any = {};
+    
+    // Find area context and convert to aoi_selected format
+    const areaContext = context.find(ctx => ctx.contextType === "area" && ctx.aoiData);
+    if (areaContext && areaContext.aoiData) {
+      ui_context.aoi_selected = {
+        aoi: {
+          name: areaContext.aoiData.name,
+          gadm_id: areaContext.aoiData.gadm_id,
+          src_id: areaContext.aoiData.src_id,
+          subtype: areaContext.aoiData.subtype,
+        },
+        aoi_name: areaContext.aoiData.name,
+        subregion_aois: null,
+        subregion: null,
+        subtype: areaContext.aoiData.subtype,
+      };
+    }
+
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
@@ -155,7 +175,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(prompt),
+        body: JSON.stringify({
+          ...prompt,
+          ...(Object.keys(ui_context).length > 0 && { ui_context }),
+        }),
         signal: abortController.signal,
       });
 
@@ -172,10 +195,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       await readDataStream({
         abortController,
         reader,
-        onData: (data, isFinal) => {
+        onData: async (data, isFinal) => {
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
-            processStreamMessage(streamMessage, addMessage);
+            await processStreamMessage(streamMessage, addMessage);
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -255,7 +278,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       await readDataStream({
         abortController,
         reader,
-        onData: (data, isFinal) => {
+        onData: async (data, isFinal) => {
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
 
@@ -269,7 +292,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             }
 
             console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
-            processStreamMessage(streamMessage, addMessage);
+            await processStreamMessage(streamMessage, addMessage);
           } catch (err) {
             if (isFinal) {
               console.error(
