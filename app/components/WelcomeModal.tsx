@@ -33,7 +33,7 @@ const WelcomeModal = () => {
   return (
     <Dialog.Root
       open={isOpen}
-      onOpenChange={(e) => setIsOpen(e.open)}
+      onOpenChange={() => setIsOpen(isOpen)}
       placement="center"
       size="lg"
     >
