@@ -1,9 +1,10 @@
 {
   "prompts": [
-    "A short prompt.",
-    "Another short prompt.",
-    "This is an example of a medium-length prompt.",
-    "Here, you will find an example containing a longer prompt that could be selected by the user.",
-    "Here, you will find an example containing an extremely long prompt that could be selected by the user which would be provided for them to input to the chat. It would contain many details and be very descriptive."
+    "Show me recent forest loss due to fires in protected areas.",
+    "How much natural land was been converted to agriculture in my region of interest last summer?",
+    "I want to monitor restoration progress in my region. What datasets should I use?",
+    "Where are the most disturbances to nature happening now?",
+    "Tell me about wild fires in the Brazilian Amazon Rainforest",
+    "What country's forests sequester the most carbon?"
   ]
 }
