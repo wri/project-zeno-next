@@ -79,7 +79,7 @@ const WelcomeModal = () => {
             </Dialog.Header>
             <Dialog.Body display="flex" flexDirection="column" gap="12">
               <Flex display="flex" flexDirection="column" gap="8">
-                <Dialog.Description fontSize="xs">
+                <Dialog.Description fontSize="xs" lineHeight="moderate">
                   Our AI-powered nature monitoring tool understands plain
                   language, so no technical jargon required! Ask about land
                   cover change, forest loss, or biodiversity risks in the areas
@@ -129,7 +129,7 @@ const WelcomeModal = () => {
                     }}
                   />
                   <Button
-                    p="0"
+                    p="0.25rem"
                     ml="auto"
                     borderRadius="full"
                     colorPalette="blue"
@@ -142,6 +142,9 @@ const WelcomeModal = () => {
                     onClick={submitPrompt}
                     disabled={isButtonDisabled}
                     loading={isLoading}
+                    h="auto"
+                    w="auto"
+                    minW="0"
                   >
                     <ArrowBendRightUpIcon weight="bold" size="10" />
                   </Button>
