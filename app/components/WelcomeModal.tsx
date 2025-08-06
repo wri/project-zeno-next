@@ -24,8 +24,8 @@ const WelcomeModal = () => {
   }, [fetchPrompts]);
 
   const handlePromptClick = async (prompt: string) => {
-    await sendMessage(prompt);
     setIsOpen(false);
+    await sendMessage(prompt);
   };
 
   if (!isOpen) return null;
