@@ -23,6 +23,12 @@ importers:
       '@phosphor-icons/react':
         specifier: ^2.1.9
         version: 2.1.10(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@tanstack/react-query':
+        specifier: ^5.83.1
+        version: 5.84.0(react@19.1.0)
+      '@turf/area':
+        specifier: ^7.2.0
+        version: 7.2.0
       '@turf/bbox':
         specifier: ^7.2.0
         version: 7.2.0
@@ -89,6 +95,9 @@ importers:
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
+      zod:
+        specifier: ^4.0.14
+        version: 4.0.14
       zustand:
         specifier: ^5.0.5
         version: 5.0.6(@types/react@19.1.8)(immer@10.1.1)(react@19.1.0)(use-sync-external-store@1.5.0(react@19.1.0))
@@ -99,9 +108,6 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.11
-      '@types/cookie':
-        specifier: ^1.0.0
-        version: 1.0.0
       '@types/geojson':
         specifier: ^7946.0.16
         version: 7946.0.16
@@ -713,6 +719,17 @@ packages:
   '@tailwindcss/postcss@4.1.11':
     resolution: {integrity: sha512-q/EAIIpF6WpLhKEuQSEVMZNMIY8KhWoAemZ9eylNAih9jxMGAYPPWBn3I9QL/2jZ+e7OEz/tZkX5HwbBR4HohA==}
 
+  '@tanstack/query-core@5.83.1':
+    resolution: {integrity: sha512-OG69LQgT7jSp+5pPuCfzltq/+7l2xoweggjme9vlbCPa/d7D7zaqv5vN/S82SzSYZ4EDLTxNO1PWrv49RAS64Q==}
+
+  '@tanstack/react-query@5.84.0':
+    resolution: {integrity: sha512-iPycFGLq5lltDE16Jf13Nx7SOvtfoopfOH/+Ahbdd+z4QqOfYu/SOkY86AVYVcKjneuqPxTm8e85lSGhwe0cog==}
+    peerDependencies:
+      react: ^18 || ^19
+
+  '@turf/area@7.2.0':
+    resolution: {integrity: sha512-zuTTdQ4eoTI9nSSjerIy4QwgvxqwJVciQJ8tOPuMHbXJ9N/dNjI7bU8tasjhxas/Cx3NE9NxVHtNpYHL0FSzoA==}
+
   '@turf/bbox@7.2.0':
     resolution: {integrity: sha512-wzHEjCXlYZiDludDbXkpBSmv8Zu6tPGLmJ1sXQ6qDwpLE1Ew3mcWqt8AaxfTP5QwDNQa3sf2vvgTEzNbPQkCiA==}
 
@@ -730,10 +747,6 @@ packages:
 
   '@tybys/wasm-util@0.10.0':
     resolution: {integrity: sha512-VyyPYFlOMNylG45GoAe0xDoLwWuowvf92F9kySqzYh8vmYm7D2u4iUJKa1tOUpS70Ku13ASrOkS4ScXFsTaCNQ==}
-
-  '@types/cookie@1.0.0':
-    resolution: {integrity: sha512-mGFXbkDQJ6kAXByHS7QAggRXgols0mAdP4MuXgloGY1tXokvzaFFM4SMqWvf7AH0oafI7zlFJwoGWzmhDqTZ9w==}
-    deprecated: This is a stub types definition. cookie provides its own type definitions, so you do not need this installed.
 
   '@types/d3-array@3.2.1':
     resolution: {integrity: sha512-Y2Jn2idRrLzUfAKV2LyRImR+y4oa2AntrgID95SHJxuMUrkNXmanDSed71sRNZysveJVt1hLLemQZIady0FpEg==}
@@ -3188,6 +3201,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
+  zod@4.0.14:
+    resolution: {integrity: sha512-nGFJTnJN6cM2v9kXL+SOBq3AtjQby3Mv5ySGFof5UGRHrRioSJ5iG680cYNjE/yWk671nROcpPj4hAS8nyLhSw==}
+
   zustand@5.0.6:
     resolution: {integrity: sha512-ihAqNeUVhe0MAD+X8M5UzqyZ9k3FFZLBTtqo6JLPwV53cbRB/mJwBI0PxcIgqhBBHlEs8G45OTDTMq3gNcLq3A==}
     engines: {node: '>=12.20.0'}
@@ -3828,6 +3844,20 @@ snapshots:
       postcss: 8.5.6
       tailwindcss: 4.1.11
 
+  '@tanstack/query-core@5.83.1': {}
+
+  '@tanstack/react-query@5.84.0(react@19.1.0)':
+    dependencies:
+      '@tanstack/query-core': 5.83.1
+      react: 19.1.0
+
+  '@turf/area@7.2.0':
+    dependencies:
+      '@turf/helpers': 7.2.0
+      '@turf/meta': 7.2.0
+      '@types/geojson': 7946.0.16
+      tslib: 2.8.1
+
   '@turf/bbox@7.2.0':
     dependencies:
       '@turf/helpers': 7.2.0
@@ -3864,10 +3894,6 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
-
-  '@types/cookie@1.0.0':
-    dependencies:
-      cookie: 1.0.2
 
   '@types/d3-array@3.2.1': {}
 
@@ -7131,6 +7157,8 @@ snapshots:
   yaml@1.10.2: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@4.0.14: {}
 
   zustand@5.0.6(@types/react@19.1.8)(immer@10.1.1)(react@19.1.0)(use-sync-external-store@1.5.0(react@19.1.0)):
     optionalDependencies:
