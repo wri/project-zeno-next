@@ -13,6 +13,10 @@ export interface ContextItem {
     subtype?: string;
     source?: string;
   };
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 interface ContextState {

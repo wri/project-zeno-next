@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -15,9 +16,12 @@ import {
   ButtonGroup,
   AbsoluteCenter,
 } from "@chakra-ui/react";
-import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { InfoIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { format } from "date-fns";
+
+import { ChatContextType, ChatContextOptions } from "./ContextButton";
+import { DatePicker, DatePickerProps } from "./DatePicker";
+import useContextStore from "../store/contextStore";
 
 // Constants for navigation and dummy content
 const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
@@ -206,123 +210,6 @@ function ContextMenu({
   const [selectedContextType, setSelectedContextType] = useState(contextType);
   const selectedItems = 0;
 
-  const renderContent = (): React.ReactElement => {
-    if (selectedContextType === "layer") {
-      return (
-        <Stack
-          bg="bg.subtle"
-          py={3}
-          w="full"
-          maxW="100%"
-          maxH="100%"
-          overflow="scroll"
-        >
-          <Box px={4}>
-            <InputGroup endElement={<MagnifyingGlassIcon />}>
-              <Input
-                size="sm"
-                bg="bg"
-                type="text"
-                placeholder="Find data layer"
-              />
-            </InputGroup>
-          </Box>
-          <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
-            <TagList tags={LAYER_TAGS} />
-            <CardList cards={LAYER_CARDS} showImage />
-          </Stack>
-        </Stack>
-      );
-    }
-    if (selectedContextType === "area") {
-      return (
-        <Stack bg="bg.subtle" py={3} w="full" maxH="100%" overflow="scroll">
-          <Flex px={4} gap={2}>
-            <InputGroup endElement={<MagnifyingGlassIcon />}>
-              <Input size="sm" bg="bg" type="text" placeholder="Find area" />
-            </InputGroup>
-            <NativeSelect.Root size="xs" alignSelf="stretch" w="16rem">
-              <NativeSelect.Field
-                placeholder="Political Boundaries"
-                bg="bg"
-                py={2}
-                h="2.25rem"
-              >
-                <option value="1">Option 1</option>
-                <option value="2">Option 2</option>
-              </NativeSelect.Field>
-              <NativeSelect.Indicator />
-            </NativeSelect.Root>
-          </Flex>
-          <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
-            <TagList tags={AREA_TAGS} />
-            <CardList cards={AREA_CARDS} />
-          </Stack>
-        </Stack>
-      );
-    }
-    if (selectedContextType === "date") {
-      return (
-        <Stack
-          direction="row"
-          bg="bg.subtle"
-          px={4}
-          py={3}
-          w="full"
-          position="relative"
-        >
-          <AbsoluteCenter display="flex" gap="4">
-            <Field.Root>
-              <Field.Label fontWeight="normal" fontSize="xs">
-                Date Resolution
-              </Field.Label>
-              <ButtonGroup attached size="xs">
-                <Button variant="outline">Year</Button>
-                <Button variant="solid" colorPalette="blue">
-                  Month
-                </Button>
-                <Button variant="outline">Day</Button>
-              </ButtonGroup>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label fontWeight="normal" fontSize="xs">
-                From:
-              </Field.Label>
-              <Input
-                size="xs"
-                bg="bg"
-                type="month"
-                id="start"
-                name="start"
-                min="2024-03"
-                value="2024-03"
-                maxW="8rem"
-                readOnly // Placeholder
-              />
-            </Field.Root>
-            <Field.Root>
-              <Field.Label fontWeight="normal" fontSize="xs">
-                To:
-              </Field.Label>
-              <Input
-                size="xs"
-                bg="bg"
-                type="month"
-                id="end"
-                name="end"
-                max="2025-05"
-                value="2025-05"
-                maxW="8rem"
-                readOnly // Placeholder
-              />
-            </Field.Root>
-          </AbsoluteCenter>
-        </Stack>
-      );
-    }
-    return <Box />;
-  };
-
   return (
     <Dialog.Root
       placement="bottom"
@@ -333,15 +220,17 @@ function ContextMenu({
     >
       <Portal>
         <Dialog.Positioner>
-          <Dialog.Content h="30rem" maxH="75vh" overflow="hidden">
-            <Flex flex="1" maxH="100%" overflow="hidden">
+          <Dialog.Content minH="30rem" maxH="75vh">
+            <Flex flex="1">
               {/* Modal Navigation */}
               <ContextNav
                 selected={selectedContextType}
                 onSelect={setSelectedContextType}
               />
               {/* Modal Body */}
-              {renderContent()}
+              {selectedContextType === "layer" && <LayerMenu />}
+              {selectedContextType === "area" && <AreaMenu />}
+              {selectedContextType === "date" && <DateMenu />}
             </Flex>
             <Dialog.Footer
               justifyContent="space-between"
@@ -372,3 +261,141 @@ function ContextMenu({
   );
 }
 export default ContextMenu;
+
+function LayerMenu() {
+  return (
+    <Stack
+      bg="bg.subtle"
+      py={3}
+      w="full"
+      maxW="100%"
+      maxH="100%"
+      overflowY="scroll"
+    >
+      <Box px={4}>
+        <InputGroup endElement={<MagnifyingGlassIcon />}>
+          <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />
+        </InputGroup>
+      </Box>
+      <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
+        <TagList tags={LAYER_TAGS} />
+        <CardList cards={LAYER_CARDS} showImage />
+      </Stack>
+    </Stack>
+  );
+}
+
+function AreaMenu() {
+  return (
+    <Stack bg="bg.subtle" py={3} w="full" overflowY="scroll">
+      <Flex px={4} gap={2}>
+        <InputGroup endElement={<MagnifyingGlassIcon />}>
+          <Input size="sm" bg="bg" type="text" placeholder="Find area" />
+        </InputGroup>
+        <NativeSelect.Root size="xs" alignSelf="stretch" w="16rem">
+          <NativeSelect.Field
+            placeholder="Political Boundaries"
+            bg="bg"
+            py={2}
+            h="2.25rem"
+          >
+            <option value="1">Option 1</option>
+            <option value="2">Option 2</option>
+          </NativeSelect.Field>
+          <NativeSelect.Indicator />
+        </NativeSelect.Root>
+      </Flex>
+      <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
+        <TagList tags={AREA_TAGS} />
+        <CardList cards={AREA_CARDS} />
+      </Stack>
+    </Stack>
+  );
+}
+
+function DateMenu() {
+  const [view, setView] = useState<DatePickerProps["view"]>("day");
+  const handleViewChange = (newView: DatePickerProps["view"]) => {
+    setView(newView);
+  };
+
+  const contextStore = useContextStore();
+
+  const currentCtxDate = contextStore.context.find(
+    (item) => item.contextType === "date"
+  );
+  // Start with context date if available, otherwise empty array.
+  const [dateValue, setDateValue] = useState<Date[]>(
+    currentCtxDate?.dateRange
+      ? [currentCtxDate.dateRange.start, currentCtxDate.dateRange.end]
+      : []
+  );
+
+  useEffect(() => {
+    if (dateValue.length === 2) {
+      // Remove previously set date.
+      const ctxId = contextStore.context.find(
+        (item) => item.contextType === "date"
+      )?.id;
+      if (ctxId) {
+        contextStore.removeContext(ctxId);
+      }
+
+      contextStore.addContext({
+        contextType: "date",
+        content: `${format(dateValue[0], "yyyy-MM-dd")} - ${format(
+          dateValue[1],
+          "yyyy-MM-dd"
+        )}`,
+        dateRange: {
+          start: dateValue[0],
+          end: dateValue[1],
+        },
+      });
+    }
+    // No need to track changes in ContextStore.
+  }, [dateValue]);
+
+  return (
+    <Stack
+      direction="row"
+      bg="bg.subtle"
+      px={4}
+      py={3}
+      w="full"
+      position="relative"
+    >
+      <AbsoluteCenter display="flex" gap="4">
+        <Field.Root>
+          <Field.Label fontWeight="normal" fontSize="xs">
+            Date Resolution
+          </Field.Label>
+          <ButtonGroup attached size="xs">
+            <Button
+              variant={view === "year" ? "solid" : "outline"}
+              colorPalette={view === "year" ? "blue" : undefined}
+              onClick={() => handleViewChange("year")}
+            >
+              Year
+            </Button>
+            <Button
+              variant={view === "month" ? "solid" : "outline"}
+              colorPalette={view === "month" ? "blue" : undefined}
+              onClick={() => handleViewChange("month")}
+            >
+              Month
+            </Button>
+            <Button
+              variant={view === "day" ? "solid" : "outline"}
+              colorPalette={view === "day" ? "blue" : undefined}
+              onClick={() => handleViewChange("day")}
+            >
+              Day
+            </Button>
+          </ButtonGroup>
+        </Field.Root>
+        <DatePicker onChange={setDateValue} dateRange={dateValue} view={view} />
+      </AbsoluteCenter>
+    </Stack>
+  );
+}
