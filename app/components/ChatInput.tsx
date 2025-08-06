@@ -60,7 +60,7 @@ function ChatInput() {
       m={0}
       p={4}
       bg="bg.subtle"
-      borderRadius="md"
+      borderRadius="lg"
       borderWidth="1px"
       className="group"
       transition="all 0.32s ease-in-out"
