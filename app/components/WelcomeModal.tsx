@@ -22,6 +22,7 @@ const WelcomeModal = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [inputValue, setInputValue] = useState("");
 
+
   useEffect(() => {
     fetchPrompts();
   }, [fetchPrompts]);
@@ -191,6 +192,7 @@ const WelcomeModal = () => {
             </Dialog.Body>
             <Dialog.CloseTrigger asChild>
               <CloseButton onClick={() => setIsOpen(false)} size="sm" />
+
             </Dialog.CloseTrigger>
           </Dialog.Content>
         </Dialog.Positioner>
