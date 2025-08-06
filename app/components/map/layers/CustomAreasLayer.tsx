@@ -21,13 +21,15 @@ function CustomAreasLayer() {
           (f) => f.source === CUSTOM_AREAS_SOURCE_ID
         );
         if (feature) {
-          const { name } = feature.properties;
+          const { name, id } = feature.properties;
           addContext({
             contextType: "area",
             content: name,
             aoiData: {
+              src_id: id,
               name,
               source: "custom",
+              subtype: "custom_area",
             },
           });
         }
