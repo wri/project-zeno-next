@@ -16,7 +16,7 @@ import useChatStore from "@/app/store/chatStore";
 import { ArrowBendRightUpIcon, SparkleIcon } from "@phosphor-icons/react";
 
 const WelcomeModal = () => {
-  const ref = useRef<HTMLInputElement>(null);
+  const ref = useRef<HTMLTextAreaElement>(null);
   const { prompts, fetchPrompts } = usePromptStore();
   const { sendMessage, isLoading } = useChatStore();
   const [isOpen, setIsOpen] = useState(true);
