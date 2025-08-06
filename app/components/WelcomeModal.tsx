@@ -33,7 +33,7 @@ const WelcomeModal = () => {
   return (
     <Dialog.Root
       open={isOpen}
-      onOpenChange={(e) => setIsOpen(e.open)}
+      onOpenChange={() => setIsOpen(isOpen)}
       placement="center"
       size="lg"
     >
@@ -102,7 +102,7 @@ const WelcomeModal = () => {
               <Button>Save</Button>
             </Dialog.Footer>
             <Dialog.CloseTrigger asChild>
-              <CloseButton size="sm" />
+              <CloseButton onClick={() => setIsOpen(false)} size="sm" />
             </Dialog.CloseTrigger>
           </Dialog.Content>
         </Dialog.Positioner>
