@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import JSON5 from "json5";
-import { parseStreamMessage } from "../../chat/route";
 import { readDataStream } from "../../chat/read-data-stream";
 import { LangChainResponse, StreamMessage } from "@/app/types/chat";
 import { API_CONFIG } from "@/app/config/api";
+import { parseStreamMessage } from "../../shared/parse-stream-message";
 
 const TOKEN_NAME = "auth_token";
 
