@@ -7,7 +7,7 @@ import {
   QueryType,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
-import { readDataStream } from "../api/chat/read-data-stream";
+import { readDataStream } from "../api/shared/read-data-stream";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
@@ -29,6 +29,21 @@ interface ChatActions {
   fetchThread: (threadId: string) => Promise<void>;
 }
 
+interface UiContext {
+  aoi_selected?: {
+    aoi: {
+      name: string;
+      gadm_id?: string;
+      src_id?: string;
+      subtype?: string;
+    };
+    aoi_name: string;
+    subregion_aois: null;
+    subregion: null;
+    subtype?: string;
+  };
+}
+
 const initialState: ChatState = {
   messages: [
     {
@@ -40,7 +55,7 @@ const initialState: ChatState = {
     },
   ],
   isLoading: false,
-  currentThreadId: null
+  currentThreadId: null,
 };
 
 // Helper function to process stream messages and add them to chat
@@ -135,10 +150,13 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     setLoading(true);
 
     // Build ui_context from current context
-    const ui_context: any = {};
-    
+
+    const ui_context: UiContext = {};
+
     // Find area context and convert to aoi_selected format
-    const areaContext = context.find(ctx => ctx.contextType === "area" && ctx.aoiData);
+    const areaContext = context.find(
+      (ctx) => ctx.contextType === "area" && ctx.aoiData
+    );
     if (areaContext && areaContext.aoiData) {
       ui_context.aoi_selected = {
         aoi: {
