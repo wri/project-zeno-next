@@ -215,7 +215,14 @@ export default function LandingPage() {
                 leading researchers.
               </Text>
             </Container>
-            <Container rounded="md" bg="bg" p="4" mt="8" maxW={{base: "lg", md: "xl"}} zIndex="10">
+            <Container
+              rounded="md"
+              bg="bg"
+              p="4"
+              mt="8"
+              maxW={{ base: "lg", md: "xl" }}
+              zIndex="10"
+            >
               <Input
                 p="0"
                 outline="none"
@@ -267,7 +274,7 @@ export default function LandingPage() {
               fontSize="xs"
               color="fg.inverted"
               zIndex="10"
-              maxW={{base: "lg", md: "xl"}} 
+              maxW={{ base: "lg", md: "xl" }}
               mt="3"
               px="2"
               py="1"
@@ -468,9 +475,14 @@ export default function LandingPage() {
         pb="28"
         borderBlockEnd="1px solid"
         borderColor="bg.emphasized"
-        bg="url(/landing-bg-image2.png)"
+        bg="linear-gradient(0deg, rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.64) 85%), url(/landing-bg-image2.png) lightgray 50% / cover no-repeat"
       >
-        <Container textAlign="center" maxW="2xl" rounded="md" color="fg.inverted">
+        <Container
+          textAlign="center"
+          maxW="2xl"
+          rounded="md"
+          color="fg.inverted"
+        >
           <Heading size={{ base: "3xl", md: "4xl" }}>
             See how monitoring intelligence can support your work
           </Heading>
@@ -604,7 +616,12 @@ export default function LandingPage() {
         borderBlockEnd="1px solid"
         borderColor="bg.emphasized"
       >
-        <Container>
+        <Container
+          css={{ "& > *": { px: 0 } }}
+          display="flex"
+          flexDir="column"
+          gap={{ base: "8", md: "10" }}
+        >
           <Container textAlign="center" maxW="2xl">
             <Heading size={{ base: "3xl", md: "4xl" }}>Latest Updates</Heading>
             <Text fontSize="lg" mb="4">
@@ -612,7 +629,7 @@ export default function LandingPage() {
               with the latest advances in technology.
             </Text>
           </Container>
-          <Flex gap="16">
+          <Container display="flex" gap="8" maxW="5xl">
             <Card.Root>
               <Image src="https://placehold.co/400x300" alt="Update 1" />
               <Card.Body>
@@ -633,13 +650,12 @@ export default function LandingPage() {
                 <Card.Description>June 30, 2025</Card.Description>
               </Card.Body>
             </Card.Root>
-          </Flex>
+          </Container>
           <Container
-            maxW="4xl"
-            mt="8"
+            maxW="5xl"
             p="4"
             rounded="md"
-            bg="bg"
+            bg="bg.emphasized"
             display="flex"
             alignItems="center"
             justifyContent="space-between"
@@ -660,53 +676,89 @@ export default function LandingPage() {
         borderBlockEnd="1px solid"
         borderColor="bg.emphasized"
       >
-        <Container>
+        <Container
+          css={{ "& > *": { px: 0 } }}
+          display="flex"
+          flexDir="column"
+          gap={{ base: "8", md: "14" }}
+        >
           <Container textAlign="center" maxW="2xl">
-            <Heading size={{ base: "3xl", md: "4xl" }}>The future of monitoring</Heading>
+            <Heading size={{ base: "3xl", md: "4xl" }}>
+              The future of monitoring
+            </Heading>
             <Text fontSize="lg" mb="4">
-              We&rsquo;re making geospatial data more accessible, easier to use and
-              more impactful for everyone working to protect the planet.{" "}
+              We&rsquo;re making geospatial data more accessible, easier to use
+              and more impactful for everyone working to protect the planet.{" "}
             </Text>
           </Container>
-          <Container display="flex" gap="8" flexDir={"column"}>
-            <Flex gap="4">
-              <Box>
-                <Heading size="sm">Cutting-edge data</Heading>
-                <Text>
+          <Container display="flex" gap="14" flexDir={"column"} maxW="5xl">
+            <Flex
+              flexDir={{ base: "column-reverse", md: "row" }}
+              alignItems="center"
+              gap={{ base: "10", md: "16" }}
+            >
+              <Box maxW="lg">
+                <Heading size={{ base: "xl", md: "2xl" }} mb="2">
+                  Cutting-edge data
+                </Heading>
+                <Text fontSize="lg" mb="4">
                   We solve the hardest challenges in monitoring nature.
-                  Providing you with the data you’ve always needed but never
-                  had, and empowering you to take real-world action. Our data is
-                  globally available, consistent over time and created by some
-                  of the world’s most talented field experts.
+                  Providing you with the data you&rsquo;ve always needed but
+                  never had, and empowering you to take real-world action. Our
+                  data is globally available, consistent over time and created
+                  by some of the world&rsquo;s most talented field experts.
                 </Text>
-                <Link href="#">Learn more about our data</Link>
+                <ChakraLink
+                  fontSize="lg"
+                  color="primary.700"
+                  textDecoration="underline"
+                  href="#"
+                >
+                  Learn more about our data
+                </ChakraLink>
               </Box>
-              <Image
-                src="https://placehold.co/400x300"
-                alt="Future of monitoring"
-              />
-            </Flex>
-            <Flex gap="4">
-              <Box>
-                <Heading size="sm">Cutting-edge data</Heading>
-                <Text>
-                  We solve the hardest challenges in monitoring nature.
-                  Providing you with the data you’ve always needed but never
-                  had, and empowering you to take real-world action. Our data is
-                  globally available, consistent over time and created by some
-                  of the world’s most talented field experts.
-                </Text>
-                <Link href="#">Learn more about our data</Link>
+              <Box position="relative" h="72" w="full">
+                <Image
+                  position="absolute"
+                  h="121px"
+                  w="201px"
+                  rounded="md"
+                  top="0.5"
+                  src="/fm-1a.png"
+                  alt="image of a field"
+                />
+                <Image
+                  position="absolute"
+                  h="127px"
+                  w="178px"
+                  rounded="md"
+                  top="25%"
+                  right="0"
+                  src="/fm-1b.png"
+                  alt="image of a field"
+                />
+                <Image
+                  position="absolute"
+                  h="124px"
+                  w="172px"
+                  rounded="md"
+                  bottom="5%"
+                  left="15%"
+                  src="/fm-1c.png"
+                  alt="image of a field"
+                />
               </Box>
-              <Image
-                src="https://placehold.co/400x300"
-                alt="Future of monitoring"
-              />
             </Flex>
-            <Flex gap="4">
-              <Box>
-                <Heading size="sm">Monitoring intelligence</Heading>
-                <Text>
+            <Flex
+              flexDir={{ base: "column-reverse", md: "row" }}
+              alignItems="center"
+              gap={{ base: "10", md: "16" }}
+            >
+              <Box maxW="lg">
+                <Heading size={{ base: "xl", md: "2xl" }} mb="2">
+                  Monitoring intelligence
+                </Heading>
+                <Text fontSize="lg" mb="4">
                   Traditional geospatial analysis has hit a ceiling. The future
                   places the power of having your own personal geospatial expert
                   in your pocket. With our AI assistants trained on our
@@ -714,42 +766,127 @@ export default function LandingPage() {
                   so it can reach more people and places, empowering both
                   geospatial experts and novices alike.
                 </Text>
-                <Link href="#">Learn more about our models and agents</Link>
+                <ChakraLink
+                  fontSize="lg"
+                  color="primary.700"
+                  textDecoration="underline"
+                  href="#"
+                >
+                  Learn more about our models and agents
+                </ChakraLink>
               </Box>
-              <Image
-                src="https://placehold.co/400x300"
-                alt="Future of monitoring"
-              />
+              <Box position="relative" h="72" w="full">
+                <Box
+                  fontSize="8px"
+                  padding="6px"
+                  bg="neutral.300"
+                  border="1px solid"
+                  borderColor="neutral.400"
+                  rounded="sm"
+                  shadow="sm"
+                  position="absolute"
+                  maxW="172px"
+                  top="20%"
+                  zIndex="10"
+                >
+                  Identify disturbances in my project portfolio
+                </Box>
+                <Box
+                  fontSize="8px"
+                  padding="6px"
+                  bg="neutral.300"
+                  border="1px solid"
+                  borderColor="neutral.400"
+                  rounded="sm"
+                  shadow="sm"
+                  position="absolute"
+                  maxW="172px"
+                  right="0"
+                  top="50%"
+                  zIndex="10"
+                >
+                  Show me high priority areas for agroforesty projects
+                </Box>
+                <Image
+                  src="/fm-2.png"
+                  alt="Smartphone mockup of monitoring application"
+                  width="136px"
+                  h="280px"
+                  objectPosition="80%"
+                  position="relative"
+                  left="50%"
+                  transform="translateX(-50%)"
+                />
+              </Box>
             </Flex>
-            <Flex gap="4">
-              <Box>
-                <Heading size="sm">Intelligent tools</Heading>
-                <Text>
+            <Flex
+              flexDir={{ base: "column-reverse", md: "row" }}
+              alignItems="center"
+              gap={{ base: "10", md: "16" }}
+            >
+              <Box maxW="lg">
+                <Heading size={{ base: "xl", md: "2xl" }} mb="2">
+                  Intelligent tools
+                </Heading>
+                <Text fontSize="lg" mb="4">
                   The new era of AI brings with it a requirement for intelligent
                   tools that help you find and predict insights from an
                   abundance of data. Nature Watch allows you to gain insights in
                   a way that is natural and convenient for you. Insights in your
                   language, on any of your devices, whenever you need it.
                 </Text>
-                <Link href="#">Learn more about our tools</Link>
+                <ChakraLink
+                  fontSize="lg"
+                  color="primary.700"
+                  textDecoration="underline"
+                  href="#"
+                >
+                  Learn more about our tools
+                </ChakraLink>
               </Box>
-              <Image
-                src="https://placehold.co/400x300"
-                alt="Future of monitoring"
-              />
+              <Box position="relative" h="72" w="full" display="grid" placeContent="center">
+                <Box
+                  w="220px"
+                  fontSize="8px"
+                  p="10px"
+                  bg="neutral.300"
+                  border="1px solid"
+                  borderColor="neutral.400"
+                  rounded="sm"
+                  shadow="sm"
+                >
+                  <Text fontSize="8px">
+                    Currently the most disturbances to nature are occurring in
+                    Brazil, with over 500,000 alerts of disturbances.
+                  </Text>
+                  Vegetation Cover Loss 250,000 Human-Driven Conversion Alerts
+                  100,000 Natural Disturbances 150,000
+                </Box>
+              </Box>
             </Flex>
-            <Flex gap="4">
-              <Box>
-                <Heading size="sm">
+            <Flex
+              flexDir={{ base: "column-reverse", md: "row" }}
+              alignItems="center"
+              gap={{ base: "10", md: "16" }}
+            >
+              <Box maxW="lg">
+                <Heading size={{ base: "xl", md: "2xl" }} mb="2">
                   Integrative technology (coming soon)
                 </Heading>
-                <Text>
+                <Text fontSize="lg" mb="4">
                   We believe the future of monitoring data and technology is
-                  open source, and accessible to everyone. That’s why Nature
-                  Watch is open, extensible and ready to integrate with your own
-                  systems, extending the power of your own data.
+                  open source, and accessible to everyone. That&rsquo;s why
+                  Nature Watch is open, extensible and ready to integrate with
+                  your own systems, extending the power of your own data.
                 </Text>
-                <Link href="#">Learn more about our integrations</Link>
+                <ChakraLink
+                  fontSize="lg"
+                  color="primary.700"
+                  textDecoration="underline"
+                  href="#"
+                >
+                  Learn more about our integrations
+                </ChakraLink>
               </Box>
               <Image
                 src="https://placehold.co/400x300"
@@ -766,9 +903,16 @@ export default function LandingPage() {
         borderBlockEnd="1px solid"
         borderColor="bg.emphasized"
       >
-        <Container display="flex" flexDir="column" gap="24">
+        <Container
+          css={{ "& > *": { px: 0 } }}
+          display="flex"
+          flexDir="column"
+          gap={{ base: "8", md: "14" }}
+        >
           <Container textAlign="center" maxW="2xl">
-            <Heading size={{ base: "3xl", md: "4xl" }}>The team behind Nature Watch</Heading>
+            <Heading size={{ base: "3xl", md: "4xl" }}>
+              The team behind Nature Watch
+            </Heading>
             <Text fontSize="lg" mb="4">
               Nature Watch is the work of World Resources Institute and Land &
               Carbon Lab, in collaboration with other teams working to shape the
@@ -787,11 +931,11 @@ export default function LandingPage() {
             <ChakraLink href="https://www.bezosearthfund.org/">
               <Image src="/BEF-logo.png" alt="BEF Logo" height="64px" />
             </ChakraLink>
-            <ChakraLink href="https://www.globalforestwatch.org/">
-              <Image src="/GFW-logo.svg" alt="GFW Logo" height="64px" />
-            </ChakraLink>
             <ChakraLink href="https://landcarbonlab.org/">
               <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
+            </ChakraLink>
+            <ChakraLink href="https://www.globalforestwatch.org/">
+              <Image src="/GFW-logo.svg" alt="GFW Logo" height="64px" />
             </ChakraLink>
           </Flex>
         </Container>
@@ -805,7 +949,7 @@ export default function LandingPage() {
         hideBelow={"sm"}
       >
         <Container maxW="2xl">
-          <Heading textAlign="center" size="4xl">
+          <Heading textAlign="center" size={{ base: "3xl", md: "4xl" }}>
             The marker of a new era
           </Heading>
           <Text fontSize="lg" mb="4">
@@ -859,7 +1003,6 @@ export default function LandingPage() {
         <Container>
           <Container
             maxW="4xl"
-            mt="8"
             py="4"
             px="5"
             rounded="md"
@@ -895,39 +1038,55 @@ export default function LandingPage() {
         pb="0"
         bg="linear-gradient(98deg, #1D84BE -1.78%, #42A1DD 4.02%, #6ABFFF 20.15%, #C1E23E 78.8%, #E3F37F 99.99%)"
       >
-        <Container display="flex" flexDirection="column" gap={16}>
+        <Container
+          css={{ "& > *": { px: 0 } }}
+          display="flex"
+          flexDir="column"
+          gap={{ base: "10", md: "16" }}
+        >
           <Flex
-            justifyContent="space-between"
+            justifyContent={{ base: "center", md: "space-between" }}
             alignItems="center"
             gap={4}
             flexDir={{ base: "column", md: "row" }}
           >
-            <Heading size={{ base: "4xl", md: "5xl" }} fontWeight="semibold">
+            <Heading size={{ base: "3xl", md: "5xl" }} fontWeight="semibold">
               NatureWATCH
             </Heading>
-            <Flex gap="12" alignItems="center" flexWrap="wrap">
+            <Flex
+              gap="12"
+              alignItems="center"
+              flexWrap="wrap"
+              justifyContent="center"
+            >
               <ChakraLink href="https://www.wri.org/">
                 <Image src="/WRI-logo-mono.svg" alt="WRI Logo" height="64px" />
               </ChakraLink>
               <ChakraLink href="https://www.bezosearthfund.org/">
                 <Image src="/BEF-logo-mono.svg" alt="BEF Logo" height="64px" />
               </ChakraLink>
+              <ChakraLink href="https://landcarbonlab.org/">
+                <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
+              </ChakraLink>
               <ChakraLink href="https://www.globalforestwatch.org/">
                 <Image src="/GFW-logo-mono.svg" alt="GFW Logo" height="64px" />
-              </ChakraLink>
-              <ChakraLink href="https://landcarbonlab.org/">
-                <Image src="/LCL-logo-mono.svg" alt="LCL Logo" height="64px" />
               </ChakraLink>
             </Flex>
           </Flex>
           <Flex
-            justifyContent="space-between"
+            justifyContent={{ base: "center", md: "space-between" }}
             alignItems={{ base: "flex-start", md: "center" }}
             gap={4}
             pb="12"
             flexDir={{ base: "column", md: "row" }}
           >
-            <Flex alignItems="center" gap={6} flexWrap="wrap">
+            <Flex
+              alignItems="center"
+              justifyContent={{ base: "center", md: "flex-start" }}
+              gap={6}
+              flexWrap="wrap"
+              w="full"
+            >
               <Text>{new Date().getFullYear()} © NatureWATCH</Text>
               <ChakraLink
                 textDecoration="underline"
@@ -944,7 +1103,13 @@ export default function LandingPage() {
                 <Link href="#">Cookie Preferences</Link>
               </ChakraLink>
             </Flex>
-            <Flex alignItems="center" gap={6} flexWrap="wrap">
+            <Flex
+              alignItems="center"
+              justifyContent={{ base: "center", md: "flex-start" }}
+              gap={6}
+              flexWrap="wrap"
+              w="full"
+            >
               <ChakraLink
                 textDecoration="underline"
                 textDecorationStyle="dotted"
