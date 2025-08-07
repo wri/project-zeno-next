@@ -1,4 +1,4 @@
-import { LangChainUpdate } from "@/app/types/chat";
+import { LangChainUpdate, StreamMessage } from "@/app/types/chat";
 
 /**
  * Parses a LangChain message into a simplified format for the frontend

@@ -145,6 +145,9 @@ export const createDrawAreaSlice: StateCreator<
 
     const newArea: AOI = {
       name: generateRandomName(),
+      src_id: generateRandomName(), // Use generated name as unique identifier for now
+      source: "custom",
+      subtype: "custom_area",
       geometry: featureCollection,
     };
 

@@ -41,9 +41,9 @@ export function getSrcId(
     const admLevel = featureProps?.adm_level;
     if (admLevel !== undefined && admLevel !== null) {
       const gidKey = `gid_${admLevel}`;
-      return featureProps?.[gidKey] || featureProps?.gadm_id || "";
+      return String(featureProps?.[gidKey] || featureProps?.gadm_id || "");
     }
-    return featureProps?.gadm_id;
+    return featureProps?.gadm_id ? String(featureProps.gadm_id) : undefined;
   }
 
   const idField = metadata.layer_id_mapping[layerKey];

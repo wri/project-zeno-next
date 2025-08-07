@@ -30,6 +30,9 @@ export const selectLayerOptions = Object.freeze([
   {
     id: "Custom",
     name: "Custom Areas",
+    url: "",
+    sourceLayer: "",
+    nameKeys: [],
   },
 ] as const);
 
