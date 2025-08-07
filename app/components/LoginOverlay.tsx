@@ -44,6 +44,8 @@ function LoginOverlay() {
     clearAuth,
   } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutPopup, setLogoutPopup] = useState<Window | null>(null);
 
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -66,6 +68,42 @@ function LoginOverlay() {
     checkAuthStatus();
   }, [setAuthStatus, clearAuth]);
 
+  // Cleanup popup on component unmount
+  useEffect(() => {
+    return () => {
+      if (logoutPopup && !logoutPopup.closed) {
+        logoutPopup.close();
+      }
+    };
+  }, [logoutPopup]);
+
+  // Listen for messages from logout popup
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verify origin for security
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data.type === "LOGOUT_COMPLETE") {
+        // Close popup when logout is complete
+        if (logoutPopup && !logoutPopup.closed) {
+          logoutPopup.close();
+          setLogoutPopup(null);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [logoutPopup]);
+
+  // Function to manually close the logout popup
+  const closeLogoutPopup = () => {
+    if (logoutPopup && !logoutPopup.closed) {
+      logoutPopup.close();
+      setLogoutPopup(null);
+    }
+  };
+
   const handleLoginClick = () => {
     localStorage.setItem(REDIRECT_URL_KEY, window.location.pathname);
     const callbackUrl = `${window.location.origin}/auth/callback`;
@@ -75,10 +113,69 @@ function LoginOverlay() {
     window.open(authUrl, "WRI Login", "width=600,height=700");
   };
 
-  const handleLogoutClick = () => {
-    // This will need to be updated to call a logout API route
-    // that clears the cookie. For now, just clear local state.
-    clearAuth();
+  const handleLogoutClick = async () => {
+    setIsLoggingOut(true); // Set logging out state immediately
+
+    try {
+      // Call our logout API to clear the server-side cookie
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+
+      // Clear local auth state
+      clearAuth();
+
+      // Create logout callback URL that will handle the return from ResourceWatch
+      const logoutCallbackUrl = `${window.location.origin}/auth/logout-callback`;
+      const resourceWatchLogoutUrl = `https://api.resourcewatch.org/auth/logout?callbackUrl=${encodeURIComponent(
+        logoutCallbackUrl
+      )}`;
+
+      console.log("Opening logout popup:", resourceWatchLogoutUrl);
+
+      // Try to open in a popup window (with pop-under behavior)
+      const popup = window.open(
+        resourceWatchLogoutUrl,
+        "WRI Logout",
+        "width=600,height=700,scrollbars=yes,resizable=yes,status=no,location=no,toolbar=no,menubar=no"
+      );
+      console.log("Popup:", popup);
+
+      // Check if popup was blocked or failed to open
+      if (!popup || popup.closed || typeof popup.closed === "undefined") {
+        console.log("Popup blocked or failed, falling back to direct redirect");
+        // Fallback: direct redirect if popup is blocked
+        window.location.href = resourceWatchLogoutUrl;
+      } else {
+        // Store popup reference for manual closing
+        setLogoutPopup(popup);
+
+        // Popup opened successfully, reset loading state
+        setIsLoggingOut(false);
+
+        // Monitor popup to detect if it's manually closed
+        const checkPopupClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkPopupClosed);
+            setLogoutPopup(null);
+          }
+        }, 1000); // Check every second
+
+        // Fallback: Auto-close popup after timeout (e.g., 10 seconds)
+        setTimeout(() => {
+          clearInterval(checkPopupClosed);
+          if (popup && !popup.closed) {
+            popup.close();
+            setLogoutPopup(null);
+          }
+        }, 10000); // 10 seconds timeout
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Even if the API call fails, still clear local state
+      clearAuth();
+      setIsLoggingOut(false);
+    }
   };
 
   if (isLoading) {
@@ -148,7 +245,19 @@ function LoginOverlay() {
           </Text>
         </Dialog.Body>
         <Dialog.Footer>
-          <Button onClick={handleLogoutClick}>Logout & Try Again</Button>
+          {logoutPopup && !logoutPopup.closed ? (
+            <Button onClick={closeLogoutPopup} variant="outline">
+              Cancel Logout
+            </Button>
+          ) : (
+            <Button
+              onClick={handleLogoutClick}
+              loading={isLoggingOut}
+              loadingText="Logging out..."
+            >
+              Logout & Try Again
+            </Button>
+          )}
         </Dialog.Footer>
       </>
     );
