@@ -38,6 +38,25 @@ export interface ChatAPIRequest {
   query: string;
   query_type: string;
   thread_id: string;
+  ui_context?: {
+    aoi_selected?: {
+      aoi: {
+        name: string;
+        gadm_id?: string;
+        src_id?: string;
+        subtype?: string;
+      };
+      aoi_name: string;
+      subregion_aois?: null;
+      subregion?: null;
+      subtype?: string;
+    };
+    dataset_selected?: object;
+    daterange_selected?: {
+      start_date: string;
+      end_date: string;
+    };
+  };
 }
 
 // Simplified message that our API sends to the client
@@ -57,7 +76,10 @@ export interface StreamMessage {
 
 export interface AOI {
   name: string;
-  geometry: FeatureCollection;
+  src_id: string;
+  source: string;
+  subtype: string;
+  geometry?: FeatureCollection; // Optional since it may not be included in the initial response
 }
 
 export interface DatasetInfo {

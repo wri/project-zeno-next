@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
-import {
-  Layer,
-  MapMouseEvent,
-  Popup,
-  Source,
-  useMap,
-} from "react-map-gl/maplibre";
+import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
-import "../theme/popup.css";
+import "../../../theme/popup.css";
 
-import { LayerId, LayerName, selectLayerOptions } from "../types/map";
-import useContextStore from "../store/contextStore";
-import useMapStore from "../store/mapStore";
+import { LayerId, selectLayerOptions } from "../../../types/map";
+import useContextStore from "../../../store/contextStore";
+import useMapStore from "../../../store/mapStore";
+import { API_CONFIG } from "../../../config/api";
+import {
+  getAoiName,
+  getSrcId,
+  getSubtype,
+  singularizeDatasetName,
+} from "../../../utils/areaHelpers";
 import {
   Feature,
   FeatureCollection,
@@ -19,35 +20,17 @@ import {
   MultiPolygon,
   Polygon,
 } from "geojson";
+import AreaTooltip, { HoverInfo } from "../../ui/AreaTooltip";
 
 interface SourceLayerProps {
   layerId: LayerId;
   beforeId?: string;
 }
 
-interface HoverInfo {
-  lng: number;
-  lat: number;
-  name: string;
-}
-
-function getAoiName(
-  nameKeys: readonly string[],
-  properties: { [key: string]: string }
-): string {
-  return nameKeys.reduce(
-    (acc: string, key: string, idx: number) =>
-      properties[key] ? `${properties[key]}${idx > 0 ? ", " : ""}${acc}` : acc,
-    ""
-  );
-}
-
-function singularizeDatasetName(name: LayerName): string {
-  if (name.endsWith("s")) {
-    return name.slice(0, -1);
-  }
-
-  return name;
+interface Metadata {
+  layer_id_mapping: Record<string, string>;
+  gadm_subtype_mapping?: Record<string, string>;
+  subregion_to_subtype_mapping?: Record<string, string>;
 }
 
 function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
@@ -55,6 +38,7 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
   const { addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
+  const [metadata, setMetadata] = useState<Metadata | null>(null);
 
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
@@ -69,6 +53,22 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
+
+  // Fetch metadata on component mount
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const response = await fetch(API_CONFIG.ENDPOINTS.METADATA);
+        const data = await response.json();
+        setMetadata(data);
+        console.log("Fetched metadata:", data);
+      } catch (error) {
+        console.error("Failed to fetch metadata:", error);
+      }
+    };
+
+    fetchMetadata();
+  }, []);
 
   useEffect(() => {
     let hoverId: string | number | undefined;
@@ -150,9 +150,28 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
                 });
               }
             }
+            // Extract AOI data for ui_context
+            const featureProps = feature.properties;
+            const layerConfig = selectLayerOptions.find(
+              (opt) => opt.id === layerId
+            );
+
+            // Get dynamic src_id and subtype using metadata
+            const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
+            const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
+
+            const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
+
             addContext({
               contextType: "area",
               content: aoiName,
+              aoiData: {
+                name: aoiName,
+                ...(idField ? { [idField]: dynamicSrcId } : {}),
+                src_id: dynamicSrcId,
+                subtype: dynamicSubtype,
+                source: layerConfig?.id.toLowerCase(),
+              },
             });
           }
         }
@@ -176,7 +195,19 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
         document.removeEventListener("keyup", onKeyUp);
       };
     }
-  }, [map, fillLayerName, sourceId, sourceLayer, nameKeys, setSelectAreaLayer]);
+  }, [
+    map,
+    fillLayerName,
+    sourceId,
+    sourceLayer,
+    nameKeys,
+    setSelectAreaLayer,
+    metadata,
+    addContext,
+    addGeoJsonFeature,
+    layerId,
+    url,
+  ]);
 
   return (
     <>
@@ -215,20 +246,10 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
         />
       </Source>
       {hoverInfo && (
-        <Popup
-          longitude={hoverInfo.lng}
-          latitude={hoverInfo.lat}
-          offset={[0, -20] as [number, number]}
-          closeButton={false}
-          anchor="left"
-        >
-          <p className="area-name">
-            <b>{hoverInfo.name}</b>
-          </p>
-          <p className="hint">{`Click to select ${singularizeDatasetName(
-            datasetName
-          )}. Esc to exit.`}</p>
-        </Popup>
+        <AreaTooltip
+          hoverInfo={hoverInfo}
+          areaName={singularizeDatasetName(datasetName)}
+        />
       )}
     </>
   );
