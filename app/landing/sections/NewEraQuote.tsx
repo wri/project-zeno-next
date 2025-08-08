@@ -1,0 +1,58 @@
+import { Box, Container, Text, Heading } from "@chakra-ui/react";
+
+export default function NewEraQuoteSection() {
+  return (
+    <Box
+      py="24"
+      pb="28"
+      borderBlockEnd="1px solid"
+      borderColor="bg.emphasized"
+      hideBelow={"sm"}
+    >
+      <Container maxW="2xl">
+        <Heading textAlign="center" size={{ base: "3xl", md: "4xl" }}>
+          The marker of a new era
+        </Heading>
+        <Text fontSize="lg" mb="4">
+          World Resources Institute tools have been transforming global
+          geospatial analysis for over 14 years, with Global Forest Watch having
+          particularly successful impact over forest monitoring across the
+          tropics.
+        </Text>
+        <Text fontSize="lg" mb="4">
+          However, as we look to the latest advances in technology, AI unlocks
+          an opportunity for us to shift from global-first, fixed-structure
+          outputs to highly-targeted, actionable insights in the language,
+          terminology and regions that matter most to our users.
+        </Text>
+        <Text fontSize="lg" mb="4">
+          Nature Watch marks a new chapter in our monitoring research, data and
+          tools. We step away from simply watching ecosystems, and toward
+          empowering intelligence-backed action.
+        </Text>
+      </Container>
+      <Container
+        bg="neutral.200"
+        rounded="xl"
+        p="6"
+        mt="8"
+        maxW="2xl"
+        display="flex"
+        flexDir="column"
+        gap="2"
+      >
+        <Heading
+          borderStart="2px solid"
+          borderColor="blue.700"
+          pl="4"
+          size="xl"
+          as="blockquote"
+        >
+          “Meaningful change doesn&rsquo;t come from simply watching, it comes
+          from taking action”
+        </Heading>
+        <Text as="cite">Craig Mills, Land & Carbon Lab</Text>
+      </Container>
+    </Box>
+  );
+}
