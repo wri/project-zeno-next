@@ -1,4 +1,5 @@
 import {
+  Accordion,
   Box,
   Button,
   Container,
@@ -7,8 +8,19 @@ import {
   Tabs,
   Text,
 } from "@chakra-ui/react";
+import { CaretRightIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
+type SupportTabCard = {
+  title: string;
+  content: string;
+  image: string;
+};
+
+type SupportTab = {
+  value: string;
+  cards?: SupportTabCard[];
+};
 const SUPPORT_TABS = [
   {
     value: "Restoration",
@@ -17,19 +29,19 @@ const SUPPORT_TABS = [
         title: "Highlight priority areas for intervention",
         content:
           "Identify regions most in need of restoration by exploring global and local ecological activity from forest loss, to land conversion.",
-        image: "https://placehold.co/270x135",
+        image: "/support-1-a.png",
       },
       {
         title: "Respond to near-realtime disturbances",
         content:
           "Stay up to date with fires, deforestation and land conversion in your areas of interest so you can act fast where it counts.",
-        image: "https://placehold.co/270x135",
+        image: "/support-1-b.png",
       },
       {
         title: "Report on land cover changes over time",
         content:
           "Compare your areas of interest before and after intervention, and export anything from charts, statistics and satellite imagery for your reports.",
-        image: "https://placehold.co/270x135",
+        image: "/support-1-c.png",
       },
     ],
   },
@@ -47,6 +59,32 @@ const SUPPORT_TABS = [
   },
 ];
 
+const renderContent = (tab: SupportTab): React.ReactElement | null => {
+  if (!tab.cards) return null;
+  return (
+    <>
+      {tab.cards.map((card) => (
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="stretch"
+          gap="4"
+          bg="lime.100"
+          rounded="lg"
+          p="4"
+          flex={1}
+          key={card.title}
+        >
+          <Image src={card.image} alt="Restoration" />
+          <Heading size="lg" as="p" m={0}>
+            {card.title}
+          </Heading>
+          <Text color="fg.muted">{card.content}</Text>
+        </Box>
+      ))}
+    </>
+  );
+};
 export default function SupportWorkTabsSection() {
   return (
     <Box
@@ -65,14 +103,15 @@ export default function SupportWorkTabsSection() {
           smarter decisions, and meaningful action in the places you care about.
         </Text>
       </Container>
-      {/* Ideas Section */}
-      <Container maxW="5xl" mt="8" p="0">
+      <Container maxW="5xl" mt={{base: "8", md: "10" }}>
+        {/* Tabs on medium breakpoint up, hidden on mobile */}
         <Tabs.Root
           variant="enclosed"
           defaultValue="Restoration"
           display="flex"
           flexDir="column"
           alignItems="center"
+          hideBelow="md"
         >
           <Tabs.List
             borderBottomRadius={0}
@@ -101,55 +140,74 @@ export default function SupportWorkTabsSection() {
                 value={tab.value}
                 bg="bg"
                 display="flex"
-                flexDirection={{base: "column", md: "row"}}
-                rounded="lg"
+                rounded="2xl"
                 gap="4"
                 padding="8"
               >
-                {tab.cards?.map((card) => {
-                  return (
-                    <Box
-                      display="flex"
-                      flexDirection="column"
-                      alignItems="flex-start"
-                      gap="4"
-                      bg="lime.100"
-                      rounded="md"
-                      p="4"
-                      flex={1}
-                      key={card.title}
-                    >
-                      <Image src={card.image} alt="Restoration" />
-                      <Heading size="lg" as="p">
-                        {card.title}
-                      </Heading>
-                      <Text color="fg.muted">
-                        {card.content}
-                      </Text>
-                    </Box>
-                  );
-                })}
+                {renderContent(tab)}
               </Tabs.Content>
             );
           })}
         </Tabs.Root>
+        {/* Accordion component is used on mobile only */}
+        <Accordion.Root
+          collapsible
+          defaultValue={["Restoration"]}
+          hideFrom="md"
+          variant="plain"
+          display="flex"
+          flexDir="column"
+          gap={4}
+        >
+          {SUPPORT_TABS.map((tab, index) => (
+            <Accordion.Item
+              key={index}
+              value={tab.value}
+              bg="bg.panel"
+              px={5}
+              py={4}
+              rounded="xl"
+              _open={{
+                px: 4,
+                py: 3,
+              }}
+            >
+              <Accordion.ItemTrigger p={0}>
+                <Heading size="lg" as="h5" flex="1">
+                  {tab.value}
+                </Heading>
+              </Accordion.ItemTrigger>
+              <Accordion.ItemContent pt={2}>
+                <Accordion.ItemBody display="flex" flexDir="column" gap={4}>
+                  {renderContent(tab)}
+                </Accordion.ItemBody>
+              </Accordion.ItemContent>
+            </Accordion.Item>
+          ))}
+        </Accordion.Root>
       </Container>
-      <Container
-        maxW="5xl"
-        mt="8"
-        p="4"
-        rounded="md"
-        bg="bg"
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-      >
-        <Heading size="md" as="p">
-          How will you use monitoring intelligence?
-        </Heading>
-        <Button asChild variant="solid" colorPalette="blue">
-          <Link href="/">Start Exploring</Link>
-        </Button>
+      <Container maxW="5xl" mt={{base: "8", md: "10" }}>
+        <Box
+          py={4}
+          px={5}
+          rounded="xl"
+          bg="bg"
+          display="flex"
+          flexDir={{ base: "column", md: "row" }}
+          alignItems={{ base: "flex-start", md: "center" }}
+          justifyContent="space-between"
+          gap={3}
+        >
+          <Heading size="md" as="p">
+            How will you use monitoring intelligence?
+          </Heading>
+          <Button asChild variant="solid" colorPalette="blue" rounded="lg">
+            <Link href="/">
+              Try the preview
+              <CaretRightIcon weight="bold" />
+            </Link>
+          </Button>
+        </Box>
       </Container>
     </Box>
   );

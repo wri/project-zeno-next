@@ -69,7 +69,7 @@ export default function LatestUpdatesSection() {
           <Heading size="md" as="p">
             Learn more about our data and research
           </Heading>
-          <Button asChild variant="solid" colorPalette="blue">
+          <Button asChild variant="solid" colorPalette="blue" rounded="lg">
             <Link href="/">Visit Land & Carbon Lab</Link>
           </Button>
         </Container>

@@ -133,7 +133,7 @@ export default function LandingPage() {
                 <Button asChild>
                   <Link href="#">Team</Link>
                 </Button>
-                <Button asChild ml={4} variant="solid" colorPalette="blue">
+                <Button asChild ml={4} variant="solid" colorPalette="blue" rounded="lg">
                   <Link href="/">Try the preview</Link>
                 </Button>
               </ButtonGroup>
@@ -174,6 +174,7 @@ export default function LandingPage() {
                 <Flex gap="2" alignItems="flex-start" flexDirection="column">
                   <Button
                     variant="outline"
+                    rounded="lg"
                     _after={{
                       position: "absolute",
                       top: 0,
@@ -196,6 +197,7 @@ export default function LandingPage() {
                 </Flex>
                 <WRIButton
                   variant="primary"
+                  rounded="lg"
                   rightIcon={<CaretRightIcon weight="bold" />}
                   label="Go"
                 />

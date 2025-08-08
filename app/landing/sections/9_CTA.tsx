@@ -27,7 +27,7 @@ export default function CTASection() {
               comes next.
             </Text>
           </Box>
-          <Button asChild variant="solid" colorPalette="blue">
+          <Button asChild variant="solid" colorPalette="blue" rounded="lg">
             <Link href="/">
               Try the preview
               <CaretRightIcon weight="bold" />

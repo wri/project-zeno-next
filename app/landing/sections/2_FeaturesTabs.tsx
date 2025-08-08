@@ -47,7 +47,7 @@ export default function FeaturesTabsSection() {
             language and delivers the most relevant data, satellite imagery and
             insights, formatted to fit your wofrkflow.
           </Text>
-          <Button asChild variant="solid" colorPalette="blue" mt="4">
+          <Button asChild variant="solid" colorPalette="blue" mt="4" rounded="lg">
             <Link href="/">
               Launch the Preview
               <CaretRightIcon weight="bold" />
