@@ -17,8 +17,8 @@ export function pickDatasetTool(
       // Create a dataset card widget for interactive tile layer adding
       const datasetWidget: InsightWidget = {
         type: "dataset-card",
-        title: `${dataset.source} - ${dataset.data_layer}`,
-        description: `Dataset from ${dataset.source}. Click to add this layer to the map.`,
+        title: "Map Layer",
+        description: `Click to add this layer to the map.`,
         data: dataset,
         xAxis: "",
         yAxis: "",

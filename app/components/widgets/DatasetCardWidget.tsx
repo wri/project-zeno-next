@@ -18,7 +18,7 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
     if (!isAlreadyAdded) {
       addTileLayer({
         id: `dataset-${dataset.dataset_id}`,
-        name: `${dataset.source} - ${dataset.data_layer}`,
+        name: `${dataset.dataset_name}`,
         url: dataset.tile_url,
         visible: true,
       });
@@ -37,19 +37,15 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
         <Flex justify="space-between" align="flex-start">
           <Box>
             <Card.Title fontSize="md" mb={1}>
-              {dataset.data_layer}
+              {dataset.dataset_name}
             </Card.Title>
-            <Badge colorPalette="blue" size="sm">
-              {dataset.source}
-            </Badge>
           </Box>
         </Flex>
       </Card.Header>
 
       <Card.Body pt={0}>
         <Text fontSize="sm" color="fg.muted" mb={3}>
-          Context Layer: {dataset.context_layer}
-          {dataset.threshold && ` • Threshold: ${dataset.threshold}`}
+          {dataset.reason}
         </Text>
 
         <Button

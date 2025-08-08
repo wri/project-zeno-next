@@ -84,7 +84,9 @@ export interface AOI {
 
 export interface DatasetInfo {
   dataset_id: number;
+  dataset_name: string;
   source: string;
+  reason: string;
   data_layer: string;
   tile_url: string;
   context_layer: string;
