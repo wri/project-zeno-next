@@ -343,7 +343,7 @@ function DateMenu() {
 
       contextStore.addContext({
         contextType: "date",
-        content: `${format(dateValue[0], "yyyy-MM-dd")} - ${format(
+        content: `${format(dateValue[0], "yyyy-MM-dd")} — ${format(
           dateValue[1],
           "yyyy-MM-dd"
         )}`,
