@@ -9,6 +9,44 @@ import {
 } from "@chakra-ui/react";
 import Link from "next/link";
 
+const SUPPORT_TABS = [
+  {
+    value: "Restoration",
+    cards: [
+      {
+        title: "Highlight priority areas for intervention",
+        content:
+          "Identify regions most in need of restoration by exploring global and local ecological activity from forest loss, to land conversion.",
+        image: "https://placehold.co/270x135",
+      },
+      {
+        title: "Respond to near-realtime disturbances",
+        content:
+          "Stay up to date with fires, deforestation and land conversion in your areas of interest so you can act fast where it counts.",
+        image: "https://placehold.co/270x135",
+      },
+      {
+        title: "Report on land cover changes over time",
+        content:
+          "Compare your areas of interest before and after intervention, and export anything from charts, statistics and satellite imagery for your reports.",
+        image: "https://placehold.co/270x135",
+      },
+    ],
+  },
+  {
+    value: "Conservation",
+  },
+  {
+    value: "Policy",
+  },
+  {
+    value: "Research",
+  },
+  {
+    value: "Journalism",
+  },
+];
+
 export default function SupportWorkTabsSection() {
   return (
     <Box
@@ -23,93 +61,81 @@ export default function SupportWorkTabsSection() {
           See how monitoring intelligence can support your work
         </Heading>
         <Text fontSize="md" mb="4">
-          From field work to policy writing, Global Nature Watch empowers smarter
-          decisions, and meaningful action in the places you care about.
+          From field work to policy writing, Global Nature Watch empowers
+          smarter decisions, and meaningful action in the places you care about.
         </Text>
       </Container>
       {/* Ideas Section */}
-      <Container maxW="4xl" mt="8" p="0">
-        <Tabs.Root variant="enclosed">
-          <Tabs.List alignContent="center">
-            <Tabs.Trigger value="restoration">Restoration</Tabs.Trigger>
-            <Tabs.Trigger value="conservation">Conservation</Tabs.Trigger>
-            <Tabs.Trigger value="Policy">Policy</Tabs.Trigger>
-            <Tabs.Trigger value="Research">Research</Tabs.Trigger>
-            <Tabs.Trigger value="Journalism">Journalism</Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Content
-            value="restoration"
-            bg="bg"
-            display="flex"
-            rounded="lg"
-            gap="4"
-            padding="8"
+      <Container maxW="5xl" mt="8" p="0">
+        <Tabs.Root
+          variant="enclosed"
+          defaultValue="Restoration"
+          display="flex"
+          flexDir="column"
+          alignItems="center"
+        >
+          <Tabs.List
+            borderBottomRadius={0}
+            borderTopRadius="2xl"
+            p={0}
+            overflow="hidden"
           >
-            <Box
-              display="flex"
-              flexDirection="column"
-              alignItems="flex-start"
-              gap="4"
-              bg="lime.100"
-              rounded="md"
-              p="4"
-              maxW="18rem"
-            >
-              <Image src="https://placehold.co/200x80" alt="Restoration" />
-              <Heading size="sm" as="p">
-                Highlight priority areas for intervation
-              </Heading>
-              <Text fontSize="xs" color="fg.muted">
-                Identify regions most in need of restoration by exploring global
-                and local ecological activity from forest loss to land
-                conversion.
-              </Text>
-            </Box>
-            <Box
-              display="flex"
-              flexDirection="column"
-              alignItems="flex-start"
-              gap="4"
-              bg="lime.100"
-              rounded="md"
-              p="4"
-              maxW="18rem"
-            >
-              <Image src="https://placehold.co/200x80" alt="Restoration" />
-              <Heading size="sm" as="p">
-                Highlight priority areas for intervation
-              </Heading>
-              <Text fontSize="xs" color="fg.muted">
-                Identify regions most in need of restoration by exploring global
-                and local ecological activity from forest loss to land
-                conversion.
-              </Text>
-            </Box>
-            <Box
-              display="flex"
-              flexDirection="column"
-              alignItems="flex-start"
-              gap="4"
-              bg="lime.100"
-              rounded="md"
-              p="4"
-              maxW="18rem"
-            >
-              <Image src="https://placehold.co/200x80" alt="Restoration" />
-              <Heading size="sm" as="p">
-                Highlight priority areas for intervation
-              </Heading>
-              <Text fontSize="xs" color="fg.muted">
-                Identify regions most in need of restoration by exploring global
-                and local ecological activity from forest loss to land
-                conversion.
-              </Text>
-            </Box>
-          </Tabs.Content>
+            {SUPPORT_TABS.map((tab) => {
+              return (
+                <Tabs.Trigger
+                  key={tab.value}
+                  value={tab.value}
+                  _selected={{ boxShadow: "none" }}
+                  fontWeight="normal"
+                  rounded="none"
+                >
+                  {tab.value}
+                </Tabs.Trigger>
+              );
+            })}
+          </Tabs.List>
+          {SUPPORT_TABS.map((tab) => {
+            return (
+              <Tabs.Content
+                key={tab.value}
+                value={tab.value}
+                bg="bg"
+                display="flex"
+                flexDirection={{base: "column", md: "row"}}
+                rounded="lg"
+                gap="4"
+                padding="8"
+              >
+                {tab.cards?.map((card) => {
+                  return (
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="flex-start"
+                      gap="4"
+                      bg="lime.100"
+                      rounded="md"
+                      p="4"
+                      flex={1}
+                      key={card.title}
+                    >
+                      <Image src={card.image} alt="Restoration" />
+                      <Heading size="lg" as="p">
+                        {card.title}
+                      </Heading>
+                      <Text color="fg.muted">
+                        {card.content}
+                      </Text>
+                    </Box>
+                  );
+                })}
+              </Tabs.Content>
+            );
+          })}
         </Tabs.Root>
       </Container>
       <Container
-        maxW="4xl"
+        maxW="5xl"
         mt="8"
         p="4"
         rounded="md"
