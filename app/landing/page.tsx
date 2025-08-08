@@ -18,16 +18,16 @@ import {
 import { Tooltip } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { Button as WRIButton } from "@worldresources/wri-design-systems";
-import LatestUpdatesSection from "./sections/LatestUpdates";
-import HowItWorksSection from "./sections/HowItWorks";
-import FutureOfMonitoringSection from "./sections/FutureOfMonitoring";
-import TeamSection from "./sections/TeamSection";
-import NewEraQuoteSection from "./sections/NewEraQuote";
-import SupportWorkTabsSection from "./sections/SupportWorkTabs";
-import FeaturesTabsSection from "./sections/FeaturesTabs";
-import FooterSection from "./sections/Footer";
-import TrustedPlatformsSection from "./sections/TrustedPlatforms";
-import CTASection from "./sections/CTA";
+import TrustedPlatformsSection from "./sections/1_TrustedPlatforms";
+import FeaturesTabsSection from "./sections/2_FeaturesTabs";
+import SupportWorkTabsSection from "./sections/3_SupportWorkTabs";
+import HowItWorksSection from "./sections/4_HowItWorks";
+import LatestUpdatesSection from "./sections/5_LatestUpdates";
+import FutureOfMonitoringSection from "./sections/6_FutureOfMonitoring";
+import TeamSection from "./sections/7_TeamSection";
+import NewEraQuoteSection from "./sections/8_NewEraQuote";
+import CTASection from "./sections/9_CTA";
+import FooterSection from "./sections/10_Footer";
 
 const SAMPLE_PROMPTS = [
   "Tell me about wild fires in the Brazilian Amazon Rainforest",
