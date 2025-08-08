@@ -16,7 +16,7 @@ const FEATURE_TABS = [
     label: "Find new areas of interest",
     description:
       "Using our data and technology to enrich research and support governments in policy writing.",
-    image: "https://placehold.co/800x500",
+    image: "/feature-tab-1.png",
   },
   {
     value: "feature-tab-2",
@@ -43,9 +43,9 @@ export default function FeaturesTabsSection() {
             Get answers to your toughest questions about natural landscapes
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch&rsquo;s AI understands your questions in plian language
-            and delivers the most relevant data, satellite imagery and insights,
-            formatted to fit your wofrkflow.
+            Global Nature Watch&rsquo;s AI understands your questions in plian
+            language and delivers the most relevant data, satellite imagery and
+            insights, formatted to fit your wofrkflow.
           </Text>
           <Button asChild variant="solid" colorPalette="blue" mt="4">
             <Link href="/">
@@ -54,9 +54,14 @@ export default function FeaturesTabsSection() {
             </Link>
           </Button>
         </Container>
-        <Container mt="12">
-          <Tabs.Root orientation="vertical" colorPalette="blue">
-            <Tabs.List borderEndWidth={0}>
+        <Container mt="12" maxW="5xl">
+          <Tabs.Root
+            orientation="vertical"
+            colorPalette="blue"
+            flexDirection={{ base: "column", md: "row" }}
+            defaultValue="feature-tab-1"
+          >
+            <Tabs.List borderEndWidth={0} gap={6}>
               {FEATURE_TABS.map((tab) => (
                 <Tabs.Trigger
                   key={tab.value}
@@ -67,8 +72,34 @@ export default function FeaturesTabsSection() {
                   alignItems="flex-start"
                   textAlign="left"
                   height="auto"
+                  css={{
+                    "& > *:not(:first-child)": {
+                      display: "none",
+                    },
+                  }}
+                  _before={{
+                    content: "' '",
+                    position: "absolute",
+                    insetBlock: "var(--indicator-offset-y, 0)",
+                    insetInlineStart: "var(--indicator-offset-x, 0)",
+                    width: "var(--indicator-thickness, 2px)",
+                    background: "bg.emphasized",
+                  }}
+                  _selected={{
+                    "&[data-orientation=vertical]::before": {
+                      insetInlineStart: "var(--indicator-offset-x, 0)",
+                      insetInlineEnd: 0,
+                      background:
+                        "var(--indicator-color, var(--indicator-color-fallback))",
+                    },
+                    "& > *": {
+                      display: "initial",
+                    },
+                  }}
                 >
-                  <Text fontWeight="bold">{tab.label}</Text>
+                  <Heading size="lg" mb={0}>
+                    {tab.label}
+                  </Heading>
                   <Text fontWeight="normal">{tab.description}</Text>
                 </Tabs.Trigger>
               ))}
@@ -81,6 +112,7 @@ export default function FeaturesTabsSection() {
                 flexDirection="column"
                 alignItems="center"
                 gap="4"
+                maxW="2xl"
               >
                 <Image src={tab.image} alt={tab.label} />
                 <Text

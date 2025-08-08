@@ -55,20 +55,11 @@ export default function LandingPage() {
           width="100%"
           bg="hsla(225, 52%, 11%, 1)"
           backgroundImage="radial-gradient(circle at 80% 80%, hsl(225deg 70% 15%) 0%, hsl(224deg 65% 11%) 50%)"
-          _after={{
-            bgGradient:
-              "linear(180deg, rgba(6, 0, 11, 0.29) 70.65%, #06000B 100%)",
-            width: "100%",
-            height: "100%",
-            position: "absolute",
-            content: "' '",
-            top: 0,
-            left: 0,
-          }}
         >
           <Box
             width="100%"
             height="100%"
+            bg="#0D1429"
             position="absolute"
             top={28}
             zIndex="0"
