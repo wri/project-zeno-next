@@ -7,10 +7,9 @@ import {
   ChatPrompt,
   StreamMessage,
   QueryType,
-  ChatAPIRequest,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
-import { readDataStream } from "../api/chat/read-data-stream";
+import { readDataStream } from "../api/shared/read-data-stream";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
@@ -30,6 +29,26 @@ interface ChatActions {
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (threadId: string) => Promise<void>;
+}
+
+interface UiContext {
+  aoi_selected?: {
+    aoi: {
+      name: string;
+      gadm_id?: string;
+      src_id?: string;
+      subtype?: string;
+    };
+    aoi_name: string;
+    subregion_aois: null;
+    subregion: null;
+    subtype?: string;
+  };
+  dataset_selected?: object;
+  daterange_selected?: {
+    start_date: string;
+    end_date: string;
+  };
 }
 
 const initialState: ChatState = {
@@ -138,7 +157,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     setLoading(true);
 
     // Build ui_context from current context
-    const ui_context: ChatAPIRequest["ui_context"] = {};
+
+    const ui_context: UiContext = {};
 
     // Find area context and convert to aoi_selected format
     const areaContext = context.find(

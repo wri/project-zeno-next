@@ -14,7 +14,7 @@ import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
-import SelectAreaLayer from "./SelectAreaLayer";
+import SelectAreaLayer from "./map/layers/SelectAreaLayer";
 import useContextStore from "@/app/store/contextStore";
 import CustomAreasLayer from "./map/layers/CustomAreasLayer";
 import MapFeature from "./MapFeature";
@@ -115,14 +115,14 @@ function Map() {
           <MapFeature key={feature.id} feature={feature} areas={areas} />
         ))}
 
-        {selectAreaLayer && (
+        {selectAreaLayer && selectAreaLayer !== "Custom" && (
           <SelectAreaLayer
             key={selectAreaLayer}
             layerId={selectAreaLayer}
             beforeId={undefined}
           />
         )}
-        <CustomAreasLayer />
+        {selectAreaLayer === "Custom" && <CustomAreasLayer />}
         <MapAreaControls />
 
         <AttributionControl
