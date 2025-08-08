@@ -131,8 +131,6 @@ function LoginOverlay() {
         logoutCallbackUrl
       )}`;
 
-      console.log("Opening logout popup:", resourceWatchLogoutUrl);
-
       // Try to open in a popup window (with pop-under behavior)
       const popup = window.open(
         resourceWatchLogoutUrl,
