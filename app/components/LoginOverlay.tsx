@@ -137,7 +137,6 @@ function LoginOverlay() {
         "WRI Logout",
         "width=600,height=700,scrollbars=yes,resizable=yes,status=no,location=no,toolbar=no,menubar=no"
       );
-      console.log("Popup:", popup);
 
       // Check if popup was blocked or failed to open
       if (!popup || popup.closed || typeof popup.closed === "undefined") {
