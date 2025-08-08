@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
 
 export const metadata: Metadata = {
-  title: "NatureWATCH",
-  description: "NatureWATCH",
+  title: "Global Nature Watch",
+  description: "Global Nature Watch",
 };
 
 export default function RootLayout({

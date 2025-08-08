@@ -23,7 +23,7 @@ export default function SupportWorkTabsSection() {
           See how monitoring intelligence can support your work
         </Heading>
         <Text fontSize="md" mb="4">
-          From field work to policy writing, NatureWATCH empowers smarter
+          From field work to policy writing, Global Nature Watch empowers smarter
           decisions, and meaningful action in the places you care about.
         </Text>
       </Container>

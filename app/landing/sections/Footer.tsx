@@ -29,7 +29,7 @@ export default function FooterSection() {
           flexDir={{ base: "column", md: "row" }}
         >
           <Heading size={{ base: "3xl", md: "5xl" }} fontWeight="semibold">
-            NatureWATCH
+            Global Nature Watch
           </Heading>
           <Flex
             gap="12"
@@ -65,7 +65,7 @@ export default function FooterSection() {
             flexWrap="wrap"
             w="full"
           >
-            <Text>{new Date().getFullYear()} © NatureWATCH</Text>
+            <Text>{new Date().getFullYear()} © Global Nature Watch</Text>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"

@@ -43,7 +43,7 @@ export default function FeaturesTabsSection() {
             Get answers to your toughest questions about natural landscapes
           </Heading>
           <Text fontSize="lg">
-            NatureWATCH&rsquo;s AI understands your questions in plian language
+            Global Nature Watch&rsquo;s AI understands your questions in plian language
             and delivers the most relevant data, satellite imagery and insights,
             formatted to fit your wofrkflow.
           </Text>

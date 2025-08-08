@@ -46,7 +46,7 @@ function ChatInput() {
   const getInputState = () => {
     return {
       disabled: isLoading,
-      message: isLoading ? "Sending..." : "Ask NatureWATCH a question...",
+      message: isLoading ? "Sending..." : "Ask Global Nature Watch a question...",
     };
   };
 
@@ -91,7 +91,7 @@ function ChatInput() {
         </Flex>
       )}
       <Textarea
-        aria-label="Ask NatureWATCH a question..."
+        aria-label="Ask Global Nature Watch a question..."
         placeholder={message}
         fontSize="sm"
         autoresize

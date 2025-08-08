@@ -29,7 +29,7 @@ export default function TrustedPlatformsSection() {
             trusted platforms
           </Heading>
           <Text fontSize="lg">
-            NatureWATCH is build on the data and research of Global Forest Watch
+            Global Nature Watch is build on the data and research of Global Forest Watch
             and Land & Carbon Lab, as trusted by NGOs, governments and
             geospatial experts worldwide for over 14 years.
           </Text>

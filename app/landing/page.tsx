@@ -155,7 +155,7 @@ export default function LandingPage() {
                 Tackle nature&rsquo;s toughest monitoring challenges
               </Heading>
               <Text fontSize="lg">
-                NatureWATCH is your personal geospatial AI assistant, trained on
+                Global Nature Watch is your personal geospatial AI assistant, trained on
                 the latest nature monitoring breakthroughs by the worl&apos;s
                 leading researchers.
               </Text>
@@ -228,9 +228,9 @@ export default function LandingPage() {
                 <Badge size="xs" fontSize="8px" rounded="none" mr="1">
                   BETA
                 </Badge>
-                NatureWATCH is in open Beta
+                Global Nature Watch is in open Beta
               </Text>
-              <Tooltip content="While NatureWATCH is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all.">
+              <Tooltip content="While Global Nature Watch is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all.">
                 <Box
                   color="fg.inverted"
                   textDecoration="underline"
