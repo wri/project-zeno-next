@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { ChatContextType } from "@/app/components/ContextButton";
+import useMapStore from "./mapStore";
 
 export interface ContextItem {
   id: string;
@@ -17,6 +18,8 @@ export interface ContextItem {
     start: Date;
     end: Date;
   };
+  // For layer context, tie the context item to a map layer id
+  mapLayerId?: string;
 }
 
 interface ContextState {
@@ -57,10 +60,25 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
       };
     }),
   removeContext: (id) =>
-    set((state) => ({
-      context: state.context.filter((c) => c.id !== id),
-    })),
-  clearContext: () => set({ context: [] }),
+    set((state) => {
+      const itemToRemove = state.context.find((c) => c.id === id);
+      if (itemToRemove?.mapLayerId) {
+        // Remove corresponding map layer if this context item represents a dataset layer
+        useMapStore.getState().removeTileLayer(itemToRemove.mapLayerId);
+      }
+      return {
+        context: state.context.filter((c) => c.id !== id),
+      };
+    }),
+  clearContext: () =>
+    set((state) => {
+      // Remove any map layers tied to context entries before clearing
+      const { removeTileLayer } = useMapStore.getState();
+      state.context.forEach((c) => {
+        if (c.mapLayerId) removeTileLayer(c.mapLayerId);
+      });
+      return { context: [] };
+    }),
   reset: () => set(initialState),
 }));
 
