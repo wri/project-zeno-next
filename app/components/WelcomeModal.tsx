@@ -19,13 +19,21 @@ const WelcomeModal = () => {
   const ref = useRef<HTMLTextAreaElement>(null);
   const { prompts, fetchPrompts } = usePromptStore();
   const { sendMessage, isLoading } = useChatStore();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
-
+  const [bypassWelcomeModal, setBypassWelcomeModal] = useState(false);
 
   useEffect(() => {
-    fetchPrompts();
-  }, [fetchPrompts]);
+    const storedValue = localStorage.getItem("bypassWelcomeModal");
+    setBypassWelcomeModal(storedValue === "true");
+    setIsOpen(storedValue !== "true");
+  }, []);
+
+  useEffect(() => {
+    if (!bypassWelcomeModal) {
+      fetchPrompts();
+    }
+  }, [fetchPrompts, bypassWelcomeModal]);
 
   const submitPrompt = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -58,7 +66,7 @@ const WelcomeModal = () => {
     await sendMessage(prompt);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || bypassWelcomeModal) return null;
 
   return (
     <Dialog.Root
@@ -189,10 +197,45 @@ const WelcomeModal = () => {
                   ))}
                 </ButtonGroup>
               </Flex>
+              <Flex
+                justifyContent="flex-start"
+                pt={2}
+                alignItems="center"
+                gap={2}
+              >
+                <input
+                  type="checkbox"
+                  id="dontShowAgain"
+                  checked={bypassWelcomeModal}
+                  onChange={() => {
+                    if (bypassWelcomeModal) {
+                      localStorage.setItem("bypassWelcomeModal", "false");
+                      setBypassWelcomeModal(false);
+                    } else {
+                      localStorage.setItem("bypassWelcomeModal", "true");
+                      setBypassWelcomeModal(true);
+                    }
+                  }}
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    accentColor: "#1e40af",
+                  }}
+                />
+                <label
+                  htmlFor="dontShowAgain"
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--chakra-colors-fg-muted)",
+                    cursor: "pointer",
+                  }}
+                >
+                  Don&apos;t show this again
+                </label>
+              </Flex>
             </Dialog.Body>
             <Dialog.CloseTrigger asChild>
               <CloseButton onClick={() => setIsOpen(false)} size="sm" />
-
             </Dialog.CloseTrigger>
           </Dialog.Content>
         </Dialog.Positioner>
