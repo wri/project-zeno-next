@@ -5,15 +5,15 @@ import {
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_MB,
   MIN_AREA_KM2,
-} from "../constants/custom-areas";
-import type { MapState } from "./mapStore";
-import { generateRandomName } from "../utils/generateRandomName";
-import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
-import { formatAreaWithUnits } from "../utils/formatArea";
+} from "../../constants/custom-areas";
+import type { MapState } from ".";
+import { generateRandomName } from "../../utils/generateRandomName";
+import { calculateAreaKm2 } from "../../utils/calculateAreaKm2";
+import { formatAreaWithUnits } from "../../utils/formatArea";
 import type {
   CreateCustomAreaRequest,
   CreateCustomAreaResponse,
-} from "../schemas/api/custom_areas/post";
+} from "../../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
 
 type UploadErrorType =

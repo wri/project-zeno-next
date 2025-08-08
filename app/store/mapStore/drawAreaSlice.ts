@@ -2,15 +2,15 @@ import { TerraDraw, TerraDrawPolygonMode } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { StateCreator } from "zustand";
 import type { Map } from "maplibre-gl";
-import { AOI } from "../types/chat";
-import { generateRandomName } from "../utils/generateRandomName";
-import type { MapState } from "./mapStore";
-import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
-import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../constants/custom-areas";
+import { AOI } from "../../types/chat";
+import { generateRandomName } from "../../utils/generateRandomName";
+import type { MapState } from ".";
+import { calculateAreaKm2 } from "../../utils/calculateAreaKm2";
+import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../../constants/custom-areas";
 import type {
   CreateCustomAreaRequest,
   CreateCustomAreaResponse,
-} from "../schemas/api/custom_areas/post";
+} from "../../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
 
 // Type for polygon features from TerraDraw

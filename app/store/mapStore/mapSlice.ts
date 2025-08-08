@@ -1,11 +1,8 @@
-import { create } from "zustand";
 import { MapRef } from "react-map-gl/maplibre";
 import bbox from "@turf/bbox";
 import center from "@turf/center";
-import { LayerId } from "../types/map";
-import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
-import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
+import { LayerId } from "../../types/map";
 
 interface GeoJsonFeature {
   id: string;
@@ -18,7 +15,7 @@ interface SelectionMode {
   name?: string;
 }
 
-interface MapSlice {
+export interface MapSlice {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
@@ -43,16 +40,13 @@ interface MapSlice {
   clearSelectionMode: () => void;
 }
 
-export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice;
-
-const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
+export const createMapSlice: StateCreator<MapSlice & { clearValidationError?: () => void }, [], [], MapSlice> = (
   set,
   get
 ) => ({
   mapRef: null,
   geoJsonFeatures: [],
   selectAreaLayer: null,
-  selectedAreas: [],
   selectionMode: undefined,
 
   reset: () => {
@@ -78,9 +72,9 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   },
 
   addGeoJsonFeature: (feature) => {
-    set((state) => ({
+    set((state: MapSlice) => ({
       geoJsonFeatures: [
-        ...state.geoJsonFeatures.filter((f) => f.id !== feature.id),
+        ...state.geoJsonFeatures.filter((f: GeoJsonFeature) => f.id !== feature.id),
         feature,
       ],
       selectAreaLayer: null,
@@ -89,8 +83,8 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   },
 
   removeGeoJsonFeature: (id) => {
-    set((state) => ({
-      geoJsonFeatures: state.geoJsonFeatures.filter((f) => f.id !== id),
+    set((state: MapSlice) => ({
+      geoJsonFeatures: state.geoJsonFeatures.filter((f: GeoJsonFeature) => f.id !== id),
     }));
   },
 
@@ -176,11 +170,3 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     }
   },
 });
-
-const useMapStore = create<MapState>()((...a) => ({
-  ...createMapSlice(...a),
-  ...createDrawAreaSlice(...a),
-  ...createUploadAreaSlice(...a),
-}));
-
-export default useMapStore;
