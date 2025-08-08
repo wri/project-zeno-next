@@ -157,8 +157,8 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
             );
 
             // Get dynamic src_id and subtype using metadata
-            const dynamicSrcId = getSrcId(layerId, featureProps, metadata);
-            const dynamicSubtype = getSubtype(layerId, featureProps, metadata);
+            const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
+            const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
 
