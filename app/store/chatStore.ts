@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
+import { format } from "date-fns";
+
 import {
   ChatMessage,
   ChatPrompt,
@@ -41,6 +43,11 @@ interface UiContext {
     subregion_aois: null;
     subregion: null;
     subtype?: string;
+  };
+  dataset_selected?: object;
+  daterange_selected?: {
+    start_date: string;
+    end_date: string;
   };
 }
 
@@ -169,6 +176,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         subregion_aois: null,
         subregion: null,
         subtype: areaContext.aoiData.subtype,
+      };
+    }
+
+    const dateContext = context.find((ctx) => ctx.contextType === "date");
+    if (dateContext && dateContext.dateRange) {
+      ui_context.daterange_selected = {
+        start_date: format(dateContext.dateRange.start, "yyyy-MM-dd"),
+        end_date: format(dateContext.dateRange.end, "yyyy-MM-dd"),
       };
     }
 

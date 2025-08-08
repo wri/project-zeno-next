@@ -22,11 +22,20 @@ function ContextTag({
       borderWidth={closeable ? "1px" : "none"}
       borderColor={closeable ? "border" : "transparent"}
     >
-      <Tag.StartElement>{ChatContextOptions[contextType].icon}</Tag.StartElement>
+      <Tag.StartElement>
+        {ChatContextOptions[contextType].icon}
+      </Tag.StartElement>
       <Tag.Label>{content}</Tag.Label>
       {closeable && (
         <Tag.EndElement>
-          <Tag.CloseTrigger onClick={onClose} />
+          <Tag.CloseTrigger
+            onClick={onClose}
+            cursor="pointer"
+            borderRadius="sm"
+            _hover={{
+              bg: "bg.muted",
+            }}
+          />
         </Tag.EndElement>
       )}
     </Tag.Root>
