@@ -1,4 +1,5 @@
 "use client";
+import { useRef, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -40,6 +41,37 @@ const SAMPLE_PROMPTS = [
 ];
 
 export default function LandingPage() {
+  const containerRef = useRef(null);
+  const sliderRef = useRef(null);
+
+  const [promptTimer, setPromptTimer] = useState(10);
+  const [promptIndex, setPromptIndex] = useState(0);
+  const [animationKey, setAnimationKey] = useState(0);
+  const [inputValue, setInputValue] = useState("");
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (isInputFocused || inputValue.length > 0) return; // Pause timer if typing
+    const interval = setInterval(() => {
+      setPromptTimer((prev) => {
+        if (prev > 1) {
+          return prev - 1;
+        } else {
+          // When timer resets, update prompt index
+          setPromptIndex((idx) => (idx + 1) % SAMPLE_PROMPTS.length);
+          setAnimationKey((k) => k + 1);
+          return 10;
+        }
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isInputFocused, inputValue]);
+
   return (
     <div>
       {/* Top Section - header and hero with video background */}
@@ -109,7 +141,15 @@ export default function LandingPage() {
                 <br /> trusted by experts
               </Text>
             </Flex>
-            <Flex>
+            <Button
+              hideFrom="md"
+              colorPalette="blue"
+              rounded="lg"
+              variant="solid"
+            >
+              Menu
+            </Button>
+            <Flex hideBelow="md">
               <ButtonGroup
                 size="sm"
                 gap="2"
@@ -133,7 +173,13 @@ export default function LandingPage() {
                 <Button asChild>
                   <Link href="#">Team</Link>
                 </Button>
-                <Button asChild ml={4} variant="solid" colorPalette="blue" rounded="lg">
+                <Button
+                  asChild
+                  ml={4}
+                  variant="solid"
+                  colorPalette="blue"
+                  rounded="lg"
+                >
                   <Link href="/">Try the preview</Link>
                 </Button>
               </ButtonGroup>
@@ -146,97 +192,124 @@ export default function LandingPage() {
                 Tackle nature&rsquo;s toughest monitoring challenges
               </Heading>
               <Text fontSize="lg">
-                Global Nature Watch is your personal geospatial AI assistant, trained on
-                the latest nature monitoring breakthroughs by the worl&apos;s
-                leading researchers.
+                Global Nature Watch is your personal geospatial AI assistant,
+                trained on the latest nature monitoring breakthroughs by the
+                worl&apos;s leading researchers.
               </Text>
             </Container>
-            <Container
-              rounded="md"
-              bg="bg"
-              p="4"
-              mt="8"
-              maxW={{ base: "lg", md: "xl" }}
-              zIndex="10"
-            >
-              <Input
-                p="0"
-                outline="none"
-                borderWidth="0"
-                size="lg"
-                placeholder="Where are the most disturbances to nature happening now?"
-              />
-              <Flex
-                justifyContent="space-between"
-                alignItems="flex-start"
-                mt="4"
-              >
-                <Flex gap="2" alignItems="flex-start" flexDirection="column">
-                  <Button
-                    variant="outline"
-                    rounded="lg"
-                    _after={{
-                      position: "absolute",
-                      top: 0,
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      content: "''",
-                      zIndex: -1,
-                      width: "40%",
-                      height: "100%",
-                      bg: "lime.100",
-                    }}
-                  >
-                    <ArrowsClockwiseIcon />
-                    New Suggestion
-                  </Button>
-                  <Text fontSize="xs" color="fg.subtle">
-                    Automatically updating in 4s
-                  </Text>
-                </Flex>
-                <WRIButton
-                  variant="primary"
-                  rounded="lg"
-                  rightIcon={<CaretRightIcon weight="bold" />}
-                  label="Go"
+            <Container mt="8" maxW={{ base: "lg", md: "2xl" }}>
+              <Box rounded="md" bg="bg" p="4" zIndex="10">
+                <Input
+                  key={
+                    !isInputFocused && inputValue === ""
+                      ? promptIndex
+                      : undefined
+                  }
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  p="0"
+                  outline="none"
+                  borderWidth="0"
+                  size="lg"
+                  placeholder={SAMPLE_PROMPTS[promptIndex]}
+                  animationName="slide-from-bottom, fade-in"
+                  animationDuration="0.32s"
+                  animationTimingFunction="ease-in-out"
+                  _focusWithin={{
+                    animationPlayState: "paused",
+                  }}
                 />
-              </Flex>
-            </Container>
-            <Container
-              display="flex"
-              bg="blackAlpha.400"
-              justifyContent="space-between"
-              alignItems="center"
-              rounded="md"
-              fontSize="xs"
-              color="fg.inverted"
-              zIndex="10"
-              maxW={{ base: "lg", md: "xl" }}
-              mt="3"
-              px="2"
-              py="1"
-            >
-              <Text>
-                <Badge size="xs" fontSize="8px" rounded="none" mr="1">
-                  BETA
-                </Badge>
-                Global Nature Watch is in open Beta
-              </Text>
-              <Tooltip content="While Global Nature Watch is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all.">
-                <Box
-                  color="fg.inverted"
-                  textDecoration="underline"
-                  textDecorationStyle="dotted"
-                  cursor="pointer"
-                  display="flex"
-                  gap="1"
-                  alignItems="center"
+                <Flex
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  mt="4"
                 >
-                  <PencilRulerIcon />
-                  Capped at 100 prompts
-                </Box>
-              </Tooltip>
+                  <Flex gap="2" alignItems="flex-start" flexDirection="column">
+                    <Button
+                      key={animationKey}
+                      variant="outline"
+                      rounded="lg"
+                      _after={{
+                        position: "absolute",
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        content: "''",
+                        zIndex: -1,
+                        width: "10%",
+                        height: "100%",
+                        bg: "lime.100",
+                        animation: ready ? "fillWidth" : "none",
+                        animationPlayState:
+                          isInputFocused || inputValue.length > 0
+                            ? "paused"
+                            : "running",
+                      }}
+                      onClick={() => {
+                        setPromptTimer(10);
+                        setPromptIndex(
+                          (idx) => (idx + 1) % SAMPLE_PROMPTS.length
+                        );
+                        setAnimationKey((k) => k + 1);
+                      }}
+                    >
+                      <ArrowsClockwiseIcon />
+                      New Suggestion
+                    </Button>
+                    <Text fontSize="xs" color="fg.subtle">
+                      Automatically updating in {promptTimer}s
+                    </Text>
+                  </Flex>
+                  <WRIButton
+                    variant="primary"
+                    rounded="lg"
+                    rightIcon={<CaretRightIcon weight="bold" />}
+                    label="Go"
+                  />
+                </Flex>
+              </Box>
+            </Container>
+            <Container maxW={{ base: "lg", md: "2xl" }} mt="3">
+              <Box
+                display="flex"
+                bg="blackAlpha.400"
+                justifyContent="space-between"
+                alignItems="center"
+                rounded="md"
+                fontSize="xs"
+                color="fg.inverted"
+                zIndex="10"
+                px="2"
+                py="1"
+              >
+                <Text>
+                  <Badge size="xs" fontSize="8px" rounded="none" mr="1">
+                    BETA
+                  </Badge>
+                  Global Nature Watch is in open Beta
+                </Text>
+                <Tooltip
+                  openDelay={100}
+                  closeDelay={300}
+                  content="While Global Nature Watch is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all."
+                >
+                  <Box
+                    color="fg.inverted"
+                    textDecoration="underline"
+                    textDecorationStyle="dotted"
+                    cursor="pointer"
+                    display="flex"
+                    gap="1"
+                    alignItems="center"
+                  >
+                    <PencilRulerIcon />
+                    Capped at 100 prompts
+                  </Box>
+                </Tooltip>
+              </Box>
             </Container>
           </Box>
         </Box>
@@ -251,41 +324,87 @@ export default function LandingPage() {
         overflow="hidden"
         display="flex"
         flexDirection="column"
+        ref={containerRef}
       >
-        <Flex gap="4">
-          {SAMPLE_PROMPTS.map((prompt, i) => (
-            <Box
-              key={i}
-              bg="neutral.200"
-              borderWidth="1px"
-              borderColor="neutral.400"
-              p="3"
-              rounded="md"
-              maxW="18rem"
-              flexShrink="0"
-              fontSize="sm"
-            >
-              {prompt}
-            </Box>
-          ))}
+        {/* Prompts sliding left */}
+        <Flex
+          gap="4"
+          animationName="slide-to-left-full"
+          animationDuration="30s"
+          animationIterationCount="infinite"
+          animationTimingFunction="linear"
+          animationDelay="0.1s"
+          transform="translate3d(0, 0, 0)"
+          _hover={{
+            animationPlayState: "paused",
+            "& > *": {
+              opacity: 0.6,
+            },
+          }}
+          ref={sliderRef}
+        >
+          {/* Duplicate prompts array to ensure illustion of infinite scroll */}
+          {Array(2)
+            .fill(SAMPLE_PROMPTS)
+            .flat()
+            .map((prompt, i) => (
+              <Box
+                key={i}
+                bg="neutral.200"
+                borderWidth="1px"
+                borderColor="neutral.400"
+                p="3"
+                rounded="md"
+                maxW="18rem"
+                flexShrink="0"
+                cursor="pointer"
+                _hover={{
+                  opacity: 1,
+                }}
+              >
+                {prompt}
+              </Box>
+            ))}
         </Flex>
-        <Flex gap="4">
-          {SAMPLE_PROMPTS.reverse().map((prompt, i) => (
-            <Box
-              key={i}
-              bg="lime.100"
-              borderWidth="1px"
-              borderColor="lime.400"
-              p="3"
-              rounded="md"
-              maxW="18rem"
-              flexShrink="0"
-            >
-              {prompt}
-            </Box>
-          ))}
+        {/* Prompts sliding right */}
+        <Flex
+          gap="4"
+          animationName="slide-from-left-full"
+          animationDuration="30s"
+          animationIterationCount="infinite"
+          animationTimingFunction="linear"
+          animationDelay="0.1s"
+          transform="translate3d(0, 0, 0)"
+          _hover={{
+            animationPlayState: "paused",
+            "& > *": {
+              opacity: 0.6,
+            },
+          }}
+        >
+          {/* Duplicate prompts array to ensure illustion of infinite scroll */}
+          {Array(2)
+            .fill(SAMPLE_PROMPTS)
+            .flat()
+            .map((prompt, i) => (
+              <Box
+                key={i}
+                bg="lime.100"
+                shadow="xs"
+                p="3"
+                rounded="md"
+                maxW="18rem"
+                flexShrink="0"
+                cursor="pointer"
+                _hover={{
+                  opacity: 1,
+                }}
+              >
+                {prompt}
+              </Box>
+            ))}
         </Flex>
-      </Box>      
+      </Box>
       <TrustedPlatformsSection />
       <FeaturesTabsSection />
       <SupportWorkTabsSection />
