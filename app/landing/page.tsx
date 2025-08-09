@@ -39,10 +39,13 @@ const SAMPLE_PROMPTS = [
   "Where are the most disturbances to nature happening now?",
   "Show me high priority areas in my monitoring portfolio",
 ];
+const MARQUEE_SPEED = 40;
 
 export default function LandingPage() {
   const containerRef = useRef(null);
   const sliderRef = useRef(null);
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const [animationDuration, setAnimationDuration] = useState("30s");
 
   const [promptTimer, setPromptTimer] = useState(10);
   const [promptIndex, setPromptIndex] = useState(0);
@@ -71,7 +74,23 @@ export default function LandingPage() {
     }, 1000);
     return () => clearInterval(interval);
   }, [isInputFocused, inputValue]);
+  // Measure the width of one set of prompts after render
+  useEffect(() => {
+    if (sliderRef.current && containerRef.current) {
+      // Get width of one set (half the children, since you render 2x)
+      const slider = sliderRef.current as HTMLDivElement;
+      // Each prompt box has flexShrink=0, so width is sum of all
+      const promptBoxes = slider.querySelectorAll("[data-marquee-item]");
+      let width = 0;
+      for (let i = 0; i < promptBoxes.length / 2; i++) {
+        width += (promptBoxes[i] as HTMLElement).offsetWidth + 16; // 16px = gap="4"
+      }
+      setSliderWidth(width);
 
+      // Calculate duration for consistent speed
+      setAnimationDuration(`${width / MARQUEE_SPEED}s`);
+    }
+  }, [SAMPLE_PROMPTS.length]);
   return (
     <div>
       {/* Top Section - header and hero with video background */}
@@ -329,12 +348,14 @@ export default function LandingPage() {
         {/* Prompts sliding left */}
         <Flex
           gap="4"
-          animationName="slide-to-left-full"
-          animationDuration="30s"
-          animationIterationCount="infinite"
+          animationName="dynamicSlideLeft"
+          animationDuration={animationDuration}
           animationTimingFunction="linear"
-          animationDelay="0.1s"
-          transform="translate3d(0, 0, 0)"
+          animationIterationCount="infinite"
+          style={{
+            "--start-x": "0px",
+            "--end-x": `-${sliderWidth}px`,
+          }}
           _hover={{
             animationPlayState: "paused",
             "& > *": {
@@ -350,6 +371,7 @@ export default function LandingPage() {
             .map((prompt, i) => (
               <Box
                 key={i}
+                data-marquee-item
                 bg="neutral.200"
                 borderWidth="1px"
                 borderColor="neutral.400"
@@ -359,7 +381,7 @@ export default function LandingPage() {
                 flexShrink="0"
                 cursor="pointer"
                 _hover={{
-                  opacity: 1,
+                  "&&": { opacity: 1 },
                 }}
               >
                 {prompt}
@@ -369,12 +391,14 @@ export default function LandingPage() {
         {/* Prompts sliding right */}
         <Flex
           gap="4"
-          animationName="slide-from-left-full"
-          animationDuration="30s"
-          animationIterationCount="infinite"
+          animationName="dynamicSlideRight"
+          animationDuration={animationDuration}
           animationTimingFunction="linear"
-          animationDelay="0.1s"
-          transform="translate3d(0, 0, 0)"
+          animationIterationCount="infinite"
+          style={{
+            "--start-x": `-${sliderWidth}px`,
+            "--end-x": "0px",
+          }}
           _hover={{
             animationPlayState: "paused",
             "& > *": {
@@ -389,6 +413,7 @@ export default function LandingPage() {
             .map((prompt, i) => (
               <Box
                 key={i}
+                data-marquee-item
                 bg="lime.100"
                 shadow="xs"
                 p="3"
@@ -397,7 +422,7 @@ export default function LandingPage() {
                 flexShrink="0"
                 cursor="pointer"
                 _hover={{
-                  opacity: 1,
+                  "&&": { opacity: 1 },
                 }}
               >
                 {prompt}

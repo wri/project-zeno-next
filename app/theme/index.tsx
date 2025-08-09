@@ -9,6 +9,18 @@ export const config = defineConfig({
         from: { width: "0%" },
         to: { width: "100%" },
       },
+      dynamicSlideLeft: {
+        from: {
+          transform: "translateX(var(--start-x))",
+        },
+        to: { transform: "translateX(var(--end-x))" },
+      },
+      dynamicSlideRight: {
+        from: {
+          transform: "translateX(var(--start-x))",
+        },
+        to: { transform: "translateX(var(--end-x))" },
+      },
     },
     tokens: {
       fonts: {
