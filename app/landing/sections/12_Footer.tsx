@@ -12,7 +12,7 @@ export default function FooterSection() {
   return (
     <Box
       as="footer"
-      p="12"
+      p={{ base: 6, md: 12 }}
       pb="0"
       bg="linear-gradient(98deg, #1D84BE -1.78%, #42A1DD 4.02%, #6ABFFF 20.15%, #C1E23E 78.8%, #E3F37F 99.99%)"
     >
@@ -23,8 +23,8 @@ export default function FooterSection() {
         gap={{ base: "10", md: "16" }}
       >
         <Flex
-          justifyContent={{ base: "center", md: "space-between" }}
-          alignItems="center"
+          justifyContent={{ base: "flex-start", md: "space-between" }}
+          alignItems={{ base: "flex-start", md: "center" }}
           gap={4}
           flexDir={{ base: "column", md: "row" }}
         >
@@ -33,18 +33,18 @@ export default function FooterSection() {
           </Heading>
           <Flex
             gap="12"
-            alignItems="center"
+            alignItems={{ base: "flex-start", md: "center" }}
             flexWrap="wrap"
-            justifyContent="center"
+            justifyContent={{ base: "flex-start", md: "center" }}
           >
             <ChakraLink href="https://www.wri.org/">
               <Image src="/WRI-logo-mono.svg" alt="WRI Logo" height="64px" />
             </ChakraLink>
-            <ChakraLink href="https://www.bezosearthfund.org/">
-              <Image src="/BEF-logo-mono.svg" alt="BEF Logo" height="64px" />
-            </ChakraLink>
             <ChakraLink href="https://landcarbonlab.org/">
               <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
+            </ChakraLink>
+            <ChakraLink href="https://www.bezosearthfund.org/">
+              <Image src="/BEF-logo-mono.svg" alt="BEF Logo" height="64px" />
             </ChakraLink>
             <ChakraLink href="https://www.globalforestwatch.org/">
               <Image src="/GFW-logo-mono.svg" alt="GFW Logo" height="64px" />
@@ -52,7 +52,7 @@ export default function FooterSection() {
           </Flex>
         </Flex>
         <Flex
-          justifyContent={{ base: "center", md: "space-between" }}
+          justifyContent={{ base: "flex-start", md: "space-between" }}
           alignItems={{ base: "flex-start", md: "center" }}
           gap={4}
           pb="12"
@@ -60,8 +60,9 @@ export default function FooterSection() {
         >
           <Flex
             alignItems="center"
-            justifyContent={{ base: "center", md: "flex-start" }}
-            gap={6}
+            justifyContent="flex-start"
+            rowGap={6}
+            columnGap={4}
             flexWrap="wrap"
             w="full"
           >
@@ -83,8 +84,9 @@ export default function FooterSection() {
           </Flex>
           <Flex
             alignItems="center"
-            justifyContent={{ base: "center", md: "flex-start" }}
-            gap={6}
+            justifyContent={{ base: "flex-start", md: "flex-end" }}
+            rowGap={6}
+            columnGap={4}
             flexWrap="wrap"
             w="full"
           >

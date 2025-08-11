@@ -38,23 +38,29 @@ export default function FeaturesTabsSection() {
   return (
     <Box py="24" pb="28" borderBlockEnd="1px solid" borderColor="bg.emphasized">
       <Container>
-        <Container textAlign="center" maxW="3xl">
+        <Container textAlign="center" maxW="3xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
             Get answers to your toughest questions about natural landscapes
           </Heading>
           <Text fontSize="lg">
             Global Nature Watch&rsquo;s AI understands your questions in plian
             language and delivers the most relevant data, satellite imagery and
-            insights, formatted to fit your wofrkflow.
+            insights, formatted to fit your workflow.
           </Text>
-          <Button asChild variant="solid" colorPalette="blue" mt="4" rounded="lg">
+          <Button
+            asChild
+            variant="solid"
+            colorPalette="blue"
+            mt="4"
+            rounded="lg"
+          >
             <Link href="/">
               Launch the Preview
               <CaretRightIcon weight="bold" />
             </Link>
           </Button>
         </Container>
-        <Container mt="12" maxW="5xl">
+        <Container mt="12" maxW="5xl" px={0}>
           <Tabs.Root
             orientation="vertical"
             colorPalette="blue"

@@ -166,9 +166,11 @@ export default function LandingHero({ prompts }: PromptMarqueeProps) {
         <Container maxW={{ base: "lg", md: "2xl" }} mt="3">
           <Box
             display="flex"
+            flexWrap="wrap"
             bg="blackAlpha.400"
             justifyContent="space-between"
-            alignItems="center"
+            alignItems={{base: "flex-start", md: "center"}}
+            gap={2}
             rounded="md"
             fontSize="xs"
             color="fg.inverted"

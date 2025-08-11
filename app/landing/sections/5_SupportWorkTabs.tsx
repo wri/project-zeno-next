@@ -87,14 +87,14 @@ const renderContent = (tab: SupportTab): React.ReactElement | null => {
 };
 export default function SupportWorkTabsSection() {
   return (
-    <Box
+    <Container
       py="24"
       pb="28"
       borderBlockEnd="1px solid"
       borderColor="bg.emphasized"
       bg="linear-gradient(0deg, rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.64) 85%), url(/landing-bg-image2.png) lightgray 50% / cover no-repeat"
     >
-      <Container textAlign="center" maxW="2xl" rounded="md" color="fg.inverted">
+      <Container textAlign="center" maxW="2xl" rounded="md" color="fg.inverted" px={0}>
         <Heading size={{ base: "3xl", md: "4xl" }}>
           See how monitoring intelligence can support your work
         </Heading>
@@ -103,7 +103,7 @@ export default function SupportWorkTabsSection() {
           smarter decisions, and meaningful action in the places you care about.
         </Text>
       </Container>
-      <Container maxW="5xl" mt={{base: "8", md: "10" }}>
+      <Container maxW="5xl" mt={{base: "8", md: "10" }} px={0}>
         {/* Tabs on medium breakpoint up, hidden on mobile */}
         <Tabs.Root
           variant="enclosed"
@@ -186,7 +186,7 @@ export default function SupportWorkTabsSection() {
           ))}
         </Accordion.Root>
       </Container>
-      <Container maxW="5xl" mt={{base: "8", md: "10" }}>
+      <Container maxW="5xl" mt={{base: "8", md: "10" }} px={0}>
         <Box
           py={4}
           px={5}
@@ -209,6 +209,6 @@ export default function SupportWorkTabsSection() {
           </Button>
         </Box>
       </Container>
-    </Box>
+    </Container>
   );
 }

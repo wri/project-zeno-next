@@ -23,7 +23,7 @@ export default function TrustedPlatformsSection() {
   return (
     <Box py="24" pb="28" borderBlockEnd="1px solid" borderColor="bg.emphasized">
       <Container>
-        <Container textAlign="center" maxW="3xl">
+        <Container textAlign="center" maxW="3xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
             Building upon the legacy of World Resources Institute&rsquo;s
             trusted platforms
@@ -40,6 +40,7 @@ export default function TrustedPlatformsSection() {
           flexWrap="wrap"
           justifyContent="center"
           mt="8"
+          px={0}
         >
           {PARTNER_ORGS.map((org) => {
             return (

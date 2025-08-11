@@ -31,27 +31,27 @@ export default function NewEraQuoteSection() {
           empowering intelligence-backed action.
         </Text>
       </Container>
-      <Container
-        bg="neutral.200"
-        rounded="xl"
-        p="6"
-        mt="8"
-        maxW="2xl"
-        display="flex"
-        flexDir="column"
-        gap="2"
-      >
-        <Heading
-          borderStart="2px solid"
-          borderColor="blue.700"
-          pl="4"
-          size="xl"
-          as="blockquote"
+      <Container mt="8" maxW="2xl">
+        <Box
+          bg="neutral.200"
+          rounded="xl"
+          p="6"
+          display="flex"
+          flexDir="column"
+          gap="4"
         >
-          “Meaningful change doesn&rsquo;t come from simply watching, it comes
-          from taking action”
-        </Heading>
-        <Text as="cite">Craig Mills, Land & Carbon Lab</Text>
+          <Heading
+            borderStart="2px solid"
+            borderColor="blue.700"
+            pl="4"
+            size="xl"
+            as="blockquote"
+          >
+            “Meaningful change doesn&rsquo;t come from simply watching, it comes
+            from taking action”
+          </Heading>
+          <Text as="cite">Craig Mills, Land & Carbon Lab</Text>
+        </Box>
       </Container>
     </Box>
   );
