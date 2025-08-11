@@ -83,7 +83,7 @@ const WelcomeModal = () => {
           <Dialog.Content bg="bg.muted" padding="2">
             <Dialog.Header justifyContent="center" alignItems="center">
               <Dialog.Title fontWeight="normal" fontSize="2xl" m={0}>
-                Welcome to <strong>NatureWATCH</strong>
+                Welcome to <strong>Global Nature Watch</strong>
               </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body display="flex" flexDirection="column" gap="12">
