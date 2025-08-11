@@ -9,6 +9,11 @@ function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, isFetchingThread } = useChatStore();
 
+  const lastAssistantIdx = messages
+  .map((msg, idx) => (msg.type === "assistant" ? idx : -1))
+  .filter(idx => idx !== -1)
+  .pop();
+
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
     if (containerRef.current) {
@@ -51,6 +56,7 @@ function ChatMessages() {
             key={message.id} 
             message={message} 
             isConsecutive={isConsecutive}
+            isLatestAssistant={index === lastAssistantIdx}
           />
         );
       })}

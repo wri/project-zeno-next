@@ -17,13 +17,15 @@ import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
 import { useEffect, useState } from "react";
 import remarkBreaks from "remark-breaks";
+import TypewriterText from "./TypewriterText";
 
 interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
+  isLatestAssistant?: boolean;
 }
 
-function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
+function MessageBubble({ message, isConsecutive = false, isLatestAssistant = false }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
 
   useEffect(() => {
@@ -57,7 +59,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
     <Box
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
-      mb={isConsecutive ? 1 : 4} // Reduced margin for consecutive messages
+      mb={isConsecutive ? 1 : 4}
     >
       <Box
         display="flex"
@@ -95,17 +97,30 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
           </Flex>
         )}
         <Box
-          css={{
-            "& > p:not(:last-of-type)": { mb: 2 },
-            "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
-              borderBottom: "1px solid",
-              borderColor: "bg.muted",
-              pb: 2,
-            },
-          }}
-        >
-          <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
-        </Box>
+  css={{
+    "& > p:not(:last-of-type)": { mb: 2 },
+    "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
+      borderBottom: "1px solid",
+      borderColor: "bg.muted",
+      pb: 2,
+    },
+  }}
+>
+  {message.type === "assistant" ? (
+    isLatestAssistant ? (
+      <TypewriterText
+        text={message.message}
+        render={displayed => (
+          <Markdown remarkPlugins={[remarkBreaks]}>{displayed}</Markdown>
+        )}
+      />
+    ) : (
+      <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+    )
+  ) : (
+    <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+  )}
+</Box>
         {!isUser && !isConsecutive && (
           <Flex
             alignItems="center"
