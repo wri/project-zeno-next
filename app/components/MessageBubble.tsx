@@ -97,30 +97,30 @@ function MessageBubble({ message, isConsecutive = false, isLatestAssistant = fal
           </Flex>
         )}
         <Box
-  css={{
-    "& > p:not(:last-of-type)": { mb: 2 },
-    "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
-      borderBottom: "1px solid",
-      borderColor: "bg.muted",
-      pb: 2,
-    },
-  }}
->
-  {message.type === "assistant" ? (
-    isLatestAssistant ? (
-      <TypewriterText
-        text={message.message}
-        render={displayed => (
-          <Markdown remarkPlugins={[remarkBreaks]}>{displayed}</Markdown>
-        )}
-      />
-    ) : (
-      <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
-    )
-  ) : (
-    <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
-  )}
-</Box>
+          css={{
+            "& > p:not(:last-of-type)": { mb: 2 },
+            "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
+              borderBottom: "1px solid",
+              borderColor: "bg.muted",
+              pb: 2,
+            },
+          }}
+        >
+          {message.type === "assistant" ? (
+            isLatestAssistant ? (
+              <TypewriterText
+                text={message.message}
+                render={displayed => (
+                  <Markdown remarkPlugins={[remarkBreaks]}>{displayed}</Markdown>
+                )}
+              />
+            ) : (
+              <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+            )
+          ) : (
+            <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+          )}
+        </Box>
         {!isUser && !isConsecutive && (
           <Flex
             alignItems="center"
