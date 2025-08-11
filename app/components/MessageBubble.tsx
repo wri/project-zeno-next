@@ -106,19 +106,17 @@ function MessageBubble({ message, isConsecutive = false, isLatestAssistant = fal
             },
           }}
         >
-          {message.type === "assistant" ? (
-            isLatestAssistant ? (
-              <TypewriterText
-                text={message.message}
-                render={displayed => (
-                  <Markdown remarkPlugins={[remarkBreaks]}>{displayed}</Markdown>
-                )}
-              />
-            ) : (
-              <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
-            )
+          {message.type === "assistant" && isLatestAssistant ? (
+            <TypewriterText
+              text={message.message}
+              render={(displayed) => (
+                <Markdown remarkPlugins={[remarkBreaks]}>{displayed}</Markdown>
+              )}
+            />
           ) : (
-            <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+            <Markdown remarkPlugins={[remarkBreaks]}>
+              {message.message}
+            </Markdown>
           )}
         </Box>
         {!isUser && !isConsecutive && (

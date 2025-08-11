@@ -2,18 +2,8 @@ import { Box, Flex } from "@chakra-ui/react";
 
 export default function ThinkingMessage() {
   return (
-    <Box
-      display="flex"
-      alignItems="center"
-      bg="whiteAlpha.200"
-      color="fg"
-      px={4}
-      py={3}
-      borderRadius="lg"
-      maxW="80%"
-      mb={4}
-    >
-      <Flex alignItems="center" gap={1}>
+    <Box>
+      <Flex alignItems="center" gap={0}>
         <span>Thinking</span>
         <span className="thinking-ellipsis">
           <span>.</span>
