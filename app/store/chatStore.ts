@@ -56,12 +56,10 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message: `
-Hi, I’m your Global Nature Watch assistant.
-I help you explore how our planet’s land and ecosystems are changing.
+      message: `Hi, I’m your Global Nature Watch assistant.
+I help you explore how our planet’s land and ecosystems are changing, powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
 
-Simply tell me what you want to know and I’ll give you tailored insights powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
-`,
+Ask a question and let’s see what we can do for nature.`,
       timestamp: new Date().toISOString(),
     },
   ],
