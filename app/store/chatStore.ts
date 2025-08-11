@@ -7,6 +7,7 @@ import {
   ChatPrompt,
   StreamMessage,
   QueryType,
+  UiContext,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/shared/read-data-stream";
@@ -29,26 +30,6 @@ interface ChatActions {
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (threadId: string) => Promise<void>;
-}
-
-interface UiContext {
-  aoi_selected?: {
-    aoi: {
-      name: string;
-      gadm_id?: string;
-      src_id?: string;
-      subtype?: string;
-    };
-    aoi_name: string;
-    subregion_aois: null;
-    subregion: null;
-    subtype?: string;
-  };
-  dataset_selected?: object;
-  daterange_selected?: {
-    start_date: string;
-    end_date: string;
-  };
 }
 
 const initialState: ChatState = {
@@ -186,6 +167,13 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         end_date: format(dateContext.dateRange.end, "yyyy-MM-dd"),
       };
     }
+
+    const datasetContext = context.find((ctx) => ctx.contextType === "layer");
+    if (datasetContext && typeof datasetContext.datasetId === "number") {
+      ui_context.dataset_selected = datasetContext.datasetId;
+    }
+
+    console.log("ui_context", ui_context);
 
     const prompt: ChatPrompt = {
       query: message,

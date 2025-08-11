@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -43,21 +43,51 @@ const LAYER_TAGS = [
 
 const LAYER_CARDS = [
   {
-    title: "Fire alerts (VIIRS)",
-    description: "daily, 375 m, global, NASA",
+    dataset_id: 0,
+    dataset_name: "Ecosystem disturbance alerts",
+    context_layer: null,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
-    selected: true,
+    reason:
+      'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from January 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
+    tile_url:
+      "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
   },
   {
-    title: "Integrated deforestation alerts",
-    description:
-      "Integrated layer of tropical alerts: GLAD-L/GLAD-S2/RADD. Data from UMD and...",
+    dataset_id: 1,
+    dataset_name: "Global land cover",
+    context_layer: null,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
+    reason:
+      "This dataset includes built-up land as one of its land cover classes, which directly corresponds to urban areas. It provides global coverage with annual data from 2015-2024, making it the most appropriate dataset to answer questions about urban area extent worldwide.",
+    tile_url: "",
   },
   {
-    title: "Tree Cover Gain",
-    description: "20 years, 30 m, global, Hansen/UMD/Google/USGS/NASA",
+    dataset_id: 2,
+    dataset_name: "Grasslands",
+    context_layer: null,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
+    reason:
+      "This dataset provides global coverage with annual data from 2015-2024, making it the most appropriate dataset to answer questions about grassland area extent worldwide.",
+    tile_url: "",
+  },
+  {
+    dataset_id: 3,
+    dataset_name: "Natural lands",
+    context_layer: null,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
+    reason:
+      'The Natural lands dataset is the best match because it provides a 2020 baseline map of natural vs non-natural land covers at 30m resolution, which can be used to identify intact/natural landscapes. This dataset specifically defines "natural" ecosystems as those that substantially resemble what would be found without major human impacts, making it ideal for assessing landscape intactness across Canadian provinces.',
+    tile_url: "",
+  },
+  {
+    dataset_id: 4,
+    dataset_name: "Tree cover loss",
+    context_layer: null,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
+    reason:
+      "Tree cover loss dataset can detect stand-replacement disturbances including plantations and supports monitoring forestry practices. The driver context layer would help distinguish harvesting from other causes of tree loss, making it ideal for tracking plantation harvesting cycles.",
+    tile_url:
+      "https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png?start_year=2001&end_year=2024&tree_cover_density_threshold=25&render_type=true_color",
   },
 ];
 
@@ -127,36 +157,45 @@ function ContextNav({
   );
 }
 
-function CardList({
+type LayerCardItem = {
+  dataset_id: number;
+  dataset_name: string;
+  context_layer: string | null;
+  img?: string;
+  reason: string;
+  tile_url: string;
+  selected?: boolean;
+};
+
+function LayerCardList({
   cards,
   showImage = false,
+  onCardClick,
 }: {
-  cards: {
-    title: string;
-    description: string;
-    img?: string;
-    selected?: boolean;
-  }[];
+  cards: LayerCardItem[];
   showImage?: boolean;
+  onCardClick?: (card: LayerCardItem) => void;
 }) {
   return (
     <Stack>
       {cards.map((card) => (
         <Card.Root
-          key={card.title}
+          key={card.dataset_name}
           size="sm"
           flexDirection="row"
           overflow="hidden"
           maxW="xl"
           border={card.selected ? "2px solid" : undefined}
           borderColor={card.selected ? "blue.800" : undefined}
+          cursor={onCardClick ? "pointer" : undefined}
+          onClick={onCardClick ? () => onCardClick(card) : undefined}
         >
           {showImage && card.img && (
             <Image
               objectFit="cover"
               maxW="5rem"
               src={card.img}
-              alt={card.title}
+              alt={card.dataset_name}
             />
           )}
           <Card.Body>
@@ -166,11 +205,11 @@ function CardList({
               alignItems="center"
               fontSize="sm"
             >
-              {card.title}
+              {card.dataset_name}
               <InfoIcon />
             </Card.Title>
             <Card.Description fontSize="xs" color="fg.muted">
-              {card.description}
+              {card.reason}
             </Card.Description>
           </Card.Body>
         </Card.Root>
@@ -263,6 +302,41 @@ function ContextMenu({
 export default ContextMenu;
 
 function LayerMenu() {
+  const { context, addContext, removeContext } = useContextStore();
+
+  // Compute selected state from context so cards reflect external context changes
+  const cards: LayerCardItem[] = useMemo(() => {
+    return LAYER_CARDS.map((c) => {
+      const isSelected = context.some(
+        (ctx) => ctx.contextType === "layer" && ctx.datasetId === c.dataset_id
+      );
+      return { ...c, selected: isSelected } as LayerCardItem;
+    });
+  }, [context]);
+
+  const handleToggleCard = (card: LayerCardItem) => {
+    // mapTileLayerId is derived inside context store when needed
+    const existingCtx = context.find(
+      (ctx) => ctx.contextType === "layer" && ctx.datasetId === card.dataset_id
+    );
+
+    if (!card.selected) {
+      addContext({
+        contextType: "layer",
+        content: card.dataset_name,
+        datasetId: card.dataset_id,
+        tileUrl: card.tile_url,
+        layerName: card.dataset_name,
+      });
+      return;
+    }
+
+    // Currently selected → remove from context (which also removes map layer if datasetId is present)
+    if (existingCtx) {
+      removeContext(existingCtx.id);
+    }
+  };
+
   return (
     <Stack
       bg="bg.subtle"
@@ -279,8 +353,45 @@ function LayerMenu() {
       </Box>
       <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
         <TagList tags={LAYER_TAGS} />
-        <CardList cards={LAYER_CARDS} showImage />
+        <LayerCardList cards={cards} showImage onCardClick={handleToggleCard} />
       </Stack>
+    </Stack>
+  );
+}
+
+function AreaCardList({
+  cards,
+}: {
+  cards: { title: string; description: string; selected?: boolean }[];
+}) {
+  return (
+    <Stack>
+      {cards.map((card) => (
+        <Card.Root
+          key={card.title}
+          size="sm"
+          flexDirection="row"
+          overflow="hidden"
+          maxW="xl"
+          border={card.selected ? "2px solid" : undefined}
+          borderColor={card.selected ? "blue.800" : undefined}
+        >
+          <Card.Body>
+            <Card.Title
+              display="flex"
+              gap="1"
+              alignItems="center"
+              fontSize="sm"
+            >
+              {card.title}
+              <InfoIcon />
+            </Card.Title>
+            <Card.Description fontSize="xs" color="fg.muted">
+              {card.description}
+            </Card.Description>
+          </Card.Body>
+        </Card.Root>
+      ))}
     </Stack>
   );
 }
@@ -307,7 +418,7 @@ function AreaMenu() {
       </Flex>
       <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
         <TagList tags={AREA_TAGS} />
-        <CardList cards={AREA_CARDS} />
+        <AreaCardList cards={AREA_CARDS} />
       </Stack>
     </Stack>
   );
@@ -354,6 +465,7 @@ function DateMenu() {
       });
     }
     // No need to track changes in ContextStore.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateValue]);
 
   return (

@@ -1,6 +1,6 @@
 import { Box, Button, Text, Flex, Card } from "@chakra-ui/react";
 import { DatasetInfo } from "@/app/types/chat";
-import useMapStore from "@/app/store/mapStore";
+// Map layers are managed via context now
 import { GlobeIcon } from "@phosphor-icons/react";
 import useContextStore from "@/app/store/contextStore";
 
@@ -9,44 +9,29 @@ interface DatasetCardWidgetProps {
 }
 
 export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
-  const { addTileLayer, tileLayers } = useMapStore();
   const { context, addContext, removeContext } = useContextStore();
 
-  const layerId = `dataset-${dataset.dataset_id}`;
-  const isAlreadyAdded = tileLayers.some((layer) => layer.id === layerId);
   const existingLayerContext = context.find(
     (c) =>
       c.contextType === "layer" &&
-      (c.mapLayerId === layerId || c.content === dataset.dataset_name)
+      (c.datasetId === dataset.dataset_id || c.content === dataset.dataset_name)
   );
   const isInContext = Boolean(existingLayerContext);
 
   const handleAddToMap = () => {
-    if (!isAlreadyAdded) {
-      addTileLayer({
-        id: layerId,
-        name: `${dataset.dataset_name}`,
-        url: dataset.tile_url,
-        visible: true,
-      });
+    if (!isInContext) {
+      // Single source of truth: adding context adds the map layer
       addContext({
         contextType: "layer",
         content: dataset.dataset_name,
-        mapLayerId: layerId,
+        datasetId: dataset.dataset_id,
+        tileUrl: dataset.tile_url,
+        layerName: dataset.dataset_name,
       });
       return;
     }
-
-    // If already added, ensure context exists; if it exists, remove it (which also removes the layer)
-    if (!isInContext) {
-      addContext({
-        contextType: "layer",
-        content: dataset.dataset_name,
-        mapLayerId: layerId,
-      });
-    } else if (existingLayerContext) {
-      removeContext(existingLayerContext.id);
-    }
+    // If already in context, remove it (which also removes the map layer)
+    if (existingLayerContext) removeContext(existingLayerContext.id);
   };
 
   return (
@@ -74,21 +59,13 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
 
         <Button
           size="sm"
-          variant={
-            !isAlreadyAdded ? "solid" : isInContext ? "outline" : "outline"
-          }
-          colorPalette={
-            !isAlreadyAdded ? "blue" : isInContext ? "red" : "green"
-          }
+          variant={!isInContext ? "solid" : "outline"}
+          colorPalette={!isInContext ? "blue" : "red"}
           onClick={handleAddToMap}
           width="full"
         >
           <GlobeIcon />
-          {!isAlreadyAdded
-            ? "Add to Map"
-            : isInContext
-            ? "Remove from Map"
-            : "Add to Context"}
+          {!isInContext ? "Add to Map" : "Remove from Map"}
         </Button>
       </Card.Body>
     </Card.Root>

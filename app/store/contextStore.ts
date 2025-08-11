@@ -18,8 +18,11 @@ export interface ContextItem {
     start: Date;
     end: Date;
   };
-  // For layer context, tie the context item to a map layer id
-  mapLayerId?: string;
+  // For dataset context, store the dataset id (used in ui_context and to derive map layer ids)
+  datasetId?: number;
+  // Optional display properties for map layers
+  tileUrl?: string;
+  layerName?: string;
 }
 
 interface ContextState {
@@ -52,6 +55,20 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
         return state; // Don't add if it already exists
       }
 
+      // If adding a dataset layer context, ensure the map layer is added
+      if (
+        item.contextType === "layer" &&
+        typeof item.datasetId === "number" &&
+        item.tileUrl
+      ) {
+        useMapStore.getState().addTileLayer({
+          id: `dataset-${item.datasetId}`,
+          name: item.layerName || String(item.datasetId),
+          url: item.tileUrl,
+          visible: true,
+        });
+      }
+
       return {
         context: [
           ...state.context,
@@ -62,9 +79,11 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
   removeContext: (id) =>
     set((state) => {
       const itemToRemove = state.context.find((c) => c.id === id);
-      if (itemToRemove?.mapLayerId) {
+      if (typeof itemToRemove?.datasetId === "number") {
         // Remove corresponding map layer if this context item represents a dataset layer
-        useMapStore.getState().removeTileLayer(itemToRemove.mapLayerId);
+        useMapStore
+          .getState()
+          .removeTileLayer(`dataset-${itemToRemove.datasetId}`);
       }
       return {
         context: state.context.filter((c) => c.id !== id),
@@ -75,7 +94,8 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
       // Remove any map layers tied to context entries before clearing
       const { removeTileLayer } = useMapStore.getState();
       state.context.forEach((c) => {
-        if (c.mapLayerId) removeTileLayer(c.mapLayerId);
+        if (typeof c.datasetId === "number")
+          removeTileLayer(`dataset-${c.datasetId}`);
       });
       return { context: [] };
     }),
