@@ -10,6 +10,6 @@ export function pickDatasetTool(
 
   addMessage({
     type: "assistant",
-    message: `Dataset picker tool executed: selected ${dataset_name}.\n\nReason: ${reasoning}\n`,
+    message: `Dataset picker tool executed: selected ${dataset_name}. ${reasoning}\n`,
   });
 }
