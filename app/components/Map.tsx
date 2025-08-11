@@ -14,10 +14,12 @@ import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
-import SelectAreaLayer from "./SelectAreaLayer";
+import SelectAreaLayer from "./map/layers/SelectAreaLayer";
 import useContextStore from "@/app/store/contextStore";
 import CustomAreasLayer from "./map/layers/CustomAreasLayer";
 import MapFeature from "./MapFeature";
+
+const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
@@ -97,10 +99,10 @@ function Map() {
           type="raster"
           tiles={useColorModeValue(
             [
-              "https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q",
+              `https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
             ],
             [
-              "https://api.mapbox.com/styles/v1/devseed/clz35cbi302l701qo2snhdx9x/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q",
+              `https://api.mapbox.com/styles/v1/devseed/clz35cbi302l701qo2snhdx9x/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
             ]
           )}
           tileSize={256}
@@ -110,21 +112,17 @@ function Map() {
 
         {/* Render GeoJSON features */}
         {geoJsonFeatures.map((feature) => (
-          <MapFeature
-            key={feature.id}
-            feature={feature}
-            areas={areas}
-          />
+          <MapFeature key={feature.id} feature={feature} areas={areas} />
         ))}
 
-        {selectAreaLayer && (
+        {selectAreaLayer && selectAreaLayer !== "Custom" && (
           <SelectAreaLayer
             key={selectAreaLayer}
             layerId={selectAreaLayer}
             beforeId={undefined}
           />
         )}
-        <CustomAreasLayer />
+        {selectAreaLayer === "Custom" && <CustomAreasLayer />}
         <MapAreaControls />
 
         <AttributionControl

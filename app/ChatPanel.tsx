@@ -3,6 +3,7 @@
 import {
   Flex,
   Box,
+  Text,
 } from "@chakra-ui/react";
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
@@ -26,6 +27,7 @@ function ChatPanel() {
         </Box>
         <Box mt="auto" position="sticky" bottom="2">
           <ChatInput />
+          <Text fontSize="xs" color="fg.subtle">AI can make mistakes. Please verify any outputs before using them in your work.</Text>
         </Box>
       </Flex>
     </Flex>

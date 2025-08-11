@@ -11,6 +11,7 @@ import { Sidebar } from "@/app/sidebar";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import PageHeader from "@/app/components/PageHeader";
+import WelcomeModal from "../components/WelcomeModal";
 
 export default function DashboardLayout({
   children,
@@ -33,6 +34,7 @@ export default function DashboardLayout({
       bg="bg"
     >
       <LoginOverlay />
+      <WelcomeModal />
       <UploadAreaDialog />
       <PageHeader />
       <Grid

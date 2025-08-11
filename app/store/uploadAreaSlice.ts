@@ -8,9 +8,13 @@ import {
 } from "../constants/custom-areas";
 import type { MapState } from "./mapStore";
 import { generateRandomName } from "../utils/generateRandomName";
-import { AOI } from "../types/chat";
 import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
 import { formatAreaWithUnits } from "../utils/formatArea";
+import type {
+  CreateCustomAreaRequest,
+  CreateCustomAreaResponse,
+} from "../schemas/api/custom_areas/post";
+import { Polygon } from "geojson";
 
 type UploadErrorType =
   | "none"
@@ -30,12 +34,18 @@ export interface UploadAreaSlice {
   errorMessage: string;
   filename: string;
   selectedFile: File | null;
-  validatedGeoJson: GeoJSON.FeatureCollection | null;
+  validatedGeoJson: Polygon[] | null;
+  createAreaFn:
+    | ((data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>)
+    | null;
   setError: (errorType: UploadErrorType, message?: string) => void;
   clearError: () => void;
   handleFile: (file: File) => void;
   uploadFile: () => Promise<void>;
   clearFileState: () => void;
+  setCreateAreaFn: (
+    fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>
+  ) => void;
 }
 
 export const createUploadAreaSlice: StateCreator<
@@ -52,6 +62,7 @@ export const createUploadAreaSlice: StateCreator<
   filename: "",
   selectedFile: null,
   validatedGeoJson: null,
+  createAreaFn: null,
 
   toggleUploadAreaDialog: () =>
     set((state) => {
@@ -67,6 +78,10 @@ export const createUploadAreaSlice: StateCreator<
     set({ errorType, errorMessage: message }),
 
   clearError: () => set({ errorType: "none", errorMessage: "" }),
+
+  setCreateAreaFn: (fn) => {
+    set({ createAreaFn: fn });
+  },
 
   handleFile: async (file: File) => {
     const { clearError } = get();
@@ -219,6 +234,24 @@ export const createUploadAreaSlice: StateCreator<
         return;
       }
 
+      // Filter for only Polygon geometries
+      const polygonGeometries = features
+        .map((feature) => feature.geometry)
+        .filter((geometry): geometry is Polygon => geometry.type === "Polygon");
+
+      if (polygonGeometries.length === 0) {
+        get().setError(
+          "file-format-invalid",
+          "No valid Polygon features found"
+        );
+        set({
+          selectedFile: null,
+          filename: "",
+          isFileSelected: false,
+        });
+        return;
+      }
+
       // All validations passed
       set({
         selectedFile: file,
@@ -226,7 +259,7 @@ export const createUploadAreaSlice: StateCreator<
         isFileSelected: true,
         errorType: "none",
         errorMessage: "",
-        validatedGeoJson: areaFeatureCollection,
+        validatedGeoJson: polygonGeometries,
       });
     } catch (error) {
       console.error("File validation error:", error);
@@ -240,23 +273,29 @@ export const createUploadAreaSlice: StateCreator<
   },
 
   uploadFile: async () => {
-    const { validatedGeoJson, setError } = get();
+    const { validatedGeoJson, setError, createAreaFn } = get();
 
     if (!validatedGeoJson) {
       setError("file-empty", "No validated file data available");
       return;
     }
 
+    if (!createAreaFn) {
+      setError("failed-to-send", "Upload function not available");
+      return;
+    }
+
     set({ isUploading: true });
 
     try {
-      const newArea: AOI = {
+      const requestData: CreateCustomAreaRequest = {
         name: generateRandomName(),
-        geometry: validatedGeoJson,
+        geometries: validatedGeoJson,
       };
 
-      get().addCustomArea(newArea);
+      await createAreaFn(requestData);
       get().clearFileState();
+      get().clearSelectionMode();
       set({ dialogVisible: false });
     } catch (error) {
       console.error("Upload error:", error);

@@ -5,6 +5,18 @@ export interface ContextItem {
   id: string;
   contextType: ChatContextType;
   content: string | object;
+  // For AOI context, store additional details needed for ui_context
+  aoiData?: {
+    name: string;
+    gadm_id?: string;
+    src_id?: string;
+    subtype?: string;
+    source?: string;
+  };
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 interface ContextState {
