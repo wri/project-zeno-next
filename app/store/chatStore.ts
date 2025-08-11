@@ -56,8 +56,12 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message:
-        "Hi! I'm Land & Carbon Lab's alert explorer. I can help you find and investigate disturbances in your area of interest using the Land Disturbance Alert Classification System and other contextual data. \nStart by asking me what I can do.",
+      message: `
+Hi, I’m your Global Nature Watch assistant.
+I help you explore how our planet’s land and ecosystems are changing.
+
+Simply tell me what you want to know and I’ll give you tailored insights powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
+`,
       timestamp: new Date().toISOString(),
     },
   ],
