@@ -28,7 +28,12 @@ const HOW_STEPS = [
 ];
 export default function HowItWorksSection() {
   return (
-    <Box py="24" pb="28" borderBlockEnd="1px solid" borderColor="bg.emphasized">
+    <Box
+      py={{ base: 14, md: 24 }}
+      pb={{ base: 14, md: 28 }}
+      borderBlockEnd="1px solid"
+      borderColor="bg.emphasized"
+    >
       <Container textAlign="center" maxW="2xl">
         <Heading size={{ base: "4xl", md: "5xl" }}>How it works</Heading>
       </Container>

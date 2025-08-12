@@ -36,7 +36,12 @@ const FEATURE_TABS = [
 
 export default function FeaturesTabsSection() {
   return (
-    <Box py="24" pb="28" borderBlockEnd="1px solid" borderColor="bg.emphasized">
+    <Box
+      py={{ base: 14, md: 24 }}
+      pb={{ base: 14, md: 28 }}
+      borderBlockEnd="1px solid"
+      borderColor="bg.emphasized"
+    >
       <Container>
         <Container textAlign="center" maxW="3xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>

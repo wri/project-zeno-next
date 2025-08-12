@@ -24,7 +24,12 @@ export default function FutureOfMonitoringSection() {
     ],
   });
   return (
-    <Box py="24" pb="28" borderBlockEnd="1px solid" borderColor="bg.emphasized">
+    <Box
+      py={{ base: 14, md: 24 }}
+      pb={{ base: 14, md: 28 }}
+      borderBlockEnd="1px solid"
+      borderColor="bg.emphasized"
+    >
       <Container
         css={{ "& > *": { px: 0 } }}
         display="flex"

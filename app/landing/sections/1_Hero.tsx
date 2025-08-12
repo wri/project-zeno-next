@@ -86,7 +86,12 @@ export default function LandingHero({ prompts }: PromptMarqueeProps) {
       </Box>
       {/* Hero Container */}
       <Box py="20" zIndex="10">
-        <Container textAlign="center" maxW="2xl" color="fg.inverted">
+        <Container
+          textAlign="center"
+          maxW="2xl"
+          color="fg.inverted"
+          px={{ base: 6, md: 0 }}
+        >
           <Heading size={{ base: "4xl", md: "5xl" }}>
             Tackle nature&rsquo;s toughest monitoring challenges
           </Heading>
@@ -96,7 +101,7 @@ export default function LandingHero({ prompts }: PromptMarqueeProps) {
             worl&apos;s leading researchers.
           </Text>
         </Container>
-        <Container mt="8" maxW={{ base: "lg", md: "2xl" }}>
+        <Container mt="8" maxW="2xl" px={{ base: 6, md: 0 }}>
           <Box rounded="md" bg="bg" p="4" zIndex="10">
             <Input
               key={
@@ -118,7 +123,13 @@ export default function LandingHero({ prompts }: PromptMarqueeProps) {
                 animationPlayState: "paused",
               }}
             />
-            <Flex justifyContent="space-between" alignItems="flex-start" mt="4">
+            <Flex
+              justifyContent="space-between"
+              alignItems={{ base: "stretch", md: "flex-start" }}
+              mt="4"
+              flexDir={{ base: "column", md: "row" }}
+              gap={4}
+            >
               <Flex gap="2" alignItems="flex-start" flexDirection="column">
                 <Button
                   key={animationKey}
@@ -163,13 +174,13 @@ export default function LandingHero({ prompts }: PromptMarqueeProps) {
             </Flex>
           </Box>
         </Container>
-        <Container maxW={{ base: "lg", md: "2xl" }} mt="3">
+        <Container maxW="2xl" mt="3" px={{ base: 6, md: 0 }}>
           <Box
             display="flex"
             flexWrap="wrap"
             bg="blackAlpha.400"
             justifyContent="space-between"
-            alignItems={{base: "flex-start", md: "center"}}
+            alignItems={{ base: "flex-start", md: "center" }}
             gap={2}
             rounded="md"
             fontSize="xs"

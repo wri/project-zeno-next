@@ -4,7 +4,12 @@ import { CaretRightIcon } from "@phosphor-icons/react";
 
 export default function CTASection() {
   return (
-    <Box py="24" pb="28" borderBlockEnd="1px solid" borderColor="bg.emphasized">
+    <Box
+      py={{ base: 10, md: 24 }}
+      pb={{ base: 10, md: 28 }}
+      borderBlockEnd="1px solid"
+      borderColor="bg.emphasized"
+    >
       <Container>
         <Container
           maxW="4xl"

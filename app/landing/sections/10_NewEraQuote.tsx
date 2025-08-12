@@ -3,8 +3,8 @@ import { Box, Container, Text, Heading } from "@chakra-ui/react";
 export default function NewEraQuoteSection() {
   return (
     <Box
-      py="24"
-      pb="28"
+      py={{ base: 14, md: 24 }}
+      pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
       borderColor="bg.emphasized"
       hideBelow={"sm"}

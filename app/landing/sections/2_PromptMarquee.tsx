@@ -16,8 +16,6 @@ function renderPromptBoxes(prompts: string[]) {
         key={i}
         data-marquee-item
         bg="lime.100"
-        borderWidth="1px"
-        borderColor="neutral.400"
         p="3"
         rounded="md"
         maxW="18rem"
@@ -95,15 +93,14 @@ function PromptMarquee({ prompts }: PromptMarqueeProps) {
       for (let i = 0; i < promptBoxes.length / 2; i++) {
         width += (promptBoxes[i] as HTMLElement).offsetWidth + 16; // 16px = gap="4"
       }
-      setSliderWidth(width);
-      setAnimationDuration(`${width / MARQUEE_SPEED}s`);
+      setSliderWidth(width); // Slider width is the cumulative size of the number of prompt boxes plus their padding
+      setAnimationDuration(`${width / MARQUEE_SPEED}s`); // Animation duration is adjusted by screen size and number of prompts for infinite scroll effect
     }
   }, [prompts.length]);
 
   return (
     <Box
       py="8"
-      bg="neutral.300"
       borderBlockEnd="1px solid"
       borderColor="neutral.400"
       gap="4"

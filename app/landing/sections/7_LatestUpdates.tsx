@@ -10,6 +10,7 @@ import {
   LinkBox,
   LinkOverlay,
   Skeleton,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { Carousel } from "../../components/ui/carousel";
 
@@ -22,7 +23,7 @@ const POSTS = [
       "How UNESCO is Using Emissions Data to Help Safeguard World Heritage Forest Carbon Sinks",
     date: "July 8, 2025",
     image:
-      "https://www.datocms-assets.com/135908/1750706456-screenshot-2025-06-23-152038.png?auto=compress,format,enhance",
+      "https://www.datocms-assets.com/135908/1751919792-noelkempffmercado-2-morten-ross.jpg?auto=compress,format,enhance",
     url: "https://landcarbonlab.org/insights/unesco-emissions-data-world-heritage-forest-carbon-sinks/",
   },
   {
@@ -30,7 +31,7 @@ const POSTS = [
       "A New Satellite Data App Supports Better Monitoring of European Forests",
     date: "June 30, 2025",
     image:
-      "https://www.datocms-assets.com/135908/1751919792-noelkempffmercado-2-morten-ross.jpg?auto=compress,format,enhance",
+      "https://www.datocms-assets.com/135908/1750706456-screenshot-2025-06-23-152038.png?auto=compress,format,enhance",
     url: "https://landcarbonlab.org/insights/satellite-data-app-monitoring-european-forests/",
   },
   {
@@ -53,11 +54,17 @@ const POSTS = [
 
 export default function LatestUpdatesSection() {
   return (
-    <Box py="24" pb="28" borderBlockEnd="1px solid" borderColor="bg.emphasized">
+    <Box
+      py={{ base: 14, md: 24 }}
+      pb={{ base: 14, md: 28 }}
+      borderBlockEnd="1px solid"
+      borderColor="bg.emphasized"
+      overflowX="hidden"
+    >
       <Container display="flex" flexDir="column" gap={{ base: "8", md: "10" }}>
         <Container textAlign="center" maxW="2xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }} color="neutral.900">
-            Latest Updates
+            Latest Updates & Research
           </Heading>
           <Text fontSize="lg" mb="4" color="neutral.700">
             We combine cutting-edge geospatial research from Land & Carbon Lab
@@ -68,7 +75,8 @@ export default function LatestUpdatesSection() {
           <Carousel.Root
             defaultPage={0}
             slideCount={POSTS.length}
-            slidesPerPage={2}
+            slidesPerPage={useBreakpointValue({ base: 1, md: 2 })}
+            slidesPerMove={1}
             spacing="32px"
             flexWrap="wrap"
             justifyContent="center"
@@ -76,10 +84,11 @@ export default function LatestUpdatesSection() {
           >
             <Carousel.Control
               position={{ base: "relative", md: "absolute" }}
-              left={{ base: "initial", md: -12 }}
+              left={{ base: "initial", md: -8, lg: -12 }}
+              top={{ base: "initial", md: "35%" }}
             >
               <Carousel.PrevTrigger asChild>
-                <IconButton rounded="full" variant="outline">
+                <IconButton rounded="full" variant="surface" zIndex="100">
                   <CaretLeftIcon weight="bold" />
                 </IconButton>
               </Carousel.PrevTrigger>
@@ -102,12 +111,18 @@ export default function LatestUpdatesSection() {
                           src={post.image}
                           alt={post.title}
                           rounded="lg"
+                          width="full"
                           height={{ base: "213px", md: "330px" }}
                         />
                       </Skeleton>
                       <Card.Body p={0}>
-                        <Card.Title>{post.title}</Card.Title>
-                        <Card.Description>{post.date}</Card.Description>
+                        <Card.Title mb={2}>{post.title}</Card.Title>
+                        <Card.Description
+                          textTransform="uppercase"
+                          letterSpacing="wider"
+                        >
+                          {post.date}
+                        </Card.Description>
                         <LinkOverlay href={post.url} target="_blank" />
                       </Card.Body>
                     </LinkBox>
@@ -117,10 +132,12 @@ export default function LatestUpdatesSection() {
             </Carousel.ItemGroup>
             <Carousel.Control
               position={{ base: "relative", md: "absolute" }}
-              right={{ base: "initial", md: -12 }}
+              right={{ base: "initial", md: -8, lg: -12 }}
+              top={{ base: "initial", md: "35%" }}
+              pl={{ base: 8, md: "initial" }}
             >
               <Carousel.NextTrigger asChild>
-                <IconButton rounded="full" variant="outline">
+                <IconButton rounded="full" variant="surface" zIndex="100">
                   <CaretRightIcon weight="bold" />
                 </IconButton>
               </Carousel.NextTrigger>
@@ -138,10 +155,16 @@ export default function LatestUpdatesSection() {
             gap={4}
             justifyContent="space-between"
           >
-            <Heading size="md" as="p">
+            <Heading size="xl" as="p">
               Learn more about our data and research
             </Heading>
-            <Button asChild variant="solid" colorPalette="blue" rounded="lg">
+            <Button
+              asChild
+              variant="solid"
+              colorPalette="blue"
+              rounded="lg"
+              size="md"
+            >
               <Link href="/">Visit Land & Carbon Lab</Link>
             </Button>
           </Box>
