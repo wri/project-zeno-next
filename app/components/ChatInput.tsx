@@ -53,7 +53,7 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
   const getInputState = () => {
     return {
       disabled: isLoading,
-      message: isLoading ? "Sending..." : "Ask NatureWATCH a question...",
+      message: isLoading ? "Sending..." : "Ask a question about nature...",
     };
   };
 
