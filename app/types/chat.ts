@@ -46,7 +46,7 @@ export interface UiContext {
     subregion: null;
     subtype?: string;
   };
-  dataset_selected?: number;
+  dataset_selected?: { dataset: DatasetInfo };
   daterange_selected?: {
     start_date: string;
     end_date: string;

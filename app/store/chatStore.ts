@@ -11,6 +11,7 @@ import {
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/shared/read-data-stream";
+import { DATASET_BY_ID } from "../constants/datasets";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
@@ -170,7 +171,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     const datasetContext = context.find((ctx) => ctx.contextType === "layer");
     if (datasetContext && typeof datasetContext.datasetId === "number") {
-      ui_context.dataset_selected = datasetContext.datasetId;
+      const ds = DATASET_BY_ID[datasetContext.datasetId];
+      if (ds) ui_context.dataset_selected = { dataset: ds };
     }
 
     console.log("ui_context", ui_context);
