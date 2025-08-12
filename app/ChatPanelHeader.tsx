@@ -7,6 +7,7 @@ import {
   Portal,
   Dialog,
   Input,
+  Text,
 } from "@chakra-ui/react";
 import {
   SidebarIcon,
@@ -172,8 +173,34 @@ function ChatPanelHeader() {
             <Menu.Positioner>
               <Menu.Content>
                 {widgetAnchors.map((w) => (
-                  <Menu.Item key={w.id} value={w.id} onSelect={() => scrollToWidget(w.id)}>
-                    ({w.type}) {w.title} • {formatWidgetMeta(w.timestamp)}
+                  <Menu.Item
+                    key={w.id}
+                    value={w.id}
+                    onSelect={() => scrollToWidget(w.id)}
+                  >
+                    <Flex align="center" gap={2} maxW="360px" role="group">
+                      <Text as="span" color="fg.muted" flexShrink={0}>
+                        ({w.type})
+                      </Text>
+                      <Text
+                        as="span"
+                        flex="1"
+                        minW={0}
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                      >
+                        {w.title}
+                      </Text>
+                      <Text
+                        as="span"
+                        color="fg.muted"
+                        flexShrink={0}
+                        ml="2"
+                      >
+                        {formatWidgetMeta(w.timestamp)}
+                      </Text>
+                    </Flex>
                   </Menu.Item>
                 ))}
               </Menu.Content>
