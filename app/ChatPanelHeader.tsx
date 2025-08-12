@@ -61,16 +61,25 @@ function ChatPanelHeader() {
 
   // Build list of widget anchors from chat messages
   const widgetAnchors = useMemo(() => {
-    return messages
-      .flatMap((m) =>
-        m.type === "widget" && m.widgets
-          ? m.widgets.map((w, idx) => ({
-              id: `widget-${m.id}-${idx}`,
-              title: w.title || `Widget ${idx + 1}`,
-            }))
-          : []
-      );
+    return messages.flatMap((m) =>
+      m.type === "widget" && m.widgets
+        ? m.widgets.map((w, idx) => ({
+            id: `widget-${m.id}-${idx}`,
+            title: w.title || `Widget ${idx + 1}`,
+            type: w.type,
+            timestamp: m.timestamp,
+          }))
+        : []
+    );
   }, [messages]);
+
+  const formatWidgetMeta = useCallback((isoTs?: string) => {
+    if (!isoTs) return "";
+    const d = new Date(isoTs);
+    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const day = d.toLocaleDateString([], { day: "2-digit", month: "short" });
+    return `${time} on ${day}`;
+  }, []);
 
   const scrollToWidget = useCallback((anchorId: string) => {
     const el = document.getElementById(anchorId);
@@ -164,7 +173,7 @@ function ChatPanelHeader() {
               <Menu.Content>
                 {widgetAnchors.map((w) => (
                   <Menu.Item key={w.id} value={w.id} onSelect={() => scrollToWidget(w.id)}>
-                    {w.title}
+                    ({w.type}) {w.title} • {formatWidgetMeta(w.timestamp)}
                   </Menu.Item>
                 ))}
               </Menu.Content>
