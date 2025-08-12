@@ -48,7 +48,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   if (isWidget && message.widgets) {
     return (
       <Box mb={4}>
-        <WidgetMessage widgets={message.widgets} />
+        <WidgetMessage widgets={message.widgets} messageId={message.id} />
       </Box>
     );
   }

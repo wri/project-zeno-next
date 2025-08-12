@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Flex,
   IconButton,
@@ -31,7 +31,7 @@ function ChatPanelHeader() {
     deleteThread,
     getThreadById,
   } = useSidebarStore();
-  const { currentThreadId } = useChatStore();
+  const { currentThreadId, messages } = useChatStore();
 
   const [renameDialogVisible, setRenameDialogVisible] = useState(false);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
@@ -58,6 +58,26 @@ function ChatPanelHeader() {
   const currentThreadName = currentThread
     ? currentThread.name
     : "New Conversation";
+
+  // Build list of widget anchors from chat messages
+  const widgetAnchors = useMemo(() => {
+    return messages
+      .flatMap((m) =>
+        m.type === "widget" && m.widgets
+          ? m.widgets.map((w, idx) => ({
+              id: `widget-${m.id}-${idx}`,
+              title: w.title || `Widget ${idx + 1}`,
+            }))
+          : []
+      );
+  }, [messages]);
+
+  const scrollToWidget = useCallback((anchorId: string) => {
+    const el = document.getElementById(anchorId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   return (
     <Flex
@@ -123,6 +143,34 @@ function ChatPanelHeader() {
         <Button variant="ghost" size="sm" mr="auto">
           {currentThreadName}
         </Button>
+      )}
+
+      {/* Insights dropdown */}
+      {widgetAnchors.length === 0 ? (
+        <Button variant="ghost" size="sm" disabled>
+          Go to insight
+          <CaretDownIcon />
+        </Button>
+      ) : (
+        <Menu.Root>
+          <Menu.Trigger asChild>
+            <Button variant="ghost" size="sm">
+              Go to insight
+              <CaretDownIcon />
+            </Button>
+          </Menu.Trigger>
+          <Portal>
+            <Menu.Positioner>
+              <Menu.Content>
+                {widgetAnchors.map((w) => (
+                  <Menu.Item key={w.id} value={w.id} onSelect={() => scrollToWidget(w.id)}>
+                    {w.title}
+                  </Menu.Item>
+                ))}
+              </Menu.Content>
+            </Menu.Positioner>
+          </Portal>
+        </Menu.Root>
       )}
       {!sideBarVisible && (
         <Tooltip
