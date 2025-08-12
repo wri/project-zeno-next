@@ -157,10 +157,14 @@ function ChatPanelHeader() {
 
       {/* Insights dropdown */}
       {widgetAnchors.length === 0 ? (
-        <Button variant="ghost" size="sm" disabled>
-          Go to insight
-          <CaretDownIcon />
-        </Button>
+        <Tooltip content="Ask a question to generate insights" showArrow>
+          <span style={{ display: "inline-flex" }}>
+            <Button variant="ghost" size="sm" disabled>
+              Go to insight
+              <CaretDownIcon />
+            </Button>
+          </span>
+        </Tooltip>
       ) : (
         <Menu.Root>
           <Menu.Trigger asChild>
