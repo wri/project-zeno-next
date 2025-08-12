@@ -147,7 +147,7 @@ export const createDrawAreaSlice: StateCreator<
       name: generateRandomName(),
       src_id: generateRandomName(), // Use generated name as unique identifier for now
       source: "custom",
-      subtype: "custom_area",
+      subtype: "custom-area",
       geometry: featureCollection,
     };
 

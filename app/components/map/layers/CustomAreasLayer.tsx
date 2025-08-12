@@ -29,7 +29,7 @@ function CustomAreasLayer() {
               src_id: id,
               name,
               source: "custom",
-              subtype: "custom_area",
+              subtype: "custom-area",
             },
           });
         }
