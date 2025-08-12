@@ -7,7 +7,7 @@ interface TypewriterTextProps {
   onDone?: () => void;
 }
 
-export default function TypewriterText({ text, speed = 10, render, onDone }: TypewriterTextProps) {
+export default function TypewriterText({ text, speed = 15, render, onDone }: TypewriterTextProps) {
   const [displayed, setDisplayed] = useState("");
 
   useEffect(() => {
