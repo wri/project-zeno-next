@@ -27,8 +27,8 @@ export default function NewEraQuoteSection() {
         </Text>
         <Text fontSize="lg" mb="4">
           Nature Watch marks a new chapter in our monitoring research, data and
-          tools. We step away from simply watching ecosystems, and toward
-          empowering intelligence-backed action.
+          tools. When knowledge is shared, action scales. Nature Watch opens a
+          new door to people-driven, intelligence-backed impact.
         </Text>
       </Container>
       <Container mt="8" maxW="2xl">

@@ -68,7 +68,7 @@ export default function LatestUpdatesSection() {
           </Heading>
           <Text fontSize="lg" mb="4" color="neutral.700">
             We combine cutting-edge geospatial research from Land & Carbon Lab
-            with the latest advances in technology.
+            and Global Forest Watch with the latest advances in technology.
           </Text>
         </Container>
         <Container maxW="5xl" px={0}>
@@ -164,8 +164,22 @@ export default function LatestUpdatesSection() {
               colorPalette="blue"
               rounded="lg"
               size="md"
+              ml={{ base: "inherit", md: "auto" }}
             >
-              <Link href="/">Visit Land & Carbon Lab</Link>
+              <Link href="https://landcarbonlab.org/">
+                Visit Land & Carbon Lab
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="solid"
+              colorPalette="blue"
+              rounded="lg"
+              size="md"
+            >
+              <Link href="https://www.globalforestwatch.org/">
+                Visit Global Forest Watch
+              </Link>
             </Button>
           </Box>
         </Container>

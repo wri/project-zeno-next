@@ -45,8 +45,9 @@ export default function TrustedPlatformsSection() {
           </Heading>
           <Text fontSize="lg">
             Global Nature Watch is built on the data and research of Global
-            Forest Watch and Land & Carbon Lab, as trusted by NGOs, governments
-            and geospatial experts worldwide for over 14 years.
+            Forest Watch and Land & Carbon Lab, as trusted by NGOs, governments,
+            journalists, communities, companies and geospatial experts
+            worldwide for over 14 years.
           </Text>
         </Container>
         <Container
@@ -107,7 +108,9 @@ export default function TrustedPlatformsSection() {
                       </Box>
                       <Card.Body>
                         <Card.Title fontSize="lg">{org.name}</Card.Title>
-                        <Card.Description fontSize="md">{org.description}</Card.Description>
+                        <Card.Description fontSize="md">
+                          {org.description}
+                        </Card.Description>
                       </Card.Body>
                     </Card.Root>
                   </Carousel.Item>

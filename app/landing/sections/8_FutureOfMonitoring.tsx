@@ -57,10 +57,10 @@ export default function FutureOfMonitoringSection() {
               </Heading>
               <Text fontSize="lg" mb="4">
                 We solve the hardest challenges in monitoring nature. Providing
-                you with the data you&rsquo;ve always needed but never had, and
-                empowering you to take real-world action. Our data is globally
-                available, consistent over time and created by some of the
-                world&rsquo;s most talented field experts.
+                you with the data you&rsquo;ve always needed, and empowering you
+                to take real-world action. Our data is globally available,
+                consistent over time and created by some of the world&rsquo;s
+                most talented field experts.
               </Text>
               <ChakraLink
                 fontSize="lg"
@@ -114,12 +114,13 @@ export default function FutureOfMonitoringSection() {
                 Monitoring intelligence
               </Heading>
               <Text fontSize="lg" mb="4">
-                Traditional geospatial analysis has hit a ceiling. The future
-                places the power of having your own personal geospatial expert
-                in your pocket. With our AI assistants trained on our
-                cutting-edge data, we democratize data access for monitoring so
-                it can reach more people and places, empowering both geospatial
-                experts and novices alike.
+                There&rsquo;s a lot of geospatial data in the world, and it can be
+                difficult to understand which to use. The future places the
+                power of having your own personal geospatial expert in your
+                pocket. With our AI assistants trained on our cutting-edge data,
+                we democratize data access for monitoring so it can reach more
+                people and places, empowering both geospatial experts and
+                novices alike.
               </Text>
               <ChakraLink
                 fontSize="lg"
