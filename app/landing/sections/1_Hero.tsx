@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Button,
@@ -15,19 +16,27 @@ import {
   PencilRulerIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";
+import useChatStore from "@/app/store/chatStore";
 import { Button as WRIButton } from "@worldresources/wri-design-systems";
 import GlobalHeader from "../../components/GlobalHeader";
 
 type PromptMarqueeProps = {
   prompts: string[];
+  promptIndex: number;
+  setPromptIndex: React.Dispatch<React.SetStateAction<number>>;
 };
-export default function LandingHero({ prompts }: PromptMarqueeProps) {
+export default function LandingHero({
+  prompts,
+  promptIndex,
+  setPromptIndex,
+}: PromptMarqueeProps) {
+  const router = useRouter();
   const [promptTimer, setPromptTimer] = useState(10);
-  const [promptIndex, setPromptIndex] = useState(0);
   const [animationKey, setAnimationKey] = useState(0);
   const [inputValue, setInputValue] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [ready, setReady] = useState(false);
+  const { sendMessage, isLoading } = useChatStore();
 
   useEffect(() => {
     setReady(true);
@@ -48,8 +57,17 @@ export default function LandingHero({ prompts }: PromptMarqueeProps) {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [prompts.length, isInputFocused, inputValue]);
+  }, [prompts.length, setPromptIndex, isInputFocused, inputValue]);
   // Measure the width of one set of prompts after render
+
+  const submitPrompt = async () => {
+    if (isLoading) return;
+    const message = inputValue.trim() || prompts[promptIndex];
+    localStorage.setItem("bypassWelcomeModal", "true");
+    await sendMessage(message);
+    router.push("/");
+  };
+
   return (
     <Box
       position="relative"
@@ -170,6 +188,9 @@ export default function LandingHero({ prompts }: PromptMarqueeProps) {
                 rounded="lg"
                 rightIcon={<CaretRightIcon weight="bold" />}
                 label="Go"
+                onClick={submitPrompt}
+                title="Submit prompt to assistant and go to application"
+                disabled={isLoading}
               />
             </Flex>
           </Box>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import LandingHero from "./sections/1_Hero";
 import PromptMarquee from "./sections/2_PromptMarquee";
 import TrustedPlatformsSection from "./sections/3_TrustedPlatforms";
@@ -24,11 +25,19 @@ const SAMPLE_PROMPTS = [
 ];
 
 export default function LandingPage() {
-
+  const [promptIndex, setPromptIndex] = useState(0);
   return (
     <>
-      <LandingHero prompts={SAMPLE_PROMPTS} />
-      <PromptMarquee prompts={SAMPLE_PROMPTS} />
+      <LandingHero
+        prompts={SAMPLE_PROMPTS}
+        promptIndex={promptIndex}
+        setPromptIndex={setPromptIndex}
+      />
+      <PromptMarquee
+        prompts={SAMPLE_PROMPTS}
+        promptIndex={promptIndex}
+        setPromptIndex={setPromptIndex}
+      />
       <TrustedPlatformsSection />
       <FeaturesTabsSection />
       <SupportWorkTabsSection />

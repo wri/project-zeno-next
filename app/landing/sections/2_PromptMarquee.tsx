@@ -5,9 +5,14 @@ const MARQUEE_SPEED = 40;
 
 type PromptMarqueeProps = {
   prompts: string[];
+  promptIndex: number;
+  setPromptIndex: React.Dispatch<React.SetStateAction<number>>;
 };
 
-function renderPromptBoxes(prompts: string[]) {
+function renderPromptBoxes(
+  prompts: string[],
+  setPromptIndex: React.Dispatch<React.SetStateAction<number>>
+) {
   return Array(2)
     .fill(prompts)
     .flat()
@@ -26,6 +31,9 @@ function renderPromptBoxes(prompts: string[]) {
         _hover={{
           "&&": { opacity: 1 },
         }}
+        onClick={() => {
+          setPromptIndex(() => i);
+        }}
       >
         {prompt}
       </Box>
@@ -39,6 +47,7 @@ function renderMarqueeRow({
   sliderWidth,
   direction,
   sliderRef,
+  setPromptIndex,
 }: {
   prompts: string[];
   animationName: string;
@@ -46,6 +55,7 @@ function renderMarqueeRow({
   sliderWidth: number;
   direction: "left" | "right";
   sliderRef?: React.Ref<HTMLDivElement>;
+  setPromptIndex: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const style =
     direction === "left"
@@ -74,12 +84,12 @@ function renderMarqueeRow({
       }}
       ref={sliderRef}
     >
-      {renderPromptBoxes(prompts)}
+      {renderPromptBoxes(prompts, setPromptIndex)}
     </Flex>
   );
 }
 
-function PromptMarquee({ prompts }: PromptMarqueeProps) {
+function PromptMarquee({ prompts, setPromptIndex }: PromptMarqueeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
   const [sliderWidth, setSliderWidth] = useState(0);
@@ -114,6 +124,7 @@ function PromptMarquee({ prompts }: PromptMarqueeProps) {
         animationName: "dynamicSlideLeft",
         animationDuration,
         sliderWidth,
+        setPromptIndex,
         direction: "left",
         sliderRef,
       })}
@@ -121,6 +132,7 @@ function PromptMarquee({ prompts }: PromptMarqueeProps) {
         prompts,
         animationName: "dynamicSlideRight",
         animationDuration,
+        setPromptIndex,
         sliderWidth,
         direction: "right",
       })}
