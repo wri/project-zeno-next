@@ -36,12 +36,19 @@ function ChatInput() {
     await sendMessage(message);
   };
 
-  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.keyCode === 13 && inputValue?.trim().length > 0 && !isLoading) {
-      e.preventDefault();
+const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // Submit on Enter (without Shift) or Command+Enter
+  if (
+    (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
+    (e.key === "Enter" && e.metaKey)
+  ) {
+    e.preventDefault(); // Prevents newline
+    if (inputValue?.trim().length > 0 && !isLoading) {
       submitPrompt();
     }
-  };
+  }
+  // If Shift+Enter, do nothing: allow newline
+};
 
   const getInputState = () => {
     return {
@@ -91,7 +98,7 @@ function ChatInput() {
         </Flex>
       )}
       <Textarea
-        aria-label="Ask NatureWATCH a question..."
+        aria-label="Ask a question about nature..."
         placeholder={message}
         fontSize="sm"
         autoresize
@@ -100,7 +107,7 @@ function ChatInput() {
         p={0}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        onKeyUp={handleKeyUp}
+        onKeyDown={handleKeyDown}
         disabled={disabled}
         _disabled={{
           opacity: 1,
