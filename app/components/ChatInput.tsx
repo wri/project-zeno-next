@@ -53,7 +53,7 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
   const getInputState = () => {
     return {
       disabled: isLoading,
-      message: isLoading ? "Sending..." : "Ask a question about nature...",
+      message: isLoading ? "Sending..." : "Ask a question...",
     };
   };
 
@@ -98,7 +98,7 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         </Flex>
       )}
       <Textarea
-        aria-label="Ask a question about nature..."
+        aria-label="Ask a question..."
         placeholder={message}
         fontSize="sm"
         autoresize
