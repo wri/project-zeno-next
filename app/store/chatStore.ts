@@ -229,8 +229,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         abortController,
         reader,
         onData: async (data, isFinal) => {
-          // Log the raw data received
-          console.log("API Stream message:", data);
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
             await processStreamMessage(streamMessage, addMessage);
