@@ -18,6 +18,7 @@ import { ContextItem } from "../store/contextStore";
 import { useEffect, useState } from "react";
 import remarkBreaks from "remark-breaks";
 import TypewriterText from "./TypewriterText";
+import useChatStore from "@/app/store/chatStore";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -26,13 +27,16 @@ interface MessageBubbleProps {
 }
 
 function MessageBubble({ message, isConsecutive = false, isLatestAssistant = false }: MessageBubbleProps) {
+  const { isFetchingThread } = useChatStore();
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const [isTyping, setIsTyping] = useState(
-    isLatestAssistant && message.type === "assistant"
+    isLatestAssistant && message.type === "assistant" && !isFetchingThread && !message.fromHistory
   );
 
   useEffect(() => {
-    setIsTyping(isLatestAssistant && message.type === "assistant");
+    setIsTyping(
+      isLatestAssistant && message.type === "assistant" && !isFetchingThread && !message.fromHistory
+    );
   
     const date = new Date(message.timestamp);
     const time = date.toLocaleString([], {
@@ -45,7 +49,7 @@ function MessageBubble({ message, isConsecutive = false, isLatestAssistant = fal
       month: "short",
     });
     setFormattedTimestamp(`${time} on ${day}`);
-  }, [isLatestAssistant, message.type, message.timestamp]);
+  }, [isLatestAssistant, message.type, message.timestamp, isFetchingThread, message.fromHistory]);
 
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
@@ -111,7 +115,7 @@ function MessageBubble({ message, isConsecutive = false, isLatestAssistant = fal
             },
           }}
         >
-          {message.type === "assistant" && isLatestAssistant ? (
+          {message.type === "assistant" && isLatestAssistant && !isFetchingThread && !message.fromHistory ? (
             <TypewriterText
               text={message.message}
               render={(displayed) => (

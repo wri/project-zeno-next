@@ -8,7 +8,7 @@ import ThinkingMessage from "./ThinkingMessage";
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading } = useChatStore();
+  const { messages, isLoading, isFetchingThread } = useChatStore();
 
   const lastAssistantIdx = messages
   .map((msg, idx) => (msg.type === "assistant" ? idx : -1))
@@ -44,25 +44,29 @@ function ChatMessages() {
 
   // Determine if the last message is from the user
   const lastMessage = messages[messages.length - 1];
-  const showThinking = isLoading && lastMessage?.type === "user";
+  const showThinking = isLoading && lastMessage?.type === "user" && !isFetchingThread;
 
   return (
     <Box ref={containerRef} fontSize="sm">
-      {messages.map((message, index) => {
+      {!isFetchingThread && messages.map((message, index) => {
         // Check if this message is consecutive to the previous one of the same type
         const previousMessage = index > 0 ? messages[index - 1] : null;
         const isConsecutive = previousMessage?.type === message.type;
+        // Determine if we should animate typing for this assistant message:
+        // Only if it's the last assistant AND not immediately followed by a widget
+        const nextMessage = index < messages.length - 1 ? messages[index + 1] : null;
+        const isTypingCandidate = index === lastAssistantIdx && nextMessage?.type !== "widget";
         
         return (
           <MessageBubble 
             key={message.id} 
             message={message} 
             isConsecutive={isConsecutive}
-            isLatestAssistant={index === lastAssistantIdx}
+            isLatestAssistant={isTypingCandidate}
           />
         );
       })}
-      {showThinking && <ThinkingMessage />}
+      {!isFetchingThread && showThinking && <ThinkingMessage />}
     </Box>
   );
 }
