@@ -25,8 +25,13 @@ interface MessageBubbleProps {
 
 function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
+  const [isTyping, setIsTyping] = useState(
+    isLatestAssistant && message.type === "assistant"
+  );
 
   useEffect(() => {
+    setIsTyping(isLatestAssistant && message.type === "assistant");
+  
     const date = new Date(message.timestamp);
     const time = date.toLocaleString([], {
       hour: "2-digit",
@@ -38,7 +43,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
       month: "short",
     });
     setFormattedTimestamp(`${time} on ${day}`);
-  }, [message.timestamp]);
+  }, [isLatestAssistant, message.type, message.timestamp]);
 
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
@@ -104,9 +109,21 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             },
           }}
         >
-          <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+          {message.type === "assistant" && isLatestAssistant ? (
+            <TypewriterText
+              text={message.message}
+              render={(displayed) => (
+                <Markdown remarkPlugins={[remarkBreaks]}>{displayed}</Markdown>
+              )}
+              onDone={() => setIsTyping(false)}
+            />
+          ) : (
+            <Markdown remarkPlugins={[remarkBreaks]}>
+              {message.message}
+            </Markdown>
+          )}
         </Box>
-        {!isUser && !isConsecutive && (
+        {!isUser && !isConsecutive && !isTyping && (
           <Flex
             alignItems="center"
             w="full"
