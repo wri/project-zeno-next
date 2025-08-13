@@ -4,7 +4,19 @@ import { ChatContextType } from "@/app/components/ContextButton";
 export interface ContextItem {
   id: string;
   contextType: ChatContextType;
-  content: string;
+  content: string | object;
+  // For AOI context, store additional details needed for ui_context
+  aoiData?: {
+    name: string;
+    gadm_id?: string;
+    src_id?: string;
+    subtype?: string;
+    source?: string;
+  };
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 interface ContextState {
@@ -25,12 +37,25 @@ const initialState: ContextState = {
 const useContextStore = create<ContextState & ContextActions>((set) => ({
   ...initialState,
   addContext: (item) =>
-    set((state) => ({
-      context: [
-        ...state.context,
-        { ...item, id: `${item.contextType}-${Date.now()}` },
-      ],
-    })),
+    set((state) => {
+      // Check if item with same contextType and content already exists
+      const exists = state.context.some(
+        (existingItem) =>
+          existingItem.contextType === item.contextType &&
+          JSON.stringify(existingItem.content) === JSON.stringify(item.content)
+      );
+
+      if (exists) {
+        return state; // Don't add if it already exists
+      }
+
+      return {
+        context: [
+          ...state.context,
+          { ...item, id: `${item.contextType}-${Date.now()}` },
+        ],
+      };
+    }),
   removeContext: (id) =>
     set((state) => ({
       context: state.context.filter((c) => c.id !== id),

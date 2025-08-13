@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
+import { format } from "date-fns";
+
 import {
   ChatMessage,
   ChatPrompt,
@@ -7,27 +9,46 @@ import {
   QueryType,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
-import { readDataStream } from "../api/chat/read-data-stream";
+import { readDataStream } from "../api/shared/read-data-stream";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
+import useSidebarStore from "./sidebarStore";
 
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
-  currentThreadName: string;
 }
 
 interface ChatActions {
   reset: () => void;
-  setThreadName: (name: string) => void;
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
   sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (threadId: string) => Promise<void>;
+}
+
+interface UiContext {
+  aoi_selected?: {
+    aoi: {
+      name: string;
+      gadm_id?: string;
+      src_id?: string;
+      subtype?: string;
+    };
+    aoi_name: string;
+    subregion_aois: null;
+    subregion: null;
+    subtype?: string;
+  };
+  dataset_selected?: object;
+  daterange_selected?: {
+    start_date: string;
+    end_date: string;
+  };
 }
 
 const initialState: ChatState = {
@@ -42,11 +63,10 @@ const initialState: ChatState = {
   ],
   isLoading: false,
   currentThreadId: null,
-  currentThreadName: "New Conversation",
 };
 
 // Helper function to process stream messages and add them to chat
-function processStreamMessage(
+async function processStreamMessage(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
 ) {
@@ -78,7 +98,7 @@ function processStreamMessage(
     }
     // Special handling for pick-aoi tool (previously location-tool)
     else if (streamMessage.name === "pick-aoi" && streamMessage.aoi) {
-      return pickAoiTool(streamMessage, addMessage);
+      return await pickAoiTool(streamMessage, addMessage);
     }
     // Handling for pick-dataset tool
     else if (streamMessage.name === "pick-dataset") {
@@ -100,12 +120,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   ...initialState,
 
   reset: () => set(initialState),
-
-  setThreadName: (name: string) => {
-    set(() => ({
-      currentThreadName: name,
-    }));
-  },
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
@@ -142,6 +156,37 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     setLoading(true);
 
+    // Build ui_context from current context
+
+    const ui_context: UiContext = {};
+
+    // Find area context and convert to aoi_selected format
+    const areaContext = context.find(
+      (ctx) => ctx.contextType === "area" && ctx.aoiData
+    );
+    if (areaContext && areaContext.aoiData) {
+      ui_context.aoi_selected = {
+        aoi: {
+          name: areaContext.aoiData.name,
+          gadm_id: areaContext.aoiData.gadm_id,
+          src_id: areaContext.aoiData.src_id,
+          subtype: areaContext.aoiData.subtype,
+        },
+        aoi_name: areaContext.aoiData.name,
+        subregion_aois: null,
+        subregion: null,
+        subtype: areaContext.aoiData.subtype,
+      };
+    }
+
+    const dateContext = context.find((ctx) => ctx.contextType === "date");
+    if (dateContext && dateContext.dateRange) {
+      ui_context.daterange_selected = {
+        start_date: format(dateContext.dateRange.start, "yyyy-MM-dd"),
+        end_date: format(dateContext.dateRange.end, "yyyy-MM-dd"),
+      };
+    }
+
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
@@ -163,7 +208,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(prompt),
+        body: JSON.stringify({
+          ...prompt,
+          ...(Object.keys(ui_context).length > 0 && { ui_context }),
+        }),
         signal: abortController.signal,
       });
 
@@ -180,10 +228,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       await readDataStream({
         abortController,
         reader,
-        onData: (data, isFinal) => {
+        onData: async (data, isFinal) => {
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
-            processStreamMessage(streamMessage, addMessage);
+            await processStreamMessage(streamMessage, addMessage);
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -226,6 +274,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
+      useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
     }
   },
 
@@ -235,7 +284,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const { setLoading, addMessage } = get();
 
     setLoading(true);
-    set({ currentThreadName: "Loading Thread..." });
     // Set up abort controller for client-side timeout
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => {
@@ -263,7 +311,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       await readDataStream({
         abortController,
         reader,
-        onData: (data, isFinal) => {
+        onData: async (data, isFinal) => {
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
 
@@ -277,7 +325,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             }
 
             console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
-            processStreamMessage(streamMessage, addMessage);
+            await processStreamMessage(streamMessage, addMessage);
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -302,7 +350,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
-      set({ currentThreadName: threadId });
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
       setLoading(false);

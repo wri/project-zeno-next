@@ -1,7 +1,7 @@
 export async function readDataStream({ abortController, reader, onData }: {
   abortController: AbortController;
   reader: ReadableStreamDefaultReader<Uint8Array>;
-  onData: (data: string, isFinal: boolean) => void;
+  onData: (data: string, isFinal: boolean) => void | Promise<void>;
 }) {
   // Process the simplified streaming response
   const utf8Decoder = new TextDecoder("utf-8");
@@ -19,7 +19,7 @@ export async function readDataStream({ abortController, reader, onData }: {
       buffer = buffer.slice(lineBreakIndex + 1); // Remove processed line
 
       if (line) {
-        onData(line, false);
+        await onData(line, false);
       }
     }
 
@@ -30,6 +30,6 @@ export async function readDataStream({ abortController, reader, onData }: {
 
   // Handle any remaining data in the buffer
   if (buffer.trim() && !abortController.signal.aborted) {
-    onData(buffer, true);
+    await onData(buffer, true);
   }
 }

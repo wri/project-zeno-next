@@ -46,7 +46,7 @@ function ChatInput() {
   const getInputState = () => {
     return {
       disabled: isLoading,
-      message: isLoading ? "Sending..." : "Ask Zeno a question...",
+      message: isLoading ? "Sending..." : "Ask NatureWATCH a question...",
     };
   };
 
@@ -57,11 +57,10 @@ function ChatInput() {
     <Flex
       flexDir="column"
       position="relative"
-      gap={2}
       m={0}
       p={4}
       bg="bg.subtle"
-      borderRadius="md"
+      borderRadius="lg"
       borderWidth="1px"
       className="group"
       transition="all 0.32s ease-in-out"
@@ -75,12 +74,16 @@ function ChatInput() {
       }}
     >
       {hasContext && (
-        <Flex gap="2" wrap="wrap">
+        <Flex gap={1} wrap="wrap" mb={1}>
           {context.map((c) => (
             <ContextTag
               key={c.id}
               contextType={c.contextType as ChatContextType}
-              content={c.content}
+              content={
+                typeof c.content === "string"
+                  ? c.content
+                  : JSON.stringify(c.content)
+              }
               onClose={() => removeContext(c.id)}
               closeable
             />
@@ -88,7 +91,7 @@ function ChatInput() {
         </Flex>
       )}
       <Textarea
-        aria-label="Ask Zeno a question..."
+        aria-label="Ask NatureWATCH a question..."
         placeholder={message}
         fontSize="sm"
         autoresize
@@ -143,7 +146,7 @@ function ChatInput() {
           disabled={isButtonDisabled}
           loading={isLoading}
         >
-          <ArrowBendRightUpIcon />
+          <ArrowBendRightUpIcon weight="bold" />
         </Button>
       </Flex>
     </Flex>

@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { API_CONFIG } from "@/app/config/api";
 
 const TOKEN_NAME = "auth_token";
 
@@ -12,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch("https://api.zeno-staging.ds.io/api/threads", {
+    const response = await fetch(API_CONFIG.ENDPOINTS.THREADS, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,

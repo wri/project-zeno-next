@@ -6,18 +6,28 @@ import MapGl, {
   AttributionControl,
   NavigationControl,
   ScaleControl,
-  MapRef
+  MapRef,
 } from "react-map-gl/maplibre";
 import { useState, useRef } from "react";
 import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
+import MapAreaControls from "./MapAreaControls";
+import SelectAreaLayer from "./map/layers/SelectAreaLayer";
+import useContextStore from "@/app/store/contextStore";
+import CustomAreasLayer from "./map/layers/CustomAreasLayer";
+import MapFeature from "./MapFeature";
+
+const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const { geoJsonFeatures, setMapRef } = useMapStore();
+  const { geoJsonFeatures, setMapRef, selectAreaLayer, initializeTerraDraw } =
+    useMapStore();
+  const { context } = useContextStore();
+  const areas = context.filter((c) => c.contextType === "area");
 
   const onMapLoad = () => {
     if (mapRef.current) {
@@ -25,6 +35,8 @@ function Map() {
       setMapCenter([map.getCenter().lng, map.getCenter().lat]);
       // Set the map ref in the store for other components to use
       setMapRef(mapRef.current);
+
+      initializeTerraDraw(map);
     }
   };
 
@@ -64,7 +76,7 @@ function Map() {
               },
               "& .maplibregl-ctrl-icon": {
                 filter: "invert(1)",
-              }
+              },
             },
           },
         },
@@ -76,7 +88,7 @@ function Map() {
         initialViewState={{
           longitude: 0,
           latitude: 0,
-          zoom: 0
+          zoom: 0,
         }}
         onLoad={onMapLoad}
         onMove={onMapMove}
@@ -86,67 +98,39 @@ function Map() {
           id="background"
           type="raster"
           tiles={useColorModeValue(
-            ["https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q"],
-            ["https://api.mapbox.com/styles/v1/devseed/clz35cbi302l701qo2snhdx9x/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiZGV2c2VlZCIsImEiOiJnUi1mbkVvIn0.018aLhX0Mb0tdtaT2QNe2Q"]
+            [
+              `https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
+            ],
+            [
+              `https://api.mapbox.com/styles/v1/devseed/clz35cbi302l701qo2snhdx9x/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
+            ]
           )}
           tileSize={256}
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        
+
         {/* Render GeoJSON features */}
-        {geoJsonFeatures.map((feature) => {
-          // Determine if this is a KBA feature
-          const isKBA = feature.id.startsWith('kba-');
-          const fillColor = isKBA ? '#10b981' : '#3b82f6'; // Green for KBA, blue for others
-          const strokeColor = isKBA ? '#047857' : '#1d4ed8'; // Dark green for KBA, dark blue for others
-          
-          return (
-            <Source
-              key={feature.id}
-              id={`geojson-source-${feature.id}`}
-              type="geojson"
-              data={feature.data}
-            >
-              {/* Fill layer for polygons */}
-              <Layer
-                id={`geojson-fill-${feature.id}`}
-                type="fill"
-                paint={{
-                  'fill-color': fillColor,
-                  'fill-opacity': 0.3
-                }}
-                filter={['==', ['geometry-type'], 'Polygon']}
-              />
-              {/* Line layer for polygon outlines and linestrings */}
-              <Layer
-                id={`geojson-line-${feature.id}`}
-                type="line"
-                paint={{
-                  'line-color': strokeColor,
-                  'line-width': 2
-                }}
-                filter={['in', ['geometry-type'], ['literal', ['Polygon', 'LineString']]]}
-              />
-              {/* Circle layer for points */}
-              <Layer
-                id={`geojson-circle-${feature.id}`}
-                type="circle"
-                paint={{
-                  'circle-color': strokeColor,
-                  'circle-radius': 6,
-                  'circle-stroke-color': '#ffffff',
-                  'circle-stroke-width': 2
-                }}
-                filter={['==', ['geometry-type'], 'Point']}
-              />
-            </Source>
-          );
-        })}
-        
-        <AttributionControl customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>" position="bottom-left" />
+        {geoJsonFeatures.map((feature) => (
+          <MapFeature key={feature.id} feature={feature} areas={areas} />
+        ))}
+
+        {selectAreaLayer && selectAreaLayer !== "Custom" && (
+          <SelectAreaLayer
+            key={selectAreaLayer}
+            layerId={selectAreaLayer}
+            beforeId={undefined}
+          />
+        )}
+        {selectAreaLayer === "Custom" && <CustomAreasLayer />}
+        <MapAreaControls />
+
+        <AttributionControl
+          customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
+          position="bottom-left"
+        />
         <ScaleControl />
-        <AbsoluteCenter fontSize="sm">
+        <AbsoluteCenter fontSize="sm" opacity={0.375}>
           <PlusIcon />
         </AbsoluteCenter>
         <NavigationControl showCompass={false} position="bottom-left" />

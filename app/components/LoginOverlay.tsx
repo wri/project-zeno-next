@@ -110,7 +110,7 @@ function LoginOverlay() {
         </Dialog.Header>
         <Dialog.Body>
           <Text>
-            Please log in with your WRI account to access Project Zeno.
+            Please log in with your WRI account to access NatureWATCH.
           </Text>
         </Dialog.Body>
         <Dialog.Footer>
