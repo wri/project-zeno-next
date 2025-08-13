@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
+import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
 const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
 
@@ -137,45 +138,13 @@ function CustomAreasLayer() {
         <Layer
           id="custom-areas-fill"
           type="fill"
-          paint={{
-            "fill-color": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              "#fbbf24",
-              "#f59e0b",
-            ],
-            "fill-opacity": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              0.7,
-              0.2,
-            ],
-          }}
+          paint={selectAreaFillPaint}
           filter={["==", ["geometry-type"], "Polygon"]}
         />
         <Layer
           id="custom-areas-line"
           type="line"
-          paint={{
-            "line-color": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              "#f59e0b",
-              "#d97706",
-            ],
-            "line-width": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              4,
-              3,
-            ],
-            "line-opacity": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              1,
-              0.8,
-            ],
-          }}
+          paint={selectAreaLinePaint}
           filter={["==", ["geometry-type"], "Polygon"]}
         />
       </Source>

@@ -21,6 +21,7 @@ import {
   Polygon,
 } from "geojson";
 import AreaTooltip, { HoverInfo } from "../../../ui/AreaTooltip";
+import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
 interface SourceLayerProps {
   layerId: LayerId;
@@ -221,26 +222,13 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           id={fillLayerName}
           type="fill"
           source-layer={sourceLayer}
-          paint={{
-            "fill-color": "#4B88D8",
-            "fill-opacity": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              0.48,
-              ["boolean", ["feature-state", "selected"], false],
-              0.08,
-              0,
-            ],
-          }}
+          paint={selectAreaFillPaint}
         />
         <Layer
           id={`select-layer-line-${id}`}
           type="line"
           source-layer={sourceLayer}
-          paint={{
-            "line-color": "#BBC5EB",
-            "line-width": 2,
-          }}
+          paint={selectAreaLinePaint}
         />
       </Source>
       {hoverInfo && (
