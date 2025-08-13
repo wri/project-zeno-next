@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, FC } from "react";
 import {
   Source,
   Layer,
@@ -8,25 +8,30 @@ import {
 } from "react-map-gl/maplibre";
 import { Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "../../ContextButton";
-import { Feature, Polygon, GeoJsonProperties, GeoJSON } from "geojson";
+import {
+  Feature,
+  FeatureCollection,
+  Polygon,
+  GeoJsonProperties,
+} from "geojson";
 import useContextStore, { ContextItem } from "@/app/store/contextStore";
 import bbox from "@turf/bbox";
 
 interface GeoJsonFeature {
   id: string;
   name?: string;
-  data: GeoJSON.FeatureCollection | GeoJSON.Feature;
+  data: FeatureCollection | Feature;
 }
 
 interface HighlightedFeaturesLayerProps {
   geoJsonFeatures: GeoJsonFeature[];
-  areas: any[];
+  areas: ContextItem[];
 }
 
 interface MapFeatureProps {
   feature: {
     id: string;
-    data: GeoJSON;
+    data: FeatureCollection | Feature;
   };
   areas: ContextItem[];
 }
@@ -73,13 +78,10 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
   const fillLayerId = `geojson-fill-${feature.id}`;
   const bboxLayerId = `bbox-line-${feature.id}`;
 
-  // Calculate bounding box
   let bboxCoords: [number, number, number, number] | null = null;
   let bboxPolygon: Feature<Polygon, GeoJsonProperties> | null = null;
 
-  // @ts-expect-error - feature.data is a GeoJSON object with properties,
-  // feature should be better typed
-  const featureName = feature.data?.properties?.name || feature.id;
+  const featureName = (feature.data as Feature).properties?.name || feature.id;
 
   try {
     bboxCoords = bbox(feature.data) as [number, number, number, number];
