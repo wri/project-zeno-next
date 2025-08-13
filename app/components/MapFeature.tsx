@@ -148,11 +148,16 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
 
     const handleClick = () => {
       // Only add to context if not already in context
-      const isInContext = areas.find((a) => a.content === feature.id);
       if (!isInContext) {
         addContext({
           contextType: "area",
-          content: feature.id,
+          content: featureName,
+          aoiData: {
+            src_id: feature.id,
+            name: featureName,
+            source: "custom",
+            subtype: "custom-area",
+          },
         });
       }
     };
