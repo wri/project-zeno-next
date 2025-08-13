@@ -19,6 +19,7 @@ import useSidebarStore from "./sidebarStore";
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
+  isFetchingThread: boolean;
   currentThreadId: string | null;
 }
 
@@ -64,6 +65,7 @@ Ask a question and let’s see what we can do for nature.`,
     },
   ],
   isLoading: false,
+  isFetchingThread: false,
   currentThreadId: null,
 };
 
@@ -285,6 +287,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   fetchThread: async (threadId: string) => {
     const { setLoading, addMessage } = get();
 
+    // Mark that we are fetching a historical thread; used to suppress thinking UI
+    set({ isFetchingThread: true });
+
     setLoading(true);
     // Set up abort controller for client-side timeout
     const abortController = new AbortController();
@@ -355,6 +360,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
       setLoading(false);
+      set({ isFetchingThread: false });
     }
   },
 }));

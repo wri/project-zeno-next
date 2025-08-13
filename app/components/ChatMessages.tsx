@@ -7,7 +7,7 @@ import ThinkingMessage from "./ThinkingMessage";
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading } = useChatStore();
+  const { messages, isLoading, isFetchingThread } = useChatStore();
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -37,7 +37,7 @@ function ChatMessages() {
   }, []);
 
   const lastMessage = messages[messages.length - 1];
-  const showThinking = isLoading && lastMessage?.type === "user";
+  const showThinking = isLoading && lastMessage?.type === "user" && !isFetchingThread;
 
   return (
     <Box ref={containerRef} fontSize="sm">
@@ -54,6 +54,7 @@ function ChatMessages() {
           />
         );
       })}
+      {isFetchingThread && <ThinkingMessage label="Fetching conversation" />}
       {showThinking && <ThinkingMessage />}
     </Box>
   );
