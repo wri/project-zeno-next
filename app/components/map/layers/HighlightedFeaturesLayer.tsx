@@ -7,10 +7,21 @@ import {
   MapMouseEvent,
 } from "react-map-gl/maplibre";
 import { Tag } from "@chakra-ui/react";
-import { ChatContextOptions } from "./ContextButton";
+import { ChatContextOptions } from "../../ContextButton";
 import { Feature, Polygon, GeoJsonProperties, GeoJSON } from "geojson";
 import useContextStore, { ContextItem } from "@/app/store/contextStore";
 import bbox from "@turf/bbox";
+
+interface GeoJsonFeature {
+  id: string;
+  name?: string;
+  data: GeoJSON.FeatureCollection | GeoJSON.Feature;
+}
+
+interface HighlightedFeaturesLayerProps {
+  geoJsonFeatures: GeoJsonFeature[];
+  areas: any[];
+}
 
 interface MapFeatureProps {
   feature: {
@@ -304,4 +315,17 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
   );
 }
 
-export default MapFeature;
+const HighlightedFeaturesLayer: FC<HighlightedFeaturesLayerProps> = ({
+  geoJsonFeatures,
+  areas,
+}: HighlightedFeaturesLayerProps) => {
+  return (
+    <>
+      {geoJsonFeatures.map((feature) => (
+        <MapFeature key={feature.id} feature={feature} areas={areas} />
+      ))}
+    </>
+  );
+};
+
+export default HighlightedFeaturesLayer;

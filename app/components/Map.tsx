@@ -17,7 +17,7 @@ import MapAreaControls from "./MapAreaControls";
 import SelectAreaLayer from "./map/layers/SelectAreaLayer";
 import useContextStore from "@/app/store/contextStore";
 import CustomAreasLayer from "./map/layers/CustomAreasLayer";
-import MapFeature from "./MapFeature";
+import HighlightedFeaturesLayer from "./map/layers/HighlightedFeaturesLayer";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -110,10 +110,10 @@ function Map() {
           <Layer id="background-tiles" type="raster" />
         </Source>
 
-        {/* Render GeoJSON features */}
-        {geoJsonFeatures.map((feature) => (
-          <MapFeature key={feature.id} feature={feature} areas={areas} />
-        ))}
+        <HighlightedFeaturesLayer
+          geoJsonFeatures={geoJsonFeatures}
+          areas={areas}
+        />
 
         {selectAreaLayer && selectAreaLayer !== "Custom" && (
           <SelectAreaLayer
