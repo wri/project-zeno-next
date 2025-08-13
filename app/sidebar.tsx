@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Button,
   Circle,
@@ -11,6 +11,7 @@ import {
   Text,
   Link as ChLink,
   Status,
+  Accordion,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -67,6 +68,14 @@ export function Sidebar() {
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
   const hasOlderThreads = threadGroups.older.length > 0;
 
+  // Determine first non-empty section value for default open (Chakra v3)
+  const defaultValues = useMemo(() => {
+    if (hasTodayThreads) return ["today"];
+    if (hasPreviousWeekThreads) return ["previous-week"];
+    if (hasOlderThreads) return ["older"];
+    return [] as string[];
+  }, [hasTodayThreads, hasPreviousWeekThreads, hasOlderThreads]);
+
   return (
     <Flex
       flexDir="column"
@@ -114,56 +123,71 @@ export function Sidebar() {
           },
         }}
       >
-        {hasTodayThreads && (
-          <Stack gap="1" flex="1" mt="2">
-            <Text fontSize="xs" color="fg.muted" px="3">
-              Today
-            </Text>
-            {threadGroups.today.map((thread) => (
-              <ThreadLink
-                key={thread.id}
-                href={`/threads/${thread.id}`}
-                isActive={currentThreadId === thread.id}
-              >
-                {thread.name}
-              </ThreadLink>
-            ))}
-          </Stack>
-        )}
-        <Separator my="4" />
-        {hasPreviousWeekThreads && (
-          <Stack gap="1" flex="1" mt="2">
-            <Text fontSize="xs" color="fg.muted" px="3">
-              Previous 7 days
-            </Text>
-            {threadGroups.previousWeek.map((thread) => (
-              <ThreadLink
-                key={thread.id}
-                href={`/threads/${thread.id}`}
-                isActive={currentThreadId === thread.id}
-              >
-                {thread.name}
-              </ThreadLink>
-            ))}
-          </Stack>
-        )}
-        <Separator my="4" />
-        {hasOlderThreads && (
-          <Stack gap="1" flex="1" mt="2">
-            <Text fontSize="xs" color="fg.muted" px="3">
-              Older Conversations
-            </Text>
-            {threadGroups.older.map((thread) => (
-              <ThreadLink
-                key={thread.id}
-                href={`/threads/${thread.id}`}
-                isActive={currentThreadId === thread.id}
-              >
-                {thread.name}
-              </ThreadLink>
-            ))}
-          </Stack>
-        )}
+        <Accordion.Root multiple defaultValue={defaultValues}>
+          {hasTodayThreads && (
+            <Accordion.Item value="today" border="none">
+              <Accordion.ItemTrigger px="3" py="1">
+                <Accordion.ItemIndicator />
+                <Text fontSize="xs" color="fg.muted" ml="2">Today</Text>
+              </Accordion.ItemTrigger>
+              <Accordion.ItemContent px="0" pt="0">
+                <Stack gap="1" mt="1">
+                  {threadGroups.today.map((thread) => (
+                    <ThreadLink
+                      key={thread.id}
+                      href={`/threads/${thread.id}`}
+                      isActive={currentThreadId === thread.id}
+                    >
+                      {thread.name}
+                    </ThreadLink>
+                  ))}
+                </Stack>
+              </Accordion.ItemContent>
+            </Accordion.Item>
+          )}
+          {hasPreviousWeekThreads && (
+            <Accordion.Item value="previous-week" border="none">
+              <Accordion.ItemTrigger px="3" py="1">
+                <Accordion.ItemIndicator />
+                <Text fontSize="xs" color="fg.muted" ml="2">Previous 7 days</Text>
+              </Accordion.ItemTrigger>
+              <Accordion.ItemContent px="0" pt="0">
+                <Stack gap="1" mt="1">
+                  {threadGroups.previousWeek.map((thread) => (
+                    <ThreadLink
+                      key={thread.id}
+                      href={`/threads/${thread.id}`}
+                      isActive={currentThreadId === thread.id}
+                    >
+                      {thread.name}
+                    </ThreadLink>
+                  ))}
+                </Stack>
+              </Accordion.ItemContent>
+            </Accordion.Item>
+          )}
+          {hasOlderThreads && (
+            <Accordion.Item value="older" border="none">
+              <Accordion.ItemTrigger px="3" py="1">
+                <Accordion.ItemIndicator />
+                <Text fontSize="xs" color="fg.muted" ml="2">Older Conversations</Text>
+              </Accordion.ItemTrigger>
+              <Accordion.ItemContent px="0" pt="0">
+                <Stack gap="1" mt="1">
+                  {threadGroups.older.map((thread) => (
+                    <ThreadLink
+                      key={thread.id}
+                      href={`/threads/${thread.id}`}
+                      isActive={currentThreadId === thread.id}
+                    >
+                      {thread.name}
+                    </ThreadLink>
+                  ))}
+                </Stack>
+              </Accordion.ItemContent>
+            </Accordion.Item>
+          )}
+        </Accordion.Root>
         <Status.Root
           colorPalette={apiStatus === "OK" ? "green" : "red"}
           m="3"
