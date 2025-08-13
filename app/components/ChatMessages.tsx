@@ -4,7 +4,7 @@ import { Box } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import ThinkingMessage from "./ThinkingMessage";
-import ThreadSkeleton from "./ThreadSkeleton";
+// Removed ThreadSkeleton while loading old threads
 
 
 function ChatMessages() {
@@ -57,7 +57,8 @@ function ChatMessages() {
       h="100%"
       overflow="hidden"
     >
-      {isFetchingThread && <ThreadSkeleton />}
+      {/* Show a placeholder while loading historical threads */}
+      {isFetchingThread && <ThinkingMessage label="Fetching conversation" />}
       {!isFetchingThread && messages.map((message, index) => {
         // Check if this message is consecutive to the previous one of the same type
         const previousMessage = index > 0 ? messages[index - 1] : null;
