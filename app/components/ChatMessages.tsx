@@ -3,10 +3,11 @@ import { useEffect, useRef } from "react";
 import { Box } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
+import ThinkingMessage from "./ThinkingMessage";
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { messages } = useChatStore();
+  const { messages, isLoading } = useChatStore();
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -35,6 +36,9 @@ function ChatMessages() {
     }
   }, []);
 
+  const lastMessage = messages[messages.length - 1];
+  const showThinking = isLoading && lastMessage?.type === "user";
+
   return (
     <Box ref={containerRef} fontSize="sm">
       {messages.map((message, index) => {
@@ -50,6 +54,7 @@ function ChatMessages() {
           />
         );
       })}
+      {showThinking && <ThinkingMessage />}
     </Box>
   );
 }

@@ -1,4 +1,4 @@
-import { Box, Flex, Skeleton, SkeletonText, Spinner } from "@chakra-ui/react";
+import { Box, Flex, SkeletonText, Spinner } from "@chakra-ui/react";
 
 export default function ThinkingMessage() {
 
