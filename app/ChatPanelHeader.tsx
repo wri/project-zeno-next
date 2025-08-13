@@ -10,11 +10,16 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
-  SidebarIcon,
   CaretDownIcon,
   PencilSimpleIcon,
   TrashIcon,
   NotePencilIcon,
+  SidebarIcon,
+  ChartLineIcon,
+  ListNumbersIcon,
+  ChartBarIcon,
+  ChartPieSliceIcon,
+  PresentationChartIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,6 +27,14 @@ import { useRouter } from "next/navigation";
 import { Tooltip } from "./components/ui/tooltip";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
+
+const WidgetIcons = {
+  "line": <ChartLineIcon />,
+  "table": <ListNumbersIcon />,
+  "bar": <ChartBarIcon />,
+  "pie": <ChartPieSliceIcon />,
+  "insight": <PresentationChartIcon />
+}
 
 function ChatPanelHeader() {
   const router = useRouter();
@@ -65,11 +78,11 @@ function ChatPanelHeader() {
     return messages.flatMap((m) =>
       m.type === "widget" && m.widgets
         ? m.widgets.map((w, idx) => ({
-            id: `widget-${m.id}-${idx}`,
-            title: w.title || `Widget ${idx + 1}`,
-            type: w.type,
-            timestamp: m.timestamp,
-          }))
+          id: `widget-${m.id}-${idx}`,
+          title: w.title || `Widget ${idx + 1}`,
+          type: w.type,
+          timestamp: m.timestamp,
+        }))
         : []
     );
   }, [messages]);
@@ -182,10 +195,18 @@ function ChatPanelHeader() {
                     value={w.id}
                     onSelect={() => scrollToWidget(w.id)}
                   >
-                    <Flex align="center" gap={2} maxW="360px" role="group">
-                      <Text as="span" color="fg.muted" flexShrink={0}>
-                        ({w.type})
-                      </Text>
+                    <Flex
+                      align="center"
+                      gap={2}
+                      maxW="360px"
+                      role="group"
+                      className="group"
+                      cursor="pointer"
+                      fontSize="md"
+                      fontWeight="medium"
+                      color="blue.900"
+                    >
+                      {WidgetIcons[w.type]}
                       <Text
                         as="span"
                         flex="1"
@@ -193,14 +214,19 @@ function ChatPanelHeader() {
                         whiteSpace="nowrap"
                         overflow="hidden"
                         textOverflow="ellipsis"
+                        fontSize="xs"
                       >
                         {w.title}
                       </Text>
                       <Text
                         as="span"
-                        color="fg.muted"
                         flexShrink={0}
                         ml="2"
+                        display="none"
+                        fontSize="xs"
+                        _groupHover={{
+                          display: "inline",
+                        }}
                       >
                         {formatWidgetMeta(w.timestamp)}
                       </Text>
