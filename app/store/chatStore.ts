@@ -175,8 +175,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       if (ds) ui_context.dataset_selected = { dataset: ds };
     }
 
-    console.log("ui_context", ui_context);
-
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,

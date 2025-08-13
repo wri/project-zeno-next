@@ -1,6 +1,5 @@
 import { Box, Button, Text, Flex, Card } from "@chakra-ui/react";
 import { DatasetInfo } from "@/app/types/chat";
-// Map layers are managed via context now
 import { GlobeIcon } from "@phosphor-icons/react";
 import useContextStore from "@/app/store/contextStore";
 
