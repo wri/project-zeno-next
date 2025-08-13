@@ -43,18 +43,19 @@ function createBboxPolygon(
   };
 }
 
-function MapFeature({
-  feature,
-  areas,
-}: MapFeatureProps) {
+function MapFeature({ feature, areas }: MapFeatureProps) {
   const { current: map } = useMap();
   const { addContext, removeContext } = useContextStore();
   const [isHovered, setIsHovered] = useState(false);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  const fillColor = areas.find((a) => a.content === feature.id)
-    ? "#3b82f6"
-    : "#555";
+  const areaInContext = areas.find(
+    // Not ideal way of matching areas, we should normalize area ids
+    (a) => a.content === feature.id || a.aoiData?.src_id === feature.id
+  );
+  const isInContext = areaInContext ? true : false;
+
+  const fillColor = isInContext ? "#3b82f6" : "#555";
 
   const sourceId = `geojson-source-${feature.id}`;
   const bboxSourceId = `bbox-source-${feature.id}`;
@@ -64,6 +65,10 @@ function MapFeature({
   // Calculate bounding box
   let bboxCoords: [number, number, number, number] | null = null;
   let bboxPolygon: Feature<Polygon, GeoJsonProperties> | null = null;
+
+  // @ts-expect-error - feature.data is a GeoJSON object with properties,
+  // feature should be better typed
+  const featureName = feature.data?.properties?.name || feature.id;
 
   try {
     bboxCoords = bbox(feature.data) as [number, number, number, number];
@@ -185,12 +190,9 @@ function MapFeature({
     setHoverState,
   ]);
 
-  // Get area context item for display
-  const areaContext = areas.find((a) => a.content === feature.id);
-
   const handleRemoveFromContext = () => {
-    if (areaContext) {
-      removeContext(areaContext.id);
+    if (areaInContext) {
+      removeContext(areaInContext.id);
     }
   };
 
@@ -264,7 +266,7 @@ function MapFeature({
           anchor="bottom-left"
         >
           <Tag.Root
-            colorPalette={areaContext ? "blue" : "gray"}
+            colorPalette={isInContext ? "blue" : "gray"}
             px={2}
             py={1}
             size="md"
@@ -273,14 +275,14 @@ function MapFeature({
             onMouseEnter={handleLabelMouseEnter}
             onMouseLeave={handleLabelMouseLeave}
           >
-            {areaContext && (
+            {isInContext && (
               <Tag.StartElement>
                 {ChatContextOptions.area.icon}
               </Tag.StartElement>
             )}
-            <Tag.Label fontWeight="medium">{feature.id}</Tag.Label>
+            <Tag.Label fontWeight="medium">{featureName}</Tag.Label>
             {/* Show X button on hover if in context */}
-            {areaContext && (
+            {isInContext && (
               <Tag.EndElement>
                 <Tag.CloseTrigger
                   opacity={isHovered ? 1 : 0.25}

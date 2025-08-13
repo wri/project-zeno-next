@@ -10,7 +10,7 @@ const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
 
 function CustomAreasLayer() {
   const { customAreas, isLoading, error } = useCustomAreasList();
-  const { mapRef } = useMapStore();
+  const { mapRef, addGeoJsonFeature } = useMapStore();
   const { addContext } = useContextStore();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
 
@@ -22,6 +22,14 @@ function CustomAreasLayer() {
         );
         if (feature) {
           const { name, id } = feature.properties;
+
+          // Add feature to the all features list to be highlighted on the map
+          addGeoJsonFeature({
+            id: id,
+            name: name,
+            data: feature,
+          });
+
           addContext({
             contextType: "area",
             content: name,
