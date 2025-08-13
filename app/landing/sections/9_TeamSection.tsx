@@ -41,11 +41,11 @@ export default function TeamSection() {
           <ChakraLink href="https://www.wri.org/">
             <Image src="/WRI-logo.svg" alt="WRI Logo" height="64px" />
           </ChakraLink>
-          <ChakraLink href="https://www.bezosearthfund.org/">
-            <Image src="/BEF-logo.png" alt="BEF Logo" height="64px" />
-          </ChakraLink>
           <ChakraLink href="https://landcarbonlab.org/">
             <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
+          </ChakraLink>
+          <ChakraLink href="https://www.bezosearthfund.org/">
+            <Image src="/BEF-logo.png" alt="BEF Logo" height="64px" />
           </ChakraLink>
           <ChakraLink href="https://www.globalforestwatch.org/">
             <Image src="/GFW-logo.svg" alt="GFW Logo" height="64px" />

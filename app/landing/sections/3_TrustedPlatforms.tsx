@@ -55,6 +55,7 @@ export default function TrustedPlatformsSection() {
           gap="6"
           flexWrap="wrap"
           justifyContent="center"
+          maxW="5xl"
           mt="12"
           px={0}
         >
@@ -67,6 +68,7 @@ export default function TrustedPlatformsSection() {
             flexWrap="wrap"
             justifyContent="center"
             position="relative"
+            maxW="100%"
           >
             <Carousel.Control
               position={{ base: "relative", md: "absolute" }}
@@ -89,10 +91,8 @@ export default function TrustedPlatformsSection() {
                     <Card.Root
                       size="sm"
                       overflow="hidden"
-                      maxW="100%"
                       bg="bg.muted"
                       h="full"
-                      w="full"
                       rounded="xl"
                     >
                       <Box

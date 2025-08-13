@@ -120,7 +120,7 @@ export default function LandingHero({
           </Text>
         </Container>
         <Container mt="8" maxW="2xl" px={{ base: 6, md: 0 }}>
-          <Box rounded="md" bg="bg" p="4" zIndex="10">
+          <Box rounded="xl" bg="bg" p="4" zIndex="10">
             <Input
               key={
                 !isInputFocused && inputValue === "" ? promptIndex : undefined
@@ -143,9 +143,7 @@ export default function LandingHero({
             />
             <Flex
               justifyContent="space-between"
-              alignItems={{ base: "stretch", md: "flex-start" }}
               mt="4"
-              flexDir={{ base: "column", md: "row" }}
               gap={4}
             >
               <Flex gap="2" alignItems="flex-start" flexDirection="column">

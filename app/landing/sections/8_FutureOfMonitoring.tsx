@@ -322,9 +322,7 @@ export default function FutureOfMonitoringSection() {
               <Image maxH="10" src="/fm-3-qgis.png" alt="QGIS logo" />
               <Box
                 p="6"
-                bg="neutral.300"
-                border="1px solid"
-                borderColor="neutral.400"
+                bg="lime.300"
                 rounded="lg"
                 shadow="sm"
               >
