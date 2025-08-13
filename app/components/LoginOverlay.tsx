@@ -110,7 +110,7 @@ function LoginOverlay() {
         </Dialog.Header>
         <Dialog.Body>
           <Text>
-            Please log in with your WRI account to access NatureWATCH.
+            Please log in with your WRI account to access Global Nature Watch.
           </Text>
         </Dialog.Body>
         <Dialog.Footer>
