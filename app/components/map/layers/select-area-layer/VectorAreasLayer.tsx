@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
-import "../../../theme/popup.css";
+import "../../../../theme/popup.css";
 
-import { LayerId, selectLayerOptions } from "../../../types/map";
-import useContextStore from "../../../store/contextStore";
-import useMapStore from "../../../store/mapStore";
-import { API_CONFIG } from "../../../config/api";
+import { LayerId, selectLayerOptions } from "../../../../types/map";
+import useContextStore from "../../../../store/contextStore";
+import useMapStore from "../../../../store/mapStore";
+import { API_CONFIG } from "../../../../config/api";
 import {
   getAoiName,
   getSrcId,
   getSubtype,
   singularizeDatasetName,
-} from "../../../utils/areaHelpers";
+} from "../../../../utils/areaHelpers";
 import {
   Feature,
   FeatureCollection,
@@ -20,11 +20,10 @@ import {
   MultiPolygon,
   Polygon,
 } from "geojson";
-import AreaTooltip, { HoverInfo } from "../../ui/AreaTooltip";
+import AreaTooltip, { HoverInfo } from "../../../ui/AreaTooltip";
 
 interface SourceLayerProps {
   layerId: LayerId;
-  beforeId?: string;
 }
 
 interface Metadata {
@@ -33,7 +32,7 @@ interface Metadata {
   subregion_to_subtype_mapping?: Record<string, string>;
 }
 
-function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
+function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { addContext } = useContextStore();
   const { addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
@@ -242,7 +241,6 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
             "line-color": "#BBC5EB",
             "line-width": 2,
           }}
-          beforeId={beforeId}
         />
       </Source>
       {hoverInfo && (
@@ -255,4 +253,4 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
   );
 }
 
-export default SelectAreaLayer;
+export default VectorAreasLayer;
