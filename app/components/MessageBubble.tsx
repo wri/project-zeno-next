@@ -76,8 +76,8 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
         maxW={isUser ? "80%" : "none"}
         bg={isError ? "red.50" : isUser ? "gray.100" : "transparent"}
         color={isError ? "red.800" : "fg"}
-        px={isUser ? 4 : 0}
-        py={isUser ? 3 : 0}
+        px={isUser || isError ? 4 : 0}
+        py={isUser || isError  ? 3 : 0}
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
@@ -115,7 +115,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
         >
           <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
         </Box>
-        {!isUser && !isConsecutive && (
+        {!isUser && !isConsecutive && !isError && (
           <Flex
             alignItems="center"
             w="full"
