@@ -1,4 +1,4 @@
-# NatureWATCH
+# Global Nature Watch
 
 ## Installation and Usage
 
