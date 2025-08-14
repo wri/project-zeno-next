@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePromptStore } from "@/app/store/promptStore";
 import LandingHero from "./sections/1_Hero";
 import PromptMarquee from "./sections/2_PromptMarquee";
 import TrustedPlatformsSection from "./sections/3_TrustedPlatforms";
@@ -26,6 +27,10 @@ const SAMPLE_PROMPTS = [
 
 export default function LandingPage() {
   const [promptIndex, setPromptIndex] = useState(0);
+  const { prompts, fetchPrompts } = usePromptStore(); // TODO - determine if landing page should use sample prompts above, or the prompst from the welcome modal
+  useEffect(() => {
+    fetchPrompts();
+  }, [fetchPrompts]);
   return (
     <>
       <LandingHero
@@ -34,7 +39,7 @@ export default function LandingPage() {
         setPromptIndex={setPromptIndex}
       />
       <PromptMarquee
-        prompts={SAMPLE_PROMPTS}
+        prompts={prompts}
         promptIndex={promptIndex}
         setPromptIndex={setPromptIndex}
       />
