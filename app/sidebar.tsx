@@ -141,6 +141,9 @@ export function Sidebar() {
       gridArea="sidebar"
       overflow="hidden"
       transition="width 0.3s"
+      tabIndex={!sideBarVisible ? -1 : undefined}
+      aria-hidden={!sideBarVisible}
+      inert={!sideBarVisible}
     >
       <Flex
         px="3"
