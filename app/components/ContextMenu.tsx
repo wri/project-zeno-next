@@ -92,7 +92,6 @@ function ContextNav({
       w="10rem"
       borderRight="1px solid"
       borderColor="border"
-      overflowY="auto"
     >
       {CONTEXT_NAV.map((nav) => (
         <Button
@@ -131,12 +130,13 @@ function LayerCardList({
   onCardClick?: (card: LayerCardItem) => void;
 }) {
   return (
-    <Stack>
+    <Stack overflow="auto">
       {cards.map((card) => (
         <Card.Root
           key={card.dataset_name}
           size="sm"
           flexDirection="row"
+          flexShrink={0}
           overflow="hidden"
           maxW="xl"
           border={card.selected ? "2px solid" : undefined}
@@ -174,7 +174,7 @@ function LayerCardList({
 
 function TagList({ tags }: { tags: { label: string; selected?: boolean }[] }) {
   return (
-    <Flex gap="2" maxW="100%" overflow="auto">
+    <Flex gap="2" maxW="100%" overflow="auto" flexShrink={0}>
       {tags.map((tag) => (
         <Button
           key={tag.label}
@@ -209,22 +209,31 @@ function ContextMenu({
       motionPreset="slide-in-bottom"
       size="lg"
       open={open}
+      scrollBehavior="inside"
       onOpenChange={onOpenChange}
     >
       <Portal>
         <Dialog.Positioner>
-          <Dialog.Content minH="30rem" maxH="75vh">
-            <Flex flex="1">
-              {/* Modal Navigation */}
-              <ContextNav
-                selected={selectedContextType}
-                onSelect={setSelectedContextType}
-              />
-              {/* Modal Body */}
-              {selectedContextType === "layer" && <LayerMenu />}
-              {selectedContextType === "area" && <AreaMenu />}
-              {selectedContextType === "date" && <DateMenu />}
-            </Flex>
+          <Dialog.Content overflow="hidden" minH="30rem">
+            <Dialog.Body
+              p={0}
+              overflow="hidden"
+              h="full"
+              display="flex"
+              flexDir="column"
+            >
+              <Flex flex="1" overflow="hidden">
+                {/* Modal Navigation */}
+                <ContextNav
+                  selected={selectedContextType}
+                  onSelect={setSelectedContextType}
+                />
+                {/* Modal Body */}
+                {selectedContextType === "layer" && <LayerMenu />}
+                {selectedContextType === "area" && <AreaMenu />}
+                {selectedContextType === "date" && <DateMenu />}
+              </Flex>
+            </Dialog.Body>
             <Dialog.Footer
               justifyContent="space-between"
               borderTop="1px solid"
@@ -294,18 +303,25 @@ function LayerMenu() {
   return (
     <Stack
       bg="bg.subtle"
-      py={3}
+      pt={3}
       w="full"
       maxW="100%"
       maxH="100%"
-      overflowY="scroll"
+      overflow="hidden"
     >
       <Box px={4}>
         <InputGroup endElement={<MagnifyingGlassIcon />}>
           <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />
         </InputGroup>
       </Box>
-      <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
+      <Stack
+        px={4}
+        pt={3}
+        borderTopWidth="1px"
+        borderColor="border"
+        h="full"
+        overflow="hidden"
+      >
         <TagList tags={LAYER_TAGS} />
         <LayerCardList cards={cards} showImage onCardClick={handleToggleCard} />
       </Stack>
@@ -352,7 +368,14 @@ function AreaCardList({
 
 function AreaMenu() {
   return (
-    <Stack bg="bg.subtle" py={3} w="full" overflowY="scroll">
+    <Stack
+      bg="bg.subtle"
+      py={3}
+      w="full"
+      maxW="100%"
+      maxH="100%"
+      overflow="hidden"
+    >
       <Flex px={4} gap={2}>
         <InputGroup endElement={<MagnifyingGlassIcon />}>
           <Input size="sm" bg="bg" type="text" placeholder="Find area" />
@@ -370,7 +393,14 @@ function AreaMenu() {
           <NativeSelect.Indicator />
         </NativeSelect.Root>
       </Flex>
-      <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
+      <Stack
+        px={4}
+        pt={3}
+        borderTopWidth="1px"
+        borderColor="border"
+        h="full"
+        overflow="hidden"
+      >
         <TagList tags={AREA_TAGS} />
         <AreaCardList cards={AREA_CARDS} />
       </Stack>
@@ -430,6 +460,7 @@ function DateMenu() {
       py={3}
       w="full"
       position="relative"
+      overflow="hidden"
     >
       <AbsoluteCenter display="flex" gap="4">
         <Field.Root>
