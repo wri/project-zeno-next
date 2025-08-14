@@ -181,27 +181,33 @@ function ChatPanelHeader() {
       ) : (
         <Menu.Root>
           <Menu.Trigger asChild>
-            <Button variant="ghost" size="sm">
+          <Button
+              variant="ghost"
+              bgGradient="to-br"
+              gradientFrom="blue.300/25"
+              gradientTo="lime.300/25"
+              size="sm"
+            >
               Go to insight
               <CaretDownIcon />
             </Button>
           </Menu.Trigger>
           <Portal>
             <Menu.Positioner>
-              <Menu.Content>
+              <Menu.Content maxH="320px" overflowY="auto">
                 {widgetAnchors.map((w) => (
                   <Menu.Item
                     key={w.id}
                     value={w.id}
                     onSelect={() => scrollToWidget(w.id)}
+                    role="group"
+                    className="group"
+                    cursor="pointer"
                   >
                     <Flex
                       align="center"
                       gap={2}
                       maxW="360px"
-                      role="group"
-                      className="group"
-                      cursor="pointer"
                       fontSize="md"
                       fontWeight="medium"
                       color="blue.900"
@@ -224,6 +230,8 @@ function ChatPanelHeader() {
                         ml="2"
                         display="none"
                         fontSize="xs"
+                        fontWeight="normal"
+                        color="fg.muted"
                         _groupHover={{
                           display: "inline",
                         }}
