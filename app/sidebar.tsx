@@ -6,7 +6,6 @@ import {
   HStack,
   IconButton,
   LinkProps,
-  Separator,
   Stack,
   Text,
   Link as ChLink,
@@ -26,7 +25,7 @@ import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
-  const { isActive, href, children, ...rest } = props;
+  const { href, children, ...rest } = props;
   return (
     <ChLink
       fontSize="sm"
@@ -43,7 +42,9 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
       {...rest}
       asChild
     >
-      <Link href={href} style={{ display: 'block', width: '100%' }}>{children}</Link>
+      <Link href={href} style={{ display: "block", width: "100%" }}>
+        {children}
+      </Link>
     </ChLink>
   );
 }
@@ -90,13 +91,13 @@ function ThreadActionsMenu({
             aria-label={`Thread actions for ${thread.name}`}
             variant="ghost"
             size="xs"
-            mr="2"
+            mr="1"
             opacity="0"
             transition="opacity 0.15s"
             className="thread-actions"
             _focusVisible={{ opacity: 1 }}
-            _hover={{ bg: "transparent" }}
-            _active={{ bg: "transparent" }}
+            _hover={{ bg: "blackAlpha.50/50" }}
+            _active={{ bg: "blackAlpha.50/50" }}
           >
             <DotsThreeIcon
               size={20}
@@ -203,6 +204,70 @@ function ThreadActionsMenu({
   );
 }
 
+function ThreadSection({
+  threads,
+  label,
+  value,
+  currentThreadId,
+}: {
+  threads: { id: string; name: string }[];
+  label: string;
+  value: string;
+  currentThreadId: string | null;
+}) {
+  if (!threads.length) return null;
+  return (
+    <Accordion.Item value={value} border="none">
+      <Accordion.ItemTrigger px="3" py="1" cursor="pointer">
+        <Text
+          fontSize="xs"
+          fontWeight="normal"
+          color="fg.subtle"
+          ml="2"
+          mr="auto"
+        >
+          {label}
+        </Text>
+        <Accordion.ItemIndicator />
+      </Accordion.ItemTrigger>
+      <Accordion.ItemContent px="0" pt="0">
+        <Stack gap="1" mt="1">
+          {threads.map((thread) => {
+            const isActive = currentThreadId === thread.id;
+            return (
+              <Flex
+                key={thread.id}
+                align="center"
+                justify="space-between"
+                pl="2"
+                pr="0"
+                mx="4"
+                borderRadius="sm"
+                role="group"
+                _hover={{ layerStyle: "fill.muted" }}
+                css={{
+                  "&:hover .thread-actions": { opacity: 1 },
+                  "&:focus-within .thread-actions": { opacity: 1 },
+                }}
+                {...(isActive ? { bg: "bg", color: "blue.fg" } : {})}
+              >
+                <ThreadLink
+                  href={`/threads/${thread.id}`}
+                  isActive={isActive}
+                  _hover={{ textDecor: "none" }}
+                >
+                  {thread.name}
+                </ThreadLink>
+                <ThreadActionsMenu thread={thread} />
+              </Flex>
+            );
+          })}
+        </Stack>
+      </Accordion.ItemContent>
+    </Accordion.Item>
+  );
+}
+
 export function Sidebar() {
   const {
     sideBarVisible,
@@ -272,116 +337,28 @@ export function Sidebar() {
       >
         <Accordion.Root multiple defaultValue={["today", "previousWeek", "older"]}>
           {hasTodayThreads && (
-            <Accordion.Item value="today" border="none">
-              <Accordion.ItemTrigger px="3" py="1">
-                <Accordion.ItemIndicator />
-                <Text fontSize="xs" color="fg.muted" ml="2">Today</Text>
-              </Accordion.ItemTrigger>
-              <Accordion.ItemContent px="0" pt="0">
-                <Stack gap="1" mt="1">
-                  {threadGroups.today.map((thread) => (
-                    <Flex
-                      key={thread.id}
-                      align="center"
-                      justify="space-between"
-                      px="1"
-                      mx="4"
-                      p="0.5"
-                      borderRadius="sm"
-                      role="group"
-                      _hover={{ layerStyle: "fill.muted" }}
-                      css={{ '&:hover .thread-actions': { opacity: 1 }, '&:focus-within .thread-actions': { opacity: 1 } }}
-                      {...(currentThreadId === thread.id
-                        ? { color: "blue.fg" }
-                        : {})}
-                    >
-                      <ThreadLink
-                        href={`/threads/${thread.id}`}
-                        isActive={currentThreadId === thread.id}
-                        _hover={{ textDecor: "none" }}
-                      >
-                        {thread.name}
-                      </ThreadLink>
-                      <ThreadActionsMenu thread={thread} />
-                    </Flex>
-                  ))}
-                </Stack>
-              </Accordion.ItemContent>
-            </Accordion.Item>
+            <ThreadSection
+              threads={threadGroups.today}
+              label="Today"
+              value="today"
+              currentThreadId={currentThreadId}
+            />
           )}
           {hasPreviousWeekThreads && (
-            <Accordion.Item value="previousWeek" border="none">
-              <Accordion.ItemTrigger px="3" py="1">
-                <Accordion.ItemIndicator />
-                <Text fontSize="xs" color="fg.muted" ml="2">Previous 7 days</Text>
-              </Accordion.ItemTrigger>
-              <Accordion.ItemContent px="0" pt="0">
-                <Stack gap="1" mt="1">
-                  {threadGroups.previousWeek.map((thread) => (
-                    <Flex
-                      key={thread.id}
-                      align="center"
-                      justify="space-between"
-                      px="1"
-                      mx="4"
-                      p="0.5"
-                      borderRadius="sm"
-                      role="group"
-                      _hover={{ layerStyle: "fill.muted" }}
-                      css={{ '&:hover .thread-actions': { opacity: 1 }, '&:focus-within .thread-actions': { opacity: 1 } }}
-                      {...(currentThreadId === thread.id
-                        ? { bg: "bg", color: "blue.fg" }
-                        : {})}
-                    >
-                      <ThreadLink
-                        href={`/threads/${thread.id}`}
-                        isActive={currentThreadId === thread.id}
-                      >
-                        {thread.name}
-                      </ThreadLink>
-                      <ThreadActionsMenu thread={thread} />
-                    </Flex>
-                  ))}
-                </Stack>
-              </Accordion.ItemContent>
-            </Accordion.Item>
+            <ThreadSection
+              threads={threadGroups.previousWeek}
+              label="Previous 7 days"
+              value="previousWeek"
+              currentThreadId={currentThreadId}
+            />
           )}
           {hasOlderThreads && (
-            <Accordion.Item value="older" border="none">
-              <Accordion.ItemTrigger px="3" py="1">
-                <Accordion.ItemIndicator />
-                <Text fontSize="xs" color="fg.muted" ml="2">Older Conversations</Text>
-              </Accordion.ItemTrigger>
-              <Accordion.ItemContent px="0" pt="0">
-                <Stack gap="1" mt="1">
-                  {threadGroups.older.map((thread) => (
-                    <Flex
-                      key={thread.id}
-                      align="center"
-                      justify="space-between"
-                      px="1"
-                      mx="4"
-                      p="0.5"
-                      borderRadius="sm"
-                      role="group"
-                      _hover={{ layerStyle: "fill.muted" }}
-                      css={{ '&:hover .thread-actions': { opacity: 1 }, '&:focus-within .thread-actions': { opacity: 1 } }}
-                      {...(currentThreadId === thread.id
-                        ? { bg: "bg", color: "blue.fg" }
-                        : {})}
-                    >
-                      <ThreadLink
-                        href={`/threads/${thread.id}`}
-                        isActive={currentThreadId === thread.id}
-                      >
-                        {thread.name}
-                      </ThreadLink>
-                      <ThreadActionsMenu thread={thread} />
-                    </Flex>
-                  ))}
-                </Stack>
-              </Accordion.ItemContent>
-            </Accordion.Item>
+            <ThreadSection
+              threads={threadGroups.older}
+              label="Older Conversations"
+              value="older"
+              currentThreadId={currentThreadId}
+            />
           )}
         </Accordion.Root>
         <Status.Root
