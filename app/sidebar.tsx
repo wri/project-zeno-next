@@ -265,7 +265,7 @@ export function Sidebar() {
         py="2"
         overflow="auto"
         css={{
-          '& > [role="separator"]:first-child': {
+          '& > [role="separator"]:first-of-type': {
             display: "none",
           },
         }}
