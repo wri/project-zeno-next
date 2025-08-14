@@ -68,14 +68,6 @@ export function Sidebar() {
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
   const hasOlderThreads = threadGroups.older.length > 0;
 
-  // Determine first non-empty section value for default open (Chakra v3)
-  const defaultValues = useMemo(() => {
-    if (hasTodayThreads) return ["today"];
-    if (hasPreviousWeekThreads) return ["previous-week"];
-    if (hasOlderThreads) return ["older"];
-    return [] as string[];
-  }, [hasTodayThreads, hasPreviousWeekThreads, hasOlderThreads]);
-
   return (
     <Flex
       flexDir="column"
@@ -123,7 +115,7 @@ export function Sidebar() {
           },
         }}
       >
-        <Accordion.Root multiple defaultValue={defaultValues}>
+        <Accordion.Root multiple defaultValue={["today", "previousWeek", "older"]}>
           {hasTodayThreads && (
             <Accordion.Item value="today" border="none">
               <Accordion.ItemTrigger px="3" py="1">
@@ -146,7 +138,7 @@ export function Sidebar() {
             </Accordion.Item>
           )}
           {hasPreviousWeekThreads && (
-            <Accordion.Item value="previous-week" border="none">
+            <Accordion.Item value="previousWeek" border="none">
               <Accordion.ItemTrigger px="3" py="1">
                 <Accordion.ItemIndicator />
                 <Text fontSize="xs" color="fg.muted" ml="2">Previous 7 days</Text>
