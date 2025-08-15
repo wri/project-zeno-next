@@ -11,7 +11,11 @@ export function parseStreamMessage(
   messageType: "agent" | "tools" | "human"
 ): StreamMessage | null {
   // Validate input structure
-  if (!langChainMessage?.messages[0]?.kwargs) {
+  if (
+    !langChainMessage ||
+    !langChainMessage.messages?.length ||
+    !langChainMessage?.messages[0]?.kwargs
+  ) {
     return null;
   }
 

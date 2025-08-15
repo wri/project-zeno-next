@@ -13,6 +13,13 @@ interface GeoJsonFeature {
   data: GeoJSON.FeatureCollection | GeoJSON.Feature;
 }
 
+interface TileLayer {
+  id: string;
+  name: string;
+  url: string;
+  visible: boolean;
+}
+
 interface SelectionMode {
   type: "Selecting" | "Drawing" | "Uploading" | undefined;
   name?: string;
@@ -22,12 +29,17 @@ interface MapSlice {
   mapRef: MapRef | null;
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
+  tileLayers: TileLayer[];
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
   clearGeoJsonFeatures: () => void;
+  addTileLayer: (layer: TileLayer) => void;
+  removeTileLayer: (id: string) => void;
+  toggleTileLayer: (id: string) => void;
+  clearTileLayers: () => void;
   flyToGeoJson: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature) => void;
   flyToCenter: (
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
@@ -52,6 +64,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   mapRef: null,
   geoJsonFeatures: [],
   selectAreaLayer: null,
+  tileLayers: [],
   selectedAreas: [],
   selectionMode: undefined,
 
@@ -60,6 +73,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       mapRef: null,
       geoJsonFeatures: [],
       selectAreaLayer: null,
+      tileLayers: [],
     });
     get().clearSelectionMode();
   },
@@ -96,6 +110,30 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   clearGeoJsonFeatures: () => {
     set({ geoJsonFeatures: [] });
+  },
+
+  addTileLayer: (layer) => {
+    set((state) => ({
+      tileLayers: [...state.tileLayers.filter((l) => l.id !== layer.id), layer],
+    }));
+  },
+
+  removeTileLayer: (id) => {
+    set((state) => ({
+      tileLayers: state.tileLayers.filter((l) => l.id !== id),
+    }));
+  },
+
+  toggleTileLayer: (id) => {
+    set((state) => ({
+      tileLayers: state.tileLayers.map((l) =>
+        l.id === id ? { ...l, visible: !l.visible } : l
+      ),
+    }));
+  },
+
+  clearTileLayers: () => {
+    set({ tileLayers: [] });
   },
 
   clearSelectionMode: () => {

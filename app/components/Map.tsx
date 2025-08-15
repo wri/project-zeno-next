@@ -18,6 +18,7 @@ import SelectAreaLayer from "./map/layers/SelectAreaLayer";
 import useContextStore from "@/app/store/contextStore";
 import CustomAreasLayer from "./map/layers/CustomAreasLayer";
 import MapFeature from "./MapFeature";
+import DynamicTileLayers from "./map/layers/DynamicTileLayers";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -123,6 +124,7 @@ function Map() {
           />
         )}
         {selectAreaLayer === "Custom" && <CustomAreasLayer />}
+        <DynamicTileLayers />
         <MapAreaControls />
 
         <AttributionControl
