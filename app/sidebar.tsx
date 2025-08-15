@@ -36,8 +36,6 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
       display="block"
       flex="1"
       outline="none"
-      _focus={{ boxShadow: "none", bg: "transparent", outline: "none" }}
-      _focusVisible={{ boxShadow: "0 0 0 2px var(--chakra-colors-gray-400)" }}
       {...(isActive
         ? {
             color: "primary.fg",
@@ -94,6 +92,7 @@ function ThreadSection({
                 borderRadius="sm"
                 role="group"
                 _hover={{ layerStyle: "fill.muted" }}
+                _focusWithin={{ outline: "2px solid var(--chakra-colors-gray-400)", outlineOffset: "2px" }}
                 css={{
                   "&:hover .thread-actions": { opacity: 1 },
                   "&:focus-within .thread-actions": { opacity: 1 },
