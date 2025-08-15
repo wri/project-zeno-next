@@ -114,7 +114,7 @@ function LoginOverlay() {
           </Text>
         </Dialog.Body>
         <Dialog.Footer>
-          <Button colorScheme="primary" onClick={handleLoginClick}>
+          <Button colorPalette="primary" onClick={handleLoginClick}>
             Login with WRI
           </Button>
         </Dialog.Footer>
