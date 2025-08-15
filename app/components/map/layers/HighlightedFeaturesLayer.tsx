@@ -284,7 +284,7 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
           anchor="bottom-left"
         >
           <Tag.Root
-            colorPalette={isInContext ? "blue" : "gray"}
+            colorPalette={isInContext ? "primary" : "gray"}
             px={2}
             py={1}
             size="md"

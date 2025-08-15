@@ -6,9 +6,10 @@ import ChakraBarChart from "./widgets/ChakraBarChart";
 
 interface WidgetMessageProps {
   widgets: InsightWidget[];
+  messageId?: string;
 }
 
-export default function WidgetMessage({ widgets }: WidgetMessageProps) {
+export default function WidgetMessage({ widgets, messageId }: WidgetMessageProps) {
   return (
     <Box
       bg="white"
@@ -20,6 +21,8 @@ export default function WidgetMessage({ widgets }: WidgetMessageProps) {
       {widgets.map((widget, index) => (
         <Box
           key={index}
+          id={messageId ? `widget-${messageId}-${index}` : undefined}
+          scrollMarginTop="56px"
           borderBottom={index < widgets.length - 1 ? "1px solid" : "none"}
           borderColor="gray.100"
         >

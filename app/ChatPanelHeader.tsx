@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Flex,
   IconButton,
@@ -7,13 +7,19 @@ import {
   Portal,
   Dialog,
   Input,
+  Text,
 } from "@chakra-ui/react";
 import {
-  SidebarIcon,
   CaretDownIcon,
   PencilSimpleIcon,
   TrashIcon,
   NotePencilIcon,
+  SidebarIcon,
+  ChartLineIcon,
+  ListNumbersIcon,
+  ChartBarIcon,
+  ChartPieSliceIcon,
+  PresentationChartIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,6 +27,14 @@ import { useRouter } from "next/navigation";
 import { Tooltip } from "./components/ui/tooltip";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
+
+const WidgetIcons = {
+  "line": <ChartLineIcon />,
+  "table": <ListNumbersIcon />,
+  "bar": <ChartBarIcon />,
+  "pie": <ChartPieSliceIcon />,
+  "insight": <PresentationChartIcon />
+}
 
 function ChatPanelHeader() {
   const router = useRouter();
@@ -31,7 +45,7 @@ function ChatPanelHeader() {
     deleteThread,
     getThreadById,
   } = useSidebarStore();
-  const { currentThreadId } = useChatStore();
+  const { currentThreadId, messages } = useChatStore();
 
   const [renameDialogVisible, setRenameDialogVisible] = useState(false);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
@@ -58,6 +72,35 @@ function ChatPanelHeader() {
   const currentThreadName = currentThread
     ? currentThread.name
     : "New Conversation";
+
+  // Build list of widget anchors from chat messages
+  const widgetAnchors = useMemo(() => {
+    return messages.flatMap((m) =>
+      m.type === "widget" && m.widgets
+        ? m.widgets.map((w, idx) => ({
+          id: `widget-${m.id}-${idx}`,
+          title: w.title || `Widget ${idx + 1}`,
+          type: w.type,
+          timestamp: m.timestamp,
+        }))
+        : []
+    );
+  }, [messages]);
+
+  const formatWidgetMeta = useCallback((isoTs?: string) => {
+    if (!isoTs) return "";
+    const d = new Date(isoTs);
+    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const day = d.toLocaleDateString([], { day: "2-digit", month: "short" });
+    return `${time} on ${day}`;
+  }, []);
+
+  const scrollToWidget = useCallback((anchorId: string) => {
+    const el = document.getElementById(anchorId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   return (
     <Flex
@@ -123,6 +166,85 @@ function ChatPanelHeader() {
         <Button variant="ghost" size="sm" mr="auto">
           {currentThreadName}
         </Button>
+      )}
+
+      {/* Insights dropdown */}
+      {widgetAnchors.length === 0 ? (
+        <Tooltip content="Ask a question to generate insights" showArrow>
+          <span style={{ display: "inline-flex" }}>
+            <Button variant="ghost" size="sm" disabled>
+              Go to insight
+              <CaretDownIcon />
+            </Button>
+          </span>
+        </Tooltip>
+      ) : (
+        <Menu.Root>
+          <Menu.Trigger asChild>
+          <Button
+              variant="ghost"
+              bgGradient="to-br"
+              gradientFrom="primary.300/25"
+              gradientTo="secondary.300/25"
+              size="sm"
+            >
+              Go to insight
+              <CaretDownIcon />
+            </Button>
+          </Menu.Trigger>
+          <Portal>
+            <Menu.Positioner>
+              <Menu.Content maxH="320px" overflowY="auto">
+                {widgetAnchors.map((w) => (
+                  <Menu.Item
+                    key={w.id}
+                    value={w.id}
+                    onSelect={() => scrollToWidget(w.id)}
+                    role="group"
+                    className="group"
+                    cursor="pointer"
+                  >
+                    <Flex
+                      align="center"
+                      gap={2}
+                      maxW="360px"
+                      fontSize="md"
+                      fontWeight="medium"
+                      color="primary.fg"
+                    >
+                      {WidgetIcons[w.type]}
+                      <Text
+                        as="span"
+                        flex="1"
+                        minW={0}
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        fontSize="xs"
+                      >
+                        {w.title}
+                      </Text>
+                      <Text
+                        as="span"
+                        flexShrink={0}
+                        ml="2"
+                        display="none"
+                        fontSize="xs"
+                        fontWeight="normal"
+                        color="fg.muted"
+                        _groupHover={{
+                          display: "inline",
+                        }}
+                      >
+                        {formatWidgetMeta(w.timestamp)}
+                      </Text>
+                    </Flex>
+                  </Menu.Item>
+                ))}
+              </Menu.Content>
+            </Menu.Positioner>
+          </Portal>
+        </Menu.Root>
       )}
       {!sideBarVisible && (
         <Tooltip
@@ -207,7 +329,7 @@ function ThreadRenameDialog(props: ThreadRenameDialogProps) {
               <Dialog.ActionTrigger asChild>
                 <Button variant="outline">Cancel</Button>
               </Dialog.ActionTrigger>
-              <Button colorPalette="blue" disabled={!threadName} type="submit">
+              <Button colorPalette="primary" disabled={!threadName} type="submit">
                 Save
               </Button>
             </Dialog.Footer>
