@@ -25,8 +25,8 @@ function PageHeader() {
       <Flex gap="6" alignItems="center">
         <Button
           variant="solid"
-          bg="primary.900"
-          _hover={{ bg: "primary.800" }}
+          colorPalette="primary"
+          _hover={{ bg: "primary.fg" }}
           size="sm"
         >
           <LifebuoyIcon />
@@ -59,8 +59,8 @@ function PageHeader() {
         <Button
           asChild
           variant="solid"
-          bg="primary.900"
-          _hover={{ bg: "primary.800" }}
+          colorPalette="primary"
+          _hover={{ bg: "primary.fg" }}
           size="sm"
         >
           <Flex>
