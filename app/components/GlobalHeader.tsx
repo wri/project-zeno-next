@@ -48,7 +48,7 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
       <Button asChild>
         <Link href="#">Team</Link>
       </Button>
-      <Button asChild ml={4} variant="solid" colorPalette="blue" rounded="lg">
+      <Button asChild ml={4} variant="solid" colorPalette="primary" rounded="lg">
         <Link href="/">Try the preview</Link>
       </Button>
     </ButtonGroup>
@@ -86,9 +86,9 @@ export default function GlobalHeader() {
         <Drawer.Trigger asChild>
           <Button
             hideFrom="md"
-            colorPalette="blue"
-            rounded="lg"
             variant="solid"
+            colorPalette="primary"
+            rounded="lg"
           >
             Menu
           </Button>
@@ -110,7 +110,7 @@ export default function GlobalHeader() {
                 <CloseButton
                   size="sm"
                   className="dark"
-                  colorPalette="blue"
+                  colorPalette="primary"
                   variant="plain"
                 />
               </Drawer.CloseTrigger>

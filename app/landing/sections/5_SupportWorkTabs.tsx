@@ -69,7 +69,7 @@ const renderContent = (tab: SupportTab): React.ReactElement | null => {
           flexDirection="column"
           alignItems="stretch"
           gap="4"
-          bg="lime.100"
+          bg="secondary.100"
           rounded="lg"
           p="4"
           flex={1}
@@ -207,7 +207,7 @@ export default function SupportWorkTabsSection() {
           <Heading size="md" as="p">
             How will you use monitoring intelligence?
           </Heading>
-          <Button asChild variant="solid" colorPalette="blue" rounded="lg">
+          <Button asChild variant="solid" colorPalette="primary" rounded="lg">
             <Link href="/">
               Try the preview
               <CaretRightIcon weight="bold" />

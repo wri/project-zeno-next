@@ -20,7 +20,7 @@ function renderPromptBoxes(
       <Box
         key={i}
         data-marquee-item
-        bg="lime.100"
+        bg="secondary.200"
         p="3"
         rounded="md"
         maxW="18rem"

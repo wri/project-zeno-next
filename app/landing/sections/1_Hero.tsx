@@ -17,7 +17,6 @@ import {
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import useChatStore from "@/app/store/chatStore";
-import { Button as WRIButton } from "@worldresources/wri-design-systems";
 import GlobalHeader from "../../components/GlobalHeader";
 
 type PromptMarqueeProps = {
@@ -161,7 +160,7 @@ export default function LandingHero({
                     zIndex: -1,
                     width: "10%",
                     height: "100%",
-                    bg: "lime.100",
+                    bg: "secondary.100",
                     animation: ready ? "fillWidth" : "none",
                     animationPlayState:
                       isInputFocused || inputValue.length > 0
@@ -181,15 +180,17 @@ export default function LandingHero({
                   Automatically updating in {promptTimer}s
                 </Text>
               </Flex>
-              <WRIButton
-                variant="primary"
+              <Button
+                variant="solid"
+                colorPalette="primary"
                 rounded="lg"
-                rightIcon={<CaretRightIcon weight="bold" />}
-                label="Go"
                 onClick={submitPrompt}
                 title="Submit prompt to assistant and go to application"
                 disabled={isLoading}
-              />
+              >
+                  Go
+                  <CaretRightIcon weight="bold" />
+              </Button>
             </Flex>
           </Box>
         </Container>

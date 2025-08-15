@@ -114,8 +114,8 @@ export default function FutureOfMonitoringSection() {
                 Monitoring intelligence
               </Heading>
               <Text fontSize="lg" mb="4">
-                There&rsquo;s a lot of geospatial data in the world, and it can be
-                difficult to understand which to use. The future places the
+                There&rsquo;s a lot of geospatial data in the world, and it can
+                be difficult to understand which to use. The future places the
                 power of having your own personal geospatial expert in your
                 pocket. With our AI assistants trained on our cutting-edge data,
                 we democratize data access for monitoring so it can reach more
@@ -317,22 +317,53 @@ export default function FutureOfMonitoringSection() {
               display="grid"
               placeContent="center"
               w="full"
+              h={{base: "14rem", md: "17rem"}}
             >
-              <Image maxH="10" src="/fm-3-esri.png" alt="ESRI logo" />
-              <Image maxH="10" src="/fm-3-qgis.png" alt="QGIS logo" />
-              <Box
-                p="6"
-                bg="lime.300"
-                rounded="lg"
-                shadow="sm"
-              >
-                <Heading size="2xl" m={0}>
+              <Image
+                maxH="10"
+                top="2.5rem"
+                left="1.5rem"
+                src="/fm-3-esri.png"
+                alt="ESRI logo"
+                position="absolute"
+              />
+              <Image
+                maxH="10"
+                top="2.75rem"
+                right="0"
+                src="/fm-3-qgis.png"
+                alt="QGIS logo"
+                position="absolute"
+              />
+              <Box p="6" bg="secondary.300" rounded="lg" shadow="sm" zIndex="50">
+                <Heading size="2xl" m={0} textWrap="nowrap">
                   Nature Watch
                 </Heading>
               </Box>
-              <Image maxH="10" src="/fm-3-felt.png" alt="Felt logo" />
-              <Image maxH="10" src="/fm-3-aws.png" alt="AWS logo" />
-              <Image maxH="10" src="/fm-3-google.png" alt="Google Cloud logo" />
+              <Image
+                maxH="10"
+                bottom="1.5rem"
+                left="0"
+                src="/fm-3-felt.png"
+                alt="Felt logo"
+                position="absolute"
+              />
+              <Image
+                maxH="10"
+                left="50%"
+                bottom="0"
+                src="/fm-3-aws.png"
+                alt="AWS logo"
+                position="absolute"
+              />
+              <Image
+                maxH="10"
+                right="0"
+                bottom="2rem"
+                src="/fm-3-google.png"
+                alt="Google Cloud logo"
+                position="absolute"
+              />
             </Box>
           </Flex>
         </Container>

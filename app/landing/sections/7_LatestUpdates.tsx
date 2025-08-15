@@ -161,7 +161,7 @@ export default function LatestUpdatesSection() {
             <Button
               asChild
               variant="solid"
-              colorPalette="blue"
+              colorPalette="primary"
               rounded="lg"
               size="md"
               ml={{ base: "inherit", md: "auto" }}
@@ -173,7 +173,7 @@ export default function LatestUpdatesSection() {
             <Button
               asChild
               variant="solid"
-              colorPalette="blue"
+              colorPalette="primary"
               rounded="lg"
               size="md"
             >

@@ -42,7 +42,7 @@ export default function NewEraQuoteSection() {
         >
           <Heading
             borderStart="2px solid"
-            borderColor="blue.700"
+            borderColor="primary.fg"
             pl="4"
             size="xl"
             as="blockquote"

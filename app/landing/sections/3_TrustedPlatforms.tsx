@@ -96,7 +96,7 @@ export default function TrustedPlatformsSection() {
                       rounded="xl"
                     >
                       <Box
-                        bg="lime.200"
+                        bg="secondary.200"
                         display="flex"
                         justifyContent="center"
                         alignItems="center"

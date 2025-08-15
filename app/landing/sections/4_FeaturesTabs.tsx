@@ -55,7 +55,7 @@ export default function FeaturesTabsSection() {
           <Button
             asChild
             variant="solid"
-            colorPalette="blue"
+            colorPalette="primary"
             mt="4"
             rounded="lg"
           >
@@ -68,7 +68,7 @@ export default function FeaturesTabsSection() {
         <Container mt="12" maxW="5xl" px={0}>
           <Tabs.Root
             orientation="vertical"
-            colorPalette="blue"
+            colorPalette="primary"
             flexDirection={{ base: "column", md: "row" }}
             defaultValue="feature-tab-1"
           >

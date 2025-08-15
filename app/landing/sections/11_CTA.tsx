@@ -16,7 +16,7 @@ export default function CTASection() {
           py="4"
           px="5"
           rounded="md"
-          bg={{ base: "bg.emphasized", md: "lime.200" }}
+          bg={{ base: "bg.emphasized", md: "secondary.200" }}
           display="flex"
           flexDirection={{ base: "column", md: "row" }}
           alignItems={{ base: "flex-start", md: "center" }}
@@ -32,7 +32,7 @@ export default function CTASection() {
               comes next.
             </Text>
           </Box>
-          <Button asChild variant="solid" colorPalette="blue" rounded="lg">
+          <Button asChild variant="solid" colorPalette="primary" rounded="lg">
             <Link href="/">
               Try the preview
               <CaretRightIcon weight="bold" />
