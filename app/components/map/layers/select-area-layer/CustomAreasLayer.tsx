@@ -5,12 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
+import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
 const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
 
 function CustomAreasLayer() {
   const { customAreas, isLoading, error } = useCustomAreasList();
-  const { mapRef } = useMapStore();
+  const { mapRef, addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
   const { addContext } = useContextStore();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
 
@@ -22,6 +23,14 @@ function CustomAreasLayer() {
         );
         if (feature) {
           const { name, id } = feature.properties;
+
+          // Add feature to the all features list to be highlighted on the map
+          addGeoJsonFeature({
+            id: id,
+            name: name,
+            data: feature,
+          });
+
           addContext({
             contextType: "area",
             content: name,
@@ -35,7 +44,7 @@ function CustomAreasLayer() {
         }
       }
     },
-    [addContext]
+    [addContext, addGeoJsonFeature]
   );
 
   useEffect(() => {
@@ -82,16 +91,24 @@ function CustomAreasLayer() {
       }
     };
 
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectAreaLayer(null);
+      }
+    };
+
     map.on("click", "custom-areas-fill", handleClick);
     map.on("mouseenter", "custom-areas-fill", handleMouseEnter);
     map.on("mouseleave", "custom-areas-fill", handleMouseLeave);
+    document.addEventListener("keyup", onKeyUp);
 
     return () => {
       map.off("click", "custom-areas-fill", handleClick);
       map.off("mouseenter", "custom-areas-fill", handleMouseEnter);
       map.off("mouseleave", "custom-areas-fill", handleMouseLeave);
+      document.removeEventListener("keyup", onKeyUp);
     };
-  }, [mapRef, handleClick]);
+  }, [mapRef, handleClick, setSelectAreaLayer]);
 
   if (isLoading) {
     return null;
@@ -129,45 +146,13 @@ function CustomAreasLayer() {
         <Layer
           id="custom-areas-fill"
           type="fill"
-          paint={{
-            "fill-color": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              "#fbbf24",
-              "#f59e0b",
-            ],
-            "fill-opacity": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              0.7,
-              0.2,
-            ],
-          }}
+          paint={selectAreaFillPaint}
           filter={["==", ["geometry-type"], "Polygon"]}
         />
         <Layer
           id="custom-areas-line"
           type="line"
-          paint={{
-            "line-color": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              "#f59e0b",
-              "#d97706",
-            ],
-            "line-width": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              4,
-              3,
-            ],
-            "line-opacity": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              1,
-              0.8,
-            ],
-          }}
+          paint={selectAreaLinePaint}
           filter={["==", ["geometry-type"], "Polygon"]}
         />
       </Source>
