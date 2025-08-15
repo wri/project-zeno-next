@@ -48,7 +48,6 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const hasContext = isUser && message.context && message.context.length > 0;
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
-    console.log(message.widgets);
     return message.widgets.map((widget, idx) => (
       <Box
         mb={4}
