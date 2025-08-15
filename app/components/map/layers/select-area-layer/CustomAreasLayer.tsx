@@ -11,7 +11,7 @@ const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
 
 function CustomAreasLayer() {
   const { customAreas, isLoading, error } = useCustomAreasList();
-  const { mapRef, addGeoJsonFeature } = useMapStore();
+  const { mapRef, addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
   const { addContext } = useContextStore();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
 
@@ -44,7 +44,7 @@ function CustomAreasLayer() {
         }
       }
     },
-    [addContext]
+    [addContext, addGeoJsonFeature]
   );
 
   useEffect(() => {
@@ -91,16 +91,24 @@ function CustomAreasLayer() {
       }
     };
 
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectAreaLayer(null);
+      }
+    };
+
     map.on("click", "custom-areas-fill", handleClick);
     map.on("mouseenter", "custom-areas-fill", handleMouseEnter);
     map.on("mouseleave", "custom-areas-fill", handleMouseLeave);
+    document.addEventListener("keyup", onKeyUp);
 
     return () => {
       map.off("click", "custom-areas-fill", handleClick);
       map.off("mouseenter", "custom-areas-fill", handleMouseEnter);
       map.off("mouseleave", "custom-areas-fill", handleMouseLeave);
+      document.removeEventListener("keyup", onKeyUp);
     };
-  }, [mapRef, handleClick]);
+  }, [mapRef, handleClick, setSelectAreaLayer]);
 
   if (isLoading) {
     return null;
