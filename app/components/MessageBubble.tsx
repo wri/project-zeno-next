@@ -17,16 +17,27 @@ import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
 import { useEffect, useState } from "react";
 import remarkBreaks from "remark-breaks";
+import TypewriterText from "./TypewriterText";
+import useChatStore from "@/app/store/chatStore";
 
 interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
+  isLatestAssistant?: boolean;
 }
 
-function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
+function MessageBubble({ message, isConsecutive = false, isLatestAssistant = false }: MessageBubbleProps) {
+  const { isFetchingThread } = useChatStore();
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
+  const [isTyping, setIsTyping] = useState(
+    isLatestAssistant && message.type === "assistant" && !isFetchingThread && !message.fromHistory
+  );
 
   useEffect(() => {
+    setIsTyping(
+      isLatestAssistant && message.type === "assistant" && !isFetchingThread && !message.fromHistory
+    );
+  
     const date = new Date(message.timestamp);
     const time = date.toLocaleString([], {
       hour: "2-digit",
@@ -38,7 +49,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
       month: "short",
     });
     setFormattedTimestamp(`${time} on ${day}`);
-  }, [message.timestamp]);
+  }, [isLatestAssistant, message.type, message.timestamp, isFetchingThread, message.fromHistory]);
 
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
@@ -57,7 +68,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
     <Box
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
-      mb={isConsecutive ? 1 : 4} // Reduced margin for consecutive messages
+      mb={isConsecutive ? 1 : 4}
     >
       <Box
         display="flex"
@@ -104,9 +115,21 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             },
           }}
         >
-          <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+          {message.type === "assistant" && isLatestAssistant && !isFetchingThread && !message.fromHistory ? (
+            <TypewriterText
+              text={message.message}
+              render={(displayed) => (
+                <Markdown remarkPlugins={[remarkBreaks]}>{displayed}</Markdown>
+              )}
+              onDone={() => setIsTyping(false)}
+            />
+          ) : (
+            <Markdown remarkPlugins={[remarkBreaks]}>
+              {message.message}
+            </Markdown>
+          )}
         </Box>
-        {!isUser && !isConsecutive && (
+        {!isUser && !isConsecutive && !isTyping && (
           <Flex
             alignItems="center"
             w="full"

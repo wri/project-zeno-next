@@ -8,6 +8,7 @@ export interface ChatMessage {
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   context?: ContextItem[];
+  fromHistory?: boolean; // True if loaded from an existing thread (no typing animation)
 }
 
 // Widget types for insights

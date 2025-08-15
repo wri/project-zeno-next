@@ -19,6 +19,7 @@ import useSidebarStore from "./sidebarStore";
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
+  isFetchingThread: boolean;
   currentThreadId: string | null;
 }
 
@@ -64,6 +65,7 @@ Ask a question and let’s see what we can do for nature.`,
     },
   ],
   isLoading: false,
+  isFetchingThread: false,
   currentThreadId: null,
 };
 
@@ -287,6 +289,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   fetchThread: async (threadId: string) => {
     const { setLoading, addMessage } = get();
 
+    // Mark that we are fetching a historical thread; used to suppress thinking UI
+    set({ isFetchingThread: true });
     setLoading(true);
     // Set up abort controller for client-side timeout
     const abortController = new AbortController();
@@ -298,6 +302,19 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }, 310000); // 5 minutes 10 seconds (slightly longer than server timeout)
 
     try {
+      // Buffer messages locally to avoid jarring incremental render
+      const buffered: ChatMessage[] = [];
+      const pushBuffer = (msg: Omit<ChatMessage, "id" | "timestamp">) => {
+        buffered.push({
+          ...msg,
+          id:
+            Date.now().toString() +
+            "-" +
+            Math.random().toString(36).substr(2, 9),
+          timestamp: new Date().toISOString(),
+        });
+      };
+
       const response = await fetch(`/api/threads/${threadId}`, {
         signal: abortController.signal,
       });
@@ -321,15 +338,19 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
             if (streamMessage.type === "human") {
               // Add user message
-              addMessage({
+              pushBuffer({
                 type: "user",
                 message: streamMessage.text!,
+                fromHistory: true,
               });
               return;
             }
 
             console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
-            await processStreamMessage(streamMessage, addMessage);
+            // Wrap to buffer messages instead of immediate UI render
+            const bufferAddMessage = (msg: Omit<ChatMessage, "id" | "timestamp">) =>
+              pushBuffer({ ...msg, fromHistory: true });
+            await processStreamMessage(streamMessage, bufferAddMessage);
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -351,12 +372,16 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       } else if (abortController.signal.aborted) {
         console.log("FRONTEND: Stream ended due to abort signal");
       }
+
+      // Swap buffered messages into UI once fully loaded
+      set({ messages: buffered });
     } catch (error) {
       console.error("Error sending message:", error);
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
       setLoading(false);
+      set({ isFetchingThread: false });
     }
   },
 }));
