@@ -7,23 +7,19 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Box, Text, VStack } from "@chakra-ui/react";
+import { Box, Text } from "@chakra-ui/react";
 import { useColorModeValue } from "@/app/components/ui/color-mode";
 
 interface ChakraBarChartProps {
   data: Array<{
     [key: string]: unknown;
   }>;
-  title?: string;
-  description?: string;
   xAxis?: string;
   yAxis?: string;
 }
 
 export default function ChakraBarChart({
   data,
-  title,
-  description,
   xAxis,
   yAxis,
 }: ChakraBarChartProps) {
@@ -85,47 +81,33 @@ export default function ChakraBarChart({
   };
 
   return (
-    <VStack gap={4} align="stretch" p={4}>
-      {title && (
-        <Text fontSize="lg" fontWeight="bold" color={textColor}>
-          {title}
-        </Text>
-      )}
-
-      <Box height="400px" width="100%">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{
-              top: 5,
-              right: 30,
-              left: 20,
-              bottom: 5,
-            }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-            <XAxis
-              dataKey={xAxis}
-              stroke={textColor}
-              fontSize={12}
-              tickFormatter={formatXAxisLabel}
-            />
-            <YAxis
-              stroke={textColor}
-              fontSize={12}
-              tickFormatter={formatYAxisLabel}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey={yAxis} fill={barColor} radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </Box>
-
-      {description && (
-        <Text fontSize="sm" color={textColor} mt={2}>
-          {description}
-        </Text>
-      )}
-    </VStack>
+    <Box height="400px" width="100%">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={chartData}
+          margin={{
+            top: 5,
+            right: 30,
+            left: 20,
+            bottom: 5,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <XAxis
+            dataKey={xAxis}
+            stroke={textColor}
+            fontSize={12}
+            tickFormatter={formatXAxisLabel}
+          />
+          <YAxis
+            stroke={textColor}
+            fontSize={12}
+            tickFormatter={formatYAxisLabel}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey={yAxis} fill={barColor} radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </Box>
   );
 }

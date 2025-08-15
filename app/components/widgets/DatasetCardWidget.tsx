@@ -44,7 +44,6 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
       img={img}
       selected={isInContext}
       onClick={handleAddToMap}
-      size="md"
     />
   );
 }

@@ -16,6 +16,7 @@ import {
   ChartBarIcon,
   ChartPieSliceIcon,
   PresentationChartIcon,
+  StackIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 
@@ -24,12 +25,13 @@ import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 
-const WidgetIcons = {
+export const WidgetIcons = {
   "line": <ChartLineIcon />,
   "table": <ListNumbersIcon />,
   "bar": <ChartBarIcon />,
   "pie": <ChartPieSliceIcon />,
-  "insight": <PresentationChartIcon />
+  "insight": <PresentationChartIcon />,
+  "dataset-card": <StackIcon />
 }
 
 function ChatPanelHeader() {
