@@ -184,8 +184,8 @@ function ChatPanelHeader() {
           <Button
               variant="ghost"
               bgGradient="to-br"
-              gradientFrom="blue.300/25"
-              gradientTo="lime.300/25"
+              gradientFrom="primary.300/25"
+              gradientTo="secondary.300/25"
               size="sm"
             >
               Go to insight
@@ -210,7 +210,7 @@ function ChatPanelHeader() {
                       maxW="360px"
                       fontSize="md"
                       fontWeight="medium"
-                      color="blue.900"
+                      color="primary.fg"
                     >
                       {WidgetIcons[w.type]}
                       <Text
@@ -329,7 +329,7 @@ function ThreadRenameDialog(props: ThreadRenameDialogProps) {
               <Dialog.ActionTrigger asChild>
                 <Button variant="outline">Cancel</Button>
               </Dialog.ActionTrigger>
-              <Button colorPalette="blue" disabled={!threadName} type="submit">
+              <Button colorPalette="primary" disabled={!threadName} type="submit">
                 Save
               </Button>
             </Dialog.Footer>

@@ -36,7 +36,7 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
       {...(isActive
         ? {
             bg: "bg",
-            color: "blue.fg",
+            color: "primary.fg",
           }
         : {})}
       {...rest}
@@ -88,7 +88,7 @@ export function Sidebar() {
         bg="bg.muted"
         boxShadow="xs"
       >
-        <Button asChild variant="solid" colorPalette="blue" size="sm">
+        <Button asChild variant="solid" colorPalette="primary" size="sm">
           <Link href="/">
             New Conversation
             <NotePencilIcon />
@@ -109,7 +109,7 @@ export function Sidebar() {
         py="2"
         overflow="auto"
         css={{
-          '& > [role="separator"]:first-child': {
+          '& > [role="separator"]:first-of-type': {
             display: "none",
           },
         }}
