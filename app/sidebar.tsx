@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Button,
   Circle,
@@ -11,18 +11,17 @@ import {
   Link as ChLink,
   Status,
   Accordion,
-  Menu,
-  Portal,
-  Dialog,
-  Input,
 } from "@chakra-ui/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { Tooltip } from "./components/ui/tooltip";
-import { NotePencilIcon, SidebarSimpleIcon, DotsThreeIcon, PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
+import {
+  NotePencilIcon,
+  SidebarSimpleIcon
+} from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
+import ThreadActionsMenu from "./components/ThreadActionsMenu";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
   const { href, children, ...rest } = props;
@@ -46,161 +45,6 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
         {children}
       </Link>
     </ChLink>
-  );
-}
-
-function ThreadActionsMenu({
-  thread,
-}: {
-  thread: { id: string; name: string };
-}) {
-  const router = useRouter();
-  const { renameThread, deleteThread } = useSidebarStore();
-  const { currentThreadId } = useChatStore();
-
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [threadName, setThreadName] = useState(thread.name);
-
-  useEffect(() => {
-    setThreadName(thread.name);
-  }, [thread.name, renameOpen]);
-
-  const onRename = async () => {
-    await renameThread(thread.id, threadName);
-    setRenameOpen(false);
-  };
-
-  const onDelete = async () => {
-    try {
-      await deleteThread(thread.id);
-      setDeleteOpen(false);
-      if (currentThreadId === thread.id) {
-        router.replace("/");
-      }
-    } catch (e) {
-      console.error("Failed to delete thread", e);
-    }
-  };
-
-  return (
-    <>
-      <Menu.Root>
-        <Menu.Trigger asChild>
-          <IconButton
-            aria-label={`Thread actions for ${thread.name}`}
-            variant="ghost"
-            size="xs"
-            mr="1"
-            opacity="0"
-            transition="opacity 0.15s"
-            className="thread-actions"
-            _focusVisible={{ opacity: 1 }}
-            _hover={{ bg: "blackAlpha.50/50" }}
-            _active={{ bg: "blackAlpha.50/50" }}
-          >
-            <DotsThreeIcon
-              size={20}
-              weight="bold"
-            />
-          </IconButton>
-        </Menu.Trigger>
-        <Portal>
-          <Menu.Positioner>
-            <Menu.Content>
-              <Menu.Item
-                value="rename conversation"
-                color="fg.muted"
-                onSelect={() => setRenameOpen(true)}
-              >
-                <PencilSimpleIcon />
-                Rename
-              </Menu.Item>
-              <Menu.Item
-                value="delete"
-                color="fg.error"
-                _hover={{ bg: "bg.error", color: "fg.error" }}
-                onSelect={() => setDeleteOpen(true)}
-              >
-                <TrashIcon />
-                Delete
-              </Menu.Item>
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu.Root>
-
-      <Dialog.Root
-        open={renameOpen}
-        onOpenChange={({ open }) => setRenameOpen(open)}
-        initialFocusEl={undefined}
-      >
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content
-              as="form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!threadName) return;
-                onRename();
-              }}
-            >
-              <Dialog.Header>
-                <Dialog.Title>Rename thread</Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Body pb="4">
-                <Input
-                  value={threadName}
-                  onChange={(e) => setThreadName(e.target.value)}
-                />
-              </Dialog.Body>
-              <Dialog.Footer>
-                <Dialog.ActionTrigger asChild>
-                  <Button variant="outline">Cancel</Button>
-                </Dialog.ActionTrigger>
-                <Button colorPalette="blue" disabled={!threadName} type="submit">
-                  Save
-                </Button>
-              </Dialog.Footer>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
-
-      <Dialog.Root
-        role="alertdialog"
-        open={deleteOpen}
-        onOpenChange={({ open }) => setDeleteOpen(open)}
-      >
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Dialog.Title>Are you sure?</Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Body>
-                <p>
-                  This action cannot be undone. This will permanently delete the
-                  conversation <strong>{thread.name}</strong> from our systems.
-                </p>
-              </Dialog.Body>
-              <Dialog.Footer>
-                <Dialog.ActionTrigger asChild>
-                  <Button variant="outline">Cancel</Button>
-                </Dialog.ActionTrigger>
-                <Dialog.ActionTrigger asChild>
-                  <Button colorPalette="red" onClick={onDelete}>
-                    Delete
-                  </Button>
-                </Dialog.ActionTrigger>
-              </Dialog.Footer>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
-    </>
   );
 }
 
@@ -297,6 +141,9 @@ export function Sidebar() {
       gridArea="sidebar"
       overflow="hidden"
       transition="width 0.3s"
+      tabIndex={!sideBarVisible ? -1 : undefined}
+      aria-hidden={!sideBarVisible}
+      inert={!sideBarVisible}
     >
       <Flex
         px="3"
@@ -335,7 +182,10 @@ export function Sidebar() {
           },
         }}
       >
-        <Accordion.Root multiple defaultValue={["today", "previousWeek", "older"]}>
+        <Accordion.Root
+          multiple
+          defaultValue={["today", "previousWeek", "older"]}
+        >
           {hasTodayThreads && (
             <ThreadSection
               threads={threadGroups.today}
