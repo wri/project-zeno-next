@@ -1,12 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
   Flex,
   IconButton,
   Menu,
   Button,
   Portal,
-  Dialog,
-  Input,
   Text,
 } from "@chakra-ui/react";
 import {
@@ -38,8 +36,6 @@ function ChatPanelHeader() {
   const {
     sideBarVisible,
     toggleSidebar,
-    renameThread,
-    deleteThread,
     getThreadById,
   } = useSidebarStore();
   const { currentThreadId, messages } = useChatStore();
@@ -137,8 +133,8 @@ function ChatPanelHeader() {
           <Button
               variant="ghost"
               bgGradient="to-br"
-              gradientFrom="blue.300/25"
-              gradientTo="lime.300/25"
+              gradientFrom="primary.300/25"
+              gradientTo="secondary.300/25"
               size="sm"
             >
               Go to insight
@@ -163,7 +159,7 @@ function ChatPanelHeader() {
                       maxW="360px"
                       fontSize="md"
                       fontWeight="medium"
-                      color="blue.900"
+                      color="primary.fg"
                     >
                       {WidgetIcons[w.type]}
                       <Text

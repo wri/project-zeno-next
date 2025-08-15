@@ -24,7 +24,7 @@ import useChatStore from "./store/chatStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
-  const { href, children, ...rest } = props;
+  const { href, children, isActive, ...rest } = props;
   return (
     <ChLink
       fontSize="sm"
@@ -38,6 +38,11 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
       outline="none"
       _focus={{ boxShadow: "none", bg: "transparent", outline: "none" }}
       _focusVisible={{ boxShadow: "0 0 0 2px var(--chakra-colors-gray-400)" }}
+      {...(isActive
+        ? {
+            color: "primary.fg",
+          }
+        : {})}
       {...rest}
       asChild
     >
@@ -156,7 +161,7 @@ export function Sidebar() {
         bg="bg.muted"
         boxShadow="xs"
       >
-        <Button asChild variant="solid" colorPalette="blue" size="sm">
+        <Button asChild variant="solid" colorPalette="primary" size="sm">
           <Link href="/">
             New Conversation
             <NotePencilIcon />
