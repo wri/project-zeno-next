@@ -1,7 +1,7 @@
-import { Box, Button, Text, Flex, Card } from "@chakra-ui/react";
 import { DatasetInfo } from "@/app/types/chat";
-import { GlobeIcon } from "@phosphor-icons/react";
 import useContextStore from "@/app/store/contextStore";
+import { DatasetCard } from "@/app/components/DatasetCard";
+import { DATASET_CARDS } from "@/app/constants/datasets";
 
 interface DatasetCardWidgetProps {
   dataset: DatasetInfo;
@@ -33,40 +33,18 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
     if (existingLayerContext) removeContext(existingLayerContext.id);
   };
 
+  const img =
+    DATASET_CARDS.find((c) => c.dataset_name === dataset.dataset_name)?.img ??
+    "/globe.svg";
+
   return (
-    <Card.Root
-      variant="outline"
-      borderRadius="lg"
-      overflow="hidden"
-      _hover={{ shadow: "md" }}
-      transition="all 0.2s"
-    >
-      <Card.Header pb={2}>
-        <Flex justify="space-between" align="flex-start">
-          <Box>
-            <Card.Title fontSize="md" mb={1}>
-              {dataset.dataset_name}
-            </Card.Title>
-          </Box>
-        </Flex>
-      </Card.Header>
-
-      <Card.Body pt={0}>
-        <Text fontSize="sm" color="fg.muted" mb={3}>
-          {dataset.reason}
-        </Text>
-
-        <Button
-          size="sm"
-          variant={!isInContext ? "solid" : "outline"}
-          colorPalette={!isInContext ? "blue" : "red"}
-          onClick={handleAddToMap}
-          width="full"
-        >
-          <GlobeIcon />
-          {!isInContext ? "Add to Map" : "Remove from Map"}
-        </Button>
-      </Card.Body>
-    </Card.Root>
+    <DatasetCard
+      title={dataset.dataset_name}
+      description={dataset.reason}
+      img={img}
+      selected={isInContext}
+      onClick={handleAddToMap}
+      size="md"
+    />
   );
 }

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
-  Image,
   Stack,
   Field,
   Flex,
@@ -22,6 +21,7 @@ import { format } from "date-fns";
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
 import useContextStore from "../store/contextStore";
+import { DatasetCard } from "./DatasetCard";
 
 // Constants for navigation and dummy content
 const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
@@ -122,51 +122,22 @@ type LayerCardItem = {
 
 function LayerCardList({
   cards,
-  showImage = false,
   onCardClick,
 }: {
   cards: LayerCardItem[];
-  showImage?: boolean;
   onCardClick?: (card: LayerCardItem) => void;
 }) {
   return (
     <Stack overflow="auto">
       {cards.map((card) => (
-        <Card.Root
+        <DatasetCard
           key={card.dataset_name}
-          size="sm"
-          flexDirection="row"
-          flexShrink={0}
-          overflow="hidden"
-          maxW="xl"
-          border={card.selected ? "2px solid" : undefined}
-          borderColor={card.selected ? "blue.800" : undefined}
-          cursor={onCardClick ? "pointer" : undefined}
+          title={card.dataset_name}
+          description={card.reason}
+          img={card.img ?? "/globe.svg"}
+          selected={card.selected}
           onClick={onCardClick ? () => onCardClick(card) : undefined}
-        >
-          {showImage && card.img && (
-            <Image
-              objectFit="cover"
-              maxW="5rem"
-              src={card.img}
-              alt={card.dataset_name}
-            />
-          )}
-          <Card.Body>
-            <Card.Title
-              display="flex"
-              gap="1"
-              alignItems="center"
-              fontSize="sm"
-            >
-              {card.dataset_name}
-              <InfoIcon />
-            </Card.Title>
-            <Card.Description fontSize="xs" color="fg.muted">
-              {card.reason}
-            </Card.Description>
-          </Card.Body>
-        </Card.Root>
+        />
       ))}
     </Stack>
   );
@@ -323,7 +294,7 @@ function LayerMenu() {
         overflow="hidden"
       >
         <TagList tags={LAYER_TAGS} />
-        <LayerCardList cards={cards} showImage onCardClick={handleToggleCard} />
+        <LayerCardList cards={cards} onCardClick={handleToggleCard} />
       </Stack>
     </Stack>
   );
