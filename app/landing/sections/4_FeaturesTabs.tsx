@@ -8,7 +8,7 @@ import {
   Image,
 } from "@chakra-ui/react";
 import { CaretRightIcon } from "@phosphor-icons/react";
-import Link from "next/Link";
+import Link from "next/link";
 
 const FEATURE_TABS = [
   {
