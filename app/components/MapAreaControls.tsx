@@ -86,7 +86,7 @@ function MapAreaControls() {
   }, [clearSelectionMode, isDrawingMode, cancelDrawing]);
 
   return (
-    <Wrapper borderColor={selectionMode ? "lime.400" : "transparent"}>
+    <Wrapper borderColor={selectionMode ? "secondary.400" : "transparent"}>
       <ButtonGroup size="sm" variant="subtle" pointerEvents="initial">
         {isDrawingMode ? (
           <>

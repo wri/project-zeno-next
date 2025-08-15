@@ -26,13 +26,16 @@ export function DatasetCard({
       flexShrink={0}
       overflow="hidden"
       maxW="xl"
-      border={selected ? "2px solid" : undefined}
-      borderColor={selected ? "blue.800" : undefined}
-      cursor={onClick ? "pointer" : undefined}
+      border="2px solid"
+      borderColor={selected ? "primary.solid" : "border.muted"}
+      _hover={{
+        cursor: onClick ? "pointer" : "initial",
+        borderColor: "primary.300",
+      }}
       onClick={onClick}
     >
-      <Image objectFit="cover" maxW="5rem" src={effectiveImg} alt={title} />
-      <Card.Body>
+      <Image objectFit="cover" maxW="8rem" src={effectiveImg} alt={title} />
+      <Card.Body display="flex" flexDir="column" gap="1" px={5} py={4}>
         <Card.Title display="flex" gap="1" alignItems="center" fontSize="sm">
           {title}
           <InfoIcon />

@@ -109,11 +109,11 @@ const WelcomeModal = () => {
                   transition="all 0.32s ease-in-out"
                   _active={{
                     bg: "white",
-                    borderColor: "blue.900",
+                    borderColor: "primary.900",
                   }}
                   _focusWithin={{
                     bg: "white",
-                    borderColor: "blue.900",
+                    borderColor: "primary.900",
                   }}
                 >
                   <Textarea
@@ -141,8 +141,7 @@ const WelcomeModal = () => {
                     p="0.25rem"
                     ml="auto"
                     borderRadius="full"
-                    colorPalette="blue"
-                    bg="blue.900"
+                    colorPalette="primary"
                     _disabled={{
                       opacity: 0.75,
                     }}
@@ -175,7 +174,7 @@ const WelcomeModal = () => {
                 <ButtonGroup
                   flexDirection="column"
                   alignItems="start"
-                  colorPalette="blue"
+                  colorPalette="primary"
                   overflow="auto"
                   maxHeight="272px"
                   size="xs"
@@ -184,11 +183,11 @@ const WelcomeModal = () => {
                   {prompts.map((prompt, index) => (
                     <Button
                       key={index}
-                      color="blue.800"
+                      color="primary.800"
                       fontWeight="normal"
                       bg="white"
                       rounded="lg"
-                      _hover={{ bg: "blue.800/10" }}
+                      _hover={{ bg: "primary.fg/10" }}
                       onClick={() => handlePromptClick(prompt)}
                     >
                       <SparkleIcon />

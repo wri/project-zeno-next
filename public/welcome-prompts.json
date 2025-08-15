@@ -1,10 +1,14 @@
 {
   "prompts": [
-    "Show me recent forest loss due to fires in protected areas.",
-    "How much natural land was been converted to agriculture in my region of interest last summer?",
-    "I want to monitor restoration progress in my region. What datasets should I use?",
-    "Where are the most disturbances to nature happening now?",
-    "Tell me about wild fires in the Brazilian Amazon Rainforest",
-    "What country's forests sequester the most carbon?"
+    "Where are natural areas most at risk right now?",
+    "Show forest loss from wildfires in Californian protected areas in over the last five years.",
+    "How much natural land was converted to cropland in Spain last summer?",
+    "Help me monitor restoration in Indonesia.",
+    "Show this week’s disturbance hotspots.",
+    "What’s the trend in natural grassland area in Bolivia since 2015?",
+    "Since 2015 in the US, how much natural land has been converted to other uses?",
+    "Compare recent disturbances in Portugal: natural events vs human activity.",
+    "What were the top three causes of tree loss in Brazil last year?",
+    "Show the biggest changes in land cover in the Kenya between 2015 and 2024."
   ]
 }

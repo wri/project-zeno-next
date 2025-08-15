@@ -152,7 +152,7 @@ function TagList({ tags }: { tags: { label: string; selected?: boolean }[] }) {
           size="xs"
           h={6}
           borderRadius="full"
-          colorPalette={tag.selected ? "blue" : undefined}
+          colorPalette={tag.selected ? "primary" : undefined}
           variant={tag.selected ? undefined : "outline"}
         >
           {tag.label}
@@ -220,7 +220,7 @@ function ContextMenu({
                 size="xs"
                 variant="ghost"
                 borderRadius="full"
-                colorPalette="blue"
+                colorPalette="primary"
                 ml="auto"
                 disabled={!selectedItems}
               >
@@ -441,21 +441,21 @@ function DateMenu() {
           <ButtonGroup attached size="xs">
             <Button
               variant={view === "year" ? "solid" : "outline"}
-              colorPalette={view === "year" ? "blue" : undefined}
+              colorPalette={view === "year" ? "primary" : undefined}
               onClick={() => handleViewChange("year")}
             >
               Year
             </Button>
             <Button
               variant={view === "month" ? "solid" : "outline"}
-              colorPalette={view === "month" ? "blue" : undefined}
+              colorPalette={view === "month" ? "primary" : undefined}
               onClick={() => handleViewChange("month")}
             >
               Month
             </Button>
             <Button
               variant={view === "day" ? "solid" : "outline"}
-              colorPalette={view === "day" ? "blue" : undefined}
+              colorPalette={view === "day" ? "primary" : undefined}
               onClick={() => handleViewChange("day")}
             >
               Day

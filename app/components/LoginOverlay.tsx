@@ -114,7 +114,7 @@ function LoginOverlay() {
           </Text>
         </Dialog.Body>
         <Dialog.Footer>
-          <Button colorScheme="blue" onClick={handleLoginClick}>
+          <Button colorPalette="primary" onClick={handleLoginClick}>
             Login with WRI
           </Button>
         </Dialog.Footer>
@@ -140,7 +140,7 @@ function LoginOverlay() {
               href=""
               target="_blank"
               rel="noopener noreferrer"
-              color="blue.500"
+              color="primary.500"
             >
               Interest Form for Land & Carbon Lab&apos;s AI-driven Tools
             </Link>
