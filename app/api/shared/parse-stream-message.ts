@@ -10,8 +10,8 @@ export function parseStreamMessage(
   langChainMessage: LangChainUpdate,
   messageType: "agent" | "tools" | "human"
 ): StreamMessage | null {
-  // Validate input structure
-  if (!langChainMessage?.messages[0]?.kwargs) {
+  // Validate input structure (captures null & undefined messages)
+  if (!langChainMessage?.messages?.[0]?.kwargs)  {
     return null;
   }
 
