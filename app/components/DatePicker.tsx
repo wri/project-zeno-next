@@ -77,7 +77,7 @@ const DatePickerTableCellButton = (props: ButtonProps) => (
     fontSize="sm"
     css={{
       "&[data-today]": {
-        bg: "blue.100",
+        bg: "primary.100",
       },
       "&[data-selected]": {
         bg: "gray.100",

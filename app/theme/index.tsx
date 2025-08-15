@@ -6,32 +6,44 @@ export const config = defineConfig({
   theme: {
     tokens: {
       fonts: {
-        body: { value: "IBM Plex Sans, sans-serif" },
-        mono: { value: "IBM Plex Mono, monospace"},
-        heading: { value: "IBM Plex Sans, sans-serif" },
+        body: { value: "var(--font-IBMPlexSans)" },
+        mono: { value: "var(--font-IBMPlexMono)" },
+        heading: { value: "var(--font-IBMPlexSans)" },
       },
       colors: {
-        blue: {
-          50: { value: "#ebf9ff" },
-          100: { value: "#d1f1ff" },
-          200: { value: "#aee7ff" },
-          300: { value: "#76dbff" },
-          400: { value: "#35c4ff" },
-          500: { value: "#07a0ff" },
-          600: { value: "#007bff" },
-          700: { value: "#0062ff" },
-          800: { value: "#0051d7" },
-          900: { value: "#0049a8" }, //primary
-          950: { value: "#062d65" },
+        primary: {
+          50: { value: "#E0E8FF" },
+          100: { value: "#CBD7FB" },
+          200: { value: "#A3B8F0" },
+          300: { value: "#7E98D7" },
+          400: { value: "#1863DF" },
+          500: { value: "#0041B1" },
+          600: { value: "#003390" },
+          700: { value: "#002874" },
+          800: { value: "#001C59" },
+          900: { value: "#00103A" },
+          950: { value: "#000828" },
         },
-
-        lime: {
+        neutral: {
+          50: {},
+          100: { value: "#FFFFFF" },
+          200: { value: "#F4F5F7" },
+          300: { value: "#E1E2E6" },
+          400: { value: "#B2B7BD" },
+          500: { value: "#666E7B" },
+          600: { value: "#ABA29C" },
+          700: { value: "#282D33" },
+          800: { value: "#221F1D" },
+          900: { value: "#0F0E0D" },
+          950: { value: "#212529" },
+        },
+        secondary: {
           50: { value: "#fcfee7" },
-          100: { value: "#f7fbcc" },
-          200: { value: "#eef89e" },
-          300: { value: "#def066" },
+          100: { value: "#F8F8D6" },
+          200: { value: "#F0F4B4" },
+          300: { value: "#E2ED7D" },
           400: { value: "#cbe437" },
-          500: { value: "#adca18" }, //primary
+          500: { value: "#adca18" },
           600: { value: "#87a10f" },
           700: { value: "#667b10" },
           800: { value: "#516113" },
@@ -49,6 +61,28 @@ export const config = defineConfig({
         green: { 500: { value: "#00A651" } },
         berenjena: { 500: { value: "#895277" } },
         
+      },
+    },
+    semanticTokens: {
+      colors: {
+        primary: {
+          contrast: { value: "{colors.primary.100}" },
+          solid: { value: "{colors.primary.500}" },
+          fg: { value: "{colors.primary.700}" },
+          muted: { value: "{colors.primary.100}" },
+          subtle: { value: "{colors.primary.200}" },
+          emphasized: { value: "{colors.primary.300}" },
+          focusRing: { value: "{colors.primary.500}" },
+        },
+        secondary: {
+          contrast: { value: "{colors.secondary.100}" },
+          solid: { value: "{colors.secondary.500}" },
+          fg: { value: "{colors.secondary.700}" },
+          muted: { value: "{colors.secondary.100}" },
+          subtle: { value: "{colors.secondary.200}" },
+          emphasized: { value: "{colors.secondary.300}" },
+          focusRing: { value: "{colors.secondary.500}" },
+        },
       },
     },
   },

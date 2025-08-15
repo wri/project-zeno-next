@@ -73,11 +73,11 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       transition="all 0.32s ease-in-out"
       _active={{
         bg: "white",
-        borderColor: "blue.900",
+        borderColor: "primary.900",
       }}
       _focusWithin={{
         bg: "white",
-        borderColor: "blue.900",
+        borderColor: "primary.900",
       }}
     >
       {hasContext && (
@@ -142,8 +142,8 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
           p="0"
           ml="auto"
           borderRadius="full"
-          colorPalette="blue"
-          bg="blue.900"
+          variant="solid"
+          colorPalette="primary"
           _disabled={{
             opacity: 0.75,
           }}

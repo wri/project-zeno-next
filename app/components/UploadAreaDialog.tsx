@@ -79,7 +79,7 @@ function UploadAreaDialog() {
                 disabled={!isFileSelected || isUploading || isCreating}
                 loading={isUploading || isCreating}
                 loadingText="Uploading..."
-                colorPalette="blue"
+                colorPalette="primary"
               >
                 <UploadSimpleIcon /> Upload
               </Button>
@@ -127,10 +127,10 @@ function DropFileZone() {
       flexDirection="column"
       alignItems="center"
       bgGradient="to-br"
-      gradientFrom={isDragOver ? "blue.100" : "blue.50"}
-      gradientTo={isDragOver ? "lime.100" : "lime.50"}
+      gradientFrom={isDragOver ? "primary.100" : "primary.50"}
+      gradientTo={isDragOver ? "secondary.100" : "secondary.50"}
       border={isDragOver ? "1px solid" : "1px dashed"}
-      borderColor={isDragOver ? "lime.400" : "lime.700"}
+      borderColor={isDragOver ? "secondary.400" : "secondary.700"}
       borderRadius="lg"
       gap="8px"
       padding="4"
@@ -157,7 +157,7 @@ function DropFileZone() {
       <Button
         variant="solid"
         size="2xs"
-        colorPalette="blue"
+        colorPalette="primary"
         onClick={() => fileInputRef.current?.click()}
       >
         Select File
@@ -180,7 +180,7 @@ function SelectedFileBox() {
   const { filename, clearFileState } = useMapStore();
   return (
     <Box
-      border="1px dashed var(--Lime-Lime-70, #8E9954)"
+      border="1px dashed var(--chakra-colors-secondary-500, #8E9954)"
       borderRadius="md"
       padding="4"
       gap="8px"

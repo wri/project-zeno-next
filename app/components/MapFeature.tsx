@@ -264,7 +264,7 @@ function MapFeature({
           anchor="bottom-left"
         >
           <Tag.Root
-            colorPalette={areaContext ? "blue" : "gray"}
+            colorPalette={areaContext ? "primary" : "gray"}
             px={2}
             py={1}
             size="md"
