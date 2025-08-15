@@ -1,5 +1,5 @@
 "use client";
-import { Box, Badge, Flex, IconButton } from "@chakra-ui/react";
+import { Box, Badge, useClipboard, Flex, IconButton } from "@chakra-ui/react";
 import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
@@ -7,6 +7,7 @@ import Markdown from "react-markdown";
 import {
   ArrowBendDownRightIcon,
   ArrowsCounterClockwiseIcon,
+  CheckIcon,
   CopyIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -25,6 +26,7 @@ interface MessageBubbleProps {
 
 function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
+  const clipboard = useClipboard({ value: message.message });
 
   useEffect(() => {
     const date = new Date(message.timestamp);
@@ -126,9 +128,15 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
               {formattedTimestamp}
             </Flex>
             <Flex>
-              <Tooltip content="Copy response">
-                <IconButton variant="ghost" size="xs">
-                  <CopyIcon />
+              <Tooltip
+                content={
+                  clipboard.copied
+                    ? "Response copied to clipboard"
+                    : "Copy response"
+                }
+              >
+                <IconButton variant="ghost" size="xs" onClick={clipboard.copy}>
+                  {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
                 </IconButton>
               </Tooltip>
               <Tooltip content="Good response">
