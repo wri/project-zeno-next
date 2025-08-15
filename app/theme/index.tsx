@@ -24,9 +24,9 @@ export const config = defineConfig({
     },
     tokens: {
       fonts: {
-        body: { value: "IBM Plex Sans, sans-serif" },
-        mono: { value: "IBM Plex Mono, monospace" },
-        heading: { value: "IBM Plex Sans, sans-serif" },
+        body: { value: "var(--font-IBMPlexSans)" },
+        mono: { value: "var(--font-IBMPlexMono)" },
+        heading: { value: "var(--font-IBMPlexSans)" },
       },
       colors: {
         primary: {
