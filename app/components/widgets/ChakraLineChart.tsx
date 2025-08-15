@@ -53,8 +53,10 @@ export default function ChakraLineChart({
           borderColor="gray.200"
           borderRadius="md"
           boxShadow="md"
+          fontSize="xs"
+          fontWeight="normal"
         >
-          <Text fontWeight="bold">{`${xAxis}: ${label}`}</Text>
+          <Text fontWeight="medium">{`${xAxis}: ${label}`}</Text>
           <Text color={lineColor}>
             {`${yAxis}: ${payload[0].value.toLocaleString()}`}
           </Text>
@@ -65,22 +67,24 @@ export default function ChakraLineChart({
   };
 
   return (
-    <Box height="400px" width="100%">
+    <Box height="400px" width="100%" fontSize="xs">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-          <XAxis dataKey={xAxis} stroke={textColor} fontSize={12} />
+          <XAxis
+            dataKey={xAxis}
+            stroke={textColor}
+            fontSize="xs"
+            fontWeight="normal"
+            color="fg.muted"
+          />
           <YAxis
             stroke={textColor}
-            fontSize={12}
+            fontSize="xs"
+            fontWeight="normal"
+            color="fg.muted"
             tickFormatter={(value) => value.toLocaleString()}
           />
           <Tooltip content={<CustomTooltip />} />

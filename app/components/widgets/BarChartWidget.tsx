@@ -64,7 +64,7 @@ export default function ChartWidget({ data }: ChartWidgetProps) {
 
     if (chartType === "bar") {
       const maxValue = d3.max(data.values) || 0;
-      const margin = { top: 24, right: 1, bottom: 24, left: 60 };
+      const margin = { top: 24, right: 1, bottom: 24, left: 1 };
 
       const x = d3.scaleBand()
         .domain(data.categories)

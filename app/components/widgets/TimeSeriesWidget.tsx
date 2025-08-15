@@ -55,7 +55,7 @@ export default function TimeSeriesWidget({ data, xlabel, ylabel, analysis }: Tim
 
     const width = chartDimensions[0];
     const height = chartDimensions[1];
-    const margin = { top: 20, right: 100, bottom: 40, left: 60 };
+    const margin = { top: 20, right: 12, bottom: 40, left: 12 };
 
     d3.select(chartRef.current).selectAll("*").remove();
     const svg = d3.select(chartRef.current)

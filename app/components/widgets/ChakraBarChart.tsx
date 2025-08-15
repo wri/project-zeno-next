@@ -53,8 +53,10 @@ export default function ChakraBarChart({
           borderColor="gray.200"
           borderRadius="md"
           boxShadow="md"
+          fontSize="xs"
+          fontWeight="normal"
         >
-          <Text fontWeight="bold">{`${xAxis}: ${label}`}</Text>
+          <Text fontWeight="medium">{`${xAxis}: ${label}`}</Text>
           <Text color={barColor}>
             {`${yAxis}: ${payload[0].value.toLocaleString()}`}
           </Text>
@@ -96,12 +98,16 @@ export default function ChakraBarChart({
           <XAxis
             dataKey={xAxis}
             stroke={textColor}
-            fontSize={12}
+            fontSize="xs"
+            fontWeight="normal"
+            color="fg.muted"
             tickFormatter={formatXAxisLabel}
           />
           <YAxis
             stroke={textColor}
-            fontSize={12}
+            fontSize="xs"
+            fontWeight="normal"
+            color="fg.muted"
             tickFormatter={formatYAxisLabel}
           />
           <Tooltip content={<CustomTooltip />} />
