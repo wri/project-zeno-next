@@ -36,12 +36,19 @@ function ChatInput() {
     await sendMessage(message);
   };
 
-  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.keyCode === 13 && inputValue?.trim().length > 0 && !isLoading) {
-      e.preventDefault();
+const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  // Submit on Enter (without Shift) or Command+Enter
+  if (
+    (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
+    (e.key === "Enter" && e.metaKey)
+  ) {
+    e.preventDefault(); // Prevents newline
+    if (inputValue?.trim().length > 0 && !isLoading) {
       submitPrompt();
     }
-  };
+  }
+  // If Shift+Enter, do nothing: allow newline
+};
 
   const getInputState = () => {
     return {
@@ -66,11 +73,11 @@ function ChatInput() {
       transition="all 0.32s ease-in-out"
       _active={{
         bg: "white",
-        borderColor: "blue.900",
+        borderColor: "primary.900",
       }}
       _focusWithin={{
         bg: "white",
-        borderColor: "blue.900",
+        borderColor: "primary.900",
       }}
     >
       {hasContext && (
@@ -81,7 +88,7 @@ function ChatInput() {
               contextType={c.contextType as ChatContextType}
               content={
                 typeof c.content === "string"
-                  ? c.content
+                  ? c.content || c.aoiData?.name || c.aoiData?.src_id
                   : JSON.stringify(c.content)
               }
               onClose={() => removeContext(c.id)}
@@ -100,7 +107,7 @@ function ChatInput() {
         p={0}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        onKeyUp={handleKeyUp}
+        onKeyDown={handleKeyDown}
         disabled={disabled}
         _disabled={{
           opacity: 1,
@@ -135,8 +142,8 @@ function ChatInput() {
           p="0"
           ml="auto"
           borderRadius="full"
-          colorPalette="blue"
-          bg="blue.900"
+          variant="solid"
+          colorPalette="primary"
           _disabled={{
             opacity: 0.75,
           }}

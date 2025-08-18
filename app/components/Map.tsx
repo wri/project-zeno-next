@@ -14,19 +14,17 @@ import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
-import SelectAreaLayer from "./map/layers/SelectAreaLayer";
 import useContextStore from "@/app/store/contextStore";
-import CustomAreasLayer from "./map/layers/CustomAreasLayer";
-import MapFeature from "./MapFeature";
 import DynamicTileLayers from "./map/layers/DynamicTileLayers";
+import HighlightedFeaturesLayer from "./map/layers/HighlightedFeaturesLayer";
+import SelectAreaLayer from "./map/layers/select-area-layer";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 function Map() {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
-  const { geoJsonFeatures, setMapRef, selectAreaLayer, initializeTerraDraw } =
-    useMapStore();
+  const { geoJsonFeatures, setMapRef, initializeTerraDraw } = useMapStore();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
 
@@ -111,19 +109,12 @@ function Map() {
           <Layer id="background-tiles" type="raster" />
         </Source>
 
-        {/* Render GeoJSON features */}
-        {geoJsonFeatures.map((feature) => (
-          <MapFeature key={feature.id} feature={feature} areas={areas} />
-        ))}
+        <HighlightedFeaturesLayer
+          geoJsonFeatures={geoJsonFeatures}
+          areas={areas}
+        />
 
-        {selectAreaLayer && selectAreaLayer !== "Custom" && (
-          <SelectAreaLayer
-            key={selectAreaLayer}
-            layerId={selectAreaLayer}
-            beforeId={undefined}
-          />
-        )}
-        {selectAreaLayer === "Custom" && <CustomAreasLayer />}
+        <SelectAreaLayer />
         <DynamicTileLayers />
         <MapAreaControls />
 
