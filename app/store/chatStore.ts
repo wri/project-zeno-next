@@ -30,7 +30,7 @@ interface ChatActions {
   sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
-  fetchThread: (threadId: string) => Promise<void>;
+  fetchThread: (threadId: string, abortController?: AbortController) => Promise<void>;
 }
 
 const initialState: ChatState = {
@@ -272,12 +272,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  fetchThread: async (threadId: string) => {
+  fetchThread: async (threadId: string, abort?: AbortController) => {
     const { setLoading, addMessage } = get();
 
     setLoading(true);
     // Set up abort controller for client-side timeout
-    const abortController = new AbortController();
+    const abortController = abort || new AbortController();
     const timeoutId = setTimeout(() => {
       console.log(
         "CLIENT TIMEOUT: Request exceeded 5 minutes 10 seconds - aborting request"
@@ -340,7 +340,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         console.log("FRONTEND: Stream ended due to abort signal");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      if (abortController.signal.aborted) {
+        console.log("FRONTEND: Stream ended due to abort signal");
+      } else {
+        console.error("Error sending message:", error);
+      }
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);

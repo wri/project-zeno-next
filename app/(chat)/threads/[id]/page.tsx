@@ -14,7 +14,14 @@ export default function SingleThread() {
 
   useEffect(() => {
     if (id) {
-      fetchThread(id as string);
+      const abortController = new AbortController();
+      fetchThread(id as string, abortController);
+
+      return () => {
+        // Cleanup function to abort the fetch if the component unmounts.
+        // This happens during development because of React Strict Mode.
+        abortController.abort();
+      };
     }
   }, [id, fetchThread]);
 
