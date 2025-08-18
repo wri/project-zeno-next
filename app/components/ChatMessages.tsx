@@ -42,7 +42,10 @@ function ChatMessages() {
   }, []);
 
   const lastMessage = messages[messages.length - 1];
-  const showThinking = isLoading && lastMessage?.type === "user" && !isFetchingThread;
+  // Always show realtime thinking when a user message is in-flight
+  const showThinking = isLoading && lastMessage?.type === "user";
+  // Show historical fetch skeleton only when we're fetching and no messages are displayed yet
+  const showFetching = isFetchingThread && messages.length === 0 && !isLoading;
 
   return (
     <Box ref={containerRef} fontSize="sm">
@@ -60,7 +63,7 @@ function ChatMessages() {
           />
         );
       })}
-      {isFetchingThread && <ThinkingMessage label="Fetching conversation" />}
+      {showFetching && <ThinkingMessage label="Fetching conversation" />}
       {showThinking && <ThinkingMessage />}
     </Box>
   );
