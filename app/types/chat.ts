@@ -8,6 +8,7 @@ export interface ChatMessage {
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   context?: ContextItem[];
+  source?: 'historical' | 'realtime'; // historical messages when past conversations are fetched
 }
 
 // Widget types for insights

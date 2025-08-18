@@ -109,6 +109,8 @@ function MessageBubble({ message, isConsecutive = false, isLatestAssistant = fal
           {message.type === "assistant" && isLatestAssistant ? (
             <TypewriterText
               text={message.message}
+              //skip if fetching thread
+              skipAnimation={message.source === 'historical'}
               render={(displayed) => (
                 <Markdown remarkPlugins={[remarkBreaks]}>{displayed}</Markdown>
               )}

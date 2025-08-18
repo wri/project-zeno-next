@@ -287,7 +287,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   setLoading: (loading) => set({ isLoading: loading }),
 
   fetchThread: async (threadId: string) => {
-    const { setLoading, addMessage } = get();
+    const { setLoading } = get();
 
     // Mark that we are fetching a historical thread; used to suppress thinking UI
     set({ isFetchingThread: true });
@@ -301,6 +301,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       );
       abortController.abort();
     }, 310000); // 5 minutes 10 seconds (slightly longer than server timeout)
+
+    // Collect all messages before adding them to the store
+    const collectedMessages: Omit<ChatMessage, "id" | "timestamp">[] = [];
 
     try {
       const response = await fetch(`/api/threads/${threadId}`, {
@@ -325,8 +328,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             const streamMessage: StreamMessage = JSON.parse(data);
 
             if (streamMessage.type === "human") {
-              // Add user message
-              addMessage({
+              // Collect user message instead of adding immediately
+              collectedMessages.push({
                 type: "user",
                 message: streamMessage.text!,
               });
@@ -334,7 +337,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             }
 
             console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
-            await processStreamMessage(streamMessage, addMessage);
+            // Process stream message but collect instead of adding immediately
+            await processStreamMessage(streamMessage, (message) => {
+              collectedMessages.push(message);
+            });
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -356,13 +362,32 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       } else if (abortController.signal.aborted) {
         console.log("FRONTEND: Stream ended due to abort signal");
       }
+
+      // Batch add all collected messages and update fetching status at the same time
+      set((state) => {
+        const newMessages = [...state.messages];
+        collectedMessages.forEach((message) => {
+          newMessages.push({
+            ...message,
+            id: uuidv4(),
+            timestamp: new Date().toISOString(),
+            source: 'historical',
+          });
+        });
+
+        return {
+          messages: newMessages,
+          isLoading: false,
+          isFetchingThread: false,
+          currentThreadId: threadId,
+        };
+      });
     } catch (error) {
       console.error("Error sending message:", error);
+      // Ensure loading state is reset on error
+      set({ isLoading: false, isFetchingThread: false });
     } finally {
-      set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
-      setLoading(false);
-      set({ isFetchingThread: false });
     }
   },
 }));
