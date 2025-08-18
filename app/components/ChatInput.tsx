@@ -88,7 +88,7 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
               contextType={c.contextType as ChatContextType}
               content={
                 typeof c.content === "string"
-                  ? c.content
+                  ? c.content || c.aoiData?.name || c.aoiData?.src_id
                   : JSON.stringify(c.content)
               }
               onClose={() => removeContext(c.id)}
