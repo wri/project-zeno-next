@@ -3,10 +3,16 @@ import { useEffect, useRef } from "react";
 import { Box } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
+import ThinkingMessage from "./ThinkingMessage";
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { messages } = useChatStore();
+  const { messages, isLoading, isFetchingThread } = useChatStore();
+
+  const lastAssistantIdx = messages
+  .map((msg, idx) => (msg.type === "assistant" ? idx : -1))
+  .filter(idx => idx !== -1)
+  .pop();
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -35,6 +41,12 @@ function ChatMessages() {
     }
   }, []);
 
+  const lastMessage = messages[messages.length - 1];
+  // Always show realtime thinking when a user message is in-flight
+  const showThinking = isLoading && lastMessage?.type === "user";
+  // Show historical fetch skeleton only when we're fetching and no messages are displayed yet
+  const showFetching = isFetchingThread && messages.length === 0 && !isLoading;
+
   return (
     <Box ref={containerRef} fontSize="sm">
       {messages.map((message, index) => {
@@ -47,9 +59,12 @@ function ChatMessages() {
             key={message.id} 
             message={message} 
             isConsecutive={isConsecutive}
+            isLatestAssistant={index === lastAssistantIdx}
           />
         );
       })}
+      {showFetching && <ThinkingMessage label="Fetching conversation" />}
+      {showThinking && <ThinkingMessage />}
     </Box>
   );
 }
