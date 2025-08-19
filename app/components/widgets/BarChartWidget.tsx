@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import { Box, Text, IconButton } from "@chakra-ui/react";
+import { Box, IconButton } from "@chakra-ui/react";
 import { ChartBarIcon, ChartPieIcon } from "@phosphor-icons/react";
 
 interface ChartData {
@@ -11,10 +11,9 @@ interface ChartData {
 
 interface ChartWidgetProps {
   data: ChartData;
-  description?: string;
 }
 
-export default function ChartWidget({ data, description }: ChartWidgetProps) {
+export default function ChartWidget({ data }: ChartWidgetProps) {
   const chartRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -65,7 +64,7 @@ export default function ChartWidget({ data, description }: ChartWidgetProps) {
 
     if (chartType === "bar") {
       const maxValue = d3.max(data.values) || 0;
-      const margin = { top: 24, right: 1, bottom: 24, left: 60 };
+      const margin = { top: 24, right: 1, bottom: 24, left: 1 };
 
       const x = d3.scaleBand()
         .domain(data.categories)
@@ -167,7 +166,7 @@ export default function ChartWidget({ data, description }: ChartWidgetProps) {
   }, [data, chartType, chartDimensions]);
 
   return (
-    <Box ref={containerRef} style={{ position: "relative" }} p="6">
+    <Box ref={containerRef} style={{ position: "relative" }}>
       <IconButton
         onClick={() => setChartType(chartType === "bar" ? "pie" : "bar")}
         aria-label="Toggle Chart Type"
@@ -184,7 +183,6 @@ export default function ChartWidget({ data, description }: ChartWidgetProps) {
         height={chartDimensions[1]}
       />
       <div ref={tooltipRef} />
-      <Text mt={2}>{description}</Text>
     </Box>
   );
 }

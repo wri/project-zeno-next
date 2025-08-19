@@ -15,6 +15,7 @@ import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
+import DynamicTileLayers from "./map/layers/DynamicTileLayers";
 import HighlightedFeaturesLayer from "./map/layers/HighlightedFeaturesLayer";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 
@@ -112,8 +113,8 @@ function Map() {
           geoJsonFeatures={geoJsonFeatures}
           areas={areas}
         />
-
         <SelectAreaLayer />
+        <DynamicTileLayers />
         <MapAreaControls />
 
         <AttributionControl

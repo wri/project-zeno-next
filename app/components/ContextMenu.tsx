@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
-  Image,
   Stack,
   Field,
   Flex,
@@ -22,6 +21,7 @@ import { format } from "date-fns";
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
 import useContextStore from "../store/contextStore";
+import { DatasetCard } from "./DatasetCard";
 
 // Constants for navigation and dummy content
 const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
@@ -41,25 +41,9 @@ const LAYER_TAGS = [
   { label: "Biodiversity" },
 ];
 
-const LAYER_CARDS = [
-  {
-    title: "Fire alerts (VIIRS)",
-    description: "daily, 375 m, global, NASA",
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
-    selected: true,
-  },
-  {
-    title: "Integrated deforestation alerts",
-    description:
-      "Integrated layer of tropical alerts: GLAD-L/GLAD-S2/RADD. Data from UMD and...",
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
-  },
-  {
-    title: "Tree Cover Gain",
-    description: "20 years, 30 m, global, Hansen/UMD/Google/USGS/NASA",
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/BlankMap-World-1942.11.png/330px-BlankMap-World-1942.11.png",
-  },
-];
+import { DATASET_CARDS } from "../constants/datasets";
+
+const LAYER_CARDS = DATASET_CARDS;
 
 const AREA_TAGS = [
   { label: "In this conversation", selected: true },
@@ -108,7 +92,6 @@ function ContextNav({
       w="10rem"
       borderRight="1px solid"
       borderColor="border"
-      overflowY="auto"
     >
       {CONTEXT_NAV.map((nav) => (
         <Button
@@ -127,53 +110,34 @@ function ContextNav({
   );
 }
 
-function CardList({
+type LayerCardItem = {
+  dataset_id: number;
+  dataset_name: string;
+  context_layer: string | null;
+  img?: string;
+  reason: string;
+  tile_url: string;
+  selected?: boolean;
+};
+
+function LayerCardList({
   cards,
-  showImage = false,
+  onCardClick,
 }: {
-  cards: {
-    title: string;
-    description: string;
-    img?: string;
-    selected?: boolean;
-  }[];
-  showImage?: boolean;
+  cards: LayerCardItem[];
+  onCardClick?: (card: LayerCardItem) => void;
 }) {
   return (
-    <Stack>
+    <Stack overflow="auto">
       {cards.map((card) => (
-        <Card.Root
-          key={card.title}
-          size="sm"
-          flexDirection="row"
-          overflow="hidden"
-          maxW="xl"
-          border={card.selected ? "2px solid" : undefined}
-          borderColor={card.selected ? "primary.fg" : undefined}
-        >
-          {showImage && card.img && (
-            <Image
-              objectFit="cover"
-              maxW="5rem"
-              src={card.img}
-              alt={card.title}
-            />
-          )}
-          <Card.Body>
-            <Card.Title
-              display="flex"
-              gap="1"
-              alignItems="center"
-              fontSize="sm"
-            >
-              {card.title}
-              <InfoIcon />
-            </Card.Title>
-            <Card.Description fontSize="xs" color="fg.muted">
-              {card.description}
-            </Card.Description>
-          </Card.Body>
-        </Card.Root>
+        <DatasetCard
+          key={card.dataset_name}
+          title={card.dataset_name}
+          description={card.reason}
+          img={card.img ?? "/globe.svg"}
+          selected={card.selected}
+          onClick={onCardClick ? () => onCardClick(card) : undefined}
+        />
       ))}
     </Stack>
   );
@@ -181,7 +145,7 @@ function CardList({
 
 function TagList({ tags }: { tags: { label: string; selected?: boolean }[] }) {
   return (
-    <Flex gap="2" maxW="100%" overflow="auto">
+    <Flex gap="2" maxW="100%" overflow="auto" flexShrink={0}>
       {tags.map((tag) => (
         <Button
           key={tag.label}
@@ -216,22 +180,31 @@ function ContextMenu({
       motionPreset="slide-in-bottom"
       size="lg"
       open={open}
+      scrollBehavior="inside"
       onOpenChange={onOpenChange}
     >
       <Portal>
         <Dialog.Positioner>
-          <Dialog.Content minH="30rem" maxH="75vh">
-            <Flex flex="1">
-              {/* Modal Navigation */}
-              <ContextNav
-                selected={selectedContextType}
-                onSelect={setSelectedContextType}
-              />
-              {/* Modal Body */}
-              {selectedContextType === "layer" && <LayerMenu />}
-              {selectedContextType === "area" && <AreaMenu />}
-              {selectedContextType === "date" && <DateMenu />}
-            </Flex>
+          <Dialog.Content overflow="hidden" minH="30rem">
+            <Dialog.Body
+              p={0}
+              overflow="hidden"
+              h="full"
+              display="flex"
+              flexDir="column"
+            >
+              <Flex flex="1" overflow="hidden">
+                {/* Modal Navigation */}
+                <ContextNav
+                  selected={selectedContextType}
+                  onSelect={setSelectedContextType}
+                />
+                {/* Modal Body */}
+                {selectedContextType === "layer" && <LayerMenu />}
+                {selectedContextType === "area" && <AreaMenu />}
+                {selectedContextType === "date" && <DateMenu />}
+              </Flex>
+            </Dialog.Body>
             <Dialog.Footer
               justifyContent="space-between"
               borderTop="1px solid"
@@ -263,6 +236,108 @@ function ContextMenu({
 export default ContextMenu;
 
 function LayerMenu() {
+  const { context, addContext, removeContext } = useContextStore();
+
+  // Compute selected state from context so cards reflect external context changes
+  const cards: LayerCardItem[] = useMemo(() => {
+    return LAYER_CARDS.map((c) => {
+      const isSelected = context.some(
+        (ctx) => ctx.contextType === "layer" && ctx.datasetId === c.dataset_id
+      );
+      return { ...c, selected: isSelected } as LayerCardItem;
+    });
+  }, [context]);
+
+  const handleToggleCard = (card: LayerCardItem) => {
+    // mapTileLayerId is derived inside context store when needed
+    const existingCtx = context.find(
+      (ctx) => ctx.contextType === "layer" && ctx.datasetId === card.dataset_id
+    );
+
+    if (!card.selected) {
+      addContext({
+        contextType: "layer",
+        content: card.dataset_name,
+        datasetId: card.dataset_id,
+        tileUrl: card.tile_url,
+        layerName: card.dataset_name,
+      });
+      return;
+    }
+
+    // Currently selected → remove from context (which also removes map layer if datasetId is present)
+    if (existingCtx) {
+      removeContext(existingCtx.id);
+    }
+  };
+
+  return (
+    <Stack
+      bg="bg.subtle"
+      pt={3}
+      w="full"
+      maxW="100%"
+      maxH="100%"
+      overflow="hidden"
+    >
+      <Box px={4}>
+        <InputGroup endElement={<MagnifyingGlassIcon />}>
+          <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />
+        </InputGroup>
+      </Box>
+      <Stack
+        px={4}
+        pt={3}
+        borderTopWidth="1px"
+        borderColor="border"
+        h="full"
+        overflow="hidden"
+      >
+        <TagList tags={LAYER_TAGS} />
+        <LayerCardList cards={cards} onCardClick={handleToggleCard} />
+      </Stack>
+    </Stack>
+  );
+}
+
+function AreaCardList({
+  cards,
+}: {
+  cards: { title: string; description: string; selected?: boolean }[];
+}) {
+  return (
+    <Stack>
+      {cards.map((card) => (
+        <Card.Root
+          key={card.title}
+          size="sm"
+          flexDirection="row"
+          overflow="hidden"
+          maxW="xl"
+          border={card.selected ? "2px solid" : undefined}
+          borderColor={card.selected ? "blue.800" : undefined}
+        >
+          <Card.Body>
+            <Card.Title
+              display="flex"
+              gap="1"
+              alignItems="center"
+              fontSize="sm"
+            >
+              {card.title}
+              <InfoIcon />
+            </Card.Title>
+            <Card.Description fontSize="xs" color="fg.muted">
+              {card.description}
+            </Card.Description>
+          </Card.Body>
+        </Card.Root>
+      ))}
+    </Stack>
+  );
+}
+
+function AreaMenu() {
   return (
     <Stack
       bg="bg.subtle"
@@ -270,24 +345,8 @@ function LayerMenu() {
       w="full"
       maxW="100%"
       maxH="100%"
-      overflowY="scroll"
+      overflow="hidden"
     >
-      <Box px={4}>
-        <InputGroup endElement={<MagnifyingGlassIcon />}>
-          <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />
-        </InputGroup>
-      </Box>
-      <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
-        <TagList tags={LAYER_TAGS} />
-        <CardList cards={LAYER_CARDS} showImage />
-      </Stack>
-    </Stack>
-  );
-}
-
-function AreaMenu() {
-  return (
-    <Stack bg="bg.subtle" py={3} w="full" overflowY="scroll">
       <Flex px={4} gap={2}>
         <InputGroup endElement={<MagnifyingGlassIcon />}>
           <Input size="sm" bg="bg" type="text" placeholder="Find area" />
@@ -305,9 +364,16 @@ function AreaMenu() {
           <NativeSelect.Indicator />
         </NativeSelect.Root>
       </Flex>
-      <Stack p={4} py={3} borderTopWidth="1px" borderColor="border">
+      <Stack
+        px={4}
+        pt={3}
+        borderTopWidth="1px"
+        borderColor="border"
+        h="full"
+        overflow="hidden"
+      >
         <TagList tags={AREA_TAGS} />
-        <CardList cards={AREA_CARDS} />
+        <AreaCardList cards={AREA_CARDS} />
       </Stack>
     </Stack>
   );
@@ -354,6 +420,7 @@ function DateMenu() {
       });
     }
     // No need to track changes in ContextStore.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateValue]);
 
   return (
@@ -364,6 +431,7 @@ function DateMenu() {
       py={3}
       w="full"
       position="relative"
+      overflow="hidden"
     >
       <AbsoluteCenter display="flex" gap="4">
         <Field.Root>

@@ -1,11 +1,10 @@
-import { Box, Table, Text } from "@chakra-ui/react";
+import { Box, Table } from "@chakra-ui/react";
 
 interface TableWidgetProps {
   data: Record<string, string | number | boolean>[];
-  description?: string;
 }
 
-export default function TableWidget({ data, description }: TableWidgetProps) {
+export default function TableWidget({ data }: TableWidgetProps) {
   // Helper function to format numeric values
   const formatValue = (value: string | number | boolean): string | number | boolean => {
     return typeof value === "number"
@@ -13,7 +12,7 @@ export default function TableWidget({ data, description }: TableWidgetProps) {
       : value;
   };
   return (
-    <Box p="6">
+    <Box>
       <Table.Root variant="line" bg="transparent">
         <Table.Header>
           <Table.Row>
@@ -36,9 +35,6 @@ export default function TableWidget({ data, description }: TableWidgetProps) {
           ))}
         </Table.Body>
       </Table.Root>
-      <Box mt="10">
-        <Text>{description}</Text>
-      </Box>
     </Box>
   );
 }
