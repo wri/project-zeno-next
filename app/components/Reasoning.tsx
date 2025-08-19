@@ -1,5 +1,6 @@
 "use client";
 import { Box, Collapsible, Flex, Text, Spinner } from "@chakra-ui/react";
+import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 function Reasoning() {
   return (
@@ -10,11 +11,12 @@ function Reasoning() {
           <Text fontSize="sm" color="fg.muted">
             Reasoning
           </Text>
+          <CaretRightIcon />
         </Flex>
       </Collapsible.Trigger>
       <Collapsible.Content>
         <Box
-          bg="gray.200"
+          bg="bg.muted"
           borderRadius="sm"
           paddingTop="8px"
           paddingBottom="8px"
