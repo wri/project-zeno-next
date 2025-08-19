@@ -113,7 +113,6 @@ function Map() {
           geoJsonFeatures={geoJsonFeatures}
           areas={areas}
         />
-
         <SelectAreaLayer />
         <DynamicTileLayers />
         <MapAreaControls />

@@ -7,23 +7,19 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Box, Text, VStack } from "@chakra-ui/react";
+import { Box, Text } from "@chakra-ui/react";
 import { useColorModeValue } from "@/app/components/ui/color-mode";
 
 interface ChakraLineChartProps {
   data: Array<{
     [key: string]: unknown;
   }>;
-  title?: string;
-  description?: string;
   xAxis?: string;
   yAxis?: string;
 }
 
 export default function ChakraLineChart({
   data,
-  title,
-  description,
   xAxis,
   yAxis,
 }: ChakraLineChartProps) {
@@ -57,8 +53,10 @@ export default function ChakraLineChart({
           borderColor="gray.200"
           borderRadius="md"
           boxShadow="md"
+          fontSize="xs"
+          fontWeight="normal"
         >
-          <Text fontWeight="bold">{`${xAxis}: ${label}`}</Text>
+          <Text fontWeight="medium">{`${xAxis}: ${label}`}</Text>
           <Text color={lineColor}>
             {`${yAxis}: ${payload[0].value.toLocaleString()}`}
           </Text>
@@ -69,49 +67,37 @@ export default function ChakraLineChart({
   };
 
   return (
-    <VStack gap={4} align="stretch" p={4}>
-      {title && (
-        <Text fontSize="lg" fontWeight="bold" color={textColor}>
-          {title}
-        </Text>
-      )}
-
-      <Box height="400px" width="100%">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={chartData}
-            margin={{
-              top: 5,
-              right: 30,
-              left: 20,
-              bottom: 5,
-            }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-            <XAxis dataKey={xAxis} stroke={textColor} fontSize={12} />
-            <YAxis
-              stroke={textColor}
-              fontSize={12}
-              tickFormatter={(value) => value.toLocaleString()}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Line
-              type="monotone"
-              dataKey={yAxis}
-              stroke={lineColor}
-              strokeWidth={2}
-              dot={{ fill: lineColor, strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, fill: lineColor }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </Box>
-
-      {description && (
-        <Text fontSize="sm" color={textColor} mt={2}>
-          {description}
-        </Text>
-      )}
-    </VStack>
+    <Box height="400px" width="100%" fontSize="xs">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={chartData}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <XAxis
+            dataKey={xAxis}
+            stroke={textColor}
+            fontSize="xs"
+            fontWeight="normal"
+            color="fg.muted"
+          />
+          <YAxis
+            stroke={textColor}
+            fontSize="xs"
+            fontWeight="normal"
+            color="fg.muted"
+            tickFormatter={(value) => value.toLocaleString()}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Line
+            type="monotone"
+            dataKey={yAxis}
+            stroke={lineColor}
+            strokeWidth={2}
+            dot={{ fill: lineColor, strokeWidth: 2, r: 4 }}
+            activeDot={{ r: 6, fill: lineColor }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </Box>
   );
 }

@@ -12,12 +12,10 @@ interface TimeSeriesWidgetProps {
   data: TimeSeriesDataPoint[];
   xlabel?: string;
   ylabel?: string;
-  title?: string;
-  description?: string;
   analysis?: string;
 }
 
-export default function TimeSeriesWidget({ data, xlabel, ylabel, description, analysis }: TimeSeriesWidgetProps) {
+export default function TimeSeriesWidget({ data, xlabel, ylabel, analysis }: TimeSeriesWidgetProps) {
   const chartRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -57,7 +55,7 @@ export default function TimeSeriesWidget({ data, xlabel, ylabel, description, an
 
     const width = chartDimensions[0];
     const height = chartDimensions[1];
-    const margin = { top: 20, right: 100, bottom: 40, left: 60 };
+    const margin = { top: 20, right: 12, bottom: 40, left: 12 };
 
     d3.select(chartRef.current).selectAll("*").remove();
     const svg = d3.select(chartRef.current)
@@ -185,7 +183,7 @@ export default function TimeSeriesWidget({ data, xlabel, ylabel, description, an
   }, [data, colors, chartDimensions, filteredData, xlabel, ylabel]);
 
   return (
-    <Box ref={containerRef} position="relative" p="6">
+    <Box ref={containerRef} position="relative">
       <svg
         ref={chartRef}
         width={chartDimensions[0]}
@@ -200,8 +198,6 @@ export default function TimeSeriesWidget({ data, xlabel, ylabel, description, an
           </Flex>
         ))}
       </Flex>
-      <Text mt={4}>{description}</Text>
-      <Text mt={4} mb={2} fontWeight="bold">Insights</Text>
       <Markdown>{analysis}</Markdown>
     </Box>
   );
