@@ -3,14 +3,17 @@
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import useChatStore from "@/app/store/chatStore";
+import useContextStore from "@/app/store/contextStore";
 
 export default function SingleThread() {
   const { id } = useParams();
   const { reset: resetChatStore, fetchThread } = useChatStore();
+  const { reset: resetContextStore } = useContextStore();
 
   useEffect(() => {
     resetChatStore();
-  }, [resetChatStore]);
+    resetContextStore();
+  }, [resetChatStore, resetContextStore]);
 
   useEffect(() => {
     if (id) {
