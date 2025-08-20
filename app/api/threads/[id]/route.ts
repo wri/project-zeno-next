@@ -6,6 +6,8 @@ import { LangChainResponse, StreamMessage } from "@/app/types/chat";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../../shared/parse-stream-message";
 
+// import fs from "fs";
+
 const TOKEN_NAME = "auth_token";
 
 export async function GET(
@@ -30,16 +32,13 @@ export async function GET(
       abortController.abort();
     }, 60000); // 60 second timeout
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        signal: abortController.signal,
-      }
-    );
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      signal: abortController.signal,
+    });
 
     if (!response.ok) {
       clearTimeout(timeoutId);
@@ -111,6 +110,8 @@ export async function GET(
           once: true,
         });
 
+        // const debugData: object[] = [];
+
         try {
           await readDataStream({
             abortController,
@@ -120,7 +121,11 @@ export async function GET(
                 const langChainMessage: LangChainResponse = JSON.parse(data);
 
                 const updateObject = JSON5.parse(langChainMessage.update);
-                const type = updateObject.messages[0]?.kwargs.type as
+
+                // debugData.push({ ...langChainMessage, update: updateObject });
+
+                const lastMessage = updateObject.messages?.at(-1);
+                const type = lastMessage?.kwargs.type as
                   | "ai"
                   | "tool"
                   | "human"
@@ -136,7 +141,11 @@ export async function GET(
 
                 // Parse LangChain response and extract useful information
                 const streamMessage = messageType
-                  ? parseStreamMessage(updateObject, messageType)
+                  ? parseStreamMessage(
+                      updateObject,
+                      messageType,
+                      new Date(langChainMessage.timestamp)
+                    )
                   : null;
 
                 if (!streamMessage) {
@@ -157,6 +166,11 @@ export async function GET(
               }
             },
           });
+
+          // fs.writeFileSync(
+          //   "single-thread-stream.json",
+          //   JSON.stringify(debugData)
+          // );
         } catch (error) {
           console.error("Streaming error:", error);
           if (!abortController.signal.aborted) {
@@ -199,17 +213,14 @@ export async function PATCH(
 
     const body = await request.json();
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       throw new Error(`External API responded with status: ${response.status}`);
@@ -238,15 +249,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`External API responded with status: ${response.status}`);

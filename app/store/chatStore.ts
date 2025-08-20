@@ -30,7 +30,10 @@ interface ChatActions {
   sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
-  fetchThread: (threadId: string, abortController?: AbortController) => Promise<void>;
+  fetchThread: (
+    threadId: string,
+    abortController?: AbortController
+  ) => Promise<void>;
 }
 
 const initialState: ChatState = {
@@ -274,6 +277,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   fetchThread: async (threadId: string, abort?: AbortController) => {
     const { setLoading, addMessage } = get();
+    const { upsertContextByType } = useContextStore.getState();
 
     setLoading(true);
     // Set up abort controller for client-side timeout
@@ -308,15 +312,43 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             const streamMessage: StreamMessage = JSON.parse(data);
 
             if (streamMessage.type === "human") {
+              if (streamMessage.aoi) {
+                const aoi = streamMessage.aoi as {
+                  name: string;
+                  gadm_id: string;
+                  src_id: string;
+                  subtype: string;
+                };
+                upsertContextByType({
+                  contextType: "area",
+                  content: aoi.name,
+                  aoiData: aoi,
+                });
+                await pickAoiTool(streamMessage, addMessage);
+              }
+
+              if (streamMessage.start_date && streamMessage.end_date) {
+                upsertContextByType({
+                  contextType: "date",
+                  content: `${streamMessage.start_date} — ${streamMessage.end_date}`,
+                  dateRange: {
+                    start: new Date(streamMessage.start_date),
+                    end: new Date(streamMessage.end_date),
+                  },
+                });
+              }
+
               // Add user message
               addMessage({
                 type: "user",
                 message: streamMessage.text!,
+                // The context will have been updated by the upsertContextByType
+                // calls above. Get the updated context from the store
+                context: useContextStore.getState().context,
               });
+
               return;
             }
-
-            console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
             await processStreamMessage(streamMessage, addMessage);
           } catch (err) {
             if (isFinal) {

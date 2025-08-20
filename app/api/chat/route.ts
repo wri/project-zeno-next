@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
                 name: "timeout",
                 content:
                   "Request timed out after 5 minutes. Please try a simpler query or try again later.",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
               };
 
               controller.enqueue(
@@ -178,7 +178,8 @@ export async function POST(request: NextRequest) {
                   const updateObject = JSON5.parse(update);
                   const streamMessage = parseStreamMessage(
                     updateObject,
-                    "agent"
+                    "agent",
+                    new Date(langChainMessage.timestamp)
                   );
 
                   if (streamMessage) {
@@ -200,7 +201,8 @@ export async function POST(request: NextRequest) {
                   // Parse LangChain response and extract useful information
                   const streamMessage = parseStreamMessage(
                     updateObject,
-                    messageType as "agent" | "tools"
+                    messageType as "agent" | "tools",
+                    new Date(langChainMessage.timestamp)
                   );
 
                   // Send simplified message to client if we have something useful

@@ -73,6 +73,8 @@ export interface StreamMessage {
   charts_data?: object[];
   insight_count?: number;
   timestamp: number;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface AOI {
@@ -108,7 +110,9 @@ export interface LangChainResponse {
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
-  aoi: object;
+  aoi?: object;
+  start_date?: string;
+  end_date?: string;
   insights: object[];
   charts_data: object[];
   insight_count: number;
