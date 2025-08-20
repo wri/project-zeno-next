@@ -26,7 +26,9 @@ interface ChatState {
 
 interface ChatActions {
   reset: () => void;
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
+  addMessage: (
+    message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
+  ) => void;
   sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
@@ -55,7 +57,7 @@ Ask a question and let’s see what we can do for nature.`,
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   if (streamMessage.type === "error") {
     // Handle timeout errors specifically
@@ -64,6 +66,7 @@ async function processStreamMessage(
         type: "error",
         message:
           streamMessage.content || "Request timed out. Please try again.",
+        timestamp: streamMessage.timestamp,
       });
     } else {
       // Handle other error messages from LangChain tools
@@ -71,12 +74,14 @@ async function processStreamMessage(
         type: "error",
         message:
           "I encountered an error while processing your request. Please try rephrasing your question or try again.",
+        timestamp: streamMessage.timestamp,
       });
     }
   } else if (streamMessage.type === "text" && streamMessage.text) {
     addMessage({
       type: "assistant",
       message: streamMessage.text,
+      timestamp: streamMessage.timestamp,
     });
   } else if (streamMessage.type === "tool") {
     // Special handling for generate_insights tool
@@ -98,6 +103,7 @@ async function processStreamMessage(
       addMessage({
         type: "assistant",
         message: `Tool: ${streamMessage.name || "Unknown"}`,
+        timestamp: streamMessage.timestamp,
       });
     }
   }
@@ -112,7 +118,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const newMessage: ChatMessage = {
       ...message,
       id: Date.now().toString() + "-" + Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toISOString(),
+      timestamp: message.timestamp || new Date().toISOString(),
     };
 
     set((state) => ({
@@ -350,6 +356,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                 // The context will have been updated by the upsertContextByType
                 // calls above. Get the updated context from the store
                 context: useContextStore.getState().context,
+                timestamp: streamMessage.timestamp,
               });
 
               return;

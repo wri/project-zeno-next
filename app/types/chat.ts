@@ -72,7 +72,7 @@ export interface StreamMessage {
   insights?: object[];
   charts_data?: object[];
   insight_count?: number;
-  timestamp: number;
+  timestamp: string;
   start_date?: string;
   end_date?: string;
 }
@@ -104,6 +104,7 @@ export interface LangChainContent {
 
 export interface LangChainResponse {
   node: string;
+  timestamp: string;
   update: string;
 }
 

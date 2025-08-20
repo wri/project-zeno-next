@@ -77,7 +77,7 @@ export async function GET(
               type: "error",
               name: "timeout",
               content: "Request timed out. Try again later.",
-              timestamp: Date.now(),
+              timestamp: new Date().toISOString(),
             };
 
             controller.enqueue(
