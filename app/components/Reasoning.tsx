@@ -4,7 +4,7 @@ import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 function Reasoning() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   return (
     <Collapsible.Root open={isOpen} onOpenChange={setIsOpen}>
       <Collapsible.Trigger>
@@ -25,6 +25,8 @@ function Reasoning() {
           paddingLeft={3}
           paddingRight={3}
           gap={2}
+          fontFamily="mono"
+          fontSize="xs"
         >
           Placeholder text for reasoning steps.
         </Box>
