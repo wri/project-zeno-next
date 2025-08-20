@@ -22,6 +22,7 @@ interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
+  toolSteps: string[];
 }
 
 interface ChatActions {
@@ -36,6 +37,8 @@ interface ChatActions {
     threadId: string,
     abortController?: AbortController
   ) => Promise<void>;
+  addToolStep: (toolName: string) => void;
+  clearToolSteps: () => void;
 }
 
 const initialState: ChatState = {
@@ -43,21 +46,23 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message: `Hi, I’m your Global Nature Watch assistant.
-I help you explore how our planet’s land and ecosystems are changing, powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
+      message: `Hi, I'm your Global Nature Watch assistant.
+I help you explore how our planet's land and ecosystems are changing, powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
 
-Ask a question and let’s see what we can do for nature.`,
+Ask a question and let's see what we can do for nature.`,
       timestamp: new Date().toISOString(),
     },
   ],
   isLoading: false,
   currentThreadId: null,
+  toolSteps: [],
 };
 
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void,
+  addToolStep: (toolName: string) => void
 ) {
   if (streamMessage.type === "error") {
     // Handle timeout errors specifically
@@ -84,6 +89,11 @@ async function processStreamMessage(
       timestamp: streamMessage.timestamp,
     });
   } else if (streamMessage.type === "tool") {
+    // Add tool step to reasoning display
+    if (streamMessage.name) {
+      addToolStep(streamMessage.name);
+    }
+
     // Special handling for generate_insights tool
     if (streamMessage.name === "generate_insights" && streamMessage.insights) {
       return generateInsightsTool(streamMessage, addMessage);
@@ -133,7 +143,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   sendMessage: async (message: string, queryType: QueryType = "query") => {
-    const { addMessage, setLoading, currentThreadId, generateNewThread } =
+    const { addMessage, setLoading, currentThreadId, generateNewThread, addToolStep, clearToolSteps } =
       get();
     const { context } = useContextStore.getState();
 
@@ -147,6 +157,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       context,
     });
 
+    // Clear any previous tool steps and start loading
+    clearToolSteps();
     setLoading(true);
 
     // Build ui_context from current context
@@ -233,7 +245,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           console.log("API Stream message:", data);
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
-            await processStreamMessage(streamMessage, addMessage);
+            await processStreamMessage(streamMessage, addMessage, addToolStep);
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -287,10 +299,20 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
+  addToolStep: (toolName: string) => {
+    set((state) => ({
+      toolSteps: [...state.toolSteps, toolName],
+    }));
+  },
+
+  clearToolSteps: () => set({ toolSteps: [] }),
+
   fetchThread: async (threadId: string, abort?: AbortController) => {
-    const { setLoading, addMessage } = get();
+    const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
     const { upsertContextByType } = useContextStore.getState();
 
+    // Clear any previous tool steps and start loading
+    clearToolSteps();
     setLoading(true);
     // Set up abort controller for client-side timeout
     const abortController = abort || new AbortController();
@@ -362,7 +384,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
               return;
             }
-            await processStreamMessage(streamMessage, addMessage);
+            console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
+            await processStreamMessage(streamMessage, addMessage, addToolStep);
           } catch (err) {
             if (isFinal) {
               console.error(
