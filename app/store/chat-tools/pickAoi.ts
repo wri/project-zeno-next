@@ -10,7 +10,7 @@ export async function pickAoiTool(
 ) {
   try {
     const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();
-    const { addContext } = useContextStore.getState();
+    const { upsertContextByType } = useContextStore.getState();
 
     const aoiData = streamMessage.aoi as AOI;
     const aoiName = aoiData.name;
@@ -40,7 +40,7 @@ export async function pickAoiTool(
     flyToGeoJsonWithRetry(geoJsonData);
 
     if (aoiName) {
-      addContext({
+      upsertContextByType({
         contextType: "area",
         content: aoiName,
       });
