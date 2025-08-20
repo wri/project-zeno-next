@@ -1,12 +1,14 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import JSON5 from "json5";
 import { readDataStream } from "../../shared/read-data-stream";
 import { LangChainResponse, StreamMessage } from "@/app/types/chat";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../../shared/parse-stream-message";
-
-const TOKEN_NAME = "auth_token";
+import {
+  getAPIRequestHeaders,
+  getAuthToken,
+  getSessionToken,
+} from "../../shared/utils";
 
 export async function GET(
   request: NextRequest,
@@ -14,11 +16,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Create AbortController for timeout and cleanup
@@ -30,19 +33,19 @@ export async function GET(
       abortController.abort();
     }, 60000); // 60 second timeout
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        signal: abortController.signal,
-      }
-    );
+          ...(await getAPIRequestHeaders()),
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...(await getAPIRequestHeaders()),
+      },
+      signal: abortController.signal,
+    });
 
     if (!response.ok) {
       clearTimeout(timeoutId);
+      console.error(response);
       return NextResponse.json(
         { error: "External API error" },
         { status: response.status }
@@ -190,28 +193,29 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      }
-    );
+          ...(await getAPIRequestHeaders()),
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...(await getAPIRequestHeaders()),
+      },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
+      console.error(response);
       throw new Error(`External API responded with status: ${response.status}`);
     }
 
@@ -231,22 +235,22 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+          ...(await getAPIRequestHeaders()),
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(await getAPIRequestHeaders()),
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`External API responded with status: ${response.status}`);

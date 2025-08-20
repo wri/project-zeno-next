@@ -1,24 +1,33 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { API_CONFIG } from "@/app/config/api";
-
-const TOKEN_NAME = "auth_token";
+import {
+  getAuthToken,
+  getSessionToken,
+  getAPIRequestHeaders,
+} from "../shared/utils";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const response = await fetch(API_CONFIG.ENDPOINTS.THREADS, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        ...(await getAPIRequestHeaders()),
       },
     });
+
+    if (!response.ok) {
+      console.error(response);
+      throw new Error(`External API responded with status: ${response.status}`);
+    }
 
     const json = await response.json();
     return NextResponse.json(json, { status: 200 });
