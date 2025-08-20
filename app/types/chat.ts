@@ -40,6 +40,7 @@ export interface UiContext {
       gadm_id?: string;
       src_id?: string;
       subtype?: string;
+      source?: string;
     };
     aoi_name: string;
     subregion_aois: null;

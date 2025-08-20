@@ -164,6 +164,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           gadm_id: areaContext.aoiData.gadm_id,
           src_id: areaContext.aoiData.src_id,
           subtype: areaContext.aoiData.subtype,
+          source: areaContext.aoiData.source
         },
         aoi_name: areaContext.aoiData.name,
         subregion_aois: null,
