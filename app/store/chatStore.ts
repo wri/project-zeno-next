@@ -26,11 +26,16 @@ interface ChatState {
 
 interface ChatActions {
   reset: () => void;
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
+  addMessage: (
+    message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
+  ) => void;
   sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
-  fetchThread: (threadId: string) => Promise<void>;
+  fetchThread: (
+    threadId: string,
+    abortController?: AbortController
+  ) => Promise<void>;
 }
 
 const initialState: ChatState = {
@@ -52,7 +57,7 @@ Ask a question and let’s see what we can do for nature.`,
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   if (streamMessage.type === "error") {
     // Handle timeout errors specifically
@@ -61,6 +66,7 @@ async function processStreamMessage(
         type: "error",
         message:
           streamMessage.content || "Request timed out. Please try again.",
+        timestamp: streamMessage.timestamp,
       });
     } else {
       // Handle other error messages from LangChain tools
@@ -68,12 +74,14 @@ async function processStreamMessage(
         type: "error",
         message:
           "I encountered an error while processing your request. Please try rephrasing your question or try again.",
+        timestamp: streamMessage.timestamp,
       });
     }
   } else if (streamMessage.type === "text" && streamMessage.text) {
     addMessage({
       type: "assistant",
       message: streamMessage.text,
+      timestamp: streamMessage.timestamp,
     });
   } else if (streamMessage.type === "tool") {
     // Special handling for generate_insights tool
@@ -95,6 +103,7 @@ async function processStreamMessage(
       addMessage({
         type: "assistant",
         message: `Tool: ${streamMessage.name || "Unknown"}`,
+        timestamp: streamMessage.timestamp,
       });
     }
   }
@@ -109,7 +118,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const newMessage: ChatMessage = {
       ...message,
       id: Date.now().toString() + "-" + Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toISOString(),
+      timestamp: message.timestamp || new Date().toISOString(),
     };
 
     set((state) => ({
@@ -155,6 +164,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           gadm_id: areaContext.aoiData.gadm_id,
           src_id: areaContext.aoiData.src_id,
           subtype: areaContext.aoiData.subtype,
+          source: areaContext.aoiData.source
         },
         aoi_name: areaContext.aoiData.name,
         subregion_aois: null,
@@ -266,18 +276,24 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
+      if (!currentThreadId) {
+        // Change the url using the history API so not to trigger any next
+        // router events.
+        window.history.replaceState(null, "", `/threads/${threadId}`);
+      }
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
     }
   },
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  fetchThread: async (threadId: string) => {
+  fetchThread: async (threadId: string, abort?: AbortController) => {
     const { setLoading, addMessage } = get();
+    const { upsertContextByType } = useContextStore.getState();
 
     setLoading(true);
     // Set up abort controller for client-side timeout
-    const abortController = new AbortController();
+    const abortController = abort || new AbortController();
     const timeoutId = setTimeout(() => {
       console.log(
         "CLIENT TIMEOUT: Request exceeded 5 minutes 10 seconds - aborting request"
@@ -308,15 +324,44 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             const streamMessage: StreamMessage = JSON.parse(data);
 
             if (streamMessage.type === "human") {
+              if (streamMessage.aoi) {
+                const aoi = streamMessage.aoi as {
+                  name: string;
+                  gadm_id: string;
+                  src_id: string;
+                  subtype: string;
+                };
+                upsertContextByType({
+                  contextType: "area",
+                  content: aoi.name,
+                  aoiData: aoi,
+                });
+                await pickAoiTool(streamMessage, addMessage);
+              }
+
+              if (streamMessage.start_date && streamMessage.end_date) {
+                upsertContextByType({
+                  contextType: "date",
+                  content: `${streamMessage.start_date} — ${streamMessage.end_date}`,
+                  dateRange: {
+                    start: new Date(streamMessage.start_date),
+                    end: new Date(streamMessage.end_date),
+                  },
+                });
+              }
+
               // Add user message
               addMessage({
                 type: "user",
                 message: streamMessage.text!,
+                // The context will have been updated by the upsertContextByType
+                // calls above. Get the updated context from the store
+                context: useContextStore.getState().context,
+                timestamp: streamMessage.timestamp,
               });
+
               return;
             }
-
-            console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
             await processStreamMessage(streamMessage, addMessage);
           } catch (err) {
             if (isFinal) {
@@ -340,7 +385,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         console.log("FRONTEND: Stream ended due to abort signal");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      if (abortController.signal.aborted) {
+        console.log("FRONTEND: Stream ended due to abort signal");
+      } else {
+        console.error("Error sending message:", error);
+      }
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);

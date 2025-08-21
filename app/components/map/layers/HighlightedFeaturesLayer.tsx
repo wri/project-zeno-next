@@ -61,7 +61,7 @@ function createBboxPolygon(
 
 function MapFeature({ feature, areas }: MapFeatureProps) {
   const { current: map } = useMap();
-  const { addContext, removeContext } = useContextStore();
+  const { upsertContextByType, removeContext } = useContextStore();
   const [isHovered, setIsHovered] = useState(false);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
@@ -162,7 +162,7 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
     const handleClick = () => {
       // Only add to context if not already in context
       if (!isInContext) {
-        addContext({
+        upsertContextByType({
           contextType: "area",
           content: featureName,
           aoiData: {
@@ -203,7 +203,7 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
     bboxSourceId,
     feature.id,
     areas,
-    addContext,
+    upsertContextByType,
     hoverTimeout,
     setHoverState,
   ]);

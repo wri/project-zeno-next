@@ -32,6 +32,7 @@ interface ContextState {
 interface ContextActions {
   reset: () => void;
   addContext: (item: Omit<ContextItem, "id">) => void;
+  upsertContextByType: (item: Omit<ContextItem, "id">) => void;
   removeContext: (id: string) => void;
   clearContext: () => void;
 }
@@ -87,6 +88,19 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
       }
       return {
         context: state.context.filter((c) => c.id !== id),
+      };
+    }),
+  upsertContextByType: (item) =>
+    set((state) => {
+      const newContext = state.context.filter(
+        (c) => c.contextType !== item.contextType
+      );
+
+      return {
+        context: [
+          ...newContext,
+          { ...item, id: `${item.contextType}-${Date.now()}` },
+        ],
       };
     }),
   clearContext: () =>

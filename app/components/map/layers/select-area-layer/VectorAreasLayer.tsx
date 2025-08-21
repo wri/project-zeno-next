@@ -34,7 +34,7 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { addContext } = useContextStore();
+  const { upsertContextByType } = useContextStore();
   const { addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
@@ -162,7 +162,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
 
-            addContext({
+            upsertContextByType({
               contextType: "area",
               content: aoiName,
               aoiData: {
@@ -203,7 +203,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     nameKeys,
     setSelectAreaLayer,
     metadata,
-    addContext,
+    upsertContextByType,
     addGeoJsonFeature,
     layerId,
     url,
