@@ -40,6 +40,8 @@ function LoginOverlay() {
     isAuthenticated,
     userEmail,
     isWhitelisted,
+    isAnonymous,
+    setAnonymous,
     setAuthStatus,
     clearAuth,
   } = useAuthStore();
@@ -96,7 +98,7 @@ function LoginOverlay() {
     );
   }
 
-  if (isAuthenticated && isWhitelisted) {
+  if (isAuthenticated && isWhitelisted || isAnonymous) {
     return null;
   }
 
@@ -114,6 +116,9 @@ function LoginOverlay() {
           </Text>
         </Dialog.Body>
         <Dialog.Footer>
+          <Button variant='ghost' onClick={setAnonymous}>
+            Browse anonymously
+          </Button>
           <Button colorPalette="primary" onClick={handleLoginClick}>
             Login with WRI
           </Button>
