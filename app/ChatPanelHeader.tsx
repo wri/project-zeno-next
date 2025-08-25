@@ -108,14 +108,46 @@ function ChatPanelHeader() {
         <ThreadActionsMenu
           thread={{ id: currentThreadId, name: currentThreadName }}
         >
-          <Button variant="ghost" size="sm" mr="auto">
-            {currentThreadName}
-            <CaretDownIcon />
+          <Button
+            variant="ghost"
+            size="sm"
+            flex="1"
+            minW={0}
+            justifyContent="flex-start"
+          >
+            <Flex align="center" gap={1} w="100%" minW={0}>
+              <Text
+                as="span"
+                flex="1"
+                minW={0}
+                whiteSpace="nowrap"
+                overflow="hidden"
+                textOverflow="ellipsis"
+              >
+                {currentThreadName}
+              </Text>
+              <CaretDownIcon />
+            </Flex>
           </Button>
         </ThreadActionsMenu>
       ) : (
-        <Button variant="ghost" size="sm" mr="auto">
-          {currentThreadName}
+        <Button
+          variant="ghost"
+          size="sm"
+          flex="1"
+          minW={0}
+          justifyContent="flex-start"
+        >
+          <Text
+            as="span"
+            flex="1"
+            minW={0}
+            whiteSpace="nowrap"
+            overflow="hidden"
+            textOverflow="ellipsis"
+          >
+            {currentThreadName}
+          </Text>
         </Button>
       )}
 
