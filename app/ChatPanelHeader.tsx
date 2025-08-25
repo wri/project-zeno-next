@@ -1,4 +1,6 @@
-import { useCallback, useMemo } from "react";
+"use client";
+
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import {
   Flex,
   IconButton,
@@ -6,6 +8,7 @@ import {
   Button,
   Portal,
   Text,
+  Box,
 } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -34,7 +37,105 @@ export const WidgetIcons = {
   "dataset-card": <StackIcon />
 }
 
-function ChatPanelHeader() {
+// Marquee-on-hover text: scrolls horizontally to reveal overflowed content
+function HoverMarquee({ text, speed = 60, rewindSpeed = 120, ariaLabel }: { text: string; speed?: number; rewindSpeed?: number; ariaLabel?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [tx, setTx] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [active, setActive] = useState(false); // true during hover or rewind
+  const rewindTimeoutRef = useRef<number | null>(null);
+  
+  
+  // cleanup
+  useEffect(() => {
+    return () => {
+      if (rewindTimeoutRef.current) {
+        clearTimeout(rewindTimeoutRef.current);
+        rewindTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  const onEnter = () => {
+    if (rewindTimeoutRef.current) {
+      clearTimeout(rewindTimeoutRef.current);
+      rewindTimeoutRef.current = null;
+    }
+    const container = containerRef.current;
+    const inner = innerRef.current;
+    if (!container || !inner) return;
+    const distance = inner.scrollWidth - container.clientWidth;
+    if (distance > 0) {
+      setDuration(distance / speed);
+      setTx(-distance);
+      setActive(true);
+    }
+  };
+
+  const onLeave = () => {
+    const container = containerRef.current;
+    const inner = innerRef.current;
+    if (!container || !inner) return;
+    const distance = Math.abs(tx); // remaining distance back to 0
+    if (distance > 0) {
+      setDuration(distance / rewindSpeed);
+    }
+    setTx(0);
+    // keep active during rewind, then hide scroller and show truncated text
+    if (distance > 0) {
+      rewindTimeoutRef.current = window.setTimeout(() => {
+        setActive(false);
+        rewindTimeoutRef.current = null;
+      }, (distance / rewindSpeed) * 1000);
+    } else {
+      setActive(false);
+    }
+  };
+
+  return (
+    <Box
+      ref={containerRef}
+      role="text"
+      aria-label={ariaLabel ?? text}
+      flex="1"
+      minW={0}
+      whiteSpace="nowrap"
+      overflow="hidden"
+      textOverflow="ellipsis"
+      position="relative"
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      {/* Static, truncated text when idle */}
+      <Text
+        as="span"
+        display={active ? "none" : "inline"}
+        whiteSpace="nowrap"
+        overflow="hidden"
+        textOverflow="ellipsis"
+      >
+        {text}
+      </Text>
+      {/* Scrolling text shown only on hover/rewind */}
+      <Box
+        ref={innerRef}
+        display="inline-block"
+        visibility={active ? "visible" : "hidden"}
+        position={active ? "static" : "absolute"}
+        left={0}
+        transitionProperty="transform"
+        transitionTimingFunction="linear"
+        transitionDuration={`${duration}s`}
+        style={{ transform: `translateX(${tx}px)` }}
+      >
+        {text}
+      </Box>
+    </Box>
+  );
+}
+
+function ChatPanelHeader({ marqueeSpeed = 100, marqueeRewindSpeed = 300 }: { marqueeSpeed?: number; marqueeRewindSpeed?: number }) {
   const {
     sideBarVisible,
     toggleSidebar,
@@ -116,18 +217,7 @@ function ChatPanelHeader() {
             justifyContent="flex-start"
           >
             <Flex align="center" gap={1} w="100%" minW={0}>
-              <Tooltip content={currentThreadName} showArrow>
-                <Text
-                  as="span"
-                  flex="1"
-                  minW={0}
-                  whiteSpace="nowrap"
-                  overflow="hidden"
-                  textOverflow="ellipsis"
-                >
-                  {currentThreadName}
-                </Text>
-              </Tooltip>
+              <HoverMarquee text={currentThreadName} speed={marqueeSpeed} rewindSpeed={marqueeRewindSpeed} ariaLabel="Conversation title" />
               <CaretDownIcon />
             </Flex>
           </Button>
@@ -140,18 +230,7 @@ function ChatPanelHeader() {
           minW={0}
           justifyContent="flex-start"
         >
-          <Tooltip content={currentThreadName} showArrow>
-            <Text
-              as="span"
-              flex="1"
-              minW={0}
-              whiteSpace="nowrap"
-              overflow="hidden"
-              textOverflow="ellipsis"
-            >
-              {currentThreadName}
-            </Text>
-          </Tooltip>
+          <HoverMarquee text={currentThreadName} speed={marqueeSpeed} rewindSpeed={marqueeRewindSpeed} ariaLabel="Conversation title" />
         </Button>
       )}
 
