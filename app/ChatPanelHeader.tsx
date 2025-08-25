@@ -116,16 +116,18 @@ function ChatPanelHeader() {
             justifyContent="flex-start"
           >
             <Flex align="center" gap={1} w="100%" minW={0}>
-              <Text
-                as="span"
-                flex="1"
-                minW={0}
-                whiteSpace="nowrap"
-                overflow="hidden"
-                textOverflow="ellipsis"
-              >
-                {currentThreadName}
-              </Text>
+              <Tooltip content={currentThreadName} showArrow>
+                <Text
+                  as="span"
+                  flex="1"
+                  minW={0}
+                  whiteSpace="nowrap"
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                >
+                  {currentThreadName}
+                </Text>
+              </Tooltip>
               <CaretDownIcon />
             </Flex>
           </Button>
@@ -138,16 +140,18 @@ function ChatPanelHeader() {
           minW={0}
           justifyContent="flex-start"
         >
-          <Text
-            as="span"
-            flex="1"
-            minW={0}
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-          >
-            {currentThreadName}
-          </Text>
+          <Tooltip content={currentThreadName} showArrow>
+            <Text
+              as="span"
+              flex="1"
+              minW={0}
+              whiteSpace="nowrap"
+              overflow="hidden"
+              textOverflow="ellipsis"
+            >
+              {currentThreadName}
+            </Text>
+          </Tooltip>
         </Button>
       )}
 
