@@ -105,28 +105,6 @@ export const config = defineConfig({
         },
       },
     },
-    semanticTokens: {
-      colors: {
-        primary: {
-          contrast: { value: "{colors.primary.100}" },
-          solid: { value: "{colors.primary.500}" },
-          fg: { value: "{colors.primary.700}" },
-          muted: { value: "{colors.primary.100}" },
-          subtle: { value: "{colors.primary.200}" },
-          emphasized: { value: "{colors.primary.300}" },
-          focusRing: { value: "{colors.primary.500}" },
-        },
-        secondary: {
-          contrast: { value: "{colors.secondary.100}" },
-          solid: { value: "{colors.secondary.500}" },
-          fg: { value: "{colors.secondary.700}" },
-          muted: { value: "{colors.secondary.100}" },
-          subtle: { value: "{colors.secondary.200}" },
-          emphasized: { value: "{colors.secondary.300}" },
-          focusRing: { value: "{colors.secondary.500}" },
-        },
-      },
-    },
   },
 });
 
