@@ -4,6 +4,7 @@ import { StateCreator } from "zustand";
 import type { Map } from "maplibre-gl";
 import { AOI } from "../types/chat";
 import { generateRandomName } from "../utils/generateRandomName";
+import bbox from "@turf/bbox";
 import type { MapState } from "./mapStore";
 import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
 import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../constants/custom-areas";
@@ -93,7 +94,7 @@ export const createDrawAreaSlice: StateCreator<
     set({ validationError: null });
   },
 
-  confirmDrawing: () => {
+  confirmDrawing: async () => {
     const terraDraw = getTerraDraw(get);
     const drawnFeatures = terraDraw.getSnapshot();
 
@@ -143,8 +144,55 @@ export const createDrawAreaSlice: StateCreator<
       return;
     }
 
+    // Calculate bbox for each feature
+    const bboxFeatures = features.map(feature => {
+      const bounds = bbox(feature);
+      return {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [[
+            [bounds[0], bounds[1]],
+            [bounds[0], bounds[3]],
+            [bounds[2], bounds[3]],
+            [bounds[2], bounds[1]],
+            [bounds[0], bounds[1]]
+          ]]
+        }
+      } as GeoJSON.Feature;
+    });
+
+    const bboxCollection: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: bboxFeatures
+    };
+
+    let areaName: string;
+    try {
+      // Get area name from API
+      const response = await fetch("/api/proxy/custom_area_name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bboxCollection),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get area name");
+      }
+
+      const data = await response.json();
+      areaName = data.name;
+    } catch (error) {
+      console.error("Failed to get area name:", error);
+      areaName = generateRandomName();
+    }
+
     const newArea: AOI = {
-      name: generateRandomName(),
+      name: areaName,
+      src_id: areaName, // Use generated name as unique identifier for now
+      source: "custom",
+      subtype: "custom-area",
       geometry: featureCollection,
     };
 
@@ -157,7 +205,7 @@ export const createDrawAreaSlice: StateCreator<
 
     const createAreaFn = get().createAreaFn;
     if (createAreaFn) {
-      createAreaFn(requestData);
+      await createAreaFn(requestData);
     }
 
     get().endDrawing();

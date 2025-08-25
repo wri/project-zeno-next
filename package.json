@@ -10,6 +10,7 @@
     "analyze": "ANALYZE=true next build --turbopack"
   },
   "dependencies": {
+    "@ark-ui/react": "^5.18.3",
     "@chakra-ui/charts": "^3.22.0",
     "@chakra-ui/react": "^3.19.1",
     "@fontsource/ibm-plex-mono": "^5.2.5",
@@ -25,6 +26,7 @@
     "@types/uuid": "^10.0.0",
     "cookie": "^1.0.2",
     "d3": "^7.9.0",
+    "date-fns": "^4.1.0",
     "json5": "^2.2.3",
     "jwt-decode": "^4.0.0",
     "maplibre-gl": "^5.5.0",
@@ -38,6 +40,7 @@
     "remark-breaks": "^4.0.0",
     "terra-draw": "^1.10.0",
     "terra-draw-maplibre-gl-adapter": "^1.1.1",
+    "use-mask-input": "^3.5.0",
     "uuid": "^11.1.0",
     "zod": "^4.0.14",
     "zustand": "^5.0.5"
@@ -54,5 +57,5 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@9.12.1+sha1.7084e7df42ee1d221994c2c2599277a2a937f050"
+  "packageManager": "pnpm@10.14.0"
 }

@@ -12,14 +12,13 @@ async function getAuthToken(): Promise<string | null> {
 }
 
 /**
- * Builds the target URL for the proxy request. The upstream API expects
- * a trailing slash.
+ * Builds the target URL for the proxy request and strips any trailing slash.
  * @param pathSegments - The path segments to append to the base URL.
- * @returns The target URL with the path segments.
+ * @returns The target URL with the path segments and no trailing slash.
  */
 function buildTargetUrl(pathSegments: string[]): string {
   const url = `${BASE_URL}/${pathSegments.join("/")}`;
-  return url.endsWith("/") ? url : `${url}/`;
+  return url.endsWith("/") ? url.slice(0, -1) : url;
 }
 
 /**

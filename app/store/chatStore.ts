@@ -1,13 +1,17 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
+import { format } from "date-fns";
+
 import {
   ChatMessage,
   ChatPrompt,
   StreamMessage,
   QueryType,
+  UiContext,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/shared/read-data-stream";
+import { DATASET_BY_ID } from "../constants/datasets";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
@@ -29,28 +33,15 @@ interface ChatActions {
   fetchThread: (threadId: string) => Promise<void>;
 }
 
-interface UiContext {
-  aoi_selected?: {
-    aoi: {
-      name: string;
-      gadm_id?: string;
-      src_id?: string;
-      subtype?: string;
-    };
-    aoi_name: string;
-    subregion_aois: null;
-    subregion: null;
-    subtype?: string;
-  };
-}
-
 const initialState: ChatState = {
   messages: [
     {
       id: "1",
       type: "system",
-      message:
-        "Hi! I'm Land & Carbon Lab's alert explorer. I can help you find and investigate disturbances in your area of interest using the Land Disturbance Alert Classification System and other contextual data. \nStart by asking me what I can do.",
+      message: `Hi, I’m your Global Nature Watch assistant.
+I help you explore how our planet’s land and ecosystems are changing, powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
+
+Ask a question and let’s see what we can do for nature.`,
       timestamp: new Date().toISOString(),
     },
   ],
@@ -172,6 +163,20 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       };
     }
 
+    const dateContext = context.find((ctx) => ctx.contextType === "date");
+    if (dateContext && dateContext.dateRange) {
+      ui_context.daterange_selected = {
+        start_date: format(dateContext.dateRange.start, "yyyy-MM-dd"),
+        end_date: format(dateContext.dateRange.end, "yyyy-MM-dd"),
+      };
+    }
+
+    const datasetContext = context.find((ctx) => ctx.contextType === "layer");
+    if (datasetContext && typeof datasetContext.datasetId === "number") {
+      const ds = DATASET_BY_ID[datasetContext.datasetId];
+      if (ds) ui_context.dataset_selected = { dataset: ds };
+    }
+
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
@@ -214,6 +219,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         abortController,
         reader,
         onData: async (data, isFinal) => {
+          // Log the raw data received
+          console.log("API Stream message:", data);
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
             await processStreamMessage(streamMessage, addMessage);

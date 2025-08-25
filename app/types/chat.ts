@@ -12,7 +12,7 @@ export interface ChatMessage {
 
 // Widget types for insights
 export interface InsightWidget {
-  type: "line" | "bar" | "table";
+  type: "line" | "bar" | "table" | "dataset-card";
   title: string;
   description: string;
   data: unknown;
@@ -33,27 +33,31 @@ export interface ChatPrompt {
   query_type: string;
   thread_id: string;
 }
+export interface UiContext {
+  aoi_selected?: {
+    aoi: {
+      name: string;
+      gadm_id?: string;
+      src_id?: string;
+      subtype?: string;
+    };
+    aoi_name: string;
+    subregion_aois: null;
+    subregion: null;
+    subtype?: string;
+  };
+  dataset_selected?: { dataset: DatasetInfo };
+  daterange_selected?: {
+    start_date: string;
+    end_date: string;
+  };
+}
 
 export interface ChatAPIRequest {
   query: string;
   query_type: string;
   thread_id: string;
-  ui_context?: {
-    aoi_selected?: {
-      aoi: {
-        name: string;
-        gadm_id?: string;
-        src_id?: string;
-        subtype?: string;
-      };
-      aoi_name: string;
-      subregion_aois?: null;
-      subregion?: null;
-      subtype?: string;
-    };
-    dataset_selected?: object;
-    daterange_selected?: object;
-  };
+  ui_context?: UiContext;
 }
 
 // Simplified message that our API sends to the client
@@ -77,6 +81,17 @@ export interface AOI {
   source: string;
   subtype: string;
   geometry?: FeatureCollection; // Optional since it may not be included in the initial response
+}
+
+export interface DatasetInfo {
+  dataset_id: number;
+  dataset_name: string;
+  source: string;
+  reason: string;
+  data_layer: string;
+  tile_url: string;
+  context_layer: string;
+  threshold: number | null;
 }
 
 // LangChain content structure (for internal API use)

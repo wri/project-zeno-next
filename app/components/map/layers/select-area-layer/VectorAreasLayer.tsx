@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
-import "../../../theme/popup.css";
+import "../../../../theme/popup.css";
 
-import { LayerId, selectLayerOptions } from "../../../types/map";
-import useContextStore from "../../../store/contextStore";
-import useMapStore from "../../../store/mapStore";
-import { API_CONFIG } from "../../../config/api";
+import { LayerId, selectLayerOptions } from "../../../../types/map";
+import useContextStore from "../../../../store/contextStore";
+import useMapStore from "../../../../store/mapStore";
+import { API_CONFIG } from "../../../../config/api";
 import {
   getAoiName,
   getSrcId,
   getSubtype,
   singularizeDatasetName,
-} from "../../../utils/areaHelpers";
+} from "../../../../utils/areaHelpers";
 import {
   Feature,
   FeatureCollection,
@@ -20,11 +20,11 @@ import {
   MultiPolygon,
   Polygon,
 } from "geojson";
-import AreaTooltip, { HoverInfo } from "../../ui/AreaTooltip";
+import AreaTooltip, { HoverInfo } from "../../../ui/AreaTooltip";
+import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
 interface SourceLayerProps {
   layerId: LayerId;
-  beforeId?: string;
 }
 
 interface Metadata {
@@ -33,7 +33,7 @@ interface Metadata {
   subregion_to_subtype_mapping?: Record<string, string>;
 }
 
-function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
+function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { addContext } = useContextStore();
   const { addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
@@ -157,8 +157,8 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
             );
 
             // Get dynamic src_id and subtype using metadata
-            const dynamicSrcId = getSrcId(layerId, featureProps, metadata);
-            const dynamicSubtype = getSubtype(layerId, featureProps, metadata);
+            const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
+            const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
 
@@ -222,27 +222,13 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
           id={fillLayerName}
           type="fill"
           source-layer={sourceLayer}
-          paint={{
-            "fill-color": "#4B88D8",
-            "fill-opacity": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              0.48,
-              ["boolean", ["feature-state", "selected"], false],
-              0.08,
-              0,
-            ],
-          }}
+          paint={selectAreaFillPaint}
         />
         <Layer
           id={`select-layer-line-${id}`}
           type="line"
           source-layer={sourceLayer}
-          paint={{
-            "line-color": "#BBC5EB",
-            "line-width": 2,
-          }}
-          beforeId={beforeId}
+          paint={selectAreaLinePaint}
         />
       </Source>
       {hoverInfo && (
@@ -255,4 +241,4 @@ function SelectAreaLayer({ layerId, beforeId }: SourceLayerProps) {
   );
 }
 
-export default SelectAreaLayer;
+export default VectorAreasLayer;
