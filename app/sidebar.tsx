@@ -6,44 +6,113 @@ import {
   HStack,
   IconButton,
   LinkProps,
-  Separator,
   Stack,
   Text,
   Link as ChLink,
   Status,
+  Accordion,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
 import { Tooltip } from "./components/ui/tooltip";
-import { NotePencilIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
+import {
+  NotePencilIcon,
+  SidebarSimpleIcon
+} from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
+import ThreadActionsMenu from "./components/ThreadActionsMenu";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
-  const { isActive, href, children, ...rest } = props;
+  const { href, children, isActive, ...rest } = props;
   return (
     <ChLink
       fontSize="sm"
-      _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-      p="2"
-      px="1"
-      mx="2"
-      borderRadius="sm"
+      textDecor="none"
+      _hover={{ textDecor: "none" }}
       whiteSpace="nowrap"
       overflow="hidden"
       textOverflow="ellipsis"
       display="block"
+      flex="1"
+      outline="none"
       {...(isActive
         ? {
-            bg: "bg",
             color: "primary.fg",
           }
         : {})}
       {...rest}
       asChild
     >
-      <Link href={href}>{children}</Link>
+      <Link href={href} style={{ display: "block", width: "100%" }}>
+        {children}
+      </Link>
     </ChLink>
+  );
+}
+
+function ThreadSection({
+  threads,
+  label,
+  value,
+  currentThreadId,
+}: {
+  threads: { id: string; name: string }[];
+  label: string;
+  value: string;
+  currentThreadId: string | null;
+}) {
+  if (!threads.length) return null;
+  return (
+    <Accordion.Item value={value} border="none">
+      <Accordion.ItemTrigger px="3" py="1" cursor="pointer">
+        <Text
+          fontSize="xs"
+          fontWeight="normal"
+          color="fg.subtle"
+          ml="2"
+          mr="auto"
+        >
+          {label}
+        </Text>
+        <Accordion.ItemIndicator />
+      </Accordion.ItemTrigger>
+      <Accordion.ItemContent px="0" pt="0">
+        <Stack gap="1" mt="1">
+          {threads.map((thread) => {
+            const isActive = currentThreadId === thread.id;
+            return (
+              <Flex
+                key={thread.id}
+                align="center"
+                justify="space-between"
+                pl="2"
+                pr="0"
+                mx="4"
+                borderRadius="sm"
+                role="group"
+                _hover={{ layerStyle: "fill.muted" }}
+                _focusWithin={{ outline: "2px solid var(--chakra-colors-gray-400)", outlineOffset: "2px" }}
+                css={{
+                  "&:hover .thread-actions": { opacity: 1 },
+                  "&:focus-within .thread-actions": { opacity: 1 },
+                }}
+                {...(isActive ? { bg: "bg", color: "blue.fg" } : {})}
+              >
+                <ThreadLink
+                  href={`/threads/${thread.id}`}
+                  isActive={isActive}
+                  _hover={{ textDecor: "none" }}
+                >
+                  {thread.name}
+                </ThreadLink>
+                <ThreadActionsMenu thread={thread} />
+              </Flex>
+            );
+          })}
+        </Stack>
+      </Accordion.ItemContent>
+    </Accordion.Item>
   );
 }
 
@@ -76,6 +145,9 @@ export function Sidebar() {
       gridArea="sidebar"
       overflow="hidden"
       transition="width 0.3s"
+      tabIndex={!sideBarVisible ? -1 : undefined}
+      aria-hidden={!sideBarVisible}
+      inert={!sideBarVisible}
     >
       <Flex
         px="3"
@@ -114,56 +186,35 @@ export function Sidebar() {
           },
         }}
       >
-        {hasTodayThreads && (
-          <Stack gap="1" flex="1" mt="2">
-            <Text fontSize="xs" color="fg.muted" px="3">
-              Today
-            </Text>
-            {threadGroups.today.map((thread) => (
-              <ThreadLink
-                key={thread.id}
-                href={`/threads/${thread.id}`}
-                isActive={currentThreadId === thread.id}
-              >
-                {thread.name}
-              </ThreadLink>
-            ))}
-          </Stack>
-        )}
-        <Separator my="4" />
-        {hasPreviousWeekThreads && (
-          <Stack gap="1" flex="1" mt="2">
-            <Text fontSize="xs" color="fg.muted" px="3">
-              Previous 7 days
-            </Text>
-            {threadGroups.previousWeek.map((thread) => (
-              <ThreadLink
-                key={thread.id}
-                href={`/threads/${thread.id}`}
-                isActive={currentThreadId === thread.id}
-              >
-                {thread.name}
-              </ThreadLink>
-            ))}
-          </Stack>
-        )}
-        <Separator my="4" />
-        {hasOlderThreads && (
-          <Stack gap="1" flex="1" mt="2">
-            <Text fontSize="xs" color="fg.muted" px="3">
-              Older Conversations
-            </Text>
-            {threadGroups.older.map((thread) => (
-              <ThreadLink
-                key={thread.id}
-                href={`/threads/${thread.id}`}
-                isActive={currentThreadId === thread.id}
-              >
-                {thread.name}
-              </ThreadLink>
-            ))}
-          </Stack>
-        )}
+        <Accordion.Root
+          multiple
+          defaultValue={["today", "previousWeek", "older"]}
+        >
+          {hasTodayThreads && (
+            <ThreadSection
+              threads={threadGroups.today}
+              label="Today"
+              value="today"
+              currentThreadId={currentThreadId}
+            />
+          )}
+          {hasPreviousWeekThreads && (
+            <ThreadSection
+              threads={threadGroups.previousWeek}
+              label="Previous 7 days"
+              value="previousWeek"
+              currentThreadId={currentThreadId}
+            />
+          )}
+          {hasOlderThreads && (
+            <ThreadSection
+              threads={threadGroups.older}
+              label="Older Conversations"
+              value="older"
+              currentThreadId={currentThreadId}
+            />
+          )}
+        </Accordion.Root>
         <Status.Root
           colorPalette={apiStatus === "OK" ? "green" : "red"}
           m="3"

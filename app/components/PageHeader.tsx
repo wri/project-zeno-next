@@ -26,6 +26,7 @@ function PageHeader() {
         <Button
           variant="solid"
           colorPalette="primary"
+          _hover={{ bg: "primary.fg" }}
           size="sm"
         >
           <LifebuoyIcon />
@@ -59,6 +60,7 @@ function PageHeader() {
           asChild
           variant="solid"
           colorPalette="primary"
+          _hover={{ bg: "primary.fg" }}
           size="sm"
         >
           <Flex>

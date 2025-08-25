@@ -61,7 +61,7 @@ export const config = defineConfig({
           200: { value: "#F0F4B4" },
           300: { value: "#E2ED7D" },
           400: { value: "#cbe437" },
-          500: { value: "#adca18" }, //primary
+          500: { value: "#adca18" },
           600: { value: "#87a10f" },
           700: { value: "#667b10" },
           800: { value: "#516113" },
@@ -81,6 +81,28 @@ export const config = defineConfig({
       },
       animations: {
         fillWidth: { value: "fillWidth 10s linear infinite" },
+      },
+    },
+    semanticTokens: {
+      colors: {
+        primary: {
+          contrast: { value: "{colors.primary.100}" },
+          solid: { value: "{colors.primary.500}" },
+          fg: { value: "{colors.primary.700}" },
+          muted: { value: "{colors.primary.100}" },
+          subtle: { value: "{colors.primary.200}" },
+          emphasized: { value: "{colors.primary.300}" },
+          focusRing: { value: "{colors.primary.500}" },
+        },
+        secondary: {
+          contrast: { value: "{colors.secondary.100}" },
+          solid: { value: "{colors.secondary.500}" },
+          fg: { value: "{colors.secondary.700}" },
+          muted: { value: "{colors.secondary.100}" },
+          subtle: { value: "{colors.secondary.200}" },
+          emphasized: { value: "{colors.secondary.300}" },
+          focusRing: { value: "{colors.secondary.500}" },
+        },
       },
     },
     semanticTokens: {

@@ -113,7 +113,7 @@ const WelcomeModal = () => {
                   }}
                   _focusWithin={{
                     bg: "white",
-                    borderColor: "blpue.900",
+                    borderColor: "primary.900",
                   }}
                 >
                   <Textarea

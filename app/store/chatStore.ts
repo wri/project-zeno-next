@@ -7,9 +7,11 @@ import {
   ChatPrompt,
   StreamMessage,
   QueryType,
+  UiContext,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/shared/read-data-stream";
+import { DATASET_BY_ID } from "../constants/datasets";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
@@ -29,26 +31,6 @@ interface ChatActions {
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (threadId: string) => Promise<void>;
-}
-
-interface UiContext {
-  aoi_selected?: {
-    aoi: {
-      name: string;
-      gadm_id?: string;
-      src_id?: string;
-      subtype?: string;
-    };
-    aoi_name: string;
-    subregion_aois: null;
-    subregion: null;
-    subtype?: string;
-  };
-  dataset_selected?: object;
-  daterange_selected?: {
-    start_date: string;
-    end_date: string;
-  };
 }
 
 const initialState: ChatState = {
@@ -187,6 +169,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         start_date: format(dateContext.dateRange.start, "yyyy-MM-dd"),
         end_date: format(dateContext.dateRange.end, "yyyy-MM-dd"),
       };
+    }
+
+    const datasetContext = context.find((ctx) => ctx.contextType === "layer");
+    if (datasetContext && typeof datasetContext.datasetId === "number") {
+      const ds = DATASET_BY_ID[datasetContext.datasetId];
+      if (ds) ui_context.dataset_selected = { dataset: ds };
     }
 
     const prompt: ChatPrompt = {

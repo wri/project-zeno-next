@@ -14,7 +14,7 @@ interface AreaTooltipProps {
 function AreaTooltip({ hoverInfo, areaName }: AreaTooltipProps) {
   if (!hoverInfo) return null;
 
-  const displayName = areaName || hoverInfo.name;
+  const displayName = hoverInfo?.name || areaName;
 
   return (
     <Popup
