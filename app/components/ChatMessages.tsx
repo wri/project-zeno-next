@@ -36,6 +36,9 @@ function ChatMessages() {
     }
   }, []);
 
+  // Show reasoning after the last user message when loading
+  const lastUserMessageIndex = messages.findLastIndex(msg => msg.type === "user");
+
   return (
     <Box ref={containerRef} fontSize="sm">
       {messages.map((message, index) => {
@@ -44,14 +47,16 @@ function ChatMessages() {
         const isConsecutive = previousMessage?.type === message.type;
 
         return (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            isConsecutive={isConsecutive}
-          />
+          <>
+            <MessageBubble
+              key={message.id}
+              message={message}
+              isConsecutive={isConsecutive}
+            />
+            {isLoading && index === lastUserMessageIndex && <Reasoning />}
+          </>
         );
       })}
-      {isLoading && <Reasoning />}
     </Box>
   );
 }

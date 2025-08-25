@@ -38,6 +38,7 @@ function Reasoning() {
           paddingBottom="8px"
           paddingLeft={3}
           paddingRight={3}
+          marginBottom={4}
           gap={2}
           fontFamily="mono"
           fontSize="xs"
