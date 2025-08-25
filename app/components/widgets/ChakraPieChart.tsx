@@ -16,11 +16,15 @@ export default function ChakraPieChart({
 }: ChakraPieChartProps) {
   const chart = useChart({ data });
   const chartColors = getChartColors();
-
   return (
-    <Chart.Root chart={chart}>
+    <Chart.Root chart={chart} height="260px">
       <PieChart>
-        <Legend content={<Chart.Legend />} />
+        <Legend
+          layout="vertical"
+          align="right"
+          verticalAlign="middle"
+          wrapperStyle={{ paddingRight: "25%" }}
+        />
         <Tooltip
           cursor={false}
           animationDuration={100}
