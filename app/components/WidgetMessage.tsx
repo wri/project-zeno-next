@@ -10,6 +10,7 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 import { WidgetIcons } from "../ChatPanelHeader";
+import ChakraPieChart from "./widgets/ChakraPieChart";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -73,6 +74,14 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               data={widget.data as Record<string, string | number | boolean>[]}
             />
           </Box>
+        )}
+
+        {widget.type === "pie" && (
+          <ChakraPieChart
+            data={widget.data as Array<{ [key: string]: unknown }>}
+            xAxis={widget.xAxis}
+            yAxis={widget.yAxis}
+          />
         )}
 
         {widget.type === "line" && (
