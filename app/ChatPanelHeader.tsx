@@ -119,7 +119,8 @@ function ChatPanelHeader() {
               <Tooltip content={currentThreadName} showArrow>
                 <Text
                   as="span"
-                  flex="1"
+                  flexShrink="1"
+                  mr="auto"
                   minW={0}
                   whiteSpace="nowrap"
                   overflow="hidden"
