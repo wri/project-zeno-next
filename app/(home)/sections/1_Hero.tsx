@@ -35,7 +35,7 @@ export default function LandingHero({
   const [inputValue, setInputValue] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [ready, setReady] = useState(false);
-  const { sendMessage, isLoading } = useChatStore();
+  const { isLoading } = useChatStore();
 
   useEffect(() => {
     setReady(true);
@@ -63,8 +63,7 @@ export default function LandingHero({
     if (isLoading) return;
     const message = inputValue.trim() || prompts[promptIndex];
     localStorage.setItem("bypassWelcomeModal", "true");
-    await sendMessage(message);
-    router.push("/");
+    router.push(`/app?prompt=${message}`);
   };
 
   return (
