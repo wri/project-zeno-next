@@ -50,6 +50,9 @@ importers:
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
+      '@worldresources/wri-design-systems':
+        specifier: ^2.126.3
+        version: 2.127.1(@chakra-ui/react@3.22.0(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       cookie:
         specifier: ^1.0.2
         version: 1.0.2
@@ -1100,6 +1103,14 @@ packages:
     peerDependenciesMeta:
       maplibre-gl:
         optional: true
+
+  '@worldresources/wri-design-systems@2.127.1':
+    resolution: {integrity: sha512-i3F9QHp55xZAjVhkgYHTgqg5rrKZkwaJWnPAifBDwHHUf2e+iAeaMgiFm+T594sDe1ge1iGkboWGnEktkiimZw==}
+    peerDependencies:
+      '@chakra-ui/react': ^3.14.2
+      '@emotion/react': ^11.14.0
+      react: ^18.3.1
+      react-dom: ^18.3.1
 
   '@zag-js/accordion@1.18.2':
     resolution: {integrity: sha512-d9hCE7ECTPk1YrEq/6DwedArWUkSFzB/av9ocensXs2QTq9tr/FOEIWpkG+2YnIAwm9HneXV5R+9APRPqMS7ug==}
@@ -4545,6 +4556,13 @@ snapshots:
       react-dom: 19.1.0(react@19.1.0)
     optionalDependencies:
       maplibre-gl: 5.6.1
+
+  '@worldresources/wri-design-systems@2.127.1(@chakra-ui/react@3.22.0(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@chakra-ui/react': 3.22.0(@emotion/react@11.14.0(@types/react@19.1.8)(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@emotion/react': 11.14.0(@types/react@19.1.8)(react@19.1.0)
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
 
   '@zag-js/accordion@1.18.2':
     dependencies:
