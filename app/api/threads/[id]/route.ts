@@ -33,7 +33,6 @@ export async function GET(
       abortController.abort();
     }, 60000); // 60 second timeout
 
-          ...(await getAPIRequestHeaders()),
     const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
       headers: {
         "Content-Type": "application/json",
@@ -203,7 +202,6 @@ export async function PATCH(
 
     const body = await request.json();
 
-          ...(await getAPIRequestHeaders()),
     const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
       method: "PATCH",
       headers: {
@@ -243,7 +241,6 @@ export async function DELETE(
       // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-          ...(await getAPIRequestHeaders()),
     const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
       method: "DELETE",
       headers: {
