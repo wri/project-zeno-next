@@ -33,7 +33,7 @@ export default function CTASection() {
             </Text>
           </Box>
           <Button asChild variant="solid" colorPalette="primary" rounded="lg">
-            <Link href="/">
+            <Link href="/app">
               Try the preview
               <CaretRightIcon weight="bold" />
             </Link>

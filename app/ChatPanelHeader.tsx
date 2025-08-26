@@ -200,7 +200,7 @@ function ChatPanelHeader() {
       {!sideBarVisible && (
         <Tooltip content="New conversation" showArrow>
           <IconButton asChild variant="ghost" size="sm">
-            <Link href="/">
+            <Link href="/app" aria-label="New conversation">
               <NotePencilIcon />
             </Link>
           </IconButton>

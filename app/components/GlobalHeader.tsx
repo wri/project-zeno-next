@@ -49,7 +49,7 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
         <Link href="#">Team</Link>
       </Button>
       <Button asChild ml={4} variant="solid" colorPalette="primary" rounded="lg">
-        <Link href="/">Try the preview</Link>
+        <Link href="/app">Try the preview</Link>
       </Button>
     </ButtonGroup>
   );
