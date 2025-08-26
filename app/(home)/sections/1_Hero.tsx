@@ -63,7 +63,8 @@ export default function LandingHero({
     if (isLoading) return;
     const message = inputValue.trim() || prompts[promptIndex];
     localStorage.setItem("bypassWelcomeModal", "true");
-    router.push(`/app?prompt=${message}`);
+    const encodedMessage = encodeURI(message)
+    router.push(`/app?prompt=${encodedMessage}`);
   };
 
   return (
