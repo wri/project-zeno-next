@@ -15,7 +15,7 @@ export async function getSessionToken(): Promise<string> {
 
 export async function getAPIRequestHeaders(): Promise<Record<string, string>> {
   return {
-    'X-API-KEY': process.env.NEXT_SERVICE_API_KEY || '',
-    'X-NEXTJS-CLIENT-IP': (await headers()).get('x-forwarded-for') || '',
+    "X-API-KEY": process.env.NEXT_SERVICE_API_KEY || "",
+    "X-ZENO-FORWARDED-FOR": (await headers()).get("x-forwarded-for") || "",
   };
 }
