@@ -111,7 +111,9 @@ function ChatPanelHeader() {
           <Button
             variant="ghost"
             size="sm"
-            flex="1"
+            flexShrink="1"
+            mr="auto"
+            px={2}
             minW={0}
             justifyContent="flex-start"
           >
@@ -119,12 +121,12 @@ function ChatPanelHeader() {
               <Tooltip content={currentThreadName} showArrow>
                 <Text
                   as="span"
-                  flexShrink="1"
-                  mr="auto"
+                  flex="1"
                   minW={0}
                   whiteSpace="nowrap"
                   overflow="hidden"
                   textOverflow="ellipsis"
+                  fontWeight="normal"
                 >
                   {currentThreadName}
                 </Text>
@@ -137,7 +139,9 @@ function ChatPanelHeader() {
         <Button
           variant="ghost"
           size="sm"
-          flex="1"
+          flexShrink="1"
+          mr="auto"
+          px={2}
           minW={0}
           justifyContent="flex-start"
         >
@@ -149,6 +153,7 @@ function ChatPanelHeader() {
               whiteSpace="nowrap"
               overflow="hidden"
               textOverflow="ellipsis"
+              fontWeight="normal"
             >
               {currentThreadName}
             </Text>
@@ -160,7 +165,18 @@ function ChatPanelHeader() {
       {widgetAnchors.length === 0 ? (
         <Tooltip content="Ask a question to generate insights" showArrow>
           <span style={{ display: "inline-flex" }}>
-            <Button variant="ghost" size="sm" disabled>
+            <Button
+              variant="ghost"
+              color="primary.fg"
+              borderColor="primary.subtle"
+              rounded="sm"
+              h={6}
+              bgGradient="to-br"
+              gradientFrom="primary.200/25"
+              gradientTo="secondary.300/25"
+              size="xs"
+              disabled
+            >
               Go to insight
               <CaretDownIcon />
             </Button>
@@ -169,15 +185,24 @@ function ChatPanelHeader() {
       ) : (
         <Menu.Root>
           <Menu.Trigger asChild>
-          <Button
+            <Button
               variant="ghost"
+              color="primary.fg"
+              borderColor="primary.subtle"
+              rounded="sm"
+              h={6}
               bgGradient="to-br"
-              gradientFrom="primary.300/25"
-              gradientTo="secondary.300/25"
-              size="sm"
+              gradientFrom="primary.200/30"
+              gradientTo="secondary.300/30"
+              fontWeight="semibold"
+              _hover={{
+                gradientFrom: "primary.400/30",
+                gradientTo: "secondary.400/30",
+              }}
+              size="xs"
             >
               Go to insight
-              <CaretDownIcon />
+              <CaretDownIcon size="12" weight="bold" />
             </Button>
           </Menu.Trigger>
           <Portal>
