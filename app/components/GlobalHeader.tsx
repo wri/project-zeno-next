@@ -16,9 +16,9 @@ import Link from "next/link";
 const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
   return (
     <ButtonGroup
-      size={isMobile ? "md" : "sm"}
+      size={{ base: "md", md: "xs", lg: "sm" }}
       w={isMobile ? "full" : "initial"}
-      gap={isMobile ? "4" : "2"}
+      gap={{ base: 4, sm: 1, lg: 2 }}
       variant="plain"
       _hover={{ "& > :not(:hover)": { opacity: "0.5" } }}
       className="dark"
@@ -48,7 +48,14 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
       <Button asChild>
         <Link href="#">Team</Link>
       </Button>
-      <Button asChild ml={4} variant="solid" colorPalette="primary" rounded="lg">
+      <Button
+        asChild
+        ml={4}
+        className="light"
+        variant="solid"
+        colorPalette="primary"
+        rounded="lg"
+      >
         <Link href="/">Try the preview</Link>
       </Button>
     </ButtonGroup>
@@ -68,18 +75,24 @@ export default function GlobalHeader() {
       backdropBlur="10px"
     >
       <Flex
-        divideColor={"whiteAlpha.300"}
+        divideColor={"neutral.600"}
         divideStyle={"solid"}
-        divideX={"1px"}
-        alignItems="center"
-        gap="4"
+        divideX={{ base: "0px", md: "1px" }}
+        flexDir={{ base: "column", md: "row" }}
+        alignItems={{ base: "flex-start", md: "center" }}
+        gap={{ base: 2, md: 4 }}
       >
-        <Heading m="0" size="xl" lineHeight="shorter">
+        <Heading m="0" size={{base: "xl", lg: "2xl"}} lineHeight="shorter" color="fg.inverted">
           Global Nature Watch
         </Heading>
-        <Text pl="4" fontSize="xs" display="inline-block" lineHeight="1.1">
-          Intelligent nature monitoring,
-          <br /> trusted by experts
+        <Text
+          pl={{ base: 0, md: 4 }}
+          fontSize="xs"
+          display="inline-block"
+          lineHeight="1.1"
+          maxW={{ base: "none", md: "200px" }}
+        >
+          Intelligent nature monitoring, trusted by experts
         </Text>
       </Flex>
       <Drawer.Root size="md">

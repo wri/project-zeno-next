@@ -91,7 +91,7 @@ export default function SupportWorkTabsSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="border"
       bg="linear-gradient(0deg, rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.64) 85%), url(/landing-bg-image2.png) lightgray 50% / cover no-repeat"
     >
       <Container
@@ -101,7 +101,7 @@ export default function SupportWorkTabsSection() {
         color="fg.inverted"
         px={0}
       >
-        <Heading size={{ base: "3xl", md: "4xl" }}>
+        <Heading size={{ base: "3xl", md: "4xl" }} color="fg.inverted">
           See how monitoring intelligence can support your work
         </Heading>
         <Text fontSize="md" mb="4">
