@@ -50,7 +50,7 @@ export default function HowItWorksSection() {
         <Flex
           flexDir={{ base: "column-reverse", md: "row" }}
           alignItems="center"
-          bg={{ base: "bg.emphasized", md: "transparent" }}
+          bg={{ base: "bg.muted", md: "transparent" }}
           p={{ base: 6, md: 0 }}
           rounded="lg"
           gap={{ base: 0, md: 6 }}
@@ -58,7 +58,7 @@ export default function HowItWorksSection() {
         >
           <Box h={0} w="lg" textAlign={{ base: "center", md: "left" }} />
           <Box
-            bg="bg.emphasized"
+            bg="bg.muted"
             rounded="lg"
             textAlign="center"
             maxW="xs"
@@ -75,7 +75,7 @@ export default function HowItWorksSection() {
             flexDir={{ base: "column-reverse", md: "row" }}
             alignItems="center"
             gap={6}
-            bg={{ base: "bg.emphasized", md: "transparent" }}
+            bg={{ base: "bg.muted", md: "transparent" }}
             p={{ base: 6, md: 0 }}
             rounded="lg"
             zIndex={50}
@@ -91,7 +91,7 @@ export default function HowItWorksSection() {
               <Text fontSize="lg">{step.description}</Text>
             </Box>
             <Box
-              bg={{ base: "transparent", md: "bg.emphasized" }}
+              bg={{ base: "transparent", md: "bg.muted" }}
               rounded="lg"
               textAlign="center"
               flexShrink={0}

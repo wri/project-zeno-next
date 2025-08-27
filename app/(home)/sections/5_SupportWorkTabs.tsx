@@ -130,7 +130,8 @@ export default function SupportWorkTabsSection() {
                 <Tabs.Trigger
                   key={tab.value}
                   value={tab.value}
-                  _selected={{ boxShadow: "none" }}
+                  bg="bg.subtle"
+                  _selected={{ boxShadow: "none", bg: "bg" }}
                   fontWeight="normal"
                   rounded="none"
                 >

@@ -139,7 +139,7 @@ export function Sidebar() {
   return (
     <Flex
       flexDir="column"
-      bg="bg.muted"
+      bg="bg.subtle"
       w={!sideBarVisible ? "0px" : "16rem"}
       h="100%"
       gridArea="sidebar"
@@ -157,7 +157,7 @@ export function Sidebar() {
         alignItems="center"
         position="sticky"
         top="0"
-        bg="bg.muted"
+        bg="bg.subtle"
         boxShadow="xs"
       >
         <Button asChild variant="solid" colorPalette="primary" size="sm">

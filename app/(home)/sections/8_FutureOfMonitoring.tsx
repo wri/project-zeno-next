@@ -207,7 +207,7 @@ export default function FutureOfMonitoringSection() {
               <Box
                 w="220px"
                 p="10px"
-                bg="bg.emphasized"
+                bg="bg.muted"
                 rounded="sm"
                 shadow="sm"
               >
