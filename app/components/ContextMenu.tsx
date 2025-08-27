@@ -13,7 +13,6 @@ import {
   InputGroup,
   NativeSelect,
   ButtonGroup,
-  AbsoluteCenter,
 } from "@chakra-ui/react";
 import { InfoIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";
@@ -128,7 +127,7 @@ function LayerCardList({
   onCardClick?: (card: LayerCardItem) => void;
 }) {
   return (
-    <Stack overflow="auto">
+    <Stack minH={0} overflowY="auto">
       {cards.map((card) => (
         <DatasetCard
           key={card.dataset_name}
@@ -185,25 +184,23 @@ function ContextMenu({
     >
       <Portal>
         <Dialog.Positioner>
-          <Dialog.Content overflow="hidden" minH="30rem">
+          <Dialog.Content maxH="75vh" minH="30rem">
             <Dialog.Body
               p={0}
-              overflow="hidden"
               h="full"
               display="flex"
-              flexDir="column"
+              overflow="visible"
+              minH={0}
             >
-              <Flex flex="1" overflow="hidden">
-                {/* Modal Navigation */}
-                <ContextNav
-                  selected={selectedContextType}
-                  onSelect={setSelectedContextType}
-                />
-                {/* Modal Body */}
-                {selectedContextType === "layer" && <LayerMenu />}
-                {selectedContextType === "area" && <AreaMenu />}
-                {selectedContextType === "date" && <DateMenu />}
-              </Flex>
+              {/* Modal Navigation */}
+              <ContextNav
+                selected={selectedContextType}
+                onSelect={setSelectedContextType}
+              />
+              {/* Modal Body */}
+              {selectedContextType === "layer" && <LayerMenu />}
+              {selectedContextType === "area" && <AreaMenu />}
+              {selectedContextType === "date" && <DateMenu />}
             </Dialog.Body>
             <Dialog.Footer
               justifyContent="space-between"
@@ -275,24 +272,14 @@ function LayerMenu() {
     <Stack
       bg="bg.subtle"
       pt={3}
-      w="full"
-      maxW="100%"
-      maxH="100%"
-      overflow="hidden"
+      minW={0}
     >
       <Box px={4}>
         <InputGroup endElement={<MagnifyingGlassIcon />}>
           <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />
         </InputGroup>
       </Box>
-      <Stack
-        px={4}
-        pt={3}
-        borderTopWidth="1px"
-        borderColor="border"
-        h="full"
-        overflow="hidden"
-      >
+      <Stack px={4} pt={3} borderTopWidth="1px" borderColor="border" minH={0}>
         <TagList tags={LAYER_TAGS} />
         <LayerCardList cards={cards} onCardClick={handleToggleCard} />
       </Stack>
@@ -339,14 +326,7 @@ function AreaCardList({
 
 function AreaMenu() {
   return (
-    <Stack
-      bg="bg.subtle"
-      py={3}
-      w="full"
-      maxW="100%"
-      maxH="100%"
-      overflow="hidden"
-    >
+    <Stack bg="bg.subtle" py={3} w="full">
       <Flex px={4} gap={2}>
         <InputGroup endElement={<MagnifyingGlassIcon />}>
           <Input size="sm" bg="bg" type="text" placeholder="Find area" />
@@ -429,41 +409,41 @@ function DateMenu() {
       bg="bg.subtle"
       px={4}
       py={3}
+      gap={8}
       w="full"
-      position="relative"
-      overflow="hidden"
+      borderTopRightRadius="md"
+      alignItems="center"
+      justifyContent="center"
     >
-      <AbsoluteCenter display="flex" gap="4">
-        <Field.Root>
-          <Field.Label fontWeight="normal" fontSize="xs">
-            Date Resolution
-          </Field.Label>
-          <ButtonGroup attached size="xs">
-            <Button
-              variant={view === "year" ? "solid" : "outline"}
-              colorPalette={view === "year" ? "primary" : undefined}
-              onClick={() => handleViewChange("year")}
-            >
-              Year
-            </Button>
-            <Button
-              variant={view === "month" ? "solid" : "outline"}
-              colorPalette={view === "month" ? "primary" : undefined}
-              onClick={() => handleViewChange("month")}
-            >
-              Month
-            </Button>
-            <Button
-              variant={view === "day" ? "solid" : "outline"}
-              colorPalette={view === "day" ? "primary" : undefined}
-              onClick={() => handleViewChange("day")}
-            >
-              Day
-            </Button>
-          </ButtonGroup>
-        </Field.Root>
-        <DatePicker onChange={setDateValue} dateRange={dateValue} view={view} />
-      </AbsoluteCenter>
+      <Field.Root w="auto">
+        <Field.Label fontWeight="normal" fontSize="xs">
+          Date Resolution
+        </Field.Label>
+        <ButtonGroup attached size="xs">
+          <Button
+            variant={view === "year" ? "solid" : "outline"}
+            colorPalette={view === "year" ? "primary" : undefined}
+            onClick={() => handleViewChange("year")}
+          >
+            Year
+          </Button>
+          <Button
+            variant={view === "month" ? "solid" : "outline"}
+            colorPalette={view === "month" ? "primary" : undefined}
+            onClick={() => handleViewChange("month")}
+          >
+            Month
+          </Button>
+          <Button
+            variant={view === "day" ? "solid" : "outline"}
+            colorPalette={view === "day" ? "primary" : undefined}
+            onClick={() => handleViewChange("day")}
+          >
+            Day
+          </Button>
+        </ButtonGroup>
+      </Field.Root>
+      <DatePicker onChange={setDateValue} dateRange={dateValue} view={view} />
     </Stack>
   );
 }

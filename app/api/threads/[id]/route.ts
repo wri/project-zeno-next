@@ -80,7 +80,7 @@ export async function GET(
               type: "error",
               name: "timeout",
               content: "Request timed out. Try again later.",
-              timestamp: Date.now(),
+              timestamp: new Date().toISOString(),
             };
 
             controller.enqueue(
@@ -113,6 +113,7 @@ export async function GET(
           once: true,
         });
 
+
         try {
           await readDataStream({
             abortController,
@@ -122,7 +123,9 @@ export async function GET(
                 const langChainMessage: LangChainResponse = JSON.parse(data);
 
                 const updateObject = JSON5.parse(langChainMessage.update);
-                const type = updateObject.messages[0]?.kwargs.type as
+
+                const lastMessage = updateObject.messages?.at(-1);
+                const type = lastMessage?.kwargs.type as
                   | "ai"
                   | "tool"
                   | "human"
@@ -138,7 +141,11 @@ export async function GET(
 
                 // Parse LangChain response and extract useful information
                 const streamMessage = messageType
-                  ? parseStreamMessage(updateObject, messageType)
+                  ? parseStreamMessage(
+                      updateObject,
+                      messageType,
+                      new Date(langChainMessage.timestamp)
+                    )
                   : null;
 
                 if (!streamMessage) {
