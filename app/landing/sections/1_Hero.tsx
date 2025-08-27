@@ -102,138 +102,162 @@ export default function LandingHero({
         </video>
       </Box>
       {/* Hero Container */}
-      <Box py="20" zIndex="10">
+      <Box
+        py="20"
+        pt={{ base: 14, md: 24 }}
+        pb={{ base: 24, md: 32 }}
+        zIndex="10"
+      >
         <Container
-          textAlign="center"
-          maxW="2xl"
-          color="fg.inverted"
           px={{ base: 6, md: 0 }}
+          display="flex"
+          flexDirection="column"
+          gap={{ base: 8, md: 10 }}
         >
-          <Heading size={{ base: "4xl", md: "5xl" }} textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)" color="fg.inverted">
-            Tackle nature&rsquo;s toughest monitoring challenges
-          </Heading>
-          <Text fontSize="lg" textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)">
-            Global Nature Watch is your personal geospatial AI assistant,
-            trained on the latest nature monitoring breakthroughs by the
-            world&apos;s leading researchers.
-          </Text>
-        </Container>
-        <Container mt="8" maxW="2xl" px={{ base: 6, md: 0 }}>
-          <Box rounded="xl" bg="bg" p="4" zIndex="10">
-            <Input
-              key={
-                !isInputFocused && inputValue === "" ? promptIndex : undefined
-              }
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onFocus={() => setIsInputFocused(true)}
-              onBlur={() => setIsInputFocused(false)}
-              p="0"
-              outline="none"
-              borderWidth="0"
-              size="lg"
-              placeholder={prompts[promptIndex]}
-              animationName="slide-from-bottom, fade-in"
-              animationDuration="0.32s"
-              animationTimingFunction="ease-in-out"
-              _focusWithin={{
-                animationPlayState: "paused",
-              }}
-            />
-            <Flex
-              justifyContent="space-between"
-              mt="4"
-              gap={4}
+          <Container
+            textAlign="center"
+            maxW="2xl"
+            color="fg.inverted"
+            px={0}
+            display="flex"
+            flexDirection="column"
+            gap="2"
+          >
+            <Heading
+              size={{ base: "3xl", md: "5xl" }}
+              textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
+              color="fg.inverted"
+              mb={0}
             >
-              <Flex gap="2" alignItems="flex-start" flexDirection="column">
+              Tackle nature&rsquo;s toughest monitoring challenges
+            </Heading>
+            <Text
+              fontSize="lg"
+              textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
+            >
+              Global Nature Watch is your personal geospatial AI assistant,
+              trained on the latest nature monitoring breakthroughs by the
+              world&apos;s leading researchers.
+            </Text>
+          </Container>
+          <Container
+            maxW="2xl"
+            px={0}
+            display="flex"
+            flexDirection="column"
+            gap="3"
+          >
+            <Box rounded="xl" bg="bg" p="4" zIndex="10">
+              <Input
+                key={
+                  !isInputFocused && inputValue === "" ? promptIndex : undefined
+                }
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
+                p="0"
+                outline="none"
+                borderWidth="0"
+                size="lg"
+                placeholder={prompts[promptIndex]}
+                animationName="slide-from-bottom, fade-in"
+                animationDuration="0.32s"
+                animationTimingFunction="ease-in-out"
+                _focusWithin={{
+                  animationPlayState: "paused",
+                }}
+              />
+              <Flex justifyContent="space-between" mt="4" gap={4}>
+                <Flex gap="2" alignItems="flex-start" flexDirection="column">
+                  <Button
+                    key={animationKey}
+                    variant="outline"
+                    rounded="lg"
+                    _after={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      content: "''",
+                      zIndex: -1,
+                      width: "10%",
+                      height: "100%",
+                      bg: "secondary.100",
+                      animation: ready ? "fillWidth" : "none",
+                      animationPlayState:
+                        isInputFocused || inputValue.length > 0
+                          ? "paused"
+                          : "running",
+                    }}
+                    onClick={() => {
+                      setPromptTimer(10);
+                      setPromptIndex((idx) => (idx + 1) % prompts.length);
+                      setAnimationKey((k) => k + 1);
+                    }}
+                  >
+                    <ArrowsClockwiseIcon />
+                    New Suggestion
+                  </Button>
+                  <Text fontSize="xs" color="fg.subtle">
+                    Automatically updating in {promptTimer}s
+                  </Text>
+                </Flex>
                 <Button
-                  key={animationKey}
-                  variant="outline"
+                  variant="solid"
+                  colorPalette="primary"
                   rounded="lg"
-                  _after={{
-                    position: "absolute",
-                    top: 0,
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    content: "''",
-                    zIndex: -1,
-                    width: "10%",
-                    height: "100%",
-                    bg: "secondary.100",
-                    animation: ready ? "fillWidth" : "none",
-                    animationPlayState:
-                      isInputFocused || inputValue.length > 0
-                        ? "paused"
-                        : "running",
-                  }}
-                  onClick={() => {
-                    setPromptTimer(10);
-                    setPromptIndex((idx) => (idx + 1) % prompts.length);
-                    setAnimationKey((k) => k + 1);
-                  }}
+                  onClick={submitPrompt}
+                  title="Submit prompt to assistant and go to application"
+                  disabled={isLoading}
                 >
-                  <ArrowsClockwiseIcon />
-                  New Suggestion
-                </Button>
-                <Text fontSize="xs" color="fg.subtle">
-                  Automatically updating in {promptTimer}s
-                </Text>
-              </Flex>
-              <Button
-                variant="solid"
-                colorPalette="primary"
-                rounded="lg"
-                onClick={submitPrompt}
-                title="Submit prompt to assistant and go to application"
-                disabled={isLoading}
-              >
                   Go
                   <CaretRightIcon weight="bold" />
-              </Button>
-            </Flex>
-          </Box>
-        </Container>
-        <Container maxW="2xl" mt="3" px={{ base: 6, md: 0 }}>
-          <Box
-            display="flex"
-            flexWrap="wrap"
-            bg="blackAlpha.400"
-            justifyContent="space-between"
-            alignItems={{ base: "flex-start", md: "center" }}
-            gap={2}
-            rounded="md"
-            fontSize="xs"
-            color="fg.inverted"
-            zIndex="10"
-            px="2"
-            py="1"
-          >
-            <Text>
-              <Badge size="xs" fontSize="8px" rounded="none" mr="1">
-                BETA
-              </Badge>
-              Global Nature Watch is in open Beta
-            </Text>
-            <Tooltip
-              openDelay={100}
-              closeDelay={300}
-              content="While Global Nature Watch is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all."
+                </Button>
+              </Flex>
+            </Box>
+            <Box
+              display="flex"
+              flexWrap="wrap"
+              bg="neutral.950/40"
+              justifyContent="space-between"
+              alignItems={{ base: "flex-start", md: "center" }}
+              gap={2}
+              rounded="md"
+              backdropFilter="blur(4px)"
+              fontSize="xs"
+              color="fg.inverted"
+              zIndex="10"
+              px="2"
+              py="1"
             >
-              <Box
-                color="fg.inverted"
-                textDecoration="underline"
-                textDecorationStyle="dotted"
-                cursor="pointer"
-                display="flex"
-                gap="1"
-                alignItems="center"
+              <Text>
+                <Badge size="xs" fontSize="8px" rounded="none" mr="1">
+                  BETA
+                </Badge>
+                Global Nature Watch is in open Beta
+              </Text>
+              <Tooltip
+                openDelay={100}
+                closeDelay={300}
+                content="While Global Nature Watch is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all."
               >
-                <PencilRulerIcon />
-                Capped at 100 prompts
-              </Box>
-            </Tooltip>
-          </Box>
+                <Box
+                  color="fg.inverted"
+                  textDecoration="underline"
+                  textDecorationStyle="dotted"
+                  cursor="pointer"
+                  display="flex"
+                  gap="1"
+                  alignItems="center"
+                >
+                  <PencilRulerIcon />
+                  Capped at 100 prompts
+                </Box>
+              </Tooltip>
+            </Box>
+          </Container>
         </Container>
       </Box>
     </Box>

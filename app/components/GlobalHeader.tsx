@@ -51,6 +51,7 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
       <Button
         asChild
         ml={4}
+        className="light"
         variant="solid"
         colorPalette="primary"
         rounded="lg"
@@ -81,7 +82,7 @@ export default function GlobalHeader() {
         alignItems={{ base: "flex-start", md: "center" }}
         gap={{ base: 2, md: 4 }}
       >
-        <Heading m="0" size="xl" lineHeight="shorter" color="fg.inverted">
+        <Heading m="0" size={{base: "xl", lg: "2xl"}} lineHeight="shorter" color="fg.inverted">
           Global Nature Watch
         </Heading>
         <Text
