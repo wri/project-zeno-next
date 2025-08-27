@@ -59,7 +59,7 @@ export default function FeaturesTabsSection() {
             mt="4"
             rounded="lg"
           >
-            <Link href="/">
+            <Link href="/app">
               Launch the Preview
               <CaretRightIcon weight="bold" />
             </Link>

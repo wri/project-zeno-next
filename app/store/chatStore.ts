@@ -279,7 +279,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       if (!currentThreadId) {
         // Change the url using the history API so not to trigger any next
         // router events.
-        window.history.replaceState(null, "", `/threads/${threadId}`);
+        window.history.replaceState(null, "", `/app/threads/${threadId}`);
       }
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
     }
