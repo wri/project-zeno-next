@@ -6,18 +6,18 @@ import { fetchGeometry } from "@/app/utils/geometryClient";
 
 export async function pickAoiTool(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   try {
     const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();
-    const { addContext } = useContextStore.getState();
+    const { upsertContextByType } = useContextStore.getState();
 
     const aoiData = streamMessage.aoi as AOI;
     const aoiName = aoiData.name;
 
     // Check if geometry is already included, otherwise fetch it
     let geoJsonData: FeatureCollection;
-    
+
     if (aoiData.geometry) {
       // Geometry already provided (backward compatibility)
       geoJsonData = aoiData.geometry;
@@ -26,8 +26,11 @@ export async function pickAoiTool(
       if (!aoiData.src_id || !aoiData.source) {
         throw new Error("Missing src_id or source in AOI data");
       }
-      
-      const geometryResponse = await fetchGeometry(aoiData.source, aoiData.src_id);
+
+      const geometryResponse = await fetchGeometry(
+        aoiData.source,
+        aoiData.src_id
+      );
       geoJsonData = geometryResponse.geometry;
     }
 
@@ -40,7 +43,7 @@ export async function pickAoiTool(
     flyToGeoJsonWithRetry(geoJsonData);
 
     if (aoiName) {
-      addContext({
+      upsertContextByType({
         contextType: "area",
         content: aoiName,
       });
@@ -51,6 +54,7 @@ export async function pickAoiTool(
       message: `Location found and displayed on map: ${
         aoiName || "Unknown location"
       }`,
+      timestamp: streamMessage.timestamp,
     });
   } catch (error) {
     console.error("Error processing pick-aoi artifact:", error);
@@ -60,6 +64,7 @@ export async function pickAoiTool(
       message: `AOI tool executed but failed to display on map: ${
         streamMessage.content || "Unknown location"
       }. Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      timestamp: streamMessage.timestamp,
     });
   }
 }
