@@ -6,8 +6,6 @@ import { LangChainResponse, StreamMessage } from "@/app/types/chat";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../../shared/parse-stream-message";
 
-// import fs from "fs";
-
 const TOKEN_NAME = "auth_token";
 
 export async function GET(
@@ -110,7 +108,6 @@ export async function GET(
           once: true,
         });
 
-        // const debugData: object[] = [];
 
         try {
           await readDataStream({
@@ -121,8 +118,6 @@ export async function GET(
                 const langChainMessage: LangChainResponse = JSON.parse(data);
 
                 const updateObject = JSON5.parse(langChainMessage.update);
-
-                // debugData.push({ ...langChainMessage, update: updateObject });
 
                 const lastMessage = updateObject.messages?.at(-1);
                 const type = lastMessage?.kwargs.type as
@@ -166,11 +161,6 @@ export async function GET(
               }
             },
           });
-
-          // fs.writeFileSync(
-          //   "single-thread-stream.json",
-          //   JSON.stringify(debugData)
-          // );
         } catch (error) {
           console.error("Streaming error:", error);
           if (!abortController.signal.aborted) {
