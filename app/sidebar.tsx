@@ -100,7 +100,7 @@ function ThreadSection({
                 {...(isActive ? { bg: "bg", color: "blue.fg" } : {})}
               >
                 <ThreadLink
-                  href={`app/threads/${thread.id}`}
+                  href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
                 >
