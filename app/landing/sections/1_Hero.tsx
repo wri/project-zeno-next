@@ -109,7 +109,7 @@ export default function LandingHero({
           color="fg.inverted"
           px={{ base: 6, md: 0 }}
         >
-          <Heading size={{ base: "4xl", md: "5xl" }} textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)">
+          <Heading size={{ base: "4xl", md: "5xl" }} textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)" color="fg.inverted">
             Tackle nature&rsquo;s toughest monitoring challenges
           </Heading>
           <Text fontSize="lg" textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)">

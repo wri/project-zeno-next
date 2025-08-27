@@ -74,7 +74,7 @@ export default function GlobalHeader() {
         alignItems="center"
         gap="4"
       >
-        <Heading m="0" size="xl" lineHeight="shorter">
+        <Heading m="0" size="xl" lineHeight="shorter" color="fg.inverted">
           Global Nature Watch
         </Heading>
         <Text pl="4" fontSize="xs" display="inline-block" lineHeight="1.1">

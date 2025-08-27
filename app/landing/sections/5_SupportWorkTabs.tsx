@@ -101,7 +101,7 @@ export default function SupportWorkTabsSection() {
         color="fg.inverted"
         px={0}
       >
-        <Heading size={{ base: "3xl", md: "4xl" }}>
+        <Heading size={{ base: "3xl", md: "4xl" }} color="fg.inverted">
           See how monitoring intelligence can support your work
         </Heading>
         <Text fontSize="md" mb="4">
