@@ -183,7 +183,8 @@ const WelcomeModal = () => {
                   {prompts.map((prompt, index) => (
                     <Button
                       key={index}
-                      color="primary.800"
+                      colorPalette="primary"
+                      variant="outline"
                       fontWeight="normal"
                       bg="white"
                       rounded="lg"

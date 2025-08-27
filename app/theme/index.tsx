@@ -4,6 +4,24 @@ import globalCss from "@/app/theme/globalCss";
 export const config = defineConfig({
   globalCss,
   theme: {
+    keyframes: {
+      fillWidth: {
+        from: { width: "0%" },
+        to: { width: "100%" },
+      },
+      dynamicSlideLeft: {
+        from: {
+          transform: "translateX(var(--start-x))",
+        },
+        to: { transform: "translateX(var(--end-x))" },
+      },
+      dynamicSlideRight: {
+        from: {
+          transform: "translateX(var(--start-x))",
+        },
+        to: { transform: "translateX(var(--end-x))" },
+      },
+    },
     tokens: {
       fonts: {
         body: { value: "var(--font-IBMPlexSans)" },
@@ -60,7 +78,9 @@ export const config = defineConfig({
         mint: { 500: { value: "#00DCA7" } },
         green: { 500: { value: "#00A651" } },
         berenjena: { 500: { value: "#895277" } },
-        
+      },
+      animations: {
+        fillWidth: { value: "fillWidth 10s linear infinite" },
       },
     },
     semanticTokens: {
