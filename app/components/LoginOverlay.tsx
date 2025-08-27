@@ -9,9 +9,11 @@ import {
   Text,
   Center,
   Spinner,
-  VStack,
+  IconButton,
 } from "@chakra-ui/react";
 import useAuthStore from "../store/authStore";
+import { InfoIcon, XIcon } from "@phosphor-icons/react";
+import theme from "../theme";
 
 const wriAuthUrl = "https://api.resourcewatch.org/auth/login";
 const REDIRECT_URL_KEY = "redirectUrl";
@@ -24,11 +26,11 @@ function AuthDialog({
   children: React.ReactNode;
 }) {
   return (
-    <Dialog.Root open={open} onOpenChange={() => {}}>
+    <Dialog.Root open={open} placement="bottom">
       <Portal>
         <Dialog.Backdrop />
-        <Dialog.Positioner>
-          <Dialog.Content>{children}</Dialog.Content>
+        <Dialog.Positioner justifyContent="right">
+          <Dialog.Content margin="2rem">{children}</Dialog.Content>
         </Dialog.Positioner>
       </Portal>
     </Dialog.Root>
@@ -86,80 +88,102 @@ function LoginOverlay() {
   if (isLoading) {
     return (
       <AuthDialog open>
+        <DialogHeader title="Checking authentication" />
         <Dialog.Body>
-          <Center>
-            <VStack>
-              <Spinner />
-              <Text>Checking authentication...</Text>
-            </VStack>
+          <Center gap={4}>
+            <Spinner />
+            <Text>Please wait a second...</Text>
           </Center>
         </Dialog.Body>
       </AuthDialog>
     );
   }
 
-  if (isAuthenticated && isWhitelisted || isAnonymous) {
+  if ((isAuthenticated && isWhitelisted) || isAnonymous) {
     return null;
   }
 
-  let dialogInnerContent;
-
   if (!isAuthenticated) {
-    dialogInnerContent = (
-      <>
-        <Dialog.Header>
-          <Dialog.Title>Login Required</Dialog.Title>
-        </Dialog.Header>
-        <Dialog.Body>
+    return (
+      <AuthDialog open>
+        <DialogHeader onCloseClick={setAnonymous} />
+        <Dialog.Body display="flex" gap={2} flexDirection="column">
+          <Text fontWeight="bold">
+            You’re exploring Global Nature Watch as a guest.
+          </Text>
           <Text>
-            Please log in with your WRI account to access Global Nature Watch.
+            Guests have a limit of 5 prompts in a temporary conversation.
+            <br /> Log in or sign up for free to unlock extra daily prompts and
+            save multiple conversations.
           </Text>
         </Dialog.Body>
         <Dialog.Footer>
-          <Button variant='ghost' onClick={setAnonymous}>
-            Browse anonymously
+          <Button variant="outline" onClick={setAnonymous}>
+            Dismiss
           </Button>
           <Button colorPalette="primary" onClick={handleLoginClick}>
-            Login with WRI
+            Login / Sign Up
           </Button>
         </Dialog.Footer>
-      </>
-    );
-  } else {
-    dialogInnerContent = (
-      <>
-        <Dialog.Header>
-          <Dialog.Title>Access Denied</Dialog.Title>
-        </Dialog.Header>
-        <Dialog.Body>
-          <Text>
-            Your email domain (
-            <strong>{userEmail?.split("@")[1] || "N/A"}</strong>) is not
-            currently whitelisted for access.
-          </Text>
-          <Text mt="4">
-            If you believe this is an error, please contact the project
-            administrators. Alternatively, you can request access to the beta
-            program by filling out this short survey:{" "}
-            <Link
-              href=""
-              target="_blank"
-              rel="noopener noreferrer"
-              color="primary.500"
-            >
-              Interest Form for Land & Carbon Lab&apos;s AI-driven Tools
-            </Link>
-            .
-          </Text>
-        </Dialog.Body>
-        <Dialog.Footer>
-          <Button onClick={handleLogoutClick}>Logout & Try Again</Button>
-        </Dialog.Footer>
-      </>
+      </AuthDialog>
     );
   }
 
-  return <AuthDialog open>{dialogInnerContent}</AuthDialog>;
+  return (
+    <AuthDialog open>
+      <DialogHeader title="Access Denied" onCloseClick={setAnonymous} />
+      <Dialog.Body>
+        <Text>
+          Your email domain (
+          <strong>{userEmail?.split("@")[1] || "N/A"}</strong>) is not currently
+          whitelisted for access.
+        </Text>
+        <Text mt="4">
+          If you believe this is an error, please contact the project
+          administrators. Alternatively, you can request access to the beta
+          program by filling out this short survey:{" "}
+          <Link
+            href=""
+            target="_blank"
+            rel="noopener noreferrer"
+            color="primary.500"
+          >
+            Interest Form for Land & Carbon Lab&apos;s AI-driven Tools
+          </Link>
+          .
+        </Text>
+      </Dialog.Body>
+      <Dialog.Footer>
+        <Button onClick={handleLogoutClick}>Logout & Try Again</Button>
+      </Dialog.Footer>
+    </AuthDialog>
+  );
 }
 
 export default LoginOverlay;
+
+function DialogHeader(props: { onCloseClick?: () => void; title?: string }) {
+  const { onCloseClick, title = "Welcome" } = props;
+
+  return (
+    <Dialog.Header display="flex">
+      <Dialog.Title mb={0} display="flex" gap={2} alignItems="center">
+        <Center bg="cyan.100" borderRadius="full" w={12} h={12}>
+          <InfoIcon weight="fill" color={theme.token("colors.cyan.600")} />
+        </Center>
+        {title}
+      </Dialog.Title>
+      {onCloseClick && (
+        <IconButton
+          variant="ghost"
+          size="xs"
+          aria-label="Close"
+          onClick={onCloseClick}
+          ml="auto"
+        >
+          <XIcon />
+        </IconButton>
+      )}
+    </Dialog.Header>
+  );
+}
