@@ -104,13 +104,22 @@ export const config = defineConfig({
             value: { _light: "{colors.white}", _dark: "{colors.black}" },
           },
           subtle: {
-            value: { _light: "{colors.neutral.50}", _dark: "{colors.neutral.950}" },
+            value: {
+              _light: "{colors.neutral.50}",
+              _dark: "{colors.neutral.950}",
+            },
           },
           muted: {
-            value: { _light: "{colors.neutral.100}", _dark: "{colors.neutral.900}" },
+            value: {
+              _light: "{colors.neutral.100}",
+              _dark: "{colors.neutral.900}",
+            },
           },
           emphasized: {
-            value: { _light: "{colors.neutral.200}", _dark: "{colors.neutral.800}" },
+            value: {
+              _light: "{colors.neutral.200}",
+              _dark: "{colors.neutral.800}",
+            },
           },
           inverted: {
             value: { _light: "{colors.black}", _dark: "{colors.white}" },
@@ -179,6 +188,41 @@ export const config = defineConfig({
               _light: "{colors.primary.600}",
               _dark: "{colors.primary.300}",
             },
+          },
+        },
+        border: {
+          DEFAULT: {
+            value: { _light: "{colors.neutral.200}", _dark: "{colors.neutral.800}" },
+          },
+          muted: {
+            value: { _light: "{colors.neutral.100}", _dark: "{colors.neutral.900}" },
+          },
+          subtle: {
+            value: { _light: "{colors.neutral.50}", _dark: "{colors.neutral.950}" },
+          },
+          emphasized: {
+            value: { _light: "{colors.neutral.300}", _dark: "{colors.neutral.700}" },
+          },
+          inverted: {
+            value: { _light: "{colors.neutral.800}", _dark: "{colors.neutral.200}" },
+          },
+          error: {
+            value: { _light: "{colors.red.500}", _dark: "{colors.red.400}" },
+          },
+          warning: {
+            value: {
+              _light: "{colors.orange.500}",
+              _dark: "{colors.orange.400}",
+            },
+          },
+          success: {
+            value: {
+              _light: "{colors.green.500}",
+              _dark: "{colors.green.400}",
+            },
+          },
+          info: {
+            value: { _light: "{colors.blue.500}", _dark: "{colors.blue.400}" },
           },
         },
         primary: {

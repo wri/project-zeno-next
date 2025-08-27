@@ -14,7 +14,7 @@ export default function TeamSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="neutral.200"
+      borderColor="border"
     >
       <Container
         css={{ "& > *": { px: 0 } }}

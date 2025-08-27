@@ -28,7 +28,7 @@ export default function FutureOfMonitoringSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="neutral.200"
+      borderColor="border"
     >
       <Container
         css={{ "& > *": { px: 0 } }}
@@ -207,7 +207,7 @@ export default function FutureOfMonitoringSection() {
               <Box
                 w="220px"
                 p="10px"
-                bg="neutral.200"
+                bg="bg.emphasized"
                 rounded="sm"
                 shadow="sm"
               >

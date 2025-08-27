@@ -112,7 +112,7 @@ function PromptMarquee({ prompts, setPromptIndex }: PromptMarqueeProps) {
     <Box
       py="8"
       borderBlockEnd="1px solid"
-      borderColor="neutral.200"
+      borderColor="border"
       gap="4"
       overflow="hidden"
       display="flex"

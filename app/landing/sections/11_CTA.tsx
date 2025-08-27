@@ -8,7 +8,7 @@ export default function CTASection() {
       py={{ base: 10, md: 24 }}
       pb={{ base: 10, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="neutral.200"
+      borderColor="border"
     >
       <Container>
         <Container
