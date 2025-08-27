@@ -40,7 +40,7 @@ export default function FeaturesTabsSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="neutral.200"
     >
       <Container>
         <Container textAlign="center" maxW="3xl" px={0}>

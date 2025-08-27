@@ -6,8 +6,7 @@ export default function NewEraQuoteSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
-      hideBelow={"sm"}
+      borderColor="neutral.200"
     >
       <Container maxW="2xl">
         <Heading textAlign="center" size={{ base: "3xl", md: "4xl" }}>
@@ -33,7 +32,10 @@ export default function NewEraQuoteSection() {
       </Container>
       <Container mt="8" maxW="2xl">
         <Box
-          bg="neutral.200"
+          bg={{base: "secondary.100", md: "neutral.200"}}
+          border="1px solid"
+          borderColor={{base: "secondary.400", md: "transparent"}}
+          shadow={{ base: "sm", md: "none" }}
           rounded="xl"
           p="6"
           display="flex"
@@ -42,7 +44,7 @@ export default function NewEraQuoteSection() {
         >
           <Heading
             borderStart="2px solid"
-            borderColor="primary.fg"
+            borderColor={{base: "secondary.500", md: "primary.500"}}
             pl="4"
             size="xl"
             as="blockquote"

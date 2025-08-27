@@ -58,7 +58,7 @@ export default function LatestUpdatesSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="neutral.200"
       overflowX="hidden"
     >
       <Container display="flex" flexDir="column" gap={{ base: "8", md: "10" }}>
@@ -151,7 +151,7 @@ export default function LatestUpdatesSection() {
             bg="bg.emphasized"
             display="flex"
             flexDir={{ base: "column", md: "row" }}
-            alignItems={{ base: "flex-start", md: "center" }}
+            alignItems={{ base: "stretch", md: "center" }}
             gap={4}
             justifyContent="space-between"
           >

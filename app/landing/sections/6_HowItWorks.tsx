@@ -32,7 +32,7 @@ export default function HowItWorksSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="neutral.200"
       display="flex"
       flexDir="column"
       gap={{ base: 8, md: 20 }}
