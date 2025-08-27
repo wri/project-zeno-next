@@ -94,7 +94,7 @@ export default function FeaturesTabsSection() {
                     insetBlock: "var(--indicator-offset-y, 0)",
                     insetInlineStart: "var(--indicator-offset-x, 0)",
                     width: "var(--indicator-thickness, 2px)",
-                    background: "bg.emphasized",
+                    background: "bg.subtle",
                   }}
                   _selected={{
                     "&[data-orientation=vertical]::before": {

@@ -105,19 +105,19 @@ export const config = defineConfig({
           },
           subtle: {
             value: {
-              _light: "{colors.neutral.50}",
+              _light: "{colors.neutral.200}",
               _dark: "{colors.neutral.950}",
             },
           },
           muted: {
             value: {
-              _light: "{colors.neutral.100}",
+              _light: "{colors.neutral.300}",
               _dark: "{colors.neutral.900}",
             },
           },
           emphasized: {
             value: {
-              _light: "{colors.neutral.200}",
+              _light: "{colors.neutral.400}",
               _dark: "{colors.neutral.800}",
             },
           },

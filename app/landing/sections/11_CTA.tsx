@@ -16,7 +16,7 @@ export default function CTASection() {
           py="4"
           px="5"
           rounded="md"
-          bg={{ base: "bg.emphasized", md: "secondary.200" }}
+          bg={{ base: "bg.muted", md: "secondary.200" }}
           display="flex"
           flexDirection={{ base: "column", md: "row" }}
           alignItems={{ base: "flex-start", md: "center" }}

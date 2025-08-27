@@ -18,7 +18,7 @@ function PageHeader() {
     >
       <Flex gap="2">
         <LclLogo width={16} avatarOnly />
-        <Heading as="h1" size="sm">
+        <Heading as="h1" size="sm" color="fg.inverted">
           Global Nature Watch
         </Heading>
       </Flex>
