@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Grid } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { GoogleAnalytics } from '@next/third-parties/google'
 
 import ChatPanel from "@/app/ChatPanel";

@@ -2,10 +2,6 @@ import { Box, Button, Portal, ActionBar, Text } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import useCookieConsentStore from '../store/cookieConsentStore';
 
-interface CookieConsentProps {
-  onConsent: (consent: boolean) => void;
-}
-
 const CookieConsent = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { setConsentStatus } = useCookieConsentStore();
