@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import JSON5 from "json5";
 import {
   ChatAPIRequest,
@@ -9,16 +8,20 @@ import {
 import { readDataStream } from "../shared/read-data-stream";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../shared/parse-stream-message";
-
-const TOKEN_NAME = "auth_token";
+import {
+  getAuthToken,
+  getSessionToken,
+  getAPIRequestHeaders,
+} from "../shared/utils";
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body: ChatAPIRequest = await request.json();
@@ -82,6 +85,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          ...(await getAPIRequestHeaders()),
         },
         body: JSON.stringify({
           query,
@@ -133,7 +137,7 @@ export async function POST(request: NextRequest) {
                 name: "timeout",
                 content:
                   "Request timed out after 5 minutes. Please try a simpler query or try again later.",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
               };
 
               controller.enqueue(
@@ -178,7 +182,8 @@ export async function POST(request: NextRequest) {
                   const updateObject = JSON5.parse(update);
                   const streamMessage = parseStreamMessage(
                     updateObject,
-                    "agent"
+                    "agent",
+                    new Date(langChainMessage.timestamp)
                   );
 
                   if (streamMessage) {
@@ -200,7 +205,8 @@ export async function POST(request: NextRequest) {
                   // Parse LangChain response and extract useful information
                   const streamMessage = parseStreamMessage(
                     updateObject,
-                    messageType as "agent" | "tools"
+                    messageType as "agent" | "tools",
+                    new Date(langChainMessage.timestamp)
                   );
 
                   // Send simplified message to client if we have something useful
