@@ -64,7 +64,7 @@ export default function LandingHero({
     const message = inputValue.trim() || prompts[promptIndex];
     localStorage.setItem("bypassWelcomeModal", "true");
     await sendMessage(message);
-    router.push("/");
+    router.push("/app");
   };
 
   return (

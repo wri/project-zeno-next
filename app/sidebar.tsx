@@ -100,7 +100,7 @@ function ThreadSection({
                 {...(isActive ? { bg: "bg", color: "blue.fg" } : {})}
               >
                 <ThreadLink
-                  href={`/threads/${thread.id}`}
+                  href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
                 >
@@ -161,7 +161,7 @@ export function Sidebar() {
         boxShadow="xs"
       >
         <Button asChild variant="solid" colorPalette="primary" size="sm">
-          <Link href="/">
+          <Link href="/app" aria-label="New conversation">
             New Conversation
             <NotePencilIcon />
           </Link>
@@ -218,6 +218,7 @@ export function Sidebar() {
         <Status.Root
           colorPalette={apiStatus === "OK" ? "green" : "red"}
           m="3"
+          mt="auto"
           size="sm"
           px="2"
           py="1"
@@ -230,7 +231,7 @@ export function Sidebar() {
           API Status: {apiStatus}
         </Status.Root>
         <ChLink
-          href="#"
+          href="/"
           _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
           borderRadius="lg"
           px="1"
@@ -239,9 +240,9 @@ export function Sidebar() {
           <HStack whiteSpace="nowrap">
             <Circle size="8" fontSize="lg" borderWidth="1px"></Circle>
             <Stack gap="0" fontWeight="medium">
-              <Text fontSize="sm">Understand</Text>
+              <Text fontSize="sm">Home</Text>
               <Text fontSize="xs" color="fg.subtle">
-                More information
+                Global Nature Watch
               </Text>
             </Stack>
           </HStack>
