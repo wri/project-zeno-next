@@ -5,6 +5,9 @@ interface AuthState {
   isAuthenticated: boolean;
   isWhitelisted: boolean;
   isAnonymous: boolean;
+  usedPrompts: number;
+  totalPrompts: number;
+  setPromptUsage: (used: number, total: number) => void;
   setAuthStatus: (email: string) => void;
   setAnonymous: () => void;
   clearAuth: () => void;
@@ -17,6 +20,11 @@ const useAuthStore = create<AuthState>()((set) => ({
   isAuthenticated: false,
   isWhitelisted: false,
   isAnonymous: false,
+  usedPrompts: 0,
+  totalPrompts: 5,
+  setPromptUsage: (used: number, total: number) => {
+    set({ usedPrompts: used, totalPrompts: total });
+  },
   setAnonymous: () => {
     set({
       userEmail: null,
