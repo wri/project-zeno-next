@@ -37,7 +37,9 @@ function AuthDialog({
   );
 }
 
-function LoginOverlay() {
+function LoginOverlay(props: { isClassicMode?: boolean }) {
+  const { isClassicMode } = props;
+
   const {
     isAuthenticated,
     userEmail,
@@ -100,7 +102,8 @@ function LoginOverlay() {
   }
 
   if ((isAuthenticated && isWhitelisted) || isAnonymous) {
-    return null;
+    // After checking login status if in classic mode, show a information dialog
+    return isClassicMode ? <InfoDialog /> : null;
   }
 
   if (!isAuthenticated) {
@@ -185,5 +188,40 @@ function DialogHeader(props: { onCloseClick?: () => void; title?: string }) {
         </IconButton>
       )}
     </Dialog.Header>
+  );
+}
+
+function InfoDialog() {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <Dialog.Root open={open} placement="bottom">
+      <Portal>
+        <Dialog.Backdrop />
+        <Dialog.Positioner justifyContent="right">
+          <Dialog.Content margin="2rem">
+            <DialogHeader onCloseClick={() => setOpen(false)} />
+            <Dialog.Body display="flex" gap={2} flexDirection="column">
+              <Text fontWeight="bold">
+                You&apos;re exploring in Classic Mode.
+              </Text>
+              <Text>
+                You can continue browsing Global Nature Watch data layers, but
+                AI features will be unavailable.
+              </Text>
+            </Dialog.Body>
+            <Dialog.Footer>
+              <Button
+                colorPalette="primary"
+                size="sm"
+                onClick={() => setOpen(false)}
+              >
+                I understand
+              </Button>
+            </Dialog.Footer>
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog.Root>
   );
 }
