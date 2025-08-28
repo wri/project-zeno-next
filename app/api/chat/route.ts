@@ -172,58 +172,47 @@ export async function POST(request: NextRequest) {
             abortController,
             reader,
             onData: (data: string, isFinal: boolean) => {
-              if (isFinal) {
-                try {
-                  const langChainMessage: LangChainResponse = JSON.parse(data);
+              try {
+                const langChainMessage: LangChainResponse = JSON.parse(data);
+
+                if (isFinal) {
                   console.log("Final LangChain message:", langChainMessage);
-
-                  // Same parsing logic for final message
-                  const update = langChainMessage.update;
-                  const updateObject = JSON5.parse(update);
-                  const streamMessage = parseStreamMessage(
-                    updateObject,
-                    "agent",
-                    new Date(langChainMessage.timestamp)
-                  );
-
-                  if (streamMessage) {
-                    controller.enqueue(
-                      encoder.encode(JSON.stringify(streamMessage) + "\n")
-                    );
-                  }
-                } catch (err) {
-                  console.error("Failed to parse final buffer", data, err);
                 }
-              } else {
-                try {
-                  const langChainMessage: LangChainResponse = JSON.parse(data);
 
-                  const messageType = langChainMessage.node;
-                  const message = langChainMessage.update;
-                  const updateObject = JSON5.parse(message);
+                const message = langChainMessage.update;
+                const updateObject = JSON5.parse(message);
+                const date = langChainMessage.timestamp
+                  ? new Date(langChainMessage.timestamp)
+                  : new Date();
 
-                  // Parse LangChain response and extract useful information
-                  const streamMessage = parseStreamMessage(
-                    updateObject,
-                    messageType as "agent" | "tools",
-                    new Date(langChainMessage.timestamp)
+                const messageType = isFinal
+                  ? "agent"
+                  : (langChainMessage.node as "agent" | "tools");
+
+                // Parse LangChain response and extract useful information
+                const streamMessage = parseStreamMessage(
+                  updateObject,
+                  messageType,
+                  date
+                );
+
+                if (streamMessage) {
+                  controller.enqueue(
+                    encoder.encode(JSON.stringify(streamMessage) + "\n")
                   );
-
-                  // Send simplified message to client if we have something useful
-                  if (streamMessage) {
-                    controller.enqueue(
-                      encoder.encode(JSON.stringify(streamMessage) + "\n")
-                    );
-                  } else {
-                    // Log unhandled content for debugging
-                    console.log(
-                      "Unhandled message type:",
-                      JSON.stringify(updateObject)
-                    );
-                  }
-                } catch (err) {
-                  console.error("Failed to parse line", data, err);
+                } else {
+                  // Log unhandled content for debugging
+                  console.log(
+                    `Unhandled${isFinal ? " [final] " : " "}message type:`,
+                    JSON.stringify(updateObject)
+                  );
                 }
+              } catch (err) {
+                console.error(
+                  `Failed to parse${isFinal ? " [final] " : " "}message`,
+                  data,
+                  err
+                );
               }
             },
           });
