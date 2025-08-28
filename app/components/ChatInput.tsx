@@ -61,8 +61,8 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
       position="relative"
       m={0}
       p={4}
-      bg="gray.200"
-      borderColor="gray.400"
+      bg="gray.100"
+      borderColor="gray.300"
       borderRadius="lg"
       borderWidth="1px"
       className="group"
