@@ -42,39 +42,54 @@ const initialState: ContextState = {
 
 const useContextStore = create<ContextState & ContextActions>((set) => ({
   ...initialState,
-  addContext: (item) =>
+    addContext: (item) =>
     set((state) => {
-      // Check if item with same contextType and content already exists
-      const exists = state.context.some(
+      let newContext = [...state.context];
+
+      // If adding a layer, remove all other layers first
+      if (item.contextType === "layer") {
+        const existingLayers = newContext.filter(
+          (c) => c.contextType === "layer"
+        );
+        const { removeTileLayer } = useMapStore.getState();
+        existingLayers.forEach((layer) => {
+          if (typeof layer.datasetId === "number") {
+            removeTileLayer(`dataset-${layer.datasetId}`);
+          }
+        });
+        newContext = newContext.filter((c) => c.contextType !== "layer");
+      }
+
+      // Check for duplicates for non-layer context types
+      const exists = newContext.some(
         (existingItem) =>
           existingItem.contextType === item.contextType &&
           JSON.stringify(existingItem.content) === JSON.stringify(item.content)
       );
 
       if (exists) {
-        return state; // Don't add if it already exists
+        return { context: newContext };
       }
 
-      // If adding a dataset layer context, ensure the map layer is added
+      // Add the new item
+      const newItem = { ...item, id: `${item.contextType}-${Date.now()}` };
+      newContext.push(newItem);
+
+      // If it's a layer, add it to the map
       if (
-        item.contextType === "layer" &&
-        typeof item.datasetId === "number" &&
-        item.tileUrl
+        newItem.contextType === "layer" &&
+        typeof newItem.datasetId === "number" &&
+        newItem.tileUrl
       ) {
         useMapStore.getState().addTileLayer({
-          id: `dataset-${item.datasetId}`,
-          name: item.layerName || String(item.datasetId),
-          url: item.tileUrl,
+          id: `dataset-${newItem.datasetId}`,
+          name: newItem.layerName || String(newItem.datasetId),
+          url: newItem.tileUrl,
           visible: true,
         });
       }
 
-      return {
-        context: [
-          ...state.context,
-          { ...item, id: `${item.contextType}-${Date.now()}` },
-        ],
-      };
+      return { context: newContext };
     }),
   removeContext: (id) =>
     set((state) => {
