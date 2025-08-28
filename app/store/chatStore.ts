@@ -109,12 +109,6 @@ async function processStreamMessage(
     // Handling for pull-data tool
     else if (streamMessage.name === "pull-data") {
       return pullDataTool(streamMessage, addMessage);
-    } else {
-      addMessage({
-        type: "assistant",
-        message: `Tool: ${streamMessage.name || "Unknown"}`,
-        timestamp: streamMessage.timestamp,
-      });
     }
   }
 }
@@ -143,8 +137,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   sendMessage: async (message: string, queryType: QueryType = "query") => {
-    const { addMessage, setLoading, currentThreadId, generateNewThread, addToolStep, clearToolSteps } =
-      get();
+    const {
+      addMessage,
+      setLoading,
+      currentThreadId,
+      generateNewThread,
+      addToolStep,
+      clearToolSteps,
+    } = get();
     const { context } = useContextStore.getState();
 
     // Generate thread ID if this is the first message
@@ -176,7 +176,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           gadm_id: areaContext.aoiData.gadm_id,
           src_id: areaContext.aoiData.src_id,
           subtype: areaContext.aoiData.subtype,
-          source: areaContext.aoiData.source
+          source: areaContext.aoiData.source,
         },
         aoi_name: areaContext.aoiData.name,
         subregion_aois: null,
