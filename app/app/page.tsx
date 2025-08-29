@@ -9,16 +9,16 @@ export default function Home() {
   const { reset: resetChatStore, sendMessage } = useChatStore();
   const { reset: resetContextStore } = useContextStore();
   const searchParams = useSearchParams();
-
   useEffect(() => {
     resetChatStore();
     resetContextStore();
+  }, [resetChatStore, resetContextStore]);
 
+  useEffect(() => {
     const prompt = searchParams.get("prompt");
     if (prompt && typeof sendMessage === "function") {
       sendMessage(prompt);
     }
-  }, [resetChatStore, resetContextStore, sendMessage, searchParams]);
-
+  }, [sendMessage, searchParams]);
   return null; // The layout handles all the UI
 }
