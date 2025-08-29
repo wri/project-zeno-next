@@ -91,7 +91,7 @@ export default function TrustedPlatformsSection() {
                     <Card.Root
                       size="sm"
                       overflow="hidden"
-                      bg="bg.muted"
+                      bg="bg.subtle"
                       h="full"
                       rounded="xl"
                     >

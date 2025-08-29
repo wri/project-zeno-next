@@ -148,7 +148,7 @@ export default function LatestUpdatesSection() {
           <Box
             p="4"
             rounded="md"
-            bg="bg.emphasized"
+            bg="bg.muted"
             display="flex"
             flexDir={{ base: "column", md: "row" }}
             alignItems={{ base: "stretch", md: "center" }}
