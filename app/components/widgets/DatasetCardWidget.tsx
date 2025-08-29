@@ -18,7 +18,6 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
   );
   const isInContext = Boolean(existingLayerContext);
 
-  console.log("dataset", dataset);
 
   useEffect(() => {
     addContext({
