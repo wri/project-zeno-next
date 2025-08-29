@@ -48,19 +48,11 @@ export async function pickAoiTool(
         content: aoiName,
       });
     }
-
-    addMessage({
-      type: "assistant",
-      message: `Location found and displayed on map: ${
-        aoiName || "Unknown location"
-      }`,
-      timestamp: streamMessage.timestamp,
-    });
   } catch (error) {
     console.error("Error processing pick-aoi artifact:", error);
 
     addMessage({
-      type: "assistant",
+      type: "error",
       message: `AOI tool executed but failed to display on map: ${
         streamMessage.content || "Unknown location"
       }. Error: ${error instanceof Error ? error.message : "Unknown error"}`,
