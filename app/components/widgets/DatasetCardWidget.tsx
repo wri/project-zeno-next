@@ -20,15 +20,17 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
 
 
   useEffect(() => {
-    addContext({
-      contextType: "layer",
-      content: dataset.dataset_name,
-      datasetId: dataset.dataset_id,
-      tileUrl: dataset.tile_url,
-      layerName: dataset.dataset_name,
-    });
+    if (!isInContext) {
+      addContext({
+        contextType: "layer",
+        content: dataset.dataset_name,
+        datasetId: dataset.dataset_id,
+        tileUrl: dataset.tile_url,
+        layerName: dataset.dataset_name,
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataset.dataset_id]); // Rerun if dataset changes
+  }, []); // Run only once on mount
 
   const handleAddToMap = () => {
     if (!isInContext) {
