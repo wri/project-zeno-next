@@ -17,7 +17,7 @@ import LoginOverlay from "@/app/components/LoginOverlay";
 import PageHeader from "@/app/components/PageHeader";
 import Map from "@/app/components/Map";
 import ChatStatusInfo from "@/app/components/ChatStatusInfo";
-import { LayerMenu } from "../components/ContextMenu";
+import { LayerMenu } from "../../components/ContextMenu";
 import { StackPlusIcon } from "@phosphor-icons/react";
 // import { Legend } from "./legend";
 
