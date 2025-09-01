@@ -228,7 +228,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const error = new Error("Failed to send message");
+        (error as any).status = response.status;
+        throw error;
       }
 
       if (!response.body) {
@@ -277,6 +279,34 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           type: "error",
           message:
             "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
+        });
+      } else if (
+        error instanceof TypeError &&
+        error.message.includes("network")
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "Unable to connect to the server. Please check your internet connection and try again.",
+        });
+      } else if (
+        error instanceof Error &&
+        error.message.includes("Failed to fetch")
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "Network request failed. Please check your connection and try again.",
+        });
+      } else if (
+        error instanceof Error &&
+        (error as any).status >= 400 &&
+        (error as any).status < 500
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "The service is currently unavailable. Please try again later.",
         });
       } else {
         addMessage({
@@ -329,7 +359,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const error = new Error("Failed to fetch thread");
+        (error as any).status = response.status;
+        throw error;
       }
 
       if (!response.body) {

@@ -3,6 +3,7 @@ import {
   ListCustomAreasResponseSchema,
   type ListCustomAreasResponse,
 } from "../schemas/api/custom_areas/get";
+import { useErrorHandler } from "./useErrorHandler";
 
 async function fetchCustomAreas(): Promise<ListCustomAreasResponse> {
   const res = await fetch("/api/proxy/custom_areas", {
@@ -12,7 +13,9 @@ async function fetchCustomAreas(): Promise<ListCustomAreasResponse> {
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || `Request failed: ${res.statusText}`);
+    const errorWithStatus = new Error(error.error || `Request failed: ${res.statusText}`);
+    (errorWithStatus as any).status = res.status;
+    throw errorWithStatus;
   }
 
   const data = await res.json();
@@ -20,6 +23,8 @@ async function fetchCustomAreas(): Promise<ListCustomAreasResponse> {
 }
 
 export function useCustomAreasList() {
+  const { showServiceUnavailableError, showApiError } = useErrorHandler();
+  
   const {
     data: customAreas,
     isLoading,
@@ -28,6 +33,13 @@ export function useCustomAreasList() {
   } = useQuery({
     queryKey: ["customAreas"],
     queryFn: fetchCustomAreas,
+    onError: (error: Error & { status?: number }) => {
+      if (error.status === 400 || error.status === 401 || error.status === 403) {
+        showServiceUnavailableError("Custom Areas");
+      } else if (error.status && error.status >= 400 && error.status < 500) {
+        showApiError(error, { title: "Unable to Load Areas" });
+      }
+    },
   });
 
   return {
