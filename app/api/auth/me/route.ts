@@ -35,12 +35,16 @@ export async function GET() {
       });
 
       if (upstream.ok) {
-        const data = await upstream.json();
-        // Be defensive: only assign if present and of correct type
-        const used = (data as any)?.promptsUsed;
-        const quota = (data as any)?.promptQuota;
-        promptsUsed = typeof used === "number" ? used : null;
-        promptQuota = typeof quota === "number" ? quota : null;
+        const data = (await upstream.json()) as unknown;
+        if (data && typeof data === "object") {
+          const d = data as { promptsUsed?: unknown; promptQuota?: unknown };
+          if (typeof d.promptsUsed === "number") {
+            promptsUsed = d.promptsUsed;
+          }
+          if (typeof d.promptQuota === "number") {
+            promptQuota = d.promptQuota;
+          }
+        }
       }
     } catch {
       // Swallow upstream errors and fall back to nulls
