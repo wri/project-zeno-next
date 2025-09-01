@@ -19,6 +19,7 @@ import Map from "@/app/components/Map";
 import ChatStatusInfo from "@/app/components/ChatStatusInfo";
 import { LayerMenu } from "../components/ContextMenu";
 import { StackPlusIcon } from "@phosphor-icons/react";
+// import { Legend } from "./legend";
 
 export default function ClassicLayout() {
   return (
@@ -57,6 +58,7 @@ export default function ClassicLayout() {
         >
           <LayerDialog open onOpenChange={() => {}} />
         </Flex>
+        {/* <Legend /> */}
         <Map disableMapAreaControls />
       </Box>
     </Grid>
