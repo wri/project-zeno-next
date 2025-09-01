@@ -11,7 +11,7 @@ import { Sidebar } from "@/app/sidebar";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import PageHeader from "@/app/components/PageHeader";
-import WelcomeModal from "../components/WelcomeModal";
+import WelcomeModal from "@/app/components/WelcomeModal";
 
 export default function DashboardLayout({
   children,
