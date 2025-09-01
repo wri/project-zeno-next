@@ -30,19 +30,12 @@ export function pickDatasetTool(
         widgets: [datasetWidget],
         timestamp: streamMessage.timestamp,
       });
-    } else {
-      // Fallback for datasets without tile_url
-      addMessage({
-        type: "assistant",
-        message: `Dataset found: ${streamMessage.content || "Unknown dataset"}`,
-        timestamp: streamMessage.timestamp,
-      });
     }
   } catch (error) {
     console.error("Error processing pick-dataset tool:", error);
 
     addMessage({
-      type: "assistant",
+      type: "error",
       message: `Dataset tool executed but encountered an error: ${
         streamMessage.content || "Unknown error"
       }`,
