@@ -18,6 +18,7 @@ import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
 import { useEffect, useState } from "react";
 import remarkBreaks from "remark-breaks";
+import { WarningIcon } from "@phosphor-icons/react";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -77,14 +78,13 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
         bg={isError ? "red.50" : isUser ? "gray.100" : "transparent"}
         color={isError ? "red.800" : "fg"}
         px={isUser || isError ? 4 : 0}
-        py={isUser || isError  ? 3 : 0}
+        py={isUser || isError ? 3 : 0}
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
         border={isError ? "1px solid" : "none"}
         borderColor={isError ? "red.200" : "transparent"}
       >
-        {isError && <Badge colorPalette="red">Error</Badge>}
         {hasContext && (
           <Flex gap="2" wrap="wrap" mb="1">
             <Flex gap="1" fontSize="xs" color="fg.muted">
@@ -103,18 +103,40 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             ))}
           </Flex>
         )}
-        <Box
-          css={{
-            "& > p:not(:last-of-type)": { mb: 2 },
-            "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
-              borderBottom: "1px solid",
-              borderColor: "bg.muted",
-              pb: 2,
-            },
-          }}
-        >
-          <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
-        </Box>
+        {isError ? (
+          <Flex alignItems="center" gap="2">
+            <WarningIcon weight="fill" color="red" />
+            <Box
+              css={{
+                "& > p:not(:last-of-type)": { mb: 2 },
+                "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
+                  borderBottom: "1px solid",
+                  borderColor: "bg.muted",
+                  pb: 2,
+                },
+              }}
+            >
+              <Markdown remarkPlugins={[remarkBreaks]}>
+                {message.message}
+              </Markdown>
+            </Box>
+          </Flex>
+        ) : (
+          <Box
+            css={{
+              "& > p:not(:last-of-type)": { mb: 2 },
+              "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
+                borderBottom: "1px solid",
+                borderColor: "bg.muted",
+                pb: 2,
+              },
+            }}
+          >
+            <Markdown remarkPlugins={[remarkBreaks]}>
+              {message.message}
+            </Markdown>
+          </Box>
+        )}
         {!isUser && !isConsecutive && !isError && (
           <Flex
             alignItems="center"
