@@ -6,6 +6,7 @@ import { LayerId } from "../types/map";
 import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
+import { toaster } from "../components/ui/toaster";
 
 interface GeoJsonFeature {
   id: string;
@@ -165,6 +166,13 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       });
     } catch (error) {
       console.error("Error flying to GeoJSON bounds:", error);
+      toaster.create({
+        title: "Map Navigation Error",
+        description: "Unable to navigate to the selected area on the map.",
+        type: "error",
+        closable: true,
+        duration: 5000,
+      });
     }
   },
 
@@ -178,6 +186,14 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
     if (maxRetries <= 0) {
       console.warn("Max retries reached, map ref still not available");
+      toaster.create({
+        title: "Map Loading Error",
+        description:
+          "The map failed to load properly. Please refresh the page and try again.",
+        type: "error",
+        closable: true,
+        duration: 5000,
+      });
       return;
     }
 
@@ -211,6 +227,13 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       });
     } catch (error) {
       console.error("Error flying to GeoJSON center:", error);
+      toaster.create({
+        title: "Map Navigation Error",
+        description: "Unable to navigate to the selected location on the map.",
+        type: "error",
+        closable: true,
+        duration: 5000,
+      });
     }
   },
 });
