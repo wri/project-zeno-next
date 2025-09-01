@@ -17,6 +17,7 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import useSidebarStore from "./sidebarStore";
+import useAuthStore from "./authStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -234,6 +235,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       if (!response.body) {
         throw new Error("No response body received");
       }
+
+      // Update prompt usage from response headers (case-insensitive)
+      useAuthStore.getState().setUsageFromHeaders(response.headers);
 
       const reader = response.body.getReader();
 
