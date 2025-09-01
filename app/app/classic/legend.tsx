@@ -88,6 +88,7 @@ export function Legend() {
  * Item component representing a single draggable/reorderable layer entry in the
  * legend.
  */
+// @ts-expect-error prop types to be implemented later
 function Item(props) {
   const { item } = props;
 
@@ -126,7 +127,7 @@ function Item(props) {
  * LayerInfo component displaying details, controls, and legend swatches for a
  * map layer.
  */
-function LayerInfo(props) {
+function LayerInfo() {
   return (
     <Flex flexDir="column" gap={2} pr={4}>
       <Flex justifyContent="space-between" gap={2} alignItems="center" mr={-4}>
