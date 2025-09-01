@@ -40,7 +40,7 @@ export default function FeaturesTabsSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="border"
     >
       <Container>
         <Container textAlign="center" maxW="3xl" px={0}>
@@ -59,7 +59,7 @@ export default function FeaturesTabsSection() {
             mt="4"
             rounded="lg"
           >
-            <Link href="/">
+            <Link href="/app">
               Launch the Preview
               <CaretRightIcon weight="bold" />
             </Link>
@@ -94,7 +94,7 @@ export default function FeaturesTabsSection() {
                     insetBlock: "var(--indicator-offset-y, 0)",
                     insetInlineStart: "var(--indicator-offset-x, 0)",
                     width: "var(--indicator-thickness, 2px)",
-                    background: "bg.emphasized",
+                    background: "bg.subtle",
                   }}
                   _selected={{
                     "&[data-orientation=vertical]::before": {

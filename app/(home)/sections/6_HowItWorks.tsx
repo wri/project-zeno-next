@@ -32,7 +32,7 @@ export default function HowItWorksSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="border"
       display="flex"
       flexDir="column"
       gap={{ base: 8, md: 20 }}
@@ -50,7 +50,7 @@ export default function HowItWorksSection() {
         <Flex
           flexDir={{ base: "column-reverse", md: "row" }}
           alignItems="center"
-          bg={{ base: "neutral.200", md: "transparent" }}
+          bg={{ base: "bg.muted", md: "transparent" }}
           p={{ base: 6, md: 0 }}
           rounded="lg"
           gap={{ base: 0, md: 6 }}
@@ -58,7 +58,7 @@ export default function HowItWorksSection() {
         >
           <Box h={0} w="lg" textAlign={{ base: "center", md: "left" }} />
           <Box
-            bg="neutral.200"
+            bg="bg.muted"
             rounded="lg"
             textAlign="center"
             maxW="xs"
@@ -75,7 +75,7 @@ export default function HowItWorksSection() {
             flexDir={{ base: "column-reverse", md: "row" }}
             alignItems="center"
             gap={6}
-            bg={{ base: "neutral.200", md: "transparent" }}
+            bg={{ base: "bg.muted", md: "transparent" }}
             p={{ base: 6, md: 0 }}
             rounded="lg"
             zIndex={50}
@@ -91,7 +91,7 @@ export default function HowItWorksSection() {
               <Text fontSize="lg">{step.description}</Text>
             </Box>
             <Box
-              bg={{ base: "transparent", md: "neutral.200" }}
+              bg={{ base: "transparent", md: "bg.muted" }}
               rounded="lg"
               textAlign="center"
               flexShrink={0}

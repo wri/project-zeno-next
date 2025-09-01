@@ -37,7 +37,7 @@ function ThreadActionsMenu({
     try {
       await deleteThread(thread.id);
       if (currentThreadId === thread.id) {
-        router.replace("/");
+        router.replace("/app");
       }
     } catch (e) {
       console.error("Failed to delete thread", e);

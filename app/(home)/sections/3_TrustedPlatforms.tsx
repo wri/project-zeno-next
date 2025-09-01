@@ -35,7 +35,7 @@ export default function TrustedPlatformsSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="border"
     >
       <Container>
         <Container textAlign="center" maxW="3xl">
@@ -91,7 +91,7 @@ export default function TrustedPlatformsSection() {
                     <Card.Root
                       size="sm"
                       overflow="hidden"
-                      bg="bg.muted"
+                      bg="bg.subtle"
                       h="full"
                       rounded="xl"
                     >

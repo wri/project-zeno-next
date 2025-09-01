@@ -56,7 +56,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           "& .maplibregl-ctrl-scale": {
             bgColor: "black/20",
             color: "fg",
-            borderColor: "bg.muted",
+            borderColor: "bg.subtle",
           },
           "& .maplibregl-ctrl.maplibregl-ctrl-attrib": {
             bgColor: "black/40",
@@ -68,9 +68,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             boxShadow: "lg",
             boxShadowColor: "white",
             "& button": {
-              "&+button": { borderColor: "border.emphasized" },
+              "&+button": { borderColor: "border.muted" },
               "&:not(:disabled):hover": {
-                bgColor: "bg.emphasized",
+                bgColor: "bg.muted",
                 color: "fg",
               },
               "& .maplibregl-ctrl-icon": {

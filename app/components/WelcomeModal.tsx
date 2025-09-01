@@ -80,7 +80,7 @@ const WelcomeModal = () => {
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content bg="bg.muted" padding="2">
+          <Dialog.Content bg="bg.subtle" padding="2">
             <Dialog.Header justifyContent="center" alignItems="center">
               <Dialog.Title fontWeight="normal" fontSize="2xl" m={0}>
                 Welcome to <strong>Global Nature Watch</strong>
