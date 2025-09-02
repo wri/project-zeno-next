@@ -109,6 +109,7 @@ export default function LandingHero({
         pt={{ base: 14, md: 24 }}
         pb={{ base: 24, md: 32 }}
         zIndex="10"
+        minH={{ base: "none", xl: "45vh" }}
       >
         <Container
           px={{ base: 6, md: 0 }}
