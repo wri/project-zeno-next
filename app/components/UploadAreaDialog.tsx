@@ -6,6 +6,7 @@ import {
   Text,
   Box,
   Link,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import useMapStore from "../store/mapStore";
 import { useRef, useState, useEffect } from "react";
@@ -158,20 +159,20 @@ function DropFileZone() {
         variant="solid"
         size="2xs"
         colorPalette="primary"
-        onClick={() => fileInputRef.current?.click()}
       >
         Select File
       </Button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        style={{ display: "none" }}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
-        }}
-        accept={ACCEPTED_FILE_TYPES.join(",")}
-      />
+      <VisuallyHidden>
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+          }}
+          accept={ACCEPTED_FILE_TYPES.join(",")}
+        />
+      </VisuallyHidden>
     </Box>
   );
 }
