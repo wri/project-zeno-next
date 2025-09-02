@@ -1,15 +1,13 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { API_CONFIG } from "@/app/config/api";
+import {
+  getAuthToken,
+  getSessionToken,
+  getAPIRequestHeaders,
+} from "../../shared/utils";
 
-const TOKEN_NAME = "auth_token";
 const BASE_URL = API_CONFIG.API_BASE_URL;
 const METHODS_WITH_BODY = ["POST", "PUT"];
-
-async function getAuthToken(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get(TOKEN_NAME)?.value || null;
-}
 
 /**
  * Builds the target URL for the proxy request and strips any trailing slash.
@@ -44,6 +42,7 @@ async function proxyRequest(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      ...(await getAPIRequestHeaders()),
     },
     body,
   });
@@ -68,9 +67,10 @@ export async function handler(
   { params }: { params: Promise<{ path: string[] }> }
 ): Promise<NextResponse> {
   try {
-    const token = await getAuthToken();
+    let token = await getAuthToken();
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
     }
 
     const method = request.method.toUpperCase();

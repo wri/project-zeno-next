@@ -49,6 +49,7 @@ export interface UiContext {
       gadm_id?: string;
       src_id?: string;
       subtype?: string;
+      source?: string;
     };
     aoi_name: string;
     subregion_aois: null;
@@ -81,7 +82,9 @@ export interface StreamMessage {
   insights?: object[];
   charts_data?: object[];
   insight_count?: number;
-  timestamp: number;
+  timestamp: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface AOI {
@@ -111,13 +114,16 @@ export interface LangChainContent {
 
 export interface LangChainResponse {
   node: string;
+  timestamp: string;
   update: string;
 }
 
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
-  aoi: object;
+  aoi?: object;
+  start_date?: string;
+  end_date?: string;
   insights: object[];
   charts_data: object[];
   insight_count: number;

@@ -4,7 +4,7 @@ import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
 import useAuthStore from "../store/authStore";
 
 function PageHeader() {
-  const { userEmail } = useAuthStore();
+  const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
 
   return (
     <Flex
@@ -18,7 +18,7 @@ function PageHeader() {
     >
       <Flex gap="2">
         <LclLogo width={16} avatarOnly />
-        <Heading as="h1" size="sm">
+        <Heading as="h1" size="sm" color="fg.inverted">
           Global Nature Watch
         </Heading>
       </Flex>
@@ -37,7 +37,7 @@ function PageHeader() {
           size="xs"
           min={0}
           max={100}
-          value={40}
+          value={(usedPrompts / totalPrompts) * 100}
           minW="6rem"
           textAlign="center"
           rounded="full"
@@ -49,7 +49,7 @@ function PageHeader() {
             fontWeight="normal"
             color="primary.100"
           >
-            40/100 Prompts
+            {usedPrompts}/{totalPrompts} Prompts
           </Progress.Label>
           <Progress.Track bg="primary.950" maxH="4px">
             <Progress.Range bg="white" />

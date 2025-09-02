@@ -1,11 +1,43 @@
-import { createSystem, defaultConfig, defineConfig } from "@chakra-ui/react";
+import {
+  createSystem,
+  defaultConfig,
+  defineConfig,
+  defineRecipe,
+} from "@chakra-ui/react";
 import globalCss from "@/app/theme/globalCss";
+
+export const headingRecipe = defineRecipe({
+  base: {
+    color: "neutral.900",
+  },
+});
 
 const defaultColors = defaultConfig?.theme?.tokens?.colors ?? {};
 
 export const config = defineConfig({
   globalCss,
   theme: {
+    recipes: {
+      heading: headingRecipe,
+    },
+    keyframes: {
+      fillWidth: {
+        from: { width: "0%" },
+        to: { width: "100%" },
+      },
+      dynamicSlideLeft: {
+        from: {
+          transform: "translateX(var(--start-x))",
+        },
+        to: { transform: "translateX(var(--end-x))" },
+      },
+      dynamicSlideRight: {
+        from: {
+          transform: "translateX(var(--start-x))",
+        },
+        to: { transform: "translateX(var(--end-x))" },
+      },
+    },
     tokens: {
       fonts: {
         body: { value: "var(--font-IBMPlexSans)" },
@@ -15,41 +47,41 @@ export const config = defineConfig({
       colors: {
         primary: {
           50: { value: "#E0E8FF" },
-          100: { value: "#CBD7FB" },
-          200: { value: "#A3B8F0" },
-          300: { value: "#7E98D7" },
-          400: { value: "#1863DF" },
+          100: { value: "#D7DFF2" },
+          200: { value: "#AFBFE6" },
+          300: { value: "#7898D7" },
+          400: { value: "#3361C0" },
           500: { value: "#0041B1" },
-          600: { value: "#003390" },
-          700: { value: "#002874" },
-          800: { value: "#001C59" },
-          900: { value: "#00103A" },
+          600: { value: "#0A3785" },
+          700: { value: "#002C6C" },
+          800: { value: "#022456" },
+          900: { value: "#0E1E3C" },
           950: { value: "#000828" },
         },
         neutral: {
-          50: {},
+          50: { value: "#FFFFFF" },
           100: { value: "#FFFFFF" },
           200: { value: "#F4F5F7" },
           300: { value: "#E1E2E6" },
           400: { value: "#B2B7BD" },
           500: { value: "#666E7B" },
-          600: { value: "#ABA29C" },
+          600: { value: "#394048" },
           700: { value: "#282D33" },
-          800: { value: "#221F1D" },
-          900: { value: "#0F0E0D" },
-          950: { value: "#212529" },
+          800: { value: "#212629" },
+          900: { value: "#13171A" },
+          950: { value: "#02070B" },
         },
         secondary: {
           50: { value: "#fcfee7" },
           100: { value: "#F8F8D6" },
           200: { value: "#F0F4B4" },
           300: { value: "#E2ED7D" },
-          400: { value: "#cbe437" },
-          500: { value: "#adca18" },
-          600: { value: "#87a10f" },
-          700: { value: "#667b10" },
-          800: { value: "#516113" },
-          900: { value: "#445215" },
+          400: { value: "#CAD470" },
+          500: { value: "#9CA25A" },
+          600: { value: "#7B8044" },
+          700: { value: "#5B5F3A" },
+          800: { value: "#42442C" },
+          900: { value: "#323625" },
           950: { value: "#242e05" },
         },
         cyan: { ...defaultColors.cyan, 500: { value: "#01B9F3" } },
@@ -87,26 +119,225 @@ export const config = defineConfig({
           950: { value: "#170e14" },
         },
       },
+      animations: {
+        fillWidth: { value: "fillWidth 10s linear infinite" },
+      }
     },
     semanticTokens: {
       colors: {
+        bg: {
+          DEFAULT: {
+            value: { _light: "{colors.white}", _dark: "{colors.black}" },
+          },
+          subtle: {
+            value: {
+              _light: "{colors.neutral.200}",
+              _dark: "{colors.neutral.950}",
+            },
+          },
+          muted: {
+            value: {
+              _light: "{colors.neutral.300}",
+              _dark: "{colors.neutral.900}",
+            },
+          },
+          emphasized: {
+            value: {
+              _light: "{colors.neutral.400}",
+              _dark: "{colors.neutral.800}",
+            },
+          },
+          inverted: {
+            value: { _light: "{colors.black}", _dark: "{colors.white}" },
+          },
+          panel: {
+            value: { _light: "{colors.white}", _dark: "{colors.neutral.950}" },
+          },
+          error: {
+            value: { _light: "{colors.red.50}", _dark: "{colors.red.950}" },
+          },
+          warning: {
+            value: {
+              _light: "{colors.orange.50}",
+              _dark: "{colors.orange.950}",
+            },
+          },
+          success: {
+            value: { _light: "{colors.green.50}", _dark: "{colors.green.950}" },
+          },
+          info: {
+            value: { _light: "{colors.blue.50}", _dark: "{colors.blue.950}" },
+          },
+        },
+        fg: {
+          DEFAULT: {
+            value: {
+              _light: "{colors.neutral.800}",
+              _dark: "{colors.neutral.50}",
+            },
+          },
+          muted: {
+            value: {
+              _light: "{colors.neutral.600}",
+              _dark: "{colors.neutral.400}",
+            },
+          },
+          subtle: {
+            value: {
+              _light: "{colors.neutral.400}",
+              _dark: "{colors.neutral.500}",
+            },
+          },
+          inverted: {
+            value: {
+              _light: "{colors.neutral.50}",
+              _dark: "{colors.neutral.900}",
+            },
+          },
+          error: {
+            value: { _light: "{colors.red.500}", _dark: "{colors.red.400}" },
+          },
+          warning: {
+            value: {
+              _light: "{colors.orange.600}",
+              _dark: "{colors.orange.300}",
+            },
+          },
+          success: {
+            value: {
+              _light: "{colors.green.600}",
+              _dark: "{colors.green.300}",
+            },
+          },
+          info: {
+            value: {
+              _light: "{colors.primary.600}",
+              _dark: "{colors.primary.300}",
+            },
+          },
+        },
+        border: {
+          DEFAULT: {
+            value: { _light: "{colors.neutral.200}", _dark: "{colors.neutral.800}" },
+          },
+          muted: {
+            value: { _light: "{colors.neutral.100}", _dark: "{colors.neutral.900}" },
+          },
+          subtle: {
+            value: { _light: "{colors.neutral.50}", _dark: "{colors.neutral.950}" },
+          },
+          emphasized: {
+            value: { _light: "{colors.neutral.300}", _dark: "{colors.neutral.700}" },
+          },
+          inverted: {
+            value: { _light: "{colors.neutral.800}", _dark: "{colors.neutral.200}" },
+          },
+          error: {
+            value: { _light: "{colors.red.500}", _dark: "{colors.red.400}" },
+          },
+          warning: {
+            value: {
+              _light: "{colors.orange.500}",
+              _dark: "{colors.orange.400}",
+            },
+          },
+          success: {
+            value: {
+              _light: "{colors.green.500}",
+              _dark: "{colors.green.400}",
+            },
+          },
+          info: {
+            value: { _light: "{colors.blue.500}", _dark: "{colors.blue.400}" },
+          },
+        },
         primary: {
-          contrast: { value: "{colors.primary.100}" },
-          solid: { value: "{colors.primary.500}" },
-          fg: { value: "{colors.primary.700}" },
-          muted: { value: "{colors.primary.100}" },
-          subtle: { value: "{colors.primary.200}" },
-          emphasized: { value: "{colors.primary.300}" },
-          focusRing: { value: "{colors.primary.500}" },
+          contrast: {
+            value: {
+              _light: "{colors.primary.50}",
+              _dark: "{colors.primary.50}",
+            },
+          },
+          fg: {
+            value: {
+              _light: "{colors.primary.700}",
+              _dark: "{colors.primary.300}",
+            },
+          },
+          subtle: {
+            value: {
+              _light: "{colors.primary.100}",
+              _dark: "{colors.primary.900}",
+            },
+          },
+          muted: {
+            value: {
+              _light: "{colors.primary.200}",
+              _dark: "{colors.primary.800}",
+            },
+          },
+          emphasized: {
+            value: {
+              _light: "{colors.primary.300}",
+              _dark: "{colors.primary.700}",
+            },
+          },
+          solid: {
+            value: {
+              _light: "{colors.primary.500}",
+              _dark: "{colors.primary.600}",
+            },
+          },
+          focusRing: {
+            value: {
+              _light: "{colors.primary.500}",
+              _dark: "{colors.primary.500}",
+            },
+          },
         },
         secondary: {
-          contrast: { value: "{colors.secondary.100}" },
-          solid: { value: "{colors.secondary.500}" },
-          fg: { value: "{colors.secondary.700}" },
-          muted: { value: "{colors.secondary.100}" },
-          subtle: { value: "{colors.secondary.200}" },
-          emphasized: { value: "{colors.secondary.300}" },
-          focusRing: { value: "{colors.secondary.500}" },
+          contrast: {
+            value: {
+              _light: "{colors.secondary.50}",
+              _dark: "{colors.secondary.50}",
+            },
+          },
+          fg: {
+            value: {
+              _light: "{colors.secondary.800}",
+              _dark: "{colors.secondary.300}",
+            },
+          },
+          subtle: {
+            value: {
+              _light: "{colors.secondary.100}",
+              _dark: "{colors.secondary.900}",
+            },
+          },
+          muted: {
+            value: {
+              _light: "{colors.secondary.200}",
+              _dark: "{colors.secondary.800}",
+            },
+          },
+          emphasized: {
+            value: {
+              _light: "{colors.secondary.300}",
+              _dark: "{colors.secondary.700}",
+            },
+          },
+          solid: {
+            value: {
+              _light: "{colors.secondary.400}",
+              _dark: "{colors.secondary.400}",
+            },
+          },
+          focusRing: {
+            value: {
+              _light: "{colors.secondary.500}",
+              _dark: "{colors.secondary.500}",
+            },
+          },
         },
       },
     },
