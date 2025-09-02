@@ -41,7 +41,7 @@ export interface UploadAreaSlice {
   setError: (errorType: UploadErrorType, message?: string) => void;
   clearError: () => void;
   handleFile: (file: File) => void;
-  uploadFile: () => Promise<void>;
+  uploadFile: () => Promise<CreateCustomAreaResponse | undefined>;
   clearFileState: () => void;
   setCreateAreaFn: (
     fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>
@@ -293,10 +293,11 @@ export const createUploadAreaSlice: StateCreator<
         geometries: validatedGeoJson,
       };
 
-      await createAreaFn(requestData);
+      const result = await createAreaFn(requestData);
       get().clearFileState();
       get().clearSelectionMode();
       set({ dialogVisible: false });
+      return result;
     } catch (error) {
       console.error("Upload error:", error);
       setError("failed-to-send", "Failed to process file. Please try again.");
