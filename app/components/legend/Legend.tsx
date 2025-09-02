@@ -1,0 +1,134 @@
+import { useCallback } from "react";
+import {
+  Flex,
+  Heading,
+  VisuallyHidden,
+  IconButton,
+  chakra,
+} from "@chakra-ui/react";
+import { DotsSixVerticalIcon } from "@phosphor-icons/react";
+import { Reorder, useDragControls } from "motion/react";
+
+import { LayerActionHandler, LegendLayer } from "./types";
+import { LayerEntry } from "./LayerEntry";
+
+const ChReorderGroup = chakra(Reorder.Group);
+const ChReorderItem = chakra(Reorder.Item);
+
+/**
+ * Props for the Legend component.
+ */
+interface LegendProps {
+  layers: LegendLayer[];
+  onLayersChange: (layers: LegendLayer[]) => void;
+}
+
+/**
+ * Legend component displaying a draggable, reorderable list of map layers with
+ * legend details.
+ *
+ * @param props.layers - Array of LegendLayer objects to display.
+ * @param props.onLayersChange - Callback when layers are reordered or changed.
+ */
+export function Legend(props: LegendProps) {
+  const { layers, onLayersChange } = props;
+
+  const handleLayerAction: LayerActionHandler = useCallback(
+    ({ action, payload }) => {
+      switch (action) {
+        case "remove":
+          onLayersChange(layers.filter((layer) => layer.id !== payload.id));
+          break;
+        case "visibility":
+          onLayersChange(
+            layers.map((layer) =>
+              layer.id === payload.id
+                ? { ...layer, visible: payload.visible }
+                : layer
+            )
+          );
+          break;
+        case "opacity":
+          onLayersChange(
+            layers.map((layer) =>
+              layer.id === payload.id
+                ? { ...layer, opacity: payload.opacity }
+                : layer
+            )
+          );
+          break;
+      }
+    },
+    [layers, onLayersChange]
+  );
+
+  if (!layers.length) return null;
+
+  return (
+    <Flex
+      position="absolute"
+      right={4}
+      bottom={4}
+      zIndex={100}
+      width={320}
+      bg="bg"
+      border="1px solid {colors.gray.400}"
+      shadow="md"
+    >
+      <VisuallyHidden>
+        <Heading>Map Legend</Heading>
+      </VisuallyHidden>
+      <ChReorderGroup
+        axis="y"
+        values={layers}
+        onReorder={onLayersChange}
+        listStyleType="none"
+        fontSize="xs"
+        p={0}
+        m={0}
+        w="100%"
+      >
+        {layers.map((item) => (
+          <Item key={item.id} item={item} onLayerAction={handleLayerAction} />
+        ))}
+      </ChReorderGroup>
+    </Flex>
+  );
+}
+
+/**
+ * Item component representing a single draggable/reorderable layer entry in the
+ * legend.
+ */
+function Item(props: { item: LegendLayer; onLayerAction: LayerActionHandler }) {
+  const { item, onLayerAction } = props;
+  const dragControls = useDragControls();
+
+  return (
+    <ChReorderItem
+      value={item}
+      id={item}
+      dragListener={false}
+      dragControls={dragControls}
+      p={2}
+      pl={1}
+      display="flex"
+      gap={1}
+      bg="bg"
+    >
+      <IconButton
+        variant="ghost"
+        size="xs"
+        p={0}
+        minW="18px"
+        h="18px"
+        mt="2px"
+        cursor="grab"
+        onPointerDown={(event) => dragControls.start(event)}
+      >
+        <DotsSixVerticalIcon />
+      </IconButton>
+      <LayerEntry {...item} onLayerAction={onLayerAction} />
+    </ChReorderItem>
+  );
+}

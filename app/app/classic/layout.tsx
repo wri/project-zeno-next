@@ -21,7 +21,13 @@ import PageHeader from "@/app/components/PageHeader";
 import Map from "@/app/components/Map";
 import ChatStatusInfo from "@/app/components/ChatStatusInfo";
 import { LayerMenu } from "@/app/components/ContextMenu";
-import { Legend, LegendCategorical, LegendDivergent, LegendLayer, LegendSequential, LegendSwatches } from "./legend";
+
+import { LegendLayer } from "@/app/components/legend/types";
+import { Legend } from "@/app/components/legend/Legend";
+import { LegendSequential } from "@/app/components/legend/LegendSequential";
+import { LegendSymbolList } from "@/app/components/legend/LegendSymbolList";
+import { LegendCategorical } from "@/app/components/legend/LegendCategorical";
+import { LegendDivergent } from "@/app/components/legend/LegendDivergent";
 
 const exLayers: LegendLayer[] = [
   {
@@ -67,7 +73,7 @@ const exLayers: LegendLayer[] = [
     visible: true,
     opacity: 100,
     symbology: (
-      <LegendSwatches
+      <LegendSymbolList
         items={[
           {
             color: "#4CAF50",
@@ -132,7 +138,6 @@ const exLayers: LegendLayer[] = [
 ];
 
 export default function ClassicLayout() {
-
   const [layers, setLayers] = useState<LegendLayer[]>(exLayers);
 
   return (
