@@ -1,15 +1,12 @@
 "use client";
 
 import { Box, Grid } from "@chakra-ui/react";
-import { useEffect } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
 import LoginOverlay from "@/app/components/LoginOverlay";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
-import useMapStore from "@/app/store/mapStore";
-import useContextStore from "@/app/store/contextStore";
 import PageHeader from "@/app/components/PageHeader";
 import WelcomeModal from "@/app/components/WelcomeModal";
 
@@ -18,14 +15,6 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { reset: resetMapStore } = useMapStore();
-  const { reset: resetContextStore } = useContextStore();
-
-  useEffect(() => {
-    resetMapStore();
-    resetContextStore();
-  }, [resetMapStore, resetContextStore]);
-
   return (
     <Grid
       maxH="100vh"

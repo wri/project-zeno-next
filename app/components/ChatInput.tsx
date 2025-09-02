@@ -7,12 +7,15 @@ import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import useContextStore from "../store/contextStore";
+import { useRouter } from "next/navigation";
 
 function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedContextType, setSelectedContextType] =
     useState<ChatContextType | null>(null);
+
+  const router = useRouter();
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -33,7 +36,10 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
     const message = inputValue.trim();
     setInputValue("");
 
-    await sendMessage(message);
+    const result = await sendMessage(message);
+    if (result.isNew) {
+      router.replace(`/app/threads/${result.id}`);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -110,7 +116,7 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
           outline: "none",
         }}
         _placeholder={{
-          color: disabled ? 'gray.400' : 'gray.600',
+          color: disabled ? "gray.400" : "gray.600",
         }}
       />
       <Flex justifyContent="space-between" alignItems="center" w="full">

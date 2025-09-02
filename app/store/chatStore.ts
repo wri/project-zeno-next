@@ -30,7 +30,7 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
-  sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
+  sendMessage: (message: string, queryType?: QueryType) => Promise<{isNew: boolean, id: string}>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
@@ -288,12 +288,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
-      if (!currentThreadId) {
-        // Change the url using the history API so not to trigger any next
-        // router events.
-        window.history.replaceState(null, "", `/app/threads/${threadId}`);
-      }
+
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      return { isNew: !currentThreadId, id: threadId };
     }
   },
 
