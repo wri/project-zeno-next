@@ -13,13 +13,21 @@ export const ChatContextOptions = {
 
 export type ChatContextType = keyof typeof ChatContextOptions;
 
-interface ContextButtonProps extends ButtonProps{
+interface ContextButtonProps extends ButtonProps {
   contextType?: ChatContextType;
 }
 
 function ContextButton({ contextType = "area", ...props }: ContextButtonProps) {
   return (
-    <Button size="xs" variant="surface" borderRadius="full" py="1" h="auto" {...props} >
+    <Button
+      size="xs"
+      variant="outline"
+      borderRadius="full"
+      borderColor="gray.300"
+      py="1"
+      h="auto"
+      {...props}
+    >
       {ChatContextOptions[contextType].icon}
       {ChatContextOptions[contextType].label}
     </Button>

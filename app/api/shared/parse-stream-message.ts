@@ -4,29 +4,31 @@ import { LangChainUpdate, StreamMessage } from "@/app/types/chat";
  * Parses a LangChain message into a simplified format for the frontend
  * @param langChainMessage - The raw LangChain message structure
  * @param messageType - The type of message: "agent", "tools", or "human"
+ * @param timestamp - Optional timestamp for the message, defaults to current time
  * @returns Parsed StreamMessage or null if parsing fails
  */
 export function parseStreamMessage(
   langChainMessage: LangChainUpdate,
-  messageType: "agent" | "tools" | "human"
+  messageType: "agent" | "tools" | "human",
+  timestamp: Date = new Date()
 ): StreamMessage | null {
+  const lastMessage = langChainMessage.messages?.at(-1);
   // Validate input structure
-  if (
-    !langChainMessage ||
-    !langChainMessage.messages?.length ||
-    !langChainMessage?.messages[0]?.kwargs
-  ) {
+  if (!langChainMessage || !lastMessage?.kwargs) {
     return null;
   }
 
-  const kwargs = langChainMessage.messages[0].kwargs;
+  const kwargs = lastMessage.kwargs;
   const content = kwargs.content;
 
   if (messageType === "human") {
     return {
       type: "human",
       text: content as string,
-      timestamp: Date.now(),
+      aoi: langChainMessage.aoi || undefined,
+      timestamp: timestamp.toISOString(),
+      start_date: langChainMessage.start_date,
+      end_date: langChainMessage.end_date,
     };
   } else if (messageType === "tools") {
     // Check if this is an error from a tool
@@ -38,7 +40,7 @@ export function parseStreamMessage(
         type: "error",
         name: kwargs.name,
         content: typeof content === "string" ? content : String(content),
-        timestamp: Date.now(),
+        timestamp: timestamp.toISOString(),
       };
     }
 
@@ -52,7 +54,7 @@ export function parseStreamMessage(
       charts_data: langChainMessage.charts_data || [],
       insight_count: langChainMessage.insight_count || 0,
       aoi: langChainMessage.aoi || undefined,
-      timestamp: Date.now(),
+      timestamp: timestamp.toISOString()
     };
   } else if (messageType === "agent") {
     // For AI messages, handle different content formats
@@ -82,7 +84,7 @@ export function parseStreamMessage(
       return {
         type: "text",
         text: textContent.trim(),
-        timestamp: Date.now(),
+        timestamp: timestamp.toISOString(),
       };
     }
   }

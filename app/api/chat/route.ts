@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import JSON5 from "json5";
 import {
   ChatAPIRequest,
@@ -9,16 +8,20 @@ import {
 import { readDataStream } from "../shared/read-data-stream";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../shared/parse-stream-message";
-
-const TOKEN_NAME = "auth_token";
+import {
+  getAuthToken,
+  getSessionToken,
+  getAPIRequestHeaders,
+} from "../shared/utils";
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body: ChatAPIRequest = await request.json();
@@ -82,6 +85,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          ...(await getAPIRequestHeaders()),
         },
         body: JSON.stringify({
           query,
@@ -133,7 +137,7 @@ export async function POST(request: NextRequest) {
                 name: "timeout",
                 content:
                   "Request timed out after 5 minutes. Please try a simpler query or try again later.",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
               };
 
               controller.enqueue(
@@ -168,56 +172,47 @@ export async function POST(request: NextRequest) {
             abortController,
             reader,
             onData: (data: string, isFinal: boolean) => {
-              if (isFinal) {
-                try {
-                  const langChainMessage: LangChainResponse = JSON.parse(data);
+              try {
+                const langChainMessage: LangChainResponse = JSON.parse(data);
+
+                if (isFinal) {
                   console.log("Final LangChain message:", langChainMessage);
-
-                  // Same parsing logic for final message
-                  const update = langChainMessage.update;
-                  const updateObject = JSON5.parse(update);
-                  const streamMessage = parseStreamMessage(
-                    updateObject,
-                    "agent"
-                  );
-
-                  if (streamMessage) {
-                    controller.enqueue(
-                      encoder.encode(JSON.stringify(streamMessage) + "\n")
-                    );
-                  }
-                } catch (err) {
-                  console.error("Failed to parse final buffer", data, err);
                 }
-              } else {
-                try {
-                  const langChainMessage: LangChainResponse = JSON.parse(data);
 
-                  const messageType = langChainMessage.node;
-                  const message = langChainMessage.update;
-                  const updateObject = JSON5.parse(message);
+                const message = langChainMessage.update;
+                const updateObject = JSON5.parse(message);
+                const date = langChainMessage.timestamp
+                  ? new Date(langChainMessage.timestamp)
+                  : new Date();
 
-                  // Parse LangChain response and extract useful information
-                  const streamMessage = parseStreamMessage(
-                    updateObject,
-                    messageType as "agent" | "tools"
+                const messageType = isFinal
+                  ? "agent"
+                  : (langChainMessage.node as "agent" | "tools");
+
+                // Parse LangChain response and extract useful information
+                const streamMessage = parseStreamMessage(
+                  updateObject,
+                  messageType,
+                  date
+                );
+
+                if (streamMessage) {
+                  controller.enqueue(
+                    encoder.encode(JSON.stringify(streamMessage) + "\n")
                   );
-
-                  // Send simplified message to client if we have something useful
-                  if (streamMessage) {
-                    controller.enqueue(
-                      encoder.encode(JSON.stringify(streamMessage) + "\n")
-                    );
-                  } else {
-                    // Log unhandled content for debugging
-                    console.log(
-                      "Unhandled message type:",
-                      JSON.stringify(updateObject)
-                    );
-                  }
-                } catch (err) {
-                  console.error("Failed to parse line", data, err);
+                } else {
+                  // Log unhandled content for debugging
+                  console.log(
+                    `Unhandled${isFinal ? " [final] " : " "}message type:`,
+                    JSON.stringify(updateObject)
+                  );
                 }
+              } catch (err) {
+                console.error(
+                  `Failed to parse${isFinal ? " [final] " : " "}message`,
+                  data,
+                  err
+                );
               }
             },
           });
