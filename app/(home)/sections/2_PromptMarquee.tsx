@@ -13,6 +13,8 @@ function renderPromptBoxes(
   prompts: string[],
   setPromptIndex: React.Dispatch<React.SetStateAction<number>>
 ) {
+  const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+  
   return Array(2)
     .fill(prompts)
     .flat()
@@ -32,6 +34,7 @@ function renderPromptBoxes(
           "&&": { opacity: 1 },
         }}
         onClick={() => {
+          if (LANDING_PAGE_VERSION !== "public") return;
           setPromptIndex(() => i);
         }}
       >
