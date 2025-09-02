@@ -22,15 +22,11 @@ function PageHeader() {
           Global Nature Watch
         </Heading>
         <Badge
-          bg="blue.800"
-          color="blue.100"
-          borderRadius="4px"
-          px={1}
-          py={0.5}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          gap={1}
+          colorPalette="primary"
+          bg="primary.800"
+          letterSpacing="wider"
+          variant="solid"
+          size="xs"
         >
           BETA
         </Badge>
