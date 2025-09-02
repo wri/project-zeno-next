@@ -1,5 +1,5 @@
 "use client";
-import { Box, Badge, useClipboard, Flex, IconButton } from "@chakra-ui/react";
+import { Box, useClipboard, Flex, IconButton } from "@chakra-ui/react";
 import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
