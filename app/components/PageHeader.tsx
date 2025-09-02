@@ -1,6 +1,6 @@
-import { Flex, Heading, Button, Progress } from "@chakra-ui/react";
+import { Flex, Heading, Button, Progress, Badge } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
-import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
+import { LifebuoyIcon, UserIcon, FlaskIcon } from "@phosphor-icons/react";
 import useAuthStore from "../store/authStore";
 
 function PageHeader() {
@@ -16,11 +16,24 @@ function PageHeader() {
       bg="primary.solid"
       color="fg.inverted"
     >
-      <Flex gap="2">
+      <Flex gap="3" alignItems="center">
         <LclLogo width={16} avatarOnly />
         <Heading as="h1" size="sm" color="fg.inverted">
           Global Nature Watch
         </Heading>
+        <Badge
+          bg="blue.800"
+          color="blue.100"
+          borderRadius="4px"
+          px={1}
+          py={0.5}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          gap={1}
+        >
+          BETA
+        </Badge>
       </Flex>
       <Flex gap="6" alignItems="center">
         <Button
