@@ -24,9 +24,9 @@ const WelcomeModal = () => {
   const [bypassWelcomeModal, setBypassWelcomeModal] = useState(false);
 
   useEffect(() => {
-    const storedValue = localStorage.getItem("bypassWelcomeModal");
-    setBypassWelcomeModal(storedValue === "true");
-    setIsOpen(storedValue !== "true");
+    const shouldBypass = localStorage.getItem("bypassWelcomeModal") === "true";
+    setBypassWelcomeModal(shouldBypass);
+    setIsOpen(!shouldBypass);
   }, []);
 
   useEffect(() => {
@@ -35,36 +35,28 @@ const WelcomeModal = () => {
     }
   }, [fetchPrompts, bypassWelcomeModal]);
 
-  const submitPrompt = async () => {
-    if (!inputValue.trim() || isLoading) return;
+  const sendAndClose = async (prompt: string) => {
+    if (!prompt || isLoading) return;
 
-    const message = inputValue.trim();
-    setInputValue("");
-
-    await sendMessage(message);
-  };
-
-  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && inputValue?.trim().length > 0 && !isLoading) {
-      e.preventDefault();
-      setIsOpen(false);
-      submitPrompt();
-    }
-  };
-
-  const getInputState = () => {
-    return {
-      disabled: isLoading,
-    };
-  };
-
-  const { disabled } = getInputState();
-  const isButtonDisabled = disabled || !inputValue?.trim();
-
-  const handlePromptClick = async (prompt: string) => {
     setIsOpen(false);
+    setInputValue("");
     await sendMessage(prompt);
   };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Submit on Enter (without Shift) or Command+Enter
+    if (
+      (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
+      (e.key === "Enter" && e.metaKey)
+    ) {
+      e.preventDefault();
+      sendAndClose(inputValue.trim());
+    }
+    // If Shift+Enter, do nothing: allow newline
+  };
+
+  const disabled = isLoading;
+  const isButtonDisabled = disabled || !inputValue?.trim();
 
   if (!isOpen || bypassWelcomeModal) return null;
 
@@ -128,7 +120,7 @@ const WelcomeModal = () => {
                     value={inputValue}
                     ref={ref}
                     onChange={(e) => setInputValue(e.target.value)}
-                    onKeyUp={handleKeyUp}
+                    onKeyDown={handleKeyDown}
                     disabled={disabled}
                     _disabled={{
                       opacity: 1,
@@ -147,7 +139,7 @@ const WelcomeModal = () => {
                     }}
                     type="button"
                     size="xs"
-                    onClick={submitPrompt}
+                    onClick={() => sendAndClose(inputValue.trim())}
                     disabled={isButtonDisabled}
                     loading={isLoading}
                     h="auto"
@@ -189,7 +181,7 @@ const WelcomeModal = () => {
                       bg="white"
                       rounded="lg"
                       _hover={{ bg: "primary.fg/10" }}
-                      onClick={() => handlePromptClick(prompt)}
+                      onClick={() => sendAndClose(prompt)}
                     >
                       <SparkleIcon />
                       {prompt}
