@@ -71,7 +71,13 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
         rounded="lg"
       >
         {LANDING_PAGE_VERSION === "closed" ? (
-          <Link href="#">Join waitlist</Link>
+          <Link
+            href="https://forms.office.com/r/jmFh27TUUz"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Join waitlist
+          </Link>
         ) : LANDING_PAGE_VERSION === "limited" ? (
           <Link href="/app">Try the preview</Link>
         ) : (
