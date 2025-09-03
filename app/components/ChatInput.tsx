@@ -49,9 +49,7 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
       (e.key === "Enter" && e.metaKey)
     ) {
       e.preventDefault(); // Prevents newline
-      if (inputValue?.trim().length > 0 && !isLoading) {
-        submitPrompt();
-      }
+      submitPrompt();
     }
     // If Shift+Enter, do nothing: allow newline
   };
