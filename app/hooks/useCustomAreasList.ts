@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   ListCustomAreasResponseSchema,
   type ListCustomAreasResponse,
@@ -30,17 +31,21 @@ export function useCustomAreasList() {
     isLoading,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<ListCustomAreasResponse>({
     queryKey: ["customAreas"],
     queryFn: fetchCustomAreas,
-    onError: (error: Error & { status?: number }) => {
-      if (error.status === 400 || error.status === 401 || error.status === 403) {
+  });
+
+  useEffect(() => {
+    if (error) {
+      const errorWithStatus = error as Error & { status?: number };
+      if (errorWithStatus.status === 400 || errorWithStatus.status === 401 || errorWithStatus.status === 403) {
         showServiceUnavailableError("Custom Areas");
-      } else if (error.status && error.status >= 400 && error.status < 500) {
+      } else if (errorWithStatus.status && errorWithStatus.status >= 400 && errorWithStatus.status < 500) {
         showApiError(error, { title: "Unable to Load Areas" });
       }
-    },
-  });
+    }
+  }, [error, showServiceUnavailableError, showApiError]);
 
   return {
     customAreas,

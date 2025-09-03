@@ -300,8 +300,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         });
       } else if (
         error instanceof Error &&
-        (error as Error & { status?: number }).status >= 400 &&
-        (error as Error & { status?: number }).status < 500
+        (error as Error & { status?: number }).status &&
+        (error as Error & { status?: number }).status! >= 400 &&
+        (error as Error & { status?: number }).status! < 500
       ) {
         addMessage({
           type: "error",
