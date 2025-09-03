@@ -59,7 +59,7 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
           rounded="lg"
           borderColor="white"
         >
-          <Link href="#">Sign in (invite only)</Link>
+          <Link href="/app">Sign in (invite only)</Link>
         </Button>
       )}
       <Button
