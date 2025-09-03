@@ -29,6 +29,8 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
   const clipboard = useClipboard({ value: message.message });
 
   useEffect(() => {
+    // This has to be done by a useEffect, otherwise there will be a hydration
+    // mismatch because the timestamp is different on the server and client
     const date = new Date(message.timestamp);
     const time = date.toLocaleString([], {
       hour: "2-digit",

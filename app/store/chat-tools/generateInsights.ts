@@ -12,7 +12,7 @@ interface ChartData {
 
 export function generateInsightsTool(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   try {
     // Handle charts_data from streamMessage
@@ -34,16 +34,18 @@ export function generateInsightsTool(
         type: "widget",
         message: "Charts generated",
         widgets: widgets,
+        timestamp: streamMessage.timestamp,
       });
     }
   } catch (error) {
     console.error("Error processing generate_insights:", error);
 
     addMessage({
-      type: "assistant",
+      type: "error",
       message: `Generate insights tool executed but failed to parse data: ${
         error instanceof Error ? error.message : JSON.stringify(error)
       }}`,
+      timestamp: streamMessage.timestamp,
     });
   }
 }

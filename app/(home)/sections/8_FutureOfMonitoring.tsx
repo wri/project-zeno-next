@@ -28,7 +28,7 @@ export default function FutureOfMonitoringSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="border"
     >
       <Container
         css={{ "& > *": { px: 0 } }}
@@ -136,9 +136,7 @@ export default function FutureOfMonitoringSection() {
               <Box
                 fontSize="10px"
                 padding="6px"
-                bg="neutral.300"
-                border="1px solid"
-                borderColor="neutral.400"
+                bg="secondary.300"
                 rounded="sm"
                 shadow="sm"
                 position="absolute"
@@ -151,9 +149,7 @@ export default function FutureOfMonitoringSection() {
               <Box
                 fontSize="10px"
                 padding="6px"
-                bg="neutral.300"
-                border="1px solid"
-                borderColor="neutral.400"
+                bg="secondary.300"
                 rounded="sm"
                 shadow="sm"
                 position="absolute"
@@ -211,9 +207,7 @@ export default function FutureOfMonitoringSection() {
               <Box
                 w="220px"
                 p="10px"
-                bg="neutral.300"
-                border="1px solid"
-                borderColor="neutral.400"
+                bg="bg.muted"
                 rounded="sm"
                 shadow="sm"
               >
@@ -337,7 +331,7 @@ export default function FutureOfMonitoringSection() {
               />
               <Box p="6" bg="secondary.300" rounded="lg" shadow="sm" zIndex="50">
                 <Heading size="2xl" m={0} textWrap="nowrap">
-                  Nature Watch
+                  Global Nature Watch
                 </Heading>
               </Box>
               <Image

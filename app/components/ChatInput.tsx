@@ -7,12 +7,15 @@ import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import useContextStore from "../store/contextStore";
+import { useRouter } from "next/navigation";
 
-function ChatInput() {
+function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
   const [inputValue, setInputValue] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedContextType, setSelectedContextType] =
     useState<ChatContextType | null>(null);
+
+  const router = useRouter();
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -33,31 +36,27 @@ function ChatInput() {
     const message = inputValue.trim();
     setInputValue("");
 
-    await sendMessage(message);
+    const result = await sendMessage(message);
+    if (result.isNew) {
+      router.replace(`/app/threads/${result.id}`);
+    }
   };
 
-const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-  // Submit on Enter (without Shift) or Command+Enter
-  if (
-    (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
-    (e.key === "Enter" && e.metaKey)
-  ) {
-    e.preventDefault(); // Prevents newline
-    if (inputValue?.trim().length > 0 && !isLoading) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Submit on Enter (without Shift) or Command+Enter
+    if (
+      (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
+      (e.key === "Enter" && e.metaKey)
+    ) {
+      e.preventDefault(); // Prevents newline
       submitPrompt();
     }
-  }
-  // If Shift+Enter, do nothing: allow newline
-};
-
-  const getInputState = () => {
-    return {
-      disabled: isLoading,
-      message: isLoading ? "Sending..." : "Ask a question...",
-    };
+    // If Shift+Enter, do nothing: allow newline
   };
 
-  const { disabled, message } = getInputState();
+  const disabled = isLoading || isChatDisabled;
+  const message = isLoading ? "Sending..." : "Ask a question...";
+
   const isButtonDisabled = disabled || !inputValue?.trim();
   const hasContext = context.length > 0;
   return (
@@ -66,17 +65,16 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       position="relative"
       m={0}
       p={4}
-      bg="bg.subtle"
+      bg="gray.100"
+      borderColor="gray.300"
       borderRadius="lg"
       borderWidth="1px"
       className="group"
       transition="all 0.32s ease-in-out"
       _active={{
-        bg: "white",
         borderColor: "primary.focusRing",
       }}
       _focusWithin={{
-        bg: "white",
         borderColor: "primary.focusRing",
       }}
     >
@@ -115,20 +113,26 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         _focus={{
           outline: "none",
         }}
+        _placeholder={{
+          color: disabled ? "gray.400" : "gray.600",
+        }}
       />
       <Flex justifyContent="space-between" alignItems="center" w="full">
         <Flex gap="2">
           <ContextButton
             contextType="layer"
             onClick={() => openContextMenu("layer")}
+            disabled={disabled}
           />
           <ContextButton
             contextType="area"
             onClick={() => openContextMenu("area")}
+            disabled={disabled}
           />
           <ContextButton
             contextType="date"
             onClick={() => openContextMenu("date")}
+            disabled={disabled}
           />
         </Flex>
         {selectedContextType && (
@@ -145,7 +149,7 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
           variant="solid"
           colorPalette="primary"
           _disabled={{
-            opacity: 0.75,
+            opacity: 0.36,
           }}
           type="button"
           size="xs"

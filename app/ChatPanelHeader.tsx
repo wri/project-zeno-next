@@ -51,12 +51,14 @@ function ChatPanelHeader() {
   const widgetAnchors = useMemo(() => {
     return messages.flatMap((m) =>
       m.type === "widget" && m.widgets
-        ? m.widgets.map((w, idx) => ({
-          id: `widget-${m.id}-${idx}`,
-          title: w.title || `Widget ${idx + 1}`,
-          type: w.type,
-          timestamp: m.timestamp,
-        }))
+        ? m.widgets
+            .filter((w) => w.type !== "dataset-card")
+            .map((w, idx) => ({
+              id: `widget-${m.id}-${idx}`,
+              title: w.title || `Insight ${idx + 1}`,
+              type: w.type,
+              timestamp: m.timestamp,
+            }))
         : []
     );
   }, [messages]);
@@ -262,7 +264,7 @@ function ChatPanelHeader() {
       {!sideBarVisible && (
         <Tooltip content="New conversation" showArrow>
           <IconButton asChild variant="ghost" size="sm">
-            <Link href="/">
+            <Link href="/app" aria-label="New conversation">
               <NotePencilIcon />
             </Link>
           </IconButton>

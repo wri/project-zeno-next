@@ -1,10 +1,10 @@
-import { Flex, Heading, Button, Progress } from "@chakra-ui/react";
+import { Flex, Heading, Button, Progress, Badge } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
 import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
 import useAuthStore from "../store/authStore";
 
 function PageHeader() {
-  const { userEmail } = useAuthStore();
+  const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
 
   return (
     <Flex
@@ -16,11 +16,20 @@ function PageHeader() {
       bg="primary.solid"
       color="fg.inverted"
     >
-      <Flex gap="2">
+      <Flex gap="2" alignItems="center">
         <LclLogo width={16} avatarOnly />
-        <Heading as="h1" size="sm">
+        <Heading as="h1" size="sm" color="fg.inverted">
           Global Nature Watch
         </Heading>
+        <Badge
+          colorPalette="primary"
+          bg="primary.800"
+          letterSpacing="wider"
+          variant="solid"
+          size="xs"
+        >
+          BETA
+        </Badge>
       </Flex>
       <Flex gap="6" alignItems="center">
         <Button
@@ -37,7 +46,7 @@ function PageHeader() {
           size="xs"
           min={0}
           max={100}
-          value={40}
+          value={(usedPrompts / totalPrompts) * 100}
           minW="6rem"
           textAlign="center"
           rounded="full"
@@ -49,7 +58,7 @@ function PageHeader() {
             fontWeight="normal"
             color="primary.100"
           >
-            40/100 Prompts
+            {usedPrompts}/{totalPrompts} Prompts
           </Progress.Label>
           <Progress.Track bg="primary.950" maxH="4px">
             <Progress.Range bg="white" />

@@ -58,15 +58,15 @@ export default function LatestUpdatesSection() {
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
-      borderColor="bg.emphasized"
+      borderColor="border"
       overflowX="hidden"
     >
       <Container display="flex" flexDir="column" gap={{ base: "8", md: "10" }}>
         <Container textAlign="center" maxW="2xl" px={0}>
-          <Heading size={{ base: "3xl", md: "4xl" }} color="neutral.900">
+          <Heading size={{ base: "3xl", md: "4xl" }}>
             Latest Updates & Research
           </Heading>
-          <Text fontSize="lg" mb="4" color="neutral.700">
+          <Text fontSize="lg" mb="4">
             We combine cutting-edge geospatial research from Land & Carbon Lab
             and Global Forest Watch with the latest advances in technology.
           </Text>
@@ -148,10 +148,10 @@ export default function LatestUpdatesSection() {
           <Box
             p="4"
             rounded="md"
-            bg="bg.emphasized"
+            bg="bg.muted"
             display="flex"
             flexDir={{ base: "column", md: "row" }}
-            alignItems={{ base: "flex-start", md: "center" }}
+            alignItems={{ base: "stretch", md: "center" }}
             gap={4}
             justifyContent="space-between"
           >
