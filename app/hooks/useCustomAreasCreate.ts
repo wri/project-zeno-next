@@ -17,7 +17,7 @@ async function createCustomArea(
   if (!res.ok) {
     const error = await res.json();
     const errorWithStatus = new Error(error.error || `Request failed: ${res.statusText}`);
-    (errorWithStatus as any).status = res.status;
+    (errorWithStatus as Error & { status?: number }).status = res.status;
     throw errorWithStatus;
   }
 
