@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Grid } from "@chakra-ui/react";
-
 import { useEffect } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
@@ -21,9 +20,6 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-
-  const { reset: resetMapStore } = useMapStore();
-  const { reset: resetContextStore } = useContextStore();
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
 
   useEffect(() => {
@@ -38,10 +34,6 @@ export default function DashboardLayout({
     }
   }, [cookieConsent, setConsentStatus]);
 
-  useEffect(() => {
-    resetMapStore();
-    resetContextStore();
-  }, [resetMapStore, resetContextStore]);
 
   return (
     <Grid
