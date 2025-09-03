@@ -24,7 +24,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   return (
     <Box
       rounded="md"
-      border="1.5px solid"
+      border="1px solid"
       borderColor="blue.fg"
       overflow="hidden"
     >
@@ -42,7 +42,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         </Heading>
       </Flex>
       <Flex gap={5} px={4} py={5} flexDir="column">
-        <Text fontSize="xs" color="gray.600">
+        <Text fontSize="xs" color="fg.muted">
           {widget.description}
         </Text>
         <Separator />
@@ -60,10 +60,13 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           </Button>
         </Flex>
 
-        {widget.type === "bar" && (
+        {(widget.type === "bar" ||
+          widget.type === "stacked-bar" ||
+          widget.type === "grouped-bar") && (
           <ChakraBarChart
             data={widget.data as Array<{ [key: string]: unknown }>}
             xAxis={widget.xAxis}
+            type={widget.type}
             yAxis={widget.yAxis}
           />
         )}
