@@ -229,7 +229,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
       if (!response.ok) {
         const error = new Error("Failed to send message");
-        (error as any).status = response.status;
+        (error as Error & { status?: number }).status = response.status;
         throw error;
       }
 
@@ -300,8 +300,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         });
       } else if (
         error instanceof Error &&
-        (error as any).status >= 400 &&
-        (error as any).status < 500
+        (error as Error & { status?: number }).status >= 400 &&
+        (error as Error & { status?: number }).status < 500
       ) {
         addMessage({
           type: "error",
@@ -360,7 +360,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
       if (!response.ok) {
         const error = new Error("Failed to fetch thread");
-        (error as any).status = response.status;
+        (error as Error & { status?: number }).status = response.status;
         throw error;
       }
 
