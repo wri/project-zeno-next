@@ -1,4 +1,5 @@
 import { DatasetInfo } from "@/app/types/chat";
+import { useEffect } from "react";
 import useContextStore from "@/app/store/contextStore";
 import { DatasetCard } from "@/app/components/DatasetCard";
 import { DATASET_CARDS } from "@/app/constants/datasets";
@@ -16,6 +17,20 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
       (c.datasetId === dataset.dataset_id || c.content === dataset.dataset_name)
   );
   const isInContext = Boolean(existingLayerContext);
+
+
+  useEffect(() => {
+    if (!isInContext) {
+      addContext({
+        contextType: "layer",
+        content: dataset.dataset_name,
+        datasetId: dataset.dataset_id,
+        tileUrl: dataset.tile_url,
+        layerName: dataset.dataset_name,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
   const handleAddToMap = () => {
     if (!isInContext) {
