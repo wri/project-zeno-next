@@ -17,19 +17,36 @@ function AuthBootstrapper() {
     async function loadAuth() {
       try {
         const res = await fetch("/api/auth/me", { cache: "no-store" });
-        if (!res.ok) throw new Error("unauthorized");
+        if (!res.ok) {
+          throw new Error("unauthorized");
+        }
+
         const data = await res.json();
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
+
         const email = data?.user?.email as string | undefined;
-        if (email) setAuthStatus(email);
+        if (email) {
+          setAuthStatus(email);
+        }
+
         const used =
-          typeof data?.promptsUsed === "number" ? data.promptsUsed : null;
+          typeof data?.promptsUsed === "number"
+            ? (data.promptsUsed as number)
+            : null;
         const quota =
-          typeof data?.promptQuota === "number" ? data.promptQuota : null;
-        if (used !== null && quota !== null) setPromptUsage(used, quota);
-        else if (quota !== null) setPromptUsage(0, quota);
+          typeof data?.promptQuota === "number"
+            ? (data.promptQuota as number)
+            : null;
+
+        if (quota !== null) {
+          setPromptUsage(used || 0, quota);
+        }
       } catch {
-        if (!cancelled) setAnonymous();
+        if (!cancelled) {
+          setAnonymous();
+        }
       }
     }
     loadAuth();
