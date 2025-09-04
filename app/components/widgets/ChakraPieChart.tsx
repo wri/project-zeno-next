@@ -1,6 +1,6 @@
 import { Cell, Legend, Pie, PieChart, Tooltip } from "recharts";
 import { Chart, useChart } from "@chakra-ui/charts";
-import getChartColors from "./ChartColors";
+import getChartColors from "../../utils/ChartColors";
 
 interface ChakraPieChartProps {
   data: Array<{
@@ -17,13 +17,13 @@ export default function ChakraPieChart({
   const chart = useChart({ data });
   const chartColors = getChartColors();
   return (
-    <Chart.Root chart={chart} height="260px">
+    <Chart.Root chart={chart} height="260px" overflow="hidden">
       <PieChart>
         <Legend
           layout="vertical"
           align="right"
           verticalAlign="middle"
-          wrapperStyle={{ paddingRight: "25%" }}
+          wrapperStyle={{ paddingRight: "25%", maxHeight: "100%", overflow: "auto" }}
         />
         <Tooltip
           cursor={false}
