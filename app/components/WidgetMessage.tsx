@@ -66,7 +66,6 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           <ChakraBarChart
             data={widget.data as Array<{ [key: string]: unknown }>}
             xAxis={widget.xAxis}
-            yAxis={widget.yAxis}
             type={widget.type}
           />
         )}
