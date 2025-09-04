@@ -22,10 +22,10 @@ import { useRouter } from "next/navigation";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
-  sectorRoles: Record<string, Record<string, string>>;
+  sector_roles: Record<string, Record<string, string>>;
   countries: Record<string, string>;
   languages: Record<string, string>;
-  gisExpertiseLevels: Record<string, string>;
+  gis_expertise_levels: Record<string, string>;
 };
 
 type ProfileFormState = {
@@ -106,7 +106,7 @@ export default function OnboardingPage() {
   }, [config]);
 
   const roles = useMemo(() => {
-    const roleMap = config?.sectorRoles?.[form.sector] || {};
+    const roleMap = config?.sector_roles?.[form.sector] || {};
     const items = Object.entries(roleMap).map(([value, label]) => ({
       label,
       value,
@@ -116,7 +116,7 @@ export default function OnboardingPage() {
 
   const expertises = useMemo(() => {
     const items = config
-      ? Object.entries(config.gisExpertiseLevels).map(([value, label]) => ({
+      ? Object.entries(config.gis_expertise_levels).map(([value, label]) => ({
           label,
           value,
         }))
@@ -152,17 +152,18 @@ export default function OnboardingPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: form.firstName,
-          lastName: form.lastName,
-          sectorCode: form.sector || undefined,
-          roleCode: form.role || undefined,
-          jobTitle: form.jobTitle || undefined,
-          companyOrganization: form.company || undefined,
-          countryCode: form.country || undefined,
-          preferredLanguageCode: undefined,
-          gisExpertiseLevel: form.expertise || undefined,
-          areasOfInterest: form.interests || undefined,
-          hasProfile: true,
+          first_name: form.firstName,
+          last_name: form.lastName,
+          profile_description: undefined,
+          sector_code: form.sector || undefined,
+          role_code: form.role || undefined,
+          job_title: form.jobTitle || undefined,
+          company_organization: form.company || undefined,
+          country_code: form.country || undefined,
+          preferred_language_code: undefined,
+          gis_expertise_level: form.expertise || undefined,
+          areas_of_interest: form.interests || undefined,
+          has_profile: true,
         }),
       });
 

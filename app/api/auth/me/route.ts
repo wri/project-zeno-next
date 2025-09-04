@@ -9,19 +9,7 @@ const TOKEN_NAME = "auth_token";
 export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get(TOKEN_NAME)?.value;
-  // Fetch full profile from backend
   let hasProfile = false;
-  try {
-    const profileRes = await fetch(`/api/proxy/auth/me`, {
-      headers: await getAPIRequestHeaders(),
-    });
-    if (profileRes.ok) {
-      const profileData = await profileRes.json();
-      hasProfile = Boolean(profileData?.user?.hasProfile);
-    }
-  } catch {
-    // ignore profile fetch errors, default to false
-  }
 
   if (!token) {
     return NextResponse.json({ isAuthenticated: false }, { status: 401 });
@@ -53,6 +41,7 @@ export async function GET() {
         const quota = data?.promptQuota;
         promptsUsed = typeof used === "number" ? used : null;
         promptQuota = typeof quota === "number" ? quota : null;
+        hasProfile = Boolean(data?.hasProfile ?? data?.user?.hasProfile);
       }
     } catch {
       // Swallow upstream errors and fall back to nulls
