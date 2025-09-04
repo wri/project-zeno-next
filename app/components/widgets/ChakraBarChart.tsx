@@ -7,7 +7,6 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { Box, Text } from "@chakra-ui/react";
 import { Chart, useChart } from "@chakra-ui/charts";
 import formatBarChartData from "../../utils/formatBarChartData";
 
@@ -17,14 +16,12 @@ interface ChakraBarChartProps {
   }>;
   type: "bar" | "stacked-bar" | "grouped-bar";
   xAxis?: string;
-  yAxis?: string;
 }
 
 export default function ChakraBarChart({
   data,
   type,
   xAxis,
-  yAxis,
 }: ChakraBarChartProps) {
   const { data: formattedData, series } = formatBarChartData(data, type, xAxis);
   const chart = useChart({ data: formattedData, series: series });
