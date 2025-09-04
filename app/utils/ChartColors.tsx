@@ -1,22 +1,21 @@
-import { defaultSystem } from "@chakra-ui/react";
-
+import theme from "@/app/theme";
 /**
  * A utility function to retrieve a specific, ordered array of chart colors
  * from the Chakra UI theme.
  * @returns {string[]} An array of hex color strings.
  */
 export default function getChartColors() {
-  const { tokens } = defaultSystem;
+  const { tokens } = theme;
   const colors = tokens.categoryMap.get("colors")!;
   const allColors = Array.from(colors.values());
 
   // The desired order of colors for the chart
   const chartColorNames = [
     "cyan",
+    "blue",
     "mint",
     "yellow",
     "green",
-    "indigo",
     "purple",
     "pink",
     "red",
