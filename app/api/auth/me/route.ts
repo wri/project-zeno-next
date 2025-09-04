@@ -35,16 +35,11 @@ export async function GET() {
       });
 
       if (upstream.ok) {
-        const data = (await upstream.json()) as unknown;
-        if (data && typeof data === "object") {
-          const d = data as { promptsUsed?: unknown; promptQuota?: unknown };
-          if (typeof d.promptsUsed === "number") {
-            promptsUsed = d.promptsUsed;
-          }
-          if (typeof d.promptQuota === "number") {
-            promptQuota = d.promptQuota;
-          }
-        }
+        const data = await upstream.json();
+        const used = data?.promptsUsed;
+        const quota = data?.promptQuota;
+        promptsUsed = typeof used === "number" ? used : null;
+        promptQuota = typeof quota === "number" ? quota : null;
       }
     } catch {
       // Swallow upstream errors and fall back to nulls
