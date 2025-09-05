@@ -19,6 +19,7 @@ import {
   createListCollection,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
+import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -148,23 +149,26 @@ export default function OnboardingPage() {
     if (!isValid || isSubmitting) return;
     setIsSubmitting(true);
     try {
+      // Validate payload with zod before sending
+      const payload = PatchProfileRequestSchema.parse({
+        first_name: form.firstName,
+        last_name: form.lastName,
+        profile_description: undefined,
+        sector_code: form.sector || null,
+        role_code: form.role || null,
+        job_title: form.jobTitle || null,
+        company_organization: form.company || null,
+        country_code: form.country || null,
+        preferred_language_code: null,
+        gis_expertise_level: form.expertise || null,
+        areas_of_interest: form.interests || null,
+        has_profile: true,
+      });
+
       const res = await fetch(`/api/proxy/auth/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          first_name: form.firstName,
-          last_name: form.lastName,
-          profile_description: undefined,
-          sector_code: form.sector || undefined,
-          role_code: form.role || undefined,
-          job_title: form.jobTitle || undefined,
-          company_organization: form.company || undefined,
-          country_code: form.country || undefined,
-          preferred_language_code: undefined,
-          gis_expertise_level: form.expertise || undefined,
-          areas_of_interest: form.interests || undefined,
-          has_profile: true,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
