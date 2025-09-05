@@ -27,7 +27,7 @@ const CustomScatterTooltip = ({
   payload?: Array<{
     value: number;
     name: string;
-    payload: { [key: string]: any };
+    payload: { [key: string]: string | number };
   }>;
   label?: string;
 }) => {
