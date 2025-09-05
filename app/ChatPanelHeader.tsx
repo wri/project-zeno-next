@@ -179,9 +179,7 @@ function ChatPanelHeader() {
               borderColor="primary.subtle"
               rounded="sm"
               h={6}
-              bgGradient="to-br"
-              gradientFrom="primary.200/25"
-              gradientTo="secondary.300/25"
+              bgGradient="LCLGradientLight"
               size="xs"
               disabled
             >
@@ -199,9 +197,7 @@ function ChatPanelHeader() {
               borderColor="primary.subtle"
               rounded="sm"
               h={6}
-              bgGradient="to-br"
-              gradientFrom="primary.200/30"
-              gradientTo="secondary.300/30"
+              bgGradient="LCLGradientLight"
               fontWeight="semibold"
               _hover={{
                 gradientFrom: "primary.400/30",

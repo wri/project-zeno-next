@@ -118,6 +118,15 @@ export const config = defineConfig({
           950: { value: "#170e14" },
         },
       },
+      animations: {
+        fillWidth: { value: "fillWidth 10s linear infinite" },
+      },
+      gradients: {
+        LCLGradientLight: {
+          value:
+            "linear-gradient(107deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)",
+        },
+      },
     },
     semanticTokens: {
       colors: {
@@ -214,19 +223,34 @@ export const config = defineConfig({
         },
         border: {
           DEFAULT: {
-            value: { _light: "{colors.neutral.200}", _dark: "{colors.neutral.800}" },
+            value: {
+              _light: "{colors.neutral.200}",
+              _dark: "{colors.neutral.800}",
+            },
           },
           muted: {
-            value: { _light: "{colors.neutral.100}", _dark: "{colors.neutral.900}" },
+            value: {
+              _light: "{colors.neutral.100}",
+              _dark: "{colors.neutral.900}",
+            },
           },
           subtle: {
-            value: { _light: "{colors.neutral.50}", _dark: "{colors.neutral.950}" },
+            value: {
+              _light: "{colors.neutral.50}",
+              _dark: "{colors.neutral.950}",
+            },
           },
           emphasized: {
-            value: { _light: "{colors.neutral.300}", _dark: "{colors.neutral.700}" },
+            value: {
+              _light: "{colors.neutral.300}",
+              _dark: "{colors.neutral.700}",
+            },
           },
           inverted: {
-            value: { _light: "{colors.neutral.800}", _dark: "{colors.neutral.200}" },
+            value: {
+              _light: "{colors.neutral.800}",
+              _dark: "{colors.neutral.200}",
+            },
           },
           error: {
             value: { _light: "{colors.red.500}", _dark: "{colors.red.400}" },
