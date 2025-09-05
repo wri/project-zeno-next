@@ -3,6 +3,8 @@ import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import ChakraLineChart from "./widgets/ChakraLineChart";
 import ChakraBarChart from "./widgets/ChakraBarChart";
+import ChakraAreaChart from "./widgets/ChakraAreaChart";
+import ChakraScatterChart from "./widgets/ChakraScatterChart";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import {
   CaretDownIcon,
@@ -93,6 +95,19 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             yAxis={widget.yAxis}
           />
         )}
+        {widget.type === "area" && (
+          <ChakraAreaChart
+            data={widget.data as Array<{ [key: string]: unknown }>}
+            xAxis={widget.xAxis}
+          />
+        )}
+        {widget.type === "scatter" && ( 
+          <ChakraScatterChart
+            data={widget.data as Array<{ [key: string]: unknown }>}
+            xAxis={widget.xAxis}
+            yAxis={widget.yAxis}
+          />
+        ) }
         {/* Cautions section: conditionally rendered if there are cautions, stubbed for now */}
         <Flex
           gap={2}
