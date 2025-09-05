@@ -5,14 +5,9 @@ import {
   CartesianGrid,
   Legend,
   Tooltip,
-  TooltipProps,
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  ValueType,
-  NameType,
-} from "recharts/types/component/DefaultTooltipContent";
 import formatChartData, { formatYAxisLabel } from "@/app/utils/formatCharts";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 
