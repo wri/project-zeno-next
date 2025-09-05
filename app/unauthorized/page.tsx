@@ -12,8 +12,8 @@ export default function UnauthorizedPage() {
           Access not available yet
         </Heading>
         <Text color="fg.muted" mb={8}>
-          Your account isn't authorized for Global Nature Watch yet. Join the
-          waitlist and we’ll notify you as soon as access is available.
+          Your account isn&apos;t authorized for Global Nature Watch yet. Join
+          the waitlist and we’ll notify you as soon as access is available.
         </Text>
         <Button asChild colorPalette="primary">
           <a href={WAITLIST_URL} target="_blank" rel="noopener noreferrer">
