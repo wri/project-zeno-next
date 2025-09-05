@@ -8,7 +8,10 @@ import {
   Legend,
 } from "recharts";
 import { Chart, useChart } from "@chakra-ui/charts";
-import formatBarChartData from "../../utils/formatBarChartData";
+import formatChartData, {
+  formatYAxisLabel,
+  formatXAxisLabel,
+} from "../../utils/formatCharts";
 
 interface ChakraBarChartProps {
   data: Array<{
@@ -23,30 +26,14 @@ export default function ChakraBarChart({
   type,
   xAxis,
 }: ChakraBarChartProps) {
-  const { data: formattedData, series } = formatBarChartData(data, type, xAxis);
+  const { data: formattedData, series } = formatChartData(data, type, xAxis);
   const chart = useChart({ data: formattedData, series: series });
-
-  // Custom label formatter for X-axis (truncate long names)
-  const formatXAxisLabel = (value: string) => {
-    if (typeof value === "string" && value.length > 10) {
-      return `${value.slice(0, 10)}...`;
-    }
-    return value;
-  };
-
-  // Custom formatter for Y-axis (format large numbers)
-  const formatYAxisLabel = (value: number) => {
-    if (Math.abs(value) < 1000) return value.toLocaleString();
-    if (Math.abs(value) < 1000000) return `${(value / 1000).toFixed(1)}K`;
-    if (Math.abs(value) < 1000000000) return `${(value / 1000000).toFixed(1)}M`;
-    return `${(value / 1000000000).toFixed(1)}B`;
-  };
 
   return (
     <Chart.Root maxH="280px" chart={chart} overflow="hidden">
       <BarChart data={chart.data}>
         <CartesianGrid
-          stroke={chart.color("border.muted")}
+          stroke={"border.muted"}
           strokeDasharray="3 3"
           vertical={false}
         />
@@ -69,7 +56,7 @@ export default function ChakraBarChart({
           tickFormatter={formatXAxisLabel}
         />
         <YAxis
-          stroke={chart.color("border.emphasized")}
+          stroke={"border.muted"}
           color="fg.subtle"
           tickFormatter={formatYAxisLabel}
         />

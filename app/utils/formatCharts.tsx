@@ -15,18 +15,20 @@ interface ChartSeries {
 }
 
 /**
- * Transforms data into a format suitable for Chakra UI Bar Charts.
- * It automatically determines keys based on column order, unless an xAxis is provided.
+ * Transforms data into a format suitable for Chakra UI Charts.
  *
  * @param data The raw array of data points.
- * @param type The type of chart, either "stacked", "grouped", or "bar".
- * @param xAxis The key to use for the x-axis. Defaults to the first key if not provided.
+ * @param type The type of chart: "stacked", "grouped", "bar", or "scatter".
+ * @param xAxis The key to use for the x-axis.
+ * @param yAxis The key to use for the y-axis (required for scatter charts).
  * @returns An object containing the transformed `data` and `series` arrays.
  */
-export default function formatBarChartData(
+
+export default function formatChartData(
   data: InputData[],
-  type: "stacked-bar" | "grouped-bar" | "bar",
-  xAxis?: string
+  type: "stacked-bar" | "grouped-bar" | "bar" | "scatter",
+  xAxis?: string,
+  yAxis?: string
 ): { data: ChartData[]; series: ChartSeries[] } {
   if (!data || data.length === 0) {
     return { data: [], series: [] };
@@ -36,6 +38,39 @@ export default function formatBarChartData(
   const keys = Object.keys(data[0]);
   const xAxisKey = xAxis || keys[0];
 
+  if (type === "scatter") {
+    if (!xAxis || !yAxis) {
+      console.error(
+        "Scatter charts require both `xAxis` and `yAxis` props to be provided."
+      );
+      return { data: [], series: [] };
+    }
+
+    // The name key is the one that is not the x or y axis.
+    const nameKey = keys.find((k) => k !== xAxis && k !== yAxis);
+
+    if (!nameKey) {
+      console.error(
+        "Could not determine the name key for the scatter plot labels."
+      );
+      return { data: [], series: [] };
+    }
+
+    const transformedData = data.map((item) => ({
+      [xAxis]: item[xAxis],
+      [yAxis]: item[yAxis],
+      name: item[nameKey],
+    }));
+
+    const series: ChartSeries[] = [
+      {
+        name: nameKey, // The series name can be derived from the label key
+        color: chartColors[0],
+      },
+    ];
+
+    return { data: transformedData as ChartData[], series };
+  }
   // --- Logic for a standard BAR chart ---
   if (type === "bar") {
     // A simple bar chart has one series, which is the value column.
@@ -104,3 +139,19 @@ export default function formatBarChartData(
   // Return empty if the type is not recognized.
   return { data: [], series: [] };
 }
+
+// Custom label formatter for X-axis (truncate long names)
+export const formatXAxisLabel = (value: string) => {
+  if (typeof value === "string" && value.length > 10) {
+    return `${value.slice(0, 10)}...`;
+  }
+  return value;
+};
+
+// Custom formatter for Y-axis (format large numbers)
+export const formatYAxisLabel = (value: number) => {
+  if (Math.abs(value) < 1000) return value.toLocaleString();
+  if (Math.abs(value) < 1000000) return `${(value / 1000).toFixed(1)}K`;
+  if (Math.abs(value) < 1000000000) return `${(value / 1000000).toFixed(1)}M`;
+  return `${(value / 1000000000).toFixed(1)}B`;
+};
