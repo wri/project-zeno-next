@@ -17,6 +17,7 @@ import {
   Textarea,
   Checkbox,
   createListCollection,
+  Link,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
@@ -415,7 +416,23 @@ export default function OnboardingPage() {
               <Checkbox.HiddenInput />
               <Checkbox.Control />
               <Checkbox.Label>
-                I agree to the Terms and Conditions
+                I agree to the{" "}
+                <Link
+                  href="https://www.wri.org/about/legal/general-terms-use"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Terms and Conditions
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="https://www.wri.org/about/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Privacy Policy
+                </Link>
+                .
               </Checkbox.Label>
             </Checkbox.Root>
           </Flex>
