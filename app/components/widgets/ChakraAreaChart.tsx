@@ -1,44 +1,33 @@
 import {
+  Area,
+  AreaChart,
+  CartesianGrid,
   Legend,
-  Line,
-  LineChart,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
 } from "recharts";
 import { Chart, useChart } from "@chakra-ui/charts";
-import formatBarChartData, {
-  formatXAxisLabel,
-  formatYAxisLabel,
-} from "@/app/utils/formatCharts";
+import formatChartData, { formatYAxisLabel } from "@/app/utils/formatCharts";
 
-interface ChakraLineChartProps {
+interface ChakraAreaChartProps {
   data: Array<{
     [key: string]: unknown;
   }>;
   xAxis?: string;
-  yAxis?: string;
 }
 
-export default function ChakraLineChart({
-  data,
-  xAxis,
-}: ChakraLineChartProps) {
-  const { data: formattedData, series } = formatBarChartData(
-    data,
-    "bar",
-    xAxis
-  );
+export default function ChakraAreaChart({ data, xAxis }: ChakraAreaChartProps) {
+  const { data: formattedData, series } = formatChartData(data, "bar", xAxis);
   const chart = useChart({ data: formattedData, series: series });
 
   return (
     <Chart.Root maxH="280px" chart={chart} overflow="hidden">
-      <LineChart data={chart.data}>
+      <AreaChart data={chart.data}>
         <CartesianGrid
-          strokeDasharray="3 3"
-          stroke={chart.color("border.muted")}
           vertical={false}
+          stroke={"border.muted"}
+          strokeDasharray="3 3"
         />
         <Legend
           content={<Chart.Legend />}
@@ -51,32 +40,29 @@ export default function ChakraLineChart({
             overflow: "auto",
           }}
         />
-        <XAxis
-          axisLine={false}
-          dataKey={chart.key(xAxis)}
-          tickFormatter={formatXAxisLabel}
-          stroke={chart.color("border")}
-        />
+        <XAxis axisLine={false} tickLine={false} dataKey={chart.key(xAxis)} />
         <YAxis
-          axisLine={false}
-          tickLine={false}
+          stroke={"border.muted"}
+          color="fg.subtle"
           tickFormatter={formatYAxisLabel}
         />
         <Tooltip
-          animationDuration={100}
           cursor={false}
+          animationDuration={100}
           content={<Chart.Tooltip />}
         />
         {chart.series.map((item) => (
-          <Line
+          <Area
             key={item.name}
             isAnimationActive={false}
             dataKey={chart.key(item.name)}
+            fill={chart.color(item.color)}
+            fillOpacity={0.2}
             stroke={chart.color(item.color)}
-            strokeWidth={2}
+            stackId="a"
           />
         ))}
-      </LineChart>
+      </AreaChart>
     </Chart.Root>
   );
 }
