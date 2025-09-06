@@ -46,7 +46,7 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
         <Link href="#">Research</Link>
       </Button>
       <Button asChild>
-        <Link href="#">Team</Link>
+        <Link href="#">About</Link>
       </Button>
       <Button
         asChild
