@@ -136,8 +136,8 @@ export default function LandingHero({
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
               Global Nature Watch is your personal geospatial AI assistant,
-              trained on the latest nature monitoring breakthroughs by the
-              world&apos;s leading researchers.
+              <br />
+              trained to help you make the most of cutting-edge nature monitoring data.
             </Text>
           </Container>
           <Container
