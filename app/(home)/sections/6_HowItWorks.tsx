@@ -29,6 +29,7 @@ const HOW_STEPS = [
 export default function HowItWorksSection() {
   return (
     <Box
+      id="technology"
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"

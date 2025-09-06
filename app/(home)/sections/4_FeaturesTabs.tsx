@@ -42,7 +42,7 @@ export default function FeaturesTabsSection() {
       borderBlockEnd="1px solid"
       borderColor="border"
     >
-      <Container>
+      <Container id="use-cases">
         <Container textAlign="center" maxW="3xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
             Get answers to your toughest questions about natural landscapes

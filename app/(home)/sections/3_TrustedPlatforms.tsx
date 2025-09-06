@@ -37,7 +37,7 @@ export default function TrustedPlatformsSection() {
       borderBlockEnd="1px solid"
       borderColor="border"
     >
-      <Container>
+      <Container id="testimonials">
         <Container textAlign="center" maxW="3xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
             Building upon the legacy of World Resources Institute&rsquo;s
