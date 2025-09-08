@@ -48,9 +48,9 @@ export default function FeaturesTabsSection() {
           Get answers to your toughest questions about landscapes, backed by data
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch&rsquo;s AI understands your questions in plian
-            language and delivers the most relevant data, satellite imagery and
-            insights, formatted to fit your workflow.
+            Global Nature Watch makes complex geospatial data accessible.
+            Just ask in plain language and get trusted data and insights
+            tailored to support your work.
           </Text>
           <Button
             asChild
