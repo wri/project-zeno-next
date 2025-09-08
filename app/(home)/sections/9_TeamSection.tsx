@@ -40,7 +40,7 @@ export default function TeamSection() {
           justifyContent="center"
         >
           <ChakraLink href="https://www.wri.org/" target="_blank" rel="noopener noreferrer">
-            <Image src="/WRI-logo.svg" alt="WRI Logo" height="64px" />
+            <Image src="/WRI-Logo.svg" alt="WRI Logo" height="64px" />
           </ChakraLink>
           <ChakraLink href="https://landcarbonlab.org/" target="_blank" rel="noopener noreferrer">
             <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />

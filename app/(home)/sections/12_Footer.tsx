@@ -38,7 +38,7 @@ export default function FooterSection() {
             justifyContent={{ base: "flex-start", md: "center" }}
           >
             <ChakraLink href="https://www.wri.org/" target="_blank" rel="noopener noreferrer">
-              <Image src="/WRI-logo-mono.svg" alt="WRI Logo" height="64px" />
+              <Image src="/WRI-Logo-mono.svg" alt="WRI Logo" height="64px" />
             </ChakraLink>
             <ChakraLink href="https://landcarbonlab.org/" target="_blank" rel="noopener noreferrer">
               <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
@@ -69,7 +69,7 @@ export default function FooterSection() {
             flexWrap="wrap"
             w="full"
           >
-            <Text>{new Date().getFullYear()} © Global Nature Watch</Text>
+            <Text>{new Date().getFullYear()} Global Nature Watch</Text>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
