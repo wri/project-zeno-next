@@ -24,7 +24,6 @@ import formatChartData, {
 } from "@/app/utils/formatCharts";
 import { InsightWidget } from "@/app/types/chat";
 
-// Chart wrapper map
 type ChartType =
   | "bar"
   | "stacked-bar"
@@ -34,10 +33,15 @@ type ChartType =
   | "pie"
   | "scatter";
 
-interface ChartWidgetProps {
-  widget: InsightWidget;
-}
-const chartWrappers: Record<ChartType, any> = {
+// Chart wrapper components
+type ChartWrapperComponent =
+  | typeof BarChart
+  | typeof AreaChart
+  | typeof LineChart
+  | typeof PieChart
+  | typeof ScatterChart;
+
+const chartWrappers: Record<ChartType, ChartWrapperComponent> = {
   bar: BarChart,
   "stacked-bar": BarChart,
   "grouped-bar": BarChart,
@@ -47,67 +51,68 @@ const chartWrappers: Record<ChartType, any> = {
   scatter: ScatterChart,
 };
 
-// Chart item map
-const chartItems: Record<ChartType, any> = {
-  bar: Bar,
-  "stacked-bar": Bar,
-  "grouped-bar": Bar,
-  line: Line,
-  area: Area,
-  pie: Pie,
-  scatter: Scatter,
-};
-
 interface ChartWidgetProps {
   widget: InsightWidget;
 }
-
-const CustomScatterTooltip = ({
-  active,
-  payload,
-}: {
+interface CustomTooltipProps {
   active?: boolean;
   payload?: Array<{
     value: number;
     name: string;
     payload: { [key: string]: string | number };
   }>;
-}) => {
-  if (active && payload && payload.length) {
+}
+
+const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
+  if (active && payload && payload.length >= 2) {
     const dataPoint = payload[0].payload;
-    const xAxisKey = payload[0].name;
-    const yAxisKey = payload[1].name;
-    console.log(dataPoint)
+    const xAxisPayload = payload[0];
+    const yAxisPayload = payload[1];
 
     return (
-      <Box bg="bg.panel" p={2} py={1} borderRadius="sm" boxShadow="sm">
-        <Heading size="xs" mb={0}>
-          {dataPoint.name}
-        </Heading>
+      <Box
+        bg="white"
+        p={2}
+        py={1}
+        borderRadius="md"
+        boxShadow="md"
+        border="1px"
+        borderColor="gray.200"
+      >
+        {dataPoint.name && (
+          <Heading size="xs" mb={1}>
+            {String(dataPoint.name)}
+          </Heading>
+        )}
         <Flex
           justifyContent="space-between"
           fontSize="xs"
           fontWeight="normal"
           color="fg.muted"
         >
-          <Text as="span" fontFamily="body" mr={4}>
-            {xAxisKey}
-          </Text>{" "}
+          <Text as="span" mr={4}>
+            {xAxisPayload.name}
+          </Text>
           <Text fontFamily="mono" textAlign="right">
-            {xAxisKey === "year" ? payload[0].value : Number(payload[0].value).toLocaleString()}
+            {xAxisPayload.name === "year"
+              ? xAxisPayload.value
+              : Number(xAxisPayload.value).toLocaleString()}
           </Text>
         </Flex>
         <Flex
           justifyContent="space-between"
           fontSize="xs"
           fontWeight="normal"
-          color="fg.muted"
+          color="gray.600"
         >
-          <Text as="span" fontFamily="body" mr={4}>
-            {yAxisKey}
-          </Text>{" "}
+          <Text as="span" mr={4}>
+            {yAxisPayload.name}
+          </Text>
           <Text fontFamily="mono" textAlign="right">
-            {yAxisKey === "year" ? payload[0].value : Number(payload[1].value).toLocaleString()}
+            {/* FIX: Correctly reference the y-axis payload value */}
+            {yAxisPayload.name === "year"
+              ? yAxisPayload.value
+              : Number(yAxisPayload.value).toLocaleString()}
           </Text>
         </Flex>
       </Box>
@@ -117,21 +122,17 @@ const CustomScatterTooltip = ({
   return null;
 };
 
-const CustomPieTooltip = ({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{
-    value: number;
-    name: string;
-    payload: { [key: string]: string | number };
-  }>;
-}) => {
+const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const dataPoint = payload[0];
     return (
-      <Box bg="bg.panel" p={2} py={1} borderRadius="sm" boxShadow="sm">
+      <Box
+        bg="bg.panel"
+        p={2}
+        py={1}
+        borderRadius="sm"
+        boxShadow="sm"
+      >
         <Flex
           fontSize="xs"
           fontWeight="normal"
@@ -144,9 +145,9 @@ const CustomPieTooltip = ({
             w={2}
             rounded="full"
             bg={dataPoint.payload.color}
-            boxShadow={"inset"}
+            boxShadow="inset"
           />
-          <Text as="span" fontFamily="body" mr={4}>
+          <Text as="span" mr={4}>
             {dataPoint.name}
           </Text>
           <Text fontFamily="mono" textAlign="right">
@@ -162,7 +163,6 @@ const CustomPieTooltip = ({
 export default function ChartWidget({ widget }: ChartWidgetProps) {
   const { data, xAxis, yAxis, type } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
-  const ChartTypeItem = chartItems[type as ChartType];
 
   const { data: formattedData, series } = formatChartData(
     data,
@@ -172,6 +172,88 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
   );
 
   const chart = useChart({ data: formattedData, series: series });
+
+  const renderChartItems = () => {
+    switch (type) {
+      case "pie": {
+        return (
+          <Pie
+            data={chart.data}
+            nameKey={chart.key(xAxis)}
+            dataKey={chart.key(yAxis)}
+            innerRadius={50}
+            outerRadius={100}
+            isAnimationActive={false}
+          >
+            {chart.data.map((entry) => (
+              <Cell
+                key={`cell-${entry[xAxis]}`}
+                fill={chart.color(entry.color as string)}
+                strokeWidth={1}
+                stroke="#fff"
+              />
+            ))}
+          </Pie>
+        );
+      }
+      case "scatter": {
+        return chart.series.map((item) => (
+          <Scatter
+            key={item.name}
+            name={item.name?.toString()}
+            data={chart.data} // Scatter plots often use the full dataset
+            fill={chart.color(item.color)}
+            isAnimationActive={false}
+          />
+        ));
+      }
+      case "line": {
+        return chart.series.map((item) => (
+          <Line
+            key={item.name}
+            type="monotone"
+            name={item.name?.toString()}
+            dataKey={chart.key(item.name)}
+            stroke={chart.color(item.color)}
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
+        ));
+      }
+      case "area": {
+        return chart.series.map((item) => (
+          <Area
+            key={item.name}
+            type="monotone"
+            name={item.name?.toString()}
+            dataKey={chart.key(item.name)}
+            stackId="a"
+            fill={chart.color(item.color)}
+            fillOpacity={0.2}
+            stroke={chart.color(item.color)}
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
+        ));
+      }
+      case "bar":
+      case "grouped-bar":
+      case "stacked-bar": {
+        return chart.series.map((item) => (
+          <Bar
+            key={item.name}
+            name={item.name?.toString()}
+            dataKey={chart.key(item.name)}
+            stackId={type === "stacked-bar" ? "a" : undefined}
+            fill={chart.color(item.color)}
+            isAnimationActive={false}
+          />
+        ));
+      }
+      default:
+        return null;
+    }
+  };
 
   return (
     <Chart.Root maxH="280px" chart={chart} overflow="hidden">
@@ -203,10 +285,10 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
               name={xAxis}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value) =>
+              tickFormatter={(value: any, index: number) =>
                 type === "scatter"
-                  ? formatYAxisLabel(value, chart.key(xAxis))
-                  : formatXAxisLabel(value, chart.key(xAxis))
+                  ? String(formatYAxisLabel(value, chart.key(xAxis)))
+                  : String(formatXAxisLabel(value, chart.key(xAxis)))
               }
               domain={type === "scatter" ? ["auto", "auto"] : undefined}
             />
@@ -237,50 +319,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
             )
           }
         />
-        {/* Render chart items */}
-        {chart.series.map((item, idx) => (
-          <ChartTypeItem
-            key={item.name || idx}
-            name={item.name?.toString()}
-            nameKey={type === "pie" ? chart.key(xAxis) : null}
-            dataKey={
-              type === "pie"
-                ? chart.key(yAxis)
-                : type !== "scatter"
-                ? chart.key(item.name)
-                : undefined
-            }
-            data={type === "scatter" || type === "pie" ? chart.data : null}
-            stackId={
-              type === "stacked-bar"
-                ? item.stackId
-                : type === "area"
-                ? "a"
-                : undefined
-            }
-            fill={chart.color(item.color)}
-            fillOpacity={type === "area" ? 0.2 : 1}
-            stroke={
-              type === "line" || type === "area"
-                ? chart.color(item.color)
-                : "none"
-            }
-            strokeWidth={type === "line" || type === "area" ? 2 : null}
-            isAnimationActive={false}
-            innerRadius={type === "pie" ? 50 : null}
-            outerRadius={type === "pie" ? 100 : null}
-          >
-            {type === "pie" &&
-              chart.data.map((entry: any) => (
-                <Cell
-                  key={String(entry[xAxis as string])}
-                  fill={chart.color(entry.color)}
-                  strokeWidth={1}
-                  stroke="#fff"
-                />
-              ))}
-          </ChartTypeItem>
-        ))}
+        {renderChartItems()}
       </ChartTypeWrapper>
     </Chart.Root>
   );
