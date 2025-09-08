@@ -2,7 +2,6 @@ import {
   Dialog,
   Portal,
   Button,
-  Text,
   VStack,
   Heading,
   Box,
