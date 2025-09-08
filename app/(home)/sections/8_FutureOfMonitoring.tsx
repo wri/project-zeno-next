@@ -41,7 +41,7 @@ export default function FutureOfMonitoringSection() {
             About Global Nature Watch
           </Heading>
           <Text fontSize="lg" mb="4">
-          We're making environmental geospatial data faster,
+          We&apos;re making environmental geospatial data faster,
           more accessible and easier to use for everyone working to protect and restore nature.
           </Text>
           </Container>
@@ -304,7 +304,7 @@ export default function FutureOfMonitoringSection() {
               </Heading>
               <Text fontSize="lg" mb="4">
                We believe the future of monitoring is open, extensible, and integrative.
-                That&rsquo;s why Global Nature Watch will be able to connect with your
+                That&apos;s why Global Nature Watch will be able to connect with your
                 own systems, extending the power of your data.
               </Text>
             </Box>

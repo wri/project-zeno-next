@@ -234,12 +234,12 @@ export default function LandingHero({
                 <Badge size="xs" fontSize="8px" rounded="4px" mr="1">
                   BETA
                 </Badge>
-                You're exploring a beta version of Global Nature Watch.
+                You&apos;re exploring a beta version of Global Nature Watch.
               </Text>
               <Tooltip
                 openDelay={100}
                 closeDelay={300}
-                content="We’re learning, iterating, and improving—and your feedback is essential to help build the next generation of environmental monitoring."
+                content="We are learning, iterating, and improving—and your feedback is essential to help build the next generation of environmental monitoring."
               >
                 <Box
                   color="fg.inverted"
