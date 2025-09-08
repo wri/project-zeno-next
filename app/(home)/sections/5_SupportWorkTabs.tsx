@@ -21,6 +21,8 @@ type SupportTab = {
   value: string;
   cards?: SupportTabCard[];
 };
+
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 const SUPPORT_TABS = [
   {
     value: "Restoration",
@@ -193,29 +195,31 @@ export default function SupportWorkTabsSection() {
           ))}
         </Accordion.Root>
       </Container>
-      <Container maxW="5xl" mt={{ base: "8", md: "10" }} px={0}>
-        <Box
-          py={4}
-          px={5}
-          rounded="xl"
-          bg="bg"
-          display="flex"
-          flexDir={{ base: "column", md: "row" }}
-          alignItems={{ base: "flex-start", md: "center" }}
-          justifyContent="space-between"
-          gap={3}
-        >
-          <Heading size="md" as="p">
-            How will you use monitoring intelligence?
-          </Heading>
-          <Button asChild variant="solid" colorPalette="primary" rounded="lg">
-            <Link href="/app">
-              Try the preview
-              <CaretRightIcon weight="bold" />
-            </Link>
-          </Button>
-        </Box>
-      </Container>
+      {LANDING_PAGE_VERSION !== "closed" && (
+        <Container maxW="5xl" mt={{ base: "8", md: "10" }} px={0}>
+          <Box
+            py={4}
+            px={5}
+            rounded="xl"
+            bg="bg"
+            display="flex"
+            flexDir={{ base: "column", md: "row" }}
+            alignItems={{ base: "flex-start", md: "center" }}
+            justifyContent="space-between"
+            gap={3}
+          >
+            <Heading size="md" as="p">
+              How will you use monitoring intelligence?
+            </Heading>
+            <Button asChild variant="solid" colorPalette="primary" rounded="lg">
+              <Link href="/app">
+                Try the preview
+                <CaretRightIcon weight="bold" />
+              </Link>
+            </Button>
+          </Box>
+        </Container>
+      )}
     </Container>
   );
 }
