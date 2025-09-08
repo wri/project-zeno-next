@@ -17,11 +17,13 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import useSidebarStore from "./sidebarStore";
+import useAuthStore from "./authStore";
 
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
+  toolSteps: string[];
 }
 
 interface ChatActions {
@@ -29,13 +31,15 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
-  sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
+  sendMessage: (message: string, queryType?: QueryType) => Promise<{isNew: boolean, id: string}>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
     threadId: string,
     abortController?: AbortController
   ) => Promise<void>;
+  addToolStep: (toolName: string) => void;
+  clearToolSteps: () => void;
 }
 
 const initialState: ChatState = {
@@ -43,21 +47,23 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message: `Hi, I’m your Global Nature Watch assistant.
-I help you explore how our planet’s land and ecosystems are changing, powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
+      message: `Hi, I'm your Global Nature Watch assistant.
+I help you explore how our planet's land and ecosystems are changing, powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
 
-Ask a question and let’s see what we can do for nature.`,
+Ask a question and let's see what we can do for nature.`,
       timestamp: new Date().toISOString(),
     },
   ],
   isLoading: false,
   currentThreadId: null,
+  toolSteps: [],
 };
 
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void,
+  addToolStep: (toolName: string) => void
 ) {
   if (streamMessage.type === "error") {
     // Handle timeout errors specifically
@@ -84,6 +90,11 @@ async function processStreamMessage(
       timestamp: streamMessage.timestamp,
     });
   } else if (streamMessage.type === "tool") {
+    // Add tool step to reasoning display
+    if (streamMessage.name) {
+      addToolStep(streamMessage.name);
+    }
+
     // Special handling for generate_insights tool
     if (streamMessage.name === "generate_insights" && streamMessage.insights) {
       return generateInsightsTool(streamMessage, addMessage);
@@ -99,12 +110,6 @@ async function processStreamMessage(
     // Handling for pull-data tool
     else if (streamMessage.name === "pull-data") {
       return pullDataTool(streamMessage, addMessage);
-    } else {
-      addMessage({
-        type: "assistant",
-        message: `Tool: ${streamMessage.name || "Unknown"}`,
-        timestamp: streamMessage.timestamp,
-      });
     }
   }
 }
@@ -133,8 +138,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   sendMessage: async (message: string, queryType: QueryType = "query") => {
-    const { addMessage, setLoading, currentThreadId, generateNewThread } =
-      get();
+    const {
+      addMessage,
+      setLoading,
+      currentThreadId,
+      generateNewThread,
+      addToolStep,
+      clearToolSteps,
+    } = get();
     const { context } = useContextStore.getState();
 
     // Generate thread ID if this is the first message
@@ -147,6 +158,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       context,
     });
 
+    // Clear any previous tool steps and start loading
+    clearToolSteps();
     setLoading(true);
 
     // Build ui_context from current context
@@ -164,7 +177,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           gadm_id: areaContext.aoiData.gadm_id,
           src_id: areaContext.aoiData.src_id,
           subtype: areaContext.aoiData.subtype,
-          source: areaContext.aoiData.source
+          source: areaContext.aoiData.source,
         },
         aoi_name: areaContext.aoiData.name,
         subregion_aois: null,
@@ -223,6 +236,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         throw new Error("No response body received");
       }
 
+      // Update prompt usage from response headers (case-insensitive)
+      useAuthStore.getState().setUsageFromHeaders(response.headers);
+
       const reader = response.body.getReader();
 
       await readDataStream({
@@ -233,7 +249,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           console.log("API Stream message:", data);
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
-            await processStreamMessage(streamMessage, addMessage);
+            await processStreamMessage(streamMessage, addMessage, addToolStep);
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -276,21 +292,28 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
-      if (!currentThreadId) {
-        // Change the url using the history API so not to trigger any next
-        // router events.
-        window.history.replaceState(null, "", `/app/threads/${threadId}`);
-      }
+
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      return { isNew: !currentThreadId, id: threadId };
     }
   },
 
   setLoading: (loading) => set({ isLoading: loading }),
 
+  addToolStep: (toolName: string) => {
+    set((state) => ({
+      toolSteps: [...state.toolSteps, toolName],
+    }));
+  },
+
+  clearToolSteps: () => set({ toolSteps: [] }),
+
   fetchThread: async (threadId: string, abort?: AbortController) => {
-    const { setLoading, addMessage } = get();
+    const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
     const { upsertContextByType } = useContextStore.getState();
 
+    // Clear any previous tool steps and start loading
+    clearToolSteps();
     setLoading(true);
     // Set up abort controller for client-side timeout
     const abortController = abort || new AbortController();
@@ -362,7 +385,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
               return;
             }
-            await processStreamMessage(streamMessage, addMessage);
+            console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
+            await processStreamMessage(streamMessage, addMessage, addToolStep);
           } catch (err) {
             if (isFinal) {
               console.error(

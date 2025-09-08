@@ -12,6 +12,8 @@ export const headingRecipe = defineRecipe({
   },
 });
 
+const defaultColors = defaultConfig?.theme?.tokens?.colors ?? {};
+
 export const config = defineConfig({
   globalCss,
   theme: {
@@ -82,19 +84,49 @@ export const config = defineConfig({
           900: { value: "#323625" },
           950: { value: "#242e05" },
         },
-        cyan: { 500: { value: "#01B9F3" } },
+        cyan: { ...defaultColors.cyan, 500: { value: "#01B9F3" } },
         indigo: { 500: { value: "#6F6FDF" } },
-        purple: { 500: { value: "#BA4AFF" } },
-        pink: { 500: { value: "#F26798" } },
-        red: { 500: { value: "#FF452C" } },
-        orange: { 500: { value: "#FF9916" } },
-        yellow: { 500: { value: "#FFD80B" } },
-        mint: { 500: { value: "#00DCA7" } },
-        green: { 500: { value: "#00A651" } },
-        berenjena: { 500: { value: "#895277" } },
+        purple: { ...defaultColors.purple, 500: { value: "#BA4AFF" } },
+        pink: { ...defaultColors.pink, 500: { value: "#F26798" } },
+        red: { ...defaultColors.red, 500: { value: "#FF452C" } },
+        orange: { ...defaultColors.orange, 500: { value: "#FF9916" } },
+        yellow: { ...defaultColors.yellow, 500: { value: "#FFD80B" } },
+        green: { ...defaultColors.green, 500: { value: "#00A651" } },
+        mint: {
+          50: { value: "#e2fff8" },
+          100: { value: "#b6fde9" },
+          200: { value: "#89fadc" },
+          300: { value: "#5cf2cf" },
+          400: { value: "#35eac2" },
+          500: { value: "#00DCA7" },
+          600: { value: "#00b086" },
+          700: { value: "#008465" },
+          800: { value: "#005a45" },
+          900: { value: "#003126" },
+          950: { value: "#001a14" },
+        },
+        berenjena: {
+          50: { value: "#fbe9f7" },
+          100: { value: "#efcde5" },
+          200: { value: "#e2b2d2" },
+          300: { value: "#d596bf" },
+          400: { value: "#c57aac" },
+          500: { value: "#895277" },
+          600: { value: "#9b6488" },
+          700: { value: "#734563" },
+          800: { value: "#4e2f44" },
+          900: { value: "#2a1a25" },
+          950: { value: "#170e14" },
+        },
       },
       animations: {
         fillWidth: { value: "fillWidth 10s linear infinite" },
+      },
+      gradients: {
+        LCLGradientLight: {
+          value:
+            "linear-gradient(107deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)",
+        },
       },
     },
     semanticTokens: {
@@ -192,19 +224,34 @@ export const config = defineConfig({
         },
         border: {
           DEFAULT: {
-            value: { _light: "{colors.neutral.200}", _dark: "{colors.neutral.800}" },
+            value: {
+              _light: "{colors.neutral.200}",
+              _dark: "{colors.neutral.800}",
+            },
           },
           muted: {
-            value: { _light: "{colors.neutral.100}", _dark: "{colors.neutral.900}" },
+            value: {
+              _light: "{colors.neutral.100}",
+              _dark: "{colors.neutral.900}",
+            },
           },
           subtle: {
-            value: { _light: "{colors.neutral.50}", _dark: "{colors.neutral.950}" },
+            value: {
+              _light: "{colors.neutral.50}",
+              _dark: "{colors.neutral.950}",
+            },
           },
           emphasized: {
-            value: { _light: "{colors.neutral.300}", _dark: "{colors.neutral.700}" },
+            value: {
+              _light: "{colors.neutral.300}",
+              _dark: "{colors.neutral.700}",
+            },
           },
           inverted: {
-            value: { _light: "{colors.neutral.800}", _dark: "{colors.neutral.200}" },
+            value: {
+              _light: "{colors.neutral.800}",
+              _dark: "{colors.neutral.200}",
+            },
           },
           error: {
             value: { _light: "{colors.red.500}", _dark: "{colors.red.400}" },

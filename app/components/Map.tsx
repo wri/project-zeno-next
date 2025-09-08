@@ -21,7 +21,7 @@ import SelectAreaLayer from "./map/layers/select-area-layer";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-function Map() {
+function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
   const { geoJsonFeatures, setMapRef, initializeTerraDraw } = useMapStore();
@@ -115,7 +115,7 @@ function Map() {
         />
         <SelectAreaLayer />
         <DynamicTileLayers />
-        <MapAreaControls />
+        {!disableMapAreaControls && <MapAreaControls />}
 
         <AttributionControl
           customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"

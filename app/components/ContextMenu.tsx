@@ -232,7 +232,7 @@ function ContextMenu({
 }
 export default ContextMenu;
 
-function LayerMenu() {
+export function LayerMenu() {
   const { context, addContext, removeContext } = useContextStore();
 
   // Compute selected state from context so cards reflect external context changes
@@ -269,11 +269,7 @@ function LayerMenu() {
   };
 
   return (
-    <Stack
-      bg="bg.subtle"
-      pt={3}
-      minW={0}
-    >
+    <Stack bg="bg.subtle" pt={3} minW={0} w='100%'>
       <Box px={4}>
         <InputGroup endElement={<MagnifyingGlassIcon />}>
           <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />

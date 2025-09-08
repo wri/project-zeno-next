@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import useChatStore from "@/app/store/chatStore";
-import useContextStore from "../store/contextStore";
+import useContextStore from "@/app/store/contextStore";
 
 export default function Home() {
   const { reset: resetChatStore, sendMessage } = useChatStore();

@@ -17,6 +17,8 @@ import {
   ChartPieSliceIcon,
   PresentationChartIcon,
   StackIcon,
+  ChartScatterIcon,
+  ChartPolarIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 
@@ -29,9 +31,13 @@ export const WidgetIcons = {
   "line": <ChartLineIcon />,
   "table": <ListNumbersIcon />,
   "bar": <ChartBarIcon />,
+  "stacked-bar": <ChartBarIcon />,
+  "grouped-bar": <ChartBarIcon />,
   "pie": <ChartPieSliceIcon />,
   "insight": <PresentationChartIcon />,
-  "dataset-card": <StackIcon />
+  "dataset-card": <StackIcon />,
+  "scatter": <ChartScatterIcon />,
+  "area": <ChartPolarIcon />,
 }
 
 function ChatPanelHeader() {
@@ -51,12 +57,14 @@ function ChatPanelHeader() {
   const widgetAnchors = useMemo(() => {
     return messages.flatMap((m) =>
       m.type === "widget" && m.widgets
-        ? m.widgets.map((w, idx) => ({
-          id: `widget-${m.id}-${idx}`,
-          title: w.title || `Widget ${idx + 1}`,
-          type: w.type,
-          timestamp: m.timestamp,
-        }))
+        ? m.widgets
+            .filter((w) => w.type !== "dataset-card")
+            .map((w, idx) => ({
+              id: `widget-${m.id}-${idx}`,
+              title: w.title || `Insight ${idx + 1}`,
+              type: w.type,
+              timestamp: m.timestamp,
+            }))
         : []
     );
   }, [messages]);
@@ -171,9 +179,7 @@ function ChatPanelHeader() {
               borderColor="primary.subtle"
               rounded="sm"
               h={6}
-              bgGradient="to-br"
-              gradientFrom="primary.200/25"
-              gradientTo="secondary.300/25"
+              bgGradient="LCLGradientLight"
               size="xs"
               disabled
             >
@@ -191,9 +197,7 @@ function ChatPanelHeader() {
               borderColor="primary.subtle"
               rounded="sm"
               h={6}
-              bgGradient="to-br"
-              gradientFrom="primary.200/30"
-              gradientTo="secondary.300/30"
+              bgGradient="LCLGradientLight"
               fontWeight="semibold"
               _hover={{
                 gradientFrom: "primary.400/30",
