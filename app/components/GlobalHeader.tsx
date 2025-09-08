@@ -56,7 +56,7 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
         colorPalette="primary"
         rounded="lg"
       >
-        <Link href="/app">Try the preview</Link>
+        <Link href="/app">Explore the beta</Link>
       </Button>
     </ButtonGroup>
   );

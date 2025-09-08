@@ -210,7 +210,7 @@ export default function SupportWorkTabsSection() {
           </Heading>
           <Button asChild variant="solid" colorPalette="primary" rounded="lg">
             <Link href="/app">
-              Try the preview
+              Explore the beta
               <CaretRightIcon weight="bold" />
             </Link>
           </Button>
