@@ -171,7 +171,7 @@ function DialogHeader(props: { onCloseClick?: () => void; title?: string }) {
   return (
     <Dialog.Header display="flex">
       <Dialog.Title mb={0} display="flex" gap={2} alignItems="center">
-        <Center bg="cyan.100" borderRadius="full" w={12} h={12}>
+        <Center bg="cyan.100" borderRadius="full" w={8} h={8}>
           <InfoIcon weight="fill" color={theme.token("colors.cyan.600")} />
         </Center>
         {title}
@@ -195,11 +195,11 @@ function InfoDialog() {
   const [open, setOpen] = useState(true);
 
   return (
-    <Dialog.Root open={open} placement="bottom">
+    <Dialog.Root open={open} placement="bottom" size="sm">
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner justifyContent="right">
-          <Dialog.Content margin="2rem">
+          <Dialog.Content margin={4}>
             <DialogHeader onCloseClick={() => setOpen(false)} />
             <Dialog.Body display="flex" gap={2} flexDirection="column">
               <Text fontWeight="bold">
