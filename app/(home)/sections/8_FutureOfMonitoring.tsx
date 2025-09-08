@@ -56,17 +56,18 @@ export default function FutureOfMonitoringSection() {
                 Cutting-edge data
               </Heading>
               <Text fontSize="lg" mb="4">
-                We solve the hardest challenges in monitoring nature. Providing
-                you with the data you&rsquo;ve always needed, and empowering you
-                to take real-world action. Our data is globally available,
-                consistent over time and created by some of the world&rsquo;s
-                most talented field experts.
+                We tackle the hardest challenges in monitoring nature,
+                providing globally consistent data built by some of the world&rsquo;s
+                most talented experts.
+                Our data is designed to empower real-world action, today and into the future.
               </Text>
               <ChakraLink
                 fontSize="lg"
                 color="primary.700"
                 textDecoration="underline"
                 href="#"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Learn more about our data
               </ChakraLink>
@@ -114,19 +115,18 @@ export default function FutureOfMonitoringSection() {
                 Monitoring intelligence
               </Heading>
               <Text fontSize="lg" mb="4">
-                There&rsquo;s a lot of geospatial data in the world, and it can
-                be difficult to understand which to use. The future places the
-                power of having your own personal geospatial expert in your
-                pocket. With our AI assistants trained on our cutting-edge data,
-                we democratize data access for monitoring so it can reach more
-                people and places, empowering both geospatial experts and
-                novices alike.
+                With so much geospatial data available, it can be hard to know where to start.
+                Global Nature Watch places the power of a personal geospatial assistant in your pocket.
+                AI trained on trusted datasets helps both experts and newcomers navigate,
+                analyze and apply insights.
               </Text>
               <ChakraLink
                 fontSize="lg"
                 color="primary.700"
                 textDecoration="underline"
                 href="#"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Learn more about our models and agents
               </ChakraLink>
@@ -193,6 +193,8 @@ export default function FutureOfMonitoringSection() {
                 color="primary.700"
                 textDecoration="underline"
                 href="#"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Learn more about our tools
               </ChakraLink>
@@ -292,19 +294,10 @@ export default function FutureOfMonitoringSection() {
                 Integrative technology (coming soon)
               </Heading>
               <Text fontSize="lg" mb="4">
-                We believe the future of monitoring data and technology is open
-                source, and accessible to everyone. That&rsquo;s why Nature
-                Watch is open, extensible and ready to integrate with your own
-                systems, extending the power of your own data.
+               We believe the future of monitoring is open, extensible, and integrative.
+                That&rsquo;s why Global Nature Watch will be able to connect with your
+                own systems, extending the power of your data.
               </Text>
-              <ChakraLink
-                fontSize="lg"
-                color="primary.700"
-                textDecoration="underline"
-                href="#"
-              >
-                Learn more about our integrations
-              </ChakraLink>
             </Box>
             <Box
               position="relative"
