@@ -4,17 +4,17 @@ const HOW_STEPS = [
   {
     title: "Processing your intent",
     description:
-      "When you ask Nature Watch a question, we use LangChain to process the natural language and determine your intent. This allows us to select the best AI models and analysis tools to calculate Nature Watch's response.",
+      "When you ask Global Nature Watch a question, we use LangChain to process the language and understand what you mean.",
     images: ["/Langchain-logo.svg"],
   },
   {
     title: "Retrieving quality data",
     description:
-      "We use our trusted APIs to pull data from Global Forest Watch and Land & Carbon Lab. This means verifiable data direct from authoritative sources, not from model training data.",
+      "We use our APIs to pull verifiable, peer-reviewed data data from Global Forest Watch and Land & Carbon Lab. This means verifiable data direct from authoritative sources, not from model training data.",
     images: ["/GFW-logo.svg", "LCL-logo.svg"],
   },
   {
-    title: "Tuning AI model's response",
+    title: "Tuning the AI model's response",
     description:
       "We use Retrieval-Augmented Generation (RAG) to link data retrieved via our trusted APIs with real documentation, methods papers and metadata from our research.",
     images: ["/ri_chat-ai-line.svg"],
@@ -22,7 +22,7 @@ const HOW_STEPS = [
   {
     title: "Returning a response",
     description:
-      "Our agents are currently able to create spatial summary statistics, perform dataset searches and return natural-language summaries.",
+      "Our agents create spatial summary statistics, perform dataset searches, and return insights in plain language.",
     images: ["/HIW-Brazil-Widget.png"],
   },
 ];
