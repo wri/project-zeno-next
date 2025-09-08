@@ -251,7 +251,7 @@ export default function LandingHero({
                   alignItems="center"
                 >
                   <InfoIcon />
-                  Why we're doing this.
+                  Why we&apos;re doing this.
                 </Box>
               </Tooltip>
             </Box>
