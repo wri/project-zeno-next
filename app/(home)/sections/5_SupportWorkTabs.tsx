@@ -106,7 +106,7 @@ export default function SupportWorkTabsSection() {
         </Heading>
         <Text fontSize="md" mb="4">
           From field work to policy writing, Global Nature Watch empowers
-          smarter decisions, and meaningful action in the places you care about.
+          smarter decisions and meaningful action in the places you care about.
         </Text>
       </Container>
       <Container maxW="5xl" mt={{ base: "8", md: "10" }} px={0}>
