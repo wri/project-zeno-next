@@ -17,13 +17,11 @@ import {
   UserIcon,
 } from "@phosphor-icons/react";
 import useAuthStore from "../store/authStore";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
     useAuthStore();
-  const router = useRouter();
 
   return (
     <Flex
