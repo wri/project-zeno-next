@@ -8,14 +8,22 @@ import {
   Portal,
 } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
-import { LifebuoyIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
+import {
+  GearSixIcon,
+  HouseSimpleIcon,
+  InfoIcon,
+  LifebuoyIcon,
+  SignOutIcon,
+  UserIcon,
+} from "@phosphor-icons/react";
 import useAuthStore from "../store/authStore";
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 function PageHeader() {
-  const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
+  const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
     useAuthStore();
-    const router = useRouter()
+  const router = useRouter();
 
   return (
     <Flex
@@ -76,7 +84,7 @@ function PageHeader() {
           </Progress.Track>
         </Progress.Root>
         {isAuthenticated ? (
-          <Menu.Root navigate={({ value, node }) => router.push(`/${value}`)}>
+          <Menu.Root>
             <Menu.Trigger asChild>
               <Button
                 variant="solid"
@@ -90,13 +98,30 @@ function PageHeader() {
             </Menu.Trigger>
             <Portal>
               <Menu.Positioner>
-                <Menu.Content>
-                  <Menu.Item value="">Homepage</Menu.Item>
-                  <Menu.Item value="dashboard">Settings</Menu.Item>
-                  <Menu.Item value="about">About</Menu.Item>
+                <Menu.Content css={{ "& a": { cursor: "pointer" } }}>
+                  <Menu.Item value="" asChild>
+                    <Link href="/">
+                      <HouseSimpleIcon />
+                      Homepage
+                    </Link>
+                  </Menu.Item>
+                  <Menu.Item value="dashboard" asChild>
+                    <Link href="/dashboard">
+                      <GearSixIcon />
+                      Settings
+                    </Link>
+                  </Menu.Item>
+                  <Menu.Item value="about" asChild>
+                    <Link href="/about">
+                      <InfoIcon />
+                      About
+                    </Link>
+                  </Menu.Item>
                   <Menu.Separator />
                   <Menu.Item
                     value="logout"
+                    cursor="pointer"
+                    onClick={() => clearAuth()}
                   >
                     <SignOutIcon />
                     Logout
