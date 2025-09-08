@@ -38,11 +38,20 @@ export default function FutureOfMonitoringSection() {
       >
         <Container textAlign="center" maxW="2xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            The future of monitoring
+            About Global Nature Watch
           </Heading>
           <Text fontSize="lg" mb="4">
-            We&rsquo;re making geospatial data more accessible, easier to use
-            and more impactful for everyone working to protect the planet.{" "}
+          We're making environmental geospatial data faster,
+          more accessible and easier to use for everyone working to protect and restore nature.
+          </Text>
+          </Container>
+          <Container display="flex" maxW="5xl">
+          <Text fontSize="lg" mb="4">
+          For more than 14 years, World Resources Institute tools like Global Forest Watch have
+          transformed how the world monitors nature, driving impact across the tropics and beyond.
+          Global Nature Watch marks the next chapter. Built on trusted, peer-reviewed data and
+          powered by the latest advances in AI, it shifts monitoring from fixed global outputs to
+          targeted, actionable insights delivered in the language, regions and contexts that matter most.
           </Text>
         </Container>
         <Container display="flex" gap="14" flexDir={"column"} maxW="5xl">
