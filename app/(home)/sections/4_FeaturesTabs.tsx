@@ -13,23 +13,23 @@ import Link from "next/link";
 const FEATURE_TABS = [
   {
     value: "feature-tab-1",
-    label: "Find new areas of interest",
+    label: "Explore trusted data with an AI assistant",
     description:
-      "Using our data and technology to enrich research and support governments in policy writing.",
+      "Quickly surface the most relevant peer-reviewed datasets, with AI support that helps you explore and apply them with confidence.",
     image: "/feature-tab-1.png",
   },
   {
     value: "feature-tab-2",
-    label: "Monitor your existing portfolio",
+    label: "Track what matters to you",
     description:
-      "Track changes and disturbances in your areas of interest with real-time updates.",
+      "See a clear snapshot of your area and track changes with near-real-time alerts.",
     image: "https://placehold.co/800x500",
   },
   {
     value: "feature-tab-3",
-    label: "Compare national or regional impact",
+    label: "Understand the trends",
     description:
-      "Analyze the effects of policies and interventions across different regions.",
+      "Make sense of patterns in the data with AI-powered interpretations that add context to your area.",
     image: "https://placehold.co/800x500",
   },
 ];
