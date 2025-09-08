@@ -23,6 +23,29 @@ type SupportTab = {
 };
 const SUPPORT_TABS = [
   {
+    value: "Conservation",
+    cards: [
+      {
+        title: "Monitor protected areas",
+        content:
+          "Track changes and threats to conservation zones, ensuring the integrity of protected ecosystems.",
+        image: "https://placehold.co/800x500/0D1429/FFFFFF?text=Conservation+1",
+      },
+      {
+        title: "Identify biodiversity hotspots",
+        content:
+          "Use data to pinpoint areas rich in biodiversity that require conservation efforts.",
+        image: "https://placehold.co/800x500/0D1429/FFFFFF?text=Conservation+2",
+      },
+      {
+        title: "Assess habitat fragmentation",
+        content:
+          "Analyze landscape connectivity to understand the impact of human activity on wildlife habitats.",
+        image: "https://placehold.co/800x500/0D1429/FFFFFF?text=Conservation+3",
+      },
+    ],
+  },
+  {
     value: "Restoration",
     cards: [
       {
@@ -46,16 +69,73 @@ const SUPPORT_TABS = [
     ],
   },
   {
-    value: "Conservation",
-  },
-  {
     value: "Policy",
+    cards: [
+      {
+        title: "Inform land use planning",
+        content:
+          "Provide data-driven insights to support sustainable land management policies.",
+        image: "https://placehold.co/800x500/1C2D5A/FFFFFF?text=Policy+1",
+      },
+      {
+        title: "Evaluate policy effectiveness",
+        content:
+          "Measure the impact of environmental policies by monitoring changes in land cover and ecosystem health over time.",
+        image: "https://placehold.co/800x500/1C2D5A/FFFFFF?text=Policy+2",
+      },
+      {
+        title: "Support international agreements",
+        content:
+          "Contribute to national reporting for global environmental commitments with accurate and up-to-date data.",
+        image: "https://placehold.co/800x500/1C2D5A/FFFFFF?text=Policy+3",
+      },
+    ],
   },
   {
     value: "Research",
+    cards: [
+      {
+        title: "Access analysis-ready data",
+        content:
+          "Download and integrate geospatial data into your research workflows to accelerate discovery.",
+        image: "https://placehold.co/800x500/3B5B9A/FFFFFF?text=Research+1",
+      },
+      {
+        title: "Collaborate on a global scale",
+        content:
+          "Share findings and datasets with a community of researchers working on similar environmental challenges.",
+        image: "https://placehold.co/800x500/3B5B9A/FFFFFF?text=Research+2",
+      },
+      {
+        title: "Validate models and hypotheses",
+        content:
+          "Use high-resolution satellite imagery and environmental data to test and refine your scientific models.",
+        image: "https://placehold.co/800x500/3B5B9A/FFFFFF?text=Research+3",
+      },
+    ],
   },
   {
     value: "Journalism",
+    cards: [
+      {
+        title: "Uncover environmental stories",
+        content:
+          "Find and visualize data to report on environmental issues with compelling evidence.",
+        image: "https://placehold.co/800x500/5A8DC2/FFFFFF?text=Journalism+1",
+      },
+      {
+        title: "Create data-driven visualizations",
+        content:
+          "Generate maps, charts, and timelines to illustrate your stories and engage your audience.",
+        image: "https://placehold.co/800x500/5A8DC2/FFFFFF?text=Journalism+2",
+      },
+      {
+        title: "Fact-check claims",
+        content:
+          "Verify information and claims about environmental events using historical and near-real-time data.",
+        image: "https://placehold.co/800x500/5A8DC2/FFFFFF?text=Journalism+3",
+      },
+    ],
   },
 ];
 
@@ -159,7 +239,7 @@ export default function SupportWorkTabsSection() {
         {/* Accordion component is used on mobile only */}
         <Accordion.Root
           collapsible
-          defaultValue={["Restoration"]}
+          defaultValue={["Conservation"]}
           hideFrom="md"
           variant="plain"
           display="flex"
