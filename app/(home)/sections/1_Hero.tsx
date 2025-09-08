@@ -13,7 +13,7 @@ import {
 import {
   ArrowsClockwiseIcon,
   CaretRightIcon,
-  PencilRulerIcon,
+  InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import useChatStore from "@/app/store/chatStore";
@@ -233,15 +233,15 @@ export default function LandingHero({
               py="1"
             >
               <Text>
-                <Badge size="xs" fontSize="8px" rounded="none" mr="1">
+                <Badge size="xs" fontSize="8px" rounded="4px" mr="1">
                   BETA
                 </Badge>
-                Global Nature Watch is in open Beta
+                You're exploring a beta version of Global Nature Watch.
               </Text>
               <Tooltip
                 openDelay={100}
                 closeDelay={300}
-                content="While Global Nature Watch is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all."
+                content="We’re learning, iterating, and improving—and your feedback is essential to help build the next generation of environmental monitoring."
               >
                 <Box
                   color="fg.inverted"
@@ -252,8 +252,8 @@ export default function LandingHero({
                   gap="1"
                   alignItems="center"
                 >
-                  <PencilRulerIcon />
-                  Capped at 100 prompts
+                  <InfoIcon />
+                  Why we're doing this.
                 </Box>
               </Tooltip>
             </Box>
