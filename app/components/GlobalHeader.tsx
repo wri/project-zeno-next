@@ -12,6 +12,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import Link from "next/link";
+import LclLogo from "./LclLogo";
 
 const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
   return (
@@ -82,9 +83,17 @@ export default function GlobalHeader() {
         alignItems={{ base: "flex-start", md: "center" }}
         gap={{ base: 2, md: 4 }}
       >
-        <Heading m="0" size={{base: "xl", lg: "2xl"}} lineHeight="shorter" color="fg.inverted">
-          Global Nature Watch
-        </Heading>
+        <Flex alignItems="center" gap={{ base: 2, md: 4 }}>
+          <LclLogo width={16} avatarOnly />
+          <Heading
+            m="0"
+            size={{ base: "xl", lg: "2xl" }}
+            lineHeight="shorter"
+            color="fg.inverted"
+          >
+            Global Nature Watch
+          </Heading>
+        </Flex>
         <Text
           pl={{ base: 0, md: 4 }}
           fontSize="xs"
@@ -92,8 +101,8 @@ export default function GlobalHeader() {
           lineHeight="1.1"
           maxW={{ base: "none", md: "200px" }}
         >
-          Intelligent nature monitoring 
-          <br/>
+          Intelligent nature monitoring
+          <br />
           for shaping our future
         </Text>
       </Flex>
