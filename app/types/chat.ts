@@ -99,7 +99,7 @@ export interface DatasetInfo {
   methodology?: string;
   cautions?: string;
   citation?: string;
-  [key: string]: any; // Allow other properties
+  [key: string]: unknown; // Allow other properties
 }
 
 // LangChain content structure (for internal API use)
