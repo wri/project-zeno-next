@@ -45,7 +45,7 @@ export default function FeaturesTabsSection() {
       <Container id="use-cases">
         <Container textAlign="center" maxW="3xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            Get answers to your toughest questions about natural landscapes
+          Get answers to your toughest questions about landscapes, backed by data
           </Heading>
           <Text fontSize="lg">
             Global Nature Watch&rsquo;s AI understands your questions in plian
