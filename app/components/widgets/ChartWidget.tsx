@@ -285,7 +285,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
               name={xAxis}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(value: any, index: number) =>
+              tickFormatter={(value: number) =>
                 type === "scatter"
                   ? String(formatYAxisLabel(value, chart.key(xAxis)))
                   : String(formatXAxisLabel(value, chart.key(xAxis)))
@@ -296,8 +296,8 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
               dataKey={type === "scatter" ? chart.key(yAxis) : undefined}
               type="number"
               name={yAxis}
-              tickFormatter={(value) =>
-                formatYAxisLabel(value, chart.key(yAxis))
+              tickFormatter={(value: number) =>
+                String(formatYAxisLabel(value, chart.key(yAxis)))
               }
               axisLine={false}
               tickLine={false}
