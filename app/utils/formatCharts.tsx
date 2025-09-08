@@ -173,7 +173,7 @@ export default function formatChartData(
 }
 
 // Custom label formatter for X-axis (truncate long names)
-export const formatXAxisLabel = (value: any, key?: string) => {
+export const formatXAxisLabel = (value: string | number, key?: string) => {
   // Check if the axis key is 'year' to prevent special formatting
   if (key?.toString().toLowerCase() === "year") {
     return value.toString();
