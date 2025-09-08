@@ -83,7 +83,7 @@ export default function GlobalHeader() {
         alignItems={{ base: "flex-start", md: "center" }}
         gap={{ base: 2, md: 4 }}
       >
-        <Flex alignItems="center" gap={{ base: 2, md: 4 }}>
+        <Flex alignItems="center" gap={2}>
           <LclLogo width={16} avatarOnly />
           <Heading
             m="0"
@@ -102,7 +102,6 @@ export default function GlobalHeader() {
           maxW={{ base: "none", md: "200px" }}
         >
           Intelligent nature monitoring
-          <br />
           for shaping our future
         </Text>
       </Flex>
