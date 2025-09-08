@@ -65,7 +65,7 @@ export default function LatestUpdatesSection() {
       <Container display="flex" flexDir="column" gap={{ base: "8", md: "10" }}>
         <Container textAlign="center" maxW="2xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            Latest Updates & Research
+            Latest updates & research
           </Heading>
           <Text fontSize="lg" mb="4">
             We combine cutting-edge geospatial research from Land & Carbon Lab
@@ -167,7 +167,7 @@ export default function LatestUpdatesSection() {
               size="md"
               ml={{ base: "inherit", md: "auto" }}
             >
-              <Link href="https://landcarbonlab.org/">
+              <Link href="https://landcarbonlab.org/" target="_blank" rel="noopener noreferrer">
                 Visit Land & Carbon Lab
               </Link>
             </Button>
@@ -178,7 +178,7 @@ export default function LatestUpdatesSection() {
               rounded="lg"
               size="md"
             >
-              <Link href="https://www.globalforestwatch.org/">
+              <Link href="https://www.globalforestwatch.org/" target="_blank" rel="noopener noreferrer">
                 Visit Global Forest Watch
               </Link>
             </Button>
