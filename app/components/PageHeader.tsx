@@ -1,10 +1,21 @@
-import { Flex, Heading, Button, Progress, Badge } from "@chakra-ui/react";
+import {
+  Flex,
+  Heading,
+  Button,
+  Progress,
+  Badge,
+  Menu,
+  Portal,
+} from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
-import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
+import { LifebuoyIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
 import useAuthStore from "../store/authStore";
+import { useRouter } from 'next/navigation'
 
 function PageHeader() {
-  const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
+  const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
+    useAuthStore();
+    const router = useRouter()
 
   return (
     <Flex
@@ -64,19 +75,50 @@ function PageHeader() {
             <Progress.Range bg="white" />
           </Progress.Track>
         </Progress.Root>
-
-        <Button
-          asChild
-          variant="solid"
-          colorPalette="primary"
-          _hover={{ bg: "primary.fg" }}
-          size="sm"
-        >
-          <Flex>
-            <UserIcon />
-            <a href="#">{userEmail || "User name"}</a>
-          </Flex>
-        </Button>
+        {isAuthenticated ? (
+          <Menu.Root navigate={({ value, node }) => router.push(`/${value}`)}>
+            <Menu.Trigger asChild>
+              <Button
+                variant="solid"
+                colorPalette="primary"
+                _hover={{ bg: "primary.fg" }}
+                size="sm"
+              >
+                <UserIcon />
+                {userEmail || "User name"}
+              </Button>
+            </Menu.Trigger>
+            <Portal>
+              <Menu.Positioner>
+                <Menu.Content>
+                  <Menu.Item value="">Homepage</Menu.Item>
+                  <Menu.Item value="dashboard">Settings</Menu.Item>
+                  <Menu.Item value="about">About</Menu.Item>
+                  <Menu.Separator />
+                  <Menu.Item
+                    value="logout"
+                  >
+                    <SignOutIcon />
+                    Logout
+                  </Menu.Item>
+                </Menu.Content>
+              </Menu.Positioner>
+            </Portal>
+          </Menu.Root>
+        ) : (
+          <Button
+            asChild
+            variant="solid"
+            colorPalette="primary"
+            _hover={{ bg: "primary.fg" }}
+            size="sm"
+          >
+            <Flex>
+              <UserIcon />
+              <a href="/signup">Log in / Sign Up</a>
+            </Flex>
+          </Button>
+        )}
       </Flex>
     </Flex>
   );
