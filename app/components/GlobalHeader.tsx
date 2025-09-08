@@ -92,7 +92,9 @@ export default function GlobalHeader() {
           lineHeight="1.1"
           maxW={{ base: "none", md: "200px" }}
         >
-          Intelligent nature monitoring, trusted by experts
+          Intelligent nature monitoring 
+          <br/>
+          for shaping our future
         </Text>
       </Flex>
       <Drawer.Root size="md">
