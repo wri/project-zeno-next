@@ -11,7 +11,6 @@ import HowItWorksSection from "./sections/6_HowItWorks";
 import LatestUpdatesSection from "./sections/7_LatestUpdates";
 import FutureOfMonitoringSection from "./sections/8_FutureOfMonitoring";
 import TeamSection from "./sections/9_TeamSection";
-import NewEraQuoteSection from "./sections/10_NewEraQuote";
 import CTASection from "./sections/11_CTA";
 import FooterSection from "./sections/12_Footer";
 
@@ -50,7 +49,6 @@ export default function LandingPage() {
       <LatestUpdatesSection />
       <FutureOfMonitoringSection />
       <TeamSection />
-      <NewEraQuoteSection />
       <CTASection />
       <FooterSection />
     </>
