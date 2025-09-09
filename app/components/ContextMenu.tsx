@@ -114,9 +114,10 @@ type LayerCardItem = {
   dataset_name: string;
   context_layer: string | null;
   img?: string;
-  reason: string;
+  description: string;
   tile_url: string;
   selected?: boolean;
+  reason?: string;
 };
 
 function LayerCardList({

@@ -129,11 +129,13 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     dataset_name,
     description,
     reason: description, // for compatibility with LayerCardItem
-    data_layer: data_layer ?? DEFAULT_DATASET_FIELDS.data_layer,
-    tile_url: tile_url ?? DEFAULT_DATASET_FIELDS.tile_url,
-    context_layer: (context_layer ??
-      DEFAULT_DATASET_FIELDS.context_layer) as string,
-    threshold: threshold ?? DEFAULT_DATASET_FIELDS.threshold,
+    data_layer:
+      (data_layer ?? DEFAULT_DATASET_FIELDS.data_layer) as string,
+    tile_url: (tile_url ?? DEFAULT_DATASET_FIELDS.tile_url) as string,
+    context_layer: (context_layer ?? DEFAULT_DATASET_FIELDS.context_layer) as
+      | string
+      | null,
+    threshold: (threshold ?? DEFAULT_DATASET_FIELDS.threshold) as number | null,
   })
 );
 
