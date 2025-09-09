@@ -36,11 +36,13 @@ export default function DashboardLayout({
     }
   }, [cookieConsent, setConsentStatus]);
 
-
-  const params = useSearchParams();
-  const debugEnabled =
-    process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
-    params.get("debug") === "1";
+  function DebugToastsMount() {
+    const params = useSearchParams();
+    const debugEnabled =
+      process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
+      params.get("debug") === "1";
+    return <DebugToastsPanel enabled={debugEnabled} />;
+  }
 
   return (
     <Grid
@@ -70,7 +72,7 @@ export default function DashboardLayout({
         </Grid>
       </Grid>
       <Suspense fallback={null}>
-        <DebugToastsPanel enabled={debugEnabled} />
+        <DebugToastsMount />
       </Suspense>
       {children}
     </Grid>
