@@ -25,7 +25,7 @@ const PARTNER_ORGS = [
   {
     name: "Land & Carbon Lab",
     logo: "/LCL-logo.svg",
-    description: "A global leader in land use and carbon monitoring.",
+    description: "A leading global research initiative for land and carbon monitoring.",
   },
 ];
 
