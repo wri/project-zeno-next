@@ -45,9 +45,11 @@ export async function GET(
     if (!response.ok) {
       clearTimeout(timeoutId);
       console.error(response);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
       return NextResponse.json(
-        { error: "External API error" },
-        { status: response.status }
+        { error: "External API error", status: upstreamStatus },
+        { status: mappedStatus }
       );
     }
 
@@ -112,7 +114,6 @@ export async function GET(
         abortController.signal.addEventListener("abort", onAbort, {
           once: true,
         });
-
 
         try {
           await readDataStream({
@@ -190,6 +191,10 @@ export async function GET(
     });
   } catch (error) {
     console.log("error", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -221,7 +226,12 @@ export async function PATCH(
 
     if (!response.ok) {
       console.error(response);
-      throw new Error(`External API responded with status: ${response.status}`);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
+      return NextResponse.json(
+        { error: "External API error", status: upstreamStatus },
+        { status: mappedStatus }
+      );
     }
 
     return NextResponse.json({ success: true });
@@ -257,7 +267,12 @@ export async function DELETE(
     });
 
     if (!response.ok) {
-      throw new Error(`External API responded with status: ${response.status}`);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
+      return NextResponse.json(
+        { error: "External API error", status: upstreamStatus },
+        { status: mappedStatus }
+      );
     }
 
     return NextResponse.json({ success: true });
