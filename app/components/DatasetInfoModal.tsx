@@ -30,7 +30,7 @@ export function DatasetInfoModal({
         <Dialog.Positioner>
           <Dialog.Content maxW="3xl" p="10" borderRadius="8px">
             <Dialog.Title mb="4" fontSize="xl" fontWeight="bold" pr="6">{dataset.dataset_name}</Dialog.Title>
-            <Dialog.Description asChild>
+            <Dialog.Description asChild css={{ "& p": { whiteSpace: "pre-wrap" } }}>
               <VStack gap="5" align="stretch" maxH="70vh" overflowY="auto" pr="6" pb="6">
                 <Box>
                   <Heading size="sm" mb={3} color="gray.500">
