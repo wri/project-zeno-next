@@ -1,13 +1,9 @@
 import { Box, Text, Heading, Flex, Separator } from "@chakra-ui/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
-import ChakraLineChart from "./widgets/ChakraLineChart";
-import ChakraBarChart from "./widgets/ChakraBarChart";
-import ChakraAreaChart from "./widgets/ChakraAreaChart";
-import ChakraScatterChart from "./widgets/ChakraScatterChart";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
+import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
-import ChakraPieChart from "./widgets/ChakraPieChart";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -17,7 +13,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
-
+  console.log(widget);
   return (
     <Box
       rounded="md"
@@ -25,12 +21,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
       borderColor="blue.fg"
       overflow="hidden"
     >
-      <Flex
-        px={4}
-        py={3}
-        gap={2}
-        bgGradient="LCLGradientLight"
-      >
+      <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight">
         {WidgetIcons[widget.type]}
         <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
           {widget.title}
@@ -41,16 +32,13 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {widget.description}
         </Text>
         <Separator />
-
         {(widget.type === "bar" ||
           widget.type === "stacked-bar" ||
-          widget.type === "grouped-bar") && (
-          <ChakraBarChart
-            data={widget.data as Array<{ [key: string]: unknown }>}
-            xAxis={widget.xAxis}
-            type={widget.type}
-          />
-        )}
+          widget.type === "grouped-bar" ||
+          widget.type === "line" ||
+          widget.type === "area" ||
+          widget.type === "pie" ||
+          widget.type === "scatter") && <ChartWidget widget={widget} />}
 
         {widget.type === "table" && (
           <Box overflowX="auto" maxW="100%">
@@ -59,35 +47,6 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             />
           </Box>
         )}
-
-        {widget.type === "pie" && (
-          <ChakraPieChart
-            data={widget.data as Array<{ [key: string]: unknown }>}
-            xAxis={widget.xAxis}
-            yAxis={widget.yAxis}
-          />
-        )}
-
-        {widget.type === "line" && (
-          <ChakraLineChart
-            data={widget.data as Array<{ [key: string]: unknown }>}
-            xAxis={widget.xAxis}
-            yAxis={widget.yAxis}
-          />
-        )}
-        {widget.type === "area" && (
-          <ChakraAreaChart
-            data={widget.data as Array<{ [key: string]: unknown }>}
-            xAxis={widget.xAxis}
-          />
-        )}
-        {widget.type === "scatter" && ( 
-          <ChakraScatterChart
-            data={widget.data as Array<{ [key: string]: unknown }>}
-            xAxis={widget.xAxis}
-            yAxis={widget.yAxis}
-          />
-        ) }
       </Flex>
     </Box>
   );
