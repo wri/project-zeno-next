@@ -47,7 +47,7 @@ export default function FutureOfMonitoringSection() {
           </Container>
           <Container display="flex" maxW="5xl">
           <Text fontSize="lg" mb="4">
-          For more than 14 years, World Resources Institute tools like Global Forest Watch have
+          For more than a decade, World Resources Institute tools like Global Forest Watch have
           transformed how the world monitors nature, driving impact across the tropics and beyond.
           Global Nature Watch marks the next chapter. Built on trusted, peer-reviewed data and
           powered by the latest advances in AI, it shifts monitoring from fixed global outputs to
