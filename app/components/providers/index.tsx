@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import theme from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
+import { Toaster } from "@/app/components/ui/toaster";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ function Providers({ children }: { children: React.ReactNode }) {
       <ChakraProvider value={theme}>
         <AuthBootstrapper />
         {children}
+        <Toaster />
       </ChakraProvider>
     </QueryClientProvider>
   );
