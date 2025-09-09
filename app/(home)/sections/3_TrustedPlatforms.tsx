@@ -47,7 +47,7 @@ export default function TrustedPlatformsSection() {
             Global Nature Watch is built on the data and research of Global
             Forest Watch and Land & Carbon Lab, as trusted by NGOs, governments,
             journalists, communities, companies and geospatial experts
-            worldwide for over 14 years.
+            worldwide for over a decade.
           </Text>
         </Container>
         <Container

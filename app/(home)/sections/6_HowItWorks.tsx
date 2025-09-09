@@ -22,7 +22,7 @@ const HOW_STEPS = [
   {
     title: "Returning a response",
     description:
-      "Our agents create spatial summary statistics, perform dataset searches, and return insights in plain language.",
+      "Our agents create spatial summary statistics, perform dataset searches and return insights in plain language.",
     images: ["/HIW-Brazil-Widget.png"],
   },
 ];
