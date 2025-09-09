@@ -1,4 +1,4 @@
-import { Card, Image, useDisclosure } from "@chakra-ui/react";
+import { Box, Card, Image, useDisclosure } from "@chakra-ui/react";
 import { InfoIcon } from "@phosphor-icons/react";
 import { DatasetInfo } from "@/app/types/chat";
 import { DatasetInfoModal } from "./DatasetInfoModal";
@@ -20,6 +20,8 @@ export function DatasetCard({
 }: DatasetCardProps) {
   const { open, onOpen, onClose } = useDisclosure();
   const effectiveImg = img ?? "/globe.svg";
+  const cardText = dataset.reason || dataset.description;
+
   return (
     <>
       <DatasetInfoModal isOpen={open} onClose={onClose} dataset={dataset} />
@@ -43,22 +45,28 @@ export function DatasetCard({
         src={effectiveImg}
         alt={dataset.dataset_name}
       />
-      <Card.Body display="flex" flexDir="column" gap="1" px={5} py={4}>
-        <Card.Title display="flex" gap="1" alignItems="center" fontSize="sm">
+      <Card.Body display="flex" flexDir="column" px={5} py={4} position="relative">
+        <Card.Title fontSize="sm" pr="6">
           {dataset.dataset_name}
-          <InfoIcon
-            onClick={(e) => {
-              e.stopPropagation(); // prevent card click
-              onOpen();
-            }}
-            cursor="pointer"
-          />
         </Card.Title>
-        {dataset.reason ? (
-          <Card.Description fontSize="xs" color="fg.muted">
-            {dataset.reason}
+        <Box
+          as="button"
+          onClick={(e) => {
+            e.stopPropagation(); // prevent card click
+            onOpen();
+          }}
+          aria-label="Show dataset info"
+          pos="absolute"
+          top="4"
+          right="5"
+        >
+          <InfoIcon cursor="pointer" />
+        </Box>
+        {cardText && (
+          <Card.Description fontSize="xs" color="fg.muted" mt="1">
+            {cardText}
           </Card.Description>
-        ) : null}
+        )}
       </Card.Body>
     </Card.Root>
     </>
