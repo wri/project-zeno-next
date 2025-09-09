@@ -35,16 +35,38 @@ export async function GET() {
         cache: "no-store",
       });
 
-      if (upstream.ok) {
-        const data = await upstream.json();
-        const used = data?.promptsUsed;
-        const quota = data?.promptQuota;
-        promptsUsed = typeof used === "number" ? used : null;
-        promptQuota = typeof quota === "number" ? quota : null;
-        hasProfile = Boolean(data?.hasProfile ?? data?.user?.hasProfile);
+      // Propagate unauthorized (for guards/clients to react)
+      if (upstream.status === 401 || upstream.status === 403) {
+        return NextResponse.json(
+          { isAuthenticated: false, error: "Unauthorized" },
+          { status: 401 }
+        );
       }
-    } catch {
-      // Swallow upstream errors and fall back to nulls
+
+      // For other upstream errors, surface an error payload for toasts
+      if (!upstream.ok) {
+        let text = "Upstream error";
+        try {
+          const bodyText = await upstream.text();
+          text = bodyText || text;
+        } catch {
+          // ignore
+        }
+        return NextResponse.json({ error: text }, { status: upstream.status });
+      }
+
+      // OK path
+      const data = await upstream.json();
+      const used = data?.promptsUsed;
+      const quota = data?.promptQuota;
+      promptsUsed = typeof used === "number" ? used : null;
+      promptQuota = typeof quota === "number" ? quota : null;
+      hasProfile = Boolean(data?.hasProfile ?? data?.user?.hasProfile);
+    } catch (err) {
+      return NextResponse.json(
+        { error: (err as Error)?.message || "Internal error" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
