@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { API_CONFIG } from "@/app/config/api";
+import { showApiError } from "@/app/hooks/useErrorHandler";
 
 interface ThreadEntry {
   agent_id: "UniGuana";
@@ -73,12 +74,23 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
   },
 
   fetchThreads: async () => {
-    const response = await fetch("/api/threads");
+    try {
+      const response = await fetch("/api/threads");
 
-    if (response.ok) {
-      const data: ThreadEntry[] = await response.json();
-      const groupedThreads = computeThreadGroups(data);
-      set({ threadGroups: groupedThreads, threads: data });
+      if (response.ok) {
+        const data: ThreadEntry[] = await response.json();
+        const groupedThreads = computeThreadGroups(data);
+        set({ threadGroups: groupedThreads, threads: data });
+      } else {
+        showApiError("Failed to load threads.", {
+          title: response.status >= 500 ? "Server Error" : "Request Error",
+        });
+      }
+    } catch (error) {
+      console.error("Error loading threads:", error);
+      showApiError("Network error while loading threads.", {
+        title: "Network Error",
+      });
     }
   },
 
