@@ -27,6 +27,21 @@ const PARTNER_ORGS = [
     logo: "/LCL-logo.svg",
     description: "A leading global research initiative for land and carbon monitoring.",
   },
+  {
+    name: "Placeholder 1",
+    logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+1",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+  },
+  {
+    name: "Placeholder 2",
+    logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+2",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+  },
+  {
+    name: "Placeholder 3",
+    logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+3",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+  }
 ];
 
 export default function TrustedPlatformsSection() {
