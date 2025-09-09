@@ -2,7 +2,6 @@
 
 import { Flex, Box, Text, Link as ChLink } from "@chakra-ui/react";
 import Link from "next/link";
-import { Toaster } from "@/app/components/ui/toaster";
 
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
@@ -26,7 +25,6 @@ function ChatPanel() {
         height="100%"
         overflow="auto"
       >
-        <Toaster />
         <Box flex="1" overflowY="auto" height="100%" mx="-4" px="4" pb="8">
           <ChatMessages />
         </Box>
