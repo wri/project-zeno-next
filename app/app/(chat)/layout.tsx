@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Grid } from "@chakra-ui/react";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 import ChatPanel from "@/app/ChatPanel";
@@ -12,6 +12,8 @@ import PageHeader from "@/app/components/PageHeader";
 import WelcomeModal from "@/app/components/WelcomeModal";
 import CookieConsent from "@/app/components/CookieConsent";
 import useCookieConsentStore from "@/app/store/cookieConsentStore";
+import DebugToastsPanel from "@/app/components/DebugToastsPanel";
+import { useSearchParams } from "next/navigation";
 const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
 export default function DashboardLayout({
@@ -32,6 +34,12 @@ export default function DashboardLayout({
       setConsentStatus(true);
     }
   }, [cookieConsent, setConsentStatus]);
+
+
+  const params = useSearchParams();
+  const debugEnabled =
+    process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
+    params.get("debug") === "1";
 
   return (
     <Grid
@@ -59,6 +67,9 @@ export default function DashboardLayout({
           </Box>
         </Grid>
       </Grid>
+      <Suspense fallback={null}>
+        <DebugToastsPanel enabled={debugEnabled} />
+      </Suspense>
       {children}
     </Grid>
   );

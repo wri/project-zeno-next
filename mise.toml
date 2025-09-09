@@ -21,3 +21,8 @@ outputs = ['node_modules/.pnpm/lock.yaml']
 description = 'Calls your dev script in `package.json`'
 run = 'next dev'
 depends = ['pnpm-install']
+
+[tasks.build]
+description = 'Build'
+run = 'next build'
+depends = ['pnpm-install']

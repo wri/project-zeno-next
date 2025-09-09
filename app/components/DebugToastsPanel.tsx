@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Button, Stack, Text } from "@chakra-ui/react";
-import { useSearchParams } from "next/navigation";
 import {
   showApiError,
   showError,
@@ -9,14 +8,11 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import { toaster } from "@/app/components/ui/toaster";
 
-function DebugToastsPanel() {
-  const searchParams = useSearchParams();
-
+function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const envEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true";
-  const queryEnabled = searchParams?.get("debug") === "1";
-  const enabled = envEnabled || queryEnabled;
+  const active = enabled ?? envEnabled;
 
-  if (!enabled) return null;
+  if (!active) return null;
 
   return (
     <Box

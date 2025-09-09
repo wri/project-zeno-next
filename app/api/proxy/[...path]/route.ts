@@ -62,9 +62,9 @@ async function proxyRequest(
  * @param params - The path segments to append to the base URL.
  * @returns The response from the upstream API.
  */
-export async function handler(
+async function handler(
   request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
+  { params }: { params: { path: string[] } }
 ): Promise<NextResponse> {
   try {
     let token = await getAuthToken();
@@ -74,8 +74,7 @@ export async function handler(
     }
 
     const method = request.method.toUpperCase();
-    const resolvedParams = await params;
-    const targetUrl = buildTargetUrl(resolvedParams.path);
+    const targetUrl = buildTargetUrl(params.path);
 
     return await proxyRequest(method, targetUrl, token, request);
   } catch (error) {
