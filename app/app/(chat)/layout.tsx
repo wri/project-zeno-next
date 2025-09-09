@@ -5,7 +5,6 @@ import { Suspense, useEffect } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 import ChatPanel from "@/app/ChatPanel";
-import LoginOverlay from "@/app/components/LoginOverlay";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
@@ -52,7 +51,6 @@ export default function DashboardLayout({
       bg="bg"
     >
       {cookieConsent && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
-      <LoginOverlay />
       <WelcomeModal />
       {GA_ID && <CookieConsent />}
       <UploadAreaDialog />

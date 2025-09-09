@@ -27,7 +27,7 @@ function UploadAreaDialog() {
     isFileSelected,
     setCreateAreaFn,
     addGeoJsonFeature,
-    flyToGeoJson
+    flyToGeoJson,
   } = useMapStore();
   const { addContext } = useContextStore();
 
@@ -109,7 +109,14 @@ function UploadAreaDialog() {
               <Box color="fg.muted" fontSize="xs">
                 <Text>
                   By uploading data you agree to the{" "}
-                  <Link href="/terms">terms of service</Link>.
+                  <Link
+                    href="https://www.wri.org/about/legal/general-terms-use"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    terms of service
+                  </Link>
+                  .
                 </Text>
               </Box>
             </Dialog.Body>
@@ -199,11 +206,7 @@ function DropFileZone() {
           {errorMessage}
         </Text>
       )}
-      <Button
-        variant="solid"
-        size="2xs"
-        colorPalette="primary"
-      >
+      <Button variant="solid" size="2xs" colorPalette="primary">
         Select File
       </Button>
       <VisuallyHidden>
