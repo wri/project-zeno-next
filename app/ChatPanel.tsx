@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Flex, Box, Text, Link as ChLink, AbsoluteCenter } from "@chakra-ui/react";
+import { Flex, Box, Text, Link as ChLink } from "@chakra-ui/react";
 import Link from "next/link";
 
 import ChatInput from "./components/ChatInput";
@@ -20,7 +20,7 @@ function ChatPanel() {
     parseInt(localStorage.getItem("sidebarWidth") ?? `${defaultWidth}`) ||
       defaultWidth
   );
-  let isDragged = useRef(false);
+  const isDragged = useRef(false);
 
   // Function to resize chat panel and store width in localStorage
   useEffect(() => {
