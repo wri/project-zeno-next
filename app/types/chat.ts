@@ -12,7 +12,16 @@ export interface ChatMessage {
 
 // Widget types for insights
 export interface InsightWidget {
-  type: "line" | "bar" | "table" | "dataset-card";
+  type:
+    | "line"
+    | "bar"
+    | "table"
+    | "dataset-card"
+    | "pie"
+    | "stacked-bar"
+    | "grouped-bar"
+    | "area"
+    | "scatter";
   title: string;
   description: string;
   data: unknown;

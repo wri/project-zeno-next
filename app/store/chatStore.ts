@@ -22,6 +22,7 @@ import {
   showError,
   showServiceUnavailableError,
 } from "@/app/hooks/useErrorHandler";
+import useAuthStore from "./authStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -35,7 +36,7 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
-  sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
+  sendMessage: (message: string, queryType?: QueryType) => Promise<{isNew: boolean, id: string}>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
@@ -250,6 +251,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         throw new Error("No response body received");
       }
 
+      // Update prompt usage from response headers (case-insensitive)
+      useAuthStore.getState().setUsageFromHeaders(response.headers);
+
       const reader = response.body.getReader();
 
       await readDataStream({
@@ -347,12 +351,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
-      if (!currentThreadId) {
-        // Change the url using the history API so not to trigger any next
-        // router events.
-        window.history.replaceState(null, "", `/app/threads/${threadId}`);
-      }
+
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      return { isNew: !currentThreadId, id: threadId };
     }
   },
 

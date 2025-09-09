@@ -1,15 +1,13 @@
-import { Box, Text, Heading, Flex, Separator, Button } from "@chakra-ui/react";
+import { Box, Text, Heading, Flex, Separator } from "@chakra-ui/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import ChakraLineChart from "./widgets/ChakraLineChart";
 import ChakraBarChart from "./widgets/ChakraBarChart";
+import ChakraAreaChart from "./widgets/ChakraAreaChart";
+import ChakraScatterChart from "./widgets/ChakraScatterChart";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
-import {
-  CaretDownIcon,
-  DownloadSimpleIcon,
-  InfoIcon,
-} from "@phosphor-icons/react";
 import { WidgetIcons } from "../ChatPanelHeader";
+import ChakraPieChart from "./widgets/ChakraPieChart";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -23,7 +21,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   return (
     <Box
       rounded="md"
-      border="1.5px solid"
+      border="1px solid"
       borderColor="blue.fg"
       overflow="hidden"
     >
@@ -31,39 +29,26 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         px={4}
         py={3}
         gap={2}
-        bgGradient="to-br"
-        gradientFrom="primary.500/15"
-        gradientTo="secondary.500/25"
+        bgGradient="LCLGradientLight"
       >
         {WidgetIcons[widget.type]}
         <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
           {widget.title}
         </Heading>
       </Flex>
-      <Flex gap={5} px={4} py={5} flexDir="column">
-        <Text fontSize="xs" color="gray.600">
+      <Flex gap={3} px={4} py={3} flexDir="column">
+        <Text fontSize="xs" color="fg.muted">
           {widget.description}
         </Text>
         <Separator />
-        {/* Download and Info buttons */}
-        {/* {hasDownload || hasMetaData && <Flex>Buttons here</Flex> }  <== use to conditionally render these action buttons */}
-        <Flex justifyContent="space-between">
-          <Button variant="outline" size="xs">
-            <DownloadSimpleIcon size="14" />
-            Download data
-            <CaretDownIcon size="12" />
-          </Button>
-          <Button variant="outline" size="xs">
-            <InfoIcon size="14" />
-            Learn more about the data
-          </Button>
-        </Flex>
 
-        {widget.type === "bar" && (
+        {(widget.type === "bar" ||
+          widget.type === "stacked-bar" ||
+          widget.type === "grouped-bar") && (
           <ChakraBarChart
             data={widget.data as Array<{ [key: string]: unknown }>}
             xAxis={widget.xAxis}
-            yAxis={widget.yAxis}
+            type={widget.type}
           />
         )}
 
@@ -75,6 +60,14 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           </Box>
         )}
 
+        {widget.type === "pie" && (
+          <ChakraPieChart
+            data={widget.data as Array<{ [key: string]: unknown }>}
+            xAxis={widget.xAxis}
+            yAxis={widget.yAxis}
+          />
+        )}
+
         {widget.type === "line" && (
           <ChakraLineChart
             data={widget.data as Array<{ [key: string]: unknown }>}
@@ -82,26 +75,19 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             yAxis={widget.yAxis}
           />
         )}
-        {/* Cautions section: conditionally rendered if there are cautions, stubbed for now */}
-        <Flex
-          gap={2}
-          border="1px solid"
-          borderColor="secondary.500"
-          p={2}
-          pb={3}
-          rounded="sm"
-          fontSize="xs"
-          css={{ "& > *": { flexShrink: 0 } }}
-        >
-          <InfoIcon
-            fill="var(--chakra-colors-secondary-500)"
-            weight="fill"
-            size="16"
+        {widget.type === "area" && (
+          <ChakraAreaChart
+            data={widget.data as Array<{ [key: string]: unknown }>}
+            xAxis={widget.xAxis}
           />
-          CO2 is absorbed in grassland areas due to soil carbon sequestration
-          and grazing management. Grasslands can also be a source of emissions
-          due to land degradation, overgrazing, fires and droughts.
-        </Flex>
+        )}
+        {widget.type === "scatter" && ( 
+          <ChakraScatterChart
+            data={widget.data as Array<{ [key: string]: unknown }>}
+            xAxis={widget.xAxis}
+            yAxis={widget.yAxis}
+          />
+        ) }
       </Flex>
     </Box>
   );

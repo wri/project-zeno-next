@@ -44,7 +44,7 @@ function ChatPanel() {
                     Log in or sign up for free
                   </ChLink>{" "}
                   to unlock extra daily prompts, or{" "}
-                  <ChLink as={Link} href="#">
+                  <ChLink as={Link} href="/app/classic">
                     continue without AI
                   </ChLink>
                   .
@@ -59,7 +59,7 @@ function ChatPanel() {
                   </strong>
                   <br />
                   Wait until tomorrow for new prompts, or{" "}
-                  <ChLink as={Link} href="#">
+                  <ChLink as={Link} href="/app/classic">
                     continue without AI
                   </ChLink>
                   .

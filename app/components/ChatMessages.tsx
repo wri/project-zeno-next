@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { Box } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
@@ -47,14 +47,13 @@ function ChatMessages() {
         const isConsecutive = previousMessage?.type === message.type;
 
         return (
-          <>
+          <Fragment key={message.id}>
             <MessageBubble
-              key={message.id}
               message={message}
               isConsecutive={isConsecutive}
             />
             {isLoading && index === lastUserMessageIndex && <Reasoning />}
-          </>
+          </Fragment>
         );
       })}
     </Box>

@@ -1,13 +1,64 @@
 "use client";
 
+import { useEffect } from "react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import theme from "@/app/theme";
 import { Toaster } from "@/app/components/ui/toaster";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
+import useAuthStore from "@/app/store/authStore";
 
 const queryClient = new QueryClient();
+
+function AuthBootstrapper() {
+  const { setAuthStatus, setAnonymous, setPromptUsage } = useAuthStore();
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAuth() {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (!res.ok) {
+          throw new Error("unauthorized");
+        }
+
+        const data = await res.json();
+        if (cancelled) {
+          return;
+        }
+
+        const email = data?.user?.email as string | undefined;
+        if (email) {
+          setAuthStatus(email);
+        }
+
+        const used =
+          typeof data?.promptsUsed === "number"
+            ? (data.promptsUsed as number)
+            : null;
+        const quota =
+          typeof data?.promptQuota === "number"
+            ? (data.promptQuota as number)
+            : null;
+
+        if (quota !== null) {
+          setPromptUsage(used || 0, quota);
+        }
+      } catch {
+        if (!cancelled) {
+          setAnonymous();
+        }
+      }
+    }
+    loadAuth();
+    return () => {
+      cancelled = true;
+    };
+  }, [setAuthStatus, setAnonymous, setPromptUsage]);
+
+  return null;
+}
 
 function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -16,6 +67,7 @@ function Providers({ children }: { children: React.ReactNode }) {
         {children}
         <Toaster />
         <DebugToastsPanel />
+        <AuthBootstrapper />
       </ChakraProvider>
     </QueryClientProvider>
   );

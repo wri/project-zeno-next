@@ -247,10 +247,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Forward prompts usage headers from upstream if present
+    const getHeaderCaseInsensitive = (name: string): string | null => {
+      for (const [key, value] of response.headers.entries()) {
+        if (key.toLowerCase() === name.toLowerCase()) return value;
+      }
+      return null;
+    };
+
+    const promptsQuota = getHeaderCaseInsensitive("X-Prompts-Quota");
+    const promptsUsed = getHeaderCaseInsensitive("X-Prompts-Used");
+
     return new NextResponse(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
+        ...(promptsQuota ? { "X-Prompts-Quota": promptsQuota } : {}),
+        ...(promptsUsed ? { "X-Prompts-Used": promptsUsed } : {}),
       },
     });
   } catch (error) {

@@ -10,6 +10,8 @@ import {
 import { CaretRightIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 const FEATURE_TABS = [
   {
     value: "feature-tab-1",
@@ -48,22 +50,24 @@ export default function FeaturesTabsSection() {
             Get answers to your toughest questions about natural landscapes
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch&rsquo;s AI understands your questions in plian
+            Global Nature Watch&rsquo;s AI understands your questions in plain
             language and delivers the most relevant data, satellite imagery and
             insights, formatted to fit your workflow.
           </Text>
-          <Button
-            asChild
-            variant="solid"
-            colorPalette="primary"
-            mt="4"
-            rounded="lg"
-          >
-            <Link href="/app">
-              Launch the Preview
-              <CaretRightIcon weight="bold" />
-            </Link>
-          </Button>
+          {LANDING_PAGE_VERSION !== "closed" && (
+            <Button
+              asChild
+              variant="solid"
+              colorPalette="primary"
+              mt="4"
+              rounded="lg"
+            >
+              <Link href="/app">
+                Launch the Preview
+                <CaretRightIcon weight="bold" />
+              </Link>
+            </Button>
+          )}
         </Container>
         <Container mt="12" maxW="5xl" px={0}>
           <Tabs.Root
