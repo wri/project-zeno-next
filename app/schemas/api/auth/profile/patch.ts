@@ -12,6 +12,8 @@ export const PatchProfileRequestSchema = z.object({
   preferred_language_code: z.string().optional().nullable(),
   gis_expertise_level: z.string().optional().nullable(),
   areas_of_interest: z.string().optional().nullable(),
+  receive_news_emails: z.boolean().optional(),
+  help_test_features: z.boolean().optional(),
   has_profile: z.boolean(),
 });
 
