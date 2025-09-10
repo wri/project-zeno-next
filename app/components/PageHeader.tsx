@@ -1,4 +1,5 @@
 import {
+  Box,
   Flex,
   Heading,
   Button,
@@ -6,12 +7,11 @@ import {
   Badge,
   Menu,
   Portal,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
 import {
   GearSixIcon,
-  HouseSimpleIcon,
-  InfoIcon,
   LifebuoyIcon,
   SignOutIcon,
   UserIcon,
@@ -34,10 +34,18 @@ function PageHeader() {
       color="fg.inverted"
     >
       <Flex gap="2" alignItems="center">
-        <LclLogo width={16} avatarOnly />
-        <Heading as="h1" size="sm" color="fg.inverted">
-          Global Nature Watch
-        </Heading>
+        <ChakraLink
+          as={Link}
+          href="/"
+          display="flex"
+          transition="opacity 0.24s ease"
+          _hover={{ opacity: 0.8 }}
+        >
+          <LclLogo width={16} avatarOnly fill="white" />
+          <Heading as="h1" size="sm" color="fg.inverted">
+            Global Nature Watch
+          </Heading>
+        </ChakraLink>
         <Badge
           colorPalette="primary"
           bg="primary.800"
@@ -82,7 +90,7 @@ function PageHeader() {
           </Progress.Track>
         </Progress.Root>
         {isAuthenticated ? (
-          <Menu.Root>
+          <Menu.Root positioning={{ placement: "bottom-end" }}>
             <Menu.Trigger asChild>
               <Button
                 variant="solid"
@@ -97,28 +105,18 @@ function PageHeader() {
             <Portal>
               <Menu.Positioner>
                 <Menu.Content css={{ "& a": { cursor: "pointer" } }}>
-                  <Menu.Item value="" asChild>
-                    <Link href="/">
-                      <HouseSimpleIcon />
-                      Homepage
-                    </Link>
-                  </Menu.Item>
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />
                       Settings
                     </Link>
                   </Menu.Item>
-                  <Menu.Item value="about" asChild>
-                    <Link href="/about">
-                      <InfoIcon />
-                      About
-                    </Link>
-                  </Menu.Item>
                   <Menu.Separator />
                   <Menu.Item
                     value="logout"
                     cursor="pointer"
+                    color="fg.error"
+                    _hover={{ bg: "bg.error", color: "fg.error" }}
                     onClick={() => clearAuth()}
                   >
                     <SignOutIcon />
