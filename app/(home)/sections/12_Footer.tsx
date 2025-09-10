@@ -7,6 +7,7 @@ import {
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
+import LclLogo from "../../components/LclLogo";
 
 export default function FooterSection() {
   return (
@@ -28,30 +29,11 @@ export default function FooterSection() {
           gap={4}
           flexDir={{ base: "column", md: "row" }}
         >
-          <Heading size={{ base: "3xl", md: "5xl" }} fontWeight="semibold">
-            Global Nature Watch
-          </Heading>
-          <Flex
-            gap="12"
-            alignItems={{ base: "flex-start", md: "center" }}
-            flexWrap="wrap"
-            justifyContent={{ base: "flex-start", md: "center" }}
-          >
-            <ChakraLink href="https://www.wri.org/" target="_blank" rel="noopener noreferrer">
-              <Image src="/WRI-Logo-mono.svg" alt="WRI Logo" height="64px" />
-            </ChakraLink>
-            <ChakraLink href="https://landcarbonlab.org/" target="_blank" rel="noopener noreferrer">
-              <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
-            </ChakraLink>
-            <ChakraLink href="https://www.bezosearthfund.org/" target="_blank" rel="noopener noreferrer">
-              <Image src="/BEF-logo.png" alt="BEF Logo" height="64px" />
-            </ChakraLink>
-            <ChakraLink href="https://www.globalforestwatch.org/" target="_blank" rel="noopener noreferrer">
-              <Image src="/GFW-logo.svg" alt="GFW Logo" height="64px" />
-            </ChakraLink>
-            <ChakraLink href="https://developmentseed.org/" target="_blank" rel="noopener noreferrer">
-              <Image src="/developmentseed-logo-mono.svg" alt="DevSeed Logo" height="64px" />
-            </ChakraLink>
+          <Flex alignItems="center" gap={4}>
+            <LclLogo width={32} avatarOnly />
+            <Text fontSize={{ base: "3xl", md: "5xl" }} fontWeight="semibold" lineHeight="1">
+              Global Nature Watch
+            </Text>
           </Flex>
         </Flex>
         <Flex
