@@ -1,6 +1,12 @@
 "use client";
 
-import { Box, Grid } from "@chakra-ui/react";
+import {
+  Box,
+  Grid,
+  Drawer,
+  Portal,
+  IconButton,
+} from "@chakra-ui/react";
 import { Suspense, useEffect, useState } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
@@ -15,6 +21,8 @@ import useCookieConsentStore from "@/app/store/cookieConsentStore";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
+import { ListIcon } from "@phosphor-icons/react";
+import useSidebarStore from "@/app/store/sidebarStore";
 const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
 export default function DashboardLayout({
@@ -24,6 +32,7 @@ export default function DashboardLayout({
 }) {
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
+  const { toggleSidebar } = useSidebarStore();
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
@@ -90,10 +99,35 @@ export default function DashboardLayout({
           h={`calc(100% - ${sheetHeight}px + 12px)`}
           transition="height 0.05s linear"
         >
+          <Drawer.Root placement="start">
+            <Drawer.Trigger asChild>
+              <IconButton
+                variant="plain"
+                bg="bg"
+                position="absolute"
+                top={3}
+                left={3}
+                rounded="sm"
+                overflow="hidden"
+                zIndex={100}
+                onClick={toggleSidebar}
+              >
+                <ListIcon />
+              </IconButton>
+            </Drawer.Trigger>
+            <Portal>
+              <Drawer.Backdrop backdropFilter="blur(2px)" />
+              <Drawer.Positioner>
+                <Drawer.Content>
+                  <Sidebar />
+                </Drawer.Content>
+              </Drawer.Positioner>
+            </Portal>
+          </Drawer.Root>
           <Box
             position="absolute"
-            top={4}
-            left={4}
+            top={3}
+            left={"3.75rem"}
             rounded="sm"
             overflow="hidden"
             zIndex={100}

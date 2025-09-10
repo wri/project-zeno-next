@@ -11,11 +11,11 @@ function PageHeader() {
     <Flex
       alignItems="center"
       justifyContent="space-between"
-      px="5"
+      px={{ base: 3, md: 5 }}
       py="2"
-      h="12"
+      h={{ base: 10, md: 12 }}
       bg="primary.solid"
-      color="fg.inverted"      
+      color="fg.inverted"
     >
       <Flex gap="2" alignItems="center">
         <LclLogo width={16} avatarOnly />

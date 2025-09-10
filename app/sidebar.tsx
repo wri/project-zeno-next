@@ -15,10 +15,7 @@ import {
 import Link from "next/link";
 
 import { Tooltip } from "./components/ui/tooltip";
-import {
-  NotePencilIcon,
-  SidebarSimpleIcon
-} from "@phosphor-icons/react";
+import { NotePencilIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
@@ -92,7 +89,10 @@ function ThreadSection({
                 borderRadius="sm"
                 role="group"
                 _hover={{ layerStyle: "fill.muted" }}
-                _focusWithin={{ outline: "2px solid var(--chakra-colors-gray-400)", outlineOffset: "2px" }}
+                _focusWithin={{
+                  outline: "2px solid var(--chakra-colors-gray-400)",
+                  outlineOffset: "2px",
+                }}
                 css={{
                   "&:hover .thread-actions": { opacity: 1 },
                   "&:focus-within .thread-actions": { opacity: 1 },
@@ -140,7 +140,7 @@ export function Sidebar() {
     <Flex
       flexDir="column"
       bg="bg.subtle"
-      w={!sideBarVisible ? "0px" : "16rem"}
+      w={{ base: "full", md: !sideBarVisible ? "0px" : "16rem" }}
       h="100%"
       gridArea="sidebar"
       overflow="hidden"
@@ -151,8 +151,9 @@ export function Sidebar() {
     >
       <Flex
         px="3"
-        py="2"
-        h="14"
+        py={2}
+        pt={{ base: 4, md: 2}}
+        h={{ base: "auto", md: 14}}
         justify="space-between"
         alignItems="center"
         position="sticky"
@@ -160,7 +161,7 @@ export function Sidebar() {
         bg="bg.subtle"
         boxShadow="xs"
       >
-        <Button asChild variant="solid" colorPalette="primary" size="sm">
+        <Button asChild variant="outline" colorPalette="primary" size="sm" w={{ base: "full", md: "auto" }}>
           <Link href="/app" aria-label="New conversation">
             New Conversation
             <NotePencilIcon />
@@ -171,7 +172,12 @@ export function Sidebar() {
           positioning={{ placement: "right" }}
           showArrow
         >
-          <IconButton variant="ghost" size="sm" onClick={toggleSidebar}>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+            hideBelow="md"
+          >
             <SidebarSimpleIcon />
           </IconButton>
         </Tooltip>
