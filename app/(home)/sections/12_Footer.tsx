@@ -2,8 +2,6 @@ import {
   Box,
   Container,
   Flex,
-  Heading,
-  Image,
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
