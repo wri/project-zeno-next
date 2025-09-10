@@ -1,6 +1,7 @@
 import { Flex, Heading, Button, Progress, Badge } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
 import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
+import Link from "next/link";
 import useAuthStore from "../store/authStore";
 
 function PageHeader() {
@@ -32,15 +33,17 @@ function PageHeader() {
         </Badge>
       </Flex>
       <Flex gap="6" alignItems="center">
-        <Button
-          variant="solid"
-          colorPalette="primary"
-          _hover={{ bg: "primary.fg" }}
-          size="sm"
-        >
-          <LifebuoyIcon />
-          Help
-        </Button>
+        <Link href="https://help.globalnaturewatch.org/" target="_blank">
+          <Button
+            variant="solid"
+            colorPalette="primary"
+            _hover={{ bg: "primary.fg" }}
+            size="sm"
+          >
+            <LifebuoyIcon />
+            Help
+          </Button>
+        </Link>
 
         <Progress.Root
           size="xs"

@@ -114,9 +114,10 @@ type LayerCardItem = {
   dataset_name: string;
   context_layer: string | null;
   img?: string;
-  reason: string;
+  description: string;
   tile_url: string;
   selected?: boolean;
+  reason?: string;
 };
 
 function LayerCardList({
@@ -131,8 +132,7 @@ function LayerCardList({
       {cards.map((card) => (
         <DatasetCard
           key={card.dataset_name}
-          title={card.dataset_name}
-          description={card.reason}
+          dataset={card}
           img={card.img ?? "/globe.svg"}
           selected={card.selected}
           onClick={onCardClick ? () => onCardClick(card) : undefined}
@@ -269,7 +269,7 @@ export function LayerMenu() {
   };
 
   return (
-    <Stack bg="bg.subtle" pt={3} minW={0} w='100%'>
+    <Stack bg="bg.subtle" pt={3} minW={0} w="100%">
       <Box px={4}>
         <InputGroup endElement={<MagnifyingGlassIcon />}>
           <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />

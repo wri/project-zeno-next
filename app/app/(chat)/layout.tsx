@@ -56,7 +56,7 @@ export default function DashboardLayout({
       <UploadAreaDialog />
       <PageHeader />
       <Grid
-        templateColumns="auto 36rem 1fr"
+        templateColumns="auto min-content 1fr"
         templateAreas="'sidebar chat map'"
         templateRows="1fr"
         maxH="calc(100vh - 3rem)"
