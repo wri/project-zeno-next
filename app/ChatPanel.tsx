@@ -16,13 +16,16 @@ function ChatPanel() {
   const { usedPrompts, totalPrompts, isAnonymous } = useAuthStore();
 
   const promptsExhausted = usedPrompts >= totalPrompts;
-  const [width, setWidth] = useState(
-    parseInt(localStorage.getItem("sidebarWidth") ?? `${defaultWidth}`) ||
-      defaultWidth
-  );
+  const [width, setWidth] = useState(defaultWidth);
   const isDragged = useRef(false);
 
   // Function to resize chat panel and store width in localStorage
+  useEffect(() => {
+    if (localStorage.getItem("sidebarWidth")) {
+      setWidth(Number(localStorage.getItem("sidebarWidth")));
+    }
+  }, []);
+
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!isDragged.current) {
@@ -44,7 +47,7 @@ function ChatPanel() {
     };
 
     window.addEventListener("mouseup", onMouseUp);
-    
+
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
@@ -135,16 +138,16 @@ function ChatPanel() {
         transition="background 0.16s ease"
         _hover={{
           bg: "primary.500/50",
-          cursor: "col-resize"
+          cursor: "col-resize",
         }}
         _active={{
           bg: "primary.500/50",
-          cursor: "col-resize"
+          cursor: "col-resize",
         }}
         onMouseDown={() => {
           isDragged.current = true;
         }}
-       />
+      />
     </Flex>
   );
 }
