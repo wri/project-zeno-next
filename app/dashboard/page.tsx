@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -12,7 +13,6 @@ import {
   GridItem,
   Portal,
   Input,
-  Textarea,
   Field,
   Separator,
   createListCollection,
@@ -30,43 +30,205 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import LclLogo from "../components/LclLogo";
+import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
+import { toaster } from "@/app/components/ui/toaster";
 
-const sectors = createListCollection({
-  items: [
-    { label: "Tech", value: "tech" },
-    { label: "Healthcare", value: "healthcare" },
-    { label: "Finance", value: "finance" },
-  ],
-});
-const roles = createListCollection({
-  items: [
-    { label: "Developer", value: "Developer" },
-    { label: "Designer", value: "Designer" },
-    { label: "Manager", value: "Manager" },
-  ],
-});
-const expertises = createListCollection({
-  items: [
-    { label: "Beginner", value: "Beginner" },
-    { label: "Intermediate", value: "Intermediate" },
-    { label: "Expert", value: "Expert" },
-  ],
-});
-const countries = createListCollection({
-  items: [
-    { label: "USA", value: "USA" },
-    { label: "UK", value: "UK" },
-    { label: "Spain", value: "Spain" },
-    { label: "India", value: "India" },
-    { label: "Portugal", value: "Portugal" },
-    { label: "Brazil", value: "Brazil" },
-    { label: "Canada", value: "Canada" },
-    { label: "Switzerland", value: "Switzerland" },
-    { label: "France", value: "France" },
-    { label: "Lebanon", value: "Lebanon" },
-  ],
-});
+type ProfileConfig = {
+  sectors: Record<string, string>;
+  sector_roles: Record<string, Record<string, string>>;
+  countries: Record<string, string>;
+  languages: Record<string, string>;
+  gis_expertise_levels: Record<string, string>;
+  topics?: Record<string, string>;
+};
+
+type ProfileFormState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  sector: string;
+  role: string;
+  jobTitle: string;
+  company: string;
+  country: string;
+  expertise: string;
+  topics: string[];
+  receiveNewsEmails: boolean;
+  helpTestFeatures: boolean;
+};
+
+type ValueChangeDetails = { value: string[] };
 export default function UserSettingsPage() {
+  const [config, setConfig] = useState<ProfileConfig | null>(null);
+  const [form, setForm] = useState<ProfileFormState>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    sector: "",
+    role: "",
+    jobTitle: "",
+    company: "",
+    country: "",
+    expertise: "",
+    topics: [],
+    receiveNewsEmails: false,
+    helpTestFeatures: false,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [promptUsage, setPromptUsage] = useState<{
+    used: number;
+    quota: number;
+  }>({ used: 0, quota: 100 });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [meRes, cfgRes] = await Promise.all([
+          fetch("/api/proxy/auth/me", { cache: "no-store" }),
+          fetch("/api/proxy/profile/config", { cache: "no-store" }),
+        ]);
+        if (cfgRes.ok) {
+          const cfg: ProfileConfig = await cfgRes.json();
+          setConfig(cfg);
+        }
+        if (meRes.ok) {
+          const data = await meRes.json();
+          const user = data;
+          console.log("user", user);
+          setForm((p) => ({
+            ...p,
+            firstName: user?.firstName ?? p.firstName,
+            lastName: user?.lastName ?? p.lastName,
+            email: user?.email ?? p.email,
+            sector: user?.sectorCode ?? p.sector,
+            role: user?.roleCode ?? p.role,
+            jobTitle: user?.jobTitle ?? p.jobTitle,
+            company: user?.companyOrganization ?? p.company,
+            country: user?.countryCode ?? p.country,
+            expertise: user?.gisExpertiseLevel ?? p.expertise,
+            topics: Array.isArray(user?.topics) ? user.topics : p.topics,
+            receiveNewsEmails: Boolean(
+              user?.receiveNewsEmails ?? p.receiveNewsEmails
+            ),
+            helpTestFeatures: Boolean(
+              user?.helpTestFeatures ?? p.helpTestFeatures
+            ),
+          }));
+
+          const used =
+            typeof user?.promptsUsed === "number" ? user.promptsUsed : 0;
+          const quotaRaw =
+            typeof user?.promptQuota === "number" ? user.promptQuota : 0;
+          const quota = quotaRaw > 0 ? quotaRaw : 100;
+          setPromptUsage({ used: Math.max(0, Math.min(used, quota)), quota });
+        }
+      } catch {
+        // ignore
+      }
+    };
+    load();
+  }, []);
+
+  const sectors = useMemo(() => {
+    const items = config
+      ? Object.entries(config.sectors).map(([value, label]) => ({
+          label,
+          value,
+        }))
+      : [];
+    return createListCollection({ items });
+  }, [config]);
+
+  const roles = useMemo(() => {
+    const roleMap = config?.sector_roles?.[form.sector] || {};
+    const items = Object.entries(roleMap).map(([value, label]) => ({
+      label,
+      value,
+    }));
+    return createListCollection({ items });
+  }, [config, form.sector]);
+
+  // Clear role if not valid for current sector
+  useEffect(() => {
+    const valid = roles.items.some((i) => i.value === form.role);
+    if (!valid && form.role) {
+      setForm((p) => ({ ...p, role: "" }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roles]);
+
+  const expertises = useMemo(() => {
+    const items = config
+      ? Object.entries(config.gis_expertise_levels).map(([value, label]) => ({
+          label,
+          value,
+        }))
+      : [];
+    return createListCollection({ items });
+  }, [config]);
+
+  const countries = useMemo(() => {
+    const items = config
+      ? Object.entries(config.countries).map(([value, label]) => ({
+          label,
+          value,
+        }))
+      : [];
+    return createListCollection({ items });
+  }, [config]);
+
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const payload = PatchProfileRequestSchema.parse({
+        first_name: form.firstName,
+        last_name: form.lastName,
+        profile_description: undefined,
+        sector_code: form.sector || null,
+        role_code: form.role || null,
+        job_title: form.jobTitle || null,
+        company_organization: form.company || null,
+        country_code: form.country || null,
+        preferred_language_code: null,
+        gis_expertise_level: form.expertise || null,
+        // Only send when there are selections; omit the key to avoid clearing inadvertently
+        topics:
+          Array.isArray(form.topics) && form.topics.length
+            ? form.topics
+            : undefined,
+        receive_news_emails: form.receiveNewsEmails,
+        help_test_features: form.helpTestFeatures,
+        has_profile: true,
+      });
+
+      const res = await fetch(`/api/proxy/auth/profile`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to save profile");
+      }
+      toaster.create({
+        title: "Profile saved",
+        description: "Your changes have been saved successfully.",
+        type: "success",
+        duration: 3000,
+      });
+    } catch (err) {
+      console.error(err);
+      toaster.create({
+        title: "Save failed",
+        description: (err as Error)?.message || "Unable to save profile.",
+        type: "error",
+        duration: 4000,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Box
       display="grid"
@@ -123,8 +285,8 @@ export default function UserSettingsPage() {
           <Progress.Root
             size="xs"
             min={0}
-            max={100}
-            value={40}
+            max={promptUsage.quota}
+            value={promptUsage.used}
             minW="6rem"
             rounded="full"
             colorPalette="primary"
@@ -135,7 +297,7 @@ export default function UserSettingsPage() {
               fontWeight="normal"
               color="fg.subtle"
             >
-              40/100
+              {promptUsage.used}/{promptUsage.quota}
             </Progress.Label>
             <Progress.Track>
               <Progress.Range />
@@ -150,7 +312,7 @@ export default function UserSettingsPage() {
           justifyContent="flex-start"
         >
           <UserIcon />
-          <Text mr="auto">Username</Text>
+          <Text mr="auto">{form.email || "User"}</Text>
           <SignOutIcon />
         </Button>
       </Flex>
@@ -169,7 +331,14 @@ export default function UserSettingsPage() {
                 User Settings
               </Heading>
             </Flex>
-            <Button colorPalette="primary" mt={{ base: 4, md: 0 }} size="sm">
+            <Button
+              colorPalette="primary"
+              mt={{ base: 4, md: 0 }}
+              size="sm"
+              onClick={handleSave}
+              loading={isSaving}
+              disabled={isSaving}
+            >
               <FloppyDiskIcon />
               Save changes
             </Button>
@@ -181,7 +350,13 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="first-name">
                 <Field.Label>First name</Field.Label>
-                <Input type="text" defaultValue="Alyssa" />
+                <Input
+                  type="text"
+                  value={form.firstName}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, firstName: e.target.value }))
+                  }
+                />
               </Field.Root>
             </GridItem>
 
@@ -189,7 +364,13 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="last-name">
                 <Field.Label>Last name</Field.Label>
-                <Input type="text" defaultValue="Barrett" />
+                <Input
+                  type="text"
+                  value={form.lastName}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, lastName: e.target.value }))
+                  }
+                />
               </Field.Root>
             </GridItem>
 
@@ -197,17 +378,8 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="email">
                 <Field.Label>Email address</Field.Label>
-                <Input type="email" defaultValue="alyssa.barrett@wri.org" />
+                <Input type="email" value={form.email} readOnly />
               </Field.Root>
-            </GridItem>
-
-            {/* Newsletter Subscription */}
-            <GridItem>
-              <Checkbox.Root>
-                <Checkbox.HiddenInput />
-                <Checkbox.Control />
-                <Checkbox.Label>Subscribe to our newsletter</Checkbox.Label>
-              </Checkbox.Root>
             </GridItem>
           </Grid>
 
@@ -221,7 +393,15 @@ export default function UserSettingsPage() {
             {/* Sector */}
             <GridItem>
               <Field.Root id="sector">
-                <Select.Root collection={sectors} size="sm" width="320px">
+                <Select.Root
+                  collection={sectors}
+                  size="sm"
+                  width="320px"
+                  value={form.sector ? [form.sector] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, sector: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>Sector</Select.Label>
                   <Select.Control>
@@ -251,7 +431,16 @@ export default function UserSettingsPage() {
             {/* Role */}
             <GridItem>
               <Field.Root id="role">
-                <Select.Root collection={roles} size="sm" width="320px">
+                <Select.Root
+                  collection={roles}
+                  size="sm"
+                  width="320px"
+                  disabled={!form.sector}
+                  value={form.role ? [form.role] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, role: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>Role</Select.Label>
                   <Select.Control>
@@ -282,7 +471,13 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="job-title">
                 <Field.Label>Job title</Field.Label>
-                <Input type="text" />
+                <Input
+                  type="text"
+                  value={form.jobTitle}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, jobTitle: e.target.value }))
+                  }
+                />
               </Field.Root>
             </GridItem>
 
@@ -290,14 +485,28 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="company">
                 <Field.Label>Company / Organization</Field.Label>
-                <Input type="text" />
+                <Input
+                  type="text"
+                  value={form.company}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, company: e.target.value }))
+                  }
+                />
               </Field.Root>
             </GridItem>
 
             {/* Country */}
             <GridItem>
               <Field.Root id="country">
-                <Select.Root collection={countries} size="sm" width="320px">
+                <Select.Root
+                  collection={countries}
+                  size="sm"
+                  width="320px"
+                  value={form.country ? [form.country] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, country: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>Country</Select.Label>
                   <Select.Control>
@@ -327,7 +536,15 @@ export default function UserSettingsPage() {
             {/* Level of technical expertise */}
             <GridItem>
               <Field.Root id="expertise">
-                <Select.Root collection={expertises} size="sm" width="320px">
+                <Select.Root
+                  collection={expertises}
+                  size="sm"
+                  width="320px"
+                  value={form.expertise ? [form.expertise] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, expertise: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>Level of technical expertise</Select.Label>
                   <Select.Control>
@@ -354,14 +571,74 @@ export default function UserSettingsPage() {
               </Field.Root>
             </GridItem>
 
-            {/* Areas of Interest */}
+            {/* Topics (from profile) */}
             <GridItem colSpan={{ base: 1, md: 2 }}>
-              <Field.Root id="interests">
+              <Field.Root id="topics">
                 <Field.Label>
                   What area(s) are you most interested in?
                 </Field.Label>
-                <Textarea placeholder="Enter your interests here..." rows={4} />
+                <Flex gap={2} flexWrap="wrap" pt={2}>
+                  {Object.entries(config?.topics || {}).map(([code, label]) => {
+                    const selected = form.topics.includes(code);
+                    return (
+                      <Button
+                        key={code}
+                        size="xs"
+                        h={6}
+                        borderRadius="full"
+                        colorPalette={selected ? "primary" : undefined}
+                        variant={selected ? undefined : "outline"}
+                        onClick={() =>
+                          setForm((p) => ({
+                            ...p,
+                            topics: selected
+                              ? p.topics.filter((i) => i !== code)
+                              : [...p.topics, code],
+                          }))
+                        }
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })}
+                </Flex>
               </Field.Root>
+            </GridItem>
+            {/* Opt-in Checkboxes */}
+            <GridItem colSpan={{ base: 1, md: 2 }}>
+              <Flex direction="column" gap={2} pt={2}>
+                <Checkbox.Root
+                  checked={form.receiveNewsEmails}
+                  onCheckedChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      receiveNewsEmails: Boolean(e.checked),
+                    }))
+                  }
+                >
+                  <Checkbox.HiddenInput />
+                  <Checkbox.Control />
+                  <Checkbox.Label>
+                    Send me news, resources, and opportunities from Land &
+                    Carbon Lab.
+                  </Checkbox.Label>
+                </Checkbox.Root>
+                <Checkbox.Root
+                  checked={form.helpTestFeatures}
+                  onCheckedChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      helpTestFeatures: Boolean(e.checked),
+                    }))
+                  }
+                >
+                  <Checkbox.HiddenInput />
+                  <Checkbox.Control />
+                  <Checkbox.Label>
+                    Contact me about testing new features.
+                  </Checkbox.Label>
+                </Checkbox.Root>
+              </Flex>
             </GridItem>
           </Grid>
         </Container>
