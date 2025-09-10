@@ -191,11 +191,10 @@ export default function FutureOfMonitoringSection() {
                 Intelligent tools
               </Heading>
               <Text fontSize="lg" mb="4">
-                The new era of AI brings with it a requirement for intelligent
-                tools that help you find and predict insights from an abundance
-                of data. Nature Watch allows you to gain insights in a way that
-                is natural and convenient for you. Insights in your language, on
-                any of your devices, whenever you need it.
+              The new era of AI requires tools that make data approachable and useful.
+              Global Nature Watch has access to a variety of tools targeted at
+              specific jobs, ranging from high-resolution site-level monitoring
+              to large-scale reporting.
               </Text>
               <ChakraLink
                 fontSize="lg"
