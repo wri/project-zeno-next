@@ -252,18 +252,18 @@ export default function UserSettingsPage() {
           orientation="vertical"
           alignItems="stretch"
         >
-          <Button asChild>
+          {/* <Button asChild>
             <Link href="#">
               <ChatsIcon />
               Conversations
             </Link>
-          </Button>
-          <Button asChild>
+          </Button> */}
+          {/* <Button asChild>
             <Link href="#">
               <ShapesIcon />
               Templates
             </Link>
-          </Button>
+          </Button> */}
           <Button asChild bg="white">
             <Link href="#">
               {" "}
