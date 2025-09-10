@@ -8,7 +8,7 @@ export type OnboardingFieldKey =
   | "company"
   | "country"
   | "expertise"
-  | "interests"
+  | "topics"
   | "receiveNewsEmails"
   | "helpTestFeatures"
   | "termsAccepted";
@@ -23,7 +23,7 @@ const ALL_FIELD_KEYS: readonly OnboardingFieldKey[] = [
   "company",
   "country",
   "expertise",
-  "interests",
+  "topics",
   "receiveNewsEmails",
   "helpTestFeatures",
   "termsAccepted",

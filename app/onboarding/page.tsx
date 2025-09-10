@@ -30,16 +30,8 @@ type ProfileConfig = {
   countries: Record<string, string>;
   languages: Record<string, string>;
   gis_expertise_levels: Record<string, string>;
+  topics?: Record<string, string>;
 };
-
-const INTEREST_OPTIONS = [
-  "Restoring Degraded Landscapes",
-  "Combating Deforestation",
-  "Responsible Supply Chains",
-  "Strengthening Indigenous & Local Communities Land Rights",
-  "Improving Agricultural Land Use & Food Systems",
-  "Protecting Natural Ecosystems",
-] as const;
 
 type ProfileFormState = {
   firstName: string;
@@ -51,7 +43,7 @@ type ProfileFormState = {
   company: string;
   country: string;
   expertise: string;
-  interests: string[];
+  topics: string[]; // holds selected topic codes
   receiveNewsEmails: boolean;
   helpTestFeatures: boolean;
   termsAccepted: boolean;
@@ -73,7 +65,7 @@ export default function OnboardingPage() {
     company: "",
     country: "",
     expertise: "",
-    interests: [],
+    topics: [],
     receiveNewsEmails: false,
     helpTestFeatures: false,
     termsAccepted: false,
@@ -176,10 +168,10 @@ export default function OnboardingPage() {
         country_code: validated.country || null,
         preferred_language_code: null,
         gis_expertise_level: validated.expertise || null,
-        areas_of_interest:
-          Array.isArray(validated.interests) && validated.interests.length
-            ? validated.interests.join(", ")
-            : null,
+        topics:
+          Array.isArray(validated.topics) && validated.topics.length
+            ? validated.topics
+            : [],
         receive_news_emails: form.receiveNewsEmails,
         help_test_features: form.helpTestFeatures,
         has_profile: true,
@@ -481,21 +473,21 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem colSpan={{ base: 1, md: 2 }}>
-              <Field.Root id="interests" required={fieldRequired("interests")}>
+              <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
                   What area(s) are you most interested in?
-                  {fieldRequired("interests") && (
+                  {fieldRequired("topics") && (
                     <Text as="span" color="red.500" ml={1}>
                       *
                     </Text>
                   )}
                 </Field.Label>
                 <Flex gap={2} flexWrap="wrap" pt={2}>
-                  {INTEREST_OPTIONS.map((label) => {
-                    const selected = form.interests.includes(label);
+                  {Object.entries(config?.topics || {}).map(([code, label]) => {
+                    const selected = form.topics.includes(code);
                     return (
                       <Button
-                        key={label}
+                        key={code}
                         size="xs"
                         h={6}
                         borderRadius="full"
@@ -504,9 +496,9 @@ export default function OnboardingPage() {
                         onClick={() =>
                           setForm((p) => ({
                             ...p,
-                            interests: selected
-                              ? p.interests.filter((i) => i !== label)
-                              : [...p.interests, label],
+                            topics: selected
+                              ? p.topics.filter((i) => i !== code)
+                              : [...p.topics, code],
                           }))
                         }
                       >

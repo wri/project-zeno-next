@@ -36,9 +36,7 @@ export const getOnboardingFormSchema = () => {
     company: str("company"),
     country: str("country"),
     expertise: str("expertise"),
-    interests: req.has("interests")
-      ? requiredStringArray()
-      : optionalStringArray(),
+    topics: req.has("topics") ? requiredStringArray() : optionalStringArray(),
     receiveNewsEmails: z.boolean().optional(),
     helpTestFeatures: z.boolean().optional(),
     termsAccepted: req.has("termsAccepted")
