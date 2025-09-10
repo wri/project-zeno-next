@@ -36,7 +36,10 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
-  sendMessage: (message: string, queryType?: QueryType) => Promise<{isNew: boolean, id: string}>;
+  sendMessage: (
+    message: string,
+    queryType?: QueryType
+  ) => Promise<{ isNew: boolean; id: string }>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
@@ -70,6 +73,7 @@ async function processStreamMessage(
   addMessage: (message: Omit<ChatMessage, "id">) => void,
   addToolStep: (toolName: string) => void
 ) {
+  console.log("processStreamMessage", streamMessage);
   if (streamMessage.type === "error") {
     // Handle timeout errors specifically
     if (streamMessage.name === "timeout") {
@@ -110,19 +114,31 @@ async function processStreamMessage(
 
     // Special handling for generate_insights tool
     if (streamMessage.name === "generate_insights" && streamMessage.insights) {
-      return generateInsightsTool(streamMessage, addMessage);
+      // Non-blocking: do not await tool side-effects
+      void Promise.resolve().then(() =>
+        generateInsightsTool(streamMessage, addMessage)
+      );
+      return;
     }
-    // Special handling for pick-aoi tool (previously location-tool)
-    else if (streamMessage.name === "pick-aoi" && streamMessage.aoi) {
-      return await pickAoiTool(streamMessage, addMessage);
+    // Special handling for pick_aoi tool (previously location-tool)
+    else if (streamMessage.name === "pick_aoi" && streamMessage.aoi) {
+      // Non-blocking: geometry fetch can be slow; don't stall stream
+      void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
+      return;
     }
-    // Handling for pick-dataset tool
-    else if (streamMessage.name === "pick-dataset") {
-      return pickDatasetTool(streamMessage, addMessage);
+    // Handling for pick_dataset tool
+    else if (streamMessage.name === "pick_dataset") {
+      void Promise.resolve().then(() =>
+        pickDatasetTool(streamMessage, addMessage)
+      );
+      return;
     }
-    // Handling for pull-data tool
-    else if (streamMessage.name === "pull-data") {
-      return pullDataTool(streamMessage, addMessage);
+    // Handling for pull_data tool
+    else if (streamMessage.name === "pull_data") {
+      void Promise.resolve().then(() =>
+        pullDataTool(streamMessage, addMessage)
+      );
+      return;
     }
   }
 }

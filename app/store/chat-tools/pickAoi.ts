@@ -49,7 +49,7 @@ export async function pickAoiTool(
       });
     }
   } catch (error) {
-    console.error("Error processing pick-aoi artifact:", error);
+    console.error("Error processing pick_aoi artifact:", error);
 
     addMessage({
       type: "error",
