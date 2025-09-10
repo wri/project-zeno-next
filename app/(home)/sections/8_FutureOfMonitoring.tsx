@@ -302,7 +302,7 @@ export default function FutureOfMonitoringSection() {
                 Integrative technology (coming soon)
               </Heading>
               <Text fontSize="lg" mb="4">
-               We believe the future of monitoring is open, extensible, and integrative.
+               We believe the future of monitoring is open, extensible and integrative.
                 That&apos;s why Global Nature Watch will be able to connect with your
                 own systems, extending the power of your data.
               </Text>
