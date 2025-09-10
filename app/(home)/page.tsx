@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { usePromptStore } from "@/app/store/promptStore";
 import LandingHero from "./sections/1_Hero";
 import PromptMarquee from "./sections/2_PromptMarquee";
-import TrustedPlatformsSection from "./sections/3_TrustedPlatforms";
 import FeaturesTabsSection from "./sections/4_FeaturesTabs";
 import SupportWorkTabsSection from "./sections/5_SupportWorkTabs";
 import HowItWorksSection from "./sections/6_HowItWorks";
