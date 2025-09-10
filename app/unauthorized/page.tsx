@@ -1,30 +1,18 @@
 "use client";
 
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  Container,
-  Flex,
-  Heading,
-  Text,
-} from "@chakra-ui/react";
+import { Box, Button, Container, Flex, Heading, Text } from "@chakra-ui/react";
 
 import Link from "next/link";
 
-const WAITLIST_URL = process.env.NEXT_PUBLIC_WAITLIST_URL || "/";
-
-import GlobalHeader from "../components/GlobalHeader";
-
 export default function UnauthorizedPage() {
   return (
-    <Box>
+    <Box bg="hsla(225, 52%, 11%, 1)">
       <Box
         width="100%"
         height="100%"
-        bg="#0D1429"
+        bg="#1d358d"
         position="absolute"
-        top={0}
+        top={20}
         zIndex="0"
         pointerEvents="none"
         css={{
@@ -40,6 +28,25 @@ export default function UnauthorizedPage() {
           <source src={"/landing-hero-bg.mp4"} type="video/mp4" />
         </video>
       </Box>
+      <Container
+        textAlign="center"
+        maxW="lg"
+        color="fg.inverted"
+        py={10}
+        display="flex"
+        flexDirection="column"
+        gap="4"
+      >
+        <Heading
+          size={{ base: "2xl", md: "4xl" }}
+          textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
+          color="fg.inverted"
+          mb={0}
+          letterSpacing={-2.5}
+        >
+          Global Nature Watch
+        </Heading>
+      </Container>
       <Box
         pt={{ base: 14, md: 24 }}
         pb={{ base: 24, md: 32 }}
