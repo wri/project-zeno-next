@@ -42,7 +42,6 @@ export default function LandingPage() {
         promptIndex={promptIndex}
         setPromptIndex={setPromptIndex}
       />
-      <TrustedPlatformsSection />
       <FeaturesTabsSection />
       <SupportWorkTabsSection />
       <HowItWorksSection />
