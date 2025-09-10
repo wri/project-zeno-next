@@ -127,6 +127,13 @@ export default function OnboardingPage() {
     return createListCollection({ items });
   }, [config, form.sector]);
 
+  // Clear role if current selection is not valid for the chosen sector
+  useEffect(() => {
+    const validValues = roles.items.map((i) => i.value);
+    setForm((p) => (validValues.includes(p.role) ? p : { ...p, role: "" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roles]);
+
   const expertises = useMemo(() => {
     const items = config
       ? Object.entries(config.gis_expertise_levels).map(([value, label]) => ({
@@ -313,7 +320,12 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="role" required={fieldRequired("role")}>
-                <Select.Root collection={roles} size="sm" width="320px">
+                <Select.Root
+                  collection={roles}
+                  size="sm"
+                  width="320px"
+                  disabled={!form.sector}
+                >
                   <Select.HiddenSelect />
                   <Select.Label>
                     Role
