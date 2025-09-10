@@ -20,11 +20,9 @@ import {
   Container,
 } from "@chakra-ui/react";
 import {
-  ChatsIcon,
   FloppyDiskIcon,
   GearIcon,
   LifebuoyIcon,
-  ShapesIcon,
   SignOutIcon,
   UserIcon,
 } from "@phosphor-icons/react";
