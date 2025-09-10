@@ -20,6 +20,22 @@ import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 const POSTS = [
   {
     title:
+      "New Global Data Provides the Best View Yet of Vegetation Height Outside of Forests",
+    date: "September 5, 2025",
+    image:
+      "https://www.datocms-assets.com/135908/1756848110-paramo_colombia_3.jpeg?auto=compress,format,enhance",
+    url: "https://landcarbonlab.org/insights/global-short-vegetation-height-outside-forest/",
+  },
+  {
+    title:
+      "Tracking the Health of Earth’s Ecosystems with New Global Productivity Data",
+    date: "August 21, 2025",
+    image:
+      "https://www.datocms-assets.com/135908/1755789098-screenshot-2025-08-21-105942.png?auto=compress,format,enhance",
+    url: "https://landcarbonlab.org/insights/global-productivity-data-ecosystem-health/",
+  },
+  {
+    title:
       "How UNESCO is Using Emissions Data to Help Safeguard World Heritage Forest Carbon Sinks",
     date: "July 8, 2025",
     image:
@@ -49,7 +65,7 @@ const POSTS = [
     image:
       "https://www.datocms-assets.com/135908/1743777114-greenfleet-australia_flickr.jpg?auto=compress,format,enhance",
     url: "https://landcarbonlab.org/insights/protecting-secondary-forests-climate-solution/",
-  },
+  }
 ];
 
 export default function LatestUpdatesSection() {
