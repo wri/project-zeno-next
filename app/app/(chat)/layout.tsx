@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Grid } from "@chakra-ui/react";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 import ChatPanel from "@/app/ChatPanel";
@@ -14,6 +14,7 @@ import CookieConsent from "@/app/components/CookieConsent";
 import useCookieConsentStore from "@/app/store/cookieConsentStore";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { useSearchParams } from "next/navigation";
+import DraggableBottomSheet from "@/app/components/BottomSheet";
 const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
 export default function DashboardLayout({
@@ -22,6 +23,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
+  const [sheetHeight, setSheetHeight] = useState(400);
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
@@ -47,19 +49,23 @@ export default function DashboardLayout({
     <Grid
       maxH="100vh"
       h="100vh"
-      templateRows="min-content minmax(0px, 1fr)"
+      templateRows={{ base: "1fr", md: "min-content minmax(0px, 1fr)" }}
       bg="bg"
     >
       {cookieConsent && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
       <WelcomeModal />
       {GA_ID && <CookieConsent />}
       <UploadAreaDialog />
-      <PageHeader />
+      <Box hideBelow="md">
+        <PageHeader />
+      </Box>
+      {/* Desktop view */}
       <Grid
         templateColumns="auto 36rem 1fr"
         templateAreas="'sidebar chat map'"
         templateRows="1fr"
         maxH="calc(100vh - 3rem)"
+        hideBelow="md"
       >
         <Sidebar />
         <ChatPanel />
@@ -69,6 +75,38 @@ export default function DashboardLayout({
           </Box>
         </Grid>
       </Grid>
+
+      {/* Mobile View */}
+      <Box
+        position="relative"
+        w="100vw"
+        h="100vh"
+        overflow="hidden"
+        gridRow={1}
+        hideFrom="md"
+      >
+        <Box
+          w="100%"
+          h={`calc(100% - ${sheetHeight}px + 12px)`}
+          transition="height 0.05s linear"
+        >
+          <Box
+            position="absolute"
+            top={4}
+            left={4}
+            rounded="sm"
+            overflow="hidden"
+            zIndex={100}
+          >
+            <PageHeader />
+          </Box>
+          <Map />
+        </Box>
+        <DraggableBottomSheet onHeightChange={setSheetHeight}>
+          <ChatPanel />
+        </DraggableBottomSheet>
+      </Box>
+
       <Suspense fallback={null}>
         <DebugToastsMount />
       </Suspense>

@@ -18,14 +18,22 @@ function ChatPanel() {
     <Flex minH="100%" maxH="100%" flexDir="column" gridArea="chat">
       <ChatPanelHeader />
       <Flex
-        p="2"
+        p={{ base: 3, md: 4 }}
+        py={0}
         position="relative"
         flex="1"
         flexDir="column"
         height="100%"
         overflow="auto"
       >
-        <Box flex="1" overflowY="auto" height="100%" mx="-4" px="4" pb="8">
+        <Box
+          flex="1"
+          overflowY="auto"
+          height="100%"
+          mx={{ base: -3, md: -4 }}
+          px={{ base: 4, md: 6 }}
+          pb={{ base: 6, md: 8 }}
+        >
           <ChatMessages />
         </Box>
         <Box mt="auto" position="sticky" bottom="2">
@@ -68,7 +76,7 @@ function ChatPanel() {
             ))}
 
           <ChatInput isChatDisabled={promptsExhausted} />
-          <Text fontSize="xs" color="fg.subtle">
+          <Text fontSize="xs" color="fg.subtle" hideBelow="md">
             AI can make mistakes. Please verify any outputs before using them in
             your work.
           </Text>

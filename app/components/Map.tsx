@@ -9,7 +9,7 @@ import MapGl, {
   MapRef,
 } from "react-map-gl/maplibre";
 import { useState, useRef } from "react";
-import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
+import { AbsoluteCenter, Code, Box, useMediaQuery } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
@@ -27,7 +27,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const { geoJsonFeatures, setMapRef, initializeTerraDraw } = useMapStore();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
-
+  const [isMediumUp] = useMediaQuery(["(min-width: 768px)"]);
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -79,6 +79,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             },
           },
         },
+        "& .maplibregl-ctrl-attrib.maplibregl-compact": {
+          mb: 6,
+          opacity: 0.8,
+          transition: "opacity 0.16s ease",
+          _hover: { opacity: 1 }
+        }
       }}
     >
       <MapGl
@@ -115,17 +121,24 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         />
         <SelectAreaLayer />
         <DynamicTileLayers />
-        {!disableMapAreaControls && <MapAreaControls />}
+        <Box hideBelow="md">
+          {!disableMapAreaControls && <MapAreaControls />}
+        </Box>
 
+        <AbsoluteCenter fontSize="sm" opacity={0.375} hideBelow="md">
+          <PlusIcon />
+        </AbsoluteCenter>
         <AttributionControl
           customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
           position="bottom-left"
+          compact={true}
         />
-        <ScaleControl />
-        <AbsoluteCenter fontSize="sm" opacity={0.375}>
-          <PlusIcon />
-        </AbsoluteCenter>
-        <NavigationControl showCompass={false} position="bottom-left" />
+        {isMediumUp && (
+          <>
+            <ScaleControl position="bottom-left"  />
+            <NavigationControl showCompass={false} position="bottom-left" />
+          </>
+        )}
         <Code
           pos="absolute"
           bottom="0"
@@ -135,6 +148,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           fontSize="10px"
           bg={useColorModeValue("whiteAlpha.600", "blackAlpha.600")}
           boxShadow="sm"
+          hideBelow="md"
         >
           lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
         </Code>

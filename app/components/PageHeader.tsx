@@ -15,7 +15,7 @@ function PageHeader() {
       py="2"
       h="12"
       bg="primary.solid"
-      color="fg.inverted"
+      color="fg.inverted"      
     >
       <Flex gap="2" alignItems="center">
         <LclLogo width={16} avatarOnly />
@@ -32,7 +32,7 @@ function PageHeader() {
           BETA
         </Badge>
       </Flex>
-      <Flex gap="6" alignItems="center">
+      <Flex gap="6" alignItems="center" hideBelow="md">
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
             variant="solid"

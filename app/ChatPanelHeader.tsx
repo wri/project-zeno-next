@@ -95,6 +95,7 @@ function ChatPanelHeader() {
       bg="bg"
       color="fg"
       boxShadow="sm"
+      hideBelow="md"
     >
       {!sideBarVisible && (
         <Tooltip
