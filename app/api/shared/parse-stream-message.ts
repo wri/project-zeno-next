@@ -69,12 +69,22 @@ export function parseStreamMessage(
         // Content is an object with text property
         textContent = contentObj.text;
       } else if (Array.isArray(content) && content.length > 0) {
-        // Content is an array of objects
-        const firstItem = content[0] as Record<string, unknown>;
-        if (firstItem.text && typeof firstItem.text === "string") {
-          textContent = firstItem.text;
-        } else if (typeof content[0] === "string") {
-          textContent = content[0];
+        // Content is an array of objects - filter out Gemini thinking content
+        const validContent = content.filter((item: any) => {
+          // Skip Gemini thinking content
+          if (typeof item === "object" && item?.type === "thinking") {
+            return false;
+          }
+          return true;
+        });
+
+        if (validContent.length > 0) {
+          const firstItem = validContent[0] as Record<string, unknown>;
+          if (firstItem.text && typeof firstItem.text === "string") {
+            textContent = firstItem.text;
+          } else if (typeof validContent[0] === "string") {
+            textContent = validContent[0];
+          }
         }
       }
     }

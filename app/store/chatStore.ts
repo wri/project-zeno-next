@@ -113,15 +113,15 @@ async function processStreamMessage(
       return generateInsightsTool(streamMessage, addMessage);
     }
     // Special handling for pick-aoi tool (previously location-tool)
-    else if (streamMessage.name === "pick-aoi" && streamMessage.aoi) {
+    else if (streamMessage.name === "pick_aoi" && streamMessage.aoi) {
       return await pickAoiTool(streamMessage, addMessage);
     }
     // Handling for pick-dataset tool
-    else if (streamMessage.name === "pick-dataset") {
+    else if (streamMessage.name === "pick_dataset") {
       return pickDatasetTool(streamMessage, addMessage);
     }
     // Handling for pull-data tool
-    else if (streamMessage.name === "pull-data") {
+    else if (streamMessage.name === "pull_data") {
       return pullDataTool(streamMessage, addMessage);
     }
   }
@@ -168,7 +168,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     addMessage({
       type: "user",
       message,
-      context,
+      context,  
     });
 
     // Clear any previous tool steps and start loading
