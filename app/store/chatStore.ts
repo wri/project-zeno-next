@@ -17,6 +17,11 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import useSidebarStore from "./sidebarStore";
+import {
+  showApiError,
+  showError,
+  showServiceUnavailableError,
+} from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 
 interface ChatState {
@@ -74,6 +79,10 @@ async function processStreamMessage(
           streamMessage.content || "Request timed out. Please try again.",
         timestamp: streamMessage.timestamp,
       });
+      showApiError(
+        streamMessage.content || "Request timed out. Please try again.",
+        { title: "Request Timed Out" }
+      );
     } else {
       // Handle other error messages from LangChain tools
       addMessage({
@@ -82,6 +91,10 @@ async function processStreamMessage(
           "I encountered an error while processing your request. Please try rephrasing your question or try again.",
         timestamp: streamMessage.timestamp,
       });
+      showError(
+        "I encountered an error while processing your request. Please try rephrasing your question or try again.",
+        { title: "Processing Error" }
+      );
     }
   } else if (streamMessage.type === "text" && streamMessage.text) {
     addMessage({
@@ -229,7 +242,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const error = new Error("Failed to send message");
+        (error as Error & { status?: number }).status = response.status;
+        throw error;
       }
 
       if (!response.body) {
@@ -282,12 +297,56 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           message:
             "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
         });
+        showApiError(
+          "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
+          { title: "Client Timeout" }
+        );
+      } else if (
+        error instanceof TypeError &&
+        error.message.includes("network")
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "Unable to connect to the server. Please check your internet connection and try again.",
+        });
+        showApiError(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+          { title: "Network Error" }
+        );
+      } else if (
+        error instanceof Error &&
+        error.message.includes("Failed to fetch")
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "Network request failed. Please check your connection and try again.",
+        });
+        showApiError("Network request failed. Please try again.", {
+          title: "Network Request Failed",
+        });
+      } else if (
+        error instanceof Error &&
+        (error as Error & { status?: number }).status &&
+        (error as Error & { status?: number }).status! >= 400 &&
+        (error as Error & { status?: number }).status! < 500
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "The service is currently unavailable. Please try again later.",
+        });
+        showServiceUnavailableError();
       } else {
         addMessage({
-          type: "assistant",
+          type: "error",
           message:
             "Sorry, there was an error processing your request. Please try again.",
         });
+        showError(
+          "Sorry, there was an error processing your request. Please try again."
+        );
       }
     } finally {
       clearTimeout(timeoutId);
@@ -330,7 +389,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const error = new Error("Failed to fetch thread");
+        (error as Error & { status?: number }).status = response.status;
+        throw error;
       }
 
       if (!response.body) {
@@ -413,6 +474,25 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         console.log("FRONTEND: Stream ended due to abort signal");
       } else {
         console.error("Error sending message:", error);
+        const status = (error as Error & { status?: number }).status;
+        if (status && status >= 500) {
+          showApiError("Server error while loading thread.", {
+            title: "Server Error",
+          });
+        } else if (status && status >= 400 && status < 500) {
+          showApiError("Unable to load thread.", {
+            title: "Request Error",
+          });
+        } else if (
+          error instanceof TypeError &&
+          error.message.toLowerCase().includes("network")
+        ) {
+          showApiError("Network error. Please check your connection.", {
+            title: "Network Error",
+          });
+        } else {
+          showError("Unexpected error while loading thread.");
+        }
       }
     } finally {
       set({ currentThreadId: threadId });
