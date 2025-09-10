@@ -1,5 +1,4 @@
 import {
-  Box,
   Flex,
   Heading,
   Button,
@@ -18,10 +17,20 @@ import {
 } from "@phosphor-icons/react";
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
+import { REDIRECT_URL_KEY, wriAuthUrl } from "./LoginOverlay";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
     useAuthStore();
+
+  const handleLoginClick = () => {
+    localStorage.setItem(REDIRECT_URL_KEY, window.location.pathname);
+    const callbackUrl = `${window.location.origin}/auth/callback`;
+    const authUrl = `${wriAuthUrl}?callbackUrl=${encodeURIComponent(
+      callbackUrl
+    )}&token=true`;
+    window.open(authUrl, "WRI Login", "width=600,height=700");
+  };
 
   return (
     <Flex
@@ -128,16 +137,14 @@ function PageHeader() {
           </Menu.Root>
         ) : (
           <Button
-            asChild
             variant="solid"
             colorPalette="primary"
             _hover={{ bg: "primary.fg" }}
             size="sm"
+            onClick={handleLoginClick}
           >
-            <Flex>
               <UserIcon />
-              <a href="/signup">Log in / Sign Up</a>
-            </Flex>
+              Log in / Sign Up
           </Button>
         )}
       </Flex>

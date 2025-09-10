@@ -15,8 +15,8 @@ import useAuthStore from "../store/authStore";
 import { InfoIcon, XIcon } from "@phosphor-icons/react";
 import theme from "../theme";
 
-const wriAuthUrl = "https://api.resourcewatch.org/auth/login";
-const REDIRECT_URL_KEY = "redirectUrl";
+export const wriAuthUrl = "https://api.resourcewatch.org/auth/login";
+export const REDIRECT_URL_KEY = "redirectUrl";
 
 function AuthDialog({
   open,
