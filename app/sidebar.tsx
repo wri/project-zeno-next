@@ -1,9 +1,7 @@
 import { useEffect } from "react";
 import {
   Button,
-  Circle,
   Flex,
-  HStack,
   IconButton,
   LinkProps,
   Stack,
@@ -11,12 +9,21 @@ import {
   Link as ChLink,
   Status,
   Accordion,
+  Box,
+  Progress,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
 import { Tooltip } from "./components/ui/tooltip";
-import { NotePencilIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
+import {
+  LifebuoyIcon,
+  NotePencilIcon,
+  SidebarSimpleIcon,
+  SignOutIcon,
+  UserIcon,
+} from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
+import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 
@@ -126,6 +133,7 @@ export function Sidebar() {
     fetchApiStatus,
   } = useSidebarStore();
   const { currentThreadId } = useChatStore();
+  const { clearAuth, userEmail, usedPrompts, totalPrompts } = useAuthStore();
 
   useEffect(() => {
     fetchThreads();
@@ -152,8 +160,8 @@ export function Sidebar() {
       <Flex
         px="3"
         py={2}
-        pt={{ base: 4, md: 2}}
-        h={{ base: "auto", md: 14}}
+        pt={{ base: 4, md: 2 }}
+        h={{ base: "auto", md: 14 }}
         justify="space-between"
         alignItems="center"
         position="sticky"
@@ -161,7 +169,13 @@ export function Sidebar() {
         bg="bg.subtle"
         boxShadow="xs"
       >
-        <Button asChild variant="outline" colorPalette="primary" size="sm" w={{ base: "full", md: "auto" }}>
+        <Button
+          asChild
+          variant="outline"
+          colorPalette="primary"
+          size="sm"
+          w={{ base: "full", md: "auto" }}
+        >
           <Link href="/app" aria-label="New conversation">
             New Conversation
             <NotePencilIcon />
@@ -236,6 +250,41 @@ export function Sidebar() {
           <Status.Indicator />
           API Status: {apiStatus}
         </Status.Root>
+        <Box m={3} display="flex" flexDir="column" gap={2} hideFrom="md">
+          <Box bg="white" rounded="md" fontSize="sm" px={4} py={5}>
+            Available Prompts
+            <Progress.Root
+              size="xs"
+              min={0}
+              max={100}
+              value={(usedPrompts / totalPrompts) * 100}
+              minW="6rem"
+              rounded="full"
+              colorPalette="primary"
+            >
+              <Progress.Label mb="0.5" fontSize="xs" fontWeight="normal">
+                {usedPrompts}/{totalPrompts} Prompts
+              </Progress.Label>
+              <Progress.Track bg="neutral.200" maxH="4px">
+                <Progress.Range bg="primary.solid" />
+              </Progress.Track>
+            </Progress.Root>
+          </Box>
+          <Button variant="ghost" size="sm" justifyContent="flex-start">
+            <LifebuoyIcon />
+            Help
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => clearAuth()}
+            size="sm"
+            justifyContent="flex-start"
+          >
+            <UserIcon />
+            {userEmail || "User name"}
+            <SignOutIcon />
+          </Button>
+        </Box>
         <ChLink
           href="/"
           _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
@@ -243,15 +292,12 @@ export function Sidebar() {
           px="1"
           py="2"
         >
-          <HStack whiteSpace="nowrap">
-            <Circle size="8" fontSize="lg" borderWidth="1px"></Circle>
-            <Stack gap="0" fontWeight="medium">
-              <Text fontSize="sm">Home</Text>
-              <Text fontSize="xs" color="fg.subtle">
-                Global Nature Watch
-              </Text>
-            </Stack>
-          </HStack>
+          <Stack gap="0" fontWeight="medium">
+            <Text fontSize="sm">Home</Text>
+            <Text fontSize="xs" color="fg.subtle">
+              Global Nature Watch
+            </Text>
+          </Stack>
         </ChLink>
       </Stack>
     </Flex>
