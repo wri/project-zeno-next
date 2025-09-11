@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import useChatStore from "@/app/store/chatStore";
 import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
 
 export default function SingleThread() {
   const { id } = useParams();
@@ -13,6 +14,7 @@ export default function SingleThread() {
     currentThreadId,
   } = useChatStore();
   const { reset: resetContextStore } = useContextStore();
+  const { reset: resetMapStore } = useMapStore();
 
   // This check should only happen on mount. When coming from a thread started
   // at the root page the context should be preserved.
@@ -21,9 +23,10 @@ export default function SingleThread() {
   useEffect(() => {
     if (!comingFromNewThread) {
       resetChatStore();
+      resetMapStore();
       resetContextStore();
     }
-  }, [comingFromNewThread, resetChatStore, resetContextStore]);
+  }, [comingFromNewThread, resetChatStore, resetContextStore, resetMapStore]);
 
   useEffect(() => {
     if (!currentThreadId && id) {
