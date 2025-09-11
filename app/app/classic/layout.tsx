@@ -35,6 +35,24 @@ export default function ClassicLayout() {
     >
       <PageHeader />
       <Box h="calc(100vh - 3rem)" overflow="hidden" position="relative">
+        <Flex
+          position="absolute"
+          zIndex={100}
+          top={{
+            base: 4,
+            lgDown: 16,
+          }}
+          w="100%"
+          left={{
+            lgDown: 4,
+          }}
+          justifyContent={{
+            lgDown: "flex-start",
+            base: "center",
+          }}
+        >
+          <LayerDialog />
+        </Flex>
         <ChatStatusInfo
           position="absolute"
           top={4}
@@ -46,21 +64,12 @@ export default function ClassicLayout() {
         >
           <Text>
             AI features are unavailable.{" "}
-            <ChLink as={Link} href="/">
+            <ChLink as={Link} href="/app">
               Go back to AI conversations
             </ChLink>
             .
           </Text>
         </ChatStatusInfo>
-        <Flex
-          position="absolute"
-          zIndex={100}
-          top={4}
-          w="100%"
-          justifyContent="center"
-        >
-          <LayerDialog />
-        </Flex>
         <Legend layers={layers} onLayerAction={handleLayerAction} />
         <Map disableMapAreaControls />
       </Box>
@@ -75,7 +84,7 @@ function LayerDialog() {
 
   return (
     <Dialog.Root
-      placement="top"
+      placement="bottom"
       motionPreset="slide-in-bottom"
       size="lg"
       scrollBehavior="inside"

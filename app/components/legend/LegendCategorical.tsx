@@ -19,32 +19,27 @@ export function LegendCategorical(props: { items: SymbolColorValue[] }) {
       p={0}
       w="100%"
       listStyle="none"
-      gridAutoFlow="column"
-      gridAutoColumns="minmax(0, 1fr)"
+      gridTemplateColumns="repeat(auto-fit, minmax(3rem, 1fr))"
     >
       {items.map((item) => (
-        <Tooltip.Root
-          key={item.color}
-          positioning={{ placement: "top" }}
-          openDelay={50}
-        >
-          <Tooltip.Trigger>
-            <GridItem as="li" flexDir="column" maxW="100%">
+        <GridItem key={item.color} as="li" flexDir="column" maxW="100%">
+          <Tooltip.Root positioning={{ placement: "top" }} openDelay={50}>
+            <Tooltip.Trigger width="100%" >
               <ColorBar color={item.color} borderRadius="3px" />
-              <Text textOverflow="ellipsis" wordWrap="normal" overflow="hidden">
+              <Text textOverflow="ellipsis" textWrap="nowrap" overflow="hidden">
                 {item.value}
               </Text>
-            </GridItem>
-          </Tooltip.Trigger>
-          <Tooltip.Positioner>
-            <Tooltip.Content>
-              <Tooltip.Arrow>
-                <Tooltip.ArrowTip />
-              </Tooltip.Arrow>
-              {item.value}
-            </Tooltip.Content>
-          </Tooltip.Positioner>
-        </Tooltip.Root>
+            </Tooltip.Trigger>
+            <Tooltip.Positioner>
+              <Tooltip.Content>
+                <Tooltip.Arrow>
+                  <Tooltip.ArrowTip />
+                </Tooltip.Arrow>
+                {item.value}
+              </Tooltip.Content>
+            </Tooltip.Positioner>
+          </Tooltip.Root>
+        </GridItem>
       ))}
     </Grid>
   );
