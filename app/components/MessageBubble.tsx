@@ -68,7 +68,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
       mb={isConsecutive ? 1 : 4} // Reduced margin for consecutive messages
-      _first={{ mt: 6 }}
+      _first={{ base: { mt: 3 }, md: { mt: 6 } }}
     >
       <Box
         display="flex"

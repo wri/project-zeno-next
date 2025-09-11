@@ -23,9 +23,9 @@ export default function DraggableBottomSheet({
   const snapPoints = useMemo(() => {
     // Ensure this code runs only on the client where `window` is available.
     if (typeof window === "undefined") {
-      return [164, 400, 700]; // Default SSR values
+      return [200, 400, 700]; // Default SSR values
     }
-    return [164, 400, window.innerHeight * 0.85];
+    return [200, 400, window.innerHeight * 0.85];
   }, []);
 
   // Set initial height and notify parent on mount

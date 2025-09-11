@@ -82,7 +82,7 @@ function ChatPanel() {
             height="100%"
             mx={{ base: -2, md: -4 }}
             px={{ base: 4, md: 6 }}
-            pb={{ base: 6, md: 8 }}
+            pb={{ base: 4, md: 8 }}
           >
             <ChatMessages />
           </Box>

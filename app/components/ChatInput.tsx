@@ -37,7 +37,7 @@ export default function ChatInput({
     onOpen: onInputModalOpen,
     onClose: onInputModalClose,
   } = useDisclosure();
-  const initialFocusRef = useRef<HTMLTextAreaElement>(null);
+
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
   const { sendMessage, isLoading } = useChatStore();
@@ -132,7 +132,7 @@ export default function ChatInput({
         placeholder={message}
         fontSize="sm"
         minH="20px"
-        resize="none"
+        autoresize
         maxH="10lh"
         border="none"
         p={0}
@@ -201,18 +201,17 @@ export default function ChatInput({
       {/* Mobile Trigger Bar */}
       <Flex
         onClick={onInputModalOpen}
-        align="center"
-        justifyContent="space-between"
+        align="flex-start"
         m={0}
         p={3}
-        gap={1}
         bg="gray.100"
-        maxH="6lh"
+        maxH="7rem"
         overflowY="auto"
         borderTopWidth="1px"
         borderColor="gray.300"
         cursor="pointer"
         position="relative"
+        flexDir="column"
         borderRadius="lg"
         borderWidth="1px"
         className="group"
@@ -231,27 +230,62 @@ export default function ChatInput({
         >
           {inputValue || message}
         </Text>
-        <Button
-          p={0}
-          flexShrink={0}
-          colorPalette="primary"
-          title="Send message"
-          aria-hidden
-          ml="auto"
-          borderRadius="full"
-          variant="solid"
-          _disabled={{ opacity: 0.36, cursor: "not-allowed" }}
-          type="button"
-          size="xs"
-          onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.stopPropagation();
-            submitPrompt();
-          }}
-          disabled={isButtonDisabled}
-          loading={isLoading}
-        >
-          <ArrowBendRightUpIcon weight="bold" />
-        </Button>
+        <Flex justifyContent="space-between" alignItems="center" w="full">
+          <Flex gap="2">
+            <ContextButton
+              contextType="layer"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                openContextMenu("layer");
+              }}
+              disabled={disabled}
+            />
+            <ContextButton
+              contextType="area"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                openContextMenu("area");
+              }}
+              disabled={disabled}
+            />
+            <ContextButton
+              contextType="date"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                openContextMenu("date");
+              }}
+              disabled={disabled}
+            />
+          </Flex>
+          {selectedContextType && (
+            <ContextMenu
+              contextType={selectedContextType}
+              open={contextModalOpen}
+              onOpenChange={handleContextModalOpenChange}
+            />
+          )}
+          <Button
+            p={0}
+            flexShrink={0}
+            colorPalette="primary"
+            title="Send message"
+            aria-hidden
+            ml="auto"
+            borderRadius="full"
+            variant="solid"
+            _disabled={{ opacity: 0.36, cursor: "not-allowed" }}
+            type="button"
+            size="xs"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.stopPropagation();
+              submitPrompt();
+            }}
+            disabled={isButtonDisabled}
+            loading={isLoading}
+          >
+            <ArrowBendRightUpIcon weight="bold" />
+          </Button>
+        </Flex>
       </Flex>
 
       {/* Input Modal appears on tap when on mobile device */}
