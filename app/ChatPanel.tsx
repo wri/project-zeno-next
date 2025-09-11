@@ -80,7 +80,7 @@ function ChatPanel() {
             flex="1"
             overflowY="auto"
             height="100%"
-            mx={{ base: -3, md: -4 }}
+            mx={{ base: -2, md: -4 }}
             px={{ base: 4, md: 6 }}
             pb={{ base: 6, md: 8 }}
           >
