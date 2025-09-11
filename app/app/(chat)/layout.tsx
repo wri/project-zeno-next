@@ -56,8 +56,8 @@ export default function DashboardLayout({
 
   return (
     <Grid
-      maxH="100vh"
-      h="100vh"
+      maxH="min(100dvh, 100vh)"
+      h="min(100dvh, 100vh)"
       templateRows={{ base: "1fr", md: "min-content minmax(0px, 1fr)" }}
       bg="bg"
     >
@@ -89,7 +89,7 @@ export default function DashboardLayout({
       <Box
         position="relative"
         w="100vw"
-        h="100vh"
+        h="min(100dvh, 100vh)"
         overflow="hidden"
         gridRow={1}
         hideFrom="md"

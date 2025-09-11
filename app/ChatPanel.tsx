@@ -60,7 +60,12 @@ function ChatPanel() {
 
   return (
     <Flex minH="100%" maxH="100%" gridArea="chat">
-      <Flex minH="100%" maxH="100%" w={`${width}px`} flexDir="column">
+      <Flex
+        minH="100%"
+        maxH="100%"
+        w={{ base: "full", md: `${width}px` }}
+        flexDir="column"
+      >
         <ChatPanelHeader />
         <Flex
           px={{ base: 2, md: 4 }}
