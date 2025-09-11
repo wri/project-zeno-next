@@ -26,6 +26,7 @@ import { Tooltip } from "./components/ui/tooltip";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
+import { sendGAEvent } from "@next/third-parties/google";
 
 export const WidgetIcons = {
   "line": <ChartLineIcon />,
@@ -217,7 +218,14 @@ function ChatPanelHeader() {
                   <Menu.Item
                     key={w.id}
                     value={w.id}
-                    onSelect={() => scrollToWidget(w.id)}
+                    onSelect={() => {
+                      sendGAEvent("event", "insight_selected", {
+                        title: w.title,
+                        chart_type: w.type,
+                        created_at: w.timestamp,
+                      });
+                      scrollToWidget(w.id);
+                    }}
                     role="group"
                     className="group"
                     cursor="pointer"
