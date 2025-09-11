@@ -145,6 +145,7 @@ export default function UnauthorizedPage() {
         py={8}
         px={4}
         height="56px"
+        maxWidth="100%"
         backgroundColor={"white"}
         display="flex"
         justifyContent="space-between"
