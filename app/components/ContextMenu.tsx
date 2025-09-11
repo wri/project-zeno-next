@@ -12,8 +12,14 @@ import {
   Button,
   InputGroup,
   ButtonGroup,
+  Text,
+  List,
 } from "@chakra-ui/react";
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import {
+  CircleIcon,
+  DotIcon,
+  MagnifyingGlassIcon,
+} from "@phosphor-icons/react";
 import { format } from "date-fns";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
@@ -163,7 +169,6 @@ function ContextMenu({
               p={0}
               h="full"
               display="flex"
-              overflow="visible"
               minH={0}
             >
               {/* Modal Navigation */}
@@ -286,7 +291,7 @@ function AreaCardList({
           overflow="hidden"
           maxW="xl"
           border={card.selected ? "2px solid" : undefined}
-          borderColor={card.selected ? "blue.800" : undefined}
+          borderColor={card.selected ? "primary.solid" : undefined}
           cursor={onCardClick ? "pointer" : undefined}
           onClick={
             onCardClick
@@ -300,6 +305,7 @@ function AreaCardList({
               gap="1"
               alignItems="center"
               fontSize="sm"
+              m={0}
             >
               {card.name}
             </Card.Title>
@@ -395,7 +401,7 @@ function AreaMenu() {
         borderTopWidth="1px"
         borderColor="border"
         h="full"
-        overflow="hidden"
+        overflow="auto"
       >
         {cards.length === 0 ? (
           <Box color="fg.muted" fontSize="sm">
