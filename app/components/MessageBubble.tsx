@@ -4,6 +4,7 @@ import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
+import { sendGAEvent } from "@next/third-parties/google";
 import {
   ArrowBendDownRightIcon,
   ArrowsCounterClockwiseIcon,
@@ -164,26 +165,64 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
                     ? "Response copied to clipboard"
                     : "Copy response"
                 }
-              >
-                <IconButton variant="ghost" size="xs" onClick={clipboard.copy}>
-                  {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
-                </IconButton>
-              </Tooltip>
-              <Tooltip content="Good response">
-                <IconButton variant="ghost" size="xs">
-                  <ThumbsUpIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip content="Bad response">
-                <IconButton variant="ghost" size="xs">
-                  <ThumbsDownIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip content="Regenerate response">
-                <IconButton variant="ghost" size="xs">
-                  <ArrowsCounterClockwiseIcon />
-                </IconButton>
-              </Tooltip>
+                children={
+                  <IconButton
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => {
+                      clipboard.copy();
+                      sendGAEvent("event", "response_feedback", {
+                        value: "copy_response",
+                        message_id: message.id,
+                      });
+                    }}
+                  >
+                    {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
+                  </IconButton>
+                }
+              />
+              <Tooltip
+                content="Good response"
+                children={
+                  <IconButton
+                    variant="ghost"
+                    size="xs"
+                    onClick={() =>
+                      sendGAEvent("event", "response_feedback", {
+                        value: "positive_response",
+                        message_id: message.id,
+                      })
+                    }
+                  >
+                    <ThumbsUpIcon />
+                  </IconButton>
+                }
+              />
+              <Tooltip
+                content="Bad response"
+                children={
+                  <IconButton
+                    variant="ghost"
+                    size="xs"
+                    onClick={() =>
+                      sendGAEvent("event", "response_feedback", {
+                        value: "negative_response",
+                        message_id: message.id,
+                      })
+                    }
+                  >
+                    <ThumbsDownIcon />
+                  </IconButton>
+                }
+              />
+              <Tooltip
+                content="Regenerate response"
+                children={
+                  <IconButton variant="ghost" size="xs">
+                    <ArrowsCounterClockwiseIcon />
+                  </IconButton>
+                }
+              />
             </Flex>
           </Flex>
         )}
