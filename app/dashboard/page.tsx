@@ -18,6 +18,7 @@ import {
   createListCollection,
   Text,
   Container,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
 import {
   FloppyDiskIcon,
@@ -235,10 +236,18 @@ export default function UserSettingsPage() {
       maxH="100vh"
     >
       <Flex flexDir="column" bg="bg.subtle" px={6} py={8} maxH="100%" gap={6}>
-        <Heading display="flex" alignItems="center" gap="2">
+        <ChakraLink
+          as={Link}
+          href="/"
+          display="flex"
+          alignItems="center"
+          gap="2"
+          transition="opacity 0.24s ease"
+          _hover={{ opacity: 0.8, textDecor: "none" }}
+        >
           <LclLogo width={16} avatarOnly />
-          Global Nature Watch
-        </Heading>
+          <Heading m={0}>Global Nature Watch</Heading>
+        </ChakraLink>
         <ButtonGroup
           size="sm"
           w="full"
@@ -269,8 +278,10 @@ export default function UserSettingsPage() {
               User Settings
             </Link>
           </Button>
-          <Button asChild>
-            <Link href="#">
+          <Button
+            asChild
+          >
+            <Link href="https://help.globalnaturewatch.org/" target="_blank">
               <LifebuoyIcon />
               Help
             </Link>
