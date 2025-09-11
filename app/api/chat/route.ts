@@ -101,7 +101,15 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       clearTimeout(timeoutId);
-      throw new Error(`External API responded with status: ${response.status}`);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
+      return NextResponse.json(
+        {
+          error: "External API error",
+          status: upstreamStatus,
+        },
+        { status: mappedStatus }
+      );
     }
 
     // Check if the response is streaming
@@ -118,6 +126,7 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
         const reader = response.body!.getReader();
+        let controllerClosed = false;
 
         try {
           // Set up cleanup for abort signal
@@ -132,6 +141,7 @@ export async function POST(request: NextRequest) {
 
             // Send timeout message to frontend before closing
             try {
+              if (controllerClosed) return;
               const timeoutMessage: StreamMessage = {
                 type: "error",
                 name: "timeout",
@@ -152,8 +162,10 @@ export async function POST(request: NextRequest) {
 
             // Small delay to ensure message is sent before closing
             setTimeout(() => {
+              if (controllerClosed) return;
               try {
                 controller.close();
+                controllerClosed = true;
                 console.log("CONTROLLER CLOSED after timeout");
               } catch {
                 console.log("Controller already closed");
@@ -179,22 +191,30 @@ export async function POST(request: NextRequest) {
                   console.log("Final LangChain message:", langChainMessage);
                 }
 
-                const message = langChainMessage.update;
-                const updateObject = JSON5.parse(message);
+                const updateObject = JSON5.parse(langChainMessage.update);
                 const date = langChainMessage.timestamp
                   ? new Date(langChainMessage.timestamp)
                   : new Date();
 
-                const messageType = isFinal
-                  ? "agent"
-                  : (langChainMessage.node as "agent" | "tools");
+                // Derive message type from the last message's kwargs.type like threads endpoint
+                const lastMessage = updateObject?.messages?.at(-1);
+                const rawType = lastMessage?.kwargs?.type as
+                  | "ai"
+                  | "tool"
+                  | "human"
+                  | undefined;
+                const messageType = rawType
+                  ? ({
+                      ai: "agent",
+                      tool: "tools",
+                      human: "human",
+                    }[rawType] as "agent" | "tools" | "human")
+                  : undefined;
 
                 // Parse LangChain response and extract useful information
-                const streamMessage = parseStreamMessage(
-                  updateObject,
-                  messageType,
-                  date
-                );
+                const streamMessage = messageType
+                  ? parseStreamMessage(updateObject, messageType, date)
+                  : null;
 
                 if (streamMessage) {
                   controller.enqueue(
@@ -225,15 +245,18 @@ export async function POST(request: NextRequest) {
           }
         } finally {
           clearTimeout(timeoutId);
-          if (!controller.desiredSize || controller.desiredSize === 0) {
-            // Controller already closed
-            return;
-          }
-          try {
-            controller.close();
-          } catch {
-            // Controller might already be closed, ignore the error
-            console.log("Controller already closed");
+          if (!controllerClosed) {
+            if (!controller.desiredSize || controller.desiredSize === 0) {
+              // Controller already closed
+              return;
+            }
+            try {
+              controller.close();
+              controllerClosed = true;
+            } catch {
+              // Controller might already be closed, ignore the error
+              console.log("Controller already closed");
+            }
           }
         }
       },
@@ -254,6 +277,10 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
+        // Prevent proxy/CDN buffering to allow progressive delivery
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+        Connection: "keep-alive",
         ...(promptsQuota ? { "X-Prompts-Quota": promptsQuota } : {}),
         ...(promptsUsed ? { "X-Prompts-Used": promptsUsed } : {}),
       },

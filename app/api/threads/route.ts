@@ -26,7 +26,12 @@ export async function GET() {
 
     if (!response.ok) {
       console.error(response);
-      throw new Error(`External API responded with status: ${response.status}`);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
+      return NextResponse.json(
+        { error: "External API error", status: upstreamStatus },
+        { status: mappedStatus }
+      );
     }
 
     const json = await response.json();

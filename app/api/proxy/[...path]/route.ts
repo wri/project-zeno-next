@@ -7,7 +7,7 @@ import {
 } from "../../shared/utils";
 
 const BASE_URL = API_CONFIG.API_BASE_URL;
-const METHODS_WITH_BODY = ["POST", "PUT"];
+const METHODS_WITH_BODY = ["POST", "PUT", "PATCH"];
 
 /**
  * Builds the target URL for the proxy request and strips any trailing slash.
@@ -62,7 +62,7 @@ async function proxyRequest(
  * @param params - The path segments to append to the base URL.
  * @returns The response from the upstream API.
  */
-export async function handler(
+async function handler(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ): Promise<NextResponse> {
@@ -74,8 +74,8 @@ export async function handler(
     }
 
     const method = request.method.toUpperCase();
-    const resolvedParams = await params;
-    const targetUrl = buildTargetUrl(resolvedParams.path);
+    const { path } = await params;
+    const targetUrl = buildTargetUrl(path);
 
     return await proxyRequest(method, targetUrl, token, request);
   } catch (error) {
@@ -94,3 +94,4 @@ export const GET = handler;
 export const POST = handler;
 export const PUT = handler;
 export const DELETE = handler;
+export const PATCH = handler;

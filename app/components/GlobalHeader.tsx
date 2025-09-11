@@ -13,6 +13,8 @@ import {
 } from "@chakra-ui/react";
 import Link from "next/link";
 
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
   return (
     <ButtonGroup
@@ -48,6 +50,18 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
       <Button asChild>
         <Link href="#">Team</Link>
       </Button>
+      {LANDING_PAGE_VERSION === "closed" && (
+        <Button
+          asChild
+          ml={4}
+          variant="outline"
+          colorPalette="white"
+          rounded="lg"
+          borderColor="white"
+        >
+          <Link href="/app">Sign in (invite only)</Link>
+        </Button>
+      )}
       <Button
         asChild
         ml={4}
@@ -56,7 +70,19 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
         colorPalette="primary"
         rounded="lg"
       >
-        <Link href="/app">Try the preview</Link>
+        {LANDING_PAGE_VERSION === "closed" ? (
+          <Link
+            href="https://forms.office.com/r/jmFh27TUUz"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Join waitlist
+          </Link>
+        ) : LANDING_PAGE_VERSION === "limited" ? (
+          <Link href="/app">Try the preview</Link>
+        ) : (
+          <Link href="/app">Get started</Link>
+        )}
       </Button>
     </ButtonGroup>
   );
@@ -82,7 +108,12 @@ export default function GlobalHeader() {
         alignItems={{ base: "flex-start", md: "center" }}
         gap={{ base: 2, md: 4 }}
       >
-        <Heading m="0" size={{base: "xl", lg: "2xl"}} lineHeight="shorter" color="fg.inverted">
+        <Heading
+          m="0"
+          size={{ base: "xl", lg: "2xl" }}
+          lineHeight="shorter"
+          color="fg.inverted"
+        >
           Global Nature Watch
         </Heading>
         <Text
