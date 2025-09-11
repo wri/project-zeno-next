@@ -4,6 +4,8 @@ import { Box, Button, Container, Flex, Heading, Text } from "@chakra-ui/react";
 
 import Link from "next/link";
 
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 export default function UnauthorizedPage() {
   return (
     <Box bg="hsla(225, 52%, 11%, 1)">
@@ -68,23 +70,40 @@ export default function UnauthorizedPage() {
             color="fg.inverted"
             mb={0}
           >
-            Early access only
+            {LANDING_PAGE_VERSION === "closed"
+              ? "Early access only"
+              : "Only available to pre-approved email addresses"}
           </Heading>
-          <Text
-            fontSize="lg"
-            textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
-            marginBottom={4}
-          >
-            Thank you for your interest in Global Nature Watch!
-          </Text>
-          <Text
-            fontSize="lg"
-            textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
-          >
-            Right now access is limited while we are in closed beta. We&apos;d
-            love for you to be part of what&apos;s next, so join the waitlist to
-            be among the first to know when the tool becomes available.
-          </Text>
+          {LANDING_PAGE_VERSION === "closed" ? (
+            <>
+              <Text
+                fontSize="lg"
+                textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
+                marginBottom={4}
+              >
+                Thank you for your interest in Global Nature Watch!
+              </Text>
+              <Text
+                fontSize="lg"
+                textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
+              >
+                Right now access is limited while we are in closed beta.
+                We&apos;d love for you to be part of what&apos;s next, so join
+                the waitlist to be among the first to know when the tool becomes
+                available.
+              </Text>
+            </>
+          ) : (
+            <Text
+              fontSize="lg"
+              textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
+            >
+              Thank you for showing interest in Global Nature Watch, the tool
+              can currently only be accessed by those invited to early access.
+              If you have not been notified of early access, please join the
+              waitlist.
+            </Text>
+          )}
           <Flex justifyContent="center">
             <Button
               asChild
@@ -115,6 +134,9 @@ export default function UnauthorizedPage() {
             </Button>
           </Flex>
         </Container>
+      </Box>
+      <Box height="200px">
+        <Text>Hello</Text>
       </Box>
     </Box>
   );
