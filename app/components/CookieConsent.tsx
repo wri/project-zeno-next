@@ -1,4 +1,4 @@
-import { Box, Button, Portal, ActionBar, Text } from '@chakra-ui/react';
+import { Box, Button, Portal, ActionBar, Text, Link } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import useCookieConsentStore from '../store/cookieConsentStore';
 
@@ -41,7 +41,13 @@ const CookieConsent = () => {
             <ActionBar.Content>
                 <Text>
                   We use cookies to analyze traffic and improve your experience. 
-                  Do you consent to the use of cookies for analytics?
+                  Do you consent?
+                  <br />
+                  See our{' '}
+                  <Link href="https://www.wri.org/about/privacy-policy" target="_blank" rel="noreferrer" color="blue.500">
+                    Privacy Policy
+                  </Link>
+                  {' '}for more info.
                 </Text>
                   <Button variant="outline" onClick={handleReject}>Reject</Button>
                 <Button colorPalette="primary" onClick={handleAccept}>Accept</Button>
