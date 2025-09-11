@@ -9,6 +9,7 @@ interface ThreadEntry {
   name: string;
   updated_at: string;
   user_id: string;
+  is_public: boolean;
 }
 
 interface ThreadGroups {

@@ -13,6 +13,7 @@ import {
   Accordion,
 } from "@chakra-ui/react";
 import Link from "next/link";
+import { sendGAEvent } from "@next/third-parties/google";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
@@ -57,7 +58,7 @@ function ThreadSection({
   value,
   currentThreadId,
 }: {
-  threads: { id: string; name: string }[];
+  threads: { id: string; name: string; updated_at: string; is_public: boolean }[];
   label: string;
   value: string;
   currentThreadId: string | null;
@@ -93,6 +94,15 @@ function ThreadSection({
                 role="group"
                 _hover={{ layerStyle: "fill.muted" }}
                 _focusWithin={{ outline: "2px solid var(--chakra-colors-gray-400)", outlineOffset: "2px" }}
+                onClick={() => {
+                  if (!isActive){ //only when navigating to old threads
+                    sendGAEvent("event", "saved_conversation_loaded", {
+                      conversation_id: thread.id,
+                      updated_at: thread.updated_at,
+                      is_public: thread.is_public,
+                    });
+                  }
+                }}
                 css={{
                   "&:hover .thread-actions": { opacity: 1 },
                   "&:focus-within .thread-actions": { opacity: 1 },

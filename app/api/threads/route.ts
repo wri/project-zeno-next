@@ -35,7 +35,11 @@ export async function GET() {
     }
 
     const json = await response.json();
-    return NextResponse.json(json, { status: 200 });
+    const threadsWithPublicFlag = json.map((thread: any) => ({
+      ...thread,
+      is_public: thread.is_public ?? false,
+    }));
+    return NextResponse.json(threadsWithPublicFlag, { status: 200 });
   } catch (error) {
     console.log("error", error);
     return NextResponse.json(
