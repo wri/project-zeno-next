@@ -54,7 +54,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_land_cover.png",
     description:
       "Global All Ecosystem Disturbance Alerts (DIST-ALERT) provides near-real-time alerts of vegetation disturbance globally at 30-meter resolution, using harmonized Landsat-Sentinel-2 imagery. A filtered subset of these daily alerts (Land Disturbance Alert Classification System or LDACS) can also be classified into potential drivers: conversion, cropland dynamics, fire-related, water-related, or unclassified.",
-    tile_url: "",
+    tile_url: "https://eoapi.zeno-staging.ds.io/raster/collections/global-land-cover-v-2/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B139%2C%2069%2C%2019%2C%20255%5D%2C%20%221%22%3A%20%5B255%2C%20255%2C%200%2C%20255%5D%2C%20%222%22%3A%20%5B0%2C%20128%2C%200%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%20255%2C%20255%2C%20255%5D%2C%20%224%22%3A%20%5B0%2C%200%2C%20255%2C%20255%5D%2C%20%225%22%3A%20%5B255%2C%20255%2C%20255%2C%20255%5D%2C%20%226%22%3A%20%5B255%2C%200%2C%200%2C%20255%5D%2C%20%227%22%3A%20%5B128%2C%20128%2C%20128%2C%20255%5D%2C%20%228%22%3A%20%5B255%2C%20165%2C%200%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True",
     legend: {
       title: "Global land cover (2024)",
       color: "#8E3037",
@@ -83,7 +83,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_grasslands.png",
     description:
       "Annual 30 m maps of global natural/semi-natural grassland extent from 2000 to 2024. This dataset defines grasslands very broadly such that they encompass grasslands, shrublands, and savannas by including any land cover type which contains at least 30% of dry or wet low vegetation, dominated by grasses and forbs (less than 3 meters) and a: maximum of 50% tree canopy cover (greater than 5 meters), a maximum of 70% of other woody vegetation (scrubs and open shrubland), and a maximum of 50% active cropland cover in mosaic landscapes of cropland & other vegetation.",
-    tile_url: "",
+    tile_url: "https://eoapi.zeno-staging.ds.io/raster/collections/grasslands-v-1-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True",
     legend: {
       title: "Global Grasslands (2024)",
       color: "#ff9916",
@@ -102,7 +102,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_natural_lands.png",
     description:
       "The SBTN Natural Lands Map v1.1 is a 2020 baseline map of natural and non-natural land covers intended for use by companies setting science-based targets for nature, specifically the SBTN Land target #1: no conversion of natural ecosystems. This map is global with 30m resolution and was made by compiling existing global and regional data including the GLAD Global Land Cover and Change data, ESA WorldCover, and many other land cover and use datasets.",
-    tile_url: "",
+    tile_url: "https://eoapi.zeno-staging.ds.io/raster/collections/natural-lands-v-1-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%222%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%20%223%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%20%224%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%20%225%22%3A%20%5B6%2C%20162%2C%20133%2C%20255%5D%2C%20%226%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%20%227%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%20%228%22%3A%20%5B88%2C%20149%2C%2088%2C%20255%5D%2C%20%229%22%3A%20%5B9%2C%2061%2C%209%2C%20255%5D%2C%20%2210%22%3A%20%5B219%2C%20219%2C%20123%2C%20255%5D%2C%20%2211%22%3A%20%5B153%2C%20153%2C%2026%2C%20255%5D%2C%20%2212%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2213%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2214%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2215%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2216%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2217%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2218%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2219%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2220%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2221%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C22%29%2A%28asset%3E1%29&asset_as_band=True",
     legend: {
       title: "SBTN Natural lands (2020)",
       color: "#A8DCB5",
