@@ -12,12 +12,8 @@ import {
   Button,
   InputGroup,
   ButtonGroup,
-  Text,
-  List,
 } from "@chakra-ui/react";
 import {
-  CircleIcon,
-  DotIcon,
   MagnifyingGlassIcon,
 } from "@phosphor-icons/react";
 import { format } from "date-fns";
