@@ -71,7 +71,6 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   reset: () => {
     set({
-      mapRef: null,
       geoJsonFeatures: [],
       selectAreaLayer: null,
       tileLayers: [],
