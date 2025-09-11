@@ -165,64 +165,54 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
                     ? "Response copied to clipboard"
                     : "Copy response"
                 }
-                children={
-                  <IconButton
-                    variant="ghost"
-                    size="xs"
-                    onClick={() => {
-                      clipboard.copy();
-                      sendGAEvent("event", "response_feedback", {
-                        value: "copy_response",
-                        message_id: message.id,
-                      });
-                    }}
-                  >
-                    {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
-                  </IconButton>
-                }
-              />
-              <Tooltip
-                content="Good response"
-                children={
-                  <IconButton
-                    variant="ghost"
-                    size="xs"
-                    onClick={() =>
-                      sendGAEvent("event", "response_feedback", {
-                        value: "positive_response",
-                        message_id: message.id,
-                      })
-                    }
-                  >
-                    <ThumbsUpIcon />
-                  </IconButton>
-                }
-              />
-              <Tooltip
-                content="Bad response"
-                children={
-                  <IconButton
-                    variant="ghost"
-                    size="xs"
-                    onClick={() =>
-                      sendGAEvent("event", "response_feedback", {
-                        value: "negative_response",
-                        message_id: message.id,
-                      })
-                    }
-                  >
-                    <ThumbsDownIcon />
-                  </IconButton>
-                }
-              />
-              <Tooltip
-                content="Regenerate response"
-                children={
-                  <IconButton variant="ghost" size="xs">
-                    <ArrowsCounterClockwiseIcon />
-                  </IconButton>
-                }
-              />
+              >
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => {
+                    clipboard.copy();
+                    sendGAEvent("event", "response_feedback", {
+                      value: "copy_response",
+                      message_id: message.id,
+                    });
+                  }}
+                >
+                  {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
+                </IconButton>
+              </Tooltip>
+              <Tooltip content="Good response">
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={() =>
+                    sendGAEvent("event", "response_feedback", {
+                      value: "positive_response",
+                      message_id: message.id,
+                    })
+                  }
+                >
+                  <ThumbsUpIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip content="Bad response">
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={() =>
+                    sendGAEvent("event", "response_feedback", {
+                      value: "negative_response",
+                      message_id: message.id,
+                    })
+                  }
+                >
+                  <ThumbsDownIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip content="Regenerate response">
+                <IconButton variant="ghost" size="xs">
+                  <ArrowsCounterClockwiseIcon />
+                </IconButton>
+              </Tooltip>
             </Flex>
           </Flex>
         )}
