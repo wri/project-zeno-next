@@ -70,9 +70,9 @@ export function parseStreamMessage(
         textContent = contentObj.text;
       } else if (Array.isArray(content) && content.length > 0) {
         // Content is an array of objects - filter out Gemini thinking content
-        const validContent = content.filter((item: any) => {
+        const validContent = content.filter((item: unknown) => {
           // Skip Gemini thinking content
-          if (typeof item === "object" && item?.type === "thinking") {
+          if (typeof item === "object" && item && 'type' in item && (item as { type: unknown }).type === "thinking") {
             return false;
           }
           return true;
