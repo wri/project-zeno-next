@@ -83,8 +83,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           mb: 6,
           opacity: 0.8,
           transition: "opacity 0.16s ease",
-          _hover: { opacity: 1 }
-        }
+          _hover: { opacity: 1 },
+        },
       }}
     >
       <MapGl
@@ -121,9 +121,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         />
         <SelectAreaLayer />
         <DynamicTileLayers />
-        <Box hideBelow="md">
-          {!disableMapAreaControls && <MapAreaControls />}
-        </Box>
+
+        {!disableMapAreaControls && <MapAreaControls />}
 
         <AbsoluteCenter fontSize="sm" opacity={0.375} hideBelow="md">
           <PlusIcon />
@@ -135,7 +134,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         />
         {isMediumUp && (
           <>
-            <ScaleControl position="bottom-left"  />
+            <ScaleControl position="bottom-left" />
             <NavigationControl showCompass={false} position="bottom-left" />
           </>
         )}

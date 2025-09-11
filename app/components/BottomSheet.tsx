@@ -100,6 +100,7 @@ export default function DraggableBottomSheet({
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={{ top: 0.1, bottom: 0.1 }}
       pos="absolute"
+      zIndex={200}
       bottom={0}
       left={0}
       right={0}
