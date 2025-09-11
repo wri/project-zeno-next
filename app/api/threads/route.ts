@@ -6,6 +6,13 @@ import {
   getAPIRequestHeaders,
 } from "../shared/utils";
 
+interface Thread {
+  id: string;
+  name: string;
+  is_public?: boolean;
+  [key: string]: unknown;
+}
+
 export async function GET() {
   try {
     let token = await getAuthToken();
@@ -34,8 +41,8 @@ export async function GET() {
       );
     }
 
-    const json = await response.json();
-    const threadsWithPublicFlag = json.map((thread: any) => ({
+    const json = (await response.json()) as Thread[];
+    const threadsWithPublicFlag = json.map((thread) => ({
       ...thread,
       is_public: thread.is_public ?? false,
     }));
