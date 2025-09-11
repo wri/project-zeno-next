@@ -12,7 +12,16 @@ export interface ChatMessage {
 
 // Widget types for insights
 export interface InsightWidget {
-  type: "line" | "bar" | "table" | "dataset-card";
+  type:
+    | "line"
+    | "bar"
+    | "table"
+    | "dataset-card"
+    | "pie"
+    | "stacked-bar"
+    | "grouped-bar"
+    | "area"
+    | "scatter";
   title: string;
   description: string;
   data: unknown;
@@ -40,6 +49,7 @@ export interface UiContext {
       gadm_id?: string;
       src_id?: string;
       subtype?: string;
+      source?: string;
     };
     aoi_name: string;
     subregion_aois: null;
@@ -72,7 +82,9 @@ export interface StreamMessage {
   insights?: object[];
   charts_data?: object[];
   insight_count?: number;
-  timestamp: number;
+  timestamp: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface AOI {
@@ -86,12 +98,17 @@ export interface AOI {
 export interface DatasetInfo {
   dataset_id: number;
   dataset_name: string;
-  source: string;
-  reason: string;
-  data_layer: string;
+  source?: string;
+  reason?: string;
+  data_layer?: string;
   tile_url: string;
-  context_layer: string;
-  threshold: number | null;
+  context_layer?: string | null;
+  threshold?: number | null;
+  description?: string;
+  methodology?: string;
+  cautions?: string;
+  citation?: string;
+  [key: string]: unknown; // Allow other properties
 }
 
 // LangChain content structure (for internal API use)
@@ -102,13 +119,16 @@ export interface LangChainContent {
 
 export interface LangChainResponse {
   node: string;
+  timestamp: string;
   update: string;
 }
 
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
-  aoi: object;
+  aoi?: object;
+  start_date?: string;
+  end_date?: string;
   insights: object[];
   charts_data: object[];
   insight_count: number;

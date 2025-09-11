@@ -93,7 +93,7 @@ function MapAreaControls() {
             <Tooltip content="Cancel drawing">
               <IconButton
                 bg="bg"
-                _hover={{ bg: "bg.emphasized" }}
+                _hover={{ bg: "bg.muted" }}
                 aria-label="Cancel drawing"
                 onClick={cancelDrawing}
               >
@@ -103,7 +103,7 @@ function MapAreaControls() {
             <Tooltip content="Confirm area">
               <IconButton
                 bg="bg"
-                _hover={{ bg: "bg.emphasized" }}
+                _hover={{ bg: "bg.muted" }}
                 aria-label="Confirm area"
                 onClick={confirmDrawing}
                 disabled={isCreating}
@@ -118,7 +118,7 @@ function MapAreaControls() {
               <IconButton
                 aria-label="Upload area"
                 bg="bg"
-                _hover={{ bg: "bg.emphasized" }}
+                _hover={{ bg: "bg.muted" }}
                 onClick={() => {
                   toggleUploadAreaDialog();
                   setSelectionMode({ type: "Uploading", name: undefined });
@@ -130,7 +130,7 @@ function MapAreaControls() {
             <ButtonGroup attached variant="subtle" size="sm">
               <IconButton
                 bg="bg"
-                _hover={{ bg: "bg.emphasized" }}
+                _hover={{ bg: "bg.muted" }}
                 aria-label="Select area on map"
               >
                 <HandPointingIcon />
@@ -145,7 +145,7 @@ function MapAreaControls() {
                     px={1}
                     borderLeftRadius={0}
                     bg="bg"
-                    _hover={{ bg: "bg.emphasized" }}
+                    _hover={{ bg: "bg.muted" }}
                     aria-label="Select area from options"
                   >
                     <CaretDownIcon />
@@ -172,7 +172,7 @@ function MapAreaControls() {
             </ButtonGroup>
             <IconButton
               bg="bg"
-              _hover={{ bg: "bg.emphasized" }}
+              _hover={{ bg: "bg.muted" }}
               aria-label="Draw area bounds"
               onClick={() => {
                 startDrawing();

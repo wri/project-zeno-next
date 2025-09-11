@@ -1,12 +1,14 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import JSON5 from "json5";
 import { readDataStream } from "../../shared/read-data-stream";
 import { LangChainResponse, StreamMessage } from "@/app/types/chat";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../../shared/parse-stream-message";
-
-const TOKEN_NAME = "auth_token";
+import {
+  getAPIRequestHeaders,
+  getAuthToken,
+  getSessionToken,
+} from "../../shared/utils";
 
 export async function GET(
   request: NextRequest,
@@ -14,38 +16,40 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Create AbortController for timeout and cleanup
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log(
-        "SERVER TIMEOUT: Request exceeded 60 seconds - aborting stream"
+        "SERVER TIMEOUT: Request exceeded 5 minutes - aborting stream"
       );
       abortController.abort();
-    }, 60000); // 60 second timeout
+    }, 300000); // 5 minute timeout
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        signal: abortController.signal,
-      }
-    );
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...(await getAPIRequestHeaders()),
+      },
+      signal: abortController.signal,
+    });
 
     if (!response.ok) {
       clearTimeout(timeoutId);
+      console.error(response);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
       return NextResponse.json(
-        { error: "External API error" },
-        { status: response.status }
+        { error: "External API error", status: upstreamStatus },
+        { status: mappedStatus }
       );
     }
 
@@ -63,10 +67,15 @@ export async function GET(
       async start(controller) {
         const encoder = new TextEncoder();
         const reader = response.body!.getReader();
+        let controllerClosed = false;
 
         // Set up cleanup for abort signal
         const onAbort = () => {
           clearTimeout(timeoutId);
+
+          if (controllerClosed) {
+            return;
+          }
 
           console.log(
             "ABORT TRIGGERED: Stream aborted - cleaning up and sending timeout message"
@@ -78,7 +87,7 @@ export async function GET(
               type: "error",
               name: "timeout",
               content: "Request timed out. Try again later.",
-              timestamp: Date.now(),
+              timestamp: new Date().toISOString(),
             };
 
             controller.enqueue(
@@ -93,8 +102,10 @@ export async function GET(
 
           // Small delay to ensure message is sent before closing
           setTimeout(() => {
+            if (controllerClosed) return;
             try {
               controller.close();
+              controllerClosed = true;
               console.log("CONTROLLER CLOSED after timeout");
             } catch {
               console.log("Controller already closed");
@@ -120,7 +131,9 @@ export async function GET(
                 const langChainMessage: LangChainResponse = JSON.parse(data);
 
                 const updateObject = JSON5.parse(langChainMessage.update);
-                const type = updateObject.messages[0]?.kwargs.type as
+
+                const lastMessage = updateObject.messages?.at(-1);
+                const type = lastMessage?.kwargs.type as
                   | "ai"
                   | "tool"
                   | "human"
@@ -136,7 +149,11 @@ export async function GET(
 
                 // Parse LangChain response and extract useful information
                 const streamMessage = messageType
-                  ? parseStreamMessage(updateObject, messageType)
+                  ? parseStreamMessage(
+                      updateObject,
+                      messageType,
+                      new Date(langChainMessage.timestamp)
+                    )
                   : null;
 
                 if (!streamMessage) {
@@ -164,11 +181,14 @@ export async function GET(
           }
         }
 
-        try {
-          controller.close();
-        } catch {
-          // Controller might already be closed, ignore the error
-          console.log("Controller already closed");
+        if (!controllerClosed) {
+          try {
+            controller.close();
+            controllerClosed = true;
+          } catch {
+            // Controller might already be closed, ignore the error
+            console.log("Controller already closed");
+          }
         }
       },
     });
@@ -177,10 +197,18 @@ export async function GET(
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
+        // Prevent proxy/CDN buffering to allow progressive delivery
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+        Connection: "keep-alive",
       },
     });
   } catch (error) {
     console.log("error", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -190,29 +218,34 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...(await getAPIRequestHeaders()),
+      },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
-      throw new Error(`External API responded with status: ${response.status}`);
+      console.error(response);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
+      return NextResponse.json(
+        { error: "External API error", status: upstreamStatus },
+        { status: mappedStatus }
+      );
     }
 
     return NextResponse.json({ success: true });
@@ -231,25 +264,29 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(
-      `${API_CONFIG.ENDPOINTS.THREADS}/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(await getAPIRequestHeaders()),
+      },
+    });
 
     if (!response.ok) {
-      throw new Error(`External API responded with status: ${response.status}`);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
+      return NextResponse.json(
+        { error: "External API error", status: upstreamStatus },
+        { status: mappedStatus }
+      );
     }
 
     return NextResponse.json({ success: true });

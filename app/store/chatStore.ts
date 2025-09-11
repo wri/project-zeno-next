@@ -17,20 +17,37 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import useSidebarStore from "./sidebarStore";
+import {
+  showApiError,
+  showError,
+  showServiceUnavailableError,
+} from "@/app/hooks/useErrorHandler";
+import useAuthStore from "./authStore";
 
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
+  toolSteps: string[];
 }
 
 interface ChatActions {
   reset: () => void;
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void;
-  sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
+  addMessage: (
+    message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
+  ) => void;
+  sendMessage: (
+    message: string,
+    queryType?: QueryType
+  ) => Promise<{ isNew: boolean; id: string }>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
-  fetchThread: (threadId: string) => Promise<void>;
+  fetchThread: (
+    threadId: string,
+    abortController?: AbortController
+  ) => Promise<void>;
+  addToolStep: (toolName: string) => void;
+  clearToolSteps: () => void;
 }
 
 const initialState: ChatState = {
@@ -38,22 +55,25 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message: `Hi, I’m your Global Nature Watch assistant.
-I help you explore how our planet’s land and ecosystems are changing, powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
+      message: `Hi, I'm your Global Nature Watch assistant.
+I help you explore how our planet's land and ecosystems are changing, powered by trusted, open-source data from Land & Carbon Lab and Global Forest Watch.
 
-Ask a question and let’s see what we can do for nature.`,
+Ask a question and let's see what we can do for nature.`,
       timestamp: new Date().toISOString(),
     },
   ],
   isLoading: false,
   currentThreadId: null,
+  toolSteps: [],
 };
 
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void,
+  addToolStep: (toolName: string) => void
 ) {
+  console.log("processStreamMessage", streamMessage);
   if (streamMessage.type === "error") {
     // Handle timeout errors specifically
     if (streamMessage.name === "timeout") {
@@ -61,41 +81,64 @@ async function processStreamMessage(
         type: "error",
         message:
           streamMessage.content || "Request timed out. Please try again.",
+        timestamp: streamMessage.timestamp,
       });
+      showApiError(
+        streamMessage.content || "Request timed out. Please try again.",
+        { title: "Request Timed Out" }
+      );
     } else {
       // Handle other error messages from LangChain tools
       addMessage({
         type: "error",
         message:
           "I encountered an error while processing your request. Please try rephrasing your question or try again.",
+        timestamp: streamMessage.timestamp,
       });
+      showError(
+        "I encountered an error while processing your request. Please try rephrasing your question or try again.",
+        { title: "Processing Error" }
+      );
     }
   } else if (streamMessage.type === "text" && streamMessage.text) {
     addMessage({
       type: "assistant",
       message: streamMessage.text,
+      timestamp: streamMessage.timestamp,
     });
   } else if (streamMessage.type === "tool") {
+    // Add tool step to reasoning display
+    if (streamMessage.name) {
+      addToolStep(streamMessage.name);
+    }
+
     // Special handling for generate_insights tool
     if (streamMessage.name === "generate_insights" && streamMessage.insights) {
-      return generateInsightsTool(streamMessage, addMessage);
+      // Non-blocking: do not await tool side-effects
+      void Promise.resolve().then(() =>
+        generateInsightsTool(streamMessage, addMessage)
+      );
+      return;
     }
-    // Special handling for pick-aoi tool (previously location-tool)
-    else if (streamMessage.name === "pick-aoi" && streamMessage.aoi) {
-      return await pickAoiTool(streamMessage, addMessage);
+    // Special handling for pick_aoi tool (previously location-tool)
+    else if (streamMessage.name === "pick_aoi" && streamMessage.aoi) {
+      // Non-blocking: geometry fetch can be slow; don't stall stream
+      void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
+      return;
     }
-    // Handling for pick-dataset tool
-    else if (streamMessage.name === "pick-dataset") {
-      return pickDatasetTool(streamMessage, addMessage);
+    // Handling for pick_dataset tool
+    else if (streamMessage.name === "pick_dataset") {
+      void Promise.resolve().then(() =>
+        pickDatasetTool(streamMessage, addMessage)
+      );
+      return;
     }
-    // Handling for pull-data tool
-    else if (streamMessage.name === "pull-data") {
-      return pullDataTool(streamMessage, addMessage);
-    } else {
-      addMessage({
-        type: "assistant",
-        message: `Tool: ${streamMessage.name || "Unknown"}`,
-      });
+    // Handling for pull_data tool
+    else if (streamMessage.name === "pull_data") {
+      void Promise.resolve().then(() =>
+        pullDataTool(streamMessage, addMessage)
+      );
+      return;
     }
   }
 }
@@ -109,7 +152,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const newMessage: ChatMessage = {
       ...message,
       id: Date.now().toString() + "-" + Math.random().toString(36).substr(2, 9),
-      timestamp: new Date().toISOString(),
+      timestamp: message.timestamp || new Date().toISOString(),
     };
 
     set((state) => ({
@@ -124,8 +167,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   sendMessage: async (message: string, queryType: QueryType = "query") => {
-    const { addMessage, setLoading, currentThreadId, generateNewThread } =
-      get();
+    const {
+      addMessage,
+      setLoading,
+      currentThreadId,
+      generateNewThread,
+      addToolStep,
+      clearToolSteps,
+    } = get();
     const { context } = useContextStore.getState();
 
     // Generate thread ID if this is the first message
@@ -138,6 +187,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       context,
     });
 
+    // Clear any previous tool steps and start loading
+    clearToolSteps();
     setLoading(true);
 
     // Build ui_context from current context
@@ -155,6 +206,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           gadm_id: areaContext.aoiData.gadm_id,
           src_id: areaContext.aoiData.src_id,
           subtype: areaContext.aoiData.subtype,
+          source: areaContext.aoiData.source,
         },
         aoi_name: areaContext.aoiData.name,
         subregion_aois: null,
@@ -206,12 +258,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const error = new Error("Failed to send message");
+        (error as Error & { status?: number }).status = response.status;
+        throw error;
       }
 
       if (!response.body) {
         throw new Error("No response body received");
       }
+
+      // Update prompt usage from response headers (case-insensitive)
+      useAuthStore.getState().setUsageFromHeaders(response.headers);
 
       const reader = response.body.getReader();
 
@@ -223,7 +280,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           console.log("API Stream message:", data);
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
-            await processStreamMessage(streamMessage, addMessage);
+            await processStreamMessage(streamMessage, addMessage, addToolStep);
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -256,28 +313,85 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           message:
             "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
         });
+        showApiError(
+          "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
+          { title: "Client Timeout" }
+        );
+      } else if (
+        error instanceof TypeError &&
+        error.message.includes("network")
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "Unable to connect to the server. Please check your internet connection and try again.",
+        });
+        showApiError(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+          { title: "Network Error" }
+        );
+      } else if (
+        error instanceof Error &&
+        error.message.includes("Failed to fetch")
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "Network request failed. Please check your connection and try again.",
+        });
+        showApiError("Network request failed. Please try again.", {
+          title: "Network Request Failed",
+        });
+      } else if (
+        error instanceof Error &&
+        (error as Error & { status?: number }).status &&
+        (error as Error & { status?: number }).status! >= 400 &&
+        (error as Error & { status?: number }).status! < 500
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "The service is currently unavailable. Please try again later.",
+        });
+        showServiceUnavailableError();
       } else {
         addMessage({
-          type: "assistant",
+          type: "error",
           message:
             "Sorry, there was an error processing your request. Please try again.",
         });
+        showError(
+          "Sorry, there was an error processing your request. Please try again."
+        );
       }
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
+
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      return { isNew: !currentThreadId, id: threadId };
     }
   },
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  fetchThread: async (threadId: string) => {
-    const { setLoading, addMessage } = get();
+  addToolStep: (toolName: string) => {
+    set((state) => ({
+      toolSteps: [...state.toolSteps, toolName],
+    }));
+  },
 
+  clearToolSteps: () => set({ toolSteps: [] }),
+
+  fetchThread: async (threadId: string, abort?: AbortController) => {
+    const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
+    const { upsertContextByType } = useContextStore.getState();
+
+    // Clear any previous tool steps and start loading
+    clearToolSteps();
     setLoading(true);
     // Set up abort controller for client-side timeout
-    const abortController = new AbortController();
+    const abortController = abort || new AbortController();
     const timeoutId = setTimeout(() => {
       console.log(
         "CLIENT TIMEOUT: Request exceeded 5 minutes 10 seconds - aborting request"
@@ -291,7 +405,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const error = new Error("Failed to fetch thread");
+        (error as Error & { status?: number }).status = response.status;
+        throw error;
       }
 
       if (!response.body) {
@@ -308,16 +424,46 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             const streamMessage: StreamMessage = JSON.parse(data);
 
             if (streamMessage.type === "human") {
+              if (streamMessage.aoi) {
+                const aoi = streamMessage.aoi as {
+                  name: string;
+                  gadm_id: string;
+                  src_id: string;
+                  subtype: string;
+                };
+                upsertContextByType({
+                  contextType: "area",
+                  content: aoi.name,
+                  aoiData: aoi,
+                });
+                await pickAoiTool(streamMessage, addMessage);
+              }
+
+              if (streamMessage.start_date && streamMessage.end_date) {
+                upsertContextByType({
+                  contextType: "date",
+                  content: `${streamMessage.start_date} — ${streamMessage.end_date}`,
+                  dateRange: {
+                    start: new Date(streamMessage.start_date),
+                    end: new Date(streamMessage.end_date),
+                  },
+                });
+              }
+
               // Add user message
               addMessage({
                 type: "user",
                 message: streamMessage.text!,
+                // The context will have been updated by the upsertContextByType
+                // calls above. Get the updated context from the store
+                context: useContextStore.getState().context,
+                timestamp: streamMessage.timestamp,
               });
+
               return;
             }
-
             console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
-            await processStreamMessage(streamMessage, addMessage);
+            await processStreamMessage(streamMessage, addMessage, addToolStep);
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -340,7 +486,30 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         console.log("FRONTEND: Stream ended due to abort signal");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      if (abortController.signal.aborted) {
+        console.log("FRONTEND: Stream ended due to abort signal");
+      } else {
+        console.error("Error sending message:", error);
+        const status = (error as Error & { status?: number }).status;
+        if (status && status >= 500) {
+          showApiError("Server error while loading thread.", {
+            title: "Server Error",
+          });
+        } else if (status && status >= 400 && status < 500) {
+          showApiError("Unable to load thread.", {
+            title: "Request Error",
+          });
+        } else if (
+          error instanceof TypeError &&
+          error.message.toLowerCase().includes("network")
+        ) {
+          showApiError("Network error. Please check your connection.", {
+            title: "Network Error",
+          });
+        } else {
+          showError("Unexpected error while loading thread.");
+        }
+      }
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);

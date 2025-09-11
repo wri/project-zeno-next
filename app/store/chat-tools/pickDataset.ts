@@ -7,7 +7,7 @@ import {
 
 export function pickDatasetTool(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   try {
     // Check if we have dataset information with a tile_url
@@ -28,22 +28,18 @@ export function pickDatasetTool(
         type: "widget",
         message: "",
         widgets: [datasetWidget],
-      });
-    } else {
-      // Fallback for datasets without tile_url
-      addMessage({
-        type: "assistant",
-        message: `Dataset found: ${streamMessage.content || "Unknown dataset"}`,
+        timestamp: streamMessage.timestamp,
       });
     }
   } catch (error) {
-    console.error("Error processing pick-dataset tool:", error);
+    console.error("Error processing pick_dataset tool:", error);
 
     addMessage({
-      type: "assistant",
+      type: "error",
       message: `Dataset tool executed but encountered an error: ${
         streamMessage.content || "Unknown error"
       }`,
+      timestamp: streamMessage.timestamp,
     });
   }
 }

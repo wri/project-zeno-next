@@ -1,10 +1,27 @@
-import { Flex, Heading, Button, Progress } from "@chakra-ui/react";
+import {
+  Flex,
+  Heading,
+  Button,
+  Progress,
+  Badge,
+  Menu,
+  Portal,
+  Link as ChakraLink,
+} from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
-import { LifebuoyIcon, UserIcon } from "@phosphor-icons/react";
+import {
+  GearSixIcon,
+  LifebuoyIcon,
+  SignOutIcon,
+  UserIcon,
+} from "@phosphor-icons/react";
+
 import useAuthStore from "../store/authStore";
+import Link from "next/link";
 
 function PageHeader() {
-  const { userEmail } = useAuthStore();
+  const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
+    useAuthStore();
 
   return (
     <Flex
@@ -16,28 +33,47 @@ function PageHeader() {
       bg="primary.solid"
       color="fg.inverted"
     >
-      <Flex gap="2">
-        <LclLogo width={16} avatarOnly />
-        <Heading as="h1" size="sm">
-          Global Nature Watch
-        </Heading>
+      <Flex gap="2" alignItems="center">
+        <ChakraLink
+          as={Link}
+          href="/"
+          display="flex"
+          transition="opacity 0.24s ease"
+          _hover={{ opacity: 0.8 }}
+        >
+          <LclLogo width={16} avatarOnly fill="white" />
+          <Heading as="h1" size="sm" color="fg.inverted">
+            Global Nature Watch
+          </Heading>
+        </ChakraLink>
+        <Badge
+          colorPalette="primary"
+          bg="primary.800"
+          letterSpacing="wider"
+          variant="solid"
+          size="xs"
+        >
+          BETA
+        </Badge>
       </Flex>
       <Flex gap="6" alignItems="center">
-        <Button
-          variant="solid"
-          colorPalette="primary"
-          _hover={{ bg: "primary.fg" }}
-          size="sm"
-        >
-          <LifebuoyIcon />
-          Help
-        </Button>
+        <Link href="https://help.globalnaturewatch.org/" target="_blank">
+          <Button
+            variant="solid"
+            colorPalette="primary"
+            _hover={{ bg: "primary.fg" }}
+            size="sm"
+          >
+            <LifebuoyIcon />
+            Help
+          </Button>
+        </Link>
 
         <Progress.Root
           size="xs"
           min={0}
           max={100}
-          value={40}
+          value={(usedPrompts / totalPrompts) * 100}
           minW="6rem"
           textAlign="center"
           rounded="full"
@@ -49,25 +85,60 @@ function PageHeader() {
             fontWeight="normal"
             color="primary.100"
           >
-            40/100 Prompts
+            {usedPrompts}/{totalPrompts} Prompts
           </Progress.Label>
           <Progress.Track bg="primary.950" maxH="4px">
             <Progress.Range bg="white" />
           </Progress.Track>
         </Progress.Root>
-
-        <Button
-          asChild
-          variant="solid"
-          colorPalette="primary"
-          _hover={{ bg: "primary.fg" }}
-          size="sm"
-        >
-          <Flex>
+        {isAuthenticated ? (
+          <Menu.Root positioning={{ placement: "bottom-end" }}>
+            <Menu.Trigger asChild>
+              <Button
+                variant="solid"
+                colorPalette="primary"
+                _hover={{ bg: "primary.fg" }}
+                size="sm"
+              >
+                <UserIcon />
+                {userEmail || "User name"}
+              </Button>
+            </Menu.Trigger>
+            <Portal>
+              <Menu.Positioner>
+                <Menu.Content css={{ "& a": { cursor: "pointer" } }}>
+                  <Menu.Item value="dashboard" asChild>
+                    <Link href="/dashboard">
+                      <GearSixIcon />
+                      Settings
+                    </Link>
+                  </Menu.Item>
+                  <Menu.Separator />
+                  <Menu.Item
+                    value="logout"
+                    cursor="pointer"
+                    color="fg.error"
+                    _hover={{ bg: "bg.error", color: "fg.error" }}
+                    onClick={() => clearAuth()}
+                  >
+                    <SignOutIcon />
+                    Logout
+                  </Menu.Item>
+                </Menu.Content>
+              </Menu.Positioner>
+            </Portal>
+          </Menu.Root>
+        ) : (
+          <Button
+            variant="solid"
+            colorPalette="primary"
+            _hover={{ bg: "primary.fg" }}
+            size="sm"
+          >
             <UserIcon />
-            <a href="#">{userEmail || "User name"}</a>
-          </Flex>
-        </Button>
+            Log in / Sign Up
+          </Button>
+        )}
       </Flex>
     </Flex>
   );

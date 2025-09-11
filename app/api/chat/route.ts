@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import JSON5 from "json5";
 import {
   ChatAPIRequest,
@@ -9,16 +8,20 @@ import {
 import { readDataStream } from "../shared/read-data-stream";
 import { API_CONFIG } from "@/app/config/api";
 import { parseStreamMessage } from "../shared/parse-stream-message";
-
-const TOKEN_NAME = "auth_token";
+import {
+  getAuthToken,
+  getSessionToken,
+  getAPIRequestHeaders,
+} from "../shared/utils";
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(TOKEN_NAME)?.value;
+    let token = await getAuthToken();
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.warn("No auth token found, using anonymous access");
+      token = await getSessionToken();
+      // return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body: ChatAPIRequest = await request.json();
@@ -82,6 +85,7 @@ export async function POST(request: NextRequest) {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          ...(await getAPIRequestHeaders()),
         },
         body: JSON.stringify({
           query,
@@ -97,7 +101,15 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       clearTimeout(timeoutId);
-      throw new Error(`External API responded with status: ${response.status}`);
+      const upstreamStatus = response.status;
+      const mappedStatus = upstreamStatus >= 500 ? 500 : 400;
+      return NextResponse.json(
+        {
+          error: "External API error",
+          status: upstreamStatus,
+        },
+        { status: mappedStatus }
+      );
     }
 
     // Check if the response is streaming
@@ -114,6 +126,7 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
         const reader = response.body!.getReader();
+        let controllerClosed = false;
 
         try {
           // Set up cleanup for abort signal
@@ -128,12 +141,13 @@ export async function POST(request: NextRequest) {
 
             // Send timeout message to frontend before closing
             try {
+              if (controllerClosed) return;
               const timeoutMessage: StreamMessage = {
                 type: "error",
                 name: "timeout",
                 content:
                   "Request timed out after 5 minutes. Please try a simpler query or try again later.",
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
               };
 
               controller.enqueue(
@@ -148,8 +162,10 @@ export async function POST(request: NextRequest) {
 
             // Small delay to ensure message is sent before closing
             setTimeout(() => {
+              if (controllerClosed) return;
               try {
                 controller.close();
+                controllerClosed = true;
                 console.log("CONTROLLER CLOSED after timeout");
               } catch {
                 console.log("Controller already closed");
@@ -168,56 +184,55 @@ export async function POST(request: NextRequest) {
             abortController,
             reader,
             onData: (data: string, isFinal: boolean) => {
-              if (isFinal) {
-                try {
-                  const langChainMessage: LangChainResponse = JSON.parse(data);
+              try {
+                const langChainMessage: LangChainResponse = JSON.parse(data);
+
+                if (isFinal) {
                   console.log("Final LangChain message:", langChainMessage);
-
-                  // Same parsing logic for final message
-                  const update = langChainMessage.update;
-                  const updateObject = JSON5.parse(update);
-                  const streamMessage = parseStreamMessage(
-                    updateObject,
-                    "agent"
-                  );
-
-                  if (streamMessage) {
-                    controller.enqueue(
-                      encoder.encode(JSON.stringify(streamMessage) + "\n")
-                    );
-                  }
-                } catch (err) {
-                  console.error("Failed to parse final buffer", data, err);
                 }
-              } else {
-                try {
-                  const langChainMessage: LangChainResponse = JSON.parse(data);
 
-                  const messageType = langChainMessage.node;
-                  const message = langChainMessage.update;
-                  const updateObject = JSON5.parse(message);
+                const updateObject = JSON5.parse(langChainMessage.update);
+                const date = langChainMessage.timestamp
+                  ? new Date(langChainMessage.timestamp)
+                  : new Date();
 
-                  // Parse LangChain response and extract useful information
-                  const streamMessage = parseStreamMessage(
-                    updateObject,
-                    messageType as "agent" | "tools"
+                // Derive message type from the last message's kwargs.type like threads endpoint
+                const lastMessage = updateObject?.messages?.at(-1);
+                const rawType = lastMessage?.kwargs?.type as
+                  | "ai"
+                  | "tool"
+                  | "human"
+                  | undefined;
+                const messageType = rawType
+                  ? ({
+                      ai: "agent",
+                      tool: "tools",
+                      human: "human",
+                    }[rawType] as "agent" | "tools" | "human")
+                  : undefined;
+
+                // Parse LangChain response and extract useful information
+                const streamMessage = messageType
+                  ? parseStreamMessage(updateObject, messageType, date)
+                  : null;
+
+                if (streamMessage) {
+                  controller.enqueue(
+                    encoder.encode(JSON.stringify(streamMessage) + "\n")
                   );
-
-                  // Send simplified message to client if we have something useful
-                  if (streamMessage) {
-                    controller.enqueue(
-                      encoder.encode(JSON.stringify(streamMessage) + "\n")
-                    );
-                  } else {
-                    // Log unhandled content for debugging
-                    console.log(
-                      "Unhandled message type:",
-                      JSON.stringify(updateObject)
-                    );
-                  }
-                } catch (err) {
-                  console.error("Failed to parse line", data, err);
+                } else {
+                  // Log unhandled content for debugging
+                  console.log(
+                    `Unhandled${isFinal ? " [final] " : " "}message type:`,
+                    JSON.stringify(updateObject)
+                  );
                 }
+              } catch (err) {
+                console.error(
+                  `Failed to parse${isFinal ? " [final] " : " "}message`,
+                  data,
+                  err
+                );
               }
             },
           });
@@ -230,24 +245,44 @@ export async function POST(request: NextRequest) {
           }
         } finally {
           clearTimeout(timeoutId);
-          if (!controller.desiredSize || controller.desiredSize === 0) {
-            // Controller already closed
-            return;
-          }
-          try {
-            controller.close();
-          } catch {
-            // Controller might already be closed, ignore the error
-            console.log("Controller already closed");
+          if (!controllerClosed) {
+            if (!controller.desiredSize || controller.desiredSize === 0) {
+              // Controller already closed
+              return;
+            }
+            try {
+              controller.close();
+              controllerClosed = true;
+            } catch {
+              // Controller might already be closed, ignore the error
+              console.log("Controller already closed");
+            }
           }
         }
       },
     });
 
+    // Forward prompts usage headers from upstream if present
+    const getHeaderCaseInsensitive = (name: string): string | null => {
+      for (const [key, value] of response.headers.entries()) {
+        if (key.toLowerCase() === name.toLowerCase()) return value;
+      }
+      return null;
+    };
+
+    const promptsQuota = getHeaderCaseInsensitive("X-Prompts-Quota");
+    const promptsUsed = getHeaderCaseInsensitive("X-Prompts-Used");
+
     return new NextResponse(stream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
+        // Prevent proxy/CDN buffering to allow progressive delivery
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+        Connection: "keep-alive",
+        ...(promptsQuota ? { "X-Prompts-Quota": promptsQuota } : {}),
+        ...(promptsUsed ? { "X-Prompts-Used": promptsUsed } : {}),
       },
     });
   } catch (error) {

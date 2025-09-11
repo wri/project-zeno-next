@@ -1,11 +1,11 @@
 import { ChatMessage, StreamMessage } from "@/app/types/chat";
 
 export function pullDataTool(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id" | "timestamp">) => void
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
-  addMessage({
-    type: "assistant",
-    message: `Data pull tool executed.`,
-  });
+  // Tool execution is now handled by the reasoning component
+  // No message needed here
 }

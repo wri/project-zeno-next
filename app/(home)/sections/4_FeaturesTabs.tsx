@@ -1,0 +1,148 @@
+import {
+  Box,
+  Container,
+  Heading,
+  Text,
+  Button,
+  Tabs,
+  Image,
+} from "@chakra-ui/react";
+import { CaretRightIcon } from "@phosphor-icons/react";
+import Link from "next/link";
+
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
+const FEATURE_TABS = [
+  {
+    value: "feature-tab-1",
+    label: "Find new areas of interest",
+    description:
+      "Using our data and technology to enrich research and support governments in policy writing.",
+    image: "/feature-tab-1.png",
+  },
+  {
+    value: "feature-tab-2",
+    label: "Monitor your existing portfolio",
+    description:
+      "Track changes and disturbances in your areas of interest with real-time updates.",
+    image: "https://placehold.co/800x500",
+  },
+  {
+    value: "feature-tab-3",
+    label: "Compare national or regional impact",
+    description:
+      "Analyze the effects of policies and interventions across different regions.",
+    image: "https://placehold.co/800x500",
+  },
+];
+
+export default function FeaturesTabsSection() {
+  return (
+    <Box
+      py={{ base: 14, md: 24 }}
+      pb={{ base: 14, md: 28 }}
+      borderBlockEnd="1px solid"
+      borderColor="border"
+    >
+      <Container>
+        <Container textAlign="center" maxW="3xl" px={0}>
+          <Heading size={{ base: "3xl", md: "4xl" }}>
+            Get answers to your toughest questions about natural landscapes
+          </Heading>
+          <Text fontSize="lg">
+            Global Nature Watch&rsquo;s AI understands your questions in plain
+            language and delivers the most relevant data, satellite imagery and
+            insights, formatted to fit your workflow.
+          </Text>
+          {LANDING_PAGE_VERSION !== "closed" && (
+            <Button
+              asChild
+              variant="solid"
+              colorPalette="primary"
+              mt="4"
+              rounded="lg"
+            >
+              <Link href="/app">
+                Launch the Preview
+                <CaretRightIcon weight="bold" />
+              </Link>
+            </Button>
+          )}
+        </Container>
+        <Container mt="12" maxW="5xl" px={0}>
+          <Tabs.Root
+            orientation="vertical"
+            colorPalette="primary"
+            flexDirection={{ base: "column", md: "row" }}
+            defaultValue="feature-tab-1"
+          >
+            <Tabs.List borderEndWidth={0} gap={6}>
+              {FEATURE_TABS.map((tab) => (
+                <Tabs.Trigger
+                  key={tab.value}
+                  value={tab.value}
+                  display="flex"
+                  flexDir="column"
+                  maxW="sm"
+                  alignItems="flex-start"
+                  textAlign="left"
+                  height="auto"
+                  css={{
+                    "& > *:not(:first-child)": {
+                      display: "none",
+                    },
+                  }}
+                  _before={{
+                    content: "' '",
+                    position: "absolute",
+                    insetBlock: "var(--indicator-offset-y, 0)",
+                    insetInlineStart: "var(--indicator-offset-x, 0)",
+                    width: "var(--indicator-thickness, 2px)",
+                    background: "bg.subtle",
+                  }}
+                  _selected={{
+                    "&[data-orientation=vertical]::before": {
+                      insetInlineStart: "var(--indicator-offset-x, 0)",
+                      insetInlineEnd: 0,
+                      background:
+                        "var(--indicator-color, var(--indicator-color-fallback))",
+                    },
+                    "& > *": {
+                      display: "initial",
+                    },
+                  }}
+                >
+                  <Heading size="lg" mb={0}>
+                    {tab.label}
+                  </Heading>
+                  <Text fontWeight="normal">{tab.description}</Text>
+                </Tabs.Trigger>
+              ))}
+            </Tabs.List>
+            {FEATURE_TABS.map((tab) => (
+              <Tabs.Content
+                key={tab.value}
+                value={tab.value}
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                gap="4"
+                maxW="2xl"
+              >
+                <Image src={tab.image} alt={tab.label} />
+                <Text
+                  fontSize="xs"
+                  textAlign="center"
+                  as="figcaption"
+                  color="fg.muted"
+                >
+                  {tab.description}
+                </Text>
+              </Tabs.Content>
+            ))}
+          </Tabs.Root>
+        </Container>
+      </Container>
+    </Box>
+  );
+}
