@@ -36,7 +36,7 @@ function ThreadActionsMenu({
       await renameThread(thread.id, name);
       setRenameOpen(false);
     },
-    [thread.id, renameThread]
+    [thread.id, thread.name, renameThread]
   );
 
   const onDelete = useCallback(async () => {
@@ -52,7 +52,7 @@ function ThreadActionsMenu({
     } catch (e) {
       console.error("Failed to delete thread", e);
     }
-  }, [currentThreadId, thread.id, router, deleteThread]);
+  }, [currentThreadId, thread.id, thread.name, router, deleteThread]);
 
   return (
     <>
