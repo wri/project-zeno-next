@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import {
   ListCustomAreasResponseSchema,
@@ -14,7 +14,9 @@ async function fetchCustomAreas(): Promise<ListCustomAreasResponse> {
 
   if (!res.ok) {
     const error = await res.json();
-    const errorWithStatus = new Error(error.error || `Request failed: ${res.statusText}`);
+    const errorWithStatus = new Error(
+      error.error || `Request failed: ${res.statusText}`
+    );
     (errorWithStatus as Error & { status?: number }).status = res.status;
     throw errorWithStatus;
   }
@@ -25,7 +27,7 @@ async function fetchCustomAreas(): Promise<ListCustomAreasResponse> {
 
 export function useCustomAreasList() {
   const { showServiceUnavailableError, showApiError } = useErrorHandler();
-  
+
   const {
     data: customAreas,
     isLoading,
@@ -39,9 +41,17 @@ export function useCustomAreasList() {
   useEffect(() => {
     if (error) {
       const errorWithStatus = error as Error & { status?: number };
-      if (errorWithStatus.status === 400 || errorWithStatus.status === 401 || errorWithStatus.status === 403) {
+      if (
+        errorWithStatus.status === 400 ||
+        errorWithStatus.status === 401 ||
+        errorWithStatus.status === 403
+      ) {
         showServiceUnavailableError("Custom Areas");
-      } else if (errorWithStatus.status && errorWithStatus.status >= 400 && errorWithStatus.status < 500) {
+      } else if (
+        errorWithStatus.status &&
+        errorWithStatus.status >= 400 &&
+        errorWithStatus.status < 500
+      ) {
         showApiError(error, { title: "Unable to Load Areas" });
       }
     }
@@ -53,4 +63,16 @@ export function useCustomAreasList() {
     error,
     refetch,
   };
+}
+
+export function useCustomAreasListSuspense() {
+  const result = useSuspenseQuery<ListCustomAreasResponse>({
+    queryKey: ["customAreas"],
+    queryFn: fetchCustomAreas,
+  });
+
+  return {
+    customAreas: result.data,
+    refetch: result.refetch,
+  } as const;
 }
