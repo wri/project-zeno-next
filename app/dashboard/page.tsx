@@ -387,7 +387,7 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="email">
                 <Field.Label>Email address</Field.Label>
-                <Input type="email" value={form.email} readOnly />
+                <Input type="email" value={form.email} readOnly disabled />
               </Field.Root>
             </GridItem>
           </Grid>
