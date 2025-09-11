@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
+import { showApiError } from "@/app/hooks/useErrorHandler";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -146,10 +147,12 @@ export default function OnboardingPage() {
 
   const countries = useMemo(() => {
     const items = config
-      ? Object.entries(config.countries).map(([value, label]) => ({
-          label,
-          value,
-        }))
+      ? Object.entries(config.countries)
+          .map(([value, label]) => ({
+            label,
+            value,
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label))
       : [];
     return createListCollection({ items });
   }, [config]);
@@ -194,10 +197,40 @@ export default function OnboardingPage() {
         throw new Error("Failed to save profile");
       }
 
-      router.push("/app");
+      // Poll for hasProfile to avoid middleware redirect race
+      const waitForProfileCompletion = async (
+        maxAttempts = 20,
+        delayMs = 500
+      ) => {
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          try {
+            const check = await fetch("/api/auth/me", { cache: "no-store" });
+            if (check.ok) {
+              const data = await check.json();
+              if (data?.hasProfile) return true;
+            }
+          } catch {
+            // ignore transient errors
+          }
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+        return false;
+      };
+
+      const verified = await waitForProfileCompletion();
+      if (verified) {
+        router.push("/app");
+      } else {
+        showApiError("We saved your profile, but it’s not verified yet.", {
+          title: "Almost there",
+          description:
+            "Please wait a moment and try Continue again. Your profile status is updating.",
+        });
+      }
     } catch (err) {
       // Basic error handling; could be replaced with toast
       console.error(err);
+      showApiError(err as Error, { title: "Failed to save profile" });
     } finally {
       setIsSubmitting(false);
     }
@@ -609,6 +642,7 @@ export default function OnboardingPage() {
               colorPalette="primary"
               disabled={!isValid || isSubmitting}
               loading={isSubmitting}
+              loadingText="Finalizing profile..."
             >
               Continue
             </Button>
