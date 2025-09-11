@@ -281,6 +281,7 @@ function ValidationErrorDisplay() {
       borderRadius="md"
       boxShadow="sm"
       position="relative"
+      order={{ base: -1, md: "initial" }}
     >
       <Tooltip content="Close area validation error">
         <IconButton

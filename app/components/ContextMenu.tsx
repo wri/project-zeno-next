@@ -1,20 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Box,
   Card,
   Stack,
   Field,
-  Flex,
   Dialog,
   Portal,
-  Input,
-  Badge,
   Button,
-  InputGroup,
-  NativeSelect,
   ButtonGroup,
 } from "@chakra-ui/react";
-import { InfoIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { InfoIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
@@ -31,23 +25,10 @@ const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
   })
 );
 
-const LAYER_TAGS = [
-  { label: "Recent", selected: true },
-  { label: "Forest Change" },
-  { label: "Land Cover" },
-  { label: "Land Use" },
-  { label: "Climate" },
-  { label: "Biodiversity" },
-];
 
 import { DATASET_CARDS } from "../constants/datasets";
 
 const LAYER_CARDS = DATASET_CARDS;
-
-const AREA_TAGS = [
-  { label: "In this conversation", selected: true },
-  { label: "From past conversations" },
-];
 
 const AREA_CARDS = [
   {
@@ -82,14 +63,14 @@ function ContextNav({
 }) {
   return (
     <Stack
-      direction="column"
+      direction={{ base: "row", md: "column" }}
       bg="bg"
       flexShrink={0}
       gap={2}
       p={3}
       py={4}
-      w="10rem"
-      borderRight="1px solid"
+      w={{ base: "full", md: "10rem" }}
+      borderRight={{ base: "none", md: "1px solid" }}
       borderColor="border"
     >
       {CONTEXT_NAV.map((nav) => (
@@ -142,24 +123,6 @@ function LayerCardList({
   );
 }
 
-function TagList({ tags }: { tags: { label: string; selected?: boolean }[] }) {
-  return (
-    <Flex gap="2" maxW="100%" overflow="auto" flexShrink={0}>
-      {tags.map((tag) => (
-        <Button
-          key={tag.label}
-          size="xs"
-          h={6}
-          borderRadius="full"
-          colorPalette={tag.selected ? "primary" : undefined}
-          variant={tag.selected ? undefined : "outline"}
-        >
-          {tag.label}
-        </Button>
-      ))}
-    </Flex>
-  );
-}
 
 function ContextMenu({
   contextType,
@@ -171,25 +134,25 @@ function ContextMenu({
   onOpenChange: (e: { open: boolean }) => void;
 }) {
   const [selectedContextType, setSelectedContextType] = useState(contextType);
-  const selectedItems = 0;
 
   return (
     <Dialog.Root
       placement="bottom"
       motionPreset="slide-in-bottom"
-      size="lg"
+      size={{ base: "xs", md: "lg" }}
       open={open}
       scrollBehavior="inside"
       onOpenChange={onOpenChange}
     >
       <Portal>
+        <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner>
-          <Dialog.Content maxH="75vh" minH="30rem">
+          <Dialog.Content maxH="75vh" minH="30rem" overflow="hidden" mx={{ base: 2, md: "auto" }}>
             <Dialog.Body
               p={0}
               h="full"
               display="flex"
-              overflow="visible"
+              flexDirection={{ base: "column", md: "row" }}
               minH={0}
             >
               {/* Modal Navigation */}
@@ -202,28 +165,6 @@ function ContextMenu({
               {selectedContextType === "area" && <AreaMenu />}
               {selectedContextType === "date" && <DateMenu />}
             </Dialog.Body>
-            <Dialog.Footer
-              justifyContent="space-between"
-              borderTop="1px solid"
-              borderColor="border"
-              py={2}
-              px={3}
-            >
-              <Badge size="sm" borderRadius="full">
-                {/* Update with count of selected items */}
-                {selectedItems ? selectedItems : "No items"} selected{" "}
-              </Badge>
-              <Button
-                size="xs"
-                variant="ghost"
-                borderRadius="full"
-                colorPalette="primary"
-                ml="auto"
-                disabled={!selectedItems}
-              >
-                Clear all
-              </Button>
-            </Dialog.Footer>
           </Dialog.Content>
         </Dialog.Positioner>
       </Portal>
@@ -270,13 +211,7 @@ export function LayerMenu() {
 
   return (
     <Stack bg="bg.subtle" pt={3} minW={0} w="100%">
-      <Box px={4}>
-        <InputGroup endElement={<MagnifyingGlassIcon />}>
-          <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />
-        </InputGroup>
-      </Box>
       <Stack px={4} pt={3} borderTopWidth="1px" borderColor="border" minH={0}>
-        <TagList tags={LAYER_TAGS} />
         <LayerCardList cards={cards} onCardClick={handleToggleCard} />
       </Stack>
     </Stack>
@@ -323,23 +258,6 @@ function AreaCardList({
 function AreaMenu() {
   return (
     <Stack bg="bg.subtle" py={3} w="full">
-      <Flex px={4} gap={2}>
-        <InputGroup endElement={<MagnifyingGlassIcon />}>
-          <Input size="sm" bg="bg" type="text" placeholder="Find area" />
-        </InputGroup>
-        <NativeSelect.Root size="xs" alignSelf="stretch" w="16rem">
-          <NativeSelect.Field
-            placeholder="Political Boundaries"
-            bg="bg"
-            py={2}
-            h="2.25rem"
-          >
-            <option value="1">Option 1</option>
-            <option value="2">Option 2</option>
-          </NativeSelect.Field>
-          <NativeSelect.Indicator />
-        </NativeSelect.Root>
-      </Flex>
       <Stack
         px={4}
         pt={3}
@@ -348,7 +266,6 @@ function AreaMenu() {
         h="full"
         overflow="hidden"
       >
-        <TagList tags={AREA_TAGS} />
         <AreaCardList cards={AREA_CARDS} />
       </Stack>
     </Stack>
@@ -401,12 +318,13 @@ function DateMenu() {
 
   return (
     <Stack
-      direction="row"
+      direction={{ base: "column", md: "row" }}
       bg="bg.subtle"
       px={4}
       py={3}
       gap={8}
       w="full"
+      flex={1}
       borderTopRightRadius="md"
       alignItems="center"
       justifyContent="center"
