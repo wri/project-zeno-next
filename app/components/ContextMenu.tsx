@@ -16,6 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { InfoIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";
+import { sendGAEvent } from "@next/third-parties/google";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
@@ -252,6 +253,10 @@ export function LayerMenu() {
     );
 
     if (!card.selected) {
+      sendGAEvent("event", "manual_layer_selected", {
+        dataset_id: card.dataset_id,
+        dataset_name: card.dataset_name,
+      });
       addContext({
         contextType: "layer",
         content: card.dataset_name,
@@ -285,8 +290,10 @@ export function LayerMenu() {
 
 function AreaCardList({
   cards,
+  onCardClick,
 }: {
   cards: { title: string; description: string; selected?: boolean }[];
+  onCardClick?: (card: { title: string; description: string }) => void;
 }) {
   return (
     <Stack>
@@ -299,6 +306,8 @@ function AreaCardList({
           maxW="xl"
           border={card.selected ? "2px solid" : undefined}
           borderColor={card.selected ? "blue.800" : undefined}
+          onClick={onCardClick ? () => onCardClick(card) : undefined}
+          cursor={onCardClick ? "pointer" : "default"}
         >
           <Card.Body>
             <Card.Title
@@ -321,6 +330,38 @@ function AreaCardList({
 }
 
 function AreaMenu() {
+  const { context, addContext, removeContext } = useContextStore();
+
+  const cards = useMemo(() => {
+    return AREA_CARDS.map((c) => {
+      const isSelected = context.some(
+        (ctx) => ctx.contextType === "area" && ctx.content === c.title
+      );
+      return { ...c, selected: isSelected };
+    });
+  }, [context]);
+
+  const handleToggleCard = (card: { title: string; selected?: boolean }) => {
+    const existingCtx = context.find(
+      (ctx) => ctx.contextType === "area" && ctx.content === card.title
+    );
+
+    if (!card.selected) {
+      sendGAEvent("event", "manual_area_selected", {
+        area_name: card.title,
+      });
+      addContext({
+        contextType: "area",
+        content: card.title,
+      });
+      return;
+    }
+
+    if (existingCtx) {
+      removeContext(existingCtx.id);
+    }
+  };
+
   return (
     <Stack bg="bg.subtle" py={3} w="full">
       <Flex px={4} gap={2}>
@@ -349,7 +390,7 @@ function AreaMenu() {
         overflow="hidden"
       >
         <TagList tags={AREA_TAGS} />
-        <AreaCardList cards={AREA_CARDS} />
+        <AreaCardList cards={cards} onCardClick={handleToggleCard} />
       </Stack>
     </Stack>
   );
@@ -382,7 +423,10 @@ function DateMenu() {
       if (ctxId) {
         contextStore.removeContext(ctxId);
       }
-
+      sendGAEvent("event", "manual_date_selected", {
+        start_date: format(dateValue[0], "yyyy-MM-dd"),
+        end_date: format(dateValue[1], "yyyy-MM-dd"),
+      });
       contextStore.addContext({
         contextType: "date",
         content: `${format(dateValue[0], "yyyy-MM-dd")} — ${format(
