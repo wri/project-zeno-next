@@ -17,6 +17,12 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import useSidebarStore from "./sidebarStore";
+import {
+  showApiError,
+  showError,
+  showServiceUnavailableError,
+} from "@/app/hooks/useErrorHandler";
+import useAuthStore from "./authStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -30,7 +36,10 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
-  sendMessage: (message: string, queryType?: QueryType) => Promise<void>;
+  sendMessage: (
+    message: string,
+    queryType?: QueryType
+  ) => Promise<{ isNew: boolean; id: string }>;
   setLoading: (loading: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
@@ -64,6 +73,7 @@ async function processStreamMessage(
   addMessage: (message: Omit<ChatMessage, "id">) => void,
   addToolStep: (toolName: string) => void
 ) {
+  console.log("processStreamMessage", streamMessage);
   if (streamMessage.type === "error") {
     // Handle timeout errors specifically
     if (streamMessage.name === "timeout") {
@@ -73,6 +83,10 @@ async function processStreamMessage(
           streamMessage.content || "Request timed out. Please try again.",
         timestamp: streamMessage.timestamp,
       });
+      showApiError(
+        streamMessage.content || "Request timed out. Please try again.",
+        { title: "Request Timed Out" }
+      );
     } else {
       // Handle other error messages from LangChain tools
       addMessage({
@@ -81,6 +95,10 @@ async function processStreamMessage(
           "I encountered an error while processing your request. Please try rephrasing your question or try again.",
         timestamp: streamMessage.timestamp,
       });
+      showError(
+        "I encountered an error while processing your request. Please try rephrasing your question or try again.",
+        { title: "Processing Error" }
+      );
     }
   } else if (streamMessage.type === "text" && streamMessage.text) {
     addMessage({
@@ -96,19 +114,31 @@ async function processStreamMessage(
 
     // Special handling for generate_insights tool
     if (streamMessage.name === "generate_insights" && streamMessage.insights) {
-      return generateInsightsTool(streamMessage, addMessage);
+      // Non-blocking: do not await tool side-effects
+      void Promise.resolve().then(() =>
+        generateInsightsTool(streamMessage, addMessage)
+      );
+      return;
     }
-    // Special handling for pick-aoi tool (previously location-tool)
-    else if (streamMessage.name === "pick-aoi" && streamMessage.aoi) {
-      return await pickAoiTool(streamMessage, addMessage);
+    // Special handling for pick_aoi tool (previously location-tool)
+    else if (streamMessage.name === "pick_aoi" && streamMessage.aoi) {
+      // Non-blocking: geometry fetch can be slow; don't stall stream
+      void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
+      return;
     }
-    // Handling for pick-dataset tool
-    else if (streamMessage.name === "pick-dataset") {
-      return pickDatasetTool(streamMessage, addMessage);
+    // Handling for pick_dataset tool
+    else if (streamMessage.name === "pick_dataset") {
+      void Promise.resolve().then(() =>
+        pickDatasetTool(streamMessage, addMessage)
+      );
+      return;
     }
-    // Handling for pull-data tool
-    else if (streamMessage.name === "pull-data") {
-      return pullDataTool(streamMessage, addMessage);
+    // Handling for pull_data tool
+    else if (streamMessage.name === "pull_data") {
+      void Promise.resolve().then(() =>
+        pullDataTool(streamMessage, addMessage)
+      );
+      return;
     }
   }
 }
@@ -228,12 +258,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const error = new Error("Failed to send message");
+        (error as Error & { status?: number }).status = response.status;
+        throw error;
       }
 
       if (!response.body) {
         throw new Error("No response body received");
       }
+
+      // Update prompt usage from response headers (case-insensitive)
+      useAuthStore.getState().setUsageFromHeaders(response.headers);
 
       const reader = response.body.getReader();
 
@@ -278,22 +313,63 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           message:
             "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
         });
+        showApiError(
+          "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
+          { title: "Client Timeout" }
+        );
+      } else if (
+        error instanceof TypeError &&
+        error.message.includes("network")
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "Unable to connect to the server. Please check your internet connection and try again.",
+        });
+        showApiError(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+          { title: "Network Error" }
+        );
+      } else if (
+        error instanceof Error &&
+        error.message.includes("Failed to fetch")
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "Network request failed. Please check your connection and try again.",
+        });
+        showApiError("Network request failed. Please try again.", {
+          title: "Network Request Failed",
+        });
+      } else if (
+        error instanceof Error &&
+        (error as Error & { status?: number }).status &&
+        (error as Error & { status?: number }).status! >= 400 &&
+        (error as Error & { status?: number }).status! < 500
+      ) {
+        addMessage({
+          type: "error",
+          message:
+            "The service is currently unavailable. Please try again later.",
+        });
+        showServiceUnavailableError();
       } else {
         addMessage({
-          type: "assistant",
+          type: "error",
           message:
             "Sorry, there was an error processing your request. Please try again.",
         });
+        showError(
+          "Sorry, there was an error processing your request. Please try again."
+        );
       }
     } finally {
       clearTimeout(timeoutId);
       setLoading(false);
-      if (!currentThreadId) {
-        // Change the url using the history API so not to trigger any next
-        // router events.
-        window.history.replaceState(null, "", `/app/threads/${threadId}`);
-      }
+
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      return { isNew: !currentThreadId, id: threadId };
     }
   },
 
@@ -329,7 +405,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        const error = new Error("Failed to fetch thread");
+        (error as Error & { status?: number }).status = response.status;
+        throw error;
       }
 
       if (!response.body) {
@@ -412,6 +490,25 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         console.log("FRONTEND: Stream ended due to abort signal");
       } else {
         console.error("Error sending message:", error);
+        const status = (error as Error & { status?: number }).status;
+        if (status && status >= 500) {
+          showApiError("Server error while loading thread.", {
+            title: "Server Error",
+          });
+        } else if (status && status >= 400 && status < 500) {
+          showApiError("Unable to load thread.", {
+            title: "Request Error",
+          });
+        } else if (
+          error instanceof TypeError &&
+          error.message.toLowerCase().includes("network")
+        ) {
+          showApiError("Network error. Please check your connection.", {
+            title: "Network Error",
+          });
+        } else {
+          showError("Unexpected error while loading thread.");
+        }
       }
     } finally {
       set({ currentThreadId: threadId });

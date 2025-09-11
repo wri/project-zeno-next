@@ -12,7 +12,16 @@ export interface ChatMessage {
 
 // Widget types for insights
 export interface InsightWidget {
-  type: "line" | "bar" | "table" | "dataset-card";
+  type:
+    | "line"
+    | "bar"
+    | "table"
+    | "dataset-card"
+    | "pie"
+    | "stacked-bar"
+    | "grouped-bar"
+    | "area"
+    | "scatter";
   title: string;
   description: string;
   data: unknown;
@@ -89,12 +98,17 @@ export interface AOI {
 export interface DatasetInfo {
   dataset_id: number;
   dataset_name: string;
-  source: string;
-  reason: string;
-  data_layer: string;
+  source?: string;
+  reason?: string;
+  data_layer?: string;
   tile_url: string;
-  context_layer: string;
-  threshold: number | null;
+  context_layer?: string | null;
+  threshold?: number | null;
+  description?: string;
+  methodology?: string;
+  cautions?: string;
+  citation?: string;
+  [key: string]: unknown; // Allow other properties
 }
 
 // LangChain content structure (for internal API use)

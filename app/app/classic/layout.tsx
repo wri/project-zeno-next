@@ -16,7 +16,6 @@ import {
 } from "@chakra-ui/react";
 import Link from "next/link";
 
-import LoginOverlay from "@/app/components/LoginOverlay";
 import PageHeader from "@/app/components/PageHeader";
 import Map from "@/app/components/Map";
 import ChatStatusInfo from "@/app/components/ChatStatusInfo";
@@ -147,7 +146,6 @@ export default function ClassicLayout() {
       templateRows="min-content minmax(0px, 1fr)"
       bg="bg"
     >
-      <LoginOverlay isClassicMode />
       <PageHeader />
       <Box h="calc(100vh - 3rem)" overflow="hidden" position="relative">
         <ChatStatusInfo

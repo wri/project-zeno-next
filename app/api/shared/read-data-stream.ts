@@ -1,4 +1,8 @@
-export async function readDataStream({ abortController, reader, onData }: {
+export async function readDataStream({
+  abortController,
+  reader,
+  onData,
+}: {
   abortController: AbortController;
   reader: ReadableStreamDefaultReader<Uint8Array>;
   onData: (data: string, isFinal: boolean) => void | Promise<void>;
@@ -28,8 +32,8 @@ export async function readDataStream({ abortController, reader, onData }: {
     decodedChunk = chunk ? utf8Decoder.decode(chunk, { stream: true }) : "";
   }
 
-  // Handle any remaining data in the buffer
-  if (buffer.trim() && !abortController.signal.aborted) {
+  // Handle any remaining data in the buffer, even if aborted
+  if (buffer.trim()) {
     await onData(buffer, true);
   }
 }

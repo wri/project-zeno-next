@@ -6,6 +6,7 @@ import {
   Text,
   Box,
   Link,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import useMapStore from "../store/mapStore";
 import { useRef, useState, useEffect } from "react";
@@ -15,6 +16,7 @@ import {
 } from "../constants/custom-areas";
 import { UploadSimpleIcon } from "@phosphor-icons/react";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
+import useContextStore from "../store/contextStore";
 
 function UploadAreaDialog() {
   const {
@@ -24,7 +26,10 @@ function UploadAreaDialog() {
     isUploading,
     isFileSelected,
     setCreateAreaFn,
+    addGeoJsonFeature,
+    flyToGeoJson,
   } = useMapStore();
+  const { addContext } = useContextStore();
 
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
 
@@ -33,7 +38,47 @@ function UploadAreaDialog() {
   }, [setCreateAreaFn, createAreaAsync]);
 
   const handleUpload = async () => {
-    await uploadFile();
+    try {
+      const result = await uploadFile();
+      if (!result) return;
+
+      const {
+        name,
+        id,
+        geometries: [geo],
+      } = result;
+
+      const feat: GeoJSON.Feature = {
+        type: "Feature",
+        geometry: geo,
+        properties: {
+          id: id,
+          name: name,
+        },
+      };
+
+      // Add feature to the all features list to be highlighted on the map
+      addGeoJsonFeature({
+        id: id,
+        name: name,
+        data: feat,
+      });
+
+      addContext({
+        contextType: "area",
+        content: name,
+        aoiData: {
+          src_id: id,
+          name,
+          source: "custom",
+          subtype: "custom-area",
+        },
+      });
+
+      flyToGeoJson(feat);
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
   };
 
   return (
@@ -64,7 +109,14 @@ function UploadAreaDialog() {
               <Box color="fg.muted" fontSize="xs">
                 <Text>
                   By uploading data you agree to the{" "}
-                  <Link href="/terms">terms of service</Link>.
+                  <Link
+                    href="https://www.wri.org/about/legal/general-terms-use"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    terms of service
+                  </Link>
+                  .
                 </Text>
               </Box>
             </Dialog.Body>
@@ -154,24 +206,20 @@ function DropFileZone() {
           {errorMessage}
         </Text>
       )}
-      <Button
-        variant="solid"
-        size="2xs"
-        colorPalette="primary"
-        onClick={() => fileInputRef.current?.click()}
-      >
+      <Button variant="solid" size="2xs" colorPalette="primary">
         Select File
       </Button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        style={{ display: "none" }}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
-        }}
-        accept={ACCEPTED_FILE_TYPES.join(",")}
-      />
+      <VisuallyHidden>
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+          }}
+          accept={ACCEPTED_FILE_TYPES.join(",")}
+        />
+      </VisuallyHidden>
     </Box>
   );
 }

@@ -1,22 +1,32 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import useChatStore from "@/app/store/chatStore";
 import useContextStore from "@/app/store/contextStore";
 
 export default function SingleThread() {
   const { id } = useParams();
-  const { reset: resetChatStore, fetchThread } = useChatStore();
+  const {
+    reset: resetChatStore,
+    fetchThread,
+    currentThreadId,
+  } = useChatStore();
   const { reset: resetContextStore } = useContextStore();
 
-  useEffect(() => {
-    resetChatStore();
-    resetContextStore();
-  }, [resetChatStore, resetContextStore]);
+  // This check should only happen on mount. When coming from a thread started
+  // at the root page the context should be preserved.
+  const comingFromNewThread = useMemo(() => id === currentThreadId, []);
 
   useEffect(() => {
-    if (id) {
+    if (!comingFromNewThread) {
+      resetChatStore();
+      resetContextStore();
+    }
+  }, [comingFromNewThread, resetChatStore, resetContextStore]);
+
+  useEffect(() => {
+    if (!currentThreadId && id) {
       const abortController = new AbortController();
       fetchThread(id as string, abortController);
 
@@ -26,7 +36,7 @@ export default function SingleThread() {
         abortController.abort();
       };
     }
-  }, [id, fetchThread]);
+  }, [currentThreadId, id, fetchThread]);
 
   return null; // The layout handles the UI
 }
