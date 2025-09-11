@@ -7,6 +7,7 @@ import {
   Menu,
   Portal,
   Link as ChakraLink,
+  Text,
 } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
 import {
@@ -85,7 +86,15 @@ function PageHeader() {
             fontWeight="normal"
             color="primary.100"
           >
-            {usedPrompts}/{totalPrompts} Prompts
+            {usedPrompts}/
+            {totalPrompts > 5000 ? (
+              <Text as="span" fontSize="xl" verticalAlign="bottom">
+                ∞
+              </Text>
+            ) : (
+              totalPrompts
+            )}{" "}
+            Prompts
           </Progress.Label>
           <Progress.Track bg="primary.950" maxH="4px">
             <Progress.Range bg="white" />
