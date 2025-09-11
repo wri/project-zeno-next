@@ -10,6 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import ThreadDeleteDialog from "./ThreadDeleteDialog";
 import ThreadRenameDialog from "./ThreadRenameDialog";
+import { sendGAEvent } from "@next/third-parties/google";
 
 function ThreadActionsMenu({
   thread,
@@ -27,6 +28,11 @@ function ThreadActionsMenu({
 
   const onRename = useCallback(
     async (name: string) => {
+      sendGAEvent("event", "thread_renamed", {
+        old_thread_name: thread.name,
+        new_thread_name: name,
+        thread_id: thread.id,
+      });
       await renameThread(thread.id, name);
       setRenameOpen(false);
     },
@@ -34,6 +40,10 @@ function ThreadActionsMenu({
   );
 
   const onDelete = useCallback(async () => {
+    sendGAEvent("event", "thread_deleted", { 
+      thread_name: thread.name,
+      thread_id: thread.id,
+     });
     try {
       await deleteThread(thread.id);
       if (currentThreadId === thread.id) {
