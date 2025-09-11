@@ -120,7 +120,6 @@ async function processStreamMessage(
       );
       return;
     }
-    
     // Special handling for pick_aoi tool (previously location-tool)
     else if (streamMessage.name === "pick_aoi" && streamMessage.aoi) {
       // Non-blocking: geometry fetch can be slow; don't stall stream
@@ -185,7 +184,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     addMessage({
       type: "user",
       message,
-      context,  
+      context,
     });
 
     // Clear any previous tool steps and start loading
