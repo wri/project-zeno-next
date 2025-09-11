@@ -15,6 +15,7 @@ import type {
   CreateCustomAreaResponse,
 } from "../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
+import { sendGAEvent } from "@next/third-parties/google";
 
 type UploadErrorType =
   | "none"
@@ -288,6 +289,20 @@ export const createUploadAreaSlice: StateCreator<
     set({ isUploading: true });
 
     try {
+      const areaSizeKm2 = calculateAreaKm2({
+        type: "FeatureCollection",
+        features: validatedGeoJson.map((g) => ({
+          type: "Feature",
+          geometry: g,
+          properties: {},
+        })),
+      });
+      sendGAEvent("event", "map_area_uploaded", {
+        file_name: get().filename,
+        totalarea_size_km2: areaSizeKm2,
+        area_count: validatedGeoJson.length,
+      });
+
       const requestData: CreateCustomAreaRequest = {
         name: generateRandomName(),
         geometries: validatedGeoJson,

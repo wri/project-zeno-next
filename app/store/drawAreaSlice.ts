@@ -13,6 +13,7 @@ import type {
   CreateCustomAreaResponse,
 } from "../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
+import { sendGAEvent } from "@next/third-parties/google";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -205,6 +206,14 @@ export const createDrawAreaSlice: StateCreator<
 
     const createAreaFn = get().createAreaFn;
     if (createAreaFn) {
+      console.log('area drawn', {
+        area_name: newArea.name,
+        area_size_km2: areaSizeKm2,
+      })
+      sendGAEvent("event", "map_area_drawn", {
+        area_name: newArea.name,
+        area_size_km2: areaSizeKm2,
+      });
       await createAreaFn(requestData);
     }
 
