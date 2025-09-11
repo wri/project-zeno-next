@@ -36,7 +36,7 @@ export default function UnauthorizedPage() {
   return (
     <Box
       bg="hsla(225, 52%, 11%, 1)"
-      minH="100vh"
+      minH="100dvh"
       display="flex"
       flexDirection="column"
     >
