@@ -9,9 +9,10 @@ import {
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
+import { useEffect } from "react";
 import LclLogo from "../components/LclLogo";
-
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+import useAuthStore from "../store/authStore";
+import { useErrorHandler } from "../hooks/useErrorHandler";
 
 const commonStyles = {
   textShadow: "2px 2px 5px hsla(225, 52%, 11%, 0.75)",
@@ -19,6 +20,19 @@ const commonStyles = {
 };
 
 export default function UnauthorizedPage() {
+  const { isSignupOpen, fetchMetadata } = useAuthStore();
+  const { showApiError } = useErrorHandler();
+
+  useEffect(() => {
+    fetchMetadata().catch((error) => {
+      showApiError(error, {
+        title: "Failed to load signup status",
+        description:
+          "Unable to check if signup is currently open. Please try again later.",
+      });
+    });
+  }, [fetchMetadata, showApiError]);
+
   return (
     <Box
       bg="hsla(225, 52%, 11%, 1)"
@@ -75,11 +89,9 @@ export default function UnauthorizedPage() {
           Global Nature Watch
         </Heading>
         <Heading size={{ base: "3xl", md: "5xl" }} {...commonStyles} mb={0}>
-          {LANDING_PAGE_VERSION === "closed"
-            ? "Early access only"
-            : "Coming soon"}
+          {isSignupOpen ? "Early access only" : "Coming soon"}
         </Heading>
-        {LANDING_PAGE_VERSION === "closed" ? (
+        {isSignupOpen ? (
           <>
             <Text fontSize="lg" {...commonStyles} marginBottom={4}>
               Thank you for your interest in Global Nature Watch!
@@ -108,7 +120,7 @@ export default function UnauthorizedPage() {
           >
             <ChakraLink href="/">Back to homepage</ChakraLink>
           </Button>
-          {LANDING_PAGE_VERSION === "closed" && (
+          {isSignupOpen && (
             <Button
               asChild
               size="sm"
