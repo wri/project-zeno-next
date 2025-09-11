@@ -8,9 +8,9 @@ import useChatStore from "@/app/store/chatStore";
 function formatToolName(toolName: string): string {
   const toolNameMap: Record<string, string> = {
     generate_insights: "Generating insights",
-    "pick-aoi": "Picking area of interest",
-    "pick-dataset": "Selecting dataset",
-    "pull-data": "Pulling data",
+    pick_aoi: "Picking area of interest",
+    pick_dataset: "Selecting dataset",
+    pull_data: "Pulling data",
   };
 
   return toolNameMap[toolName] || `Processing ${toolName}`;

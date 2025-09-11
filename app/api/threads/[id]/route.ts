@@ -28,10 +28,10 @@ export async function GET(
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log(
-        "SERVER TIMEOUT: Request exceeded 60 seconds - aborting stream"
+        "SERVER TIMEOUT: Request exceeded 5 minutes - aborting stream"
       );
       abortController.abort();
-    }, 60000); // 60 second timeout
+    }, 300000); // 5 minute timeout
 
     const response = await fetch(`${API_CONFIG.ENDPOINTS.THREADS}/${id}`, {
       headers: {
@@ -67,10 +67,15 @@ export async function GET(
       async start(controller) {
         const encoder = new TextEncoder();
         const reader = response.body!.getReader();
+        let controllerClosed = false;
 
         // Set up cleanup for abort signal
         const onAbort = () => {
           clearTimeout(timeoutId);
+
+          if (controllerClosed) {
+            return;
+          }
 
           console.log(
             "ABORT TRIGGERED: Stream aborted - cleaning up and sending timeout message"
@@ -97,8 +102,10 @@ export async function GET(
 
           // Small delay to ensure message is sent before closing
           setTimeout(() => {
+            if (controllerClosed) return;
             try {
               controller.close();
+              controllerClosed = true;
               console.log("CONTROLLER CLOSED after timeout");
             } catch {
               console.log("Controller already closed");
@@ -174,11 +181,14 @@ export async function GET(
           }
         }
 
-        try {
-          controller.close();
-        } catch {
-          // Controller might already be closed, ignore the error
-          console.log("Controller already closed");
+        if (!controllerClosed) {
+          try {
+            controller.close();
+            controllerClosed = true;
+          } catch {
+            // Controller might already be closed, ignore the error
+            console.log("Controller already closed");
+          }
         }
       },
     });
@@ -187,6 +197,10 @@ export async function GET(
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Transfer-Encoding": "chunked",
+        // Prevent proxy/CDN buffering to allow progressive delivery
+        "Cache-Control": "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
+        Connection: "keep-alive",
       },
     });
   } catch (error) {
