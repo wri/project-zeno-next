@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { sendGAEvent } from "@next/third-parties/google";
 
 interface AuthState {
   userEmail: string | null;
@@ -48,14 +49,22 @@ const useAuthStore = create<AuthState>()((set) => ({
     const used = usedStr != null ? Number(usedStr) : null;
     const quota = quotaStr != null ? Number(quotaStr) : null;
 
-    set(({ usedPrompts, totalPrompts }) => ({
-      usedPrompts:
-        typeof used === "number" && !Number.isNaN(used) ? used : usedPrompts,
-      totalPrompts:
-        typeof quota === "number" && !Number.isNaN(quota)
-          ? quota
-          : totalPrompts,
-    }));
+    set(({ usedPrompts, totalPrompts }) => {
+      const newUsed = typeof used === "number" && !Number.isNaN(used) ? used : usedPrompts;
+      const newTotal = typeof quota === "number" && !Number.isNaN(quota) ? quota : totalPrompts;
+
+      if (newUsed >= newTotal) {
+        sendGAEvent("event", "prompt_limit_reached", {
+          prompts_remaining: newTotal - newUsed,
+          quota: newTotal,
+        });
+      }
+
+      return {
+        usedPrompts: newUsed,
+        totalPrompts: newTotal,
+      };
+    });
   },
   setAnonymous: () => {
     set({
