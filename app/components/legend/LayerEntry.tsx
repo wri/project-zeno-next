@@ -1,4 +1,12 @@
-import { Flex, Heading, Text, ButtonGroup, IconButton } from "@chakra-ui/react";
+import {
+  Flex,
+  Heading,
+  Text,
+  ButtonGroup,
+  IconButton,
+  Popover,
+  Portal,
+} from "@chakra-ui/react";
 import {
   InfoIcon,
   EyeIcon,
@@ -27,6 +35,7 @@ export function LayerEntry(
     visible,
     opacity,
     onLayerAction,
+    info,
   } = props;
   return (
     <Flex flexDir="column" gap={2} pr={4} w="100%">
@@ -52,9 +61,28 @@ export function LayerEntry(
             },
           }}
         >
-          <IconButton>
-            <InfoIcon />
-          </IconButton>
+          {info && (
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <IconButton>
+                  <InfoIcon />
+                </IconButton>
+              </Popover.Trigger>
+              <Portal>
+                <Popover.Positioner>
+                  <Popover.Content>
+                    <Popover.Arrow />
+                    <Popover.Body>
+                      <Popover.Title fontWeight="medium">
+                        Layer information
+                      </Popover.Title>
+                      <Text my="4">{info}</Text>
+                    </Popover.Body>
+                  </Popover.Content>
+                </Popover.Positioner>
+              </Portal>
+            </Popover.Root>
+          )}
           <OpacityControl
             value={opacity}
             onValueChange={(value) =>

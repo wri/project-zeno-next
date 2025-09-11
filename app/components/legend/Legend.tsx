@@ -1,4 +1,3 @@
-import { useCallback } from "react";
 import {
   Flex,
   Heading,
@@ -20,7 +19,7 @@ const ChReorderItem = chakra(Reorder.Item);
  */
 interface LegendProps {
   layers: LegendLayer[];
-  onLayersChange: (layers: LegendLayer[]) => void;
+  onLayerAction?: LayerActionHandler;
 }
 
 /**
@@ -28,39 +27,9 @@ interface LegendProps {
  * legend details.
  *
  * @param props.layers - Array of LegendLayer objects to display.
- * @param props.onLayersChange - Callback when layers are reordered or changed.
  */
 export function Legend(props: LegendProps) {
-  const { layers, onLayersChange } = props;
-
-  const handleLayerAction: LayerActionHandler = useCallback(
-    ({ action, payload }) => {
-      switch (action) {
-        case "remove":
-          onLayersChange(layers.filter((layer) => layer.id !== payload.id));
-          break;
-        case "visibility":
-          onLayersChange(
-            layers.map((layer) =>
-              layer.id === payload.id
-                ? { ...layer, visible: payload.visible }
-                : layer
-            )
-          );
-          break;
-        case "opacity":
-          onLayersChange(
-            layers.map((layer) =>
-              layer.id === payload.id
-                ? { ...layer, opacity: payload.opacity }
-                : layer
-            )
-          );
-          break;
-      }
-    },
-    [layers, onLayersChange]
-  );
+  const { layers, onLayerAction } = props;
 
   if (!layers.length) return null;
 
@@ -81,7 +50,9 @@ export function Legend(props: LegendProps) {
       <ChReorderGroup
         axis="y"
         values={layers}
-        onReorder={onLayersChange}
+        onReorder={(layers: LegendLayer[]) =>
+          onLayerAction?.({ action: "reorder", payload: { layers } })
+        }
         listStyleType="none"
         fontSize="xs"
         p={0}
@@ -89,7 +60,11 @@ export function Legend(props: LegendProps) {
         w="100%"
       >
         {layers.map((item) => (
-          <Item key={item.id} item={item} onLayerAction={handleLayerAction} />
+          <Item
+            key={item.id}
+            item={item}
+            onLayerAction={(details) => onLayerAction?.(details)}
+          />
         ))}
       </ChReorderGroup>
     </Flex>

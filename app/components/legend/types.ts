@@ -11,6 +11,7 @@ export interface LegendLayer {
   dateRange?: string;
   symbology: ReactNode;
   children?: ReactNode;
+  info?: string;
 }
 
 export type LayerActionArgs =
@@ -25,6 +26,10 @@ export type LayerActionArgs =
   | {
       action: "opacity";
       payload: { id: string; opacity: number };
+    }
+  | {
+      action: "reorder";
+      payload: { layers: LegendLayer[] };
     };
 
 export type LayerActionHandler = (args: LayerActionArgs) => void;

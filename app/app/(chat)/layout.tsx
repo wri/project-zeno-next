@@ -14,6 +14,8 @@ import CookieConsent from "@/app/components/CookieConsent";
 import useCookieConsentStore from "@/app/store/cookieConsentStore";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { useSearchParams } from "next/navigation";
+import { useLegendHook } from "@/app/components/legend/useLegendHook";
+import { Legend } from "@/app/components/legend/Legend";
 const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
 export default function DashboardLayout({
@@ -22,6 +24,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
+  const { layers, handleLayerAction } = useLegendHook();
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
@@ -65,6 +68,7 @@ export default function DashboardLayout({
         <ChatPanel />
         <Grid templateRows="1fr" gridArea="map">
           <Box overflow="hidden">
+            <Legend layers={layers} onLayerAction={handleLayerAction} />
             <Map />
           </Box>
         </Grid>

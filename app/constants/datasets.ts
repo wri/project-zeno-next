@@ -15,11 +15,11 @@ export type DatasetCardConfig = {
     color: string;
     symbology: {
       items: {
-        label: string;
+        value: string;
         color: string;
       }[];
     };
-    type: "simple" | "categorical" | "gradient";
+    type: "symbol" | "categorical" | "sequential" | "divergent";
     info: string;
     note: string;
   };
@@ -40,9 +40,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       title: "Global all ecosystem disturbance alerts (DIST-ALERT)",
       color: "#f69",
       symbology: {
-        items: [{ label: "Disturbance Alert", color: "#f69" }],
+        items: [{ value: "Disturbance Alert", color: "#f69" }],
       },
-      type: "simple",
+      type: "symbol",
       info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from January 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
       note: "This is a placeholder note.",
     },
@@ -58,17 +58,17 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: {
       title: "Global land cover (2024)",
       color: "#8E3037",
-      symbology: {
+      symbology: {                                                                                                                                                                                                                
         items: [
-          { label: "bare", color: "#FEFECC" },
-          { label: "short vegetation", color: "#B9B91E" },
-          { label: "forest", color: "#246E24" },
-          { label: "wetland vegetation", color: "#74D6B4" },
-          { label: "water", color: "#6BAED6" },
-          { label: "ice", color: "#ACD1E8" },
-          { label: "cropland", color: "#fff183" },
-          { label: "built-up", color: "#e8765d" },
-          { label: "cultivated grasslands", color: "#d95f02" },
+          { value: "bare", color: "#FEFECC" },
+          { value: "short vegetation", color: "#B9B91E" },
+          { value: "forest", color: "#246E24" },
+          { value: "wetland vegetation", color: "#74D6B4" },
+          { value: "water", color: "#6BAED6" },
+          { value: "ice", color: "#ACD1E8" },
+          { value: "cropland", color: "#fff183" },
+          { value: "built-up", color: "#e8765d" },
+          { value: "cultivated grasslands", color: "#d95f02" },
         ],
       },
       type: "categorical",
@@ -88,9 +88,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       title: "Global Grasslands (2024)",
       color: "#ff9916",
       symbology: {
-        items: [{ label: "Natural/semi-natural grassland", color: "#ff9916" }],
+        items: [{ value: "Natural/semi-natural grassland", color: "#ff9916" }],
       },
-      type: "simple",
+      type: "symbol",
       info: "This dataset provides global coverage with annual data from 2015-2024, making it the most appropriate dataset to answer questions about grassland area extent worldwide.",
       note: "This is a placeholder note.",
     },
@@ -108,26 +108,26 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       color: "#A8DCB5",
       symbology: {
         items: [
-          { label: "natural forests", color: "#246E24" },
-          { label: "natural short vegetation", color: "#B9B91E" },
-          { label: "natural water", color: "#6BAED6" },
-          { label: "mangroves", color: "#06A285" },
-          { label: "bare", color: "#FEFECC" },
-          { label: "snow", color: "#ACD1E8" },
-          { label: "wet natural forests", color: "#589558" },
-          { label: "natural peat forests", color: "#093D09" },
-          { label: "wet natural short vegetation", color: "#DBDB7B" },
-          { label: "natural peat short vegetation", color: "#99991A" },
-          { label: "crop", color: "#D3D3D3" },
-          { label: "built", color: "#D3D3D3" },
-          { label: "non-natural tree cover", color: "#D3D3D3" },
-          { label: "non-natural short vegetation", color: "#D3D3D3" },
-          { label: "non-natural water", color: "#D3D3D3" },
-          { label: "wet non-natural tree cover", color: "#D3D3D3" },
-          { label: "non-natural peat tree cover", color: "#D3D3D3" },
-          { label: "wet non-natural short vegetation", color: "#D3D3D3" },
-          { label: "non-natural peat short vegetation", color: "#D3D3D3" },
-          { label: "non-natural bare", color: "#D3D3D3" },
+          { value: "natural forests", color: "#246E24" },
+          { value: "natural short vegetation", color: "#B9B91E" },
+          { value: "natural water", color: "#6BAED6" },
+          { value: "mangroves", color: "#06A285" },
+          { value: "bare", color: "#FEFECC" },
+          { value: "snow", color: "#ACD1E8" },
+          { value: "wet natural forests", color: "#589558" },
+          { value: "natural peat forests", color: "#093D09" },
+          { value: "wet natural short vegetation", color: "#DBDB7B" },
+          { value: "natural peat short vegetation", color: "#99991A" },
+          { value: "crop", color: "#D3D3D3" },
+          { value: "built", color: "#D3D3D3" },
+          { value: "non-natural tree cover", color: "#D3D3D3" },
+          { value: "non-natural short vegetation", color: "#D3D3D3" },
+          { value: "non-natural water", color: "#D3D3D3" },
+          { value: "wet non-natural tree cover", color: "#D3D3D3" },
+          { value: "non-natural peat tree cover", color: "#D3D3D3" },
+          { value: "wet non-natural short vegetation", color: "#D3D3D3" },
+          { value: "non-natural peat short vegetation", color: "#D3D3D3" },
+          { value: "non-natural bare", color: "#D3D3D3" },
         ],
       },
       type: "categorical",
@@ -150,9 +150,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       title: "Tree cover loss (2001-2024)",
       color: "#f69",
       symbology: {
-        items: [{ label: "Tree cover loss", color: "#f69" }],
+        items: [{ value: "Tree cover loss", color: "#f69" }],
       },
-      type: "simple",
+      type: "symbol",
       info: "Tree cover loss dataset can detect stand-replacement disturbances including plantations and supports monitoring forestry practices. The driver context layer would help distinguish harvesting from other causes of tree loss, making it ideal for tracking plantation harvesting cycles.",
       note: "This is a placeholder note.",
     },
