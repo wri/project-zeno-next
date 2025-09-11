@@ -1,8 +1,15 @@
 "use client";
 
-import { Box, Button, Container, Flex, Heading, Text } from "@chakra-ui/react";
-
-import Link from "next/link";
+import {
+  Box,
+  Button,
+  Container,
+  Flex,
+  Heading,
+  Text,
+  Link as ChakraLink,
+} from "@chakra-ui/react";
+import LclLogo from "../components/LclLogo";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
@@ -13,7 +20,12 @@ const commonStyles = {
 
 export default function UnauthorizedPage() {
   return (
-    <Box bg="hsla(225, 52%, 11%, 1)">
+    <Box
+      bg="hsla(225, 52%, 11%, 1)"
+      minH="100vh"
+      display="flex"
+      flexDirection="column"
+    >
       <Box
         position="absolute"
         top={20} // adjust this to "lower" the video, but the video top and background colors aren't exactly the same
@@ -52,6 +64,7 @@ export default function UnauthorizedPage() {
         pb={{ base: 24, md: 32 }}
         zIndex="10"
         minH={{ base: "none", xl: "45vh" }}
+        flex={1}
       >
         <Heading
           size={{ base: "2xl", md: "4xl" }}
@@ -93,7 +106,7 @@ export default function UnauthorizedPage() {
             colorPalette="primary"
             rounded="lg"
           >
-            <Link href="/">Back to homepage</Link>
+            <ChakraLink href="/">Back to homepage</ChakraLink>
           </Button>
           {LANDING_PAGE_VERSION === "closed" && (
             <Button
@@ -104,16 +117,56 @@ export default function UnauthorizedPage() {
               colorPalette="primary"
               rounded="lg"
             >
-              <Link
+              <ChakraLink
                 href="https://forms.office.com/r/jmFh27TUUz"
                 rel="noreferrer"
                 target="_blank"
               >
                 Join waitlist
-              </Link>
+              </ChakraLink>
             </Button>
           )}
         </Flex>
+      </Container>
+      <Container
+        as="footer"
+        py={8}
+        px={4}
+        height="56px"
+        backgroundColor={"white"}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        gap={8}
+        flexWrap={"nowrap"}
+      >
+        <Flex flexWrap={"nowrap"} gap={"8px"}>
+          <LclLogo width={16} avatarOnly />
+          <Text letterSpacing={-1}>Global Nature Watch</Text>
+        </Flex>
+        <Flex gap={"24px"} fontSize="sm" display={{ base: "none", md: "flex" }}>
+          <ChakraLink
+            textDecoration="underline"
+            textDecorationStyle="dotted"
+            rel="noreferrer"
+            target="_blank"
+            href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
+          >
+            Privacy Policy
+          </ChakraLink>
+          <ChakraLink
+            textDecoration="underline"
+            textDecorationStyle="dotted"
+            rel="noreferrer"
+            target="_blank"
+            href="https://www.wri.org/about/legal/general-terms-use"
+          >
+            Terms of service
+          </ChakraLink>
+        </Flex>
+        <Text fontSize="sm" display={{ base: "none", md: "flex" }}>
+          © Global Nature Watch 2025
+        </Text>
       </Container>
     </Box>
   );
