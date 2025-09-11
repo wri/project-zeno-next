@@ -94,15 +94,6 @@ function ThreadSection({
                 role="group"
                 _hover={{ layerStyle: "fill.muted" }}
                 _focusWithin={{ outline: "2px solid var(--chakra-colors-gray-400)", outlineOffset: "2px" }}
-                onClick={() => {
-                  if (!isActive){ //only when navigating to old threads
-                    sendGAEvent("event", "saved_conversation_loaded", {
-                      conversation_id: thread.id,
-                      updated_at: thread.updated_at,
-                      is_public: thread.is_public,
-                    });
-                  }
-                }}
                 css={{
                   "&:hover .thread-actions": { opacity: 1 },
                   "&:focus-within .thread-actions": { opacity: 1 },
@@ -113,10 +104,21 @@ function ThreadSection({
                   href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
+                  onClick={() => {
+                    if (!isActive) {
+                      sendGAEvent("event", "saved_conversation_loaded", {
+                        conversation_id: thread.id,
+                        updated_at: thread.updated_at,
+                        is_public: thread.is_public,
+                      });
+                    }
+                  }}
                 >
                   {thread.name}
                 </ThreadLink>
-                <ThreadActionsMenu thread={thread} />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <ThreadActionsMenu thread={thread} />
+                </div>
               </Flex>
             );
           })}
