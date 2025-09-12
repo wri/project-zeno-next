@@ -1,14 +1,15 @@
 import {
-  Accordion,
   Box,
   Button,
   Container,
   Heading,
+  IconButton,
   Image,
-  Tabs,
   Text,
+  useBreakpointValue,
 } from "@chakra-ui/react";
-import { CaretRightIcon } from "@phosphor-icons/react";
+import { Carousel } from "../../components/ui/carousel";
+import { CaretRightIcon, CaretLeftIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
 type SupportTabCard = {
@@ -17,154 +18,36 @@ type SupportTabCard = {
   image: string;
 };
 
-type SupportTab = {
-  value: string;
-  cards?: SupportTabCard[];
-};
-const SUPPORT_TABS = [
+const SUPPORT_TABS: SupportTabCard[] = [
   {
-    value: "Conservation",
-    cards: [
-      {
-        title: "Monitor protected areas",
-        content:
-          "Track changes and threats to conservation zones, ensuring the integrity of protected ecosystems.",
-        image: "https://placehold.co/800x500/0D1429/FFFFFF?text=Conservation+1",
-      },
-      {
-        title: "Identify biodiversity hotspots",
-        content:
-          "Use data to pinpoint areas rich in biodiversity that require conservation efforts.",
-        image: "https://placehold.co/800x500/0D1429/FFFFFF?text=Conservation+2",
-      },
-      {
-        title: "Assess habitat fragmentation",
-        content:
-          "Analyze landscape connectivity to understand the impact of human activity on wildlife habitats.",
-        image: "https://placehold.co/800x500/0D1429/FFFFFF?text=Conservation+3",
-      },
-    ],
+    title: "Track the vegetation disturbances that matter most",
+    content:
+      "View near real-time disturbance alerts anywhere in the world and filter by type, such as wildfire, conversion, or flooding, to focus on the events most relevant to your project or region.",
+    image: "https://placehold.co/800x500/0D1429/FFFFFF?text=alert by type pie chart",
   },
   {
-    value: "Restoration",
-    cards: [
-      {
-        title: "Highlight priority areas for intervention",
-        content:
-          "Identify regions most in need of restoration by exploring global and local ecological activity from forest loss, to land conversion.",
-        image: "/support-1-a.png",
-      },
-      {
-        title: "Respond to near-realtime disturbances",
-        content:
-          "Stay up to date with fires, deforestation and land conversion in your areas of interest so you can act fast where it counts.",
-        image: "/support-1-b.png",
-      },
-      {
-        title: "Report on land cover changes over time",
-        content:
-          "Compare your areas of interest before and after intervention, and export anything from charts, statistics and satellite imagery for your reports.",
-        image: "/support-1-c.png",
-      },
-    ],
+    title: "Understand natural ecosystem",
+    content:
+      "Identify remaining natural lands in your area of interest and track alerts that flag likely conversion to agriculture, mining, or urban expansion, critical for meeting conservation and compliance goals.",
+    image: "https://placehold.co/800x500/0D1429/FFFFFF?text=natural ecosystem map",
   },
   {
-    value: "Policy",
-    cards: [
-      {
-        title: "Inform land use planning",
-        content:
-          "Provide data-driven insights to support sustainable land management policies.",
-        image: "https://placehold.co/800x500/1C2D5A/FFFFFF?text=Policy+1",
-      },
-      {
-        title: "Evaluate policy effectiveness",
-        content:
-          "Measure the impact of environmental policies by monitoring changes in land cover and ecosystem health over time.",
-        image: "https://placehold.co/800x500/1C2D5A/FFFFFF?text=Policy+2",
-      },
-      {
-        title: "Support international agreements",
-        content:
-          "Contribute to national reporting for global environmental commitments with accurate and up-to-date data.",
-        image: "https://placehold.co/800x500/1C2D5A/FFFFFF?text=Policy+3",
-      },
-    ],
+    title: "Monitor grassland health and conversion",
+    content:
+    "See how grasslands are changing over time, whether from degradation or conversion, and assess likely causes, supporting sustainable agriculture and land-use planning.",
+    image: "https://placehold.co/800x500/0D1429/FFFFFF?text=chart showing trends in grasslands",
   },
   {
-    value: "Research",
-    cards: [
-      {
-        title: "Access analysis-ready data",
-        content:
-          "Download and integrate geospatial data into your research workflows to accelerate discovery.",
-        image: "https://placehold.co/800x500/3B5B9A/FFFFFF?text=Research+1",
-      },
-      {
-        title: "Collaborate on a global scale",
-        content:
-          "Share findings and datasets with a community of researchers working on similar environmental challenges.",
-        image: "https://placehold.co/800x500/3B5B9A/FFFFFF?text=Research+2",
-      },
-      {
-        title: "Validate models and hypotheses",
-        content:
-          "Use high-resolution satellite imagery and environmental data to test and refine your scientific models.",
-        image: "https://placehold.co/800x500/3B5B9A/FFFFFF?text=Research+3",
-      },
-    ],
+    title: "Assess land cover change",
+    content: "Get a clear snapshot of land cover anywhere on Earth and see how it has shifted over the past decade, helping you evaluate ecosystem trends and land-use trade-offs.",
+    image: "https://placehold.co/800x500/0D1429/FFFFFF?text=map or chart - whatever looks better",
   },
   {
-    value: "Journalism",
-    cards: [
-      {
-        title: "Uncover environmental stories",
-        content:
-          "Find and visualize data to report on environmental issues with compelling evidence.",
-        image: "https://placehold.co/800x500/5A8DC2/FFFFFF?text=Journalism+1",
-      },
-      {
-        title: "Create data-driven visualizations",
-        content:
-          "Generate maps, charts, and timelines to illustrate your stories and engage your audience.",
-        image: "https://placehold.co/800x500/5A8DC2/FFFFFF?text=Journalism+2",
-      },
-      {
-        title: "Fact-check claims",
-        content:
-          "Verify information and claims about environmental events using historical and near-real-time data.",
-        image: "https://placehold.co/800x500/5A8DC2/FFFFFF?text=Journalism+3",
-      },
-    ],
+    title: "Analyze drivers of forest change",
+    content: "Pinpoint the causes of tree cover loss, from commodity production to wildfire, and quickly understand the pressures shaping forests in your region.",
+    image: "https://placehold.co/800x500/0D1429/FFFFFF?text=map or chart - whatever looks better",
   },
 ];
-
-const renderContent = (tab: SupportTab): React.ReactElement | null => {
-  if (!tab.cards) return null;
-  return (
-    <>
-      {tab.cards.map((card) => (
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="stretch"
-          gap="4"
-          bg="secondary.100"
-          rounded="lg"
-          p="4"
-          flex={1}
-          key={card.title}
-        >
-          <Image src={card.image} alt="Restoration" />
-          <Heading size="lg" as="p" m={0}>
-            {card.title}
-          </Heading>
-          <Text color="fg.muted">{card.content}</Text>
-        </Box>
-      ))}
-    </>
-  );
-};
 export default function SupportWorkTabsSection() {
   return (
     <Container
@@ -185,93 +68,76 @@ export default function SupportWorkTabsSection() {
           See how monitoring intelligence can support your work
         </Heading>
         <Text fontSize="md" mb="4">
-          From field work to policy writing, Global Nature Watch empowers
-          smarter decisions and meaningful action in the places you care about.
+        Global Nature Watch makes advanced monitoring data easy to use,
+        <br /> 
+        so you can make smarter, faster decisions for people and the planet.
         </Text>
       </Container>
       <Container maxW="5xl" mt={{ base: "8", md: "10" }} px={0}>
-        {/* Tabs on medium breakpoint up, hidden on mobile */}
-        <Tabs.Root
-          variant="enclosed"
-          defaultValue="Restoration"
-          display="flex"
-          flexDir="column"
-          alignItems="center"
-          hideBelow="md"
+        <Carousel.Root
+          slideCount={SUPPORT_TABS.length}
+          slidesPerPage={useBreakpointValue({ base: 1, md: 2, lg: 3 })}
+          slidesPerMove={1}
+          spacing="16px"
+          position="relative"
         >
-          <Tabs.List
-            borderBottomRadius={0}
-            borderTopRadius="2xl"
-            p={0}
-            overflow="hidden"
+          <Carousel.Control
+            position="absolute"
+            left={{ base: -4, md: -16 }}
+            top="50%"
+            transform="translateY(-50%)"
+            zIndex={2}
           >
-            {SUPPORT_TABS.map((tab) => {
-              return (
-                <Tabs.Trigger
-                  key={tab.value}
-                  value={tab.value}
-                  bg="bg.subtle"
-                  _selected={{ boxShadow: "none", bg: "bg" }}
-                  fontWeight="normal"
-                  rounded="none"
-                >
-                  {tab.value}
-                </Tabs.Trigger>
-              );
-            })}
-          </Tabs.List>
-          {SUPPORT_TABS.map((tab) => {
-            return (
-              <Tabs.Content
-                key={tab.value}
-                value={tab.value}
-                bg="bg"
-                display="flex"
-                rounded="2xl"
-                gap="4"
-                padding="8"
+            <Carousel.PrevTrigger asChild>
+              <IconButton
+                size="lg"
+                rounded="full"
+                variant="surface"
               >
-                {renderContent(tab)}
-              </Tabs.Content>
-            );
-          })}
-        </Tabs.Root>
-        {/* Accordion component is used on mobile only */}
-        <Accordion.Root
-          collapsible
-          defaultValue={["Conservation"]}
-          hideFrom="md"
-          variant="plain"
-          display="flex"
-          flexDir="column"
-          gap={4}
-        >
-          {SUPPORT_TABS.map((tab, index) => (
-            <Accordion.Item
-              key={index}
-              value={tab.value}
-              bg="bg.panel"
-              px={5}
-              py={4}
-              rounded="xl"
-              _open={{
-                px: 4,
-                py: 3,
-              }}
-            >
-              <Accordion.ItemTrigger p={0}>
-                <Heading size="lg" as="h5" flex="1">
-                  {tab.value}
-                </Heading>
-              </Accordion.ItemTrigger>
-              <Accordion.ItemContent pt={2}>
-                <Accordion.ItemBody display="flex" flexDir="column" gap={4}>
-                  {renderContent(tab)}
-                </Accordion.ItemBody>
-              </Accordion.ItemContent>
-            </Accordion.Item>
-          ))}
-        </Accordion.Root>
+                <CaretLeftIcon weight="bold" />
+              </IconButton>
+            </Carousel.PrevTrigger>
+          </Carousel.Control>
+          <Carousel.ItemGroup>
+            {SUPPORT_TABS.map((card, idx) => (
+              <Carousel.Item key={idx} index={idx}>
+                <Box
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="stretch"
+                  gap="4"
+                  bg="secondary.100"
+                  rounded="lg"
+                  p="4"
+                  height="100%"
+                >
+                  <Image src={card.image} alt={card.title} />
+                  <Heading size="lg" as="p" m={0} minH="3em">
+                    {card.title}
+                  </Heading>
+                  <Text color="fg.muted">{card.content}</Text>
+                </Box>
+              </Carousel.Item>
+            ))}
+          </Carousel.ItemGroup>
+          <Carousel.Control
+            position="absolute"
+            right={{ base: -4, md: -16 }}
+            top="50%"
+            transform="translateY(-50%)"
+            zIndex={2}
+          >
+            <Carousel.NextTrigger asChild>
+              <IconButton
+              size="lg"
+              rounded="full"
+              variant="surface"
+              >
+                <CaretRightIcon weight="bold" />
+              </IconButton>
+            </Carousel.NextTrigger>
+          </Carousel.Control>
+        </Carousel.Root>
       </Container>
       <Container maxW="5xl" mt={{ base: "8", md: "10" }} px={0}>
         <Box

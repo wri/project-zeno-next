@@ -14,7 +14,7 @@ const HOW_STEPS = [
   {
     title: "Retrieving quality data",
     description:
-      "We use our APIs to pull verifiable, peer-reviewed data from Global Forest Watch and Land & Carbon Lab. This means verifiable data direct from authoritative sources, not from model training data.",
+      "We use our APIs to pull verifiable, peer-reviewed data from Global Forest Watch and Land & Carbon Lab. This means verifiable data direct from authoritative sources.",
     images: [
       { src: "/GFW-logo.svg", alt: "GFW logo", maxW: "100%" },
       { src: "LCL-logo.svg", alt: "LCL logo", maxW: "100%" },
@@ -29,7 +29,7 @@ const HOW_STEPS = [
   {
     title: "Returning a response",
     description:
-      "Our agents create spatial summary statistics, perform dataset searches and return insights in plain language.",
+      "Our agents create summaries of spatial data, search through datasets, and explain insights clearly in over 170 languages.",
     images: [
       {
         src: "/HIW-Brazil-Widget.png",
