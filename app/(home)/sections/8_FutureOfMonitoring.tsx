@@ -1,28 +1,14 @@
 import {
   Box,
   Container,
-  DataList,
   Heading,
   Flex,
   Text,
   Link as ChakraLink,
   Image,
 } from "@chakra-ui/react";
-import { Chart, useChart } from "@chakra-ui/charts";
-import { PieChart, Pie, Cell } from "recharts";
 
 export default function FutureOfMonitoringSection() {
-  const chart = useChart({
-    data: [
-      { name: "Vegetation Cover Loss", value: 250000, color: "#1B6450" },
-      {
-        name: "Human-Driven Conversion Alerts",
-        value: 100000,
-        color: "#C5D692",
-      },
-      { name: "Natural Disturbances", value: 150000, color: "#CD9F60" },
-    ],
-  });
   return (
     <Box
       py={{ base: 14, md: 24 }}
