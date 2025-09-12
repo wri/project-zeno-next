@@ -118,31 +118,33 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        <Button
-          variant="subtle"
-          position="absolute"
-          bottom={6}
-          right={3}
-          key="legendButton"
-          size="xs"
-          bg={showLegend ? "bg.muted" : "bg"}
-          _active={{ bg: "bg.muted" }}
-          flexDirection="column"
-          h="auto"
-          px={3}
-          py={1}
-          gap={0}
-          lineHeight="0.875rem"
-          hideFrom="md"
-          zIndex={500}
-          pointerEvents="all"
-          onClick={() => setShowLegend((prev) => !prev)}
-          fontFamily="body"
-          color="fg.muted"
-        >
-           {!showLegend? <ListDashesIcon /> : <XIcon />}
-          Legend
-        </Button>
+        {layers.length > 0 && (
+          <Button
+            variant="subtle"
+            position="absolute"
+            bottom={6}
+            right={3}
+            key="legendButton"
+            size="xs"
+            bg={showLegend ? "bg.muted" : "bg"}
+            _active={{ bg: "bg.muted" }}
+            flexDirection="column"
+            h="auto"
+            px={3}
+            py={1}
+            gap={0}
+            lineHeight="0.875rem"
+            hideFrom="md"
+            zIndex={500}
+            pointerEvents="all"
+            onClick={() => setShowLegend((prev) => !prev)}
+            fontFamily="body"
+            color="fg.muted"
+          >
+            {!showLegend ? <ListDashesIcon /> : <XIcon />}
+            Legend
+          </Button>
+        )}
         <Box display={{ base: showLegend ? "inherit" : "none", md: "inherit" }}>
           <Legend layers={layers} onLayerAction={handleLayerAction} />
         </Box>
