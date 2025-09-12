@@ -12,12 +12,6 @@ import { Carousel } from "../../components/ui/carousel";
 import { CaretRightIcon, CaretLeftIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
-type SupportTabCard = {
-  title: string;
-  content: string;
-  image: string;
-};
-
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 const SUPPORT_TABS = [
   {
