@@ -218,7 +218,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         symbology: {
           items: [{
             color: "#151d44",
-            value: "1500 (sink)" },
+            value: "<-1500 (sink)" },
             { color: "#172447", value: "" },
             { color: "#182c4c", value: "" },
             { color: "#1a3350", value: "" },
