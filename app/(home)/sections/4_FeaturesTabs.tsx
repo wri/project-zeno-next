@@ -15,7 +15,6 @@ const FEATURE_TABS = [
     value: "feature-tab-1",
     label: "Explore trusted data with an AI assistant",
     description:
-      "Quickly surface the most relevant peer-reviewed datasets, with AI support that helps you explore and apply them with confidence.",
       "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
     image: "/feature-tab-1.png",
   },
