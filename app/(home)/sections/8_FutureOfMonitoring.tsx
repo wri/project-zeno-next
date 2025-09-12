@@ -315,49 +315,12 @@ export default function FutureOfMonitoringSection() {
               h={{base: "14rem", md: "17rem"}}
             >
               <Image
-                maxH="10"
-                top="2.5rem"
-                left="1.5rem"
-                src="/fm-3-esri.png"
-                alt="ESRI logo"
-                position="absolute"
-              />
-              <Image
-                maxH="10"
-                top="2.75rem"
-                right="0"
-                src="/fm-3-qgis.png"
-                alt="QGIS logo"
-                position="absolute"
-              />
-              <Box p="6" bg="secondary.300" rounded="lg" shadow="sm" zIndex="50">
-                <Heading size="2xl" m={0} textWrap="nowrap">
-                  Global Nature Watch
-                </Heading>
-              </Box>
-              <Image
-                maxH="10"
-                bottom="1.5rem"
-                left="0"
-                src="/fm-3-felt.png"
-                alt="Felt logo"
-                position="absolute"
-              />
-              <Image
-                maxH="10"
+                objectPosition="80%"
+                position="relative"
                 left="50%"
-                bottom="0"
-                src="/fm-3-aws.png"
-                alt="AWS logo"
-                position="absolute"
-              />
-              <Image
-                maxH="10"
-                right="0"
-                bottom="2rem"
-                src="/fm-3-google.png"
-                alt="Google Cloud logo"
-                position="absolute"
+                transform="translateX(-50%)"
+                src="/integrations.svg"
+                alt="Global Nature Watch integrations"
               />
             </Box>
           </Flex>
