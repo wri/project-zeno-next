@@ -17,10 +17,9 @@ export function LegendDivergent(props: {
   color: SymbolColor[] | SymbolColorValue[];
 }) {
   const { min, max, color } = props;
-
-  const reversedColors = [...color].reverse().slice(1);
+  console.log(min, max, color)
   const colorRamp = makeColorRamp(
-    color.concat(reversedColors) as SymbolColor[] | SymbolColorValue[]
+    color as SymbolColor[] | SymbolColorValue[]
   );
   if (!colorRamp) return null;
 
