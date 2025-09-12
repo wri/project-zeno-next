@@ -105,6 +105,7 @@ async function processStreamMessage(
       type: "assistant",
       message: streamMessage.text,
       timestamp: streamMessage.timestamp,
+      checkpoint_id: streamMessage.checkpoint_id
     });
   } else if (streamMessage.type === "tool") {
     // Add tool step to reasoning display
