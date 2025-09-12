@@ -16,20 +16,21 @@ const FEATURE_TABS = [
     label: "Explore trusted data with an AI assistant",
     description:
       "Quickly surface the most relevant peer-reviewed datasets, with AI support that helps you explore and apply them with confidence.",
+      "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
     image: "/feature-tab-1.png",
   },
   {
     value: "feature-tab-2",
-    label: "Track what matters to you",
+    label: "Tailored answers to your context",
     description:
-      "See a clear snapshot of your area and track changes with near-real-time alerts.",
+      "Explore how Global Nature Watch assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
     image: "https://placehold.co/800x500",
   },
   {
     value: "feature-tab-3",
-    label: "Understand the trends",
+    label: "Insights you can act on",
     description:
-      "Make sense of patterns in the data with AI-powered interpretations that add context to your area.",
+      "Global Nature Watch's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies, or field decisions while opening the door to dive deeper.",
     image: "https://placehold.co/800x500",
   },
 ];
@@ -48,9 +49,8 @@ export default function FeaturesTabsSection() {
           Get answers to your toughest questions about landscapes, backed by data
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch makes complex geospatial data accessible.
-            Just ask in plain language and get trusted data and insights
-            tailored to support your work.
+          Global Nature Watch is testing new ways to make geospatial information easier to use.
+          Try asking in plain language and explore the insights it can provide.
           </Text>
           <Button
             asChild
