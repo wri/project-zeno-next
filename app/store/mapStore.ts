@@ -19,6 +19,7 @@ interface TileLayer {
   name: string;
   url: string;
   visible: boolean;
+  opacity?: number;
 }
 
 interface SelectionMode {
@@ -37,6 +38,7 @@ interface MapSlice {
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
   clearGeoJsonFeatures: () => void;
+  setTileLayers: (layers: TileLayer[]) => void;
   addTileLayer: (layer: TileLayer) => void;
   removeTileLayer: (id: string) => void;
   toggleTileLayer: (id: string) => void;
@@ -116,6 +118,10 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     set((state) => ({
       tileLayers: [...state.tileLayers.filter((l) => l.id !== layer.id), layer],
     }));
+  },
+
+  setTileLayers: (tileLayers) => {
+    set(() => ({ tileLayers }));
   },
 
   removeTileLayer: (id) => {

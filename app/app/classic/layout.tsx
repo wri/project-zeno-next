@@ -1,5 +1,6 @@
 "use client";
 
+import { StackPlusIcon } from "@phosphor-icons/react";
 import {
   Box,
   Grid,
@@ -16,11 +17,15 @@ import Link from "next/link";
 import PageHeader from "@/app/components/PageHeader";
 import Map from "@/app/components/Map";
 import ChatStatusInfo from "@/app/components/ChatStatusInfo";
-import { LayerMenu } from "../../components/ContextMenu";
-import { StackPlusIcon } from "@phosphor-icons/react";
-// import { Legend } from "./legend";
+import { LayerMenu } from "@/app/components/ContextMenu";
+
+import { Legend } from "@/app/components/legend/Legend";
+import { useLegendHook } from "@/app/components/legend/useLegendHook";
+import useContextStore from "@/app/store/contextStore";
 
 export default function ClassicLayout() {
+  const { layers, handleLayerAction } = useLegendHook();
+
   return (
     <Grid
       maxH="100vh"
@@ -30,6 +35,24 @@ export default function ClassicLayout() {
     >
       <PageHeader />
       <Box h="calc(100vh - 3rem)" overflow="hidden" position="relative">
+        <Flex
+          position="absolute"
+          zIndex={100}
+          top={{
+            base: 4,
+            lgDown: 16,
+          }}
+          w="100%"
+          left={{
+            lgDown: 4,
+          }}
+          justifyContent={{
+            lgDown: "flex-start",
+            base: "center",
+          }}
+        >
+          <LayerDialog />
+        </Flex>
         <ChatStatusInfo
           position="absolute"
           top={4}
@@ -41,45 +64,30 @@ export default function ClassicLayout() {
         >
           <Text>
             AI features are unavailable.{" "}
-            <ChLink as={Link} href="/">
+            <ChLink as={Link} href="/app">
               Go back to AI conversations
             </ChLink>
             .
           </Text>
         </ChatStatusInfo>
-        <Flex
-          position="absolute"
-          zIndex={100}
-          top={4}
-          w="100%"
-          justifyContent="center"
-        >
-          <LayerDialog open onOpenChange={() => {}} />
-        </Flex>
-        {/* <Legend /> */}
+        <Legend layers={layers} onLayerAction={handleLayerAction} />
         <Map disableMapAreaControls />
       </Box>
     </Grid>
   );
 }
 
-function LayerDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (e: { open: boolean }) => void;
-}) {
-  const selectedItems = 0;
+function LayerDialog() {
+  const { context, removeContext } = useContextStore();
+  const activeItems = context.filter((c) => c.contextType === "layer");
+  const selectedItems = activeItems.length;
 
   return (
     <Dialog.Root
-      placement="top"
+      placement="bottom"
       motionPreset="slide-in-bottom"
       size="lg"
-      // open={open}
       scrollBehavior="inside"
-      onOpenChange={onOpenChange}
     >
       <Dialog.Trigger asChild>
         <Button
@@ -121,6 +129,9 @@ function LayerDialog({
                 colorPalette="primary"
                 ml="auto"
                 disabled={!selectedItems}
+                onClick={() => {
+                  activeItems.forEach((item) => removeContext(item.id));
+                }}
               >
                 Clear all
               </Button>
