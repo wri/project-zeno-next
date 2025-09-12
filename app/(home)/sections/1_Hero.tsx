@@ -24,6 +24,7 @@ type PromptMarqueeProps = {
   promptIndex: number;
   setPromptIndex: React.Dispatch<React.SetStateAction<number>>;
 };
+
 export default function LandingHero({
   prompts,
   promptIndex,
@@ -244,10 +245,10 @@ export default function LandingHero({
                 </Badge>
                 Global Nature Watch is
                 {LANDING_PAGE_VERSION === "closed"
-                  ? " in closed Beta."
+                  ? " in closed beta."
                   : LANDING_PAGE_VERSION === "limited"
-                  ? " in limited Beta."
-                  : " open."}
+                  ? " in limited beta."
+                  : " in beta."}
               </Text>
               <Tooltip
                 openDelay={100}

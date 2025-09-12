@@ -76,10 +76,8 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
           >
             Join waitlist
           </Link>
-        ) : LANDING_PAGE_VERSION === "limited" ? (
-          <Link href="/app">Explore the beta</Link>
         ) : (
-          <Link href="/app">Get started</Link>
+          <Link href="/app">Explore the beta</Link>
         )}
       </Button>
     </ButtonGroup>
