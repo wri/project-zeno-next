@@ -58,7 +58,10 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
         id={`widget-${message.id}-${idx}`}
         scrollMarginTop="32px"
       >
-        <WidgetMessage widget={widget} />
+        <WidgetMessage
+          widget={widget}
+          checkpointId={message.checkpoint_id!}
+        />
       </Box>
     ));
   }
