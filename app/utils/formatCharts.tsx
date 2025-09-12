@@ -1,7 +1,7 @@
 import getChartColors from "./ChartColors";
 
 interface InputData {
-  [key: string]: unknown;
+  [key: string]: unknown | unknown;
 }
 
 interface ChartData {
@@ -25,18 +25,50 @@ interface ChartSeries {
  */
 
 export default function formatChartData(
-  data: InputData[],
-  type: "stacked-bar" | "grouped-bar" | "bar" | "scatter",
+  data: InputData[] | unknown,
+  type:
+    | "line"
+    | "bar"
+    | "table"
+    | "dataset-card"
+    | "pie"
+    | "stacked-bar"
+    | "grouped-bar"
+    | "area"
+    | "scatter",
   xAxis?: string,
   yAxis?: string
 ): { data: ChartData[]; series: ChartSeries[] } {
-  if (!data || data.length === 0) {
+  if (!Array.isArray(data) || data.length === 0) {
     return { data: [], series: [] };
   }
 
   const chartColors = getChartColors();
   const keys = Object.keys(data[0]);
   const xAxisKey = xAxis || keys[0];
+
+  // --- Logic for PIE charts ---
+  if (type === "pie") {
+    const valueKey = yAxis || keys.find((key) => key !== xAxisKey);
+    if (!valueKey) {
+      console.error("Could not determine value key for Pie chart.");
+      return { data: [], series: [] };
+    }
+    // For Pie charts, we need to add a color to each data point.
+    const transformedData = data.map((item, index) => ({
+      ...item,
+      color: chartColors[index % chartColors.length],
+    }));
+
+    const series: ChartSeries[] = [
+      {
+        name: valueKey,
+        color: chartColors[0], // A base color, though cells will override.
+      },
+    ];
+
+    return { data: transformedData as ChartData[], series };
+  }
 
   if (type === "scatter") {
     if (!xAxis || !yAxis) {
@@ -72,8 +104,8 @@ export default function formatChartData(
     return { data: transformedData as ChartData[], series };
   }
   // --- Logic for a standard BAR chart ---
-  if (type === "bar") {
-    // A simple bar chart has one series, which is the value column.
+  if (type === "bar" || type === "area" || type === "line") {
+    // Bar, area and line charts have one series, which is the value column.
     const valueKey = keys.find((key) => key !== xAxisKey);
 
     const series: ChartSeries[] = valueKey
@@ -141,7 +173,11 @@ export default function formatChartData(
 }
 
 // Custom label formatter for X-axis (truncate long names)
-export const formatXAxisLabel = (value: string) => {
+export const formatXAxisLabel = (value: string | number, key?: string) => {
+  // Check if the axis key is 'year' to prevent special formatting
+  if (key?.toString().toLowerCase() === "year") {
+    return value.toString();
+  }
   if (typeof value === "string" && value.length > 10) {
     return `${value.slice(0, 10)}...`;
   }
@@ -149,9 +185,20 @@ export const formatXAxisLabel = (value: string) => {
 };
 
 // Custom formatter for Y-axis (format large numbers)
-export const formatYAxisLabel = (value: number) => {
-  if (Math.abs(value) < 1000) return value.toLocaleString();
-  if (Math.abs(value) < 1000000) return `${(value / 1000).toFixed(1)}K`;
-  if (Math.abs(value) < 1000000000) return `${(value / 1000000).toFixed(1)}M`;
-  return `${(value / 1000000000).toFixed(1)}B`;
+export const formatYAxisLabel = (value: number, key?: string) => {
+  // Check if the axis key is 'year' to prevent special formatting
+  if (key?.toString().toLowerCase() === "year") {
+    return value.toString();
+  }
+
+  if (value === 0) {
+    return "0";
+  }
+  if (Number(value)) {
+    if (Math.abs(value) < 1000) return value.toLocaleString();
+    if (Math.abs(value) < 1e6) return `${(value / 1e3).toFixed(1)}K`;
+    if (Math.abs(value) < 1e9) return `${(value / 1e6).toFixed(1)}M`;
+    return `${(value / 1e9).toFixed(1)}B`;
+  }
+  return value.toString();
 };

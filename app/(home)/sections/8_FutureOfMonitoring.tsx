@@ -1,28 +1,14 @@
 import {
   Box,
   Container,
-  DataList,
   Heading,
   Flex,
   Text,
   Link as ChakraLink,
   Image,
 } from "@chakra-ui/react";
-import { Chart, useChart } from "@chakra-ui/charts";
-import { PieChart, Pie, Cell } from "recharts";
 
 export default function FutureOfMonitoringSection() {
-  const chart = useChart({
-    data: [
-      { name: "Vegetation Cover Loss", value: 250000, color: "#1B6450" },
-      {
-        name: "Human-Driven Conversion Alerts",
-        value: 100000,
-        color: "#C5D692",
-      },
-      { name: "Natural Disturbances", value: 150000, color: "#CD9F60" },
-    ],
-  });
   return (
     <Box
       py={{ base: 14, md: 24 }}
@@ -38,11 +24,20 @@ export default function FutureOfMonitoringSection() {
       >
         <Container textAlign="center" maxW="2xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            The future of monitoring
+            About Global Nature Watch
           </Heading>
           <Text fontSize="lg" mb="4">
-            We&rsquo;re making geospatial data more accessible, easier to use
-            and more impactful for everyone working to protect the planet.{" "}
+          We&apos;re making environmental geospatial data faster,
+          more accessible and easier to use for everyone working to protect and restore nature.
+          </Text>
+          </Container>
+          <Container display="flex" maxW="5xl">
+          <Text fontSize="lg" mb="4">
+          For more than a decade, World Resources Institute tools like Global Forest Watch have
+          transformed how the world monitors nature, driving impact across the tropics and beyond.
+          Global Nature Watch marks the next chapter. Built on trusted, peer-reviewed data and
+          powered by the latest advances in AI, it shifts monitoring from fixed global outputs to
+          targeted, actionable insights delivered in the language, regions and contexts that matter most.
           </Text>
         </Container>
         <Container display="flex" gap="14" flexDir={"column"} maxW="5xl">
@@ -56,17 +51,18 @@ export default function FutureOfMonitoringSection() {
                 Cutting-edge data
               </Heading>
               <Text fontSize="lg" mb="4">
-                We solve the hardest challenges in monitoring nature. Providing
-                you with the data you&rsquo;ve always needed, and empowering you
-                to take real-world action. Our data is globally available,
-                consistent over time and created by some of the world&rsquo;s
-                most talented field experts.
+                We tackle the hardest challenges in monitoring nature,
+                providing globally consistent data built by some of the world&rsquo;s
+                most talented experts.
+                Our data is designed to empower real-world action, today and into the future.
               </Text>
               <ChakraLink
                 fontSize="lg"
                 color="primary.700"
                 textDecoration="underline"
                 href="#"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Learn more about our data
               </ChakraLink>
@@ -114,19 +110,18 @@ export default function FutureOfMonitoringSection() {
                 Monitoring intelligence
               </Heading>
               <Text fontSize="lg" mb="4">
-                There&rsquo;s a lot of geospatial data in the world, and it can
-                be difficult to understand which to use. The future places the
-                power of having your own personal geospatial expert in your
-                pocket. With our AI assistants trained on our cutting-edge data,
-                we democratize data access for monitoring so it can reach more
-                people and places, empowering both geospatial experts and
-                novices alike.
+                With so much geospatial data available, it can be hard to know where to start.
+                Global Nature Watch places the power of a personal geospatial assistant in your pocket.
+                AI trained on trusted datasets helps both experts and newcomers navigate,
+                analyze and apply insights.
               </Text>
               <ChakraLink
                 fontSize="lg"
                 color="primary.700"
                 textDecoration="underline"
                 href="#"
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Learn more about our models and agents
               </ChakraLink>
@@ -179,132 +174,13 @@ export default function FutureOfMonitoringSection() {
           >
             <Box maxW="lg">
               <Heading size={{ base: "xl", md: "2xl" }} mb="2">
-                Intelligent tools
-              </Heading>
-              <Text fontSize="lg" mb="4">
-                The new era of AI brings with it a requirement for intelligent
-                tools that help you find and predict insights from an abundance
-                of data. Nature Watch allows you to gain insights in a way that
-                is natural and convenient for you. Insights in your language, on
-                any of your devices, whenever you need it.
-              </Text>
-              <ChakraLink
-                fontSize="lg"
-                color="primary.700"
-                textDecoration="underline"
-                href="#"
-              >
-                Learn more about our tools
-              </ChakraLink>
-            </Box>
-            <Box
-              position="relative"
-              h="72"
-              w="full"
-              display="grid"
-              placeContent="center"
-            >
-              <Box
-                w="220px"
-                p="10px"
-                bg="bg.muted"
-                rounded="sm"
-                shadow="sm"
-              >
-                <Text fontSize="10px" mb="2">
-                  Currently the most disturbances to nature are occurring in
-                  Brazil, with over 500,000 alerts of disturbances.
-                </Text>
-                <Box
-                  p="2"
-                  border="1px solid"
-                  borderColor="neutral.400/50"
-                  rounded="sm"
-                >
-                  <Chart.Root
-                    chart={chart}
-                    transform="rotate(-45deg)"
-                    my="-20%"
-                  >
-                    <PieChart>
-                      <Pie
-                        innerRadius={15}
-                        outerRadius={25}
-                        isAnimationActive={true}
-                        data={chart.data}
-                        dataKey={chart.key("value")}
-                        nameKey="name"
-                        cornerRadius={2}
-                      >
-                        {chart.data.map((item) => {
-                          return (
-                            <Cell
-                              key={item.name}
-                              fill={chart.color(item.color)}
-                            />
-                          );
-                        })}
-                      </Pie>
-                    </PieChart>
-                  </Chart.Root>
-                  <DataList.Root gap={0}>
-                    {chart.data.map((item) => (
-                      <DataList.Item
-                        key={item.name}
-                        display="flex"
-                        flexDir="row"
-                        alignItems="center"
-                        gap="1"
-                        m={0}
-                      >
-                        <Box
-                          borderRadius="1.5px"
-                          border="0.5px solid"
-                          borderColor="fg.inverted"
-                          bg={item.color}
-                          w="3"
-                          h="1.5"
-                        />
-                        <DataList.ItemLabel fontSize="7px" flex="1">
-                          {item.name}
-                        </DataList.ItemLabel>
-                        <DataList.ItemValue
-                          fontSize="8px"
-                          fontWeight="bold"
-                          flex="unset"
-                        >
-                          {item.value.toLocaleString()}
-                        </DataList.ItemValue>
-                      </DataList.Item>
-                    ))}
-                  </DataList.Root>
-                </Box>
-              </Box>
-            </Box>
-          </Flex>
-          <Flex
-            flexDir={{ base: "column-reverse", md: "row" }}
-            alignItems="center"
-            gap={{ base: "10", md: "16" }}
-          >
-            <Box maxW="lg">
-              <Heading size={{ base: "xl", md: "2xl" }} mb="2">
                 Integrative technology (coming soon)
               </Heading>
               <Text fontSize="lg" mb="4">
-                We believe the future of monitoring data and technology is open
-                source, and accessible to everyone. That&rsquo;s why Nature
-                Watch is open, extensible and ready to integrate with your own
-                systems, extending the power of your own data.
+               We believe the future of monitoring is open, extensible and integrative.
+                That&apos;s why Global Nature Watch will be able to connect with your
+                own systems, extending the power of your data.
               </Text>
-              <ChakraLink
-                fontSize="lg"
-                color="primary.700"
-                textDecoration="underline"
-                href="#"
-              >
-                Learn more about our integrations
-              </ChakraLink>
             </Box>
             <Box
               position="relative"
@@ -314,49 +190,12 @@ export default function FutureOfMonitoringSection() {
               h={{base: "14rem", md: "17rem"}}
             >
               <Image
-                maxH="10"
-                top="2.5rem"
-                left="1.5rem"
-                src="/fm-3-esri.png"
-                alt="ESRI logo"
-                position="absolute"
-              />
-              <Image
-                maxH="10"
-                top="2.75rem"
-                right="0"
-                src="/fm-3-qgis.png"
-                alt="QGIS logo"
-                position="absolute"
-              />
-              <Box p="6" bg="secondary.300" rounded="lg" shadow="sm" zIndex="50">
-                <Heading size="2xl" m={0} textWrap="nowrap">
-                  Global Nature Watch
-                </Heading>
-              </Box>
-              <Image
-                maxH="10"
-                bottom="1.5rem"
-                left="0"
-                src="/fm-3-felt.png"
-                alt="Felt logo"
-                position="absolute"
-              />
-              <Image
-                maxH="10"
+                objectPosition="80%"
+                position="relative"
                 left="50%"
-                bottom="0"
-                src="/fm-3-aws.png"
-                alt="AWS logo"
-                position="absolute"
-              />
-              <Image
-                maxH="10"
-                right="0"
-                bottom="2rem"
-                src="/fm-3-google.png"
-                alt="Google Cloud logo"
-                position="absolute"
+                transform="translateX(-50%)"
+                src="/integrations.svg"
+                alt="Global Nature Watch integrations"
               />
             </Box>
           </Flex>

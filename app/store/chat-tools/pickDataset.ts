@@ -32,7 +32,7 @@ export function pickDatasetTool(
       });
     }
   } catch (error) {
-    console.error("Error processing pick-dataset tool:", error);
+    console.error("Error processing pick_dataset tool:", error);
 
     addMessage({
       type: "error",

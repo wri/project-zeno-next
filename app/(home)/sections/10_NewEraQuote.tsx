@@ -14,7 +14,7 @@ export default function NewEraQuoteSection() {
         </Heading>
         <Text fontSize="lg" mb="4">
           World Resources Institute tools have been transforming global
-          geospatial analysis for over 14 years, with Global Forest Watch having
+          geospatial analysis for over a decade, with Global Forest Watch having
           particularly successful impact over forest monitoring across the
           tropics.
         </Text>

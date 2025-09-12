@@ -4,14 +4,12 @@ import { useState, useEffect } from "react";
 import { usePromptStore } from "@/app/store/promptStore";
 import LandingHero from "./sections/1_Hero";
 import PromptMarquee from "./sections/2_PromptMarquee";
-import TrustedPlatformsSection from "./sections/3_TrustedPlatforms";
 import FeaturesTabsSection from "./sections/4_FeaturesTabs";
 import SupportWorkTabsSection from "./sections/5_SupportWorkTabs";
 import HowItWorksSection from "./sections/6_HowItWorks";
 import LatestUpdatesSection from "./sections/7_LatestUpdates";
 import FutureOfMonitoringSection from "./sections/8_FutureOfMonitoring";
 import TeamSection from "./sections/9_TeamSection";
-import NewEraQuoteSection from "./sections/10_NewEraQuote";
 import CTASection from "./sections/11_CTA";
 import FooterSection from "./sections/12_Footer";
 
@@ -43,14 +41,12 @@ export default function LandingPage() {
         promptIndex={promptIndex}
         setPromptIndex={setPromptIndex}
       />
-      <TrustedPlatformsSection />
       <FeaturesTabsSection />
       <SupportWorkTabsSection />
       <HowItWorksSection />
       <LatestUpdatesSection />
       <FutureOfMonitoringSection />
       <TeamSection />
-      <NewEraQuoteSection />
       <CTASection />
       <FooterSection />
     </>

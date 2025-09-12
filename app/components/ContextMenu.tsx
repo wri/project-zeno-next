@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
   Stack,
   Field,
   Flex,
+  Input,
   Dialog,
   Portal,
-  Input,
-  Badge,
   Button,
   InputGroup,
-  NativeSelect,
   ButtonGroup,
 } from "@chakra-ui/react";
-import { InfoIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import {
+  MagnifyingGlassIcon,
+} from "@phosphor-icons/react";
 import { format } from "date-fns";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
@@ -31,47 +31,14 @@ const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
   })
 );
 
-const LAYER_TAGS = [
-  { label: "Recent", selected: true },
-  { label: "Forest Change" },
-  { label: "Land Cover" },
-  { label: "Land Use" },
-  { label: "Climate" },
-  { label: "Biodiversity" },
-];
 
 import { DATASET_CARDS } from "../constants/datasets";
+import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
+import type { CustomArea } from "../schemas/api/custom_areas/get";
+import useMapStore from "../store/mapStore";
+import type { Feature, MultiPolygon } from "geojson";
 
 const LAYER_CARDS = DATASET_CARDS;
-
-const AREA_TAGS = [
-  { label: "In this conversation", selected: true },
-  { label: "From past conversations" },
-];
-
-const AREA_CARDS = [
-  {
-    title: "Areas at risk of fire in northern Australia woodlands",
-    description: "Custom area",
-    selected: true,
-  },
-  {
-    title: "Pará, Brazil",
-    description: "Political boundaries",
-  },
-  {
-    title: "Serra dos Carajás",
-    description: "Key biodiversity areas",
-  },
-  {
-    title: "Japurá-Solimões-Negro moist forests",
-    description: "Terrestrial ecorregions",
-  },
-  {
-    title: "Amazon",
-    description: "River Basins",
-  },
-];
 
 function ContextNav({
   selected,
@@ -82,14 +49,14 @@ function ContextNav({
 }) {
   return (
     <Stack
-      direction="column"
+      direction={{ base: "row", md: "column" }}
       bg="bg"
       flexShrink={0}
       gap={2}
       p={3}
       py={4}
-      w="10rem"
-      borderRight="1px solid"
+      w={{ base: "full", md: "10rem" }}
+      borderRight={{ base: "none", md: "1px solid" }}
       borderColor="border"
     >
       {CONTEXT_NAV.map((nav) => (
@@ -114,9 +81,10 @@ type LayerCardItem = {
   dataset_name: string;
   context_layer: string | null;
   img?: string;
-  reason: string;
+  description: string;
   tile_url: string;
   selected?: boolean;
+  reason?: string;
 };
 
 function LayerCardList({
@@ -131,8 +99,7 @@ function LayerCardList({
       {cards.map((card) => (
         <DatasetCard
           key={card.dataset_name}
-          title={card.dataset_name}
-          description={card.reason}
+          dataset={card}
           img={card.img ?? "/globe.svg"}
           selected={card.selected}
           onClick={onCardClick ? () => onCardClick(card) : undefined}
@@ -142,24 +109,6 @@ function LayerCardList({
   );
 }
 
-function TagList({ tags }: { tags: { label: string; selected?: boolean }[] }) {
-  return (
-    <Flex gap="2" maxW="100%" overflow="auto" flexShrink={0}>
-      {tags.map((tag) => (
-        <Button
-          key={tag.label}
-          size="xs"
-          h={6}
-          borderRadius="full"
-          colorPalette={tag.selected ? "primary" : undefined}
-          variant={tag.selected ? undefined : "outline"}
-        >
-          {tag.label}
-        </Button>
-      ))}
-    </Flex>
-  );
-}
 
 function ContextMenu({
   contextType,
@@ -171,25 +120,25 @@ function ContextMenu({
   onOpenChange: (e: { open: boolean }) => void;
 }) {
   const [selectedContextType, setSelectedContextType] = useState(contextType);
-  const selectedItems = 0;
 
   return (
     <Dialog.Root
       placement="bottom"
       motionPreset="slide-in-bottom"
-      size="lg"
+      size={{ base: "xs", md: "lg" }}
       open={open}
       scrollBehavior="inside"
       onOpenChange={onOpenChange}
     >
       <Portal>
+        <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner>
-          <Dialog.Content maxH="75vh" minH="30rem">
+          <Dialog.Content maxH="75vh" minH="30rem" overflow="hidden" mx={{ base: 2, md: "auto" }}>
             <Dialog.Body
               p={0}
               h="full"
               display="flex"
-              overflow="visible"
+              flexDirection={{ base: "column", md: "row" }}
               minH={0}
             >
               {/* Modal Navigation */}
@@ -199,31 +148,21 @@ function ContextMenu({
               />
               {/* Modal Body */}
               {selectedContextType === "layer" && <LayerMenu />}
-              {selectedContextType === "area" && <AreaMenu />}
+              {selectedContextType === "area" && (
+                <Suspense
+                  fallback={
+                    <Flex w="full" alignItems="center" justifyContent="center">
+                      <Box color="fg.muted" fontSize="sm">
+                        Loading areas…
+                      </Box>
+                    </Flex>
+                  }
+                >
+                  <AreaMenu />
+                </Suspense>
+              )}
               {selectedContextType === "date" && <DateMenu />}
             </Dialog.Body>
-            <Dialog.Footer
-              justifyContent="space-between"
-              borderTop="1px solid"
-              borderColor="border"
-              py={2}
-              px={3}
-            >
-              <Badge size="sm" borderRadius="full">
-                {/* Update with count of selected items */}
-                {selectedItems ? selectedItems : "No items"} selected{" "}
-              </Badge>
-              <Button
-                size="xs"
-                variant="ghost"
-                borderRadius="full"
-                colorPalette="primary"
-                ml="auto"
-                disabled={!selectedItems}
-              >
-                Clear all
-              </Button>
-            </Dialog.Footer>
           </Dialog.Content>
         </Dialog.Positioner>
       </Portal>
@@ -269,14 +208,8 @@ export function LayerMenu() {
   };
 
   return (
-    <Stack bg="bg.subtle" pt={3} minW={0} w='100%'>
-      <Box px={4}>
-        <InputGroup endElement={<MagnifyingGlassIcon />}>
-          <Input size="sm" bg="bg" type="text" placeholder="Find data layer" />
-        </InputGroup>
-      </Box>
+    <Stack bg="bg.subtle" pt={3} minW={0} w="100%">
       <Stack px={4} pt={3} borderTopWidth="1px" borderColor="border" minH={0}>
-        <TagList tags={LAYER_TAGS} />
         <LayerCardList cards={cards} onCardClick={handleToggleCard} />
       </Stack>
     </Stack>
@@ -285,20 +218,28 @@ export function LayerMenu() {
 
 function AreaCardList({
   cards,
+  onCardClick,
 }: {
-  cards: { title: string; description: string; selected?: boolean }[];
+  cards: { id: string; name: string; selected?: boolean }[];
+  onCardClick?: (card: { id: string; name: string }) => void;
 }) {
   return (
     <Stack>
       {cards.map((card) => (
         <Card.Root
-          key={card.title}
+          key={card.id}
           size="sm"
           flexDirection="row"
           overflow="hidden"
           maxW="xl"
           border={card.selected ? "2px solid" : undefined}
-          borderColor={card.selected ? "blue.800" : undefined}
+          borderColor={card.selected ? "primary.solid" : undefined}
+          cursor={onCardClick ? "pointer" : undefined}
+          onClick={
+            onCardClick
+              ? () => onCardClick({ id: card.id, name: card.name })
+              : undefined
+          }
         >
           <Card.Body>
             <Card.Title
@@ -306,13 +247,10 @@ function AreaCardList({
               gap="1"
               alignItems="center"
               fontSize="sm"
+              m={0}
             >
-              {card.title}
-              <InfoIcon />
+              {card.name}
             </Card.Title>
-            <Card.Description fontSize="xs" color="fg.muted">
-              {card.description}
-            </Card.Description>
           </Card.Body>
         </Card.Root>
       ))}
@@ -321,24 +259,83 @@ function AreaCardList({
 }
 
 function AreaMenu() {
+  const { customAreas } = useCustomAreasListSuspense();
+  const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore();
+  const { context, upsertContextByType } = useContextStore();
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const list = (customAreas as unknown as CustomArea[] | undefined) ?? [];
+    if (!query) return list;
+    const q = query.toLowerCase();
+    return list.filter((a: CustomArea) => a.name.toLowerCase().includes(q));
+  }, [customAreas, query]);
+
+  const cards = useMemo(
+    () =>
+      filtered.map((a) => {
+        const isSelected = context.some(
+          (c) =>
+            c.contextType === "area" &&
+            ((c.aoiData?.src_id &&
+              c.aoiData.src_id === a.id &&
+              c.aoiData.source === "custom") ||
+              (typeof c.content === "string" && c.content === a.name))
+        );
+        return { id: a.id, name: a.name, selected: isSelected };
+      }),
+    [filtered, context]
+  );
+
+  const handleSelectArea = (area: { id: string; name: string }) => {
+    upsertContextByType({
+      contextType: "area",
+      content: area.name,
+      aoiData: {
+        src_id: area.id,
+        name: area.name,
+        source: "custom",
+        subtype: "custom-area",
+      },
+    });
+
+    // Build a single MultiPolygon Feature from the selected custom area's geometries
+    const selected = (customAreas as unknown as CustomArea[] | undefined)?.find(
+      (a) => a.id === area.id
+    );
+    if (selected) {
+      const multi: MultiPolygon = {
+        type: "MultiPolygon",
+        coordinates: selected.geometries.map((poly) => poly.coordinates),
+      };
+      const feature: Feature = {
+        type: "Feature",
+        id: selected.id,
+        geometry: multi,
+        properties: { id: selected.id, name: selected.name },
+      };
+      addGeoJsonFeature({
+        id: selected.id,
+        name: selected.name,
+        data: feature,
+      });
+      flyToGeoJsonWithRetry(feature);
+    }
+  };
+
   return (
     <Stack bg="bg.subtle" py={3} w="full">
       <Flex px={4} gap={2}>
         <InputGroup endElement={<MagnifyingGlassIcon />}>
-          <Input size="sm" bg="bg" type="text" placeholder="Find area" />
-        </InputGroup>
-        <NativeSelect.Root size="xs" alignSelf="stretch" w="16rem">
-          <NativeSelect.Field
-            placeholder="Political Boundaries"
+          <Input
+            size="sm"
             bg="bg"
-            py={2}
-            h="2.25rem"
-          >
-            <option value="1">Option 1</option>
-            <option value="2">Option 2</option>
-          </NativeSelect.Field>
-          <NativeSelect.Indicator />
-        </NativeSelect.Root>
+            type="text"
+            placeholder="Find area by name"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </InputGroup>
       </Flex>
       <Stack
         px={4}
@@ -346,10 +343,15 @@ function AreaMenu() {
         borderTopWidth="1px"
         borderColor="border"
         h="full"
-        overflow="hidden"
+        overflow="auto"
       >
-        <TagList tags={AREA_TAGS} />
-        <AreaCardList cards={AREA_CARDS} />
+        {cards.length === 0 ? (
+          <Box color="fg.muted" fontSize="sm">
+            No custom areas found
+          </Box>
+        ) : (
+          <AreaCardList cards={cards} onCardClick={handleSelectArea} />
+        )}
       </Stack>
     </Stack>
   );
@@ -401,12 +403,13 @@ function DateMenu() {
 
   return (
     <Stack
-      direction="row"
+      direction={{ base: "column", md: "row" }}
       bg="bg.subtle"
       px={4}
       py={3}
       gap={8}
       w="full"
+      flex={1}
       borderTopRightRadius="md"
       alignItems="center"
       justifyContent="center"
