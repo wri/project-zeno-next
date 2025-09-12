@@ -48,6 +48,7 @@ export async function middleware(request: NextRequest) {
         redirectUrl
       )}`;
       const loginUrl = new URL("https://api.resourcewatch.org/auth/login");
+      loginUrl.searchParams.set("origin", "gnw");
       loginUrl.searchParams.set("callbackUrl", callbackUrl);
       loginUrl.searchParams.set("token", "true");
       return NextResponse.redirect(loginUrl);
