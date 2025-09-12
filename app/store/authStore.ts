@@ -19,6 +19,8 @@ interface AuthState {
 
 const ALLOWED_DOMAINS = ["wri.org", "developmentseed.org", "wriconsultant.org"];
 
+const API_METADATA_URL = process.env.NEXT_PUBLIC_API_METADATA_URL;
+
 const useAuthStore = create<AuthState>()((set) => ({
   userEmail: null,
   isAuthenticated: false,
@@ -91,9 +93,10 @@ const useAuthStore = create<AuthState>()((set) => ({
   fetchMetadata: async () => {
     set({ isLoadingMetadata: true });
     try {
-      const response = await fetch(
-        "https://api.zeno-staging.ds.io/api/metadata"
-      );
+      if (!API_METADATA_URL) {
+        throw new Error("API_METADATA_URL is not configured");
+      }
+      const response = await fetch(API_METADATA_URL);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
