@@ -23,6 +23,8 @@ import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { useLegendHook } from "@/app/components/legend/useLegendHook";
+import { Legend } from "@/app/components/legend/Legend";
 const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
 export default function DashboardLayout({
@@ -33,6 +35,7 @@ export default function DashboardLayout({
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
+  const { layers, handleLayerAction } = useLegendHook();
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
@@ -80,6 +83,7 @@ export default function DashboardLayout({
         <ChatPanel />
         <Grid templateRows="1fr" gridArea="map">
           <Box overflow="hidden">
+            <Legend layers={layers} onLayerAction={handleLayerAction} />
             <Map />
           </Box>
         </Grid>

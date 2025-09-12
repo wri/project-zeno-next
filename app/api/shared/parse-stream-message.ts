@@ -54,29 +54,40 @@ export function parseStreamMessage(
       charts_data: langChainMessage.charts_data || [],
       insight_count: langChainMessage.insight_count || 0,
       aoi: langChainMessage.aoi || undefined,
-      timestamp: timestamp.toISOString()
+      timestamp: timestamp.toISOString(),
     };
   } else if (messageType === "agent") {
     // For AI messages, handle different content formats
-    let textContent = null;
+    let textContent: string | null = null;
+
+    const isThinking = (item: unknown): boolean =>
+      typeof item === "object" &&
+      item !== null &&
+      "type" in item &&
+      (item as { type: unknown }).type === "thinking";
 
     if (typeof content === "string") {
-      // Content is a direct string
       textContent = content;
-    } else if (content && typeof content === "object") {
-      const contentObj = content as Record<string, unknown>;
-      if (contentObj.text && typeof contentObj.text === "string") {
-        // Content is an object with text property
-        textContent = contentObj.text;
-      } else if (Array.isArray(content) && content.length > 0) {
-        // Content is an array of objects
-        const firstItem = content[0] as Record<string, unknown>;
-        if (firstItem.text && typeof firstItem.text === "string") {
-          textContent = firstItem.text;
-        } else if (typeof content[0] === "string") {
-          textContent = content[0];
-        }
+    } else if (Array.isArray(content) && content.length > 0) {
+      // Find first non-thinking segment from array content
+      const firstValid = content.find((item: unknown) => !isThinking(item));
+      if (typeof firstValid === "string") {
+        textContent = firstValid;
+      } else if (
+        firstValid &&
+        typeof firstValid === "object" &&
+        "text" in firstValid &&
+        typeof (firstValid as { text?: unknown }).text === "string"
+      ) {
+        textContent = (firstValid as { text: string }).text;
       }
+    } else if (
+      content &&
+      typeof content === "object" &&
+      "text" in (content as Record<string, unknown>) &&
+      typeof (content as { text?: unknown }).text === "string"
+    ) {
+      textContent = (content as { text: string }).text;
     }
 
     // Only return a message if we have valid text content

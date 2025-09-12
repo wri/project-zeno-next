@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { API_CONFIG } from "@/app/config/api";
 
 interface AuthState {
   userEmail: string | null;
@@ -7,11 +8,14 @@ interface AuthState {
   isAnonymous: boolean;
   usedPrompts: number;
   totalPrompts: number;
+  isSignupOpen: boolean;
+  isLoadingMetadata: boolean;
   setPromptUsage: (used: number, total: number) => void;
   setUsageFromHeaders: (headers: Headers | Record<string, string>) => void;
   setAuthStatus: (email: string) => void;
   setAnonymous: () => void;
   clearAuth: () => void;
+  fetchMetadata: () => Promise<void>;
 }
 
 const ALLOWED_DOMAINS = ["wri.org", "developmentseed.org", "wriconsultant.org"];
@@ -23,6 +27,8 @@ const useAuthStore = create<AuthState>()((set) => ({
   isAnonymous: false,
   usedPrompts: 0,
   totalPrompts: 25,
+  isSignupOpen: false,
+  isLoadingMetadata: false,
   setPromptUsage: (used: number, total: number) => {
     set({ usedPrompts: used, totalPrompts: total });
   },
@@ -82,6 +88,29 @@ const useAuthStore = create<AuthState>()((set) => ({
       isWhitelisted: false,
       isAnonymous: false,
     });
+  },
+  fetchMetadata: async () => {
+    set({ isLoadingMetadata: true });
+    try {
+      if (!API_CONFIG.ENDPOINTS.METADATA) {
+        throw new Error("API_METADATA_URL is not configured");
+      }
+      const response = await fetch(API_CONFIG.ENDPOINTS.METADATA);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      set({
+        isSignupOpen: data.is_signup_open,
+        isLoadingMetadata: false,
+      });
+    } catch (error) {
+      console.error("Failed to fetch metadata:", error);
+      set({
+        isLoadingMetadata: false,
+        isSignupOpen: false, // Keep default false on error
+      });
+    }
   },
 }));
 
