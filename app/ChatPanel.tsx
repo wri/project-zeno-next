@@ -60,10 +60,15 @@ function ChatPanel() {
 
   return (
     <Flex minH="100%" maxH="100%" gridArea="chat">
-      <Flex minH="100%" maxH="100%" w={`${width}px`} flexDir="column">
+      <Flex
+        minH="100%"
+        maxH="100%"
+        w={{ base: "full", md: `${width}px` }}
+        flexDir="column"
+      >
         <ChatPanelHeader />
         <Flex
-          p="4"
+          px={{ base: 2, md: 4 }}
           py={0}
           position="relative"
           flex="1"
@@ -71,7 +76,14 @@ function ChatPanel() {
           height="100%"
           overflow="auto"
         >
-          <Box flex="1" overflowY="auto" height="100%" mx="-4" px="6" pb="8">
+          <Box
+            flex="1"
+            overflowY="auto"
+            height="100%"
+            mx={{ base: -2, md: -4 }}
+            px={{ base: 4, md: 6 }}
+            pb={{ base: 4, md: 8 }}
+          >
             <ChatMessages />
           </Box>
           <Box mt="auto" position="sticky" bottom="2">
@@ -119,6 +131,7 @@ function ChatPanel() {
               color="fg.subtle"
               whiteSpace="pre"
               overflowX="auto"
+              hideBelow="md"
             >
               AI can make mistakes. Please verify any outputs before using them
               in your work.
@@ -147,6 +160,7 @@ function ChatPanel() {
         onMouseDown={() => {
           isDragged.current = true;
         }}
+        hideBelow="md"
       />
     </Flex>
   );
