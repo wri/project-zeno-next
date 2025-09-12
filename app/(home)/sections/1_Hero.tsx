@@ -13,7 +13,7 @@ import {
 import {
   ArrowsClockwiseIcon,
   CaretRightIcon,
-  InfoIcon,
+  QuestionIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import useChatStore from "@/app/store/chatStore";
@@ -135,7 +135,7 @@ export default function LandingHero({
               fontSize="lg"
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
-              Global Nature Watch is your personal geospatial AI assistant, trained to help you make the most of cutting-edge nature monitoring data.
+              Global Nature Watch is an experimental geospatial AI assistant, exploring how AI can help you make the most of cutting-edge nature monitoring data. Test the beta and help shape the future.
             </Text>
           </Container>
           <Container
@@ -239,7 +239,7 @@ export default function LandingHero({
               <Tooltip
                 openDelay={100}
                 closeDelay={300}
-                content="We are learning, iterating, and improving—and your feedback is essential to help build the next generation of environmental monitoring."
+                content="This is an early version of Global Nature Watch. Our agent may make mistakes and some features are still in development. Your usage and feedback will help us enhance it!"
               >
                 <Box
                   color="fg.inverted"
@@ -250,8 +250,8 @@ export default function LandingHero({
                   gap="1"
                   alignItems="center"
                 >
-                  <InfoIcon />
-                  Why we&apos;re doing this.
+                  <QuestionIcon />
+                  What does beta mean?
                 </Box>
               </Tooltip>
             </Box>
