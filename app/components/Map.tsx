@@ -9,9 +9,13 @@ import MapGl, {
   MapRef,
 } from "react-map-gl/maplibre";
 import { useState, useRef } from "react";
-import { AbsoluteCenter, Code, Box } from "@chakra-ui/react";
+import {
+  AbsoluteCenter,
+  Code,
+  Box,
+  useBreakpointValue,
+} from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
-import { useColorModeValue } from "./ui/color-mode";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
@@ -24,10 +28,10 @@ const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
+  const isMobile = useBreakpointValue({ base: true, md: false });
   const { geoJsonFeatures, setMapRef, initializeTerraDraw } = useMapStore();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
-
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -79,6 +83,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             },
           },
         },
+        "& .maplibregl-ctrl-attrib.maplibregl-compact": {
+          mb: 6,
+          opacity: 0.8,
+          transition: "opacity 0.16s ease",
+          _hover: { opacity: 1 },
+        },
       }}
     >
       <MapGl
@@ -96,14 +106,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         <Source
           id="background"
           type="raster"
-          tiles={useColorModeValue(
-            [
-              `https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
-            ],
-            [
-              `https://api.mapbox.com/styles/v1/devseed/clz35cbi302l701qo2snhdx9x/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
-            ]
-          )}
+          tiles={[`https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`]}
           tileSize={256}
         >
           <Layer id="background-tiles" type="raster" />
@@ -115,26 +118,36 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         />
         <SelectAreaLayer />
         <DynamicTileLayers />
+
         {!disableMapAreaControls && <MapAreaControls />}
 
-        <AttributionControl
-          customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
-          position="bottom-left"
-        />
-        <ScaleControl />
-        <AbsoluteCenter fontSize="sm" opacity={0.375}>
+        <AbsoluteCenter fontSize="sm" opacity={0.375} hideBelow="md">
           <PlusIcon />
         </AbsoluteCenter>
-        <NavigationControl showCompass={false} position="bottom-left" />
+        <AttributionControl
+          customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
+          position="bottom-right"
+          compact={isMobile ? true : false}
+          style={{
+            background: "transparent",
+            fontSize: "0.675rem",
+            color: "gray",
+          }}
+        />
+        {!isMobile && (
+          <>
+            <ScaleControl position="bottom-left" />
+            <NavigationControl showCompass={false} position="bottom-left" />
+          </>
+        )}
         <Code
           pos="absolute"
-          bottom="0"
+          bottom="4"
           right="0"
           p="2"
-          borderRadius={8}
-          fontSize="10px"
-          bg={useColorModeValue("whiteAlpha.600", "blackAlpha.600")}
-          boxShadow="sm"
+          fontSize="xs"
+          bg="transparent"
+          hideBelow="md"
         >
           lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
         </Code>

@@ -66,20 +66,35 @@ const WelcomeModal = () => {
       open={isOpen}
       onOpenChange={() => setIsOpen(isOpen)}
       placement="center"
-      size="lg"
+      size={{ base: "xs", sm: "sm", md: "lg" }}
       initialFocusEl={() => ref.current}
     >
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content bg="bg.subtle" padding="2">
+          <Dialog.Content
+            bg="bg.subtle"
+            padding="2"
+            mx={{ base: 2, md: "inherit" }}
+            maxH="min(92dvh, 92vh)"
+            overflow="hidden"
+          >
             <Dialog.Header justifyContent="center" alignItems="center">
               <Dialog.Title fontWeight="normal" fontSize="2xl" m={0}>
                 Welcome to <strong>Global Nature Watch</strong>
               </Dialog.Title>
             </Dialog.Header>
-            <Dialog.Body display="flex" flexDirection="column" gap="12">
-              <Flex display="flex" flexDirection="column" gap="8">
+            <Dialog.Body
+              display="flex"
+              flexDirection="column"
+              gap={{ base: 3, sm: 6, md: 12 }}
+              overflow={{ base: "auto", md: "hidden" }}
+            >
+              <Flex
+                display="flex"
+                flexDirection="column"
+                gap={{ base: 4, md: 8 }}
+              >
                 <Dialog.Description fontSize="xs" lineHeight="moderate">
                   Our AI-powered nature monitoring tool understands plain
                   language, so no technical jargon required! Ask about land
@@ -150,7 +165,7 @@ const WelcomeModal = () => {
                   </Button>
                 </Flex>
               </Flex>
-              <Flex display="flex" flexDir="column" gap="6">
+              <Flex display="flex" flexDir="column" gap={{ base: 4, md: 6 }}>
                 <HStack>
                   <Separator flex="1" />
                   <Text
