@@ -17,7 +17,6 @@ export function LegendDivergent(props: {
   color: SymbolColor[] | SymbolColorValue[];
 }) {
   const { min, max, color } = props;
-  console.log(min, max, color)
   const colorRamp = makeColorRamp(
     color as SymbolColor[] | SymbolColorValue[]
   );
