@@ -6,6 +6,7 @@ import { LayerId } from "../types/map";
 import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
+import { showError } from "@/app/hooks/useErrorHandler";
 
 interface GeoJsonFeature {
   id: string;
@@ -70,7 +71,6 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   reset: () => {
     set({
-      mapRef: null,
       geoJsonFeatures: [],
       selectAreaLayer: null,
       tileLayers: [],
@@ -165,6 +165,10 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       });
     } catch (error) {
       console.error("Error flying to GeoJSON bounds:", error);
+      showError("Unable to navigate to the selected area on the map.", {
+        title: "Map Navigation Error",
+        duration: 5000,
+      });
     }
   },
 
@@ -178,6 +182,10 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
     if (maxRetries <= 0) {
       console.warn("Max retries reached, map ref still not available");
+      showError(
+        "The map failed to load properly. Please refresh the page and try again.",
+        { title: "Map Loading Error", duration: 5000 }
+      );
       return;
     }
 
@@ -211,6 +219,10 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       });
     } catch (error) {
       console.error("Error flying to GeoJSON center:", error);
+      showError("Unable to navigate to the selected location on the map.", {
+        title: "Map Navigation Error",
+        duration: 5000,
+      });
     }
   },
 });

@@ -54,8 +54,7 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
 
   return (
     <DatasetCard
-      title={dataset.dataset_name}
-      description={dataset.reason}
+      dataset={dataset}
       img={img}
       selected={isInContext}
       onClick={handleAddToMap}

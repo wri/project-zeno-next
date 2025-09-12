@@ -59,6 +59,8 @@ export default function LandingHero({
   }, [prompts.length, setPromptIndex, isInputFocused, inputValue]);
   // Measure the width of one set of prompts after render
 
+  const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
   const submitPrompt = async () => {
     if (isLoading) return;
     const message = inputValue.trim() || prompts[promptIndex];
@@ -107,6 +109,7 @@ export default function LandingHero({
         pt={{ base: 14, md: 24 }}
         pb={{ base: 24, md: 32 }}
         zIndex="10"
+        minH={{ base: "none", xl: "45vh" }}
       >
         <Container
           px={{ base: 6, md: 0 }}
@@ -145,76 +148,81 @@ export default function LandingHero({
             flexDirection="column"
             gap="3"
           >
-            <Box rounded="xl" bg="bg" p="4" zIndex="10">
-              <Input
-                key={
-                  !isInputFocused && inputValue === "" ? promptIndex : undefined
-                }
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onFocus={() => setIsInputFocused(true)}
-                onBlur={() => setIsInputFocused(false)}
-                p="0"
-                outline="none"
-                borderWidth="0"
-                size="lg"
-                placeholder={prompts[promptIndex]}
-                animationName="slide-from-bottom, fade-in"
-                animationDuration="0.32s"
-                animationTimingFunction="ease-in-out"
-                _focusWithin={{
-                  animationPlayState: "paused",
-                }}
-              />
-              <Flex justifyContent="space-between" mt="4" gap={4}>
-                <Flex gap="2" alignItems="flex-start" flexDirection="column">
+            {(LANDING_PAGE_VERSION === "public" ||
+              LANDING_PAGE_VERSION === "limited") && (
+              <Box rounded="xl" bg="bg" p="4" zIndex="10">
+                <Input
+                  key={
+                    !isInputFocused && inputValue === ""
+                      ? promptIndex
+                      : undefined
+                  }
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  p="0"
+                  outline="none"
+                  borderWidth="0"
+                  size="lg"
+                  placeholder={prompts[promptIndex]}
+                  animationName="slide-from-bottom, fade-in"
+                  animationDuration="0.32s"
+                  animationTimingFunction="ease-in-out"
+                  _focusWithin={{
+                    animationPlayState: "paused",
+                  }}
+                />
+                <Flex justifyContent="space-between" mt="4" gap={4}>
+                  <Flex gap="2" alignItems="flex-start" flexDirection="column">
+                    <Button
+                      key={animationKey}
+                      variant="outline"
+                      rounded="lg"
+                      _after={{
+                        position: "absolute",
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        content: "''",
+                        zIndex: -1,
+                        width: "10%",
+                        height: "100%",
+                        bg: "secondary.100",
+                        animation: ready ? "fillWidth" : "none",
+                        animationPlayState:
+                          isInputFocused || inputValue.length > 0
+                            ? "paused"
+                            : "running",
+                      }}
+                      onClick={() => {
+                        setPromptTimer(10);
+                        setPromptIndex((idx) => (idx + 1) % prompts.length);
+                        setAnimationKey((k) => k + 1);
+                      }}
+                    >
+                      <ArrowsClockwiseIcon />
+                      New Suggestion
+                    </Button>
+                    <Text fontSize="xs" color="fg.subtle">
+                      Automatically updating in {promptTimer}s
+                    </Text>
+                  </Flex>
                   <Button
-                    key={animationKey}
-                    variant="outline"
+                    variant="solid"
+                    colorPalette="primary"
                     rounded="lg"
-                    _after={{
-                      position: "absolute",
-                      top: 0,
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      content: "''",
-                      zIndex: -1,
-                      width: "10%",
-                      height: "100%",
-                      bg: "secondary.100",
-                      animation: ready ? "fillWidth" : "none",
-                      animationPlayState:
-                        isInputFocused || inputValue.length > 0
-                          ? "paused"
-                          : "running",
-                    }}
-                    onClick={() => {
-                      setPromptTimer(10);
-                      setPromptIndex((idx) => (idx + 1) % prompts.length);
-                      setAnimationKey((k) => k + 1);
-                    }}
+                    onClick={submitPrompt}
+                    title="Submit prompt to assistant and go to application"
+                    disabled={isLoading}
                   >
-                    <ArrowsClockwiseIcon />
-                    New Suggestion
+                    Go
+                    <CaretRightIcon weight="bold" />
                   </Button>
-                  <Text fontSize="xs" color="fg.subtle">
-                    Automatically updating in {promptTimer}s
-                  </Text>
                 </Flex>
-                <Button
-                  variant="solid"
-                  colorPalette="primary"
-                  rounded="lg"
-                  onClick={submitPrompt}
-                  title="Submit prompt to assistant and go to application"
-                  disabled={isLoading}
-                >
-                  Go
-                  <CaretRightIcon weight="bold" />
-                </Button>
-              </Flex>
-            </Box>
+              </Box>
+            )}
             <Box
               display="flex"
               flexWrap="wrap"
@@ -234,7 +242,12 @@ export default function LandingHero({
                 <Badge size="xs" fontSize="8px" rounded="4px" mr="1">
                   BETA
                 </Badge>
-                You&apos;re exploring a beta version of Global Nature Watch.
+                Global Nature Watch is
+                {LANDING_PAGE_VERSION === "closed"
+                  ? " in closed Beta."
+                  : LANDING_PAGE_VERSION === "limited"
+                  ? " in limited Beta."
+                  : " open."}
               </Text>
               <Tooltip
                 openDelay={100}

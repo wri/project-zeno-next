@@ -10,6 +10,8 @@ import {
 import { CaretRightIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 const FEATURE_TABS = [
   {
     value: "feature-tab-1",
@@ -51,18 +53,20 @@ export default function FeaturesTabsSection() {
           Global Nature Watch is testing new ways to make geospatial information easier to use.
           Try asking in plain language and explore the insights it can provide.
           </Text>
-          <Button
-            asChild
-            variant="solid"
-            colorPalette="primary"
-            mt="4"
-            rounded="lg"
-          >
-            <Link href="/app">
-              Explore the beta
-              <CaretRightIcon weight="bold" />
-            </Link>
-          </Button>
+          {LANDING_PAGE_VERSION !== "closed" && (
+            <Button
+              asChild
+              variant="solid"
+              colorPalette="primary"
+              mt="4"
+              rounded="lg"
+            >
+              <Link href="/app">
+                Explore the beta
+                <CaretRightIcon weight="bold" />
+              </Link>
+            </Button>
+          )}
         </Container>
         <Container mt="12" maxW="5xl" px={0}>
           <Tabs.Root
