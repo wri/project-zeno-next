@@ -139,7 +139,9 @@ export default function LandingHero({
               fontSize="lg"
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
-              Global Nature Watch is an experimental geospatial AI assistant, exploring how AI can help you make the most of cutting-edge nature monitoring data. Test the beta and help shape the future.
+              Global Nature Watch is an experimental geospatial AI assistant, exploring how AI can help you make the most of cutting-edge nature monitoring data.
+              <br />
+              Test the beta and help shape the future.
             </Text>
           </Container>
           <Container
