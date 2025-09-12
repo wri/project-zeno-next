@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { API_CONFIG } from "@/app/config/api";
 
 interface AuthState {
   userEmail: string | null;
@@ -18,8 +19,6 @@ interface AuthState {
 }
 
 const ALLOWED_DOMAINS = ["wri.org", "developmentseed.org", "wriconsultant.org"];
-
-const API_METADATA_URL = process.env.NEXT_PUBLIC_API_METADATA_URL;
 
 const useAuthStore = create<AuthState>()((set) => ({
   userEmail: null,
@@ -93,10 +92,10 @@ const useAuthStore = create<AuthState>()((set) => ({
   fetchMetadata: async () => {
     set({ isLoadingMetadata: true });
     try {
-      if (!API_METADATA_URL) {
+      if (!API_CONFIG.ENDPOINTS.METADATA) {
         throw new Error("API_METADATA_URL is not configured");
       }
-      const response = await fetch(API_METADATA_URL);
+      const response = await fetch(API_CONFIG.ENDPOINTS.METADATA);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
