@@ -37,7 +37,7 @@ export function Legend(props: LegendProps) {
     <Flex
       position="absolute"
       right={3}
-      bottom={{ base: 18, md: 12 }}
+      bottom={{ base: "4.5rem", md: 12 }}
       zIndex={100}
       width={320}
       bg="bg"
