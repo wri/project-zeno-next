@@ -8,8 +8,10 @@ import {
   Text,
   Link as ChLink,
   Status,
+  Heading,
   Accordion,
   Box,
+  Badge,
   Progress,
 } from "@chakra-ui/react";
 import Link from "next/link";
@@ -26,6 +28,7 @@ import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
+import LclLogo from "./components/LclLogo";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
   const { href, children, isActive, ...rest } = props;
@@ -158,9 +161,41 @@ export function Sidebar() {
       inert={!sideBarVisible}
     >
       <Flex
+        alignItems="center"
+        justifyContent="space-between"
+        p={3}
+        bg="primary.solid"
+        color="fg.inverted"
+        hideFrom="md"
+      >
+        <Flex gap="2" alignItems="center">
+          <ChLink
+            as={Link}
+            href="/"
+            display="flex"
+            transition="opacity 0.24s ease"
+            _hover={{ opacity: 0.8 }}
+          >
+            <LclLogo width={16} avatarOnly fill="white" />
+            <Heading as="h1" size="sm" color="fg.inverted">
+              Global Nature Watch
+            </Heading>
+          </ChLink>
+          <Badge
+            colorPalette="primary"
+            bg="primary.800"
+            letterSpacing="wider"
+            variant="solid"
+            size="xs"
+          >
+            BETA
+          </Badge>
+        </Flex>
+      </Flex>
+      <Flex
         px="3"
         py={2}
-        pt={{ base: 4, md: 2 }}
+        pt={{ base: 3, md: 2 }}
         h={{ base: "auto", md: 14 }}
         justify="space-between"
         alignItems="center"
@@ -285,20 +320,6 @@ export function Sidebar() {
             <SignOutIcon />
           </Button>
         </Box>
-        <ChLink
-          href="/"
-          _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-          borderRadius="lg"
-          px="1"
-          py="2"
-        >
-          <Stack gap="0" fontWeight="medium">
-            <Text fontSize="sm">Home</Text>
-            <Text fontSize="xs" color="fg.subtle">
-              Global Nature Watch
-            </Text>
-          </Stack>
-        </ChLink>
       </Stack>
     </Flex>
   );
