@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import CookieConsent from "@/app/components/CookieConsent";
 
 const ibmPlexSans = IBM_Plex_Sans({
   variable: "--font-IBMPlexSans",
@@ -28,6 +29,7 @@ export default function RootLayout({
       <body>
         <Providers>
           {children}
+          <CookieConsent />
         </Providers>
       </body>
     </html>
