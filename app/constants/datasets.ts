@@ -53,7 +53,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null as string | null,
     img: "/dataset_card_land_cover.png",
     description:
-      "Global All Ecosystem Disturbance Alerts (DIST-ALERT) provides near-real-time alerts of vegetation disturbance globally at 30-meter resolution, using harmonized Landsat-Sentinel-2 imagery. A filtered subset of these daily alerts (Land Disturbance Alert Classification System or LDACS) can also be classified into potential drivers: conversion, cropland dynamics, fire-related, water-related, or unclassified.",
+      "This Global Land Cover dataset is a combination of two global datasets: the GLAD Land Cover and Land Use Change annual data and the Global Pasture Watch Grassland Class Collection 2 Cultivated Grasslands annual data. This combination is annual from 2015 through 2024. This dataset shows land covers and uses including: bare ground and sparsevegetation, short vegetation, tree cover, wetlands, water, snow/ice, cropland, cultivated grasslands, and built-up land.",
     tile_url: "https://eoapi.zeno-staging.ds.io/raster/collections/global-land-cover-v-2/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B139%2C%2069%2C%2019%2C%20255%5D%2C%20%221%22%3A%20%5B255%2C%20255%2C%200%2C%20255%5D%2C%20%222%22%3A%20%5B0%2C%20128%2C%200%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%20255%2C%20255%2C%20255%5D%2C%20%224%22%3A%20%5B0%2C%200%2C%20255%2C%20255%5D%2C%20%225%22%3A%20%5B255%2C%20255%2C%20255%2C%20255%5D%2C%20%226%22%3A%20%5B255%2C%200%2C%200%2C%20255%5D%2C%20%227%22%3A%20%5B128%2C%20128%2C%20128%2C%20255%5D%2C%20%228%22%3A%20%5B255%2C%20165%2C%200%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True",
     legend: {
       title: "Global land cover (2024)",
@@ -73,7 +73,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       },
       type: "categorical",
       info: "This dataset includes built-up land as one of its land cover classes, which directly corresponds to urban areas. It provides global coverage with annual data from 2015-2024, making it the most appropriate dataset to answer questions about urban area extent worldwide.",
-      note: "This is a placeholder note.",
+      note: "",
     },
   },
   {
@@ -85,14 +85,14 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Annual 30 m maps of global natural/semi-natural grassland extent from 2000 to 2024. This dataset defines grasslands very broadly such that they encompass grasslands, shrublands, and savannas by including any land cover type which contains at least 30% of dry or wet low vegetation, dominated by grasses and forbs (less than 3 meters) and a: maximum of 50% tree canopy cover (greater than 5 meters), a maximum of 70% of other woody vegetation (scrubs and open shrubland), and a maximum of 50% active cropland cover in mosaic landscapes of cropland & other vegetation.",
     tile_url: "https://eoapi.zeno-staging.ds.io/raster/collections/grasslands-v-1-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True",
     legend: {
-      title: "Global Grasslands (2024)",
+      title: "Global Grasslands (2000-2024)",
       color: "#ff9916",
       symbology: {
         items: [{ value: "Natural/semi-natural grassland", color: "#ff9916" }],
       },
       type: "symbol",
-      info: "This dataset provides global coverage with annual data from 2015-2024, making it the most appropriate dataset to answer questions about grassland area extent worldwide.",
-      note: "This is a placeholder note.",
+      info: "This dataset provides global coverage with annual data from 2000-2024, making it the most appropriate dataset to answer questions about grassland area extent worldwide.",
+      note: "",
     },
   },
   {
@@ -132,7 +132,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       },
       type: "categorical",
       info: 'The Natural lands dataset is the best match because it provides a 2020 baseline map of natural vs non-natural land covers at 30m resolution, which can be used to identify intact/natural landscapes. This dataset specifically defines "natural" ecosystems as those that substantially resemble what would be found without major human impacts, making it ideal for assessing landscape intactness across Canadian provinces.',
-      note: "This is a placeholder note.",
+      note: "This map overestimates the extent of natural lands, and while remote sensing data, on which the map is based, can provide powerful insights, additional field work should be used for validation and to understand local dynamics. Caution should be used if calculating areas with the SBTN Natural Lands Map.",
     },
   },
   {
@@ -148,13 +148,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png?start_year=2001&end_year=2024&tree_cover_density_threshold=25&render_type=true_color",
     legend: {
       title: "Tree cover loss (2001-2024)",
-      color: "#f69",
+      color: "#DC6C9A",
       symbology: {
-        items: [{ value: "Tree cover loss", color: "#f69" }],
+        items: [{ value: "Tree cover loss", color: "#DC6C9A" }],
       },
       type: "symbol",
       info: "Tree cover loss dataset can detect stand-replacement disturbances including plantations and supports monitoring forestry practices. The driver context layer would help distinguish harvesting from other causes of tree loss, making it ideal for tracking plantation harvesting cycles.",
-      note: "This is a placeholder note.",
+      note: "Tree cover canopy cover density is >30% by default"
     },
   },
   {
@@ -168,18 +168,16 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Tree Cover Gain (Hansen/UMD/GLAD) identifies areas where new tree canopy was established between 2000 and 2012 at 30-meter resolution, using Landsat 7 imagery. It captures both  natural forest regrowth and tree plantation cycles, and is useful for tracking large-scale forest recovery trends. Users should note that it is a cumulative layer and should not be combined directly with loss or tree cover data to calculate net change.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_tree_cover_gain_from_height/latest/default/{z}/{x}/{y}.png",
-  },
-  {
-    dataset_id: 6,
-    dataset_name: "Forest greenhouse gas net flux",
-    data_layer: "Forest greenhouse gas net flux",
-    context_layer: null,
-    threshold: 30,
-    img: "/dataset_card_net_flux.png",
-    description:
-      "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2024, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
-    tile_url:
-      "https://tiles.globalforestwatch.org/gfw_forest_carbon_net_flux/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30",
+    legend: {
+        title: "Tree cover gain (2000-2020)",
+        color: "#3F08F5",
+        symbology: {
+          items: [{ value: "Tree cover gain", color: "#3F08F5" }],
+        },
+        type: "symbol",
+        info: "Tree cover gain dataset can detect natural forest regrowth and tree plantation cycles. It is useful for tracking large-scale forest recovery trends.",
+        note: "This is a placeholder note.",
+      },
   },
   {
     dataset_id: 7,
@@ -192,6 +190,104 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Tree Cover provides global percent tree canopy cover at 30-meter resolution for years 2000, based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_tree_cover_density_{year}/latest/tcd_{threshold}/{z}/{x}/{y}.png",
+    legend: {
+        title: "Tree cover (2000)",
+        color: "##7BD3D",
+        symbology: {
+          items: [{ value: "Tree cover", color: "#97BD3D" }],
+        },
+        type: "symbol",
+        info: "Tree cover gain dataset can detect natural forest regrowth and tree plantation cycles. It is useful for tracking large-scale forest recovery trends.",
+        note: "Tree cover canopy cover density is >30% by default",
+      },
+  },
+  {
+    dataset_id: 6,
+    dataset_name: "Forest greenhouse gas net flux (2001-2024)",
+    data_layer: "Forest greenhouse gas net flux",
+    context_layer: null,
+    threshold: 30,
+    img: "/dataset_card_net_flux.png",
+    description:
+      "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2024, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
+    tile_url:
+      "https://tiles.globalforestwatch.org/gfw_forest_carbon_net_flux/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30",
+      legend: {
+        title: "GHG net flux",
+        color: "#9760B9",
+        symbology: {
+          items: [{
+            color: "#151d44",
+            value: "1500 (sink)" },
+            { color: "#172447", value: "" },
+            { color: "#182c4c", value: "" },
+            { color: "#1a3350", value: "" },
+            { color: "#1b3a54", value: "" },
+            { color: "#1c4259", value: "" },
+            { color: "#1c485d", value: "" },
+            { color: "#1c4f62", value: "" },
+            { color: "#1b5766", value: "" },
+            { color: "#1a5d6a", value: "" },
+            { color: "#18656e", value: "" },
+            { color: "#156c72", value: "" },
+            { color: "#137375", value: "" },
+            { color: "#117a78", value: "" },
+            { color: "#12827b", value: "" },
+            { color: "#17887d", value: "" },
+            { color: "#25917f", value: "" },
+            { color: "#349880", value: "" },
+            { color: "#419d82", value: "" },
+            { color: "#52a384", value: "" },
+            { color: "#61a987", value: "" },
+            { color: "#6fad8b", value: "" },
+            { color: "#7db390", value: "" },
+            { color: "#8bb896", value: "" },
+            { color: "#97bd9c", value: "" },
+            { color: "#a4c3a3", value: "" },
+            { color: "#b1c8ac", value: "" },
+            { color: "#bcceb4", value: "" },
+            { color: "#c8d4be", value: "" },
+            { color: "#d3dac8", value: "" },
+            { color: "#dde0d1", value: "" },
+            { color: "#e9e7dd", value: "" },
+            { color: "#ece4ec", value: "" },
+            { color: "#e3dce7", value: "" },
+            { color: "#dcd4e5", value: "" },
+            { color: "#d3cce3", value: "" },
+            { color: "#ccc3e3", value: "" },
+            { color: "#c5bbe4", value: "" },
+            { color: "#beb2e6", value: "" },
+            { color: "#b9a8e8", value: "" },
+            { color: "#b4a0e8", value: "" },
+            { color: "#b097e7", value: "" },
+            { color: "#ac8de4", value: "" },
+            { color: "#a885e0", value: "" },
+            { color: "#a57dd9", value: "" },
+            { color: "#a174d2", value: "" },
+            { color: "#9e6dca", value: "" },
+            { color: "#9a65c0", value: "" },
+            { color: "#945cb4", value: "" },
+            { color: "#9056ab", value: "" },
+            { color: "#8c4fa0", value: "" },
+            { color: "#864896", value: "" },
+            { color: "#82438c", value: "" },
+            { color: "#7c3d82", value: "" },
+            { color: "#763777", value: "" },
+            { color: "#70326e", value: "" },
+            { color: "#6a2d64", value: "" },
+            { color: "#63275a", value: "" },
+            { color: "#5c2352", value: "" },
+            { color: "#551e48", value: "" },
+            { color: "#4e1940", value: "" },
+            { color: "#471438", value: "" },
+            { color: "#3f0e31", value: "" },
+            { color: "#39082a", value: ">1500 tCO₂e/ha (source)"}
+          ]
+        },
+        type: "divergent",
+        info: "This dataset maps the balance between emissions from forest disturbances and carbon removals from forest growth, making it ideal for identifying where forests are contributing to or helping mitigate climate change.",
+        note: "Tree cover canopy cover density is >30% by default"
+      },
   },
 ];
 
