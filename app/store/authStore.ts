@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { API_CONFIG } from "@/app/config/api";
 
 interface AuthState {
   userEmail: string | null;
@@ -91,9 +92,10 @@ const useAuthStore = create<AuthState>()((set) => ({
   fetchMetadata: async () => {
     set({ isLoadingMetadata: true });
     try {
-      const response = await fetch(
-        "https://api.zeno-staging.ds.io/api/metadata"
-      );
+      if (!API_CONFIG.ENDPOINTS.METADATA) {
+        throw new Error("API_METADATA_URL is not configured");
+      }
+      const response = await fetch(API_CONFIG.ENDPOINTS.METADATA);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
