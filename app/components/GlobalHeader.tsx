@@ -12,6 +12,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import Link from "next/link";
+import LclLogo from "./LclLogo";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
@@ -36,19 +37,16 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
       }
     >
       <Button asChild>
-        <Link href="#">Testimonials</Link>
+        <Link href="#use-cases">Use cases</Link>
       </Button>
       <Button asChild>
-        <Link href="#">Use cases</Link>
+        <Link href="#technology">Technology</Link>
       </Button>
       <Button asChild>
-        <Link href="#">Research</Link>
+        <Link href="#research">Research</Link>
       </Button>
       <Button asChild>
-        <Link href="#">Technology</Link>
-      </Button>
-      <Button asChild>
-        <Link href="#">Team</Link>
+        <Link href="#about">About</Link>
       </Button>
       {LANDING_PAGE_VERSION === "closed" && (
         <Button
@@ -78,10 +76,8 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
           >
             Join waitlist
           </Link>
-        ) : LANDING_PAGE_VERSION === "limited" ? (
-          <Link href="/app">Try the preview</Link>
         ) : (
-          <Link href="/app">Get started</Link>
+          <Link href="/app">Explore the beta</Link>
         )}
       </Button>
     </ButtonGroup>
@@ -108,14 +104,17 @@ export default function GlobalHeader() {
         alignItems={{ base: "flex-start", md: "center" }}
         gap={{ base: 2, md: 4 }}
       >
-        <Heading
-          m="0"
-          size={{ base: "xl", lg: "2xl" }}
-          lineHeight="shorter"
-          color="fg.inverted"
-        >
-          Global Nature Watch
-        </Heading>
+        <Flex alignItems="center" gap={2}>
+          <LclLogo width={16} avatarOnly />
+          <Heading
+            m="0"
+            size={{ base: "xl", lg: "2xl" }}
+            lineHeight="shorter"
+            color="fg.inverted"
+          >
+            Global Nature Watch
+          </Heading>
+        </Flex>
         <Text
           pl={{ base: 0, md: 4 }}
           fontSize="xs"
@@ -123,7 +122,7 @@ export default function GlobalHeader() {
           lineHeight="1.1"
           maxW={{ base: "none", md: "200px" }}
         >
-          Intelligent nature monitoring, trusted by experts
+          Turning intelligent monitoring into impact
         </Text>
       </Flex>
       <Drawer.Root size="md">

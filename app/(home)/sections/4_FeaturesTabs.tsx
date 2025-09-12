@@ -15,23 +15,23 @@ const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 const FEATURE_TABS = [
   {
     value: "feature-tab-1",
-    label: "Find new areas of interest",
+    label: "Explore trusted data with an AI assistant",
     description:
-      "Using our data and technology to enrich research and support governments in policy writing.",
+      "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
     image: "/feature-tab-1.png",
   },
   {
     value: "feature-tab-2",
-    label: "Monitor your existing portfolio",
+    label: "Tailored answers to your context",
     description:
-      "Track changes and disturbances in your areas of interest with real-time updates.",
+      "Explore how Global Nature Watch assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
     image: "https://placehold.co/800x500",
   },
   {
     value: "feature-tab-3",
-    label: "Compare national or regional impact",
+    label: "Insights you can act on",
     description:
-      "Analyze the effects of policies and interventions across different regions.",
+      "Global Nature Watch's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies, or field decisions while opening the door to dive deeper.",
     image: "https://placehold.co/800x500",
   },
 ];
@@ -44,15 +44,14 @@ export default function FeaturesTabsSection() {
       borderBlockEnd="1px solid"
       borderColor="border"
     >
-      <Container>
+      <Container id="use-cases">
         <Container textAlign="center" maxW="3xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            Get answers to your toughest questions about natural landscapes
+          Get answers to your toughest questions about landscapes, backed by data
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch&rsquo;s AI understands your questions in plain
-            language and delivers the most relevant data, satellite imagery and
-            insights, formatted to fit your workflow.
+          Global Nature Watch is testing new ways to make geospatial information easier to use.
+          Try asking in plain language and explore the insights it can provide.
           </Text>
           {LANDING_PAGE_VERSION !== "closed" && (
             <Button
@@ -63,7 +62,7 @@ export default function FeaturesTabsSection() {
               rounded="lg"
             >
               <Link href="/app">
-                Launch the Preview
+                Explore the beta
                 <CaretRightIcon weight="bold" />
               </Link>
             </Button>
