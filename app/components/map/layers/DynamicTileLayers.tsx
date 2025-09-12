@@ -18,7 +18,9 @@ function DynamicTileLayers() {
             id={`tile-layer-${tileLayer.id}`}
             type="raster"
             paint={{
-              "raster-opacity": tileLayer.visible ? 0.8 : 0,
+              "raster-opacity": tileLayer.visible
+                ? tileLayer.opacity || 0.8
+                : 0,
             }}
           />
         </Source>

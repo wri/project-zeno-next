@@ -13,7 +13,7 @@ import {
 import {
   ArrowsClockwiseIcon,
   CaretRightIcon,
-  PencilRulerIcon,
+  QuestionIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import useChatStore from "@/app/store/chatStore";
@@ -24,6 +24,7 @@ type PromptMarqueeProps = {
   promptIndex: number;
   setPromptIndex: React.Dispatch<React.SetStateAction<number>>;
 };
+
 export default function LandingHero({
   prompts,
   promptIndex,
@@ -138,9 +139,9 @@ export default function LandingHero({
               fontSize="lg"
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
-              Global Nature Watch is your personal geospatial AI assistant,
-              trained on the latest nature monitoring breakthroughs by the
-              world&apos;s leading researchers.
+              Global Nature Watch is an experimental geospatial AI assistant, exploring how AI can help you make the most of cutting-edge nature monitoring data.
+              <br />
+              Test the beta and help shape the future.
             </Text>
           </Container>
           <Container
@@ -241,20 +242,20 @@ export default function LandingHero({
               py="1"
             >
               <Text>
-                <Badge size="xs" fontSize="8px" rounded="none" mr="1">
+                <Badge size="xs" fontSize="8px" rounded="4px" mr="1">
                   BETA
                 </Badge>
                 Global Nature Watch is
                 {LANDING_PAGE_VERSION === "closed"
-                  ? " in closed Beta."
+                  ? " in closed beta."
                   : LANDING_PAGE_VERSION === "limited"
-                  ? " in limited Beta."
-                  : " open."}
+                  ? " in limited beta."
+                  : " in beta."}
               </Text>
               <Tooltip
                 openDelay={100}
                 closeDelay={300}
-                content="While Global Nature Watch is in Beta, prompt limits exist to let you trial the assistant while keeping it fast, reliable, and affordable for all."
+                content="This is an early version of Global Nature Watch. Our agent may make mistakes and some features are still in development. Your usage and feedback will help us enhance it!"
               >
                 <Box
                   color="fg.inverted"
@@ -265,8 +266,8 @@ export default function LandingHero({
                   gap="1"
                   alignItems="center"
                 >
-                  <PencilRulerIcon />
-                  Capped at 100 prompts
+                  <QuestionIcon />
+                  What does beta mean?
                 </Box>
               </Tooltip>
             </Box>

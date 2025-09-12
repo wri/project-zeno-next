@@ -67,6 +67,7 @@ async function handler(
   { params }: { params: Promise<{ path: string[] }> }
 ): Promise<NextResponse> {
   try {
+    const { path } = await params;
     let token = await getAuthToken();
     if (!token) {
       console.warn("No auth token found, using anonymous access");
@@ -74,7 +75,6 @@ async function handler(
     }
 
     const method = request.method.toUpperCase();
-    const { path } = await params;
     const targetUrl = buildTargetUrl(path);
 
     return await proxyRequest(method, targetUrl, token, request);

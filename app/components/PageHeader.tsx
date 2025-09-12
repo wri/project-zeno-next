@@ -7,6 +7,7 @@ import {
   Menu,
   Portal,
   Link as ChakraLink,
+  Text,
 } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
 import {
@@ -27,9 +28,9 @@ function PageHeader() {
     <Flex
       alignItems="center"
       justifyContent="space-between"
-      px="5"
+      px={{ base: 3, md: 5 }}
       py="2"
-      h="12"
+      h={{ base: 10, md: 12 }}
       bg="primary.solid"
       color="fg.inverted"
     >
@@ -56,7 +57,7 @@ function PageHeader() {
           BETA
         </Badge>
       </Flex>
-      <Flex gap="6" alignItems="center">
+      <Flex gap="6" alignItems="center" hideBelow="md">
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
             variant="solid"
@@ -85,7 +86,15 @@ function PageHeader() {
             fontWeight="normal"
             color="primary.100"
           >
-            {usedPrompts}/{totalPrompts} Prompts
+            {usedPrompts}/
+            {totalPrompts > 5000 ? (
+              <Text as="span" fontSize="xl" verticalAlign="bottom">
+                ∞
+              </Text>
+            ) : (
+              totalPrompts
+            )}{" "}
+            Prompts
           </Progress.Label>
           <Progress.Track bg="primary.950" maxH="4px">
             <Progress.Range bg="white" />
