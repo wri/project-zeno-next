@@ -14,6 +14,8 @@ import LclLogo from "../components/LclLogo";
 import useAuthStore from "../store/authStore";
 import { useErrorHandler } from "../hooks/useErrorHandler";
 
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 const commonStyles = {
   textShadow: "2px 2px 5px hsla(225, 52%, 11%, 0.75)",
   color: "fg.inverted",
@@ -89,9 +91,17 @@ export default function UnauthorizedPage() {
           Global Nature Watch
         </Heading>
         <Heading size={{ base: "3xl", md: "5xl" }} {...commonStyles} mb={0}>
-          {isSignupOpen ? "Early access only" : "Coming soon"}
+          {LANDING_PAGE_VERSION === "closed" && !isSignupOpen
+            ? "Coming soon"
+            : "Early access only"}
         </Heading>
-        {isSignupOpen ? (
+        {LANDING_PAGE_VERSION === "closed" && !isSignupOpen ? (
+          <Text fontSize="lg" {...commonStyles}>
+            Thank you for creating a Global Nature Watch account. Early access
+            is limited while we scale responsibly. You&apos;re on the waitlist,
+            and we will email you as soon as the tool is ready.
+          </Text>
+        ) : (
           <>
             <Text fontSize="lg" {...commonStyles} marginBottom={4}>
               Thank you for your interest in Global Nature Watch!
@@ -102,12 +112,6 @@ export default function UnauthorizedPage() {
               to be among the first to know when the tool becomes available.
             </Text>
           </>
-        ) : (
-          <Text fontSize="lg" {...commonStyles}>
-            Thank you for creating a Global Nature Watch account. Early access
-            is limited while we scale responsibly. You’re on the waitlist, and
-            we will email you as soon as the tool is ready.
-          </Text>
         )}
         <Flex justifyContent="center" gap={4}>
           <Button
@@ -120,7 +124,7 @@ export default function UnauthorizedPage() {
           >
             <ChakraLink href="/">Back to homepage</ChakraLink>
           </Button>
-          {isSignupOpen && (
+          {LANDING_PAGE_VERSION === "closed" && !isSignupOpen && (
             <Button
               asChild
               size="sm"
