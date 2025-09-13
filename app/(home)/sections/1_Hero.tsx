@@ -6,9 +6,10 @@ import {
   Container,
   Flex,
   Heading,
-  Input,
   Text,
   Badge,
+  Textarea,
+  Spinner,
 } from "@chakra-ui/react";
 import {
   ArrowsClockwiseIcon,
@@ -36,14 +37,19 @@ export default function LandingHero({
   const [inputValue, setInputValue] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [ready, setReady] = useState(false);
-  const { isLoading } = useChatStore();
+  const [sendingPrompt, setSendingPrompt] = useState(false);
 
   useEffect(() => {
     setReady(true);
   }, []);
 
   useEffect(() => {
-    if (isInputFocused || inputValue.length > 0) return; // Pause timer if typing
+    setSendingPrompt(false);
+  }, []);
+
+  useEffect(() => {
+    if (!ready || isInputFocused || inputValue.length > 0 || sendingPrompt)
+      return; // Pause timer if typing or sendingPrompt
     const interval = setInterval(() => {
       setPromptTimer((prev) => {
         if (prev > 1) {
@@ -57,12 +63,18 @@ export default function LandingHero({
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [prompts.length, setPromptIndex, isInputFocused, inputValue]);
+  }, [
+    prompts.length,
+    setPromptIndex,
+    isInputFocused,
+    inputValue,
+    sendingPrompt,
+  ]);
   // Measure the width of one set of prompts after render
 
   const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Submit on Enter (without Shift) or Command+Enter
     if (
       (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
@@ -75,7 +87,8 @@ export default function LandingHero({
   };
 
   const submitPrompt = async () => {
-    if (isLoading) return;
+    if (sendingPrompt) return;
+    setSendingPrompt(true);
     const message = inputValue.trim() || prompts[promptIndex];
     localStorage.setItem("bypassWelcomeModal", "true");
     const encodedMessage = encodeURI(message);
@@ -168,7 +181,7 @@ export default function LandingHero({
             {(LANDING_PAGE_VERSION === "public" ||
               LANDING_PAGE_VERSION === "limited") && (
               <Box rounded="xl" bg="bg" p="4" zIndex="10">
-                <Input
+                <Textarea
                   key={
                     !isInputFocused && inputValue === ""
                       ? promptIndex
@@ -190,6 +203,16 @@ export default function LandingHero({
                   _focusWithin={{
                     animationPlayState: "paused",
                   }}
+                  aria-label="Ask a question..."
+                  minH="20px"
+                  autoresize
+                  maxH="3lh"
+                  border="none"
+                  color={sendingPrompt ? "fg.subtle" : "fg"}
+                  _placeholder={{ color: sendingPrompt ? "fg.subtle" : "fg" }}
+                  disabled={sendingPrompt}
+                  _disabled={{ opacity: 1 }}
+                  _focus={{ outline: "none", boxShadow: "none" }}
                 />
                 <Flex justifyContent="space-between" mt="4" gap={4}>
                   <Flex gap="2" alignItems="flex-start" flexDirection="column">
@@ -210,7 +233,9 @@ export default function LandingHero({
                         bg: "secondary.100",
                         animation: ready ? "fillWidth" : "none",
                         animationPlayState:
-                          isInputFocused || inputValue.length > 0
+                          isInputFocused ||
+                          inputValue.length > 0 ||
+                          sendingPrompt
                             ? "paused"
                             : "running",
                       }}
@@ -233,9 +258,10 @@ export default function LandingHero({
                     rounded="lg"
                     onClick={submitPrompt}
                     title="Submit prompt to assistant and go to application"
-                    disabled={isLoading}
+                    disabled={sendingPrompt}
                   >
-                    Go
+                    {sendingPrompt ? <Spinner size="sm" mr={2} /> : null}
+                    {sendingPrompt ? "Sending" : "Go"}
                     <CaretRightIcon weight="bold" />
                   </Button>
                 </Flex>
