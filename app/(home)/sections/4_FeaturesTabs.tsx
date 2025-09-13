@@ -87,7 +87,7 @@ export default function FeaturesTabsSection() {
                   textAlign="left"
                   height="auto"
                   css={{
-                    "& > *:not(:first-child)": {
+                    "& > *:not(:first-of-type)": {
                       display: "none",
                     },
                   }}

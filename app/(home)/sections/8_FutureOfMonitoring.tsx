@@ -1,3 +1,4 @@
+import NextImage from "next/image";
 import {
   Box,
   Container,
@@ -5,7 +6,6 @@ import {
   Flex,
   Text,
   Link as ChakraLink,
-  Image,
 } from "@chakra-ui/react";
 
 export default function FutureOfMonitoringSection() {
@@ -69,35 +69,30 @@ export default function FutureOfMonitoringSection() {
             </Box>
             <Box position="relative" h="72" w="full">
               {/* Images in the "Cuting edge data" section will animate in from container sides */}
-              <Image
-                position="absolute"
-                h="121px"
-                w="201px"
-                rounded="md"
-                top="0.5"
-                src="/fm-1a.png"
-                alt="image of a field"
-              />
-              <Image
-                position="absolute"
-                h="127px"
-                w="178px"
-                rounded="md"
-                top="25%"
-                right="0"
-                src="/fm-1b.png"
-                alt="image of a field"
-              />
-              <Image
-                position="absolute"
-                h="124px"
-                w="172px"
-                rounded="md"
-                bottom="5%"
-                left="15%"
-                src="/fm-1c.png"
-                alt="image of a field"
-              />
+              <Box position="absolute" h="121px" w="201px" top="0.5" rounded="md" overflow="hidden">
+                <NextImage
+                  src="/fm-1a.png"
+                  alt="image of a field"
+                  fill
+                  style={{ objectFit: "cover" }}
+                />
+              </Box>
+              <Box position="absolute" h="127px" w="178px" top="25%" right="0" rounded="md" overflow="hidden">
+                <NextImage
+                  src="/fm-1b.png"
+                  alt="image of a field"
+                  fill
+                  style={{ objectFit: "cover" }}
+                />
+              </Box>
+              <Box position="absolute" h="124px" w="172px" bottom="5%" left="15%" rounded="md" overflow="hidden">
+                <NextImage
+                  src="/fm-1c.png"
+                  alt="image of a field"
+                  fill
+                  style={{ objectFit: "cover" }}
+                />
+              </Box>
             </Box>
           </Flex>
           <Flex
@@ -155,16 +150,20 @@ export default function FutureOfMonitoringSection() {
               >
                 Show me high priority areas for agroforesty projects
               </Box>
-              <Image
-                src="/fm-2.png"
-                alt="Smartphone mockup of monitoring application"
+              <Box
                 width="136px"
                 h="280px"
-                objectPosition="80%"
                 position="relative"
                 left="50%"
                 transform="translateX(-50%)"
-              />
+              >
+                <NextImage
+                  src="/fm-2.png"
+                  alt="Smartphone mockup of monitoring application"
+                  fill
+                  style={{ objectFit: "cover", objectPosition: "80%" }}
+                />
+              </Box>
             </Box>
           </Flex>
           <Flex
@@ -189,13 +188,15 @@ export default function FutureOfMonitoringSection() {
               w="full"
               h={{base: "14rem", md: "17rem"}}
             >
-              <Image
-                objectPosition="80%"
-                position="relative"
-                left="50%"
-                transform="translateX(-50%)"
+              <NextImage
+                style={{
+                  objectPosition: "80%",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }}
                 src="/integrations.svg"
                 alt="Global Nature Watch integrations"
+                fill
               />
             </Box>
           </Flex>

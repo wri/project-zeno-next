@@ -1,8 +1,8 @@
+import NextImage from "next/image";
 import {
   Box,
   Container,
   Flex,
-  Image,
   Link as ChakraLink,
   Text,
   Heading,
@@ -44,22 +44,22 @@ export default function TeamSection() {
           justifyContent="center"
         >
           <ChakraLink href="https://www.wri.org/" target="_blank" rel="noopener noreferrer">
-            <Image src="/WRI-Logo.svg" alt="WRI Logo" height="64px" />
+            <NextImage src="/WRI-Logo.svg" alt="WRI Logo" width={128} height={64} />
           </ChakraLink>
           <ChakraLink href="https://landcarbonlab.org/" target="_blank" rel="noopener noreferrer">
-            <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
+            <NextImage src="/LCL-logo.svg" alt="LCL Logo" width={128} height={64} />
           </ChakraLink>
           <ChakraLink href="https://www.bezosearthfund.org/" target="_blank" rel="noopener noreferrer">
-            <Image src="/BEF-logo.png" alt="BEF Logo" height="64px" />
+            <NextImage src="/BEF-logo.png" alt="BEF Logo" width={128} height={64} />
           </ChakraLink>
           <ChakraLink href="https://www.globalforestwatch.org/" target="_blank" rel="noopener noreferrer">
-            <Image src="/GFW-logo.svg" alt="GFW Logo" height="64px" />
+            <NextImage src="/GFW-logo.svg" alt="GFW Logo" width={128} height={64} />
           </ChakraLink>
           <ChakraLink href="https://developmentseed.org/" target="_blank" rel="noopener noreferrer">
-            <Image src="/developmentseed-logo.svg" alt="DevSeed Logo" height="64px" />
+            <NextImage src="/developmentseed-logo.svg" alt="DevSeed Logo" width={128} height={64} />
           </ChakraLink>
           <ChakraLink href="https://www.nicfi.no/" target="_blank" rel="noopener noreferrer">
-            <Image src="/nicfi-logo.png" alt="NICFI Logo" height="64px" />
+            <NextImage src="/nicfi-logo.png" alt="NICFI Logo" width={128} height={64} />
           </ChakraLink>
         </Flex>
         <Box maxW="3xl" w="100%" mx="auto">

@@ -100,7 +100,8 @@ export default function LandingHero({
           },
         }}
       >
-        <video autoPlay loop muted playsInline preload="auto">
+        <video autoPlay loop muted playsInline preload="auto" poster="/landing-hero-poster.jpg">
+          <source src={"/landing-hero-bg.webm"} type="video/webm" />
           <source src={"/landing-hero-bg.mp4"} type="video/mp4" />
         </video>
       </Box>

@@ -1,8 +1,8 @@
+import NextImage from "next/image";
 import {
   Box,
   Container,
   Heading,
-  Image,
   Card,
   Text,
   IconButton,
@@ -119,7 +119,13 @@ export default function TrustedPlatformsSection() {
                         p={4}
                         overflow="hidden"
                       >
-                        <Image src={org.logo} alt={`${org.name} logo`} />
+                        <NextImage
+                          src={org.logo}
+                          alt={`${org.name} logo`}
+                          width={200}
+                          height={60}
+                          style={{ objectFit: "contain" }}
+                        />
                       </Box>
                       <Card.Body>
                         <Card.Title fontSize="lg">{org.name}</Card.Title>
