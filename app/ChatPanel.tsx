@@ -129,12 +129,9 @@ function ChatPanel() {
             <Text
               fontSize="xs"
               color="fg.subtle"
-              whiteSpace="pre"
-              overflowX="auto"
               hideBelow="md"
             >
-              AI can make mistakes. Please verify any outputs before using them
-              in your work.
+              AI may make mistakes. Verify outputs and don&apos;t share sensitive personal information.
             </Text>
           </Box>
         </Flex>
