@@ -17,7 +17,6 @@ import {
   QuestionIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import useChatStore from "@/app/store/chatStore";
 import GlobalHeader from "../../components/GlobalHeader";
 
 type PromptMarqueeProps = {
