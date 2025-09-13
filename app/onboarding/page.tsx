@@ -599,8 +599,26 @@ export default function OnboardingPage() {
             </Flex>
             <Separator mt={4} />
           </Box>
-
-          <Flex alignItems="center" gap={3} mt={8}>
+          <Box
+            mt={4}
+            p={4}
+            borderWidth="1px"
+            borderRadius="md"
+            bg="lime.100"
+            borderColor="lime.400"
+            color="gray.700"
+          >
+            <Flex align="center">
+              <Text fontSize="sm">
+                We use the information you provide to improve the service and
+                personalize your experience. This tool is experimental and
+                features may change or be removed over time. Please do not share
+                sensitive personal information that could be used to identify you
+                or put your privacy at risk.
+              </Text>
+            </Flex>
+          </Box>
+          <Flex alignItems="center" justifyContent="space-between" mt={4}>
             <Checkbox.Root
               checked={form.termsAccepted}
               onCheckedChange={(e) =>
@@ -609,12 +627,13 @@ export default function OnboardingPage() {
             >
               <Checkbox.HiddenInput />
               <Checkbox.Control />
-              <Checkbox.Label>
+              <Checkbox.Label fontWeight="normal">
                 I accept the{" "}
                 <Link
                   href="https://www.wri.org/about/legal/general-terms-use"
                   target="_blank"
                   rel="noopener noreferrer"
+                  textDecoration="underline"
                 >
                   Terms of Use
                 </Link>{" "}
@@ -623,6 +642,7 @@ export default function OnboardingPage() {
                   href="https://www.wri.org/about/privacy-policy"
                   target="_blank"
                   rel="noopener noreferrer"
+                  textDecoration="underline"
                 >
                   Privacy Policy
                 </Link>
@@ -634,21 +654,20 @@ export default function OnboardingPage() {
                 )}
               </Checkbox.Label>
             </Checkbox.Root>
-          </Flex>
-
-          <Flex mt={8} gap={4}>
-            <Button
-              type="submit"
-              colorPalette="primary"
-              disabled={!isValid || isSubmitting}
-              loading={isSubmitting}
-              loadingText="Finalizing profile..."
-            >
-              Continue
-            </Button>
-            <Text color="fg.muted" fontSize="xs" alignSelf="center">
-              You can edit these details later in Settings.
-            </Text>
+            <Flex gap={4}>
+              <Button variant="outline" onClick={() => router.push("/")}>
+                Go back
+              </Button>
+              <Button
+                type="submit"
+                colorPalette="primary"
+                disabled={!isValid || isSubmitting}
+                loading={isSubmitting}
+                loadingText="Finalizing profile..."
+              >
+                Complete profile
+              </Button>
+            </Flex>
           </Flex>
         </form>
       </Container>
