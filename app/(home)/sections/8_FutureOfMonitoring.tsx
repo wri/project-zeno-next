@@ -71,7 +71,7 @@ export default function FutureOfMonitoringSection() {
               {/* Images in the "Cuting edge data" section will animate in from container sides */}
               <Box position="absolute" h="121px" w="201px" top="0.5" rounded="md" overflow="hidden">
                 <NextImage
-                  src="/fm-1a.png"
+                  src="/fm-1a.webp"
                   alt="image of a field"
                   fill
                   style={{ objectFit: "cover" }}
@@ -79,7 +79,7 @@ export default function FutureOfMonitoringSection() {
               </Box>
               <Box position="absolute" h="127px" w="178px" top="25%" right="0" rounded="md" overflow="hidden">
                 <NextImage
-                  src="/fm-1b.png"
+                  src="/fm-1b.webp"
                   alt="image of a field"
                   fill
                   style={{ objectFit: "cover" }}
@@ -87,7 +87,7 @@ export default function FutureOfMonitoringSection() {
               </Box>
               <Box position="absolute" h="124px" w="172px" bottom="5%" left="15%" rounded="md" overflow="hidden">
                 <NextImage
-                  src="/fm-1c.png"
+                  src="/fm-1c.webp"
                   alt="image of a field"
                   fill
                   style={{ objectFit: "cover" }}
@@ -158,7 +158,7 @@ export default function FutureOfMonitoringSection() {
                 transform="translateX(-50%)"
               >
                 <NextImage
-                  src="/fm-2.png"
+                  src="/fm-2.webp"
                   alt="Smartphone mockup of monitoring application"
                   fill
                   style={{ objectFit: "cover", objectPosition: "80%" }}

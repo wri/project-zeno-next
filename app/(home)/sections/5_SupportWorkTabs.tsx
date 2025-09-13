@@ -50,7 +50,7 @@ export default function SupportWorkTabsSection() {
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
       borderColor="border"
-      bg="linear-gradient(0deg, rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.64) 85%), url(/landing-bg-image2.png) lightgray 50% / cover no-repeat"
+      bg="linear-gradient(0deg, rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.64) 85%), url(/landing-bg-image2.webp) lightgray 50% / cover no-repeat"
     >
       <Container
         textAlign="center"
