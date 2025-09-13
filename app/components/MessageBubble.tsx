@@ -131,6 +131,14 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
                 borderColor: "bg.muted",
                 pb: 2,
               },
+              "& a": {
+                textDecoration: "underline",
+                color: "primary.solid",
+                transition: "all 0.24s ease",
+              },
+              "& a:hover" : {
+                opacity: 0.64
+              },
             }}
           >
             <Markdown remarkPlugins={[remarkBreaks]}>
