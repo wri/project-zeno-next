@@ -22,14 +22,16 @@ function renderPromptBoxes(
       <Box
         key={i}
         data-marquee-item
-        bg="secondary.200"
+        bg="secondary.muted"
+        color="secondary.fg"
         p="3"
         rounded="md"
-        maxW="18rem"
+        maxW="20rem"
         flexShrink="0"
         cursor="pointer"
         transition="opacity"
         shadow="xs"
+        fontSize="sm"
         _hover={{
           "&&": { opacity: 1 },
         }}
