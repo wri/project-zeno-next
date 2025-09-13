@@ -6,6 +6,7 @@ import {
   Drawer,
   Portal,
   IconButton,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { Suspense, useEffect, useState } from "react";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -34,6 +35,7 @@ export default function DashboardLayout({
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
@@ -55,6 +57,75 @@ export default function DashboardLayout({
     return <DebugToastsPanel enabled={debugEnabled} />;
   }
 
+  const DesktopLayout = (
+    <Grid
+      templateColumns="auto min-content 1fr"
+      templateAreas="'sidebar chat map'"
+      templateRows="1fr"
+      maxH="calc(100vh - 3rem)"
+    >
+      <Sidebar />
+      <ChatPanel />
+      <Map />
+    </Grid>
+  );
+
+  const MobileLayout = (
+    <Box
+      position="relative"
+      w="100vw"
+      h="min(100dvh, 100vh)"
+      overflow="hidden"
+      gridRow={1}
+    >
+      <Box
+        w="100%"
+        h={`calc(100% - ${sheetHeight}px + 12px)`}
+        transition="height 0.05s linear"
+      >
+        <Drawer.Root placement="start">
+          <Drawer.Trigger asChild>
+            <IconButton
+              variant="plain"
+              bg="bg"
+              position="absolute"
+              top={3}
+              left={3}
+              rounded="sm"
+              overflow="hidden"
+              zIndex={100}
+              onClick={toggleSidebar}
+            >
+              <ListIcon />
+            </IconButton>
+          </Drawer.Trigger>
+          <Portal>
+            <Drawer.Backdrop backdropFilter="blur(2px)" />
+            <Drawer.Positioner>
+              <Drawer.Content>
+                <Sidebar />
+              </Drawer.Content>
+            </Drawer.Positioner>
+          </Portal>
+        </Drawer.Root>
+        <Box
+          position="absolute"
+          top={3}
+          left={"3.75rem"}
+          rounded="sm"
+          overflow="hidden"
+          zIndex={100}
+        >
+          <PageHeader />
+        </Box>
+        <Map />
+      </Box>
+      <DraggableBottomSheet onHeightChange={setSheetHeight}>
+        <ChatPanel />
+      </DraggableBottomSheet>
+    </Box>
+  );
+
   return (
     <Grid
       maxH="min(100dvh, 100vh)"
@@ -66,81 +137,9 @@ export default function DashboardLayout({
       <WelcomeModal />
       {GA_ID && <CookieConsent />}
       <UploadAreaDialog />
-      <Box hideBelow="md">
-        <PageHeader />
-      </Box>
-      {/* Desktop view */}
-      <Grid
-        templateColumns="auto min-content 1fr"
-        templateAreas="'sidebar chat map'"
-        templateRows="1fr"
-        maxH="calc(100vh - 3rem)"
-        hideBelow="md"
-      >
-        <Sidebar />
-        <ChatPanel />
-        <Grid templateRows="1fr" gridArea="map">
-          <Box overflow="hidden">
-            <Map />
-          </Box>
-        </Grid>
-      </Grid>
 
-      {/* Mobile View */}
-      <Box
-        position="relative"
-        w="100vw"
-        h="min(100dvh, 100vh)"
-        overflow="hidden"
-        gridRow={1}
-        hideFrom="md"
-      >
-        <Box
-          w="100%"
-          h={`calc(100% - ${sheetHeight}px + 12px)`}
-          transition="height 0.05s linear"
-        >
-          <Drawer.Root placement="start">
-            <Drawer.Trigger asChild>
-              <IconButton
-                variant="plain"
-                bg="bg"
-                position="absolute"
-                top={3}
-                left={3}
-                rounded="sm"
-                overflow="hidden"
-                zIndex={100}
-                onClick={toggleSidebar}
-              >
-                <ListIcon />
-              </IconButton>
-            </Drawer.Trigger>
-            <Portal>
-              <Drawer.Backdrop backdropFilter="blur(2px)" />
-              <Drawer.Positioner>
-                <Drawer.Content>
-                  <Sidebar />
-                </Drawer.Content>
-              </Drawer.Positioner>
-            </Portal>
-          </Drawer.Root>
-          <Box
-            position="absolute"
-            top={3}
-            left={"3.75rem"}
-            rounded="sm"
-            overflow="hidden"
-            zIndex={100}
-          >
-            <PageHeader />
-          </Box>
-          <Map />
-        </Box>
-        <DraggableBottomSheet onHeightChange={setSheetHeight}>
-          <ChatPanel />
-        </DraggableBottomSheet>
-      </Box>
+      {!isMobile && <PageHeader />}
+      {isMobile ? MobileLayout : DesktopLayout}
 
       <Suspense fallback={null}>
         <DebugToastsMount />

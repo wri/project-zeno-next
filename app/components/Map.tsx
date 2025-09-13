@@ -59,6 +59,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   return (
     <Box
       position="relative"
+      overflow="hidden"
+      gridArea="map"
       height="100%"
       css={{
         _dark: {
@@ -179,7 +181,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         )}
         <Code
           pos="absolute"
-          bottom="0"
+          bottom="4"
           right="0"
           p="2"
           size="xs"
