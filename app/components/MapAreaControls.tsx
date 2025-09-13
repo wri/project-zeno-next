@@ -26,6 +26,7 @@ import { Tooltip } from "./ui/tooltip";
 import { MAX_AREA_KM2, MIN_AREA_KM2 } from "../constants/custom-areas";
 import { formatAreaWithUnits } from "../utils/formatArea";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
+import useContextStore from "../store/contextStore";
 
 function Wrapper({
   children,
@@ -66,7 +67,10 @@ function MapAreaControls() {
     confirmDrawing,
     toggleUploadAreaDialog,
     setCreateAreaFn,
+    addGeoJsonFeature,
+    flyToGeoJson,
   } = useMapStore();
+  const { addContext } = useContextStore();
 
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
   const [showTools, setShowTools] = useState(false);
@@ -89,6 +93,46 @@ function MapAreaControls() {
       document.removeEventListener("keyup", onKeyUp);
     };
   }, [clearSelectionMode, isDrawingMode, cancelDrawing]);
+
+  const handleConfirmDrawing = async () => {
+    try {
+      const result = await confirmDrawing();
+      if (!result) return;
+      console.log(result);
+      const {
+        name,
+        id,
+        geometries: [geo],
+      } = result;
+      const feat: GeoJSON.Feature = {
+        type: "Feature",
+        geometry: geo,
+        properties: {
+          id: id,
+          name: name,
+        },
+      };
+      addGeoJsonFeature({
+        id: id,
+        name: name,
+        data: feat,
+      });
+      addContext({
+        contextType: "area",
+        content: name,
+        aoiData: {
+          src_id: id,
+          name,
+          source: "custom",
+          subtype: "custom-area",
+        },
+      });
+
+      flyToGeoJson(feat);
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
+  };
 
   return (
     <Wrapper borderColor={selectionMode ? "secondary.400" : "transparent"}>
@@ -136,7 +180,7 @@ function MapAreaControls() {
                   bg="bg"
                   _hover={{ bg: "bg.muted" }}
                   aria-label="Confirm area"
-                  onClick={confirmDrawing}
+                  onClick={handleConfirmDrawing}
                   disabled={isCreating}
                 >
                   <CheckIcon />
