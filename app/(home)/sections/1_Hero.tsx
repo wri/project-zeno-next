@@ -62,11 +62,23 @@ export default function LandingHero({
 
   const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Submit on Enter (without Shift) or Command+Enter
+    if (
+      (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
+      (e.key === "Enter" && e.metaKey)
+    ) {
+      e.preventDefault(); // Prevents newline
+      submitPrompt();
+    }
+    // If Shift+Enter, do nothing: allow newline
+  };
+
   const submitPrompt = async () => {
     if (isLoading) return;
     const message = inputValue.trim() || prompts[promptIndex];
     localStorage.setItem("bypassWelcomeModal", "true");
-    const encodedMessage = encodeURI(message)
+    const encodedMessage = encodeURI(message);
     router.push(`/app?prompt=${encodedMessage}`);
   };
 
@@ -139,7 +151,9 @@ export default function LandingHero({
               fontSize="lg"
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
-              Global Nature Watch is an experimental geospatial AI assistant, exploring how AI can help you make the most of cutting-edge nature monitoring data.
+              Global Nature Watch is an experimental geospatial AI assistant,
+              exploring how AI can help you make the most of cutting-edge nature
+              monitoring data.
               <br />
               Test the beta and help shape the future.
             </Text>
@@ -164,6 +178,7 @@ export default function LandingHero({
                   onChange={(e) => setInputValue(e.target.value)}
                   onFocus={() => setIsInputFocused(true)}
                   onBlur={() => setIsInputFocused(false)}
+                  onKeyDown={handleKeyDown}
                   p="0"
                   outline="none"
                   borderWidth="0"
