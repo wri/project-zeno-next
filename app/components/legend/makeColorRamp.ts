@@ -19,7 +19,8 @@ export function makeColorRamp(colors: SymbolColor[] | SymbolColorValue[]) {
     const scale = scaleLinear().domain(e).range([0, 100]);
 
     return `linear-gradient(to right, ${c
-      .map((stop) => `${stop.color} ${scale(stop.value)}%`)
+      .filter((stop) => typeof stop.value === "number")
+      .map((stop) => `${stop.color} ${scale(stop.value as number)}%`)
       .join(", ")})`;
   }
 }

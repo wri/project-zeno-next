@@ -40,12 +40,12 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     legend: {
-      title: "Global all ecosystem disturbance alerts (DIST-ALERT)",
+      title: "Global all ecosystem disturbance alerts",
       color: "#f69",
-      items: [{ label: "Disturbance alert", color: "#f69" }],
+      items: [{ label: "DIST alert", color: "#f69" }],
       type: "symbol",
       info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from January 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
-      note: "Near-real-time alerts of vegetation disturbance across all ecosystems, updated weekly (2023–present). Shows drivers such as fire, conversion, cropland change, or water.",
+      note: "Near-real-time vegetation disturbance alerts across all ecosystems, updated weekly (2023-present).",
     },
   },
   {
@@ -72,7 +72,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       ],
       type: "categorical",
       info: "This dataset includes built-up land as one of its land cover classes, which directly corresponds to urban areas. It provides global coverage with annual data from 2015-2024, making it the most appropriate dataset to answer questions about urban area extent worldwide.",
-      note: "Single-year global land cover snapshot for composition and baseline context. Useful for quick comparisons of dominant covers and for pairing with change layers.",
+      note: "Single-year global land cover snapshot for composition and baseline context.",
     },
   },
   {
@@ -130,7 +130,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       ],
       type: "categorical",
       info: 'The Natural lands dataset is the best match because it provides a 2020 baseline map of natural vs non-natural land covers at 30m resolution, which can be used to identify intact/natural landscapes. This dataset specifically defines "natural" ecosystems as those that substantially resemble what would be found without major human impacts, making it ideal for assessing landscape intactness across Canadian provinces.',
-      note: "Baseline map separating natural from non-natural lands for conversion assessments. Helps flag where change intersects areas considered natural."
+      note: "Baseline map separating natural from non-natural lands for conversion assessments."
     },
   },
   {
@@ -150,7 +150,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       items: [{label: "Tree cover loss", color: "#DC6C9A" }],
       type: "symbol",
       info: "Tree cover loss dataset can detect stand-replacement disturbances including plantations and supports monitoring forestry practices. The driver context layer would help distinguish harvesting from other causes of tree loss, making it ideal for tracking plantation harvesting cycles.",
-      note: "Annual locations of tree cover removal across both natural forests and plantations. Optional driver context helps explore likely causes. Tree cover canopy cover density is >30% by default",
+      note: "Annual locations of tree cover removal across both natural forests and plantations. Tree cover canopy >30%.",
       unit: "ha",
     },
   },
@@ -192,7 +192,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       items: [{ label: "Tree cover", color: "#97BD3D" }],
       type: "symbol",
       info: "Tree cover gain dataset can detect natural forest regrowth and tree plantation cycles. It is useful for tracking large-scale forest recovery trends.",
-      note: "Baseline percent tree canopy cover showing density of woody vegetation. Useful for setting thresholds and contextualising loss/gain layers. Tree cover canopy cover density is >30% by default",
+      note: "Baseline percent tree canopy cover showing density of woody vegetation. Tree cover canopy >30%.",
       unit: "ha",
     },
   },
@@ -275,7 +275,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
           { label: `>1500 (source)`, color: "#39082a" },
         ],
       info: "This dataset maps the balance between emissions from forest disturbances and carbon removals from forest growth, making it ideal for identifying where forests are contributing to or helping mitigate climate change.",
-      note: "Net balance between forest emissions and removals, highlighting sources and sinks. Useful for spotting where forests contribute to or mitigate climate change. Tree cover canopy cover density is >30% by default",
+      note: "Balance between forest emissions and removals. Tree cover canopy >30%.",
       unit: "tCO2e/ha",
     },
   },
