@@ -33,10 +33,13 @@ export function LegendDivergent(props: {
       <ColorBar color={colorRamp} />
       <Box position="relative" h="20px">
         <Flex justifyContent="space-between" fontSize="xs" position="absolute" w="100%">
+            <VisuallyHidden>From</VisuallyHidden>
             <Text as="span">{minLabel}</Text>
+            <VisuallyHidden>to</VisuallyHidden>
             <Text as="span">{maxLabel}</Text>
         </Flex>
         <Flex justifyContent="center" fontSize="xs" position="absolute" w="100%">
+            <VisuallyHidden>0</VisuallyHidden>
             <Text as="span">0</Text>
         </Flex>
       </Box>
