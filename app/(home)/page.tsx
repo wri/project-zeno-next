@@ -13,16 +13,6 @@ import TeamSection from "./sections/9_TeamSection";
 import CTASection from "./sections/11_CTA";
 import FooterSection from "./sections/12_Footer";
 
-const SAMPLE_PROMPTS = [
-  "Tell me about wild fires in the Brazilian Amazon Rainforest",
-  "What are the latest deforestation trends in Indonesia?",
-  "How is climate change affecting biodiversity in the Amazon?",
-  "Show me recent land use changes in the Congo Basin",
-  "What country's forests sequester the most carbon?",
-  "Where are the most disturbances to nature happening now?",
-  "Show me high priority areas in my monitoring portfolio",
-];
-
 export default function LandingPage() {
   const [promptIndex, setPromptIndex] = useState(0);
   const { prompts, fetchPrompts } = usePromptStore(); // TODO - determine if landing page should use sample prompts above, or the prompst from the welcome modal
@@ -32,14 +22,12 @@ export default function LandingPage() {
   return (
     <>
       <LandingHero
-        prompts={SAMPLE_PROMPTS}
+        prompts={prompts}
         promptIndex={promptIndex}
         setPromptIndex={setPromptIndex}
       />
       <PromptMarquee
         prompts={prompts}
-        promptIndex={promptIndex}
-        setPromptIndex={setPromptIndex}
       />
       <FeaturesTabsSection />
       <SupportWorkTabsSection />
