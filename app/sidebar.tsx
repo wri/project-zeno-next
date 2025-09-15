@@ -148,7 +148,11 @@ export function Sidebar() {
   }, [fetchThreads, fetchApiStatus]);
 
   const handleLogout = () => {
-    LANDING_PAGE_VERSION === "public" ? clearAuth() : router.push("/");
+    if (LANDING_PAGE_VERSION === "public") {
+      clearAuth();
+    } else {
+      router.push("/");
+    }
   };
 
   const hasTodayThreads = threadGroups.today.length > 0;

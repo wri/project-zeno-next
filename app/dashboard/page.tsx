@@ -236,7 +236,11 @@ export default function UserSettingsPage() {
   };
 
   const handleLogout = () => {
-    LANDING_PAGE_VERSION === "public" ? clearAuth() : router.push("/");
+    if (LANDING_PAGE_VERSION === "public") {
+      clearAuth();
+    } else {
+      router.push("/");
+    }
   };
 
   return (
