@@ -46,6 +46,7 @@ export async function pickAoiTool(
       upsertContextByType({
         contextType: "area",
         content: aoiName,
+        isAiContext: true,
       });
     }
   } catch (error) {
