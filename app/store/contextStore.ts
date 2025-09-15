@@ -5,6 +5,8 @@ import useMapStore from "./mapStore";
 export interface ContextItem {
   id: string;
   contextType: ChatContextType;
+  // Flag to indicate if this context is part of the ai state.
+  isAiContext?: boolean;
   content: string | object;
   // For AOI context, store additional details needed for ui_context
   aoiData?: {
@@ -34,6 +36,7 @@ interface ContextActions {
   addContext: (item: Omit<ContextItem, "id">) => void;
   upsertContextByType: (item: Omit<ContextItem, "id">) => void;
   removeContext: (id: string) => void;
+  markAsAiContext: (ids: string[]) => void;
   clearContext: () => void;
 }
 
@@ -41,7 +44,7 @@ const initialState: ContextState = {
   context: [],
 };
 
-const useContextStore = create<ContextState & ContextActions>((set) => ({
+const useContextStore = create<ContextState & ContextActions>((set, get) => ({
   ...initialState,
   addContext: (item) =>
     set((state) => {
@@ -73,7 +76,11 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
       return {
         context: [
           ...state.context,
-          { ...item, id: `${item.contextType}-${Date.now()}` },
+          {
+            ...item,
+            isAiContext: item.isAiContext ?? false,
+            id: `${item.contextType}-${Date.now()}`,
+          },
         ],
       };
     }),
@@ -90,19 +97,21 @@ const useContextStore = create<ContextState & ContextActions>((set) => ({
         context: state.context.filter((c) => c.id !== id),
       };
     }),
-  upsertContextByType: (item) =>
-    set((state) => {
-      const newContext = state.context.filter(
-        (c) => c.contextType !== item.contextType
-      );
+  upsertContextByType: (item) => {
+    const state = get();
+    // Remove contexts with the same type.
+    state.context
+      .filter((c) => c.contextType === item.contextType)
+      .forEach((c) => state.removeContext(c.id));
 
-      return {
-        context: [
-          ...newContext,
-          { ...item, id: `${item.contextType}-${Date.now()}` },
-        ],
-      };
-    }),
+    state.addContext(item);
+  },
+  markAsAiContext: (ids) =>
+    set((state) => ({
+      context: state.context.map((c) =>
+        ids.includes(c.id) ? { ...c, isAiContext: true } : c
+      ),
+    })),
   clearContext: () =>
     set((state) => {
       // Remove any map layers tied to context entries before clearing

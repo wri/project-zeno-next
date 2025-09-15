@@ -162,13 +162,6 @@ export default function ChatInput({
             disabled={disabled}
           />
         </Flex>
-        {selectedContextType && (
-          <ContextMenu
-            contextType={selectedContextType}
-            open={contextModalOpen}
-            onOpenChange={handleContextModalOpenChange}
-          />
-        )}
         <Button
           p="0"
           ml="auto"
@@ -190,9 +183,24 @@ export default function ChatInput({
     </Flex>
   );
 
+  const contextMenu = selectedContextType && (
+    <Portal>
+      <ContextMenu
+        contextType={selectedContextType}
+        open={contextModalOpen}
+        onOpenChange={handleContextModalOpenChange}
+      />
+    </Portal>
+  );
+
   // For desktop, return the UI directly.
   if (!isMobile) {
-    return chatInputUI;
+    return (
+      <>
+        {chatInputUI}
+        {contextMenu}
+      </>
+    );
   }
 
   // For mobile, return a trigger and a modal containing the UI.
@@ -201,7 +209,9 @@ export default function ChatInput({
       {/* Mobile Trigger Bar */}
       <Flex
         onClick={onInputModalOpen}
+        flexDir="column"
         align="flex-start"
+        justifyContent="space-between"
         m={0}
         p={3}
         bg="gray.100"
@@ -211,7 +221,6 @@ export default function ChatInput({
         borderColor="gray.300"
         cursor="pointer"
         position="relative"
-        flexDir="column"
         borderRadius="lg"
         borderWidth="1px"
         className="group"
@@ -257,13 +266,6 @@ export default function ChatInput({
               disabled={disabled}
             />
           </Flex>
-          {selectedContextType && (
-            <ContextMenu
-              contextType={selectedContextType}
-              open={contextModalOpen}
-              onOpenChange={handleContextModalOpenChange}
-            />
-          )}
           <Button
             p={0}
             flexShrink={0}
@@ -287,7 +289,7 @@ export default function ChatInput({
           </Button>
         </Flex>
       </Flex>
-
+      {contextMenu}
       {/* Input Modal appears on tap when on mobile device */}
       <Dialog.Root
         open={inputModalOpen}
@@ -300,7 +302,13 @@ export default function ChatInput({
         <Portal>
           <Dialog.Backdrop bg="blackAlpha.400" backdropFilter="blur(2px)" />
           <Dialog.Positioner>
-            <Dialog.Content bg="transparent" boxShadow="none" mx={3} bottom={6}>
+            <Dialog.Content
+              bg="transparent"
+              boxShadow="none"
+              position="fixed"
+              w="full"
+              maxW="calc(100vw - 1rem)"
+            >
               {chatInputUI}
             </Dialog.Content>
           </Dialog.Positioner>

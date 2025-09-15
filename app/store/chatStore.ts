@@ -175,7 +175,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       addToolStep,
       clearToolSteps,
     } = get();
-    const { context } = useContextStore.getState();
+    const { context, markAsAiContext } = useContextStore.getState();
 
     // Generate thread ID if this is the first message
     const threadId = currentThreadId || generateNewThread();
@@ -192,11 +192,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     setLoading(true);
 
     // Build ui_context from current context
-
+    const newContext = context.filter((ctx) => !ctx.isAiContext);
     const ui_context: UiContext = {};
 
     // Find area context and convert to aoi_selected format
-    const areaContext = context.find(
+    const areaContext = newContext.find(
       (ctx) => ctx.contextType === "area" && ctx.aoiData
     );
     if (areaContext && areaContext.aoiData) {
@@ -215,7 +215,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       };
     }
 
-    const dateContext = context.find((ctx) => ctx.contextType === "date");
+    const dateContext = newContext.find((ctx) => ctx.contextType === "date");
     if (dateContext && dateContext.dateRange) {
       ui_context.daterange_selected = {
         start_date: format(dateContext.dateRange.start, "yyyy-MM-dd"),
@@ -223,7 +223,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       };
     }
 
-    const datasetContext = context.find((ctx) => ctx.contextType === "layer");
+    const datasetContext = newContext.find(
+      (ctx) => ctx.contextType === "layer"
+    );
     if (datasetContext && typeof datasetContext.datasetId === "number") {
       const ds = DATASET_BY_ID[datasetContext.datasetId];
       if (ds) ui_context.dataset_selected = { dataset: ds };
@@ -299,6 +301,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       // Log why the loop ended
       if (readerDone) {
         console.log("FRONTEND: Stream ended normally (readerDone = true)");
+        // All good. Mark current context items as AI context to prevent them
+        // being sent again in future messages
+        markAsAiContext(context.map((c) => c.id));
       } else if (abortController.signal.aborted) {
         console.log("FRONTEND: Stream ended due to abort signal");
       }
@@ -462,7 +467,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
               return;
             }
-            console.log("🚀 ~ fetchThread: ~ streamMessage:", streamMessage);
             await processStreamMessage(streamMessage, addMessage, addToolStep);
           } catch (err) {
             if (isFinal) {

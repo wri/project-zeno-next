@@ -12,9 +12,7 @@ import {
   InputGroup,
   ButtonGroup,
 } from "@chakra-ui/react";
-import {
-  MagnifyingGlassIcon,
-} from "@phosphor-icons/react";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
@@ -30,7 +28,6 @@ const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
     icon: ChatContextOptions[type].icon,
   })
 );
-
 
 import { DATASET_CARDS } from "../constants/datasets";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
@@ -56,8 +53,8 @@ function ContextNav({
       p={3}
       py={4}
       w={{ base: "full", md: "10rem" }}
-      borderRight={{ base: "none", md: "1px solid" }}
-      borderColor="border"
+      borderRightWidth={{ base: "none", md: "1px solid" }}
+      borderRightColor="border.emphasized"
     >
       {CONTEXT_NAV.map((nav) => (
         <Button
@@ -109,7 +106,6 @@ function LayerCardList({
   );
 }
 
-
 function ContextMenu({
   contextType,
   open,
@@ -132,7 +128,7 @@ function ContextMenu({
     >
       <Portal>
         <Dialog.Backdrop backdropFilter="blur(2px)" />
-        <Dialog.Positioner>
+        <Dialog.Positioner zIndex={1500}>
           <Dialog.Content maxH="75vh" minH="30rem" overflow="hidden" mx={{ base: 2, md: "auto" }}>
             <Dialog.Body
               p={0}
@@ -271,9 +267,16 @@ function AreaMenu() {
     return list.filter((a: CustomArea) => a.name.toLowerCase().includes(q));
   }, [customAreas, query]);
 
+  const sorted = useMemo(() => {
+    const list = filtered.sort(
+     (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
+    );
+    return list;
+  }, [filtered]);
+
   const cards = useMemo(
     () =>
-      filtered.map((a) => {
+      sorted.map((a) => {
         const isSelected = context.some(
           (c) =>
             c.contextType === "area" &&
@@ -284,7 +287,7 @@ function AreaMenu() {
         );
         return { id: a.id, name: a.name, selected: isSelected };
       }),
-    [filtered, context]
+    [sorted, context]
   );
 
   const handleSelectArea = (area: { id: string; name: string }) => {
