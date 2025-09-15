@@ -8,6 +8,7 @@ export interface ChatMessage {
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   context?: ContextItem[];
+  traceId?: string;
 }
 
 // Widget types for insights
@@ -85,6 +86,7 @@ export interface StreamMessage {
   timestamp: string;
   start_date?: string;
   end_date?: string;
+  trace_id?: string;
 }
 
 export interface AOI {
