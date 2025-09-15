@@ -57,7 +57,7 @@ function ContextNav({
       py={4}
       w={{ base: "full", md: "10rem" }}
       borderRight={{ base: "none", md: "1px solid" }}
-      borderColor="border"
+      borderRightColor="border"
     >
       {CONTEXT_NAV.map((nav) => (
         <Button
@@ -132,7 +132,7 @@ function ContextMenu({
     >
       <Portal>
         <Dialog.Backdrop backdropFilter="blur(2px)" />
-        <Dialog.Positioner>
+        <Dialog.Positioner zIndex={1500}>
           <Dialog.Content maxH="75vh" minH="30rem" overflow="hidden" mx={{ base: 2, md: "auto" }}>
             <Dialog.Body
               p={0}
