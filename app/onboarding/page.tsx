@@ -19,7 +19,7 @@ import {
   createListCollection,
   Link,
 } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
@@ -52,6 +52,7 @@ type ProfileFormState = {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [config, setConfig] = useState<ProfileConfig | null>(null);
   const fieldRequired = isOnboardingFieldRequired;
@@ -219,7 +220,9 @@ export default function OnboardingPage() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
-        router.push("/app");
+        const queryString = searchParams.toString();
+        const destination = queryString ? `/app?${queryString}` : "/app";
+        router.push(destination);
       } else {
         showApiError("We saved your profile, but it’s not verified yet.", {
           title: "Almost there",

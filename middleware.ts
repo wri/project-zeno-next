@@ -70,6 +70,8 @@ export async function middleware(request: NextRequest) {
       const data = await res.json();
       if (!data?.hasProfile) {
         const onboardingUrl = new URL("/onboarding", origin);
+        onboardingUrl.search = request.nextUrl.search;
+    
         return NextResponse.redirect(onboardingUrl);
       }
     } catch {
