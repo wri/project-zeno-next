@@ -36,13 +36,16 @@ export function Legend(props: LegendProps) {
   return (
     <Flex
       position="absolute"
-      right={4}
-      bottom={4}
+      right={3}
+      bottom={{ base: "4.5rem", md: 12 }}
       zIndex={100}
       width={320}
       bg="bg"
-      border="1px solid {colors.gray.400}"
-      shadow="md"
+      border="1px solid"
+      borderColor="border"
+      overflow="hidden"
+      rounded="sm"
+      shadow="sm"
     >
       <VisuallyHidden>
         <Heading>Map Legend</Heading>
