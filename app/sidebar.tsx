@@ -15,6 +15,7 @@ import {
   Progress,
 } from "@chakra-ui/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
@@ -126,6 +127,8 @@ function ThreadSection({
   );
 }
 
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 export function Sidebar() {
   const {
     sideBarVisible,
@@ -137,11 +140,16 @@ export function Sidebar() {
   } = useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { clearAuth, userEmail, usedPrompts, totalPrompts } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     fetchThreads();
     fetchApiStatus();
   }, [fetchThreads, fetchApiStatus]);
+
+  const handleLogout = () => {
+    LANDING_PAGE_VERSION === "public" ? () => clearAuth() : router.push("/");
+  };
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -311,9 +319,10 @@ export function Sidebar() {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => clearAuth()}
+            onClick={handleLogout}
             size="sm"
             justifyContent="flex-start"
+            title="Log Out"
           >
             <UserIcon />
             {userEmail || "User name"}
