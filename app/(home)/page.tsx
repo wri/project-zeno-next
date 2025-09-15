@@ -25,10 +25,10 @@ const SAMPLE_PROMPTS = [
 
 export default function LandingPage() {
   const [promptIndex, setPromptIndex] = useState(0);
-  const { prompts, fetchPrompts } = usePromptStore(); // TODO - determine if landing page should use sample prompts above, or the prompst from the welcome modal
+  const { prompts, fetchPrompts } = usePromptStore();
   useEffect(() => {
     fetchPrompts();
-  }, [fetchPrompts]);
+  }, []);
   return (
     <>
       <LandingHero
