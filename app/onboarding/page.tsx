@@ -592,25 +592,6 @@ export default function OnboardingPage() {
             </Flex>
             <Separator mt={4} />
           </Box>
-          <Box
-            mt={4}
-            p={4}
-            borderWidth="1px"
-            borderRadius="md"
-            bg="secondary.subtle"
-            borderColor="secondary.solid"
-            color="gray.700"
-          >
-            <Flex align="center">
-              <Text fontSize="sm">
-                We use the information you provide to improve the service and
-                personalize your experience. This tool is experimental and
-                features may change or be removed over time. Please do not share
-                sensitive personal information that could be used to identify you
-                or put your privacy at risk.
-              </Text>
-            </Flex>
-          </Box>
           <Flex alignItems="center" justifyContent="space-between" mt={4}>
             <Checkbox.Root
               checked={form.termsAccepted}
