@@ -137,6 +137,7 @@ function MapAreaControls() {
     <Wrapper borderColor={selectionMode ? "secondary.400" : "transparent"}>
       <Flex>
         <Button
+          position="relative"
           variant="subtle"
           size="xs"
           bg={showTools ? "bg.muted" : "bg"}
@@ -145,6 +146,8 @@ function MapAreaControls() {
           h="auto"
           px={3}
           py={1}
+          bottom={1}
+          color="fg.muted"
           gap={0}
           lineHeight="0.875rem"
           hideFrom="md"
@@ -161,6 +164,8 @@ function MapAreaControls() {
           pointerEvents="initial"
           display={{ base: showTools ? "inherit" : "none", md: "inherit" }}
           ml={{ base: 2, md: 0 }}
+          bottom={{ base: 1, md: "initial" }}
+          align="center"
         >
           {isDrawingMode ? (
             <>

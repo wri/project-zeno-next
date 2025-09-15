@@ -13,23 +13,28 @@ import {
   AbsoluteCenter,
   Code,
   Box,
+  Button,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { PlusIcon } from "@phosphor-icons/react";
+import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
 import DynamicTileLayers from "./map/layers/DynamicTileLayers";
 import HighlightedFeaturesLayer from "./map/layers/HighlightedFeaturesLayer";
 import SelectAreaLayer from "./map/layers/select-area-layer";
+import { useLegendHook } from "@/app/components/legend/useLegendHook";
+import { Legend } from "@/app/components/legend/Legend";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
+  const [showLegend, setShowLegend] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
   const { geoJsonFeatures, setMapRef, initializeTerraDraw } = useMapStore();
+  const { layers, handleLayerAction } = useLegendHook();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
   const onMapLoad = () => {
@@ -54,6 +59,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   return (
     <Box
       position="relative"
+      overflow="hidden"
+      gridArea="map"
       height="100%"
       css={{
         _dark: {
@@ -106,11 +113,43 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         <Source
           id="background"
           type="raster"
-          tiles={[`https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`]}
+          tiles={[
+            `https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
+          ]}
           tileSize={256}
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
+        {layers.length > 0 && (
+          <Button
+            variant="subtle"
+            position="absolute"
+            bottom={6}
+            right={3}
+            key="legendButton"
+            size="xs"
+            bg={showLegend ? "bg.muted" : "bg"}
+            _active={{ bg: "bg.muted" }}
+            flexDirection="column"
+            h="auto"
+            px={3}
+            py={1}
+            gap={0}
+            lineHeight="0.875rem"
+            hideFrom="md"
+            zIndex={500}
+            pointerEvents="all"
+            onClick={() => setShowLegend((prev) => !prev)}
+            fontFamily="body"
+            color="fg.muted"
+          >
+            {!showLegend ? <ListDashesIcon /> : <XIcon />}
+            Legend
+          </Button>
+        )}
+        <Box display={{ base: showLegend ? "inherit" : "none", md: "inherit" }}>
+          <Legend layers={layers} onLayerAction={handleLayerAction} />
+        </Box>
 
         <HighlightedFeaturesLayer
           geoJsonFeatures={geoJsonFeatures}
@@ -145,7 +184,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           bottom="4"
           right="0"
           p="2"
-          fontSize="xs"
+          size="xs"
           bg="transparent"
           hideBelow="md"
         >

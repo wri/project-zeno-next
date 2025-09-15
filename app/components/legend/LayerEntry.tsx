@@ -38,7 +38,7 @@ export function LayerEntry(
     info,
   } = props;
   return (
-    <Flex flexDir="column" gap={2} pr={4} w="100%">
+    <Flex flexDir="column" gap={2} pr={4} w="100%" fontFamily="body" lineHeight="shorter">
       <Flex justifyContent="space-between" gap={2} alignItems="center" mr={-4}>
         <Flex gap={1} alignItems="center" fontSize="sm">
           <Heading as="h3" size="sm" m={0}>

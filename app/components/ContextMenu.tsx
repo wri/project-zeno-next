@@ -128,13 +128,8 @@ function ContextMenu({
     >
       <Portal>
         <Dialog.Backdrop backdropFilter="blur(2px)" />
-        <Dialog.Positioner>
-          <Dialog.Content
-            maxH="75vh"
-            minH="30rem"
-            overflow="hidden"
-            mx={{ base: 2, md: "auto" }}
-          >
+        <Dialog.Positioner zIndex={1500}>
+          <Dialog.Content maxH="75vh" minH="30rem" overflow="hidden" mx={{ base: 2, md: "auto" }}>
             <Dialog.Body
               p={0}
               h="full"
