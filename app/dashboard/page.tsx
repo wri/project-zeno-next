@@ -234,10 +234,10 @@ export default function UserSettingsPage() {
       setIsSaving(false);
     }
   };
-    
-    const handleLogout = () => {
-      LANDING_PAGE_VERSION === "public" ? () => clearAuth() : router.push("/");
-    };
+
+  const handleLogout = () => {
+    LANDING_PAGE_VERSION === "public" ? clearAuth() : router.push("/");
+  };
 
   return (
     <Box
@@ -289,9 +289,7 @@ export default function UserSettingsPage() {
               User Settings
             </Link>
           </Button>
-          <Button
-            asChild
-          >
+          <Button asChild>
             <Link href="https://help.globalnaturewatch.org/" target="_blank">
               <LifebuoyIcon />
               Help

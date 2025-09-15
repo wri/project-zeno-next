@@ -28,7 +28,7 @@ function PageHeader() {
     useAuthStore();
   const router = useRouter();
   const handleLogout = () => {
-    LANDING_PAGE_VERSION === "public" ? () => clearAuth() : router.push("/");
+    LANDING_PAGE_VERSION === "public" ? clearAuth() : router.push("/");
   };
   return (
     <Flex
