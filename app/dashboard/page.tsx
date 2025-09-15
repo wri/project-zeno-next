@@ -278,9 +278,7 @@ export default function UserSettingsPage() {
               User Settings
             </Link>
           </Button>
-          <Button
-            asChild
-          >
+          <Button asChild>
             <Link href="https://help.globalnaturewatch.org/" target="_blank">
               <LifebuoyIcon />
               Help
@@ -387,7 +385,16 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="email">
                 <Field.Label>Email address</Field.Label>
-                <Input type="email" value={form.email} readOnly disabled />
+                <Input
+                  type="email"
+                  value={form.email}
+                  readOnly
+                  _readOnly={{
+                    bg: "bg.subtle",
+                    color: "fg.muted",
+                    cursor: "not-allowed",
+                  }}
+                />
               </Field.Root>
             </GridItem>
           </Grid>
@@ -452,7 +459,7 @@ export default function UserSettingsPage() {
                 >
                   <Select.HiddenSelect />
                   <Select.Label>Role</Select.Label>
-                  <Select.Control>
+                  <Select.Control _disabled={{ bg: "bg.subtle" }}>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Role" />
                     </Select.Trigger>

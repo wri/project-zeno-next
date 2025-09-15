@@ -301,6 +301,11 @@ export default function OnboardingPage() {
                   type="email"
                   value={form.email}
                   readOnly
+                  _readOnly={{
+                    bg: "bg.subtle",
+                    color: "fg.muted",
+                    cursor: "not-allowed",
+                  }}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, email: e.target.value }))
                   }
@@ -368,7 +373,11 @@ export default function OnboardingPage() {
                       </Text>
                     )}
                   </Select.Label>
-                  <Select.Control>
+                  <Select.Control
+                    _disabled={{
+                      bg: "bg.subtle",
+                    }}
+                  >
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Role" />
                     </Select.Trigger>
@@ -613,8 +622,8 @@ export default function OnboardingPage() {
                 We use the information you provide to improve the service and
                 personalize your experience. This tool is experimental and
                 features may change or be removed over time. Please do not share
-                sensitive personal information that could be used to identify you
-                or put your privacy at risk.
+                sensitive personal information that could be used to identify
+                you or put your privacy at risk.
               </Text>
             </Flex>
           </Box>
