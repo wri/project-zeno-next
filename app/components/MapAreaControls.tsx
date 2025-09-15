@@ -98,7 +98,6 @@ function MapAreaControls() {
     try {
       const result = await confirmDrawing();
       if (!result) return;
-      console.log(result);
       const {
         name,
         id,
