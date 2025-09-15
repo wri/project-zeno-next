@@ -126,15 +126,28 @@ function ChatPanel() {
               ))}
 
             <ChatInput isChatDisabled={promptsExhausted} />
-            <Text
+            <Flex
               fontSize="xs"
               color="fg.subtle"
               hideBelow="md"
               whiteSpace="pre"
               overflowX="auto"
+              gap={2}
             >
-              AI may make mistakes. Verify outputs and don&apos;t share sensitive personal information.
-            </Text>
+              <Text>
+                AI makes mistakes. Verify outputs and don&apos;t share sensitive or
+                personal information.
+              </Text>
+              <ChLink
+                href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
+                target="_blank"
+                rel="noopener noreferrer"
+                textDecoration="underline"
+                color="fg.subtle"
+              >
+                Privacy Policy
+              </ChLink>
+            </Flex>
           </Box>
         </Flex>
       </Flex>
