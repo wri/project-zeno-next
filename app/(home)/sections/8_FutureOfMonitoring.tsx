@@ -56,16 +56,6 @@ export default function FutureOfMonitoringSection() {
                 most talented experts.
                 Our data is designed to empower real-world action, today and into the future.
               </Text>
-              <ChakraLink
-                fontSize="lg"
-                color="primary.700"
-                textDecoration="underline"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Learn more about our data
-              </ChakraLink>
             </Box>
             <Box position="relative" h="72" w="full">
               {/* Images in the "Cuting edge data" section will animate in from container sides */}
@@ -110,16 +100,6 @@ export default function FutureOfMonitoringSection() {
                 AI trained on trusted datasets helps both experts and newcomers navigate,
                 analyze and apply insights.
               </Text>
-              <ChakraLink
-                fontSize="lg"
-                color="primary.700"
-                textDecoration="underline"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Learn more about our models and agents
-              </ChakraLink>
             </Box>
             <Box position="relative" h="72" w="full">
               {/* Chat window items slide in from sides */}
@@ -173,7 +153,7 @@ export default function FutureOfMonitoringSection() {
           >
             <Box maxW="lg">
               <Heading size={{ base: "xl", md: "2xl" }} mb="2">
-                Integrative technology (coming soon)
+                Interoperable technology (coming soon)
               </Heading>
               <Text fontSize="lg" mb="4">
                We believe the future of monitoring is open, extensible and integrative.
