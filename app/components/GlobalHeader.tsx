@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Box,
   Button,
   ButtonGroup,
   CloseButton,
@@ -105,7 +106,9 @@ export default function GlobalHeader() {
         gap={{ base: 2, md: 4 }}
       >
         <Flex alignItems="center" gap={2}>
-          <LclLogo width={16} avatarOnly />
+          <Box as="span" flexShrink={0}>
+            <LclLogo width={16} avatarOnly />
+          </Box>
           <Heading
             m="0"
             size={{ base: "xl", lg: "2xl" }}
