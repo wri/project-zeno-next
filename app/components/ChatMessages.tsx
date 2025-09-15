@@ -5,19 +5,13 @@ import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
 import { InfoIcon } from "@phosphor-icons/react";
-import { usePromptStore } from "../store/promptStore";
+import SamplePrompts from "./SamplePrompts";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
-const SAMPLE_PROMPTS = [
-  "Show me recent forest loss due to firest in protected areas",
-  "I want to monitor restoration progress in my region. What datasets should I use?",
-  "Where are the most disturbances to nature happening now?",
-];
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, sendMessage } = useChatStore();
-  const { prompts } = usePromptStore();
+  const { messages, isLoading } = useChatStore();
   const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
 
   // Auto-scroll to bottom when new messages are added or loading state changes
@@ -109,28 +103,7 @@ function ChatMessages() {
 
             {/* Prompt options for first message, removed when sent */}
             {messages.length < 2 && LANDING_PAGE_VERSION !== "public" && (
-              <Box display="flex" gap={2} flexWrap="nowrap" mt={6} mb={4}>
-                {prompts.slice(0, 3).map((text, i) => (
-                  <Box
-                    key={i}
-                    p={2}
-                    flex={1}
-                    rounded="lg"
-                    border="1px solid"
-                    borderColor="border.emphasized"
-                    fontSize="xs"
-                    transition="all 0.24s ease"
-                    _hover={{
-                      cursor: "pointer",
-                      bg: "bg.subtle",
-                      borderColor: "primary.solid",
-                    }}
-                    onClick={() => sendMessage(text)}
-                  >
-                    {text}
-                  </Box>
-                ))}
-              </Box>
+              <SamplePrompts />
             )}
           </Fragment>
         );
