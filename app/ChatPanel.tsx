@@ -130,6 +130,8 @@ function ChatPanel() {
               fontSize="xs"
               color="fg.subtle"
               hideBelow="md"
+              whiteSpace="pre"
+              overflowX="auto"
             >
               AI may make mistakes. Verify outputs and don&apos;t share sensitive personal information.
             </Text>

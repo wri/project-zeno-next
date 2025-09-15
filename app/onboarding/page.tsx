@@ -604,8 +604,8 @@ export default function OnboardingPage() {
             p={4}
             borderWidth="1px"
             borderRadius="md"
-            bg="lime.100"
-            borderColor="lime.400"
+            bg="secondary.subtle"
+            borderColor="secondary.solid"
             color="gray.700"
           >
             <Flex align="center">
