@@ -135,8 +135,8 @@ function ChatPanel() {
               gap={2}
             >
               <Text>
-                AI makes mistakes. Verify outputs and don&apos;t share sensitive or
-                personal information.
+                AI makes mistakes. Verify outputs and do not share
+                any sensitive or personal information.
               </Text>
             </Flex>
           </Box>
