@@ -238,17 +238,16 @@ export default function OnboardingPage() {
 
   return (
     <Box minH="100vh" bg="bg" py={10}>
-      <Container maxW="4xl">
+      <Container maxW="3xl">
         <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
           Complete your Global Nature Watch profile
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
           We use this information to make Global Nature Watch more useful for
-          you. Your privacy is important to us and we’ll never share your
-          information without your consent.
+          you. This tool is experimental and knowing you better helps us improve.
         </Text>
         <form onSubmit={handleSubmit}>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
+          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={12}>
             <GridItem>
               <Field.Root id="first-name" required={fieldRequired("firstName")}>
                 <Field.Label>
@@ -312,7 +311,7 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="sector" required={fieldRequired("sector")}>
-                <Select.Root collection={sectors} size="sm" width="320px">
+                <Select.Root collection={sectors} size="sm">
                   <Select.HiddenSelect />
                   <Select.Label>
                     Sector
@@ -356,7 +355,6 @@ export default function OnboardingPage() {
                 <Select.Root
                   collection={roles}
                   size="sm"
-                  width="320px"
                   disabled={!form.sector}
                 >
                   <Select.HiddenSelect />
@@ -401,11 +399,6 @@ export default function OnboardingPage() {
               <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
                 <Field.Label>
                   Job title
-                  {fieldRequired("jobTitle") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
                 </Field.Label>
                 <Input
                   type="text"
@@ -437,7 +430,7 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="country" required={fieldRequired("country")}>
-                <Select.Root collection={countries} size="sm" width="320px">
+                <Select.Root collection={countries} size="sm">
                   <Select.HiddenSelect />
                   <Select.Label>
                     Country
@@ -478,15 +471,10 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="expertise" required={fieldRequired("expertise")}>
-                <Select.Root collection={expertises} size="sm" width="320px">
+                <Select.Root collection={expertises} size="sm">
                   <Select.HiddenSelect />
                   <Select.Label>
                     Level of technical expertise
-                    {fieldRequired("expertise") && (
-                      <Text as="span" color="red.500" ml={1}>
-                        *
-                      </Text>
-                    )}
                   </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
@@ -520,7 +508,7 @@ export default function OnboardingPage() {
             <GridItem colSpan={{ base: 1, md: 2 }}>
               <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
-                  What area(s) are you most interested in?
+                  What topic(s) are you most interested in?
                   {fieldRequired("topics") && (
                     <Text as="span" color="red.500" ml={1}>
                       *
