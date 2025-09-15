@@ -239,12 +239,17 @@ export default function OnboardingPage() {
   return (
     <Box minH="100vh" bg="bg" py={10}>
       <Container maxW="3xl">
-        <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
-          Complete your Global Nature Watch profile
+      <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
+          Complete your{" "}
+          <Text as="span" fontWeight="bold">
+            Global Nature Watch
+          </Text>{" "}
+          user profile
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
-          We use this information to make Global Nature Watch more useful for
-          you. This tool is experimental and knowing you better helps us improve.
+          We use this information to make Global Nature Watch more useful to you.
+          This tool is experimental, and your and knowing you better helps us improve.
+          Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
           <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={12}>
@@ -625,7 +630,7 @@ export default function OnboardingPage() {
                 >
                   Terms of Use
                 </Link>{" "}
-                and{" "}
+                and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"
                   target="_blank"
