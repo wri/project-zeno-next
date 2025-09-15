@@ -35,7 +35,7 @@ export interface DrawAreaSlice {
     | ((data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>)
     | null;
   startDrawing: () => void;
-  confirmDrawing: () => void;
+  confirmDrawing: () => Promise<CreateCustomAreaResponse | undefined>;
   cancelDrawing: () => void;
   initializeTerraDraw: (map: Map) => void;
   endDrawing: () => void;
@@ -204,11 +204,13 @@ export const createDrawAreaSlice: StateCreator<
     };
 
     const createAreaFn = get().createAreaFn;
+    let result;
     if (createAreaFn) {
-      await createAreaFn(requestData);
+      result = await createAreaFn(requestData);
     }
 
     get().endDrawing();
+    return result;
   },
 
   cancelDrawing: () => {

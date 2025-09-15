@@ -28,8 +28,6 @@ export default function LandingPage() {
       />
       <PromptMarquee
         prompts={prompts}
-        promptIndex={promptIndex}
-        setPromptIndex={setPromptIndex}
       />
       <FeaturesTabsSection />
       <SupportWorkTabsSection />
