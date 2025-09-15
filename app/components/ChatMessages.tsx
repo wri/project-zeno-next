@@ -52,11 +52,11 @@ function ChatMessages() {
         // Check if this message is consecutive to the previous one of the same type
         const previousMessage = index > 0 ? messages[index - 1] : null;
         const isConsecutive = previousMessage?.type === message.type;
-
+        const isFirst = index === 0
         return (
           <Fragment key={message.id}>
             {/* Disclaimer above first message in closed mode */}
-            {index === 0 &&
+            {isFirst &&
               LANDING_PAGE_VERSION !== "public" &&
               displayDisclaimer && (
                 <Box
@@ -98,7 +98,11 @@ function ChatMessages() {
                   />
                 </Box>
               )}
-            <MessageBubble message={message} isConsecutive={isConsecutive} />
+            <MessageBubble
+              message={message}
+              isConsecutive={isConsecutive}
+              isFirst={isFirst}
+            />
             {isLoading && index === lastUserMessageIndex && <Reasoning />}
 
             {/* Prompt options for first message, removed when sent */}

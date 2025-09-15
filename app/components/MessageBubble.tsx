@@ -23,9 +23,10 @@ import { WarningIcon } from "@phosphor-icons/react";
 interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
+  isFirst?: boolean;
 }
 
-function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
+function MessageBubble({ message, isConsecutive = false, isFirst = false }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const clipboard = useClipboard({ value: message.message });
 
@@ -146,7 +147,7 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             </Markdown>
           </Box>
         )}
-        {!isUser && !isConsecutive && !isError && (
+        {!isUser && !isConsecutive && !isError && !isFirst && (
           <Flex
             alignItems="center"
             w="full"
