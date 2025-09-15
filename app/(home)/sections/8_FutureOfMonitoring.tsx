@@ -5,7 +5,6 @@ import {
   Heading,
   Flex,
   Text,
-  Link as ChakraLink,
 } from "@chakra-ui/react";
 
 export default function FutureOfMonitoringSection() {
