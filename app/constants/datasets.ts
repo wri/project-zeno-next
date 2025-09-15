@@ -68,7 +68,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "ice", color: "#ACD1E8" },
         { label: "cropland", color: "#fff183" },
         { label: "built-up", color: "#e8765d" },
-        { label: "cultivated grasslands", color: "#d95f02" },
+        { label: "cultivated grasslands", color: "#FFCD73" },
       ],
       type: "categorical",
       info: "This dataset includes built-up land as one of its land cover classes, which directly corresponds to urban areas. It provides global coverage with annual data from 2015-2024, making it the most appropriate dataset to answer questions about urban area extent worldwide.",
