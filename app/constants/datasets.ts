@@ -151,9 +151,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     data_layer: "Tree cover loss by dominant driver",
     context_layer: null,
     threshold: 30,
-    img: "/dataset_card_tree_cover_loss.png", //todo
+    img: "/dataset_card_tree_cover_loss_drivers.webp",
     description:
-      "todo...",
+      "Shows the primary driver or cause of tree cover loss over the entire range 2001-2024. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
       "https://tiles.globalforestwatch.org/wri_google_tree_cover_loss_drivers/v1.12/dynamic/{z}/{x}/{y}.png?&tree_cover_density_threshold=25&render_type=true_color",
     legend: {
@@ -170,8 +170,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "Unknown", color: "#246E24"},
       ],
       type: "symbol",
-      info: "...",
-      note: "... Tree cover canopy >30%.",
+      info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2024. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
+      note: "Shows the dominant driver of deforestation between 2001 and 2024. Tree cover canopy >30%.",
       unit: "ha",
     },
   },
