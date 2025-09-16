@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
+import { sendGAEvent } from "@next/third-parties/google";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
 const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
@@ -23,6 +24,11 @@ function CustomAreasLayer() {
         );
         if (feature) {
           const { name, id } = feature.properties;
+          sendGAEvent("event", "map_area_selected", {
+            area_name: name,
+            area_source: "custom",
+            area_subtype: "custom-area",
+          });
 
           // Add feature to the all features list to be highlighted on the map
           addGeoJsonFeature({

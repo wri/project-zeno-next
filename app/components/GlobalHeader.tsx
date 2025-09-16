@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Box,
   Button,
   ButtonGroup,
   CloseButton,
@@ -11,21 +12,26 @@ import {
   Portal,
   Text,
 } from "@chakra-ui/react";
+import { useState } from "react";
 import Link from "next/link";
 import LclLogo from "./LclLogo";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
-const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
+const renderNavItems = (
+  isMobile: boolean,
+  setNavOpen?: (open: boolean) => void | undefined
+): React.ReactElement | null => {
   return (
     <ButtonGroup
       size={{ base: "md", md: "xs", lg: "sm" }}
       w={isMobile ? "full" : "initial"}
-      gap={{ base: 4, sm: 1, lg: 2 }}
+      gap={{ base: 4, md: 1, lg: 2 }}
       variant="plain"
       _hover={{ "& > :not(:hover)": { opacity: "0.5" } }}
       className="dark"
       colorPalette="gray"
+      rounded="lg"
       orientation={isMobile ? "vertical" : "horizontal"}
       css={
         isMobile && {
@@ -36,37 +42,38 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
         }
       }
     >
-      <Button asChild>
+      <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
         <Link href="#use-cases">Use cases</Link>
       </Button>
-      <Button asChild>
+      <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
         <Link href="#technology">Technology</Link>
       </Button>
-      <Button asChild>
+      <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
         <Link href="#research">Research</Link>
       </Button>
-      <Button asChild>
+      <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
         <Link href="#about">About</Link>
       </Button>
       {LANDING_PAGE_VERSION === "closed" && (
         <Button
           asChild
-          ml={4}
+          ml={{ base: 0, md: 1 }}
           variant="outline"
-          colorPalette="white"
-          rounded="lg"
           borderColor="white"
+          _hover={{
+            bg: "whiteAlpha.100",
+          }}
+          onClick={() => setNavOpen && setNavOpen(false)}
         >
           <Link href="/app">Sign in (invite only)</Link>
         </Button>
       )}
       <Button
         asChild
-        ml={4}
+        ml={{ base: 0, md: 1 }}
         className="light"
         variant="solid"
         colorPalette="primary"
-        rounded="lg"
       >
         {LANDING_PAGE_VERSION === "closed" ? (
           <Link
@@ -77,7 +84,9 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
             Join waitlist
           </Link>
         ) : (
-          <Link href="/app">Explore the beta</Link>
+          <Link href="/app" onClick={() => setNavOpen && setNavOpen(false)}>
+            Explore the beta
+          </Link>
         )}
       </Button>
     </ButtonGroup>
@@ -85,15 +94,18 @@ const renderNavItems = (isMobile: boolean): React.ReactElement | null => {
 };
 
 export default function GlobalHeader() {
+  const [openNav, setNavOpen] = useState(false);
   return (
     <Container
       display="flex"
       alignItems="center"
+      flexWrap={{ base: "nowrap", md: "wrap" }}
       justifyContent="space-between"
       maxW="8xl"
       color="fg.inverted"
-      py="2"
-      zIndex="10"
+      py={2}
+      pt={4}
+      zIndex={10}
       backdropBlur="10px"
     >
       <Flex
@@ -105,7 +117,9 @@ export default function GlobalHeader() {
         gap={{ base: 2, md: 4 }}
       >
         <Flex alignItems="center" gap={2}>
-          <LclLogo width={16} avatarOnly />
+          <Box as="span" flexShrink={0}>
+            <LclLogo width={16} avatarOnly />
+          </Box>
           <Heading
             m="0"
             size={{ base: "xl", lg: "2xl" }}
@@ -125,7 +139,11 @@ export default function GlobalHeader() {
           Turning intelligent monitoring into impact
         </Text>
       </Flex>
-      <Drawer.Root size="md">
+      <Drawer.Root
+        size="md"
+        open={openNav}
+        onOpenChange={(e) => setNavOpen(e.open)}
+      >
         <Drawer.Trigger asChild>
           <Button
             hideFrom="md"
@@ -148,7 +166,7 @@ export default function GlobalHeader() {
                   Global Nature Watch
                 </Drawer.Title>
               </Drawer.Header>
-              <Drawer.Body>{renderNavItems(true)}</Drawer.Body>
+              <Drawer.Body>{renderNavItems(true, setNavOpen)}</Drawer.Body>
               <Drawer.CloseTrigger asChild>
                 <CloseButton
                   size="sm"
@@ -161,7 +179,9 @@ export default function GlobalHeader() {
           </Drawer.Positioner>
         </Portal>
       </Drawer.Root>
-      <Flex hideBelow="md">{renderNavItems(false)}</Flex>
+      <Flex ml="auto" hideBelow="md">
+        {renderNavItems(false)}
+      </Flex>
     </Container>
   );
 }

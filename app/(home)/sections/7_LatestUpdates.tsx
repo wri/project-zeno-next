@@ -84,8 +84,8 @@ export default function LatestUpdatesSection() {
             Latest updates & research
           </Heading>
           <Text fontSize="lg" mb="4">
-            We combine cutting-edge geospatial research from Land & Carbon Lab
-            and Global Forest Watch with the latest advances in technology.
+            Global Nature Watch serves up the latest breakthroughs in geospatial data
+            from the field-leading research and technology partners behind Land & Carbon Lab and Global Forest Watch.
           </Text>
         </Container>
         <Container maxW="5xl" px={0}>
