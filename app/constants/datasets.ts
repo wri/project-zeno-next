@@ -146,6 +146,36 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     },
   },
   {
+    dataset_id: 7,
+    dataset_name: "Tree cover loss by dominant driver",
+    data_layer: "Tree cover loss by dominant driver",
+    context_layer: null,
+    threshold: 30,
+    img: "/dataset_card_tree_cover_loss.png", //todo
+    description:
+      "todo...",
+    tile_url:
+      "https://tiles.globalforestwatch.org/wri_google_tree_cover_loss_drivers/v1.12/dynamic/{z}/{x}/{y}.png?&tree_cover_density_threshold=25&render_type=true_color",
+    legend: {
+      title: "Tree cover loss by dominant driver (2001-2024)",
+      color: "#DC6C9A",
+      items: [
+        { label: "Logging", color: "#52A44E"},
+        { label: "Shifting cultivation", color: "#E9D700"},
+        { label: "Wildfire", color: "#885128"},
+        { label: "Other natural disturbances", color: "#3B209A"},
+        { label: "Settlements & Infrastructure", color: "#A354A0"},
+        { label: "Hard commodities", color: "#246E24"},
+        { label: "Permanent Agriculture", color: "#E39D29"},
+        { label: "Unknown", color: "#246E24"},
+      ],
+      type: "symbol",
+      info: "...",
+      note: "... Tree cover canopy >30%.",
+      unit: "ha",
+    },
+  },
+  {
     dataset_id: 5,
     dataset_name: "Tree cover gain",
     data_layer: "Tree cover gain",
