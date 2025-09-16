@@ -171,8 +171,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       ],
       type: "symbol",
       info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2024. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
-      note: "Shows the dominant driver of deforestation between 2001 and 2024. Tree cover canopy >30%.",
-      unit: "ha",
+      note: "Shows the dominant driver of deforestation between 2001 and 2024. Tree cover canopy >30%."
     },
   },
   {
