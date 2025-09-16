@@ -8,6 +8,7 @@ export interface ChatMessage {
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   context?: ContextItem[];
+  checkpoint_id?: string;
 }
 
 // Widget types for insights
@@ -85,6 +86,7 @@ export interface StreamMessage {
   timestamp: string;
   start_date?: string;
   end_date?: string;
+  checkpoint_id?: string;
 }
 
 export interface AOI {
@@ -121,6 +123,7 @@ export interface LangChainResponse {
   node: string;
   timestamp: string;
   update: string;
+  checkpoint_id: string;
 }
 
 // LangChain-based API response structure (for internal API use)
