@@ -151,12 +151,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Legend layers={layers} onLayerAction={handleLayerAction} />
         </Box>
 
+        <DynamicTileLayers />
         <HighlightedFeaturesLayer
           geoJsonFeatures={geoJsonFeatures}
           areas={areas}
         />
         <SelectAreaLayer />
-        <DynamicTileLayers />
 
         {!disableMapAreaControls && <MapAreaControls />}
 
