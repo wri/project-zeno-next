@@ -15,7 +15,6 @@ import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
-import WelcomeModal from "@/app/components/WelcomeModal";
 import CookieConsent from "@/app/components/CookieConsent";
 import useCookieConsentStore from "@/app/store/cookieConsentStore";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
@@ -26,7 +25,7 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import { Legend } from "@/app/components/legend/Legend";
 const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 export default function DashboardLayout({
   children,
 }: {
@@ -65,7 +64,6 @@ export default function DashboardLayout({
       bg="bg"
     >
       {cookieConsent && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
-      {LANDING_PAGE_VERSION === "public" && <WelcomeModal />}
       {GA_ID && <CookieConsent />}
       <UploadAreaDialog />
       <Box hideBelow="md">
