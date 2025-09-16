@@ -89,7 +89,7 @@ function ChatPanel() {
           <Box mt="auto" position="sticky" bottom="2">
             {promptsExhausted &&
               (isAnonymous ? (
-                <ChatStatusInfo>
+                <ChatStatusInfo type="error">
                   <Text>
                     <strong>You&apos;ve used all your guest prompts.</strong>
                     <br />
@@ -109,7 +109,7 @@ function ChatPanel() {
                   </Text>
                 </ChatStatusInfo>
               ) : (
-                <ChatStatusInfo>
+                <ChatStatusInfo type="error">
                   <Text>
                     <strong>
                       You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}

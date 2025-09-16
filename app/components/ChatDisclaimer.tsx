@@ -1,12 +1,13 @@
-import { Box, Flex, FlexProps } from "@chakra-ui/react";
+import { Box, CloseButton } from "@chakra-ui/react";
 import {
-  WarningIcon,
+  CheckCircleIcon,
   InfoIcon,
   WarningCircleIcon,
-  CheckCircleIcon,
+  WarningIcon,
 } from "@phosphor-icons/react";
 
-interface ChatStatusInfoProps extends FlexProps {
+interface ChatDisclaimerProps {
+  setDisplayDisclaimer: React.Dispatch<React.SetStateAction<boolean>>;
   type?: "info" | "error" | "warning" | "success";
   children: React.ReactNode;
 }
@@ -25,32 +26,25 @@ const TypeIcon = {
   success: CheckCircleIcon,
 };
 
-export default function ChatStatusInfo(props: ChatStatusInfoProps) {
-  const { type = "error", children, ...rest } = props;
+export default function ChatDisclaimer({
+  setDisplayDisclaimer,
+  type = "info",
+  children
+}: ChatDisclaimerProps) {
   const IconComponent = TypeIcon[type];
+
   return (
-    <Flex
+    <Box
       background={`${typeColorMap[type]}.subtle`}
-      border="solid 1px"
+      p={2}
+      rounded="sm"
+      border="1px solid"
       borderColor={`${typeColorMap[type]}.muted`}
-      borderBottom="none"
-      borderTopRightRadius="md"
-      borderTopLeftRadius="md"
-      mx={4}
-      py={4}
-      px={2}
-      gap={2}
       fontSize="xs"
-      css={{
-        "& a": {
-          color: "primary.solid",
-          textDecoration: "underline",
-        },
-        "& svg": {
-          mt: "2px",
-        },
-      }}
-      {...rest}
+      display="flex"
+      gap={2}
+      my={4}
+      mb={6}
     >
       <IconComponent
         weight="fill"
@@ -58,7 +52,14 @@ export default function ChatStatusInfo(props: ChatStatusInfoProps) {
         size="16"
         fill={`var(--chakra-colors-${typeColorMap[type]}-600)`}
       />
-      <Box>{children}</Box>
-    </Flex>
+      {children}
+      <CloseButton
+        size="2xs"
+        variant="ghost"
+        colorPalette={typeColorMap[type]}
+        title="Hide disclaimer"
+        onClick={() => setDisplayDisclaimer((prev) => !prev)}
+      />
+    </Box>
   );
 }
