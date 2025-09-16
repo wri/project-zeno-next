@@ -30,8 +30,8 @@ function AuthBootstrapper() {
 
         const email = data?.user?.email as string | undefined;
         const id = data?.user?.id as string | undefined;
-        if (email && id) {
-          setAuthStatus(email, id);
+        if (email) {
+          setAuthStatus(email, id ?? "");
         }
 
         const used =
