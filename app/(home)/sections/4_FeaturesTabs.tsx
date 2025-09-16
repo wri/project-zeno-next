@@ -17,7 +17,7 @@ const FEATURE_TABS = [
     value: "feature-tab-1",
     label: "Explore trusted data with an AI assistant",
     description:
-      "Deforestation due to wildfires across Californian Protected Areas.",
+      "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
     caption:
       "Quickly find the most relevant data for your work.",
     image: "/feature-tab-1.webp",
