@@ -27,6 +27,7 @@ import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
+import { sendGAEvent } from "@next/third-parties/google";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -223,6 +224,15 @@ export default function OnboardingPage() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
+        sendGAEvent("event", "sign_up", {
+          sector: payload.sector_code,
+          role: payload.role_code,
+          country: payload.country_code,
+          expertise_level: payload.gis_expertise_level,
+          topics: (payload.topics || []).join(","),
+          news_opt_in: payload.receive_news_emails,
+          testing_opt_in: payload.help_test_features,
+        });
         router.push("/app");
       } else {
         showApiError("We saved your profile, but it’s not verified yet.", {

@@ -14,6 +14,7 @@ import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
+import { sendGAEvent } from "@next/third-parties/google";
 import {
   ArrowBendDownRightIcon,
   CheckIcon,
@@ -260,7 +261,17 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                     : "Copy response"
                 }
               >
-                <IconButton variant="ghost" size="xs" onClick={clipboard.copy}>
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => {
+                    clipboard.copy();
+                    sendGAEvent("event", "response_feedback", {
+                      value: "copy_response",
+                      message_id: message.id,
+                    });
+                  }}
+                >
                   {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
                 </IconButton>
               </Tooltip>
@@ -268,8 +279,14 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                 <IconButton
                   variant="ghost"
                   size="xs"
+                  onClick={() => {
+                    rateMessage(1);
+                    sendGAEvent("event", "response_feedback", {
+                      value: "positive_response",
+                      message_id: message.id,
+                    });
+                  }}
                   disabled={isRating || !message.traceId}
-                  onClick={() => rateMessage(1)}
                 >
                   <ThumbsUpIcon />
                 </IconButton>
@@ -289,6 +306,10 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                         onClick={async () => {
                           await rateMessage(-1);
                           setFeedbackOpen(true);
+                          sendGAEvent("event", "response_feedback", {
+                            value: "negative_response",
+                            message_id: message.id,
+                          });
                         }}
                       >
                         <ThumbsDownIcon />

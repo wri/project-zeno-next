@@ -15,6 +15,7 @@ import {
   Progress,
 } from "@chakra-ui/react";
 import Link from "next/link";
+import { sendGAEvent } from "@next/third-parties/google";
 import { useRouter } from "next/navigation";
 
 import { Tooltip } from "./components/ui/tooltip";
@@ -65,7 +66,7 @@ function ThreadSection({
   value,
   currentThreadId,
 }: {
-  threads: { id: string; name: string }[];
+  threads: { id: string; name: string; updated_at: string; is_public: boolean }[];
   label: string;
   value: string;
   currentThreadId: string | null;
@@ -114,10 +115,21 @@ function ThreadSection({
                   href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
+                  onClick={() => {
+                    if (!isActive) {
+                      sendGAEvent("event", "saved_conversation_loaded", {
+                        conversation_id: thread.id,
+                        updated_at: thread.updated_at,
+                        is_public: thread.is_public,
+                      });
+                    }
+                  }}
                 >
                   {thread.name}
                 </ThreadLink>
-                <ThreadActionsMenu thread={thread} />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <ThreadActionsMenu thread={thread} />
+                </div>
               </Flex>
             );
           })}

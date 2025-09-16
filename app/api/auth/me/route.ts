@@ -16,7 +16,7 @@ export async function GET() {
   }
 
   try {
-    const decoded: { email: string; exp: number } = jwtDecode(token);
+    const decoded: { email: string; exp: number; sub: string } = jwtDecode(token);
     // Check if the token is expired
     if (decoded.exp * 1000 < Date.now()) {
       return NextResponse.json({ isAuthenticated: false }, { status: 401 });
@@ -71,7 +71,7 @@ export async function GET() {
 
     return NextResponse.json({
       isAuthenticated: true,
-      user: { email: decoded.email },
+      user: { email: decoded.email, id: decoded.sub },
       promptsUsed,
       promptQuota,
       hasProfile,
