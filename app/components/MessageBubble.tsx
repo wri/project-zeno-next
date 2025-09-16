@@ -7,6 +7,8 @@ import {
   Textarea,
   Button,
   HStack,
+  Popover,
+  Portal,
 } from "@chakra-ui/react";
 import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
@@ -92,18 +94,25 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
             type: "error",
           });
         } else {
-          toaster.create({
-            title:
-              ratingValue === 1
-                ? "Thanks for the feedback"
-                : "Marked as not helpful",
-            description:
-              ratingValue === 1
-                ? "Glad it helped!"
-                : "Thank you for your feedback.",
-            duration: 2500,
-            type: "success",
-          });
+          if (ratingValue === 1) {
+            toaster.create({
+              title: "Thanks for the feedback",
+              description: "Glad it helped!",
+              duration: 2500,
+              type: "success",
+            });
+          } else {
+            const hasComment =
+              typeof comment === "string" && comment.trim().length > 0;
+            toaster.create({
+              title: hasComment ? "Feedback sent" : "Marked as not helpful",
+              description: hasComment
+                ? "Thanks for helping us improve."
+                : "You can add a comment.",
+              duration: 2500,
+              type: "success",
+            });
+          }
         }
       } finally {
         setIsRating(false);
@@ -256,47 +265,67 @@ function MessageBubble({ message, isConsecutive = false }: MessageBubbleProps) {
                   <ThumbsUpIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip content="Bad response">
-                <IconButton
-                  variant="ghost"
-                  size="xs"
-                  disabled={isRating || !message.traceId}
-                  onClick={async () => {
-                    await rateMessage(-1);
-                    setFeedbackOpen(true);
-                  }}
-                >
-                  <ThumbsDownIcon />
-                </IconButton>
-              </Tooltip>
+              <Popover.Root
+                open={feedbackOpen}
+                onOpenChange={(e) => setFeedbackOpen(e.open)}
+                positioning={{ placement: "bottom-end" }}
+              >
+                <Tooltip content="Bad response">
+                  <Box display="inline-block">
+                    <Popover.Trigger asChild>
+                      <IconButton
+                        variant="ghost"
+                        size="xs"
+                        disabled={isRating || !message.traceId}
+                        onClick={async () => {
+                          await rateMessage(-1);
+                          setFeedbackOpen(true);
+                        }}
+                      >
+                        <ThumbsDownIcon />
+                      </IconButton>
+                    </Popover.Trigger>
+                  </Box>
+                </Tooltip>
+                <Portal>
+                  <Popover.Positioner>
+                    <Popover.Content>
+                      <Popover.Body>
+                        <Textarea
+                          value={feedbackText}
+                          onChange={(e) => setFeedbackText(e.target.value)}
+                          placeholder="Tell us what went wrong (optional)"
+                          size="sm"
+                          rows={3}
+                        />
+                        <HStack justify="flex-end" mt="2" gap="2">
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => {
+                              setFeedbackOpen(false);
+                              setFeedbackText("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="xs"
+                            disabled={isRating}
+                            colorPalette="primary"
+                            onClick={submitFeedback}
+                          >
+                            Send feedback
+                          </Button>
+                        </HStack>
+                      </Popover.Body>
+                      <Popover.CloseTrigger />
+                    </Popover.Content>
+                  </Popover.Positioner>
+                </Portal>
+              </Popover.Root>
             </Flex>
           </Flex>
-        )}
-        {feedbackOpen && !isUser && !isError && (
-          <Box mt="2" w="full">
-            <Textarea
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-              placeholder="Tell us what went wrong (optional)"
-              size="sm"
-              rows={3}
-            />
-            <HStack justify="flex-end" mt="2" gap="2">
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => {
-                  setFeedbackOpen(false);
-                  setFeedbackText("");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button size="xs" disabled={isRating} onClick={submitFeedback}>
-                Send feedback
-              </Button>
-            </HStack>
-          </Box>
         )}
       </Box>
     </Box>
