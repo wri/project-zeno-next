@@ -211,6 +211,23 @@ export async function POST(request: NextRequest) {
                     }[rawType] as "agent" | "tools" | "human")
                   : undefined;
 
+                // Special-case: upstream may send separate trace metadata updates
+                if (updateObject && updateObject.trace_id) {
+                  const traceMsg: StreamMessage = {
+                    type: "other",
+                    name: "trace",
+                    timestamp: date.toISOString(),
+                    trace_id: updateObject.trace_id,
+                    ...(updateObject.trace_url
+                      ? { content: updateObject.trace_url }
+                      : {}),
+                  } as StreamMessage;
+                  controller.enqueue(
+                    encoder.encode(JSON.stringify(traceMsg) + "\n")
+                  );
+                  return;
+                }
+
                 // Parse LangChain response and extract useful information
                 const streamMessage = messageType
                   ? parseStreamMessage(updateObject, messageType, date)
