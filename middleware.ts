@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { COOKIE_NAME, getAuthTokenFromRequest } from "./app/api/shared/utils";
+import {
+  COOKIE_NAME,
+  TOKEN_NAME,
+  getAuthTokenFromRequest,
+} from "./app/api/shared/utils";
 
 // Set a session token if not set.
 // This is not to identify the user, but to identify the session.
@@ -9,6 +13,43 @@ const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export async function middleware(request: NextRequest) {
   const { pathname, origin } = request.nextUrl;
+
+  // Handle logout centrally via middleware
+  if (pathname === "/auth/logout") {
+    // Best-effort: attempt RW logout via server-side GET with bearer token
+    try {
+      const token = getAuthTokenFromRequest(request);
+      if (token) {
+        await fetch("https://api.resourcewatch.org/auth/logout", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
+      }
+    } catch {}
+
+    // Then clear our cookies and redirect locally to / (no external navigation)
+    const response = NextResponse.redirect(new URL("/", origin));
+    // Clear our cookies before redirecting
+    response.cookies.set(TOKEN_NAME, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 0,
+      path: "/",
+    });
+    response.cookies.set("has_profile", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 0,
+      path: "/",
+    });
+    response.cookies.set(COOKIE_NAME, "", { maxAge: 0, path: "/" });
+    return response;
+  }
 
   // Ensure session cookie exists for anonymous sessions
   const sessionCookie = request.cookies.get(COOKIE_NAME);

@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 import {
   Button,
@@ -127,8 +129,6 @@ function ThreadSection({
   );
 }
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
-
 export function Sidebar() {
   const {
     sideBarVisible,
@@ -139,7 +139,7 @@ export function Sidebar() {
     fetchApiStatus,
   } = useSidebarStore();
   const { currentThreadId } = useChatStore();
-  const { clearAuth, userEmail, usedPrompts, totalPrompts } = useAuthStore();
+  const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -148,10 +148,10 @@ export function Sidebar() {
   }, [fetchThreads, fetchApiStatus]);
 
   const handleLogout = () => {
-    if (LANDING_PAGE_VERSION === "public") {
-      clearAuth();
-    } else {
-      router.push("/");
+    try {
+      router.push("/auth/logout");
+    } catch {
+      window.location.href = "/auth/logout";
     }
   };
 

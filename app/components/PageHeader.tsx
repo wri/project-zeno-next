@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Flex,
   Heading,
@@ -9,7 +11,6 @@ import {
   Link as ChakraLink,
   Text,
 } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
 import LclLogo from "./LclLogo";
 import {
   GearSixIcon,
@@ -22,32 +23,8 @@ import useAuthStore from "../store/authStore";
 import Link from "next/link";
 
 function PageHeader() {
-  const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
+  const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
-  const router = useRouter();
-  const handleLogout = async () => {
-    // 1) Try to invalidate RW session via cross-origin GET
-    try {
-      await fetch("https://api.resourcewatch.org/auth/logout", {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store",
-      });
-    } catch {}
-
-    // 2) Clear our cookies/server session
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {}
-
-    // 3) Clear client auth store and go to home
-    clearAuth();
-    try {
-      router.push("/");
-    } catch {
-      window.location.href = "/";
-    }
-  };
   return (
     <Flex
       alignItems="center"
@@ -149,14 +126,16 @@ function PageHeader() {
                   <Menu.Separator />
                   <Menu.Item
                     value="logout"
+                    asChild
                     cursor="pointer"
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
-                    onClick={handleLogout}
                     title="Log Out"
                   >
-                    <SignOutIcon />
-                    Logout
+                    <Link href="/auth/logout">
+                      <SignOutIcon />
+                      Logout
+                    </Link>
                   </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>
