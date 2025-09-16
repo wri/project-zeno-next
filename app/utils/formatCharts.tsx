@@ -71,7 +71,7 @@ const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
     { value: "Other natural disturbances", color: "#3B209A"},
     { value: "Settlements & Infrastructure", color: "#A354A0"},
     { value: "Hard commodities", color: "#246E24"},
-    { value: "Permanent Agriculture", color: "#E39D29"},
+    { value: "Permanent agriculture", color: "#E39D29"},
     { value: "Unknown", color: "#246E24"},
   ]
 
@@ -119,6 +119,10 @@ export default function formatChartData(
       (_, index) => defaultColors[index % defaultColors.length]
     );
   }
+  
+  console.log("data", data)
+  console.log("chartColors", chartColors)
+  console.log("keys", keys)
 
   // --- Logic for PIE charts ---
   if (type === "pie") {

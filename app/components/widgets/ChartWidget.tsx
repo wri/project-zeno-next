@@ -175,7 +175,7 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
             {dataPoint.name}
           </Text>
           <Text fontFamily="mono" textAlign="right">
-            {Number(dataPoint.value).toLocaleString()}
+            {Number(dataPoint.value).toLocaleString()}%
           </Text>
         </Flex>
       </Box>
