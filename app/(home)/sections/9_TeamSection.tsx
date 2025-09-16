@@ -68,7 +68,7 @@ export default function TeamSection() {
             </ChakraLink>
           </Flex>
         <Box maxW="3xl" w="100%" mx="auto">
-          <Text fontSize="lg" mb="2" textAlign="left">
+          <Text fontSize="lg" mb="2" textAlign="center">
             View the partners behind{" "}
             <ChakraLink href="https://landcarbonlab.org/about" target="_blank" rel="noopener noreferrer" textDecor="underline">
               Land & Carbon Lab
