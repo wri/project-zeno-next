@@ -29,7 +29,7 @@ interface ChartSeries {
  * @returns An object containing the transformed `data` and `series` arrays.
  */
 
-//TODO: Generate this from teh DATASET_CARDS fixture or move to config
+//TODO: Generate this from the DATASET_CARDS fixture or move to config
 const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
   "land_cover_type": [
     { value: "Bare and sparse vegetation", color: "#FEFECC" },
@@ -93,11 +93,9 @@ export default function formatChartData(
   if (!Array.isArray(data) || data.length === 0) {
     return { data: [], series: [] };
   }
-
-  // const chartColors = getChartColors();
   
   const keys = Object.keys(data[0]);
-  const xAxisKey = xAxis || keys[0];
+  const xAxisKey = xAxis || keys[0]; //identify dataset
   
   const colorPalette = CHART_COLOR_MAPPING[xAxisKey];
   const defaultColors = getChartColors();
@@ -120,10 +118,6 @@ export default function formatChartData(
       (_, index) => defaultColors[index % defaultColors.length]
     );
   }
-
-  console.log("xAxisKey", xAxisKey);
-  console.log("data", data);
-  console.log("chartColors", chartColors);
 
   // --- Logic for PIE charts ---
   if (type === "pie") {
