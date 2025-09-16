@@ -22,10 +22,12 @@ function renderPromptBoxes(
       <Box
         key={i}
         data-marquee-item
-        bg="secondary.200"
+        bg="secondary.muted"
+        color="secondary.fg"
+        fontSize="sm"
         p="3"
         rounded="md"
-        maxW="18rem"
+        maxW="19rem"
         flexShrink="0"
         cursor="pointer"
         transition="opacity"
