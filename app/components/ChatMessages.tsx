@@ -1,18 +1,16 @@
 "use client";
-import { Fragment, useState, useEffect, useRef } from "react";
-import { Box, Text, Link } from "@chakra-ui/react";
+import { Fragment, useEffect, useRef } from "react";
+import { Box } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
 import SamplePrompts from "./SamplePrompts";
-import ChatDisclaimer from "./ChatDisclaimer";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading } = useChatStore();
-  const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
 
   // Auto-scroll to bottom when new messages are added or loading state changes
   useEffect(() => {
@@ -55,25 +53,6 @@ function ChatMessages() {
         const isFirst = index === 0;
         return (
           <Fragment key={message.id}>
-            {displayDisclaimer && (
-              <ChatDisclaimer
-                type="info"
-                setDisplayDisclaimer={setDisplayDisclaimer}
-              >
-                <Text>
-                  This is an <strong>experimental preview</strong> of Global
-                  Nature Watch. Our AI assistant may make mistakes, please
-                  verify outputs with primary sources. Feedback is welcome at{" "}
-                  <Link
-                    color="primary.solid"
-                    textDecor="underline"
-                    href="mailto:xyz@landandcarbonlab.org"
-                  >
-                    xyz@landandcarbonlab.org.
-                  </Link>
-                </Text>
-              </ChatDisclaimer>
-            )}
             <MessageBubble
               message={message}
               isConsecutive={isConsecutive}
