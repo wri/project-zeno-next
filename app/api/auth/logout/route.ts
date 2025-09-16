@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, TOKEN_NAME } from "@/app/api/shared/utils";
 
 const HAS_PROFILE_COOKIE = "has_profile";
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const cookieStore = await cookies();
   const token = cookieStore.get(TOKEN_NAME)?.value;
 
