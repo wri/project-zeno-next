@@ -8,6 +8,11 @@ interface ChartData {
   [key: string]: unknown;
 }
 
+interface ColorMapEntry {
+  value: string;
+  color: string;
+}
+
 interface ChartSeries {
   name: string;
   color: string;
@@ -24,6 +29,52 @@ interface ChartSeries {
  * @returns An object containing the transformed `data` and `series` arrays.
  */
 
+//TODO: Generate this from teh DATASET_CARDS fixture or move to config
+const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
+  "land_cover_type": [
+    { value: "Bare and sparse vegetation", color: "#FEFECC" },
+    { value: "Short vegetation", color: "#B9B91E" },
+    { value: "Tree cover", color: "#246E24" },
+    { value: "Wetland – short vegetation", color: "#74D6B4" },
+    { value: "Water", color: "#6BAED6" },
+    { value: "Snow/ice", color: "#ACD1E8" },
+    { value: "Cropland", color: "#fff183" },
+    { value: "Built-up", color: "#e8765d" },
+    { value: "Cultivated grasslands", color: "#FFCD73" }],
+  "land_type": [
+    {value: "Natural forests", color: "#246E24" },
+    { value: "Natural short vegetation", color: "#B9B91E" },
+    { value: "Natural water", color: "#6BAED6" },
+    { value: "Mangroves", color: "#06A285" },
+    { value: "Bare", color: "#FEFECC" },
+    { value: "Snow", color: "#ACD1E8" },
+    { value: "Wet natural forests", color: "#589558" },
+    { value: "Natural peat forests", color: "#093D09" },
+    { value: "Wet natural short vegetation", color: "#DBDB7B" },
+    { value: "Natural peat short vegetation", color: "#99991A" },
+    { value: "Crop", color: "#D3D3D3" },
+    { value: "Built", color: "#D3D3D3" },
+    { value: "Non-natural tree cover", color: "#D3D3D3" },
+    { value: "Non-natural short vegetation", color: "#D3D3D3" },
+    { value: "Non-natural water", color: "#D3D3D3" },
+    { value: "Wet non-natural tree cover", color: "#D3D3D3" },
+    { value: "Non-natural peat tree cover", color: "#D3D3D3" },
+    { value: "Wet non-natural short vegetation", color: "#D3D3D3" },
+    { value: "Non-natural peat short vegetation", color: "#D3D3D3" },
+    { value: "Non-natural bare", color: "#D3D3D3" },
+    { value: "Other", color: "#D3D3D3" }],
+  "driver": [
+    { value: "Logging", color: "#52A44E"},
+    { value: "Shifting cultivation", color: "#E9D700"},
+    { value: "Wildfire", color: "#885128"},
+    { value: "Other natural disturbances", color: "#3B209A"},
+    { value: "Settlements & Infrastructure", color: "#A354A0"},
+    { value: "Hard commodities", color: "#246E24"},
+    { value: "Permanent Agriculture", color: "#E39D29"},
+    { value: "Unknown", color: "#246E24"},
+  ]
+
+}
 export default function formatChartData(
   data: InputData[] | unknown,
   type:
@@ -43,9 +94,36 @@ export default function formatChartData(
     return { data: [], series: [] };
   }
 
-  const chartColors = getChartColors();
+  // const chartColors = getChartColors();
+  
   const keys = Object.keys(data[0]);
   const xAxisKey = xAxis || keys[0];
+  
+  const colorPalette = CHART_COLOR_MAPPING[xAxisKey];
+  const defaultColors = getChartColors();
+  let chartColors: string[] = [];
+
+  if (colorPalette) {
+    const valueToColorMap = new Map(
+      colorPalette.map((item) => [item.value, item.color])
+    );
+    chartColors = data.map((item, index) => {
+      const key = String(item[xAxisKey]);
+      return (
+        valueToColorMap.get(key) ||
+        defaultColors[index % defaultColors.length]
+      );
+    });
+  } else {
+    // Fallback to default colors if no specific palette is found
+    chartColors = data.map(
+      (_, index) => defaultColors[index % defaultColors.length]
+    );
+  }
+
+  console.log("xAxisKey", xAxisKey);
+  console.log("data", data);
+  console.log("chartColors", chartColors);
 
   // --- Logic for PIE charts ---
   if (type === "pie") {
