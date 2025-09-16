@@ -18,29 +18,29 @@ const SUPPORT_TABS = [
     title: "Track the vegetation disturbances that matter most",
     content:
       "View near real-time disturbance alerts anywhere in the world and filter by type, such as wildfire, conversion, or flooding, to focus on the events most relevant to your project or region.",
-    image: "/carousel-1.webp",
+    image: "/carousel-1.png",
   },
   {
     title: "Understand natural ecosystem",
     content:
       "Identify remaining natural lands in your area of interest and track alerts that flag likely conversion to agriculture, mining, or urban expansion, critical for meeting conservation and compliance goals.",
-    image: "/carousel-2.webp",
+    image: "/carousel-2.png",
   },
   {
     title: "Monitor grassland health and conversion",
     content:
     "See how grasslands are changing over time, whether from degradation or conversion, and assess likely causes, supporting sustainable agriculture and land-use planning.",
-    image: "/carousel-3.webp",
+    image: "/carousel-3.png",
   },
   {
     title: "Assess land cover change",
     content: "Get a clear snapshot of land cover anywhere on Earth and see how it has shifted over the past decade, helping you evaluate ecosystem trends and land-use trade-offs.",
-    image: "/carousel-4.webp",
+    image: "/carousel-4.png",
   },
   {
     title: "Analyze drivers of forest change",
     content: "Pinpoint the causes of tree cover loss, from commodity production to wildfire, and quickly understand the pressures shaping forests in your region.",
-    image: "/carousel-5.webp",
+    image: "/carousel-5.png",
   },
 ];
 export default function SupportWorkTabsSection() {
