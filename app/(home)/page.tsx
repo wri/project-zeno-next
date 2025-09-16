@@ -25,10 +25,8 @@ const SAMPLE_PROMPTS = [
 
 export default function LandingPage() {
   const [promptIndex, setPromptIndex] = useState(0);
-  const { prompts, fetchPrompts } = usePromptStore();
-  useEffect(() => {
-    fetchPrompts();
-  }, []);
+  const { prompts } = usePromptStore();
+  
   return (
     <>
       <LandingHero

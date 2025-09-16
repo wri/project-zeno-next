@@ -4,12 +4,10 @@ import { usePromptStore } from "../store/promptStore";
 import useChatStore from "../store/chatStore";
 
 export default function SamplePrompts() {
-  const { prompts, fetchPrompts } = usePromptStore();
+  const { prompts } = usePromptStore();
   const { sendMessage } = useChatStore();
   const [samplePrompts, setSamplePrompts] = useState<string[]>([]);
-  useEffect(() => {
-    fetchPrompts();
-  }, []);
+
   useEffect(() => {
     if (prompts.length > 0 && samplePrompts.length === 0) {
       setSamplePrompts(getRandomFromArray(prompts, 3));
