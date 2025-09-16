@@ -27,7 +27,7 @@ export function DatasetInfoModal({
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
       <Portal>
         <Dialog.Backdrop backdropFilter="blur(8px)" />
-        <Dialog.Positioner>
+        <Dialog.Positioner zIndex={1600}>
           <Dialog.Content maxW="3xl" p="10" borderRadius="8px">
             <Dialog.Title mb="4" fontSize="xl" fontWeight="bold" pr="6">{dataset.dataset_name}</Dialog.Title>
             <Dialog.Description asChild css={{ "& p": { whiteSpace: "pre-wrap" } }}>
