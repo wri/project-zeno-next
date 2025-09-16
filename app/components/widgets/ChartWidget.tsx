@@ -128,29 +128,31 @@ interface LegendPayload {
 }
 
 interface CustomPieLegendProps {
-  payload?: LegendPayload[];
+  series: { name?: string | number; color: string }[];
 }
 
-const CustomPieLegend = ({ payload }: CustomPieLegendProps) => {
-  if (!payload) return null;
+const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
+  if (!series) return null;
 
   return (
     <Flex direction="column" gap={2} as="ul" listStyleType="none" m={0} p={0}>
-      {payload.map((entry, index) => (
-        <Flex as="li" key={`item-${index}`} align="center" gap={2}>
-          <Box
-            w={4}
-            h={4}
-            bg={entry.color}
-            border="1px solid"
-            borderColor="neutral.400"
-            rounded="sm"
-          />
-          <Text fontSize="xs" color="neutral.500">
-            {entry.value}
-          </Text>
-        </Flex>
-      ))}
+      {series
+        .filter((entry) => entry.name)
+        .map((entry, index) => (
+          <Flex as="li" key={`item-${index}`} align="center" gap={2}>
+            <Box
+              w={4}
+              h={4}
+              bg={entry.color}
+              border="1px solid"
+              borderColor="neutral.400"
+              rounded="sm"
+            />
+            <Text fontSize="xs" color="neutral.500">
+              {String(entry.name)}
+            </Text>
+          </Flex>
+        ))}
     </Flex>
   );
 };
@@ -291,7 +293,13 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
         )}
         <Legend
-          content={type === "pie" ? <CustomPieLegend /> : <Chart.Legend />}
+          content={
+            type === "pie" ? (
+              <CustomPieLegend series={chart.series} />
+            ) : (
+              <Chart.Legend />
+            )
+          }
           align={type === "pie" ? "right" : "left"}
           layout={type === "pie" ? "vertical" : "horizontal"}
           verticalAlign={type === "pie" ? "middle" : "top"}

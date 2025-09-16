@@ -32,35 +32,36 @@ interface ChartSeries {
 //TODO: Generate this from the DATASET_CARDS fixture or move to config
 const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
   "land_cover_type": [
-    { value: "Bare and sparse vegetation", color: "#FEFECC" },
-    { value: "Short vegetation", color: "#B9B91E" },
     { value: "Tree cover", color: "#246E24" },
+    { value: "Short vegetation", color: "#B9B91E" },
     { value: "Wetland – short vegetation", color: "#74D6B4" },
+    { value: "Bare and sparse vegetation", color: "#FEFECC" },
     { value: "Water", color: "#6BAED6" },
     { value: "Snow/ice", color: "#ACD1E8" },
     { value: "Cropland", color: "#fff183" },
+    { value: "Cultivated grasslands", color: "#FFCD73" },
     { value: "Built-up", color: "#e8765d" },
-    { value: "Cultivated grasslands", color: "#FFCD73" }],
+  ],
   "land_type": [
     {value: "Natural forests", color: "#246E24" },
+    { value: "Natural peat forests", color: "#093D09" },
+    { value: "Natural peat short vegetation", color: "#99991A" },
+    { value: "Mangroves", color: "#06A285" },
+    { value: "Wet natural forests", color: "#589558" },
+    { value: "Wet natural short vegetation", color: "#DBDB7B" },
     { value: "Natural short vegetation", color: "#B9B91E" },
     { value: "Natural water", color: "#6BAED6" },
-    { value: "Mangroves", color: "#06A285" },
     { value: "Bare", color: "#FEFECC" },
     { value: "Snow", color: "#ACD1E8" },
-    { value: "Wet natural forests", color: "#589558" },
-    { value: "Natural peat forests", color: "#093D09" },
-    { value: "Wet natural short vegetation", color: "#DBDB7B" },
-    { value: "Natural peat short vegetation", color: "#99991A" },
     { value: "Crop", color: "#D3D3D3" },
     { value: "Built", color: "#D3D3D3" },
     { value: "Non-natural tree cover", color: "#D3D3D3" },
     { value: "Non-natural short vegetation", color: "#D3D3D3" },
-    { value: "Non-natural water", color: "#D3D3D3" },
     { value: "Wet non-natural tree cover", color: "#D3D3D3" },
     { value: "Non-natural peat tree cover", color: "#D3D3D3" },
     { value: "Wet non-natural short vegetation", color: "#D3D3D3" },
     { value: "Non-natural peat short vegetation", color: "#D3D3D3" },
+    { value: "Non-natural water", color: "#D3D3D3" },
     { value: "Non-natural bare", color: "#D3D3D3" },
     { value: "Other", color: "#D3D3D3" }],
   "driver": [
@@ -132,12 +133,35 @@ export default function formatChartData(
       color: chartColors[index % chartColors.length],
     }));
 
-    const series: ChartSeries[] = [
-      {
-        name: valueKey,
-        color: chartColors[0], // A base color, though cells will override.
-      },
-    ];
+    let series: ChartSeries[];
+
+    if (colorPalette) {
+      // Create a map for quick color lookup
+      const valueToColorMap = new Map(
+        colorPalette.map((item) => [item.value, item.color])
+      );
+
+      // Create a map for the original data values for sorting
+      const dataValueMap = new Map(
+        transformedData.map((item) => [item[xAxisKey], item])
+      );
+
+      // Sort the series based on the order in colorPalette
+      series = colorPalette
+        .filter((paletteItem) => dataValueMap.has(paletteItem.value)) // Ensure the item exists in the data
+        .map((paletteItem) => ({
+          name: paletteItem.value,
+          color: valueToColorMap.get(paletteItem.value) || "#000000", // Fallback color
+        }));
+    } else {
+      // Fallback to default series generation if no color palette is defined
+      series = [
+        {
+          name: valueKey,
+          color: chartColors[0], // A base color, though cells will override.
+        },
+      ];
+    }
 
     return { data: transformedData as ChartData[], series };
   }
