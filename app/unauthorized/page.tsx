@@ -182,7 +182,7 @@ export default function UnauthorizedPage() {
           </ChakraLink>
         </Flex>
         <Text fontSize="sm" display={{ base: "none", md: "flex" }}>
-          © Global Nature Watch 2025
+          © Global Nature Watch {new Date().getFullYear()}
         </Text>
       </Container>
     </Box>
