@@ -210,6 +210,12 @@ export const createDrawAreaSlice: StateCreator<
       result = await createAreaFn(requestData);
     }
 
+    sendGAEvent("event", "map_area_drawn", {
+      area_name: newArea.name,
+      area_size_km2: areaSizeKm2,
+      area_bbox_km2: bboxCollection
+    });
+
     get().endDrawing();
     return result;
   },
