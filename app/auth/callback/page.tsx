@@ -45,7 +45,9 @@ export default function AuthCallbackPage() {
               value: crypto.randomUUID(),
             });
           }
-          setTimeout(() => window.close(), 500);
+          if (window.opener) {
+            setTimeout(() => window.close(), 500);
+          }
         } catch (error) {
           console.error("Failed to set auth token:", error);
         }
