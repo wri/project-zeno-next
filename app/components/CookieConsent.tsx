@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Portal, ActionBar, Text, Link } from '@chakra-ui/react';
+import { Box, Button, Portal, ActionBar, Text, Link, Flex } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import useCookieConsentStore from '../store/cookieConsentStore';
 
