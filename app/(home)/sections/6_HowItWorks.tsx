@@ -14,7 +14,7 @@ const HOW_STEPS = [
   {
     title: "Retrieving quality data",
     description:
-      "We use our APIs to pull verifiable, peer-reviewed data from Global Forest Watch and Land & Carbon Lab. This means verifiable data direct from authoritative sources.",
+      "Our data comes via APIs from Global Forest Watch and Land & Carbon Lab, platforms powered by contributions from researchers and partners around the globe. This means verifiable data from authoritative sources.",
     images: [
       { src: "/GFW-logo.svg", alt: "GFW logo", maxW: "100%" },
       { src: "LCL-logo.svg", alt: "LCL logo", maxW: "100%" },

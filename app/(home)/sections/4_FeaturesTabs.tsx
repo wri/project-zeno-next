@@ -17,21 +17,27 @@ const FEATURE_TABS = [
     value: "feature-tab-1",
     label: "Explore trusted data with an AI assistant",
     description:
-      "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
+      "Deforestation due to wildfires across Californian Protected Areas.",
+    caption:
+      "Quickly find the most relevant data for your work.",
     image: "/feature-tab-1.webp",
   },
   {
     value: "feature-tab-2",
     label: "Tailored answers to your context",
     description:
-      "Explore how Global Nature Watch assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
+      "Explore how Global Nature Watch's assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
+    caption:
+      "Shape responses to your needs.",
     image: "/feature-tab-2.webp",
   },
   {
     value: "feature-tab-3",
     label: "Insights you can act on",
     description:
-      "Global Nature Watch's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies, or field decisions while opening the door to dive deeper.",
+      "Global Nature Watch's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies or field decisions while opening the door to dive deeper.",
+    caption:
+      "Generate clear takeaways from complex data.",
     image: "/feature-tab-3.webp",
   },
 ];
@@ -135,7 +141,7 @@ export default function FeaturesTabsSection() {
                   as="figcaption"
                   color="fg.muted"
                 >
-                  {tab.description}
+                  {tab.caption}
                 </Text>
               </Tabs.Content>
             ))}

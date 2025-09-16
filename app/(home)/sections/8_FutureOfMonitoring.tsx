@@ -32,11 +32,13 @@ export default function FutureOfMonitoringSection() {
           </Container>
           <Container display="flex" maxW="5xl">
           <Text fontSize="lg" mb="4">
-          For more than a decade, World Resources Institute tools like Global Forest Watch have
-          transformed how the world monitors nature, driving impact across the tropics and beyond.
-          Global Nature Watch marks the next chapter. Built on trusted, peer-reviewed data and
-          powered by the latest advances in AI, it shifts monitoring from fixed global outputs to
-          targeted, actionable insights delivered in the language, regions and contexts that matter most.
+          <Text as="b">We know that monitoring works.</Text> For more than a decade, Global Forest Watch has
+          transformed how the world monitors nature, driving impact across the world&rsquo;s forests.
+          Global Nature Watch is the next major leap in land monitoring, transforming world-leading
+          research into an open, AI-powered system that extends beyond forests to include all ecosystems.
+          For the first time, anyone working to protect, restore or sustainably manage land can monitor
+          the changes that are happening everywhere on Earth by asking questions in plain language and
+          receiving authoritative answers with satellite imagery, maps, statistics and context.
           </Text>
         </Container>
         <Container display="flex" gap="14" flexDir={"column"} maxW="5xl">
