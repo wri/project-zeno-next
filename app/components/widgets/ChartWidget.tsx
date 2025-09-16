@@ -122,13 +122,8 @@ const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
   return null;
 };
 
-interface LegendPayload {
-  value: string;
-  color: string;
-}
-
 interface CustomPieLegendProps {
-  series: { name?: string | number; color: string }[];
+  series: { name?: string | number; color?: string }[];
 }
 
 const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
@@ -137,7 +132,7 @@ const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
   return (
     <Flex direction="column" gap={2} as="ul" listStyleType="none" m={0} p={0}>
       {series
-        .filter((entry) => entry.name)
+        .filter((entry) => entry.name && entry.color)
         .map((entry, index) => (
           <Flex as="li" key={`item-${index}`} align="center" gap={2}>
             <Box
