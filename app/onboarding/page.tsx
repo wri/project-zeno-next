@@ -18,12 +18,15 @@ import {
   Checkbox,
   createListCollection,
   Link,
+  Badge,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
+import LclLogo from "../components/LclLogo";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -237,9 +240,30 @@ export default function OnboardingPage() {
   };
 
   return (
-    <Box minH="100vh" bg="bg" py={10}>
+    <Box minH="100vh" bg="bg" py={24}>
       <Container maxW="3xl">
-      <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
+        <Flex justifyContent="space-between" mb={12}>
+          <Flex gap="2" alignItems="center" >
+            <LclLogo width={16} avatarOnly fill="var(--chakra-colors-primary-fg)" />
+            <Heading as="h1" size="md" color="primary.fg">
+              Global Nature Watch
+            </Heading>
+            <Badge
+              colorPalette="primary"
+              bg="primary.800"
+              letterSpacing="wider"
+              variant="solid"
+              size="xs"
+            >
+              BETA
+            </Badge>
+          </Flex>
+          <Button colorPalette="primary" variant="ghost" onClick={() => router.push("/")}>
+            <ArrowLeftIcon />
+            Go back
+          </Button>
+        </Flex>
+        <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
           Complete your{" "}
           <Text as="span" fontWeight="bold">
             Global Nature Watch
@@ -247,12 +271,15 @@ export default function OnboardingPage() {
           user profile
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
-          We use this information to make Global Nature Watch more useful to you.
-          This tool is experimental, and your and knowing you better helps us improve.
-          Features may change or be removed over time.
+          We use this information to make Global Nature Watch more useful to
+          you. This tool is experimental, and your and knowing you better helps
+          us improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={12}>
+          <Grid
+            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+            gap={12}
+          >
             <GridItem>
               <Field.Root id="first-name" required={fieldRequired("firstName")}>
                 <Field.Label>
@@ -308,6 +335,11 @@ export default function OnboardingPage() {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, email: e.target.value }))
                   }
+                  _readOnly={{
+                    bg: "bg.subtle",
+                    color: "fg.muted",
+                    cursor: "not-allowed",
+                  }}
                 />
               </Field.Root>
             </GridItem>
@@ -371,7 +403,7 @@ export default function OnboardingPage() {
                       </Text>
                     )}
                   </Select.Label>
-                  <Select.Control>
+                  <Select.Control _disabled={{ bg: "bg.subtle" }}>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Role" />
                     </Select.Trigger>
@@ -402,9 +434,7 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
-                <Field.Label>
-                  Job title
-                </Field.Label>
+                <Field.Label>Job title</Field.Label>
                 <Input
                   type="text"
                   value={form.jobTitle}
@@ -478,9 +508,7 @@ export default function OnboardingPage() {
               <Field.Root id="expertise" required={fieldRequired("expertise")}>
                 <Select.Root collection={expertises} size="sm">
                   <Select.HiddenSelect />
-                  <Select.Label>
-                    Level of technical expertise
-                  </Select.Label>
+                  <Select.Label>Level of technical expertise</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Level" />
@@ -629,9 +657,6 @@ export default function OnboardingPage() {
               </Checkbox.Label>
             </Checkbox.Root>
             <Flex gap={4}>
-              <Button variant="outline" onClick={() => router.push("/")}>
-                Go back
-              </Button>
               <Button
                 type="submit"
                 colorPalette="primary"
