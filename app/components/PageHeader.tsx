@@ -143,13 +143,16 @@ function PageHeader() {
           </Menu.Root>
         ) : (
           <Button
+            asChild
             variant="solid"
             colorPalette="primary"
             _hover={{ bg: "primary.fg" }}
             size="sm"
           >
-            <UserIcon />
-            Log in / Sign Up
+            <Link href="/app">
+              <UserIcon />
+              Log in / Sign Up
+            </Link>
           </Button>
         )}
       </Flex>
