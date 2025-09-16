@@ -166,8 +166,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "Other natural disturbances", color: "#3B209A"},
         { label: "Settlements & Infrastructure", color: "#A354A0"},
         { label: "Hard commodities", color: "#246E24"},
-        { label: "Permanent Agriculture", color: "#E39D29"},
-        { label: "Unknown", color: "#246E24"},
+        { label: "Permanent Agriculture", color: "#E39D29"}
       ],
       type: "symbol",
       info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2024. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
