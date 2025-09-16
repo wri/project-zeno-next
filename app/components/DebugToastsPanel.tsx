@@ -54,7 +54,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
             toaster.create({
               title: "Warning",
               description: "This is a warning toast",
-              type: "Warning",
+              type: "warning",
               closable: true,
               duration: 3000,
             })
