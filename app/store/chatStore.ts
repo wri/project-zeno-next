@@ -29,6 +29,7 @@ interface ChatState {
   isLoading: boolean;
   currentThreadId: string | null;
   toolSteps: string[];
+  pendingTraceId: string | null;
 }
 
 interface ChatActions {
@@ -67,15 +68,30 @@ const initialState: ChatState = {
   isLoading: false,
   currentThreadId: null,
   toolSteps: [],
+  pendingTraceId: null,
 };
 
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void,
-  addToolStep: (toolName: string) => void
+  addToolStep: (toolName: string) => void,
+  getPendingTraceId: () => string | null,
+  setPendingTraceId: (traceId: string | null) => void,
+  attachTraceToLastAssistant: (traceId: string) => boolean
 ) {
-  console.log("processStreamMessage", streamMessage);
+  // Capture standalone trace metadata sent as a separate stream message
+  if (streamMessage.type === "other" && streamMessage.name === "trace") {
+    if (streamMessage.trace_id) {
+      // Try to attach to the latest assistant message without a trace first
+      const attached = attachTraceToLastAssistant(streamMessage.trace_id);
+      if (!attached) {
+        // No assistant yet; remember for the next one
+        setPendingTraceId(streamMessage.trace_id);
+      }
+    }
+    return;
+  }
   if (streamMessage.type === "error") {
     // Handle timeout errors specifically
     if (streamMessage.name === "timeout") {
@@ -102,12 +118,22 @@ async function processStreamMessage(
         { title: "Processing Error" }
       );
     }
+    // TODO: StreamMessage.type "text" currently represents assistant messages.
+    // Consider renaming server-emitted type to "assistant" and updating this
+    // branch accordingly, keeping temporary backward compatibility for "text".
   } else if (streamMessage.type === "text" && streamMessage.text) {
+    const pending = getPendingTraceId();
+    const traceToUse = streamMessage.trace_id || pending || undefined;
     addMessage({
       type: "assistant",
       message: streamMessage.text,
       timestamp: streamMessage.timestamp,
+      traceId: traceToUse,
     });
+    // Clear pending trace id once used
+    if (pending && pending === traceToUse) {
+      setPendingTraceId(null);
+    }
   } else if (streamMessage.type === "tool") {
     // Add tool step to reasoning display
     if (streamMessage.name) {
@@ -284,7 +310,28 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           console.log("API Stream message:", data);
           try {
             const streamMessage: StreamMessage = JSON.parse(data);
-            await processStreamMessage(streamMessage, addMessage, addToolStep);
+            await processStreamMessage(
+              streamMessage,
+              addMessage,
+              addToolStep,
+              () => get().pendingTraceId,
+              (traceId) => set({ pendingTraceId: traceId }),
+              (traceId: string) => {
+                let attached = false;
+                set((state) => {
+                  for (let i = state.messages.length - 1; i >= 0; i--) {
+                    const m = state.messages[i];
+                    if (m.type === "assistant" && !m.traceId) {
+                      state.messages[i] = { ...m, traceId };
+                      attached = true;
+                      break;
+                    }
+                  }
+                  return state;
+                });
+                return attached;
+              }
+            );
           } catch (err) {
             if (isFinal) {
               console.error(
@@ -469,7 +516,28 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
               return;
             }
-            await processStreamMessage(streamMessage, addMessage, addToolStep);
+            await processStreamMessage(
+              streamMessage,
+              addMessage,
+              addToolStep,
+              () => get().pendingTraceId,
+              (traceId) => set({ pendingTraceId: traceId }),
+              (traceId: string) => {
+                let attached = false;
+                set((state) => {
+                  for (let i = state.messages.length - 1; i >= 0; i--) {
+                    const m = state.messages[i];
+                    if (m.type === "assistant" && !m.traceId) {
+                      state.messages[i] = { ...m, traceId };
+                      attached = true;
+                      break;
+                    }
+                  }
+                  return state;
+                });
+                return attached;
+              }
+            );
           } catch (err) {
             if (isFinal) {
               console.error(

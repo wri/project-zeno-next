@@ -1,12 +1,21 @@
 "use client";
-import { Box, useClipboard, Flex, IconButton } from "@chakra-ui/react";
+import {
+  Box,
+  useClipboard,
+  Flex,
+  IconButton,
+  Textarea,
+  Button,
+  HStack,
+  Popover,
+  Portal,
+} from "@chakra-ui/react";
 import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
 import {
   ArrowBendDownRightIcon,
-  ArrowsCounterClockwiseIcon,
   CheckIcon,
   CopyIcon,
   ThumbsDownIcon,
@@ -16,9 +25,11 @@ import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
 import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
+import useChatStore from "../store/chatStore";
+import { toaster } from "./ui/toaster";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -29,6 +40,10 @@ interface MessageBubbleProps {
 function MessageBubble({ message, isConsecutive = false, isFirst = false }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const clipboard = useClipboard({ value: message.message });
+  const [isRating, setIsRating] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const { currentThreadId } = useChatStore();
 
   useEffect(() => {
     // This has to be done by a useEffect, otherwise there will be a hydration
@@ -45,6 +60,77 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
     });
     setFormattedTimestamp(`${time} on ${day}`);
   }, [message.timestamp]);
+
+  const rateMessage = useCallback(
+    async (ratingValue: 1 | -1, comment?: string) => {
+      if (isRating) return;
+      try {
+        setIsRating(true);
+        const threadId = currentThreadId || "";
+        if (!threadId) {
+          toaster.create({
+            title: "Unable to rate",
+            description: "No active thread.",
+            type: "error",
+          });
+          return;
+        }
+        // Only attempt rating for assistant messages with a traceId
+        if (!message.traceId) return;
+        const res = await fetch(`/api/threads/${threadId}/rating`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            trace_id: message.traceId,
+            rating: ratingValue,
+            comment,
+          }),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("Failed to submit rating", text);
+          toaster.create({
+            title: "Rating failed",
+            description: "Please try again.",
+            type: "error",
+          });
+        } else {
+          if (ratingValue === 1) {
+            toaster.create({
+              title: "Thanks for the feedback",
+              description: "Glad it helped!",
+              duration: 2500,
+              type: "success",
+            });
+          } else {
+            const hasComment =
+              typeof comment === "string" && comment.trim().length > 0;
+            toaster.create({
+              title: hasComment ? "Feedback sent" : "Marked as not helpful",
+              description: hasComment
+                ? "Thanks for helping us improve."
+                : "You can add a comment.",
+              duration: 2500,
+              type: "success",
+            });
+          }
+        }
+      } finally {
+        setIsRating(false);
+      }
+    },
+    [isRating, message.traceId, currentThreadId]
+  );
+
+  const submitFeedback = useCallback(async () => {
+    if (!feedbackText.trim()) {
+      setFeedbackOpen(false);
+      return;
+    }
+    await rateMessage(-1, feedbackText.trim());
+    setFeedbackText("");
+    setFeedbackOpen(false);
+  }, [feedbackText, rateMessage]);
 
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
@@ -179,20 +265,74 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                 </IconButton>
               </Tooltip>
               <Tooltip content="Good response">
-                <IconButton variant="ghost" size="xs">
+                <IconButton
+                  variant="ghost"
+                  size="xs"
+                  disabled={isRating || !message.traceId}
+                  onClick={() => rateMessage(1)}
+                >
                   <ThumbsUpIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip content="Bad response">
-                <IconButton variant="ghost" size="xs">
-                  <ThumbsDownIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip content="Regenerate response">
-                <IconButton variant="ghost" size="xs">
-                  <ArrowsCounterClockwiseIcon />
-                </IconButton>
-              </Tooltip>
+              <Popover.Root
+                open={feedbackOpen}
+                onOpenChange={(e) => setFeedbackOpen(e.open)}
+                positioning={{ placement: "bottom-end" }}
+              >
+                <Tooltip content="Bad response">
+                  <Box display="inline-block">
+                    <Popover.Trigger asChild>
+                      <IconButton
+                        variant="ghost"
+                        size="xs"
+                        disabled={isRating || !message.traceId}
+                        onClick={async () => {
+                          await rateMessage(-1);
+                          setFeedbackOpen(true);
+                        }}
+                      >
+                        <ThumbsDownIcon />
+                      </IconButton>
+                    </Popover.Trigger>
+                  </Box>
+                </Tooltip>
+                <Portal>
+                  <Popover.Positioner>
+                    <Popover.Content>
+                      <Popover.Body>
+                        <Textarea
+                          value={feedbackText}
+                          onChange={(e) => setFeedbackText(e.target.value)}
+                          placeholder="Tell us what went wrong (optional)"
+                          size="sm"
+                          rows={3}
+                        />
+                        <HStack justify="flex-end" mt="2" gap="2">
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => {
+                              setFeedbackOpen(false);
+                              setFeedbackText("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="xs"
+                            disabled={isRating}
+                            colorPalette="primary"
+                            onClick={submitFeedback}
+                          >
+                            Send feedback
+                          </Button>
+                        </HStack>
+                      </Popover.Body>
+                      <Popover.CloseTrigger />
+                    </Popover.Content>
+                  </Popover.Positioner>
+                </Portal>
+              </Popover.Root>
             </Flex>
           </Flex>
         )}
