@@ -35,7 +35,7 @@ export default function TeamSection() {
           </Text>
         </Container>
           <Box maxW="3xl" w="100%" mx="auto">
-            <Text fontSize="lg" textAlign="left">Founding partners and supporters</Text>
+            <Text fontSize="lg" textAlign="center">Founding partners and supporters</Text>
           </Box>
           <Flex
             gap="10"
