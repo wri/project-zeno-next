@@ -127,11 +127,11 @@ interface LegendPayload {
   color: string;
 }
 
-interface PieLegendProps {
+interface CustomPieLegendProps {
   payload?: LegendPayload[];
 }
 
-const PieLegend = ({ payload }: PieLegendProps) => {
+const CustomPieLegend = ({ payload }: CustomPieLegendProps) => {
   if (!payload) return null;
 
   return (
@@ -291,7 +291,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
         )}
         <Legend
-          content={type === "pie" ? <PieLegend /> : <Chart.Legend />}
+          content={type === "pie" ? <CustomPieLegend /> : <Chart.Legend />}
           align={type === "pie" ? "right" : "left"}
           layout={type === "pie" ? "vertical" : "horizontal"}
           verticalAlign={type === "pie" ? "middle" : "top"}
