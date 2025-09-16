@@ -64,12 +64,11 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
   );
   const isInContext = areaInContext ? true : false;
 
-  const fillColor = isInContext ? "#3b82f6" : "#555";
+  const fillColor = isInContext ? "#0A3785" : "#666E7B";
 
   const sourceId = `geojson-source-${feature.id}`;
   const bboxSourceId = `bbox-source-${feature.id}`;
   const fillLayerId = `geojson-fill-${feature.id}`;
-  const lineDashedLayerId = `geojson-line-${feature.id}-dashed`;
   const lineSolidLayerId = `geojson-line-${feature.id}-solid`;
   const bboxLayerId = `bbox-line-${feature.id}`;
 
@@ -165,31 +164,14 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
           ]}
         />
 
-        {/* Dashed polygon outline (default when not hovered and not selected) */}
-        <Layer
-          id={lineDashedLayerId}
-          type="line"
-          paint={{
-            "line-color": fillColor,
-            "line-width": 2,
-            "line-dasharray": [2, 1],
-            "line-opacity": isHovered || isInContext ? 0 : 1,
-          }}
-          filter={[
-            "any",
-            ["==", ["geometry-type"], "Polygon"],
-            ["==", ["geometry-type"], "MultiPolygon"],
-          ]}
-        />
-
-        {/* Solid polygon outline (on hover or when selected) */}
+        {/* Feature polygon outline */}
         <Layer
           id={lineSolidLayerId}
           type="line"
           paint={{
             "line-color": fillColor,
             "line-width": 2,
-            "line-opacity": isHovered || isInContext ? 1 : 0,
+            "line-opacity": 1,
           }}
           filter={[
             "any",
@@ -213,19 +195,19 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
             type="line"
             paint={{
               "line-color": fillColor,
-              "line-width": 2,
+              "line-width": 1.5,
               "line-dasharray": [2, 1],
-              "line-opacity": isHovered || isInContext ? 0 : 0.8,
+              "line-opacity": isHovered || isInContext ? 0 : 0.75,
             }}
           />
-          {/* Solid line layer (on hover) */}
+          {/* Solid line layer (on hover or in context) */}
           <Layer
             id={`${bboxLayerId}-solid`}
             type="line"
             paint={{
               "line-color": fillColor,
-              "line-width": 2,
-              "line-opacity": isHovered || isInContext ? 0.8 : 0,
+              "line-width": 1.5,
+              "line-opacity": isHovered || isInContext ? 0.75 : 0,
             }}
           />
         </Source>
@@ -243,7 +225,7 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
             px={2}
             py={1}
             size="md"
-            variant={isHovered ? "surface" : "subtle"}
+            variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
             roundedBottom="none"
             cursor="pointer"
             onMouseEnter={handleLabelMouseEnter}
