@@ -1,11 +1,11 @@
 "use client";
 import { Fragment, useState, useEffect, useRef } from "react";
-import { Box, CloseButton, Link, Text } from "@chakra-ui/react";
+import { Box, Text, Link } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
-import { InfoIcon } from "@phosphor-icons/react";
 import SamplePrompts from "./SamplePrompts";
+import ChatDisclaimer from "./ChatDisclaimer";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
@@ -52,52 +52,28 @@ function ChatMessages() {
         // Check if this message is consecutive to the previous one of the same type
         const previousMessage = index > 0 ? messages[index - 1] : null;
         const isConsecutive = previousMessage?.type === message.type;
-        const isFirst = index === 0
+        const isFirst = index === 0;
         return (
           <Fragment key={message.id}>
-            {/* Disclaimer above first message in closed mode */}
-            {isFirst &&
-              LANDING_PAGE_VERSION !== "public" &&
-              displayDisclaimer && (
-                <Box
-                  background="secondary.subtle"
-                  p={2}
-                  rounded="sm"
-                  border="1px solid"
-                  borderColor="secondary.300"
-                  fontSize="xs"
-                  display="flex"
-                  gap={2}
-                  my={4}
-                  mb={6}
-                >
-                  <InfoIcon
-                    weight="fill"
-                    style={{ flexShrink: 0 }}
-                    size="16"
-                    fill="var(--chakra-colors-secondary-600)"
-                  />
-                  <Text>
-                    This is an <strong>experimental preview</strong> of Global
-                    Nature Watch. Our AI assistant may make mistakes, please
-                    verify outputs with primary sources. Feedback is welcome at{" "}
-                    <Link
-                      color="primary.solid"
-                      textDecor="underline"
-                      href="mailto:xyz@landandcarbonlab.org"
-                    >
-                      xyz@landandcarbonlab.org.
-                    </Link>
-                  </Text>
-                  <CloseButton
-                    size="2xs"
-                    variant="ghost"
-                    colorPalette="secondary"
-                    title="Hide disclaimer"
-                    onClick={() => setDisplayDisclaimer((prev) => !prev)}
-                  />
-                </Box>
-              )}
+            {displayDisclaimer && (
+              <ChatDisclaimer
+                type="info"
+                setDisplayDisclaimer={setDisplayDisclaimer}
+              >
+                <Text>
+                  This is an <strong>experimental preview</strong> of Global
+                  Nature Watch. Our AI assistant may make mistakes, please
+                  verify outputs with primary sources. Feedback is welcome at{" "}
+                  <Link
+                    color="primary.solid"
+                    textDecor="underline"
+                    href="mailto:xyz@landandcarbonlab.org"
+                  >
+                    xyz@landandcarbonlab.org.
+                  </Link>
+                </Text>
+              </ChatDisclaimer>
+            )}
             <MessageBubble
               message={message}
               isConsecutive={isConsecutive}
