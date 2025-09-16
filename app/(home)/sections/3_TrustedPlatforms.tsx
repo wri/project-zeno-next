@@ -1,8 +1,8 @@
+import NextImage from "next/image";
 import {
   Box,
   Container,
   Heading,
-  Image,
   Card,
   Text,
   IconButton,
@@ -59,7 +59,7 @@ export default function TrustedPlatformsSection() {
             trusted platforms
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch is built on the data and research of Global
+            Global Nature Watch is built on the trusted data and research of Global
             Forest Watch and Land & Carbon Lab, as trusted by NGOs, governments,
             journalists, communities, companies and geospatial experts
             worldwide for over a decade.
@@ -119,7 +119,13 @@ export default function TrustedPlatformsSection() {
                         p={4}
                         overflow="hidden"
                       >
-                        <Image src={org.logo} alt={`${org.name} logo`} />
+                        <NextImage
+                          src={org.logo}
+                          alt={`${org.name} logo`}
+                          width={200}
+                          height={60}
+                          style={{ objectFit: "contain" }}
+                        />
                       </Box>
                       <Card.Body>
                         <Card.Title fontSize="lg">{org.name}</Card.Title>
