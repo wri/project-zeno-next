@@ -126,13 +126,7 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const dataPoint = payload[0];
     return (
-      <Box
-        bg="bg.panel"
-        p={2}
-        py={1}
-        borderRadius="sm"
-        boxShadow="sm"
-      >
+      <Box bg="bg.panel" p={2} py={1} borderRadius="sm" boxShadow="sm">
         <Flex
           fontSize="xs"
           fontWeight="normal"
@@ -266,16 +260,12 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
           align={type === "pie" ? "right" : "left"}
           layout={type === "pie" ? "vertical" : "horizontal"}
           verticalAlign={type === "pie" ? "middle" : "top"}
-          wrapperStyle={
-            type === "pie"
-              ? { paddingRight: "25%", maxHeight: "100%", overflow: "auto" }
-              : {
-                  paddingBottom: "0.5rem",
-                  maxHeight: "100%",
-                  maxWidth: "100%",
-                  overflow: "auto",
-                }
-          }
+          wrapperStyle={{
+            paddingBottom: "0.5rem",
+            maxHeight: "100%",
+            maxWidth: "100%",
+            overflow: "auto",
+          }}
         />
         {type !== "pie" && (
           <>
