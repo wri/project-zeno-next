@@ -28,11 +28,8 @@ function PageHeader() {
     useAuthStore();
   const router = useRouter();
   const handleLogout = () => {
-    if (LANDING_PAGE_VERSION === "public") {
-      clearAuth();
-    } else {
-      router.push("/");
-    }
+    clearAuth();
+    router.push("/");
   };
   return (
     <Flex
