@@ -6,8 +6,6 @@ import {
   CheckCircleIcon,
 } from "@phosphor-icons/react";
 
-import theme from "../theme";
-
 interface ChatStatusInfoProps extends FlexProps {
   type?: "info" | "error" | "warning" | "success";
   children: React.ReactNode;
