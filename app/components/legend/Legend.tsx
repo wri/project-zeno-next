@@ -41,8 +41,6 @@ export function Legend(props: LegendProps) {
       zIndex={100}
       width={320}
       bg="bg"
-      border="1px solid"
-      borderColor="border"
       overflow="hidden"
       rounded="sm"
       shadow="sm"
@@ -93,6 +91,9 @@ function Item(props: { item: LegendLayer; onLayerAction: LayerActionHandler }) {
       display="flex"
       gap={1}
       bg="bg"
+      borderBottom="1px solid"
+      borderColor="border"
+      _last={{ borderBottom: "none" }}
     >
       <IconButton
         variant="ghost"

@@ -23,9 +23,8 @@ export function useLegendHook() {
       );
       if (!relatedDataset?.legend) return [];
 
-      const { type, symbology, title, info, note, min, max, color } =
+      const { type, title, info, note, items, color, unit } =
         relatedDataset.legend;
-      const items = symbology?.items;
 
       return {
         id: tileLayer.id,
@@ -35,21 +34,25 @@ export function useLegendHook() {
         info,
         symbology:
           type === "categorical" && items ? (
-            <LegendCategorical items={items} />
+            <LegendCategorical items={items.map(i => ({ value: i.label ?? "", color: i.color }))} />
           ) : type === "sequential" ? (
             <LegendSequential
-              min={min ?? Number(items?.[0]?.value) ?? 0}
-              max={max ?? Number(items?.[items.length - 1]?.value) ?? 0}
-              color={items ?? (Array.isArray(color) ? color : [color])}
+              minLabel={items?.[0]?.label ?? ""}
+              maxLabel={items?.[items.length - 1]?.label ?? ""}
+              color={items?.map(item => item.color) ?? (Array.isArray(color) ? color : [color])}
             />
           ) : type === "divergent" ? (
             <LegendDivergent
-              min={min ?? 0}
-              max={max ?? 0}
+              unit={relatedDataset.legend.unit ?? ""}
+              minLabel={items?.[0]?.label ?? ""}
+              maxLabel={items?.[items.length - 1]?.label ?? ""}
               color={items?.map((item) => item.color) ?? (Array.isArray(color) ? color : [color])}
             />
           ) : items ? (
-            <LegendSymbolList items={items} />
+            <LegendSymbolList 
+              unit={unit ?? ""}
+              items={items.map(i => ({label: i.label ?? "", color: i.color}))} 
+            />
           ) : null,
         children: note ? <Text fontSize="xs">{note}</Text> : undefined,
       };

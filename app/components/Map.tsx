@@ -185,12 +185,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         <Flex
           pos="absolute"
           bottom="4"
-          right="4"
+          right="3"
           p="2"
           fontSize="xs"
           bg="transparent"
           hideBelow="md"
-          alignItems="center"
+          alignItems="baseline"
           gap={2}
         >
           <ChLink
@@ -198,21 +198,21 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
-            color="fg.subtle"
+            color="fg.muted"
           >
             Privacy Policy
           </ChLink>
-          <Text color="fg.subtle">•</Text>
+          <Text color="fg.muted">•</Text>
           <ChLink
             href="https://www.wri.org/about/wri-data-platforms-tos"
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
-            color="fg.subtle"
+            color="fg.muted"
           >
             Terms of Service
           </ChLink>
-          <Code bg="transparent" p={0} color="fg.subtle" ml={2}>
+          <Code bg="transparent" p={0} color="fg.muted" ml={2} fontSize="0.625rem">
             lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
           </Code>
         </Flex>

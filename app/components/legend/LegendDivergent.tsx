@@ -12,11 +12,12 @@ import { ColorBar } from "./ColorBar";
  * @param props.color - Array of colors or color/value stops for the ramp.
  */
 export function LegendDivergent(props: {
-  min: number;
-  max: number;
+  unit: string;
+  minLabel: string;
+  maxLabel: string;
   color: SymbolColor[] | SymbolColorValue[];
 }) {
-  const { min, max, color } = props;
+  const { unit, minLabel, maxLabel, color } = props;
   const colorRamp = makeColorRamp(
     color as SymbolColor[] | SymbolColorValue[]
   );
@@ -24,14 +25,24 @@ export function LegendDivergent(props: {
 
   return (
     <Box w="100%">
-      <ColorBar color={colorRamp} />
-      <Flex justifyContent="space-between" fontSize="xs">
-        <VisuallyHidden>From</VisuallyHidden>
-        <Text as="span">{min}</Text>
-        <Text as="span">0</Text>
-        <VisuallyHidden>to</VisuallyHidden>
-        <Text as="span">{max}</Text>
+      <Flex justifyContent="flex-end">
+        <Text as="span" fontSize="xs">
+          {unit}
+        </Text>
       </Flex>
+      <ColorBar color={colorRamp} />
+      <Box position="relative" h="20px">
+        <Flex justifyContent="space-between" fontSize="xs" position="absolute" w="100%">
+            <VisuallyHidden>From</VisuallyHidden>
+            <Text as="span">{minLabel}</Text>
+            <VisuallyHidden>to</VisuallyHidden>
+            <Text as="span">{maxLabel}</Text>
+        </Flex>
+        <Flex justifyContent="center" fontSize="xs" position="absolute" w="100%">
+            <VisuallyHidden>0</VisuallyHidden>
+            <Text as="span">0</Text>
+        </Flex>
+      </Box>
     </Box>
   );
 }
