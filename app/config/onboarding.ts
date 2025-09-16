@@ -35,6 +35,7 @@ export const DEFAULT_REQUIRED_ONBOARDING_FIELDS: readonly OnboardingFieldKey[] =
     (k) =>
       k !== "receiveNewsEmails" &&
       k !== "helpTestFeatures" &&
+      k !== "topics" &&
       k !== "expertise" &&
       k !== "jobTitle"
   ) as OnboardingFieldKey[];
