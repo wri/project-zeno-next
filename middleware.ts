@@ -36,11 +36,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // General guard for /app and /onboarding
+  // General guard for /app, /onboarding, and /dashboard
   const isOnboarding = pathname.startsWith("/onboarding");
   const isApp = pathname.startsWith("/app");
+  const isDashboard = pathname.startsWith("/dashboard");
 
-  if (isOnboarding || isApp) {
+  if (isOnboarding || isApp || isDashboard) {
     const authCookie = getAuthTokenFromRequest(request);
 
     // If not authenticated, redirect to WRI login
