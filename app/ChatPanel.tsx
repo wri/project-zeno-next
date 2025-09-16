@@ -126,16 +126,19 @@ function ChatPanel() {
               ))}
 
             <ChatInput isChatDisabled={promptsExhausted} />
-            <Text
+            <Flex
               fontSize="xs"
               color="fg.subtle"
+              hideBelow="md"
               whiteSpace="pre"
               overflowX="auto"
-              hideBelow="md"
+              gap={2}
             >
-              AI can make mistakes. Please verify any outputs before using them
-              in your work.
-            </Text>
+              <Text>
+                AI makes mistakes. Verify outputs and do not share
+                any sensitive or personal information.
+              </Text>
+            </Flex>
           </Box>
         </Flex>
       </Flex>

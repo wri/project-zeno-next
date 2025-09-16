@@ -32,7 +32,11 @@ const ALL_FIELD_KEYS: readonly OnboardingFieldKey[] = [
 // By default, all fields except marketing/opt-in checkboxes are required.
 export const DEFAULT_REQUIRED_ONBOARDING_FIELDS: readonly OnboardingFieldKey[] =
   ALL_FIELD_KEYS.filter(
-    (k) => k !== "receiveNewsEmails" && k !== "helpTestFeatures"
+    (k) =>
+      k !== "receiveNewsEmails" &&
+      k !== "helpTestFeatures" &&
+      k !== "expertise" &&
+      k !== "jobTitle"
   ) as OnboardingFieldKey[];
 
 /**

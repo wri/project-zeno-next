@@ -18,12 +18,15 @@ import {
   Checkbox,
   createListCollection,
   Link,
+  Badge,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
+import LclLogo from "../components/LclLogo";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -237,18 +240,46 @@ export default function OnboardingPage() {
   };
 
   return (
-    <Box minH="100vh" bg="bg" py={10}>
-      <Container maxW="4xl">
+    <Box minH="100vh" bg="bg" py={24}>
+      <Container maxW="3xl">
+        <Flex justifyContent="space-between" mb={12}>
+          <Flex gap="2" alignItems="center" >
+            <LclLogo width={16} avatarOnly fill="var(--chakra-colors-primary-fg)" />
+            <Heading as="h1" size="md" color="primary.fg">
+              Global Nature Watch
+            </Heading>
+            <Badge
+              colorPalette="primary"
+              bg="primary.800"
+              letterSpacing="wider"
+              variant="solid"
+              size="xs"
+            >
+              BETA
+            </Badge>
+          </Flex>
+          <Button colorPalette="primary" variant="ghost" onClick={() => router.push("/")}>
+            <ArrowLeftIcon />
+            Go back
+          </Button>
+        </Flex>
         <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
-          Complete your Global Nature Watch profile
+          Complete your{" "}
+          <Text as="span" fontWeight="bold">
+            Global Nature Watch
+          </Text>{" "}
+          user profile
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
-          We use this information to make Global Nature Watch more useful for
-          you. Your privacy is important to us and we’ll never share your
-          information without your consent.
+          We use this information to make Global Nature Watch more useful to
+          you. This tool is experimental, and your and knowing you better helps
+          us improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
+          <Grid
+            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+            gap={12}
+          >
             <GridItem>
               <Field.Root id="first-name" required={fieldRequired("firstName")}>
                 <Field.Label>
@@ -304,6 +335,11 @@ export default function OnboardingPage() {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, email: e.target.value }))
                   }
+                  _readOnly={{
+                    bg: "bg.subtle",
+                    color: "fg.muted",
+                    cursor: "not-allowed",
+                  }}
                 />
               </Field.Root>
             </GridItem>
@@ -312,7 +348,7 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="sector" required={fieldRequired("sector")}>
-                <Select.Root collection={sectors} size="sm" width="320px">
+                <Select.Root collection={sectors} size="sm">
                   <Select.HiddenSelect />
                   <Select.Label>
                     Sector
@@ -356,7 +392,6 @@ export default function OnboardingPage() {
                 <Select.Root
                   collection={roles}
                   size="sm"
-                  width="320px"
                   disabled={!form.sector}
                 >
                   <Select.HiddenSelect />
@@ -368,7 +403,7 @@ export default function OnboardingPage() {
                       </Text>
                     )}
                   </Select.Label>
-                  <Select.Control>
+                  <Select.Control _disabled={{ bg: "bg.subtle" }}>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Role" />
                     </Select.Trigger>
@@ -399,14 +434,7 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
-                <Field.Label>
-                  Job title
-                  {fieldRequired("jobTitle") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
-                </Field.Label>
+                <Field.Label>Job title</Field.Label>
                 <Input
                   type="text"
                   value={form.jobTitle}
@@ -437,7 +465,7 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="country" required={fieldRequired("country")}>
-                <Select.Root collection={countries} size="sm" width="320px">
+                <Select.Root collection={countries} size="sm">
                   <Select.HiddenSelect />
                   <Select.Label>
                     Country
@@ -478,16 +506,9 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="expertise" required={fieldRequired("expertise")}>
-                <Select.Root collection={expertises} size="sm" width="320px">
+                <Select.Root collection={expertises} size="sm">
                   <Select.HiddenSelect />
-                  <Select.Label>
-                    Level of technical expertise
-                    {fieldRequired("expertise") && (
-                      <Text as="span" color="red.500" ml={1}>
-                        *
-                      </Text>
-                    )}
-                  </Select.Label>
+                  <Select.Label>Level of technical expertise</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Level" />
@@ -520,7 +541,7 @@ export default function OnboardingPage() {
             <GridItem colSpan={{ base: 1, md: 2 }}>
               <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
-                  What area(s) are you most interested in?
+                  What topic(s) are you most interested in?
                   {fieldRequired("topics") && (
                     <Text as="span" color="red.500" ml={1}>
                       *
@@ -599,8 +620,7 @@ export default function OnboardingPage() {
             </Flex>
             <Separator mt={4} />
           </Box>
-
-          <Flex alignItems="center" gap={3} mt={8}>
+          <Flex alignItems="center" justifyContent="space-between" mt={4}>
             <Checkbox.Root
               checked={form.termsAccepted}
               onCheckedChange={(e) =>
@@ -609,20 +629,22 @@ export default function OnboardingPage() {
             >
               <Checkbox.HiddenInput />
               <Checkbox.Control />
-              <Checkbox.Label>
+              <Checkbox.Label fontWeight="normal">
                 I accept the{" "}
                 <Link
                   href="https://www.wri.org/about/legal/general-terms-use"
                   target="_blank"
                   rel="noopener noreferrer"
+                  textDecoration="underline"
                 >
                   Terms of Use
                 </Link>{" "}
-                and{" "}
+                and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"
                   target="_blank"
                   rel="noopener noreferrer"
+                  textDecoration="underline"
                 >
                   Privacy Policy
                 </Link>
@@ -634,21 +656,17 @@ export default function OnboardingPage() {
                 )}
               </Checkbox.Label>
             </Checkbox.Root>
-          </Flex>
-
-          <Flex mt={8} gap={4}>
-            <Button
-              type="submit"
-              colorPalette="primary"
-              disabled={!isValid || isSubmitting}
-              loading={isSubmitting}
-              loadingText="Finalizing profile..."
-            >
-              Continue
-            </Button>
-            <Text color="fg.muted" fontSize="xs" alignSelf="center">
-              You can edit these details later in Settings.
-            </Text>
+            <Flex gap={4}>
+              <Button
+                type="submit"
+                colorPalette="primary"
+                disabled={!isValid || isSubmitting}
+                loading={isSubmitting}
+                loadingText="Finalizing profile..."
+              >
+                Complete profile
+              </Button>
+            </Flex>
           </Flex>
         </form>
       </Container>
