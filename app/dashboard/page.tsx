@@ -341,7 +341,7 @@ export default function UserSettingsPage() {
         </Button>
       </Flex>
       <Box maxH="100%" overflowY="auto">
-        <Container maxW="4xl" display="flex" flexDirection="column" py={10}>
+        <Container maxW="4xl" display="flex" flexDirection="column" py={16}>
           {/* Header Section */}
           <Flex
             justifyContent="space-between"
@@ -402,7 +402,16 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="email">
                 <Field.Label>Email address</Field.Label>
-                <Input type="email" value={form.email} readOnly disabled />
+                <Input
+                  type="email"
+                  value={form.email}
+                  readOnly
+                  _readOnly={{
+                    bg: "bg.subtle",
+                    color: "fg.muted",
+                    cursor: "not-allowed",
+                  }}
+                />
               </Field.Root>
             </GridItem>
           </Grid>
@@ -467,7 +476,11 @@ export default function UserSettingsPage() {
                 >
                   <Select.HiddenSelect />
                   <Select.Label>Role</Select.Label>
-                  <Select.Control>
+                  <Select.Control
+                    _disabled={{
+                      bg: "bg.subtle",
+                    }}
+                  >
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Role" />
                     </Select.Trigger>

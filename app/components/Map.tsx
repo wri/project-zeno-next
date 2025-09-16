@@ -15,6 +15,9 @@ import {
   Box,
   Button,
   useBreakpointValue,
+  Flex,
+  Link as ChLink,
+  Text,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
@@ -179,17 +182,40 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             <NavigationControl showCompass={false} position="bottom-left" />
           </>
         )}
-        <Code
+        <Flex
           pos="absolute"
           bottom="4"
-          right="0"
+          right="4"
           p="2"
-          size="xs"
+          fontSize="xs"
           bg="transparent"
           hideBelow="md"
+          alignItems="center"
+          gap={2}
         >
-          lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
-        </Code>
+          <ChLink
+            href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
+            target="_blank"
+            rel="noopener noreferrer"
+            textDecoration="underline"
+            color="fg.subtle"
+          >
+            Privacy Policy
+          </ChLink>
+          <Text color="fg.subtle">•</Text>
+          <ChLink
+            href="https://www.wri.org/about/wri-data-platforms-tos"
+            target="_blank"
+            rel="noopener noreferrer"
+            textDecoration="underline"
+            color="fg.subtle"
+          >
+            Terms of Service
+          </ChLink>
+          <Code bg="transparent" p={0} color="fg.subtle" ml={2}>
+            lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
+          </Code>
+        </Flex>
       </MapGl>
     </Box>
   );
