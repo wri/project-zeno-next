@@ -21,16 +21,22 @@ import {
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
-
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
     useAuthStore();
   const router = useRouter();
-  const handleLogout = () => {
-    if (LANDING_PAGE_VERSION === "public") {
-      clearAuth();
-    } else {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    clearAuth();
+    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    try {
+      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+      url.searchParams.set("origin", "gnw");
+      window.location.href = url.toString();
+      console.log("url", url.toString());
+    } catch {
       router.push("/");
     }
   };
