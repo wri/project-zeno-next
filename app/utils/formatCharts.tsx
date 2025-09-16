@@ -119,10 +119,6 @@ export default function formatChartData(
       (_, index) => defaultColors[index % defaultColors.length]
     );
   }
-  
-  console.log("data", data)
-  console.log("chartColors", chartColors)
-  console.log("keys", keys)
 
   // --- Logic for PIE charts ---
   if (type === "pie") {
