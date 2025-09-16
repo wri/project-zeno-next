@@ -53,6 +53,8 @@ type ProfileFormState = {
   termsAccepted: boolean;
 };
 
+type ValueChangeDetails = { value: string[] };
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -135,7 +137,6 @@ export default function OnboardingPage() {
   useEffect(() => {
     const validValues = roles.items.map((i) => i.value);
     setForm((p) => (validValues.includes(p.role) ? p : { ...p, role: "" }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roles]);
 
   const expertises = useMemo(() => {
@@ -243,8 +244,12 @@ export default function OnboardingPage() {
     <Box minH="100vh" bg="bg" py={24}>
       <Container maxW="3xl">
         <Flex justifyContent="space-between" mb={12}>
-          <Flex gap="2" alignItems="center" >
-            <LclLogo width={16} avatarOnly fill="var(--chakra-colors-primary-fg)" />
+          <Flex gap="2" alignItems="center">
+            <LclLogo
+              width={16}
+              avatarOnly
+              fill="var(--chakra-colors-primary-fg)"
+            />
             <Heading as="h1" size="md" color="primary.fg">
               Global Nature Watch
             </Heading>
@@ -258,7 +263,11 @@ export default function OnboardingPage() {
               BETA
             </Badge>
           </Flex>
-          <Button colorPalette="primary" variant="ghost" onClick={() => router.push("/")}>
+          <Button
+            colorPalette="primary"
+            variant="ghost"
+            onClick={() => router.push("/")}
+          >
             <ArrowLeftIcon />
             Go back
           </Button>
@@ -348,7 +357,14 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="sector" required={fieldRequired("sector")}>
-                <Select.Root collection={sectors} size="sm">
+                <Select.Root
+                  collection={sectors}
+                  size="sm"
+                  value={form.sector ? [form.sector] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, sector: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>
                     Sector
@@ -370,13 +386,7 @@ export default function OnboardingPage() {
                     <Select.Positioner>
                       <Select.Content>
                         {sectors.items.map((sector) => (
-                          <Select.Item
-                            key={sector.value}
-                            item={sector}
-                            onClick={() =>
-                              setForm((p) => ({ ...p, sector: sector.value }))
-                            }
-                          >
+                          <Select.Item key={sector.value} item={sector}>
                             {sector.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -393,6 +403,10 @@ export default function OnboardingPage() {
                   collection={roles}
                   size="sm"
                   disabled={!form.sector}
+                  value={form.role ? [form.role] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, role: d.value[0] ?? "" }))
+                  }
                 >
                   <Select.HiddenSelect />
                   <Select.Label>
@@ -415,13 +429,7 @@ export default function OnboardingPage() {
                     <Select.Positioner>
                       <Select.Content>
                         {roles.items.map((role) => (
-                          <Select.Item
-                            key={role.value}
-                            item={role}
-                            onClick={() =>
-                              setForm((p) => ({ ...p, role: role.value }))
-                            }
-                          >
+                          <Select.Item key={role.value} item={role}>
                             {role.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -465,7 +473,14 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="country" required={fieldRequired("country")}>
-                <Select.Root collection={countries} size="sm">
+                <Select.Root
+                  collection={countries}
+                  size="sm"
+                  value={form.country ? [form.country] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, country: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>
                     Country
@@ -487,13 +502,7 @@ export default function OnboardingPage() {
                     <Select.Positioner>
                       <Select.Content>
                         {countries.items.map((country) => (
-                          <Select.Item
-                            key={country.value}
-                            item={country}
-                            onClick={() =>
-                              setForm((p) => ({ ...p, country: country.value }))
-                            }
-                          >
+                          <Select.Item key={country.value} item={country}>
                             {country.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -506,7 +515,14 @@ export default function OnboardingPage() {
             </GridItem>
             <GridItem>
               <Field.Root id="expertise" required={fieldRequired("expertise")}>
-                <Select.Root collection={expertises} size="sm">
+                <Select.Root
+                  collection={expertises}
+                  size="sm"
+                  value={form.expertise ? [form.expertise] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, expertise: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>Level of technical expertise</Select.Label>
                   <Select.Control>
@@ -521,13 +537,7 @@ export default function OnboardingPage() {
                     <Select.Positioner>
                       <Select.Content>
                         {expertises.items.map((exp) => (
-                          <Select.Item
-                            key={exp.value}
-                            item={exp}
-                            onClick={() =>
-                              setForm((p) => ({ ...p, expertise: exp.value }))
-                            }
-                          >
+                          <Select.Item key={exp.value} item={exp}>
                             {exp.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -542,11 +552,9 @@ export default function OnboardingPage() {
               <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
                   What topic(s) are you most interested in?
-                  {fieldRequired("topics") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
+                  <Text as="span" color="red.500" ml={1}>
+                    *
+                  </Text>
                 </Field.Label>
                 <Flex gap={2} flexWrap="wrap" pt={2}>
                   {Object.entries(config?.topics || {}).map(([code, label]) => {
