@@ -3,6 +3,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 import { API_CONFIG } from "@/app/config/api";
 
 interface AuthState {
+  userId: string | null;
   userEmail: string | null;
   isAuthenticated: boolean;
   isAnonymous: boolean;
@@ -12,13 +13,14 @@ interface AuthState {
   isLoadingMetadata: boolean;
   setPromptUsage: (used: number, total: number) => void;
   setUsageFromHeaders: (headers: Headers | Record<string, string>) => void;
-  setAuthStatus: (email: string) => void;
+  setAuthStatus: (email: string, id: string) => void;
   setAnonymous: () => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
 }
 
 const useAuthStore = create<AuthState>()((set) => ({
+  userId: null,
   userEmail: null,
   isAuthenticated: false,
   isAnonymous: false,
@@ -75,15 +77,19 @@ const useAuthStore = create<AuthState>()((set) => ({
       isAnonymous: true,
     });
   },
-  setAuthStatus: (email) => {
+  setAuthStatus: (email, id) => {
     set({
+      userId: id,
       userEmail: email,
       isAuthenticated: true,
       isAnonymous: false,
     });
+    console.log("GA: Setting user_id", id);
+    sendGAEvent("login", { user_id: id });
   },
   clearAuth: () => {
     set({
+      userId: null,
       userEmail: null,
       isAuthenticated: false,
       isAnonymous: false,
