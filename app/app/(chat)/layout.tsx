@@ -34,7 +34,7 @@ export default function DashboardLayout({
 }) {
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
-  const { toggleSidebar } = useSidebarStore();
+  const { toggleSidebar, isDrawerOpen, openDrawer, closeDrawer } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function DashboardLayout({
         h={`calc(100% - ${sheetHeight}px + 12px)`}
         transition="height 0.05s linear"
       >
-        <Drawer.Root placement="start">
+        <Drawer.Root placement="start" open={isDrawerOpen} onOpenChange={(details) => !details.open && closeDrawer()}>
           <Drawer.Trigger asChild>
             <IconButton
               variant="plain"
@@ -94,7 +94,7 @@ export default function DashboardLayout({
               rounded="sm"
               overflow="hidden"
               zIndex={100}
-              onClick={toggleSidebar}
+              onClick={openDrawer}
             >
               <ListIcon />
             </IconButton>
@@ -103,7 +103,7 @@ export default function DashboardLayout({
             <Drawer.Backdrop backdropFilter="blur(2px)" />
             <Drawer.Positioner>
               <Drawer.Content>
-                <Sidebar />
+                <Sidebar isMobile={isMobile} />
               </Drawer.Content>
             </Drawer.Positioner>
           </Portal>

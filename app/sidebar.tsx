@@ -13,6 +13,7 @@ import {
   Box,
   Badge,
   Progress,
+  LinkOverlay,
 } from "@chakra-ui/react";
 import Link from "next/link";
 import { sendGAEvent } from "@next/third-parties/google";
@@ -47,7 +48,7 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
       outline="none"
       {...(isActive
         ? {
-            color: "primary.fg",
+            color: "primary.solid",
           }
         : {})}
       {...rest}
@@ -65,12 +66,15 @@ function ThreadSection({
   label,
   value,
   currentThreadId,
+  isMobile,
 }: {
   threads: { id: string; name: string; updated_at: string; is_public: boolean }[];
   label: string;
   value: string;
   currentThreadId: string | null;
+  isMobile?: boolean;
 }) {
+  const { closeDrawer } = useSidebarStore();
   if (!threads.length) return null;
   return (
     <Accordion.Item value={value} border="none">
@@ -87,7 +91,7 @@ function ThreadSection({
         <Accordion.ItemIndicator />
       </Accordion.ItemTrigger>
       <Accordion.ItemContent px="0" pt="0">
-        <Stack gap="1" mt="1">
+        <Stack gap="1" my={1}>
           {threads.map((thread) => {
             const isActive = currentThreadId === thread.id;
             return (
@@ -100,6 +104,9 @@ function ThreadSection({
                 mx="4"
                 borderRadius="sm"
                 role="group"
+                position="relative"
+                overflow="hidden"
+                className="group"
                 _hover={{ layerStyle: "fill.muted" }}
                 _focusWithin={{
                   outline: "2px solid var(--chakra-colors-gray-400)",
@@ -109,24 +116,31 @@ function ThreadSection({
                   "&:hover .thread-actions": { opacity: 1 },
                   "&:focus-within .thread-actions": { opacity: 1 },
                 }}
-                {...(isActive ? { bg: "bg", color: "blue.fg" } : {})}
+                {...(isActive ? { bg: "bg" } : {})}
+                onClick={() =>{
+                  if (isMobile) {
+                    closeDrawer();
+                  }
+                }}
               >
-                <ThreadLink
-                  href={`/app/threads/${thread.id}`}
-                  isActive={isActive}
-                  _hover={{ textDecor: "none" }}
-                  onClick={() => {
-                    if (!isActive) {
-                      sendGAEvent("event", "saved_conversation_loaded", {
-                        conversation_id: thread.id,
-                        updated_at: thread.updated_at,
-                        is_public: thread.is_public,
-                      });
-                    }
-                  }}
-                >
-                  {thread.name}
-                </ThreadLink>
+                <LinkOverlay asChild>
+                  <ThreadLink
+                    href={`/app/threads/${thread.id}`}
+                    isActive={isActive}
+                    _groupHover={{ textDecor: "none", color: "primary.fg" }}
+                    onClick={() => {
+                      if (!isActive) {
+                        sendGAEvent("event", "saved_conversation_loaded", {
+                          conversation_id: thread.id,
+                          updated_at: thread.updated_at,
+                          is_public: thread.is_public,
+                        });
+                      }
+                    }}
+                  >
+                    {thread.name}
+                  </ThreadLink>
+                </LinkOverlay>
                 <div onClick={(e) => e.stopPropagation()}>
                   <ThreadActionsMenu thread={thread} />
                 </div>
@@ -141,7 +155,7 @@ function ThreadSection({
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
-export function Sidebar() {
+export function Sidebar({ isMobile }: { isMobile?: boolean }) {
   const {
     sideBarVisible,
     toggleSidebar,
@@ -275,6 +289,7 @@ export function Sidebar() {
               label="Today"
               value="today"
               currentThreadId={currentThreadId}
+              isMobile={isMobile}
             />
           )}
           {hasPreviousWeekThreads && (
@@ -283,6 +298,7 @@ export function Sidebar() {
               label="Previous 7 days"
               value="previousWeek"
               currentThreadId={currentThreadId}
+              isMobile={isMobile}
             />
           )}
           {hasOlderThreads && (
@@ -291,6 +307,7 @@ export function Sidebar() {
               label="Older Conversations"
               value="older"
               currentThreadId={currentThreadId}
+              isMobile={isMobile}
             />
           )}
         </Accordion.Root>
