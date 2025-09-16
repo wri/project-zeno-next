@@ -84,7 +84,6 @@ const useAuthStore = create<AuthState>()((set) => ({
       isAuthenticated: true,
       isAnonymous: false,
     });
-    console.log("GA: Setting user_id", id);
     sendGAEvent("login", { user_id: id });
   },
   clearAuth: () => {

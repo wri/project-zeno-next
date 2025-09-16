@@ -223,7 +223,6 @@ export default function OnboardingPage() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
-        console.log("GA: Sending sign_up event");
         sendGAEvent("event", "sign_up", {
           sector: payload.sector_code,
           role: payload.role_code,
