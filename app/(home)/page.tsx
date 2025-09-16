@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePromptStore } from "@/app/store/promptStore";
 import LandingHero from "./sections/1_Hero";
 import PromptMarquee from "./sections/2_PromptMarquee";
