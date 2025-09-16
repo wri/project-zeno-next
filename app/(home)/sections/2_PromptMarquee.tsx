@@ -5,16 +5,9 @@ const MARQUEE_SPEED = 40;
 
 type PromptMarqueeProps = {
   prompts: string[];
-  promptIndex: number;
-  setPromptIndex: React.Dispatch<React.SetStateAction<number>>;
 };
 
-function renderPromptBoxes(
-  prompts: string[],
-  setPromptIndex: React.Dispatch<React.SetStateAction<number>>
-) {
-  const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
-  
+function renderPromptBoxes(prompts: string[]) {
   return Array(2)
     .fill(prompts)
     .flat()
@@ -33,10 +26,6 @@ function renderPromptBoxes(
         _hover={{
           "&&": { opacity: 1 },
         }}
-        onClick={() => {
-          if (LANDING_PAGE_VERSION !== "public") return;
-          setPromptIndex(() => i);
-        }}
       >
         {prompt}
       </Box>
@@ -50,7 +39,6 @@ function renderMarqueeRow({
   sliderWidth,
   direction,
   sliderRef,
-  setPromptIndex,
 }: {
   prompts: string[];
   animationName: string;
@@ -58,7 +46,6 @@ function renderMarqueeRow({
   sliderWidth: number;
   direction: "left" | "right";
   sliderRef?: React.Ref<HTMLDivElement>;
-  setPromptIndex: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const style =
     direction === "left"
@@ -87,12 +74,12 @@ function renderMarqueeRow({
       }}
       ref={sliderRef}
     >
-      {renderPromptBoxes(prompts, setPromptIndex)}
+      {renderPromptBoxes(prompts)}
     </Flex>
   );
 }
 
-function PromptMarquee({ prompts, setPromptIndex }: PromptMarqueeProps) {
+function PromptMarquee({ prompts }: PromptMarqueeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
   const [sliderWidth, setSliderWidth] = useState(0);
@@ -127,7 +114,6 @@ function PromptMarquee({ prompts, setPromptIndex }: PromptMarqueeProps) {
         animationName: "dynamicSlideLeft",
         animationDuration,
         sliderWidth,
-        setPromptIndex,
         direction: "left",
         sliderRef,
       })}
@@ -135,7 +121,6 @@ function PromptMarquee({ prompts, setPromptIndex }: PromptMarqueeProps) {
         prompts,
         animationName: "dynamicSlideRight",
         animationDuration,
-        setPromptIndex,
         sliderWidth,
         direction: "right",
       })}

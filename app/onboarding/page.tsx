@@ -11,16 +11,22 @@ import {
   GridItem,
   Heading,
   Input,
+  Separator,
   Portal,
   Select,
   Text,
-  Textarea,
   Checkbox,
   createListCollection,
   Link,
+  Badge,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
+import { isOnboardingFieldRequired } from "@/app/config/onboarding";
+import { getOnboardingFormSchema } from "@/app/onboarding/schema";
+import { showApiError } from "@/app/hooks/useErrorHandler";
+import LclLogo from "../components/LclLogo";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -28,6 +34,7 @@ type ProfileConfig = {
   countries: Record<string, string>;
   languages: Record<string, string>;
   gis_expertise_levels: Record<string, string>;
+  topics?: Record<string, string>;
 };
 
 type ProfileFormState = {
@@ -40,7 +47,9 @@ type ProfileFormState = {
   company: string;
   country: string;
   expertise: string;
-  interests: string;
+  topics: string[]; // holds selected topic codes
+  receiveNewsEmails: boolean;
+  helpTestFeatures: boolean;
   termsAccepted: boolean;
 };
 
@@ -48,6 +57,8 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [config, setConfig] = useState<ProfileConfig | null>(null);
+  const fieldRequired = isOnboardingFieldRequired;
+  const schema = useMemo(() => getOnboardingFormSchema(), []);
   const [form, setForm] = useState<ProfileFormState>({
     firstName: "",
     lastName: "",
@@ -58,7 +69,9 @@ export default function OnboardingPage() {
     company: "",
     country: "",
     expertise: "",
-    interests: "",
+    topics: [],
+    receiveNewsEmails: false,
+    helpTestFeatures: false,
     termsAccepted: false,
   });
 
@@ -80,6 +93,8 @@ export default function OnboardingPage() {
     };
     fetchMe();
   }, []);
+
+  // Opt-in fields are optional and not prefilled
 
   // Fetch dropdown configuration
   useEffect(() => {
@@ -116,6 +131,13 @@ export default function OnboardingPage() {
     return createListCollection({ items });
   }, [config, form.sector]);
 
+  // Clear role if current selection is not valid for the chosen sector
+  useEffect(() => {
+    const validValues = roles.items.map((i) => i.value);
+    setForm((p) => (validValues.includes(p.role) ? p : { ...p, role: "" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roles]);
+
   const expertises = useMemo(() => {
     const items = config
       ? Object.entries(config.gis_expertise_levels).map(([value, label]) => ({
@@ -128,41 +150,43 @@ export default function OnboardingPage() {
 
   const countries = useMemo(() => {
     const items = config
-      ? Object.entries(config.countries).map(([value, label]) => ({
-          label,
-          value,
-        }))
+      ? Object.entries(config.countries)
+          .map(([value, label]) => ({
+            label,
+            value,
+          }))
+          .sort((a, b) => a.label.localeCompare(b.label))
       : [];
     return createListCollection({ items });
   }, [config]);
 
-  const isValid = useMemo(() => {
-    return (
-      !!form.firstName.trim() &&
-      !!form.lastName.trim() &&
-      !!form.email.trim() &&
-      form.termsAccepted
-    );
-  }, [form.firstName, form.lastName, form.email, form.termsAccepted]);
+  const isValid = useMemo(() => schema.safeParse(form).success, [schema, form]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid || isSubmitting) return;
     setIsSubmitting(true);
     try {
+      // Validate form with dynamic schema (env-driven required fields)
+      const validated = schema.parse(form);
       // Validate payload with zod before sending
       const payload = PatchProfileRequestSchema.parse({
-        first_name: form.firstName,
-        last_name: form.lastName,
+        first_name: validated.firstName,
+        last_name: validated.lastName,
         profile_description: undefined,
-        sector_code: form.sector || null,
-        role_code: form.role || null,
-        job_title: form.jobTitle || null,
-        company_organization: form.company || null,
-        country_code: form.country || null,
+        sector_code: validated.sector || null,
+        role_code: validated.role || null,
+        job_title: validated.jobTitle || null,
+        company_organization: validated.company || null,
+        country_code: validated.country || null,
         preferred_language_code: null,
-        gis_expertise_level: form.expertise || null,
-        areas_of_interest: form.interests || null,
+        gis_expertise_level: validated.expertise || null,
+        topics:
+          Array.isArray(validated.topics) && validated.topics.length
+            ? validated.topics
+            : [],
+        receive_news_emails: form.receiveNewsEmails,
+        help_test_features: form.helpTestFeatures,
         has_profile: true,
       });
 
@@ -176,26 +200,96 @@ export default function OnboardingPage() {
         throw new Error("Failed to save profile");
       }
 
-      router.push("/app");
+      // Poll for hasProfile to avoid middleware redirect race
+      const waitForProfileCompletion = async (
+        maxAttempts = 20,
+        delayMs = 500
+      ) => {
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          try {
+            const check = await fetch("/api/auth/me", { cache: "no-store" });
+            if (check.ok) {
+              const data = await check.json();
+              if (data?.hasProfile) return true;
+            }
+          } catch {
+            // ignore transient errors
+          }
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
+        return false;
+      };
+
+      const verified = await waitForProfileCompletion();
+      if (verified) {
+        router.push("/app");
+      } else {
+        showApiError("We saved your profile, but it’s not verified yet.", {
+          title: "Almost there",
+          description:
+            "Please wait a moment and try Continue again. Your profile status is updating.",
+        });
+      }
     } catch (err) {
       // Basic error handling; could be replaced with toast
       console.error(err);
+      showApiError(err as Error, { title: "Failed to save profile" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Box minH="100vh" bg="bg" py={10}>
-      <Container maxW="4xl">
-        <Heading as="h1" size="2xl" mb={8} fontWeight="normal">
-          Welcome — let’s set up your profile
+    <Box minH="100vh" bg="bg" py={24}>
+      <Container maxW="3xl">
+        <Flex justifyContent="space-between" mb={12}>
+          <Flex gap="2" alignItems="center" >
+            <LclLogo width={16} avatarOnly fill="var(--chakra-colors-primary-fg)" />
+            <Heading as="h1" size="md" color="primary.fg">
+              Global Nature Watch
+            </Heading>
+            <Badge
+              colorPalette="primary"
+              bg="primary.800"
+              letterSpacing="wider"
+              variant="solid"
+              size="xs"
+            >
+              BETA
+            </Badge>
+          </Flex>
+          <Button colorPalette="primary" variant="ghost" onClick={() => router.push("/")}>
+            <ArrowLeftIcon />
+            Go back
+          </Button>
+        </Flex>
+        <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
+          Complete your{" "}
+          <Text as="span" fontWeight="bold">
+            Global Nature Watch
+          </Text>{" "}
+          user profile
         </Heading>
+        <Text color="fg.muted" fontSize="sm" mb={10}>
+          We use this information to make Global Nature Watch more useful to
+          you. This tool is experimental, and your and knowing you better helps
+          us improve. Features may change or be removed over time.
+        </Text>
         <form onSubmit={handleSubmit}>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
+          <Grid
+            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+            gap={12}
+          >
             <GridItem>
-              <Field.Root id="first-name" required>
-                <Field.Label>First name</Field.Label>
+              <Field.Root id="first-name" required={fieldRequired("firstName")}>
+                <Field.Label>
+                  First name
+                  {fieldRequired("firstName") && (
+                    <Text as="span" color="red.500" ml={1}>
+                      *
+                    </Text>
+                  )}
+                </Field.Label>
                 <Input
                   type="text"
                   value={form.firstName}
@@ -206,8 +300,15 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="last-name" required>
-                <Field.Label>Last name</Field.Label>
+              <Field.Root id="last-name" required={fieldRequired("lastName")}>
+                <Field.Label>
+                  Last name
+                  {fieldRequired("lastName") && (
+                    <Text as="span" color="red.500" ml={1}>
+                      *
+                    </Text>
+                  )}
+                </Field.Label>
                 <Input
                   type="text"
                   value={form.lastName}
@@ -218,22 +319,45 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="email" required>
-                <Field.Label>Email address</Field.Label>
+              <Field.Root id="email" required={fieldRequired("email")}>
+                <Field.Label>
+                  Email address
+                  {fieldRequired("email") && (
+                    <Text as="span" color="red.500" ml={1}>
+                      *
+                    </Text>
+                  )}
+                </Field.Label>
                 <Input
                   type="email"
                   value={form.email}
+                  readOnly
                   onChange={(e) =>
                     setForm((p) => ({ ...p, email: e.target.value }))
                   }
+                  _readOnly={{
+                    bg: "bg.subtle",
+                    color: "fg.muted",
+                    cursor: "not-allowed",
+                  }}
                 />
               </Field.Root>
             </GridItem>
+            <GridItem colSpan={{ base: 1, md: 2 }}>
+              <Separator />
+            </GridItem>
             <GridItem>
-              <Field.Root id="sector">
-                <Select.Root collection={sectors} size="sm" width="320px">
+              <Field.Root id="sector" required={fieldRequired("sector")}>
+                <Select.Root collection={sectors} size="sm">
                   <Select.HiddenSelect />
-                  <Select.Label>Sector</Select.Label>
+                  <Select.Label>
+                    Sector
+                    {fieldRequired("sector") && (
+                      <Text as="span" color="red.500" ml={1}>
+                        *
+                      </Text>
+                    )}
+                  </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Sector" />
@@ -264,11 +388,22 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="role">
-                <Select.Root collection={roles} size="sm" width="320px">
+              <Field.Root id="role" required={fieldRequired("role")}>
+                <Select.Root
+                  collection={roles}
+                  size="sm"
+                  disabled={!form.sector}
+                >
                   <Select.HiddenSelect />
-                  <Select.Label>Role</Select.Label>
-                  <Select.Control>
+                  <Select.Label>
+                    Role
+                    {fieldRequired("role") && (
+                      <Text as="span" color="red.500" ml={1}>
+                        *
+                      </Text>
+                    )}
+                  </Select.Label>
+                  <Select.Control _disabled={{ bg: "bg.subtle" }}>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Role" />
                     </Select.Trigger>
@@ -298,7 +433,7 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="job-title">
+              <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
                 <Field.Label>Job title</Field.Label>
                 <Input
                   type="text"
@@ -310,8 +445,15 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="company">
-                <Field.Label>Company / Organization</Field.Label>
+              <Field.Root id="company" required={fieldRequired("company")}>
+                <Field.Label>
+                  Company / Organization
+                  {fieldRequired("company") && (
+                    <Text as="span" color="red.500" ml={1}>
+                      *
+                    </Text>
+                  )}
+                </Field.Label>
                 <Input
                   type="text"
                   value={form.company}
@@ -322,10 +464,17 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="country">
-                <Select.Root collection={countries} size="sm" width="320px">
+              <Field.Root id="country" required={fieldRequired("country")}>
+                <Select.Root collection={countries} size="sm">
                   <Select.HiddenSelect />
-                  <Select.Label>Country</Select.Label>
+                  <Select.Label>
+                    Country
+                    {fieldRequired("country") && (
+                      <Text as="span" color="red.500" ml={1}>
+                        *
+                      </Text>
+                    )}
+                  </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Country" />
@@ -356,8 +505,8 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="expertise">
-                <Select.Root collection={expertises} size="sm" width="320px">
+              <Field.Root id="expertise" required={fieldRequired("expertise")}>
+                <Select.Root collection={expertises} size="sm">
                   <Select.HiddenSelect />
                   <Select.Label>Level of technical expertise</Select.Label>
                   <Select.Control>
@@ -390,23 +539,88 @@ export default function OnboardingPage() {
               </Field.Root>
             </GridItem>
             <GridItem colSpan={{ base: 1, md: 2 }}>
-              <Field.Root id="interests">
+              <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
-                  What area(s) are you most interested in?
+                  What topic(s) are you most interested in?
+                  {fieldRequired("topics") && (
+                    <Text as="span" color="red.500" ml={1}>
+                      *
+                    </Text>
+                  )}
                 </Field.Label>
-                <Textarea
-                  placeholder="Enter your interests here..."
-                  rows={4}
-                  value={form.interests}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, interests: e.target.value }))
-                  }
-                />
+                <Flex gap={2} flexWrap="wrap" pt={2}>
+                  {Object.entries(config?.topics || {}).map(([code, label]) => {
+                    const selected = form.topics.includes(code);
+                    return (
+                      <Button
+                        key={code}
+                        size="xs"
+                        h={6}
+                        borderRadius="full"
+                        colorPalette={selected ? "primary" : undefined}
+                        variant={selected ? undefined : "outline"}
+                        onClick={() =>
+                          setForm((p) => ({
+                            ...p,
+                            topics: selected
+                              ? p.topics.filter((i) => i !== code)
+                              : [...p.topics, code],
+                          }))
+                        }
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })}
+                </Flex>
               </Field.Root>
             </GridItem>
+            <GridItem colSpan={{ base: 1, md: 2 }}>
+              <Separator />
+            </GridItem>
           </Grid>
-
-          <Flex alignItems="center" gap={3} mt={8}>
+          <Box mt={6}>
+            <Text color="fg.muted" fontSize="sm">
+              By creating an account, you agree to receive essential emails
+              about your Global Nature Watch account and system updates. You can
+              unsubscribe from non-essential emails at any time.
+            </Text>
+            <Flex direction="column" gap={2} mt={3}>
+              <Checkbox.Root
+                checked={form.receiveNewsEmails}
+                onCheckedChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    receiveNewsEmails: Boolean(e.checked),
+                  }))
+                }
+              >
+                <Checkbox.HiddenInput />
+                <Checkbox.Control />
+                <Checkbox.Label>
+                  Send me news, resources, and opportunities from Land & Carbon
+                  Lab.
+                </Checkbox.Label>
+              </Checkbox.Root>
+              <Checkbox.Root
+                checked={form.helpTestFeatures}
+                onCheckedChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    helpTestFeatures: Boolean(e.checked),
+                  }))
+                }
+              >
+                <Checkbox.HiddenInput />
+                <Checkbox.Control />
+                <Checkbox.Label>
+                  Contact me about testing new features.
+                </Checkbox.Label>
+              </Checkbox.Root>
+            </Flex>
+            <Separator mt={4} />
+          </Box>
+          <Flex alignItems="center" justifyContent="space-between" mt={4}>
             <Checkbox.Root
               checked={form.termsAccepted}
               onCheckedChange={(e) =>
@@ -415,40 +629,44 @@ export default function OnboardingPage() {
             >
               <Checkbox.HiddenInput />
               <Checkbox.Control />
-              <Checkbox.Label>
-                I agree to the{" "}
+              <Checkbox.Label fontWeight="normal">
+                I accept the{" "}
                 <Link
                   href="https://www.wri.org/about/legal/general-terms-use"
                   target="_blank"
                   rel="noopener noreferrer"
+                  textDecoration="underline"
                 >
-                  Terms and Conditions
+                  Terms of Use
                 </Link>{" "}
-                and{" "}
+                and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"
                   target="_blank"
                   rel="noopener noreferrer"
+                  textDecoration="underline"
                 >
                   Privacy Policy
                 </Link>
                 .
+                {fieldRequired("termsAccepted") && (
+                  <Text as="span" color="red.500" ml={1}>
+                    *
+                  </Text>
+                )}
               </Checkbox.Label>
             </Checkbox.Root>
-          </Flex>
-
-          <Flex mt={8} gap={4}>
-            <Button
-              type="submit"
-              colorPalette="primary"
-              disabled={!isValid || isSubmitting}
-              loading={isSubmitting}
-            >
-              Continue
-            </Button>
-            <Text color="fg.muted" fontSize="xs" alignSelf="center">
-              You can edit these details later in Settings.
-            </Text>
+            <Flex gap={4}>
+              <Button
+                type="submit"
+                colorPalette="primary"
+                disabled={!isValid || isSubmitting}
+                loading={isSubmitting}
+                loadingText="Finalizing profile..."
+              >
+                Complete profile
+              </Button>
+            </Flex>
           </Flex>
         </form>
       </Container>

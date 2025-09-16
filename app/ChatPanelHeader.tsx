@@ -96,6 +96,7 @@ function ChatPanelHeader() {
       bg="bg"
       color="fg"
       boxShadow="sm"
+      hideBelow="md"
       zIndex={100}
     >
       {!sideBarVisible && (
