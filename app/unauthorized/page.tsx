@@ -60,6 +60,7 @@ export default function UnauthorizedPage() {
           muted
           playsInline
           preload="auto"
+          poster="/landing-hero-poster.jpg"
           style={{
             height: "100%",
             width: "100%",
@@ -67,7 +68,8 @@ export default function UnauthorizedPage() {
             objectPosition: "bottom",
           }}
         >
-        <source src={"/landing-hero-bg.webm"} type="video/webm" />
+          <source src={"/landing-hero-bg.webm"} type="video/webm" />
+          <source src={"/landing-hero-bg.mp4"} type="video/mp4" />
         </video>
       </Box>
       <Container
