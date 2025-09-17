@@ -20,6 +20,7 @@ interface ThreadGroups {
 
 interface SidebarState {
   sideBarVisible: boolean;
+  isDrawerOpen: boolean;
   threads: ThreadEntry[];
   threadGroups: ThreadGroups;
   fetchThreads: () => Promise<void>;
@@ -32,6 +33,8 @@ interface SidebarState {
   toggleSidebar: () => void;
   fetchApiStatus: () => Promise<void>;
   apiStatus: "Idle" | "OK" | "Error";
+  openDrawer: () => void;
+  closeDrawer: () => void;
 }
 
 const computeThreadGroups = (data: ThreadEntry[]): ThreadGroups => {
@@ -66,9 +69,11 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
     older: [],
   },
   apiStatus: "Idle",
+  isDrawerOpen: false,
   toggleSidebar: () =>
     set((state) => ({ sideBarVisible: !state.sideBarVisible })),
-
+  openDrawer: () => set({ isDrawerOpen: true }),
+  closeDrawer: () => set({ isDrawerOpen: false }),
   getThreadById: (threadId: string | null | undefined) => {
     const { threads } = get();
     return threads.find((thread) => thread.id === threadId);
