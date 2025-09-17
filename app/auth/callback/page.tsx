@@ -15,8 +15,6 @@ export default function AuthCallbackPage() {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");
 
-      console.log(token, REDIRECT_URL_KEY, window.opener);
-
       if (token) {
         try {
           await fetch("/api/auth/set-token", {
@@ -53,7 +51,18 @@ export default function AuthCallbackPage() {
         }
       } else {
         const error = params.get("error");
-        console.error("Authentication failed:", error);
+        console.warn(
+          "No token in callback; redirecting to login flow via /app",
+          { error }
+        );
+        const redirectUrl = "/app";
+        if (window.opener) {
+          window.opener.location.href = redirectUrl;
+          localStorage.removeItem(REDIRECT_URL_KEY);
+          setTimeout(() => window.close(), 500);
+        } else {
+          window.location.href = redirectUrl;
+        }
       }
     };
 
