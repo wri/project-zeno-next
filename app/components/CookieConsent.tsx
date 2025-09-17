@@ -1,15 +1,23 @@
 "use client";
 
-import { Box, Button, Portal, ActionBar, Text, Link, Flex } from '@chakra-ui/react';
-import { useState, useEffect } from 'react';
-import useCookieConsentStore from '../store/cookieConsentStore';
+import {
+  Box,
+  Button,
+  Portal,
+  ActionBar,
+  Text,
+  Link,
+  Flex,
+} from "@chakra-ui/react";
+import { useState, useEffect } from "react";
+import useCookieConsentStore from "../store/cookieConsentStore";
 
 const CookieConsent = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { setConsentStatus } = useCookieConsentStore();
 
   useEffect(() => {
-    const consentAsked = localStorage.getItem('analyticsConsentAsked');
+    const consentAsked = localStorage.getItem("analyticsConsentAsked");
     if (!consentAsked) {
       const timer = setTimeout(() => {
         setIsOpen(true);
@@ -21,15 +29,15 @@ const CookieConsent = () => {
   const handleAccept = () => {
     setIsOpen(false);
     setConsentStatus(true);
-    localStorage.setItem('analyticsConsentAsked', 'true');
-    localStorage.setItem('analyticsConsent', 'true');
+    localStorage.setItem("analyticsConsentAsked", "true");
+    localStorage.setItem("analyticsConsent", "true");
   };
 
   const handleReject = () => {
     setIsOpen(false);
     setConsentStatus(false);
-    localStorage.setItem('analyticsConsentAsked', 'true');
-    localStorage.setItem('analyticsConsent', 'false');
+    localStorage.setItem("analyticsConsentAsked", "true");
+    localStorage.setItem("analyticsConsent", "false");
   };
 
   return (
@@ -61,7 +69,7 @@ const CookieConsent = () => {
                     color="primary.solid"
                   >
                     Privacy Policy
-                  </Link>
+                  </Link>{" "}
                   and{" "}
                   <Link
                     href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
