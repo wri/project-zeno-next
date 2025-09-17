@@ -102,6 +102,7 @@ export default function formatChartData(
   const chartColors = data.map(
     (_, index) => defaultColors[index % defaultColors.length]
   );
+
   // --- Logic for PIE charts ---
   if (type === "pie") {
     const valueKey = yAxis || keys.find((key) => key !== xAxisKey);
@@ -155,12 +156,10 @@ export default function formatChartData(
         }));
     } else {
       // Fallback to default series generation if no color palette is defined
-      series = [
-        {
-          name: valueKey,
-          color: pieChartColors[0], // A base color, though cells will override.
-        },
-      ];
+      series = transformedData.map((item) => ({
+        name: String(item[xAxisKey]),
+        color: item.color as string,
+      }));
     }
 
     return { data: transformedData as ChartData[], series };
