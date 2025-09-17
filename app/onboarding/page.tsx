@@ -291,7 +291,7 @@ export default function OnboardingPage() {
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
           We use this information to make Global Nature Watch more useful to
-          you. This tool is experimental, and your and knowing you better helps
+          you. This tool is experimental, and knowing you better helps
           us improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
