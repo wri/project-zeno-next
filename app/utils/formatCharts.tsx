@@ -98,39 +98,39 @@ export default function formatChartData(
   const keys = Object.keys(data[0]);
   const xAxisKey = xAxis || keys[0]; //identify dataset
   
-  const colorPalette = CHART_COLOR_MAPPING[xAxisKey];
   const defaultColors = getChartColors();
-  let chartColors: string[] = [];
-
-  if (colorPalette) {
-    const valueToColorMap = new Map(
-      colorPalette.map((item) => [item.value, item.color])
-    );
-    chartColors = data.map((item, index) => {
-      const key = String(item[xAxisKey]);
-      return (
-        valueToColorMap.get(key) ||
-        defaultColors[index % defaultColors.length]
-      );
-    });
-  } else {
-    // Fallback to default colors if no specific palette is found
-    chartColors = data.map(
-      (_, index) => defaultColors[index % defaultColors.length]
-    );
-  }
-
+  const chartColors = data.map(
+    (_, index) => defaultColors[index % defaultColors.length]
+  );
   // --- Logic for PIE charts ---
   if (type === "pie") {
     const valueKey = yAxis || keys.find((key) => key !== xAxisKey);
     if (!valueKey) {
-      console.error("Could not determine value key for Pie chart.");
       return { data: [], series: [] };
     }
+
+    const colorPalette = CHART_COLOR_MAPPING[xAxisKey];
+    let pieChartColors: string[] = [];
+
+    if (colorPalette) {
+      const valueToColorMap = new Map(
+        colorPalette.map((item) => [item.value, item.color])
+      );
+      pieChartColors = data.map((item, index) => {
+        const key = String(item[xAxisKey]);
+        return (
+          valueToColorMap.get(key) ||
+          defaultColors[index % defaultColors.length]
+        );
+      });
+    } else {
+      pieChartColors = chartColors;
+    }
+
     // For Pie charts, we need to add a color to each data point.
     const transformedData = data.map((item, index) => ({
       ...item,
-      color: chartColors[index % chartColors.length],
+      color: pieChartColors[index % pieChartColors.length],
     }));
 
     let series: ChartSeries[];
@@ -158,7 +158,7 @@ export default function formatChartData(
       series = [
         {
           name: valueKey,
-          color: chartColors[0], // A base color, though cells will override.
+          color: pieChartColors[0], // A base color, though cells will override.
         },
       ];
     }
@@ -193,7 +193,7 @@ export default function formatChartData(
     const series: ChartSeries[] = [
       {
         name: nameKey, // The series name can be derived from the label key
-        color: chartColors[0],
+        color: defaultColors[0],
       },
     ];
 
@@ -208,7 +208,7 @@ export default function formatChartData(
       ? [
           {
             name: valueKey,
-            color: chartColors[0], // Assign the first color
+            color: defaultColors[0], // Assign the first color
           },
         ]
       : [];
@@ -222,7 +222,7 @@ export default function formatChartData(
     const seriesKeys = keys.filter((key) => key !== xAxisKey);
     const series: ChartSeries[] = seriesKeys.map((key, index) => ({
       name: key,
-      color: chartColors[index % chartColors.length],
+      color: defaultColors[index % defaultColors.length],
       stackId: "a", // All items in a stacked chart share a stackId
     }));
     // The data format is already correct for stacked charts.
@@ -247,7 +247,7 @@ export default function formatChartData(
     ].sort();
     const series: ChartSeries[] = uniqueGroups.map((group, index) => ({
       name: group,
-      color: chartColors[index % chartColors.length],
+      color: defaultColors[index % defaultColors.length],
     }));
 
     // Pivot the data from "long" to "wide" format.
