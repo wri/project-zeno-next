@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Flex,
   Heading,
@@ -9,7 +11,6 @@ import {
   Link as ChakraLink,
   Text,
 } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
 import LclLogo from "./LclLogo";
 import {
   GearSixIcon,
@@ -20,19 +21,27 @@ import {
 
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
-
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+import { toaster } from "@/app/components/ui/toaster";
 
 function PageHeader() {
-  const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
+  const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
-  const router = useRouter();
-  const handleLogout = () => {
-    if (LANDING_PAGE_VERSION === "public") {
-      clearAuth();
-    } else {
-      router.push("/");
-    }
+  const handleLogout = async () => {
+    try {
+      toaster.create({
+        title: "Logging out",
+        description: "Signing you out and redirecting…",
+        type: "info",
+        duration: 8000,
+      });
+    } catch {}
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+    url.searchParams.set("origin", "gnw");
+    window.location.href = url.toString();
   };
   return (
     <Flex
@@ -150,13 +159,16 @@ function PageHeader() {
           </Menu.Root>
         ) : (
           <Button
+            asChild
             variant="solid"
             colorPalette="primary"
             _hover={{ bg: "primary.fg" }}
             size="sm"
           >
-            <UserIcon />
-            Log in / Sign Up
+            <Link href="/app">
+              <UserIcon />
+              Log in / Sign Up
+            </Link>
           </Button>
         )}
       </Flex>

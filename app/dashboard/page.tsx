@@ -20,7 +20,6 @@ import {
   Container,
   Link as ChakraLink,
 } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
 import {
   FloppyDiskIcon,
   GearIcon,
@@ -32,7 +31,6 @@ import Link from "next/link";
 import LclLogo from "../components/LclLogo";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
-import useAuthStore from "../store/authStore";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -60,11 +58,7 @@ type ProfileFormState = {
 
 type ValueChangeDetails = { value: string[] };
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
-
 export default function UserSettingsPage() {
-  const router = useRouter();
-  const { clearAuth } = useAuthStore();
   const [config, setConfig] = useState<ProfileConfig | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
     firstName: "",
@@ -236,11 +230,23 @@ export default function UserSettingsPage() {
   };
 
   const handleLogout = () => {
-    if (LANDING_PAGE_VERSION === "public") {
-      clearAuth();
-    } else {
-      router.push("/");
-    }
+    try {
+      toaster.create({
+        title: "Logging out",
+        description: "Signing you out and redirecting…",
+        type: "info",
+        duration: 8000,
+      });
+    } catch {}
+    (async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {}
+      const url = new URL("https://api.resourcewatch.org/auth/logout");
+      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+      url.searchParams.set("origin", "gnw");
+      window.location.href = url.toString();
+    })();
   };
 
   return (
