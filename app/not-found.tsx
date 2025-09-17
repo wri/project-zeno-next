@@ -138,7 +138,7 @@ export default function NotFound() {
             </Text>
           </a>
         </Flex>
-        <Text>©Global Nature Watch 2025</Text>
+        <Text>©Global Nature Watch {new Date().getFullYear()}</Text>
       </Box>
     </Box>
   );

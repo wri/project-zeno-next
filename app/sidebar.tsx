@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Flex,
@@ -16,7 +16,6 @@ import {
 } from "@chakra-ui/react";
 import Link from "next/link";
 import { sendGAEvent } from "@next/third-parties/google";
-import { useRouter } from "next/navigation";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
@@ -29,6 +28,7 @@ import {
 import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
+import { toaster } from "@/app/components/ui/toaster";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
 
@@ -66,7 +66,12 @@ function ThreadSection({
   value,
   currentThreadId,
 }: {
-  threads: { id: string; name: string; updated_at: string; is_public: boolean }[];
+  threads: {
+    id: string;
+    name: string;
+    updated_at: string;
+    is_public: boolean;
+  }[];
   label: string;
   value: string;
   currentThreadId: string | null;
@@ -139,8 +144,6 @@ function ThreadSection({
   );
 }
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
-
 export function Sidebar() {
   const {
     sideBarVisible,
@@ -151,20 +154,34 @@ export function Sidebar() {
     fetchApiStatus,
   } = useSidebarStore();
   const { currentThreadId } = useChatStore();
-  const { clearAuth, userEmail, usedPrompts, totalPrompts } = useAuthStore();
-  const router = useRouter();
+  const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
 
   useEffect(() => {
     fetchThreads();
     fetchApiStatus();
   }, [fetchThreads, fetchApiStatus]);
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const handleLogout = () => {
-    if (LANDING_PAGE_VERSION === "public") {
-      clearAuth();
-    } else {
-      router.push("/");
-    }
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      toaster.create({
+        title: "Logging out",
+        description: "Signing you out and redirecting…",
+        type: "info",
+        duration: 8000,
+      });
+    } catch {}
+    (async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {}
+      const url = new URL("https://api.resourcewatch.org/auth/logout");
+      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+      url.searchParams.set("origin", "gnw");
+      window.location.href = url.toString();
+    })();
   };
 
   const hasTodayThreads = threadGroups.today.length > 0;
@@ -337,6 +354,8 @@ export function Sidebar() {
             variant="ghost"
             onClick={handleLogout}
             size="sm"
+            loading={isLoggingOut}
+            disabled={isLoggingOut}
             justifyContent="flex-start"
             title="Log Out"
           >

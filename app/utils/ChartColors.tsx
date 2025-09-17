@@ -11,15 +11,15 @@ export default function getChartColors() {
 
   // The desired order of colors for the chart
   const chartColorNames = [
-    "cyan",
     "blue",
+    "cyan",
     "mint",
-    "yellow",
     "green",
-    "purple",
-    "pink",
-    "red",
+    "yellow",
     "orange",
+    "red",
+    "pink",
+    "purple",
     "berenjena",
   ];
 
