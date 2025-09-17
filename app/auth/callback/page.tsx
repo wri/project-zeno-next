@@ -25,7 +25,8 @@ export default function AuthCallbackPage() {
             body: JSON.stringify({ token }),
           });
 
-          console.log(token, REDIRECT_URL_KEY, window.opener);
+          // Clear any previous loop guard on successful auth
+          sessionStorage.removeItem("authCallbackRedirects");
 
           const redirectQuery = params.get("redirect");
           const redirectUrl =
@@ -48,6 +49,25 @@ export default function AuthCallbackPage() {
           }
         } catch (error) {
           console.error("Failed to set auth token:", error);
+          // Fallback: attempt to trigger login flow once, then break loop
+          const redirects = Number(
+            sessionStorage.getItem("authCallbackRedirects") || "0"
+          );
+          if (redirects >= 1) {
+            window.location.href = "/";
+            return;
+          }
+          sessionStorage.setItem(
+            "authCallbackRedirects",
+            String(redirects + 1)
+          );
+          const fallbackUrl = "/app";
+          if (window.opener) {
+            window.opener.location.href = fallbackUrl;
+            setTimeout(() => window.close(), 500);
+          } else {
+            window.location.href = fallbackUrl;
+          }
         }
       } else {
         const error = params.get("error");
@@ -55,6 +75,15 @@ export default function AuthCallbackPage() {
           "No token in callback; redirecting to login flow via /app",
           { error }
         );
+        // Loop guard: only redirect to /app once from callback
+        const redirects = Number(
+          sessionStorage.getItem("authCallbackRedirects") || "0"
+        );
+        if (redirects >= 1) {
+          window.location.href = "/";
+          return;
+        }
+        sessionStorage.setItem("authCallbackRedirects", String(redirects + 1));
         const redirectUrl = "/app";
         if (window.opener) {
           window.opener.location.href = redirectUrl;
