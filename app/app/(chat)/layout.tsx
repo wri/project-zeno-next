@@ -74,9 +74,9 @@ export default function DashboardLayout({
     <Box
       position="relative"
       w="100vw"
-      h="min(100dvh, 100vh)"
+      h={{ base: "min(100dvh, 100vh)", md: 0 }}
       overflow="hidden"
-      gridRow={1}
+      gridRow={{ base: 1, md: "none" }}
       display={{ base: "block", md: "none" }}
     >
       <Box
