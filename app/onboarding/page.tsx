@@ -640,6 +640,7 @@ export default function OnboardingPage() {
           </Box>
           <Flex alignItems="center" justifyContent="space-between" mt={4}>
             <Checkbox.Root
+              alignItems="flex-start"
               checked={form.termsAccepted}
               onCheckedChange={(e) =>
                 setForm((p) => ({ ...p, termsAccepted: Boolean(e.checked) }))
@@ -657,6 +658,15 @@ export default function OnboardingPage() {
                 >
                   Terms of Use
                 </Link>{" "}
+                and{" "}
+                <Link
+                  href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  textDecoration="underline"
+                >
+                Global Nature Watch AI Terms of Use
+                </Link>{", "}
                 and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"
@@ -665,6 +675,15 @@ export default function OnboardingPage() {
                   textDecoration="underline"
                 >
                   Privacy Policy
+                </Link>{" "}
+                and the{" "}
+                <Link
+                  href="https://help.globalnaturewatch.org/global-nature-watch-ai-privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  textDecoration="underline"
+                >
+                  Global Nature Watch AI Privacy Policy
                 </Link>
                 .
                 {fieldRequired("termsAccepted") && (
