@@ -38,18 +38,19 @@ export default function FooterSection() {
           justifyContent={{ base: "flex-start", md: "space-between" }}
           alignItems={{ base: "flex-start", md: "center" }}
           gap={4}
-          pb="12"
+          pb="4"
           flexDir={{ base: "column", md: "row" }}
-        >
+          >
           <Flex
             alignItems="center"
             justifyContent="flex-start"
             rowGap={6}
             columnGap={4}
             flexWrap="wrap"
-            w="full"
-          >
-            <Text>{new Date().getFullYear()} Global Nature Watch</Text>
+            w={{ base: "full", md: "auto" }}
+            flex={{ md: 2 }}
+            >
+              <Text>{new Date().getFullYear()} Global Nature Watch</Text>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
@@ -61,18 +62,26 @@ export default function FooterSection() {
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
-              href="https://landcarbonlab.org/"
+              href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
               target="_blank" rel="noopener noreferrer"
             >
-              Cookie Preferences
+              AI Privacy Policy
             </ChakraLink>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
-              href="https://www.wri.org/about/wri-data-platforms-tos"
+              href="https://www.wri.org/about/legal/general-terms-use"
               target="_blank" rel="noopener noreferrer"
             >
-              Terms of Service
+              Terms of Use
+            </ChakraLink>
+            <ChakraLink
+              textDecoration="underline"
+              textDecorationStyle="dotted"
+              href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+              target="_blank" rel="noopener noreferrer"
+            >
+              AI Terms of Use
             </ChakraLink>
           </Flex>
           <Flex
@@ -81,8 +90,9 @@ export default function FooterSection() {
             rowGap={6}
             columnGap={4}
             flexWrap="wrap"
-            w="full"
-          >
+            w={{ base: "full", md: "auto" }}
+            flex={{ md: 1 }}
+            >
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"

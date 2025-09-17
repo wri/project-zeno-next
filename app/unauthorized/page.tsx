@@ -183,9 +183,27 @@ export default function UnauthorizedPage() {
             textDecorationStyle="dotted"
             rel="noreferrer"
             target="_blank"
+            href="https://help.globalnaturewatch.org/global-nature-watch-ai-privacy-policy"
+          >
+            AI Privacy Policy
+          </ChakraLink>
+          <ChakraLink
+            textDecoration="underline"
+            textDecorationStyle="dotted"
+            rel="noreferrer"
+            target="_blank"
             href="https://www.wri.org/about/legal/general-terms-use"
           >
-            Terms of service
+            Terms of use
+          </ChakraLink>
+          <ChakraLink
+            textDecoration="underline"
+            textDecorationStyle="dotted"
+            rel="noreferrer"
+            target="_blank"
+            href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+          >
+            AI Terms of use
           </ChakraLink>
         </Flex>
         <Text fontSize="sm" display={{ base: "none", md: "flex" }}>

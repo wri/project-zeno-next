@@ -78,6 +78,16 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       tileLayers: [],
     });
     get().clearSelectionMode();
+  
+    // Return map to the center point
+    const { mapRef } = get();
+    if (mapRef) {
+      const map = mapRef.getMap();
+      map.flyTo({
+        center: [0, 0],
+        zoom: 0,
+      });
+    }
   },
 
   setMapRef: (mapRef) => {
