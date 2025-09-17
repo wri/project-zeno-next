@@ -62,6 +62,7 @@ export default function DashboardLayout({
       templateAreas="'sidebar chat map'"
       templateRows="1fr"
       maxH="calc(100vh - 3rem)"
+      display={{ base: "none", md: "grid" }}
     >
       <Sidebar />
       <ChatPanel />
@@ -76,6 +77,7 @@ export default function DashboardLayout({
       h="min(100dvh, 100vh)"
       overflow="hidden"
       gridRow={1}
+      display={{ base: "block", md: "none" }}
     >
       <Box
         w="100%"
