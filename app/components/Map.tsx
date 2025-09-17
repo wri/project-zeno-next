@@ -17,6 +17,7 @@ import {
   useBreakpointValue,
   Flex,
   Link as ChLink,
+  Spinner
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
@@ -64,6 +65,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       overflow="hidden"
       gridArea="map"
       height="100%"
+      bg={mapRef.current ? "transparent" : "neutral.200"}
       css={{
         _dark: {
           "& .maplibregl-ctrl-scale": {
@@ -100,6 +102,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         },
       }}
     >
+      {!mapRef.current && (
+        <AbsoluteCenter>
+          <Spinner size="xl" borderWidth="4px" color="primary.solid" />
+        </AbsoluteCenter>
+      )}
       <MapGl
         ref={mapRef}
         style={{ width: "100%", height: "100%" }}
@@ -227,7 +234,13 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           >
             AI Terms of Use
           </ChLink>
-          <Code bg="transparent" p={0} color="fg.muted" ml={2} fontSize="0.625rem">
+          <Code
+            bg="transparent"
+            p={0}
+            color="fg.muted"
+            ml={2}
+            fontSize="0.625rem"
+          >
             lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
           </Code>
         </Flex>
