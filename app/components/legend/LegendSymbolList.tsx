@@ -24,8 +24,11 @@ export type LegendSymbolItem = SymbolColorValue &
  * labels.
  * @param props.items - Array of color/value pairs to display.
  */
-export function LegendSymbolList(props: { items: LegendSymbolItem[] }) {
-  const { items } = props;
+export function LegendSymbolList(props: {
+  items: LegendSymbolItem[];
+  unit?: string;
+}) {
+  const { unit, items } = props;
 
   return (
     <Flex
@@ -50,7 +53,7 @@ export function LegendSymbolList(props: { items: LegendSymbolItem[] }) {
           ) : (
             <ColorSwatch size="xs" value={item.color} />
           )}{" "}
-          {item.value}
+          {item.label}{unit && ` (${unit})`}
         </Flex>
       ))}
     </Flex>

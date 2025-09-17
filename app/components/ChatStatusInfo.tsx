@@ -1,15 +1,38 @@
 import { Box, Flex, FlexProps } from "@chakra-ui/react";
-import { WarningIcon } from "@phosphor-icons/react";
+import {
+  WarningIcon,
+  InfoIcon,
+  WarningCircleIcon,
+  CheckCircleIcon,
+} from "@phosphor-icons/react";
 
-import theme from "../theme";
+interface ChatStatusInfoProps extends FlexProps {
+  type?: "info" | "error" | "warning" | "success";
+  children: React.ReactNode;
+}
 
-export default function ChatStatusInfo(props: FlexProps) {
-  const { children, ...rest } = props;
+const typeColorMap = {
+  info: "secondary",
+  error: "red",
+  warning: "orange",
+  success: "green",
+};
 
+const TypeIcon = {
+  info: InfoIcon,
+  error: WarningCircleIcon,
+  warning: WarningIcon,
+  success: CheckCircleIcon,
+};
+
+export default function ChatStatusInfo(props: ChatStatusInfoProps) {
+  const { type = "error", children, ...rest } = props;
+  const IconComponent = TypeIcon[type];
   return (
     <Flex
-      bg="red.100"
-      border="solid 1px {colors.red.200}"
+      background={`${typeColorMap[type]}.subtle`}
+      border="solid 1px"
+      borderColor={`${typeColorMap[type]}.muted`}
       borderBottom="none"
       borderTopRightRadius="md"
       borderTopLeftRadius="md"
@@ -20,7 +43,7 @@ export default function ChatStatusInfo(props: FlexProps) {
       fontSize="xs"
       css={{
         "& a": {
-          color: "blue.600",
+          color: "primary.solid",
           textDecoration: "underline",
         },
         "& svg": {
@@ -29,10 +52,11 @@ export default function ChatStatusInfo(props: FlexProps) {
       }}
       {...rest}
     >
-      <WarningIcon
-        size="14"
+      <IconComponent
         weight="fill"
-        color={theme.token("colors.red.600")}
+        style={{ flexShrink: 0 }}
+        size="16"
+        fill={`var(--chakra-colors-${typeColorMap[type]}-600)`}
       />
       <Box>{children}</Box>
     </Flex>

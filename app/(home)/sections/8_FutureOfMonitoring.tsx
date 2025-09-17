@@ -1,11 +1,10 @@
+import NextImage from "next/image";
 import {
   Box,
   Container,
   Heading,
   Flex,
   Text,
-  Link as ChakraLink,
-  Image,
 } from "@chakra-ui/react";
 
 export default function FutureOfMonitoringSection() {
@@ -33,11 +32,13 @@ export default function FutureOfMonitoringSection() {
           </Container>
           <Container display="flex" maxW="5xl">
           <Text fontSize="lg" mb="4">
-          For more than a decade, World Resources Institute tools like Global Forest Watch have
-          transformed how the world monitors nature, driving impact across the tropics and beyond.
-          Global Nature Watch marks the next chapter. Built on trusted, peer-reviewed data and
-          powered by the latest advances in AI, it shifts monitoring from fixed global outputs to
-          targeted, actionable insights delivered in the language, regions and contexts that matter most.
+          <Text as="b">We know that monitoring works.</Text> For more than a decade, Global Forest Watch has
+          transformed how the world monitors nature, driving impact across the world&rsquo;s forests.
+          Global Nature Watch is the next major leap in land monitoring, transforming world-leading
+          research into an open, AI-powered system that extends beyond forests to include all ecosystems.
+          For the first time, anyone working to protect, restore or sustainably manage land can monitor
+          the changes that are happening everywhere on Earth by asking questions in plain language and
+          receiving authoritative answers with satellite imagery, maps, statistics and context.
           </Text>
         </Container>
         <Container display="flex" gap="14" flexDir={"column"} maxW="5xl">
@@ -56,48 +57,33 @@ export default function FutureOfMonitoringSection() {
                 most talented experts.
                 Our data is designed to empower real-world action, today and into the future.
               </Text>
-              <ChakraLink
-                fontSize="lg"
-                color="primary.700"
-                textDecoration="underline"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Learn more about our data
-              </ChakraLink>
             </Box>
             <Box position="relative" h="72" w="full">
               {/* Images in the "Cuting edge data" section will animate in from container sides */}
-              <Image
-                position="absolute"
-                h="121px"
-                w="201px"
-                rounded="md"
-                top="0.5"
-                src="/fm-1a.png"
-                alt="image of a field"
-              />
-              <Image
-                position="absolute"
-                h="127px"
-                w="178px"
-                rounded="md"
-                top="25%"
-                right="0"
-                src="/fm-1b.png"
-                alt="image of a field"
-              />
-              <Image
-                position="absolute"
-                h="124px"
-                w="172px"
-                rounded="md"
-                bottom="5%"
-                left="15%"
-                src="/fm-1c.png"
-                alt="image of a field"
-              />
+              <Box position="absolute" h="121px" w="201px" top="0.5" rounded="md" overflow="hidden">
+                <NextImage
+                  src="/fm-1a.webp"
+                  alt="image of a field"
+                  fill
+                  style={{ objectFit: "cover" }}
+                />
+              </Box>
+              <Box position="absolute" h="127px" w="178px" top="25%" right="0" rounded="md" overflow="hidden">
+                <NextImage
+                  src="/fm-1b.webp"
+                  alt="image of a field"
+                  fill
+                  style={{ objectFit: "cover" }}
+                />
+              </Box>
+              <Box position="absolute" h="124px" w="172px" bottom="5%" left="15%" rounded="md" overflow="hidden">
+                <NextImage
+                  src="/fm-1c.webp"
+                  alt="image of a field"
+                  fill
+                  style={{ objectFit: "cover" }}
+                />
+              </Box>
             </Box>
           </Flex>
           <Flex
@@ -115,16 +101,6 @@ export default function FutureOfMonitoringSection() {
                 AI trained on trusted datasets helps both experts and newcomers navigate,
                 analyze and apply insights.
               </Text>
-              <ChakraLink
-                fontSize="lg"
-                color="primary.700"
-                textDecoration="underline"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Learn more about our models and agents
-              </ChakraLink>
             </Box>
             <Box position="relative" h="72" w="full">
               {/* Chat window items slide in from sides */}
@@ -155,16 +131,20 @@ export default function FutureOfMonitoringSection() {
               >
                 Show me high priority areas for agroforesty projects
               </Box>
-              <Image
-                src="/fm-2.png"
-                alt="Smartphone mockup of monitoring application"
+              <Box
                 width="136px"
                 h="280px"
-                objectPosition="80%"
                 position="relative"
                 left="50%"
                 transform="translateX(-50%)"
-              />
+              >
+                <NextImage
+                  src="/fm-2.webp"
+                  alt="Smartphone mockup of monitoring application"
+                  fill
+                  style={{ objectFit: "cover", objectPosition: "80%" }}
+                />
+              </Box>
             </Box>
           </Flex>
           <Flex
@@ -174,7 +154,7 @@ export default function FutureOfMonitoringSection() {
           >
             <Box maxW="lg">
               <Heading size={{ base: "xl", md: "2xl" }} mb="2">
-                Integrative technology (coming soon)
+                Interoperable technology (coming soon)
               </Heading>
               <Text fontSize="lg" mb="4">
                We believe the future of monitoring is open, extensible and integrative.
@@ -189,13 +169,15 @@ export default function FutureOfMonitoringSection() {
               w="full"
               h={{base: "14rem", md: "17rem"}}
             >
-              <Image
-                objectPosition="80%"
-                position="relative"
-                left="50%"
-                transform="translateX(-50%)"
+              <NextImage
+                style={{
+                  objectPosition: "80%",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }}
                 src="/integrations.svg"
                 alt="Global Nature Watch integrations"
+                fill
               />
             </Box>
           </Flex>

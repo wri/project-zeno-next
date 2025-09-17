@@ -15,6 +15,9 @@ import {
   Box,
   Button,
   useBreakpointValue,
+  Flex,
+  Link as ChLink,
+  Text,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
@@ -151,12 +154,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Legend layers={layers} onLayerAction={handleLayerAction} />
         </Box>
 
+        <DynamicTileLayers />
         <HighlightedFeaturesLayer
           geoJsonFeatures={geoJsonFeatures}
           areas={areas}
         />
         <SelectAreaLayer />
-        <DynamicTileLayers />
 
         {!disableMapAreaControls && <MapAreaControls />}
 
@@ -179,17 +182,40 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             <NavigationControl showCompass={false} position="bottom-left" />
           </>
         )}
-        <Code
+        <Flex
           pos="absolute"
           bottom="4"
-          right="0"
+          right="3"
           p="2"
-          size="xs"
+          fontSize="xs"
           bg="transparent"
           hideBelow="md"
+          alignItems="baseline"
+          gap={2}
         >
-          lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
-        </Code>
+          <ChLink
+            href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
+            target="_blank"
+            rel="noopener noreferrer"
+            textDecoration="underline"
+            color="fg.muted"
+          >
+            Privacy Policy
+          </ChLink>
+          <Text color="fg.muted">•</Text>
+          <ChLink
+            href="https://www.wri.org/about/wri-data-platforms-tos"
+            target="_blank"
+            rel="noopener noreferrer"
+            textDecoration="underline"
+            color="fg.muted"
+          >
+            Terms of Service
+          </ChLink>
+          <Code bg="transparent" p={0} color="fg.muted" ml={2} fontSize="0.625rem">
+            lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
+          </Code>
+        </Flex>
       </MapGl>
     </Box>
   );

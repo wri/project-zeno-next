@@ -124,7 +124,8 @@ export default function LandingHero({
           },
         }}
       >
-        <video autoPlay loop muted playsInline preload="auto">
+        <video autoPlay loop muted playsInline preload="auto" poster="/landing-hero-poster.jpg">
+          <source src={"/landing-hero-bg.webm"} type="video/webm" />
           <source src={"/landing-hero-bg.mp4"} type="video/mp4" />
         </video>
       </Box>
@@ -163,11 +164,9 @@ export default function LandingHero({
               fontSize="lg"
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
-              Global Nature Watch is an experimental geospatial AI assistant,
-              exploring how AI can help you make the most of cutting-edge nature
-              monitoring data.
-              <br />
-              Test the beta and help shape the future.
+              Global Nature Watch is an open, AI-powered system that transforms groundbreaking
+              land monitoring data into intelligence to understand Earth&rsquo;s landscapes.
+              Test the beta and help shape the future of land monitoring.
             </Text>
           </Container>
           <Container

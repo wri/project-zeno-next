@@ -18,12 +18,16 @@ import {
   Checkbox,
   createListCollection,
   Link,
+  Badge,
 } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
+import LclLogo from "../components/LclLogo";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
+import { sendGAEvent } from "@next/third-parties/google";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -49,6 +53,8 @@ type ProfileFormState = {
   helpTestFeatures: boolean;
   termsAccepted: boolean;
 };
+
+type ValueChangeDetails = { value: string[] };
 
 export default function OnboardingForm() {
   const router = useRouter();
@@ -133,7 +139,6 @@ export default function OnboardingForm() {
   useEffect(() => {
     const validValues = roles.items.map((i) => i.value);
     setForm((p) => (validValues.includes(p.role) ? p : { ...p, role: "" }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roles]);
 
   const expertises = useMemo(() => {
@@ -220,6 +225,15 @@ export default function OnboardingForm() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
+        sendGAEvent("event", "sign_up", {
+          sector: payload.sector_code,
+          role: payload.role_code,
+          country: payload.country_code,
+          expertise_level: payload.gis_expertise_level,
+          topics: (payload.topics || []).join(","),
+          news_opt_in: payload.receive_news_emails,
+          testing_opt_in: payload.help_test_features,
+        });
         const queryString = searchParams.toString();
         const destination = queryString ? `/app?${queryString}` : "/app";
         router.push(destination);
@@ -240,18 +254,54 @@ export default function OnboardingForm() {
   };
 
   return (
-    <Box minH="100vh" bg="bg" py={10}>
-      <Container maxW="4xl">
+    <Box minH="100vh" bg="bg" py={24}>
+      <Container maxW="3xl">
+        <Flex justifyContent="space-between" mb={12}>
+          <Flex gap="2" alignItems="center">
+            <LclLogo
+              width={16}
+              avatarOnly
+              fill="var(--chakra-colors-primary-fg)"
+            />
+            <Heading as="h1" size="md" color="primary.fg">
+              Global Nature Watch
+            </Heading>
+            <Badge
+              colorPalette="primary"
+              bg="primary.800"
+              letterSpacing="wider"
+              variant="solid"
+              size="xs"
+            >
+              BETA
+            </Badge>
+          </Flex>
+          <Button
+            colorPalette="primary"
+            variant="ghost"
+            onClick={() => router.push("/")}
+          >
+            <ArrowLeftIcon />
+            Go back
+          </Button>
+        </Flex>
         <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
-          Complete your Global Nature Watch profile
+          Complete your{" "}
+          <Text as="span" fontWeight="bold">
+            Global Nature Watch
+          </Text>{" "}
+          user profile
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
-          We use this information to make Global Nature Watch more useful for
-          you. Your privacy is important to us and we’ll never share your
-          information without your consent.
+          We use this information to make Global Nature Watch more useful to
+          you. This tool is experimental, and your and knowing you better helps
+          us improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
+          <Grid
+            templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+            gap={12}
+          >
             <GridItem>
               <Field.Root id="first-name" required={fieldRequired("firstName")}>
                 <Field.Label>
@@ -307,6 +357,11 @@ export default function OnboardingForm() {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, email: e.target.value }))
                   }
+                  _readOnly={{
+                    bg: "bg.subtle",
+                    color: "fg.muted",
+                    cursor: "not-allowed",
+                  }}
                 />
               </Field.Root>
             </GridItem>
@@ -315,7 +370,14 @@ export default function OnboardingForm() {
             </GridItem>
             <GridItem>
               <Field.Root id="sector" required={fieldRequired("sector")}>
-                <Select.Root collection={sectors} size="sm" width="320px">
+                <Select.Root
+                  collection={sectors}
+                  size="sm"
+                  value={form.sector ? [form.sector] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, sector: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>
                     Sector
@@ -337,13 +399,7 @@ export default function OnboardingForm() {
                     <Select.Positioner>
                       <Select.Content>
                         {sectors.items.map((sector) => (
-                          <Select.Item
-                            key={sector.value}
-                            item={sector}
-                            onClick={() =>
-                              setForm((p) => ({ ...p, sector: sector.value }))
-                            }
-                          >
+                          <Select.Item key={sector.value} item={sector}>
                             {sector.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -359,8 +415,11 @@ export default function OnboardingForm() {
                 <Select.Root
                   collection={roles}
                   size="sm"
-                  width="320px"
                   disabled={!form.sector}
+                  value={form.role ? [form.role] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, role: d.value[0] ?? "" }))
+                  }
                 >
                   <Select.HiddenSelect />
                   <Select.Label>
@@ -371,7 +430,7 @@ export default function OnboardingForm() {
                       </Text>
                     )}
                   </Select.Label>
-                  <Select.Control>
+                  <Select.Control _disabled={{ bg: "bg.subtle" }}>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Role" />
                     </Select.Trigger>
@@ -383,13 +442,7 @@ export default function OnboardingForm() {
                     <Select.Positioner>
                       <Select.Content>
                         {roles.items.map((role) => (
-                          <Select.Item
-                            key={role.value}
-                            item={role}
-                            onClick={() =>
-                              setForm((p) => ({ ...p, role: role.value }))
-                            }
-                          >
+                          <Select.Item key={role.value} item={role}>
                             {role.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -402,14 +455,7 @@ export default function OnboardingForm() {
             </GridItem>
             <GridItem>
               <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
-                <Field.Label>
-                  Job title
-                  {fieldRequired("jobTitle") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
-                </Field.Label>
+                <Field.Label>Job title</Field.Label>
                 <Input
                   type="text"
                   value={form.jobTitle}
@@ -440,7 +486,14 @@ export default function OnboardingForm() {
             </GridItem>
             <GridItem>
               <Field.Root id="country" required={fieldRequired("country")}>
-                <Select.Root collection={countries} size="sm" width="320px">
+                <Select.Root
+                  collection={countries}
+                  size="sm"
+                  value={form.country ? [form.country] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, country: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
                   <Select.Label>
                     Country
@@ -462,13 +515,7 @@ export default function OnboardingForm() {
                     <Select.Positioner>
                       <Select.Content>
                         {countries.items.map((country) => (
-                          <Select.Item
-                            key={country.value}
-                            item={country}
-                            onClick={() =>
-                              setForm((p) => ({ ...p, country: country.value }))
-                            }
-                          >
+                          <Select.Item key={country.value} item={country}>
                             {country.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -481,16 +528,16 @@ export default function OnboardingForm() {
             </GridItem>
             <GridItem>
               <Field.Root id="expertise" required={fieldRequired("expertise")}>
-                <Select.Root collection={expertises} size="sm" width="320px">
+                <Select.Root
+                  collection={expertises}
+                  size="sm"
+                  value={form.expertise ? [form.expertise] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, expertise: d.value[0] ?? "" }))
+                  }
+                >
                   <Select.HiddenSelect />
-                  <Select.Label>
-                    Level of technical expertise
-                    {fieldRequired("expertise") && (
-                      <Text as="span" color="red.500" ml={1}>
-                        *
-                      </Text>
-                    )}
-                  </Select.Label>
+                  <Select.Label>Level of technical expertise</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Level" />
@@ -503,13 +550,7 @@ export default function OnboardingForm() {
                     <Select.Positioner>
                       <Select.Content>
                         {expertises.items.map((exp) => (
-                          <Select.Item
-                            key={exp.value}
-                            item={exp}
-                            onClick={() =>
-                              setForm((p) => ({ ...p, expertise: exp.value }))
-                            }
-                          >
+                          <Select.Item key={exp.value} item={exp}>
                             {exp.label}
                             <Select.ItemIndicator />
                           </Select.Item>
@@ -523,12 +564,10 @@ export default function OnboardingForm() {
             <GridItem colSpan={{ base: 1, md: 2 }}>
               <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
-                  What area(s) are you most interested in?
-                  {fieldRequired("topics") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
+                  What topic(s) are you most interested in?
+                  <Text as="span" color="red.500" ml={1}>
+                    *
+                  </Text>
                 </Field.Label>
                 <Flex gap={2} flexWrap="wrap" pt={2}>
                   {Object.entries(config?.topics || {}).map(([code, label]) => {
@@ -602,8 +641,7 @@ export default function OnboardingForm() {
             </Flex>
             <Separator mt={4} />
           </Box>
-
-          <Flex alignItems="center" gap={3} mt={8}>
+          <Flex alignItems="center" justifyContent="space-between" mt={4}>
             <Checkbox.Root
               checked={form.termsAccepted}
               onCheckedChange={(e) =>
@@ -612,20 +650,22 @@ export default function OnboardingForm() {
             >
               <Checkbox.HiddenInput />
               <Checkbox.Control />
-              <Checkbox.Label>
+              <Checkbox.Label fontWeight="normal">
                 I accept the{" "}
                 <Link
                   href="https://www.wri.org/about/legal/general-terms-use"
                   target="_blank"
                   rel="noopener noreferrer"
+                  textDecoration="underline"
                 >
                   Terms of Use
                 </Link>{" "}
-                and{" "}
+                and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"
                   target="_blank"
                   rel="noopener noreferrer"
+                  textDecoration="underline"
                 >
                   Privacy Policy
                 </Link>
@@ -637,21 +677,17 @@ export default function OnboardingForm() {
                 )}
               </Checkbox.Label>
             </Checkbox.Root>
-          </Flex>
-
-          <Flex mt={8} gap={4}>
-            <Button
-              type="submit"
-              colorPalette="primary"
-              disabled={!isValid || isSubmitting}
-              loading={isSubmitting}
-              loadingText="Finalizing profile..."
-            >
-              Continue
-            </Button>
-            <Text color="fg.muted" fontSize="xs" alignSelf="center">
-              You can edit these details later in Settings.
-            </Text>
+            <Flex gap={4}>
+              <Button
+                type="submit"
+                colorPalette="primary"
+                disabled={!isValid || isSubmitting}
+                loading={isSubmitting}
+                loadingText="Finalizing profile..."
+              >
+                Complete profile
+              </Button>
+            </Flex>
           </Flex>
         </form>
       </Container>

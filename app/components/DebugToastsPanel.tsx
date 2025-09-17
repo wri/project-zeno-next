@@ -52,6 +52,20 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           size="xs"
           onClick={() =>
             toaster.create({
+              title: "Warning",
+              description: "This is a warning toast",
+              type: "warning",
+              closable: true,
+              duration: 3000,
+            })
+          }
+        >
+          Warning
+        </Button>
+        <Button
+          size="xs"
+          onClick={() =>
+            toaster.create({
               title: "Success",
               description: "This is a success toast",
               type: "success",

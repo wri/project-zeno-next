@@ -92,6 +92,10 @@ export const config = defineConfig({
         orange: { ...defaultColors.orange, 500: { value: "#FF9916" } },
         yellow: { ...defaultColors.yellow, 500: { value: "#FFD80B" } },
         green: { ...defaultColors.green, 500: { value: "#00A651" } },
+        lime: {
+          100: { value: "#F7FBD9" },
+          400: { value: "#E3F37F" },
+        },
         mint: {
           50: { value: "#e2fff8" },
           100: { value: "#b6fde9" },

@@ -17,14 +17,14 @@ function renderPromptBoxes(prompts: string[]) {
         data-marquee-item
         bg="secondary.muted"
         color="secondary.fg"
+        fontSize="sm"
         p="3"
         rounded="md"
-        maxW="20rem"
+        maxW="19rem"
         flexShrink="0"
         cursor="pointer"
         transition="opacity"
         shadow="xs"
-        fontSize="sm"
         _hover={{
           "&&": { opacity: 1 },
         }}

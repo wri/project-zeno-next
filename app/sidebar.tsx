@@ -15,6 +15,8 @@ import {
   Progress,
 } from "@chakra-ui/react";
 import Link from "next/link";
+import { sendGAEvent } from "@next/third-parties/google";
+import { useRouter } from "next/navigation";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
@@ -64,7 +66,7 @@ function ThreadSection({
   value,
   currentThreadId,
 }: {
-  threads: { id: string; name: string }[];
+  threads: { id: string; name: string; updated_at: string; is_public: boolean }[];
   label: string;
   value: string;
   currentThreadId: string | null;
@@ -113,10 +115,21 @@ function ThreadSection({
                   href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
+                  onClick={() => {
+                    if (!isActive) {
+                      sendGAEvent("event", "saved_conversation_loaded", {
+                        conversation_id: thread.id,
+                        updated_at: thread.updated_at,
+                        is_public: thread.is_public,
+                      });
+                    }
+                  }}
                 >
                   {thread.name}
                 </ThreadLink>
-                <ThreadActionsMenu thread={thread} />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <ThreadActionsMenu thread={thread} />
+                </div>
               </Flex>
             );
           })}
@@ -125,6 +138,8 @@ function ThreadSection({
     </Accordion.Item>
   );
 }
+
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 export function Sidebar() {
   const {
@@ -137,11 +152,20 @@ export function Sidebar() {
   } = useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { clearAuth, userEmail, usedPrompts, totalPrompts } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     fetchThreads();
     fetchApiStatus();
   }, [fetchThreads, fetchApiStatus]);
+
+  const handleLogout = () => {
+    if (LANDING_PAGE_VERSION === "public") {
+      clearAuth();
+    } else {
+      router.push("/");
+    }
+  };
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -311,9 +335,10 @@ export function Sidebar() {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => clearAuth()}
+            onClick={handleLogout}
             size="sm"
             justifyContent="flex-start"
+            title="Log Out"
           >
             <UserIcon />
             {userEmail || "User name"}

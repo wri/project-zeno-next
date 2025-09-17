@@ -20,7 +20,7 @@ export function OpacityControl(props: {
   }, [value]);
 
   return (
-    <Popover.Root positioning={{ placement: "top" }} size="xs">
+    <Popover.Root positioning={{ placement: "top", strategy: "fixed", hideWhenDetached: true }} size="xs">
       <Popover.Trigger asChild>{children}</Popover.Trigger>
       <Popover.Positioner>
         <Popover.Content maxW="15rem">

@@ -9,29 +9,30 @@ Can be:
   
 ```tsx
 <LegendSymbolList
+  unit="ha"
   items={[
     {
       color: "#4CAF50",
-      value: "Estimated Tree Cover Loss 4PSG 932 (hsa)",
+      label: "Estimated Tree Cover Loss 4PSG 932",
     },
     {
       color: "#FFC107",
-      value: "Estimated burn area",
+      label: "Estimated burn area",
     },
     {
       type: "line",
       color: "#FF5722",
-      value: "Estimated deforestation",
+      label: "Estimated deforestation",
     },
     {
       type: "dashed",
       color: "#22ffde",
-      value: "Watershed",
+      label: "Watershed",
     },
     {
       type: "icon",
       color: "#00d77d",
-      value: "Recycling",
+      label: "Recycling",
       icon: <LeafIcon size={16} />,
     },
   ]}
@@ -87,8 +88,9 @@ The colors are mirrored around the center, so only the first part of the diverge
 
 ```tsx
 <LegendDivergent
-  min={-1}
-  max={1}
+  unit="°C"
+  minLabel="-1"
+  maxLabel="1"
   color={["#2196F3", "#b41919", "#ff00dd"]}
 />
 ```

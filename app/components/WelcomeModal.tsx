@@ -17,7 +17,7 @@ import { ArrowBendRightUpIcon, SparkleIcon } from "@phosphor-icons/react";
 
 const WelcomeModal = () => {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const { prompts, fetchPrompts } = usePromptStore();
+  const { prompts } = usePromptStore();
   const { sendMessage, isLoading } = useChatStore();
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -28,12 +28,6 @@ const WelcomeModal = () => {
     setBypassWelcomeModal(shouldBypass);
     setIsOpen(!shouldBypass);
   }, []);
-
-  useEffect(() => {
-    if (!bypassWelcomeModal) {
-      fetchPrompts();
-    }
-  }, [fetchPrompts, bypassWelcomeModal]);
 
   const sendAndClose = async (prompt: string) => {
     if (!prompt || isLoading) return;

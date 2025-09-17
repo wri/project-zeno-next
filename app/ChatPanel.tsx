@@ -89,7 +89,7 @@ function ChatPanel() {
           <Box mt="auto" position="sticky" bottom="2">
             {promptsExhausted &&
               (isAnonymous ? (
-                <ChatStatusInfo>
+                <ChatStatusInfo type="error">
                   <Text>
                     <strong>You&apos;ve used all your guest prompts.</strong>
                     <br />
@@ -109,7 +109,7 @@ function ChatPanel() {
                   </Text>
                 </ChatStatusInfo>
               ) : (
-                <ChatStatusInfo>
+                <ChatStatusInfo type="error">
                   <Text>
                     <strong>
                       You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}
@@ -126,16 +126,19 @@ function ChatPanel() {
               ))}
 
             <ChatInput isChatDisabled={promptsExhausted} />
-            <Text
+            <Flex
               fontSize="xs"
               color="fg.subtle"
+              hideBelow="md"
               whiteSpace="pre"
               overflowX="auto"
-              hideBelow="md"
+              gap={2}
             >
-              AI can make mistakes. Please verify any outputs before using them
-              in your work.
-            </Text>
+              <Text>
+                AI makes mistakes. Verify outputs and do not share
+                any sensitive or personal information.
+              </Text>
+            </Flex>
           </Box>
         </Flex>
       </Flex>
