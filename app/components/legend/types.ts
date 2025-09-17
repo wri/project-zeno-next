@@ -37,5 +37,6 @@ export type LayerActionHandler = (args: LayerActionArgs) => void;
 export type SymbolColor = string;
 export type SymbolColorValue<T = number | string> = {
   color: string;
-  value: T;
+  value?: T;
+  label?: T;
 };

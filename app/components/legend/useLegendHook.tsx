@@ -23,13 +23,8 @@ export function useLegendHook() {
       );
       if (!relatedDataset?.legend) return [];
 
-      const {
-        type,
-        symbology: { items },
-        title,
-        info,
-        note,
-      } = relatedDataset.legend;
+      const { type, title, info, note, items, color, unit } =
+        relatedDataset.legend;
 
       return {
         id: tileLayer.id,
@@ -38,23 +33,27 @@ export function useLegendHook() {
         opacity: (tileLayer.opacity ?? 1) * 80,
         info,
         symbology:
-          type === "categorical" ? (
-            <LegendCategorical items={items} />
+          type === "categorical" && items ? (
+            <LegendCategorical items={items.map(i => ({ value: i.label ?? "", color: i.color }))} />
           ) : type === "sequential" ? (
             <LegendSequential
-              min={Number(items[0]?.value) || 0}
-              max={Number(items[items.length - 1]?.value) || 0}
-              color={items}
+              minLabel={items?.[0]?.label ?? ""}
+              maxLabel={items?.[items.length - 1]?.label ?? ""}
+              color={items?.map(item => item.color) ?? (Array.isArray(color) ? color : [color])}
             />
           ) : type === "divergent" ? (
             <LegendDivergent
-              min={Number(items[0]?.value) || 0}
-              max={Number(items[items.length - 1]?.value) || 0}
-              color={items}
+              unit={relatedDataset.legend.unit ?? ""}
+              minLabel={items?.[0]?.label ?? ""}
+              maxLabel={items?.[items.length - 1]?.label ?? ""}
+              color={items?.map((item) => item.color) ?? (Array.isArray(color) ? color : [color])}
             />
-          ) : (
-            <LegendSymbolList items={items} />
-          ),
+          ) : items ? (
+            <LegendSymbolList 
+              unit={unit ?? ""}
+              items={items.map(i => ({label: i.label ?? "", color: i.color}))} 
+            />
+          ) : null,
         children: note ? <Text fontSize="xs">{note}</Text> : undefined,
       };
     });

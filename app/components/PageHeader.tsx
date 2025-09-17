@@ -9,6 +9,7 @@ import {
   Link as ChakraLink,
   Text,
 } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 import LclLogo from "./LclLogo";
 import {
   GearSixIcon,
@@ -20,17 +21,26 @@ import {
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
 
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
     useAuthStore();
-
+  const router = useRouter();
+  const handleLogout = () => {
+    if (LANDING_PAGE_VERSION === "public") {
+      clearAuth();
+    } else {
+      router.push("/");
+    }
+  };
   return (
     <Flex
       alignItems="center"
       justifyContent="space-between"
-      px="5"
+      px={{ base: 3, md: 5 }}
       py="2"
-      h="12"
+      h={{ base: 10, md: 12 }}
       bg="primary.solid"
       color="fg.inverted"
     >
@@ -57,7 +67,7 @@ function PageHeader() {
           BETA
         </Badge>
       </Flex>
-      <Flex gap="6" alignItems="center">
+      <Flex gap="6" alignItems="center" hideBelow="md">
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
             variant="solid"
@@ -128,7 +138,8 @@ function PageHeader() {
                     cursor="pointer"
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
-                    onClick={() => clearAuth()}
+                    onClick={handleLogout}
+                    title="Log Out"
                   >
                     <SignOutIcon />
                     Logout

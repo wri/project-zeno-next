@@ -31,14 +31,17 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/static") ||
     pathname === "/favicon.ico" ||
     pathname.startsWith("/auth/callback") ||
-    pathname.startsWith("/onboarding") ||
     pathname === "/"
   ) {
     return NextResponse.next();
   }
 
-  // Guard restricted routes under /app
-  if (pathname.startsWith("/app")) {
+  // General guard for /app, /onboarding, and /dashboard
+  const isOnboarding = pathname.startsWith("/onboarding");
+  const isApp = pathname.startsWith("/app");
+  const isDashboard = pathname.startsWith("/dashboard");
+
+  if (isOnboarding || isApp || isDashboard) {
     const authCookie = getAuthTokenFromRequest(request);
 
     // If not authenticated, redirect to WRI login
@@ -48,12 +51,13 @@ export async function middleware(request: NextRequest) {
         redirectUrl
       )}`;
       const loginUrl = new URL("https://api.resourcewatch.org/auth/login");
+      loginUrl.searchParams.set("origin", "gnw");
       loginUrl.searchParams.set("callbackUrl", callbackUrl);
       loginUrl.searchParams.set("token", "true");
       return NextResponse.redirect(loginUrl);
     }
 
-    // If authenticated, ensure profile is completed
+    // Fetch profile once and route accordingly
     try {
       const meUrl = new URL("/api/auth/me", origin);
       const res = await fetch(meUrl, {
@@ -67,9 +71,15 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(unauthorizedUrl);
       }
       const data = await res.json();
-      if (!data?.hasProfile) {
+      const hasProfile = Boolean(data?.hasProfile);
+
+      if (isApp && !hasProfile) {
         const onboardingUrl = new URL("/onboarding", origin);
         return NextResponse.redirect(onboardingUrl);
+      }
+      if (isOnboarding && hasProfile) {
+        const appUrl = new URL("/app", origin);
+        return NextResponse.redirect(appUrl);
       }
     } catch {
       const unauthorizedUrl = new URL("/unauthorized", origin);

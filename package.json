@@ -28,6 +28,7 @@
     "cookie": "^1.0.2",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.23.12",
     "json5": "^2.2.3",
     "jwt-decode": "^4.0.0",
     "maplibre-gl": "^5.5.0",

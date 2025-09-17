@@ -67,7 +67,7 @@ export default function UnauthorizedPage() {
             objectPosition: "bottom",
           }}
         >
-          <source src="/landing-hero-bg.mp4" type="video/mp4" />
+        <source src={"/landing-hero-bg.webm"} type="video/webm" />
         </video>
       </Box>
       <Container

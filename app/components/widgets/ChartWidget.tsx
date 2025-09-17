@@ -122,17 +122,41 @@ const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
   return null;
 };
 
+interface CustomPieLegendProps {
+  series: { name?: string | number; color?: string }[];
+}
+
+const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
+  if (!series) return null;
+
+  return (
+    <Flex direction="column" gap={2} as="ul" listStyleType="none" m={0} p={0}>
+      {series
+        .filter((entry) => entry.name && entry.color)
+        .map((entry, index) => (
+          <Flex as="li" key={`item-${index}`} align="center" gap={2}>
+            <Box
+              w={4}
+              h={4}
+              bg={entry.color}
+              border="1px solid"
+              borderColor="neutral.400"
+              rounded="sm"
+            />
+            <Text fontSize="xs" color="neutral.500">
+              {String(entry.name)}
+            </Text>
+          </Flex>
+        ))}
+    </Flex>
+  );
+};
+
 const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const dataPoint = payload[0];
     return (
-      <Box
-        bg="bg.panel"
-        p={2}
-        py={1}
-        borderRadius="sm"
-        boxShadow="sm"
-      >
+      <Box bg="bg.panel" p={2} py={1} borderRadius="sm" boxShadow="sm">
         <Flex
           fontSize="xs"
           fontWeight="normal"
@@ -184,6 +208,8 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
             innerRadius={50}
             outerRadius={100}
             isAnimationActive={false}
+            startAngle={90}
+            endAngle={-270}
           >
             {chart.data.map((entry) => (
               <Cell
@@ -262,20 +288,22 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
         )}
         <Legend
-          content={type !== "pie" ? <Chart.Legend /> : undefined}
+          content={
+            type === "pie" ? (
+              <CustomPieLegend series={chart.series} />
+            ) : (
+              <Chart.Legend />
+            )
+          }
           align={type === "pie" ? "right" : "left"}
           layout={type === "pie" ? "vertical" : "horizontal"}
           verticalAlign={type === "pie" ? "middle" : "top"}
-          wrapperStyle={
-            type === "pie"
-              ? { paddingRight: "25%", maxHeight: "100%", overflow: "auto" }
-              : {
-                  paddingBottom: "0.5rem",
-                  maxHeight: "100%",
-                  maxWidth: "100%",
-                  overflow: "auto",
-                }
-          }
+          wrapperStyle={{
+            paddingBottom: "0.5rem",
+            maxHeight: "100%",
+            maxWidth: "100%",
+            overflow: "auto",
+          }}
         />
         {type !== "pie" && (
           <>

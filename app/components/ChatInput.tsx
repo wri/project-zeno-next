@@ -1,6 +1,15 @@
 "use client";
 import { useState } from "react";
-import { Button, Flex, Textarea } from "@chakra-ui/react";
+import {
+  Button,
+  Flex,
+  Textarea,
+  useBreakpointValue,
+  useDisclosure,
+  Dialog,
+  Text,
+  Portal,
+} from "@chakra-ui/react";
 import { ArrowBendRightUpIcon } from "@phosphor-icons/react";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
@@ -9,32 +18,51 @@ import ContextMenu from "./ContextMenu";
 import useContextStore from "../store/contextStore";
 import { useRouter } from "next/navigation";
 
-function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
+export default function ChatInput({
+  isChatDisabled,
+}: {
+  isChatDisabled?: boolean;
+}) {
   const [inputValue, setInputValue] = useState("");
-  const [open, setOpen] = useState(false);
+  const [contextModalOpen, setContextModalOpen] = useState(false);
   const [selectedContextType, setSelectedContextType] =
     useState<ChatContextType | null>(null);
 
   const router = useRouter();
 
-  const openContextMenu = (type: ChatContextType) => {
-    setSelectedContextType(type);
-    setOpen(true);
-  };
+  // Hooks for responsive modal behavior
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const {
+    open: inputModalOpen,
+    onOpen: onInputModalOpen,
+    onClose: onInputModalClose,
+  } = useDisclosure();
 
-  const handleOpenChange = (e: { open: boolean }) => {
-    setOpen(e.open);
-    if (!e.open) setSelectedContextType(null);
-  };
+  const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
   const { sendMessage, isLoading } = useChatStore();
   const { context, removeContext } = useContextStore();
+
+  const openContextMenu = (type: ChatContextType) => {
+    setSelectedContextType(type);
+    setContextModalOpen(true);
+  };
+
+  const handleContextModalOpenChange = (e: { open: boolean }) => {
+    setContextModalOpen(e.open);
+    if (!e.open) setSelectedContextType(null);
+  };
 
   const submitPrompt = async () => {
     if (!inputValue.trim() || isLoading) return;
 
     const message = inputValue.trim();
     setInputValue("");
+
+    // Close the modal on mobile after sending a message
+    if (isMobile) {
+      onInputModalClose();
+    }
 
     const result = await sendMessage(message);
     if (result.isNew) {
@@ -59,7 +87,10 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
 
   const isButtonDisabled = disabled || !inputValue?.trim();
   const hasContext = context.length > 0;
-  return (
+
+  // The core UI of the chat input is defined here so it can be reused
+  // for both the desktop view and within the mobile modal.
+  const chatInputUI = (
     <Flex
       flexDir="column"
       position="relative"
@@ -96,9 +127,11 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
         </Flex>
       )}
       <Textarea
+        ref={setFocusEl}
         aria-label="Ask a question..."
         placeholder={message}
         fontSize="sm"
+        minH="20px"
         autoresize
         maxH="10lh"
         border="none"
@@ -107,15 +140,9 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
-        _disabled={{
-          opacity: 1,
-        }}
-        _focus={{
-          outline: "none",
-        }}
-        _placeholder={{
-          color: disabled ? "gray.400" : "gray.600",
-        }}
+        _disabled={{ opacity: 1 }}
+        _focus={{ outline: "none", boxShadow: "none" }}
+        _placeholder={{ color: disabled ? "gray.400" : "gray.600" }}
       />
       <Flex justifyContent="space-between" alignItems="center" w="full">
         <Flex gap="2">
@@ -135,13 +162,6 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
             disabled={disabled}
           />
         </Flex>
-        {selectedContextType && (
-          <ContextMenu
-            contextType={selectedContextType}
-            open={open}
-            onOpenChange={handleOpenChange}
-          />
-        )}
         <Button
           p="0"
           ml="auto"
@@ -162,6 +182,138 @@ function ChatInput({ isChatDisabled }: { isChatDisabled?: boolean }) {
       </Flex>
     </Flex>
   );
-}
 
-export default ChatInput;
+  const contextMenu = selectedContextType && (
+    <Portal>
+      <ContextMenu
+        contextType={selectedContextType}
+        open={contextModalOpen}
+        onOpenChange={handleContextModalOpenChange}
+      />
+    </Portal>
+  );
+
+  // For desktop, return the UI directly.
+  if (!isMobile) {
+    return (
+      <>
+        {chatInputUI}
+        {contextMenu}
+      </>
+    );
+  }
+
+  // For mobile, return a trigger and a modal containing the UI.
+  return (
+    <>
+      {/* Mobile Trigger Bar */}
+      <Flex
+        onClick={onInputModalOpen}
+        flexDir="column"
+        align="flex-start"
+        justifyContent="space-between"
+        m={0}
+        p={3}
+        bg="gray.100"
+        maxH="7rem"
+        overflowY="auto"
+        borderTopWidth="1px"
+        borderColor="gray.300"
+        cursor="pointer"
+        position="relative"
+        borderRadius="lg"
+        borderWidth="1px"
+        className="group"
+        transition="all 0.32s ease-in-out"
+        _active={{
+          borderColor: "primary.focusRing",
+        }}
+        _focusWithin={{
+          borderColor: "primary.focusRing",
+        }}
+      >
+        <Text
+          fontSize="sm"
+          color={inputValue ? "fg" : "fg.subtle"}
+          wordBreak="break-word"
+        >
+          {inputValue || message}
+        </Text>
+        <Flex justifyContent="space-between" alignItems="center" w="full">
+          <Flex gap="2">
+            <ContextButton
+              contextType="layer"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                openContextMenu("layer");
+              }}
+              disabled={disabled}
+            />
+            <ContextButton
+              contextType="area"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                openContextMenu("area");
+              }}
+              disabled={disabled}
+            />
+            <ContextButton
+              contextType="date"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                openContextMenu("date");
+              }}
+              disabled={disabled}
+            />
+          </Flex>
+          <Button
+            p={0}
+            flexShrink={0}
+            colorPalette="primary"
+            title="Send message"
+            aria-hidden
+            ml="auto"
+            borderRadius="full"
+            variant="solid"
+            _disabled={{ opacity: 0.36, cursor: "not-allowed" }}
+            type="button"
+            size="xs"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.stopPropagation();
+              submitPrompt();
+            }}
+            disabled={isButtonDisabled}
+            loading={isLoading}
+          >
+            <ArrowBendRightUpIcon weight="bold" />
+          </Button>
+        </Flex>
+      </Flex>
+      {contextMenu}
+      {/* Input Modal appears on tap when on mobile device */}
+      <Dialog.Root
+        open={inputModalOpen}
+        onOpenChange={onInputModalClose}
+        initialFocusEl={focusEl ? () => focusEl : undefined}
+        placement="center"
+        motionPreset="slide-in-bottom"
+        scrollBehavior="inside"
+      >
+        <Portal>
+          <Dialog.Backdrop bg="blackAlpha.400" backdropFilter="blur(2px)" />
+          <Dialog.Positioner>
+            <Dialog.Content
+              bg="transparent"
+              boxShadow="none"
+              position="fixed"
+              w="full"
+              maxW="calc(100vw - 1rem)"
+            >
+              {chatInputUI}
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
+    </>
+  );
+}
