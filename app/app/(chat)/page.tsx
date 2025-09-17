@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { Loader } from "@chakra-ui/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import useChatStore from "@/app/store/chatStore";
 import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
@@ -17,6 +17,7 @@ function NewThread() {
   const { reset: resetMapStore } = useMapStore();
   const searchParams = useSearchParams();
   const [hasMounted, setHasMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     resetChatStore();
@@ -28,13 +29,20 @@ function NewThread() {
     setHasMounted(true);
   }, []);
 
+  const submitPrompt = async (prompt: string) => {
+    const result = await sendMessage(prompt);
+    if (result.isNew) {
+      router.replace(`/app/threads/${result.id}`);
+    }
+  };
+  
   useEffect(() => {
     if (!hasMounted) return;
     const prompt = searchParams.get("prompt");
-    if (prompt && typeof sendMessage === "function" && !currentThreadId) {
-      sendMessage(prompt);
+    if (prompt && !currentThreadId) {
+      submitPrompt(prompt);
     }
-  }, [hasMounted, sendMessage, searchParams, currentThreadId]);
+  }, [hasMounted, submitPrompt, searchParams, currentThreadId]);
 
   return null;
 }
