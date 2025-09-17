@@ -17,7 +17,6 @@ import {
   useBreakpointValue,
   Flex,
   Link as ChLink,
-  Text,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
