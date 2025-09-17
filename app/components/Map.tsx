@@ -119,7 +119,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           tiles={[
             `https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
           ]}
-          tileSize={256}
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
