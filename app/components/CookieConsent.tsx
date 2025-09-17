@@ -62,6 +62,16 @@ const CookieConsent = () => {
                   >
                     Privacy Policy
                   </Link>
+                  and{" "}
+                  <Link
+                    href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    textDecor="underline"
+                    color="primary.solid"
+                  >
+                    AI Privacy Policy
+                  </Link>
                 </Text>
               </Flex>
               <Box display="flex" gap={4} flexShrink={0}>

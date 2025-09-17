@@ -202,15 +202,32 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           >
             Privacy Policy
           </ChLink>
-          <Text color="fg.muted">•</Text>
           <ChLink
-            href="https://www.wri.org/about/wri-data-platforms-tos"
+            href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
             color="fg.muted"
           >
-            Terms of Service
+            AI Privacy Policy
+          </ChLink>
+          <ChLink
+            href="https://www.wri.org/about/legal/general-terms-use"
+            target="_blank"
+            rel="noopener noreferrer"
+            textDecoration="underline"
+            color="fg.muted"
+          >
+            Terms of Use
+          </ChLink>
+          <ChLink
+            href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+            target="_blank"
+            rel="noopener noreferrer"
+            textDecoration="underline"
+            color="fg.muted"
+          >
+            AI Terms of Use
           </ChLink>
           <Code bg="transparent" p={0} color="fg.muted" ml={2} fontSize="0.625rem">
             lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
