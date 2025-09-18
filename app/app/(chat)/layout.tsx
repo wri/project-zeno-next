@@ -34,7 +34,7 @@ export default function DashboardLayout({
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
-  const isMobile = useBreakpointValue({ base: true, md: false });
+  const isMobile = useBreakpointValue({ base: true, md: false },{ fallback: "md" });
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
