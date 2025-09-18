@@ -6,6 +6,7 @@ import {
   Drawer,
   Portal,
   IconButton,
+  useBreakpoint,
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { Suspense, useEffect, useState } from "react";
@@ -34,7 +35,9 @@ export default function DashboardLayout({
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
-  const isMobile = useBreakpointValue({ base: true, md: false },{ fallback: "md" });
+  const isMobile = useBreakpointValue({ base: true, md: false }, {ssr: false});
+  const breakpoint = useBreakpoint({ ssr: typeof window !== "undefined" ? false : undefined, })
+
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
