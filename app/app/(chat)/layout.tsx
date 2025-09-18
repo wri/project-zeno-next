@@ -6,7 +6,6 @@ import {
   Drawer,
   Portal,
   IconButton,
-  useBreakpoint,
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { Suspense, useEffect, useState } from "react";
@@ -35,8 +34,9 @@ export default function DashboardLayout({
   const { cookieConsent, setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
-  const isMobile = useBreakpointValue({ base: true, md: false }, {ssr: false});
-  const breakpoint = useBreakpoint({ ssr: typeof window !== "undefined" ? false : undefined, })
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const [mobileHeight, setMobileHeight] = useState("0")
+  const [desktopHeight, setDesktopHeight] = useState("0")
 
 
   useEffect(() => {
@@ -51,6 +51,12 @@ export default function DashboardLayout({
     }
   }, [cookieConsent, setConsentStatus]);
 
+  useEffect(() => {
+    // Set layout heights after mount to avoid flash of both layouts at once
+    setMobileHeight("min(100dvh, 100vh)")
+    setDesktopHeight("auto")
+  }, [])
+
   function DebugToastsMount() {
     const params = useSearchParams();
     const debugEnabled =
@@ -64,6 +70,7 @@ export default function DashboardLayout({
       templateColumns="auto min-content 1fr"
       templateAreas="'sidebar chat map'"
       templateRows="1fr"
+      h={{ base: 0, md: desktopHeight }}
       maxH="calc(100vh - 3rem)"
       display={{ base: "none", md: "grid" }}
     >
@@ -77,7 +84,7 @@ export default function DashboardLayout({
     <Box
       position="relative"
       w="100vw"
-      h={{ base: "min(100dvh, 100vh)", md: 0 }}
+      h={{ base: mobileHeight, md: 0 }}
       overflow="hidden"
       gridRow={{ base: 1, md: "none" }}
       display={{ base: "block", md: "none" }}
