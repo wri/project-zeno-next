@@ -25,7 +25,7 @@ const useAuthStore = create<AuthState>()((set) => ({
   isAuthenticated: false,
   isAnonymous: false,
   usedPrompts: 0,
-  totalPrompts: 25,
+  totalPrompts: 10,
   isSignupOpen: false,
   isLoadingMetadata: false,
   setPromptUsage: (used: number, total: number) => {
