@@ -678,7 +678,7 @@ export default function OnboardingPage() {
                 </Link>{" "}
                 and the{" "}
                 <Link
-                  href="https://help.globalnaturewatch.org/global-nature-watch-ai-privacy-policy"
+                  href="https://help.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"

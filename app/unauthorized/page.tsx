@@ -183,7 +183,7 @@ export default function UnauthorizedPage() {
             textDecorationStyle="dotted"
             rel="noreferrer"
             target="_blank"
-            href="https://help.globalnaturewatch.org/global-nature-watch-ai-privacy-policy"
+            href="https://help.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
           >
             AI Privacy Policy
           </ChakraLink>
