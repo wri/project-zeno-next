@@ -16,7 +16,6 @@ import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
-import CookieConsent from "@/app/components/CookieConsent";
 import useCookieConsentStore from "@/app/store/cookieConsentStore";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { useSearchParams } from "next/navigation";
@@ -135,7 +134,6 @@ export default function DashboardLayout({
       bg="bg"
     >
       {cookieConsent && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
-      {/* {GA_ID && <CookieConsent />} */}
       <UploadAreaDialog />
 
       {!isMobile && <PageHeader />}
