@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
-import CookieConsent from "@/app/components/CookieConsent";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
 import Script from "next/script";
 
