@@ -135,7 +135,7 @@ export default function DashboardLayout({
       bg="bg"
     >
       {cookieConsent && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
-      {GA_ID && <CookieConsent />}
+      {/* {GA_ID && <CookieConsent />} */}
       <UploadAreaDialog />
 
       {!isMobile && <PageHeader />}
