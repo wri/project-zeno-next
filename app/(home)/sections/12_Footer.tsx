@@ -2,11 +2,10 @@ import {
   Box,
   Container,
   Flex,
-  Heading,
-  Image,
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
+import LclLogo from "../../components/LclLogo";
 
 export default function FooterSection() {
   return (
@@ -28,58 +27,61 @@ export default function FooterSection() {
           gap={4}
           flexDir={{ base: "column", md: "row" }}
         >
-          <Heading size={{ base: "3xl", md: "5xl" }} fontWeight="semibold">
-            Global Nature Watch
-          </Heading>
-          <Flex
-            gap="12"
-            alignItems={{ base: "flex-start", md: "center" }}
-            flexWrap="wrap"
-            justifyContent={{ base: "flex-start", md: "center" }}
-          >
-            <ChakraLink href="https://www.wri.org/">
-              <Image src="/WRI-logo-mono.svg" alt="WRI Logo" height="64px" />
-            </ChakraLink>
-            <ChakraLink href="https://landcarbonlab.org/">
-              <Image src="/LCL-logo.svg" alt="LCL Logo" height="64px" />
-            </ChakraLink>
-            <ChakraLink href="https://www.bezosearthfund.org/">
-              <Image src="/BEF-logo-mono.svg" alt="BEF Logo" height="64px" />
-            </ChakraLink>
-            <ChakraLink href="https://www.globalforestwatch.org/">
-              <Image src="/GFW-logo-mono.svg" alt="GFW Logo" height="64px" />
-            </ChakraLink>
+          <Flex alignItems="center" gap={4}>
+            <LclLogo width={32} avatarOnly />
+            <Text fontSize={{ base: "3xl", md: "5xl" }} fontWeight="semibold" lineHeight="1">
+              Global Nature Watch
+            </Text>
           </Flex>
         </Flex>
         <Flex
           justifyContent={{ base: "flex-start", md: "space-between" }}
           alignItems={{ base: "flex-start", md: "center" }}
           gap={4}
-          pb="12"
+          pb="4"
           flexDir={{ base: "column", md: "row" }}
-        >
+          >
           <Flex
             alignItems="center"
             justifyContent="flex-start"
             rowGap={6}
             columnGap={4}
             flexWrap="wrap"
-            w="full"
-          >
-            <Text>{new Date().getFullYear()} © Global Nature Watch</Text>
+            w={{ base: "full", md: "auto" }}
+            flex={{ md: 2 }}
+            >
+              <Text>{new Date().getFullYear()} Global Nature Watch</Text>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
+              target="_blank" rel="noopener noreferrer"
             >
               Privacy Policy
             </ChakraLink>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
-              href="https://landcarbonlab.org/"
+              href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
+              target="_blank" rel="noopener noreferrer"
             >
-              Cookie Preferences
+              AI Privacy Policy
+            </ChakraLink>
+            <ChakraLink
+              textDecoration="underline"
+              textDecorationStyle="dotted"
+              href="https://www.wri.org/about/legal/general-terms-use"
+              target="_blank" rel="noopener noreferrer"
+            >
+              Terms of Use
+            </ChakraLink>
+            <ChakraLink
+              textDecoration="underline"
+              textDecorationStyle="dotted"
+              href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+              target="_blank" rel="noopener noreferrer"
+            >
+              AI Terms of Use
             </ChakraLink>
           </Flex>
           <Flex
@@ -88,12 +90,14 @@ export default function FooterSection() {
             rowGap={6}
             columnGap={4}
             flexWrap="wrap"
-            w="full"
-          >
+            w={{ base: "full", md: "auto" }}
+            flex={{ md: 1 }}
+            >
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://www.instagram.com/landcarbonlab/"
+              target="_blank" rel="noopener noreferrer"
             >
               Instagram
             </ChakraLink>
@@ -101,6 +105,7 @@ export default function FooterSection() {
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://www.linkedin.com/showcase/land-carbon-lab/"
+              target="_blank" rel="noopener noreferrer"
             >
               Linkedin
             </ChakraLink>
@@ -108,6 +113,7 @@ export default function FooterSection() {
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://x.com/landcarbonlab"
+              target="_blank" rel="noopener noreferrer"
             >
               Twitter
             </ChakraLink>

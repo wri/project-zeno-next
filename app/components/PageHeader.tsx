@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Flex,
   Heading,
@@ -19,18 +21,35 @@ import {
 
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
+import { toaster } from "@/app/components/ui/toaster";
 
 function PageHeader() {
-  const { userEmail, usedPrompts, totalPrompts, isAuthenticated, clearAuth } =
+  const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
-
+  const handleLogout = async () => {
+    try {
+      toaster.create({
+        title: "Logging out",
+        description: "Signing you out and redirecting…",
+        type: "info",
+        duration: 8000,
+      });
+    } catch {}
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+    url.searchParams.set("origin", "gnw");
+    window.location.href = url.toString();
+  };
   return (
     <Flex
       alignItems="center"
       justifyContent="space-between"
-      px="5"
+      px={{ base: 3, md: 5 }}
       py="2"
-      h="12"
+      h={{ base: 10, md: 12 }}
       bg="primary.solid"
       color="fg.inverted"
     >
@@ -57,7 +76,7 @@ function PageHeader() {
           BETA
         </Badge>
       </Flex>
-      <Flex gap="6" alignItems="center">
+      <Flex gap="6" alignItems="center" hideBelow="md">
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
             variant="solid"
@@ -128,7 +147,8 @@ function PageHeader() {
                     cursor="pointer"
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
-                    onClick={() => clearAuth()}
+                    onClick={handleLogout}
+                    title="Log Out"
                   >
                     <SignOutIcon />
                     Logout
@@ -139,13 +159,16 @@ function PageHeader() {
           </Menu.Root>
         ) : (
           <Button
+            asChild
             variant="solid"
             colorPalette="primary"
             _hover={{ bg: "primary.fg" }}
             size="sm"
           >
-            <UserIcon />
-            Log in / Sign Up
+            <Link href="/app">
+              <UserIcon />
+              Log in / Sign Up
+            </Link>
           </Button>
         )}
       </Flex>

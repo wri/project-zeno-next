@@ -114,7 +114,7 @@ function UploadAreaDialog() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    terms of service
+                    terms of use
                   </Link>
                   .
                 </Text>

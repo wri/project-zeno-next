@@ -1,11 +1,5 @@
 import React, { useEffect, useState, useCallback, FC } from "react";
-import {
-  Source,
-  Layer,
-  Marker,
-  useMap,
-  MapMouseEvent,
-} from "react-map-gl/maplibre";
+import { Source, Layer, Marker } from "react-map-gl/maplibre";
 import { Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "../../ContextButton";
 import {
@@ -60,7 +54,6 @@ function createBboxPolygon(
 }
 
 function MapFeature({ feature, areas }: MapFeatureProps) {
-  const { current: map } = useMap();
   const { upsertContextByType, removeContext } = useContextStore();
   const [isHovered, setIsHovered] = useState(false);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -71,11 +64,12 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
   );
   const isInContext = areaInContext ? true : false;
 
-  const fillColor = isInContext ? "#3b82f6" : "#555";
+  const fillColor = isInContext ? "#0A3785" : "#666E7B";
 
   const sourceId = `geojson-source-${feature.id}`;
   const bboxSourceId = `bbox-source-${feature.id}`;
   const fillLayerId = `geojson-fill-${feature.id}`;
+  const lineSolidLayerId = `geojson-line-${feature.id}-solid`;
   const bboxLayerId = `bbox-line-${feature.id}`;
 
   let bboxCoords: [number, number, number, number] | null = null;
@@ -100,7 +94,6 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
       if (hovered) {
         setIsHovered(true);
       } else {
-        // Add small delay before hiding to allow moving between polygon and label
         const timeout = setTimeout(() => {
           setIsHovered(false);
         }, 100);
@@ -118,99 +111,33 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
     setHoverState(false);
   };
 
-  // Set up hover and click event listeners
+  // Clear hover timeout on unmount
   useEffect(() => {
-    if (!map) return;
-
-    let hoverId: string | number | undefined;
-
-    // Helper function to set feature hover state on both sources
-    const setFeatureHoverState = (id: string | number, hovered: boolean) => {
-      map.setFeatureState({ source: sourceId, id }, { hover: hovered });
-      map.setFeatureState({ source: bboxSourceId, id }, { hover: hovered });
-    };
-
-    // Helper function to clear all hover states
-    const clearHoverState = () => {
-      if (hoverId !== undefined) {
-        setFeatureHoverState(hoverId, false);
-        hoverId = undefined;
-      }
-      setHoverState(false);
-    };
-
-    const handleMouseEnter = (e: MapMouseEvent) => {
-      if (e.features && e.features.length > 0) {
-        const feature = e.features[0];
-
-        // Clear previous hover if exists
-        if (hoverId !== undefined) {
-          setFeatureHoverState(hoverId, false);
-        }
-
-        // Set new hover
-        hoverId = feature.id || 0;
-        setFeatureHoverState(hoverId, true);
-        setHoverState(true);
-      }
-    };
-
-    const handleMouseLeave = () => {
-      clearHoverState();
-    };
-
-    const handleClick = () => {
-      // Only add to context if not already in context
-      if (!isInContext) {
-        upsertContextByType({
-          contextType: "area",
-          content: featureName,
-          aoiData: {
-            src_id: feature.id,
-            name: featureName,
-            source: "custom",
-            subtype: "custom-area",
-          },
-        });
-      }
-    };
-
-    // Reset hover state on map zoom/move to prevent stuck states
-    const handleMapTransform = () => {
-      clearHoverState();
-    };
-
-    map.on("mouseenter", fillLayerId, handleMouseEnter);
-    map.on("mouseleave", fillLayerId, handleMouseLeave);
-    map.on("click", fillLayerId, handleClick);
-    map.on("zoom", handleMapTransform);
-    map.on("move", handleMapTransform);
-
     return () => {
-      map.off("mouseenter", fillLayerId, handleMouseEnter);
-      map.off("mouseleave", fillLayerId, handleMouseLeave);
-      map.off("click", fillLayerId, handleClick);
-      map.off("zoom", handleMapTransform);
-      map.off("move", handleMapTransform);
       if (hoverTimeout) {
         clearTimeout(hoverTimeout);
       }
     };
-  }, [
-    map,
-    fillLayerId,
-    sourceId,
-    bboxSourceId,
-    feature.id,
-    areas,
-    upsertContextByType,
-    hoverTimeout,
-    setHoverState,
-  ]);
+  }, [hoverTimeout]);
 
   const handleRemoveFromContext = () => {
     if (areaInContext) {
       removeContext(areaInContext.id);
+    }
+  };
+
+  const handleSelectFromLabel = () => {
+    if (!isInContext) {
+      upsertContextByType({
+        contextType: "area",
+        content: featureName,
+        aoiData: {
+          src_id: feature.id,
+          name: featureName,
+          source: "custom",
+          subtype: "custom-area",
+        },
+      });
     }
   };
 
@@ -222,15 +149,35 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
         data={feature.data}
         generateId={true}
       >
-        {/* Fill layer for polygons */}
+        {/* Fill layer for polygons (transparent fill only) */}
         <Layer
           id={fillLayerId}
           type="fill"
           paint={{
             "fill-color": fillColor,
-            "fill-opacity": 0.3,
+            "fill-opacity": 0,
           }}
-          filter={["==", ["geometry-type"], "Polygon"]}
+          filter={[
+            "any",
+            ["==", ["geometry-type"], "Polygon"],
+            ["==", ["geometry-type"], "MultiPolygon"],
+          ]}
+        />
+
+        {/* Feature polygon outline */}
+        <Layer
+          id={lineSolidLayerId}
+          type="line"
+          paint={{
+            "line-color": fillColor,
+            "line-width": 2,
+            "line-opacity": 1,
+          }}
+          filter={[
+            "any",
+            ["==", ["geometry-type"], "Polygon"],
+            ["==", ["geometry-type"], "MultiPolygon"],
+          ]}
         />
       </Source>
 
@@ -248,29 +195,19 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
             type="line"
             paint={{
               "line-color": fillColor,
-              "line-width": 2,
+              "line-width": 1.5,
               "line-dasharray": [2, 1],
-              "line-opacity": [
-                "case",
-                ["boolean", ["feature-state", "hover"], false],
-                0, // Hide when hovered
-                0.8, // Show when not hovered
-              ],
+              "line-opacity": isHovered || isInContext ? 0 : 0.75,
             }}
           />
-          {/* Solid line layer (on hover) */}
+          {/* Solid line layer (on hover or in context) */}
           <Layer
             id={`${bboxLayerId}-solid`}
             type="line"
             paint={{
               "line-color": fillColor,
-              "line-width": 2,
-              "line-opacity": [
-                "case",
-                ["boolean", ["feature-state", "hover"], false],
-                0.8, // Show when hovered
-                0, // Hide when not hovered
-              ],
+              "line-width": 1.5,
+              "line-opacity": isHovered || isInContext ? 0.75 : 0,
             }}
           />
         </Source>
@@ -288,10 +225,12 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
             px={2}
             py={1}
             size="md"
-            variant={isHovered ? "surface" : "subtle"}
+            variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
             roundedBottom="none"
+            cursor="pointer"
             onMouseEnter={handleLabelMouseEnter}
             onMouseLeave={handleLabelMouseLeave}
+            onClick={handleSelectFromLabel}
           >
             {isInContext && (
               <Tag.StartElement>
@@ -305,7 +244,11 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
                 <Tag.CloseTrigger
                   opacity={isHovered ? 1 : 0.25}
                   cursor="pointer"
-                  onClick={handleRemoveFromContext}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFromContext();
+                    setHoverState(false);
+                  }}
                   aria-label="Remove from context"
                 />
               </Tag.EndElement>

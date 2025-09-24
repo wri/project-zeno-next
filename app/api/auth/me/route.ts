@@ -16,9 +16,13 @@ export async function GET() {
   }
 
   try {
-    const decoded: { email: string; exp: number } = jwtDecode(token);
-    // Check if the token is expired
-    if (decoded.exp * 1000 < Date.now()) {
+    const decoded: Record<string, unknown> = jwtDecode(token) as Record<
+      string,
+      unknown
+    >;
+    // Check if the token is expired (if exp present)
+    const exp = typeof decoded.exp === "number" ? decoded.exp : null;
+    if (exp && exp * 1000 < Date.now()) {
       return NextResponse.json({ isAuthenticated: false }, { status: 401 });
     }
 
@@ -69,9 +73,32 @@ export async function GET() {
       );
     }
 
+    // fallbacks for email and id
+    const root = decoded as Record<string, unknown>;
+    const userObj =
+      typeof root.user === "object" && root.user !== null
+        ? (root.user as Record<string, unknown>)
+        : undefined;
+
+    const emailRoot =
+      typeof root.email === "string" ? (root.email as string) : null;
+    const emailUser =
+      userObj && typeof userObj.email === "string"
+        ? (userObj.email as string)
+        : null;
+    const email = emailRoot ?? emailUser ?? null;
+
+    const idSub = typeof root.sub === "string" ? (root.sub as string) : null;
+    const idRoot = typeof root.id === "string" ? (root.id as string) : null;
+    const idUserId =
+      typeof root.userId === "string" ? (root.userId as string) : null;
+    const idFromUser =
+      userObj && typeof userObj.id === "string" ? (userObj.id as string) : null;
+    const userId = idSub ?? idRoot ?? idUserId ?? idFromUser ?? email;
+
     return NextResponse.json({
       isAuthenticated: true,
-      user: { email: decoded.email },
+      user: { email, id: userId },
       promptsUsed,
       promptQuota,
       hasProfile,

@@ -8,6 +8,11 @@ interface ChartData {
   [key: string]: unknown;
 }
 
+interface ColorMapEntry {
+  value: string;
+  color: string;
+}
+
 interface ChartSeries {
   name: string;
   color: string;
@@ -24,6 +29,53 @@ interface ChartSeries {
  * @returns An object containing the transformed `data` and `series` arrays.
  */
 
+//TODO: Generate this from the DATASET_CARDS fixture or move to config
+const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
+  "land_cover_type": [
+    { value: "Tree cover", color: "#246E24" },
+    { value: "Short vegetation", color: "#B9B91E" },
+    { value: "Wetland – short vegetation", color: "#74D6B4" },
+    { value: "Bare and sparse vegetation", color: "#FEFECC" },
+    { value: "Water", color: "#6BAED6" },
+    { value: "Snow/ice", color: "#ACD1E8" },
+    { value: "Cropland", color: "#fff183" },
+    { value: "Cultivated grasslands", color: "#FFCD73" },
+    { value: "Built-up", color: "#e8765d" },
+  ],
+  "land_type": [
+    {value: "Natural forests", color: "#246E24" },
+    { value: "Natural peat forests", color: "#093D09" },
+    { value: "Natural peat short vegetation", color: "#99991A" },
+    { value: "Mangroves", color: "#06A285" },
+    { value: "Wet natural forests", color: "#589558" },
+    { value: "Wet natural short vegetation", color: "#DBDB7B" },
+    { value: "Natural short vegetation", color: "#B9B91E" },
+    { value: "Natural water", color: "#6BAED6" },
+    { value: "Bare", color: "#FEFECC" },
+    { value: "Snow", color: "#ACD1E8" },
+    { value: "Crop", color: "#D3D3D3" },
+    { value: "Built", color: "#D3D3D3" },
+    { value: "Non-natural tree cover", color: "#D3D3D3" },
+    { value: "Non-natural short vegetation", color: "#D3D3D3" },
+    { value: "Wet non-natural tree cover", color: "#D3D3D3" },
+    { value: "Non-natural peat tree cover", color: "#D3D3D3" },
+    { value: "Wet non-natural short vegetation", color: "#D3D3D3" },
+    { value: "Non-natural peat short vegetation", color: "#D3D3D3" },
+    { value: "Non-natural water", color: "#D3D3D3" },
+    { value: "Non-natural bare", color: "#D3D3D3" },
+    { value: "Other", color: "#D3D3D3" }],
+  "driver": [
+    { value: "Logging", color: "#52A44E"},
+    { value: "Shifting cultivation", color: "#E9D700"},
+    { value: "Wildfire", color: "#885128"},
+    { value: "Other natural disturbances", color: "#3B209A"},
+    { value: "Settlements & Infrastructure", color: "#A354A0"},
+    { value: "Hard commodities", color: "#246E24"},
+    { value: "Permanent agriculture", color: "#E39D29"},
+    { value: "Unknown", color: "#246E24"},
+  ]
+
+}
 export default function formatChartData(
   data: InputData[] | unknown,
   type:
@@ -42,30 +94,73 @@ export default function formatChartData(
   if (!Array.isArray(data) || data.length === 0) {
     return { data: [], series: [] };
   }
-
-  const chartColors = getChartColors();
+  
   const keys = Object.keys(data[0]);
-  const xAxisKey = xAxis || keys[0];
+  const xAxisKey = xAxis || keys[0]; //identify dataset
+  
+  const defaultColors = getChartColors();
+  const chartColors = data.map(
+    (_, index) => defaultColors[index % defaultColors.length]
+  );
 
   // --- Logic for PIE charts ---
   if (type === "pie") {
     const valueKey = yAxis || keys.find((key) => key !== xAxisKey);
     if (!valueKey) {
-      console.error("Could not determine value key for Pie chart.");
       return { data: [], series: [] };
     }
+
+    const colorPalette = CHART_COLOR_MAPPING[xAxisKey];
+    let pieChartColors: string[] = [];
+
+    if (colorPalette) {
+      const valueToColorMap = new Map(
+        colorPalette.map((item) => [item.value, item.color])
+      );
+      pieChartColors = data.map((item, index) => {
+        const key = String(item[xAxisKey]);
+        return (
+          valueToColorMap.get(key) ||
+          defaultColors[index % defaultColors.length]
+        );
+      });
+    } else {
+      pieChartColors = chartColors;
+    }
+
     // For Pie charts, we need to add a color to each data point.
     const transformedData = data.map((item, index) => ({
       ...item,
-      color: chartColors[index % chartColors.length],
+      color: pieChartColors[index % pieChartColors.length],
     }));
 
-    const series: ChartSeries[] = [
-      {
-        name: valueKey,
-        color: chartColors[0], // A base color, though cells will override.
-      },
-    ];
+    let series: ChartSeries[];
+
+    if (colorPalette) {
+      // Create a map for quick color lookup
+      const valueToColorMap = new Map(
+        colorPalette.map((item) => [item.value, item.color])
+      );
+
+      // Create a map for the original data values for sorting
+      const dataValueMap = new Map(
+        transformedData.map((item) => [item[xAxisKey], item])
+      );
+
+      // Sort the series based on the order in colorPalette
+      series = colorPalette
+        .filter((paletteItem) => dataValueMap.has(paletteItem.value)) // Ensure the item exists in the data
+        .map((paletteItem) => ({
+          name: paletteItem.value,
+          color: valueToColorMap.get(paletteItem.value) || "#000000", // Fallback color
+        }));
+    } else {
+      // Fallback to default series generation if no color palette is defined
+      series = transformedData.map((item) => ({
+        name: String(item[xAxisKey]),
+        color: item.color as string,
+      }));
+    }
 
     return { data: transformedData as ChartData[], series };
   }
@@ -97,7 +192,7 @@ export default function formatChartData(
     const series: ChartSeries[] = [
       {
         name: nameKey, // The series name can be derived from the label key
-        color: chartColors[0],
+        color: defaultColors[0],
       },
     ];
 
@@ -112,7 +207,7 @@ export default function formatChartData(
       ? [
           {
             name: valueKey,
-            color: chartColors[0], // Assign the first color
+            color: defaultColors[0], // Assign the first color
           },
         ]
       : [];
@@ -126,7 +221,7 @@ export default function formatChartData(
     const seriesKeys = keys.filter((key) => key !== xAxisKey);
     const series: ChartSeries[] = seriesKeys.map((key, index) => ({
       name: key,
-      color: chartColors[index % chartColors.length],
+      color: defaultColors[index % defaultColors.length],
       stackId: "a", // All items in a stacked chart share a stackId
     }));
     // The data format is already correct for stacked charts.
@@ -151,7 +246,7 @@ export default function formatChartData(
     ].sort();
     const series: ChartSeries[] = uniqueGroups.map((group, index) => ({
       name: group,
-      color: chartColors[index % chartColors.length],
+      color: defaultColors[index % defaultColors.length],
     }));
 
     // Pivot the data from "long" to "wide" format.
@@ -190,10 +285,15 @@ export const formatYAxisLabel = (value: number, key?: string) => {
   if (key?.toString().toLowerCase() === "year") {
     return value.toString();
   }
+
+  if (value === 0) {
+    return "0";
+  }
   if (Number(value)) {
     if (Math.abs(value) < 1000) return value.toLocaleString();
     if (Math.abs(value) < 1e6) return `${(value / 1e3).toFixed(1)}K`;
     if (Math.abs(value) < 1e9) return `${(value / 1e6).toFixed(1)}M`;
     return `${(value / 1e9).toFixed(1)}B`;
   }
+  return value.toString();
 };

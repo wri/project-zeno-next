@@ -4,6 +4,9 @@ import { Box } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
+import SamplePrompts from "./SamplePrompts";
+
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,7 +40,9 @@ function ChatMessages() {
   }, []);
 
   // Show reasoning after the last user message when loading
-  const lastUserMessageIndex = messages.findLastIndex(msg => msg.type === "user");
+  const lastUserMessageIndex = messages.findLastIndex(
+    (msg) => msg.type === "user"
+  );
 
   return (
     <Box ref={containerRef} fontSize="sm">
@@ -45,14 +50,20 @@ function ChatMessages() {
         // Check if this message is consecutive to the previous one of the same type
         const previousMessage = index > 0 ? messages[index - 1] : null;
         const isConsecutive = previousMessage?.type === message.type;
-
+        const isFirst = index === 0;
         return (
           <Fragment key={message.id}>
             <MessageBubble
               message={message}
               isConsecutive={isConsecutive}
+              isFirst={isFirst}
             />
             {isLoading && index === lastUserMessageIndex && <Reasoning />}
+
+            {/* Prompt options for first message, removed when sent */}
+            {messages.length < 2 && LANDING_PAGE_VERSION !== "public" && (
+              <SamplePrompts />
+            )}
           </Fragment>
         );
       })}

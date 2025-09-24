@@ -1,9 +1,11 @@
 import { create } from "zustand";
+import { sendGAEvent } from "@next/third-parties/google";
+import { API_CONFIG } from "@/app/config/api";
 
 interface AuthState {
+  userId: string | null;
   userEmail: string | null;
   isAuthenticated: boolean;
-  isWhitelisted: boolean;
   isAnonymous: boolean;
   usedPrompts: number;
   totalPrompts: number;
@@ -11,21 +13,19 @@ interface AuthState {
   isLoadingMetadata: boolean;
   setPromptUsage: (used: number, total: number) => void;
   setUsageFromHeaders: (headers: Headers | Record<string, string>) => void;
-  setAuthStatus: (email: string) => void;
+  setAuthStatus: (email: string, id: string) => void;
   setAnonymous: () => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
 }
 
-const ALLOWED_DOMAINS = ["wri.org", "developmentseed.org", "wriconsultant.org"];
-
 const useAuthStore = create<AuthState>()((set) => ({
+  userId: null,
   userEmail: null,
   isAuthenticated: false,
-  isWhitelisted: false,
   isAnonymous: false,
   usedPrompts: 0,
-  totalPrompts: 25,
+  totalPrompts: 10,
   isSignupOpen: false,
   isLoadingMetadata: false,
   setPromptUsage: (used: number, total: number) => {
@@ -53,47 +53,54 @@ const useAuthStore = create<AuthState>()((set) => ({
     const used = usedStr != null ? Number(usedStr) : null;
     const quota = quotaStr != null ? Number(quotaStr) : null;
 
-    set(({ usedPrompts, totalPrompts }) => ({
-      usedPrompts:
-        typeof used === "number" && !Number.isNaN(used) ? used : usedPrompts,
-      totalPrompts:
-        typeof quota === "number" && !Number.isNaN(quota)
-          ? quota
-          : totalPrompts,
-    }));
+    set(({ usedPrompts, totalPrompts }) => {
+      const newUsed = typeof used === "number" && !Number.isNaN(used) ? used : usedPrompts;
+      const newTotal = typeof quota === "number" && !Number.isNaN(quota) ? quota : totalPrompts;
+
+      if (newUsed >= newTotal) {
+        sendGAEvent("event", "prompt_limit_reached", {
+          prompts_remaining: newTotal - newUsed,
+          quota: newTotal,
+        });
+      }
+
+      return {
+        usedPrompts: newUsed,
+        totalPrompts: newTotal,
+      };
+    });
   },
   setAnonymous: () => {
     set({
       userEmail: null,
       isAuthenticated: false,
-      isWhitelisted: false,
       isAnonymous: true,
     });
   },
-  setAuthStatus: (email) => {
-    const domain = email.split("@")[1];
-    const isWhitelisted = ALLOWED_DOMAINS.includes(domain);
+  setAuthStatus: (email, id) => {
     set({
+      userId: id,
       userEmail: email,
       isAuthenticated: true,
-      isWhitelisted,
       isAnonymous: false,
     });
+    sendGAEvent("login", { user_id: id });
   },
   clearAuth: () => {
     set({
+      userId: null,
       userEmail: null,
       isAuthenticated: false,
-      isWhitelisted: false,
       isAnonymous: false,
     });
   },
   fetchMetadata: async () => {
     set({ isLoadingMetadata: true });
     try {
-      const response = await fetch(
-        "https://api.zeno-staging.ds.io/api/metadata"
-      );
+      if (!API_CONFIG.ENDPOINTS.METADATA) {
+        throw new Error("API_METADATA_URL is not configured");
+      }
+      const response = await fetch(API_CONFIG.ENDPOINTS.METADATA);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

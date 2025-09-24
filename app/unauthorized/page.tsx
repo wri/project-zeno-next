@@ -14,6 +14,8 @@ import LclLogo from "../components/LclLogo";
 import useAuthStore from "../store/authStore";
 import { useErrorHandler } from "../hooks/useErrorHandler";
 
+const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+
 const commonStyles = {
   textShadow: "2px 2px 5px hsla(225, 52%, 11%, 0.75)",
   color: "fg.inverted",
@@ -39,16 +41,18 @@ export default function UnauthorizedPage() {
       minH="100dvh"
       display="flex"
       flexDirection="column"
+      position="relative"
+      overflow="hidden"
     >
       <Box
         position="absolute"
-        top={20} // adjust this to "lower" the video, but the video top and background colors aren't exactly the same
         left={0}
         right={0}
-        bottom={0}
-        bg="#1d358d"
+        bottom={-200}
+        bg="#0D1429"
         zIndex="0"
         pointerEvents="none"
+        height="70%"
       >
         <video
           autoPlay
@@ -56,19 +60,21 @@ export default function UnauthorizedPage() {
           muted
           playsInline
           preload="auto"
+          poster="/landing-hero-poster.jpg"
           style={{
             height: "100%",
             width: "100%",
             objectFit: "cover",
-            objectPosition: "top",
+            objectPosition: "bottom",
           }}
         >
-          <source src="/landing-hero-bg.mp4" type="video/mp4" />
+          <source src={"/landing-hero-bg.webm"} type="video/webm" />
+          <source src={"/landing-hero-bg.mp4"} type="video/mp4" />
         </video>
       </Box>
       <Container
         textAlign="center"
-        maxW="lg"
+        maxW="2xl"
         {...commonStyles}
         py={10}
         display="flex"
@@ -80,39 +86,44 @@ export default function UnauthorizedPage() {
         minH={{ base: "none", xl: "45vh" }}
         flex={1}
       >
-        <Heading
-          size={{ base: "2xl", md: "4xl" }}
-          {...commonStyles}
-          mb={10}
-          letterSpacing={-2.5}
-        >
-          Global Nature Watch
-        </Heading>
+        <Flex alignItems="center" gap="2" justifyContent="center" mb={10}>
+          <LclLogo width={18} avatarOnly />
+          <Heading
+            size={{ base: "2xl", md: "4xl" }}
+            {...commonStyles}
+            m={0}
+            letterSpacing={-2.5}
+          >
+            Global Nature Watch
+          </Heading>
+        </Flex>
         <Heading size={{ base: "3xl", md: "5xl" }} {...commonStyles} mb={0}>
-          {isSignupOpen ? "Early access only" : "Coming soon"}
+          {LANDING_PAGE_VERSION === "closed" && !isSignupOpen
+            ? "Early access only"
+            : "Coming soon"}
         </Heading>
-        {isSignupOpen ? (
+        {LANDING_PAGE_VERSION === "closed" && !isSignupOpen ? (
           <>
-            <Text fontSize="lg" {...commonStyles} marginBottom={4}>
+            <Text fontSize={{ base: "xl", md: "2xl"}} {...commonStyles} marginBottom={4}>
               Thank you for your interest in Global Nature Watch!
             </Text>
-            <Text fontSize="lg" {...commonStyles}>
+            <Text fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
               Right now access is limited while we are in closed beta. We&apos;d
               love for you to be part of what&apos;s next, so join the waitlist
               to be among the first to know when the tool becomes available.
             </Text>
           </>
         ) : (
-          <Text fontSize="lg" {...commonStyles}>
+          <Text px={3} maxW="xl" fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
             Thank you for creating a Global Nature Watch account. Early access
-            is limited while we scale responsibly. You’re on the waitlist, and
-            we will email you as soon as the tool is ready.
+            is limited while we scale responsibly. You&apos;re on the waitlist,
+            and we will email you as soon as the tool is ready.
           </Text>
         )}
         <Flex justifyContent="center" gap={4}>
           <Button
             asChild
-            size="sm"
+            size="md"
             className="light"
             variant="solid"
             colorPalette="primary"
@@ -120,10 +131,10 @@ export default function UnauthorizedPage() {
           >
             <ChakraLink href="/">Back to homepage</ChakraLink>
           </Button>
-          {isSignupOpen && (
+          {LANDING_PAGE_VERSION === "closed" && !isSignupOpen && (
             <Button
               asChild
-              size="sm"
+              size="md"
               className="light"
               variant="solid"
               colorPalette="primary"
@@ -172,13 +183,31 @@ export default function UnauthorizedPage() {
             textDecorationStyle="dotted"
             rel="noreferrer"
             target="_blank"
+            href="https://help.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
+          >
+            AI Privacy Policy
+          </ChakraLink>
+          <ChakraLink
+            textDecoration="underline"
+            textDecorationStyle="dotted"
+            rel="noreferrer"
+            target="_blank"
             href="https://www.wri.org/about/legal/general-terms-use"
           >
-            Terms of service
+            Terms of use
+          </ChakraLink>
+          <ChakraLink
+            textDecoration="underline"
+            textDecorationStyle="dotted"
+            rel="noreferrer"
+            target="_blank"
+            href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+          >
+            AI Terms of use
           </ChakraLink>
         </Flex>
         <Text fontSize="sm" display={{ base: "none", md: "flex" }}>
-          © Global Nature Watch 2025
+          © Global Nature Watch {new Date().getFullYear()}
         </Text>
       </Container>
     </Box>

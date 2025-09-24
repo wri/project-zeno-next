@@ -19,6 +19,7 @@ interface TileLayer {
   name: string;
   url: string;
   visible: boolean;
+  opacity?: number;
 }
 
 interface SelectionMode {
@@ -37,6 +38,7 @@ interface MapSlice {
   addGeoJsonFeature: (feature: GeoJsonFeature) => void;
   removeGeoJsonFeature: (id: string) => void;
   clearGeoJsonFeatures: () => void;
+  setTileLayers: (layers: TileLayer[]) => void;
   addTileLayer: (layer: TileLayer) => void;
   removeTileLayer: (id: string) => void;
   toggleTileLayer: (id: string) => void;
@@ -76,6 +78,16 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       tileLayers: [],
     });
     get().clearSelectionMode();
+  
+    // Return map to the center point
+    const { mapRef } = get();
+    if (mapRef) {
+      const map = mapRef.getMap();
+      map.flyTo({
+        center: [0, 0],
+        zoom: 0,
+      });
+    }
   },
 
   setMapRef: (mapRef) => {
@@ -116,6 +128,10 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     set((state) => ({
       tileLayers: [...state.tileLayers.filter((l) => l.id !== layer.id), layer],
     }));
+  },
+
+  setTileLayers: (tileLayers) => {
+    set(() => ({ tileLayers }));
   },
 
   removeTileLayer: (id) => {
@@ -160,6 +176,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
       // Fit the map to the bounds with some padding
       map.fitBounds(bounds, {
+        linear: true,
         padding: { top: 50, bottom: 50, left: 50, right: 50 },
         maxZoom: 16, // Prevent zooming in too much for very small areas
       });
@@ -212,10 +229,9 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       const map = mapRef.getMap();
 
       // Fly to the center point
-      map.flyTo({
+      map.jumpTo({
         center: [lng, lat],
         zoom: zoom,
-        essential: true, // This animation is considered essential for accessibility
       });
     } catch (error) {
       console.error("Error flying to GeoJSON center:", error);

@@ -20,6 +20,22 @@ import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 const POSTS = [
   {
     title:
+      "New Global Data Provides the Best View Yet of Vegetation Height Outside of Forests",
+    date: "September 5, 2025",
+    image:
+      "https://www.datocms-assets.com/135908/1756848110-paramo_colombia_3.jpeg?auto=compress,format,enhance",
+    url: "https://landcarbonlab.org/insights/global-short-vegetation-height-outside-forest/",
+  },
+  {
+    title:
+      "Tracking the Health of Earth’s Ecosystems with New Global Productivity Data",
+    date: "August 21, 2025",
+    image:
+      "https://www.datocms-assets.com/135908/1755789098-screenshot-2025-08-21-105942.png?auto=compress,format,enhance",
+    url: "https://landcarbonlab.org/insights/global-productivity-data-ecosystem-health/",
+  },
+  {
+    title:
       "How UNESCO is Using Emissions Data to Help Safeguard World Heritage Forest Carbon Sinks",
     date: "July 8, 2025",
     image:
@@ -49,12 +65,13 @@ const POSTS = [
     image:
       "https://www.datocms-assets.com/135908/1743777114-greenfleet-australia_flickr.jpg?auto=compress,format,enhance",
     url: "https://landcarbonlab.org/insights/protecting-secondary-forests-climate-solution/",
-  },
+  }
 ];
 
 export default function LatestUpdatesSection() {
   return (
     <Box
+      id="research"
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
@@ -64,11 +81,11 @@ export default function LatestUpdatesSection() {
       <Container display="flex" flexDir="column" gap={{ base: "8", md: "10" }}>
         <Container textAlign="center" maxW="2xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            Latest Updates & Research
+            Latest updates & research
           </Heading>
           <Text fontSize="lg" mb="4">
-            We combine cutting-edge geospatial research from Land & Carbon Lab
-            and Global Forest Watch with the latest advances in technology.
+            Global Nature Watch serves up the latest breakthroughs in geospatial data
+            from the field-leading research and technology partners behind Land & Carbon Lab and Global Forest Watch.
           </Text>
         </Container>
         <Container maxW="5xl" px={0}>
@@ -166,7 +183,7 @@ export default function LatestUpdatesSection() {
               size="md"
               ml={{ base: "inherit", md: "auto" }}
             >
-              <Link href="https://landcarbonlab.org/">
+              <Link href="https://landcarbonlab.org/" target="_blank" rel="noopener noreferrer">
                 Visit Land & Carbon Lab
               </Link>
             </Button>
@@ -177,7 +194,7 @@ export default function LatestUpdatesSection() {
               rounded="lg"
               size="md"
             >
-              <Link href="https://www.globalforestwatch.org/">
+              <Link href="https://www.globalforestwatch.org/" target="_blank" rel="noopener noreferrer">
                 Visit Global Forest Watch
               </Link>
             </Button>

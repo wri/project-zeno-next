@@ -1,27 +1,36 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
-  Circle,
   Flex,
-  HStack,
   IconButton,
   LinkProps,
   Stack,
   Text,
   Link as ChLink,
   Status,
+  Heading,
   Accordion,
+  Box,
+  Badge,
+  Progress,
 } from "@chakra-ui/react";
 import Link from "next/link";
+import { sendGAEvent } from "@next/third-parties/google";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
+  LifebuoyIcon,
   NotePencilIcon,
-  SidebarSimpleIcon
+  SidebarSimpleIcon,
+  SignOutIcon,
+  UserIcon,
 } from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
+import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
+import { toaster } from "@/app/components/ui/toaster";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
+import LclLogo from "./components/LclLogo";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
   const { href, children, isActive, ...rest } = props;
@@ -57,7 +66,12 @@ function ThreadSection({
   value,
   currentThreadId,
 }: {
-  threads: { id: string; name: string }[];
+  threads: {
+    id: string;
+    name: string;
+    updated_at: string;
+    is_public: boolean;
+  }[];
   label: string;
   value: string;
   currentThreadId: string | null;
@@ -92,7 +106,10 @@ function ThreadSection({
                 borderRadius="sm"
                 role="group"
                 _hover={{ layerStyle: "fill.muted" }}
-                _focusWithin={{ outline: "2px solid var(--chakra-colors-gray-400)", outlineOffset: "2px" }}
+                _focusWithin={{
+                  outline: "2px solid var(--chakra-colors-gray-400)",
+                  outlineOffset: "2px",
+                }}
                 css={{
                   "&:hover .thread-actions": { opacity: 1 },
                   "&:focus-within .thread-actions": { opacity: 1 },
@@ -103,10 +120,21 @@ function ThreadSection({
                   href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
+                  onClick={() => {
+                    if (!isActive) {
+                      sendGAEvent("event", "saved_conversation_loaded", {
+                        conversation_id: thread.id,
+                        updated_at: thread.updated_at,
+                        is_public: thread.is_public,
+                      });
+                    }
+                  }}
                 >
                   {thread.name}
                 </ThreadLink>
-                <ThreadActionsMenu thread={thread} />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <ThreadActionsMenu thread={thread} />
+                </div>
               </Flex>
             );
           })}
@@ -126,11 +154,35 @@ export function Sidebar() {
     fetchApiStatus,
   } = useSidebarStore();
   const { currentThreadId } = useChatStore();
+  const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
 
   useEffect(() => {
     fetchThreads();
     fetchApiStatus();
   }, [fetchThreads, fetchApiStatus]);
+
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const handleLogout = () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      toaster.create({
+        title: "Logging out",
+        description: "Signing you out and redirecting…",
+        type: "info",
+        duration: 8000,
+      });
+    } catch {}
+    (async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {}
+      const url = new URL("https://api.resourcewatch.org/auth/logout");
+      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+      url.searchParams.set("origin", "gnw");
+      window.location.href = url.toString();
+    })();
+  };
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -140,7 +192,7 @@ export function Sidebar() {
     <Flex
       flexDir="column"
       bg="bg.subtle"
-      w={!sideBarVisible ? "0px" : "16rem"}
+      w={{ base: "full", md: !sideBarVisible ? "0px" : "16rem" }}
       h="100%"
       gridArea="sidebar"
       overflow="hidden"
@@ -150,9 +202,42 @@ export function Sidebar() {
       inert={!sideBarVisible}
     >
       <Flex
+        alignItems="center"
+        justifyContent="space-between"
+        p={3}
+        bg="primary.solid"
+        color="fg.inverted"
+        hideFrom="md"
+      >
+        <Flex gap="2" alignItems="center">
+          <ChLink
+            as={Link}
+            href="/"
+            display="flex"
+            transition="opacity 0.24s ease"
+            _hover={{ opacity: 0.8 }}
+          >
+            <LclLogo width={16} avatarOnly fill="white" />
+            <Heading as="h1" size="sm" color="fg.inverted">
+              Global Nature Watch
+            </Heading>
+          </ChLink>
+          <Badge
+            colorPalette="primary"
+            bg="primary.800"
+            letterSpacing="wider"
+            variant="solid"
+            size="xs"
+          >
+            BETA
+          </Badge>
+        </Flex>
+      </Flex>
+      <Flex
         px="3"
-        py="2"
-        h="14"
+        py={2}
+        pt={{ base: 3, md: 2 }}
+        h={{ base: "auto", md: 14 }}
         justify="space-between"
         alignItems="center"
         position="sticky"
@@ -160,7 +245,13 @@ export function Sidebar() {
         bg="bg.subtle"
         boxShadow="xs"
       >
-        <Button asChild variant="solid" colorPalette="primary" size="sm">
+        <Button
+          asChild
+          variant="outline"
+          colorPalette="primary"
+          size="sm"
+          w={{ base: "full", md: "auto" }}
+        >
           <Link href="/app" aria-label="New conversation">
             New Conversation
             <NotePencilIcon />
@@ -171,7 +262,12 @@ export function Sidebar() {
           positioning={{ placement: "right" }}
           showArrow
         >
-          <IconButton variant="ghost" size="sm" onClick={toggleSidebar}>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+            hideBelow="md"
+          >
             <SidebarSimpleIcon />
           </IconButton>
         </Tooltip>
@@ -230,23 +326,44 @@ export function Sidebar() {
           <Status.Indicator />
           API Status: {apiStatus}
         </Status.Root>
-        <ChLink
-          href="/"
-          _hover={{ textDecor: "none", layerStyle: "fill.muted" }}
-          borderRadius="lg"
-          px="1"
-          py="2"
-        >
-          <HStack whiteSpace="nowrap">
-            <Circle size="8" fontSize="lg" borderWidth="1px"></Circle>
-            <Stack gap="0" fontWeight="medium">
-              <Text fontSize="sm">Home</Text>
-              <Text fontSize="xs" color="fg.subtle">
-                Global Nature Watch
-              </Text>
-            </Stack>
-          </HStack>
-        </ChLink>
+        <Box m={3} display="flex" flexDir="column" gap={2} hideFrom="md">
+          <Box bg="white" rounded="md" fontSize="sm" px={4} py={5}>
+            Available Prompts
+            <Progress.Root
+              size="xs"
+              min={0}
+              max={100}
+              value={(usedPrompts / totalPrompts) * 100}
+              minW="6rem"
+              rounded="full"
+              colorPalette="primary"
+            >
+              <Progress.Label mb="0.5" fontSize="xs" fontWeight="normal">
+                {usedPrompts}/{totalPrompts} Prompts
+              </Progress.Label>
+              <Progress.Track bg="neutral.200" maxH="4px">
+                <Progress.Range bg="primary.solid" />
+              </Progress.Track>
+            </Progress.Root>
+          </Box>
+          <Button variant="ghost" size="sm" justifyContent="flex-start">
+            <LifebuoyIcon />
+            Help
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            size="sm"
+            loading={isLoggingOut}
+            disabled={isLoggingOut}
+            justifyContent="flex-start"
+            title="Log Out"
+          >
+            <UserIcon />
+            {userEmail || "User name"}
+            <SignOutIcon />
+          </Button>
+        </Box>
       </Stack>
     </Flex>
   );

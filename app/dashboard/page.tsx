@@ -57,6 +57,7 @@ type ProfileFormState = {
 };
 
 type ValueChangeDetails = { value: string[] };
+
 export default function UserSettingsPage() {
   const [config, setConfig] = useState<ProfileConfig | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
@@ -228,6 +229,26 @@ export default function UserSettingsPage() {
     }
   };
 
+  const handleLogout = () => {
+    try {
+      toaster.create({
+        title: "Logging out",
+        description: "Signing you out and redirecting…",
+        type: "info",
+        duration: 8000,
+      });
+    } catch {}
+    (async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {}
+      const url = new URL("https://api.resourcewatch.org/auth/logout");
+      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+      url.searchParams.set("origin", "gnw");
+      window.location.href = url.toString();
+    })();
+  };
+
   return (
     <Box
       display="grid"
@@ -278,9 +299,7 @@ export default function UserSettingsPage() {
               User Settings
             </Link>
           </Button>
-          <Button
-            asChild
-          >
+          <Button asChild>
             <Link href="https://help.globalnaturewatch.org/" target="_blank">
               <LifebuoyIcon />
               Help
@@ -319,6 +338,8 @@ export default function UserSettingsPage() {
           gap={2}
           variant="outline"
           justifyContent="flex-start"
+          onClick={handleLogout}
+          title="Sign Out"
         >
           <UserIcon />
           <Text mr="auto">{form.email || "User"}</Text>
@@ -326,7 +347,7 @@ export default function UserSettingsPage() {
         </Button>
       </Flex>
       <Box maxH="100%" overflowY="auto">
-        <Container maxW="4xl" display="flex" flexDirection="column" py={10}>
+        <Container maxW="4xl" display="flex" flexDirection="column" py={16}>
           {/* Header Section */}
           <Flex
             justifyContent="space-between"
@@ -387,7 +408,16 @@ export default function UserSettingsPage() {
             <GridItem>
               <Field.Root id="email">
                 <Field.Label>Email address</Field.Label>
-                <Input type="email" value={form.email} readOnly disabled />
+                <Input
+                  type="email"
+                  value={form.email}
+                  readOnly
+                  _readOnly={{
+                    bg: "bg.subtle",
+                    color: "fg.muted",
+                    cursor: "not-allowed",
+                  }}
+                />
               </Field.Root>
             </GridItem>
           </Grid>
@@ -452,7 +482,11 @@ export default function UserSettingsPage() {
                 >
                   <Select.HiddenSelect />
                   <Select.Label>Role</Select.Label>
-                  <Select.Control>
+                  <Select.Control
+                    _disabled={{
+                      bg: "bg.subtle",
+                    }}
+                  >
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Role" />
                     </Select.Trigger>

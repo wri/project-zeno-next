@@ -1,8 +1,8 @@
+import NextImage from "next/image";
 import {
   Box,
   Container,
   Heading,
-  Image,
   Card,
   Text,
   IconButton,
@@ -25,8 +25,23 @@ const PARTNER_ORGS = [
   {
     name: "Land & Carbon Lab",
     logo: "/LCL-logo.svg",
-    description: "A global leader in land use and carbon monitoring.",
+    description: "A leading global research initiative for land and carbon monitoring.",
   },
+  {
+    name: "Placeholder 1",
+    logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+1",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+  },
+  {
+    name: "Placeholder 2",
+    logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+2",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+  },
+  {
+    name: "Placeholder 3",
+    logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+3",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+  }
 ];
 
 export default function TrustedPlatformsSection() {
@@ -37,17 +52,17 @@ export default function TrustedPlatformsSection() {
       borderBlockEnd="1px solid"
       borderColor="border"
     >
-      <Container>
+      <Container id="testimonials">
         <Container textAlign="center" maxW="3xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
             Building upon the legacy of World Resources Institute&rsquo;s
             trusted platforms
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch is built on the data and research of Global
+            Global Nature Watch is built on the trusted data and research of Global
             Forest Watch and Land & Carbon Lab, as trusted by NGOs, governments,
             journalists, communities, companies and geospatial experts
-            worldwide for over 14 years.
+            worldwide for over a decade.
           </Text>
         </Container>
         <Container
@@ -104,7 +119,13 @@ export default function TrustedPlatformsSection() {
                         p={4}
                         overflow="hidden"
                       >
-                        <Image src={org.logo} alt={`${org.name} logo`} />
+                        <NextImage
+                          src={org.logo}
+                          alt={`${org.name} logo`}
+                          width={200}
+                          height={60}
+                          style={{ objectFit: "contain" }}
+                        />
                       </Box>
                       <Card.Body>
                         <Card.Title fontSize="lg">{org.name}</Card.Title>

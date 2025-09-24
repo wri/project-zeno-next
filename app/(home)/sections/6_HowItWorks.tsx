@@ -4,31 +4,45 @@ const HOW_STEPS = [
   {
     title: "Processing your intent",
     description:
-      "When you ask Nature Watch a question, we use LangChain to process the natural language and determine your intent. This allows us to select the best AI models and analysis tools to calculate Nature Watch's response.",
-    images: ["/Langchain-logo.svg"],
+      "When you ask Global Nature Watch a question, our system of agents work together to understand your request and deliver the most accurate, relevant answers.",
+    images: [
+      { src: "/Langchain-logo.svg", alt: "Langchain logo", width: "80px" },
+      { src: "/gemini-icon.svg", alt: "Gemini icon", width: "50px" },
+      { src: "/claude-ai-icon.svg", alt: "Claude AI icon", width: "50px" },
+    ],
   },
   {
     title: "Retrieving quality data",
     description:
-      "We use our trusted APIs to pull data from Global Forest Watch and Land & Carbon Lab. This means verifiable data direct from authoritative sources, not from model training data.",
-    images: ["/GFW-logo.svg", "LCL-logo.svg"],
+      "Our data comes via APIs from Global Forest Watch and Land & Carbon Lab, platforms powered by contributions from researchers and partners around the globe. This means verifiable data from authoritative sources.",
+    images: [
+      { src: "/GFW-logo.svg", alt: "GFW logo", maxW: "100%" },
+      { src: "LCL-logo.svg", alt: "LCL logo", maxW: "100%" },
+    ],
   },
   {
-    title: "Tuning AI model's response",
+    title: "Tuning the AI model's response",
     description:
       "We use Retrieval-Augmented Generation (RAG) to link data retrieved via our trusted APIs with real documentation, methods papers and metadata from our research.",
-    images: ["/ri_chat-ai-line.svg"],
+    images: [{ src: "/ri_chat-ai-line.svg", alt: "AI icon", maxW: "100%" }],
   },
   {
     title: "Returning a response",
     description:
-      "Our agents are currently able to create spatial summary statistics, perform dataset searches and return natural-language summaries.",
-    images: ["/HIW-Brazil-Widget.png"],
+      "Our agents create summaries of spatial data, search through datasets, and explain insights clearly in over 170 languages.",
+    images: [
+      {
+        src: "/HIW-Brazil-Widget.png",
+        alt: "Brazil widget example",
+        maxW: "100%",
+      },
+    ],
   },
 ];
 export default function HowItWorksSection() {
   return (
     <Box
+      id="technology"
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"
@@ -73,7 +87,7 @@ export default function HowItWorksSection() {
           <Flex
             key={index}
             flexDir={{ base: "column-reverse", md: "row" }}
-            alignItems="center"
+            alignItems="stretch"
             gap={6}
             bg={{ base: "bg.muted", md: "transparent" }}
             p={{ base: 6, md: 0 }}
@@ -85,13 +99,13 @@ export default function HowItWorksSection() {
               maxW="lg"
               textAlign={{ base: "center", md: "left" }}
             >
-              <Heading as="p" size={{ base: "xl", md: "2xl" }} mb={2}>
+              <Heading as="p" size={{ base: "xl", md: "2xl" }}>
                 {step.title}
               </Heading>
               <Text fontSize="lg">{step.description}</Text>
             </Box>
             <Box
-              bg={{ base: "transparent", md: "bg.muted" }}
+              bg="bg.muted"
               rounded="lg"
               textAlign="center"
               flexShrink={0}
@@ -99,23 +113,15 @@ export default function HowItWorksSection() {
               flexDir="column"
               alignItems="center"
               justifyContent="center"
-              gap={6}
-              p={{ base: 0, md: 6 }}
+              p={6}
               mx="auto"
               zIndex={100}
               maxW={{ base: "none", md: "xs" }}
             >
-              <Flex gap={4}>
-                {step.images.map((image, i) => {
-                  return (
-                    <Image
-                      key={i}
-                      src={image}
-                      alt="placeholder"
-                      maxW="100%"
-                    />
-                  );
-                })}
+              <Flex gap={4} alignItems="center" justifyContent="center">
+                {step.images.map((image, i) => (
+                  <Image key={i} {...image} />
+                ))}
               </Flex>
             </Box>
           </Flex>

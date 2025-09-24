@@ -21,6 +21,11 @@ export function parseStreamMessage(
 
   const kwargs = lastMessage.kwargs;
   const content = kwargs.content;
+  // Extract trace identifier from response metadata (canonical field)
+  const responseMetadata =
+    (kwargs.response_metadata as { trace_id?: string } | undefined) ||
+    undefined;
+  const traceId = responseMetadata?.trace_id;
 
   if (messageType === "human") {
     return {
@@ -31,6 +36,7 @@ export function parseStreamMessage(
       start_date: langChainMessage.start_date,
       end_date: langChainMessage.end_date,
       checkpoint_id,
+      trace_id: traceId,
     };
   } else if (messageType === "tools") {
     // Check if this is an error from a tool
@@ -44,6 +50,7 @@ export function parseStreamMessage(
         content: typeof content === "string" ? content : String(content),
         timestamp: timestamp.toISOString(),
         checkpoint_id,
+        trace_id: traceId,
       };
     }
 
@@ -59,6 +66,7 @@ export function parseStreamMessage(
       aoi: langChainMessage.aoi || undefined,
       timestamp: timestamp.toISOString(),
       checkpoint_id,
+      trace_id: traceId,
     };
   } else if (messageType === "agent") {
     // For AI messages, handle different content formats
@@ -95,12 +103,16 @@ export function parseStreamMessage(
     }
 
     // Only return a message if we have valid text content
+    // TODO: This function emits StreamMessage.type = "text" for assistant messages.
+    // Consider renaming to "assistant" for clarity and updating client handling
+    // (keep a temporary backward-compat branch for "text").
     if (textContent && typeof textContent === "string" && textContent.trim()) {
       return {
         type: "text",
         text: textContent.trim(),
         timestamp: timestamp.toISOString(),
         checkpoint_id,
+        trace_id: traceId,
       };
     }
   }
