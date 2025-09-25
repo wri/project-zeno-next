@@ -14,7 +14,7 @@ import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
 import useChatStore from "../store/chatStore";
-import { DownloadSimpleIcon, InfoIcon } from "@phosphor-icons/react";
+import { DownloadSimpleIcon } from "@phosphor-icons/react";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -43,8 +43,8 @@ export default function WidgetMessage({
           throw new Error(`Failed to fetch raw data: ${res.statusText}`);
         const csv = await res.text();
         setCsvData(csv);
-      } catch (err: any) {
-        console.error(err.message);
+      } catch (err) {
+        console.error(err);
       }
     }
     if (currentThreadId && checkpointId) fetchCsv();

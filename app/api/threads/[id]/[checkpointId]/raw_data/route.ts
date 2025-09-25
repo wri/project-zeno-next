@@ -81,7 +81,7 @@ export async function GET(
 
         // Process all datasets and create a unified CSV
         if (allDatasets.length > 0) {
-          let csvRows = [];
+          const csvRows = [];
           let headerAdded = false;
 
           for (const data of allDatasets) {
