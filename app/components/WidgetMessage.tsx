@@ -27,13 +27,9 @@ export default function WidgetMessage({
 }: WidgetMessageProps) {
   const { currentThreadId } = useChatStore();
   const [csvData, setCsvData] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchCsv() {
-      setLoading(true);
-      setError(null);
       try {
         const res = await fetch(
           `/api/threads/${currentThreadId}/${checkpointId}/raw_data`,
@@ -48,9 +44,7 @@ export default function WidgetMessage({
         const csv = await res.text();
         setCsvData(csv);
       } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        console.error(err.message);
       }
     }
     if (currentThreadId && checkpointId) fetchCsv();
@@ -77,26 +71,18 @@ export default function WidgetMessage({
           {widget.description}
         </Text>
         <Separator />
-        {csvData && (
-          <Flex justifyContent="space-between">
-            <Link
-              href={`data:text/csv;charset=utf-8,${encodeURIComponent(
-                csvData
-              )}`}
-              download={`raw_data_${currentThreadId}_${checkpointId}.csv`}
-              _hover={{ textDecor: "none" }}
-            >
-              <Button variant="outline" size="xs">
-                <DownloadSimpleIcon size="14" />
-                Download data
-              </Button>
-            </Link>
-            <Button variant="outline" size="xs">
-              <InfoIcon size="14" />
-              Learn more about the data
-            </Button>
-          </Flex>
-        )}
+        <Link
+          href={csvData ? `data:text/csv;charset=utf-8,${encodeURIComponent(
+            csvData
+          )}` : undefined}
+          download={`raw_data_${currentThreadId}_${checkpointId}.csv`}
+          _hover={{ textDecor: "none" }}
+        >
+          <Button variant="outline" size="xs" disabled={!csvData}>
+            <DownloadSimpleIcon size="14" />
+            Download data
+          </Button>
+        </Link>
         {(widget.type === "bar" ||
           widget.type === "stacked-bar" ||
           widget.type === "grouped-bar" ||
