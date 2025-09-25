@@ -1,4 +1,4 @@
-import { Box, CloseButton } from "@chakra-ui/react";
+import { Box, CloseButton, type BoxProps } from "@chakra-ui/react";
 import {
   CheckCircleIcon,
   InfoIcon,
@@ -6,8 +6,8 @@ import {
   WarningIcon,
 } from "@phosphor-icons/react";
 
-interface ChatDisclaimerProps {
-  setDisplayDisclaimer: React.Dispatch<React.SetStateAction<boolean>>;
+interface ChatDisclaimerProps extends BoxProps {
+  setDisplayDisclaimer?: React.Dispatch<React.SetStateAction<boolean>>;
   type?: "info" | "error" | "warning" | "success";
   children: React.ReactNode;
 }
@@ -29,7 +29,8 @@ const TypeIcon = {
 export default function ChatDisclaimer({
   setDisplayDisclaimer,
   type = "info",
-  children
+  children,
+  ...boxProps
 }: ChatDisclaimerProps) {
   const IconComponent = TypeIcon[type];
 
@@ -45,6 +46,7 @@ export default function ChatDisclaimer({
       gap={2}
       my={4}
       mb={6}
+      {...boxProps}
     >
       <IconComponent
         weight="fill"
@@ -53,13 +55,15 @@ export default function ChatDisclaimer({
         fill={`var(--chakra-colors-${typeColorMap[type]}-600)`}
       />
       {children}
-      <CloseButton
-        size="2xs"
-        variant="ghost"
-        colorPalette={typeColorMap[type]}
-        title="Hide disclaimer"
-        onClick={() => setDisplayDisclaimer((prev) => !prev)}
-      />
+      {setDisplayDisclaimer && (
+        <CloseButton
+          size="2xs"
+          variant="ghost"
+          colorPalette={typeColorMap[type]}
+          title="Hide disclaimer"
+          onClick={() => setDisplayDisclaimer((prev) => !prev)}
+        />
+      )}
     </Box>
   );
 }

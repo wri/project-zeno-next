@@ -7,23 +7,26 @@ import {
   DotsThreeIcon,
   PencilSimpleIcon,
   TrashIcon,
+  ShareIcon,
 } from "@phosphor-icons/react";
 import ThreadDeleteDialog from "./ThreadDeleteDialog";
 import ThreadRenameDialog from "./ThreadRenameDialog";
+import ThreadShareDialog from "./ThreadShareDialog";
 import { sendGAEvent } from "@next/third-parties/google";
 
 function ThreadActionsMenu({
   thread,
   children,
 }: {
-  thread: { id: string; name: string };
+  thread: { id: string; name: string, is_public?: boolean };
   children?: React.ReactNode;
 }) {
   const router = useRouter();
-  const { renameThread, deleteThread } = useSidebarStore();
+  const { renameThread, shareThread, deleteThread } = useSidebarStore();
   const { currentThreadId } = useChatStore();
 
   const [renameOpen, setRenameOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const onRename = useCallback(
@@ -38,6 +41,12 @@ function ThreadActionsMenu({
     },
     [thread.id, thread.name, renameThread]
   );
+
+  const onShare = useCallback(
+    async (is_public: boolean) => {
+      await shareThread(thread.id, is_public);
+    }, [thread.id, shareThread]
+  )
 
   const onDelete = useCallback(async () => {
     sendGAEvent("event", "thread_deleted", { 
@@ -87,6 +96,14 @@ function ThreadActionsMenu({
                 Rename
               </Menu.Item>
               <Menu.Item
+                value="share conversation"
+                color="fg.muted"
+                onSelect={() => setShareOpen(true)}
+              >
+                <ShareIcon />
+                Share
+              </Menu.Item>
+              <Menu.Item
                 value="delete"
                 color="fg.error"
                 _hover={{ bg: "bg.error", color: "fg.error" }}
@@ -104,6 +121,13 @@ function ThreadActionsMenu({
         isOpen={renameOpen}
         onOpenChange={setRenameOpen}
         onRename={onRename}
+      />
+      <ThreadShareDialog
+        isPublic={thread.is_public}
+        isOpen={shareOpen}
+        onOpenChange={setShareOpen}
+        onShare={onShare}
+        threadId={thread.id}
       />
       <ThreadDeleteDialog
         threadName={thread.name}

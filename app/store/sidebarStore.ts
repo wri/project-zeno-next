@@ -24,6 +24,7 @@ interface SidebarState {
   threadGroups: ThreadGroups;
   fetchThreads: () => Promise<void>;
   renameThread: (threadId: string, newName: string) => Promise<void>;
+  shareThread: (threadId: string, isPublic: boolean) => Promise<void>;
   deleteThread: (threadId: string) => Promise<void>;
   getThreadById: (
     threadId: string | null | undefined
@@ -114,6 +115,28 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
       });
     } else {
       throw new Error("Failed to rename thread");
+    }
+  },
+
+   shareThread: async (threadId: string, isPublic: boolean) => {
+    const response = await fetch(`/api/threads/${threadId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ is_public: isPublic }),
+    });
+
+    if (response.ok) {
+      // Update the thread in the store
+      set((state) => {
+        const threads = state.threads.map((thread) =>
+          thread.id === threadId ? { ...thread, is_public: isPublic } : thread
+        );
+        return { threads, threadGroups: computeThreadGroups(threads) };
+      });
+    } else {
+      throw new Error("Failed to share thread");
     }
   },
 
