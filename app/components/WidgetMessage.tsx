@@ -1,19 +1,58 @@
-import { Box, Text, Heading, Flex, Separator } from "@chakra-ui/react";
+import {
+  Box,
+  Text,
+  Heading,
+  Flex,
+  Separator,
+  Button,
+  Link,
+} from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
+import useChatStore from "../store/chatStore";
+import { DownloadSimpleIcon } from "@phosphor-icons/react";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
+  checkpointId: string;
 }
 
-export default function WidgetMessage({ widget }: WidgetMessageProps) {
+export default function WidgetMessage({
+  widget,
+  checkpointId,
+}: WidgetMessageProps) {
+  const { currentThreadId } = useChatStore();
+  const [csvData, setCsvData] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchCsv() {
+      try {
+        const res = await fetch(
+          `/api/threads/${currentThreadId}/${checkpointId}/raw_data`,
+          {
+            headers: {
+              "Content-Type": "text/csv",
+            },
+          }
+        );
+        if (!res.ok)
+          throw new Error(`Failed to fetch raw data: ${res.statusText}`);
+        const csv = await res.text();
+        setCsvData(csv);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    if (currentThreadId && checkpointId) fetchCsv();
+  }, [currentThreadId, checkpointId]);
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
-  console.log(widget);
+
   return (
     <Box
       rounded="md"
@@ -32,6 +71,18 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {widget.description}
         </Text>
         <Separator />
+        <Link
+          href={csvData ? `data:text/csv;charset=utf-8,${encodeURIComponent(
+            csvData
+          )}` : undefined}
+          download={`raw_data_${currentThreadId}_${checkpointId}.csv`}
+          _hover={{ textDecor: "none" }}
+        >
+          <Button variant="outline" size="xs" disabled={!csvData}>
+            <DownloadSimpleIcon size="14" />
+            Download data
+          </Button>
+        </Link>
         {(widget.type === "bar" ||
           widget.type === "stacked-bar" ||
           widget.type === "grouped-bar" ||
