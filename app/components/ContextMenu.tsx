@@ -322,6 +322,11 @@ function AreaMenu() {
         geometry: multi,
         properties: { id: selected.id, name: selected.name },
       };
+      sendGAEvent("event", "manual_area_selected", {
+        area_id: selected.id,
+        area_name: selected.name,
+        geometries: feature.geometry,
+      });
       addGeoJsonFeature({
         id: selected.id,
         name: selected.name,
