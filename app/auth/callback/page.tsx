@@ -2,14 +2,10 @@
 
 import { useEffect } from "react";
 import { Center, Spinner, Text, VStack } from "@chakra-ui/react";
-import { sendGAEvent } from "@next/third-parties/google";
-import useCookieConsentStore from "@/app/store/cookieConsentStore";
 
 const REDIRECT_URL_KEY = "redirectUrl";
 
 export default function AuthCallbackPage() {
-  const { cookieConsent } = useCookieConsentStore();
-
   useEffect(() => {
     const processAuth = async () => {
       const params = new URLSearchParams(window.location.search);
@@ -39,11 +35,6 @@ export default function AuthCallbackPage() {
             window.location.href = redirectUrl;
           }
 
-          if (cookieConsent) {
-            sendGAEvent("event", "user_logged_in", {
-              value: crypto.randomUUID(),
-            });
-          }
           if (window.opener) {
             setTimeout(() => window.close(), 500);
           }

@@ -9,20 +9,18 @@ import {
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { Suspense, useEffect, useState } from "react";
-import { GoogleAnalytics } from "@next/third-parties/google";
 
 import ChatPanel from "@/app/ChatPanel";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
-import CookieConsent from "@/app/components/CookieConsent";
-import useCookieConsentStore from "@/app/store/cookieConsentStore";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
+import useCookieConsentStore from "@/app/store/cookieConsentStore";
 
 const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
@@ -31,31 +29,26 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { cookieConsent, setConsentStatus } = useCookieConsentStore();
+  const { setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const [mobileHeight, setMobileHeight] = useState("0")
-  const [desktopHeight, setDesktopHeight] = useState("0")
-
+  const [mobileHeight, setMobileHeight] = useState("0");
+  const [desktopHeight, setDesktopHeight] = useState("0");
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
     // cookieConsent state value if the consent was given previously.
-    if (
-      GA_ID &&
-      localStorage.getItem("analyticsConsent") === "true" &&
-      !cookieConsent
-    ) {
+    if (GA_ID && localStorage.getItem("analyticsConsent") === "true") {
       setConsentStatus(true);
     }
-  }, [cookieConsent, setConsentStatus]);
+  }, [setConsentStatus]);
 
   useEffect(() => {
     // Set layout heights after mount to avoid flash of both layouts at once
-    setMobileHeight("min(100dvh, 100vh)")
-    setDesktopHeight("auto")
-  }, [])
+    setMobileHeight("min(100dvh, 100vh)");
+    setDesktopHeight("auto");
+  }, []);
 
   function DebugToastsMount() {
     const params = useSearchParams();
@@ -144,8 +137,6 @@ export default function DashboardLayout({
       templateRows={{ base: "1fr", md: "min-content minmax(0px, 1fr)" }}
       bg="bg"
     >
-      {cookieConsent && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
-      {GA_ID && <CookieConsent />}
       <UploadAreaDialog />
 
       {!isMobile && <PageHeader />}
