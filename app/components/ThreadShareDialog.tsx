@@ -34,10 +34,10 @@ type ValueChangeDetails = { value: string[] };
 
 function ThreadShareDialog(props: ThreadShareDialogProps) {
   const { threadId, isPublic, onShare, isOpen, onOpenChange } = props;
-  const shareUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/app/threads/${threadId}`
-      : threadId;
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  const shareUrl = `${baseUrl}/app/threads/${threadId}`;
   const clipboard = useClipboard({ value: shareUrl });
   const ref = useRef<HTMLInputElement>(null);
   const [threadIsPublic, setThreadIsPublic] = useState<boolean>(false);
