@@ -2,11 +2,13 @@ import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { usePromptStore } from "../store/promptStore";
 import useChatStore from "../store/chatStore";
+import { useRouter } from "next/navigation";
 
 export default function SamplePrompts() {
   const { prompts } = usePromptStore();
   const { sendMessage } = useChatStore();
   const [samplePrompts, setSamplePrompts] = useState<string[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     if (prompts.length > 0 && samplePrompts.length === 0) {
@@ -14,6 +16,12 @@ export default function SamplePrompts() {
     }
   }, [prompts]);
 
+  const submitPrompt = async (prompt: string) => {
+    const result = await sendMessage(prompt);
+    if (result.isNew) {
+      router.replace(`/app/threads/${result.id}`);
+    }
+  };
   function getRandomFromArray<T>(arr: T[], count: number): T[] {
     if (count > arr.length) {
       throw new Error("Cannot select more items than available in the array.");
@@ -29,7 +37,7 @@ export default function SamplePrompts() {
   }
   return (
     <Box display="flex" gap={2} flexWrap="nowrap" mt={6} mb={4}>
-      {samplePrompts.map((text, i) => (
+      {samplePrompts.map((prompt, i) => (
         <Box
           key={i}
           p={2}
@@ -44,9 +52,9 @@ export default function SamplePrompts() {
             bg: "bg.subtle",
             borderColor: "primary.solid",
           }}
-          onClick={() => sendMessage(text)}
+          onClick={() => submitPrompt(prompt)}
         >
-          {text}
+          {prompt}
         </Box>
       ))}
     </Box>

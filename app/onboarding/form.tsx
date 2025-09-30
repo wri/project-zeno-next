@@ -294,8 +294,8 @@ export default function OnboardingForm() {
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
           We use this information to make Global Nature Watch more useful to
-          you. This tool is experimental, and your and knowing you better helps
-          us improve. Features may change or be removed over time.
+          you. This tool is experimental, and knowing you better helps us
+          improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
           <Grid
@@ -643,6 +643,7 @@ export default function OnboardingForm() {
           </Box>
           <Flex alignItems="center" justifyContent="space-between" mt={4}>
             <Checkbox.Root
+              alignItems="flex-start"
               checked={form.termsAccepted}
               onCheckedChange={(e) =>
                 setForm((p) => ({ ...p, termsAccepted: Boolean(e.checked) }))
@@ -660,6 +661,16 @@ export default function OnboardingForm() {
                 >
                   Terms of Use
                 </Link>{" "}
+                and{" "}
+                <Link
+                  href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  textDecoration="underline"
+                >
+                  Global Nature Watch AI Terms of Use
+                </Link>
+                {", "}
                 and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"
@@ -668,6 +679,15 @@ export default function OnboardingForm() {
                   textDecoration="underline"
                 >
                   Privacy Policy
+                </Link>{" "}
+                and the{" "}
+                <Link
+                  href="https://help.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  textDecoration="underline"
+                >
+                  Global Nature Watch AI Privacy Policy
                 </Link>
                 .
                 {fieldRequired("termsAccepted") && (

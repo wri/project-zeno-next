@@ -146,7 +146,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     },
   },
   {
-    dataset_id: 7,
+    dataset_id: 8,
     dataset_name: "Tree cover loss by dominant driver",
     data_layer: "Tree cover loss by dominant driver",
     context_layer: null,

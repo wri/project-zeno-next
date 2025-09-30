@@ -35,6 +35,9 @@ export default function DashboardLayout({
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const [mobileHeight, setMobileHeight] = useState("0")
+  const [desktopHeight, setDesktopHeight] = useState("0")
+
 
   useEffect(() => {
     // As we can't read localStorage outside the useEffect, we update the
@@ -47,6 +50,12 @@ export default function DashboardLayout({
       setConsentStatus(true);
     }
   }, [cookieConsent, setConsentStatus]);
+
+  useEffect(() => {
+    // Set layout heights after mount to avoid flash of both layouts at once
+    setMobileHeight("min(100dvh, 100vh)")
+    setDesktopHeight("auto")
+  }, [])
 
   function DebugToastsMount() {
     const params = useSearchParams();
@@ -61,7 +70,9 @@ export default function DashboardLayout({
       templateColumns="auto min-content 1fr"
       templateAreas="'sidebar chat map'"
       templateRows="1fr"
+      h={{ base: 0, md: desktopHeight }}
       maxH="calc(100vh - 3rem)"
+      display={{ base: "none", md: "grid" }}
     >
       <Sidebar />
       <ChatPanel />
@@ -73,9 +84,10 @@ export default function DashboardLayout({
     <Box
       position="relative"
       w="100vw"
-      h="min(100dvh, 100vh)"
+      h={{ base: mobileHeight, md: 0 }}
       overflow="hidden"
-      gridRow={1}
+      gridRow={{ base: 1, md: "none" }}
+      display={{ base: "block", md: "none" }}
     >
       <Box
         w="100%"

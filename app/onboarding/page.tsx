@@ -4,7 +4,7 @@ import OnboardingForm from "./form";
 
 function Loading() {
   return (
-    <Box minH="100vh" bg="bg" py={10}>
+    <Box minH="100vh" bg="bg" py={24}>
       <Center>
         <Spinner size="xl" />
       </Center>

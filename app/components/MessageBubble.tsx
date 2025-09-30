@@ -266,9 +266,11 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                   size="xs"
                   onClick={() => {
                     clipboard.copy();
-                    sendGAEvent("event", "response_feedback", {
-                      value: "copy_response",
+                    sendGAEvent("event", "response_feedback_copy", {
                       message_id: message.id,
+                      trace_id: message.traceId,
+                      copied: clipboard.copied,
+                      message: message.message
                     });
                   }}
                 >
@@ -281,9 +283,10 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                   size="xs"
                   onClick={() => {
                     rateMessage(1);
-                    sendGAEvent("event", "response_feedback", {
-                      value: "positive_response",
+                    sendGAEvent("event", "response_feedback_positive", {
                       message_id: message.id,
+                      trace_id: message.traceId,
+                      message: message.message
                     });
                   }}
                   disabled={isRating || !message.traceId}
@@ -306,9 +309,10 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                         onClick={async () => {
                           await rateMessage(-1);
                           setFeedbackOpen(true);
-                          sendGAEvent("event", "response_feedback", {
-                            value: "negative_response",
+                          sendGAEvent("event", "response_feedback_negative", {
                             message_id: message.id,
+                            trace_id: message.traceId,
+                            message: message.message
                           });
                         }}
                       >

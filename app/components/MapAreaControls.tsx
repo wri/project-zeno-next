@@ -213,82 +213,86 @@ function MapAreaControls() {
                   <UploadSimpleIcon />
                 </IconButton>
               </Tooltip>
-              <ButtonGroup
-                attached
-                variant="subtle"
-                size="sm"
-                opacity={{ base: 0, md: 1 }}
-                key="2"
-                animation={{
-                  base: "0.16s 0.0625s ease-out 1 forwards slide-from-left-full, 0.24s 0.0625s ease-out 1 forwards fade-in",
-                  md: "none",
-                }}
-                zIndex={20}
-              >
+              <Tooltip content="Select area on map">
+                <ButtonGroup
+                  attached
+                  variant="subtle"
+                  size="sm"
+                  opacity={{ base: 0, md: 1 }}
+                  key="2"
+                  animation={{
+                    base: "0.16s 0.0625s ease-out 1 forwards slide-from-left-full, 0.24s 0.0625s ease-out 1 forwards fade-in",
+                    md: "none",
+                  }}
+                  zIndex={20}
+                >
+                  <IconButton
+                    bg="bg"
+                    _hover={{ bg: "bg.muted" }}
+                    aria-label="Select area on map"
+                  >
+                    <HandPointingIcon />
+                  </IconButton>
+                  <Menu.Root
+                    positioning={{ placement: "bottom-end" }}
+                    onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}
+                  >
+                    <Menu.Trigger asChild>
+                      <IconButton
+                        minW="0"
+                        px={1}
+                        borderLeftRadius={0}
+                        bg="bg"
+                        _hover={{ bg: "bg.muted" }}
+                        aria-label="Select area from options"
+                      >
+                        <CaretDownIcon />
+                      </IconButton>
+                    </Menu.Trigger>
+                    <Portal>
+                      <Menu.Positioner>
+                        <Menu.Content>
+                          {selectLayerOptions.map(({ id, name }) => (
+                            <Menu.Item
+                              key={id}
+                              value={id}
+                              onClick={() =>
+                                setSelectionMode({
+                                  type: "Selecting",
+                                  name: name,
+                                })
+                              }
+                            >
+                              {name}
+                            </Menu.Item>
+                          ))}
+                        </Menu.Content>
+                      </Menu.Positioner>
+                    </Portal>
+                  </Menu.Root>
+                </ButtonGroup>
+              </Tooltip>
+              <Tooltip content="Draw area on map">
                 <IconButton
                   bg="bg"
                   _hover={{ bg: "bg.muted" }}
-                  aria-label="Select area on map"
+                  aria-label="Draw area bounds"
+                  onClick={() => {
+                    startDrawing();
+                    setSelectionMode({ type: "Drawing", name: undefined });
+                  }}
+                  data-active={isDrawingMode}
+                  opacity={{ base: 0, md: 1 }}
+                  key="3"
+                  animation={{
+                    base: "0.16s 0.125s ease-out 1 forwards slide-from-left-full, 0.24s 0.125s ease-out 1 forwards fade-in",
+                    md: "none",
+                  }}
+                  zIndex={30}
                 >
-                  <HandPointingIcon />
+                  <SelectionPlusIcon />
                 </IconButton>
-                <Menu.Root
-                  positioning={{ placement: "bottom-end" }}
-                  onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}
-                >
-                  <Menu.Trigger asChild>
-                    <IconButton
-                      minW="0"
-                      px={1}
-                      borderLeftRadius={0}
-                      bg="bg"
-                      _hover={{ bg: "bg.muted" }}
-                      aria-label="Select area from options"
-                    >
-                      <CaretDownIcon />
-                    </IconButton>
-                  </Menu.Trigger>
-                  <Portal>
-                    <Menu.Positioner>
-                      <Menu.Content>
-                        {selectLayerOptions.map(({ id, name }) => (
-                          <Menu.Item
-                            key={id}
-                            value={id}
-                            onClick={() =>
-                              setSelectionMode({
-                                type: "Selecting",
-                                name: name,
-                              })
-                            }
-                          >
-                            {name}
-                          </Menu.Item>
-                        ))}
-                      </Menu.Content>
-                    </Menu.Positioner>
-                  </Portal>
-                </Menu.Root>
-              </ButtonGroup>
-              <IconButton
-                bg="bg"
-                _hover={{ bg: "bg.muted" }}
-                aria-label="Draw area bounds"
-                onClick={() => {
-                  startDrawing();
-                  setSelectionMode({ type: "Drawing", name: undefined });
-                }}
-                data-active={isDrawingMode}
-                opacity={{ base: 0, md: 1 }}
-                key="3"
-                animation={{
-                  base: "0.16s 0.125s ease-out 1 forwards slide-from-left-full, 0.24s 0.125s ease-out 1 forwards fade-in",
-                  md: "none",
-                }}
-                zIndex={30}
-              >
-                <SelectionPlusIcon />
-              </IconButton>
+              </Tooltip>
             </>
           )}
         </ButtonGroup>

@@ -64,7 +64,7 @@ export default function TeamSection() {
                 <NextImage src="/nicfi-logo.png" alt="NICFI Logo" width={128} height={64} />
             </ChakraLink>
             <ChakraLink href="https://www.google.org/" target="_blank" rel="noopener noreferrer">
-                <NextImage src="/Google-org-logo.svg" alt="Google.org Logo" width={128} height={64} />
+                <NextImage src="/google-org-logo.png" alt="Google.org Logo" width={128} height={64} />
             </ChakraLink>
           </Flex>
         <Box maxW="3xl" w="100%" mx="auto">
