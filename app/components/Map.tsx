@@ -17,7 +17,7 @@ import {
   useBreakpointValue,
   Flex,
   Link as ChLink,
-  Spinner
+  Spinner,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
@@ -36,6 +36,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const [mapCenter, setMapCenter] = useState([0, 0]);
   const [showLegend, setShowLegend] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const [basemapTiles, setBasemapTiles] = useState(
+    "devseed/cmazl5ws500bz01scaa27dqi4"
+  );
   const { geoJsonFeatures, setMapRef, initializeTerraDraw } = useMapStore();
   const { layers, handleLayerAction } = useLegendHook();
   const { context } = useContextStore();
@@ -123,7 +126,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           id="background"
           type="raster"
           tiles={[
-            `https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
+            `https://api.mapbox.com/styles/v1/${basemapTiles}/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
           ]}
         >
           <Layer id="background-tiles" type="raster" />
@@ -166,7 +169,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         />
         <SelectAreaLayer />
 
-        {!disableMapAreaControls && <MapAreaControls />}
+        {!disableMapAreaControls && (
+          <MapAreaControls
+            basemapTiles={basemapTiles}
+            setBasemapTiles={setBasemapTiles}
+          />
+        )}
 
         <AbsoluteCenter fontSize="sm" opacity={0.375} hideBelow="md">
           <PlusIcon />
