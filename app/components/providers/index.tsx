@@ -8,6 +8,7 @@ import theme from "@/app/theme";
 import { Toaster } from "@/app/components/ui/toaster";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import useAuthStore from "@/app/store/authStore";
+import { ColorModeProvider } from "@/app/components/ui/color-mode";
 
 const queryClient = new QueryClient();
 
@@ -64,12 +65,14 @@ function AuthBootstrapper() {
 function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider value={theme}>
-        {children}
-        <Toaster />
-        <DebugToastsPanel />
-        <AuthBootstrapper />
-      </ChakraProvider>
+      <ColorModeProvider>
+        <ChakraProvider value={theme}>
+          {children}
+          <Toaster />
+          <DebugToastsPanel />
+          <AuthBootstrapper />
+        </ChakraProvider>
+      </ColorModeProvider>
     </QueryClientProvider>
   );
 }

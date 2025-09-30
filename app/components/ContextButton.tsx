@@ -23,7 +23,7 @@ function ContextButton({ contextType = "area", ...props }: ContextButtonProps) {
       size="xs"
       variant="outline"
       borderRadius="full"
-      borderColor="gray.300"
+      borderColor="border.emphasized"
       py="1"
       h="auto"
       {...props}

@@ -71,13 +71,13 @@ const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
 
     return (
       <Box
-        bg="white"
+        bg="bg"
         p={2}
         py={1}
         borderRadius="md"
         boxShadow="md"
         border="1px"
-        borderColor="gray.200"
+        borderColor="border"
       >
         {dataPoint.name && (
           <Heading size="xs" mb={1}>
@@ -103,7 +103,7 @@ const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
           justifyContent="space-between"
           fontSize="xs"
           fontWeight="normal"
-          color="gray.600"
+          color="fg.muted"
         >
           <Text as="span" mr={4}>
             {yAxisPayload.name}
@@ -140,10 +140,10 @@ const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
               h={4}
               bg={entry.color}
               border="1px solid"
-              borderColor="neutral.400"
+              borderColor="border.emphasized"
               rounded="sm"
             />
-            <Text fontSize="xs" color="neutral.500">
+            <Text fontSize="xs" color="fg">
               {String(entry.name)}
             </Text>
           </Flex>

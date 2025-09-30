@@ -9,6 +9,9 @@ import globalCss from "@/app/theme/globalCss";
 export const headingRecipe = defineRecipe({
   base: {
     color: "neutral.900",
+    _dark: {
+      color: "neutral.200",
+    },
   },
 });
 
@@ -128,16 +131,26 @@ export const config = defineConfig({
       },
       gradients: {
         LCLGradientLight: {
-          value:
-            "linear-gradient(107deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)",
+          value: "linear-gradient(107deg, #CCE2FF 5.2%, #E0F1FA 14.44%, #F8FCE4 69.9%)",
+          },
+        LCLGradientDark: {
+          value: "linear-gradient(107deg, #1A2B7A 5.2%, #2B8DB8 48%, #5f8b2f 97%)",
         },
       },
     },
     semanticTokens: {
+      gradients: {
+        brandGradient: {
+          value: {
+            _light: "{gradients.LCLGradientLight}",
+            _dark: "{gradients.LCLGradientDark}",
+          },
+        },
+      },
       colors: {
         bg: {
           DEFAULT: {
-            value: { _light: "{colors.white}", _dark: "{colors.black}" },
+            value: { _light: "{colors.white}", _dark: "{colors.neutral.800}" },
           },
           subtle: {
             value: {
@@ -158,10 +171,10 @@ export const config = defineConfig({
             },
           },
           inverted: {
-            value: { _light: "{colors.black}", _dark: "{colors.white}" },
+            value: { _light: "{colors.neutral.900}", _dark: "{colors.neutral.50}" },
           },
           panel: {
-            value: { _light: "{colors.white}", _dark: "{colors.neutral.950}" },
+            value: { _light: "{colors.neutral.50}", _dark: "{colors.neutral.950}" },
           },
           error: {
             value: { _light: "{colors.red.50}", _dark: "{colors.red.950}" },

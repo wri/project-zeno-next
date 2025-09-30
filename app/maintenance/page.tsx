@@ -69,7 +69,7 @@ export default function NotFound() {
         justifyContent={{ base: "center", md: "space-between"}}
         alignItems="center"
         mt="auto"
-        bg="white"
+        bg="bg"
         p={4}
         fontSize="sm"
       >

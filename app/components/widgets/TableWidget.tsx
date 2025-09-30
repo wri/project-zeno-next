@@ -25,7 +25,7 @@ export default function TableWidget({ data }: TableWidgetProps) {
               Object.keys(data[0]).map((key: string) => (
                 <Table.ColumnHeader
                   key={key}
-                  color="neutral.500"
+                  color="fg"
                   fontWeight="normal"
                   whiteSpace="pre"
                 >

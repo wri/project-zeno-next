@@ -96,8 +96,8 @@ export default function ChatInput({
       position="relative"
       m={0}
       p={4}
-      bg="gray.100"
-      borderColor="gray.300"
+      bg="bg.subtle"
+      borderColor="border.emphasized"
       borderRadius="lg"
       borderWidth="1px"
       className="group"
@@ -214,11 +214,11 @@ export default function ChatInput({
         justifyContent="space-between"
         m={0}
         p={3}
-        bg="gray.100"
+        bg="bg.muted"
         maxH="7rem"
         overflowY="auto"
         borderTopWidth="1px"
-        borderColor="gray.300"
+        borderColor="border.emphasized"
         cursor="pointer"
         position="relative"
         borderRadius="lg"

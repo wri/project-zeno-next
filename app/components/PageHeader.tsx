@@ -22,6 +22,7 @@ import {
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
 import { toaster } from "@/app/components/ui/toaster";
+import { ColorModeDropdown } from "@/app/components/ui/color-mode";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
@@ -77,11 +78,14 @@ function PageHeader() {
         </Badge>
       </Flex>
       <Flex gap="6" alignItems="center" hideBelow="md">
+        <ColorModeDropdown />
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
             variant="solid"
             colorPalette="primary"
-            _hover={{ bg: "primary.fg" }}
+            _hover={{ bg: "primary.fg", _dark: {
+              bg: "primary.solid"
+            } }}
             size="sm"
           >
             <LifebuoyIcon />
@@ -103,7 +107,7 @@ function PageHeader() {
             mb="0.5"
             fontSize="xs"
             fontWeight="normal"
-            color="primary.100"
+            color="primary.contrast"
           >
             {usedPrompts}/
             {totalPrompts > 5000 ? (

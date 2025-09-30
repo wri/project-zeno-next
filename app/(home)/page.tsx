@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePromptStore } from "@/app/store/promptStore";
+import { LightMode } from "@/app/components/ui/color-mode";
 import LandingHero from "./sections/1_Hero";
 import PromptMarquee from "./sections/2_PromptMarquee";
 import FeaturesTabsSection from "./sections/4_FeaturesTabs";
@@ -18,7 +19,7 @@ export default function LandingPage() {
   const { prompts } = usePromptStore();
   
   return (
-    <>
+    <LightMode className="chakra-theme light">
       <LandingHero
         prompts={prompts}
         promptIndex={promptIndex}
@@ -35,6 +36,6 @@ export default function LandingPage() {
       <TeamSection />
       <CTASection />
       <FooterSection />
-    </>
+    </LightMode>
   );
 }

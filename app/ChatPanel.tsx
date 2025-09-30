@@ -96,7 +96,7 @@ function ChatPanel() {
                     <ChLink
                       as={Link}
                       href="/login"
-                      color="blue.600"
+                      color="primary.emphasized"
                       textDecoration="underline"
                     >
                       Log in or sign up for free

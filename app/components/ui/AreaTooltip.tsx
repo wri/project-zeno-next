@@ -23,6 +23,10 @@ function AreaTooltip({ hoverInfo, areaName }: AreaTooltipProps) {
       offset={[0, -20] as [number, number]}
       closeButton={false}
       anchor="left"
+      style={{
+        background: "var(--chakra-colors-bg)",
+        color: "var(--chakra-colors-fg)"
+      }}
     >
       <p className="area-name">
         <b>{displayName}</b>

@@ -46,7 +46,7 @@ export function Legend(props: LegendProps) {
       shadow="sm"
     >
       <VisuallyHidden>
-        <Heading>Map Legend</Heading>
+        <Heading as="h6" color="fg">Map Legend</Heading>
       </VisuallyHidden>
       <ChReorderGroup
         axis="y"

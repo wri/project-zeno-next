@@ -318,7 +318,7 @@ function MapAreaControls({
           order={{ base: -1, md: "initial" }}
           borderRadius="md"
           boxShadow="sm"
-          color="blackAlpha.700"
+          color="fg"
         >
           {selectionMode.type}{" "}
           {selectionMode.type === "Selecting" ? selectionMode.name : "AOI"}

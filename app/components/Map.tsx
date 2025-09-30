@@ -68,7 +68,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       overflow="hidden"
       gridArea="map"
       height="100%"
-      bg={mapRef.current ? "transparent" : "neutral.200"}
+      bg={mapRef.current ? "transparent" : "background.subtle"}
       css={{
         _dark: {
           "& .maplibregl-ctrl-scale": {

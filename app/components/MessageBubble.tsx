@@ -164,7 +164,7 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
         alignItems={isUser ? "flex-end" : "flex-start"}
         w={isUser ? "fit-content" : "100%"}
         maxW={isUser ? "80%" : "none"}
-        bg={isError ? "red.50" : isUser ? "gray.100" : "transparent"}
+        bg={isError ? "red.50" : isUser ? "bg.muted" : "transparent"}
         color={isError ? "red.800" : "fg"}
         px={isUser || isError ? 4 : 0}
         py={isUser || isError ? 3 : 0}
@@ -221,7 +221,7 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
               },
               "& a": {
                 textDecoration: "underline",
-                color: "primary.solid",
+                color: "primary.fg",
                 transition: "all 0.24s ease",
               },
               "& a:hover" : {

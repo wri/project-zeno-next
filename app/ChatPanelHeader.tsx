@@ -182,7 +182,7 @@ function ChatPanelHeader() {
               borderColor="primary.subtle"
               rounded="sm"
               h={6}
-              bgGradient="LCLGradientLight"
+              bgGradient="brandGradient"
               size="xs"
               disabled
             >
@@ -200,7 +200,7 @@ function ChatPanelHeader() {
               borderColor="primary.subtle"
               rounded="sm"
               h={6}
-              bgGradient="LCLGradientLight"
+              bgGradient="brandGradient"
               fontWeight="semibold"
               _hover={{
                 gradientFrom: "primary.400/30",

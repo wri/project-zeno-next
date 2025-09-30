@@ -341,7 +341,7 @@ export function Sidebar() {
               <Progress.Label mb="0.5" fontSize="xs" fontWeight="normal">
                 {usedPrompts}/{totalPrompts} Prompts
               </Progress.Label>
-              <Progress.Track bg="neutral.200" maxH="4px">
+              <Progress.Track bg="border" maxH="4px">
                 <Progress.Range bg="primary.solid" />
               </Progress.Track>
             </Progress.Root>

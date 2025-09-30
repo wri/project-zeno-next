@@ -8,6 +8,8 @@ import {
   Heading,
 } from "@chakra-ui/react";
 import { CheckIcon, MapTrifoldIcon } from "@phosphor-icons/react";
+import { useColorMode } from "@/app/components/ui/color-mode";
+import { useEffect, useState, useRef } from "react";
 
 export interface BasemapOption {
   id: string;
@@ -54,9 +56,42 @@ export function BasemapSelector({
   currentBasemap,
   onBasemapChange,
 }: BasemapSelectorProps) {
+  const { colorMode, mounted } = useColorMode();
+  const [selectedBasemap, setSelectedBasemap] = useState(false);
+  const lastColorModeRef = useRef<string | undefined>(undefined);
+
   const currentOption =
     basemapOptions.find((option) => option.tileUrl === currentBasemap) ||
     basemapOptions[0];
+
+  // Reset user override when color mode changes
+  useEffect(() => {
+    if (!mounted || !colorMode) return;
+
+    // If color mode has changed, reset override and allow automatic switching
+    if (lastColorModeRef.current !== undefined && lastColorModeRef.current !== colorMode) {
+      setSelectedBasemap(false);
+    }
+    lastColorModeRef.current = colorMode;
+  }, [colorMode, mounted]);
+
+  // Automatically switch basemap when resolved color mode changes (unless user has overridden)
+  useEffect(() => {
+    if (!mounted || !colorMode || selectedBasemap) return;
+
+    const targetBasemap = colorMode === "dark" ? "dark" : "light";
+    const targetOption = basemapOptions.find((option) => option.id === targetBasemap);
+
+    if (targetOption && currentBasemap !== targetOption.tileUrl) {
+      onBasemapChange(targetOption.tileUrl);
+    }
+  }, [colorMode, mounted, currentBasemap, onBasemapChange, selectedBasemap]);
+
+  // Handle manual basemap selection
+  const handleBasemapChange = (tileUrl: string) => {
+    setSelectedBasemap(true);
+    onBasemapChange(tileUrl);
+  };
 
   return (
     <Popover.Root positioning={{ placement: "top-start", strategy: "fixed" }}>
@@ -111,7 +146,7 @@ export function BasemapSelector({
                   gap={2}
                   cursor="pointer"
                   alignItems="center"
-                  onClick={() => onBasemapChange(option.tileUrl)}
+                  onClick={() => handleBasemapChange(option.tileUrl)}
                   overflow="hidden"
                   _hover={{ color: "primary.solid" }}
                   transition="border-color 0.2s"

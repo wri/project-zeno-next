@@ -32,6 +32,7 @@ import Link from "next/link";
 import LclLogo from "../components/LclLogo";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
+import { ColorModeDropdown } from "@/app/components/ui/color-mode";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -293,7 +294,7 @@ export default function UserSettingsPage() {
               Templates
             </Link>
           </Button> */}
-          <Button asChild bg="white">
+          <Button asChild bg="bg">
             <Link href="#">
               {" "}
               <GearIcon />
@@ -339,11 +340,18 @@ export default function UserSettingsPage() {
             </Progress.Track>
           </Progress.Root>
         </Box>
+        <Box display="flex" alignItems="center" gap={2} rounded="lg">
+          <ColorModeDropdown />
+          <Heading size="xs" as="p" color="fg.muted" m={0}>
+            Appearance
+          </Heading>
+        </Box>
         <Button
           size="sm"
           w="full"
           gap={2}
           variant="outline"
+          _hover={{ bg: "bg" }}
           justifyContent="flex-start"
           onClick={handleLogout}
           title="Sign Out"

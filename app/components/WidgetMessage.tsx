@@ -18,10 +18,10 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
     <Box
       rounded="md"
       border="1px solid"
-      borderColor="blue.fg"
+      borderColor="primary.fg"
       overflow="hidden"
     >
-      <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight">
+      <Flex px={4} py={3} gap={2} bgGradient="brandGradient">
         {WidgetIcons[widget.type]}
         <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
           {widget.title}

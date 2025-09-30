@@ -33,7 +33,7 @@ export function DatasetInfoModal({
             <Dialog.Description asChild css={{ "& p": { whiteSpace: "pre-wrap" } }}>
               <VStack gap="5" align="stretch" maxH="70vh" overflowY="auto" pr="6" pb="6">
                 <Box>
-                  <Heading size="sm" mb={3} color="gray.500">
+                  <Heading size="sm" mb={3} color="fg">
                     Description
                   </Heading>
                   <Box>
@@ -45,7 +45,7 @@ export function DatasetInfoModal({
                 <Separator />
                 {dataset.methodology && (
                   <Box>
-                    <Heading size="sm" mb={3} color="gray.500">
+                    <Heading size="sm" mb={3} color="fg">
                       Methodology
                     </Heading>
                     <Box>
@@ -58,7 +58,7 @@ export function DatasetInfoModal({
                 {dataset.methodology && <Separator />}
                 {dataset.cautions && (
                   <Box>
-                    <Heading size="sm" mb={3} color="gray.500">
+                    <Heading size="sm" mb={3} color="fg">
                       Cautions
                     </Heading>
                     <Box>
@@ -71,7 +71,7 @@ export function DatasetInfoModal({
                 {dataset.cautions && <Separator />}
                 {dataset.citation && (
                   <Box>
-                    <Heading size="sm" mb={3} color="gray.500">
+                    <Heading size="sm" mb={3} color="fg">
                       Citation
                     </Heading>
                     <Box>
