@@ -112,16 +112,16 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "mangroves", color: "#06A285" },
         { label: "wet natural forests", color: "#589558" },
         { label: "natural peat short vegetation", color: "#99991A" },
-        { label: "wet natural short vegetation", color: "#DBDB7B" },
         { label: "natural short vegetation", color: "#B9B91E" },
+        { label: "wet natural short vegetation", color: "#DBDB7B" },
         { label: "natural water", color: "#6BAED6" },
-        { label: "bare", color: "#FEFECC" },
         { label: "snow", color: "#ACD1E8" },
+        { label: "bare", color: "#FEFECC" },
         { label: "non-natural", color: "#D3D3D3" },
       ],
-      type: "categorical",
+      type: "symbol",
       info: 'The Natural lands dataset is the best match because it provides a 2020 baseline map of natural vs non-natural land covers at 30m resolution, which can be used to identify intact/natural landscapes. This dataset specifically defines "natural" ecosystems as those that substantially resemble what would be found without major human impacts, making it ideal for assessing landscape intactness across Canadian provinces.',
-      note: "Baseline map separating natural from non-natural lands for conversion assessments."
+      note: "Baseline map separating natural from non-natural lands for conversion assessments. This map may overestimate the extent of natural lands."
     },
   },
   {
