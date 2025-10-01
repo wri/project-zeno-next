@@ -20,6 +20,7 @@ import {
   CopyIcon,
   CheckIcon,
 } from "@phosphor-icons/react";
+import { sendGAEvent } from "@next/third-parties/google";
 import ChatDisclaimer from "./ChatDisclaimer";
 
 interface ThreadShareDialogProps {
@@ -184,6 +185,9 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
                   colorPalette="primary"
                   onClick={() => {
                     clipboard.copy();
+                    sendGAEvent("event", "share_link_copied", {
+                      share_url: shareUrl,
+                    });
                   }}
                 >
                   {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
