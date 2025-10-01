@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Menu, Portal, IconButton } from "@chakra-ui/react";
+import { Menu, IconButton } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import useSidebarStore from "../store/sidebarStore";
 import useChatStore from "../store/chatStore";
@@ -65,7 +65,7 @@ function ThreadActionsMenu({
 
   return (
     <>
-      <Menu.Root>
+      <Menu.Root positioning={{ strategy: "fixed", hideWhenDetached: true }}>
         <Menu.Trigger asChild>
           {children || (
             <IconButton
@@ -84,7 +84,6 @@ function ThreadActionsMenu({
             </IconButton>
           )}
         </Menu.Trigger>
-        <Portal>
           <Menu.Positioner>
             <Menu.Content>
               <Menu.Item
@@ -114,7 +113,6 @@ function ThreadActionsMenu({
               </Menu.Item>
             </Menu.Content>
           </Menu.Positioner>
-        </Portal>
       </Menu.Root>
       <ThreadRenameDialog
         name={thread.name}
