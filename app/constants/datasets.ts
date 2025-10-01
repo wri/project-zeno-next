@@ -60,8 +60,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       title: "Global land cover (2024)",
       color: "#8E3037",
       items: [
-        { label: "forest", color: "#246E24" },
-        { label: "wetland vegetation", color: "#74D6B4" },
+        { label: "forest", color: "#FAFAC3" },
+        { label: "wetland vegetation", color: "#B0B006" },
         { label: "short vegetation", color: "#B9B91E" },
         { label: "bare", color: "#FEFECC" },
         { label: "water", color: "#6BAED6" },
@@ -165,7 +165,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "wildfire", color: "#885128"},
         { label: "other natural disturbances", color: "#3B209A"},
         { label: "settlements & infrastructure", color: "#A354A0"},
-        { label: "hard commodities", color: "#246E24"},
+        { label: "hard commodities", color: "#E58074"},
         { label: "permanent agriculture", color: "#E39D29"}
       ],
       type: "symbol",
