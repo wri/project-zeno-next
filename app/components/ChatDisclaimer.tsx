@@ -54,7 +54,7 @@ export default function ChatDisclaimer({
         size="16"
         fill={`var(--chakra-colors-${typeColorMap[type]}-600)`}
       />
-      {children}
+      <Box>{children}</Box>
       {setDisplayDisclaimer && (
         <CloseButton
           size="2xs"
