@@ -115,8 +115,7 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
                 Sharing creates a public, view-only link to this conversation.
                 Make sure it contains no personal or sensitive information.
                 You can switch Visibility back to private later.
-                <br />
-                Learn more in our{' '}
+                For more information, read our{' '}
                 <Link
                   textDecoration="underline"
                   textDecorationStyle="dotted"
