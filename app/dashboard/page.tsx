@@ -24,6 +24,7 @@ import {
   FloppyDiskIcon,
   GearIcon,
   LifebuoyIcon,
+  MapTrifoldIcon,
   SignOutIcon,
   UserIcon,
 } from "@phosphor-icons/react";
@@ -303,6 +304,12 @@ export default function UserSettingsPage() {
             <Link href="https://help.globalnaturewatch.org/" target="_blank">
               <LifebuoyIcon />
               Help
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/app">
+              <MapTrifoldIcon />
+              Back to Application
             </Link>
           </Button>
         </ButtonGroup>

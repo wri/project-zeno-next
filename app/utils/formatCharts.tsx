@@ -70,9 +70,9 @@ const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
     { value: "Wildfire", color: "#885128"},
     { value: "Other natural disturbances", color: "#3B209A"},
     { value: "Settlements & Infrastructure", color: "#A354A0"},
-    { value: "Hard commodities", color: "#246E24"},
+    { value: "Hard commodities", color: "#E58074"},
     { value: "Permanent agriculture", color: "#E39D29"},
-    { value: "Unknown", color: "#246E24"},
+    { value: "Unknown", color: "#D3D3D3"},
   ]
 
 }
