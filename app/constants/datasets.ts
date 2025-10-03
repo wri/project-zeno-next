@@ -55,13 +55,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_land_cover.webp",
     description:
       "This Global Land Cover dataset is a combination of two global datasets: the GLAD Land Cover and Land Use Change annual data and the Global Pasture Watch Grassland Class Collection 2 Cultivated Grasslands annual data. This combination is annual from 2015 through 2024. This dataset shows land covers and uses including: bare ground and sparsevegetation, short vegetation, tree cover, wetlands, water, snow/ice, cropland, cultivated grasslands, and built-up land.",
-    tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-2024/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B139%2C%2069%2C%2019%2C%20255%5D%2C%20%222%22%3A%20%5B255%2C%20255%2C%200%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%20128%2C%200%2C%20255%5D%2C%20%224%22%3A%20%5B0%2C%20255%2C%20255%2C%20255%5D%2C%20%225%22%3A%20%5B0%2C%200%2C%20255%2C%20255%5D%2C%20%226%22%3A%20%5B255%2C%20255%2C%20255%2C%20255%5D%2C%20%227%22%3A%20%5B255%2C%200%2C%200%2C%20255%5D%2C%20%228%22%3A%20%5B128%2C%20128%2C%20128%2C%20255%5D%2C%20%229%22%3A%20%5B255%2C%20165%2C%200%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
+    tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-2024/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%222%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%223%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%224%22%3A%20%5B116%2C%20214%2C%20180%2C%20255%5D%2C%225%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%226%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%227%22%3A%20%5B255%2C%20241%2C%20131%2C%20255%5D%2C%228%22%3A%20%5B232%2C%20118%2C%2093%2C%20255%5D%2C%229%22%3A%20%5B255%2C%20205%2C%20115%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
     legend: {
       title: "Global land cover (2024)",
       color: "#8E3037",
       items: [
-        { label: "forest", color: "#FAFAC3" },
-        { label: "wetland vegetation", color: "#B0B006" },
+        { label: "forest", color: "#246E24" },
+        { label: "wet vegetation", color: "#74D6B4" },
         { label: "short vegetation", color: "#B9B91E" },
         { label: "bare", color: "#FEFECC" },
         { label: "water", color: "#6BAED6" },
