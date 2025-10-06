@@ -75,6 +75,8 @@ export async function middleware(request: NextRequest) {
 
       if (isApp && !hasProfile) {
         const onboardingUrl = new URL("/onboarding", origin);
+        onboardingUrl.search = request.nextUrl.search;
+    
         return NextResponse.redirect(onboardingUrl);
       }
       if (isOnboarding && hasProfile) {
