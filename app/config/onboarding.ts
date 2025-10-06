@@ -8,6 +8,7 @@ export type OnboardingFieldKey =
   | "company"
   | "country"
   | "expertise"
+  | "preferredLanguage"
   | "topics"
   | "receiveNewsEmails"
   | "helpTestFeatures"
@@ -23,6 +24,7 @@ const ALL_FIELD_KEYS: readonly OnboardingFieldKey[] = [
   "company",
   "country",
   "expertise",
+  "preferredLanguage",
   "topics",
   "receiveNewsEmails",
   "helpTestFeatures",
@@ -37,7 +39,8 @@ export const DEFAULT_REQUIRED_ONBOARDING_FIELDS: readonly OnboardingFieldKey[] =
       k !== "helpTestFeatures" &&
       k !== "topics" &&
       k !== "expertise" &&
-      k !== "jobTitle"
+      k !== "jobTitle" &&
+      k !== "preferredLanguage"
   ) as OnboardingFieldKey[];
 
 /**
