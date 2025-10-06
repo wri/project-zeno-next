@@ -403,6 +403,7 @@ export default function UserSettingsPage() {
                 <Field.Label>First name</Field.Label>
                 <Input
                   type="text"
+                  width="320px"
                   value={form.firstName}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, firstName: e.target.value }))
@@ -417,6 +418,7 @@ export default function UserSettingsPage() {
                 <Field.Label>Last name</Field.Label>
                 <Input
                   type="text"
+                  width="320px"
                   value={form.lastName}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, lastName: e.target.value }))
@@ -431,6 +433,7 @@ export default function UserSettingsPage() {
                 <Field.Label>Email address</Field.Label>
                 <Input
                   type="email"
+                  width="320px"
                   value={form.email}
                   readOnly
                   _readOnly={{
@@ -537,6 +540,7 @@ export default function UserSettingsPage() {
                 <Field.Label>Job title</Field.Label>
                 <Input
                   type="text"
+                  width="320px"
                   value={form.jobTitle}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, jobTitle: e.target.value }))
@@ -551,6 +555,7 @@ export default function UserSettingsPage() {
                 <Field.Label>Company / Organization</Field.Label>
                 <Input
                   type="text"
+                  width="320px"
                   value={form.company}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, company: e.target.value }))
