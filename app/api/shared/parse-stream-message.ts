@@ -10,7 +10,8 @@ import { LangChainUpdate, StreamMessage } from "@/app/types/chat";
 export function parseStreamMessage(
   langChainMessage: LangChainUpdate,
   messageType: "agent" | "tools" | "human",
-  timestamp: Date = new Date()
+  timestamp: Date = new Date(),
+  checkpoint_id?: string,
 ): StreamMessage | null {
   const lastMessage = langChainMessage.messages?.at(-1);
   // Validate input structure
@@ -34,6 +35,7 @@ export function parseStreamMessage(
       timestamp: timestamp.toISOString(),
       start_date: langChainMessage.start_date,
       end_date: langChainMessage.end_date,
+      checkpoint_id,
       trace_id: traceId,
     };
   } else if (messageType === "tools") {
@@ -47,6 +49,7 @@ export function parseStreamMessage(
         name: kwargs.name,
         content: typeof content === "string" ? content : String(content),
         timestamp: timestamp.toISOString(),
+        checkpoint_id,
         trace_id: traceId,
       };
     }
@@ -62,6 +65,7 @@ export function parseStreamMessage(
       insight_count: langChainMessage.insight_count || 0,
       aoi: langChainMessage.aoi || undefined,
       timestamp: timestamp.toISOString(),
+      checkpoint_id,
       trace_id: traceId,
     };
   } else if (messageType === "agent") {
@@ -107,6 +111,7 @@ export function parseStreamMessage(
         type: "text",
         text: textContent.trim(),
         timestamp: timestamp.toISOString(),
+        checkpoint_id,
         trace_id: traceId,
       };
     }

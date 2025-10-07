@@ -129,7 +129,7 @@ export async function GET(
             onData: (data: string) => {
               try {
                 const langChainMessage: LangChainResponse = JSON.parse(data);
-
+                const checkpoint_id = langChainMessage.checkpoint_id;
                 const updateObject = JSON5.parse(langChainMessage.update);
 
                 const lastMessage = updateObject.messages?.at(-1);
@@ -152,7 +152,8 @@ export async function GET(
                   ? parseStreamMessage(
                       updateObject,
                       messageType,
-                      new Date(langChainMessage.timestamp)
+                      new Date(langChainMessage.timestamp),
+                      checkpoint_id
                     )
                   : null;
 

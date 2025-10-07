@@ -35,6 +35,7 @@ export function generateInsightsTool(
         message: "Charts generated",
         widgets: widgets,
         timestamp: streamMessage.timestamp,
+        checkpoint_id: streamMessage.checkpoint_id
       });
     }
   } catch (error) {
