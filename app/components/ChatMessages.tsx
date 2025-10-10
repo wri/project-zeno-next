@@ -1,16 +1,18 @@
 "use client";
-import { Fragment, useEffect, useRef } from "react";
-import { Box } from "@chakra-ui/react";
+import { Fragment, useState, useEffect, useRef } from "react";
+import { Box, Text, Link } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
 import SamplePrompts from "./SamplePrompts";
+import ChatDisclaimer from "./ChatDisclaimer";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading } = useChatStore();
+  const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
 
   // Auto-scroll to bottom when new messages are added or loading state changes
   useEffect(() => {
@@ -53,6 +55,40 @@ function ChatMessages() {
         const isFirst = index === 0;
         return (
           <Fragment key={message.id}>
+                        {isFirst && displayDisclaimer && (
+              <ChatDisclaimer
+                type="info"
+                setDisplayDisclaimer={setDisplayDisclaimer}
+              >
+                <Text>
+                This is an <strong>experimental beta</strong> of Global Nature Watch.
+                <br />
+                AI makes mistakes. Verify outputs with primary sources.
+                While in beta, assistant behavior, application features and available datasets may change or be removed.
+                <br />
+                To learn more about how to use the app, check out the{" "}
+                <Link
+                    color="primary.solid"
+                    textDecor="underline"
+                    href="https://help.globalnaturewatch.org/get-started"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Help Center
+                  </Link>{"."}
+                <br />
+                Your input helps shape the future of Global Nature Watch.
+                Please send your feedback to{" "}
+                  <Link
+                    color="primary.solid"
+                    textDecor="underline"
+                    href="mailto:landcarbonlab@wri.org"
+                  >
+                    landcarbonlab@wri.org
+                  </Link>{"."}
+                </Text>
+              </ChatDisclaimer>
+            )}
             <MessageBubble
               message={message}
               isConsecutive={isConsecutive}
