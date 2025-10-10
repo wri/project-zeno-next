@@ -55,7 +55,7 @@ function ChatMessages() {
         const isFirst = index === 0;
         return (
           <Fragment key={message.id}>
-                        {displayDisclaimer && (
+                        {isFirst && displayDisclaimer && (
               <ChatDisclaimer
                 type="info"
                 setDisplayDisclaimer={setDisplayDisclaimer}
