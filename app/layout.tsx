@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
-import CookieConsent from "@/app/components/CookieConsent";
+import Script from "next/script";
 import Analytics from "@/app/components/Analytics";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
 
@@ -33,6 +33,7 @@ export default function RootLayout({
       className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
     >
       <head>
+        <Script src="https://cmp.osano.com/AzyfddTRtqi1560Dk/1543dfc1-f73d-43a2-8296-3849161e9ff5/osano.js" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -52,7 +53,6 @@ export default function RootLayout({
         <Providers>
           <Analytics />
           {children}
-          <CookieConsent />
           <HotjarTrigger />
         </Providers>
       </body>
