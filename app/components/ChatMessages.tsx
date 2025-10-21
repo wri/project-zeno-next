@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Box } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
@@ -8,133 +8,177 @@ import SamplePrompts from "./SamplePrompts";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
+// Constants for better maintainability
+const SCROLL_PADDING = 24;
+const SCROLL_TOLERANCE = 50;
+const VIEWPORT_FILL_THRESHOLD = 0.8; // 80% of viewport
+const SCROLL_DURATION = 800; // Slower scroll animation in ms
+
+// Easing function for smooth animation
+const easeInOutCubic = (t: number): number => {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+};
+
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
+  const parentElementRef = useRef<HTMLElement | null>(null);
   const { messages, isLoading } = useChatStore();
-  const [shouldScrollToUser, setShouldScrollToUser] = useState(false);
-  const [scrollTargetMessageId, setScrollTargetMessageId] = useState<string | null>(null);
+  const [isScrollingToUser, setIsScrollingToUser] = useState(false);
+  const isScrollingToUserRef = useRef(false); // Synchronous flag to prevent race condition
+  const isAnimatingScrollRef = useRef(false); // Flag to prevent clearing during our own animation
+  const prevLastUserMessageIdRef = useRef<string | null>(null);
 
   // Find the last user message
   const lastUserMessage = messages.findLast((msg) => msg.type === "user");
   const lastUserMessageIndex = messages.findLastIndex((msg) => msg.type === "user");
 
-  // Track when a new user message is added (by ID, not index)
-  const prevLastUserMessageIdRef = useRef(lastUserMessage?.id);
-  
+  // Cache parent element reference
   useEffect(() => {
-    // Check if a new user message was added (different ID)
-    if (lastUserMessage && lastUserMessage.id !== prevLastUserMessageIdRef.current) {
-      // Enable scroll-to-top mode and remember which message to scroll to
-      setScrollTargetMessageId(lastUserMessage.id);
-      setShouldScrollToUser(true);
-      
-      // Use multiple animation frames to ensure DOM is fully rendered
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (lastUserMessageRef.current && containerRef.current) {
-            const parentElement = containerRef.current.parentElement;
-            if (parentElement) {
-              // Get the position of the message relative to the parent
-              const messageRect = lastUserMessageRef.current.getBoundingClientRect();
-              const parentRect = parentElement.getBoundingClientRect();
-              
-              // Calculate the scroll position to put message at top
-              // Add small offset to account for parent padding
-              const paddingOffset = 24; // Account for parent padding
-              const scrollOffset = messageRect.top - parentRect.top - paddingOffset;
-              const targetScroll = parentElement.scrollTop + scrollOffset;
-              const maxScroll = parentElement.scrollHeight - parentElement.clientHeight;
-              
-              // Scroll to the target, or max scroll if target is beyond content
-              parentElement.scrollTop = Math.min(targetScroll, maxScroll);
-            }
-          }
-        });
-      });
+    if (containerRef.current) {
+      parentElementRef.current = containerRef.current.parentElement;
     }
-    
-    prevLastUserMessageIdRef.current = lastUserMessage?.id;
+  }, []);
+
+  // Detect new user message and block auto-scroll immediately
+  // Using useLayoutEffect to run synchronously BEFORE ResizeObserver can fire
+  useLayoutEffect(() => {
+    const hasNewUserMessage = 
+      lastUserMessage && 
+      lastUserMessage.id !== prevLastUserMessageIdRef.current;
+
+    if (hasNewUserMessage) {
+      // Set ref and state immediately to block auto-scroll
+      isScrollingToUserRef.current = true;
+      setIsScrollingToUser(true);
+    }
+
+    prevLastUserMessageIdRef.current = lastUserMessage?.id ?? null;
   }, [lastUserMessage?.id]);
 
-  // Auto-scroll to bottom as content grows (for streaming responses)
-  // But only if we're not trying to scroll to user message
+  // Perform the actual scroll animation after spacer is rendered
   useEffect(() => {
-    if (containerRef.current && !shouldScrollToUser) {
-      const observer = new ResizeObserver((entries) => {
-        const e = entries[0];
-        const parentElement = containerRef.current?.parentElement;
-        const elementHeight = e.contentRect.height;
-
-        // Only auto-scroll to bottom if we're not scrolling to user message
-        if (parentElement && elementHeight > parentElement.clientHeight) {
-          parentElement.scrollTop = parentElement.scrollHeight;
+    if (isScrollingToUser && lastUserMessageRef.current && parentElementRef.current) {
+      const parent = parentElementRef.current;
+      const messageElement = lastUserMessageRef.current;
+      
+      // Wait for spacer to be in DOM and increase scrollHeight
+      const checkAndScroll = () => {
+        if (!lastUserMessageRef.current || !parentElementRef.current) return;
+        
+        const expectedMinHeight = messageElement.offsetTop + parent.clientHeight * 0.7;
+        
+        // Wait until spacer has actually increased the scrollHeight
+        if (parent.scrollHeight < expectedMinHeight) {
+          requestAnimationFrame(checkAndScroll);
+          return;
         }
-      });
-      observer.observe(containerRef.current);
+        
+        // Now spacer is rendered, calculate scroll position
+        const messageTop = messageElement.offsetTop;
+        const targetScroll = Math.max(0, messageTop - SCROLL_PADDING);
+        const startScroll = parent.scrollTop;
+        const distance = targetScroll - startScroll;
+        
+        // Set flag to prevent disable logic from running during our animation
+        isAnimatingScrollRef.current = true;
+        const startTime = performance.now();
 
-      return () => {
-        observer.disconnect();
-      };
-    }
-  }, [shouldScrollToUser]);
-
-  // Track initial content height when scroll-to-user mode starts
-  const initialContentHeightRef = useRef<number>(0);
-  
-  useEffect(() => {
-    if (shouldScrollToUser && containerRef.current) {
-      // Capture the initial content height when we start scroll-to-user mode
-      initialContentHeightRef.current = containerRef.current.scrollHeight;
-    }
-  }, [shouldScrollToUser]);
-
-  // Disable scroll-to-top mode when response fills viewport OR user manually scrolls
-  useEffect(() => {
-    if (shouldScrollToUser && containerRef.current) {
-      const parentElement = containerRef.current.parentElement;
-      if (!parentElement) return;
-      
-      const userMessageTop = lastUserMessageRef.current?.offsetTop || 0;
-      
-      // Check if NEW content has filled the viewport OR user scrolled
-      const checkShouldDisable = () => {
-        if (parentElement && containerRef.current) {
-          const currentContentHeight = containerRef.current.scrollHeight;
-          const viewportHeight = parentElement.clientHeight;
-          const scrollTop = parentElement.scrollTop;
-          const contentGrowth = currentContentHeight - initialContentHeightRef.current;
+        const animateScroll = (currentTime: number) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / SCROLL_DURATION, 1);
+          const easedProgress = easeInOutCubic(progress);
           
-          // Calculate if user message is still near the top of viewport
-          const messageScrollPosition = scrollTop;
-          const userScrolledAway = Math.abs(messageScrollPosition - userMessageTop) > 50;
-          
-          // Disable scroll-to-top mode if:
-          // 1. Response has filled the viewport, OR
-          // 2. User manually scrolled away from the user message
-          if (contentGrowth > viewportHeight || userScrolledAway) {
-            setShouldScrollToUser(false);
-            setScrollTargetMessageId(null);
+          if (parent) {
+            parent.scrollTop = startScroll + distance * easedProgress;
           }
-        }
+
+          if (progress < 1) {
+            requestAnimationFrame(animateScroll);
+          } else {
+            // Animation complete, allow disable logic to run again
+            isAnimatingScrollRef.current = false;
+          }
+        };
+
+        requestAnimationFrame(animateScroll);
       };
       
-      // Check periodically
-      const intervalId = setInterval(checkShouldDisable, 200);
-      
-      // Also listen for manual scroll events
-      const handleScroll = () => {
-        checkShouldDisable();
-      };
-      
-      parentElement.addEventListener('scroll', handleScroll);
-      
-      return () => {
-        clearInterval(intervalId);
-        parentElement.removeEventListener('scroll', handleScroll);
-      };
+      requestAnimationFrame(checkAndScroll);
     }
-  }, [shouldScrollToUser]);
+  }, [isScrollingToUser]);
+
+  // Auto-scroll to bottom as content grows (streaming responses)
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Always check ref - don't rely on state
+      if (isScrollingToUserRef.current) {
+        return;
+      }
+      
+      if (parentElementRef.current && containerRef.current) {
+        const { scrollHeight, clientHeight } = parentElementRef.current;
+        
+        if (scrollHeight > clientHeight) {
+          parentElementRef.current.scrollTop = scrollHeight;
+        }
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []); // No dependencies - single observer for component lifetime
+
+  // Disable scroll-to-top mode when appropriate
+  useEffect(() => {
+    if (!isScrollingToUser || !parentElementRef.current || !containerRef.current) return;
+
+    const parent = parentElementRef.current;
+    const userMessageTop = lastUserMessageRef.current?.offsetTop ?? 0;
+    const initialContentHeight = containerRef.current.scrollHeight;
+
+    const handleScrollChange = () => {
+      // Don't check during our own scroll animation
+      if (isAnimatingScrollRef.current) {
+        return;
+      }
+      
+      if (!parent || !containerRef.current) return;
+
+      const currentContentHeight = containerRef.current.scrollHeight;
+      const viewportHeight = parent.clientHeight;
+      const scrollTop = parent.scrollTop;
+      const contentGrowth = currentContentHeight - initialContentHeight;
+
+      // Check if content has grown significantly
+      const hasFilledViewport = contentGrowth > (viewportHeight * VIEWPORT_FILL_THRESHOLD);
+
+      // Check if user manually scrolled away
+      const currentMessagePosition = scrollTop;
+      const hasScrolledAway = Math.abs(currentMessagePosition - userMessageTop) > SCROLL_TOLERANCE;
+
+      if (hasFilledViewport || hasScrolledAway) {
+        isScrollingToUserRef.current = false;
+        setIsScrollingToUser(false);
+      }
+    };
+
+    // Use ResizeObserver for content growth (more efficient than interval)
+    const resizeObserver = new ResizeObserver(handleScrollChange);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Listen for manual scroll
+    parent.addEventListener('scroll', handleScrollChange, { passive: true });
+
+    return () => {
+      resizeObserver.disconnect();
+      parent.removeEventListener('scroll', handleScrollChange);
+    };
+  }, [isScrollingToUser]);
 
   return (
     <Box ref={containerRef} fontSize="sm">
@@ -164,9 +208,9 @@ function ChatMessages() {
         );
       })}
       
-      {/* Add temporary spacer after last message to allow scrolling user message to top */}
-      {shouldScrollToUser && (
-        <Box height="70vh" />
+      {/* Dynamic spacer to allow scrolling user message to top */}
+      {isScrollingToUser && parentElementRef.current && (
+        <Box height={`${parentElementRef.current.clientHeight * 0.7}px`} />
       )}
     </Box>
   );
