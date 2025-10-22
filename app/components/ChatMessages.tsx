@@ -8,7 +8,6 @@ import SamplePrompts from "./SamplePrompts";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
-// Constants for better maintainability
 const SCROLL_PADDING = 24;
 const SCROLL_TOLERANCE = 50;
 const VIEWPORT_FILL_THRESHOLD = 0.8; // 80% of viewport
