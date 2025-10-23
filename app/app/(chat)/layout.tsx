@@ -20,29 +20,17 @@ import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
-import useCookieConsentStore from "@/app/store/cookieConsentStore";
-
-const GA_ID = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { setConsentStatus } = useCookieConsentStore();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
   const [desktopHeight, setDesktopHeight] = useState("0");
-
-  useEffect(() => {
-    // As we can't read localStorage outside the useEffect, we update the
-    // cookieConsent state value if the consent was given previously.
-    if (GA_ID && localStorage.getItem("analyticsConsent") === "true") {
-      setConsentStatus(true);
-    }
-  }, [setConsentStatus]);
 
   useEffect(() => {
     // Set layout heights after mount to avoid flash of both layouts at once
