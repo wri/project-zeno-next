@@ -202,7 +202,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     threshold: 30,
     img: "/dataset_card_tree_cover.webp",
     description:
-      "Tree Cover provides global percent tree canopy cover at 30-meter resolution for years 2000, based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
+      "Tree Cover provides global percent tree canopy cover at 30-meter resolution for the year 2000 based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_tree_cover_density_{year}/latest/tcd_{threshold}/{z}/{x}/{y}.png",
     legend: {
