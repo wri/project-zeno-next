@@ -61,25 +61,32 @@ function ChatMessages() {
                 setDisplayDisclaimer={setDisplayDisclaimer}
               >
                 <Text>
-                This is an <strong>experimental beta</strong> of Global Nature Watch.
+                <strong>Beta notice</strong>
                 <br />
-                AI makes mistakes. Verify outputs with primary sources.
-                While in beta, assistant behavior, application features and available datasets may change or be removed.
-                <br />
-                To learn more about how to use the app, check out the{" "}
+                This version of Global Nature Watch is still being tested. Expect mistakes and verify results with primary sources.
+                Assistant behavior, features and datasets may change or be removed while in beta.
+                Visit the{" "}
                 <Link
                     color="primary.solid"
                     textDecor="underline"
-                    href="https://help.globalnaturewatch.org/get-started"
+                    href="https://help.globalnaturewatch.org/"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     Help Center
-                  </Link>{"."}
+                  </Link>{" "}
+                  to learn more.
                 <br />
-                Your input helps shape the future of Global Nature Watch.
-                Please send your feedback to{" "}
+                  Your feedback is critical to improving Global Nature Watch. Complete{" "}
                   <Link
+                    color="primary.solid"
+                    textDecor="underline"
+                    href="https://surveys.hotjar.com/860def81-d4f2-4f8c-abee-339ebc3129f3"
+                  >
+                    this survey
+                  </Link>{" "}
+                   or us at{" "} 
+                   <Link
                     color="primary.solid"
                     textDecor="underline"
                     href="mailto:landcarbonlab@wri.org"
