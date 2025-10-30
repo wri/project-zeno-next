@@ -85,7 +85,7 @@ function ChatMessages() {
                   >
                     this survey
                   </Link>{" "}
-                   or us at{" "} 
+                   or email us at{" "} 
                    <Link
                     color="primary.solid"
                     textDecor="underline"
