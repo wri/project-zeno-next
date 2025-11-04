@@ -31,6 +31,7 @@ import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
+import CopySelectionTooltip from "./CopySelectionTooltip";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -229,9 +230,11 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
               },
             }}
           >
-            <Markdown remarkPlugins={[remarkBreaks]}>
-              {message.message}
-            </Markdown>
+            <CopySelectionTooltip enabled={!isUser}>
+              <Markdown remarkPlugins={[remarkBreaks]}>
+                {message.message}
+              </Markdown>
+            </CopySelectionTooltip>
           </Box>
         )}
         {!isUser && !isConsecutive && !isError && !isFirst && (
