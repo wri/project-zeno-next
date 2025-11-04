@@ -8,10 +8,9 @@ interface SelectionTooltipProps {
   onClose: () => void;
   target: DOMRect | null;
   onCopy: () => void;
-  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export function SelectionTooltip({ isOpen, onClose, target, onCopy, containerRef }: SelectionTooltipProps) {
+export function SelectionTooltip({ isOpen, onClose, target, onCopy }: SelectionTooltipProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -40,7 +39,7 @@ export function SelectionTooltip({ isOpen, onClose, target, onCopy, containerRef
     <Box
       position="absolute"
       top={`${target.bottom + 8}px`}
-      left="5%"
+      left="5%" // TODO: not sure this is the best solution, but it passes the eye-test for now
       zIndex={1000}
       bg="white"
       border="1px solid"
