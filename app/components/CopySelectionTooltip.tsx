@@ -1,6 +1,8 @@
 "use client";
-import { Box, Button, Flex, Icon, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, Text, chakra } from "@chakra-ui/react";
 import { CopyIcon, SparkleIcon } from "@phosphor-icons/react";
+const Sparkle = chakra(SparkleIcon);
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 interface CopySelectionTooltipProps {
@@ -118,7 +120,7 @@ export default function CopySelectionTooltip({
           ref={tooltipRef}
         >
           <Flex align="center" gap="2">
-            <Icon as={SparkleIcon} color="fg.muted" />
+            <Sparkle color="secondary.500" weight="fill" />
             <Text fontSize="xs" flex="1">
               {notice}
             </Text>
