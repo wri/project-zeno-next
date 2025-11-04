@@ -95,6 +95,7 @@ export const config = defineConfig({
         lime: {
           100: { value: "#F7FBD9" },
           400: { value: "#E3F37F" },
+          500: { value: "#C3D16F" },
         },
         mint: {
           50: { value: "#e2fff8" },

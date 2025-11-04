@@ -36,14 +36,15 @@ interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
   isFirst?: boolean;
+  onSelectText: () => void;
 }
 
-function MessageBubble({ message, isConsecutive = false, isFirst = false }: MessageBubbleProps) {
+function MessageBubble({ message, isConsecutive = false, isFirst = false, onSelectText }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
-  const clipboard = useClipboard({ value: message.message });
   const [isRating, setIsRating] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
+  const clipboard = useClipboard({ value: message.message });
   const { currentThreadId } = useChatStore();
 
   useEffect(() => {
@@ -158,7 +159,7 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
       mb={isConsecutive ? 1 : 4} // Reduced margin for consecutive messages
       _first={{ base: { mt: 3 }, md: { mt: 6 } }}
     >
-      <Box
+            <Box
         display="flex"
         flexDir="column"
         alignItems={isUser ? "flex-end" : "flex-start"}
@@ -229,9 +230,11 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
               },
             }}
           >
-            <Markdown remarkPlugins={[remarkBreaks]}>
-              {message.message}
-            </Markdown>
+                        <Box onMouseUp={onSelectText}>
+              <Markdown remarkPlugins={[remarkBreaks]}>
+                {message.message}
+              </Markdown>
+            </Box>
           </Box>
         )}
         {!isUser && !isConsecutive && !isError && !isFirst && (
