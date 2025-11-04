@@ -59,7 +59,6 @@ function ChatMessages() {
         onClose={onClose}
         target={tooltipTarget}
         onCopy={handleCopy}
-        containerRef={containerRef}
       />
       {messages.map((message, index) => {
         // Check if this message is consecutive to the previous one of the same type
