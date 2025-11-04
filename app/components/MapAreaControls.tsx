@@ -27,6 +27,7 @@ import { MAX_AREA_KM2, MIN_AREA_KM2 } from "../constants/custom-areas";
 import { formatAreaWithUnits } from "../utils/formatArea";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 import useContextStore from "../store/contextStore";
+import { BasemapSelector } from "./map/BasemapSelector";
 
 function Wrapper({
   children,
@@ -55,7 +56,14 @@ function Wrapper({
   );
 }
 
-function MapAreaControls() {
+interface MapAreaControlsProps {
+  basemapTiles: string;
+  setBasemapTiles: (tileUrl: string) => void;
+}
+function MapAreaControls({
+  basemapTiles,
+  setBasemapTiles,
+}: MapAreaControlsProps) {
   const {
     setSelectAreaLayer,
     isDrawingMode,
@@ -158,6 +166,11 @@ function MapAreaControls() {
           {!showTools ? <MapTrifoldIcon /> : <XIcon />}
           Tools
         </Button>
+        <BasemapSelector
+          currentBasemap={basemapTiles}
+          onBasemapChange={setBasemapTiles}
+          display={{ base: showTools ? "inherit" : "none", md: "inherit" }}
+        />
         <ButtonGroup
           size="sm"
           variant="subtle"
