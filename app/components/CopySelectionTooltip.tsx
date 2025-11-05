@@ -30,6 +30,7 @@ export default function CopySelectionTooltip({
     top: 0,
     left: 0,
   });
+  const isTouchingRef = useRef(false);
 
   const isSelectionInside = useCallback(
     (root: HTMLElement, sel: Selection | null) => {
@@ -70,22 +71,77 @@ export default function CopySelectionTooltip({
     const gap = 8; // space between selection and tooltip
     const top =
       rect.top - rootRect.top - (tooltipHeight > 0 ? tooltipHeight + gap : 48);
-    const left = Math.max(0, rect.left - rootRect.left);
-    setPosition({ top, left });
+    // Center horizontally within the container; clamp with 8px padding
+    const containerWidth = rootRect.width;
+    const estimatedWidth = tooltipRef.current?.offsetWidth || 320; // fallback before first paint
+    const centeredLeft = Math.max(
+      8,
+      Math.min(
+        containerWidth - estimatedWidth - 8,
+        (containerWidth - estimatedWidth) / 2
+      )
+    );
+    setPosition({ top, left: centeredLeft });
     setVisible(true);
+    // After first paint, re-center using the actual measured width
+    requestAnimationFrame(() => {
+      const realWidth = tooltipRef.current?.offsetWidth;
+      const currentRoot = containerRef.current;
+      if (!realWidth || !currentRoot) return;
+      const cw = currentRoot.getBoundingClientRect().width;
+      const left = Math.max(
+        8,
+        Math.min(cw - realWidth - 8, (cw - realWidth) / 2)
+      );
+      setPosition((prev) => ({ ...prev, left }));
+    });
   }, [enabled, isSelectionInside]);
 
   useEffect(() => {
     const onScroll = () => setVisible(false);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!visible) return;
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        (e.key === "c" || e.key === "C" || e.code === "KeyC")
+      ) {
+        // Dismiss tooltip but do not interfere with native copy
+        const root = containerRef.current;
+        const sel = window.getSelection();
+        if (root && isSelectionInside(root, sel)) setVisible(false);
+      }
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      const target = e.target as Node | null;
+      if (
+        containerRef.current &&
+        target &&
+        containerRef.current.contains(target)
+      ) {
+        isTouchingRef.current = true;
+        setVisible(false);
+      }
+    };
+    const onTouchEnd = () => {
+      if (!isTouchingRef.current) return;
+      isTouchingRef.current = false;
+      setTimeout(() => updateFromSelection(), 50);
+    };
     document.addEventListener("selectionchange", updateFromSelection);
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onScroll);
+    document.addEventListener("keydown", onKeyDown, true);
+    document.addEventListener("touchstart", onTouchStart, true);
+    document.addEventListener("touchend", onTouchEnd, true);
     return () => {
       document.removeEventListener("selectionchange", updateFromSelection);
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onScroll);
+      document.removeEventListener("keydown", onKeyDown, true);
+      document.removeEventListener("touchstart", onTouchStart, true);
+      document.removeEventListener("touchend", onTouchEnd, true);
     };
-  }, [updateFromSelection]);
+  }, [updateFromSelection, isSelectionInside, visible]);
 
   const handleCopy = useCallback(async () => {
     const sel = window.getSelection();
@@ -101,7 +157,7 @@ export default function CopySelectionTooltip({
   }, []);
 
   return (
-    <Box position="relative" ref={containerRef}>
+    <Box position="relative" ref={containerRef} userSelect="text">
       {children}
       {enabled && visible && (
         <Box
