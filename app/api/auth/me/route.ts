@@ -1,29 +1,35 @@
 import { NextResponse } from "next/server";
 import { jwtDecode } from "jwt-decode";
-import { cookies } from "next/headers";
 import { API_CONFIG } from "@/app/config/api";
-import { getAPIRequestHeaders } from "../../shared/utils";
-
-const TOKEN_NAME = "auth_token";
+import { getAPIRequestHeaders, getAuthToken, getMachineUserToken } from "../../shared/utils";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(TOKEN_NAME)?.value;
+  const token = await getAuthToken();
   let hasProfile = false;
 
   if (!token) {
     return NextResponse.json({ isAuthenticated: false }, { status: 401 });
   }
 
+  // Check if this is a machine user token
+  const isMachineToken = getMachineUserToken() === token;
+
   try {
-    const decoded: Record<string, unknown> = jwtDecode(token) as Record<
-      string,
-      unknown
-    >;
-    // Check if the token is expired (if exp present)
-    const exp = typeof decoded.exp === "number" ? decoded.exp : null;
-    if (exp && exp * 1000 < Date.now()) {
-      return NextResponse.json({ isAuthenticated: false }, { status: 401 });
+    // Try to decode JWT - machine tokens might not be JWTs
+    let decoded: Record<string, unknown> | null = null;
+    try {
+      decoded = jwtDecode(token) as Record<string, unknown>;
+      // Check if the token is expired (if exp present)
+      const exp = typeof decoded.exp === "number" ? decoded.exp : null;
+      if (exp && exp * 1000 < Date.now()) {
+        return NextResponse.json({ isAuthenticated: false }, { status: 401 });
+      }
+    } catch (decodeError) {
+      // If it's a machine token and not a JWT, that's okay - we'll still use it for API calls
+      if (!isMachineToken) {
+        throw decodeError;
+      }
+      // For machine tokens that aren't JWTs, we'll skip JWT decoding
     }
 
     // Attempt to fetch prompts usage/quota from upstream
@@ -73,28 +79,37 @@ export async function GET() {
       );
     }
 
-    // fallbacks for email and id
-    const root = decoded as Record<string, unknown>;
-    const userObj =
-      typeof root.user === "object" && root.user !== null
-        ? (root.user as Record<string, unknown>)
-        : undefined;
+    // Extract user info from JWT if available
+    let email: string | null = null;
+    let userId: string | null = null;
 
-    const emailRoot =
-      typeof root.email === "string" ? (root.email as string) : null;
-    const emailUser =
-      userObj && typeof userObj.email === "string"
-        ? (userObj.email as string)
-        : null;
-    const email = emailRoot ?? emailUser ?? null;
+    if (decoded) {
+      const root = decoded as Record<string, unknown>;
+      const userObj =
+        typeof root.user === "object" && root.user !== null
+          ? (root.user as Record<string, unknown>)
+          : undefined;
 
-    const idSub = typeof root.sub === "string" ? (root.sub as string) : null;
-    const idRoot = typeof root.id === "string" ? (root.id as string) : null;
-    const idUserId =
-      typeof root.userId === "string" ? (root.userId as string) : null;
-    const idFromUser =
-      userObj && typeof userObj.id === "string" ? (userObj.id as string) : null;
-    const userId = idSub ?? idRoot ?? idUserId ?? idFromUser ?? email;
+      const emailRoot =
+        typeof root.email === "string" ? (root.email as string) : null;
+      const emailUser =
+        userObj && typeof userObj.email === "string"
+          ? (userObj.email as string)
+          : null;
+      email = emailRoot ?? emailUser ?? null;
+
+      const idSub = typeof root.sub === "string" ? (root.sub as string) : null;
+      const idRoot = typeof root.id === "string" ? (root.id as string) : null;
+      const idUserId =
+        typeof root.userId === "string" ? (root.userId as string) : null;
+      const idFromUser =
+        userObj && typeof userObj.id === "string" ? (userObj.id as string) : null;
+      userId = idSub ?? idRoot ?? idUserId ?? idFromUser ?? email;
+    } else if (isMachineToken) {
+      // For machine tokens, use a default identifier
+      userId = "machine_user";
+      email = "machine@system";
+    }
 
     return NextResponse.json({
       isAuthenticated: true,

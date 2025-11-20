@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { COOKIE_NAME, getAuthTokenFromRequest } from "./app/api/shared/utils";
+import { COOKIE_NAME, getAuthTokenFromRequest, getMachineUserToken } from "./app/api/shared/utils";
 
 // Set a session token if not set.
 // This is not to identify the user, but to identify the session.
@@ -42,6 +42,12 @@ export async function middleware(request: NextRequest) {
   const isDashboard = pathname.startsWith("/dashboard");
 
   if (isOnboarding || isApp || isDashboard) {
+    // If machine user token is present, skip auth flow entirely
+    const machineToken = getMachineUserToken();
+    if (machineToken) {
+      return NextResponse.next();
+    }
+
     const authCookie = getAuthTokenFromRequest(request);
 
     // If not authenticated, redirect to WRI login
