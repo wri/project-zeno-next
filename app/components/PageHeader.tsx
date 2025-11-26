@@ -113,7 +113,7 @@ function PageHeader() {
             ) : (
               totalPrompts
             )}{" "}
-            Prompts
+            Prompts used
           </Progress.Label>
           <Progress.Track bg="primary.950" maxH="4px">
             <Progress.Range bg="white" />
