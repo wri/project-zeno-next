@@ -36,7 +36,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null as string | null,
     img: "/dataset_card_dist_alerts.webp",
     description:
-      "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from January 2023 to present.",
+      "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     legend: {
@@ -44,7 +44,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       color: "#f69",
       items: [{ label: "DIST alert", color: "#f69" }],
       type: "symbol",
-      info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from January 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
+      info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
       note: "Near-real-time vegetation disturbance alerts across all ecosystems, updated weekly (2023-present).",
     },
   },
