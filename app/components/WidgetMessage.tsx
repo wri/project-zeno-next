@@ -6,6 +6,7 @@ import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
+import VisualizationDisclaimer from "./VisualizationDisclaimer";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -22,6 +23,17 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
     onOpen();
   };
 
+  const chartTypes: InsightWidget["type"][] = [
+    "bar",
+    "stacked-bar",
+    "grouped-bar",
+    "line",
+    "area",
+    "pie",
+    "scatter",
+  ];
+  const isChartType = chartTypes.includes(widget.type);
+  const showDisclaimer = isChartType || widget.type === "table";
   return (
     <Box
       rounded="md"
@@ -40,13 +52,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {widget.description}
         </Text>
         <Separator />
-        {(widget.type === "bar" ||
-          widget.type === "stacked-bar" ||
-          widget.type === "grouped-bar" ||
-          widget.type === "line" ||
-          widget.type === "area" ||
-          widget.type === "pie" ||
-          widget.type === "scatter") && <ChartWidget widget={widget} />}
+        {isChartType && <ChartWidget widget={widget} />}
 
         {widget.type === "table" && (
           <Box overflowX="auto" maxW="100%">
@@ -62,6 +68,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             </Button>
           </Flex>
         )}
+        {showDisclaimer && <VisualizationDisclaimer />}
       </Flex>
       <InsightProvenanceDrawer
         isOpen={open}
