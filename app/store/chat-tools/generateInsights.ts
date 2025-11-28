@@ -27,9 +27,7 @@ export function generateInsightsTool(
         xAxis: chart.xAxis,
         yAxis: chart.yAxis,
         generation: {
-          text_output: streamMessage.text_output,
-          code_blocks: streamMessage.code_blocks,
-          execution_outputs: streamMessage.execution_outputs,
+          codeact_parts: streamMessage.codeact_parts,
           source_urls: streamMessage.source_urls,
         },
       }));

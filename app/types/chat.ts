@@ -39,11 +39,16 @@ export interface RawInsightData {
   data: unknown;
 }
 
+export type CodeActPartType = "text_output" | "code_block" | "execution_output";
+
+export interface CodeActPart {
+  type: CodeActPartType;
+  content: string; // base64 encoded
+}
+
 // Step-wise provenance attached to an insight/tool result
 export interface InsightGeneration {
-  text_output?: string[]; // markdown or plain text per step
-  code_blocks?: string[]; // code per step (may be encoded)
-  execution_outputs?: string[]; // stdout/stderr per step
+  codeact_parts?: CodeActPart[];
   source_urls?: string[]; // optional sources used
 }
 
@@ -91,10 +96,7 @@ export interface StreamMessage {
   aoi?: object;
   insights?: object[];
   charts_data?: object[];
-  // Optional provenance fields returned by a tool (aligned by index as steps)
-  text_output?: string[];
-  code_blocks?: EncodedCodeBlock[];
-  execution_outputs?: string[];
+  codeact_parts?: CodeActPart[];
   source_urls?: string[];
   insight_count?: number;
   timestamp: string;
@@ -148,9 +150,7 @@ export interface LangChainUpdate {
   insights: object[];
   charts_data: object[];
   // Optional provenance fields emitted by tools
-  text_output?: string[];
-  code_blocks?: EncodedCodeBlock[];
-  execution_outputs?: string[];
+  codeact_parts?: CodeActPart[];
   source_urls?: string[];
   insight_count: number;
   messages: [
