@@ -17,6 +17,8 @@ import { useMemo } from "react";
 import type { InsightGeneration } from "@/app/types/chat";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vs } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 interface InsightProvenanceDrawerProps {
   isOpen: boolean;
@@ -68,8 +70,20 @@ function CodeBlockViewer({ code }: { code: string }) {
           {copied ? "Copied" : "Copy"}
         </Button>
       </Flex>
-      <Box as="pre" m={0} p={3} bg="neutral.25" overflowX="auto">
-        <Code whiteSpace="pre">{code}</Code>
+      <Box m={0} p={0} bg="neutral.25" overflowX="auto">
+        <SyntaxHighlighter
+          language="python"
+          style={vs}
+          customStyle={{
+            margin: 0,
+            padding: "1rem",
+            fontSize: "0.875rem",
+            backgroundColor: "transparent",
+          }}
+          wrapLongLines
+        >
+          {code}
+        </SyntaxHighlighter>
       </Box>
     </Box>
   );
@@ -122,13 +136,14 @@ export default function InsightProvenanceDrawer({
                     // Decode text outputs (Markdown)
                     const textRaw = generation?.text_output?.[i];
                     const text = textRaw ? safeBase64Decode(textRaw) : undefined;
-
-                    console.log("text", text);
                     
                     const codeRaw = generation?.code_blocks?.[i];
+                    // The API returns encoded strings as EncodedCodeBlock (which is just string now per user change)
+                    // We cast to string to be safe if types were mixed, but we updated types previously.
+                    // Actually, let's just treat it as string since we know it is.
                     const code =
                       codeRaw !== undefined
-                        ? decodeCodeBlock(codeRaw)
+                        ? decodeCodeBlock(codeRaw as string)
                         : undefined;
                     
                     // Decode execution outputs
@@ -137,15 +152,9 @@ export default function InsightProvenanceDrawer({
 
                     return (
                       <Box key={i}>
-                        <Heading size="xs" mb={2}>
-                          Step {i + 1}
-                        </Heading>
                         <Flex direction="column" gap={3}>
                           {text && (
                             <Box>
-                              <Text fontSize="xs" color="neutral.600" mb={1}>
-                                Explanation
-                              </Text>
                               <Box fontSize="sm" css={{
                                 "& p": { mb: 2 },
                                 "& ul, & ol": { pl: 4, mb: 2 },
