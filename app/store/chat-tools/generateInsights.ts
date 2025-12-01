@@ -26,6 +26,10 @@ export function generateInsightsTool(
         data: chart.data,
         xAxis: chart.xAxis,
         yAxis: chart.yAxis,
+        generation: {
+          codeact_parts: streamMessage.codeact_parts,
+          source_urls: streamMessage.source_urls,
+        },
       }));
 
       console.log("FRONTEND: Received charts_data message:", widgets);
