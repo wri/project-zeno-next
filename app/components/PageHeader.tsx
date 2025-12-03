@@ -120,7 +120,7 @@ function PageHeader() {
               content={
                 totalPrompts > 5000 
                   ? "You have unlimited prompts!" 
-                  : `${usedPrompts} of ${totalPrompts} prompts used. These refresh every 24 hours.`
+                  : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
               }
               showArrow
             >
