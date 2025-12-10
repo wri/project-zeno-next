@@ -1,7 +1,6 @@
 "use client";
 import {
   Box,
-  Button,
   Drawer,
   Flex,
   Heading,
@@ -12,9 +11,9 @@ import {
   Portal,
   CloseButton,
   Link,
-  Menu,
+  IconButton,
 } from "@chakra-ui/react";
-import { DownloadSimple } from "@phosphor-icons/react";
+import { DownloadSimpleIcon as DownloadSimple, CopyIcon as Copy, CheckIcon as Check } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import type { InsightGeneration } from "@/app/types/chat";
 import Markdown from "react-markdown";
@@ -22,6 +21,8 @@ import remarkBreaks from "remark-breaks";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vs } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { fetchExternalData } from "@/app/actions/fetch-data";
+import { Tooltip } from "@/app/components/ui/tooltip";
+import JSZip from "jszip";
 
 interface InsightProvenanceDrawerProps {
   isOpen: boolean;
@@ -48,57 +49,53 @@ function safeBase64Decode(str: string): string {
 
 // --- Data Fetching & CSV Conversion ---
 
-async function fetchAndDownloadCsv(url: string, filename?: string) {
-  try {
-    const json = await fetchExternalData(url);
+async function fetchAndConvertToCsv(url: string): Promise<{ csv: string; filename: string }> {
+  const json = await fetchExternalData(url);
 
-    // Access nested result structure
-    // Structure: { data: { result: { col1: [vals], col2: [vals] } } }
-    const result = json.data?.result;
-    if (!result) throw new Error("Invalid data format");
+  // Access nested result structure
+  const result = json.data?.result;
+  if (!result) throw new Error("Invalid data format");
 
-    // Convert column-oriented to CSV
-    const columns = Object.keys(result);
-    if (columns.length === 0) throw new Error("No data found");
+  // Convert column-oriented to CSV
+  const columns = Object.keys(result);
+  if (columns.length === 0) throw new Error("No data found");
 
-    const rowCount = result[columns[0]].length;
-    
-    // Header row
-    const csvRows = [columns.join(",")];
+  const rowCount = result[columns[0]].length;
+  
+  const csvRows = [columns.join(",")];
 
-    // Data rows
-    for (let i = 0; i < rowCount; i++) {
-      const row = columns.map(col => {
-        const val = result[col][i];
-        // Handle null, undefined, strings with commas
-        if (val === null || val === undefined) return "";
-        const strVal = String(val);
-        if (strVal.includes(",")) return `"${strVal}"`;
-        return strVal;
-      });
-      csvRows.push(row.join(","));
-    }
-
-    const csvContent = csvRows.join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const downloadName = filename || "data.csv";
-    
-    const urlObj = URL.createObjectURL(blob);
-    link.setAttribute("href", urlObj);
-    link.setAttribute("download", downloadName);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (err) {
-    console.error("Download error:", err);
-    alert("Failed to download data. See console for details.");
+  for (let i = 0; i < rowCount; i++) {
+    const row = columns.map(col => {
+      const val = result[col][i];
+      if (val === null || val === undefined) return "";
+      const strVal = String(val);
+      if (strVal.includes(",")) return `"${strVal}"`;
+      return strVal;
+    });
+    csvRows.push(row.join(","));
   }
+
+  const csv = csvRows.join("\n");
+  let filename = url.split("/").pop() || "data";
+  if (!filename.endsWith(".csv")) {
+    filename += ".csv";
+  }
+  return { csv, filename };
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const link = document.createElement("a");
+  const urlObj = URL.createObjectURL(blob);
+  link.setAttribute("href", urlObj);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(urlObj);
 }
 
 // Regex to find http/https URLs inside quotes
-// Matches "http..." or 'http...'
 function extractDataUrls(code: string): string[] {
   const urlRegex = /(?:["'])(https?:\/\/[^"'\s]+)(?:["'])/g;
   const matches = [];
@@ -117,15 +114,35 @@ function CodeBlockViewer({ code }: { code: string }) {
   
   const dataUrls = useMemo(() => extractDataUrls(code), [code]);
 
-  const handleDownload = async (url: string) => {
+  const handleDownload = async () => {
+    if (dataUrls.length === 1) return;
     setDownloading(true);
-    // Extract filename from URL (last segment) and ensure .csv extension
-    let filename = url.split("/").pop() || "data";
-    if (!filename.endsWith(".csv")) {
-      filename += ".csv";
+    try {
+      if (dataUrls.length === 0) {
+        // Single file download
+        const { csv, filename } = await fetchAndConvertToCsv(dataUrls[0]);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        triggerDownload(blob, filename);
+      } else {
+        // Multiple files - ZIP
+        const zip = new JSZip();
+        const results = await Promise.all(
+          dataUrls.map(url => fetchAndConvertToCsv(url))
+        );
+        
+        results.forEach(({ csv, filename }) => {
+          zip.file(filename, csv);
+        });
+        
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        triggerDownload(zipBlob, "source_files.zip");
+      }
+    } catch (err) {
+      console.error("Download error:", err);
+      alert("Failed to download data.");
+    } finally {
+      setDownloading(false);
     }
-    await fetchAndDownloadCsv(url, filename);
-    setDownloading(false);
   };
 
   return (
@@ -147,51 +164,28 @@ function CodeBlockViewer({ code }: { code: string }) {
         </Text>
         <Flex gap={2}>
           {dataUrls.length > 0 && (
-            <>
-              {dataUrls.length === 1 ? (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => handleDownload(dataUrls[0])}
-                  disabled={downloading}
-                >
-                  <DownloadSimple />
-                  {downloading ? "Downloading..." : "Download CSV"}
-                </Button>
-              ) : (
-                <Menu.Root>
-                  <Menu.Trigger asChild>
-                    <Button size="xs" variant="outline" disabled={downloading}>
-                      <DownloadSimple />
-                      Download CSV...
-                    </Button>
-                  </Menu.Trigger>
-                  <Portal>
-                    <Menu.Positioner>
-                      <Menu.Content zIndex={1500}>
-                        {dataUrls.map((url, idx) => {
-                          const name = url.split("/").pop() || `File ${idx + 1}`;
-                          return (
-                            <Menu.Item
-                              key={url}
-                              value={url}
-                              onClick={() => handleDownload(url)}
-                              cursor="pointer"
-                            >
-                              {name}
-                            </Menu.Item>
-                          );
-                        })}
-                      </Menu.Content>
-                    </Menu.Positioner>
-                  </Portal>
-                </Menu.Root>
-              )}
-            </>
+            <Tooltip content="Download Source files">
+              <IconButton
+                size="xs"
+                variant="outline"
+                onClick={handleDownload}
+                disabled={downloading}
+                aria-label="Download Source files"
+              >
+                <DownloadSimple />
+              </IconButton>
+            </Tooltip>
           )}
-          <Button size="xs" variant="outline" onClick={copy}>
-            {copied ? "Copied" : "Copy"}
-          </Button>
+          <Tooltip content="Copy">
+            <IconButton
+              size="xs"
+              variant="outline"
+              onClick={copy}
+              aria-label="Copy code"
+            >
+              {copied ? <Check /> : <Copy />}
+            </IconButton>
+          </Tooltip>
         </Flex>
       </Flex>
       <Box m={0} p={0} bg="neutral.25" overflowX="auto">

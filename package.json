@@ -31,6 +31,7 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.12",
     "json5": "^2.2.3",
+    "jszip": "^3.10.1",
     "jwt-decode": "^4.0.0",
     "maplibre-gl": "^5.5.0",
     "motion": "^12.23.12",
