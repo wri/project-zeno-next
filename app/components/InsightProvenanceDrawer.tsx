@@ -12,12 +12,16 @@ import {
   Portal,
   CloseButton,
   Link,
+  Menu,
 } from "@chakra-ui/react";
+import { DownloadSimple } from "@phosphor-icons/react";
+import { useMemo, useState } from "react";
 import type { InsightGeneration } from "@/app/types/chat";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vs } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { fetchExternalData } from "@/app/actions/fetch-data";
 
 interface InsightProvenanceDrawerProps {
   isOpen: boolean;
@@ -42,8 +46,88 @@ function safeBase64Decode(str: string): string {
   }
 }
 
+// --- Data Fetching & CSV Conversion ---
+
+async function fetchAndDownloadCsv(url: string, filename?: string) {
+  try {
+    const json = await fetchExternalData(url);
+
+    // Access nested result structure
+    // Structure: { data: { result: { col1: [vals], col2: [vals] } } }
+    const result = json.data?.result;
+    if (!result) throw new Error("Invalid data format");
+
+    // Convert column-oriented to CSV
+    const columns = Object.keys(result);
+    if (columns.length === 0) throw new Error("No data found");
+
+    const rowCount = result[columns[0]].length;
+    
+    // Header row
+    const csvRows = [columns.join(",")];
+
+    // Data rows
+    for (let i = 0; i < rowCount; i++) {
+      const row = columns.map(col => {
+        const val = result[col][i];
+        // Handle null, undefined, strings with commas
+        if (val === null || val === undefined) return "";
+        const strVal = String(val);
+        if (strVal.includes(",")) return `"${strVal}"`;
+        return strVal;
+      });
+      csvRows.push(row.join(","));
+    }
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const downloadName = filename || "data.csv";
+    
+    const urlObj = URL.createObjectURL(blob);
+    link.setAttribute("href", urlObj);
+    link.setAttribute("download", downloadName);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (err) {
+    console.error("Download error:", err);
+    alert("Failed to download data. See console for details.");
+  }
+}
+
+// Regex to find http/https URLs inside quotes
+// Matches "http..." or 'http...'
+function extractDataUrls(code: string): string[] {
+  const urlRegex = /(?:["'])(https?:\/\/[^"'\s]+)(?:["'])/g;
+  const matches = [];
+  let match;
+  while ((match = urlRegex.exec(code)) !== null) {
+    matches.push(match[1]);
+  }
+  return Array.from(new Set(matches));
+}
+
+// --- Components ---
+
 function CodeBlockViewer({ code }: { code: string }) {
   const { copy, copied } = useClipboard({ value: code });
+  const [downloading, setDownloading] = useState(false);
+  
+  const dataUrls = useMemo(() => extractDataUrls(code), [code]);
+
+  const handleDownload = async (url: string) => {
+    setDownloading(true);
+    // Extract filename from URL (last segment) and ensure .csv extension
+    let filename = url.split("/").pop() || "data";
+    if (!filename.endsWith(".csv")) {
+      filename += ".csv";
+    }
+    await fetchAndDownloadCsv(url, filename);
+    setDownloading(false);
+  };
+
   return (
     <Box
       border="1px solid"
@@ -61,9 +145,54 @@ function CodeBlockViewer({ code }: { code: string }) {
         <Text fontSize="xs" color="neutral.600">
           Code
         </Text>
-        <Button size="xs" variant="outline" onClick={copy}>
-          {copied ? "Copied" : "Copy"}
-        </Button>
+        <Flex gap={2}>
+          {dataUrls.length > 0 && (
+            <>
+              {dataUrls.length === 1 ? (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() => handleDownload(dataUrls[0])}
+                  disabled={downloading}
+                >
+                  <DownloadSimple />
+                  {downloading ? "Downloading..." : "Download CSV"}
+                </Button>
+              ) : (
+                <Menu.Root>
+                  <Menu.Trigger asChild>
+                    <Button size="xs" variant="outline" disabled={downloading}>
+                      <DownloadSimple />
+                      Download CSV...
+                    </Button>
+                  </Menu.Trigger>
+                  <Portal>
+                    <Menu.Positioner>
+                      <Menu.Content zIndex={1500}>
+                        {dataUrls.map((url, idx) => {
+                          const name = url.split("/").pop() || `File ${idx + 1}`;
+                          return (
+                            <Menu.Item
+                              key={url}
+                              value={url}
+                              onClick={() => handleDownload(url)}
+                              cursor="pointer"
+                            >
+                              {name}
+                            </Menu.Item>
+                          );
+                        })}
+                      </Menu.Content>
+                    </Menu.Positioner>
+                  </Portal>
+                </Menu.Root>
+              )}
+            </>
+          )}
+          <Button size="xs" variant="outline" onClick={copy}>
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </Flex>
       </Flex>
       <Box m={0} p={0} bg="neutral.25" overflowX="auto">
         <SyntaxHighlighter
@@ -119,7 +248,7 @@ export default function InsightProvenanceDrawer({
                   No generation details available.
                 </Text>
               ) : (
-                <Flex direction="column" gap={3}>
+                <Flex direction="column" gap={6}>
                   {parts.map((part, i) => {
                     const content = safeBase64Decode(part.content);
 
@@ -174,7 +303,7 @@ export default function InsightProvenanceDrawer({
                             </Box>
                           )}
                         </Flex>
-                        {i < parts.length - 1 && <Separator my={3} />}
+                        {i < parts.length - 1 && <Separator my={4} />}
                       </Box>
                     );
                   })}
