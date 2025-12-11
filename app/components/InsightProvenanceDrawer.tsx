@@ -9,11 +9,11 @@ import {
   Code,
   Separator,
   Portal,
-  CloseButton,
   Link,
   IconButton,
+  Button,
 } from "@chakra-ui/react";
-import { DownloadSimpleIcon as DownloadSimple, CopyIcon as Copy, CheckIcon as Check } from "@phosphor-icons/react";
+import { DownloadSimpleIcon as DownloadSimple, CopyIcon as Copy, CheckIcon as Check, TerminalWindowIcon as Terminal, XIcon as X } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import type { InsightGeneration } from "@/app/types/chat";
 import Markdown from "react-markdown";
@@ -23,6 +23,7 @@ import { vs } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { fetchExternalData } from "@/app/actions/fetch-data";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import JSZip from "jszip";
+import Image from "next/image";
 
 interface InsightProvenanceDrawerProps {
   isOpen: boolean;
@@ -158,10 +159,15 @@ function CodeBlockViewer({ code }: { code: string }) {
         bg="neutral.50"
         px={3}
         py={2}
+        borderBottomWidth="1px"
+        borderColor="neutral.300"
       >
-        <Text fontSize="xs" color="neutral.600">
-          Code
-        </Text>
+        <Flex gap={2} align="center">
+          <Image src="/python-logo.svg" alt="Python" width={14} height={14} />
+          <Text fontSize="xs" color="neutral.600">
+            Code
+          </Text>
+        </Flex>
         <Flex gap={2}>
           {dataUrls.length > 0 && (
             <Tooltip content="Download Source files">
@@ -188,7 +194,7 @@ function CodeBlockViewer({ code }: { code: string }) {
           </Tooltip>
         </Flex>
       </Flex>
-      <Box m={0} p={0} bg="neutral.25" overflowX="auto">
+      <Box m={0} p={0} bg="white" overflowX="auto">
         <SyntaxHighlighter
           language="python"
           style={vs}
@@ -197,6 +203,7 @@ function CodeBlockViewer({ code }: { code: string }) {
             padding: "1rem",
             fontSize: "0.875rem",
             backgroundColor: "transparent",
+            border: "none",
           }}
           wrapLongLines
         >
@@ -223,20 +230,37 @@ export default function InsightProvenanceDrawer({
       placement="end"
     >
       <Portal>
-        <Drawer.Backdrop zIndex={1000} />
-        <Drawer.Positioner>
-          <Drawer.Content>
-            <Drawer.Header borderBottomWidth="1px">
-              <Heading size="sm" m={0}>
+        <Drawer.Backdrop zIndex={1000} top={{ md: 12 }} />
+        <Drawer.Positioner top={{ md: 12 }}>
+          <Drawer.Content bg="neutral.200" maxH="calc(100vh - 3rem)">
+            <Drawer.Header
+              display="flex"
+              justifyContent="space-between"
+              alignItems="flex-start"
+              pt={5}
+              pb={3}
+            >
+              <Heading size="sm" m={0} maxW="calc(100% - 80px)">
                 {title
-                  ? `How "${title}" was generated`
+                  ? `${title}`
                   : "How this was generated"}
               </Heading>
               <Drawer.CloseTrigger asChild>
-                <CloseButton size="sm" variant="plain" />
+                <Button
+                  size="xs"
+                  variant="outline"
+                  color="neutral.600"
+                  borderColor="neutral.300"
+                  bg="white"
+                  h={6}
+                  rounded="sm"
+                >
+                  <X />
+                  Close
+                </Button>
               </Drawer.CloseTrigger>
             </Drawer.Header>
-            <Drawer.Body>
+            <Drawer.Body bg="neutral.200" pt={0}>
               {parts.length === 0 ? (
                 <Text fontSize="sm" color="neutral.600">
                   No generation details available.
@@ -258,7 +282,29 @@ export default function InsightProvenanceDrawer({
                                   "& ul, & ol": { pl: 4, mb: 2 },
                                 }}
                               >
-                                <Markdown remarkPlugins={[remarkBreaks]}>
+                                <Markdown
+                                  remarkPlugins={[remarkBreaks]}
+                                  components={{
+                                    h1: ({ node, ...props }) => (
+                                      <>
+                                        <Separator my={4} borderColor="neutral.300" />
+                                        <Heading as="h1" size="sm" mb={2} {...props} />
+                                      </>
+                                    ),
+                                    h2: ({ node, ...props }) => (
+                                      <>
+                                        <Separator my={4} borderColor="neutral.300" />
+                                        <Heading as="h2" size="xs" mb={2} {...props} />
+                                      </>
+                                    ),
+                                    h3: ({ node, ...props }) => (
+                                      <>
+                                        <Separator my={4} borderColor="neutral.300" />
+                                        <Heading as="h3" size="xs" mb={2} {...props} />
+                                      </>
+                                    ),
+                                  }}
+                                >
                                   {content}
                                 </Markdown>
                               </Box>
@@ -280,24 +326,40 @@ export default function InsightProvenanceDrawer({
                                 bg="neutral.50"
                                 px={3}
                                 py={2}
+                                borderBottomWidth="1px"
+                                borderColor="neutral.300"
                               >
-                                <Text fontSize="xs" color="neutral.600">
-                                  Execution output
-                                </Text>
+                                <Flex gap={2} align="center">
+                                  <Terminal size={14} />
+                                  <Text fontSize="xs" color="neutral.600">
+                                    Execution output
+                                  </Text>
+                                </Flex>
+                                <Flex gap={2}>
+                                  <Tooltip content="Copy">
+                                    <IconButton
+                                      size="xs"
+                                      variant="outline"
+                                      onClick={() => navigator.clipboard.writeText(content)}
+                                      aria-label="Copy output"
+                                    >
+                                      <Copy />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Flex>
                               </Flex>
                               <Box
                                 as="pre"
                                 m={0}
                                 p={3}
-                                bg="neutral.25"
+                                bg="white"
                                 overflowX="auto"
                               >
-                                <Code whiteSpace="pre">{content}</Code>
+                                <Code whiteSpace="pre" bg="transparent" display="block">{content}</Code>
                               </Box>
                             </Box>
                           )}
                         </Flex>
-                        {i < parts.length - 1 && <Separator my={4} />}
                       </Box>
                     );
                   })}
