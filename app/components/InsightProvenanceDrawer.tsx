@@ -115,10 +115,10 @@ function CodeBlockViewer({ code }: { code: string }) {
   const dataUrls = useMemo(() => extractDataUrls(code), [code]);
 
   const handleDownload = async () => {
-    if (dataUrls.length === 1) return;
+    if (dataUrls.length === 0) return;
     setDownloading(true);
     try {
-      if (dataUrls.length === 0) {
+      if (dataUrls.length === 1) {
         // Single file download
         const { csv, filename } = await fetchAndConvertToCsv(dataUrls[0]);
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
