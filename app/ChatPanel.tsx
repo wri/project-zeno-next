@@ -59,7 +59,7 @@ function ChatPanel() {
   }, [width]);
 
   return (
-    <Flex minH="100%" maxH="100%" gridArea="chat">
+    <Flex minH="100%" maxH="100%" gridArea="chat" zIndex={1001} position="relative" bg="bg">
       <Flex
         minH="100%"
         maxH="100%"

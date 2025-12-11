@@ -52,6 +52,8 @@ function PageHeader() {
       h={{ base: 10, md: 12 }}
       bg="primary.solid"
       color="fg.inverted"
+      zIndex={1002}
+      position="relative"
     >
       <Flex gap="2" alignItems="center">
         <ChakraLink

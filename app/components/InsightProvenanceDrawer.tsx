@@ -223,7 +223,7 @@ export default function InsightProvenanceDrawer({
       placement="end"
     >
       <Portal>
-        <Drawer.Backdrop />
+        <Drawer.Backdrop zIndex={1000} />
         <Drawer.Positioner>
           <Drawer.Content>
             <Drawer.Header borderBottomWidth="1px">
