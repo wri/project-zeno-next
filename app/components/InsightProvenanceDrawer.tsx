@@ -285,19 +285,19 @@ export default function InsightProvenanceDrawer({
                                 <Markdown
                                   remarkPlugins={[remarkBreaks]}
                                   components={{
-                                    h1: ({ node, ...props }) => (
+                                    h1: ({ ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
                                         <Heading as="h1" size="sm" mb={2} {...props} />
                                       </>
                                     ),
-                                    h2: ({ node, ...props }) => (
+                                    h2: ({ ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
                                         <Heading as="h2" size="xs" mb={2} {...props} />
                                       </>
                                     ),
-                                    h3: ({ node, ...props }) => (
+                                    h3: ({ ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
                                         <Heading as="h3" size="xs" mb={2} {...props} />
