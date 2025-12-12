@@ -60,13 +60,35 @@ function ChatMessages() {
                 type="info"
                 setDisplayDisclaimer={setDisplayDisclaimer}
               >
-                <Text>
-                <strong>Beta notice</strong>
-                <br />
-                This version of Global Nature Watch is still being tested. Expect mistakes and verify results with primary sources.
-                Assistant behavior, features and datasets may change or be removed while in beta.
-                Visit the{" "}
-                <Link
+                <Box>
+                  <Text mb={{ base: 1, md: 2 }}>
+                    <strong>Global Nature Watch beta</strong>
+                  </Text>
+                  <Text mb={{ base: 1, md: 2 }}>
+                    You&apos;re using a beta version that&apos;s still under active development.
+                    You may encounter errors or incomplete results, so verify results with primary sources.
+                    Features, datasets, and assistant behavior may change or be removed as we iterate.
+                  </Text>
+                  <Text>
+                    By using this beta, you&apos;re helping shape the future of Global Nature Watch.
+                  Share feedback via{" "}
+                  <Link
+                    color="primary.solid"
+                    textDecor="underline"
+                    href="https://surveys.hotjar.com/860def81-d4f2-4f8c-abee-339ebc3129f3"
+                  >
+                    this survey
+                  </Link>{" "}
+                  or by emailing{" "}
+                  <Link
+                    color="primary.solid"
+                    textDecor="underline"
+                    href="mailto:landcarbonlab@wri.org"
+                  >
+                    landcarbonlab@wri.org
+                  </Link>{". "}
+                  Visit the{" "}
+                  <Link
                     color="primary.solid"
                     textDecor="underline"
                     href="https://help.globalnaturewatch.org/"
@@ -75,25 +97,9 @@ function ChatMessages() {
                   >
                     Help Center
                   </Link>{" "}
-                  to learn more.
-                <br />
-                  Your feedback is critical to improving Global Nature Watch. Complete{" "}
-                  <Link
-                    color="primary.solid"
-                    textDecor="underline"
-                    href="https://surveys.hotjar.com/860def81-d4f2-4f8c-abee-339ebc3129f3"
-                  >
-                    this survey
-                  </Link>{" "}
-                   or email us at{" "} 
-                   <Link
-                    color="primary.solid"
-                    textDecor="underline"
-                    href="mailto:landcarbonlab@wri.org"
-                  >
-                    landcarbonlab@wri.org
-                  </Link>{"."}
-                </Text>
+                  to learn more about the beta.
+                  </Text>
+                </Box>
               </ChatDisclaimer>
             )}
             <MessageBubble
