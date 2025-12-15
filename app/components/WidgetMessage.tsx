@@ -1,5 +1,6 @@
 "use client";
 import { Box, Text, Heading, Flex, Separator, Button, useDisclosure } from "@chakra-ui/react";
+import { MicroscopeIcon as Microscope } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
@@ -52,6 +53,26 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {widget.description}
         </Text>
         <Separator />
+        {widget.generation && (
+          <Flex justify="flex-end">
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleOpen}
+              bg={open ? "bg.info" : undefined}
+              borderColor={open ? "border.info" : undefined}
+              color={open ? "fg.info" : undefined}
+              h={6}
+              rounded="sm"
+              _hover={{
+                bg: open ? "blue.100" : undefined,
+              }}
+            >
+              <Microscope />
+              View how this was generated
+            </Button>
+          </Flex>
+        )}
         {isChartType && <ChartWidget widget={widget} />}
 
         {widget.type === "table" && (
@@ -60,13 +81,6 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               data={widget.data as Record<string, string | number | boolean>[]}
             />
           </Box>
-        )}
-        {widget.generation && (
-          <Flex justify="flex-end">
-            <Button size="xs" variant="outline" onClick={handleOpen}>
-              View how this was generated
-            </Button>
-          </Flex>
         )}
         {showDisclaimer && <VisualizationDisclaimer />}
       </Flex>
