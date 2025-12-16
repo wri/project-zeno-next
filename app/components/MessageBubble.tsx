@@ -31,6 +31,7 @@ import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
+import CopySelectionTooltip from "./CopySelectionTooltip";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -38,7 +39,11 @@ interface MessageBubbleProps {
   isFirst?: boolean;
 }
 
-function MessageBubble({ message, isConsecutive = false, isFirst = false }: MessageBubbleProps) {
+function MessageBubble({
+  message,
+  isConsecutive = false,
+  isFirst = false,
+}: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const clipboard = useClipboard({ value: message.message });
   const [isRating, setIsRating] = useState(false);
@@ -224,14 +229,16 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                 color: "primary.solid",
                 transition: "all 0.24s ease",
               },
-              "& a:hover" : {
-                opacity: 0.64
+              "& a:hover": {
+                opacity: 0.64,
               },
             }}
           >
-            <Markdown remarkPlugins={[remarkBreaks]}>
-              {message.message}
-            </Markdown>
+            <CopySelectionTooltip enabled={!isUser}>
+              <Markdown remarkPlugins={[remarkBreaks]}>
+                {message.message}
+              </Markdown>
+            </CopySelectionTooltip>
           </Box>
         )}
         {!isUser && !isConsecutive && !isError && !isFirst && (
@@ -270,7 +277,7 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                       message_id: message.id,
                       trace_id: message.traceId,
                       copied: clipboard.copied,
-                      message: message.message
+                      message: message.message,
                     });
                   }}
                 >
@@ -286,7 +293,7 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                     sendGAEvent("event", "response_feedback_positive", {
                       message_id: message.id,
                       trace_id: message.traceId,
-                      message: message.message
+                      message: message.message,
                     });
                   }}
                   disabled={isRating || !message.traceId}
@@ -312,7 +319,7 @@ function MessageBubble({ message, isConsecutive = false, isFirst = false }: Mess
                           sendGAEvent("event", "response_feedback_negative", {
                             message_id: message.id,
                             trace_id: message.traceId,
-                            message: message.message
+                            message: message.message,
                           });
                         }}
                       >

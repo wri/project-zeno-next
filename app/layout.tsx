@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
-import CookieConsent from "@/app/components/CookieConsent";
+import Script from "next/script";
+import Analytics from "@/app/components/Analytics";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
 
 const ibmPlexSans = IBM_Plex_Sans({
   variable: "--font-IBMPlexSans",
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
-})
+});
 const ibmPlexMono = IBM_Plex_Mono({
   variable: "--font-IBMPlexMono",
   weight: ["400", "700"],
   subsets: ["latin"],
-})
+});
 
 export const metadata: Metadata = {
   title: "Global Nature Watch",
@@ -26,8 +27,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
+    >
       <head>
+        <Script src="https://cmp.osano.com/AzyfddTRtqi1560Dk/1543dfc1-f73d-43a2-8296-3849161e9ff5/osano.js" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -45,8 +51,8 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
+          <Analytics />
           {children}
-          <CookieConsent />
           <HotjarTrigger />
         </Providers>
       </body>

@@ -28,6 +28,7 @@ export interface InsightWidget {
   data: unknown;
   xAxis: string;
   yAxis: string;
+  generation?: InsightGeneration; // Optional provenance for how the widget was generated
 }
 
 // Raw insight data from API (before conversion to InsightWidget)
@@ -36,6 +37,19 @@ export interface RawInsightData {
   title: string;
   description: string;
   data: unknown;
+}
+
+export type CodeActPartType = "text_output" | "code_block" | "execution_output";
+
+export interface CodeActPart {
+  type: CodeActPartType;
+  content: string; // base64 encoded
+}
+
+// Step-wise provenance attached to an insight/tool result
+export interface InsightGeneration {
+  codeact_parts?: CodeActPart[];
+  source_urls?: string[]; // optional sources used
 }
 
 export interface ChatPrompt {
@@ -82,6 +96,8 @@ export interface StreamMessage {
   aoi?: object;
   insights?: object[];
   charts_data?: object[];
+  codeact_parts?: CodeActPart[];
+  source_urls?: string[];
   insight_count?: number;
   timestamp: string;
   start_date?: string;
@@ -133,6 +149,9 @@ export interface LangChainUpdate {
   end_date?: string;
   insights: object[];
   charts_data: object[];
+  // Optional provenance fields emitted by tools
+  codeact_parts?: CodeActPart[];
+  source_urls?: string[];
   insight_count: number;
   messages: [
     {

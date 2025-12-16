@@ -17,7 +17,9 @@ import {
   LifebuoyIcon,
   SignOutIcon,
   UserIcon,
+  InfoIcon,
 } from "@phosphor-icons/react";
+import { Tooltip } from "./ui/tooltip";
 
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
@@ -52,6 +54,8 @@ function PageHeader() {
       h={{ base: 10, md: 12 }}
       bg="primary.solid"
       color="fg.inverted"
+      zIndex={1300}
+      position="relative"
     >
       <Flex gap="2" alignItems="center">
         <ChakraLink
@@ -113,7 +117,25 @@ function PageHeader() {
             ) : (
               totalPrompts
             )}{" "}
-            Prompts
+            daily prompts
+            <Tooltip
+              content={
+                totalPrompts > 5000 
+                  ? "You have unlimited prompts!" 
+                  : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
+              }
+              showArrow
+            >
+              <Text
+                as="span"
+                display="inline-block"
+                ml="1"
+                verticalAlign="text-bottom"
+                cursor="help"
+              >
+                <InfoIcon />
+              </Text>
+            </Tooltip>
           </Progress.Label>
           <Progress.Track bg="primary.950" maxH="4px">
             <Progress.Range bg="white" />

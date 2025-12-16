@@ -48,6 +48,7 @@ type ProfileFormState = {
   company: string;
   country: string;
   expertise: string;
+  preferredLanguage: string;
   topics: string[]; // holds selected topic codes
   receiveNewsEmails: boolean;
   helpTestFeatures: boolean;
@@ -72,6 +73,7 @@ export default function OnboardingPage() {
     company: "",
     country: "",
     expertise: "",
+    preferredLanguage: "",
     topics: [],
     receiveNewsEmails: false,
     helpTestFeatures: false,
@@ -162,6 +164,17 @@ export default function OnboardingPage() {
     return createListCollection({ items });
   }, [config]);
 
+  const languages = useMemo(() => {
+    const items = [
+      { label: "English", value: "en" },
+      { label: "Français", value: "fr" },
+      { label: "Español", value: "es" },
+      { label: "Português", value: "pt" },
+      { label: "Bahasa Indonesia", value: "id" },
+    ];
+    return createListCollection({ items });
+  }, []);
+
   const isValid = useMemo(() => schema.safeParse(form).success, [schema, form]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -181,7 +194,7 @@ export default function OnboardingPage() {
         job_title: validated.jobTitle || null,
         company_organization: validated.company || null,
         country_code: validated.country || null,
-        preferred_language_code: null,
+        preferred_language_code: validated.preferredLanguage || null,
         gis_expertise_level: validated.expertise || null,
         topics:
           Array.isArray(validated.topics) && validated.topics.length
@@ -556,6 +569,44 @@ export default function OnboardingPage() {
                     </Select.Positioner>
                   </Portal>
                 </Select.Root>
+              </Field.Root>
+            </GridItem>
+            <GridItem>
+              <Field.Root id="preferred-language" required={fieldRequired("preferredLanguage")}>
+                <Select.Root
+                  collection={languages}
+                  size="sm"
+                  value={form.preferredLanguage ? [form.preferredLanguage] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, preferredLanguage: d.value[0] ?? "" }))
+                  }
+                >
+                  <Select.HiddenSelect />
+                  <Select.Label>Preferred language</Select.Label>
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder="Select Language" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {languages.items.map((lang) => (
+                          <Select.Item key={lang.value} item={lang}>
+                            {lang.label}
+                            <Select.ItemIndicator />
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+                <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
+                  Please note most of our communications are in English.
+                </Field.HelperText>
               </Field.Root>
             </GridItem>
             <GridItem colSpan={{ base: 1, md: 2 }}>

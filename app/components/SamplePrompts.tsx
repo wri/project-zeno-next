@@ -14,7 +14,7 @@ export default function SamplePrompts() {
     if (prompts.length > 0 && samplePrompts.length === 0) {
       setSamplePrompts(getRandomFromArray(prompts, 3));
     }
-  }, [prompts]);
+  }, [prompts, samplePrompts.length]);
 
   const submitPrompt = async (prompt: string) => {
     const result = await sendMessage(prompt);
