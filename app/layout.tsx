@@ -4,6 +4,7 @@ import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import Analytics from "@/app/components/Analytics";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
+import "./theme/cookies.css"
 
 const ibmPlexSans = IBM_Plex_Sans({
   variable: "--font-IBMPlexSans",

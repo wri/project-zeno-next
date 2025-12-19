@@ -1,0 +1,37 @@
+.osano-cm-button {
+  border-radius: 0.25rem;
+  font-weight: var(--chakra-font-weights-medium);
+  background: #ffffff;
+  border-color: var(--chakra-colors-primary-500);
+  color: var(--chakra-colors-primary-500);
+}
+.osano-cm-button:hover {
+  background: var(--chakra-colors-primary-100);
+}
+.osano-cm-button--type_accept {
+  background: var(--chakra-colors-primary-500);
+  color: var(--chakra-colors-color-palette-contrast);
+  border: none;
+  order: 1;
+}
+.osano-cm-button--type_accept:hover {
+  background: var(--chakra-colors-primary-400);
+}
+.osano-cm-dialog {
+  background: #ffffff;
+  color: #272f38;
+  font-family: "IBM Plex Sans";
+  font-size: 0.75rem;
+  box-shadow: var(--chakra-shadows-lg);
+}
+@media screen and (min-width: 768px) {
+  .osano-cm-dialog--type_bar .osano-cm-dialog__buttons {
+    flex-wrap: nowrap;
+    width: 100%;
+    flex: 4;
+    max-width: none;
+  }
+  .osano-cm-dialog--type_bar .osano-cm-button {
+    flex: 1 0 0;
+  }
+}
