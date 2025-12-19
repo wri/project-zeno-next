@@ -25,6 +25,7 @@ import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch"
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
+import { submitToOrtto } from "@/app/actions/ortto";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { sendGAEvent } from "@next/third-parties/google";
@@ -214,6 +215,23 @@ export default function OnboardingPage() {
       if (!res.ok) {
         throw new Error("Failed to save profile");
       }
+
+      // Submit to Ortto
+      const topicLabels = form.topics.map(
+        (code) => config?.topics?.[code] || code
+      );
+
+      await submitToOrtto({
+        email: form.email,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        sector: form.sector,
+        jobTitle: form.jobTitle,
+        companyOrganization: form.company,
+        countryCode: form.country,
+        Topics: topicLabels,
+        receiveNewsEmails: form.receiveNewsEmails,
+      }).catch((e) => console.error("Ortto submission error", e));
 
       // Poll for hasProfile to avoid middleware redirect race
       const waitForProfileCompletion = async (
