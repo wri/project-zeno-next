@@ -23,6 +23,7 @@ export interface ChatMessage {
   context?: ContextItem[];
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
+  reasoningDuration?: number; // Duration in seconds for reasoning to complete
 }
 
 // Widget types for insights

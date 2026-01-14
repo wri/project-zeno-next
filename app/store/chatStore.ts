@@ -31,6 +31,7 @@ interface ChatState {
   currentThreadId: string | null;
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
+  reasoningStartTime: number | null; // Timestamp when reasoning started
 }
 
 interface ChatActions {
@@ -71,6 +72,7 @@ const initialState: ChatState = {
   currentThreadId: null,
   toolSteps: [],
   pendingTraceId: null,
+  reasoningStartTime: null,
 };
 
 // Helper function to process stream messages and add them to chat
@@ -219,6 +221,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
+    set({ reasoningStartTime: Date.now() });
     setLoading(true);
 
     // Build ui_context from current context
@@ -461,17 +464,22 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     set((state) => {
       // Find the last user message
       const messages = [...state.messages];
+      const duration = state.reasoningStartTime
+        ? (Date.now() - state.reasoningStartTime) / 1000
+        : 0;
+      
       for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].type === "user") {
-          // Attach current tool steps to this message
+          // Attach current tool steps and duration to this message
           messages[i] = {
             ...messages[i],
             toolSteps: [...state.toolSteps],
+            reasoningDuration: duration,
           };
           break;
         }
       }
-      return { messages };
+      return { messages, reasoningStartTime: null };
     });
   },
 
@@ -481,6 +489,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
+    set({ reasoningStartTime: Date.now() });
     setLoading(true);
     // Set up abort controller for client-side timeout
     const abortController = abort || new AbortController();

@@ -115,7 +115,11 @@ function ChatMessages() {
                 )}
                 {/* Show reasoning for completed queries (user messages with toolSteps) */}
                 {message.toolSteps && message.toolSteps.length > 0 && (
-                  <Reasoning toolSteps={message.toolSteps} isLoading={false} />
+                  <Reasoning 
+                    toolSteps={message.toolSteps} 
+                    isLoading={false}
+                    reasoningDuration={message.reasoningDuration}
+                  />
                 )}
               </>
             )}

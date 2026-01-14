@@ -1,5 +1,7 @@
 "use client";
-import { Box, Collapsible, Flex, Text, Spinner } from "@chakra-ui/react";
+import { Box, Collapsible, Flex, Text } from "@chakra-ui/react";
+
+
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { ToolStepData } from "@/app/types/chat";
@@ -19,20 +21,30 @@ function formatToolName(toolName: string): string {
 interface ReasoningProps {
   toolSteps: ToolStepData[];
   isLoading: boolean;
+  reasoningDuration?: number;
 }
 
-function Reasoning({ toolSteps, isLoading }: ReasoningProps) {
+function Reasoning({ toolSteps, isLoading, reasoningDuration }: ReasoningProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Get current tool name for dynamic status
   const currentTool = toolSteps.length > 0 ? toolSteps[toolSteps.length - 1] : null;
 
-  // While loading, show spinner with dynamic status
+  // While loading, show shimmer with dynamic status
   if (isLoading) {
     return (
       <Flex justifyContent="flex-start" alignItems="center" gap="3" mb={4}>
-        <Spinner size="sm" color="fg.muted" />
-        <Text fontSize="sm" color="fg.muted">
+        <Text fontSize="sm" 
+        color="fg.muted" 
+        animation={ isLoading ? "shimmer" : "none"} 
+        background={ `linear-gradient(
+          120deg,
+          rgba(131, 131, 131, 0.5) 0%,
+          rgba(0, 0, 0, 0.5) 50%,
+          rgba(131, 131, 131, 0.5) 100%
+        )`} 
+        backgroundSize="200% 100%"
+        backgroundClip="text">
           {currentTool ? formatToolName(currentTool.name) : "Processing request..."}
         </Text>
       </Flex>
@@ -53,7 +65,7 @@ function Reasoning({ toolSteps, isLoading }: ReasoningProps) {
             _hover={{ opacity: 0.8 }}
           >
             <Text fontSize="sm" color="fg.muted">
-              Show Reasoning
+              Reasoned for {reasoningDuration?.toFixed(1) || "0.0"}s
             </Text>
             {isOpen ? (
               <CaretDownIcon size={16} color="var(--chakra-colors-fg-muted)" />
