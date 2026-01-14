@@ -2,7 +2,7 @@
 import { Box, Collapsible, Flex, Text, Spinner } from "@chakra-ui/react";
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-import useChatStore from "@/app/store/chatStore";
+import { ToolStepData } from "@/app/types/chat";
 
 // Helper function to format tool names for display
 function formatToolName(toolName: string): string {
@@ -16,9 +16,13 @@ function formatToolName(toolName: string): string {
   return toolNameMap[toolName] || `Processing ${toolName}`;
 }
 
-function Reasoning() {
+interface ReasoningProps {
+  toolSteps: ToolStepData[];
+  isLoading: boolean;
+}
+
+function Reasoning({ toolSteps, isLoading }: ReasoningProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { toolSteps, isLoading } = useChatStore();
 
   // Get current tool name for dynamic status
   const currentTool = toolSteps.length > 0 ? toolSteps[toolSteps.length - 1] : null;

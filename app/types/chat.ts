@@ -1,6 +1,19 @@
 import { ContextItem } from "../store/contextStore";
 import { FeatureCollection } from "geojson";
 
+// Type for storing tool execution data
+export interface ToolStepData {
+  name: string;
+  content?: string;
+  dataset?: object;
+  insights?: object[];
+  charts_data?: object[];
+  codeact_parts?: CodeActPart[];
+  source_urls?: string[];
+  aoi?: object;
+  timestamp: string;
+}
+
 export interface ChatMessage {
   id: string;
   type: "user" | "assistant" | "system" | "widget" | "error";
@@ -9,6 +22,7 @@ export interface ChatMessage {
   widgets?: InsightWidget[]; // For widget messages
   context?: ContextItem[];
   traceId?: string;
+  toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
 }
 
 // Widget types for insights

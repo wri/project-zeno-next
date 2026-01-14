@@ -8,21 +8,8 @@ import {
   StreamMessage,
   QueryType,
   UiContext,
-  CodeActPart,
+  ToolStepData,
 } from "@/app/types/chat";
-
-// Type for storing tool execution data
-export interface ToolStepData {
-  name: string;
-  content?: string;
-  dataset?: object;
-  insights?: object[];
-  charts_data?: object[];
-  codeact_parts?: CodeActPart[];
-  source_urls?: string[];
-  aoi?: object;
-  timestamp: string;
-}
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/shared/read-data-stream";
 import { DATASET_BY_ID } from "../constants/datasets";
@@ -63,6 +50,7 @@ interface ChatActions {
   ) => Promise<void>;
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
+  attachToolStepsToLastUserMessage: () => void;
 }
 
 const initialState: ChatState = {
@@ -434,6 +422,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
     } finally {
       clearTimeout(timeoutId);
+      
+      // Attach tool steps to the user message before clearing loading state
+      const { attachToolStepsToLastUserMessage } = get();
+      attachToolStepsToLastUserMessage();
+      
       setLoading(false);
 
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
@@ -463,6 +456,24 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   clearToolSteps: () => set({ toolSteps: [] }),
+
+  attachToolStepsToLastUserMessage: () => {
+    set((state) => {
+      // Find the last user message
+      const messages = [...state.messages];
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].type === "user") {
+          // Attach current tool steps to this message
+          messages[i] = {
+            ...messages[i],
+            toolSteps: [...state.toolSteps],
+          };
+          break;
+        }
+      }
+      return { messages };
+    });
+  },
 
   fetchThread: async (threadId: string, abort?: AbortController) => {
     const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
@@ -614,6 +625,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
+      
+      // Attach tool steps to the user message before clearing loading state
+      const { attachToolStepsToLastUserMessage } = get();
+      attachToolStepsToLastUserMessage();
+      
       setLoading(false);
     }
   },

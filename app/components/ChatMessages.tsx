@@ -11,7 +11,7 @@ const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading } = useChatStore();
+  const { messages, isLoading, toolSteps: currentToolSteps } = useChatStore();
   const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
 
   // Auto-scroll to bottom when new messages are added or loading state changes
@@ -107,7 +107,18 @@ function ChatMessages() {
               isConsecutive={isConsecutive}
               isFirst={isFirst}
             />
-            {index === lastUserMessageIndex && <Reasoning />}
+            {message.type === "user" && (
+              <>
+                {/* Show reasoning for current loading query (last user message) */}
+                {index === lastUserMessageIndex && isLoading && (
+                  <Reasoning toolSteps={currentToolSteps} isLoading={true} />
+                )}
+                {/* Show reasoning for completed queries (user messages with toolSteps) */}
+                {message.toolSteps && message.toolSteps.length > 0 && (
+                  <Reasoning toolSteps={message.toolSteps} isLoading={false} />
+                )}
+              </>
+            )}
 
             {/* Prompt options for first message, removed when sent */}
             {messages.length < 2 && LANDING_PAGE_VERSION !== "public" && (
