@@ -8,7 +8,21 @@ import {
   StreamMessage,
   QueryType,
   UiContext,
+  CodeActPart,
 } from "@/app/types/chat";
+
+// Type for storing tool execution data
+export interface ToolStepData {
+  name: string;
+  content?: string;
+  dataset?: object;
+  insights?: object[];
+  charts_data?: object[];
+  codeact_parts?: CodeActPart[];
+  source_urls?: string[];
+  aoi?: object;
+  timestamp: string;
+}
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/shared/read-data-stream";
 import { DATASET_BY_ID } from "../constants/datasets";
@@ -28,7 +42,7 @@ interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
-  toolSteps: string[];
+  toolSteps: ToolStepData[];
   pendingTraceId: string | null;
 }
 
@@ -47,7 +61,7 @@ interface ChatActions {
     threadId: string,
     abortController?: AbortController
   ) => Promise<void>;
-  addToolStep: (toolName: string) => void;
+  addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
 }
 
@@ -75,7 +89,7 @@ const initialState: ChatState = {
 async function processStreamMessage(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void,
-  addToolStep: (toolName: string) => void,
+  addToolStep: (toolData: StreamMessage) => void,
   getPendingTraceId: () => string | null,
   setPendingTraceId: (traceId: string | null) => void,
   attachTraceToLastAssistant: (traceId: string) => boolean
@@ -137,7 +151,7 @@ async function processStreamMessage(
   } else if (streamMessage.type === "tool") {
     // Add tool step to reasoning display
     if (streamMessage.name) {
-      addToolStep(streamMessage.name);
+      addToolStep(streamMessage);
     }
 
     // Special handling for generate_insights tool
@@ -429,9 +443,22 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  addToolStep: (toolName: string) => {
+  addToolStep: (toolData: StreamMessage) => {
     set((state) => ({
-      toolSteps: [...state.toolSteps, toolName],
+      toolSteps: [
+        ...state.toolSteps,
+        {
+          name: toolData.name || "unknown",
+          content: toolData.content,
+          dataset: toolData.dataset,
+          insights: toolData.insights,
+          charts_data: toolData.charts_data,
+          codeact_parts: toolData.codeact_parts,
+          source_urls: toolData.source_urls,
+          aoi: toolData.aoi,
+          timestamp: toolData.timestamp,
+        },
+      ],
     }));
   },
 

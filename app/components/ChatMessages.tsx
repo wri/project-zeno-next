@@ -107,7 +107,7 @@ function ChatMessages() {
               isConsecutive={isConsecutive}
               isFirst={isFirst}
             />
-            {isLoading && index === lastUserMessageIndex && <Reasoning />}
+            {index === lastUserMessageIndex && <Reasoning />}
 
             {/* Prompt options for first message, removed when sent */}
             {messages.length < 2 && LANDING_PAGE_VERSION !== "public" && (

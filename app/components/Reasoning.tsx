@@ -18,44 +18,83 @@ function formatToolName(toolName: string): string {
 
 function Reasoning() {
   const [isOpen, setIsOpen] = useState(false);
-  const { toolSteps } = useChatStore();
-  return (
-    <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
-      <Collapsible.Trigger>
-        <Flex justifyContent="flex-start" alignItems="center" gap="3" mb={4}>
-          <Spinner size="sm" color="fg.muted" />
-          <Text fontSize="sm" color="fg.muted">
-            Reasoning
-          </Text>
-          {isOpen ? <CaretDownIcon /> : <CaretRightIcon />}
-        </Flex>
-      </Collapsible.Trigger>
-      <Collapsible.Content>
-        <Box
-          bg="bg.muted"
-          borderRadius="sm"
-          paddingTop="8px"
-          paddingBottom="8px"
-          paddingLeft={3}
-          paddingRight={3}
-          marginBottom={4}
-          gap={2}
-          fontFamily="mono"
-          fontSize="xs"
-        >
-          {toolSteps.length === 0 ? (
-            <Text color="fg.muted">Processing request...</Text>
-          ) : (
-            toolSteps.map((toolName, index) => (
-              <Text key={`${toolName}-${index}`} color="fg.muted" mb={1}>
-                • {formatToolName(toolName)}
-              </Text>
-            ))
-          )}
-        </Box>
-      </Collapsible.Content>
-    </Collapsible.Root>
-  );
+  const { toolSteps, isLoading } = useChatStore();
+
+  // Get current tool name for dynamic status
+  const currentTool = toolSteps.length > 0 ? toolSteps[toolSteps.length - 1] : null;
+
+  // While loading, show spinner with dynamic status
+  if (isLoading) {
+    return (
+      <Flex justifyContent="flex-start" alignItems="center" gap="3" mb={4}>
+        <Spinner size="sm" color="fg.muted" />
+        <Text fontSize="sm" color="fg.muted">
+          {currentTool ? formatToolName(currentTool.name) : "Processing request..."}
+        </Text>
+      </Flex>
+    );
+  }
+
+  // After completion, show collapsible reasoning with tool cards
+  if (!isLoading && toolSteps.length > 0) {
+    return (
+      <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
+        <Collapsible.Trigger>
+          <Flex
+            justifyContent="flex-start"
+            alignItems="center"
+            gap="2"
+            mb={4}
+            cursor="pointer"
+            _hover={{ opacity: 0.8 }}
+          >
+            <Text fontSize="sm" color="fg.muted">
+              Show Reasoning
+            </Text>
+            {isOpen ? (
+              <CaretDownIcon size={16} color="var(--chakra-colors-fg-muted)" />
+            ) : (
+              <CaretRightIcon size={16} color="var(--chakra-colors-fg-muted)" />
+            )}
+          </Flex>
+        </Collapsible.Trigger>
+        <Collapsible.Content>
+          <Box mb={4}>
+            {toolSteps.map((tool, index) => (
+              <Box
+                key={`${tool.name}-${index}`}
+                bg="bg.muted"
+                borderRadius="md"
+                padding={4}
+                marginBottom={3}
+              >
+                <Text fontWeight="bold" mb={2} fontSize="sm">
+                  {formatToolName(tool.name)}
+                </Text>
+                <Box
+                  as="pre"
+                  fontSize="xs"
+                  fontFamily="mono"
+                  overflow="auto"
+                  maxHeight="300px"
+                  bg="bg.surface"
+                  padding={3}
+                  borderRadius="sm"
+                  whiteSpace="pre-wrap"
+                  wordBreak="break-word"
+                >
+                  {JSON.stringify(tool, null, 2)}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Collapsible.Content>
+      </Collapsible.Root>
+    );
+  }
+
+  // If not loading and no tool steps, don't render anything
+  return null;
 }
 
 export default Reasoning;
