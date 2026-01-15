@@ -18,7 +18,10 @@ export default function SingleThread() {
 
   // This check should only happen on mount. When coming from a thread started
   // at the root page the context should be preserved.
-  const comingFromNewThread = useMemo(() => id === currentThreadId, []);
+  const comingFromNewThread = useMemo(
+    () => id === currentThreadId,
+    [id, currentThreadId]
+  );
 
   useEffect(() => {
     if (!comingFromNewThread) {

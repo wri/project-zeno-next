@@ -52,6 +52,7 @@ type ProfileFormState = {
   company: string;
   country: string;
   expertise: string;
+  preferredLanguage: string;
   topics: string[];
   receiveNewsEmails: boolean;
   helpTestFeatures: boolean;
@@ -71,6 +72,7 @@ export default function UserSettingsPage() {
     company: "",
     country: "",
     expertise: "",
+    preferredLanguage: "",
     topics: [],
     receiveNewsEmails: false,
     helpTestFeatures: false,
@@ -107,6 +109,7 @@ export default function UserSettingsPage() {
             company: user?.companyOrganization ?? p.company,
             country: user?.countryCode ?? p.country,
             expertise: user?.gisExpertiseLevel ?? p.expertise,
+            preferredLanguage: user?.preferredLanguageCode ?? p.preferredLanguage,
             topics: Array.isArray(user?.topics) ? user.topics : p.topics,
             receiveNewsEmails: Boolean(
               user?.receiveNewsEmails ?? p.receiveNewsEmails
@@ -178,6 +181,17 @@ export default function UserSettingsPage() {
     return createListCollection({ items });
   }, [config]);
 
+  const languages = useMemo(() => {
+    const items = [
+      { label: "English", value: "en" },
+      { label: "Français", value: "fr" },
+      { label: "Español", value: "es" },
+      { label: "Português", value: "pt" },
+      { label: "Bahasa Indonesia", value: "id" },
+    ];
+    return createListCollection({ items });
+  }, []);
+
   const handleSave = async () => {
     if (isSaving) return;
     setIsSaving(true);
@@ -191,7 +205,7 @@ export default function UserSettingsPage() {
         job_title: form.jobTitle || null,
         company_organization: form.company || null,
         country_code: form.country || null,
-        preferred_language_code: null,
+        preferred_language_code: form.preferredLanguage || null,
         gis_expertise_level: form.expertise || null,
         // Only send when there are selections; omit the key to avoid clearing inadvertently
         topics:
@@ -389,6 +403,7 @@ export default function UserSettingsPage() {
                 <Field.Label>First name</Field.Label>
                 <Input
                   type="text"
+                  width="320px"
                   value={form.firstName}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, firstName: e.target.value }))
@@ -403,6 +418,7 @@ export default function UserSettingsPage() {
                 <Field.Label>Last name</Field.Label>
                 <Input
                   type="text"
+                  width="320px"
                   value={form.lastName}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, lastName: e.target.value }))
@@ -417,6 +433,7 @@ export default function UserSettingsPage() {
                 <Field.Label>Email address</Field.Label>
                 <Input
                   type="email"
+                  width="320px"
                   value={form.email}
                   readOnly
                   _readOnly={{
@@ -523,6 +540,7 @@ export default function UserSettingsPage() {
                 <Field.Label>Job title</Field.Label>
                 <Input
                   type="text"
+                  width="320px"
                   value={form.jobTitle}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, jobTitle: e.target.value }))
@@ -537,6 +555,7 @@ export default function UserSettingsPage() {
                 <Field.Label>Company / Organization</Field.Label>
                 <Input
                   type="text"
+                  width="320px"
                   value={form.company}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, company: e.target.value }))
@@ -618,6 +637,47 @@ export default function UserSettingsPage() {
                     </Select.Positioner>
                   </Portal>
                 </Select.Root>
+              </Field.Root>
+            </GridItem>
+
+            {/* Preferred Language */}
+            <GridItem>
+              <Field.Root id="preferred-language">
+                <Select.Root
+                  collection={languages}
+                  size="sm"
+                  width="320px"
+                  value={form.preferredLanguage ? [form.preferredLanguage] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, preferredLanguage: d.value[0] ?? "" }))
+                  }
+                >
+                  <Select.HiddenSelect />
+                  <Select.Label>Preferred language</Select.Label>
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder="Select Language" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {languages.items.map((lang) => (
+                          <Select.Item item={lang} key={lang.value}>
+                            {lang.label}
+                            <Select.ItemIndicator />
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+                <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
+                  Please note most of our communications are in English.
+                </Field.HelperText>
               </Field.Root>
             </GridItem>
 

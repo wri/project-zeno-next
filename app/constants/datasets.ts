@@ -36,7 +36,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null as string | null,
     img: "/dataset_card_dist_alerts.webp",
     description:
-      "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from January 2023 to present.",
+      "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     legend: {
@@ -44,7 +44,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       color: "#f69",
       items: [{ label: "DIST alert", color: "#f69" }],
       type: "symbol",
-      info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from January 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
+      info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
       note: "Near-real-time vegetation disturbance alerts across all ecosystems, updated weekly (2023-present).",
     },
   },
@@ -55,13 +55,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_land_cover.webp",
     description:
       "This Global Land Cover dataset is a combination of two global datasets: the GLAD Land Cover and Land Use Change annual data and the Global Pasture Watch Grassland Class Collection 2 Cultivated Grasslands annual data. This combination is annual from 2015 through 2024. This dataset shows land covers and uses including: bare ground and sparsevegetation, short vegetation, tree cover, wetlands, water, snow/ice, cropland, cultivated grasslands, and built-up land.",
-    tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-2024/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B139%2C%2069%2C%2019%2C%20255%5D%2C%20%222%22%3A%20%5B255%2C%20255%2C%200%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%20128%2C%200%2C%20255%5D%2C%20%224%22%3A%20%5B0%2C%20255%2C%20255%2C%20255%5D%2C%20%225%22%3A%20%5B0%2C%200%2C%20255%2C%20255%5D%2C%20%226%22%3A%20%5B255%2C%20255%2C%20255%2C%20255%5D%2C%20%227%22%3A%20%5B255%2C%200%2C%200%2C%20255%5D%2C%20%228%22%3A%20%5B128%2C%20128%2C%20128%2C%20255%5D%2C%20%229%22%3A%20%5B255%2C%20165%2C%200%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
+    tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-2024/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%222%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%223%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%224%22%3A%20%5B116%2C%20214%2C%20180%2C%20255%5D%2C%225%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%226%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%227%22%3A%20%5B255%2C%20241%2C%20131%2C%20255%5D%2C%228%22%3A%20%5B232%2C%20118%2C%2093%2C%20255%5D%2C%229%22%3A%20%5B255%2C%20205%2C%20115%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
     legend: {
       title: "Global land cover (2024)",
       color: "#8E3037",
       items: [
         { label: "forest", color: "#246E24" },
-        { label: "wetland vegetation", color: "#74D6B4" },
+        { label: "wet vegetation", color: "#74D6B4" },
         { label: "short vegetation", color: "#B9B91E" },
         { label: "bare", color: "#FEFECC" },
         { label: "water", color: "#6BAED6" },
@@ -112,16 +112,16 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "mangroves", color: "#06A285" },
         { label: "wet natural forests", color: "#589558" },
         { label: "natural peat short vegetation", color: "#99991A" },
-        { label: "wet natural short vegetation", color: "#DBDB7B" },
         { label: "natural short vegetation", color: "#B9B91E" },
+        { label: "wet natural short vegetation", color: "#DBDB7B" },
         { label: "natural water", color: "#6BAED6" },
-        { label: "bare", color: "#FEFECC" },
         { label: "snow", color: "#ACD1E8" },
+        { label: "bare", color: "#FEFECC" },
         { label: "non-natural", color: "#D3D3D3" },
       ],
-      type: "categorical",
+      type: "symbol",
       info: 'The Natural lands dataset is the best match because it provides a 2020 baseline map of natural vs non-natural land covers at 30m resolution, which can be used to identify intact/natural landscapes. This dataset specifically defines "natural" ecosystems as those that substantially resemble what would be found without major human impacts, making it ideal for assessing landscape intactness across Canadian provinces.',
-      note: "Baseline map separating natural from non-natural lands for conversion assessments."
+      note: "Baseline map separating natural from non-natural lands for conversion assessments. This map may overestimate the extent of natural lands."
     },
   },
   {
@@ -165,7 +165,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "wildfire", color: "#885128"},
         { label: "other natural disturbances", color: "#3B209A"},
         { label: "settlements & infrastructure", color: "#A354A0"},
-        { label: "hard commodities", color: "#246E24"},
+        { label: "hard commodities", color: "#E58074"},
         { label: "permanent agriculture", color: "#E39D29"}
       ],
       type: "symbol",
@@ -202,7 +202,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     threshold: 30,
     img: "/dataset_card_tree_cover.webp",
     description:
-      "Tree Cover provides global percent tree canopy cover at 30-meter resolution for years 2000, based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
+      "Tree Cover provides global percent tree canopy cover at 30-meter resolution for the year 2000 based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_tree_cover_density_{year}/latest/tcd_{threshold}/{z}/{x}/{y}.png",
     legend: {

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Menu, Portal, IconButton } from "@chakra-ui/react";
+import { Menu, IconButton } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import useSidebarStore from "../store/sidebarStore";
 import useChatStore from "../store/chatStore";
@@ -7,23 +7,26 @@ import {
   DotsThreeIcon,
   PencilSimpleIcon,
   TrashIcon,
+  ShareIcon,
 } from "@phosphor-icons/react";
 import ThreadDeleteDialog from "./ThreadDeleteDialog";
 import ThreadRenameDialog from "./ThreadRenameDialog";
+import ThreadShareDialog from "./ThreadShareDialog";
 import { sendGAEvent } from "@next/third-parties/google";
 
 function ThreadActionsMenu({
   thread,
   children,
 }: {
-  thread: { id: string; name: string };
+  thread: { id: string; name: string, is_public?: boolean };
   children?: React.ReactNode;
 }) {
   const router = useRouter();
-  const { renameThread, deleteThread } = useSidebarStore();
+  const { renameThread, shareThread, deleteThread } = useSidebarStore();
   const { currentThreadId } = useChatStore();
 
   const [renameOpen, setRenameOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const onRename = useCallback(
@@ -38,6 +41,12 @@ function ThreadActionsMenu({
     },
     [thread.id, thread.name, renameThread]
   );
+
+  const onShare = useCallback(
+    async (is_public: boolean) => {
+      await shareThread(thread.id, is_public);
+    }, [thread.id, shareThread]
+  )
 
   const onDelete = useCallback(async () => {
     sendGAEvent("event", "thread_deleted", { 
@@ -56,7 +65,7 @@ function ThreadActionsMenu({
 
   return (
     <>
-      <Menu.Root>
+      <Menu.Root positioning={{ strategy: "fixed", hideWhenDetached: true }}>
         <Menu.Trigger asChild>
           {children || (
             <IconButton
@@ -75,7 +84,6 @@ function ThreadActionsMenu({
             </IconButton>
           )}
         </Menu.Trigger>
-        <Portal>
           <Menu.Positioner>
             <Menu.Content>
               <Menu.Item
@@ -85,6 +93,14 @@ function ThreadActionsMenu({
               >
                 <PencilSimpleIcon />
                 Rename
+              </Menu.Item>
+              <Menu.Item
+                value="share conversation"
+                color="fg.muted"
+                onSelect={() => setShareOpen(true)}
+              >
+                <ShareIcon />
+                Share
               </Menu.Item>
               <Menu.Item
                 value="delete"
@@ -97,13 +113,19 @@ function ThreadActionsMenu({
               </Menu.Item>
             </Menu.Content>
           </Menu.Positioner>
-        </Portal>
       </Menu.Root>
       <ThreadRenameDialog
         name={thread.name}
         isOpen={renameOpen}
         onOpenChange={setRenameOpen}
         onRename={onRename}
+      />
+      <ThreadShareDialog
+        isPublic={thread.is_public}
+        isOpen={shareOpen}
+        onOpenChange={setShareOpen}
+        onShare={onShare}
+        threadId={thread.id}
       />
       <ThreadDeleteDialog
         threadName={thread.name}

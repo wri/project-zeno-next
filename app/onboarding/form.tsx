@@ -25,6 +25,7 @@ import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch"
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
+import { submitToOrtto } from "@/app/actions/ortto";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { sendGAEvent } from "@next/third-parties/google";
@@ -48,6 +49,7 @@ type ProfileFormState = {
   company: string;
   country: string;
   expertise: string;
+  preferredLanguage: string;
   topics: string[]; // holds selected topic codes
   receiveNewsEmails: boolean;
   helpTestFeatures: boolean;
@@ -73,6 +75,7 @@ export default function OnboardingForm() {
     company: "",
     country: "",
     expertise: "",
+    preferredLanguage: "",
     topics: [],
     receiveNewsEmails: false,
     helpTestFeatures: false,
@@ -163,6 +166,17 @@ export default function OnboardingForm() {
     return createListCollection({ items });
   }, [config]);
 
+  const languages = useMemo(() => {
+    const items = [
+      { label: "English", value: "en" },
+      { label: "Français", value: "fr" },
+      { label: "Español", value: "es" },
+      { label: "Português", value: "pt" },
+      { label: "Bahasa Indonesia", value: "id" },
+    ];
+    return createListCollection({ items });
+  }, []);
+
   const isValid = useMemo(() => schema.safeParse(form).success, [schema, form]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,7 +196,7 @@ export default function OnboardingForm() {
         job_title: validated.jobTitle || null,
         company_organization: validated.company || null,
         country_code: validated.country || null,
-        preferred_language_code: null,
+        preferred_language_code: validated.preferredLanguage || null,
         gis_expertise_level: validated.expertise || null,
         topics:
           Array.isArray(validated.topics) && validated.topics.length
@@ -202,6 +216,23 @@ export default function OnboardingForm() {
       if (!res.ok) {
         throw new Error("Failed to save profile");
       }
+
+      // Submit to Ortto
+      const topicLabels = form.topics.map(
+        (code) => config?.topics?.[code] || code
+      );
+
+      await submitToOrtto({
+        email: form.email,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        sector: form.sector,
+        jobTitle: form.jobTitle,
+        companyOrganization: form.company,
+        countryCode: form.country,
+        Topics: topicLabels,
+        receiveNewsEmails: form.receiveNewsEmails,
+      }).catch((e) => console.error("Ortto submission error", e));
 
       // Poll for hasProfile to avoid middleware redirect race
       const waitForProfileCompletion = async (
@@ -294,8 +325,8 @@ export default function OnboardingForm() {
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
           We use this information to make Global Nature Watch more useful to
-          you. This tool is experimental, and knowing you better helps us
-          improve. Features may change or be removed over time.
+          you. This tool is experimental, and knowing you better helps
+          us improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
           <Grid
@@ -561,6 +592,44 @@ export default function OnboardingForm() {
                 </Select.Root>
               </Field.Root>
             </GridItem>
+            <GridItem>
+              <Field.Root id="preferred-language" required={fieldRequired("preferredLanguage")}>
+                <Select.Root
+                  collection={languages}
+                  size="sm"
+                  value={form.preferredLanguage ? [form.preferredLanguage] : []}
+                  onValueChange={(d: ValueChangeDetails) =>
+                    setForm((p) => ({ ...p, preferredLanguage: d.value[0] ?? "" }))
+                  }
+                >
+                  <Select.HiddenSelect />
+                  <Select.Label>Preferred language</Select.Label>
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder="Select Language" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {languages.items.map((lang) => (
+                          <Select.Item key={lang.value} item={lang}>
+                            {lang.label}
+                            <Select.ItemIndicator />
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+                <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
+                  Please note most of our communications are in English.
+                </Field.HelperText>
+              </Field.Root>
+            </GridItem>
             <GridItem colSpan={{ base: 1, md: 2 }}>
               <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
@@ -668,9 +737,8 @@ export default function OnboardingForm() {
                   rel="noopener noreferrer"
                   textDecoration="underline"
                 >
-                  Global Nature Watch AI Terms of Use
-                </Link>
-                {", "}
+                Global Nature Watch AI Terms of Use
+                </Link>{", "}
                 and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"

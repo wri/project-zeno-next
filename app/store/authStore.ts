@@ -54,8 +54,12 @@ const useAuthStore = create<AuthState>()((set) => ({
     const quota = quotaStr != null ? Number(quotaStr) : null;
 
     set(({ usedPrompts, totalPrompts }) => {
-      const newUsed = typeof used === "number" && !Number.isNaN(used) ? used : usedPrompts;
-      const newTotal = typeof quota === "number" && !Number.isNaN(quota) ? quota : totalPrompts;
+      const newUsed =
+        typeof used === "number" && !Number.isNaN(used) ? used : usedPrompts;
+      const newTotal =
+        typeof quota === "number" && !Number.isNaN(quota)
+          ? quota
+          : totalPrompts;
 
       if (newUsed >= newTotal) {
         sendGAEvent("event", "prompt_limit_reached", {
@@ -84,7 +88,8 @@ const useAuthStore = create<AuthState>()((set) => ({
       isAuthenticated: true,
       isAnonymous: false,
     });
-    sendGAEvent("login", { user_id: id });
+    // GA4 login event per @next/third-parties/google requires name first and params second
+    sendGAEvent("event", "login", { method: "token", user_id: id });
   },
   clearAuth: () => {
     set({

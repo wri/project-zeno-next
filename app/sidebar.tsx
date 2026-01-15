@@ -200,6 +200,8 @@ export function Sidebar() {
       tabIndex={!sideBarVisible ? -1 : undefined}
       aria-hidden={!sideBarVisible}
       inert={!sideBarVisible}
+      zIndex={1100}
+      position="relative"
     >
       <Flex
         alignItems="center"

@@ -1,19 +1,40 @@
-import { Box, Text, Heading, Flex, Separator } from "@chakra-ui/react";
+"use client";
+import { Box, Text, Heading, Flex, Separator, Button, useDisclosure } from "@chakra-ui/react";
+import { MicroscopeIcon as Microscope } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
+import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
+import VisualizationDisclaimer from "./VisualizationDisclaimer";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
 }
 
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
+  const { open, onOpen, onClose } = useDisclosure();
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
-  console.log(widget);
+  
+  const handleOpen = () => {
+    console.log("Opening drawer for widget:", widget.title, "Generation data:", widget.generation);
+    onOpen();
+  };
+
+  const chartTypes: InsightWidget["type"][] = [
+    "bar",
+    "stacked-bar",
+    "grouped-bar",
+    "line",
+    "area",
+    "pie",
+    "scatter",
+  ];
+  const isChartType = chartTypes.includes(widget.type);
+  const showDisclaimer = isChartType || widget.type === "table";
   return (
     <Box
       rounded="md"
@@ -32,13 +53,27 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {widget.description}
         </Text>
         <Separator />
-        {(widget.type === "bar" ||
-          widget.type === "stacked-bar" ||
-          widget.type === "grouped-bar" ||
-          widget.type === "line" ||
-          widget.type === "area" ||
-          widget.type === "pie" ||
-          widget.type === "scatter") && <ChartWidget widget={widget} />}
+        {widget.generation && (
+          <Flex justify="flex-end">
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleOpen}
+              bg={open ? "bg.info" : undefined}
+              borderColor={open ? "border.info" : undefined}
+              color={open ? "fg.info" : undefined}
+              h={6}
+              rounded="sm"
+              _hover={{
+                bg: open ? "blue.100" : undefined,
+              }}
+            >
+              <Microscope />
+              View how this was generated
+            </Button>
+          </Flex>
+        )}
+        {isChartType && <ChartWidget widget={widget} />}
 
         {widget.type === "table" && (
           <Box overflowX="auto" maxW="100%">
@@ -47,7 +82,14 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             />
           </Box>
         )}
+        {showDisclaimer && <VisualizationDisclaimer />}
       </Flex>
+      <InsightProvenanceDrawer
+        isOpen={open}
+        onClose={onClose}
+        generation={widget.generation}
+        title={widget.title}
+      />
     </Box>
   );
 }

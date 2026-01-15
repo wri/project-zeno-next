@@ -115,9 +115,9 @@ function ChatPanelHeader() {
           </IconButton>
         </Tooltip>
       )}
-      {currentThreadId ? (
+      {currentThreadId && currentThread ? (
         <ThreadActionsMenu
-          thread={{ id: currentThreadId, name: currentThreadName }}
+          thread={currentThread}
         >
           <Button
             variant="ghost"

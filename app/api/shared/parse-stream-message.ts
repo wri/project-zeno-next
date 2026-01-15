@@ -59,6 +59,8 @@ export function parseStreamMessage(
       dataset: langChainMessage.dataset || undefined,
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
+      codeact_parts: langChainMessage.codeact_parts || [],
+      source_urls: langChainMessage.source_urls || [],
       insight_count: langChainMessage.insight_count || 0,
       aoi: langChainMessage.aoi || undefined,
       timestamp: timestamp.toISOString(),

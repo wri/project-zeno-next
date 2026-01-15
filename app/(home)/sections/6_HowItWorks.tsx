@@ -120,7 +120,7 @@ export default function HowItWorksSection() {
             >
               <Flex gap={4} alignItems="center" justifyContent="center">
                 {step.images.map((image, i) => (
-                  <Image key={i} {...image} />
+                  <Image key={i} {...image} alt={image.alt} />
                 ))}
               </Flex>
             </Box>
