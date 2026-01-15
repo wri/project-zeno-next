@@ -8,6 +8,8 @@ import {
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import { ToolStepData } from "@/app/types/chat";
+import Markdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 
 // Helper function to format tool names for display
 function formatToolName(toolName: string): string {
@@ -88,7 +90,7 @@ function Reasoning({
         open={isOpen}
         onOpenChange={(e) => setIsOpen(e.open)}
         border="1px solid"
-        borderColor="border"
+        borderColor="border.emphasized"
         mb={4}
         rounded="md"
         p={2}
@@ -102,7 +104,7 @@ function Reasoning({
             mb={isOpen ? 4 : 0}
             pb={isOpen ? 2 : 0}
             borderBottom={isOpen ? "1px solid" : "none"}
-            borderColor="border"
+            borderColor="border.emphasized"
             cursor="pointer"
             _hover={{ opacity: 0.8 }}
           >
@@ -127,6 +129,24 @@ function Reasoning({
                   </Timeline.Connector>
                   <Timeline.Content>
                     <Timeline.Title>{formatToolName(tool.name)}</Timeline.Title>
+                    {/* Tool Content Markdown //FIXME */}
+                    {/* <Box
+                      fontSize="sm"
+                      maxW="100%"
+                      css={{
+                        "& > *": { fontFamily: "inherit", maxWidth: "100%"},
+                        "& > p:not(:last-of-type)": { mb: 2 },
+                        "& > h1, & > h2, & > h3, & > h4, & > h5, & > h6": {
+                          borderBottom: "1px solid",
+                          borderColor: "bg.muted",
+                          pb: 2,
+                        },
+                      }}
+                    >
+                      <Markdown remarkPlugins={[remarkBreaks]}>
+                        {tool.content}
+                      </Markdown>
+                    </Box> */}
                     <Box
                       as="pre"
                       fontSize="xs"
