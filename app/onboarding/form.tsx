@@ -28,7 +28,7 @@ import { showApiError } from "@/app/hooks/useErrorHandler";
 import { submitToOrtto } from "@/app/actions/ortto";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { sendGAEvent } from "@next/third-parties/google";
+import { sendGAEventAsync } from "@/app/utils/analytics";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -256,7 +256,7 @@ export default function OnboardingForm() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
-        sendGAEvent("event", "sign_up", {
+        await sendGAEventAsync("sign_up", {
           sector: payload.sector_code,
           role: payload.role_code,
           country: payload.country_code,
