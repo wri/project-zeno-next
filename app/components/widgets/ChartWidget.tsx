@@ -265,6 +265,8 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
       case "bar":
       case "grouped-bar":
       case "stacked-bar": {
+        console.log("this one");
+        console.log(chart);
         return chart.series.map((item) => (
           <Bar
             key={item.name}
@@ -287,24 +289,26 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
         {type !== "pie" && (
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
         )}
-        <Legend
-          content={
-            type === "pie" ? (
-              <CustomPieLegend series={chart.series} />
-            ) : (
-              <Chart.Legend />
-            )
-          }
-          align={type === "pie" ? "right" : "left"}
-          layout={type === "pie" ? "vertical" : "horizontal"}
-          verticalAlign={type === "pie" ? "middle" : "top"}
-          wrapperStyle={{
-            paddingBottom: "0.5rem",
-            maxHeight: "100%",
-            maxWidth: "100%",
-            overflow: "auto",
-          }}
-        />
+        {chart.series[0].name !== "value" && 
+          <Legend
+            content={
+              type === "pie" ? (
+                <CustomPieLegend series={chart.series} />
+              ) : (
+                <Chart.Legend />
+              )
+            }
+            align={type === "pie" ? "right" : "left"}
+            layout={type === "pie" ? "vertical" : "horizontal"}
+            verticalAlign={type === "pie" ? "middle" : "top"}
+            wrapperStyle={{
+              paddingBottom: "0.5rem",
+              maxHeight: "100%",
+              maxWidth: "100%",
+              overflow: "auto",
+            }}
+          />
+        }
         {type !== "pie" && (
           <>
             <XAxis
