@@ -241,7 +241,14 @@ export default function OnboardingForm() {
       ) => {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
           try {
-            const check = await fetch("/api/auth/me", { cache: "no-store" });
+            // Cache-busting timestamp prevents stale responses
+            const check = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+              cache: "no-store",
+              headers: {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                Pragma: "no-cache",
+              },
+            });
             if (check.ok) {
               const data = await check.json();
               if (data?.hasProfile) return true;
