@@ -28,7 +28,7 @@ import { showApiError } from "@/app/hooks/useErrorHandler";
 import { submitToOrtto } from "@/app/actions/ortto";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { sendGAEvent } from "@next/third-parties/google";
+import { sendGAEventAsync } from "@/app/utils/analytics";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -241,7 +241,14 @@ export default function OnboardingForm() {
       ) => {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
           try {
-            const check = await fetch("/api/auth/me", { cache: "no-store" });
+            // Cache-busting timestamp prevents stale responses
+            const check = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+              cache: "no-store",
+              headers: {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                Pragma: "no-cache",
+              },
+            });
             if (check.ok) {
               const data = await check.json();
               if (data?.hasProfile) return true;
@@ -256,7 +263,7 @@ export default function OnboardingForm() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
-        sendGAEvent("event", "sign_up", {
+        await sendGAEventAsync("sign_up", {
           sector: payload.sector_code,
           role: payload.role_code,
           country: payload.country_code,

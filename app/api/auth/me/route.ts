@@ -4,6 +4,9 @@ import { cookies } from "next/headers";
 import { API_CONFIG } from "@/app/config/api";
 import { getAPIRequestHeaders } from "../../shared/utils";
 
+// Force dynamic rendering - this route should never be cached
+export const dynamic = "force-dynamic";
+
 const TOKEN_NAME = "auth_token";
 
 export async function GET() {
@@ -96,13 +99,22 @@ export async function GET() {
       userObj && typeof userObj.id === "string" ? (userObj.id as string) : null;
     const userId = idSub ?? idRoot ?? idUserId ?? idFromUser ?? email;
 
-    return NextResponse.json({
-      isAuthenticated: true,
-      user: { email, id: userId },
-      promptsUsed,
-      promptQuota,
-      hasProfile,
-    });
+    return NextResponse.json(
+      {
+        isAuthenticated: true,
+        user: { email, id: userId },
+        promptsUsed,
+        promptQuota,
+        hasProfile,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch {
     return NextResponse.json({ isAuthenticated: false }, { status: 401 });
   }

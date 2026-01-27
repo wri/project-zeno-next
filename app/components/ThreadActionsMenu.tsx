@@ -13,6 +13,7 @@ import ThreadDeleteDialog from "./ThreadDeleteDialog";
 import ThreadRenameDialog from "./ThreadRenameDialog";
 import ThreadShareDialog from "./ThreadShareDialog";
 import { sendGAEvent } from "@next/third-parties/google";
+import { sendGAEventAsync } from "@/app/utils/analytics";
 
 function ThreadActionsMenu({
   thread,
@@ -49,7 +50,7 @@ function ThreadActionsMenu({
   )
 
   const onDelete = useCallback(async () => {
-    sendGAEvent("event", "thread_deleted", { 
+    await sendGAEventAsync("thread_deleted", { 
       thread_name: thread.name,
       thread_id: thread.id,
      });
