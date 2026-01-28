@@ -7,8 +7,6 @@ import Reasoning from "./Reasoning";
 import SamplePrompts from "./SamplePrompts";
 import ChatDisclaimer from "./ChatDisclaimer";
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
-
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading } = useChatStore();
@@ -110,7 +108,7 @@ function ChatMessages() {
             {isLoading && index === lastUserMessageIndex && <Reasoning />}
 
             {/* Prompt options for first message, removed when sent */}
-            {messages.length < 2 && LANDING_PAGE_VERSION !== "public" && (
+            {messages.length < 2 && (
               <SamplePrompts />
             )}
           </Fragment>
