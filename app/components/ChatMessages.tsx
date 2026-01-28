@@ -7,8 +7,6 @@ import Reasoning from "./Reasoning";
 import SamplePrompts from "./SamplePrompts";
 import ChatDisclaimer from "./ChatDisclaimer";
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
-
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading } = useChatStore();
