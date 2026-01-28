@@ -166,7 +166,7 @@ export default function LandingHero({
             >
               Global Nature Watch is an open, AI-powered system that transforms groundbreaking
               land monitoring data into intelligence to understand Earth&rsquo;s landscapes.
-              Test the beta and help shape the future of land monitoring.
+              Test the preview and help shape the future of land monitoring.
             </Text>
           </Container>
           <Container
@@ -282,14 +282,14 @@ export default function LandingHero({
             >
               <Text>
                 <Badge size="xs" fontSize="8px" rounded="4px" mr="1">
-                  BETA
+                  PREVIEW
                 </Badge>
                 Global Nature Watch is
                 {LANDING_PAGE_VERSION === "closed"
-                  ? " in closed beta."
+                  ? " in closed preview."
                   : LANDING_PAGE_VERSION === "limited"
-                  ? " in limited beta."
-                  : " in beta."}
+                  ? " in limited preview."
+                  : " in preview."}
               </Text>
               <Tooltip
                 openDelay={100}
@@ -306,7 +306,7 @@ export default function LandingHero({
                   alignItems="center"
                 >
                   <QuestionIcon />
-                  What does beta mean?
+                  What does preview mean?
                 </Box>
               </Tooltip>
             </Box>

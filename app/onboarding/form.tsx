@@ -311,7 +311,7 @@ export default function OnboardingForm() {
               variant="solid"
               size="xs"
             >
-              BETA
+              PREVIEW
             </Badge>
           </Flex>
           <Button
