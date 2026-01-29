@@ -110,7 +110,7 @@ export default function UnauthorizedPage() {
               Thank you for your interest in Global Nature Watch!
             </Text>
             <Text fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
-              Right now access is limited while we are in closed beta. We&apos;d
+              Right now access is limited while we are in closed preview. We&apos;d
               love for you to be part of what&apos;s next, so join the waitlist
               to be among the first to know when the tool becomes available.
             </Text>

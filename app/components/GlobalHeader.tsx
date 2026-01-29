@@ -85,7 +85,7 @@ const renderNavItems = (
           </Link>
         ) : (
           <Link href="/app" onClick={() => setNavOpen && setNavOpen(false)}>
-            Explore the beta
+            Explore the preview
           </Link>
         )}
       </Button>

@@ -25,10 +25,9 @@ import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch"
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
-import { submitToOrtto } from "@/app/actions/ortto";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { sendGAEvent } from "@next/third-parties/google";
+import { sendGAEventAsync } from "@/app/utils/analytics";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -217,22 +216,31 @@ export default function OnboardingForm() {
         throw new Error("Failed to save profile");
       }
 
-      // Submit to Ortto
+      // Submit to Ortto directly from client (no secrets needed)
       const topicLabels = form.topics.map(
         (code) => config?.topics?.[code] || code
       );
 
-      await submitToOrtto({
-        email: form.email,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        sector: form.sector,
-        jobTitle: form.jobTitle,
-        companyOrganization: form.company,
-        countryCode: form.country,
-        Topics: topicLabels,
-        receiveNewsEmails: form.receiveNewsEmails,
-      }).catch((e) => console.error("Ortto submission error", e));
+      try {
+        const orttoRes = await fetch("https://ortto.wri.org/custom-forms/gnw/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: form.email,
+            firstName: form.firstName,
+            lastName: form.lastName,
+            sector: form.sector,
+            jobTitle: form.jobTitle,
+            companyOrganization: form.company,
+            countryCode: form.country,
+            Topics: topicLabels,
+            receiveNewsEmails: form.receiveNewsEmails,
+          }),
+        });
+        console.log("[Client] Ortto submission status:", orttoRes.status, orttoRes.ok ? "OK" : "FAILED");
+      } catch (e) {
+        console.error("[Client] Ortto submission error:", e);
+      }
 
       // Poll for hasProfile to avoid middleware redirect race
       const waitForProfileCompletion = async (
@@ -241,7 +249,14 @@ export default function OnboardingForm() {
       ) => {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
           try {
-            const check = await fetch("/api/auth/me", { cache: "no-store" });
+            // Cache-busting timestamp prevents stale responses
+            const check = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+              cache: "no-store",
+              headers: {
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                Pragma: "no-cache",
+              },
+            });
             if (check.ok) {
               const data = await check.json();
               if (data?.hasProfile) return true;
@@ -256,7 +271,7 @@ export default function OnboardingForm() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
-        sendGAEvent("event", "sign_up", {
+        await sendGAEventAsync("sign_up", {
           sector: payload.sector_code,
           role: payload.role_code,
           country: payload.country_code,
@@ -304,7 +319,7 @@ export default function OnboardingForm() {
               variant="solid"
               size="xs"
             >
-              BETA
+              PREVIEW
             </Badge>
           </Flex>
           <Button

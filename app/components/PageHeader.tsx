@@ -77,7 +77,7 @@ function PageHeader() {
           variant="solid"
           size="xs"
         >
-          BETA
+          PREVIEW
         </Badge>
       </Flex>
       <Flex gap="6" alignItems="center" hideBelow="md">

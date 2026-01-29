@@ -231,7 +231,7 @@ export function Sidebar() {
             variant="solid"
             size="xs"
           >
-            BETA
+            PREVIEW
           </Badge>
         </Flex>
       </Flex>
