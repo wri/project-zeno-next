@@ -153,7 +153,7 @@ export default function SupportWorkTabsSection() {
                 rounded="lg"
               >
                 <Link href="/app">
-                  Explore the beta
+                  Explore the preview
                   <CaretRightIcon weight="bold" />
                 </Link>
               </Button>
