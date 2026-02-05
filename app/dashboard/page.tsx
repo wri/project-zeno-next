@@ -225,6 +225,32 @@ export default function UserSettingsPage() {
       if (!res.ok) {
         throw new Error("Failed to save profile");
       }
+
+      // Submit to Ortto directly from client (no secrets needed)
+      const topicLabels = form.topics.map(
+        (code) => config?.topics?.[code] || code
+      );
+      try {
+        const orttoRes = await fetch("https://ortto.wri.org/custom-forms/gnw/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: form.email,
+            firstName: form.firstName,
+            lastName: form.lastName,
+            sector: form.sector,
+            jobTitle: form.jobTitle,
+            companyOrganization: form.company,
+            countryCode: form.country,
+            Topics: topicLabels,
+            receiveNewsEmails: form.receiveNewsEmails,
+          }),
+        });
+        console.log("[Client] Ortto submission status:", orttoRes.status, orttoRes.ok ? "OK" : "FAILED");
+      } catch (e) {
+        console.error("[Client] Ortto submission error:", e);
+      }
+
       toaster.create({
         title: "Profile saved",
         description: "Your changes have been saved successfully.",
