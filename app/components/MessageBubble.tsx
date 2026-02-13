@@ -151,7 +151,11 @@ function MessageBubble({
         id={`widget-${message.id}-${idx}`}
         scrollMarginTop="32px"
       >
-        <WidgetMessage widget={widget} />
+        <WidgetMessage
+          widget={widget}
+          traceId={message.traceId}
+          messageId={message.id}
+        />
       </Box>
     ));
   }
