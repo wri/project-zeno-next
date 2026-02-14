@@ -79,7 +79,13 @@ export function buildTileUrl(
     if (spec.type === "categorical" && value === "all") {
       search.delete(spec.url_key);
     } else {
-      search.set(spec.url_key, String(value));
+      // Year params mapped to date-format URL keys (e.g. start_date, end_date)
+      let urlValue = String(value);
+      if (spec.type === "year" && spec.url_key.includes("date")) {
+        const isEnd = spec.url_key.includes("end");
+        urlValue = `${value}-${isEnd ? "12-31" : "01-01"}`;
+      }
+      search.set(spec.url_key, urlValue);
     }
   }
 
@@ -98,6 +104,11 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
+    configurable_params: {
+      start_year: { label: "Start year", type: "year", default: 2024, min: 2024, max: 2026, url_key: "start_date", url_strategy: "query", range_group: "year_range" },
+      end_year: { label: "End year", type: "year", default: 2026, min: 2024, max: 2026, url_key: "end_date", url_strategy: "query", range_group: "year_range" },
+      confidence: { label: "Confidence", type: "categorical", default: "all", url_key: "alert_confidence", url_strategy: "query", options: [{ value: "all", label: "All" }, { value: "highest", label: "High only" }] },
+    },
     legend: {
       title: "Global all ecosystem disturbance alerts",
       color: "#f69",
@@ -114,9 +125,12 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_land_cover.webp",
     description:
       "This Global Land Cover dataset is a combination of two global datasets: the GLAD Land Cover and Land Use Change annual data and the Global Pasture Watch Grassland Class Collection 2 Cultivated Grasslands annual data. This combination is annual from 2015 through 2024. This dataset shows land covers and uses including: bare ground and sparsevegetation, short vegetation, tree cover, wetlands, water, snow/ice, cropland, cultivated grasslands, and built-up land.",
-    tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-2024/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%222%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%223%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%224%22%3A%20%5B116%2C%20214%2C%20180%2C%20255%5D%2C%225%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%226%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%227%22%3A%20%5B255%2C%20241%2C%20131%2C%20255%5D%2C%228%22%3A%20%5B232%2C%20118%2C%2093%2C%20255%5D%2C%229%22%3A%20%5B255%2C%20205%2C%20115%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
+    tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-{lc_year}/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%222%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%223%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%224%22%3A%20%5B116%2C%20214%2C%20180%2C%20255%5D%2C%225%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%226%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%227%22%3A%20%5B255%2C%20241%2C%20131%2C%20255%5D%2C%228%22%3A%20%5B232%2C%20118%2C%2093%2C%20255%5D%2C%229%22%3A%20%5B255%2C%20205%2C%20115%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
+    configurable_params: {
+      lc_year: { label: "Year", type: "year", default: 2024, min: 2015, max: 2024, url_key: "lc_year", url_strategy: "path", path_template: "{lc_year}" },
+    },
     legend: {
-      title: "Global land cover (2024)",
+      title: "Global land cover",
       color: "#8E3037",
       items: [
         { label: "forest", color: "#246E24" },
@@ -141,9 +155,12 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_grasslands.webp",
     description:
       "Annual 30 m maps of global natural/semi-natural grassland extent from 2000 to 2022. This dataset defines grasslands very broadly such that they encompass grasslands, shrublands, and savannas by including any land cover type which contains at least 30% of dry or wet low vegetation, dominated by grasses and forbs (less than 3 meters) and a: maximum of 50% tree canopy cover (greater than 5 meters), a maximum of 70% of other woody vegetation (scrubs and open shrubland), and a maximum of 50% active cropland cover in mosaic landscapes of cropland & other vegetation.",
-    tile_url: `${EOAPI_HOST}/raster/collections/grasslands-v-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
+    tile_url: `${EOAPI_HOST}/raster/collections/grasslands-v-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True&datetime={grass_year}-01-01T00:00:00Z/{grass_year}-12-31T23:59:59Z`,
+    configurable_params: {
+      grass_year: { label: "Year", type: "year", default: 2022, min: 2000, max: 2022, url_key: "grass_year", url_strategy: "path", path_template: "{grass_year}" },
+    },
     legend: {
-      title: "Global Grasslands (2000-2022)",
+      title: "Global Grasslands",
       color: "#ff9916",
       items: [
         { label: "Natural/semi-natural grassland", color: "#ff9916" },
@@ -271,7 +288,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     description:
       "Tree Cover provides global percent tree canopy cover at 30-meter resolution for the year 2000 based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
-      "https://tiles.globalforestwatch.org/umd_tree_cover_density_{year}/latest/tcd_{threshold}/{z}/{x}/{y}.png",
+      "https://tiles.globalforestwatch.org/umd_tree_cover_density_2000/latest/tcd_{tc_threshold}/{z}/{x}/{y}.png",
+    configurable_params: {
+      tc_threshold: { label: "Tree cover threshold", type: "threshold", default: 30, min: 0, max: 100, url_key: "tc_threshold", url_strategy: "path", path_template: "{tc_threshold}" },
+    },
     legend: {
       title: "Tree cover (2000)",
       color: "#97BD3D",
