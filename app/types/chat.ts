@@ -71,7 +71,7 @@ export interface UiContext {
     subregion: null;
     subtype?: string;
   };
-  dataset_selected?: { dataset: DatasetInfo };
+  dataset_selected?: { dataset: DatasetInfo; active_params?: Record<string, number | string> };
   daterange_selected?: {
     start_date: string;
     end_date: string;

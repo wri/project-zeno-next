@@ -13,8 +13,10 @@ import {
   EyeClosedIcon,
   XIcon,
   CircleHalfIcon,
+  SlidersHorizontalIcon,
 } from "@phosphor-icons/react";
 import { OpacityControl } from "./OpacityControl";
+import { ParamEditor } from "./ParamEditor";
 import type { LegendLayer, LayerActionHandler } from "./types";
 
 /**
@@ -36,6 +38,9 @@ export function LayerEntry(
     opacity,
     onLayerAction,
     info,
+    configurable,
+    params,
+    paramSpecs,
   } = props;
   return (
     <Flex flexDir="column" gap={2} pr={4} w="100%" fontFamily="body" lineHeight="shorter">
@@ -61,6 +66,22 @@ export function LayerEntry(
             },
           }}
         >
+          {configurable && params && paramSpecs && (
+            <ParamEditor
+              params={params}
+              paramSpecs={paramSpecs}
+              onParamsChange={(newParams) =>
+                onLayerAction({
+                  action: "params",
+                  payload: { id, params: newParams },
+                })
+              }
+            >
+              <IconButton>
+                <SlidersHorizontalIcon />
+              </IconButton>
+            </ParamEditor>
+          )}
           {info && (
             <Popover.Root>
               <Popover.Trigger asChild>

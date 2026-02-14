@@ -256,7 +256,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     );
     if (datasetContext && typeof datasetContext.datasetId === "number") {
       const ds = DATASET_BY_ID[datasetContext.datasetId];
-      if (ds) ui_context.dataset_selected = { dataset: ds };
+      if (ds) {
+        ui_context.dataset_selected = {
+          dataset: ds,
+          ...(datasetContext.activeParams && {
+            active_params: datasetContext.activeParams,
+          }),
+        };
+      }
     }
 
     const prompt: ChatPrompt = {

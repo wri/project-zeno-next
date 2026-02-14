@@ -13,7 +13,9 @@ export function pickDatasetTool(
   const { upsertContextByType } = useContextStore.getState();
   try {
     // Check if we have dataset information with a tile_url
-    const dataset = streamMessage.dataset as DatasetInfo | undefined;
+    const dataset = streamMessage.dataset as
+      | (DatasetInfo & { active_params?: Record<string, number> })
+      | undefined;
 
     if (dataset && dataset.tile_url) {
       // Create a dataset card widget for interactive tile layer adding
@@ -26,6 +28,10 @@ export function pickDatasetTool(
         yAxis: "",
       };
 
+      // If the backend echoes active_params, use those; otherwise leave undefined
+      // so defaults from configurable_params will apply via useLegendHook.
+      const activeParams = dataset.active_params ?? undefined;
+
       upsertContextByType({
         contextType: "layer",
         content: dataset.dataset_name,
@@ -33,6 +39,7 @@ export function pickDatasetTool(
         tileUrl: dataset.tile_url,
         layerName: dataset.dataset_name,
         isAiContext: true,
+        activeParams,
       });
 
       addMessage({

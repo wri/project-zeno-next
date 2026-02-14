@@ -10,11 +10,51 @@ import useMapStore from "@/app/store/mapStore";
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import useContextStore from "@/app/store/contextStore";
 
+/**
+ * Derive a human-readable dateRange string from active params.
+ * Returns undefined when the dataset has no year params.
+ */
+function deriveDateRange(
+  params: Record<string, number | string> | undefined,
+  paramSpecs: Record<string, import("@/app/constants/datasets").ParamSpec> | undefined
+): string | undefined {
+  if (!params || !paramSpecs) return undefined;
+
+  // Year range (start/end year)
+  const startSpec = Object.entries(paramSpecs).find(([, s]) => s.type === "year" && s.url_key.includes("start"));
+  const endSpec = Object.entries(paramSpecs).find(([, s]) => s.type === "year" && s.url_key.includes("end"));
+
+  if (startSpec && endSpec) {
+    const start = params[startSpec[0]] ?? startSpec[1].default;
+    const end = params[endSpec[0]] ?? endSpec[1].default;
+    return `(${start}–${end})`;
+  }
+
+  // Date range (start/end date)
+  const startDateSpec = Object.entries(paramSpecs).find(([, s]) => s.type === "date" && s.url_key.includes("start"));
+  const endDateSpec = Object.entries(paramSpecs).find(([, s]) => s.type === "date" && s.url_key.includes("end"));
+
+  if (startDateSpec && endDateSpec) {
+    const start = params[startDateSpec[0]] ?? startDateSpec[1].default;
+    const end = params[endDateSpec[0]] ?? endDateSpec[1].default;
+    return `(${start}–${end})`;
+  }
+
+  // Single year param
+  const yearSpec = Object.entries(paramSpecs).find(([, s]) => s.type === "year");
+  if (yearSpec) {
+    const year = params[yearSpec[0]] ?? yearSpec[1].default;
+    return `(${year})`;
+  }
+
+  return undefined;
+}
+
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendLayer[]>([]);
 
-  const { tileLayers, setTileLayers } = useMapStore();
-  const { context, removeContext } = useContextStore();
+  const { tileLayers, setTileLayers, updateTileLayerParams } = useMapStore();
+  const { context, removeContext, updateContextParams } = useContextStore();
 
   useEffect(() => {
     const activeLayers = tileLayers.flatMap((tileLayer) => {
@@ -26,12 +66,27 @@ export function useLegendHook() {
       const { type, title, info, note, items, color, unit } =
         relatedDataset.legend;
 
+      const cfgParams = relatedDataset.configurable_params;
+      const hasConfigurableParams = !!cfgParams && Object.keys(cfgParams).length > 0;
+
+      // Build effective params: defaults merged with overrides from tileLayer
+      const effectiveParams: Record<string, number | string> = {};
+      if (cfgParams) {
+        for (const [key, spec] of Object.entries(cfgParams)) {
+          effectiveParams[key] = tileLayer.params?.[key] ?? spec.default;
+        }
+      }
+
       return {
         id: tileLayer.id,
         title: title,
         visible: tileLayer.visible,
         opacity: (tileLayer.opacity ?? 1) * 80,
         info,
+        dateRange: deriveDateRange(effectiveParams, cfgParams),
+        configurable: hasConfigurableParams,
+        params: hasConfigurableParams ? effectiveParams : undefined,
+        paramSpecs: hasConfigurableParams ? cfgParams : undefined,
         symbology:
           type === "categorical" && items ? (
             <LegendCategorical items={items.map(i => ({ value: i.label ?? "", color: i.color }))} />
@@ -99,9 +154,18 @@ export function useLegendHook() {
             .filter((l): l is NonNullable<typeof l> => !!l);
           setTileLayers(reorderedLayers);
           break;
+        case "params":
+          updateTileLayerParams(payload.id, payload.params);
+          // Also sync to context store so chat ui_context stays current
+          const datasetIdStr = payload.id.replace("dataset-", "");
+          const parsedId = parseInt(datasetIdStr, 10);
+          if (!isNaN(parsedId)) {
+            updateContextParams(parsedId, payload.params);
+          }
+          break;
       }
     },
-    [context, removeContext, tileLayers, setTileLayers]
+    [context, removeContext, tileLayers, setTileLayers, updateTileLayerParams, updateContextParams]
   );
 
   return { layers, handleLayerAction };

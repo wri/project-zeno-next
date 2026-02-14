@@ -5,6 +5,19 @@ const EOAPI_HOST =
   "https://eoapi.staging.globalnaturewatch.org";
 
 // UI card config that may omit some DatasetInfo fields; we'll fill defaults
+export type ParamSpec = {
+  label: string;
+  type: "year" | "threshold" | "date" | "categorical";
+  default: number | string;
+  min?: number; // for numeric types
+  max?: number; // for numeric types
+  options?: { value: string; label: string }[]; // for categorical
+  url_key: string; // query-param name or path token
+  url_strategy: "query" | "path"; // how to inject into the URL
+  path_template?: string; // e.g. "{year}" — token to replace in the URL path
+  range_group?: string; // params sharing a range_group render as a dual-handle slider
+};
+
 export type DatasetCardConfig = {
   dataset_id: number;
   dataset_name: string;
@@ -14,6 +27,7 @@ export type DatasetCardConfig = {
   data_layer?: string;
   context_layer?: string | null;
   threshold?: number | null;
+  configurable_params?: Record<string, ParamSpec>;
   legend?: {
     title: string;
     color: string;
@@ -27,6 +41,51 @@ export type DatasetCardConfig = {
     unit?: string | null;
   };
 };
+
+/**
+ * Build a resolved tile URL by replacing query params and/or path tokens.
+ * Leaves map tile templates like `{z}/{x}/{y}` untouched.
+ */
+export function buildTileUrl(
+  baseUrl: string,
+  params: Record<string, number | string>,
+  paramSpecs?: Record<string, ParamSpec>
+): string {
+  if (!paramSpecs || Object.keys(params).length === 0) return baseUrl;
+
+  let url = baseUrl;
+
+  // 1. Handle path-based params — replace {token} in the URL path
+  for (const [paramKey, value] of Object.entries(params)) {
+    const spec = paramSpecs[paramKey];
+    if (!spec || spec.url_strategy !== "path") continue;
+    const token = spec.path_template ?? `{${spec.url_key}}`;
+    url = url.replaceAll(token, String(value));
+  }
+
+  // 2. Handle query-based params
+  const qIdx = url.indexOf("?");
+  const querySpecs = Object.entries(params).filter(
+    ([k]) => paramSpecs[k]?.url_strategy === "query"
+  );
+  if (querySpecs.length === 0) return url;
+
+  const path = qIdx === -1 ? url : url.slice(0, qIdx);
+  const search = new URLSearchParams(qIdx === -1 ? "" : url.slice(qIdx + 1));
+
+  for (const [paramKey, value] of querySpecs) {
+    const spec = paramSpecs[paramKey]!;
+    // For categorical "all" values, remove the param rather than setting it
+    if (spec.type === "categorical" && value === "all") {
+      search.delete(spec.url_key);
+    } else {
+      search.set(spec.url_key, String(value));
+    }
+  }
+
+  const qs = search.toString();
+  return qs ? `${path}?${qs}` : path;
+}
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
@@ -135,6 +194,11 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2024 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png?start_year=2001&end_year=2024&tree_cover_density_threshold=25&render_type=true_color",
+    configurable_params: {
+      start_year: { label: "Start year", type: "year", default: 2001, min: 2001, max: 2024, url_key: "start_year", url_strategy: "query", range_group: "year_range" },
+      end_year: { label: "End year", type: "year", default: 2024, min: 2001, max: 2024, url_key: "end_year", url_strategy: "query", range_group: "year_range" },
+      threshold: { label: "Tree cover threshold", type: "threshold", default: 25, min: 0, max: 100, url_key: "tree_cover_density_threshold", url_strategy: "query" },
+    },
     legend: {
       title: "Tree cover loss (2001-2024)",
       color: "#DC6C9A",
@@ -156,6 +220,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Shows the primary driver or cause of tree cover loss over the entire range 2001-2024. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
       "https://tiles.globalforestwatch.org/wri_google_tree_cover_loss_drivers/v1.12/dynamic/{z}/{x}/{y}.png?&tree_cover_density_threshold=25&render_type=true_color",
+    configurable_params: {
+      threshold: { label: "Tree cover threshold", type: "threshold", default: 25, min: 0, max: 100, url_key: "tree_cover_density_threshold", url_strategy: "query" },
+    },
     legend: {
       title: "Tree cover loss by dominant driver (2001-2024)",
       color: "#DC6C9A",
@@ -226,6 +293,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2024, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_forest_carbon_net_flux/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30",
+    configurable_params: {
+      threshold: { label: "Tree cover threshold", type: "threshold", default: 30, min: 0, max: 100, url_key: "tree_cover_density_threshold", url_strategy: "query" },
+    },
       legend: {
         title: "GHG net flux",
         type: "divergent",
