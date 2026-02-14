@@ -22,13 +22,13 @@ import useContextStore from "../store/contextStore";
 import { DatasetCard } from "./DatasetCard";
 
 // Constants for navigation and dummy content
-const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
-  (type) => ({
-    type,
-    label: ChatContextOptions[type].label,
-    icon: ChatContextOptions[type].icon,
-  })
-);
+// Only show user-selectable context types in the nav (exclude derived types like threshold/confidence)
+const SELECTABLE_CONTEXT_TYPES: ChatContextType[] = ["layer", "area", "date"];
+const CONTEXT_NAV = SELECTABLE_CONTEXT_TYPES.map((type) => ({
+  type,
+  label: ChatContextOptions[type].label,
+  icon: ChatContextOptions[type].icon,
+}));
 
 import { DATASET_CARDS } from "../constants/datasets";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";

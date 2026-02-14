@@ -2,13 +2,18 @@ import { Button, ButtonProps } from "@chakra-ui/react";
 import {
   CalendarBlankIcon,
   PolygonIcon,
+  SlidersHorizontalIcon,
+  ShieldCheckIcon,
   StackSimpleIcon,
+  TreeIcon,
 } from "@phosphor-icons/react";
 
 export const ChatContextOptions = {
   layer: { icon: <StackSimpleIcon />, label: "Data Layer" },
   area: { icon: <PolygonIcon />, label: "Area" },
   date: { icon: <CalendarBlankIcon />, label: "Date" },
+  threshold: { icon: <TreeIcon />, label: "Threshold" },
+  confidence: { icon: <ShieldCheckIcon />, label: "Confidence" },
 } as const;
 
 export type ChatContextType = keyof typeof ChatContextOptions;

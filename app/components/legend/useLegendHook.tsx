@@ -54,7 +54,7 @@ export function useLegendHook() {
   const [layers, setLayers] = useState<LegendLayer[]>([]);
 
   const { tileLayers, setTileLayers, updateTileLayerParams } = useMapStore();
-  const { context, removeContext, updateContextParams } = useContextStore();
+  const { context, removeContext, updateContextParams, upsertContextByType } = useContextStore();
 
   useEffect(() => {
     const activeLayers = tileLayers.flatMap((tileLayer) => {
@@ -154,7 +154,7 @@ export function useLegendHook() {
             .filter((l): l is NonNullable<typeof l> => !!l);
           setTileLayers(reorderedLayers);
           break;
-        case "params":
+        case "params": {
           updateTileLayerParams(payload.id, payload.params);
           // Also sync to context store so chat ui_context stays current
           const datasetIdStr = payload.id.replace("dataset-", "");
@@ -162,7 +162,61 @@ export function useLegendHook() {
           if (!isNaN(parsedId)) {
             updateContextParams(parsedId, payload.params);
           }
+
+          // Sync derived context chips (threshold, confidence, date range)
+          const dsCard = DATASET_CARDS.find(
+            (d) => `dataset-${d.dataset_id}` === payload.id
+          );
+          if (dsCard?.configurable_params) {
+            const specs = dsCard.configurable_params;
+
+            // Threshold chip
+            const thresholdEntry = Object.entries(specs).find(
+              ([, s]) => s.type === "threshold"
+            );
+            if (thresholdEntry) {
+              const val = payload.params[thresholdEntry[0]] ?? thresholdEntry[1].default;
+              upsertContextByType({
+                contextType: "threshold",
+                content: `Tree cover ≥ ${val}%`,
+              });
+            }
+
+            // Confidence chip
+            const confEntry = Object.entries(specs).find(
+              ([, s]) => s.type === "categorical"
+            );
+            if (confEntry) {
+              const val = (payload.params[confEntry[0]] ?? confEntry[1].default) as string;
+              const opt = confEntry[1].options?.find((o) => o.value === val);
+              upsertContextByType({
+                contextType: "confidence",
+                content: `Confidence: ${opt?.label ?? val}`,
+              });
+            }
+
+            // Date range chip — sync year range params to date context
+            const startSpec = Object.entries(specs).find(
+              ([, s]) => s.type === "year" && s.url_key.includes("start")
+            );
+            const endSpec = Object.entries(specs).find(
+              ([, s]) => s.type === "year" && s.url_key.includes("end")
+            );
+            if (startSpec && endSpec) {
+              const startVal = payload.params[startSpec[0]] ?? startSpec[1].default;
+              const endVal = payload.params[endSpec[0]] ?? endSpec[1].default;
+              upsertContextByType({
+                contextType: "date",
+                content: `${startVal} – ${endVal}`,
+                dateRange: {
+                  start: new Date(`${startVal}-01-01`),
+                  end: new Date(`${endVal}-12-31`),
+                },
+              });
+            }
+          }
           break;
+        }
       }
     },
     [context, removeContext, tileLayers, setTileLayers, updateTileLayerParams, updateContextParams]
