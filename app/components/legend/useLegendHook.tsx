@@ -170,9 +170,9 @@ export function useLegendHook() {
           if (dsCard?.configurable_params) {
             const specs = dsCard.configurable_params;
 
-            // Threshold chip
+            // Threshold chip — threshold params are now categorical with url_key containing "threshold"
             const thresholdEntry = Object.entries(specs).find(
-              ([, s]) => s.type === "threshold"
+              ([, s]) => s.type === "categorical" && s.url_key.includes("threshold")
             );
             if (thresholdEntry) {
               const val = payload.params[thresholdEntry[0]] ?? thresholdEntry[1].default;
@@ -182,9 +182,9 @@ export function useLegendHook() {
               });
             }
 
-            // Confidence chip
+            // Confidence chip — categorical params with "confidence" in url_key
             const confEntry = Object.entries(specs).find(
-              ([, s]) => s.type === "categorical"
+              ([, s]) => s.type === "categorical" && s.url_key.includes("confidence")
             );
             if (confEntry) {
               const val = (payload.params[confEntry[0]] ?? confEntry[1].default) as string;

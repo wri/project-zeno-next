@@ -7,7 +7,7 @@ const EOAPI_HOST =
 // UI card config that may omit some DatasetInfo fields; we'll fill defaults
 export type ParamSpec = {
   label: string;
-  type: "year" | "threshold" | "date" | "categorical";
+  type: "year" | "date" | "categorical";
   default: number | string;
   min?: number; // for numeric types
   max?: number; // for numeric types
@@ -17,6 +17,17 @@ export type ParamSpec = {
   path_template?: string; // e.g. "{year}" — token to replace in the URL path
   range_group?: string; // params sharing a range_group render as a dual-handle slider
 };
+
+/** Fixed threshold values available in GFW tile APIs. */
+const THRESHOLD_OPTIONS: { value: string; label: string }[] = [
+  { value: "10", label: "≥ 10%" },
+  { value: "15", label: "≥ 15%" },
+  { value: "20", label: "≥ 20%" },
+  { value: "25", label: "≥ 25%" },
+  { value: "30", label: "≥ 30%" },
+  { value: "50", label: "≥ 50%" },
+  { value: "75", label: "≥ 75%" },
+];
 
 export type DatasetCardConfig = {
   dataset_id: number;
@@ -125,9 +136,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_land_cover.webp",
     description:
       "This Global Land Cover dataset is a combination of two global datasets: the GLAD Land Cover and Land Use Change annual data and the Global Pasture Watch Grassland Class Collection 2 Cultivated Grasslands annual data. This combination is annual from 2015 through 2024. This dataset shows land covers and uses including: bare ground and sparsevegetation, short vegetation, tree cover, wetlands, water, snow/ice, cropland, cultivated grasslands, and built-up land.",
-    tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-{lc_year}/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%222%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%223%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%224%22%3A%20%5B116%2C%20214%2C%20180%2C%20255%5D%2C%225%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%226%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%227%22%3A%20%5B255%2C%20241%2C%20131%2C%20255%5D%2C%228%22%3A%20%5B232%2C%20118%2C%2093%2C%20255%5D%2C%229%22%3A%20%5B255%2C%20205%2C%20115%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
+    tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-{lc_end_year}/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%222%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%223%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%224%22%3A%20%5B116%2C%20214%2C%20180%2C%20255%5D%2C%225%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%226%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%227%22%3A%20%5B255%2C%20241%2C%20131%2C%20255%5D%2C%228%22%3A%20%5B232%2C%20118%2C%2093%2C%20255%5D%2C%229%22%3A%20%5B255%2C%20205%2C%20115%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C9%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
     configurable_params: {
-      lc_year: { label: "Year", type: "year", default: 2024, min: 2015, max: 2024, url_key: "lc_year", url_strategy: "path", path_template: "{lc_year}" },
+      lc_start_year: { label: "Start year", type: "year", default: 2015, min: 2015, max: 2024, url_key: "lc_start_year", url_strategy: "path", path_template: "{lc_start_year}", range_group: "year_range" },
+      lc_end_year: { label: "End year", type: "year", default: 2024, min: 2015, max: 2024, url_key: "lc_end_year", url_strategy: "path", path_template: "{lc_end_year}", range_group: "year_range" },
     },
     legend: {
       title: "Global land cover",
@@ -155,9 +167,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_grasslands.webp",
     description:
       "Annual 30 m maps of global natural/semi-natural grassland extent from 2000 to 2022. This dataset defines grasslands very broadly such that they encompass grasslands, shrublands, and savannas by including any land cover type which contains at least 30% of dry or wet low vegetation, dominated by grasses and forbs (less than 3 meters) and a: maximum of 50% tree canopy cover (greater than 5 meters), a maximum of 70% of other woody vegetation (scrubs and open shrubland), and a maximum of 50% active cropland cover in mosaic landscapes of cropland & other vegetation.",
-    tile_url: `${EOAPI_HOST}/raster/collections/grasslands-v-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True&datetime={grass_year}-01-01T00:00:00Z/{grass_year}-12-31T23:59:59Z`,
+    tile_url: `${EOAPI_HOST}/raster/collections/grasslands-v-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True&datetime={grass_end_year}-01-01T00:00:00Z/{grass_end_year}-12-31T23:59:59Z`,
     configurable_params: {
-      grass_year: { label: "Year", type: "year", default: 2022, min: 2000, max: 2022, url_key: "grass_year", url_strategy: "path", path_template: "{grass_year}" },
+      grass_start_year: { label: "Start year", type: "year", default: 2000, min: 2000, max: 2022, url_key: "grass_start_year", url_strategy: "path", path_template: "{grass_start_year}", range_group: "year_range" },
+      grass_end_year: { label: "End year", type: "year", default: 2022, min: 2000, max: 2022, url_key: "grass_end_year", url_strategy: "path", path_template: "{grass_end_year}", range_group: "year_range" },
     },
     legend: {
       title: "Global Grasslands",
@@ -214,7 +227,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     configurable_params: {
       start_year: { label: "Start year", type: "year", default: 2001, min: 2001, max: 2024, url_key: "start_year", url_strategy: "query", range_group: "year_range" },
       end_year: { label: "End year", type: "year", default: 2024, min: 2001, max: 2024, url_key: "end_year", url_strategy: "query", range_group: "year_range" },
-      threshold: { label: "Tree cover threshold", type: "threshold", default: 25, min: 0, max: 100, url_key: "tree_cover_density_threshold", url_strategy: "query" },
+      threshold: { label: "Tree cover threshold", type: "categorical", default: "25", url_key: "tree_cover_density_threshold", url_strategy: "query", options: THRESHOLD_OPTIONS },
     },
     legend: {
       title: "Tree cover loss (2001-2024)",
@@ -238,7 +251,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/wri_google_tree_cover_loss_drivers/v1.12/dynamic/{z}/{x}/{y}.png?&tree_cover_density_threshold=25&render_type=true_color",
     configurable_params: {
-      threshold: { label: "Tree cover threshold", type: "threshold", default: 25, min: 0, max: 100, url_key: "tree_cover_density_threshold", url_strategy: "query" },
+      threshold: { label: "Tree cover threshold", type: "categorical", default: "25", url_key: "tree_cover_density_threshold", url_strategy: "query", options: THRESHOLD_OPTIONS },
     },
     legend: {
       title: "Tree cover loss by dominant driver (2001-2024)",
@@ -290,7 +303,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/umd_tree_cover_density_2000/latest/tcd_{tc_threshold}/{z}/{x}/{y}.png",
     configurable_params: {
-      tc_threshold: { label: "Tree cover threshold", type: "threshold", default: 30, min: 0, max: 100, url_key: "tc_threshold", url_strategy: "path", path_template: "{tc_threshold}" },
+      tc_threshold: { label: "Tree cover threshold", type: "categorical", default: "30", url_key: "tc_threshold", url_strategy: "path", path_template: "{tc_threshold}", options: THRESHOLD_OPTIONS },
     },
     legend: {
       title: "Tree cover (2000)",
@@ -314,7 +327,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_forest_carbon_net_flux/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30",
     configurable_params: {
-      threshold: { label: "Tree cover threshold", type: "threshold", default: 30, min: 0, max: 100, url_key: "tree_cover_density_threshold", url_strategy: "query" },
+      threshold: { label: "Tree cover threshold", type: "categorical", default: "30", url_key: "tree_cover_density_threshold", url_strategy: "query", options: THRESHOLD_OPTIONS },
     },
       legend: {
         title: "GHG net flux",

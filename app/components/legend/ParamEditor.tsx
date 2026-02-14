@@ -4,6 +4,7 @@ import {
   Button,
   Flex,
   Input,
+  NativeSelect,
   Popover,
   SegmentGroup,
   Slider,
@@ -164,9 +165,8 @@ function ParamSlider(props: {
 }) {
   const { spec, value, onChange, onCommit } = props;
 
-  const step = spec.type === "year" ? 1 : 5;
-  const formatValue = (v: number) =>
-    spec.type === "threshold" ? `${v}%` : String(v);
+  const step = 1;
+  const formatValue = (v: number) => String(v);
 
   return (
     <Box>
@@ -339,6 +339,30 @@ function CategoricalToggle(props: {
 }) {
   const { spec, value, onChange } = props;
   const options = spec.options ?? [];
+
+  // Use a dropdown for many options, segmented toggle for few (≤3)
+  if (options.length > 3) {
+    return (
+      <Box>
+        <Text fontSize="xs" color="fg.muted" mb={1}>
+          {spec.label}
+        </Text>
+        <NativeSelect.Root size="xs">
+          <NativeSelect.Field
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+          >
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </NativeSelect.Field>
+          <NativeSelect.Indicator />
+        </NativeSelect.Root>
+      </Box>
+    );
+  }
 
   return (
     <Box>
