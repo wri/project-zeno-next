@@ -195,16 +195,23 @@ export function useLegendHook() {
               });
             }
 
-            // Date range chip — sync year range params to date context
-            const startSpec = Object.entries(specs).find(
+            // Date range chip — sync year range or date range params to date context
+            const startYearSpec = Object.entries(specs).find(
               ([, s]) => s.type === "year" && s.url_key.includes("start")
             );
-            const endSpec = Object.entries(specs).find(
+            const endYearSpec = Object.entries(specs).find(
               ([, s]) => s.type === "year" && s.url_key.includes("end")
             );
-            if (startSpec && endSpec) {
-              const startVal = payload.params[startSpec[0]] ?? startSpec[1].default;
-              const endVal = payload.params[endSpec[0]] ?? endSpec[1].default;
+            const startDateSpec = Object.entries(specs).find(
+              ([, s]) => s.type === "date" && s.url_key.includes("start")
+            );
+            const endDateSpec = Object.entries(specs).find(
+              ([, s]) => s.type === "date" && s.url_key.includes("end")
+            );
+
+            if (startYearSpec && endYearSpec) {
+              const startVal = payload.params[startYearSpec[0]] ?? startYearSpec[1].default;
+              const endVal = payload.params[endYearSpec[0]] ?? endYearSpec[1].default;
               upsertContextByType({
                 contextType: "date",
                 content: `${startVal} – ${endVal}`,
@@ -213,13 +220,24 @@ export function useLegendHook() {
                   end: new Date(`${endVal}-12-31`),
                 },
               });
+            } else if (startDateSpec && endDateSpec) {
+              const startVal = (payload.params[startDateSpec[0]] ?? startDateSpec[1].default) as string;
+              const endVal = (payload.params[endDateSpec[0]] ?? endDateSpec[1].default) as string;
+              upsertContextByType({
+                contextType: "date",
+                content: `${startVal} – ${endVal}`,
+                dateRange: {
+                  start: new Date(startVal),
+                  end: new Date(endVal),
+                },
+              });
             }
           }
           break;
         }
       }
     },
-    [context, removeContext, tileLayers, setTileLayers, updateTileLayerParams, updateContextParams]
+    [context, removeContext, tileLayers, setTileLayers, updateTileLayerParams, updateContextParams, upsertContextByType]
   );
 
   return { layers, handleLayerAction };

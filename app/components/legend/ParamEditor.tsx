@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Flex,
+  Input,
   Popover,
   SegmentGroup,
   Slider,
@@ -49,14 +50,17 @@ export function ParamEditor(props: ParamEditorProps) {
     ([key, spec]) => draft[key] === spec.default
   );
 
-  // Group params: range groups, standalone numeric, categorical
+  // Group params: range groups, standalone numeric, categorical, date pairs
   const rangeGroups = new Map<string, [string, ParamSpec][]>();
   const standaloneNumeric: [string, ParamSpec][] = [];
   const categoricals: [string, ParamSpec][] = [];
+  const dateParams: [string, ParamSpec][] = [];
 
   for (const [key, spec] of Object.entries(paramSpecs)) {
     if (spec.type === "categorical") {
       categoricals.push([key, spec]);
+    } else if (spec.type === "date") {
+      dateParams.push([key, spec]);
     } else if (spec.range_group) {
       const group = rangeGroups.get(spec.range_group) ?? [];
       group.push([key, spec]);
@@ -85,6 +89,16 @@ export function ParamEditor(props: ParamEditorProps) {
               Layer parameters
             </Text>
             <Flex direction="column" gap={4}>
+              {/* Date inputs */}
+              {dateParams.length > 0 && (
+                <DateParamInputs
+                  entries={dateParams}
+                  draft={draft}
+                  onCommit={(updates) =>
+                    commitDraft({ ...draft, ...updates })
+                  }
+                />
+              )}
               {/* Range sliders (dual-handle) */}
               {[...rangeGroups.entries()].map(([groupKey, entries]) => (
                 <RangeParamSlider
@@ -264,6 +278,52 @@ function RangeParamSlider(props: {
           />
         </Slider.Control>
       </Slider.Root>
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Date inputs (for sub-daily resolution datasets like DIST alerts)
+// ---------------------------------------------------------------------------
+
+function DateParamInputs(props: {
+  entries: [string, ParamSpec][];
+  draft: Record<string, number | string>;
+  onCommit: (updates: Record<string, string>) => void;
+}) {
+  const { entries, draft, onCommit } = props;
+
+  // Sort so start comes before end
+  const sorted = [...entries].sort((a, b) => {
+    const aIsStart = a[1].url_key.includes("start") ? 0 : 1;
+    const bIsStart = b[1].url_key.includes("start") ? 0 : 1;
+    return aIsStart - bIsStart;
+  });
+
+  return (
+    <Box>
+      <Text fontSize="xs" color="fg.muted" mb={2}>
+        Date range
+      </Text>
+      <Flex direction="column" gap={2}>
+        {sorted.map(([key, spec]) => (
+          <Flex key={key} alignItems="center" gap={2}>
+            <Text fontSize="xs" color="fg.muted" w="3rem" flexShrink={0}>
+              {spec.url_key.includes("start") ? "From" : "To"}
+            </Text>
+            <Input
+              type="date"
+              size="xs"
+              value={(draft[key] as string) ?? (spec.default as string)}
+              onChange={(e) => {
+                if (e.target.value) {
+                  onCommit({ [key]: e.target.value });
+                }
+              }}
+            />
+          </Flex>
+        ))}
+      </Flex>
     </Box>
   );
 }

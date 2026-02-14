@@ -105,9 +105,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url:
       "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     configurable_params: {
-      start_year: { label: "Start year", type: "year", default: 2024, min: 2024, max: 2026, url_key: "start_date", url_strategy: "query", range_group: "year_range" },
-      end_year: { label: "End year", type: "year", default: 2026, min: 2024, max: 2026, url_key: "end_date", url_strategy: "query", range_group: "year_range" },
-      confidence: { label: "Confidence", type: "categorical", default: "all", url_key: "alert_confidence", url_strategy: "query", options: [{ value: "all", label: "All" }, { value: "highest", label: "High only" }] },
+      start_date: { label: "Start date", type: "date", default: "2024-01-01", url_key: "start_date", url_strategy: "query" },
+      end_date: { label: "End date", type: "date", default: "2026-02-14", url_key: "end_date", url_strategy: "query" },
+      confidence: { label: "Confidence", type: "categorical", default: "low", url_key: "alert_confidence", url_strategy: "query", options: [{ value: "low", label: "All" }, { value: "high", label: "High only" }] },
     },
     legend: {
       title: "Global all ecosystem disturbance alerts",
