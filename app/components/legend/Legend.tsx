@@ -32,37 +32,26 @@ interface LegendProps {
 export function Legend(props: LegendProps) {
   const { layers, onLayerAction } = props;
 
-  // Track which layer is expanded (by id). Default to the first layer.
-  const [expandedId, setExpandedId] = useState<string | null>(
-    layers[0]?.id ?? null
-  );
+  // Track which layer is expanded (by id).
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [prevLayerIds, setPrevLayerIds] = useState<Set<string>>(new Set());
 
-  // When a new layer is added, expand it
-  useEffect(() => {
-    if (layers.length > 0) {
-      const currentIds = new Set(layers.map((l) => l.id));
-      // If the currently expanded layer was removed, expand the first
-      if (expandedId && !currentIds.has(expandedId)) {
-        setExpandedId(layers[0]?.id ?? null);
-      }
-    } else {
-      setExpandedId(null);
-    }
-  }, [layers]);
-
-  // Auto-expand newly added layers
-  const [prevLayerIds, setPrevLayerIds] = useState<Set<string>>(
-    new Set(layers.map((l) => l.id))
-  );
   useEffect(() => {
     const currentIds = new Set(layers.map((l) => l.id));
-    // Find newly added layer ids
-    for (const id of currentIds) {
-      if (!prevLayerIds.has(id)) {
-        setExpandedId(id);
-        break;
-      }
+
+    // Auto-expand the most recently added layer
+    const newIds = [...currentIds].filter((id) => !prevLayerIds.has(id));
+    if (newIds.length > 0) {
+      // Expand the last new layer (most recently added)
+      setExpandedId(newIds[newIds.length - 1]);
+    } else if (expandedId && !currentIds.has(expandedId)) {
+      // If the expanded layer was removed, expand the last layer
+      setExpandedId(layers[layers.length - 1]?.id ?? null);
+    } else if (layers.length > 0 && !expandedId) {
+      // Initial state: expand the last layer
+      setExpandedId(layers[layers.length - 1]?.id ?? null);
     }
+
     setPrevLayerIds(currentIds);
   }, [layers]);
 
@@ -77,10 +66,10 @@ export function Legend(props: LegendProps) {
       width={320}
       maxH={{ base: "50vh", md: "60vh" }}
       bg="bg"
-      overflow="hidden"
       rounded="sm"
       shadow="sm"
       flexDirection="column"
+      overflow="hidden"
     >
       <VisuallyHidden>
         <Heading>Map Legend</Heading>

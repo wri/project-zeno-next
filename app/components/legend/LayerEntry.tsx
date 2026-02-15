@@ -54,9 +54,9 @@ export function LayerEntry(
   } = props;
 
   return (
-    <Flex flexDir="column" w="100%" fontFamily="body" lineHeight="shorter">
+    <Flex flexDir="column" w="100%" minW={0} fontFamily="body" lineHeight="shorter">
       {/* Header row — always visible */}
-      <Flex justifyContent="space-between" gap={1} alignItems="center" pr={0}>
+      <Flex justifyContent="space-between" gap={1} alignItems="center">
         {/* Clickable title area to toggle accordion */}
         <Flex
           gap={1}
