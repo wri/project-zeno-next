@@ -119,7 +119,7 @@ export function useLegendHook() {
   const handleLayerAction = useCallback<LayerActionHandler>(
     ({ action, payload }) => {
       switch (action) {
-        case "remove":
+        case "remove": {
           const ctx = context.find(
             (c) =>
               c.contextType === "layer" &&
@@ -128,7 +128,75 @@ export function useLegendHook() {
           if (ctx) {
             removeContext(ctx.id);
           }
+
+          // Clean up derived context chips (threshold, confidence, date) if no
+          // other active layer still provides them.
+          const removedCard = DATASET_CARDS.find(
+            (d) => `dataset-${d.dataset_id}` === payload.id
+          );
+          const remainingLayers = tileLayers.filter((l) => l.id !== payload.id);
+
+          if (removedCard?.configurable_params) {
+            const removedSpecs = removedCard.configurable_params;
+            const hasThreshold = Object.values(removedSpecs).some(
+              (s) => s.type === "categorical" && s.url_key.includes("threshold")
+            );
+            const hasConfidence = Object.values(removedSpecs).some(
+              (s) => s.type === "categorical" && s.url_key.includes("confidence")
+            );
+            const hasDateRange =
+              Object.values(removedSpecs).some(
+                (s) => s.type === "year" && s.url_key.includes("start")
+              ) ||
+              Object.values(removedSpecs).some(
+                (s) => s.type === "date" && s.url_key.includes("start")
+              );
+
+            // Check if any remaining layer still provides each chip type
+            const remainingCards = remainingLayers
+              .map((l) => DATASET_CARDS.find((d) => `dataset-${d.dataset_id}` === l.id))
+              .filter((c): c is NonNullable<typeof c> => !!c && !!c.configurable_params);
+
+            if (hasThreshold) {
+              const otherHasThreshold = remainingCards.some((c) =>
+                Object.values(c.configurable_params!).some(
+                  (s) => s.type === "categorical" && s.url_key.includes("threshold")
+                )
+              );
+              if (!otherHasThreshold) {
+                const chip = context.find((c) => c.contextType === "threshold");
+                if (chip) removeContext(chip.id);
+              }
+            }
+
+            if (hasConfidence) {
+              const otherHasConfidence = remainingCards.some((c) =>
+                Object.values(c.configurable_params!).some(
+                  (s) => s.type === "categorical" && s.url_key.includes("confidence")
+                )
+              );
+              if (!otherHasConfidence) {
+                const chip = context.find((c) => c.contextType === "confidence");
+                if (chip) removeContext(chip.id);
+              }
+            }
+
+            if (hasDateRange) {
+              const otherHasDateRange = remainingCards.some((c) =>
+                Object.values(c.configurable_params!).some(
+                  (s) =>
+                    (s.type === "year" || s.type === "date") &&
+                    s.url_key.includes("start")
+                )
+              );
+              if (!otherHasDateRange) {
+                const chip = context.find((c) => c.contextType === "date");
+                if (chip) removeContext(chip.id);
+              }
+            }
+          }
           break;
+        }
         case "visibility":
           // Go through the tile layers and update their visibility
           const updatedLayers = tileLayers.map((layer) =>
