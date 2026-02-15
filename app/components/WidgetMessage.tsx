@@ -2,6 +2,9 @@
 import { Box, Text, Heading, Flex, Separator, Button, useDisclosure } from "@chakra-ui/react";
 import { MicroscopeIcon as Microscope } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
+import { ContextItem } from "../store/contextStore";
+import { ChatContextType } from "./ContextButton";
+import ContextTag from "./ContextTag";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget from "./widgets/ChartWidget";
@@ -11,9 +14,10 @@ import VisualizationDisclaimer from "./VisualizationDisclaimer";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
+  context?: ContextItem[];
 }
 
-export default function WidgetMessage({ widget }: WidgetMessageProps) {
+export default function WidgetMessage({ widget, context }: WidgetMessageProps) {
   const { open, onOpen, onClose } = useDisclosure();
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
@@ -52,6 +56,21 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         <Text fontSize="xs" color="fg.muted">
           {widget.description}
         </Text>
+        {context && context.length > 0 && (
+          <Flex gap={1} wrap="wrap">
+            {context.map((c) => (
+              <ContextTag
+                key={c.id}
+                contextType={c.contextType as ChatContextType}
+                content={
+                  typeof c.content === "string"
+                    ? c.content
+                    : JSON.stringify(c.content)
+                }
+              />
+            ))}
+          </Flex>
+        )}
         <Separator />
         {widget.generation && (
           <Flex justify="flex-end">

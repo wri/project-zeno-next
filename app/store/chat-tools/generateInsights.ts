@@ -1,4 +1,5 @@
 import { ChatMessage, StreamMessage, InsightWidget } from "@/app/types/chat";
+import useContextStore from "@/app/store/contextStore";
 
 interface ChartData {
   id: string;
@@ -38,6 +39,7 @@ export function generateInsightsTool(
         type: "widget",
         message: "Charts generated",
         widgets: widgets,
+        context: useContextStore.getState().context,
         timestamp: streamMessage.timestamp,
       });
     }
