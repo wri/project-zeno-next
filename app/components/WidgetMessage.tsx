@@ -1,6 +1,6 @@
 "use client";
-import { Box, Text, Heading, Flex, Separator, Button, useDisclosure } from "@chakra-ui/react";
-import { MicroscopeIcon as Microscope } from "@phosphor-icons/react";
+import { Box, Text, Heading, Flex, Separator, Button, Dialog, Portal, CloseButton, useDisclosure } from "@chakra-ui/react";
+import { MicroscopeIcon as Microscope, ArrowsOutIcon } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
@@ -16,6 +16,7 @@ interface WidgetMessageProps {
 
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
   const { open, onOpen, onClose } = useDisclosure();
+  const { open: expanded, onOpen: onExpand, onClose: onCollapse } = useDisclosure();
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
@@ -54,8 +55,20 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {widget.description}
         </Text>
         <Separator />
-        {widget.generation && (
-          <Flex justify="flex-end">
+        <Flex justify="flex-end" gap={2} flexWrap="wrap">
+          {isChartType && (
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={onExpand}
+              h={6}
+              rounded="sm"
+            >
+              <ArrowsOutIcon />
+              Expand
+            </Button>
+          )}
+          {widget.generation && (
             <Button
               size="xs"
               variant="outline"
@@ -72,8 +85,8 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               <Microscope />
               View how this was generated
             </Button>
-          </Flex>
-        )}
+          )}
+        </Flex>
         {isChartType && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <ChartWidget widget={widget} />
@@ -98,6 +111,38 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         generation={widget.generation}
         title={widget.title}
       />
+      {isChartType && (
+        <Dialog.Root open={expanded} onOpenChange={(e) => !e.open && onCollapse()} size="xl">
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content p={4}>
+                <Dialog.Header px={0} pt={0} pb={3}>
+                  <Flex align="center" gap={2}>
+                    {WidgetIcons[widget.type]}
+                    <Dialog.Title fontSize="md" fontWeight="medium">
+                      {widget.title}
+                    </Dialog.Title>
+                  </Flex>
+                  <Dialog.CloseTrigger asChild position="absolute" top={3} right={3}>
+                    <CloseButton size="sm" />
+                  </Dialog.CloseTrigger>
+                </Dialog.Header>
+                <Dialog.Body px={0} pb={0}>
+                  {widget.description && (
+                    <Text fontSize="xs" color="fg.muted" mb={3}>
+                      {widget.description}
+                    </Text>
+                  )}
+                  <WidgetErrorBoundary fallbackTitle="Unable to render chart">
+                    <ChartWidget widget={widget} expanded />
+                  </WidgetErrorBoundary>
+                </Dialog.Body>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
+      )}
     </Box>
   );
 }
