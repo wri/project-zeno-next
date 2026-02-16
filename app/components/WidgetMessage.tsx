@@ -92,12 +92,21 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {/* Export menu — groups CSV + PNG downloads */}
           {(isChartType || widget.type === "table") && Array.isArray(widget.data) && widget.data.length > 0 && (
             <Menu.Root positioning={{ placement: "bottom-end" }}>
-              <Menu.Trigger asChild>
-                <Button size="xs" variant="outline" h={6} rounded="sm">
-                  <ExportIcon />
-                  Export
-                </Button>
-              </Menu.Trigger>
+              <Tooltip content="Export">
+                <Menu.Trigger asChild>
+                  <IconButton
+                    size="xs"
+                    variant="outline"
+                    h={6}
+                    w={6}
+                    minW={6}
+                    rounded="sm"
+                    aria-label="Export"
+                  >
+                    <ExportIcon size={14} />
+                  </IconButton>
+                </Menu.Trigger>
+              </Tooltip>
               <Portal>
                 <Menu.Positioner>
                   <Menu.Content minW="140px">
