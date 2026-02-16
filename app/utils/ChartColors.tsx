@@ -1,40 +1,59 @@
 import theme from "@/app/theme";
+
 /**
- * A utility function to retrieve a specific, ordered array of chart colors
- * from the Chakra UI theme.
- * @returns {string[]} An array of hex color strings.
+ * Retrieves an ordered array of chart colors from the Chakra UI theme.
+ *
+ * The order is chosen to maximise perceptual distance for common forms
+ * of color-vision deficiency (deuteranopia, protanopia, tritanopia).
+ * Adjacent colors in the sequence should remain distinguishable even
+ * when reds/greens or blues/yellows are confused.
+ *
+ * @returns An array of hex color strings.
  */
-export default function getChartColors() {
+export default function getChartColors(): string[] {
   const { tokens } = theme;
   const colors = tokens.categoryMap.get("colors")!;
   const allColors = Array.from(colors.values());
 
-  // The desired order of colors for the chart
+  // Ordered for maximum colorblind-safe contrast between neighbours:
+  //   blue → orange → green → pink → cyan → red → purple → yellow → mint → berenjena
   const chartColorNames = [
     "blue",
-    "cyan",
-    "mint",
-    "green",
-    "yellow",
     "orange",
-    "red",
+    "green",
     "pink",
+    "cyan",
+    "red",
     "purple",
+    "yellow",
+    "mint",
     "berenjena",
   ];
 
-  // Create a lookup map for fast access using the color's unique name
-  // (e.g., "colors.cyan.500") as the key.
-  const colorMap = new Map(allColors.map((color) => [color.name, color.value]));
+  const colorMap = new Map(allColors.map((c) => [c.name, c.value]));
 
-  // Map over the ordered array and pull values directly from the map
-  const chartColors = chartColorNames
-    .map((name) => {
-      const key = `colors.${name}.500`;
-      return colorMap.get(key) || null; // Get the value by its key
-    })
-    .filter(Boolean); // This removes any nulls if a color wasn't found
-
-  // Return the final, ordered array of colors
-  return chartColors;
+  return chartColorNames
+    .map((name) => colorMap.get(`colors.${name}.500`) || null)
+    .filter((v): v is string => v !== null);
 }
+
+/**
+ * Stroke dash patterns for multi-series line / area charts.
+ * Using distinct dash arrays provides a secondary (non-color) encoding
+ * so that series remain distinguishable for colorblind users or in
+ * greyscale print.
+ *
+ * Index 0 = solid (primary series), then increasingly distinctive dashes.
+ */
+export const STROKE_DASH_PATTERNS: string[] = [
+  "0",         // solid
+  "6 3",       // short dash
+  "2 2",       // dotted
+  "10 4",      // long dash
+  "10 4 2 4",  // dash-dot
+  "6 3 2 3 2 3", // dash-dot-dot
+  "14 4",      // extra-long dash
+  "4 4",       // medium dash
+  "8 3 2 3",   // long-dash-dot
+  "2 6",       // sparse dot
+];
