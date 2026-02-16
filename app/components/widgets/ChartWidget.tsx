@@ -200,6 +200,13 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
 
   const chart = useChart({ data: formattedData, series: series });
 
+  // Determine if the x-axis has long categorical labels that need angling
+  const isNumericXAxis =
+    type === "scatter" ||
+    xAxis?.toLowerCase() === "year" ||
+    (formattedData.length > 0 && typeof formattedData[0][xAxis] === "number");
+  const needsAngledTicks = !isNumericXAxis && formattedData.length > 4;
+
   const renderChartItems = () => {
     switch (type) {
       case "pie": {
@@ -325,6 +332,11 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
                   : String(formatXAxisLabel(value, chart.key(xAxis)))
               }
               domain={type === "scatter" ? ["auto", "auto"] : undefined}
+              angle={needsAngledTicks ? -35 : 0}
+              textAnchor={needsAngledTicks ? "end" : "middle"}
+              height={needsAngledTicks ? 80 : 40}
+              interval={0}
+              fontSize={11}
             >
               {xAxis && (
                 <Label
