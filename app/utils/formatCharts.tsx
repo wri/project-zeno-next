@@ -91,11 +91,30 @@ export default function formatChartData(
   xAxis?: string,
   yAxis?: string
 ): { data: ChartData[]; series: ChartSeries[] } {
+  const empty = { data: [], series: [] };
+
   if (!Array.isArray(data) || data.length === 0) {
-    return { data: [], series: [] };
+    return empty;
   }
-  
-  const keys = Object.keys(data[0]);
+
+  // Validate that the first element is a non-null object with keys
+  const firstRow = data[0];
+  if (
+    firstRow === null ||
+    firstRow === undefined ||
+    typeof firstRow !== "object" ||
+    Array.isArray(firstRow)
+  ) {
+    console.error("formatChartData: data[0] is not a valid object", firstRow);
+    return empty;
+  }
+
+  const keys = Object.keys(firstRow);
+  if (keys.length === 0) {
+    console.error("formatChartData: data[0] has no keys");
+    return empty;
+  }
+
   const xAxisKey = xAxis || keys[0]; //identify dataset
   
   const defaultColors = getChartColors();
