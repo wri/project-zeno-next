@@ -8,6 +8,7 @@ import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
+import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -73,14 +74,20 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             </Button>
           </Flex>
         )}
-        {isChartType && <ChartWidget widget={widget} />}
+        {isChartType && (
+          <WidgetErrorBoundary fallbackTitle="Unable to render chart">
+            <ChartWidget widget={widget} />
+          </WidgetErrorBoundary>
+        )}
 
         {widget.type === "table" && (
-          <Box overflowX="auto" maxW="100%">
-            <TableWidget
-              data={widget.data as Record<string, string | number | boolean>[]}
-            />
-          </Box>
+          <WidgetErrorBoundary fallbackTitle="Unable to render table">
+            <Box overflowX="auto" maxW="100%">
+              <TableWidget
+                data={widget.data as Record<string, string | number | boolean>[]}
+              />
+            </Box>
+          </WidgetErrorBoundary>
         )}
         {showDisclaimer && <VisualizationDisclaimer />}
       </Flex>
