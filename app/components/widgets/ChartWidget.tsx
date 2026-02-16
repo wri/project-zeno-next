@@ -74,13 +74,13 @@ const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
 
     return (
       <Box
-        bg="white"
+        bg="bg.panel"
         p={2}
         py={1}
         borderRadius="md"
         boxShadow="md"
         border="1px"
-        borderColor="gray.200"
+        borderColor="border"
       >
         {dataPoint.name && (
           <Heading size="xs" mb={1}>
@@ -106,7 +106,7 @@ const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
           justifyContent="space-between"
           fontSize="xs"
           fontWeight="normal"
-          color="gray.600"
+          color="fg.muted"
         >
           <Text as="span" mr={4}>
             {yAxisPayload.name}
@@ -226,7 +226,7 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
                 key={`cell-${entry[xAxis]}`}
                 fill={chart.color(entry.color as string)}
                 strokeWidth={1}
-                stroke="#fff"
+                stroke="var(--chakra-colors-bg)"
               />
             ))}
           </Pie>
