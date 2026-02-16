@@ -1,8 +1,8 @@
 "use client";
-import { useRef } from "react";
-import { Box, Text, Heading, Flex, Separator, Button, Dialog, Portal, CloseButton, useDisclosure } from "@chakra-ui/react";
-import { useState } from "react";
-import { MicroscopeIcon as Microscope, ArrowsOutIcon, DownloadSimpleIcon, ImageIcon, TableIcon, ChartBarIcon } from "@phosphor-icons/react";
+import { useRef, useState } from "react";
+import { Box, Text, Heading, Flex, Separator, Button, IconButton, Menu, Dialog, Portal, CloseButton, useDisclosure } from "@chakra-ui/react";
+import { MicroscopeIcon as Microscope, ArrowsOutIcon, DownloadSimpleIcon, ImageIcon, TableIcon, ChartBarIcon, ExportIcon } from "@phosphor-icons/react";
+import { Tooltip } from "./ui/tooltip";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
@@ -88,61 +88,78 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {widget.description}
         </Text>
         <Separator />
-        <Flex justify="flex-end" gap={2} flexWrap="wrap">
+        <Flex justify="flex-end" gap={1} flexWrap="wrap" align="center">
+          {/* Export menu — groups CSV + PNG downloads */}
           {(isChartType || widget.type === "table") && Array.isArray(widget.data) && widget.data.length > 0 && (
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={handleDownloadCsv}
-              h={6}
-              rounded="sm"
-            >
-              <DownloadSimpleIcon />
-              Download CSV
-            </Button>
+            <Menu.Root positioning={{ placement: "bottom-end" }}>
+              <Menu.Trigger asChild>
+                <Button size="xs" variant="outline" h={6} rounded="sm">
+                  <ExportIcon />
+                  Export
+                </Button>
+              </Menu.Trigger>
+              <Portal>
+                <Menu.Positioner>
+                  <Menu.Content minW="140px">
+                    <Menu.Item value="csv" onClick={handleDownloadCsv}>
+                      <DownloadSimpleIcon size={14} />
+                      Download CSV
+                    </Menu.Item>
+                    {isChartType && (
+                      <Menu.Item
+                        value="png"
+                        onClick={() => {
+                          if (chartRef.current) {
+                            const safeName = (widget.title || "chart").replace(/[^a-z0-9]/gi, "_");
+                            exportChartPng(chartRef.current, `${safeName}.png`);
+                          }
+                        }}
+                      >
+                        <ImageIcon size={14} />
+                        Save as PNG
+                      </Menu.Item>
+                    )}
+                  </Menu.Content>
+                </Menu.Positioner>
+              </Portal>
+            </Menu.Root>
           )}
-          {isChartType && (
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={() => {
-                if (chartRef.current) {
-                  const safeName = (widget.title || "chart").replace(/[^a-z0-9]/gi, "_");
-                  exportChartPng(chartRef.current, `${safeName}.png`);
-                }
-              }}
-              h={6}
-              rounded="sm"
-            >
-              <ImageIcon />
-              Save PNG
-            </Button>
-          )}
+          {/* View toggle — icon-only */}
           {isChartType && Array.isArray(widget.data) && widget.data.length > 0 && (
-            <Button
-              size="xs"
-              variant={showAsTable ? "solid" : "outline"}
-              colorPalette={showAsTable ? "primary" : undefined}
-              onClick={() => setShowAsTable((v) => !v)}
-              h={6}
-              rounded="sm"
-            >
-              {showAsTable ? <ChartBarIcon /> : <TableIcon />}
-              {showAsTable ? "View chart" : "View as table"}
-            </Button>
+            <Tooltip content={showAsTable ? "View chart" : "View as table"}>
+              <IconButton
+                size="xs"
+                variant={showAsTable ? "solid" : "outline"}
+                colorPalette={showAsTable ? "primary" : undefined}
+                onClick={() => setShowAsTable((v) => !v)}
+                h={6}
+                w={6}
+                minW={6}
+                rounded="sm"
+                aria-label={showAsTable ? "View chart" : "View as table"}
+              >
+                {showAsTable ? <ChartBarIcon size={14} /> : <TableIcon size={14} />}
+              </IconButton>
+            </Tooltip>
           )}
+          {/* Expand — icon-only */}
           {isChartType && (
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={onExpand}
-              h={6}
-              rounded="sm"
-            >
-              <ArrowsOutIcon />
-              Expand
-            </Button>
+            <Tooltip content="Expand chart">
+              <IconButton
+                size="xs"
+                variant="outline"
+                onClick={onExpand}
+                h={6}
+                w={6}
+                minW={6}
+                rounded="sm"
+                aria-label="Expand chart"
+              >
+                <ArrowsOutIcon size={14} />
+              </IconButton>
+            </Tooltip>
           )}
+          {/* Provenance — keeps label since it's the key feature */}
           {widget.generation && (
             <Button
               size="xs"
