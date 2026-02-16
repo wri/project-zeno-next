@@ -12,7 +12,49 @@ import {
   Button,
 } from "@chakra-ui/react";
 import WidgetMessage from "@/app/components/WidgetMessage";
-import type { InsightWidget } from "@/app/types/chat";
+import type { InsightWidget, InsightGeneration } from "@/app/types/chat";
+
+// ---------------------------------------------------------------------------
+// Fake provenance data for "View how this was generated" drawer
+// ---------------------------------------------------------------------------
+
+function b64(str: string): string {
+  if (typeof window !== "undefined") return btoa(str);
+  return Buffer.from(str).toString("base64");
+}
+
+const FAKE_GENERATION: InsightGeneration = {
+  codeact_parts: [
+    {
+      type: "text_output",
+      content: b64(
+        "## Analysis plan\n\nWe'll query the tree cover loss dataset for the selected area of interest, aggregate by year and land type, then visualise the result."
+      ),
+    },
+    {
+      type: "code_block",
+      content: b64(
+        `import pandas as pd\nfrom lcl_api import query_dataset\n\n# Fetch tree cover loss data\ndf = query_dataset(\n    dataset="tree_cover_loss",\n    aoi="BRA",\n    start_year=2015,\n    end_year=2023\n)\n\n# Aggregate by year\nresult = df.groupby("year")["area_ha"].sum().reset_index()\nprint(result.head())`
+      ),
+    },
+    {
+      type: "execution_output",
+      content: b64(
+        "   year    area_ha\n0  2015  4200000\n1  2016  4500000\n2  2017  4100000\n3  2018  4800000\n4  2019  5200000"
+      ),
+    },
+    {
+      type: "text_output",
+      content: b64(
+        "The data shows a general upward trend in tree cover loss between 2015 and 2019, followed by a decline. Here is the chart."
+      ),
+    },
+  ],
+  source_urls: [
+    "https://data.globalforestwatch.org/datasets/tree-cover-loss",
+    "https://www.science.org/doi/10.1126/science.aau3445",
+  ],
+};
 
 // ---------------------------------------------------------------------------
 // Dummy datasets
@@ -178,7 +220,7 @@ const LONG_LABEL_BAR_DATA = [
 // Widget fixtures
 // ---------------------------------------------------------------------------
 
-const FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = [
+const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = [
   {
     label: "Bar chart",
     notes: "Simple bar with country-level data. Tests axis labels, Y-axis unit extraction (_ha), and tooltip.",
@@ -324,12 +366,36 @@ const FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = [
     },
   },
   {
-    label: "Multi-series line (dash patterns)",
-    notes: "Tests colorblind-safe stroke dash patterns on 4 overlapping series.",
+    label: "Multi-series line (dash patterns + palette)",
+    notes: "4 overlapping line series — each gets a unique stroke dash pattern (solid, short-dash, dotted, long-dash) and a colour from the reordered colorblind-safe palette (blue → orange → green → pink).",
     widget: {
-      type: "stacked-bar",
+      type: "line",
       title: "Tree cover loss by country (2015–2023)",
       description: "Multi-country comparison with distinct dash patterns per series.",
+      data: MULTI_LINE_DATA,
+      xAxis: "year",
+      yAxis: "Brazil",
+    },
+  },
+  {
+    label: "Multi-series area (dash patterns + palette)",
+    notes: "Area variant — stroke dashes visible on the area outlines; fill colours use the same palette.",
+    widget: {
+      type: "area",
+      title: "Tree cover loss by country (area)",
+      description: "Multi-country stacked area chart with dash-pattern differentiation.",
+      data: MULTI_LINE_DATA,
+      xAxis: "year",
+      yAxis: "Brazil",
+    },
+  },
+  {
+    label: "Multi-series stacked bar (palette)",
+    notes: "Stacked bar with the same 4-country data — shows the palette across bar segments.",
+    widget: {
+      type: "stacked-bar",
+      title: "Tree cover loss by country (stacked bar)",
+      description: "Same data as the line/area fixtures, rendered as stacked bar.",
       data: MULTI_LINE_DATA,
       xAxis: "year",
       yAxis: "Brazil",
@@ -360,6 +426,12 @@ const FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = [
     },
   },
 ];
+
+// Inject fake generation data into every fixture so the provenance drawer is testable
+const FIXTURES = RAW_FIXTURES.map((f) => ({
+  ...f,
+  widget: { ...f.widget, generation: FAKE_GENERATION },
+}));
 
 // ---------------------------------------------------------------------------
 // Component

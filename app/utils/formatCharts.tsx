@@ -167,18 +167,26 @@ export default function formatChartData(
   }
   // --- Logic for a standard BAR chart ---
   if (type === "bar" || type === "area" || type === "line") {
-    // Bar, area and line charts have one series, which is the value column.
-    const valueKey = keys.find((key) => key !== xAxisKey);
+    const valueKeys = keys.filter((key) => key !== xAxisKey);
 
-    const series: ChartSeries[] = valueKey
+    // Multi-series: more than one value column → create a series per column
+    if (valueKeys.length > 1) {
+      const series: ChartSeries[] = valueKeys.map((key, index) => ({
+        name: key,
+        color: defaultColors[index % defaultColors.length],
+      }));
+      return { data: data as ChartData[], series };
+    }
+
+    // Single series
+    const series: ChartSeries[] = valueKeys.length
       ? [
           {
-            name: valueKey,
-            color: defaultColors[0], // Assign the first color
+            name: valueKeys[0],
+            color: defaultColors[0],
           },
         ]
       : [];
-    // Data is used as-is.
     return { data: data as ChartData[], series };
   }
 
