@@ -330,7 +330,10 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
     }
   };
 
+  const chartLabel = `${type} chart: ${widget.title || ""}. ${widget.description || ""}`.trim();
+
   return (
+    <Box role="img" aria-label={chartLabel} tabIndex={0}>
     <Chart.Root maxH="280px" chart={chart} overflow="hidden">
       <ChartTypeWrapper data={chart.data}>
         {type !== "pie" && (
@@ -423,5 +426,6 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
         {renderChartItems()}
       </ChartTypeWrapper>
     </Chart.Root>
+    </Box>
   );
 }

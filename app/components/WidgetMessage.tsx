@@ -85,6 +85,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             <Box overflowX="auto" maxW="100%">
               <TableWidget
                 data={widget.data as Record<string, string | number | boolean>[]}
+                caption={widget.title}
               />
             </Box>
           </WidgetErrorBoundary>
