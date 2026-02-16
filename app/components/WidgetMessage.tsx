@@ -11,6 +11,7 @@ import { WidgetIcons } from "../ChatPanelHeader";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
+import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 import exportChartPng from "@/app/utils/exportChartPng";
 
 interface WidgetMessageProps {
@@ -171,23 +172,23 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         )}
         {isChartType && showAsTable && Array.isArray(widget.data) && (
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
-            <Box overflowX="auto" maxW="100%">
+            <ScrollableTableWrapper>
               <TableWidget
                 data={widget.data as Record<string, string | number | boolean>[]}
                 caption={widget.title}
               />
-            </Box>
+            </ScrollableTableWrapper>
           </WidgetErrorBoundary>
         )}
 
         {widget.type === "table" && (
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
-            <Box overflowX="auto" maxW="100%">
+            <ScrollableTableWrapper>
               <TableWidget
                 data={widget.data as Record<string, string | number | boolean>[]}
                 caption={widget.title}
               />
-            </Box>
+            </ScrollableTableWrapper>
           </WidgetErrorBoundary>
         )}
         {showDisclaimer && <VisualizationDisclaimer />}
