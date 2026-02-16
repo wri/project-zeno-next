@@ -70,7 +70,8 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
     "scatter",
   ];
   const isChartType = chartTypes.includes(widget.type);
-  const showDisclaimer = isChartType || widget.type === "table";
+  const hasData = Array.isArray(widget.data) && widget.data.length > 0;
+  const showDisclaimer = (isChartType || widget.type === "table") && hasData;
   return (
     <Box
       rounded="md"
@@ -85,10 +86,14 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         </Heading>
       </Flex>
       <Flex gap={3} px={4} py={3} flexDir="column">
-        <Text fontSize="xs" color="fg.muted">
-          {widget.description}
-        </Text>
-        <Separator />
+        {hasData && (
+          <>
+            <Text fontSize="xs" color="fg.muted">
+              {widget.description}
+            </Text>
+            <Separator />
+          </>
+        )}
         <Flex justify="flex-end" gap={1} flexWrap="wrap" align="center">
           {/* Export menu — groups CSV + PNG downloads */}
           {(isChartType || widget.type === "table") && Array.isArray(widget.data) && widget.data.length > 0 && (
@@ -170,7 +175,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             </Tooltip>
           )}
           {/* Provenance — keeps label since it's the key feature */}
-          {widget.generation && (
+          {widget.generation && hasData && (
             <Button
               size="xs"
               variant="outline"
