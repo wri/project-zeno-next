@@ -1,7 +1,8 @@
 "use client";
 import { useRef } from "react";
 import { Box, Text, Heading, Flex, Separator, Button, Dialog, Portal, CloseButton, useDisclosure } from "@chakra-ui/react";
-import { MicroscopeIcon as Microscope, ArrowsOutIcon, DownloadSimpleIcon, ImageIcon } from "@phosphor-icons/react";
+import { useState } from "react";
+import { MicroscopeIcon as Microscope, ArrowsOutIcon, DownloadSimpleIcon, ImageIcon, TableIcon, ChartBarIcon } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
@@ -18,6 +19,7 @@ interface WidgetMessageProps {
 
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
   const chartRef = useRef<HTMLDivElement>(null);
+  const [showAsTable, setShowAsTable] = useState(false);
   const { open, onOpen, onClose } = useDisclosure();
   const { open: expanded, onOpen: onExpand, onClose: onCollapse } = useDisclosure();
   if (widget.type === "dataset-card") {
@@ -116,6 +118,19 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               Save PNG
             </Button>
           )}
+          {isChartType && Array.isArray(widget.data) && widget.data.length > 0 && (
+            <Button
+              size="xs"
+              variant={showAsTable ? "solid" : "outline"}
+              colorPalette={showAsTable ? "primary" : undefined}
+              onClick={() => setShowAsTable((v) => !v)}
+              h={6}
+              rounded="sm"
+            >
+              {showAsTable ? <ChartBarIcon /> : <TableIcon />}
+              {showAsTable ? "View chart" : "View as table"}
+            </Button>
+          )}
           {isChartType && (
             <Button
               size="xs"
@@ -147,12 +162,22 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             </Button>
           )}
         </Flex>
-        {isChartType && (
+        {isChartType && !showAsTable && (
           <Box ref={chartRef}>
             <WidgetErrorBoundary fallbackTitle="Unable to render chart">
               <ChartWidget widget={widget} />
             </WidgetErrorBoundary>
           </Box>
+        )}
+        {isChartType && showAsTable && Array.isArray(widget.data) && (
+          <WidgetErrorBoundary fallbackTitle="Unable to render table">
+            <Box overflowX="auto" maxW="100%">
+              <TableWidget
+                data={widget.data as Record<string, string | number | boolean>[]}
+                caption={widget.title}
+              />
+            </Box>
+          </WidgetErrorBoundary>
         )}
 
         {widget.type === "table" && (
