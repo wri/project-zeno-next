@@ -158,7 +158,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             </Tooltip>
           )}
           {/* Expand — icon-only */}
-          {isChartType && (
+          {isChartType && hasData && (
             <Tooltip content="Expand chart">
               <IconButton
                 size="xs"
