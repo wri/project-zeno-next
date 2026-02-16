@@ -1,6 +1,6 @@
 "use client";
 import { Box, Text, Heading, Flex, Separator, Button, Dialog, Portal, CloseButton, useDisclosure } from "@chakra-ui/react";
-import { MicroscopeIcon as Microscope, ArrowsOutIcon } from "@phosphor-icons/react";
+import { MicroscopeIcon as Microscope, ArrowsOutIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
@@ -24,6 +24,34 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   const handleOpen = () => {
     console.log("Opening drawer for widget:", widget.title, "Generation data:", widget.generation);
     onOpen();
+  };
+
+  const handleDownloadCsv = () => {
+    const data = widget.data;
+    if (!Array.isArray(data) || data.length === 0) return;
+    const rows = data as Record<string, unknown>[];
+    const headers = Object.keys(rows[0]);
+    const csvLines = [
+      headers.join(","),
+      ...rows.map((row) =>
+        headers
+          .map((h) => {
+            const val = row[h];
+            const str = val === null || val === undefined ? "" : String(val);
+            return str.includes(",") || str.includes('"') || str.includes("\n")
+              ? `"${str.replace(/"/g, '""')}"`
+              : str;
+          })
+          .join(",")
+      ),
+    ];
+    const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(widget.title || "data").replace(/[^a-z0-9]/gi, "_")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const chartTypes: InsightWidget["type"][] = [
@@ -56,6 +84,18 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         </Text>
         <Separator />
         <Flex justify="flex-end" gap={2} flexWrap="wrap">
+          {(isChartType || widget.type === "table") && Array.isArray(widget.data) && widget.data.length > 0 && (
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleDownloadCsv}
+              h={6}
+              rounded="sm"
+            >
+              <DownloadSimpleIcon />
+              Download CSV
+            </Button>
+          )}
           {isChartType && (
             <Button
               size="xs"
