@@ -157,9 +157,19 @@ const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
   );
 };
 
-const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
+interface CustomPieTooltipWithTotalProps extends CustomTooltipProps {
+  total?: number;
+}
+
+const CustomPieTooltip = ({
+  active,
+  payload,
+  total,
+}: CustomPieTooltipWithTotalProps) => {
   if (active && payload && payload.length) {
     const dataPoint = payload[0];
+    const value = Number(dataPoint.value);
+    const pct = total && total > 0 ? ((value / total) * 100).toFixed(1) : null;
     return (
       <Box bg="bg.panel" p={2} py={1} borderRadius="sm" boxShadow="sm">
         <Flex
@@ -180,7 +190,12 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
             {dataPoint.name}
           </Text>
           <Text fontFamily="mono" textAlign="right">
-            {Number(dataPoint.value).toLocaleString()}
+            {value.toLocaleString()}
+            {pct !== null && (
+              <Text as="span" color="fg.subtle" ml={1}>
+                ({pct}%)
+              </Text>
+            )}
           </Text>
         </Flex>
       </Box>
@@ -199,6 +214,12 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
   );
 
   const chart = useChart({ data: formattedData, series: series });
+
+  // Compute pie total for percentage display in tooltips
+  const pieTotal = useMemo(() => {
+    if (type !== "pie" || !yAxis) return 0;
+    return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
+  }, [type, yAxis, formattedData]);
 
   if (!ChartTypeWrapper || formattedData.length === 0 || series.length === 0) {
     return (
@@ -400,7 +421,7 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
             type === "scatter" ? (
               <CustomScatterTooltip />
             ) : type === "pie" ? (
-              <CustomPieTooltip />
+              <CustomPieTooltip total={pieTotal} />
             ) : (
               <Chart.Tooltip />
             )
