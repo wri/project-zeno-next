@@ -26,6 +26,7 @@ import formatChartData, {
   toAxisLabel,
 } from "@/app/utils/formatCharts";
 import { InsightWidget } from "@/app/types/chat";
+import { STROKE_DASH_PATTERNS } from "@/app/utils/ChartColors";
 
 type ChartType =
   | "bar"
@@ -283,7 +284,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
         ));
       }
       case "line": {
-        return chart.series.map((item) => (
+        return chart.series.map((item, idx) => (
           <Line
             key={item.name}
             type="monotone"
@@ -291,12 +292,13 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
             dataKey={chart.key(item.name)}
             stroke={chart.color(item.color)}
             strokeWidth={2}
+            strokeDasharray={STROKE_DASH_PATTERNS[idx % STROKE_DASH_PATTERNS.length]}
             isAnimationActive={false}
           />
         ));
       }
       case "area": {
-        return chart.series.map((item) => (
+        return chart.series.map((item, idx) => (
           <Area
             key={item.name}
             type="monotone"
@@ -307,6 +309,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
             fillOpacity={0.2}
             stroke={chart.color(item.color)}
             strokeWidth={2}
+            strokeDasharray={STROKE_DASH_PATTERNS[idx % STROKE_DASH_PATTERNS.length]}
             isAnimationActive={false}
           />
         ));
