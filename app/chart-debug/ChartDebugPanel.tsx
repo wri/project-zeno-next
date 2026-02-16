@@ -427,10 +427,16 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
   },
 ];
 
-// Inject fake generation data into every fixture so the provenance drawer is testable
+const LOREM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.";
+
+// Inject fake generation data and extended descriptions into every fixture
 const FIXTURES = RAW_FIXTURES.map((f) => ({
   ...f,
-  widget: { ...f.widget, generation: FAKE_GENERATION },
+  widget: {
+    ...f.widget,
+    description: `${f.widget.description} ${LOREM}`,
+    generation: FAKE_GENERATION,
+  },
 }));
 
 // ---------------------------------------------------------------------------
