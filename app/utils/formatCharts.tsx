@@ -267,6 +267,49 @@ export default function formatChartData(
   return { data: [], series: [] };
 }
 
+/**
+ * Convert a snake_case or camelCase field name into a readable axis label.
+ * e.g. "area_km2" → "Area (km²)", "tree_cover_loss_ha" → "Tree cover loss (ha)"
+ */
+export const toAxisLabel = (key: string): string => {
+  if (!key) return "";
+
+  // Extract common unit suffixes and format them as parenthetical
+  const unitPatterns: [RegExp, string][] = [
+    (/(_km2|_km²)$/i), ("km²"),
+    (/(_ha)$/i), ("ha"),
+    (/(_mt|_tonnes|_t)$/i), ("t"),
+    (/(_pct|_percent|_%|_percentage)$/i), ("%"),
+  ].reduce<[RegExp, string][]>((acc, val, i, arr) => {
+    if (i % 2 === 0) acc.push([arr[i] as RegExp, arr[i + 1] as string]);
+    return acc;
+  }, []);
+
+  let label = key;
+  let unit = "";
+
+  for (const [pattern, unitStr] of unitPatterns) {
+    if (pattern.test(label)) {
+      label = label.replace(pattern, "");
+      unit = unitStr;
+      break;
+    }
+  }
+
+  // Convert snake_case / camelCase to space-separated words
+  label = label
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .trim();
+
+  // Sentence-case
+  if (label.length > 0) {
+    label = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+  }
+
+  return unit ? `${label} (${unit})` : label;
+};
+
 // Custom label formatter for X-axis (truncate long names)
 export const formatXAxisLabel = (value: string | number, key?: string) => {
   // Check if the axis key is 'year' to prevent special formatting

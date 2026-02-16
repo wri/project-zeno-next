@@ -13,6 +13,7 @@ import {
   ScatterChart,
   Scatter,
   CartesianGrid,
+  Label,
   Legend,
   Tooltip,
   XAxis,
@@ -21,6 +22,7 @@ import {
 import formatChartData, {
   formatYAxisLabel,
   formatXAxisLabel,
+  toAxisLabel,
 } from "@/app/utils/formatCharts";
 import { InsightWidget } from "@/app/types/chat";
 
@@ -319,7 +321,16 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
                   : String(formatXAxisLabel(value, chart.key(xAxis)))
               }
               domain={type === "scatter" ? ["auto", "auto"] : undefined}
-            />
+            >
+              {xAxis && (
+                <Label
+                  value={toAxisLabel(xAxis)}
+                  position="insideBottom"
+                  offset={-2}
+                  style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)" }}
+                />
+              )}
+            </XAxis>
             <YAxis
               dataKey={type === "scatter" ? chart.key(yAxis) : undefined}
               type="number"
@@ -330,7 +341,17 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
               axisLine={false}
               tickLine={false}
               domain={["auto", "auto"]}
-            />
+            >
+              {yAxis && (
+                <Label
+                  value={toAxisLabel(yAxis)}
+                  angle={-90}
+                  position="insideLeft"
+                  offset={10}
+                  style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)", textAnchor: "middle" }}
+                />
+              )}
+            </YAxis>
           </>
         )}
         <Tooltip
