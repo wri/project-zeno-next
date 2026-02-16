@@ -199,6 +199,26 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
 
   const chart = useChart({ data: formattedData, series: series });
 
+  if (!ChartTypeWrapper || formattedData.length === 0 || series.length === 0) {
+    return (
+      <Flex
+        align="center"
+        justify="center"
+        minH="120px"
+        border="1px dashed"
+        borderColor="border"
+        borderRadius="md"
+        p={4}
+      >
+        <Text fontSize="sm" color="fg.muted">
+          {!ChartTypeWrapper
+            ? `Unsupported chart type: "${type}"`
+            : "No data available for this chart."}
+        </Text>
+      </Flex>
+    );
+  }
+
   // Determine if the x-axis has long categorical labels that need angling
   const isNumericXAxis =
     type === "scatter" ||
