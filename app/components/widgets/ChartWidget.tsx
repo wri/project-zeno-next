@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Chart, useChart } from "@chakra-ui/charts";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import {
@@ -190,11 +191,9 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
   const { data, xAxis, yAxis, type } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
-  const { data: formattedData, series } = formatChartData(
-    data,
-    type,
-    xAxis,
-    yAxis
+  const { data: formattedData, series } = useMemo(
+    () => formatChartData(data, type, xAxis, yAxis),
+    [data, type, xAxis, yAxis]
   );
 
   const chart = useChart({ data: formattedData, series: series });
