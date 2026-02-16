@@ -136,6 +136,33 @@ const LARGE_TABLE_DATA = Array.from({ length: 50 }, (_, i) => ({
   change_pct: +((-2 - Math.random() * 8).toFixed(1)),
 }));
 
+// Multi-series line for dash-pattern testing
+const MULTI_LINE_DATA = [
+  { year: 2015, "Brazil": 4200, "Indonesia": 2400, "DR Congo": 800, "Bolivia": 420 },
+  { year: 2016, "Brazil": 4500, "Indonesia": 2300, "DR Congo": 850, "Bolivia": 450 },
+  { year: 2017, "Brazil": 4100, "Indonesia": 2100, "DR Congo": 900, "Bolivia": 480 },
+  { year: 2018, "Brazil": 4800, "Indonesia": 2600, "DR Congo": 950, "Bolivia": 500 },
+  { year: 2019, "Brazil": 5200, "Indonesia": 2500, "DR Congo": 1000, "Bolivia": 520 },
+  { year: 2020, "Brazil": 4600, "Indonesia": 2200, "DR Congo": 1050, "Bolivia": 550 },
+  { year: 2021, "Brazil": 4300, "Indonesia": 2000, "DR Congo": 1100, "Bolivia": 570 },
+  { year: 2022, "Brazil": 4000, "Indonesia": 1900, "DR Congo": 1150, "Bolivia": 590 },
+  { year: 2023, "Brazil": 3700, "Indonesia": 1800, "DR Congo": 1200, "Bolivia": 600 },
+];
+
+// Wide table for scroll-indicator testing
+const WIDE_TABLE_DATA = Array.from({ length: 12 }, (_, i) => ({
+  rank: i + 1,
+  country: ["Brazil", "Indonesia", "DR Congo", "Bolivia", "Malaysia", "Peru", "Colombia", "Cameroon", "Laos", "Myanmar", "Paraguay", "Mexico"][i],
+  tree_loss_2018_ha: Math.round(4000000 - i * 350000 + Math.random() * 50000),
+  tree_loss_2019_ha: Math.round(3800000 - i * 320000 + Math.random() * 50000),
+  tree_loss_2020_ha: Math.round(3600000 - i * 300000 + Math.random() * 50000),
+  tree_loss_2021_ha: Math.round(3400000 - i * 280000 + Math.random() * 50000),
+  tree_loss_2022_ha: Math.round(3200000 - i * 260000 + Math.random() * 50000),
+  tree_loss_2023_ha: Math.round(3000000 - i * 240000 + Math.random() * 50000),
+  primary_loss_ha: Math.round(1500000 - i * 120000 + Math.random() * 30000),
+  pct_global: +((25 - i * 2.2 + Math.random()).toFixed(1)),
+}));
+
 // Long category names for label testing
 const LONG_LABEL_BAR_DATA = [
   { land_cover_type: "Tropical moist broadleaf forests", area_km2: 17000 },
@@ -292,6 +319,30 @@ const FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = [
       title: "Province-level deforestation data",
       description: "Simulated dataset with 50 rows to exercise table pagination.",
       data: LARGE_TABLE_DATA as unknown as InsightWidget["data"],
+      xAxis: "",
+      yAxis: "",
+    },
+  },
+  {
+    label: "Multi-series line (dash patterns)",
+    notes: "Tests colorblind-safe stroke dash patterns on 4 overlapping series.",
+    widget: {
+      type: "stacked-bar",
+      title: "Tree cover loss by country (2015–2023)",
+      description: "Multi-country comparison with distinct dash patterns per series.",
+      data: MULTI_LINE_DATA,
+      xAxis: "year",
+      yAxis: "Brazil",
+    },
+  },
+  {
+    label: "Wide table (scroll indicator)",
+    notes: "Table with 8+ columns to test horizontal scroll fade indicators.",
+    widget: {
+      type: "table",
+      title: "Country-level tree loss (2018–2023)",
+      description: "Wide table that should show gradient fades when scrollable.",
+      data: WIDE_TABLE_DATA as unknown as InsightWidget["data"],
       xAxis: "",
       yAxis: "",
     },
