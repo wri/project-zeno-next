@@ -2,7 +2,6 @@ import { Button, ButtonProps } from "@chakra-ui/react";
 import {
   CalendarBlankIcon,
   PolygonIcon,
-  SlidersHorizontalIcon,
   ShieldCheckIcon,
   StackSimpleIcon,
   TreeIcon,
