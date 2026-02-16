@@ -1,6 +1,7 @@
 "use client";
+import { useRef } from "react";
 import { Box, Text, Heading, Flex, Separator, Button, Dialog, Portal, CloseButton, useDisclosure } from "@chakra-ui/react";
-import { MicroscopeIcon as Microscope, ArrowsOutIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
+import { MicroscopeIcon as Microscope, ArrowsOutIcon, DownloadSimpleIcon, ImageIcon } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
@@ -9,12 +10,14 @@ import { WidgetIcons } from "../ChatPanelHeader";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
+import exportChartPng from "@/app/utils/exportChartPng";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
 }
 
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
   const { open, onOpen, onClose } = useDisclosure();
   const { open: expanded, onOpen: onExpand, onClose: onCollapse } = useDisclosure();
   if (widget.type === "dataset-card") {
@@ -100,6 +103,23 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             <Button
               size="xs"
               variant="outline"
+              onClick={() => {
+                if (chartRef.current) {
+                  const safeName = (widget.title || "chart").replace(/[^a-z0-9]/gi, "_");
+                  exportChartPng(chartRef.current, `${safeName}.png`);
+                }
+              }}
+              h={6}
+              rounded="sm"
+            >
+              <ImageIcon />
+              Save PNG
+            </Button>
+          )}
+          {isChartType && (
+            <Button
+              size="xs"
+              variant="outline"
               onClick={onExpand}
               h={6}
               rounded="sm"
@@ -128,9 +148,11 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           )}
         </Flex>
         {isChartType && (
-          <WidgetErrorBoundary fallbackTitle="Unable to render chart">
-            <ChartWidget widget={widget} />
-          </WidgetErrorBoundary>
+          <Box ref={chartRef}>
+            <WidgetErrorBoundary fallbackTitle="Unable to render chart">
+              <ChartWidget widget={widget} />
+            </WidgetErrorBoundary>
+          </Box>
         )}
 
         {widget.type === "table" && (
