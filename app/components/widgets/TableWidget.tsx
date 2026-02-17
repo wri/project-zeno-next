@@ -77,12 +77,12 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
       >
         {caption && (
           <Table.Caption
-            placement="top"
             textAlign="left"
             mt={0}
             mb={2}
             fontSize="xs"
             color="fg.muted"
+            css={{ captionSide: "top" }}
           >
             {caption}
           </Table.Caption>
