@@ -19,10 +19,23 @@ function NewThread() {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
+  const { addContext } = useContextStore();
+
   useEffect(() => {
     resetChatStore();
     resetMapStore();
     resetContextStore();
+
+    // Add Tree Cover Loss as the default visible layer on landing
+    addContext({
+      contextType: "layer",
+      content: "Tree cover loss",
+      datasetId: 4,
+      tileUrl:
+        "https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png?start_year=2001&end_year=2024&tree_cover_density_threshold=25&render_type=true_color",
+      layerName: "Tree cover loss",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetChatStore, resetContextStore, resetMapStore]);
 
   useEffect(() => {

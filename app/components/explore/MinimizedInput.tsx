@@ -5,7 +5,6 @@ import { Box, Button, Flex, Textarea } from "@chakra-ui/react";
 import { ArrowBendRightUpIcon } from "@phosphor-icons/react";
 import useChatStore from "@/app/store/chatStore";
 import useExplorePanelStore from "@/app/store/explorePanelStore";
-import SamplePrompts from "@/app/components/SamplePrompts";
 import { useRouter } from "next/navigation";
 
 export default function MinimizedInput() {
@@ -43,7 +42,6 @@ export default function MinimizedInput() {
 
   return (
     <Box w="400px">
-      <SamplePrompts />
       <Flex
         flexDir="column"
         position="relative"
