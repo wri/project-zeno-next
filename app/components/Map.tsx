@@ -5,7 +5,6 @@ import MapGl, {
   Source,
   AttributionControl,
   NavigationControl,
-  ScaleControl,
   MapRef,
 } from "react-map-gl/maplibre";
 import { useState, useRef } from "react";
@@ -216,8 +215,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           display={{ base: "none", md: "inherit" }}
           positionProps={{
             left: "auto",
-            right: 3,
-            bottom: "6.5rem",
+            right: "10px",
+            bottom: "5rem",
           }}
         />
       )}
@@ -295,7 +294,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         </AbsoluteCenter>
         <AttributionControl
           customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
-          position="bottom-left"
+          position="bottom-right"
           compact={isMobile ? true : false}
           style={{
             background: "transparent",
@@ -304,68 +303,69 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           }}
         />
         {!isMobile && (
-          <>
-            <ScaleControl position="bottom-left" />
-            <NavigationControl showCompass={false} position="bottom-right" />
-          </>
+          <NavigationControl showCompass={false} position="bottom-right" />
         )}
-        {/* Policy links + coords — bottom-left, above attribution */}
+        {/* Bottom-right info stack: scale, policy links, coords */}
         <Flex
           pos="absolute"
-          bottom="2.5rem"
-          left="3"
-          p="0"
-          fontSize="xs"
-          bg="transparent"
+          bottom="1"
+          right="3"
+          flexDir="column"
+          alignItems="flex-end"
+          gap={0}
           hideBelow="md"
-          alignItems="baseline"
-          gap={2}
+          pointerEvents="none"
+          mb="1.25rem"
+          css={{ "& a, & *": { pointerEvents: "auto" } }}
         >
-          <ChLink
-            href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
-            target="_blank"
-            rel="noopener noreferrer"
-            textDecoration="underline"
+          <Flex
+            fontSize="xs"
+            alignItems="baseline"
+            gap={2}
             color="fg.muted"
           >
-            Privacy Policy
-          </ChLink>
-          <ChLink
-            href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            textDecoration="underline"
-            color="fg.muted"
-          >
-            AI Privacy Policy
-          </ChLink>
-          <ChLink
-            href="https://www.wri.org/about/legal/general-terms-use"
-            target="_blank"
-            rel="noopener noreferrer"
-            textDecoration="underline"
-            color="fg.muted"
-          >
-            Terms of Use
-          </ChLink>
-          <ChLink
-            href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
-            target="_blank"
-            rel="noopener noreferrer"
-            textDecoration="underline"
-            color="fg.muted"
-          >
-            AI Terms of Use
-          </ChLink>
-          <Code
-            bg="transparent"
-            p={0}
-            color="fg.muted"
-            ml={2}
-            fontSize="0.625rem"
-          >
-            lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
-          </Code>
+            <Code bg="transparent" p={0} fontSize="0.625rem" color="fg.muted">
+              {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
+            </Code>
+          </Flex>
+          <Flex fontSize="xs" gap={2} flexWrap="wrap" justifyContent="flex-end">
+            <ChLink
+              href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
+              target="_blank"
+              rel="noopener noreferrer"
+              textDecoration="underline"
+              color="fg.muted"
+            >
+              Privacy Policy
+            </ChLink>
+            <ChLink
+              href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              textDecoration="underline"
+              color="fg.muted"
+            >
+              AI Privacy Policy
+            </ChLink>
+            <ChLink
+              href="https://www.wri.org/about/legal/general-terms-use"
+              target="_blank"
+              rel="noopener noreferrer"
+              textDecoration="underline"
+              color="fg.muted"
+            >
+              Terms of Use
+            </ChLink>
+            <ChLink
+              href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+              target="_blank"
+              rel="noopener noreferrer"
+              textDecoration="underline"
+              color="fg.muted"
+            >
+              AI Terms of Use
+            </ChLink>
+          </Flex>
         </Flex>
       </MapGl>
     </Box>
