@@ -222,9 +222,11 @@ export async function POST(request: NextRequest) {
                       ? { content: updateObject.trace_url }
                       : {}),
                   } as StreamMessage;
-                  controller.enqueue(
-                    encoder.encode(JSON.stringify(traceMsg) + "\n")
-                  );
+                  if (!controllerClosed) {
+                    controller.enqueue(
+                      encoder.encode(JSON.stringify(traceMsg) + "\n")
+                    );
+                  }
                   return;
                 }
 
@@ -233,7 +235,7 @@ export async function POST(request: NextRequest) {
                   ? parseStreamMessage(updateObject, messageType, date)
                   : null;
 
-                if (streamMessage) {
+                if (streamMessage && !controllerClosed) {
                   controller.enqueue(
                     encoder.encode(JSON.stringify(streamMessage) + "\n")
                   );

@@ -144,8 +144,6 @@ export default function InsightCard() {
         {/* Chart */}
         {isChartType && <ChartWidget widget={widget} />}
 
-        <VisualizationDisclaimer />
-
         {/* Quick prompts */}
         <Flex gap={2} flexWrap="wrap">
           <Button
@@ -193,6 +191,8 @@ export default function InsightCard() {
         </Flex>
 
         <Separator />
+
+        <VisualizationDisclaimer />
 
         {/* CTAs */}
         <Flex gap={2} flexWrap="wrap">
