@@ -3,6 +3,7 @@
 import { Box } from "@chakra-ui/react";
 import useExplorePanelStore from "@/app/store/explorePanelStore";
 import ChatPanel from "@/app/ChatPanel";
+import MinimizedInput from "./MinimizedInput";
 
 const PANEL_WIDTH = 420;
 
@@ -67,7 +68,7 @@ export default function LeftPanelContainer() {
         </Box>
       )}
 
-      {/* Minimized input — Phase 1.3, placeholder for now */}
+      {/* Minimized input — shown at bottom-left when panel is closed */}
       {panelState === "minimized" && (
         <Box
           position="absolute"
@@ -75,7 +76,7 @@ export default function LeftPanelContainer() {
           left={4}
           pointerEvents="auto"
         >
-          {/* MinimizedInput will go here */}
+          <MinimizedInput />
         </Box>
       )}
     </Box>
