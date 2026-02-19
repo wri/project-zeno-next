@@ -18,6 +18,9 @@ import {
   SignOutIcon,
   UserIcon,
   InfoIcon,
+  MapTrifoldIcon,
+  BellIcon,
+  FileTextIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
 
@@ -80,6 +83,48 @@ function PageHeader() {
           PREVIEW
         </Badge>
       </Flex>
+      {/* Center tabs — dummy navigation, visual only */}
+      <Flex
+        gap={1}
+        alignItems="center"
+        hideBelow="md"
+        position="absolute"
+        left="50%"
+        transform="translateX(-50%)"
+      >
+        <Button
+          variant="solid"
+          size="sm"
+          bg="primary.fg"
+          color="fg.inverted"
+          _hover={{ bg: "primary.fg" }}
+          pointerEvents="none"
+        >
+          <MapTrifoldIcon weight="fill" />
+          Map
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          color="primary.200"
+          _hover={{ bg: "primary.fg/20" }}
+          cursor="default"
+        >
+          <BellIcon />
+          Monitor
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          color="primary.200"
+          _hover={{ bg: "primary.fg/20" }}
+          cursor="default"
+        >
+          <FileTextIcon />
+          Report
+        </Button>
+      </Flex>
+
       <Flex gap="6" alignItems="center" hideBelow="md">
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
