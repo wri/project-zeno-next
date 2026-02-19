@@ -27,8 +27,10 @@ import { Tooltip } from "./components/ui/tooltip";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
 import useExplorePanelStore from "./store/explorePanelStore";
+import useMapStore from "./store/mapStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import { sendGAEvent } from "@next/third-parties/google";
+import { InsightWidget } from "./types/chat";
 
 export const WidgetIcons: Record<string, React.ReactNode> = {
   "line": <ChartLineIcon />,
@@ -46,7 +48,8 @@ export const WidgetIcons: Record<string, React.ReactNode> = {
 function ChatPanelHeader() {
   const { getThreadById } = useSidebarStore();
   const { currentThreadId, messages } = useChatStore();
-  const { closePanel, openThreads } = useExplorePanelStore();
+  const { closePanel, openThreads, setActiveInsight } = useExplorePanelStore();
+  const { flyToGeoJson } = useMapStore();
 
   const currentThread = getThreadById(currentThreadId);
   const currentThreadName = currentThread
@@ -64,6 +67,7 @@ function ChatPanelHeader() {
               title: w.title || `Insight ${idx + 1}`,
               type: w.type,
               timestamp: m.timestamp,
+              aoi: (w as InsightWidget).aoi,
             }))
         : []
     );
@@ -75,13 +79,6 @@ function ChatPanelHeader() {
     const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const day = d.toLocaleDateString([], { day: "2-digit", month: "short" });
     return `${time} on ${day}`;
-  }, []);
-
-  const scrollToWidget = useCallback((anchorId: string) => {
-    const el = document.getElementById(anchorId);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
   }, []);
 
   return (
@@ -224,7 +221,10 @@ function ChatPanelHeader() {
                         chart_type: w.type,
                         created_at: w.timestamp,
                       });
-                      scrollToWidget(w.id);
+                      setActiveInsight(w.id);
+                      if (w.aoi?.geometry) {
+                        flyToGeoJson(w.aoi.geometry);
+                      }
                     }}
                     role="group"
                     className="group"

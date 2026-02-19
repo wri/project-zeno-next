@@ -11,9 +11,12 @@ import {
   Portal,
 } from "@chakra-ui/react";
 import { Tooltip } from "./ui/tooltip";
-import { ChatMessage } from "@/app/types/chat";
+import { ChatMessage, InsightWidget } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
+import useExplorePanelStore from "../store/explorePanelStore";
+import useMapStore from "../store/mapStore";
+import { WidgetIcons } from "../ChatPanelHeader";
 import { sendGAEvent } from "@next/third-parties/google";
 import {
   ArrowBendDownRightIcon,
@@ -138,22 +141,83 @@ function MessageBubble({
     setFeedbackOpen(false);
   }, [feedbackText, rateMessage]);
 
+  const { setActiveInsight } = useExplorePanelStore();
+  const { flyToGeoJson } = useMapStore();
+
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
   const isError = message.type === "error";
   const hasContext = isUser && message.context && message.context.length > 0;
-  // For widget messages, render them in a full-width container
+
+  const handleInsightChipClick = (widget: InsightWidget, widgetId: string) => {
+    setActiveInsight(widgetId);
+    if (widget.aoi?.geometry) {
+      flyToGeoJson(widget.aoi.geometry);
+    }
+  };
+
+  // For widget messages, render clickable insight chips (desktop) instead of
+  // full inline charts. The actual chart renders in InsightCard on the map.
   if (isWidget && message.widgets) {
-    return message.widgets.map((widget, idx) => (
-      <Box
-        mb={4}
-        key={`${widget.title} ${message.id}`}
-        id={`widget-${message.id}-${idx}`}
-        scrollMarginTop="32px"
-      >
-        <WidgetMessage widget={widget} />
-      </Box>
-    ));
+    return (
+      <Flex gap={2} mb={4} flexWrap="wrap">
+        {message.widgets.map((widget, idx) => {
+          // Dataset cards still render inline
+          if (widget.type === "dataset-card") {
+            return (
+              <Box
+                key={`${widget.title}-${message.id}`}
+                id={`widget-${message.id}-${idx}`}
+                w="100%"
+              >
+                <WidgetMessage widget={widget} />
+              </Box>
+            );
+          }
+
+          const widgetId = `widget-${message.id}-${idx}`;
+          return (
+            <Flex
+              key={widgetId}
+              id={widgetId}
+              as="button"
+              onClick={() => handleInsightChipClick(widget, widgetId)}
+              align="center"
+              gap={2}
+              px={3}
+              py={2}
+              rounded="md"
+              border="1px solid"
+              borderColor="primary.subtle"
+              bgGradient="LCLGradientLight"
+              cursor="pointer"
+              transition="all 0.16s ease"
+              _hover={{
+                shadow: "sm",
+                borderColor: "primary.solid",
+              }}
+              maxW="100%"
+              scrollMarginTop="32px"
+            >
+              <Box color="primary.fg" flexShrink={0}>
+                {WidgetIcons[widget.type]}
+              </Box>
+              <Box
+                fontSize="xs"
+                fontWeight="medium"
+                color="primary.fg"
+                whiteSpace="nowrap"
+                overflow="hidden"
+                textOverflow="ellipsis"
+                textAlign="left"
+              >
+                {widget.title}
+              </Box>
+            </Flex>
+          );
+        })}
+      </Flex>
+    );
   }
 
   return (
