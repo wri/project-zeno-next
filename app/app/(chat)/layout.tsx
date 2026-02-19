@@ -22,6 +22,9 @@ import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
 
+const floatingHeader =
+  process.env.NEXT_PUBLIC_FLOATING_HEADER === "true";
+
 export default function DashboardLayout({
   children,
 }: {
@@ -48,7 +51,7 @@ export default function DashboardLayout({
     <Box
       position="relative"
       h={{ base: 0, md: "auto" }}
-      maxH="100vh"
+      maxH={floatingHeader ? "100vh" : "calc(100vh - 3rem)"}
       overflow="hidden"
       display={{ base: "none", md: "block" }}
     >
@@ -118,10 +121,14 @@ export default function DashboardLayout({
     <Grid
       maxH="min(100dvh, 100vh)"
       h="min(100dvh, 100vh)"
-      templateRows={{ base: "1fr", md: "1fr" }}
+      templateRows={{
+        base: "1fr",
+        md: floatingHeader ? "1fr" : "min-content minmax(0px, 1fr)",
+      }}
       bg="bg"
     >
       <UploadAreaDialog />
+      {!isMobile && !floatingHeader && <PageHeader />}
       {isMobile ? MobileLayout : DesktopLayout}
 
       <Suspense fallback={null}>

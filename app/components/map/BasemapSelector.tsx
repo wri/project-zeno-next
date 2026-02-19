@@ -71,7 +71,9 @@ export function BasemapSelector({
           size="lg"
           bg={currentOption ? `url(${currentOption.thumbnailUrl})` : "bg"}
           bgSize="cover"
-          bgPosition="center"
+          css={{
+            backgroundPosition: "center",
+          }}
           position="absolute"
           pointerEvents="all"
           bottom={{ base: "4.25rem", md: "calc(7rem - 2px)" }}

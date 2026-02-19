@@ -8,6 +8,9 @@ import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import { PANEL_WIDTH } from "./LeftPanelContainer";
 import PageHeader from "@/app/components/PageHeader";
 
+const floatingHeader =
+  process.env.NEXT_PUBLIC_FLOATING_HEADER === "true";
+
 export default function MapLayersPanel() {
   const { panelState, openDataset } = useExplorePanelStore();
   const { layers, handleLayerAction } = useLegendHook();
@@ -28,8 +31,8 @@ export default function MapLayersPanel() {
       flexDir="column"
       gap={2}
     >
-      {/* Global header */}
-      <PageHeader />
+      {/* Global header (floating mode only) */}
+      {floatingHeader && <PageHeader />}
 
       {/* Map layers */}
       <Box
