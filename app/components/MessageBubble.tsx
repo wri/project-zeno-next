@@ -52,7 +52,7 @@ function MessageBubble({
   const [isRating, setIsRating] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
-  const { currentThreadId } = useChatStore();
+  const { currentThreadId, sendMessage } = useChatStore();
 
   useEffect(() => {
     // This has to be done by a useEffect, otherwise there will be a hydration
@@ -304,6 +304,23 @@ function MessageBubble({
               </Markdown>
             </CopySelectionTooltip>
           </Box>
+        )}
+        {/* CTA button (e.g. "Analyze {country}" from click-on-map) */}
+        {message.cta && (
+          <Button
+            size="sm"
+            variant="solid"
+            colorPalette="primary"
+            mt={2}
+            onClick={async () => {
+              const result = await sendMessage(message.cta!.prompt);
+              if (result.isNew) {
+                // Navigation handled by sendMessage
+              }
+            }}
+          >
+            {message.cta.label}
+          </Button>
         )}
         {!isUser && !isConsecutive && !isError && !isFirst && (
           <Flex

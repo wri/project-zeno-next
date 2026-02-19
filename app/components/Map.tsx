@@ -23,6 +23,9 @@ import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
+import useChatStore from "@/app/store/chatStore";
+import useExplorePanelStore from "@/app/store/explorePanelStore";
+import type { MapLayerMouseEvent } from "react-map-gl/maplibre";
 import DynamicTileLayers from "./map/layers/DynamicTileLayers";
 import HighlightedFeaturesLayer from "./map/layers/HighlightedFeaturesLayer";
 import SelectAreaLayer from "./map/layers/select-area-layer";
@@ -41,7 +44,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const [basemapTiles, setBasemapTiles] = useState(
     "devseed/cmazl5ws500bz01scaa27dqi4"
   );
-  const { geoJsonFeatures, setMapRef, initializeTerraDraw } = useMapStore();
+  const { geoJsonFeatures, setMapRef, initializeTerraDraw, selectionMode, isDrawingMode } = useMapStore();
+  const { addMessage } = useChatStore();
+  const { openChat } = useExplorePanelStore();
   const { layers, handleLayerAction } = useLegendHook();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
@@ -58,6 +63,40 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
       setMapCenter([map.getCenter().lng, map.getCenter().lat]);
+    }
+  };
+
+  /**
+   * Click-on-map: reverse geocode to get country name, then open chat with
+   * "You clicked on [Country]" + "Analyze [Country]" CTA.
+   * Skipped when in drawing/selection mode or on mobile.
+   */
+  const onMapClick = async (e: MapLayerMouseEvent) => {
+    // Don't interfere with drawing or area selection
+    if (selectionMode || isDrawingMode || isMobile) return;
+
+    const { lng, lat } = e.lngLat;
+
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/search/geocode/v6/reverse?longitude=${lng}&latitude=${lat}&types=country&access_token=${MAPBOX_ACCESS_TOKEN}`
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const country = data?.features?.[0]?.properties?.name;
+      if (!country) return;
+
+      openChat();
+      addMessage({
+        type: "system",
+        message: `You clicked on **${country}**`,
+        cta: {
+          label: `Analyze ${country}`,
+          prompt: `Analyze ${country}`,
+        },
+      });
+    } catch {
+      // Silently fail — reverse geocoding is best-effort
     }
   };
 
@@ -156,6 +195,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         }}
         onLoad={onMapLoad}
         onMove={onMapMove}
+        onClick={onMapClick}
         attributionControl={false}
       >
         <Source

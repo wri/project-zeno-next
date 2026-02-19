@@ -9,6 +9,11 @@ export interface ChatMessage {
   widgets?: InsightWidget[]; // For widget messages
   context?: ContextItem[];
   traceId?: string;
+  /** Optional CTA button to show below the message */
+  cta?: {
+    label: string;
+    prompt: string; // The message to send when clicked
+  };
 }
 
 // Widget types for insights
