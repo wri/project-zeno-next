@@ -132,8 +132,8 @@ export default function MinimizedInput() {
             </Button>
           ))}
 
-        {/* No dataset selected */}
-        {!hasDataset && (
+        {/* Add dataset — always show in initial state, or when no dataset */}
+        {(!hasUserMessages || !hasDataset) && (
           <Button
             size="xs"
             variant="solid"
@@ -142,7 +142,7 @@ export default function MinimizedInput() {
             onClick={openDataset}
           >
             <StackIcon weight="bold" />
-            Select a dataset
+            Add dataset
           </Button>
         )}
 

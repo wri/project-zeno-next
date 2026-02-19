@@ -11,17 +11,17 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
 
 import useExplorePanelStore from "@/app/store/explorePanelStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import useChatStore from "@/app/store/chatStore";
 
-/**
- * Dummy thread history panel — shows thread list, no navigation.
- * Reuses threadGroups from sidebarStore.
- */
 export default function ThreadHistoryPanel() {
-  const { goBack } = useExplorePanelStore();
+  const { goBack, openChat } = useExplorePanelStore();
   const { threadGroups, fetchThreads } = useSidebarStore();
+  const { currentThreadId } = useChatStore();
+  const router = useRouter();
 
   useEffect(() => {
     fetchThreads();
@@ -34,6 +34,11 @@ export default function ThreadHistoryPanel() {
   ].filter((s) => s.threads.length > 0);
 
   const hasThreads = sections.length > 0;
+
+  const handleSelectThread = (threadId: string) => {
+    router.push(`/app/threads/${threadId}`);
+    openChat();
+  };
 
   return (
     <Flex flexDir="column" h="100%" w="100%">
@@ -92,27 +97,33 @@ export default function ThreadHistoryPanel() {
                 </Accordion.ItemTrigger>
                 <Accordion.ItemContent px={0} pt={0}>
                   <Stack gap={1} mt={1}>
-                    {section.threads.map((thread) => (
-                      <Flex
-                        key={thread.id}
-                        align="center"
-                        px={4}
-                        py={1.5}
-                        mx={2}
-                        borderRadius="sm"
-                        _hover={{ layerStyle: "fill.muted" }}
-                        cursor="default"
-                      >
-                        <Text
-                          fontSize="sm"
-                          whiteSpace="nowrap"
-                          overflow="hidden"
-                          textOverflow="ellipsis"
+                    {section.threads.map((thread) => {
+                      const isActive = currentThreadId === thread.id;
+                      return (
+                        <Flex
+                          key={thread.id}
+                          align="center"
+                          px={4}
+                          py={1.5}
+                          mx={2}
+                          borderRadius="sm"
+                          cursor="pointer"
+                          bg={isActive ? "bg.muted" : "transparent"}
+                          color={isActive ? "primary.fg" : "fg"}
+                          _hover={{ layerStyle: "fill.muted" }}
+                          onClick={() => handleSelectThread(thread.id)}
                         >
-                          {thread.name}
-                        </Text>
-                      </Flex>
-                    ))}
+                          <Text
+                            fontSize="sm"
+                            whiteSpace="nowrap"
+                            overflow="hidden"
+                            textOverflow="ellipsis"
+                          >
+                            {thread.name}
+                          </Text>
+                        </Flex>
+                      );
+                    })}
                   </Stack>
                 </Accordion.ItemContent>
               </Accordion.Item>
