@@ -29,6 +29,7 @@ import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import { Legend } from "@/app/components/legend/Legend";
 import MapLayersPanel from "@/app/components/explore/MapLayersPanel";
+import InsightCard from "@/app/components/explore/InsightCard";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -110,6 +111,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
 
       {/* Map Layers panel — desktop only, replaces old bottom-right Legend */}
       <MapLayersPanel />
+
+      {/* Insight card — desktop only, floats top-right */}
+      <InsightCard />
 
       {/* Mobile legend — preserved from original layout */}
       {isMobile && layers.length > 0 && (
