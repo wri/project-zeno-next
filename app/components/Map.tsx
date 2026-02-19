@@ -66,7 +66,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
     <Box
       position="relative"
       overflow="hidden"
-      gridArea="map"
       height="100%"
       bg={mapRef.current ? "transparent" : "neutral.200"}
       css={{

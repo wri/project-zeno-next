@@ -16,6 +16,7 @@ import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
+import LeftPanelContainer from "@/app/components/explore/LeftPanelContainer";
 import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
@@ -30,12 +31,9 @@ export default function DashboardLayout({
   const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
-  const [desktopHeight, setDesktopHeight] = useState("0");
 
   useEffect(() => {
-    // Set layout heights after mount to avoid flash of both layouts at once
     setMobileHeight("min(100dvh, 100vh)");
-    setDesktopHeight("auto");
   }, []);
 
   function DebugToastsMount() {
@@ -47,18 +45,16 @@ export default function DashboardLayout({
   }
 
   const DesktopLayout = (
-    <Grid
-      templateColumns="auto min-content 1fr"
-      templateAreas="'sidebar chat map'"
-      templateRows="1fr"
-      h={{ base: 0, md: desktopHeight }}
+    <Box
+      position="relative"
+      h={{ base: 0, md: "auto" }}
       maxH="calc(100vh - 3rem)"
-      display={{ base: "none", md: "grid" }}
+      overflow="hidden"
+      display={{ base: "none", md: "block" }}
     >
-      <Sidebar />
-      <ChatPanel />
       <Map />
-    </Grid>
+      <LeftPanelContainer />
+    </Box>
   );
 
   const MobileLayout = (
