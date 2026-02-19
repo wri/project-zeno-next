@@ -6,6 +6,7 @@ import useExplorePanelStore from "@/app/store/explorePanelStore";
 import { Legend } from "@/app/components/legend/Legend";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import { PANEL_WIDTH } from "./LeftPanelContainer";
+import PageHeader from "@/app/components/PageHeader";
 
 export default function MapLayersPanel() {
   const { panelState, openDataset } = useExplorePanelStore();
@@ -15,7 +16,7 @@ export default function MapLayersPanel() {
   const leftOffset = isLeftPanelOpen ? PANEL_WIDTH + 12 : 12;
 
   return (
-    <Box
+    <Flex
       position="absolute"
       top={3}
       left={`${leftOffset}px`}
@@ -24,7 +25,13 @@ export default function MapLayersPanel() {
       transition="left 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
       hideBelow="md"
       pointerEvents="auto"
+      flexDir="column"
+      gap={2}
     >
+      {/* Global header */}
+      <PageHeader />
+
+      {/* Map layers */}
       <Box
         bg="bg"
         rounded="md"
@@ -65,6 +72,6 @@ export default function MapLayersPanel() {
           />
         )}
       </Box>
-    </Box>
+    </Flex>
   );
 }

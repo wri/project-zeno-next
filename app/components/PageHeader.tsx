@@ -3,16 +3,17 @@
 import {
   Flex,
   Heading,
-  Button,
   Progress,
   Badge,
   Menu,
   Portal,
   Link as ChakraLink,
   Text,
+  IconButton,
 } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
 import {
+  DotsThreeIcon,
   GearSixIcon,
   LifebuoyIcon,
   SignOutIcon,
@@ -28,6 +29,7 @@ import { toaster } from "@/app/components/ui/toaster";
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
+
   const handleLogout = async () => {
     try {
       toaster.create({
@@ -45,28 +47,34 @@ function PageHeader() {
     url.searchParams.set("origin", "gnw");
     window.location.href = url.toString();
   };
+
   return (
     <Flex
       alignItems="center"
       justifyContent="space-between"
-      px={{ base: 3, md: 5 }}
-      py="2"
-      h={{ base: 10, md: 12 }}
+      px={3}
+      py="1.5"
+      h="auto"
       bg="primary.solid"
       color="fg.inverted"
-      zIndex={1300}
-      position="relative"
+      rounded="md"
+      shadow="md"
+      w="100%"
     >
-      <Flex gap="2" alignItems="center">
+      {/* Logo */}
+      <Flex gap="2" alignItems="center" minW={0}>
         <ChakraLink
           as={Link}
           href="/"
           display="flex"
+          alignItems="center"
+          gap={1}
           transition="opacity 0.24s ease"
           _hover={{ opacity: 0.8 }}
+          flexShrink={0}
         >
-          <LclLogo width={16} avatarOnly fill="white" />
-          <Heading as="h1" size="sm" color="fg.inverted">
+          <LclLogo width={14} avatarOnly fill="white" />
+          <Heading as="h1" size="xs" color="fg.inverted" whiteSpace="nowrap">
             Global Nature Watch
           </Heading>
         </ChakraLink>
@@ -76,124 +84,131 @@ function PageHeader() {
           letterSpacing="wider"
           variant="solid"
           size="xs"
+          flexShrink={0}
         >
           PREVIEW
         </Badge>
       </Flex>
-      <Flex gap="6" alignItems="center" hideBelow="md">
-        <Link href="https://help.globalnaturewatch.org/" target="_blank">
-          <Button
-            variant="solid"
-            colorPalette="primary"
-            _hover={{ bg: "primary.fg" }}
-            size="sm"
-          >
-            <LifebuoyIcon />
-            Help
-          </Button>
-        </Link>
 
-        <Progress.Root
-          size="xs"
-          min={0}
-          max={100}
-          value={(usedPrompts / totalPrompts) * 100}
-          minW="6rem"
-          textAlign="center"
-          rounded="full"
-          colorPalette="primary"
-        >
-          <Progress.Label
-            mb="0.5"
-            fontSize="xs"
-            fontWeight="normal"
-            color="primary.100"
+      {/* Overflow menu — Help, prompts, login */}
+      <Menu.Root positioning={{ placement: "bottom-end" }}>
+        <Menu.Trigger asChild>
+          <IconButton
+            size="xs"
+            variant="ghost"
+            color="fg.inverted"
+            _hover={{ bg: "primary.700" }}
+            aria-label="More options"
+            flexShrink={0}
           >
-            {usedPrompts}/
-            {totalPrompts > 5000 ? (
-              <Text as="span" fontSize="xl" verticalAlign="bottom">
-                ∞
-              </Text>
-            ) : (
-              totalPrompts
-            )}{" "}
-            daily prompts
-            <Tooltip
-              content={
-                totalPrompts > 5000 
-                  ? "You have unlimited prompts!" 
-                  : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
-              }
-              showArrow
-            >
-              <Text
-                as="span"
-                display="inline-block"
-                ml="1"
-                verticalAlign="text-bottom"
-                cursor="help"
-              >
-                <InfoIcon />
-              </Text>
-            </Tooltip>
-          </Progress.Label>
-          <Progress.Track bg="primary.950" maxH="4px">
-            <Progress.Range bg="white" />
-          </Progress.Track>
-        </Progress.Root>
-        {isAuthenticated ? (
-          <Menu.Root positioning={{ placement: "bottom-end" }}>
-            <Menu.Trigger asChild>
-              <Button
-                variant="solid"
-                colorPalette="primary"
-                _hover={{ bg: "primary.fg" }}
-                size="sm"
-              >
-                <UserIcon />
-                {userEmail || "User name"}
-              </Button>
-            </Menu.Trigger>
-            <Portal>
-              <Menu.Positioner>
-                <Menu.Content css={{ "& a": { cursor: "pointer" } }}>
+            <DotsThreeIcon weight="bold" />
+          </IconButton>
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content minW="220px" css={{ "& a": { cursor: "pointer" } }}>
+              {/* Prompt quota */}
+              <Flex px={3} py={2} flexDir="column" gap={1}>
+                <Progress.Root
+                  size="xs"
+                  min={0}
+                  max={100}
+                  value={(usedPrompts / totalPrompts) * 100}
+                  rounded="full"
+                  colorPalette="primary"
+                >
+                  <Progress.Label
+                    mb="0.5"
+                    fontSize="xs"
+                    fontWeight="normal"
+                    color="fg.muted"
+                  >
+                    {usedPrompts}/
+                    {totalPrompts > 5000 ? (
+                      <Text as="span" fontSize="lg" verticalAlign="bottom">
+                        ∞
+                      </Text>
+                    ) : (
+                      totalPrompts
+                    )}{" "}
+                    daily prompts
+                    <Tooltip
+                      content={
+                        totalPrompts > 5000
+                          ? "You have unlimited prompts!"
+                          : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
+                      }
+                      showArrow
+                    >
+                      <Text
+                        as="span"
+                        display="inline-block"
+                        ml="1"
+                        verticalAlign="text-bottom"
+                        cursor="help"
+                      >
+                        <InfoIcon />
+                      </Text>
+                    </Tooltip>
+                  </Progress.Label>
+                  <Progress.Track maxH="4px">
+                    <Progress.Range />
+                  </Progress.Track>
+                </Progress.Root>
+              </Flex>
+
+              <Menu.Separator />
+
+              {/* Help */}
+              <Menu.Item value="help" asChild>
+                <Link
+                  href="https://help.globalnaturewatch.org/"
+                  target="_blank"
+                >
+                  <LifebuoyIcon />
+                  Help
+                </Link>
+              </Menu.Item>
+
+              <Menu.Separator />
+
+              {/* Auth */}
+              {isAuthenticated ? (
+                <>
+                  <Flex px={3} py={1.5}>
+                    <Text fontSize="xs" color="fg.muted" truncate>
+                      {userEmail}
+                    </Text>
+                  </Flex>
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />
                       Settings
                     </Link>
                   </Menu.Item>
-                  <Menu.Separator />
                   <Menu.Item
                     value="logout"
                     cursor="pointer"
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
                     onClick={handleLogout}
-                    title="Log Out"
                   >
                     <SignOutIcon />
                     Logout
                   </Menu.Item>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Portal>
-          </Menu.Root>
-        ) : (
-          <Button
-            asChild
-            variant="solid"
-            colorPalette="primary"
-            _hover={{ bg: "primary.fg" }}
-            size="sm"
-          >
-            <Link href="/app">
-              <UserIcon />
-              Log in / Sign Up
-            </Link>
-          </Button>
-        )}
-      </Flex>
+                </>
+              ) : (
+                <Menu.Item value="login" asChild>
+                  <Link href="/app">
+                    <UserIcon />
+                    Log in / Sign Up
+                  </Link>
+                </Menu.Item>
+              )}
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu.Root>
     </Flex>
   );
 }

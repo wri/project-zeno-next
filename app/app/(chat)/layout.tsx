@@ -48,7 +48,7 @@ export default function DashboardLayout({
     <Box
       position="relative"
       h={{ base: 0, md: "auto" }}
-      maxH="calc(100vh - 3rem)"
+      maxH="100vh"
       overflow="hidden"
       display={{ base: "none", md: "block" }}
     >
@@ -118,12 +118,10 @@ export default function DashboardLayout({
     <Grid
       maxH="min(100dvh, 100vh)"
       h="min(100dvh, 100vh)"
-      templateRows={{ base: "1fr", md: "min-content minmax(0px, 1fr)" }}
+      templateRows={{ base: "1fr", md: "1fr" }}
       bg="bg"
     >
       <UploadAreaDialog />
-
-      {!isMobile && <PageHeader />}
       {isMobile ? MobileLayout : DesktopLayout}
 
       <Suspense fallback={null}>
