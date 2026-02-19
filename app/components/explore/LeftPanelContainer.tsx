@@ -4,6 +4,7 @@ import { Box } from "@chakra-ui/react";
 import useExplorePanelStore from "@/app/store/explorePanelStore";
 import ChatPanel from "@/app/ChatPanel";
 import MinimizedInput from "./MinimizedInput";
+import DatasetBrowserPanel from "./DatasetBrowserPanel";
 
 const PANEL_WIDTH = 420;
 
@@ -42,7 +43,7 @@ export default function LeftPanelContainer() {
           <ChatPanel />
         </Box>
 
-        {/* Dataset browser — Phase 3 placeholder */}
+        {/* Dataset browser */}
         {panelState === "dataset" && (
           <Box
             h="100%"
@@ -51,9 +52,8 @@ export default function LeftPanelContainer() {
             shadow="lg"
             borderRight="1px solid"
             borderColor="border.muted"
-            p={4}
           >
-            Dataset browser placeholder
+            <DatasetBrowserPanel />
           </Box>
         )}
 
