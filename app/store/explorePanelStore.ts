@@ -6,6 +6,8 @@ interface ExplorePanelState {
   panelState: PanelState;
   previousState: PanelState | null;
   activeInsightId: string | null;
+  /** True once the panel slide-in animation has completed */
+  panelReady: boolean;
 }
 
 interface ExplorePanelActions {
@@ -16,6 +18,7 @@ interface ExplorePanelActions {
   closePanel: () => void;
   goBack: () => void;
   setActiveInsight: (id: string | null) => void;
+  setPanelReady: (ready: boolean) => void;
 }
 
 const useExplorePanelStore = create<ExplorePanelState & ExplorePanelActions>(
@@ -23,6 +26,7 @@ const useExplorePanelStore = create<ExplorePanelState & ExplorePanelActions>(
     panelState: "minimized",
     previousState: null,
     activeInsightId: null,
+    panelReady: false,
 
     setPanelState: (panelState) => set({ panelState }),
 
@@ -48,6 +52,7 @@ const useExplorePanelStore = create<ExplorePanelState & ExplorePanelActions>(
     },
 
     setActiveInsight: (id) => set({ activeInsightId: id }),
+    setPanelReady: (ready) => set({ panelReady: ready }),
   })
 );
 

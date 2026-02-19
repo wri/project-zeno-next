@@ -8,9 +8,11 @@ import ChatMessages from "./components/ChatMessages";
 import ChatStatusInfo from "./components/ChatStatusInfo";
 import ChatPanelHeader from "./ChatPanelHeader";
 import useAuthStore from "./store/authStore";
+import useExplorePanelStore from "./store/explorePanelStore";
 
 function ChatPanel() {
   const { usedPrompts, totalPrompts, isAnonymous } = useAuthStore();
+  const { panelReady } = useExplorePanelStore();
   const promptsExhausted = usedPrompts >= totalPrompts;
 
   return (
@@ -41,7 +43,13 @@ function ChatPanel() {
           >
             <ChatMessages />
           </Box>
-          <Box mt="auto" position="sticky" bottom="2">
+          <Box
+            mt="auto"
+            position="sticky"
+            bottom="2"
+            opacity={panelReady ? 1 : 0}
+            transition="opacity 0.18s ease"
+          >
             {promptsExhausted &&
               (isAnonymous ? (
                 <ChatStatusInfo type="error">

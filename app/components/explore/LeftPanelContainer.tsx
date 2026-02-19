@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Box } from "@chakra-ui/react";
 import useExplorePanelStore from "@/app/store/explorePanelStore";
 import ChatPanel from "@/app/ChatPanel";
@@ -12,27 +12,21 @@ const PANEL_WIDTH = 420;
 const SLIDE_DURATION_MS = 280;
 
 export default function LeftPanelContainer() {
-  const { panelState } = useExplorePanelStore();
+  const { panelState, panelReady, setPanelReady } = useExplorePanelStore();
   const isOpen = panelState !== "minimized";
-
-  // Track whether the slide-in has finished so we can reveal content
-  const [panelReady, setPanelReady] = useState(false);
-  // Track whether we were previously open (to detect open→close)
   const wasOpen = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
-      // Panel is opening — wait for slide animation to finish
       setPanelReady(false);
       const timer = setTimeout(() => setPanelReady(true), SLIDE_DURATION_MS);
       wasOpen.current = true;
       return () => clearTimeout(timer);
     } else {
-      // Panel is closing — hide content immediately
       setPanelReady(false);
       wasOpen.current = false;
     }
-  }, [isOpen, panelState]);
+  }, [isOpen, panelState, setPanelReady]);
 
   return (
     <Box
