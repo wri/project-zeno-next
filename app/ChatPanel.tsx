@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { Flex, Box, Text, Link as ChLink } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -10,60 +9,16 @@ import ChatStatusInfo from "./components/ChatStatusInfo";
 import ChatPanelHeader from "./ChatPanelHeader";
 import useAuthStore from "./store/authStore";
 
-const [minWidth, maxWidth, defaultWidth] = [384, 624, 592];
-
 function ChatPanel() {
   const { usedPrompts, totalPrompts, isAnonymous } = useAuthStore();
-
   const promptsExhausted = usedPrompts >= totalPrompts;
-  const [width, setWidth] = useState(defaultWidth);
-  const isDragged = useRef(false);
-
-  // Function to resize chat panel and store width in localStorage
-  useEffect(() => {
-    if (localStorage.getItem("sidebarWidth")) {
-      setWidth(Number(localStorage.getItem("sidebarWidth")));
-    }
-  }, []);
-
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragged.current) {
-        return;
-      }
-
-      setWidth((previousWidth) => {
-        const newWidth = previousWidth + e.movementX / 2;
-        const isWidthInRange = newWidth >= minWidth && newWidth <= maxWidth;
-
-        return isWidthInRange ? newWidth : previousWidth;
-      });
-    };
-    window.addEventListener("mousemove", onMouseMove);
-
-    const onMouseUp = () => {
-      document.body.style.userSelect = "auto";
-      isDragged.current = false;
-    };
-
-    window.addEventListener("mouseup", onMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("sidebarWidth", width.toString());
-  }, [width]);
 
   return (
-    <Flex minH="100%" maxH="100%" gridArea="chat" zIndex={1000} position="relative" bg="bg">
+    <Flex minH="100%" maxH="100%" position="relative" bg="bg" w="100%">
       <Flex
         minH="100%"
         maxH="100%"
-        w={{ base: "full", md: `${width}px` }}
+        w="100%"
         flexDir="column"
       >
         <ChatPanelHeader />
@@ -142,29 +97,6 @@ function ChatPanel() {
           </Box>
         </Flex>
       </Flex>
-      {/* Panel resize handle */}
-      <Box
-        h="full"
-        title="Drag to resize chat panel"
-        w={1 / 2}
-        ml={-1}
-        mr={1 / 2}
-        zIndex={10}
-        bg="transparent"
-        transition="background 0.16s ease"
-        _hover={{
-          bg: "primary.500/50",
-          cursor: "col-resize",
-        }}
-        _active={{
-          bg: "primary.500/50",
-          cursor: "col-resize",
-        }}
-        onMouseDown={() => {
-          isDragged.current = true;
-        }}
-        hideBelow="md"
-      />
     </Flex>
   );
 }

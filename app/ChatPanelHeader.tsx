@@ -10,7 +10,8 @@ import {
 import {
   CaretDownIcon,
   NotePencilIcon,
-  SidebarIcon,
+  XIcon,
+  ClockCounterClockwiseIcon,
   ChartLineIcon,
   ListNumbersIcon,
   ChartBarIcon,
@@ -25,10 +26,11 @@ import Link from "next/link";
 import { Tooltip } from "./components/ui/tooltip";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
+import useExplorePanelStore from "./store/explorePanelStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import { sendGAEvent } from "@next/third-parties/google";
 
-export const WidgetIcons = {
+export const WidgetIcons: Record<string, React.ReactNode> = {
   "line": <ChartLineIcon />,
   "table": <ListNumbersIcon />,
   "bar": <ChartBarIcon />,
@@ -39,15 +41,12 @@ export const WidgetIcons = {
   "dataset-card": <StackIcon />,
   "scatter": <ChartScatterIcon />,
   "area": <ChartPolarIcon />,
-}
+};
 
 function ChatPanelHeader() {
-  const {
-    sideBarVisible,
-    toggleSidebar,
-    getThreadById,
-  } = useSidebarStore();
+  const { getThreadById } = useSidebarStore();
   const { currentThreadId, messages } = useChatStore();
+  const { closePanel, openThreads } = useExplorePanelStore();
 
   const currentThread = getThreadById(currentThreadId);
   const currentThreadName = currentThread
@@ -89,7 +88,7 @@ function ChatPanelHeader() {
     <Flex
       alignItems="center"
       justifyContent="space-between"
-      px="4"
+      px="3"
       py="2"
       gap="1"
       h="14"
@@ -97,28 +96,28 @@ function ChatPanelHeader() {
       color="fg"
       boxShadow="sm"
       hideBelow="md"
-      zIndex={100}
+      flexShrink={0}
     >
-      {!sideBarVisible && (
-        <Tooltip
-          content="Open sidebar"
-          positioning={{ placement: "right" }}
-          showArrow
+      {/* Close panel button */}
+      <Tooltip
+        content="Close panel"
+        positioning={{ placement: "right" }}
+        showArrow
+      >
+        <IconButton
+          size="sm"
+          variant="ghost"
+          color="fg.muted"
+          onClick={closePanel}
+          aria-label="Close panel"
         >
-          <IconButton
-            size="sm"
-            variant="ghost"
-            color="fg.muted"
-            onClick={toggleSidebar}
-          >
-            <SidebarIcon />
-          </IconButton>
-        </Tooltip>
-      )}
+          <XIcon />
+        </IconButton>
+      </Tooltip>
+
+      {/* Thread name */}
       {currentThreadId && currentThread ? (
-        <ThreadActionsMenu
-          thread={currentThread}
-        >
+        <ThreadActionsMenu thread={currentThread}>
           <Button
             variant="ghost"
             size="sm"
@@ -273,15 +272,28 @@ function ChatPanelHeader() {
           </Portal>
         </Menu.Root>
       )}
-      {!sideBarVisible && (
-        <Tooltip content="New conversation" showArrow>
-          <IconButton asChild variant="ghost" size="sm">
-            <Link href="/app" aria-label="New conversation">
-              <NotePencilIcon />
-            </Link>
-          </IconButton>
-        </Tooltip>
-      )}
+
+      {/* Chat History */}
+      <Tooltip content="Chat History" showArrow>
+        <IconButton
+          size="sm"
+          variant="ghost"
+          color="fg.muted"
+          onClick={openThreads}
+          aria-label="Chat History"
+        >
+          <ClockCounterClockwiseIcon />
+        </IconButton>
+      </Tooltip>
+
+      {/* New conversation */}
+      <Tooltip content="New conversation" showArrow>
+        <IconButton asChild variant="ghost" size="sm">
+          <Link href="/app" aria-label="New conversation">
+            <NotePencilIcon />
+          </Link>
+        </IconButton>
+      </Tooltip>
     </Flex>
   );
 }
