@@ -9,6 +9,7 @@ const PANEL_WIDTH = 420;
 
 export default function LeftPanelContainer() {
   const { panelState } = useExplorePanelStore();
+  const isOpen = panelState !== "minimized";
 
   return (
     <Box
@@ -17,68 +18,74 @@ export default function LeftPanelContainer() {
       top={0}
       bottom={0}
       zIndex={400}
-      width={`${PANEL_WIDTH}px`}
       pointerEvents="none"
-      transition="opacity 0.2s ease"
     >
-      {/* Chat panel — kept mounted, toggled via display for scroll/state preservation */}
+      {/* Sliding panel wrapper */}
       <Box
-        display={panelState === "chat" ? "flex" : "none"}
-        flexDirection="column"
         h="100%"
-        w="100%"
-        bg="bg"
-        pointerEvents="auto"
-        shadow="lg"
-        borderRight="1px solid"
-        borderColor="border.muted"
+        w={`${PANEL_WIDTH}px`}
+        transform={isOpen ? "translateX(0)" : `translateX(-100%)`}
+        transition="transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+        pointerEvents={isOpen ? "auto" : "none"}
       >
-        <ChatPanel />
+        {/* Chat panel — kept mounted, toggled via display for scroll/state preservation */}
+        <Box
+          display={panelState === "chat" ? "flex" : "none"}
+          flexDirection="column"
+          h="100%"
+          w="100%"
+          bg="bg"
+          shadow="lg"
+          borderRight="1px solid"
+          borderColor="border.muted"
+        >
+          <ChatPanel />
+        </Box>
+
+        {/* Dataset browser — Phase 3 placeholder */}
+        {panelState === "dataset" && (
+          <Box
+            h="100%"
+            w="100%"
+            bg="bg"
+            shadow="lg"
+            borderRight="1px solid"
+            borderColor="border.muted"
+            p={4}
+          >
+            Dataset browser placeholder
+          </Box>
+        )}
+
+        {/* Thread history — Phase 5 placeholder */}
+        {panelState === "threads" && (
+          <Box
+            h="100%"
+            w="100%"
+            bg="bg"
+            shadow="lg"
+            borderRight="1px solid"
+            borderColor="border.muted"
+            p={4}
+          >
+            Thread history placeholder
+          </Box>
+        )}
       </Box>
 
-      {/* Dataset browser — Phase 3 placeholder */}
-      {panelState === "dataset" && (
-        <Box
-          h="100%"
-          w="100%"
-          bg="bg"
-          pointerEvents="auto"
-          shadow="lg"
-          borderRight="1px solid"
-          borderColor="border.muted"
-          p={4}
-        >
-          Dataset browser placeholder
-        </Box>
-      )}
-
-      {/* Thread history — Phase 5 placeholder */}
-      {panelState === "threads" && (
-        <Box
-          h="100%"
-          w="100%"
-          bg="bg"
-          pointerEvents="auto"
-          shadow="lg"
-          borderRight="1px solid"
-          borderColor="border.muted"
-          p={4}
-        >
-          Thread history placeholder
-        </Box>
-      )}
-
       {/* Minimized input — shown at bottom-left when panel is closed */}
-      {panelState === "minimized" && (
-        <Box
-          position="absolute"
-          bottom={4}
-          left={4}
-          pointerEvents="auto"
-        >
-          <MinimizedInput />
-        </Box>
-      )}
+      <Box
+        position="absolute"
+        bottom={4}
+        left={4}
+        pointerEvents="auto"
+        opacity={panelState === "minimized" ? 1 : 0}
+        transform={panelState === "minimized" ? "translateY(0)" : "translateY(8px)"}
+        transition="opacity 0.2s ease, transform 0.2s ease"
+        visibility={panelState === "minimized" ? "visible" : "hidden"}
+      >
+        <MinimizedInput />
+      </Box>
     </Box>
   );
 }
