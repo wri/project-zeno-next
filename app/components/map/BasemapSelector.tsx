@@ -1,5 +1,6 @@
 "use client";
 import {
+  Box,
   Popover,
   Image,
   VStack,
@@ -86,20 +87,23 @@ export function BasemapSelector({
             base: "0.16s ease-out 1 forwards slide-from-bottom-full, 0.24s ease-out 1 forwards fade-in",
             md: "none",
           }}
-          css={{
-            "& svg": {
-              width: "20px",
-              height: "20px",
-            },
-          }}
         >
-          <MapTrifoldIcon
-            fill={
-              currentOption.id === "light"
-                ? "var(--chakra-colors-fg-muted)"
-                : "var(--chakra-colors-fg-inverted)"
-            }
-          />
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            w="100%"
+            h="100%"
+          >
+            <MapTrifoldIcon
+              size={18}
+              fill={
+                currentOption.id === "light"
+                  ? "var(--chakra-colors-fg-muted)"
+                  : "var(--chakra-colors-fg-inverted)"
+              }
+            />
+          </Box>
         </IconButton>
       </Popover.Trigger>
       <Popover.Positioner>

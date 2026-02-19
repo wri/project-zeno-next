@@ -93,6 +93,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       const country = data?.features?.[0]?.properties?.name;
       if (!country) return;
 
+      // Remove any previous click-on-map messages before adding the new one
+      const { messages } = useChatStore.getState();
+      const filtered = messages.filter((m) => !m.cta);
+      useChatStore.setState({ messages: filtered });
+
       openChat();
       addMessage({
         type: "system",
