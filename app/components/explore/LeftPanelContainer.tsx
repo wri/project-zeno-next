@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Box } from "@chakra-ui/react";
 import useExplorePanelStore from "@/app/store/explorePanelStore";
 import ChatPanel from "@/app/ChatPanel";
@@ -8,10 +9,30 @@ import DatasetBrowserPanel from "./DatasetBrowserPanel";
 import ThreadHistoryPanel from "./ThreadHistoryPanel";
 
 const PANEL_WIDTH = 420;
+const SLIDE_DURATION_MS = 280;
 
 export default function LeftPanelContainer() {
   const { panelState } = useExplorePanelStore();
   const isOpen = panelState !== "minimized";
+
+  // Track whether the slide-in has finished so we can reveal content
+  const [panelReady, setPanelReady] = useState(false);
+  // Track whether we were previously open (to detect open→close)
+  const wasOpen = useRef(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Panel is opening — wait for slide animation to finish
+      setPanelReady(false);
+      const timer = setTimeout(() => setPanelReady(true), SLIDE_DURATION_MS);
+      wasOpen.current = true;
+      return () => clearTimeout(timer);
+    } else {
+      // Panel is closing — hide content immediately
+      setPanelReady(false);
+      wasOpen.current = false;
+    }
+  }, [isOpen, panelState]);
 
   return (
     <Box
@@ -28,7 +49,7 @@ export default function LeftPanelContainer() {
         h="100%"
         w={`${PANEL_WIDTH}px`}
         transform={isOpen ? "translateX(0)" : "translateX(-100%)"}
-        transition="transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)"
+        transition={`transform ${SLIDE_DURATION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`}
         pointerEvents={isOpen ? "auto" : "none"}
       >
         {/* Shared panel chrome */}
@@ -43,21 +64,31 @@ export default function LeftPanelContainer() {
           flexDirection="column"
           overflow="hidden"
         >
-          {/* Chat panel — kept mounted, toggled via display for scroll/state preservation */}
+          {/* Content — fades in after slide completes */}
           <Box
-            display={panelState === "chat" ? "flex" : "none"}
+            opacity={panelReady ? 1 : 0}
+            transition="opacity 0.15s ease"
+            display="flex"
             flexDirection="column"
             h="100%"
             w="100%"
           >
-            <ChatPanel />
+            {/* Chat panel — kept mounted, toggled via display for scroll/state preservation */}
+            <Box
+              display={panelState === "chat" ? "flex" : "none"}
+              flexDirection="column"
+              h="100%"
+              w="100%"
+            >
+              <ChatPanel />
+            </Box>
+
+            {/* Dataset browser */}
+            {panelState === "dataset" && <DatasetBrowserPanel />}
+
+            {/* Thread history */}
+            {panelState === "threads" && <ThreadHistoryPanel />}
           </Box>
-
-          {/* Dataset browser */}
-          {panelState === "dataset" && <DatasetBrowserPanel />}
-
-          {/* Thread history */}
-          {panelState === "threads" && <ThreadHistoryPanel />}
         </Box>
       </Box>
 
