@@ -30,7 +30,7 @@ import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
 import useChatStore from "@/app/store/chatStore";
-import useExplorePanelStore from "@/app/store/explorePanelStore";
+
 import type { MapLayerMouseEvent } from "react-map-gl/maplibre";
 import DynamicTileLayers from "./map/layers/DynamicTileLayers";
 import HighlightedFeaturesLayer from "./map/layers/HighlightedFeaturesLayer";
@@ -53,7 +53,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   );
   const { geoJsonFeatures, setMapRef, initializeTerraDraw, selectionMode, isDrawingMode } = useMapStore();
   const { addMessage } = useChatStore();
-  const { openChat } = useExplorePanelStore();
   const { layers, handleLayerAction } = useLegendHook();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
@@ -98,7 +97,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       const filtered = messages.filter((m) => !m.cta);
       useChatStore.setState({ messages: filtered });
 
-      openChat();
       addMessage({
         type: "system",
         message: `You clicked on **${country}**`,
