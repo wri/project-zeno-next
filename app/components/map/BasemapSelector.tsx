@@ -70,6 +70,7 @@ export function BasemapSelector({
           size="lg"
           bg={currentOption ? `url(${currentOption.thumbnailUrl})` : "bg"}
           bgSize="cover"
+          bgPosition="center"
           position="absolute"
           pointerEvents="all"
           bottom={{ base: "4.25rem", md: "calc(7rem - 2px)" }}
@@ -84,6 +85,12 @@ export function BasemapSelector({
           animation={{
             base: "0.16s ease-out 1 forwards slide-from-bottom-full, 0.24s ease-out 1 forwards fade-in",
             md: "none",
+          }}
+          css={{
+            "& svg": {
+              width: "20px",
+              height: "20px",
+            },
           }}
         >
           <MapTrifoldIcon
