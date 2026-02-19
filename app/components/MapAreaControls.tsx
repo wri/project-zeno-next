@@ -169,7 +169,7 @@ function MapAreaControls({
         <BasemapSelector
           currentBasemap={basemapTiles}
           onBasemapChange={setBasemapTiles}
-          display={{ base: showTools ? "inherit" : "none", md: "inherit" }}
+          display={{ base: showTools ? "inherit" : "none", md: "none" }}
         />
         <ButtonGroup
           size="sm"

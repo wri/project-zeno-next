@@ -47,12 +47,15 @@ interface BasemapSelectorProps {
   display: Record<string, string> | string;
   currentBasemap: string;
   onBasemapChange: (tileUrl: string) => void;
+  /** Override default bottom/left positioning */
+  positionProps?: Record<string, unknown>;
 }
 
 export function BasemapSelector({
   display,
   currentBasemap,
   onBasemapChange,
+  positionProps,
 }: BasemapSelectorProps) {
   const currentOption =
     basemapOptions.find((option) => option.tileUrl === currentBasemap) ||
@@ -72,6 +75,7 @@ export function BasemapSelector({
           bottom={{ base: "4.25rem", md: "calc(7rem - 2px)" }}
           left={{ base: 3.5, md: "calc(0.5rem - 2px)" }}
           zIndex={510}
+          {...positionProps}
           boxShadow="md"
           border="1px solid"
           borderColor={

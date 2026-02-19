@@ -19,7 +19,14 @@ import {
   Link as ChLink,
   Spinner,
 } from "@chakra-ui/react";
-import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import {
+  ListDashesIcon,
+  PlusIcon,
+  XIcon,
+  MapTrifoldIcon,
+  BellIcon,
+  FileTextIcon,
+} from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
@@ -33,6 +40,7 @@ import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import { Legend } from "@/app/components/legend/Legend";
 import MapLayersPanel from "@/app/components/explore/MapLayersPanel";
 import InsightCard from "@/app/components/explore/InsightCard";
+import { BasemapSelector } from "@/app/components/map/BasemapSelector";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -154,6 +162,66 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       {/* Insight card — desktop only, floats top-right */}
       <InsightCard />
 
+      {/* Floating Map/Monitor/Report tabs — desktop only, top-center */}
+      <Flex
+        position="absolute"
+        top={3}
+        left="50%"
+        transform="translateX(-50%)"
+        gap={1}
+        zIndex={150}
+        hideBelow="md"
+        pointerEvents="auto"
+        bg="bg"
+        rounded="md"
+        shadow="md"
+        p={1}
+        border="1px solid"
+        borderColor="border.muted"
+      >
+        <Button
+          size="sm"
+          variant="solid"
+          colorPalette="primary"
+          pointerEvents="none"
+        >
+          <MapTrifoldIcon weight="fill" />
+          Map
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          color="fg.muted"
+          cursor="default"
+        >
+          <BellIcon />
+          Monitor
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          color="fg.muted"
+          cursor="default"
+        >
+          <FileTextIcon />
+          Report
+        </Button>
+      </Flex>
+
+      {/* Basemap selector — desktop only, bottom-right */}
+      {!isMobile && (
+        <BasemapSelector
+          currentBasemap={basemapTiles}
+          onBasemapChange={setBasemapTiles}
+          display={{ base: "none", md: "inherit" }}
+          positionProps={{
+            left: "auto",
+            right: 3,
+            bottom: "7rem",
+          }}
+        />
+      )}
+
       {/* Mobile legend — preserved from original layout */}
       {isMobile && layers.length > 0 && (
         <Button
@@ -237,8 +305,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         />
         {!isMobile && (
           <>
-            <ScaleControl position="bottom-left" />
-            <NavigationControl showCompass={false} position="bottom-left" />
+            <ScaleControl position="bottom-right" />
+            <NavigationControl showCompass={false} position="bottom-right" />
           </>
         )}
         <Flex
