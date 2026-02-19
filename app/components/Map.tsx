@@ -208,7 +208,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         </Button>
       </Flex>
 
-      {/* Basemap selector — desktop only, bottom-right */}
+      {/* Basemap selector — desktop only, above zoom controls bottom-right */}
       {!isMobile && (
         <BasemapSelector
           currentBasemap={basemapTiles}
@@ -217,7 +217,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           positionProps={{
             left: "auto",
             right: 3,
-            bottom: "7rem",
+            bottom: "6.5rem",
           }}
         />
       )}
@@ -295,7 +295,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         </AbsoluteCenter>
         <AttributionControl
           customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
-          position="bottom-right"
+          position="bottom-left"
           compact={isMobile ? true : false}
           style={{
             background: "transparent",
@@ -305,15 +305,16 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         />
         {!isMobile && (
           <>
-            <ScaleControl position="bottom-right" />
+            <ScaleControl position="bottom-left" />
             <NavigationControl showCompass={false} position="bottom-right" />
           </>
         )}
+        {/* Policy links + coords — bottom-left, above attribution */}
         <Flex
           pos="absolute"
-          bottom="4"
-          right="3"
-          p="2"
+          bottom="2.5rem"
+          left="3"
+          p="0"
           fontSize="xs"
           bg="transparent"
           hideBelow="md"
