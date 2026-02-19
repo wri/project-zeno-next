@@ -28,6 +28,7 @@ import HighlightedFeaturesLayer from "./map/layers/HighlightedFeaturesLayer";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import { Legend } from "@/app/components/legend/Legend";
+import MapLayersPanel from "@/app/components/explore/MapLayersPanel";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -47,14 +48,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
       setMapCenter([map.getCenter().lng, map.getCenter().lat]);
-      // Set the map ref in the store for other components to use
       setMapRef(mapRef.current);
-
       initializeTerraDraw(map);
     }
   };
 
-  // Update map center when map moves
   const onMapMove = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -109,6 +107,41 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Spinner size="xl" borderWidth="4px" color="primary.solid" />
         </AbsoluteCenter>
       )}
+
+      {/* Map Layers panel — desktop only, replaces old bottom-right Legend */}
+      <MapLayersPanel />
+
+      {/* Mobile legend — preserved from original layout */}
+      {isMobile && layers.length > 0 && (
+        <Button
+          variant="subtle"
+          position="absolute"
+          bottom={6}
+          right={3}
+          key="legendButton"
+          size="xs"
+          bg={showLegend ? "bg.muted" : "bg"}
+          _active={{ bg: "bg.muted" }}
+          flexDirection="column"
+          h="auto"
+          px={3}
+          py={1}
+          gap={0}
+          lineHeight="0.875rem"
+          zIndex={500}
+          pointerEvents="all"
+          onClick={() => setShowLegend((prev) => !prev)}
+          fontFamily="body"
+          color="fg.muted"
+        >
+          {!showLegend ? <ListDashesIcon /> : <XIcon />}
+          Legend
+        </Button>
+      )}
+      {isMobile && showLegend && (
+        <Legend layers={layers} onLayerAction={handleLayerAction} />
+      )}
+
       <MapGl
         ref={mapRef}
         style={{ width: "100%", height: "100%" }}
@@ -130,36 +163,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        {layers.length > 0 && (
-          <Button
-            variant="subtle"
-            position="absolute"
-            bottom={6}
-            right={3}
-            key="legendButton"
-            size="xs"
-            bg={showLegend ? "bg.muted" : "bg"}
-            _active={{ bg: "bg.muted" }}
-            flexDirection="column"
-            h="auto"
-            px={3}
-            py={1}
-            gap={0}
-            lineHeight="0.875rem"
-            hideFrom="md"
-            zIndex={500}
-            pointerEvents="all"
-            onClick={() => setShowLegend((prev) => !prev)}
-            fontFamily="body"
-            color="fg.muted"
-          >
-            {!showLegend ? <ListDashesIcon /> : <XIcon />}
-            Legend
-          </Button>
-        )}
-        <Box display={{ base: showLegend ? "inherit" : "none", md: "inherit" }}>
-          <Legend layers={layers} onLayerAction={handleLayerAction} />
-        </Box>
 
         <DynamicTileLayers />
         <HighlightedFeaturesLayer

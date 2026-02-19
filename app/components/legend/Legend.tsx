@@ -20,6 +20,8 @@ const ChReorderItem = chakra(Reorder.Item);
 interface LegendProps {
   layers: LegendLayer[];
   onLayerAction?: LayerActionHandler;
+  /** When true, Legend renders as a static block (no absolute positioning). */
+  inline?: boolean;
 }
 
 /**
@@ -29,21 +31,25 @@ interface LegendProps {
  * @param props.layers - Array of LegendLayer objects to display.
  */
 export function Legend(props: LegendProps) {
-  const { layers, onLayerAction } = props;
+  const { layers, onLayerAction, inline } = props;
 
   if (!layers.length) return null;
 
   return (
     <Flex
-      position="absolute"
-      right={3}
-      bottom={{ base: "4.5rem", md: 12 }}
-      zIndex={100}
-      width={320}
+      {...(inline
+        ? { width: "100%" }
+        : {
+            position: "absolute",
+            right: 3,
+            bottom: { base: "4.5rem", md: 12 },
+            zIndex: 100,
+            width: 320,
+            shadow: "sm",
+          })}
       bg="bg"
       overflow="hidden"
       rounded="sm"
-      shadow="sm"
     >
       <VisuallyHidden>
         <Heading>Map Legend</Heading>
