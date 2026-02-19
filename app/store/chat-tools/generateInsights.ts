@@ -1,4 +1,6 @@
 import { ChatMessage, StreamMessage, InsightWidget } from "@/app/types/chat";
+import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
 
 interface ChartData {
   id: string;
@@ -10,6 +12,40 @@ interface ChartData {
   yAxis: string;
 }
 
+/**
+ * Capture the current AOI from context + map stores so each insight widget
+ * carries the location it was generated for (used for fly-to on activation).
+ */
+function captureCurrentAoi(): InsightWidget["aoi"] | undefined {
+  const areaCtx = useContextStore
+    .getState()
+    .context.find((c) => c.contextType === "area");
+  if (!areaCtx?.aoiData) return undefined;
+
+  // Try to find matching geometry from map store
+  const geoFeatures = useMapStore.getState().geoJsonFeatures;
+  const match = geoFeatures.find(
+    (f) => f.id === areaCtx.aoiData?.src_id || f.name === areaCtx.aoiData?.name
+  );
+
+  const geometry = match?.data
+    ? match.data.type === "Feature"
+      ? match.data
+      : match.data.type === "FeatureCollection" && match.data.features[0]
+        ? match.data.features[0]
+        : undefined
+    : undefined;
+
+  return {
+    name: areaCtx.aoiData.name,
+    src_id: areaCtx.aoiData.src_id,
+    gadm_id: areaCtx.aoiData.gadm_id,
+    source: areaCtx.aoiData.source,
+    subtype: areaCtx.aoiData.subtype,
+    geometry: geometry as GeoJSON.Feature | undefined,
+  };
+}
+
 export function generateInsightsTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void
@@ -17,6 +53,8 @@ export function generateInsightsTool(
   try {
     // Handle charts_data from streamMessage
     if (streamMessage.charts_data && Array.isArray(streamMessage.charts_data)) {
+      const aoi = captureCurrentAoi();
+
       const widgets: InsightWidget[] = (
         streamMessage.charts_data as ChartData[]
       ).map((chart: ChartData) => ({
@@ -30,6 +68,7 @@ export function generateInsightsTool(
           codeact_parts: streamMessage.codeact_parts,
           source_urls: streamMessage.source_urls,
         },
+        aoi,
       }));
 
       console.log("FRONTEND: Received charts_data message:", widgets);

@@ -29,6 +29,15 @@ export interface InsightWidget {
   xAxis: string;
   yAxis: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
+  /** AOI that was active when this insight was generated, used for fly-to on map */
+  aoi?: {
+    name: string;
+    src_id?: string;
+    gadm_id?: string;
+    source?: string;
+    subtype?: string;
+    geometry?: GeoJSON.Feature;
+  };
 }
 
 // Raw insight data from API (before conversion to InsightWidget)
