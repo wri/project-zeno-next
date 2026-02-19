@@ -41,4 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.prompts/*
+.prompts/*PRD.md
+PRD.md
+*.plan.md
+PLAN.md
