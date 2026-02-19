@@ -17,6 +17,8 @@ import {
   FilePlusIcon,
   InfoIcon,
   ChatTextIcon,
+  ArrowsInSimpleIcon,
+  TextAaIcon,
 } from "@phosphor-icons/react";
 import { toaster } from "@/app/components/ui/toaster";
 
@@ -59,9 +61,9 @@ export default function InsightCard() {
 
   const isChartType = ["bar", "stacked-bar", "grouped-bar", "line", "area", "pie", "scatter"].includes(widget.type);
 
-  const handleExplain = async () => {
+  const handlePrompt = async (prompt: string) => {
     openChat();
-    await sendMessage(`Explain this insight: ${widget.title}`);
+    await sendMessage(prompt);
   };
 
   const handleAddToReport = () => {
@@ -144,18 +146,51 @@ export default function InsightCard() {
 
         <VisualizationDisclaimer />
 
-        {/* Explain link */}
-        <Button
-          size="xs"
-          variant="ghost"
-          color="primary.fg"
-          onClick={handleExplain}
-          justifyContent="flex-start"
-          px={0}
-        >
-          <ChatTextIcon />
-          Explain this to me
-        </Button>
+        {/* Quick prompts */}
+        <Flex gap={2} flexWrap="wrap">
+          <Button
+            size="xs"
+            variant="solid"
+            colorPalette="primary"
+            rounded="full"
+            onClick={() =>
+              handlePrompt(
+                `Explain this insight in detail: "${widget.title}"`
+              )
+            }
+          >
+            <ChatTextIcon weight="bold" />
+            Explain
+          </Button>
+          <Button
+            size="xs"
+            variant="solid"
+            colorPalette="primary"
+            rounded="full"
+            onClick={() =>
+              handlePrompt(
+                `Simplify this insight in plain language: "${widget.title}"`
+              )
+            }
+          >
+            <TextAaIcon weight="bold" />
+            Simplify
+          </Button>
+          <Button
+            size="xs"
+            variant="solid"
+            colorPalette="primary"
+            rounded="full"
+            onClick={() =>
+              handlePrompt(
+                `Give me a one-sentence TL;DR of this insight: "${widget.title}"`
+              )
+            }
+          >
+            <ArrowsInSimpleIcon weight="bold" />
+            TL;DR
+          </Button>
+        </Flex>
 
         <Separator />
 
