@@ -5,6 +5,7 @@ import useExplorePanelStore from "@/app/store/explorePanelStore";
 import ChatPanel from "@/app/ChatPanel";
 import MinimizedInput from "./MinimizedInput";
 import DatasetBrowserPanel from "./DatasetBrowserPanel";
+import ThreadHistoryPanel from "./ThreadHistoryPanel";
 
 const PANEL_WIDTH = 420;
 
@@ -57,7 +58,7 @@ export default function LeftPanelContainer() {
           </Box>
         )}
 
-        {/* Thread history — Phase 5 placeholder */}
+        {/* Thread history */}
         {panelState === "threads" && (
           <Box
             h="100%"
@@ -66,9 +67,8 @@ export default function LeftPanelContainer() {
             shadow="lg"
             borderRight="1px solid"
             borderColor="border.muted"
-            p={4}
           >
-            Thread history placeholder
+            <ThreadHistoryPanel />
           </Box>
         )}
       </Box>
