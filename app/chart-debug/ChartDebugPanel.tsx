@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Box,
   Container,
@@ -10,7 +10,10 @@ import {
   Separator,
   Badge,
   Button,
+  Menu,
+  Portal,
 } from "@chakra-ui/react";
+import { CaretDownIcon, XIcon } from "@phosphor-icons/react";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import type { InsightWidget, InsightGeneration } from "@/app/types/chat";
 import CHART_COLOR_MAPPING, { DATASET_SERIES_COLORS, DATASET_DIVERGENT_COLORS } from "@/app/config/chartColorMappings";
@@ -474,6 +477,142 @@ const FIXTURES = RAW_FIXTURES.map((f) => ({
 // Component
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Dataset picker per fixture — lets you test different dataset palettes
+// ---------------------------------------------------------------------------
+
+/** Chart types where a single-series dataset color applies */
+const DATASET_COLOR_TYPES = new Set(["bar", "line", "area", "scatter"]);
+
+/** Build the menu options once: series colors + divergent (bar-only) */
+function useDatasetOptions(chartType: string) {
+  return useMemo(() => {
+    const options: { label: string; value: string; swatch: string }[] = [];
+
+    // Series colors apply to all single-series types
+    for (const [name, hex] of Object.entries(DATASET_SERIES_COLORS)) {
+      options.push({ label: name, value: name, swatch: hex });
+    }
+
+    // Divergent colors only make sense for bar charts
+    if (chartType === "bar") {
+      for (const [name, colors] of Object.entries(DATASET_DIVERGENT_COLORS)) {
+        options.push({ label: `${name} (divergent)`, value: name, swatch: colors.positive });
+      }
+    }
+
+    return options;
+  }, [chartType]);
+}
+
+interface FixtureCardProps {
+  fixture: { label: string; notes: string; widget: InsightWidget };
+  showSeparator: boolean;
+}
+
+function FixtureCard({ fixture, showSeparator }: FixtureCardProps) {
+  const [datasetOverride, setDatasetOverride] = useState<string | null>(null);
+  const options = useDatasetOptions(fixture.widget.type);
+  const canPickDataset = DATASET_COLOR_TYPES.has(fixture.widget.type);
+
+  const widget = datasetOverride
+    ? { ...fixture.widget, datasetName: datasetOverride }
+    : fixture.widget;
+
+  return (
+    <Box>
+      <Flex align="baseline" gap={2} mb={1}>
+        <Heading size="sm" m={0}>
+          {fixture.label}
+        </Heading>
+        <Badge size="sm" variant="outline">
+          {fixture.widget.type}
+        </Badge>
+      </Flex>
+      <Text fontSize="xs" color="fg.muted" mb={2}>
+        {fixture.notes}
+      </Text>
+
+      {canPickDataset && (
+        <Flex align="center" gap={2} mb={3}>
+          <Menu.Root positioning={{ placement: "bottom-start" }}>
+            <Menu.Trigger asChild>
+              <Button size="xs" variant="outline" h={6} rounded="sm">
+                {datasetOverride ? (
+                  <>
+                    <Box
+                      w="10px"
+                      h="10px"
+                      rounded="full"
+                      bg={
+                        DATASET_SERIES_COLORS[datasetOverride] ||
+                        DATASET_DIVERGENT_COLORS[datasetOverride]?.positive ||
+                        "gray"
+                      }
+                    />
+                    {datasetOverride.length > 40
+                      ? `${datasetOverride.slice(0, 38)}…`
+                      : datasetOverride}
+                  </>
+                ) : (
+                  "Test dataset palette…"
+                )}
+                <CaretDownIcon size={12} />
+              </Button>
+            </Menu.Trigger>
+            <Portal>
+              <Menu.Positioner>
+                <Menu.Content maxH="260px" overflowY="auto" minW="240px">
+                  {options.map((opt) => (
+                    <Menu.Item
+                      key={opt.value}
+                      value={opt.value}
+                      onClick={() => setDatasetOverride(opt.value)}
+                    >
+                      <Box
+                        w="12px"
+                        h="12px"
+                        minW="12px"
+                        rounded="sm"
+                        bg={opt.swatch}
+                        border="1px solid"
+                        borderColor="border"
+                      />
+                      <Text fontSize="xs">{opt.label}</Text>
+                    </Menu.Item>
+                  ))}
+                </Menu.Content>
+              </Menu.Positioner>
+            </Portal>
+          </Menu.Root>
+
+          {datasetOverride && (
+            <Button
+              size="xs"
+              variant="ghost"
+              h={6}
+              px={1}
+              rounded="sm"
+              onClick={() => setDatasetOverride(null)}
+              aria-label="Clear dataset override"
+            >
+              <XIcon size={12} />
+              Clear
+            </Button>
+          )}
+        </Flex>
+      )}
+
+      <WidgetMessage widget={widget} />
+      {showSeparator && <Separator mt={8} />}
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main panel
+// ---------------------------------------------------------------------------
+
 export default function ChartDebugPanel() {
   const [filter, setFilter] = useState<string>("all");
   const [showPalettes, setShowPalettes] = useState(false);
@@ -701,21 +840,11 @@ export default function ChartDebugPanel() {
 
         <Flex direction="column" gap={8}>
           {filtered.map((fixture, idx) => (
-            <Box key={idx}>
-              <Flex align="baseline" gap={2} mb={1}>
-                <Heading size="sm" m={0}>
-                  {fixture.label}
-                </Heading>
-                <Badge size="sm" variant="outline">
-                  {fixture.widget.type}
-                </Badge>
-              </Flex>
-              <Text fontSize="xs" color="fg.muted" mb={3}>
-                {fixture.notes}
-              </Text>
-              <WidgetMessage widget={fixture.widget} />
-              {idx < filtered.length - 1 && <Separator mt={8} />}
-            </Box>
+            <FixtureCard
+              key={idx}
+              fixture={fixture}
+              showSeparator={idx < filtered.length - 1}
+            />
           ))}
         </Flex>
 
