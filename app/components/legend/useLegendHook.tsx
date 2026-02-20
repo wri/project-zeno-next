@@ -238,16 +238,33 @@ export function useLegendHook() {
           if (dsCard?.configurable_params) {
             const specs = dsCard.configurable_params;
 
+            // If all params are at defaults, remove derived chips instead of
+            // upserting default values — resetting should return to the
+            // original chipless state.
+            const isAllDefault = Object.entries(specs).every(
+              ([key, spec]) => (payload.params[key] ?? spec.default) === spec.default
+            );
+            if (isAllDefault) {
+              const ctx = useContextStore.getState();
+              ctx.context
+                .filter((c) => ["threshold", "confidence", "date"].includes(c.contextType))
+                .forEach((c) => removeContext(c.id));
+              break;
+            }
+
             // Threshold chip — threshold params are now categorical with url_key containing "threshold"
             const thresholdEntry = Object.entries(specs).find(
               ([, s]) => s.type === "categorical" && s.url_key.includes("threshold")
             );
             if (thresholdEntry) {
               const val = payload.params[thresholdEntry[0]] ?? thresholdEntry[1].default;
-              upsertContextByType({
-                contextType: "threshold",
-                content: `Tree cover ≥ ${val}%`,
-              });
+              const existingThresholdChip = context.find((c) => c.contextType === "threshold");
+              if (val !== thresholdEntry[1].default || existingThresholdChip) {
+                upsertContextByType({
+                  contextType: "threshold",
+                  content: `Tree cover ≥ ${val}%`,
+                });
+              }
             }
 
             // Confidence chip — categorical params with "confidence" in url_key
@@ -256,11 +273,14 @@ export function useLegendHook() {
             );
             if (confEntry) {
               const val = (payload.params[confEntry[0]] ?? confEntry[1].default) as string;
-              const opt = confEntry[1].options?.find((o) => o.value === val);
-              upsertContextByType({
-                contextType: "confidence",
-                content: `Confidence: ${opt?.label ?? val}`,
-              });
+              const existingConfChip = context.find((c) => c.contextType === "confidence");
+              if (val !== confEntry[1].default || existingConfChip) {
+                const opt = confEntry[1].options?.find((o) => o.value === val);
+                upsertContextByType({
+                  contextType: "confidence",
+                  content: `Confidence: ${opt?.label ?? val}`,
+                });
+              }
             }
 
             // Date range chip — sync year range or date range params to date context
@@ -277,28 +297,38 @@ export function useLegendHook() {
               ([, s]) => s.type === "date" && s.url_key.includes("end")
             );
 
+            const existingDateChip = context.find((c) => c.contextType === "date");
+
             if (startYearSpec && endYearSpec) {
               const startVal = payload.params[startYearSpec[0]] ?? startYearSpec[1].default;
               const endVal = payload.params[endYearSpec[0]] ?? endYearSpec[1].default;
-              upsertContextByType({
-                contextType: "date",
-                content: `${startVal} – ${endVal}`,
-                dateRange: {
-                  start: new Date(`${startVal}-01-01`),
-                  end: new Date(`${endVal}-12-31`),
-                },
-              });
+              const isDateDefault =
+                startVal === startYearSpec[1].default && endVal === endYearSpec[1].default;
+              if (!isDateDefault || existingDateChip) {
+                upsertContextByType({
+                  contextType: "date",
+                  content: `${startVal} – ${endVal}`,
+                  dateRange: {
+                    start: new Date(`${startVal}-01-01`),
+                    end: new Date(`${endVal}-12-31`),
+                  },
+                });
+              }
             } else if (startDateSpec && endDateSpec) {
               const startVal = (payload.params[startDateSpec[0]] ?? startDateSpec[1].default) as string;
               const endVal = (payload.params[endDateSpec[0]] ?? endDateSpec[1].default) as string;
-              upsertContextByType({
-                contextType: "date",
-                content: `${startVal} – ${endVal}`,
-                dateRange: {
-                  start: new Date(startVal),
-                  end: new Date(endVal),
-                },
-              });
+              const isDateDefault =
+                startVal === startDateSpec[1].default && endVal === endDateSpec[1].default;
+              if (!isDateDefault || existingDateChip) {
+                upsertContextByType({
+                  contextType: "date",
+                  content: `${startVal} – ${endVal}`,
+                  dateRange: {
+                    start: new Date(startVal),
+                    end: new Date(endVal),
+                  },
+                });
+              }
             }
           }
           break;
