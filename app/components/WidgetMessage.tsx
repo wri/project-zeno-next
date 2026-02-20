@@ -98,7 +98,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}
           {isChartType && hasData && (
-            <Flex gap={0} border="1px solid" borderColor="border" rounded="md" overflow="hidden">
+            <Flex gap={0} border="1px solid" borderColor="border.emphasized" rounded="md" overflow="hidden">
               <Button
                 size="xs"
                 variant={!showAsTable ? "solid" : "ghost"}
@@ -106,7 +106,6 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                 onClick={() => setShowAsTable(false)}
                 h={6}
                 rounded="none"
-                roundedLeft="md"
                 fontWeight="medium"
               >
                 <ChartBarIcon size={14} />
@@ -119,7 +118,6 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                 onClick={() => setShowAsTable(true)}
                 h={6}
                 rounded="none"
-                roundedRight="md"
                 fontWeight="medium"
               >
                 <TableIcon size={14} />
