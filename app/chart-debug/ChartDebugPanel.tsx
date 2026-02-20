@@ -13,6 +13,8 @@ import {
 } from "@chakra-ui/react";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import type { InsightWidget, InsightGeneration } from "@/app/types/chat";
+import CHART_COLOR_MAPPING from "@/app/config/chartColorMappings";
+import getChartColors from "@/app/utils/ChartColors";
 
 // ---------------------------------------------------------------------------
 // Fake provenance data for "View how this was generated" drawer
@@ -445,6 +447,7 @@ const FIXTURES = RAW_FIXTURES.map((f) => ({
 
 export default function ChartDebugPanel() {
   const [filter, setFilter] = useState<string>("all");
+  const [showPalettes, setShowPalettes] = useState(false);
 
   const categories = [
     { key: "all", label: "All" },
@@ -503,6 +506,81 @@ export default function ChartDebugPanel() {
             </Button>
           ))}
         </Flex>
+
+        {/* Color palette viewer */}
+        <Box mb={6}>
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={() => setShowPalettes((v) => !v)}
+            mb={showPalettes ? 4 : 0}
+          >
+            {showPalettes ? "Hide color palettes" : "Show color palettes"}
+          </Button>
+
+          {showPalettes && (
+            <Flex direction="column" gap={6}>
+              {Object.entries(CHART_COLOR_MAPPING).map(([key, entries]) => (
+                <Box key={key}>
+                  <Heading size="sm" mb={2} m={0}>
+                    {key}
+                  </Heading>
+                  <Flex direction="column" gap={1}>
+                    {entries.map((entry) => (
+                      <Flex key={entry.value} align="center" gap={2}>
+                        <Box
+                          w="16px"
+                          h="16px"
+                          minW="16px"
+                          rounded="sm"
+                          bg={entry.color}
+                          border="1px solid"
+                          borderColor="border"
+                        />
+                        <Text fontSize="xs" minW="200px">
+                          {entry.value}
+                        </Text>
+                        <Text fontSize="xs" color="fg.muted" fontFamily="mono">
+                          {entry.color}
+                        </Text>
+                      </Flex>
+                    ))}
+                  </Flex>
+                </Box>
+              ))}
+
+              {/* Default theme palette */}
+              <Box>
+                <Heading size="sm" mb={1} m={0}>
+                  Default theme palette
+                </Heading>
+                <Text fontSize="xs" color="fg.muted" mb={2}>
+                  Other datasets use the default palette from{" "}
+                  <code>getChartColors()</code>
+                </Text>
+                <Flex gap={2} flexWrap="wrap">
+                  {getChartColors().map((hex, i) => (
+                    <Flex key={i} direction="column" align="center" gap={1}>
+                      <Box
+                        w="16px"
+                        h="16px"
+                        rounded="sm"
+                        bg={hex}
+                        border="1px solid"
+                        borderColor="border"
+                      />
+                      <Text fontSize="2xs" color="fg.muted" fontFamily="mono">
+                        {hex}
+                      </Text>
+                    </Flex>
+                  ))}
+                </Flex>
+              </Box>
+
+              <Separator />
+            </Flex>
+          )}
+        </Box>
 
         <Flex direction="column" gap={8}>
           {filtered.map((fixture, idx) => (
