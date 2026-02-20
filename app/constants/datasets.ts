@@ -221,11 +221,11 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     description:
       "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2024 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
-      "https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png?start_year=2001&end_year=2024&tree_cover_density_threshold=25&render_type=true_color",
+      "https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
     configurable_params: {
       start_year: { label: "Start year", type: "year", default: 2001, min: 2001, max: 2024, url_key: "start_year", url_strategy: "query", range_group: "year_range" },
       end_year: { label: "End year", type: "year", default: 2024, min: 2001, max: 2024, url_key: "end_year", url_strategy: "query", range_group: "year_range" },
-      threshold: { label: "Tree cover threshold", type: "categorical", default: "25", url_key: "tree_cover_density_threshold", url_strategy: "query", options: THRESHOLD_OPTIONS },
+      threshold: { label: "Tree cover threshold", type: "categorical", default: "30", url_key: "tree_cover_density_threshold", url_strategy: "query", options: THRESHOLD_OPTIONS },
     },
     legend: {
       title: "Tree cover loss (2001-2024)",
