@@ -205,7 +205,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                   <Menu.Content minW="140px">
                     <Menu.Item value="csv" onClick={handleDownloadCsv}>
                       <DownloadSimpleIcon size={14} />
-                      Download CSV
+                      Data as CSV
                     </Menu.Item>
                     {isChartType && (
                       <Menu.Item
@@ -218,7 +218,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                         }}
                       >
                         <ImageIcon size={14} />
-                        Save as PNG
+                        Chart as PNG
                       </Menu.Item>
                     )}
                   </Menu.Content>
