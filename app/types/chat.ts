@@ -28,6 +28,7 @@ export interface InsightWidget {
   data: unknown;
   xAxis: string;
   yAxis: string;
+  datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
 }
 
