@@ -400,13 +400,14 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
               axisLine={false}
               tickLine={false}
               domain={["auto", "auto"]}
+              width={60}
             >
               {yAxis && (
                 <Label
                   value={toAxisLabel(yAxis)}
                   angle={-90}
                   position="insideLeft"
-                  offset={10}
+                  offset={0}
                   style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)", textAnchor: "middle" }}
                 />
               )}
