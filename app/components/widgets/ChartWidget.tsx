@@ -209,8 +209,8 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
   const { data: formattedData, series } = useMemo(
-    () => formatChartData(data, type, xAxis, yAxis),
-    [data, type, xAxis, yAxis]
+    () => formatChartData(data, type, xAxis, yAxis, widget.datasetName),
+    [data, type, xAxis, yAxis, widget.datasetName]
   );
 
   const chart = useChart({ data: formattedData, series: series });
