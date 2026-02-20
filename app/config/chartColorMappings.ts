@@ -75,5 +75,16 @@ export const DATASET_SERIES_COLORS: Record<string, string> = {
   "Tree cover gain": "#3F08F5",
   "Global natural/semi-natural grassland extent": "#ff9916",
   "Tree cover loss by dominant driver": "#DC6C9A",
-  "Forest greenhouse gas net flux": "#39082a",
+};
+
+/**
+ * Divergent color mapping for datasets with positive/negative semantics.
+ * Used for per-bar coloring in bar charts based on value sign.
+ * For line/area charts, falls back to the positive color as a single series color.
+ */
+export const DATASET_DIVERGENT_COLORS: Record<string, { positive: string; negative: string }> = {
+  "Forest greenhouse gas net flux (2001-2024)": {
+    negative: "#137375",  // teal-green (sink/removals)
+    positive: "#9a65c0",  // purple (source/emissions)
+  },
 };
