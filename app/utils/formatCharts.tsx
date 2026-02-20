@@ -291,8 +291,8 @@ export const formatXAxisLabel = (value: string | number, key?: string) => {
   if (key?.toString().toLowerCase() === "year") {
     return value.toString();
   }
-  if (typeof value === "string" && value.length > 20) {
-    return `${value.slice(0, 18)}…`;
+  if (typeof value === "string" && value.length > 14) {
+    return `${value.slice(0, 12)}…`;
   }
   return value;
 };

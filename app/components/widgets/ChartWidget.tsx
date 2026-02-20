@@ -377,7 +377,7 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
               domain={type === "scatter" ? ["auto", "auto"] : undefined}
               angle={needsAngledTicks ? -35 : 0}
               textAnchor={needsAngledTicks ? "end" : "middle"}
-              height={needsAngledTicks ? 80 : 40}
+              height={needsAngledTicks ? 90 : 40}
               interval={0}
               fontSize={11}
             >
@@ -385,7 +385,7 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
                 <Label
                   value={toAxisLabel(xAxis)}
                   position="insideBottom"
-                  offset={-2}
+                  offset={-5}
                   style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)" }}
                 />
               )}
