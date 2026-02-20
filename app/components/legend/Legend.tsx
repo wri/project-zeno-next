@@ -32,24 +32,50 @@ interface LegendProps {
 export function Legend(props: LegendProps) {
   const { layers, onLayerAction } = props;
 
-  // Track which layer is expanded (by id).
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Track which layers are expanded (multiple can be open).
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [prevLayerIds, setPrevLayerIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const currentIds = new Set(layers.map((l) => l.id));
 
-    // Auto-expand the most recently added layer
+    // Detect newly added layers
     const newIds = [...currentIds].filter((id) => !prevLayerIds.has(id));
     if (newIds.length > 0) {
-      // Expand the last new layer (most recently added)
-      setExpandedId(newIds[newIds.length - 1]);
-    } else if (expandedId && !currentIds.has(expandedId)) {
-      // If the expanded layer was removed, expand the last layer
-      setExpandedId(layers[layers.length - 1]?.id ?? null);
-    } else if (layers.length > 0 && !expandedId) {
-      // Initial state: expand the last layer
-      setExpandedId(layers[layers.length - 1]?.id ?? null);
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        // When adding a layer would result in ≥3 total layers, collapse
+        // existing items so only the new one is expanded.
+        if (currentIds.size >= 3) {
+          next.clear();
+        }
+        // Expand each newly added layer
+        for (const id of newIds) {
+          next.add(id);
+        }
+        return next;
+      });
+    } else {
+      // Remove expanded ids for layers that were removed
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        let changed = false;
+        for (const id of prev) {
+          if (!currentIds.has(id)) {
+            next.delete(id);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+
+      // If nothing is expanded and there are layers, expand the last one
+      setExpandedIds((prev) => {
+        if (prev.size === 0 && layers.length > 0) {
+          return new Set([layers[layers.length - 1].id]);
+        }
+        return prev;
+      });
     }
 
     setPrevLayerIds(currentIds);
@@ -92,9 +118,17 @@ export function Legend(props: LegendProps) {
           <Item
             key={item.id}
             item={item}
-            expanded={item.id === expandedId}
+            expanded={expandedIds.has(item.id)}
             onToggleExpand={() =>
-              setExpandedId((prev) => (prev === item.id ? null : item.id))
+              setExpandedIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(item.id)) {
+                  next.delete(item.id);
+                } else {
+                  next.add(item.id);
+                }
+                return next;
+              })
             }
             onLayerAction={(details) => onLayerAction?.(details)}
           />
