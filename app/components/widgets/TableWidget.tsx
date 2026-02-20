@@ -4,7 +4,7 @@ import { toSentenceCase } from "@/app/utils/formatText";
 import { Badge, Box, Button, Flex, Table, Text } from "@chakra-ui/react";
 import { CaretUpIcon, CaretDownIcon } from "@phosphor-icons/react";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 interface TableWidgetProps {
   data: Record<string, string | number | boolean>[];
