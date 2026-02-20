@@ -247,9 +247,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     description:
       "Shows the primary driver or cause of tree cover loss over the entire range 2001-2024. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
-      "https://tiles.globalforestwatch.org/wri_google_tree_cover_loss_drivers/v1.12/dynamic/{z}/{x}/{y}.png?&tree_cover_density_threshold=25&render_type=true_color",
+      "https://tiles.globalforestwatch.org/wri_google_tree_cover_loss_drivers/v1.12/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
     configurable_params: {
-      threshold: { label: "Tree cover threshold", type: "categorical", default: "25", url_key: "tree_cover_density_threshold", url_strategy: "query", options: THRESHOLD_OPTIONS },
+      threshold: { label: "Tree cover threshold", type: "categorical", default: "30", url_key: "tree_cover_density_threshold", url_strategy: "query", options: THRESHOLD_OPTIONS },
     },
     legend: {
       title: "Tree cover loss by dominant driver (2001-2024)",
