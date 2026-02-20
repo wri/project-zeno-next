@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import type { InsightWidget, InsightGeneration } from "@/app/types/chat";
-import CHART_COLOR_MAPPING, { DATASET_SERIES_COLORS } from "@/app/config/chartColorMappings";
+import CHART_COLOR_MAPPING, { DATASET_SERIES_COLORS, DATASET_DIVERGENT_COLORS } from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
 
 // ---------------------------------------------------------------------------
@@ -218,6 +218,20 @@ const LONG_LABEL_BAR_DATA = [
   { land_cover_type: "Mediterranean forests", area_km2: 3100 },
 ];
 
+// GHG net flux — mix of positive (source) and negative (sink) values
+const GHG_NET_FLUX_DATA = [
+  { country: "Brazil", net_flux_tCO2e: -450 },
+  { country: "Indonesia", net_flux_tCO2e: 320 },
+  { country: "DRC", net_flux_tCO2e: -280 },
+  { country: "Colombia", net_flux_tCO2e: -120 },
+  { country: "Malaysia", net_flux_tCO2e: 180 },
+  { country: "Peru", net_flux_tCO2e: -90 },
+  { country: "India", net_flux_tCO2e: 250 },
+  { country: "Myanmar", net_flux_tCO2e: 140 },
+  { country: "Canada", net_flux_tCO2e: -340 },
+  { country: "Russia", net_flux_tCO2e: -200 },
+];
+
 // ---------------------------------------------------------------------------
 // Widget fixtures
 // ---------------------------------------------------------------------------
@@ -249,6 +263,19 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
     },
   },
   {
+    label: "GHG net flux (divergent bars)",
+    notes: "Per-bar coloring: green = sink (negative), purple = source (positive).",
+    widget: {
+      type: "bar",
+      title: "Forest greenhouse gas net flux by country",
+      description: "Net GHG flux in tCO₂e. Positive values are sources (emissions), negative values are sinks (removals).",
+      data: GHG_NET_FLUX_DATA,
+      xAxis: "country",
+      yAxis: "net_flux_tCO2e",
+      datasetName: "Forest greenhouse gas net flux (2001-2024)",
+    },
+  },
+  {
     label: "Stacked bar chart",
     notes: "Multi-series stacked bar. Tests legend, series colors, and stacking.",
     widget: {
@@ -274,7 +301,7 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
   },
   {
     label: "Line chart",
-    notes: "Simple time-series line. Tests year axis formatting and monotone curve. Uses dataset color for 'Forest greenhouse gas net flux'.",
+    notes: "Simple time-series line. Tests year axis formatting and monotone curve.",
     widget: {
       type: "line",
       title: "Carbon emissions from land use (2015–2023)",
@@ -282,7 +309,6 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
       data: LINE_DATA,
       xAxis: "year",
       yAxis: "carbon_emissions_mt",
-      datasetName: "Forest greenhouse gas net flux",
     },
   },
   {
@@ -580,6 +606,62 @@ export default function ChartDebugPanel() {
                         {hex}
                       </Text>
                     </Flex>
+                  ))}
+                </Flex>
+              </Box>
+
+              {/* Dataset divergent colors */}
+              <Box>
+                <Heading size="sm" mb={1} m={0}>
+                  Dataset divergent colors
+                </Heading>
+                <Text fontSize="xs" color="fg.muted" mb={2}>
+                  Per-bar coloring based on value sign from{" "}
+                  <code>DATASET_DIVERGENT_COLORS</code>
+                </Text>
+                <Flex direction="column" gap={2}>
+                  {Object.entries(DATASET_DIVERGENT_COLORS).map(([name, colors]) => (
+                    <Box key={name}>
+                      <Text fontSize="xs" fontWeight="medium" mb={1}>
+                        {name}
+                      </Text>
+                      <Flex gap={4}>
+                        <Flex align="center" gap={2}>
+                          <Box
+                            w="16px"
+                            h="16px"
+                            minW="16px"
+                            rounded="sm"
+                            bg={colors.positive}
+                            border="1px solid"
+                            borderColor="border"
+                          />
+                          <Text fontSize="xs" color="fg.muted">
+                            Positive (source)
+                          </Text>
+                          <Text fontSize="xs" color="fg.muted" fontFamily="mono">
+                            {colors.positive}
+                          </Text>
+                        </Flex>
+                        <Flex align="center" gap={2}>
+                          <Box
+                            w="16px"
+                            h="16px"
+                            minW="16px"
+                            rounded="sm"
+                            bg={colors.negative}
+                            border="1px solid"
+                            borderColor="border"
+                          />
+                          <Text fontSize="xs" color="fg.muted">
+                            Negative (sink)
+                          </Text>
+                          <Text fontSize="xs" color="fg.muted" fontFamily="mono">
+                            {colors.negative}
+                          </Text>
+                        </Flex>
+                      </Flex>
+                    </Box>
                   ))}
                 </Flex>
               </Box>
