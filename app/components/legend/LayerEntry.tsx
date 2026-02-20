@@ -174,7 +174,7 @@ export function LayerEntry(
 
       {/* Collapsible body — symbology + notes */}
       <Collapsible.Root open={expanded}>
-        <Collapsible.Content>
+        <Collapsible.Content css={{ transition: "height 0.15s ease" }}>
           <Flex flexDir="column" gap={2} pt={2} pr={4}>
             {symbology}
             {children}
