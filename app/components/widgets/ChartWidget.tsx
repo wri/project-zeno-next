@@ -338,7 +338,7 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
 
   return (
     <Box role="img" aria-label={chartLabel} tabIndex={0}>
-    <Chart.Root maxH={expanded ? "520px" : "280px"} chart={chart} overflow="hidden">
+    <Chart.Root maxH={expanded ? "75vh" : "280px"} chart={chart} overflow="hidden">
       <ChartTypeWrapper data={chart.data}>
         {type !== "pie" && (
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
