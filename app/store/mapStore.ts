@@ -129,8 +129,29 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   },
 
   addTileLayer: (layer) => {
+    // Resolve default params into the URL so path tokens like {grass_end_year}
+    // are replaced on initial add (not only after updateTileLayerParams).
+    const datasetId = parseInt(layer.id.replace("dataset-", ""), 10);
+    const card = !isNaN(datasetId)
+      ? DATASET_CARDS.find((d) => d.dataset_id === datasetId)
+      : undefined;
+    let resolvedLayer = layer;
+    if (card?.configurable_params) {
+      const defaults: Record<string, number | string> = {};
+      for (const [key, spec] of Object.entries(card.configurable_params)) {
+        defaults[key] = layer.params?.[key] ?? spec.default;
+      }
+      resolvedLayer = {
+        ...layer,
+        params: defaults,
+        url: buildTileUrl(layer.baseUrl, defaults, card.configurable_params),
+      };
+    }
     set((state) => ({
-      tileLayers: [...state.tileLayers.filter((l) => l.id !== layer.id), layer],
+      tileLayers: [
+        ...state.tileLayers.filter((l) => l.id !== resolvedLayer.id),
+        resolvedLayer,
+      ],
     }));
   },
 
