@@ -374,11 +374,13 @@ function CategoricalToggle(props: {
         onValueChange={(e) => { if (e.value) onChange(e.value); }}
         size="xs"
         w="full"
+        bg="bg.muted"
+        rounded="md"
       >
-        <SegmentGroup.Indicator />
+        <SegmentGroup.Indicator bg="bg" shadow="xs" rounded="sm" />
         {options.map((opt) => (
           <SegmentGroup.Item key={opt.value} value={opt.value} flex="1">
-            <SegmentGroup.ItemText>{opt.label}</SegmentGroup.ItemText>
+            <SegmentGroup.ItemText fontWeight="normal">{opt.label}</SegmentGroup.ItemText>
             <SegmentGroup.ItemHiddenInput />
           </SegmentGroup.Item>
         ))}
