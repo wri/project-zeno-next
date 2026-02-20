@@ -28,7 +28,13 @@ function ChatMessages() {
         const elementHeight = e.contentRect.height;
 
         if (parentElement && elementHeight > parentElement.clientHeight) {
-          parentElement.scrollTop = e.target.scrollHeight;
+          // Only auto-scroll if user was already at the bottom (within 100px threshold)
+          const isNearBottom =
+            parentElement.scrollHeight - parentElement.scrollTop - parentElement.clientHeight < 100;
+
+          if (isNearBottom) {
+            parentElement.scrollTop = e.target.scrollHeight;
+          }
         }
       });
       observer.observe(containerRef.current);
