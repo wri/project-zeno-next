@@ -13,7 +13,7 @@ import {
 } from "@chakra-ui/react";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import type { InsightWidget, InsightGeneration } from "@/app/types/chat";
-import CHART_COLOR_MAPPING from "@/app/config/chartColorMappings";
+import CHART_COLOR_MAPPING, { DATASET_SERIES_COLORS } from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
 
 // ---------------------------------------------------------------------------
@@ -225,7 +225,7 @@ const LONG_LABEL_BAR_DATA = [
 const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = [
   {
     label: "Bar chart",
-    notes: "Simple bar with country-level data. Tests axis labels, Y-axis unit extraction (_ha), and tooltip.",
+    notes: "Simple bar with country-level data. Tests axis labels, Y-axis unit extraction (_ha), and tooltip. Uses dataset color for 'Tree cover loss'.",
     widget: {
       type: "bar",
       title: "Tree cover loss by country (2023)",
@@ -233,6 +233,7 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
       data: BAR_DATA,
       xAxis: "country",
       yAxis: "tree_cover_loss_ha",
+      datasetName: "Tree cover loss",
     },
   },
   {
@@ -273,7 +274,7 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
   },
   {
     label: "Line chart",
-    notes: "Simple time-series line. Tests year axis formatting and monotone curve.",
+    notes: "Simple time-series line. Tests year axis formatting and monotone curve. Uses dataset color for 'Forest greenhouse gas net flux'.",
     widget: {
       type: "line",
       title: "Carbon emissions from land use (2015–2023)",
@@ -281,11 +282,12 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
       data: LINE_DATA,
       xAxis: "year",
       yAxis: "carbon_emissions_mt",
+      datasetName: "Forest greenhouse gas net flux",
     },
   },
   {
     label: "Area chart",
-    notes: "Filled area chart showing decline. Tests fill opacity and stacking.",
+    notes: "Filled area chart showing decline. Tests fill opacity and stacking. Uses dataset color for 'Tree cover'.",
     widget: {
       type: "area",
       title: "Forest area decline in Borneo",
@@ -293,6 +295,7 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
       data: AREA_DATA,
       xAxis: "year",
       yAxis: "forest_area_km2",
+      datasetName: "Tree cover",
     },
   },
   {
@@ -548,6 +551,38 @@ export default function ChartDebugPanel() {
                   </Flex>
                 </Box>
               ))}
+
+              {/* Dataset series colors */}
+              <Box>
+                <Heading size="sm" mb={1} m={0}>
+                  Dataset series colors
+                </Heading>
+                <Text fontSize="xs" color="fg.muted" mb={2}>
+                  Single-series charts use a signature color per dataset from{" "}
+                  <code>DATASET_SERIES_COLORS</code>
+                </Text>
+                <Flex direction="column" gap={1}>
+                  {Object.entries(DATASET_SERIES_COLORS).map(([name, hex]) => (
+                    <Flex key={name} align="center" gap={2}>
+                      <Box
+                        w="16px"
+                        h="16px"
+                        minW="16px"
+                        rounded="sm"
+                        bg={hex}
+                        border="1px solid"
+                        borderColor="border"
+                      />
+                      <Text fontSize="xs" minW="200px">
+                        {name}
+                      </Text>
+                      <Text fontSize="xs" color="fg.muted" fontFamily="mono">
+                        {hex}
+                      </Text>
+                    </Flex>
+                  ))}
+                </Flex>
+              </Box>
 
               {/* Default theme palette */}
               <Box>
