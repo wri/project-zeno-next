@@ -13,11 +13,9 @@ import {
   EyeIcon,
   EyeClosedIcon,
   XIcon,
-  CircleHalfIcon,
   SlidersHorizontalIcon,
   CaretDownIcon,
 } from "@phosphor-icons/react";
-import { OpacityControl } from "./OpacityControl";
 import { ParamEditor } from "./ParamEditor";
 import type { LegendLayer, LayerActionHandler } from "./types";
 
@@ -101,22 +99,30 @@ export function LayerEntry(
             },
           }}
         >
-          {configurable && params && paramSpecs && (
-            <ParamEditor
-              params={params}
-              paramSpecs={paramSpecs}
-              onParamsChange={(newParams) =>
-                onLayerAction({
-                  action: "params",
-                  payload: { id, params: newParams },
-                })
-              }
-            >
-              <IconButton>
-                <SlidersHorizontalIcon />
-              </IconButton>
-            </ParamEditor>
-          )}
+          <ParamEditor
+            params={configurable ? params : undefined}
+            paramSpecs={configurable ? paramSpecs : undefined}
+            onParamsChange={
+              configurable
+                ? (newParams) =>
+                    onLayerAction({
+                      action: "params",
+                      payload: { id, params: newParams },
+                    })
+                : undefined
+            }
+            opacity={opacity}
+            onOpacityChange={(value) =>
+              onLayerAction({
+                action: "opacity",
+                payload: { id, opacity: value },
+              })
+            }
+          >
+            <IconButton>
+              <SlidersHorizontalIcon />
+            </IconButton>
+          </ParamEditor>
           {info && (
             <Popover.Root>
               <Popover.Trigger asChild>
@@ -139,19 +145,6 @@ export function LayerEntry(
               </Portal>
             </Popover.Root>
           )}
-          <OpacityControl
-            value={opacity}
-            onValueChange={(value) =>
-              onLayerAction({
-                action: "opacity",
-                payload: { id: id, opacity: value },
-              })
-            }
-          >
-            <IconButton>
-              <CircleHalfIcon />
-            </IconButton>
-          </OpacityControl>
           <IconButton
             onClick={() =>
               onLayerAction({

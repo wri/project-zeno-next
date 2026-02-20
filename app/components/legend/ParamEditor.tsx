@@ -14,9 +14,11 @@ import { ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import type { ParamSpec } from "@/app/constants/datasets";
 
 interface ParamEditorProps {
-  params: Record<string, number | string>;
-  paramSpecs: Record<string, ParamSpec>;
-  onParamsChange: (params: Record<string, number | string>) => void;
+  params?: Record<string, number | string>;
+  paramSpecs?: Record<string, ParamSpec>;
+  onParamsChange?: (params: Record<string, number | string>) => void;
+  opacity: number;
+  onOpacityChange: (value: number) => void;
   children: React.ReactNode;
 }
 
@@ -26,20 +28,26 @@ interface ParamEditorProps {
  * segmented toggles for categorical params. Commits on release to avoid tile floods.
  */
 export function ParamEditor(props: ParamEditorProps) {
-  const { params, paramSpecs, onParamsChange, children } = props;
+  const { params, paramSpecs, onParamsChange, opacity, onOpacityChange, children } = props;
 
-  const [draft, setDraft] = useState<Record<string, number | string>>(params);
+  const [draft, setDraft] = useState<Record<string, number | string>>(params ?? {});
+  const [draftOpacity, setDraftOpacity] = useState(opacity);
 
   useEffect(() => {
-    setDraft(params);
+    setDraft(params ?? {});
   }, [params]);
+
+  useEffect(() => {
+    setDraftOpacity(opacity);
+  }, [opacity]);
 
   const commitDraft = (next: Record<string, number | string>) => {
     setDraft(next);
-    onParamsChange(next);
+    onParamsChange?.(next);
   };
 
   const handleReset = () => {
+    if (!paramSpecs) return;
     const defaults: Record<string, number | string> = {};
     for (const [key, spec] of Object.entries(paramSpecs)) {
       defaults[key] = spec.default;
@@ -47,7 +55,7 @@ export function ParamEditor(props: ParamEditorProps) {
     commitDraft(defaults);
   };
 
-  const isDefault = Object.entries(paramSpecs).every(
+  const isDefault = !paramSpecs || Object.entries(paramSpecs).every(
     ([key, spec]) => draft[key] === spec.default
   );
 
@@ -57,7 +65,7 @@ export function ParamEditor(props: ParamEditorProps) {
   const categoricals: [string, ParamSpec][] = [];
   const dateParams: [string, ParamSpec][] = [];
 
-  for (const [key, spec] of Object.entries(paramSpecs)) {
+  for (const [key, spec] of Object.entries(paramSpecs ?? {})) {
     if (spec.type === "categorical") {
       categoricals.push([key, spec]);
     } else if (spec.type === "date") {
@@ -87,9 +95,43 @@ export function ParamEditor(props: ParamEditorProps) {
           </Popover.Arrow>
           <Popover.Body>
             <Text fontWeight="medium" fontSize="xs" mb={3}>
-              Layer parameters
+              Layer settings
             </Text>
             <Flex direction="column" gap={4}>
+              {/* Opacity slider */}
+              <Box>
+                <Flex justifyContent="space-between" mb={1}>
+                  <Text fontSize="xs" color="fg.muted">
+                    Opacity
+                  </Text>
+                  <Text fontSize="xs" fontWeight="medium">
+                    {Math.round(draftOpacity)}%
+                  </Text>
+                </Flex>
+                <Slider.Root
+                  value={[draftOpacity]}
+                  min={0}
+                  max={100}
+                  step={1}
+                  onValueChange={(v) => setDraftOpacity(v.value[0])}
+                  onValueChangeEnd={(v) => onOpacityChange(v.value[0])}
+                  size="sm"
+                >
+                  <Slider.Control>
+                    <Slider.Track>
+                      <Slider.Range />
+                    </Slider.Track>
+                    <Slider.Thumb index={0} />
+                    <Slider.Marks
+                      marks={[
+                        { value: 0, label: "0%" },
+                        { value: 50, label: "50%" },
+                        { value: 100, label: "100%" },
+                      ]}
+                    />
+                  </Slider.Control>
+                </Slider.Root>
+              </Box>
               {/* Date inputs */}
               {dateParams.length > 0 && (
                 <DateParamInputs
