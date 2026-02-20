@@ -166,10 +166,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_grasslands.webp",
     description:
       "Annual 30 m maps of global natural/semi-natural grassland extent from 2000 to 2022. This dataset defines grasslands very broadly such that they encompass grasslands, shrublands, and savannas by including any land cover type which contains at least 30% of dry or wet low vegetation, dominated by grasses and forbs (less than 3 meters) and a: maximum of 50% tree canopy cover (greater than 5 meters), a maximum of 70% of other woody vegetation (scrubs and open shrubland), and a maximum of 50% active cropland cover in mosaic landscapes of cropland & other vegetation.",
-    tile_url: `${EOAPI_HOST}/raster/collections/grasslands-v-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True&datetime={grass_end_year}-01-01T00:00:00Z/{grass_end_year}-12-31T23:59:59Z`,
+    tile_url: `${EOAPI_HOST}/raster/collections/grasslands-v-1/items/grasslands-{grass_year}/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
     configurable_params: {
-      grass_start_year: { label: "Start year", type: "year", default: 2000, min: 2000, max: 2022, url_key: "grass_start_year", url_strategy: "path", path_template: "{grass_start_year}", range_group: "year_range" },
-      grass_end_year: { label: "End year", type: "year", default: 2022, min: 2000, max: 2022, url_key: "grass_end_year", url_strategy: "path", path_template: "{grass_end_year}", range_group: "year_range" },
+      grass_year: { label: "Year", type: "year", default: 2022, min: 2000, max: 2022, url_key: "grass_year", url_strategy: "path", path_template: "{grass_year}" },
     },
     legend: {
       title: "Global Grasslands",

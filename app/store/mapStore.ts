@@ -129,7 +129,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   },
 
   addTileLayer: (layer) => {
-    // Resolve default params into the URL so path tokens like {grass_end_year}
+    // Resolve default params into the URL so path tokens like {grass_year}
     // are replaced on initial add (not only after updateTileLayerParams).
     const datasetId = parseInt(layer.id.replace("dataset-", ""), 10);
     const card = !isNaN(datasetId)
