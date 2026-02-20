@@ -326,7 +326,12 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
             stackId={type === "stacked-bar" ? "a" : undefined}
             fill={chart.color(item.color)}
             isAnimationActive={false}
-          />
+          >
+            {typeof formattedData[0]?._barColor === "string" &&
+              formattedData.map((entry, index) => (
+                <Cell key={index} fill={String(entry._barColor)} />
+              ))}
+          </Bar>
         ));
       }
       default:
