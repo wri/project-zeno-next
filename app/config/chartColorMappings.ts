@@ -62,3 +62,18 @@ const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
 };
 
 export default CHART_COLOR_MAPPING;
+
+/**
+ * Dataset-level series colors for single-series charts (bar, line, area, scatter).
+ * Maps dataset_name values to a signature hex color used as the primary series color.
+ * Multi-series charts continue to use the default theme palette.
+ */
+export const DATASET_SERIES_COLORS: Record<string, string> = {
+  "Tree cover loss": "#DC6C9A",
+  "Global all ecosystem disturbance alerts (DIST-ALERT)": "#f69",
+  "Tree cover": "#97BD3D",
+  "Tree cover gain": "#3F08F5",
+  "Global natural/semi-natural grassland extent": "#ff9916",
+  "Tree cover loss by dominant driver": "#DC6C9A",
+  "Forest greenhouse gas net flux": "#39082a",
+};
