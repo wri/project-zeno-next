@@ -231,7 +231,7 @@ function ParamSlider(props: {
       >
         <Slider.Control>
           <Slider.Track>
-            <Slider.Range />
+            <Slider.Range css={{ bg: "transparent" }} />
           </Slider.Track>
           <Slider.Thumb index={0} />
           <Slider.Marks
