@@ -1,5 +1,5 @@
 import getChartColors from "./ChartColors";
-import CHART_COLOR_MAPPING from "@/app/config/chartColorMappings";
+import CHART_COLOR_MAPPING, { DATASET_SERIES_COLORS } from "@/app/config/chartColorMappings";
 
 interface InputData {
   [key: string]: unknown | unknown;
@@ -37,7 +37,8 @@ export default function formatChartData(
     | "area"
     | "scatter",
   xAxis?: string,
-  yAxis?: string
+  yAxis?: string,
+  datasetName?: string
 ): { data: ChartData[]; series: ChartSeries[] } {
   const empty = { data: [], series: [] };
 
@@ -156,10 +157,11 @@ export default function formatChartData(
       name: item[nameKey],
     }));
 
+    const datasetColor = datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined;
     const series: ChartSeries[] = [
       {
         name: nameKey, // The series name can be derived from the label key
-        color: defaultColors[0],
+        color: datasetColor || defaultColors[0],
       },
     ];
 
@@ -179,11 +181,12 @@ export default function formatChartData(
     }
 
     // Single series
+    const datasetColor = datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined;
     const series: ChartSeries[] = valueKeys.length
       ? [
           {
             name: valueKeys[0],
-            color: defaultColors[0],
+            color: datasetColor || defaultColors[0],
           },
         ]
       : [];
