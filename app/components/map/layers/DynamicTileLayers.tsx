@@ -15,7 +15,8 @@ function DynamicTileLayers() {
 
   return (
     <>
-      {tileLayers.map((tileLayer) => {
+      {/* Render in reverse so the first layer (top of legend) is on top of the map */}
+      {[...tileLayers].reverse().map((tileLayer) => {
         // Include a hash of the resolved URL in the key so that param changes
         // (which alter the URL) force maplibre to re-mount the source.
         const urlHash = hashStr(tileLayer.url);
