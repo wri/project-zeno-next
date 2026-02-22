@@ -1,24 +1,26 @@
 "use client";
 
-import { Button, Box, Text } from "@chakra-ui/react";
-import { GlobeIcon } from "@phosphor-icons/react";
+import { Button, Box, Text, Separator } from "@chakra-ui/react";
+import { GlobeIcon, InfoIcon } from "@phosphor-icons/react";
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import useAuthStore from "@/app/store/authStore";
 import { SUPPORTED_LANGUAGES } from "@/app/config/languages";
+import { toaster } from "@/app/components/ui/toaster";
 
 /**
  * A small pill button that shows the current language code and opens a
- * popover-style selector on click. Matches the visual style of the
- * existing ContextButton components.
+ * popover-style selector on click. Includes an "Other Languages…" option
+ * that explains the assistant understands many more languages.
  */
 export default function LanguageSelector({
   disabled,
   dropDirection = "down",
 }: {
   disabled?: boolean;
-  /** Which direction the dropdown opens relative to the button. */
   dropDirection?: "up" | "down";
 }) {
+  const t = useTranslations("common");
   const preferredLanguageCode = useAuthStore((s) => s.preferredLanguageCode);
   const setPreferredLanguage = useAuthStore((s) => s.setPreferredLanguage);
   const [isOpen, setIsOpen] = useState(false);
@@ -44,20 +46,28 @@ export default function LanguageSelector({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
 
+  const handleOtherLanguages = () => {
+    setIsOpen(false);
+    toaster.create({
+      title: t("languageSelector.otherToastTitle"),
+      description: t("languageSelector.otherToastDescription"),
+      type: "info",
+      duration: 8000,
+    });
+  };
+
   return (
     <Box ref={containerRef} position="relative">
       <Button
-        size="xs"
-        variant="outline"
-        borderRadius="full"
-        borderColor="gray.300"
-        py="1"
-        h="auto"
+        variant="solid"
+        colorPalette="primary"
+        _hover={{ bg: "primary.fg" }}
+        size="sm"
         disabled={disabled}
         onClick={() => setIsOpen((o) => !o)}
         title={currentLabel}
       >
-        <GlobeIcon />
+        <GlobeIcon size={16} />
         {currentCode.toUpperCase()}
       </Button>
 
@@ -75,8 +85,23 @@ export default function LanguageSelector({
           boxShadow="md"
           py="1"
           zIndex="popover"
-          minW="160px"
+          minW="180px"
         >
+          {/* Section label */}
+          <Text
+            px="3"
+            py="1"
+            fontSize="2xs"
+            fontWeight="medium"
+            color="fg.subtle"
+            textTransform="uppercase"
+            letterSpacing="wider"
+            userSelect="none"
+          >
+            {t("languageSelector.sectionLabel")}
+          </Text>
+
+          {/* Selectable languages */}
           {SUPPORTED_LANGUAGES.map((lang) => (
             <Box
               key={lang.value}
@@ -106,6 +131,28 @@ export default function LanguageSelector({
               </Text>
             </Box>
           ))}
+
+          {/* Divider + Other Languages */}
+          <Separator my="1" />
+          <Box
+            as="button"
+            display="flex"
+            alignItems="center"
+            gap="2"
+            w="full"
+            px="3"
+            py="1.5"
+            fontSize="xs"
+            cursor="pointer"
+            color="fg.muted"
+            _hover={{ bg: "gray.100", color: "fg" }}
+            onClick={handleOtherLanguages}
+          >
+            <InfoIcon size={14} />
+            <Text fontStyle="italic">
+              {t("languageSelector.otherLanguages")}
+            </Text>
+          </Box>
         </Box>
       )}
     </Box>

@@ -43,6 +43,12 @@
     "loginSignup": "Log in / Sign Up",
     "userName": "User name"
   },
+  "languageSelector": {
+    "sectionLabel": "Display Language",
+    "otherLanguages": "Other Languages…",
+    "otherToastTitle": "Chat in Any Language",
+    "otherToastDescription": "While the interface is available in 5 languages, you can chat with the assistant in your preferred language and it will understand and respond accordingly."
+  },
   "auth": {
     "loggingOut": "Logging out",
     "loggingOutDescription": "Signing you out and redirecting…"
