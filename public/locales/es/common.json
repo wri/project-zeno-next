@@ -47,7 +47,8 @@
     "sectionLabel": "Idioma de la interfaz",
     "otherLanguages": "Otros idiomas…",
     "otherToastTitle": "Chatea en cualquier idioma",
-    "otherToastDescription": "La interfaz está disponible en 5 idiomas, pero puedes chatear con el asistente en tu idioma preferido y entenderá y responderá en consecuencia."
+    "otherToastDescription": "La interfaz está disponible en 5 idiomas, pero puedes chatear con el asistente en tu idioma preferido y entenderá y responderá en consecuencia.",
+    "aiDisclaimer": "Las traducciones son generadas por IA y pueden contener errores."
   },
   "auth": {
     "loggingOut": "Cerrando sesión",

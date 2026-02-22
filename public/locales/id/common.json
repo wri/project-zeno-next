@@ -47,7 +47,8 @@
     "sectionLabel": "Bahasa tampilan",
     "otherLanguages": "Bahasa lainnya…",
     "otherToastTitle": "Ngobrol dalam bahasa apa pun",
-    "otherToastDescription": "Antarmuka tersedia dalam 5 bahasa, tetapi Anda dapat mengobrol dengan asisten dalam bahasa pilihan Anda dan asisten akan memahami serta merespons dengan tepat."
+    "otherToastDescription": "Antarmuka tersedia dalam 5 bahasa, tetapi Anda dapat mengobrol dengan asisten dalam bahasa pilihan Anda dan asisten akan memahami serta merespons dengan tepat.",
+    "aiDisclaimer": "Terjemahan dihasilkan oleh AI dan mungkin mengandung kesalahan."
   },
   "auth": {
     "loggingOut": "Sedang keluar",

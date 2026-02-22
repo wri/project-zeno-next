@@ -47,7 +47,8 @@
     "sectionLabel": "Display Language",
     "otherLanguages": "Other Languages…",
     "otherToastTitle": "Chat in Any Language",
-    "otherToastDescription": "While the interface is available in 5 languages, you can chat with the assistant in your preferred language and it will understand and respond accordingly."
+    "otherToastDescription": "While the interface is available in 5 languages, you can chat with the assistant in your preferred language and it will understand and respond accordingly.",
+    "aiDisclaimer": "Translations are AI-generated and may contain errors."
   },
   "auth": {
     "loggingOut": "Logging out",

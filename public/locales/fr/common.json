@@ -47,7 +47,8 @@
     "sectionLabel": "Langue d'affichage",
     "otherLanguages": "Autres langues…",
     "otherToastTitle": "Discutez dans n'importe quelle langue",
-    "otherToastDescription": "L'interface est disponible en 5 langues, mais vous pouvez discuter avec l'assistant dans votre langue préférée et il comprendra et répondra en conséquence."
+    "otherToastDescription": "L'interface est disponible en 5 langues, mais vous pouvez discuter avec l'assistant dans votre langue préférée et il comprendra et répondra en conséquence.",
+    "aiDisclaimer": "Les traductions sont générées par IA et peuvent contenir des erreurs."
   },
   "auth": {
     "loggingOut": "Déconnexion en cours",

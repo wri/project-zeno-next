@@ -47,7 +47,8 @@
     "sectionLabel": "Idioma da interface",
     "otherLanguages": "Outros idiomas…",
     "otherToastTitle": "Converse em qualquer idioma",
-    "otherToastDescription": "A interface está disponível em 5 idiomas, mas você pode conversar com o assistente no seu idioma preferido e ele entenderá e responderá adequadamente."
+    "otherToastDescription": "A interface está disponível em 5 idiomas, mas você pode conversar com o assistente no seu idioma preferido e ele entenderá e responderá adequadamente.",
+    "aiDisclaimer": "As traduções são geradas por IA e podem conter erros."
   },
   "auth": {
     "loggingOut": "Saindo",

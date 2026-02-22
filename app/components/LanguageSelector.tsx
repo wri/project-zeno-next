@@ -156,6 +156,18 @@ export default function LanguageSelector({
               {t("languageSelector.otherLanguages")}
             </Text>
           </Box>
+
+          {/* AI translation disclaimer */}
+          <Separator my="1" />
+          <Text
+            px="3"
+            py="1.5"
+            fontSize="2xs"
+            color="gray.400"
+            fontStyle="italic"
+          >
+            {t("languageSelector.aiDisclaimer")}
+          </Text>
         </Box>
       )}
     </Box>
