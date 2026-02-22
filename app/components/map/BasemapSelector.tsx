@@ -8,6 +8,7 @@ import {
   Heading,
 } from "@chakra-ui/react";
 import { CheckIcon, MapTrifoldIcon } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 export interface BasemapOption {
   id: string;
@@ -54,6 +55,12 @@ export function BasemapSelector({
   currentBasemap,
   onBasemapChange,
 }: BasemapSelectorProps) {
+  const t = useTranslations("chat");
+  const basemapNames: Record<string, string> = {
+    light: t("basemap.light"),
+    satellite: t("basemap.satellite"),
+    dark: t("basemap.dark"),
+  };
   const currentOption =
     basemapOptions.find((option) => option.tileUrl === currentBasemap) ||
     basemapOptions[0];
@@ -103,7 +110,7 @@ export function BasemapSelector({
                 as="p"
                 color="fg.muted"
               >
-                Basemap Style
+                {t("basemap.title")}
               </Heading>
               {basemapOptions.map((option) => (
                 <Flex
@@ -118,7 +125,7 @@ export function BasemapSelector({
                 >
                   <Image
                     src={option.thumbnailUrl}
-                    alt={option.name}
+                    alt={basemapNames[option.id] || option.name}
                     width="40px"
                     height="40px"
                     objectFit="cover"
@@ -140,7 +147,7 @@ export function BasemapSelector({
                       option.tileUrl === currentBasemap ? "primary.solid" : "fg"
                     }
                   >
-                    {option.name}
+                    {basemapNames[option.id] || option.name}
                   </Heading>
                   {option.tileUrl === currentBasemap && (
                     <CheckIcon

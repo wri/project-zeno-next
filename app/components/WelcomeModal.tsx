@@ -11,11 +11,13 @@ import {
   ButtonGroup,
 } from "@chakra-ui/react";
 import { useEffect, useState, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { usePromptStore } from "@/app/store/promptStore";
 import useChatStore from "@/app/store/chatStore";
 import { ArrowBendRightUpIcon, SparkleIcon } from "@phosphor-icons/react";
 
 const WelcomeModal = () => {
+  const t = useTranslations("chat");
   const ref = useRef<HTMLTextAreaElement>(null);
   const { prompts } = usePromptStore();
   const { sendMessage, isLoading } = useChatStore();
@@ -38,7 +40,6 @@ const WelcomeModal = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Submit on Enter (without Shift) or Command+Enter
     if (
       (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
       (e.key === "Enter" && e.metaKey)
@@ -46,7 +47,6 @@ const WelcomeModal = () => {
       e.preventDefault();
       sendAndClose(inputValue.trim());
     }
-    // If Shift+Enter, do nothing: allow newline
   };
 
   const disabled = isLoading;
@@ -75,7 +75,7 @@ const WelcomeModal = () => {
           >
             <Dialog.Header justifyContent="center" alignItems="center">
               <Dialog.Title fontWeight="normal" fontSize="2xl" m={0}>
-                Welcome to <strong>Global Nature Watch</strong>
+                {t("welcome.title")}<strong>{t("welcome.titleBold")}</strong>
               </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body
@@ -90,13 +90,7 @@ const WelcomeModal = () => {
                 gap={{ base: 4, md: 8 }}
               >
                 <Dialog.Description fontSize="xs" lineHeight="moderate">
-                  Our AI-powered nature monitoring tool understands plain
-                  language, so no technical jargon required! Ask about land
-                  cover change, forest loss, or biodiversity risks in the areas
-                  you care about and quickly generate powerful insights. Whether
-                  you&apos;re a policymaker, scientist, or community advocate,
-                  we&apos;ll help you find the right data and make sense of it,
-                  too.
+                  {t("welcome.description")}
                 </Dialog.Description>
                 <Flex
                   flexDir="column"
@@ -118,8 +112,8 @@ const WelcomeModal = () => {
                   }}
                 >
                   <Textarea
-                    aria-label="Ask a question..."
-                    placeholder="Ask a question..."
+                    aria-label={t("welcome.placeholder")}
+                    placeholder={t("welcome.placeholder")}
                     fontSize="sm"
                     size="sm"
                     autoresize
@@ -168,7 +162,7 @@ const WelcomeModal = () => {
                     flexShrink="0"
                     fontStyle="italic"
                   >
-                    ...or try asking about...
+                    {t("welcome.separator")}
                   </Text>
                   <Separator flex="1" />
                 </HStack>
@@ -231,7 +225,7 @@ const WelcomeModal = () => {
                     cursor: "pointer",
                   }}
                 >
-                  Don&apos;t show this again
+                  {t("welcome.dontShowAgain")}
                 </label>
               </Flex>
             </Dialog.Body>

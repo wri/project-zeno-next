@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Menu, IconButton } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import useSidebarStore from "../store/sidebarStore";
@@ -22,6 +23,7 @@ function ThreadActionsMenu({
   thread: { id: string; name: string, is_public?: boolean };
   children?: React.ReactNode;
 }) {
+  const t = useTranslations("dialogs");
   const router = useRouter();
   const { renameThread, shareThread, deleteThread } = useSidebarStore();
   const { currentThreadId } = useChatStore();
@@ -70,7 +72,7 @@ function ThreadActionsMenu({
         <Menu.Trigger asChild>
           {children || (
             <IconButton
-              aria-label={`Thread actions for ${thread.name}`}
+              aria-label={t("thread.actionsFor", { name: thread.name })}
               variant="ghost"
               size="xs"
               mr="1"
@@ -93,7 +95,7 @@ function ThreadActionsMenu({
                 onSelect={() => setRenameOpen(true)}
               >
                 <PencilSimpleIcon />
-                Rename
+                {t("thread.rename")}
               </Menu.Item>
               <Menu.Item
                 value="share conversation"
@@ -101,7 +103,7 @@ function ThreadActionsMenu({
                 onSelect={() => setShareOpen(true)}
               >
                 <ShareIcon />
-                Share
+                {t("thread.share")}
               </Menu.Item>
               <Menu.Item
                 value="delete"
@@ -110,7 +112,7 @@ function ThreadActionsMenu({
                 onSelect={() => setDeleteOpen(true)}
               >
                 <TrashIcon />
-                Delete
+                {t("thread.delete")}
               </Menu.Item>
             </Menu.Content>
           </Menu.Positioner>

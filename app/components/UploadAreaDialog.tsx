@@ -10,6 +10,7 @@ import {
 } from "@chakra-ui/react";
 import useMapStore from "../store/mapStore";
 import { useRef, useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   ACCEPTED_FILE_TYPES,
   MAX_FILE_SIZE_MB,
@@ -19,6 +20,8 @@ import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 import useContextStore from "../store/contextStore";
 
 function UploadAreaDialog() {
+  const t = useTranslations("dialogs");
+  const tc = useTranslations("common");
   const {
     dialogVisible,
     toggleUploadAreaDialog,
@@ -57,7 +60,6 @@ function UploadAreaDialog() {
         },
       };
 
-      // Add feature to the all features list to be highlighted on the map
       addGeoJsonFeature({
         id: id,
         name: name,
@@ -94,8 +96,8 @@ function UploadAreaDialog() {
             <Dialog.Header>
               <Dialog.Title>
                 {isUploading || isCreating
-                  ? "Uploading Area..."
-                  : "Upload Area"}
+                  ? t("upload.uploading")
+                  : t("upload.title")}
               </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body
@@ -108,13 +110,13 @@ function UploadAreaDialog() {
               {!isFileSelected ? <DropFileZone /> : <SelectedFileBox />}
               <Box color="fg.muted" fontSize="xs">
                 <Text>
-                  By uploading data you agree to the{" "}
+                  {t("upload.termsPrefix")}{" "}
                   <Link
                     href="https://www.wri.org/about/legal/general-terms-use"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    terms of use
+                    {t("upload.termsLink")}
                   </Link>
                   .
                 </Text>
@@ -123,17 +125,17 @@ function UploadAreaDialog() {
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
                 <Button variant="outline" colorPalette="gray">
-                  Cancel
+                  {tc("buttons.cancel")}
                 </Button>
               </Dialog.ActionTrigger>
               <Button
                 onClick={handleUpload}
                 disabled={!isFileSelected || isUploading || isCreating}
                 loading={isUploading || isCreating}
-                loadingText="Uploading..."
+                loadingText={t("upload.uploadingButton")}
                 colorPalette="primary"
               >
-                <UploadSimpleIcon /> Upload
+                <UploadSimpleIcon /> {t("upload.uploadButton")}
               </Button>
             </Dialog.Footer>
             <Dialog.CloseTrigger asChild>
@@ -149,6 +151,7 @@ function UploadAreaDialog() {
 export default UploadAreaDialog;
 
 function DropFileZone() {
+  const t = useTranslations("dialogs");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { errorType, errorMessage, handleFile } = useMapStore();
   const [isDragOver, setIsDragOver] = useState(false);
@@ -194,12 +197,13 @@ function DropFileZone() {
       onClick={() => fileInputRef.current?.click()}
     >
       <Text lineHeight="20px">
-        Drag and drop a <strong>polygon data file</strong> here or click to
-        upload.
+        {t("upload.dropzone.dragAndDrop")}
       </Text>
       <Text fontSize="xs" lineHeight="16px">
-        Files with extension {ACCEPTED_FILE_TYPES.join(", ")} up to{" "}
-        {MAX_FILE_SIZE_MB} MB
+        {t("upload.dropzone.fileTypes", {
+          types: ACCEPTED_FILE_TYPES.join(", "),
+          maxSize: MAX_FILE_SIZE_MB,
+        })}
       </Text>
       {errorType !== "none" && (
         <Text color="red.500" fontSize="sm">
@@ -207,7 +211,7 @@ function DropFileZone() {
         </Text>
       )}
       <Button variant="solid" size="2xs" colorPalette="primary">
-        Select File
+        {t("upload.dropzone.selectFile")}
       </Button>
       <VisuallyHidden>
         <input
@@ -225,6 +229,7 @@ function DropFileZone() {
 }
 
 function SelectedFileBox() {
+  const t = useTranslations("dialogs");
   const { filename, clearFileState } = useMapStore();
   return (
     <Box
@@ -243,7 +248,7 @@ function SelectedFileBox() {
         onClick={clearFileState}
         colorPalette="red"
       >
-        Clear
+        {t("upload.clear")}
       </Button>
     </Box>
   );

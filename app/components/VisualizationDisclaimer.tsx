@@ -1,6 +1,7 @@
 "use client";
 import { Box, Flex, Text, chakra } from "@chakra-ui/react";
 import { SparkleIcon } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 const Sparkle = chakra(SparkleIcon);
 
 interface VisualizationDisclaimerProps {
@@ -10,14 +11,13 @@ interface VisualizationDisclaimerProps {
 export default function VisualizationDisclaimer({
   variant = "inline",
 }: VisualizationDisclaimerProps) {
-  const message =
-    "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.";
+  const t = useTranslations("chat");
 
   const content = (
     <Flex align="flex-start" gap="2">
       <Sparkle color="secondary.500" weight="fill" mt="0.5" />
       <Text fontSize="xs" color="fg.muted" flex="1">
-        {message}
+        {t("visualizationDisclaimer")}
       </Text>
     </Flex>
   );
@@ -51,5 +51,3 @@ export default function VisualizationDisclaimer({
     </Box>
   );
 }
-
-

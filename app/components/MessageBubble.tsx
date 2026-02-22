@@ -29,6 +29,7 @@ import { ContextItem } from "../store/contextStore";
 import { useEffect, useState, useCallback } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
 import CopySelectionTooltip from "./CopySelectionTooltip";
@@ -44,6 +45,8 @@ function MessageBubble({
   isConsecutive = false,
   isFirst = false,
 }: MessageBubbleProps) {
+  const t = useTranslations("chat");
+  const tc = useTranslations("common");
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const clipboard = useClipboard({ value: message.message });
   const [isRating, setIsRating] = useState(false);
@@ -64,7 +67,7 @@ function MessageBubble({
       day: "2-digit",
       month: "short",
     });
-    setFormattedTimestamp(`${time} on ${day}`);
+    setFormattedTimestamp(t("message.timestamp", { time, day }));
   }, [message.timestamp]);
 
   const rateMessage = useCallback(
@@ -75,8 +78,8 @@ function MessageBubble({
         const threadId = currentThreadId || "";
         if (!threadId) {
           toaster.create({
-            title: "Unable to rate",
-            description: "No active thread.",
+            title: t("message.unableToRate"),
+            description: t("message.noActiveThread"),
             type: "error",
           });
           return;
@@ -96,15 +99,15 @@ function MessageBubble({
           const text = await res.text();
           console.error("Failed to submit rating", text);
           toaster.create({
-            title: "Rating failed",
-            description: "Please try again.",
+            title: t("message.ratingFailed"),
+            description: t("message.ratingFailedDescription"),
             type: "error",
           });
         } else {
           if (ratingValue === 1) {
             toaster.create({
-              title: "Thanks for the feedback",
-              description: "Glad it helped!",
+              title: t("message.feedbackThanks"),
+              description: t("message.feedbackThanksDescription"),
               duration: 2500,
               type: "success",
             });
@@ -112,10 +115,10 @@ function MessageBubble({
             const hasComment =
               typeof comment === "string" && comment.trim().length > 0;
             toaster.create({
-              title: hasComment ? "Feedback sent" : "Marked as not helpful",
+              title: hasComment ? t("message.feedbackSent") : t("message.markedNotHelpful"),
               description: hasComment
-                ? "Thanks for helping us improve."
-                : "You can add a comment.",
+                ? t("message.feedbackSentDescription")
+                : t("message.markedNotHelpfulDescription"),
               duration: 2500,
               type: "success",
             });
@@ -182,7 +185,7 @@ function MessageBubble({
         {hasContext && (
           <Flex gap="2" wrap="wrap" mb="1">
             <Flex gap="1" fontSize="xs" color="fg.muted">
-              <ArrowBendDownRightIcon /> Context:
+              <ArrowBendDownRightIcon /> {t("context.label")}
             </Flex>
             {message.context?.map((c: ContextItem) => (
               <ContextTag
@@ -264,8 +267,8 @@ function MessageBubble({
               <Tooltip
                 content={
                   clipboard.copied
-                    ? "Response copied to clipboard"
-                    : "Copy response"
+                    ? t("message.responseCopied")
+                    : t("message.copyResponse")
                 }
               >
                 <IconButton
@@ -284,7 +287,7 @@ function MessageBubble({
                   {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
                 </IconButton>
               </Tooltip>
-              <Tooltip content="Good response">
+              <Tooltip content={t("message.goodResponse")}>
                 <IconButton
                   variant="ghost"
                   size="xs"
@@ -306,7 +309,7 @@ function MessageBubble({
                 onOpenChange={(e) => setFeedbackOpen(e.open)}
                 positioning={{ placement: "bottom-end" }}
               >
-                <Tooltip content="Bad response">
+                <Tooltip content={t("message.badResponse")}>
                   <Box display="inline-block">
                     <Popover.Trigger asChild>
                       <IconButton
@@ -335,7 +338,7 @@ function MessageBubble({
                         <Textarea
                           value={feedbackText}
                           onChange={(e) => setFeedbackText(e.target.value)}
-                          placeholder="Tell us what went wrong (optional)"
+                          placeholder={t("message.feedbackPlaceholder")}
                           size="sm"
                           rows={3}
                         />
@@ -348,7 +351,7 @@ function MessageBubble({
                               setFeedbackText("");
                             }}
                           >
-                            Cancel
+                            {tc("buttons.cancel")}
                           </Button>
                           <Button
                             size="xs"
@@ -356,7 +359,7 @@ function MessageBubble({
                             colorPalette="primary"
                             onClick={submitFeedback}
                           >
-                            Send feedback
+                            {t("message.sendFeedback")}
                           </Button>
                         </HStack>
                       </Popover.Body>

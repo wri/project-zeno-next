@@ -12,6 +12,7 @@ import {
   Field,
   Link,
 } from "@chakra-ui/react";
+import { useTranslations } from "next-intl";
 import { toaster } from "@/app/components/ui/toaster";
 import {
   GlobeIcon,
@@ -34,6 +35,8 @@ interface ThreadShareDialogProps {
 type ValueChangeDetails = { value: string[] };
 
 function ThreadShareDialog(props: ThreadShareDialogProps) {
+  const t = useTranslations("dialogs");
+  const tc = useTranslations("common");
   const { threadId, isPublic, onShare, isOpen, onOpenChange } = props;
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -55,39 +58,36 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
         setThreadIsPublic(newIsPublic);
         await onShare(newIsPublic);
         toaster.create({
-          title: "Visibility updated",
-          description: `Thread ${threadId} is now ${
-            newIsPublic ? "public" : "private"
-          }`,
+          title: t("shareThread.visibilityUpdated"),
+          description: newIsPublic
+            ? t("shareThread.nowPublic")
+            : t("shareThread.nowPrivate"),
           type: "success",
           duration: 3000,
         });
       } catch (error) {
-        // Revert the local state on error
         setThreadIsPublic(!newIsPublic);
         toaster.create({
-          title: "Visibility update failed",
-          description: `Failed to make thread ${threadId} ${
-            newIsPublic ? "public" : "private"
-          }. Please try again.`,
+          title: t("shareThread.visibilityFailed"),
+          description: t("shareThread.visibilityFailedDescription"),
           type: "error",
           duration: 4000,
         });
         console.error("Failed to update thread visibility:", error);
       }
     },
-    [onShare, threadId]
+    [onShare, t]
   );
 
   const shareOptions = createListCollection({
     items: [
       {
-        label: "Private (only you can access)",
+        label: t("shareThread.private"),
         icon: <LockIcon />,
         value: "false",
       },
       {
-        label: "Public (anyone can access)",
+        label: t("shareThread.public"),
         icon: <GlobeIcon />,
         value: "true",
       },
@@ -109,14 +109,11 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
               <CloseButton size="sm" />
             </Dialog.CloseTrigger>
             <Dialog.Header>
-              <Dialog.Title>Share Conversation</Dialog.Title>
+              <Dialog.Title>{t("shareThread.title")}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body pb="4" display="flex" flexDir="column" gap="4">
               <ChatDisclaimer m={0}>
-                Sharing creates a public, view-only link to this conversation.
-                Make sure it contains no personal or sensitive information.
-                You can switch Visibility back to private later.
-                For more information, read our{' '}
+                {t("shareThread.disclaimer")}{" "}
                 <Link
                   textDecoration="underline"
                   textDecorationStyle="dotted"
@@ -125,8 +122,9 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
                   target="_blank"
                   href="https://www.wri.org/about/legal/general-terms-use"
                 >
-                  Terms of use
-                </Link>.
+                  {t("shareThread.termsLink")}
+                </Link>
+                .
               </ChatDisclaimer>
               <Field.Root id="visibility" w="full">
                 <Select.Root
@@ -144,14 +142,14 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
                   }}
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Visibility</Select.Label>
+                  <Select.Label>{t("shareThread.visibility")}</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
                       <HStack>
                         {threadIsPublic ? <GlobeIcon /> : <LockIcon />}
                         {threadIsPublic
-                          ? "Public (anyone can access)"
-                          : "Private (only you can access)"}
+                          ? t("shareThread.public")
+                          : t("shareThread.private")}
                       </HStack>
                     </Select.Trigger>
                     <Select.IndicatorGroup>
@@ -178,7 +176,7 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{tc("buttons.cancel")}</Button>
               </Dialog.ActionTrigger>
               {threadIsPublic ? (
                 <Button
@@ -191,7 +189,9 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
                   }}
                 >
                   {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
-                  {clipboard.copied ? "Link Copied" : "Copy share link"}
+                  {clipboard.copied
+                    ? t("shareThread.linkCopied")
+                    : t("shareThread.copyShareLink")}
                 </Button>
               ) : (
                 <Button
@@ -199,7 +199,7 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
                   onClick={() => updateVisibility(true)}
                 >
                   <LinkIcon />
-                  Create share link
+                  {t("shareThread.createShareLink")}
                 </Button>
               )}
             </Dialog.Footer>

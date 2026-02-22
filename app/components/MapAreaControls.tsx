@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Box,
   type BoxProps,
@@ -64,6 +65,7 @@ function MapAreaControls({
   basemapTiles,
   setBasemapTiles,
 }: MapAreaControlsProps) {
+  const t = useTranslations("chat");
   const {
     setSelectAreaLayer,
     isDrawingMode,
@@ -164,7 +166,7 @@ function MapAreaControls({
           onClick={() => setShowTools((prev) => !prev)}
         >
           {!showTools ? <MapTrifoldIcon /> : <XIcon />}
-          Tools
+          {t("map.tools")}
         </Button>
         <BasemapSelector
           currentBasemap={basemapTiles}
@@ -182,21 +184,21 @@ function MapAreaControls({
         >
           {isDrawingMode ? (
             <>
-              <Tooltip content="Cancel drawing">
+              <Tooltip content={t("map.cancelDrawing")}>
                 <IconButton
                   bg="bg"
                   _hover={{ bg: "bg.muted" }}
-                  aria-label="Cancel drawing"
+                  aria-label={t("map.cancelDrawing")}
                   onClick={cancelDrawing}
                 >
                   <XIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip content="Confirm area">
+              <Tooltip content={t("map.confirmArea")}>
                 <IconButton
                   bg="bg"
                   _hover={{ bg: "bg.muted" }}
-                  aria-label="Confirm area"
+                  aria-label={t("map.confirmArea")}
                   onClick={handleConfirmDrawing}
                   disabled={isCreating}
                 >
@@ -206,9 +208,9 @@ function MapAreaControls({
             </>
           ) : (
             <>
-              <Tooltip content="Upload area from file">
+              <Tooltip content={t("map.uploadAreaFromFile")}>
                 <IconButton
-                  aria-label="Upload area"
+                  aria-label={t("map.uploadArea")}
                   bg="bg"
                   _hover={{ bg: "bg.muted" }}
                   onClick={() => {
@@ -226,7 +228,7 @@ function MapAreaControls({
                   <UploadSimpleIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip content="Select area on map">
+              <Tooltip content={t("map.selectAreaOnMap")}>
                 <ButtonGroup
                   attached
                   variant="subtle"
@@ -242,7 +244,7 @@ function MapAreaControls({
                   <IconButton
                     bg="bg"
                     _hover={{ bg: "bg.muted" }}
-                    aria-label="Select area on map"
+                    aria-label={t("map.selectAreaOnMap")}
                   >
                     <HandPointingIcon />
                   </IconButton>
@@ -257,7 +259,7 @@ function MapAreaControls({
                         borderLeftRadius={0}
                         bg="bg"
                         _hover={{ bg: "bg.muted" }}
-                        aria-label="Select area from options"
+                        aria-label={t("map.selectAreaFromOptions")}
                       >
                         <CaretDownIcon />
                       </IconButton>
@@ -285,11 +287,11 @@ function MapAreaControls({
                   </Menu.Root>
                 </ButtonGroup>
               </Tooltip>
-              <Tooltip content="Draw area on map">
+              <Tooltip content={t("map.drawAreaOnMap")}>
                 <IconButton
                   bg="bg"
                   _hover={{ bg: "bg.muted" }}
-                  aria-label="Draw area bounds"
+                  aria-label={t("map.drawAreaOnMap")}
                   onClick={() => {
                     startDrawing();
                     setSelectionMode({ type: "Drawing", name: undefined });
@@ -320,8 +322,11 @@ function MapAreaControls({
           boxShadow="sm"
           color="blackAlpha.700"
         >
-          {selectionMode.type}{" "}
-          {selectionMode.type === "Selecting" ? selectionMode.name : "AOI"}
+          {selectionMode.type === "Selecting"
+            ? t("map.selectingMode", { name: selectionMode.name ?? "" })
+            : selectionMode.type === "Drawing"
+              ? t("map.drawingMode")
+              : t("map.uploadingMode")}
         </Box>
       )}
       <ValidationErrorDisplay />
@@ -332,6 +337,7 @@ function MapAreaControls({
 export default MapAreaControls;
 
 function ValidationErrorDisplay() {
+  const t = useTranslations("chat");
   const { validationError, clearValidationError } = useMapStore();
 
   if (!validationError) return null;
@@ -348,7 +354,7 @@ function ValidationErrorDisplay() {
       position="relative"
       order={{ base: -1, md: "initial" }}
     >
-      <Tooltip content="Close area validation error">
+      <Tooltip content={t("map.closeValidationError")}>
         <IconButton
           position="absolute"
           colorPalette="red"
@@ -358,7 +364,7 @@ function ValidationErrorDisplay() {
           size="xs"
           h="initial"
           minW="initial"
-          aria-label="Close validation error"
+          aria-label={t("map.closeValidationError")}
           onClick={clearValidationError}
           pointerEvents="auto"
         >
@@ -367,12 +373,12 @@ function ValidationErrorDisplay() {
       </Tooltip>
       <Text fontWeight="semibold" fontSize="sm" mb={1}>
         {validationError.code === "too-small"
-          ? "Error: Area too small"
-          : "Error: Area too large"}
+          ? t("map.errorAreaTooSmall")
+          : t("map.errorAreaTooLarge")}
       </Text>
       <Flex fontSize="xs" color="fg.muted" justifyContent="space-between">
         <Text>
-          {validationError.code === "too-small" ? "Minimum" : "Maximum"} area
+          {validationError.code === "too-small" ? t("map.minimumArea") : t("map.maximumArea")}
         </Text>
         <Text>
           {validationError.code === "too-small"
@@ -381,7 +387,7 @@ function ValidationErrorDisplay() {
         </Text>
       </Flex>
       <Flex fontSize="xs" color="fg.muted" justifyContent="space-between">
-        <Text>Your area</Text>
+        <Text>{t("map.yourArea")}</Text>
         <Text>{formatAreaWithUnits(validationError.area)}</Text>
       </Flex>
     </Box>

@@ -2,30 +2,30 @@
 import { Box, Collapsible, Flex, Text, Spinner } from "@chakra-ui/react";
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import useChatStore from "@/app/store/chatStore";
 
-// Helper function to format tool names for display
-function formatToolName(toolName: string): string {
-  const toolNameMap: Record<string, string> = {
-    generate_insights: "Generating insights",
-    pick_aoi: "Picking area of interest",
-    pick_dataset: "Selecting dataset",
-    pull_data: "Pulling data",
-  };
-
-  return toolNameMap[toolName] || `Processing ${toolName}`;
-}
-
 function Reasoning() {
+  const t = useTranslations("chat");
   const [isOpen, setIsOpen] = useState(false);
   const { toolSteps } = useChatStore();
+
+  const formatToolName = (toolName: string): string => {
+    const key = `reasoning.tools.${toolName}` as const;
+    try {
+      return t(key);
+    } catch {
+      return t("reasoning.toolFallback", { name: toolName });
+    }
+  };
+
   return (
     <Collapsible.Root open={isOpen} onOpenChange={(e) => setIsOpen(e.open)}>
       <Collapsible.Trigger>
         <Flex justifyContent="flex-start" alignItems="center" gap="3" mb={4}>
           <Spinner size="sm" color="fg.muted" />
           <Text fontSize="sm" color="fg.muted">
-            Reasoning
+            {t("reasoning.title")}
           </Text>
           {isOpen ? <CaretDownIcon /> : <CaretRightIcon />}
         </Flex>
@@ -44,7 +44,7 @@ function Reasoning() {
           fontSize="xs"
         >
           {toolSteps.length === 0 ? (
-            <Text color="fg.muted">Processing request...</Text>
+            <Text color="fg.muted">{t("reasoning.processing")}</Text>
           ) : (
             toolSteps.map((toolName, index) => (
               <Text key={`${toolName}-${index}`} color="fg.muted" mb={1}>

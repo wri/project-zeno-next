@@ -1,14 +1,14 @@
 {
-  "threadDelete": {
+  "deleteThread": {
     "title": "Are you sure?",
-    "body": "This action cannot be undone. This will permanently delete the conversation <strong>{threadName}</strong> from our systems."
+    "body": "This action cannot be undone. This will permanently delete the conversation {name} from our systems."
   },
-  "threadRename": {
+  "renameThread": {
     "title": "Rename thread"
   },
-  "threadShare": {
+  "shareThread": {
     "title": "Share Conversation",
-    "disclaimer": "Sharing creates a public, view-only link to this conversation. Make sure it contains no personal or sensitive information. You can switch Visibility back to private later. For more information, read our ",
+    "disclaimer": "Sharing creates a public, view-only link to this conversation. Make sure it contains no personal or sensitive information. You can switch Visibility back to private later. For more information, read our",
     "termsLink": "Terms of use",
     "visibility": "Visibility",
     "private": "Private (only you can access)",
@@ -17,32 +17,29 @@
     "linkCopied": "Link Copied",
     "createShareLink": "Create share link",
     "visibilityUpdated": "Visibility updated",
-    "visibilityUpdatedDescription": "Thread {threadId} is now {visibility}",
+    "nowPublic": "Thread is now public",
+    "nowPrivate": "Thread is now private",
     "visibilityFailed": "Visibility update failed",
-    "visibilityFailedDescription": "Failed to make thread {threadId} {visibility}. Please try again.",
-    "visibilityPublic": "public",
-    "visibilityPrivate": "private"
+    "visibilityFailedDescription": "Please try again."
   },
-  "threadActions": {
+  "thread": {
+    "actionsFor": "Thread actions for {name}",
     "rename": "Rename",
     "share": "Share",
-    "delete": "Delete",
-    "actionsFor": "Thread actions for {name}"
+    "delete": "Delete"
   },
-  "uploadArea": {
+  "upload": {
     "title": "Upload Area",
-    "titleUploading": "Uploading Area...",
-    "uploading": "Uploading...",
-    "dragAndDrop": "Drag and drop a <strong>polygon data file</strong> here or click to upload.",
-    "fileTypes": "Files with extension {types} up to {maxSize} MB",
-    "selectFile": "Select File",
-    "termsPrefix": "By uploading data you agree to the ",
-    "termsLink": "terms of use"
-  },
-  "datasetInfo": {
-    "description": "Description",
-    "methodology": "Methodology",
-    "cautions": "Cautions",
-    "citation": "Citation"
+    "uploading": "Uploading Area...",
+    "uploadButton": "Upload",
+    "uploadingButton": "Uploading...",
+    "termsPrefix": "By uploading data you agree to the",
+    "termsLink": "terms of use",
+    "clear": "Clear",
+    "dropzone": {
+      "dragAndDrop": "Drag and drop a polygon data file here or click to upload.",
+      "fileTypes": "Files with extension {types} up to {maxSize} MB",
+      "selectFile": "Select File"
+    }
   }
 }

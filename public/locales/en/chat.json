@@ -89,25 +89,35 @@
     "downloadFailed": "Failed to download data."
   },
   "basemap": {
+    "title": "Basemap Style",
     "light": "Light",
     "satellite": "Satellite",
     "dark": "Dark"
   },
-  "mapControls": {
+  "map": {
     "tools": "Tools",
-    "uploadArea": "Upload area from file",
-    "selectArea": "Select area on map",
-    "drawArea": "Draw area on map",
+    "uploadArea": "Upload area",
+    "uploadAreaFromFile": "Upload area from file",
+    "selectAreaOnMap": "Select area on map",
+    "selectAreaFromOptions": "Select area from options",
+    "drawAreaOnMap": "Draw area on map",
     "cancelDrawing": "Cancel drawing",
     "confirmArea": "Confirm area",
     "selectingMode": "Selecting {name}",
     "drawingMode": "Drawing AOI",
     "uploadingMode": "Uploading",
-    "validationTooSmall": "Error: Area too small",
-    "validationTooLarge": "Error: Area too large",
+    "errorAreaTooSmall": "Error: Area too small",
+    "errorAreaTooLarge": "Error: Area too large",
     "minimumArea": "Minimum area",
     "maximumArea": "Maximum area",
     "yourArea": "Your area",
     "closeValidationError": "Close area validation error"
+  },
+  "hideDisclaimer": "Hide disclaimer",
+  "dataset": {
+    "description": "Description",
+    "methodology": "Methodology",
+    "cautions": "Cautions",
+    "citation": "Citation"
   }
 }

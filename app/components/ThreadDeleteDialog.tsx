@@ -1,4 +1,5 @@
 import { Dialog, Button, Portal } from "@chakra-ui/react";
+import { useTranslations } from "next-intl";
 
 interface ThreadDeleteDialogProps {
   threadName: string;
@@ -8,6 +9,8 @@ interface ThreadDeleteDialogProps {
 }
 
 function ThreadDeleteDialog(props: ThreadDeleteDialogProps) {
+  const t = useTranslations("dialogs");
+  const tc = useTranslations("common");
   const { threadName, onConfirm, isOpen, onOpenChange } = props;
 
   return (
@@ -21,17 +24,16 @@ function ThreadDeleteDialog(props: ThreadDeleteDialogProps) {
         <Dialog.Positioner>
           <Dialog.Content>
             <Dialog.Header>
-              <Dialog.Title>Are you sure?</Dialog.Title>
+              <Dialog.Title>{t("deleteThread.title")}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
               <p>
-                This action cannot be undone. This will permanently delete the
-                conversation <strong>{threadName}</strong> from our systems.
+                {t("deleteThread.body", { name: threadName })}
               </p>
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{tc("buttons.cancel")}</Button>
               </Dialog.ActionTrigger>
               <Dialog.ActionTrigger asChild>
                 <Button
@@ -41,7 +43,7 @@ function ThreadDeleteDialog(props: ThreadDeleteDialogProps) {
                     onConfirm();
                   }}
                 >
-                  Delete
+                  {t("thread.delete")}
                 </Button>
               </Dialog.ActionTrigger>
             </Dialog.Footer>

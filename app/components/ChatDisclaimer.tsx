@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Box, CloseButton, type BoxProps } from "@chakra-ui/react";
 import {
   CheckCircleIcon,
@@ -32,6 +33,7 @@ export default function ChatDisclaimer({
   children,
   ...boxProps
 }: ChatDisclaimerProps) {
+  const t = useTranslations("chat");
   const IconComponent = TypeIcon[type];
 
   return (
@@ -60,7 +62,7 @@ export default function ChatDisclaimer({
           size="2xs"
           variant="ghost"
           colorPalette={typeColorMap[type]}
-          title="Hide disclaimer"
+          title={t("hideDisclaimer")}
           onClick={() => setDisplayDisclaimer((prev) => !prev)}
         />
       )}

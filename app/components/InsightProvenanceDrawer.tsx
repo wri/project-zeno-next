@@ -24,6 +24,7 @@ import { fetchExternalData } from "@/app/actions/fetch-data";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import JSZip from "jszip";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 interface InsightProvenanceDrawerProps {
   isOpen: boolean;
@@ -110,6 +111,7 @@ function extractDataUrls(code: string): string[] {
 // --- Components ---
 
 function CodeBlockViewer({ code }: { code: string }) {
+  const t = useTranslations("chat");
   const { copy, copied } = useClipboard({ value: code });
   const [downloading, setDownloading] = useState(false);
   
@@ -140,7 +142,7 @@ function CodeBlockViewer({ code }: { code: string }) {
       }
     } catch (err) {
       console.error("Download error:", err);
-      alert("Failed to download data.");
+      alert(t("provenance.downloadFailed"));
     } finally {
       setDownloading(false);
     }
@@ -165,29 +167,29 @@ function CodeBlockViewer({ code }: { code: string }) {
         <Flex gap={2} align="center">
           <Image src="/python-logo.svg" alt="Python" width={14} height={14} />
           <Text fontSize="xs" color="neutral.600">
-            Code
+            {t("provenance.code")}
           </Text>
         </Flex>
         <Flex gap={2}>
           {dataUrls.length > 0 && (
-            <Tooltip content="Download Source files">
+            <Tooltip content={t("provenance.downloadSource")}>
               <IconButton
                 size="xs"
                 variant="outline"
                 onClick={handleDownload}
                 disabled={downloading}
-                aria-label="Download Source files"
+                aria-label={t("provenance.downloadSource")}
               >
                 <DownloadSimple />
               </IconButton>
             </Tooltip>
           )}
-          <Tooltip content="Copy">
+          <Tooltip content={t("provenance.copyCode")}>
             <IconButton
               size="xs"
               variant="outline"
               onClick={copy}
-              aria-label="Copy code"
+              aria-label={t("provenance.copyCode")}
             >
               {copied ? <Check /> : <Copy />}
             </IconButton>
@@ -220,6 +222,8 @@ export default function InsightProvenanceDrawer({
   generation,
   title,
 }: InsightProvenanceDrawerProps) {
+  const t = useTranslations("chat");
+  const tc = useTranslations("common");
   const parts = generation?.codeact_parts || [];
 
   return (
@@ -243,7 +247,7 @@ export default function InsightProvenanceDrawer({
               <Heading size="sm" m={0} maxW="calc(100% - 80px)">
                 {title
                   ? `${title}`
-                  : "How this was generated"}
+                  : t("provenance.defaultTitle")}
               </Heading>
               <Drawer.CloseTrigger asChild>
                 <Button
@@ -256,14 +260,14 @@ export default function InsightProvenanceDrawer({
                   rounded="sm"
                 >
                   <X />
-                  Close
+                  {tc("buttons.close")}
                 </Button>
               </Drawer.CloseTrigger>
             </Drawer.Header>
             <Drawer.Body bg="neutral.200" pt={0}>
               {parts.length === 0 ? (
                 <Text fontSize="sm" color="neutral.600">
-                  No generation details available.
+                  {t("provenance.noDetails")}
                 </Text>
               ) : (
                 <Flex direction="column" gap={6}>
@@ -332,16 +336,16 @@ export default function InsightProvenanceDrawer({
                                 <Flex gap={2} align="center">
                                   <Terminal size={14} />
                                   <Text fontSize="xs" color="neutral.600">
-                                    Execution output
+                                    {t("provenance.executionOutput")}
                                   </Text>
                                 </Flex>
                                 <Flex gap={2}>
-                                  <Tooltip content="Copy">
+                                  <Tooltip content={t("provenance.copyOutput")}>
                                     <IconButton
                                       size="xs"
                                       variant="outline"
                                       onClick={() => navigator.clipboard.writeText(content)}
-                                      aria-label="Copy output"
+                                      aria-label={t("provenance.copyOutput")}
                                     >
                                       <Copy />
                                     </IconButton>
@@ -367,7 +371,7 @@ export default function InsightProvenanceDrawer({
                     generation.source_urls.length > 0 && (
                       <Box>
                         <Heading size="xs" mb={2}>
-                          Sources
+                          {t("provenance.sources")}
                         </Heading>
                         <Flex direction="column" gap={1}>
                           {generation.source_urls.map((url, idx) => (

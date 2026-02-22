@@ -8,6 +8,7 @@ import {
   Separator,
 } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import { DatasetInfo } from "@/app/types/chat";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
@@ -23,6 +24,7 @@ export function DatasetInfoModal({
   onClose,
   dataset,
 }: DatasetInfoModalProps) {
+  const t = useTranslations("chat");
   return (
     <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
       <Portal>
@@ -34,7 +36,7 @@ export function DatasetInfoModal({
               <VStack gap="5" align="stretch" maxH="70vh" overflowY="auto" pr="6" pb="6">
                 <Box>
                   <Heading size="sm" mb={3} color="gray.500">
-                    Description
+                    {t("dataset.description")}
                   </Heading>
                   <Box>
                     <ReactMarkdown remarkPlugins={[remarkBreaks]}>
@@ -46,7 +48,7 @@ export function DatasetInfoModal({
                 {dataset.methodology && (
                   <Box>
                     <Heading size="sm" mb={3} color="gray.500">
-                      Methodology
+                      {t("dataset.methodology")}
                     </Heading>
                     <Box>
                       <ReactMarkdown remarkPlugins={[remarkBreaks]}>
@@ -59,7 +61,7 @@ export function DatasetInfoModal({
                 {dataset.cautions && (
                   <Box>
                     <Heading size="sm" mb={3} color="gray.500">
-                      Cautions
+                      {t("dataset.cautions")}
                     </Heading>
                     <Box>
                       <ReactMarkdown remarkPlugins={[remarkBreaks]}>
@@ -72,7 +74,7 @@ export function DatasetInfoModal({
                 {dataset.citation && (
                   <Box>
                     <Heading size="sm" mb={3} color="gray.500">
-                      Citation
+                      {t("dataset.citation")}
                     </Heading>
                     <Box>
                       <ReactMarkdown remarkPlugins={[remarkBreaks]}>

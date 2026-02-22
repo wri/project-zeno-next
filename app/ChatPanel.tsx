@@ -8,11 +8,13 @@ import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
 import ChatStatusInfo from "./components/ChatStatusInfo";
 import ChatPanelHeader from "./ChatPanelHeader";
+import { useTranslations } from "next-intl";
 import useAuthStore from "./store/authStore";
 
 const [minWidth, maxWidth, defaultWidth] = [384, 624, 592];
 
 function ChatPanel() {
+  const t = useTranslations("chat");
   const { usedPrompts, totalPrompts, isAnonymous } = useAuthStore();
 
   const promptsExhausted = usedPrompts >= totalPrompts;
@@ -91,7 +93,7 @@ function ChatPanel() {
               (isAnonymous ? (
                 <ChatStatusInfo type="error">
                   <Text>
-                    <strong>You&apos;ve used all your guest prompts.</strong>
+                    <strong>{t("prompts.exhaustedGuest.title")}</strong>
                     <br />
                     <ChLink
                       as={Link}
@@ -99,11 +101,11 @@ function ChatPanel() {
                       color="blue.600"
                       textDecoration="underline"
                     >
-                      Log in or sign up for free
-                    </ChLink>{" "}
-                    to unlock extra daily prompts, or{" "}
+                      {t("prompts.exhaustedGuest.loginLink")}
+                    </ChLink>
+                    {t("prompts.exhaustedGuest.unlockText")}
                     <ChLink as={Link} href="/app/classic">
-                      continue without AI
+                      {t("prompts.exhaustedGuest.classicLink")}
                     </ChLink>
                     .
                   </Text>
@@ -112,13 +114,12 @@ function ChatPanel() {
                 <ChatStatusInfo type="error">
                   <Text>
                     <strong>
-                      You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}
-                      prompts.
+                      {t("prompts.exhaustedAuth.title", { total: totalPrompts })}
                     </strong>
                     <br />
-                    Wait until tomorrow for new prompts, or{" "}
+                    {t("prompts.exhaustedAuth.waitText")}
                     <ChLink as={Link} href="/app/classic">
-                      continue without AI
+                      {t("prompts.exhaustedAuth.classicLink")}
                     </ChLink>
                     .
                   </Text>
@@ -135,8 +136,7 @@ function ChatPanel() {
               gap={2}
             >
               <Text>
-                AI makes mistakes. Verify outputs and do not share
-                any sensitive or personal information.
+                {t("disclaimer")}
               </Text>
             </Flex>
           </Box>

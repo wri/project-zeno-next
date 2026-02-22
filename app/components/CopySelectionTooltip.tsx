@@ -4,6 +4,7 @@ import { CopyIcon, SparkleIcon } from "@phosphor-icons/react";
 const Sparkle = chakra(SparkleIcon);
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface CopySelectionTooltipProps {
   children: React.ReactNode;
@@ -21,8 +22,11 @@ interface CopySelectionTooltipProps {
 export default function CopySelectionTooltip({
   children,
   enabled = true,
-  notice = "This is AI-generated text. Please verify before using it in your work.",
+  notice,
 }: CopySelectionTooltipProps) {
+  const t = useTranslations("chat");
+  const tc = useTranslations("common");
+  const displayNotice = notice ?? t("copyTooltip.notice");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -178,7 +182,7 @@ export default function CopySelectionTooltip({
           <Flex align="center" gap="2">
             <Sparkle color="secondary.500" weight="fill" />
             <Text fontSize="xs" flex="1">
-              {notice}
+              {displayNotice}
             </Text>
             <Button
               size="xs"
@@ -189,7 +193,7 @@ export default function CopySelectionTooltip({
               gap="1"
             >
               <CopyIcon />
-              Copy
+              {tc("buttons.copy")}
             </Button>
           </Flex>
         </Box>

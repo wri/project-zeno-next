@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from "react";
 import { Dialog, Portal, Button, Input } from "@chakra-ui/react";
+import { useTranslations } from "next-intl";
 
 interface ThreadRenameDialogProps {
   name: string;
@@ -9,6 +10,8 @@ interface ThreadRenameDialogProps {
 }
 
 function ThreadRenameDialog(props: ThreadRenameDialogProps) {
+  const t = useTranslations("dialogs");
+  const tc = useTranslations("common");
   const { name, isOpen, onOpenChange, onRename } = props;
   const ref = useRef<HTMLInputElement>(null);
   const [threadName, setThreadName] = useState("");
@@ -40,7 +43,7 @@ function ThreadRenameDialog(props: ThreadRenameDialogProps) {
             }}
           >
             <Dialog.Header>
-              <Dialog.Title>Rename thread</Dialog.Title>
+              <Dialog.Title>{t("renameThread.title")}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body pb="4">
               <Input
@@ -50,10 +53,10 @@ function ThreadRenameDialog(props: ThreadRenameDialogProps) {
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline">{tc("buttons.cancel")}</Button>
               </Dialog.ActionTrigger>
               <Button colorPalette="blue" disabled={!threadName} type="submit">
-                Save
+                {tc("buttons.save")}
               </Button>
             </Dialog.Footer>
           </Dialog.Content>
