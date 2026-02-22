@@ -1,24 +1,24 @@
 {
   "notFound": {
-    "title": "Page not found",
-    "description": "The link you entered does not exist. Please check the link or visit our",
-    "homeLink": "home page"
+    "title": "Página no encontrada",
+    "description": "El enlace que ingresaste no existe. Por favor verifica el enlace o visita nuestra",
+    "homeLink": "página de inicio"
   },
   "maintenance": {
-    "title": "The site is currently down for maintenance",
-    "description": "Sorry for any inconvenience. Please check back shortly!"
+    "title": "El sitio está en mantenimiento",
+    "description": "Disculpa las molestias. ¡Por favor, inténtalo de nuevo en breve!"
   },
   "unauthorized": {
-    "earlyAccess": "Early access only",
-    "accessDenied": "Access Denied",
-    "comingSoon": "Coming soon",
-    "earlyAccessThanks": "Thank you for your interest in Global Nature Watch!",
-    "earlyAccessBody": "Right now access is limited while we are in closed preview. We'd love for you to be part of what's next, so join the waitlist to be among the first to know when the tool becomes available.",
-    "accessDeniedBody": "We were unable to verify your access to Global Nature Watch. Please try signing in again or contact support if the issue persists.",
-    "comingSoonBody": "Thank you for creating a Global Nature Watch account. Early access is limited while we scale responsibly. You're on the waitlist, and we will email you as soon as the tool is ready.",
-    "backToHomepage": "Back to homepage",
-    "joinWaitlist": "Join waitlist",
-    "failedLoadSignup": "Failed to load signup status",
-    "failedLoadSignupDescription": "Unable to check if signup is currently open. Please try again later."
+    "earlyAccess": "Solo acceso anticipado",
+    "accessDenied": "Acceso denegado",
+    "comingSoon": "Próximamente",
+    "earlyAccessThanks": "¡Gracias por tu interés en Global Nature Watch!",
+    "earlyAccessBody": "El acceso está actualmente limitado durante la fase de vista previa cerrada. Nos encantaría que formes parte de lo que viene — únete a la lista de espera para ser de los primeros en saber cuándo la herramienta estará disponible.",
+    "accessDeniedBody": "No pudimos verificar tu acceso a Global Nature Watch. Por favor, intenta iniciar sesión de nuevo o contacta al soporte si el problema persiste.",
+    "comingSoonBody": "Gracias por crear una cuenta en Global Nature Watch. El acceso anticipado es limitado mientras escalamos de manera responsable. Estás en la lista de espera y te enviaremos un correo cuando la herramienta esté lista.",
+    "backToHomepage": "Volver al inicio",
+    "joinWaitlist": "Unirse a la lista de espera",
+    "failedLoadSignup": "Error al cargar el estado de registro",
+    "failedLoadSignupDescription": "No se pudo verificar si el registro está abierto actualmente. Por favor, inténtalo más tarde."
   }
 }

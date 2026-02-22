@@ -1,44 +1,44 @@
 {
-  "title": "Complete your",
-  "titleSuffix": "user profile",
-  "subtitle": "We use this information to make Global Nature Watch more useful to you. This tool is experimental, and knowing you better helps us improve. Features may change or be removed over time.",
-  "goBack": "Go back",
+  "title": "Completa tu",
+  "titleSuffix": "perfil de usuario",
+  "subtitle": "Usamos esta información para hacer Global Nature Watch más útil para ti. Esta herramienta es experimental, y conocerte mejor nos ayuda a mejorar. Las funciones pueden cambiar o ser eliminadas.",
+  "goBack": "Volver",
   "fields": {
-    "firstName": "First name",
-    "lastName": "Last name",
-    "email": "Email address",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "email": "Correo electrónico",
     "sector": "Sector",
-    "role": "Role",
-    "jobTitle": "Job title",
-    "company": "Company / Organization",
-    "country": "Country",
-    "expertise": "Level of technical expertise",
-    "preferredLanguage": "Preferred language",
-    "languageNote": "Please note most of our communications are in English.",
-    "topics": "What topic(s) are you most interested in?"
+    "role": "Rol",
+    "jobTitle": "Cargo",
+    "company": "Empresa / Organización",
+    "country": "País",
+    "expertise": "Nivel de experiencia técnica",
+    "preferredLanguage": "Idioma preferido",
+    "languageNote": "Ten en cuenta que la mayoría de nuestras comunicaciones son en inglés.",
+    "topics": "¿Qué tema(s) te interesan más?"
   },
   "placeholders": {
-    "sector": "Select Sector",
-    "role": "Select Role",
-    "country": "Select Country",
-    "expertise": "Select Level",
-    "language": "Select Language"
+    "sector": "Seleccionar sector",
+    "role": "Seleccionar rol",
+    "country": "Seleccionar país",
+    "expertise": "Seleccionar nivel",
+    "language": "Seleccionar idioma"
   },
-  "emailConsent": "By creating an account, you agree to receive essential emails about your Global Nature Watch account and system updates. You can unsubscribe from non-essential emails at any time.",
+  "emailConsent": "Al crear una cuenta, aceptas recibir correos electrónicos esenciales sobre tu cuenta de Global Nature Watch y actualizaciones del sistema. Puedes cancelar la suscripción a correos no esenciales en cualquier momento.",
   "checkboxes": {
-    "receiveNews": "Send me news, resources, and opportunities from Land & Carbon Lab.",
-    "helpTest": "Contact me about testing new features."
+    "receiveNews": "Envíenme noticias, recursos y oportunidades de Land & Carbon Lab.",
+    "helpTest": "Contáctenme para probar nuevas funciones."
   },
   "terms": {
-    "iAccept": "I accept the",
-    "termsOfUse": "Terms of Use",
-    "and": "and",
-    "aiTermsOfUse": "Global Nature Watch AI Terms of Use",
-    "acknowledge": "and I acknowledge the privacy practices described in the",
-    "privacyPolicy": "Privacy Policy",
-    "andThe": "and the",
-    "aiPrivacyPolicy": "Global Nature Watch AI Privacy Policy"
+    "iAccept": "Acepto los",
+    "termsOfUse": "Términos de uso",
+    "and": "y",
+    "aiTermsOfUse": "Términos de uso IA de Global Nature Watch",
+    "acknowledge": "y reconozco las prácticas de privacidad descritas en la",
+    "privacyPolicy": "Política de privacidad",
+    "andThe": "y la",
+    "aiPrivacyPolicy": "Política de privacidad IA de Global Nature Watch"
   },
-  "completeProfile": "Complete profile",
-  "finalizingProfile": "Finalizing profile..."
+  "completeProfile": "Completar perfil",
+  "finalizingProfile": "Finalizando perfil..."
 }

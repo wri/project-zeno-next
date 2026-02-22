@@ -1,24 +1,24 @@
 {
   "notFound": {
-    "title": "Page not found",
-    "description": "The link you entered does not exist. Please check the link or visit our",
-    "homeLink": "home page"
+    "title": "Halaman tidak ditemukan",
+    "description": "Tautan yang Anda masukkan tidak ada. Silakan periksa tautan atau kunjungi",
+    "homeLink": "halaman beranda"
   },
   "maintenance": {
-    "title": "The site is currently down for maintenance",
-    "description": "Sorry for any inconvenience. Please check back shortly!"
+    "title": "Situs sedang dalam pemeliharaan",
+    "description": "Maaf atas ketidaknyamanannya. Silakan coba lagi nanti!"
   },
   "unauthorized": {
-    "earlyAccess": "Early access only",
-    "accessDenied": "Access Denied",
-    "comingSoon": "Coming soon",
-    "earlyAccessThanks": "Thank you for your interest in Global Nature Watch!",
-    "earlyAccessBody": "Right now access is limited while we are in closed preview. We'd love for you to be part of what's next, so join the waitlist to be among the first to know when the tool becomes available.",
-    "accessDeniedBody": "We were unable to verify your access to Global Nature Watch. Please try signing in again or contact support if the issue persists.",
-    "comingSoonBody": "Thank you for creating a Global Nature Watch account. Early access is limited while we scale responsibly. You're on the waitlist, and we will email you as soon as the tool is ready.",
-    "backToHomepage": "Back to homepage",
-    "joinWaitlist": "Join waitlist",
-    "failedLoadSignup": "Failed to load signup status",
-    "failedLoadSignupDescription": "Unable to check if signup is currently open. Please try again later."
+    "earlyAccess": "Hanya akses awal",
+    "accessDenied": "Akses ditolak",
+    "comingSoon": "Segera hadir",
+    "earlyAccessThanks": "Terima kasih atas minat Anda pada Global Nature Watch!",
+    "earlyAccessBody": "Akses saat ini terbatas selama fase pratinjau tertutup. Kami ingin Anda menjadi bagian dari langkah selanjutnya — bergabunglah dengan daftar tunggu untuk menjadi yang pertama tahu ketika alat ini tersedia.",
+    "accessDeniedBody": "Kami tidak dapat memverifikasi akses Anda ke Global Nature Watch. Silakan coba masuk lagi atau hubungi dukungan jika masalah berlanjut.",
+    "comingSoonBody": "Terima kasih telah membuat akun Global Nature Watch. Akses awal terbatas selama kami berkembang secara bertanggung jawab. Anda ada di daftar tunggu dan kami akan mengirim email ketika alat ini siap.",
+    "backToHomepage": "Kembali ke beranda",
+    "joinWaitlist": "Gabung daftar tunggu",
+    "failedLoadSignup": "Gagal memuat status pendaftaran",
+    "failedLoadSignupDescription": "Tidak dapat memeriksa apakah pendaftaran sedang dibuka. Silakan coba lagi nanti."
   }
 }

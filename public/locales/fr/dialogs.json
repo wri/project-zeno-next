@@ -1,45 +1,45 @@
 {
   "deleteThread": {
-    "title": "Are you sure?",
-    "body": "This action cannot be undone. This will permanently delete the conversation {name} from our systems."
+    "title": "Êtes-vous sûr ?",
+    "body": "Cette action est irréversible. La conversation {name} sera définitivement supprimée de nos systèmes."
   },
   "renameThread": {
-    "title": "Rename thread"
+    "title": "Renommer la conversation"
   },
   "shareThread": {
-    "title": "Share Conversation",
-    "disclaimer": "Sharing creates a public, view-only link to this conversation. Make sure it contains no personal or sensitive information. You can switch Visibility back to private later. For more information, read our",
-    "termsLink": "Terms of use",
-    "visibility": "Visibility",
-    "private": "Private (only you can access)",
-    "public": "Public (anyone can access)",
-    "copyShareLink": "Copy share link",
-    "linkCopied": "Link Copied",
-    "createShareLink": "Create share link",
-    "visibilityUpdated": "Visibility updated",
-    "nowPublic": "Thread is now public",
-    "nowPrivate": "Thread is now private",
-    "visibilityFailed": "Visibility update failed",
-    "visibilityFailedDescription": "Please try again."
+    "title": "Partager la conversation",
+    "disclaimer": "Le partage crée un lien public en lecture seule vers cette conversation. Assurez-vous qu'elle ne contient aucune information personnelle ou sensible. Vous pouvez repasser la visibilité en privé plus tard. Pour en savoir plus, consultez nos",
+    "termsLink": "conditions d'utilisation",
+    "visibility": "Visibilité",
+    "private": "Privé (vous seul pouvez y accéder)",
+    "public": "Public (tout le monde peut y accéder)",
+    "copyShareLink": "Copier le lien de partage",
+    "linkCopied": "Lien copié",
+    "createShareLink": "Créer un lien de partage",
+    "visibilityUpdated": "Visibilité mise à jour",
+    "nowPublic": "La conversation est maintenant publique",
+    "nowPrivate": "La conversation est maintenant privée",
+    "visibilityFailed": "Échec de la mise à jour de la visibilité",
+    "visibilityFailedDescription": "Veuillez réessayer."
   },
   "thread": {
-    "actionsFor": "Thread actions for {name}",
-    "rename": "Rename",
-    "share": "Share",
-    "delete": "Delete"
+    "actionsFor": "Actions pour la conversation {name}",
+    "rename": "Renommer",
+    "share": "Partager",
+    "delete": "Supprimer"
   },
   "upload": {
-    "title": "Upload Area",
-    "uploading": "Uploading Area...",
-    "uploadButton": "Upload",
-    "uploadingButton": "Uploading...",
-    "termsPrefix": "By uploading data you agree to the",
-    "termsLink": "terms of use",
-    "clear": "Clear",
+    "title": "Téléverser une zone",
+    "uploading": "Téléversement de la zone...",
+    "uploadButton": "Téléverser",
+    "uploadingButton": "Téléversement...",
+    "termsPrefix": "En téléversant des données, vous acceptez les",
+    "termsLink": "conditions d'utilisation",
+    "clear": "Effacer",
     "dropzone": {
-      "dragAndDrop": "Drag and drop a polygon data file here or click to upload.",
-      "fileTypes": "Files with extension {types} up to {maxSize} MB",
-      "selectFile": "Select File"
+      "dragAndDrop": "Glissez-déposez un fichier de données polygonales ici ou cliquez pour téléverser.",
+      "fileTypes": "Fichiers avec extension {types} jusqu'à {maxSize} Mo",
+      "selectFile": "Sélectionner un fichier"
     }
   }
 }

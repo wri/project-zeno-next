@@ -1,123 +1,123 @@
 {
   "welcome": {
-    "title": "Welcome to ",
+    "title": "Selamat datang di ",
     "titleBold": "Global Nature Watch",
-    "description": "Our AI-powered nature monitoring tool understands plain language, so no technical jargon required! Ask about land cover change, forest loss, or biodiversity risks in the areas you care about and quickly generate powerful insights. Whether you're a policymaker, scientist, or community advocate, we'll help you find the right data and make sense of it, too.",
-    "separator": "...or try asking about...",
-    "placeholder": "Ask a question...",
-    "dontShowAgain": "Don't show this again"
+    "description": "Alat pemantauan alam kami yang didukung AI memahami bahasa sehari-hari — tidak perlu istilah teknis! Tanyakan tentang perubahan tutupan lahan, kehilangan hutan, atau risiko keanekaragaman hayati di area yang Anda minati dan hasilkan wawasan mendalam dengan cepat. Baik Anda pembuat kebijakan, ilmuwan, atau advokat komunitas, kami akan membantu Anda menemukan data yang tepat dan memahaminya.",
+    "separator": "...atau coba tanyakan tentang...",
+    "placeholder": "Ajukan pertanyaan...",
+    "dontShowAgain": "Jangan tampilkan lagi"
   },
-  "welcomeMessage": "**Welcome to Global Nature Watch!**\n      &nbsp;\n      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).\n      &nbsp;\n      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).",
+  "welcomeMessage": "**Selamat datang di Global Nature Watch!**\n      &nbsp;\n      Halo, saya adalah asisten pemantauan alam Anda, didukung oleh AI dan data terbuka dari [Global Forest Watch](https://globalforestwatch.org) dan [Land & Carbon Lab](https://landcarbonlab.org).\n      &nbsp;\n      Anda dapat bertanya tentang perubahan tutupan lahan, kehilangan hutan, atau risiko keanekaragaman hayati di tempat yang Anda minati. Untuk detail lebih lanjut, kunjungi [Pusat Bantuan](https://help.globalnaturewatch.org/get-started).",
   "input": {
-    "placeholder": "Ask a question...",
-    "sending": "Sending...",
-    "sendMessage": "Send message"
+    "placeholder": "Ajukan pertanyaan...",
+    "sending": "Mengirim...",
+    "sendMessage": "Kirim pesan"
   },
   "context": {
-    "layer": "Data Layer",
+    "layer": "Lapisan data",
     "area": "Area",
-    "date": "Date",
-    "label": "Context:"
+    "date": "Tanggal",
+    "label": "Konteks:"
   },
   "panelHeader": {
-    "newConversation": "New Conversation",
-    "goToInsight": "Go to insight",
-    "noInsightsTooltip": "Ask a question to generate insights",
-    "newConversationTooltip": "New conversation",
-    "widgetMeta": "{time} on {day}"
+    "newConversation": "Percakapan baru",
+    "goToInsight": "Lihat analisis",
+    "noInsightsTooltip": "Ajukan pertanyaan untuk menghasilkan analisis",
+    "newConversationTooltip": "Percakapan baru",
+    "widgetMeta": "{time} pada {day}"
   },
   "prompts": {
     "exhaustedGuest": {
-      "title": "You've used all your guest prompts.",
-      "loginLink": "Log in or sign up for free",
-      "unlockText": " to unlock extra daily prompts, or ",
-      "classicLink": "continue without AI"
+      "title": "Anda telah menggunakan semua pertanyaan tamu.",
+      "loginLink": "Masuk atau daftar gratis",
+      "unlockText": " untuk membuka pertanyaan harian tambahan, atau ",
+      "classicLink": "lanjutkan tanpa AI"
     },
     "exhaustedAuth": {
-      "title": "You've reached today's limit of {total} prompts.",
-      "waitText": "Wait until tomorrow for new prompts, or ",
-      "classicLink": "continue without AI"
+      "title": "Anda telah mencapai batas {total} pertanyaan hari ini.",
+      "waitText": "Tunggu hingga besok untuk pertanyaan baru, atau ",
+      "classicLink": "lanjutkan tanpa AI"
     }
   },
-  "disclaimer": "AI makes mistakes. Verify outputs and do not share any sensitive or personal information.",
+  "disclaimer": "AI dapat membuat kesalahan. Verifikasi hasilnya dan jangan bagikan informasi sensitif atau pribadi.",
   "reasoning": {
-    "title": "Reasoning",
-    "processing": "Processing request...",
+    "title": "Penalaran",
+    "processing": "Memproses permintaan...",
     "tools": {
-      "generate_insights": "Generating insights",
-      "pick_aoi": "Picking area of interest",
-      "pick_dataset": "Selecting dataset",
-      "pull_data": "Pulling data"
+      "generate_insights": "Menghasilkan analisis",
+      "pick_aoi": "Memilih area yang diminati",
+      "pick_dataset": "Memilih kumpulan data",
+      "pull_data": "Mengambil data"
     },
-    "toolFallback": "Processing {name}"
+    "toolFallback": "Memproses {name}"
   },
   "message": {
-    "timestamp": "{time} on {day}",
-    "copyResponse": "Copy response",
-    "responseCopied": "Response copied to clipboard",
-    "goodResponse": "Good response",
-    "badResponse": "Bad response",
-    "feedbackPlaceholder": "Tell us what went wrong (optional)",
-    "sendFeedback": "Send feedback",
-    "feedbackThanks": "Thanks for the feedback",
-    "feedbackThanksDescription": "Glad it helped!",
-    "feedbackSent": "Feedback sent",
-    "feedbackSentDescription": "Thanks for helping us improve.",
-    "markedNotHelpful": "Marked as not helpful",
-    "markedNotHelpfulDescription": "You can add a comment.",
-    "unableToRate": "Unable to rate",
-    "noActiveThread": "No active thread.",
-    "ratingFailed": "Rating failed",
-    "ratingFailedDescription": "Please try again."
+    "timestamp": "{time} pada {day}",
+    "copyResponse": "Salin respons",
+    "responseCopied": "Respons disalin ke papan klip",
+    "goodResponse": "Respons bagus",
+    "badResponse": "Respons buruk",
+    "feedbackPlaceholder": "Ceritakan apa yang salah (opsional)",
+    "sendFeedback": "Kirim masukan",
+    "feedbackThanks": "Terima kasih atas masukan Anda",
+    "feedbackThanksDescription": "Senang bisa membantu!",
+    "feedbackSent": "Masukan terkirim",
+    "feedbackSentDescription": "Terima kasih telah membantu kami meningkatkan layanan.",
+    "markedNotHelpful": "Ditandai sebagai tidak membantu",
+    "markedNotHelpfulDescription": "Anda dapat menambahkan komentar.",
+    "unableToRate": "Tidak dapat menilai",
+    "noActiveThread": "Tidak ada percakapan aktif.",
+    "ratingFailed": "Penilaian gagal",
+    "ratingFailedDescription": "Silakan coba lagi."
   },
   "copyTooltip": {
-    "notice": "This is AI-generated text. Please verify before using it in your work."
+    "notice": "Teks ini dihasilkan oleh AI. Harap verifikasi sebelum menggunakannya dalam pekerjaan Anda."
   },
-  "visualizationDisclaimer": "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.",
+  "visualizationDisclaimer": "Visualisasi ini mencakup grafik dan ringkasan data yang dihasilkan oleh AI. Model AI dapat menghasilkan informasi yang tidak lengkap atau tidak akurat. Harap verifikasi semua hasil sebelum menggunakannya.",
   "widget": {
-    "viewGenerated": "View how this was generated"
+    "viewGenerated": "Lihat cara pembuatannya"
   },
   "provenance": {
-    "defaultTitle": "How this was generated",
-    "noDetails": "No generation details available.",
-    "sources": "Sources",
-    "code": "Code",
-    "executionOutput": "Execution output",
-    "downloadSource": "Download Source files",
-    "copyCode": "Copy code",
-    "copyOutput": "Copy output",
-    "downloadFailed": "Failed to download data."
+    "defaultTitle": "Cara pembuatannya",
+    "noDetails": "Tidak ada detail pembuatan yang tersedia.",
+    "sources": "Sumber",
+    "code": "Kode",
+    "executionOutput": "Hasil eksekusi",
+    "downloadSource": "Unduh file sumber",
+    "copyCode": "Salin kode",
+    "copyOutput": "Salin hasil",
+    "downloadFailed": "Gagal mengunduh data."
   },
   "basemap": {
-    "title": "Basemap Style",
-    "light": "Light",
-    "satellite": "Satellite",
-    "dark": "Dark"
+    "title": "Gaya peta dasar",
+    "light": "Terang",
+    "satellite": "Satelit",
+    "dark": "Gelap"
   },
   "map": {
-    "tools": "Tools",
-    "uploadArea": "Upload area",
-    "uploadAreaFromFile": "Upload area from file",
-    "selectAreaOnMap": "Select area on map",
-    "selectAreaFromOptions": "Select area from options",
-    "drawAreaOnMap": "Draw area on map",
-    "cancelDrawing": "Cancel drawing",
-    "confirmArea": "Confirm area",
-    "selectingMode": "Selecting {name}",
-    "drawingMode": "Drawing AOI",
-    "uploadingMode": "Uploading",
-    "errorAreaTooSmall": "Error: Area too small",
-    "errorAreaTooLarge": "Error: Area too large",
-    "minimumArea": "Minimum area",
-    "maximumArea": "Maximum area",
-    "yourArea": "Your area",
-    "closeValidationError": "Close area validation error"
+    "tools": "Alat",
+    "uploadArea": "Unggah area",
+    "uploadAreaFromFile": "Unggah area dari file",
+    "selectAreaOnMap": "Pilih area di peta",
+    "selectAreaFromOptions": "Pilih area dari opsi",
+    "drawAreaOnMap": "Gambar area di peta",
+    "cancelDrawing": "Batalkan gambar",
+    "confirmArea": "Konfirmasi area",
+    "selectingMode": "Memilih {name}",
+    "drawingMode": "Menggambar area",
+    "uploadingMode": "Mengunggah",
+    "errorAreaTooSmall": "Error: area terlalu kecil",
+    "errorAreaTooLarge": "Error: area terlalu besar",
+    "minimumArea": "Area minimum",
+    "maximumArea": "Area maksimum",
+    "yourArea": "Area Anda",
+    "closeValidationError": "Tutup error validasi"
   },
-  "hideDisclaimer": "Hide disclaimer",
+  "hideDisclaimer": "Sembunyikan peringatan",
   "dataset": {
-    "description": "Description",
-    "methodology": "Methodology",
-    "cautions": "Cautions",
-    "citation": "Citation"
+    "description": "Deskripsi",
+    "methodology": "Metodologi",
+    "cautions": "Peringatan",
+    "citation": "Sitasi"
   }
 }

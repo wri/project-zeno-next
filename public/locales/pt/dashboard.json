@@ -1,11 +1,11 @@
 {
-  "userSettings": "User Settings",
-  "saveChanges": "Save changes",
-  "backToApp": "Back to Application",
-  "signOut": "Sign Out",
-  "additionalDetails": "Additional Details (Optional)",
-  "profileSaved": "Profile saved",
-  "profileSavedDescription": "Your changes have been saved successfully.",
-  "saveFailed": "Save failed",
-  "saveFailedDescription": "Unable to save profile."
+  "userSettings": "Configurações do usuário",
+  "saveChanges": "Salvar alterações",
+  "backToApp": "Voltar ao aplicativo",
+  "signOut": "Sair",
+  "additionalDetails": "Detalhes adicionais (opcional)",
+  "profileSaved": "Perfil salvo",
+  "profileSavedDescription": "Suas alterações foram salvas com sucesso.",
+  "saveFailed": "Falha ao salvar",
+  "saveFailedDescription": "Não foi possível salvar o perfil."
 }

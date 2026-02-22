@@ -1,123 +1,123 @@
 {
   "welcome": {
-    "title": "Welcome to ",
+    "title": "Bem-vindo ao ",
     "titleBold": "Global Nature Watch",
-    "description": "Our AI-powered nature monitoring tool understands plain language, so no technical jargon required! Ask about land cover change, forest loss, or biodiversity risks in the areas you care about and quickly generate powerful insights. Whether you're a policymaker, scientist, or community advocate, we'll help you find the right data and make sense of it, too.",
-    "separator": "...or try asking about...",
-    "placeholder": "Ask a question...",
-    "dontShowAgain": "Don't show this again"
+    "description": "Nossa ferramenta de monitoramento da natureza com IA entende linguagem cotidiana — sem necessidade de jargão técnico! Pergunte sobre mudanças na cobertura do solo, perda florestal ou riscos à biodiversidade nas áreas que lhe interessam e gere análises poderosas rapidamente. Seja você legislador, cientista ou defensor comunitário, ajudaremos você a encontrar os dados certos e a compreendê-los.",
+    "separator": "...ou tente perguntar sobre...",
+    "placeholder": "Faça uma pergunta...",
+    "dontShowAgain": "Não mostrar novamente"
   },
-  "welcomeMessage": "**Welcome to Global Nature Watch!**\n      &nbsp;\n      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).\n      &nbsp;\n      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).",
+  "welcomeMessage": "**Bem-vindo ao Global Nature Watch!**\n      &nbsp;\n      Olá, sou seu assistente de monitoramento da natureza, alimentado por IA e dados abertos do [Global Forest Watch](https://globalforestwatch.org) e [Land & Carbon Lab](https://landcarbonlab.org).\n      &nbsp;\n      Você pode me perguntar sobre mudanças na cobertura do solo, perda florestal ou riscos à biodiversidade nos locais que lhe interessam. Para mais detalhes, consulte a [Central de Ajuda](https://help.globalnaturewatch.org/get-started).",
   "input": {
-    "placeholder": "Ask a question...",
-    "sending": "Sending...",
-    "sendMessage": "Send message"
+    "placeholder": "Faça uma pergunta...",
+    "sending": "Enviando...",
+    "sendMessage": "Enviar mensagem"
   },
   "context": {
-    "layer": "Data Layer",
-    "area": "Area",
-    "date": "Date",
-    "label": "Context:"
+    "layer": "Camada de dados",
+    "area": "Área",
+    "date": "Data",
+    "label": "Contexto:"
   },
   "panelHeader": {
-    "newConversation": "New Conversation",
-    "goToInsight": "Go to insight",
-    "noInsightsTooltip": "Ask a question to generate insights",
-    "newConversationTooltip": "New conversation",
-    "widgetMeta": "{time} on {day}"
+    "newConversation": "Nova conversa",
+    "goToInsight": "Ir para a análise",
+    "noInsightsTooltip": "Faça uma pergunta para gerar análises",
+    "newConversationTooltip": "Nova conversa",
+    "widgetMeta": "{time} em {day}"
   },
   "prompts": {
     "exhaustedGuest": {
-      "title": "You've used all your guest prompts.",
-      "loginLink": "Log in or sign up for free",
-      "unlockText": " to unlock extra daily prompts, or ",
-      "classicLink": "continue without AI"
+      "title": "Você usou todas as suas consultas de convidado.",
+      "loginLink": "Entre ou cadastre-se gratuitamente",
+      "unlockText": " para desbloquear consultas diárias extras, ou ",
+      "classicLink": "continuar sem IA"
     },
     "exhaustedAuth": {
-      "title": "You've reached today's limit of {total} prompts.",
-      "waitText": "Wait until tomorrow for new prompts, or ",
-      "classicLink": "continue without AI"
+      "title": "Você atingiu o limite de {total} consultas de hoje.",
+      "waitText": "Aguarde até amanhã para novas consultas, ou ",
+      "classicLink": "continuar sem IA"
     }
   },
-  "disclaimer": "AI makes mistakes. Verify outputs and do not share any sensitive or personal information.",
+  "disclaimer": "A IA pode cometer erros. Verifique os resultados e não compartilhe informações sensíveis ou pessoais.",
   "reasoning": {
-    "title": "Reasoning",
-    "processing": "Processing request...",
+    "title": "Raciocínio",
+    "processing": "Processando solicitação...",
     "tools": {
-      "generate_insights": "Generating insights",
-      "pick_aoi": "Picking area of interest",
-      "pick_dataset": "Selecting dataset",
-      "pull_data": "Pulling data"
+      "generate_insights": "Gerando análises",
+      "pick_aoi": "Selecionando área de interesse",
+      "pick_dataset": "Selecionando conjunto de dados",
+      "pull_data": "Obtendo dados"
     },
-    "toolFallback": "Processing {name}"
+    "toolFallback": "Processando {name}"
   },
   "message": {
-    "timestamp": "{time} on {day}",
-    "copyResponse": "Copy response",
-    "responseCopied": "Response copied to clipboard",
-    "goodResponse": "Good response",
-    "badResponse": "Bad response",
-    "feedbackPlaceholder": "Tell us what went wrong (optional)",
-    "sendFeedback": "Send feedback",
-    "feedbackThanks": "Thanks for the feedback",
-    "feedbackThanksDescription": "Glad it helped!",
-    "feedbackSent": "Feedback sent",
-    "feedbackSentDescription": "Thanks for helping us improve.",
-    "markedNotHelpful": "Marked as not helpful",
-    "markedNotHelpfulDescription": "You can add a comment.",
-    "unableToRate": "Unable to rate",
-    "noActiveThread": "No active thread.",
-    "ratingFailed": "Rating failed",
-    "ratingFailedDescription": "Please try again."
+    "timestamp": "{time} em {day}",
+    "copyResponse": "Copiar resposta",
+    "responseCopied": "Resposta copiada para a área de transferência",
+    "goodResponse": "Boa resposta",
+    "badResponse": "Resposta ruim",
+    "feedbackPlaceholder": "Conte-nos o que deu errado (opcional)",
+    "sendFeedback": "Enviar feedback",
+    "feedbackThanks": "Obrigado pelo feedback",
+    "feedbackThanksDescription": "Que bom que ajudou!",
+    "feedbackSent": "Feedback enviado",
+    "feedbackSentDescription": "Obrigado por nos ajudar a melhorar.",
+    "markedNotHelpful": "Marcado como não útil",
+    "markedNotHelpfulDescription": "Você pode adicionar um comentário.",
+    "unableToRate": "Não foi possível avaliar",
+    "noActiveThread": "Nenhuma conversa ativa.",
+    "ratingFailed": "Falha na avaliação",
+    "ratingFailedDescription": "Por favor, tente novamente."
   },
   "copyTooltip": {
-    "notice": "This is AI-generated text. Please verify before using it in your work."
+    "notice": "Este texto foi gerado por IA. Verifique antes de usá-lo em seu trabalho."
   },
-  "visualizationDisclaimer": "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.",
+  "visualizationDisclaimer": "Esta visualização inclui gráficos e resumos de dados gerados por IA. Modelos de IA podem produzir informações incompletas ou incorretas. Verifique todos os resultados antes de usá-los.",
   "widget": {
-    "viewGenerated": "View how this was generated"
+    "viewGenerated": "Ver como foi gerado"
   },
   "provenance": {
-    "defaultTitle": "How this was generated",
-    "noDetails": "No generation details available.",
-    "sources": "Sources",
-    "code": "Code",
-    "executionOutput": "Execution output",
-    "downloadSource": "Download Source files",
-    "copyCode": "Copy code",
-    "copyOutput": "Copy output",
-    "downloadFailed": "Failed to download data."
+    "defaultTitle": "Como foi gerado",
+    "noDetails": "Nenhum detalhe de geração disponível.",
+    "sources": "Fontes",
+    "code": "Código",
+    "executionOutput": "Resultado da execução",
+    "downloadSource": "Baixar arquivos fonte",
+    "copyCode": "Copiar código",
+    "copyOutput": "Copiar resultado",
+    "downloadFailed": "Falha ao baixar os dados."
   },
   "basemap": {
-    "title": "Basemap Style",
-    "light": "Light",
-    "satellite": "Satellite",
-    "dark": "Dark"
+    "title": "Estilo do mapa base",
+    "light": "Claro",
+    "satellite": "Satélite",
+    "dark": "Escuro"
   },
   "map": {
-    "tools": "Tools",
-    "uploadArea": "Upload area",
-    "uploadAreaFromFile": "Upload area from file",
-    "selectAreaOnMap": "Select area on map",
-    "selectAreaFromOptions": "Select area from options",
-    "drawAreaOnMap": "Draw area on map",
-    "cancelDrawing": "Cancel drawing",
-    "confirmArea": "Confirm area",
-    "selectingMode": "Selecting {name}",
-    "drawingMode": "Drawing AOI",
-    "uploadingMode": "Uploading",
-    "errorAreaTooSmall": "Error: Area too small",
-    "errorAreaTooLarge": "Error: Area too large",
-    "minimumArea": "Minimum area",
-    "maximumArea": "Maximum area",
-    "yourArea": "Your area",
-    "closeValidationError": "Close area validation error"
+    "tools": "Ferramentas",
+    "uploadArea": "Enviar área",
+    "uploadAreaFromFile": "Enviar área de um arquivo",
+    "selectAreaOnMap": "Selecionar área no mapa",
+    "selectAreaFromOptions": "Selecionar área das opções",
+    "drawAreaOnMap": "Desenhar área no mapa",
+    "cancelDrawing": "Cancelar desenho",
+    "confirmArea": "Confirmar área",
+    "selectingMode": "Selecionando {name}",
+    "drawingMode": "Desenhando área",
+    "uploadingMode": "Enviando",
+    "errorAreaTooSmall": "Erro: área muito pequena",
+    "errorAreaTooLarge": "Erro: área muito grande",
+    "minimumArea": "Área mínima",
+    "maximumArea": "Área máxima",
+    "yourArea": "Sua área",
+    "closeValidationError": "Fechar erro de validação"
   },
-  "hideDisclaimer": "Hide disclaimer",
+  "hideDisclaimer": "Ocultar aviso",
   "dataset": {
-    "description": "Description",
-    "methodology": "Methodology",
-    "cautions": "Cautions",
-    "citation": "Citation"
+    "description": "Descrição",
+    "methodology": "Metodologia",
+    "cautions": "Precauções",
+    "citation": "Citação"
   }
 }

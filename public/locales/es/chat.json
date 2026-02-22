@@ -1,123 +1,123 @@
 {
   "welcome": {
-    "title": "Welcome to ",
+    "title": "Bienvenido a ",
     "titleBold": "Global Nature Watch",
-    "description": "Our AI-powered nature monitoring tool understands plain language, so no technical jargon required! Ask about land cover change, forest loss, or biodiversity risks in the areas you care about and quickly generate powerful insights. Whether you're a policymaker, scientist, or community advocate, we'll help you find the right data and make sense of it, too.",
-    "separator": "...or try asking about...",
-    "placeholder": "Ask a question...",
-    "dontShowAgain": "Don't show this again"
+    "description": "Nuestra herramienta de monitoreo de la naturaleza impulsada por IA entiende lenguaje cotidiano, ¡no se necesita jerga técnica! Pregunta sobre cambios en la cobertura terrestre, pérdida de bosques o riesgos para la biodiversidad en las áreas que te interesan y genera rápidamente análisis poderosos. Ya seas legislador, científico o defensor comunitario, te ayudaremos a encontrar los datos correctos y a comprenderlos.",
+    "separator": "...o intenta preguntar sobre...",
+    "placeholder": "Haz una pregunta...",
+    "dontShowAgain": "No mostrar de nuevo"
   },
-  "welcomeMessage": "**Welcome to Global Nature Watch!**\n      &nbsp;\n      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).\n      &nbsp;\n      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).",
+  "welcomeMessage": "**¡Bienvenido a Global Nature Watch!**\n      &nbsp;\n      Hola, soy tu asistente de monitoreo de la naturaleza, impulsado por IA y datos abiertos de [Global Forest Watch](https://globalforestwatch.org) y [Land & Carbon Lab](https://landcarbonlab.org).\n      &nbsp;\n      Puedes preguntarme sobre cambios en la cobertura terrestre, pérdida de bosques o riesgos para la biodiversidad en los lugares que te importan. Para más detalles, consulta el [Centro de ayuda](https://help.globalnaturewatch.org/get-started).",
   "input": {
-    "placeholder": "Ask a question...",
-    "sending": "Sending...",
-    "sendMessage": "Send message"
+    "placeholder": "Haz una pregunta...",
+    "sending": "Enviando...",
+    "sendMessage": "Enviar mensaje"
   },
   "context": {
-    "layer": "Data Layer",
-    "area": "Area",
-    "date": "Date",
-    "label": "Context:"
+    "layer": "Capa de datos",
+    "area": "Área",
+    "date": "Fecha",
+    "label": "Contexto:"
   },
   "panelHeader": {
-    "newConversation": "New Conversation",
-    "goToInsight": "Go to insight",
-    "noInsightsTooltip": "Ask a question to generate insights",
-    "newConversationTooltip": "New conversation",
-    "widgetMeta": "{time} on {day}"
+    "newConversation": "Nueva conversación",
+    "goToInsight": "Ir al análisis",
+    "noInsightsTooltip": "Haz una pregunta para generar análisis",
+    "newConversationTooltip": "Nueva conversación",
+    "widgetMeta": "{time} el {day}"
   },
   "prompts": {
     "exhaustedGuest": {
-      "title": "You've used all your guest prompts.",
-      "loginLink": "Log in or sign up for free",
-      "unlockText": " to unlock extra daily prompts, or ",
-      "classicLink": "continue without AI"
+      "title": "Has usado todas tus consultas de invitado.",
+      "loginLink": "Inicia sesión o regístrate gratis",
+      "unlockText": " para desbloquear consultas diarias adicionales, o ",
+      "classicLink": "continuar sin IA"
     },
     "exhaustedAuth": {
-      "title": "You've reached today's limit of {total} prompts.",
-      "waitText": "Wait until tomorrow for new prompts, or ",
-      "classicLink": "continue without AI"
+      "title": "Has alcanzado el límite de {total} consultas de hoy.",
+      "waitText": "Espera hasta mañana para nuevas consultas, o ",
+      "classicLink": "continuar sin IA"
     }
   },
-  "disclaimer": "AI makes mistakes. Verify outputs and do not share any sensitive or personal information.",
+  "disclaimer": "La IA puede cometer errores. Verifica los resultados y no compartas información sensible o personal.",
   "reasoning": {
-    "title": "Reasoning",
-    "processing": "Processing request...",
+    "title": "Razonamiento",
+    "processing": "Procesando solicitud...",
     "tools": {
-      "generate_insights": "Generating insights",
-      "pick_aoi": "Picking area of interest",
-      "pick_dataset": "Selecting dataset",
-      "pull_data": "Pulling data"
+      "generate_insights": "Generando análisis",
+      "pick_aoi": "Seleccionando área de interés",
+      "pick_dataset": "Seleccionando conjunto de datos",
+      "pull_data": "Obteniendo datos"
     },
-    "toolFallback": "Processing {name}"
+    "toolFallback": "Procesando {name}"
   },
   "message": {
-    "timestamp": "{time} on {day}",
-    "copyResponse": "Copy response",
-    "responseCopied": "Response copied to clipboard",
-    "goodResponse": "Good response",
-    "badResponse": "Bad response",
-    "feedbackPlaceholder": "Tell us what went wrong (optional)",
-    "sendFeedback": "Send feedback",
-    "feedbackThanks": "Thanks for the feedback",
-    "feedbackThanksDescription": "Glad it helped!",
-    "feedbackSent": "Feedback sent",
-    "feedbackSentDescription": "Thanks for helping us improve.",
-    "markedNotHelpful": "Marked as not helpful",
-    "markedNotHelpfulDescription": "You can add a comment.",
-    "unableToRate": "Unable to rate",
-    "noActiveThread": "No active thread.",
-    "ratingFailed": "Rating failed",
-    "ratingFailedDescription": "Please try again."
+    "timestamp": "{time} el {day}",
+    "copyResponse": "Copiar respuesta",
+    "responseCopied": "Respuesta copiada al portapapeles",
+    "goodResponse": "Buena respuesta",
+    "badResponse": "Mala respuesta",
+    "feedbackPlaceholder": "Cuéntanos qué salió mal (opcional)",
+    "sendFeedback": "Enviar comentario",
+    "feedbackThanks": "Gracias por tu comentario",
+    "feedbackThanksDescription": "¡Nos alegra que haya ayudado!",
+    "feedbackSent": "Comentario enviado",
+    "feedbackSentDescription": "Gracias por ayudarnos a mejorar.",
+    "markedNotHelpful": "Marcado como no útil",
+    "markedNotHelpfulDescription": "Puedes agregar un comentario.",
+    "unableToRate": "No se puede evaluar",
+    "noActiveThread": "No hay conversación activa.",
+    "ratingFailed": "Error en la evaluación",
+    "ratingFailedDescription": "Por favor, inténtalo de nuevo."
   },
   "copyTooltip": {
-    "notice": "This is AI-generated text. Please verify before using it in your work."
+    "notice": "Este texto fue generado por IA. Por favor, verifícalo antes de usarlo en tu trabajo."
   },
-  "visualizationDisclaimer": "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.",
+  "visualizationDisclaimer": "Esta visualización incluye gráficos y resúmenes de datos generados por IA. Los modelos de IA pueden producir información incompleta o incorrecta. Verifica todos los resultados antes de usarlos.",
   "widget": {
-    "viewGenerated": "View how this was generated"
+    "viewGenerated": "Ver cómo se generó"
   },
   "provenance": {
-    "defaultTitle": "How this was generated",
-    "noDetails": "No generation details available.",
-    "sources": "Sources",
-    "code": "Code",
-    "executionOutput": "Execution output",
-    "downloadSource": "Download Source files",
-    "copyCode": "Copy code",
-    "copyOutput": "Copy output",
-    "downloadFailed": "Failed to download data."
+    "defaultTitle": "Cómo se generó",
+    "noDetails": "No hay detalles de generación disponibles.",
+    "sources": "Fuentes",
+    "code": "Código",
+    "executionOutput": "Resultado de ejecución",
+    "downloadSource": "Descargar archivos fuente",
+    "copyCode": "Copiar código",
+    "copyOutput": "Copiar resultado",
+    "downloadFailed": "Error al descargar los datos."
   },
   "basemap": {
-    "title": "Basemap Style",
-    "light": "Light",
-    "satellite": "Satellite",
-    "dark": "Dark"
+    "title": "Estilo de mapa base",
+    "light": "Claro",
+    "satellite": "Satélite",
+    "dark": "Oscuro"
   },
   "map": {
-    "tools": "Tools",
-    "uploadArea": "Upload area",
-    "uploadAreaFromFile": "Upload area from file",
-    "selectAreaOnMap": "Select area on map",
-    "selectAreaFromOptions": "Select area from options",
-    "drawAreaOnMap": "Draw area on map",
-    "cancelDrawing": "Cancel drawing",
-    "confirmArea": "Confirm area",
-    "selectingMode": "Selecting {name}",
-    "drawingMode": "Drawing AOI",
-    "uploadingMode": "Uploading",
-    "errorAreaTooSmall": "Error: Area too small",
-    "errorAreaTooLarge": "Error: Area too large",
-    "minimumArea": "Minimum area",
-    "maximumArea": "Maximum area",
-    "yourArea": "Your area",
-    "closeValidationError": "Close area validation error"
+    "tools": "Herramientas",
+    "uploadArea": "Subir área",
+    "uploadAreaFromFile": "Subir área desde archivo",
+    "selectAreaOnMap": "Seleccionar área en el mapa",
+    "selectAreaFromOptions": "Seleccionar área de las opciones",
+    "drawAreaOnMap": "Dibujar área en el mapa",
+    "cancelDrawing": "Cancelar dibujo",
+    "confirmArea": "Confirmar área",
+    "selectingMode": "Seleccionando {name}",
+    "drawingMode": "Dibujando área",
+    "uploadingMode": "Subiendo",
+    "errorAreaTooSmall": "Error: área demasiado pequeña",
+    "errorAreaTooLarge": "Error: área demasiado grande",
+    "minimumArea": "Área mínima",
+    "maximumArea": "Área máxima",
+    "yourArea": "Tu área",
+    "closeValidationError": "Cerrar error de validación"
   },
-  "hideDisclaimer": "Hide disclaimer",
+  "hideDisclaimer": "Ocultar aviso",
   "dataset": {
-    "description": "Description",
-    "methodology": "Methodology",
-    "cautions": "Cautions",
-    "citation": "Citation"
+    "description": "Descripción",
+    "methodology": "Metodología",
+    "cautions": "Precauciones",
+    "citation": "Citación"
   }
 }

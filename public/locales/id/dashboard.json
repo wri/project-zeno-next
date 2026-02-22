@@ -1,11 +1,11 @@
 {
-  "userSettings": "User Settings",
-  "saveChanges": "Save changes",
-  "backToApp": "Back to Application",
-  "signOut": "Sign Out",
-  "additionalDetails": "Additional Details (Optional)",
-  "profileSaved": "Profile saved",
-  "profileSavedDescription": "Your changes have been saved successfully.",
-  "saveFailed": "Save failed",
-  "saveFailedDescription": "Unable to save profile."
+  "userSettings": "Pengaturan Pengguna",
+  "saveChanges": "Simpan perubahan",
+  "backToApp": "Kembali ke aplikasi",
+  "signOut": "Keluar",
+  "additionalDetails": "Detail tambahan (opsional)",
+  "profileSaved": "Profil disimpan",
+  "profileSavedDescription": "Perubahan Anda berhasil disimpan.",
+  "saveFailed": "Gagal menyimpan",
+  "saveFailedDescription": "Tidak dapat menyimpan profil."
 }

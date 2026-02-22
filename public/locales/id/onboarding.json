@@ -1,44 +1,44 @@
 {
-  "title": "Complete your",
-  "titleSuffix": "user profile",
-  "subtitle": "We use this information to make Global Nature Watch more useful to you. This tool is experimental, and knowing you better helps us improve. Features may change or be removed over time.",
-  "goBack": "Go back",
+  "title": "Lengkapi",
+  "titleSuffix": "profil pengguna Anda",
+  "subtitle": "Kami menggunakan informasi ini untuk membuat Global Nature Watch lebih berguna bagi Anda. Alat ini bersifat eksperimental, dan mengenal Anda lebih baik membantu kami meningkatkan layanan. Fitur dapat berubah atau dihapus.",
+  "goBack": "Kembali",
   "fields": {
-    "firstName": "First name",
-    "lastName": "Last name",
-    "email": "Email address",
-    "sector": "Sector",
-    "role": "Role",
-    "jobTitle": "Job title",
-    "company": "Company / Organization",
-    "country": "Country",
-    "expertise": "Level of technical expertise",
-    "preferredLanguage": "Preferred language",
-    "languageNote": "Please note most of our communications are in English.",
-    "topics": "What topic(s) are you most interested in?"
+    "firstName": "Nama depan",
+    "lastName": "Nama belakang",
+    "email": "Alamat email",
+    "sector": "Sektor",
+    "role": "Peran",
+    "jobTitle": "Jabatan",
+    "company": "Perusahaan / Organisasi",
+    "country": "Negara",
+    "expertise": "Tingkat keahlian teknis",
+    "preferredLanguage": "Bahasa pilihan",
+    "languageNote": "Perlu diketahui bahwa sebagian besar komunikasi kami dalam bahasa Inggris.",
+    "topics": "Topik apa yang paling Anda minati?"
   },
   "placeholders": {
-    "sector": "Select Sector",
-    "role": "Select Role",
-    "country": "Select Country",
-    "expertise": "Select Level",
-    "language": "Select Language"
+    "sector": "Pilih sektor",
+    "role": "Pilih peran",
+    "country": "Pilih negara",
+    "expertise": "Pilih tingkat",
+    "language": "Pilih bahasa"
   },
-  "emailConsent": "By creating an account, you agree to receive essential emails about your Global Nature Watch account and system updates. You can unsubscribe from non-essential emails at any time.",
+  "emailConsent": "Dengan membuat akun, Anda setuju untuk menerima email penting tentang akun Global Nature Watch Anda dan pembaruan sistem. Anda dapat berhenti berlangganan email non-esensial kapan saja.",
   "checkboxes": {
-    "receiveNews": "Send me news, resources, and opportunities from Land & Carbon Lab.",
-    "helpTest": "Contact me about testing new features."
+    "receiveNews": "Kirimkan saya berita, sumber daya, dan peluang dari Land & Carbon Lab.",
+    "helpTest": "Hubungi saya untuk menguji fitur baru."
   },
   "terms": {
-    "iAccept": "I accept the",
-    "termsOfUse": "Terms of Use",
-    "and": "and",
-    "aiTermsOfUse": "Global Nature Watch AI Terms of Use",
-    "acknowledge": "and I acknowledge the privacy practices described in the",
-    "privacyPolicy": "Privacy Policy",
-    "andThe": "and the",
-    "aiPrivacyPolicy": "Global Nature Watch AI Privacy Policy"
+    "iAccept": "Saya menerima",
+    "termsOfUse": "Ketentuan Penggunaan",
+    "and": "dan",
+    "aiTermsOfUse": "Ketentuan Penggunaan AI Global Nature Watch",
+    "acknowledge": "dan saya mengakui praktik privasi yang dijelaskan dalam",
+    "privacyPolicy": "Kebijakan Privasi",
+    "andThe": "dan",
+    "aiPrivacyPolicy": "Kebijakan Privasi AI Global Nature Watch"
   },
-  "completeProfile": "Complete profile",
-  "finalizingProfile": "Finalizing profile..."
+  "completeProfile": "Selesaikan profil",
+  "finalizingProfile": "Menyelesaikan profil..."
 }
