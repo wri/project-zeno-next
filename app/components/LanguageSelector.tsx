@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Box, Text, Separator } from "@chakra-ui/react";
-import { GlobeIcon, InfoIcon } from "@phosphor-icons/react";
+import { TranslateIcon, InfoIcon } from "@phosphor-icons/react";
 import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import useAuthStore from "@/app/store/authStore";
@@ -57,7 +57,7 @@ export default function LanguageSelector({
   };
 
   return (
-    <Box ref={containerRef} position="relative">
+    <Box ref={containerRef} position="relative" display="inline-block">
       <Button
         variant="solid"
         colorPalette="primary"
@@ -67,7 +67,7 @@ export default function LanguageSelector({
         onClick={() => setIsOpen((o) => !o)}
         title={currentLabel}
       >
-        <GlobeIcon size={16} />
+        <TranslateIcon size={16} />
         {currentCode.toUpperCase()}
       </Button>
 

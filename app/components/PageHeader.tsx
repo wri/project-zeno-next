@@ -83,7 +83,7 @@ function PageHeader() {
           {t("preview")}
         </Badge>
       </Flex>
-      <Flex gap="6" alignItems="center" hideBelow="md">
+      <Flex gap="1" alignItems="center" hideBelow="md">
         <LanguageSelector />
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
@@ -103,6 +103,8 @@ function PageHeader() {
           max={100}
           value={(usedPrompts / totalPrompts) * 100}
           minW="6rem"
+          px="4"
+          py="1.5"
           textAlign="center"
           rounded="full"
           colorPalette="primary"
