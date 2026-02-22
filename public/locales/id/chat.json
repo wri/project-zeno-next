@@ -114,6 +114,16 @@
     "closeValidationError": "Tutup error validasi"
   },
   "hideDisclaimer": "Sembunyikan peringatan",
+  "previewDisclaimer": {
+    "heading": "Global Nature Watch preview",
+    "body": "Anda menggunakan versi pratinjau yang masih dalam pengembangan aktif. Anda mungkin menemui kesalahan atau hasil yang tidak lengkap — verifikasi hasil dengan sumber utama. Fitur, kumpulan data, dan perilaku asisten dapat berubah atau dihapus seiring iterasi kami.",
+    "feedbackIntro": "Dengan menggunakan pratinjau ini, Anda membantu membentuk masa depan Global Nature Watch. Bagikan masukan melalui",
+    "surveyLink": "survei ini",
+    "orEmail": "atau mengirim email ke",
+    "helpIntro": "Kunjungi",
+    "helpLink": "Pusat Bantuan",
+    "helpSuffix": "untuk mempelajari lebih lanjut tentang pratinjau ini."
+  },
   "dataset": {
     "description": "Deskripsi",
     "methodology": "Metodologi",

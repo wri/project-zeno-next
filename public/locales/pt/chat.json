@@ -114,6 +114,16 @@
     "closeValidationError": "Fechar erro de validação"
   },
   "hideDisclaimer": "Ocultar aviso",
+  "previewDisclaimer": {
+    "heading": "Global Nature Watch preview",
+    "body": "Você está usando uma versão preliminar que ainda está em desenvolvimento ativo. Você pode encontrar erros ou resultados incompletos — verifique os resultados com fontes primárias. Funcionalidades, conjuntos de dados e comportamento do assistente podem mudar ou ser removidos conforme iteramos.",
+    "feedbackIntro": "Ao usar esta versão preliminar, você está ajudando a moldar o futuro do Global Nature Watch. Compartilhe seu feedback através",
+    "surveyLink": "desta pesquisa",
+    "orEmail": "ou enviando um e-mail para",
+    "helpIntro": "Visite a",
+    "helpLink": "Central de Ajuda",
+    "helpSuffix": "para saber mais sobre a versão preliminar."
+  },
   "dataset": {
     "description": "Descrição",
     "methodology": "Metodologia",

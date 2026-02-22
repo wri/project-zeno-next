@@ -170,6 +170,31 @@ This document lists every translated UI string, its translation in all 5 support
 | `hideDisclaimer` | Hide disclaimer | Masquer l'avertissement | Ocultar aviso | Ocultar aviso | Sembunyikan peringatan | `ChatDisclaimer.tsx` | `/app` → click X on disclaimer bar |
 | `visualizationDisclaimer` | This visualization includes AI-generated charts… | Cette visualisation inclut des graphiques… générés par l'IA… | Esta visualización incluye gráficos… generados por IA… | Esta visualização inclui gráficos… gerados por IA… | Visualisasi ini mencakup grafik… yang dihasilkan oleh AI… | `VisualizationDisclaimer.tsx` | `/app` → below any chart/visualization widget |
 
+### Preview Disclaimer (New Conversation Banner)
+
+| Key | EN | FR | ES | PT | ID | Component(s) | How to Access |
+|---|---|---|---|---|---|---|---|
+| `previewDisclaimer.heading` | Global Nature Watch preview | Global Nature Watch preview | Global Nature Watch preview | Global Nature Watch preview | Global Nature Watch preview | `ChatMessages.tsx` | `/app` → open new conversation → info banner heading |
+| `previewDisclaimer.body` | You're using a preview version that's still under active development. You may encounter errors or incomplete results, so verify results with primary sources. Features, datasets, and assistant behavior may change or be removed as we iterate. | Vous utilisez une version préliminaire en cours de développement. Vous pouvez rencontrer des erreurs ou des résultats incomplets — vérifiez les résultats avec les sources primaires. Les fonctionnalités, les jeux de données et le comportement de l'assistant peuvent changer ou être supprimés au fil du temps. | Estás usando una versión preliminar que aún está en desarrollo activo. Puedes encontrar errores o resultados incompletos, así que verifica los resultados con fuentes primarias. Las funciones, los conjuntos de datos y el comportamiento del asistente pueden cambiar o eliminarse a medida que iteramos. | Você está usando uma versão preliminar que ainda está em desenvolvimento ativo. Você pode encontrar erros ou resultados incompletos — verifique os resultados com fontes primárias. Funcionalidades, conjuntos de dados e comportamento do assistente podem mudar ou ser removidos conforme iteramos. | Anda menggunakan versi pratinjau yang masih dalam pengembangan aktif. Anda mungkin menemui kesalahan atau hasil yang tidak lengkap — verifikasi hasil dengan sumber utama. Fitur, kumpulan data, dan perilaku asisten dapat berubah atau dihapus seiring iterasi kami. | `ChatMessages.tsx` | `/app` → new conversation → info banner body text |
+| `previewDisclaimer.feedbackIntro` | By using this preview, you're helping shape the future of Global Nature Watch. Share feedback via | En utilisant cette version préliminaire, vous contribuez à façonner l'avenir de Global Nature Watch. Partagez vos commentaires via | Al usar esta versión preliminar, estás ayudando a dar forma al futuro de Global Nature Watch. Comparte tus comentarios a través de | Ao usar esta versão preliminar, você está ajudando a moldar o futuro do Global Nature Watch. Compartilhe seu feedback através | Dengan menggunakan pratinjau ini, Anda membantu membentuk masa depan Global Nature Watch. Bagikan masukan melalui | `ChatMessages.tsx` | `/app` → new conversation → info banner feedback intro |
+| `previewDisclaimer.surveyLink` | this survey | ce sondage | esta encuesta | desta pesquisa | survei ini | `ChatMessages.tsx` | `/app` → new conversation → info banner survey link text |
+| `previewDisclaimer.orEmail` | or by emailing | ou en envoyant un e-mail à | o enviando un correo a | ou enviando um e-mail para | atau mengirim email ke | `ChatMessages.tsx` | `/app` → new conversation → info banner email connector |
+| `previewDisclaimer.helpIntro` | Visit the | Visitez le | Visita el | Visite a | Kunjungi | `ChatMessages.tsx` | `/app` → new conversation → info banner help intro |
+| `previewDisclaimer.helpLink` | Help Center | Centre d'aide | Centro de ayuda | Central de Ajuda | Pusat Bantuan | `ChatMessages.tsx` | `/app` → new conversation → info banner help link text |
+| `previewDisclaimer.helpSuffix` | to learn more about the preview. | pour en savoir plus sur la version préliminaire. | para saber más sobre la versión preliminar. | para saber mais sobre a versão preliminar. | untuk mempelajari lebih lanjut tentang pratinjau ini. | `ChatMessages.tsx` | `/app` → new conversation → info banner help suffix |
+
+### Starter Prompts (Sample Prompts)
+
+> **Note:** Starter/sample prompts are **not** part of the `next-intl` translation system. They are loaded from separate locale-specific JSON files (`public/welcome-prompts.json` for English, `public/welcome-prompts-{lang}.json` for other languages) via `promptStore.ts`. The prompts are randomized at runtime — 3 are picked from the pool and displayed below the first message. These files are managed independently from the UI translation JSON files.
+
+| Source File | Language | Component | How to Access |
+|---|---|---|---|
+| `public/welcome-prompts.json` | English (default) | `SamplePrompts.tsx` | `/app` → new conversation → 3 clickable prompt cards below first message |
+| `public/welcome-prompts-fr.json` | French | `SamplePrompts.tsx` | Switch to FR → new conversation → prompt cards |
+| `public/welcome-prompts-es.json` | Spanish | `SamplePrompts.tsx` | Switch to ES → new conversation → prompt cards |
+| `public/welcome-prompts-pt.json` | Portuguese | `SamplePrompts.tsx` | Switch to PT → new conversation → prompt cards |
+| `public/welcome-prompts-id.json` | Indonesian | `SamplePrompts.tsx` | Switch to ID → new conversation → prompt cards |
+
 ### Reasoning
 
 | Key | EN | FR | ES | PT | ID | Component(s) | How to Access |

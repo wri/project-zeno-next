@@ -114,6 +114,16 @@
     "closeValidationError": "Close area validation error"
   },
   "hideDisclaimer": "Hide disclaimer",
+  "previewDisclaimer": {
+    "heading": "Global Nature Watch preview",
+    "body": "You're using a preview version that's still under active development. You may encounter errors or incomplete results, so verify results with primary sources. Features, datasets, and assistant behavior may change or be removed as we iterate.",
+    "feedbackIntro": "By using this preview, you're helping shape the future of Global Nature Watch. Share feedback via",
+    "surveyLink": "this survey",
+    "orEmail": "or by emailing",
+    "helpIntro": "Visit the",
+    "helpLink": "Help Center",
+    "helpSuffix": "to learn more about the preview."
+  },
   "dataset": {
     "description": "Description",
     "methodology": "Methodology",

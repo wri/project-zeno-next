@@ -1,6 +1,7 @@
 "use client";
 import { Fragment, useState, useEffect, useRef } from "react";
 import { Box, Text, Link } from "@chakra-ui/react";
+import { useTranslations } from "next-intl";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
@@ -11,6 +12,7 @@ function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading } = useChatStore();
   const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
+  const t = useTranslations("chat");
 
   // Auto-scroll to bottom when new messages are added or loading state changes
   useEffect(() => {
@@ -60,24 +62,21 @@ function ChatMessages() {
               >
                 <Box>
                   <Text mb={{ base: 1, md: 2 }}>
-                    <strong>Global Nature Watch preview</strong>
+                    <strong>{t("previewDisclaimer.heading")}</strong>
                   </Text>
                   <Text mb={{ base: 1, md: 2 }}>
-                    You&apos;re using a preview version that&apos;s still under active development.
-                    You may encounter errors or incomplete results, so verify results with primary sources.
-                    Features, datasets, and assistant behavior may change or be removed as we iterate.
+                    {t("previewDisclaimer.body")}
                   </Text>
                   <Text>
-                    By using this preview, you&apos;re helping shape the future of Global Nature Watch.
-                    Share feedback via{" "}
+                    {t("previewDisclaimer.feedbackIntro")}{" "}
                     <Link
                       color="primary.solid"
                       textDecor="underline"
                       href="https://surveys.hotjar.com/860def81-d4f2-4f8c-abee-339ebc3129f3"
                     >
-                      this survey
+                      {t("previewDisclaimer.surveyLink")}
                     </Link>{" "}
-                    or by emailing{" "}
+                    {t("previewDisclaimer.orEmail")}{" "}
                     <Link
                       color="primary.solid"
                       textDecor="underline"
@@ -86,7 +85,7 @@ function ChatMessages() {
                       landcarbonlab@wri.org
                     </Link>
                     {" "}
-                    Visit the{" "}
+                    {t("previewDisclaimer.helpIntro")}{" "}
                     <Link
                       color="primary.solid"
                       textDecor="underline"
@@ -94,9 +93,9 @@ function ChatMessages() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Help Center
+                      {t("previewDisclaimer.helpLink")}
                     </Link>{" "}
-                    to learn more about the preview.
+                    {t("previewDisclaimer.helpSuffix")}
                   </Text>
                 </Box>
               </ChatDisclaimer>
