@@ -90,10 +90,11 @@ export default function LanguageSelector({
           {/* Section label */}
           <Text
             px="3"
-            py="1"
+            pt="1.5"
+            pb="1"
             fontSize="2xs"
-            fontWeight="medium"
-            color="fg.subtle"
+            fontWeight="semibold"
+            color="gray.500"
             textTransform="uppercase"
             letterSpacing="wider"
             userSelect="none"
@@ -102,35 +103,37 @@ export default function LanguageSelector({
           </Text>
 
           {/* Selectable languages */}
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <Box
-              key={lang.value}
-              as="button"
-              display="flex"
-              alignItems="center"
-              gap="2"
-              w="full"
-              px="3"
-              py="1.5"
-              fontSize="xs"
-              cursor="pointer"
-              bg={lang.value === currentCode ? "primary.50" : "transparent"}
-              _hover={{ bg: "gray.100" }}
-              onClick={() => {
-                setPreferredLanguage(lang.value);
-                setIsOpen(false);
-              }}
-            >
-              <Text
-                fontWeight={lang.value === currentCode ? "semibold" : "normal"}
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const isActive = lang.value === currentCode;
+            return (
+              <Box
+                key={lang.value}
+                as="button"
+                display="flex"
+                alignItems="center"
+                gap="2"
+                w="full"
+                px="3"
+                py="1.5"
+                fontSize="sm"
+                cursor="pointer"
+                color="gray.800"
+                bg={isActive ? "primary.50" : "transparent"}
+                _hover={{ bg: "gray.100" }}
+                onClick={() => {
+                  setPreferredLanguage(lang.value);
+                  setIsOpen(false);
+                }}
               >
-                {lang.label}
-              </Text>
-              <Text color="fg.muted" ml="auto">
-                {lang.value.toUpperCase()}
-              </Text>
-            </Box>
-          ))}
+                <Text fontWeight={isActive ? "semibold" : "normal"}>
+                  {lang.label}
+                </Text>
+                <Text color="gray.500" ml="auto" fontSize="xs">
+                  {lang.value.toUpperCase()}
+                </Text>
+              </Box>
+            );
+          })}
 
           {/* Divider + Other Languages */}
           <Separator my="1" />
@@ -142,10 +145,10 @@ export default function LanguageSelector({
             w="full"
             px="3"
             py="1.5"
-            fontSize="xs"
+            fontSize="sm"
             cursor="pointer"
-            color="fg.muted"
-            _hover={{ bg: "gray.100", color: "fg" }}
+            color="gray.500"
+            _hover={{ bg: "gray.100", color: "gray.700" }}
             onClick={handleOtherLanguages}
           >
             <InfoIcon size={14} />
