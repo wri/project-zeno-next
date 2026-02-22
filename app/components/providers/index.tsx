@@ -147,7 +147,11 @@ function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [preferredLanguageCode, activeLocale]);
 
   return (
-    <NextIntlClientProvider locale={activeLocale} messages={messages}>
+    <NextIntlClientProvider
+      locale={activeLocale}
+      messages={messages}
+      timeZone="UTC"
+    >
       {children}
     </NextIntlClientProvider>
   );
