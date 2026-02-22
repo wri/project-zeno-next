@@ -28,6 +28,7 @@ import {
   SignOutIcon,
   UserIcon,
 } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import LclLogo from "../components/LclLogo";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
@@ -61,6 +62,9 @@ type ProfileFormState = {
 type ValueChangeDetails = { value: string[] };
 
 export default function UserSettingsPage() {
+  const t = useTranslations("dashboard");
+  const tc = useTranslations("common");
+  const to = useTranslations("onboarding");
   const [config, setConfig] = useState<ProfileConfig | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
     firstName: "",
@@ -252,16 +256,16 @@ export default function UserSettingsPage() {
       }
 
       toaster.create({
-        title: "Profile saved",
-        description: "Your changes have been saved successfully.",
+        title: t("profileSaved"),
+        description: t("profileSavedDescription"),
         type: "success",
         duration: 3000,
       });
     } catch (err) {
       console.error(err);
       toaster.create({
-        title: "Save failed",
-        description: (err as Error)?.message || "Unable to save profile.",
+        title: t("saveFailed"),
+        description: (err as Error)?.message || t("saveFailedDescription"),
         type: "error",
         duration: 4000,
       });
@@ -273,8 +277,8 @@ export default function UserSettingsPage() {
   const handleLogout = () => {
     try {
       toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
+        title: tc("auth.loggingOut"),
+        description: tc("auth.loggingOutDescription"),
         type: "info",
         duration: 8000,
       });
@@ -308,7 +312,7 @@ export default function UserSettingsPage() {
           _hover={{ opacity: 0.8, textDecor: "none" }}
         >
           <LclLogo width={16} avatarOnly />
-          <Heading m={0}>Global Nature Watch</Heading>
+          <Heading m={0}>{tc("appName")}</Heading>
         </ChakraLink>
         <ButtonGroup
           size="sm"
@@ -337,25 +341,25 @@ export default function UserSettingsPage() {
             <Link href="#">
               {" "}
               <GearIcon />
-              User Settings
+              {t("userSettings")}
             </Link>
           </Button>
           <Button asChild>
             <Link href="https://help.globalnaturewatch.org/" target="_blank">
               <LifebuoyIcon />
-              Help
+              {tc("buttons.help")}
             </Link>
           </Button>
           <Button asChild>
             <Link href="/app">
               <MapTrifoldIcon />
-              Back to Application
+              {t("backToApp")}
             </Link>
           </Button>
         </ButtonGroup>
         <Box p={4} mt="auto" bg="bg" rounded="lg">
           <Heading size="xs" as="p" color="fg.muted">
-            Available Prompts
+            {tc("sidebar.availablePrompts")}
           </Heading>
           <Progress.Root
             size="xs"
@@ -386,10 +390,10 @@ export default function UserSettingsPage() {
           variant="outline"
           justifyContent="flex-start"
           onClick={handleLogout}
-          title="Sign Out"
+          title={t("signOut")}
         >
           <UserIcon />
-          <Text mr="auto">{form.email || "User"}</Text>
+          <Text mr="auto">{form.email || tc("header.userName")}</Text>
           <SignOutIcon />
         </Button>
       </Flex>
@@ -405,7 +409,7 @@ export default function UserSettingsPage() {
             <Flex alignItems="center" gap={2} color="fg.muted">
               <GearIcon size={24} />
               <Heading as="h1" size="2xl" fontWeight="normal">
-                User Settings
+                {t("userSettings")}
               </Heading>
             </Flex>
             <Button
@@ -417,7 +421,7 @@ export default function UserSettingsPage() {
               disabled={isSaving}
             >
               <FloppyDiskIcon />
-              Save changes
+              {t("saveChanges")}
             </Button>
           </Flex>
 
@@ -426,7 +430,7 @@ export default function UserSettingsPage() {
             {/* First Name */}
             <GridItem>
               <Field.Root id="first-name">
-                <Field.Label>First name</Field.Label>
+                <Field.Label>{to("fields.firstName")}</Field.Label>
                 <Input
                   type="text"
                   width="320px"
@@ -441,7 +445,7 @@ export default function UserSettingsPage() {
             {/* Last Name */}
             <GridItem>
               <Field.Root id="last-name">
-                <Field.Label>Last name</Field.Label>
+                <Field.Label>{to("fields.lastName")}</Field.Label>
                 <Input
                   type="text"
                   width="320px"
@@ -456,7 +460,7 @@ export default function UserSettingsPage() {
             {/* Email Address */}
             <GridItem>
               <Field.Root id="email">
-                <Field.Label>Email address</Field.Label>
+                <Field.Label>{to("fields.email")}</Field.Label>
                 <Input
                   type="email"
                   width="320px"
@@ -476,7 +480,7 @@ export default function UserSettingsPage() {
 
           {/* Second Section of the Form */}
           <Heading size="xs" color="fg.subtle" fontWeight="normal">
-            Additional Details (Optional)
+            {t("additionalDetails")}
           </Heading>
           <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
             {/* Sector */}
@@ -492,10 +496,10 @@ export default function UserSettingsPage() {
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Sector</Select.Label>
+                  <Select.Label>{to("fields.sector")}</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Sector" />
+                      <Select.ValueText placeholder={to("placeholders.sector")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -531,14 +535,14 @@ export default function UserSettingsPage() {
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Role</Select.Label>
+                  <Select.Label>{to("fields.role")}</Select.Label>
                   <Select.Control
                     _disabled={{
                       bg: "bg.subtle",
                     }}
                   >
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Role" />
+                      <Select.ValueText placeholder={to("placeholders.role")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -563,7 +567,7 @@ export default function UserSettingsPage() {
             {/* Job Title */}
             <GridItem>
               <Field.Root id="job-title">
-                <Field.Label>Job title</Field.Label>
+                <Field.Label>{to("fields.jobTitle")}</Field.Label>
                 <Input
                   type="text"
                   width="320px"
@@ -578,7 +582,7 @@ export default function UserSettingsPage() {
             {/* Company / Organization */}
             <GridItem>
               <Field.Root id="company">
-                <Field.Label>Company / Organization</Field.Label>
+                <Field.Label>{to("fields.company")}</Field.Label>
                 <Input
                   type="text"
                   width="320px"
@@ -603,10 +607,10 @@ export default function UserSettingsPage() {
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Country</Select.Label>
+                  <Select.Label>{to("fields.country")}</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Country" />
+                      <Select.ValueText placeholder={to("placeholders.country")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -641,10 +645,10 @@ export default function UserSettingsPage() {
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Level of technical expertise</Select.Label>
+                  <Select.Label>{to("fields.expertise")}</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Level of technical expertise" />
+                      <Select.ValueText placeholder={to("placeholders.expertise")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -679,10 +683,10 @@ export default function UserSettingsPage() {
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Preferred language</Select.Label>
+                  <Select.Label>{to("fields.preferredLanguage")}</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Language" />
+                      <Select.ValueText placeholder={to("placeholders.language")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -702,7 +706,7 @@ export default function UserSettingsPage() {
                   </Portal>
                 </Select.Root>
                 <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
-                  Please note most of our communications are in English.
+                  {to("fields.languageNote")}
                 </Field.HelperText>
               </Field.Root>
             </GridItem>
@@ -711,7 +715,7 @@ export default function UserSettingsPage() {
             <GridItem colSpan={{ base: 1, md: 2 }}>
               <Field.Root id="topics">
                 <Field.Label>
-                  What area(s) are you most interested in?
+                  {to("fields.topics")}
                 </Field.Label>
                 <Flex gap={2} flexWrap="wrap" pt={2}>
                   {Object.entries(config?.topics || {}).map(([code, label]) => {
@@ -755,8 +759,7 @@ export default function UserSettingsPage() {
                   <Checkbox.HiddenInput />
                   <Checkbox.Control />
                   <Checkbox.Label>
-                    Send me news, resources, and opportunities from Land &
-                    Carbon Lab.
+                    {to("checkboxes.receiveNews")}
                   </Checkbox.Label>
                 </Checkbox.Root>
                 <Checkbox.Root
@@ -771,7 +774,7 @@ export default function UserSettingsPage() {
                   <Checkbox.HiddenInput />
                   <Checkbox.Control />
                   <Checkbox.Label>
-                    Contact me about testing new features.
+                    {to("checkboxes.helpTest")}
                   </Checkbox.Label>
                 </Checkbox.Root>
               </Flex>

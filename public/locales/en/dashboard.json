@@ -1,36 +1,11 @@
 {
-  "title": "User Settings",
+  "userSettings": "User Settings",
   "saveChanges": "Save changes",
-  "additionalDetails": "Additional Details (Optional)",
-  "availablePrompts": "Available Prompts",
   "backToApp": "Back to Application",
-  "fields": {
-    "firstName": "First name",
-    "lastName": "Last name",
-    "email": "Email address",
-    "sector": "Sector",
-    "sectorPlaceholder": "Select Sector",
-    "role": "Role",
-    "rolePlaceholder": "Select Role",
-    "jobTitle": "Job title",
-    "company": "Company / Organization",
-    "country": "Country",
-    "countryPlaceholder": "Select Country",
-    "expertise": "Level of technical expertise",
-    "expertisePlaceholder": "Select Level of technical expertise",
-    "preferredLanguage": "Preferred language",
-    "preferredLanguagePlaceholder": "Select Language",
-    "preferredLanguageHelper": "Please note most of our communications are in English.",
-    "topics": "What area(s) are you most interested in?"
-  },
-  "consent": {
-    "newsEmails": "Send me news, resources, and opportunities from Land & Carbon Lab.",
-    "testFeatures": "Contact me about testing new features."
-  },
-  "toasts": {
-    "profileSaved": "Profile saved",
-    "profileSavedDescription": "Your changes have been saved successfully.",
-    "saveFailed": "Save failed",
-    "saveFailedDescription": "Unable to save profile."
-  }
+  "signOut": "Sign Out",
+  "additionalDetails": "Additional Details (Optional)",
+  "profileSaved": "Profile saved",
+  "profileSavedDescription": "Your changes have been saved successfully.",
+  "saveFailed": "Save failed",
+  "saveFailedDescription": "Unable to save profile."
 }

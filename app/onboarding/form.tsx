@@ -25,6 +25,7 @@ import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch"
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
+import { useTranslations } from "next-intl";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { sendGAEventAsync } from "@/app/utils/analytics";
@@ -58,6 +59,8 @@ type ProfileFormState = {
 type ValueChangeDetails = { value: string[] };
 
 export default function OnboardingForm() {
+  const t = useTranslations("onboarding");
+  const tc = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -310,7 +313,7 @@ export default function OnboardingForm() {
               fill="var(--chakra-colors-primary-fg)"
             />
             <Heading as="h1" size="md" color="primary.fg">
-              Global Nature Watch
+              {tc("appName")}
             </Heading>
             <Badge
               colorPalette="primary"
@@ -319,7 +322,7 @@ export default function OnboardingForm() {
               variant="solid"
               size="xs"
             >
-              PREVIEW
+              {tc("preview")}
             </Badge>
           </Flex>
           <Button
@@ -328,20 +331,18 @@ export default function OnboardingForm() {
             onClick={() => router.push("/")}
           >
             <ArrowLeftIcon />
-            Go back
+            {t("goBack")}
           </Button>
         </Flex>
         <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
-          Complete your{" "}
+          {t("title")}{" "}
           <Text as="span" fontWeight="bold">
-            Global Nature Watch
+            {tc("appName")}
           </Text>{" "}
-          user profile
+          {t("titleSuffix")}
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
-          We use this information to make Global Nature Watch more useful to
-          you. This tool is experimental, and knowing you better helps
-          us improve. Features may change or be removed over time.
+          {t("subtitle")}
         </Text>
         <form onSubmit={handleSubmit}>
           <Grid
@@ -351,7 +352,7 @@ export default function OnboardingForm() {
             <GridItem>
               <Field.Root id="first-name" required={fieldRequired("firstName")}>
                 <Field.Label>
-                  First name
+                  {t("fields.firstName")}
                   {fieldRequired("firstName") && (
                     <Text as="span" color="red.500" ml={1}>
                       *
@@ -370,7 +371,7 @@ export default function OnboardingForm() {
             <GridItem>
               <Field.Root id="last-name" required={fieldRequired("lastName")}>
                 <Field.Label>
-                  Last name
+                  {t("fields.lastName")}
                   {fieldRequired("lastName") && (
                     <Text as="span" color="red.500" ml={1}>
                       *
@@ -389,7 +390,7 @@ export default function OnboardingForm() {
             <GridItem>
               <Field.Root id="email" required={fieldRequired("email")}>
                 <Field.Label>
-                  Email address
+                  {t("fields.email")}
                   {fieldRequired("email") && (
                     <Text as="span" color="red.500" ml={1}>
                       *
@@ -426,7 +427,7 @@ export default function OnboardingForm() {
                 >
                   <Select.HiddenSelect />
                   <Select.Label>
-                    Sector
+                    {t("fields.sector")}
                     {fieldRequired("sector") && (
                       <Text as="span" color="red.500" ml={1}>
                         *
@@ -435,7 +436,7 @@ export default function OnboardingForm() {
                   </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Sector" />
+                      <Select.ValueText placeholder={t("placeholders.sector")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -469,7 +470,7 @@ export default function OnboardingForm() {
                 >
                   <Select.HiddenSelect />
                   <Select.Label>
-                    Role
+                    {t("fields.role")}
                     {fieldRequired("role") && (
                       <Text as="span" color="red.500" ml={1}>
                         *
@@ -478,7 +479,7 @@ export default function OnboardingForm() {
                   </Select.Label>
                   <Select.Control _disabled={{ bg: "bg.subtle" }}>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Role" />
+                      <Select.ValueText placeholder={t("placeholders.role")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -501,7 +502,7 @@ export default function OnboardingForm() {
             </GridItem>
             <GridItem>
               <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
-                <Field.Label>Job title</Field.Label>
+                <Field.Label>{t("fields.jobTitle")}</Field.Label>
                 <Input
                   type="text"
                   value={form.jobTitle}
@@ -514,7 +515,7 @@ export default function OnboardingForm() {
             <GridItem>
               <Field.Root id="company" required={fieldRequired("company")}>
                 <Field.Label>
-                  Company / Organization
+                  {t("fields.company")}
                   {fieldRequired("company") && (
                     <Text as="span" color="red.500" ml={1}>
                       *
@@ -542,7 +543,7 @@ export default function OnboardingForm() {
                 >
                   <Select.HiddenSelect />
                   <Select.Label>
-                    Country
+                    {t("fields.country")}
                     {fieldRequired("country") && (
                       <Text as="span" color="red.500" ml={1}>
                         *
@@ -551,7 +552,7 @@ export default function OnboardingForm() {
                   </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Country" />
+                      <Select.ValueText placeholder={t("placeholders.country")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -583,10 +584,10 @@ export default function OnboardingForm() {
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Level of technical expertise</Select.Label>
+                  <Select.Label>{t("fields.expertise")}</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Level" />
+                      <Select.ValueText placeholder={t("placeholders.expertise")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -618,10 +619,10 @@ export default function OnboardingForm() {
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Preferred language</Select.Label>
+                  <Select.Label>{t("fields.preferredLanguage")}</Select.Label>
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder="Select Language" />
+                      <Select.ValueText placeholder={t("placeholders.language")} />
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -641,14 +642,14 @@ export default function OnboardingForm() {
                   </Portal>
                 </Select.Root>
                 <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
-                  Please note most of our communications are in English.
+                  {t("fields.languageNote")}
                 </Field.HelperText>
               </Field.Root>
             </GridItem>
             <GridItem colSpan={{ base: 1, md: 2 }}>
               <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
-                  What topic(s) are you most interested in?
+                  {t("fields.topics")}
                   <Text as="span" color="red.500" ml={1}>
                     *
                   </Text>
@@ -686,9 +687,7 @@ export default function OnboardingForm() {
           </Grid>
           <Box mt={6}>
             <Text color="fg.muted" fontSize="sm">
-              By creating an account, you agree to receive essential emails
-              about your Global Nature Watch account and system updates. You can
-              unsubscribe from non-essential emails at any time.
+              {t("emailConsent")}
             </Text>
             <Flex direction="column" gap={2} mt={3}>
               <Checkbox.Root
@@ -703,8 +702,7 @@ export default function OnboardingForm() {
                 <Checkbox.HiddenInput />
                 <Checkbox.Control />
                 <Checkbox.Label>
-                  Send me news, resources, and opportunities from Land & Carbon
-                  Lab.
+                  {t("checkboxes.receiveNews")}
                 </Checkbox.Label>
               </Checkbox.Root>
               <Checkbox.Root
@@ -719,7 +717,7 @@ export default function OnboardingForm() {
                 <Checkbox.HiddenInput />
                 <Checkbox.Control />
                 <Checkbox.Label>
-                  Contact me about testing new features.
+                  {t("checkboxes.helpTest")}
                 </Checkbox.Label>
               </Checkbox.Root>
             </Flex>
@@ -736,41 +734,42 @@ export default function OnboardingForm() {
               <Checkbox.HiddenInput />
               <Checkbox.Control />
               <Checkbox.Label fontWeight="normal">
-                I accept the{" "}
+                {t("terms.iAccept")}{" "}
                 <Link
                   href="https://www.wri.org/about/legal/general-terms-use"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"
                 >
-                  Terms of Use
+                  {t("terms.termsOfUse")}
                 </Link>{" "}
-                and{" "}
+                {t("terms.and")}{" "}
                 <Link
                   href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"
                 >
-                Global Nature Watch AI Terms of Use
-                </Link>{", "}
-                and I acknowledge the privacy practices described in the{" "}
+                  {t("terms.aiTermsOfUse")}
+                </Link>
+                {", "}
+                {t("terms.acknowledge")}{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"
                 >
-                  Privacy Policy
+                  {t("terms.privacyPolicy")}
                 </Link>{" "}
-                and the{" "}
+                {t("terms.andThe")}{" "}
                 <Link
                   href="https://help.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"
                 >
-                  Global Nature Watch AI Privacy Policy
+                  {t("terms.aiPrivacyPolicy")}
                 </Link>
                 .
                 {fieldRequired("termsAccepted") && (
@@ -786,9 +785,9 @@ export default function OnboardingForm() {
                 colorPalette="primary"
                 disabled={!isValid || isSubmitting}
                 loading={isSubmitting}
-                loadingText="Finalizing profile..."
+                loadingText={t("finalizingProfile")}
               >
-                Complete profile
+                {t("completeProfile")}
               </Button>
             </Flex>
           </Flex>
