@@ -1,0 +1,123 @@
+{
+  "welcome": {
+    "title": "Welcome to ",
+    "titleBold": "Global Nature Watch",
+    "description": "Our AI-powered nature monitoring tool understands plain language, so no technical jargon required! Ask about land cover change, forest loss, or biodiversity risks in the areas you care about and quickly generate powerful insights. Whether you're a policymaker, scientist, or community advocate, we'll help you find the right data and make sense of it, too.",
+    "separator": "...or try asking about...",
+    "placeholder": "Ask a question...",
+    "dontShowAgain": "Don't show this again"
+  },
+  "welcomeMessage": "**Welcome to Global Nature Watch!**\n      &nbsp;\n      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).\n      &nbsp;\n      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).",
+  "input": {
+    "placeholder": "Ask a question...",
+    "sending": "Sending...",
+    "sendMessage": "Send message"
+  },
+  "context": {
+    "layer": "Data Layer",
+    "area": "Area",
+    "date": "Date",
+    "label": "Context:"
+  },
+  "panelHeader": {
+    "newConversation": "New Conversation",
+    "goToInsight": "Go to insight",
+    "noInsightsTooltip": "Ask a question to generate insights",
+    "newConversationTooltip": "New conversation",
+    "widgetMeta": "{time} on {day}"
+  },
+  "prompts": {
+    "exhaustedGuest": {
+      "title": "You've used all your guest prompts.",
+      "loginLink": "Log in or sign up for free",
+      "unlockText": " to unlock extra daily prompts, or ",
+      "classicLink": "continue without AI"
+    },
+    "exhaustedAuth": {
+      "title": "You've reached today's limit of {total} prompts.",
+      "waitText": "Wait until tomorrow for new prompts, or ",
+      "classicLink": "continue without AI"
+    }
+  },
+  "disclaimer": "AI makes mistakes. Verify outputs and do not share any sensitive or personal information.",
+  "reasoning": {
+    "title": "Reasoning",
+    "processing": "Processing request...",
+    "tools": {
+      "generate_insights": "Generating insights",
+      "pick_aoi": "Picking area of interest",
+      "pick_dataset": "Selecting dataset",
+      "pull_data": "Pulling data"
+    },
+    "toolFallback": "Processing {name}"
+  },
+  "message": {
+    "timestamp": "{time} on {day}",
+    "copyResponse": "Copy response",
+    "responseCopied": "Response copied to clipboard",
+    "goodResponse": "Good response",
+    "badResponse": "Bad response",
+    "feedbackPlaceholder": "Tell us what went wrong (optional)",
+    "sendFeedback": "Send feedback",
+    "feedbackThanks": "Thanks for the feedback",
+    "feedbackThanksDescription": "Glad it helped!",
+    "feedbackSent": "Feedback sent",
+    "feedbackSentDescription": "Thanks for helping us improve.",
+    "markedNotHelpful": "Marked as not helpful",
+    "markedNotHelpfulDescription": "You can add a comment.",
+    "unableToRate": "Unable to rate",
+    "noActiveThread": "No active thread.",
+    "ratingFailed": "Rating failed",
+    "ratingFailedDescription": "Please try again."
+  },
+  "copyTooltip": {
+    "notice": "This is AI-generated text. Please verify before using it in your work."
+  },
+  "visualizationDisclaimer": "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.",
+  "widget": {
+    "viewGenerated": "View how this was generated"
+  },
+  "provenance": {
+    "defaultTitle": "How this was generated",
+    "noDetails": "No generation details available.",
+    "sources": "Sources",
+    "code": "Code",
+    "executionOutput": "Execution output",
+    "downloadSource": "Download Source files",
+    "copyCode": "Copy code",
+    "copyOutput": "Copy output",
+    "downloadFailed": "Failed to download data."
+  },
+  "basemap": {
+    "title": "Basemap Style",
+    "light": "Light",
+    "satellite": "Satellite",
+    "dark": "Dark"
+  },
+  "map": {
+    "tools": "Tools",
+    "uploadArea": "Upload area",
+    "uploadAreaFromFile": "Upload area from file",
+    "selectAreaOnMap": "Select area on map",
+    "selectAreaFromOptions": "Select area from options",
+    "drawAreaOnMap": "Draw area on map",
+    "cancelDrawing": "Cancel drawing",
+    "confirmArea": "Confirm area",
+    "selectingMode": "Selecting {name}",
+    "drawingMode": "Drawing AOI",
+    "uploadingMode": "Uploading",
+    "errorAreaTooSmall": "Error: Area too small",
+    "errorAreaTooLarge": "Error: Area too large",
+    "minimumArea": "Minimum area",
+    "maximumArea": "Maximum area",
+    "yourArea": "Your area",
+    "closeValidationError": "Close area validation error"
+  },
+  "hideDisclaimer": "Hide disclaimer",
+  "dataset": {
+    "description": "Description",
+    "methodology": "Methodology",
+    "cautions": "Cautions",
+    "citation": "Citation"
+  }
+}

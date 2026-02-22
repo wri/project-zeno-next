@@ -1,0 +1,61 @@
+{
+  "appName": "Global Nature Watch",
+  "preview": "PREVIEW",
+  "nav": {
+    "useCases": "Use cases",
+    "technology": "Technology",
+    "research": "Research",
+    "about": "About",
+    "signIn": "Sign in (invite only)",
+    "joinWaitlist": "Join waitlist",
+    "explorePreview": "Explore the preview",
+    "menu": "Menu",
+    "backToHomepage": "Back to homepage"
+  },
+  "tagline": "Turning intelligent monitoring into impact",
+  "buttons": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "close": "Close",
+    "copy": "Copy",
+    "clear": "Clear",
+    "upload": "Upload",
+    "help": "Help"
+  },
+  "sidebar": {
+    "newConversation": "New Conversation",
+    "closeSidebar": "Close sidebar",
+    "openSidebar": "Open sidebar",
+    "today": "Today",
+    "previousWeek": "Previous 7 days",
+    "older": "Older Conversations",
+    "apiStatus": "API Status: {status}",
+    "availablePrompts": "Available Prompts",
+    "promptsCount": "{used}/{total} Prompts"
+  },
+  "header": {
+    "dailyPrompts": "daily prompts",
+    "unlimitedPrompts": "You have unlimited prompts!",
+    "promptsUsageTooltip": "{used} of {total} prompts used. Prompts refresh every 24 hours.",
+    "settings": "Settings",
+    "logout": "Logout",
+    "loginSignup": "Log in / Sign Up",
+    "userName": "User name"
+  },
+  "auth": {
+    "loggingOut": "Logging out",
+    "loggingOutDescription": "Signing you out and redirecting…"
+  },
+  "footer": {
+    "privacyPolicy": "Privacy Policy",
+    "aiPrivacyPolicy": "AI Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "aiTermsOfUse": "AI Terms of Use",
+    "copyright": "©Global Nature Watch {year}",
+    "copyrightLong": "{year} Global Nature Watch",
+    "instagram": "Instagram",
+    "linkedin": "Linkedin",
+    "twitter": "Twitter"
+  }
+}

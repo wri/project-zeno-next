@@ -1,0 +1,44 @@
+{
+  "title": "Complete your",
+  "titleSuffix": "user profile",
+  "subtitle": "We use this information to make Global Nature Watch more useful to you. This tool is experimental, and knowing you better helps us improve. Features may change or be removed over time.",
+  "goBack": "Go back",
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email address",
+    "sector": "Sector",
+    "role": "Role",
+    "jobTitle": "Job title",
+    "company": "Company / Organization",
+    "country": "Country",
+    "expertise": "Level of technical expertise",
+    "preferredLanguage": "Preferred language",
+    "languageNote": "Please note most of our communications are in English.",
+    "topics": "What topic(s) are you most interested in?"
+  },
+  "placeholders": {
+    "sector": "Select Sector",
+    "role": "Select Role",
+    "country": "Select Country",
+    "expertise": "Select Level",
+    "language": "Select Language"
+  },
+  "emailConsent": "By creating an account, you agree to receive essential emails about your Global Nature Watch account and system updates. You can unsubscribe from non-essential emails at any time.",
+  "checkboxes": {
+    "receiveNews": "Send me news, resources, and opportunities from Land & Carbon Lab.",
+    "helpTest": "Contact me about testing new features."
+  },
+  "terms": {
+    "iAccept": "I accept the",
+    "termsOfUse": "Terms of Use",
+    "and": "and",
+    "aiTermsOfUse": "Global Nature Watch AI Terms of Use",
+    "acknowledge": "and I acknowledge the privacy practices described in the",
+    "privacyPolicy": "Privacy Policy",
+    "andThe": "and the",
+    "aiPrivacyPolicy": "Global Nature Watch AI Privacy Policy"
+  },
+  "completeProfile": "Complete profile",
+  "finalizingProfile": "Finalizing profile..."
+}
