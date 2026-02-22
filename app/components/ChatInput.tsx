@@ -11,6 +11,7 @@ import {
   Portal,
 } from "@chakra-ui/react";
 import { ArrowBendRightUpIcon } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
@@ -82,8 +83,9 @@ export default function ChatInput({
     // If Shift+Enter, do nothing: allow newline
   };
 
+  const t = useTranslations("chat");
   const disabled = isLoading || isChatDisabled;
-  const message = isLoading ? "Sending..." : "Ask a question...";
+  const message = isLoading ? t("input.sending") : t("input.placeholder");
 
   const isButtonDisabled = disabled || !inputValue?.trim();
   const hasContext = context.length > 0;
@@ -128,7 +130,7 @@ export default function ChatInput({
       )}
       <Textarea
         ref={setFocusEl}
-        aria-label="Ask a question..."
+        aria-label={t("input.placeholder")}
         placeholder={message}
         fontSize="sm"
         minH="20px"
@@ -270,7 +272,7 @@ export default function ChatInput({
             p={0}
             flexShrink={0}
             colorPalette="primary"
-            title="Send message"
+            title={t("input.sendMessage")}
             aria-hidden
             ml="auto"
             borderRadius="full"
