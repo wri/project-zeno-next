@@ -10,6 +10,7 @@ import {
   Link as ChakraLink,
 } from "@chakra-ui/react";
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import LclLogo from "../components/LclLogo";
 import useAuthStore from "../store/authStore";
 import { useErrorHandler } from "../hooks/useErrorHandler";
@@ -22,15 +23,16 @@ const commonStyles = {
 };
 
 export default function UnauthorizedPage() {
+  const t = useTranslations("errors");
+  const tc = useTranslations("common");
   const { isSignupOpen, fetchMetadata } = useAuthStore();
   const { showApiError } = useErrorHandler();
 
   useEffect(() => {
     fetchMetadata().catch((error) => {
       showApiError(error, {
-        title: "Failed to load signup status",
-        description:
-          "Unable to check if signup is currently open. Please try again later.",
+        title: t("unauthorized.failedLoadSignup"),
+        description: t("unauthorized.failedLoadSignupDescription"),
       });
     });
   }, [fetchMetadata, showApiError]);
@@ -94,37 +96,32 @@ export default function UnauthorizedPage() {
             m={0}
             letterSpacing={-2.5}
           >
-            Global Nature Watch
+            {tc("appName")}
           </Heading>
         </Flex>
         <Heading size={{ base: "3xl", md: "5xl" }} {...commonStyles} mb={0}>
           {LANDING_PAGE_VERSION === "closed" && !isSignupOpen
-            ? "Early access only"
+            ? t("unauthorized.earlyAccess")
             : LANDING_PAGE_VERSION === "public"
-            ? "Access Denied"
-            : "Coming soon"}
+            ? t("unauthorized.accessDenied")
+            : t("unauthorized.comingSoon")}
         </Heading>
         {LANDING_PAGE_VERSION === "closed" && !isSignupOpen ? (
           <>
             <Text fontSize={{ base: "xl", md: "2xl"}} {...commonStyles} marginBottom={4}>
-              Thank you for your interest in Global Nature Watch!
+              {t("unauthorized.earlyAccessThanks")}
             </Text>
             <Text fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
-              Right now access is limited while we are in closed preview. We&apos;d
-              love for you to be part of what&apos;s next, so join the waitlist
-              to be among the first to know when the tool becomes available.
+              {t("unauthorized.earlyAccessBody")}
             </Text>
           </>
         ) : LANDING_PAGE_VERSION === "public" ? (
           <Text px={3} maxW="xl" fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
-            We were unable to verify your access to Global Nature Watch.
-            Please try signing in again or contact support if the issue persists.
+            {t("unauthorized.accessDeniedBody")}
           </Text>
         ) : (
           <Text px={3} maxW="xl" fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
-            Thank you for creating a Global Nature Watch account. Early access
-            is limited while we scale responsibly. You&apos;re on the waitlist,
-            and we will email you as soon as the tool is ready.
+            {t("unauthorized.comingSoonBody")}
           </Text>
         )}
         <Flex justifyContent="center" gap={4}>
@@ -136,7 +133,7 @@ export default function UnauthorizedPage() {
             colorPalette="primary"
             rounded="lg"
           >
-            <ChakraLink href="/">Back to homepage</ChakraLink>
+            <ChakraLink href="/">{t("unauthorized.backToHomepage")}</ChakraLink>
           </Button>
           {LANDING_PAGE_VERSION === "closed" && !isSignupOpen && (
             <Button
@@ -152,7 +149,7 @@ export default function UnauthorizedPage() {
                 rel="noreferrer"
                 target="_blank"
               >
-                Join waitlist
+                {t("unauthorized.joinWaitlist")}
               </ChakraLink>
             </Button>
           )}
@@ -173,7 +170,7 @@ export default function UnauthorizedPage() {
       >
         <Flex flexWrap={"nowrap"} gap={"8px"}>
           <LclLogo width={16} avatarOnly />
-          <Text letterSpacing={-1}>Global Nature Watch</Text>
+          <Text letterSpacing={-1}>{tc("appName")}</Text>
         </Flex>
         <Flex gap={"24px"} fontSize="sm" display={{ base: "none", md: "flex" }}>
           <ChakraLink
@@ -183,7 +180,7 @@ export default function UnauthorizedPage() {
             target="_blank"
             href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
           >
-            Privacy Policy
+            {tc("footer.privacyPolicy")}
           </ChakraLink>
           <ChakraLink
             textDecoration="underline"
@@ -192,7 +189,7 @@ export default function UnauthorizedPage() {
             target="_blank"
             href="https://help.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
           >
-            AI Privacy Policy
+            {tc("footer.aiPrivacyPolicy")}
           </ChakraLink>
           <ChakraLink
             textDecoration="underline"
@@ -201,7 +198,7 @@ export default function UnauthorizedPage() {
             target="_blank"
             href="https://www.wri.org/about/legal/general-terms-use"
           >
-            Terms of use
+            {tc("footer.termsOfUse")}
           </ChakraLink>
           <ChakraLink
             textDecoration="underline"
@@ -210,11 +207,11 @@ export default function UnauthorizedPage() {
             target="_blank"
             href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
           >
-            AI Terms of use
+            {tc("footer.aiTermsOfUse")}
           </ChakraLink>
         </Flex>
         <Text fontSize="sm" display={{ base: "none", md: "flex" }}>
-          © Global Nature Watch {new Date().getFullYear()}
+          {tc("footer.copyrightLong", { year: new Date().getFullYear() })}
         </Text>
       </Container>
     </Box>

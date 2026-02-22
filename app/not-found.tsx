@@ -1,10 +1,13 @@
 "use client";
 import { Box, Container, Heading, Text, Flex } from "@chakra-ui/react";
 import { WarningIcon } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import LclLogo from "./components/LclLogo";
 
 export default function NotFound() {
+  const t = useTranslations("errors");
+  const tc = useTranslations("common");
   return (
     <Box>
       <Box
@@ -17,19 +20,18 @@ export default function NotFound() {
         <Flex alignItems="center" gap="2" justifyContent="center">
           <LclLogo avatarOnly />
           <Heading size="2xl" m={0}>
-            Global Nature Watch
+            {tc("appName")}
           </Heading>
         </Flex>
         <Container maxW="2xl" textAlign="center" alignContent="center">
           <Heading size={{ base: "4xl", md: "6xl" }} color="primary.800">
-            Page not found
+            {t("notFound.title")}
           </Heading>
           <Heading as="p" size="2xl" fontWeight="normal">
-            The link you entered does not exist. Please check the link or visit
-            our{" "}
+            {t("notFound.description")}{" "}
             <Link href="/">
               <Text as="span" textDecoration="underline" color="primary.solid">
-                home page
+                {t("notFound.homeLink")}
               </Text>
             </Link>
             .
@@ -124,31 +126,31 @@ export default function NotFound() {
       >
         <Flex alignItems="center" gap="2">
           <LclLogo avatarOnly />
-          <Text>Global Nature Watch</Text>
+          <Text>{tc("appName")}</Text>
         </Flex>
         <Flex gap={6}>
           <a href="https://www.wri.org/about/privacy-policy">
             <Text as="span" textDecoration="underline" color="text.muted">
-              Privacy Policy
+              {tc("footer.privacyPolicy")}
             </Text>
           </a>
           <a href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy">
             <Text as="span" textDecoration="underline" color="text.muted">
-              AI Privacy Policy
+              {tc("footer.aiPrivacyPolicy")}
             </Text>
           </a>
           <a href="https://www.wri.org/about/legal/general-terms-use">
             <Text as="span" textDecoration="underline" color="text.muted">
-              Terms of Use
+              {tc("footer.termsOfUse")}
             </Text>
           </a>
           <a href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use">
             <Text as="span" textDecoration="underline" color="text.muted">
-              AI Terms of Use
+              {tc("footer.aiTermsOfUse")}
             </Text>
           </a>
         </Flex>
-        <Text>©Global Nature Watch {new Date().getFullYear()}</Text>
+        <Text>{tc("footer.copyright", { year: new Date().getFullYear() })}</Text>
       </Box>
     </Box>
   );
