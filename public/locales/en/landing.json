@@ -1,0 +1,82 @@
+{
+  "hero": {
+    "heading": "Tackle nature's toughest monitoring challenges",
+    "description": "Global Nature Watch is an open, AI-powered system that transforms groundbreaking land monitoring data into intelligence to understand Earth's landscapes. Test the preview and help shape the future of land monitoring.",
+    "newSuggestion": "New Suggestion",
+    "autoUpdating": "Automatically updating in {seconds}s",
+    "go": "Go",
+    "sending": "Sending",
+    "previewBadgeClosed": " in closed preview.",
+    "previewBadgeLimited": " in limited preview.",
+    "previewBadgePublic": " in preview.",
+    "previewBadgePrefix": "Global Nature Watch is",
+    "whatDoesPreviewMean": "What does preview mean?",
+    "previewTooltip": "This is an early version of Global Nature Watch. Our agent may make mistakes and some features are still in development. Your usage and feedback will help us enhance it!"
+  },
+  "features": {
+    "heading": "Get answers to your toughest questions about landscapes, backed by data",
+    "description": "Global Nature Watch is testing new ways to make geospatial information easier to use. Try asking in plain language and explore the insights it can provide.",
+    "tabs": [
+      {
+        "label": "Explore trusted data with an AI assistant",
+        "description": "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
+        "caption": "Quickly find the most relevant data for your work."
+      },
+      {
+        "label": "Tailored answers to your context",
+        "description": "Explore how Global Nature Watch's assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
+        "caption": "Shape responses to your needs."
+      },
+      {
+        "label": "Insights you can act on",
+        "description": "Global Nature Watch's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies or field decisions while opening the door to dive deeper.",
+        "caption": "Generate clear takeaways from complex data."
+      }
+    ]
+  },
+  "supportWork": {
+    "heading": "Built to support how you work",
+    "description": "Whether you're running field programs, advising governments, leading research, or driving business sustainability, Global Nature Watch can help you start from data, not from scratch."
+  },
+  "howItWorks": {
+    "heading": "How it works",
+    "userQuestion": "Where are the most disturbances to nature happening now?",
+    "steps": [
+      {
+        "title": "Processing your intent",
+        "description": "When you ask Global Nature Watch a question, our system of agents work together to understand your request and deliver the most accurate, relevant answers."
+      },
+      {
+        "title": "Retrieving quality data",
+        "description": "Our data comes via APIs from Global Forest Watch and Land & Carbon Lab, platforms powered by contributions from researchers and partners around the globe. This means verifiable data from authoritative sources."
+      },
+      {
+        "title": "Tuning the AI model's response",
+        "description": "We use Retrieval-Augmented Generation (RAG) to link data retrieved via our trusted APIs with real documentation, methods papers and metadata from our research."
+      },
+      {
+        "title": "Returning a response",
+        "description": "Our agents create summaries of spatial data, search through datasets, and explain insights clearly in over 170 languages."
+      }
+    ]
+  },
+  "futureMonitoring": {
+    "heading": "The future of ecosystem monitoring",
+    "description": "Global Nature Watch has been in development since 2024 and is now being shared as a preview. We'll keep adding data and features, but we'd love for you to be part of what comes next."
+  },
+  "newEraQuote": {
+    "quote": "It's a pivotal moment for the monitoring of our natural world.",
+    "attribution": "A new era of ecosystem intelligence"
+  },
+  "cta": {
+    "heading": "How will you use monitoring intelligence?",
+    "description": "Join the future of ecosystem monitoring and help us shape what comes next.",
+    "tryPreview": "Try the preview"
+  },
+  "trustedPlatforms": {
+    "heading": "Built on trusted data from leading platforms"
+  },
+  "team": {
+    "heading": "Meet the team"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "notFound": {
+    "title": "Page not found",
+    "description": "The link you entered does not exist. Please check the link or visit our ",
+    "homeLink": "home page"
+  },
+  "unauthorized": {
+    "earlyAccess": "Early access only",
+    "accessDenied": "Access Denied",
+    "comingSoon": "Coming soon",
+    "earlyAccessBody": "Thank you for your interest in Global Nature Watch!",
+    "earlyAccessBody2": "Right now access is limited while we are in closed preview. We'd love for you to be part of what's next, so join the waitlist to be among the first to know when the tool becomes available.",
+    "accessDeniedBody": "We were unable to verify your access to Global Nature Watch. Please try signing in again or contact support if the issue persists.",
+    "comingSoonBody": "Thank you for creating a Global Nature Watch account. Early access is limited while we scale responsibly. You're on the waitlist, and we will email you as soon as the tool is ready.",
+    "failedSignupStatus": "Failed to load signup status",
+    "failedSignupStatusDescription": "Unable to check if signup is currently open. Please try again later."
+  },
+  "maintenance": {
+    "title": "The site is currently down for maintenance",
+    "description": "Sorry for any inconvenience. Please check back shortly!"
+  },
+  "api": {
+    "serviceUnavailable": "Service Unavailable",
+    "serviceUnavailableDescription": "The {service} service is currently unavailable. Please try again later.",
+    "serviceUnavailableGeneric": "The requested service is currently unavailable. Please try again later.",
+    "apiError": "API Error",
+    "apiErrorGeneric": "An API error occurred. Please try again later.",
+    "error": "Error",
+    "errorGeneric": "An unexpected error occurred."
+  },
+  "upload": {
+    "file-too-large": "File size exceeds {maxSize}MB limit",
+    "file-empty": "File is empty",
+    "file-format-invalid": "Invalid file format",
+    "file-format-invalid-json": "Invalid JSON format",
+    "file-format-invalid-geojson": "Invalid GeoJSON format",
+    "file-format-invalid-no-features": "No valid Polygon or MultiPolygon features found",
+    "file-format-invalid-no-polygons": "No valid Polygon features found",
+    "file-format-invalid-types": "Only {types} files are supported",
+    "file-area-too-small": "Area is too small ({area}). Minimum area is {minArea}.",
+    "file-area-too-large": "Area is too large ({area}). Maximum area is {maxArea}.",
+    "file-read-failed": "Failed to read file content",
+    "no-data": "No validated file data available",
+    "upload-unavailable": "Upload function not available",
+    "upload-failed": "Failed to process file. Please try again."
+  }
+}
