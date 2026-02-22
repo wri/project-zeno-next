@@ -11,9 +11,11 @@ interface AuthState {
   totalPrompts: number;
   isSignupOpen: boolean;
   isLoadingMetadata: boolean;
+  preferredLanguageCode: string | null;
   setPromptUsage: (used: number, total: number) => void;
   setUsageFromHeaders: (headers: Headers | Record<string, string>) => void;
   setAuthStatus: (email: string, id: string) => void;
+  setPreferredLanguage: (code: string | null) => void;
   setAnonymous: () => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
@@ -28,6 +30,7 @@ const useAuthStore = create<AuthState>()((set) => ({
   totalPrompts: 10,
   isSignupOpen: false,
   isLoadingMetadata: false,
+  preferredLanguageCode: null,
   setPromptUsage: (used: number, total: number) => {
     set({ usedPrompts: used, totalPrompts: total });
   },
@@ -74,6 +77,9 @@ const useAuthStore = create<AuthState>()((set) => ({
       };
     });
   },
+  setPreferredLanguage: (code: string | null) => {
+    set({ preferredLanguageCode: code });
+  },
   setAnonymous: () => {
     set({
       userEmail: null,
@@ -97,6 +103,7 @@ const useAuthStore = create<AuthState>()((set) => ({
       userEmail: null,
       isAuthenticated: false,
       isAnonymous: false,
+      preferredLanguageCode: null,
     });
   },
   fetchMetadata: async () => {

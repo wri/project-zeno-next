@@ -56,6 +56,7 @@ export interface ChatPrompt {
   query: string;
   query_type: string;
   thread_id: string;
+  metadata?: { preferred_language_code?: string };
 }
 export interface UiContext {
   aoi_selected?: {
@@ -83,6 +84,7 @@ export interface ChatAPIRequest {
   query_type: string;
   thread_id: string;
   ui_context?: UiContext;
+  metadata?: { preferred_language_code?: string };
 }
 
 // Simplified message that our API sends to the client

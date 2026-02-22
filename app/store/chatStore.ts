@@ -23,6 +23,7 @@ import {
   showServiceUnavailableError,
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
+import { getWelcomeMessage } from "@/app/i18n/welcomeMessages";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -34,6 +35,7 @@ interface ChatState {
 
 interface ChatActions {
   reset: () => void;
+  setWelcomeLanguage: (lang: string) => void;
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
@@ -51,25 +53,24 @@ interface ChatActions {
   clearToolSteps: () => void;
 }
 
-const initialState: ChatState = {
-  messages: [
-    {
-      id: "1",
-      type: "system",
-      message:
-      `**Welcome to Global Nature Watch!**
-      &nbsp;
-      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
-      &nbsp;
-      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
-      timestamp: new Date().toISOString(),
-    },
-  ],
-  isLoading: false,
-  currentThreadId: null,
-  toolSteps: [],
-  pendingTraceId: null,
-};
+function buildInitialState(lang?: string | null): ChatState {
+  return {
+    messages: [
+      {
+        id: "1",
+        type: "system",
+        message: getWelcomeMessage(lang),
+        timestamp: new Date().toISOString(),
+      },
+    ],
+    isLoading: false,
+    currentThreadId: null,
+    toolSteps: [],
+    pendingTraceId: null,
+  };
+}
+
+const initialState: ChatState = buildInitialState();
 
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
@@ -174,7 +175,29 @@ async function processStreamMessage(
 const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   ...initialState,
 
-  reset: () => set(initialState),
+  reset: () => {
+    const lang = useAuthStore.getState().preferredLanguageCode;
+    set(buildInitialState(lang));
+  },
+
+  setWelcomeLanguage: (lang: string) => {
+    const { messages } = get();
+    // Only replace if still in initial state (single welcome message, no user messages)
+    if (
+      messages.length === 1 &&
+      messages[0].id === "1" &&
+      messages[0].type === "system"
+    ) {
+      set({
+        messages: [
+          {
+            ...messages[0],
+            message: getWelcomeMessage(lang),
+          },
+        ],
+      });
+    }
+  },
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
@@ -259,10 +282,15 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       if (ds) ui_context.dataset_selected = { dataset: ds };
     }
 
+    const langCode = useAuthStore.getState().preferredLanguageCode;
+
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
       thread_id: threadId,
+      ...(langCode && {
+        metadata: { preferred_language_code: langCode },
+      }),
     };
 
     // Set up abort controller for client-side timeout

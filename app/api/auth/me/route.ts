@@ -32,6 +32,7 @@ export async function GET() {
     // Attempt to fetch prompts usage/quota from upstream
     let promptsUsed: number | null = null;
     let promptQuota: number | null = null;
+    let preferredLanguageCode: string | null = null;
 
     try {
       const upstream = await fetch(`${API_CONFIG.API_BASE_URL}/auth/me`, {
@@ -69,6 +70,10 @@ export async function GET() {
       promptsUsed = typeof used === "number" ? used : null;
       promptQuota = typeof quota === "number" ? quota : null;
       hasProfile = Boolean(data?.hasProfile ?? data?.user?.hasProfile);
+      preferredLanguageCode =
+        typeof data?.preferredLanguageCode === "string"
+          ? data.preferredLanguageCode
+          : null;
     } catch (err) {
       return NextResponse.json(
         { error: (err as Error)?.message || "Internal error" },
@@ -106,6 +111,7 @@ export async function GET() {
         promptsUsed,
         promptQuota,
         hasProfile,
+        preferredLanguageCode,
       },
       {
         headers: {
