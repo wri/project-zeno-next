@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import NextImage from "next/image";
 import {
   Box,
@@ -8,6 +9,7 @@ import {
 } from "@chakra-ui/react";
 
 export default function FutureOfMonitoringSection() {
+  const t = useTranslations("landing");
   return (
     <Box
       py={{ base: 14, md: 24 }}
@@ -23,7 +25,7 @@ export default function FutureOfMonitoringSection() {
       >
         <Container textAlign="center" maxW="2xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            About Global Nature Watch
+            {t("futureMonitoring.heading")}
           </Heading>
           <Text fontSize="lg" mb="4">
           We&apos;re making environmental geospatial data faster,

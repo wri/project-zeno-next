@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
   Box,
   Container,
@@ -69,6 +70,7 @@ const POSTS = [
 ];
 
 export default function LatestUpdatesSection() {
+  const t = useTranslations("landing");
   return (
     <Box
       id="research"
@@ -81,7 +83,7 @@ export default function LatestUpdatesSection() {
       <Container display="flex" flexDir="column" gap={{ base: "8", md: "10" }}>
         <Container textAlign="center" maxW="2xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            Latest updates & research
+            {t("latestUpdates.heading")}
           </Heading>
           <Text fontSize="lg" mb="4">
             Global Nature Watch serves up the latest breakthroughs in geospatial data

@@ -1,45 +1,35 @@
 import { Box, Container, Flex, Heading, Image, Text } from "@chakra-ui/react";
+import { useTranslations } from "next-intl";
 
-const HOW_STEPS = [
-  {
-    title: "Processing your intent",
-    description:
-      "When you ask Global Nature Watch a question, our system of agents work together to understand your request and deliver the most accurate, relevant answers.",
-    images: [
-      { src: "/Langchain-logo.svg", alt: "Langchain logo", width: "80px" },
-      { src: "/gemini-icon.svg", alt: "Gemini icon", width: "50px" },
-      { src: "/claude-ai-icon.svg", alt: "Claude AI icon", width: "50px" },
-    ],
-  },
-  {
-    title: "Retrieving quality data",
-    description:
-      "Our data comes via APIs from Global Forest Watch and Land & Carbon Lab, platforms powered by contributions from researchers and partners around the globe. This means verifiable data from authoritative sources.",
-    images: [
-      { src: "/GFW-logo.svg", alt: "GFW logo", maxW: "100%" },
-      { src: "LCL-logo.svg", alt: "LCL logo", maxW: "100%" },
-    ],
-  },
-  {
-    title: "Tuning the AI model's response",
-    description:
-      "We use Retrieval-Augmented Generation (RAG) to link data retrieved via our trusted APIs with real documentation, methods papers and metadata from our research.",
-    images: [{ src: "/ri_chat-ai-line.svg", alt: "AI icon", maxW: "100%" }],
-  },
-  {
-    title: "Returning a response",
-    description:
-      "Our agents create summaries of spatial data, search through datasets, and explain insights clearly in over 170 languages.",
-    images: [
-      {
-        src: "/HIW-Brazil-Widget.png",
-        alt: "Brazil widget example",
-        maxW: "100%",
-      },
-    ],
-  },
+const STEP_IMAGES = [
+  [
+    { src: "/Langchain-logo.svg", alt: "Langchain logo", width: "80px" },
+    { src: "/gemini-icon.svg", alt: "Gemini icon", width: "50px" },
+    { src: "/claude-ai-icon.svg", alt: "Claude AI icon", width: "50px" },
+  ],
+  [
+    { src: "/GFW-logo.svg", alt: "GFW logo", maxW: "100%" },
+    { src: "LCL-logo.svg", alt: "LCL logo", maxW: "100%" },
+  ],
+  [{ src: "/ri_chat-ai-line.svg", alt: "AI icon", maxW: "100%" }],
+  [
+    {
+      src: "/HIW-Brazil-Widget.png",
+      alt: "Brazil widget example",
+      maxW: "100%",
+    },
+  ],
 ];
+
 export default function HowItWorksSection() {
+  const t = useTranslations("landing");
+
+  const steps = STEP_IMAGES.map((images, i) => ({
+    title: t(`howItWorks.steps.${i}.title`),
+    description: t(`howItWorks.steps.${i}.description`),
+    images,
+  }));
+
   return (
     <Box
       id="technology"
@@ -52,7 +42,7 @@ export default function HowItWorksSection() {
       gap={{ base: 8, md: 20 }}
     >
       <Container textAlign="center" maxW="2xl">
-        <Heading size={{ base: "4xl", md: "5xl" }}>How it works</Heading>
+        <Heading size={{ base: "4xl", md: "5xl" }}>{t("howItWorks.heading")}</Heading>
       </Container>
       <Container
         maxW="5xl"
@@ -80,10 +70,10 @@ export default function HowItWorksSection() {
             p={{ base: 0, md: 6 }}
             zIndex={100}
           >
-            Where are the most disturbances to nature happening now?
+            {t("howItWorks.userQuestion")}
           </Box>
         </Flex>
-        {HOW_STEPS.map((step, index) => (
+        {steps.map((step, index) => (
           <Flex
             key={index}
             flexDir={{ base: "column-reverse", md: "row" }}
@@ -126,7 +116,6 @@ export default function HowItWorksSection() {
             </Box>
           </Flex>
         ))}
-        {/* Animated line */}
         <Box
           width="2px"
           bg="neutral.400"

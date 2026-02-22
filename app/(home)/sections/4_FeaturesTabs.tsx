@@ -8,41 +8,29 @@ import {
   Image,
 } from "@chakra-ui/react";
 import { CaretRightIcon } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
-const FEATURE_TABS = [
-  {
-    value: "feature-tab-1",
-    label: "Explore trusted data with an AI assistant",
-    description:
-      "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
-    caption:
-      "Quickly find the most relevant data for your work.",
-    image: "/feature-tab-1.webp",
-  },
-  {
-    value: "feature-tab-2",
-    label: "Tailored answers to your context",
-    description:
-      "Explore how Global Nature Watch's assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
-    caption:
-      "Shape responses to your needs.",
-    image: "/feature-tab-2.webp",
-  },
-  {
-    value: "feature-tab-3",
-    label: "Insights you can act on",
-    description:
-      "Global Nature Watch's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies or field decisions while opening the door to dive deeper.",
-    caption:
-      "Generate clear takeaways from complex data.",
-    image: "/feature-tab-3.webp",
-  },
+const TAB_IMAGES = [
+  "/feature-tab-1.webp",
+  "/feature-tab-2.webp",
+  "/feature-tab-3.webp",
 ];
 
 export default function FeaturesTabsSection() {
+  const t = useTranslations("landing");
+  const tc = useTranslations("common");
+
+  const tabs = TAB_IMAGES.map((image, i) => ({
+    value: `feature-tab-${i + 1}`,
+    label: t(`features.tabs.${i}.label`),
+    description: t(`features.tabs.${i}.description`),
+    caption: t(`features.tabs.${i}.caption`),
+    image,
+  }));
+
   return (
     <Box
       py={{ base: 14, md: 24 }}
@@ -53,11 +41,10 @@ export default function FeaturesTabsSection() {
       <Container id="use-cases">
         <Container textAlign="center" maxW="3xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
-          Get answers to your toughest questions about landscapes, backed by data
+            {t("features.heading")}
           </Heading>
           <Text fontSize="lg">
-          Global Nature Watch is testing new ways to make geospatial information easier to use.
-          Try asking in plain language and explore the insights it can provide.
+            {t("features.description")}
           </Text>
           {LANDING_PAGE_VERSION !== "closed" && (
             <Button
@@ -68,7 +55,7 @@ export default function FeaturesTabsSection() {
               rounded="lg"
             >
               <Link href="/app">
-                Explore the preview
+                {tc("nav.explorePreview")}
                 <CaretRightIcon weight="bold" />
               </Link>
             </Button>
@@ -82,7 +69,7 @@ export default function FeaturesTabsSection() {
             defaultValue="feature-tab-1"
           >
             <Tabs.List borderEndWidth={0} gap={6}>
-              {FEATURE_TABS.map((tab) => (
+              {tabs.map((tab) => (
                 <Tabs.Trigger
                   key={tab.value}
                   value={tab.value}
@@ -124,7 +111,7 @@ export default function FeaturesTabsSection() {
                 </Tabs.Trigger>
               ))}
             </Tabs.List>
-            {FEATURE_TABS.map((tab) => (
+            {tabs.map((tab) => (
               <Tabs.Content
                 key={tab.value}
                 value={tab.value}

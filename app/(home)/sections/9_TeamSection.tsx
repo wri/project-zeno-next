@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import NextImage from "next/image";
 import {
   Box,
@@ -9,6 +10,7 @@ import {
 } from "@chakra-ui/react";
 
 export default function TeamSection() {
+  const t = useTranslations("landing");
   return (
     <Box
       id="about"
@@ -25,7 +27,7 @@ export default function TeamSection() {
       >
         <Container textAlign="center" maxW="2xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            The team behind Global Nature Watch
+            {t("team.heading")}
           </Heading>
           <Text fontSize="lg" mb="4">         
           Global Nature Watch is developed by Land & Carbon Lab,

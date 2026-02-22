@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -30,6 +31,8 @@ export default function LandingHero({
   promptIndex,
   setPromptIndex,
 }: PromptMarqueeProps) {
+  const t = useTranslations("landing");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [promptTimer, setPromptTimer] = useState(10);
   const [animationKey, setAnimationKey] = useState(0);
@@ -158,15 +161,13 @@ export default function LandingHero({
               color="fg.inverted"
               mb={0}
             >
-              Tackle nature&rsquo;s toughest monitoring challenges
+              {t("hero.heading")}
             </Heading>
             <Text
               fontSize="lg"
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
-              Global Nature Watch is an open, AI-powered system that transforms groundbreaking
-              land monitoring data into intelligence to understand Earth&rsquo;s landscapes.
-              Test the preview and help shape the future of land monitoring.
+              {t("hero.description")}
             </Text>
           </Container>
           <Container
@@ -244,10 +245,10 @@ export default function LandingHero({
                       }}
                     >
                       <ArrowsClockwiseIcon />
-                      New Suggestion
+                      {t("hero.newSuggestion")}
                     </Button>
                     <Text fontSize="xs" color="fg.subtle">
-                      Automatically updating in {promptTimer}s
+                      {t("hero.autoUpdating", { seconds: promptTimer })}
                     </Text>
                   </Flex>
                   <Button
@@ -259,7 +260,7 @@ export default function LandingHero({
                     disabled={sendingPrompt}
                   >
                     {sendingPrompt ? <Spinner size="sm" mr={2} /> : null}
-                    {sendingPrompt ? "Sending" : "Go"}
+                    {sendingPrompt ? t("hero.sending") : t("hero.go")}
                     <CaretRightIcon weight="bold" />
                   </Button>
                 </Flex>
@@ -282,19 +283,19 @@ export default function LandingHero({
             >
               <Text>
                 <Badge size="xs" fontSize="8px" rounded="4px" mr="1">
-                  PREVIEW
+                  {tc("preview")}
                 </Badge>
-                Global Nature Watch is
+                {t("hero.previewBadgePrefix")}
                 {LANDING_PAGE_VERSION === "closed"
-                  ? " in closed preview."
+                  ? t("hero.previewBadgeClosed")
                   : LANDING_PAGE_VERSION === "limited"
-                  ? " in limited preview."
-                  : " in preview."}
+                  ? t("hero.previewBadgeLimited")
+                  : t("hero.previewBadgePublic")}
               </Text>
               <Tooltip
                 openDelay={100}
                 closeDelay={300}
-                content="This is an early version of Global Nature Watch. Our agent may make mistakes and some features are still in development. Your usage and feedback will help us enhance it!"
+                content={t("hero.previewTooltip")}
               >
                 <Box
                   color="fg.inverted"
@@ -306,7 +307,7 @@ export default function LandingHero({
                   alignItems="center"
                 >
                   <QuestionIcon />
-                  What does preview mean?
+                  {t("hero.whatDoesPreviewMean")}
                 </Box>
               </Tooltip>
             </Box>

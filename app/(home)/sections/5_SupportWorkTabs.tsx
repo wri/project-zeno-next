@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import {
   Box,
   Button,
@@ -44,6 +45,7 @@ const SUPPORT_TABS = [
   },
 ];
 export default function SupportWorkTabsSection() {
+  const t = useTranslations("landing");
   return (
     <Box
       id="about"
@@ -64,7 +66,7 @@ export default function SupportWorkTabsSection() {
           px={0}
         >
           <Heading size={{ base: "3xl", md: "4xl" }} color="fg.inverted">
-            See how monitoring intelligence can support your work
+            {t("supportWork.heading")}
           </Heading>
           <Text fontSize="md" mb="4">
             Global Nature Watch makes advanced monitoring data easy to use,

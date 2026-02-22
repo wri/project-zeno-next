@@ -1,6 +1,8 @@
+import { useTranslations } from "next-intl";
 import { Box, Container, Text, Heading } from "@chakra-ui/react";
 
 export default function NewEraQuoteSection() {
+  const t = useTranslations("landing");
   return (
     <Box
       py={{ base: 14, md: 24 }}
@@ -10,7 +12,7 @@ export default function NewEraQuoteSection() {
     >
       <Container maxW="2xl">
         <Heading textAlign="center" size={{ base: "3xl", md: "4xl" }}>
-          The marker of a new era
+          {t("newEraQuote.attribution")}
         </Heading>
         <Text fontSize="lg" mb="4">
           World Resources Institute tools have been transforming global

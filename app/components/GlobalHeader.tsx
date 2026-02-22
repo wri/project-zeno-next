@@ -13,15 +13,20 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import LclLogo from "./LclLogo";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
-const renderNavItems = (
-  isMobile: boolean,
-  setNavOpen?: (open: boolean) => void | undefined
-): React.ReactElement | null => {
+function NavItems({
+  isMobile,
+  setNavOpen,
+}: {
+  isMobile: boolean;
+  setNavOpen?: (open: boolean) => void;
+}) {
+  const t = useTranslations("common");
   return (
     <ButtonGroup
       size={{ base: "md", md: "xs", lg: "sm" }}
@@ -43,16 +48,16 @@ const renderNavItems = (
       }
     >
       <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
-        <Link href="#use-cases">Use cases</Link>
+        <Link href="#use-cases">{t("nav.useCases")}</Link>
       </Button>
       <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
-        <Link href="#technology">Technology</Link>
+        <Link href="#technology">{t("nav.technology")}</Link>
       </Button>
       <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
-        <Link href="#research">Research</Link>
+        <Link href="#research">{t("nav.research")}</Link>
       </Button>
       <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
-        <Link href="#about">About</Link>
+        <Link href="#about">{t("nav.about")}</Link>
       </Button>
       {LANDING_PAGE_VERSION === "closed" && (
         <Button
@@ -65,7 +70,7 @@ const renderNavItems = (
           }}
           onClick={() => setNavOpen && setNavOpen(false)}
         >
-          <Link href="/app">Sign in (invite only)</Link>
+          <Link href="/app">{t("nav.signIn")}</Link>
         </Button>
       )}
       <Button
@@ -81,19 +86,20 @@ const renderNavItems = (
             rel="noreferrer"
             target="_blank"
           >
-            Join waitlist
+            {t("nav.joinWaitlist")}
           </Link>
         ) : (
           <Link href="/app" onClick={() => setNavOpen && setNavOpen(false)}>
-            Explore the preview
+            {t("nav.explorePreview")}
           </Link>
         )}
       </Button>
     </ButtonGroup>
   );
-};
+}
 
 export default function GlobalHeader() {
+  const t = useTranslations("common");
   const [openNav, setNavOpen] = useState(false);
   return (
     <Container
@@ -126,7 +132,7 @@ export default function GlobalHeader() {
             lineHeight="shorter"
             color="fg.inverted"
           >
-            Global Nature Watch
+            {t("appName")}
           </Heading>
         </Flex>
         <Text
@@ -136,7 +142,7 @@ export default function GlobalHeader() {
           lineHeight="1.1"
           maxW={{ base: "none", md: "200px" }}
         >
-          Turning intelligent monitoring into impact
+          {t("tagline")}
         </Text>
       </Flex>
       <Drawer.Root
@@ -151,7 +157,7 @@ export default function GlobalHeader() {
             colorPalette="primary"
             rounded="lg"
           >
-            Menu
+            {t("nav.menu")}
           </Button>
         </Drawer.Trigger>
         <Portal>
@@ -163,10 +169,12 @@ export default function GlobalHeader() {
             >
               <Drawer.Header>
                 <Drawer.Title color="fg.inverted" fontSize="2xl">
-                  Global Nature Watch
+                  {t("appName")}
                 </Drawer.Title>
               </Drawer.Header>
-              <Drawer.Body>{renderNavItems(true, setNavOpen)}</Drawer.Body>
+              <Drawer.Body>
+                <NavItems isMobile setNavOpen={setNavOpen} />
+              </Drawer.Body>
               <Drawer.CloseTrigger asChild>
                 <CloseButton
                   size="sm"
@@ -180,7 +188,7 @@ export default function GlobalHeader() {
         </Portal>
       </Drawer.Root>
       <Flex ml="auto" hideBelow="md">
-        {renderNavItems(false)}
+        <NavItems isMobile={false} />
       </Flex>
     </Container>
   );

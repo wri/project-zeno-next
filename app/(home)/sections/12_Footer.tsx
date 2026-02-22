@@ -5,9 +5,11 @@ import {
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
+import { useTranslations } from "next-intl";
 import LclLogo from "../../components/LclLogo";
 
 export default function FooterSection() {
+  const t = useTranslations("common");
   return (
     <Box
       as="footer"
@@ -30,7 +32,7 @@ export default function FooterSection() {
           <Flex alignItems="center" gap={4}>
             <LclLogo width={32} avatarOnly />
             <Text fontSize={{ base: "3xl", md: "5xl" }} fontWeight="semibold" lineHeight="1">
-              Global Nature Watch
+              {t("appName")}
             </Text>
           </Flex>
         </Flex>
@@ -50,7 +52,7 @@ export default function FooterSection() {
             w={{ base: "full", md: "auto" }}
             flex={{ md: 2 }}
             >
-              <Text>{new Date().getFullYear()} Global Nature Watch</Text>
+              <Text>{t("footer.copyrightLong", { year: new Date().getFullYear() })}</Text>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import NextImage from "next/image";
 import {
   Box,
@@ -45,6 +46,7 @@ const PARTNER_ORGS = [
 ];
 
 export default function TrustedPlatformsSection() {
+  const t = useTranslations("landing");
   return (
     <Box
       py={{ base: 14, md: 24 }}
@@ -55,8 +57,7 @@ export default function TrustedPlatformsSection() {
       <Container id="testimonials">
         <Container textAlign="center" maxW="3xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            Building upon the legacy of World Resources Institute&rsquo;s
-            trusted platforms
+            {t("trustedPlatforms.heading")}
           </Heading>
           <Text fontSize="lg">
             Global Nature Watch is built on the trusted data and research of Global

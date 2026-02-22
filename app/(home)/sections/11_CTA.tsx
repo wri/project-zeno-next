@@ -1,10 +1,13 @@
 import { Box, Button, Container, Heading, Text } from "@chakra-ui/react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { CaretRightIcon } from "@phosphor-icons/react";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 export default function CTASection() {
+  const t = useTranslations("landing");
+  const tc = useTranslations("common");
   return (
     <Box
       py={{ base: 10, md: 24 }}
@@ -28,16 +31,15 @@ export default function CTASection() {
           >
             <Box display="flex" flexDir="column" gap="2">
               <Heading size="md" as="p">
-                How will you use monitoring intelligence?{" "}
+                {t("cta.heading")}
               </Heading>
               <Text fontSize="sm" color="fg.muted">
-                Join the future of ecosystem monitoring and help us shape what
-                comes next.
+                {t("cta.description")}
               </Text>
             </Box>
             <Button asChild variant="solid" colorPalette="primary" rounded="lg">
               <Link href="/app">
-                {LANDING_PAGE_VERSION === "public" ? "Explore the preview" : "Try the preview"}
+                {LANDING_PAGE_VERSION === "public" ? tc("nav.explorePreview") : t("cta.tryPreview")}
                 <CaretRightIcon weight="bold" />
               </Link>
             </Button>
