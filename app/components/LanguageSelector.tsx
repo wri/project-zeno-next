@@ -9,22 +9,6 @@ import { SUPPORTED_LANGUAGES } from "@/app/config/languages";
 import { toaster } from "@/app/components/ui/toaster";
 
 /**
- * Persist language preference to the user profile API (fire-and-forget).
- * Only called for authenticated users.
- */
-async function persistLanguageToProfile(code: string) {
-  try {
-    await fetch("/api/proxy/auth/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ preferred_language_code: code }),
-    });
-  } catch {
-    // Silently ignore — the in-memory switch already took effect
-  }
-}
-
-/**
  * A small pill button that shows the current language code and opens a
  * popover-style selector on click. Includes an "Other Languages…" option
  * that explains the assistant understands many more languages.
@@ -39,7 +23,6 @@ export default function LanguageSelector({
   const t = useTranslations("common");
   const preferredLanguageCode = useAuthStore((s) => s.preferredLanguageCode);
   const setPreferredLanguage = useAuthStore((s) => s.setPreferredLanguage);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -135,9 +118,6 @@ export default function LanguageSelector({
               _hover={{ bg: "gray.100" }}
               onClick={() => {
                 setPreferredLanguage(lang.value);
-                if (isAuthenticated) {
-                  persistLanguageToProfile(lang.value);
-                }
                 setIsOpen(false);
               }}
             >
