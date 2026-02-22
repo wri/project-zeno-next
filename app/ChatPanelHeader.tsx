@@ -21,6 +21,7 @@ import {
   ChartPolarIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Tooltip } from "./components/ui/tooltip";
 import useSidebarStore from "./store/sidebarStore";
@@ -49,10 +50,12 @@ function ChatPanelHeader() {
   } = useSidebarStore();
   const { currentThreadId, messages } = useChatStore();
 
+  const t = useTranslations("chat");
+  const tc = useTranslations("common");
   const currentThread = getThreadById(currentThreadId);
   const currentThreadName = currentThread
     ? currentThread.name
-    : "New Conversation";
+    : t("panelHeader.newConversation");
 
   // Build list of widget anchors from chat messages
   const widgetAnchors = useMemo(() => {
@@ -75,8 +78,8 @@ function ChatPanelHeader() {
     const d = new Date(isoTs);
     const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const day = d.toLocaleDateString([], { day: "2-digit", month: "short" });
-    return `${time} on ${day}`;
-  }, []);
+    return t("panelHeader.widgetMeta", { time, day });
+  }, [t]);
 
   const scrollToWidget = useCallback((anchorId: string) => {
     const el = document.getElementById(anchorId);
@@ -101,7 +104,7 @@ function ChatPanelHeader() {
     >
       {!sideBarVisible && (
         <Tooltip
-          content="Open sidebar"
+          content={tc("sidebar.openSidebar")}
           positioning={{ placement: "right" }}
           showArrow
         >
@@ -174,7 +177,7 @@ function ChatPanelHeader() {
 
       {/* Insights dropdown */}
       {widgetAnchors.length === 0 ? (
-        <Tooltip content="Ask a question to generate insights" showArrow>
+        <Tooltip content={t("panelHeader.noInsightsTooltip")} showArrow>
           <span style={{ display: "inline-flex" }}>
             <Button
               variant="ghost"
@@ -186,7 +189,7 @@ function ChatPanelHeader() {
               size="xs"
               disabled
             >
-              Go to insight
+              {t("panelHeader.goToInsight")}
               <CaretDownIcon />
             </Button>
           </span>
@@ -208,7 +211,7 @@ function ChatPanelHeader() {
               }}
               size="xs"
             >
-              Go to insight
+              {t("panelHeader.goToInsight")}
               <CaretDownIcon size="12" weight="bold" />
             </Button>
           </Menu.Trigger>
@@ -274,9 +277,9 @@ function ChatPanelHeader() {
         </Menu.Root>
       )}
       {!sideBarVisible && (
-        <Tooltip content="New conversation" showArrow>
+        <Tooltip content={t("panelHeader.newConversationTooltip")} showArrow>
           <IconButton asChild variant="ghost" size="sm">
-            <Link href="/app" aria-label="New conversation">
+            <Link href="/app" aria-label={t("panelHeader.newConversationTooltip")}>
               <NotePencilIcon />
             </Link>
           </IconButton>
