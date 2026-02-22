@@ -20,19 +20,22 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
+import { useTranslations } from "next-intl";
 
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
 import { toaster } from "@/app/components/ui/toaster";
+import LanguageSelector from "./LanguageSelector";
 
 function PageHeader() {
+  const t = useTranslations("common");
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
   const handleLogout = async () => {
     try {
       toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
+        title: t("auth.loggingOut"),
+        description: t("auth.loggingOutDescription"),
         type: "info",
         duration: 8000,
       });
@@ -67,7 +70,7 @@ function PageHeader() {
         >
           <LclLogo width={16} avatarOnly fill="white" />
           <Heading as="h1" size="sm" color="fg.inverted">
-            Global Nature Watch
+            {t("appName")}
           </Heading>
         </ChakraLink>
         <Badge
@@ -77,10 +80,11 @@ function PageHeader() {
           variant="solid"
           size="xs"
         >
-          PREVIEW
+          {t("preview")}
         </Badge>
       </Flex>
       <Flex gap="6" alignItems="center" hideBelow="md">
+        <LanguageSelector />
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
             variant="solid"
@@ -89,7 +93,7 @@ function PageHeader() {
             size="sm"
           >
             <LifebuoyIcon />
-            Help
+            {t("buttons.help")}
           </Button>
         </Link>
 
@@ -117,12 +121,15 @@ function PageHeader() {
             ) : (
               totalPrompts
             )}{" "}
-            daily prompts
+            {t("header.dailyPrompts")}
             <Tooltip
               content={
-                totalPrompts > 5000 
-                  ? "You have unlimited prompts!" 
-                  : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
+                totalPrompts > 5000
+                  ? t("header.unlimitedPrompts")
+                  : t("header.promptsUsageTooltip", {
+                      used: usedPrompts,
+                      total: totalPrompts,
+                    })
               }
               showArrow
             >
@@ -151,7 +158,7 @@ function PageHeader() {
                 size="sm"
               >
                 <UserIcon />
-                {userEmail || "User name"}
+                {userEmail || t("header.userName")}
               </Button>
             </Menu.Trigger>
             <Portal>
@@ -160,7 +167,7 @@ function PageHeader() {
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />
-                      Settings
+                      {t("header.settings")}
                     </Link>
                   </Menu.Item>
                   <Menu.Separator />
@@ -170,10 +177,10 @@ function PageHeader() {
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
                     onClick={handleLogout}
-                    title="Log Out"
+                    title={t("header.logout")}
                   >
                     <SignOutIcon />
-                    Logout
+                    {t("header.logout")}
                   </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>
@@ -189,7 +196,7 @@ function PageHeader() {
           >
             <Link href="/app">
               <UserIcon />
-              Log in / Sign Up
+              {t("header.loginSignup")}
             </Link>
           </Button>
         )}
