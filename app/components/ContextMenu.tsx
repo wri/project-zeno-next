@@ -16,19 +16,10 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { sendGAEvent } from "@next/third-parties/google";
 
-import { ChatContextType, ChatContextOptions } from "./ContextButton";
+import { ChatContextType, useChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
 import useContextStore from "../store/contextStore";
 import { DatasetCard } from "./DatasetCard";
-
-// Constants for navigation and dummy content
-const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
-  (type) => ({
-    type,
-    label: ChatContextOptions[type].label,
-    icon: ChatContextOptions[type].icon,
-  })
-);
 
 import { DATASET_CARDS } from "../constants/datasets";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
@@ -45,6 +36,12 @@ function ContextNav({
   selected: string;
   onSelect: (type: ChatContextType) => void;
 }) {
+  const options = useChatContextOptions();
+  const navItems = (Object.keys(options) as ChatContextType[]).map((type) => ({
+    type,
+    label: options[type].label,
+    icon: options[type].icon,
+  }));
   return (
     <Stack
       direction={{ base: "row", md: "column" }}
@@ -57,7 +54,7 @@ function ContextNav({
       borderRightWidth={{ base: "none", md: "1px solid" }}
       borderRightColor="border.emphasized"
     >
-      {CONTEXT_NAV.map((nav) => (
+      {navItems.map((nav) => (
         <Button
           key={nav.type}
           size="xs"

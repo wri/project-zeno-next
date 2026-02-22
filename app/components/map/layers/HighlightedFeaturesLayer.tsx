@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, FC } from "react";
 import { Source, Layer, Marker } from "react-map-gl/maplibre";
 import { Tag } from "@chakra-ui/react";
-import { ChatContextOptions } from "../../ContextButton";
+import { ChatContextIcons } from "../../ContextButton";
 import {
   Feature,
   FeatureCollection,
@@ -234,7 +234,7 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
           >
             {isInContext && (
               <Tag.StartElement>
-                {ChatContextOptions.area.icon}
+                {ChatContextIcons.area}
               </Tag.StartElement>
             )}
             <Tag.Label fontWeight="medium">{featureName}</Tag.Label>

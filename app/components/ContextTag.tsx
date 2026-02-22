@@ -1,5 +1,5 @@
 import { Tag } from "@chakra-ui/react";
-import { ChatContextOptions, ChatContextType } from "./ContextButton";
+import { ChatContextIcons, ChatContextType } from "./ContextButton";
 
 interface ContextTagProps {
   contextType?: ChatContextType;
@@ -23,7 +23,7 @@ function ContextTag({
       borderColor={closeable ? "border" : "transparent"}
     >
       <Tag.StartElement>
-        {ChatContextOptions[contextType].icon}
+        {ChatContextIcons[contextType]}
       </Tag.StartElement>
       <Tag.Label>{content}</Tag.Label>
       {closeable && (
