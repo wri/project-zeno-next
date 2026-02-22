@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { useTranslations } from "next-intl";
 import { Tooltip } from "./components/ui/tooltip";
 import {
   LifebuoyIcon,
@@ -145,6 +146,7 @@ function ThreadSection({
 }
 
 export function Sidebar() {
+  const t = useTranslations("common");
   const {
     sideBarVisible,
     toggleSidebar,
@@ -167,8 +169,8 @@ export function Sidebar() {
     setIsLoggingOut(true);
     try {
       toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
+        title: t("auth.loggingOut"),
+        description: t("auth.loggingOutDescription"),
         type: "info",
         duration: 8000,
       });
@@ -221,7 +223,7 @@ export function Sidebar() {
           >
             <LclLogo width={16} avatarOnly fill="white" />
             <Heading as="h1" size="sm" color="fg.inverted">
-              Global Nature Watch
+              {t("appName")}
             </Heading>
           </ChLink>
           <Badge
@@ -231,7 +233,7 @@ export function Sidebar() {
             variant="solid"
             size="xs"
           >
-            PREVIEW
+            {t("preview")}
           </Badge>
         </Flex>
       </Flex>
@@ -254,13 +256,13 @@ export function Sidebar() {
           size="sm"
           w={{ base: "full", md: "auto" }}
         >
-          <Link href="/app" aria-label="New conversation">
-            New Conversation
+          <Link href="/app" aria-label={t("sidebar.newConversation")}>
+            {t("sidebar.newConversation")}
             <NotePencilIcon />
           </Link>
         </Button>
         <Tooltip
-          content="Close sidebar"
+          content={t("sidebar.closeSidebar")}
           positioning={{ placement: "right" }}
           showArrow
         >
@@ -291,7 +293,7 @@ export function Sidebar() {
           {hasTodayThreads && (
             <ThreadSection
               threads={threadGroups.today}
-              label="Today"
+              label={t("sidebar.today")}
               value="today"
               currentThreadId={currentThreadId}
             />
@@ -299,7 +301,7 @@ export function Sidebar() {
           {hasPreviousWeekThreads && (
             <ThreadSection
               threads={threadGroups.previousWeek}
-              label="Previous 7 days"
+              label={t("sidebar.previousWeek")}
               value="previousWeek"
               currentThreadId={currentThreadId}
             />
@@ -307,7 +309,7 @@ export function Sidebar() {
           {hasOlderThreads && (
             <ThreadSection
               threads={threadGroups.older}
-              label="Older Conversations"
+              label={t("sidebar.older")}
               value="older"
               currentThreadId={currentThreadId}
             />
@@ -326,11 +328,11 @@ export function Sidebar() {
           borderWidth="1px"
         >
           <Status.Indicator />
-          API Status: {apiStatus}
+          {t("sidebar.apiStatus", { status: apiStatus })}
         </Status.Root>
         <Box m={3} display="flex" flexDir="column" gap={2} hideFrom="md">
           <Box bg="white" rounded="md" fontSize="sm" px={4} py={5}>
-            Available Prompts
+            {t("sidebar.availablePrompts")}
             <Progress.Root
               size="xs"
               min={0}
@@ -341,7 +343,7 @@ export function Sidebar() {
               colorPalette="primary"
             >
               <Progress.Label mb="0.5" fontSize="xs" fontWeight="normal">
-                {usedPrompts}/{totalPrompts} Prompts
+                {t("sidebar.promptsCount", { used: usedPrompts, total: totalPrompts })}
               </Progress.Label>
               <Progress.Track bg="neutral.200" maxH="4px">
                 <Progress.Range bg="primary.solid" />
@@ -350,7 +352,7 @@ export function Sidebar() {
           </Box>
           <Button variant="ghost" size="sm" justifyContent="flex-start">
             <LifebuoyIcon />
-            Help
+            {t("buttons.help")}
           </Button>
           <Button
             variant="ghost"
@@ -359,10 +361,10 @@ export function Sidebar() {
             loading={isLoggingOut}
             disabled={isLoggingOut}
             justifyContent="flex-start"
-            title="Log Out"
+            title={t("header.logout")}
           >
             <UserIcon />
-            {userEmail || "User name"}
+            {userEmail || t("header.userName")}
             <SignOutIcon />
           </Button>
         </Box>
