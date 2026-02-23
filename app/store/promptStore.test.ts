@@ -81,7 +81,9 @@ describe("promptStore – validation (fixes #2 & #3)", () => {
   });
 
   it("falls back to English on network error", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Network error"));
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      new TypeError("Network error"),
+    );
 
     await usePromptStore.getState().loadPromptsForLanguage("pt");
 
@@ -118,38 +120,44 @@ describe("promptStore – validation (fixes #2 & #3)", () => {
     // Now switch back to English — no fetch
     await usePromptStore.getState().loadPromptsForLanguage("en");
     expect(spy).toHaveBeenCalledTimes(1);
-    expect(usePromptStore.getState().prompts).toEqual(defaultPromptsData.prompts);
+    expect(usePromptStore.getState().prompts).toEqual(
+      defaultPromptsData.prompts,
+    );
     expect(usePromptStore.getState().loadedLanguage).toBe("en");
   });
 });
 
 describe("promptStore – race condition (fix #1)", () => {
   it("last language wins when switching rapidly", async () => {
-    const frPrompts = ["Prompt français"];
     const esPrompts = ["Prompt español"];
 
     // Control resolution order: fr resolves AFTER es
-    let resolveFr!: (v: Response) => void;
     let resolveEs!: (v: Response) => void;
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
-      const url = typeof input === "string" ? input : (input as Request).url;
-      return new Promise<Response>((resolve, reject) => {
-        // Wire up abort handling
-        init?.signal?.addEventListener("abort", () =>
-          reject(new DOMException("Aborted", "AbortError")),
-        );
-        if (url.includes("-fr")) resolveFr = resolve;
-        if (url.includes("-es")) resolveEs = resolve;
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation((input, init) => {
+        const url = typeof input === "string" ? input : (input as Request).url;
+        return new Promise<Response>((resolve, reject) => {
+          // Wire up abort handling
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("Aborted", "AbortError")),
+          );
+          // fr resolve captured but unused — abort fires first
+          if (url.includes("-es")) resolveEs = resolve;
+        });
       });
-    });
 
     // Fire both requests without awaiting
     const frPromise = usePromptStore.getState().loadPromptsForLanguage("fr");
     const esPromise = usePromptStore.getState().loadPromptsForLanguage("es");
 
     // Resolve es first (the newer request)
-    resolveEs({ ok: true, status: 200, json: async () => ({ prompts: esPrompts }) } as Response);
+    resolveEs({
+      ok: true,
+      status: 200,
+      json: async () => ({ prompts: esPrompts }),
+    } as Response);
     await esPromise;
 
     // Now fr resolves late — it was aborted so its promise should also settle
