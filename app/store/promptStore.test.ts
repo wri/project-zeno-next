@@ -222,3 +222,71 @@ describe("promptStore – race condition (fix #1)", () => {
     expect(callArgs[1]!.signal).toBeInstanceOf(AbortSignal);
   });
 });
+
+describe("promptStore – SamplePrompts reactivity (fix: language switch)", () => {
+  /**
+   * Models the SamplePrompts component behaviour:
+   * – subscribes to promptStore.prompts
+   * – picks 3 random samples when prompts change
+   *
+   * The bug: the old useEffect guard `samplePrompts.length === 0` prevented
+   * re-picking after the initial load, so a language switch was silently
+   * ignored by the UI.
+   */
+
+  it("subscriber sees new prompts after a language switch", async () => {
+    const frPrompts = [
+      "Montre les changements",
+      "Analyse les tendances",
+      "Résume les données",
+      "Compare les marchés",
+    ];
+    mockFetch({ prompts: frPrompts });
+
+    // Simulate initial load — component picks from English defaults
+    const initialPrompts = usePromptStore.getState().prompts;
+    expect(initialPrompts).toEqual(defaultPromptsData.prompts);
+
+    // Track every prompts update the subscriber receives
+    const observed: string[][] = [];
+    const unsub = usePromptStore.subscribe((state) => {
+      if (state.prompts !== initialPrompts) {
+        observed.push(state.prompts);
+      }
+    });
+
+    // Language switch happens
+    await usePromptStore.getState().loadPromptsForLanguage("fr");
+
+    unsub();
+
+    // The store MUST have emitted new (French) prompts
+    expect(observed.length).toBeGreaterThanOrEqual(1);
+    const finalPrompts = observed[observed.length - 1];
+    expect(finalPrompts).toEqual(frPrompts);
+    // Prompts should NOT be the English defaults
+    expect(finalPrompts).not.toEqual(defaultPromptsData.prompts);
+  });
+
+  it("subscriber sees updated prompts when switching back to English", async () => {
+    const frPrompts = [
+      "Prompt français 1",
+      "Prompt français 2",
+      "Prompt français 3",
+    ];
+    mockFetch({ prompts: frPrompts });
+
+    // Switch to French
+    await usePromptStore.getState().loadPromptsForLanguage("fr");
+    expect(usePromptStore.getState().prompts).toEqual(frPrompts);
+
+    // Now switch back to English
+    await usePromptStore.getState().loadPromptsForLanguage("en");
+
+    // Store should have English defaults again
+    expect(usePromptStore.getState().prompts).toEqual(
+      defaultPromptsData.prompts,
+    );
+    expect(usePromptStore.getState().loadedLanguage).toBe("en");
+  });
+});

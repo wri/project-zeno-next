@@ -11,10 +11,10 @@ export default function SamplePrompts() {
   const router = useRouter();
 
   useEffect(() => {
-    if (prompts.length > 0 && samplePrompts.length === 0) {
+    if (prompts.length > 0) {
       setSamplePrompts(getRandomFromArray(prompts, 3));
     }
-  }, [prompts, samplePrompts.length]);
+  }, [prompts]);
 
   const submitPrompt = async (prompt: string) => {
     const result = await sendMessage(prompt);
