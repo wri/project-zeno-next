@@ -108,7 +108,7 @@ describe("promptStore – validation (fixes #2 & #3)", () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it("returns English synchronously without fetching", async () => {
+  it("switches to English synchronously without fetching", async () => {
     const spy = mockFetch({ prompts: ["test"] });
 
     // First load French so loadedLanguage !== "en"
@@ -120,5 +120,97 @@ describe("promptStore – validation (fixes #2 & #3)", () => {
     expect(spy).toHaveBeenCalledTimes(1);
     expect(usePromptStore.getState().prompts).toEqual(defaultPromptsData.prompts);
     expect(usePromptStore.getState().loadedLanguage).toBe("en");
+  });
+});
+
+describe("promptStore – race condition (fix #1)", () => {
+  it("last language wins when switching rapidly", async () => {
+    const frPrompts = ["Prompt français"];
+    const esPrompts = ["Prompt español"];
+
+    // Control resolution order: fr resolves AFTER es
+    let resolveFr!: (v: Response) => void;
+    let resolveEs!: (v: Response) => void;
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+      const url = typeof input === "string" ? input : (input as Request).url;
+      return new Promise<Response>((resolve, reject) => {
+        // Wire up abort handling
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("Aborted", "AbortError")),
+        );
+        if (url.includes("-fr")) resolveFr = resolve;
+        if (url.includes("-es")) resolveEs = resolve;
+      });
+    });
+
+    // Fire both requests without awaiting
+    const frPromise = usePromptStore.getState().loadPromptsForLanguage("fr");
+    const esPromise = usePromptStore.getState().loadPromptsForLanguage("es");
+
+    // Resolve es first (the newer request)
+    resolveEs({ ok: true, status: 200, json: async () => ({ prompts: esPrompts }) } as Response);
+    await esPromise;
+
+    // Now fr resolves late — it was aborted so its promise should also settle
+    // The abort already fired, so resolveFr may not have been assigned if the
+    // abort rejected first. Either way, await the promise to let it settle.
+    await frPromise;
+
+    const state = usePromptStore.getState();
+    expect(state.prompts).toEqual(esPrompts);
+    expect(state.loadedLanguage).toBe("es");
+    expect(state.isLoading).toBe(false);
+
+    fetchSpy.mockRestore();
+  });
+
+  it("aborted fetch does not fall back to English", async () => {
+    // First, get to a non-English loaded state so switching to English
+    // won't short-circuit on the "already loaded" check.
+    const frPrompts = ["Prompt français"];
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ prompts: frPrompts }),
+    } as Response);
+    await usePromptStore.getState().loadPromptsForLanguage("fr");
+    expect(usePromptStore.getState().loadedLanguage).toBe("fr");
+
+    // Now mock a slow Spanish fetch that will be aborted
+    vi.restoreAllMocks();
+    vi.spyOn(globalThis, "fetch").mockImplementation((_input, init) => {
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("Aborted", "AbortError")),
+        );
+      });
+    });
+
+    // Start loading Spanish (loadedLanguage is "fr", so no short-circuit)
+    const esPromise = usePromptStore.getState().loadPromptsForLanguage("es");
+
+    // Switch to English — aborts the Spanish fetch
+    await usePromptStore.getState().loadPromptsForLanguage("en");
+
+    // Let the aborted es promise settle
+    await esPromise;
+
+    // The abort should have been silently ignored — no fallback-to-English
+    // from the catch block. State should be English from the explicit switch.
+    const state = usePromptStore.getState();
+    expect(state.loadedLanguage).toBe("en");
+    expect(state.prompts).toEqual(defaultPromptsData.prompts);
+    expect(state.isLoading).toBe(false);
+  });
+
+  it("passes AbortSignal to fetch", async () => {
+    const fetchSpy = mockFetch({ prompts: ["test"] });
+
+    await usePromptStore.getState().loadPromptsForLanguage("fr");
+
+    const callArgs = fetchSpy.mock.calls[0];
+    expect(callArgs[1]).toHaveProperty("signal");
+    expect(callArgs[1]!.signal).toBeInstanceOf(AbortSignal);
   });
 });
