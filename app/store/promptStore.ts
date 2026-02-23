@@ -33,11 +33,16 @@ export const usePromptStore = create<PromptState>((set, get) => ({
       const res = await fetch(`/welcome-prompts-${lang}.json`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (Array.isArray(data?.prompts)) {
-        set({ prompts: data.prompts, loadedLanguage: lang, isLoading: false });
-      } else {
+      if (!Array.isArray(data?.prompts) || data.prompts.length === 0) {
         throw new Error("Invalid prompts format");
       }
+      const valid = data.prompts.filter(
+        (p: unknown): p is string => typeof p === "string" && p.trim().length > 0,
+      );
+      if (valid.length === 0) {
+        throw new Error("No valid prompts after filtering");
+      }
+      set({ prompts: valid, loadedLanguage: lang, isLoading: false });
     } catch (err) {
       console.error(`Failed to load prompts for language "${lang}":`, err);
       // Fall back to English prompts on error

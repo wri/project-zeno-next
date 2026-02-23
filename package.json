@@ -7,7 +7,9 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "next lint",
-    "analyze": "ANALYZE=true next build --turbopack"
+    "analyze": "ANALYZE=true next build --turbopack",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ark-ui/react": "^5.18.3",
@@ -62,7 +64,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   },
   "packageManager": "pnpm@10.14.0"
 }
