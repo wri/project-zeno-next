@@ -1,6 +1,8 @@
 import { ChatMessage, StreamMessage, InsightWidget } from "@/app/types/chat";
 import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
+import useExplorePanelStore from "@/app/store/explorePanelStore";
+import useChatStore from "@/app/store/chatStore";
 
 interface ChartData {
   id: string;
@@ -79,6 +81,19 @@ export function generateInsightsTool(
         widgets: widgets,
         timestamp: streamMessage.timestamp,
       });
+
+      // Automatically show the first insight on the map
+      const lastMessage = useChatStore.getState().messages.at(-1);
+      if (lastMessage && widgets.length > 0) {
+        const widgetId = `widget-${lastMessage.id}-0`;
+        useExplorePanelStore.getState().setActiveInsight(widgetId);
+      }
+
+      // Fly to the AOI on the map when insights are generated
+      if (aoi?.geometry) {
+        const { flyToGeoJsonWithRetry } = useMapStore.getState();
+        flyToGeoJsonWithRetry(aoi.geometry);
+      }
     }
   } catch (error) {
     console.error("Error processing generate_insights:", error);
