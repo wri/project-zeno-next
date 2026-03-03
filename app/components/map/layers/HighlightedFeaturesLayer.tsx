@@ -59,8 +59,12 @@ function MapFeature({ feature, areas }: MapFeatureProps) {
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const areaInContext = areas.find(
-    // Not ideal way of matching areas, we should normalize area ids
-    (a) => a.content === feature.id || a.aoiData?.src_id === feature.id
+    // Match by direct content/aoiData, or by checking if this feature is
+    // one of the AOIs in a multi-area selection (aoiSelection.aois)
+    (a) =>
+      a.content === feature.id ||
+      a.aoiData?.src_id === feature.id ||
+      a.aoiSelection?.aois?.some((aoi) => aoi.name === feature.id)
   );
   const isInContext = areaInContext ? true : false;
 
