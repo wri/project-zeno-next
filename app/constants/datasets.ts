@@ -2,7 +2,7 @@ import { DatasetInfo } from "@/app/types/chat";
 
 const EOAPI_HOST =
   process.env.NEXT_PUBLIC_EOAPI_HOST ||
-  "https://eoapi.staging.globalnaturewatch.org";
+  "https://eoapi-cache.globalnaturewatch.org/";
 
 // UI card config that may omit some DatasetInfo fields; we'll fill defaults
 export type DatasetCardConfig = {
