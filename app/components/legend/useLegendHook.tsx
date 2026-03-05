@@ -47,6 +47,15 @@ function deriveDateRange(
     return `(${year})`;
   }
 
+  // Categorical year param (e.g. land cover 2015/2024 toggle)
+  const catYearSpec = Object.entries(paramSpecs).find(
+    ([, s]) => s.type === "categorical" && s.label.toLowerCase().includes("year")
+  );
+  if (catYearSpec) {
+    const year = params[catYearSpec[0]] ?? catYearSpec[1].default;
+    return `(${year})`;
+  }
+
   return undefined;
 }
 

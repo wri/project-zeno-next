@@ -2,7 +2,7 @@ import { DatasetInfo } from "@/app/types/chat";
 
 const EOAPI_HOST =
   process.env.NEXT_PUBLIC_EOAPI_HOST ||
-  "https://eoapi.staging.globalnaturewatch.org";
+  "https://eoapi-cache.globalnaturewatch.org";
 
 // UI card config that may omit some DatasetInfo fields; we'll fill defaults
 export type ParamSpec = {
@@ -211,7 +211,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       end_year: { label: "End year", type: "year", default: 2024, min: 2001, max: 2024, url_key: "end_year", url_strategy: "query", range_group: "year_range" },
     },
     legend: {
-      title: "Tree cover loss (2001-2024)",
+      title: "Tree cover loss",
       color: "#DC6C9A",
       items: [{label: "Tree cover loss", color: "#DC6C9A" }],
       type: "symbol",
