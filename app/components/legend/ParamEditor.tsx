@@ -28,11 +28,23 @@ interface ParamEditorProps {
 export function ParamEditor(props: ParamEditorProps) {
   const { params, paramSpecs, onParamsChange, opacity, onOpacityChange, children } = props;
 
-  const [draft, setDraft] = useState<Record<string, number | string>>(params ?? {});
+  // Initialise draft with spec defaults so controlled components (e.g.
+  // SegmentGroup) have a value on first render, before any user interaction.
+  const initDraft = (): Record<string, number | string> => {
+    const defaults: Record<string, number | string> = {};
+    if (paramSpecs) {
+      for (const [key, spec] of Object.entries(paramSpecs)) {
+        defaults[key] = spec.default;
+      }
+    }
+    return { ...defaults, ...(params ?? {}) };
+  };
+
+  const [draft, setDraft] = useState<Record<string, number | string>>(initDraft);
   const [draftOpacity, setDraftOpacity] = useState(opacity);
 
   useEffect(() => {
-    setDraft(params ?? {});
+    setDraft(initDraft());
   }, [params]);
 
   useEffect(() => {
