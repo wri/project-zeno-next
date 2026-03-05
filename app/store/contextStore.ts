@@ -25,6 +25,8 @@ export interface ContextItem {
   // Optional display properties for map layers
   tileUrl?: string;
   layerName?: string;
+  // Dynamic layer params (e.g. { start_year: 2010, end_year: 2020, threshold: 25, confidence: "highest" })
+  activeParams?: Record<string, number | string>;
 }
 
 interface ContextState {
@@ -36,6 +38,7 @@ interface ContextActions {
   addContext: (item: Omit<ContextItem, "id">) => void;
   upsertContextByType: (item: Omit<ContextItem, "id">) => void;
   removeContext: (id: string) => void;
+  updateContextParams: (datasetId: number, params: Record<string, number | string>) => void;
   markAsAiContext: (ids: string[]) => void;
   clearContext: () => void;
 }
@@ -68,6 +71,7 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
         useMapStore.getState().addTileLayer({
           id: `dataset-${item.datasetId}`,
           name: item.layerName || String(item.datasetId),
+          baseUrl: item.tileUrl,
           url: item.tileUrl,
           visible: true,
         });
@@ -106,6 +110,14 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
 
     state.addContext(item);
   },
+  updateContextParams: (datasetId, params) =>
+    set((state) => ({
+      context: state.context.map((c) =>
+        c.contextType === "layer" && c.datasetId === datasetId
+          ? { ...c, activeParams: params }
+          : c
+      ),
+    })),
   markAsAiContext: (ids) =>
     set((state) => ({
       context: state.context.map((c) =>

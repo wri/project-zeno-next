@@ -7,6 +7,7 @@ import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
+import { buildTileUrl, DATASET_CARDS } from "../constants/datasets";
 
 interface GeoJsonFeature {
   id: string;
@@ -17,9 +18,11 @@ interface GeoJsonFeature {
 interface TileLayer {
   id: string;
   name: string;
+  baseUrl: string;
   url: string;
   visible: boolean;
   opacity?: number;
+  params?: Record<string, number | string>;
 }
 
 interface SelectionMode {
@@ -42,6 +45,7 @@ interface MapSlice {
   addTileLayer: (layer: TileLayer) => void;
   removeTileLayer: (id: string) => void;
   toggleTileLayer: (id: string) => void;
+  updateTileLayerParams: (id: string, params: Record<string, number | string>) => void;
   clearTileLayers: () => void;
   flyToGeoJson: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature) => void;
   flyToCenter: (
@@ -125,13 +129,50 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   },
 
   addTileLayer: (layer) => {
+    // Resolve default params into the URL so path tokens like {grass_end_year}
+    // are replaced on initial add (not only after updateTileLayerParams).
+    const datasetId = parseInt(layer.id.replace("dataset-", ""), 10);
+    const card = !isNaN(datasetId)
+      ? DATASET_CARDS.find((d) => d.dataset_id === datasetId)
+      : undefined;
+    let resolvedLayer = layer;
+    if (card?.configurable_params) {
+      const defaults: Record<string, number | string> = {};
+      for (const [key, spec] of Object.entries(card.configurable_params)) {
+        defaults[key] = layer.params?.[key] ?? spec.default;
+      }
+      resolvedLayer = {
+        ...layer,
+        params: defaults,
+        url: buildTileUrl(layer.baseUrl, defaults, card.configurable_params),
+      };
+    }
     set((state) => ({
-      tileLayers: [...state.tileLayers.filter((l) => l.id !== layer.id), layer],
+      tileLayers: [
+        ...state.tileLayers.filter((l) => l.id !== resolvedLayer.id),
+        resolvedLayer,
+      ],
     }));
   },
 
   setTileLayers: (tileLayers) => {
     set(() => ({ tileLayers }));
+  },
+
+  updateTileLayerParams: (id, params) => {
+    set((state) => ({
+      tileLayers: state.tileLayers.map((l) => {
+        if (l.id !== id) return l;
+        const datasetId = parseInt(id.replace("dataset-", ""), 10);
+        const card = DATASET_CARDS.find((d) => d.dataset_id === datasetId);
+        const merged = { ...l.params, ...params };
+        return {
+          ...l,
+          params: merged,
+          url: buildTileUrl(l.baseUrl, merged, card?.configurable_params),
+        };
+      }),
+    }));
   },
 
   removeTileLayer: (id) => {

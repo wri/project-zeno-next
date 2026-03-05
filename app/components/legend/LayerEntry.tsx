@@ -12,9 +12,9 @@ import {
   EyeIcon,
   EyeClosedIcon,
   XIcon,
-  CircleHalfIcon,
+  SlidersHorizontalIcon,
 } from "@phosphor-icons/react";
-import { OpacityControl } from "./OpacityControl";
+import { ParamEditor } from "./ParamEditor";
 import type { LegendLayer, LayerActionHandler } from "./types";
 
 /**
@@ -36,6 +36,9 @@ export function LayerEntry(
     opacity,
     onLayerAction,
     info,
+    configurable,
+    params,
+    paramSpecs,
   } = props;
   return (
     <Flex flexDir="column" gap={2} pr={4} w="100%" fontFamily="body" lineHeight="shorter">
@@ -61,6 +64,30 @@ export function LayerEntry(
             },
           }}
         >
+          <ParamEditor
+            params={configurable ? params : undefined}
+            paramSpecs={configurable ? paramSpecs : undefined}
+            onParamsChange={
+              configurable
+                ? (newParams) =>
+                    onLayerAction({
+                      action: "params",
+                      payload: { id, params: newParams },
+                    })
+                : undefined
+            }
+            opacity={opacity}
+            onOpacityChange={(value) =>
+              onLayerAction({
+                action: "opacity",
+                payload: { id, opacity: value },
+              })
+            }
+          >
+            <IconButton>
+              <SlidersHorizontalIcon />
+            </IconButton>
+          </ParamEditor>
           {info && (
             <Popover.Root>
               <Popover.Trigger asChild>
@@ -83,19 +110,6 @@ export function LayerEntry(
               </Portal>
             </Popover.Root>
           )}
-          <OpacityControl
-            value={opacity}
-            onValueChange={(value) =>
-              onLayerAction({
-                action: "opacity",
-                payload: { id: id, opacity: value },
-              })
-            }
-          >
-            <IconButton>
-              <CircleHalfIcon />
-            </IconButton>
-          </OpacityControl>
           <IconButton
             onClick={() =>
               onLayerAction({
