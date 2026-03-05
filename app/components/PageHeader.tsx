@@ -25,6 +25,8 @@ import useAuthStore from "../store/authStore";
 import Link from "next/link";
 import { toaster } from "@/app/components/ui/toaster";
 
+const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
+
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
@@ -52,8 +54,8 @@ function PageHeader() {
       px={{ base: 3, md: 5 }}
       py="2"
       h={{ base: 10, md: 12 }}
-      bg="primary.solid"
-      color="fg.inverted"
+      bg={isPrototype ? "#f59e0b" : "primary.solid"}
+      color={isPrototype ? "#451a03" : "fg.inverted"}
       zIndex={1300}
       position="relative"
     >
@@ -65,27 +67,46 @@ function PageHeader() {
           transition="opacity 0.24s ease"
           _hover={{ opacity: 0.8 }}
         >
-          <LclLogo width={16} avatarOnly fill="white" />
-          <Heading as="h1" size="sm" color="fg.inverted">
+          <LclLogo width={16} avatarOnly fill={isPrototype ? "#451a03" : "white"} />
+          <Heading as="h1" size="sm" color={isPrototype ? "#451a03" : "fg.inverted"}>
             Global Nature Watch
           </Heading>
         </ChakraLink>
         <Badge
-          colorPalette="primary"
-          bg="primary.800"
+          colorPalette={isPrototype ? "orange" : "primary"}
+          bg={isPrototype ? "#451a03" : "primary.800"}
+          color={isPrototype ? "#fef3c7" : undefined}
           letterSpacing="wider"
           variant="solid"
           size="xs"
         >
-          PREVIEW
+          {isPrototype ? "PROTOTYPE" : "PREVIEW"}
         </Badge>
+
       </Flex>
+      {isPrototype && (
+        <Text
+          fontSize="xs"
+          fontWeight="bold"
+          letterSpacing="wider"
+          textTransform="uppercase"
+          color="#451a03"
+          position="absolute"
+          left="50%"
+          transform="translateX(-50%)"
+          pointerEvents="none"
+        >
+          NOT FOR PRODUCTION USE
+        </Text>
+      )}
       <Flex gap="6" alignItems="center" hideBelow="md">
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
             variant="solid"
-            colorPalette="primary"
-            _hover={{ bg: "primary.fg" }}
+            colorPalette={isPrototype ? "orange" : "primary"}
+            bg={isPrototype ? "#d97706" : undefined}
+            color={isPrototype ? "#451a03" : undefined}
+            _hover={{ bg: isPrototype ? "#b45309" : "primary.fg" }}
             size="sm"
           >
             <LifebuoyIcon />
@@ -107,7 +128,7 @@ function PageHeader() {
             mb="0.5"
             fontSize="xs"
             fontWeight="normal"
-            color="primary.100"
+            color={isPrototype ? "#78350f" : "primary.100"}
           >
             {usedPrompts}/
             {totalPrompts > 5000 ? (
@@ -137,8 +158,8 @@ function PageHeader() {
               </Text>
             </Tooltip>
           </Progress.Label>
-          <Progress.Track bg="primary.950" maxH="4px">
-            <Progress.Range bg="white" />
+          <Progress.Track bg={isPrototype ? "#78350f" : "primary.950"} maxH="4px">
+            <Progress.Range bg={isPrototype ? "#451a03" : "white"} />
           </Progress.Track>
         </Progress.Root>
         {isAuthenticated ? (
@@ -146,8 +167,10 @@ function PageHeader() {
             <Menu.Trigger asChild>
               <Button
                 variant="solid"
-                colorPalette="primary"
-                _hover={{ bg: "primary.fg" }}
+                colorPalette={isPrototype ? "orange" : "primary"}
+                bg={isPrototype ? "#d97706" : undefined}
+                color={isPrototype ? "#451a03" : undefined}
+                _hover={{ bg: isPrototype ? "#b45309" : "primary.fg" }}
                 size="sm"
               >
                 <UserIcon />
@@ -183,8 +206,10 @@ function PageHeader() {
           <Button
             asChild
             variant="solid"
-            colorPalette="primary"
-            _hover={{ bg: "primary.fg" }}
+            colorPalette={isPrototype ? "orange" : "primary"}
+            bg={isPrototype ? "#d97706" : undefined}
+            color={isPrototype ? "#451a03" : undefined}
+            _hover={{ bg: isPrototype ? "#b45309" : "primary.fg" }}
             size="sm"
           >
             <Link href="/app">
