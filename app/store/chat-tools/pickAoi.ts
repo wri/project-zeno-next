@@ -9,10 +9,12 @@ import bbox from "@turf/bbox";
  * Fetch geometry for a single AOI and add it to the map.
  * Returns the raw geometry data (FeatureCollection or Feature) for combined
  * bounds computation.
+ * @param selectionName - The name of the selection of AOIs. Used in multi-area selection.
  */
 async function fetchAndDisplayAoi(
   aoi: AOI,
-  addGeoJsonFeature: (feature: { id: string; name: string; data: FeatureCollection | Feature }) => void
+  addGeoJsonFeature: (feature: { id: string; name: string; selectionName?: string; data: FeatureCollection | Feature }) => void,
+  selectionName?: string
 ): Promise<FeatureCollection | Feature> {
   let geoJsonData: FeatureCollection;
 
@@ -29,6 +31,7 @@ async function fetchAndDisplayAoi(
   addGeoJsonFeature({
     id: aoi.name,
     name: aoi.name,
+    selectionName: selectionName,
     data: geoJsonData,
   });
 
@@ -40,7 +43,7 @@ export async function pickAoiTool(
   addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   try {
-    const { addGeoJsonFeature, flyToGeoJsonWithRetry } = useMapStore.getState();
+    const { addGeoJsonFeature, flyToGeoJsonWithRetry, setAoiSelection } = useMapStore.getState();
     const { upsertContextByType } = useContextStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
@@ -59,8 +62,9 @@ export async function pickAoiTool(
     };
 
     // Fetch geometry for all AOIs in parallel
+    // If there are multiple AOIs, forward the selection name to the addGeoJsonFeature function.
     const results = await Promise.allSettled(
-      aois.map((aoi) => fetchAndDisplayAoi(aoi, addGeoJsonFeature))
+      aois.map((aoi) => fetchAndDisplayAoi(aoi, addGeoJsonFeature, aois.length > 1 ? selectionName : undefined))
     );
 
     // Collect all raw geometry data for combined bounds, track failures
@@ -114,6 +118,11 @@ export async function pickAoiTool(
       isAiContext: true,
       aoiSelection: selectionForContext,
     });
+
+    // Add the AOISelection to the map store
+    if (aois.length > 1) {
+      setAoiSelection(selectionName, selectionForContext);
+    }
 
     // If some AOIs failed, show a partial-failure message
     if (failures.length > 0 && failures.length < aois.length) {
