@@ -8,7 +8,7 @@ import type { PdfExportPhase } from "@/app/utils/generateReportPdf";
 import { DragDropProvider } from "@dnd-kit/react";
 import { Report } from "@/app/types/report";
 import useReportStore from "@/app/store/reportStore";
-import generateText from "@/app/utils/generateText";
+import mockGenerateText from "@/app/utils/mockGenerateText";
 import SortableBlock from "./SortableBlock";
 import ReportTitleBlock from "./ReportTitleBlock";
 import ReportPromptBar from "./ReportPromptBar";
@@ -113,7 +113,7 @@ export default function ReportCanvas({ report }: Props) {
   const makeGenerateHandler = (blockId: string) => {
     const info = getBlockGeneratingInfo(blockId);
     return async (prompt: string): Promise<string> => {
-      return generateText(report, prompt, info?.focusWidgetId ?? null);
+      return mockGenerateText(report, prompt, info?.focusWidgetId ?? null);
     };
   };
 
@@ -167,6 +167,7 @@ export default function ReportCanvas({ report }: Props) {
         onGenerate={handlePromptBarGenerate}
         onAddTextBlock={handleAddTextBlock}
         isGenerating={isPromptBarGenerating}
+        isMockMode={true}
       />
 
       <DragDropProvider onDragEnd={handleDragEnd}>

@@ -1,5 +1,9 @@
 import { Report } from "@/app/types/report";
 
+/** Prefix added to all mock responses so the UI can detect them. */
+export const MOCK_TEXT_PREFIX =
+  "⚠️ **Mock data** — this is placeholder text, not a real AI response.\n\n";
+
 const LOREM_PARAGRAPHS = [
   "Based on the available data, there has been a notable shift in land cover distribution over the observed period. Tree cover has shown a gradual decline in several key regions, while areas classified as cropland and built-up surfaces have expanded. This pattern is consistent with broader trends of agricultural expansion and urbanisation observed across tropical and subtropical zones.",
   "The rate of change appears to have accelerated in the most recent five-year window, with annual loss rates approximately 15% higher than the preceding decade. Wetland areas have been disproportionately affected, losing an estimated 8% of their extent. These changes have significant implications for carbon storage, biodiversity, and local water cycles.",
@@ -44,7 +48,7 @@ export default async function mockGenerateText(
   const delay = 1500 + Math.random() * 500;
   await new Promise((resolve) => setTimeout(resolve, delay));
 
-  // Return 2–3 paragraphs
+  // Return 2–3 paragraphs, prefixed with a mock-data disclaimer
   const count = 2 + Math.floor(Math.random() * 2); // 2 or 3
-  return LOREM_PARAGRAPHS.slice(0, count).join("\n\n");
+  return MOCK_TEXT_PREFIX + LOREM_PARAGRAPHS.slice(0, count).join("\n\n");
 }

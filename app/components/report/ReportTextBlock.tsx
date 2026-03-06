@@ -7,6 +7,7 @@ import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { ReportBlock } from "@/app/types/report";
 import useReportStore from "@/app/store/reportStore";
+import { MOCK_TEXT_PREFIX } from "@/app/utils/mockGenerateText";
 
 interface Props {
   block: ReportBlock;
@@ -70,6 +71,7 @@ export default function ReportTextBlock({
   const content = block.content ?? "";
   const hasContent = content.length > 0;
   const isAiGenerated = block.generatedByAi === true;
+  const isMockContent = isAiGenerated && content.startsWith(MOCK_TEXT_PREFIX);
 
   const handleChange = (value: string) => {
     clearTimeout(debounceRef.current);
@@ -89,7 +91,7 @@ export default function ReportTextBlock({
   if (isEditing || !hasContent) {
     return (
       <Box>
-        {isAiGenerated && <AiBadge />}
+        {isAiGenerated && <AiBadge isMock={isMockContent} />}
         <Textarea
           ref={textareaRef}
           defaultValue={content}
@@ -109,7 +111,7 @@ export default function ReportTextBlock({
   // Render markdown — click to edit
   return (
     <Box>
-      {isAiGenerated && <AiBadge />}
+      {isAiGenerated && <AiBadge isMock={isMockContent} />}
       <Box
         onClick={() => setIsEditing(true)}
         cursor="text"
@@ -126,7 +128,17 @@ export default function ReportTextBlock({
   );
 }
 
-function AiBadge() {
+function AiBadge({ isMock = false }: { isMock?: boolean }) {
+  if (isMock) {
+    return (
+      <Flex align="center" gap={1} mb={1}>
+        <Text fontSize="2xs" color="orange.600" fontWeight="medium">
+          ⚠️ Mock data — placeholder text
+        </Text>
+      </Flex>
+    );
+  }
+
   return (
     <Flex align="center" gap={1} mb={1}>
       <SparkleIcon

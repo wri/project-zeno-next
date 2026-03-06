@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Flex, Input, Button, IconButton, Spinner } from "@chakra-ui/react";
-import { SparkleIcon, PlusIcon } from "@phosphor-icons/react";
+import { Box, Flex, Input, Button, IconButton, Spinner, Text } from "@chakra-ui/react";
+import { SparkleIcon, PlusIcon, WarningIcon } from "@phosphor-icons/react";
 import { Tooltip } from "@/app/components/ui/tooltip";
 
 interface Props {
@@ -14,6 +14,8 @@ interface Props {
   isGenerating: boolean;
   /** Placeholder text for the input. */
   placeholder?: string;
+  /** When true, shows a banner indicating responses are mocked. */
+  isMockMode?: boolean;
 }
 
 export default function ReportPromptBar({
@@ -21,6 +23,7 @@ export default function ReportPromptBar({
   onAddTextBlock,
   isGenerating,
   placeholder = "Write about this report…",
+  isMockMode = false,
 }: Props) {
   const [prompt, setPrompt] = useState("");
 
@@ -39,7 +42,26 @@ export default function ReportPromptBar({
   };
 
   return (
-    <Flex gap={2} align="center" mb={4}>
+    <Box mb={4}>
+      {isMockMode && (
+        <Flex
+          align="center"
+          gap={1.5}
+          mb={2}
+          px={3}
+          py={1.5}
+          bg="orange.50"
+          border="1px solid"
+          borderColor="orange.200"
+          rounded="md"
+        >
+          <WarningIcon size={14} color="var(--chakra-colors-orange-500)" />
+          <Text fontSize="xs" color="orange.700">
+            Mock mode — AI responses are placeholder text.
+          </Text>
+        </Flex>
+      )}
+    <Flex gap={2} align="center">
       <Input
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
@@ -79,5 +101,6 @@ export default function ReportPromptBar({
         </IconButton>
       </Tooltip>
     </Flex>
+    </Box>
   );
 }
