@@ -29,6 +29,18 @@ export interface InsightWidget {
   xAxis: string;
   yAxis: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
+  metadata?: {
+    datasetName?: string;
+    aoiNames?: string[];
+    dateRange?: { start: string; end: string };
+    sourceUrls?: string[];
+    userQuery?: string;
+    methodology?: string;
+    cautions?: string;
+    citation?: string;
+    datasetSource?: string;
+    statisticsData?: Record<string, unknown>[];
+  };
 }
 
 // Raw insight data from API (before conversion to InsightWidget)

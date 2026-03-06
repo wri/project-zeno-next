@@ -31,6 +31,17 @@ interface ReportActions {
       size?: "full" | "half";
     }
   ) => void;
+  /**
+   * Insert a block after a specific block. Returns the new block's ID.
+   * If `afterBlockId` is not found, appends to the end.
+   */
+  insertBlockAfter: (
+    reportId: string,
+    afterBlockId: string,
+    block: Omit<ReportBlock, "id" | "order" | "createdAt" | "size"> & {
+      size?: "full" | "half";
+    }
+  ) => string;
   removeBlock: (reportId: string, blockId: string) => void;
   updateBlockContent: (
     reportId: string,
@@ -149,6 +160,37 @@ const useReportStore = create<ReportState & ReportActions>()(
           }),
         })),
 
+      insertBlockAfter: (reportId, afterBlockId, block) => {
+        const newId = uuidv4();
+        set((s) => ({
+          reports: s.reports.map((r) => {
+            if (r.id !== reportId) return r;
+            const sorted = [...r.blocks].sort((a, b) => a.order - b.order);
+            const afterIdx = sorted.findIndex((b) => b.id === afterBlockId);
+            const insertAt = afterIdx === -1 ? sorted.length : afterIdx + 1;
+
+            const newBlock: ReportBlock = {
+              ...block,
+              id: newId,
+              size: block.size ?? "full",
+              order: insertAt,
+              createdAt: new Date().toISOString(),
+            };
+
+            // Splice into sorted array and re-index orders
+            sorted.splice(insertAt, 0, newBlock);
+            const reindexed = sorted.map((b, i) => ({ ...b, order: i }));
+
+            return {
+              ...r,
+              blocks: reindexed,
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        }));
+        return newId;
+      },
+
       removeBlock: (reportId, blockId) =>
         set((s) => ({
           reports: s.reports.map((r) => {
@@ -247,6 +289,7 @@ const useReportStore = create<ReportState & ReportActions>()(
           sourceTraceId: traceId,
           sourceMessageId: messageId,
           truncatedFrom,
+          metadata: widget.metadata,
         };
 
         get().addBlock(reportId, { kind: "insight", widget: pinned });
@@ -256,10 +299,10 @@ const useReportStore = create<ReportState & ReportActions>()(
     {
       name: "report-store",
       storage: idbStorage,
-      version: 1,
+      version: 3,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as ReportState;
-        if (version === 0) {
+        if (version < 1) {
           // Backfill `size` for blocks created before the field existed
           state.reports = state.reports.map((r) => ({
             ...r,
@@ -269,6 +312,17 @@ const useReportStore = create<ReportState & ReportActions>()(
             })),
           }));
         }
+        if (version < 2) {
+          // Backfill `generatedByAi` — all existing blocks are user-authored
+          state.reports = state.reports.map((r) => ({
+            ...r,
+            blocks: r.blocks.map((b) => ({
+              ...b,
+              generatedByAi: b.generatedByAi ?? false,
+            })),
+          }));
+        }
+        // v3: metadata field on PinnedWidget — optional, no backfill needed
         return state;
       },
     }

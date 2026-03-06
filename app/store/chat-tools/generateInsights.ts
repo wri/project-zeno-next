@@ -8,6 +8,11 @@ interface ChartData {
   data: unknown;
   xAxis: string;
   yAxis: string;
+  colorField?: string;
+  stackField?: string;
+  groupField?: string;
+  seriesFields?: string[];
+  metadata?: InsightWidget["metadata"];
 }
 
 export function generateInsightsTool(
@@ -26,6 +31,7 @@ export function generateInsightsTool(
         data: chart.data,
         xAxis: chart.xAxis,
         yAxis: chart.yAxis,
+        metadata: chart.metadata,
         generation: {
           codeact_parts: streamMessage.codeact_parts,
           source_urls: streamMessage.source_urls,
