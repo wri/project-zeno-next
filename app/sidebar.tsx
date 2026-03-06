@@ -19,6 +19,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
+  ChartBarIcon,
   LifebuoyIcon,
   NotepadIcon,
   NotePencilIcon,
@@ -261,7 +262,22 @@ export function Sidebar() {
               <NotePencilIcon />
             </Link>
           </Button>
-          <Tooltip content="Reports" positioning={{ placement: "bottom" }} showArrow>
+          <Tooltip
+            content="Monitor"
+            positioning={{ placement: "bottom" }}
+            showArrow
+          >
+            <IconButton asChild variant="ghost" size="sm">
+              <Link href="/app/monitor" aria-label="Monitor">
+                <ChartBarIcon />
+              </Link>
+            </IconButton>
+          </Tooltip>
+          <Tooltip
+            content="Reports"
+            positioning={{ placement: "bottom" }}
+            showArrow
+          >
             <IconButton asChild variant="ghost" size="sm">
               <Link href="/app/report-builder" aria-label="Reports">
                 <NotepadIcon />
