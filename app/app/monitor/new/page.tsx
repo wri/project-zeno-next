@@ -11,8 +11,10 @@ import type {
   MultiDatasetFormValues,
   WizardPhase,
 } from "@/app/monitor/types/stream";
+import type { DatasetRawData } from "@/app/types/dashboard";
 import { useMultiDatasetStream } from "@/app/monitor/hooks/useMultiDatasetStream";
 import { convertSelectionsToBlocks } from "@/app/monitor/utils/convertToBlocks";
+import { extractRows } from "@/app/monitor/utils/extractRows";
 import useDashboardStore from "@/app/store/dashboardStore";
 import { DATASETS } from "@/app/monitor/constants/datasets";
 import { GADM_CODE_TO_NAME } from "@/app/monitor/constants/gadmCountries";
@@ -25,6 +27,29 @@ import SummaryPrompt from "@/app/monitor/components/SummaryPrompt";
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
+
+/** Collect raw analytics rows from all streams, one entry per dataset. */
+function collectRawData(
+  streams: Map<number, { analyticsData: { data: unknown; dataset_name: string }[] }>,
+  datasetIds: number[],
+): DatasetRawData[] {
+  const result: DatasetRawData[] = [];
+  for (const id of datasetIds) {
+    const state = streams.get(id);
+    if (!state) continue;
+    const rows: Record<string, unknown>[] = [];
+    for (const item of state.analyticsData) {
+      rows.push(...extractRows(item.data));
+    }
+    if (rows.length === 0) continue;
+    result.push({
+      datasetId: id,
+      datasetName: DATASETS[id] ?? `Dataset ${id}`,
+      rows,
+    });
+  }
+  return result;
+}
 
 export default function NewDashboardPage() {
   const router = useRouter();
@@ -96,6 +121,8 @@ export default function NewDashboardPage() {
         .join(", ");
       const title = `Dashboard: ${datasetNames}`;
 
+      const rawData = collectRawData(streams, formValues.datasetIds);
+
       const id = createDashboard(
         title,
         {
@@ -106,11 +133,12 @@ export default function NewDashboardPage() {
           prompt,
         },
         blocks,
+        rawData,
       );
 
       router.push(`/app/monitor/${id}`);
     },
-    [formValues, selectedCharts, createDashboard, router],
+    [formValues, selectedCharts, streams, createDashboard, router],
   );
 
   const handleSummarySkip = useCallback(() => {
@@ -136,6 +164,8 @@ export default function NewDashboardPage() {
       .join(", ");
     const title = `Dashboard: ${datasetNames}`;
 
+    const rawData = collectRawData(streams, formValues.datasetIds);
+
     const id = createDashboard(
       title,
       {
@@ -146,10 +176,11 @@ export default function NewDashboardPage() {
         prompt: "",
       },
       blocks,
+      rawData,
     );
 
     router.push(`/app/monitor/${id}`);
-  }, [formValues, selectedCharts, createDashboard, router]);
+  }, [formValues, selectedCharts, streams, createDashboard, router]);
 
   const handleBackToSetup = useCallback(() => {
     cancel();

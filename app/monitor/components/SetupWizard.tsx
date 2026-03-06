@@ -82,9 +82,22 @@ export default function SetupWizard({ onSubmit }: SetupWizardProps) {
         if (endDate > latestEnd) latestEnd = endDate;
       }
 
+      // If sub-regions are selected for a country, exclude the parent
+      // country itself so we don't fetch both parent + children.
+      const parentCodesWithChildren = new Set(
+        selectedAreas
+          .filter((a) => a.parentCode)
+          .map((a) => a.parentCode!),
+      );
+      const resolvedAreas = selectedAreas.filter((a) => {
+        if (a.parentCode) return true; // always keep sub-regions
+        const code = a.areaId.replace("gadm:", "");
+        return !parentCodesWithChildren.has(code);
+      });
+
       onSubmit({
         datasetIds,
-        areaIds: selectedAreas.map((a) => a.areaId),
+        areaIds: resolvedAreas.map((a) => a.areaId),
         startDate: earliestStart,
         endDate: latestEnd,
         prompt: "",
@@ -161,8 +174,8 @@ export default function SetupWizard({ onSubmit }: SetupWizardProps) {
             <Box>
               <Heading size="md" mb={1}>Select Areas of Interest</Heading>
               <Text color="fg.muted" fontSize="sm">
-                Search and select the countries you want to analyze. Sub-region selection
-                will be available in a future update.
+                Search and select countries or their sub-regions. When you select
+                specific regions within a country, only those regions will be analyzed.
               </Text>
             </Box>
 
@@ -346,7 +359,7 @@ export default function SetupWizard({ onSubmit }: SetupWizardProps) {
                       const code = country.areaId.replace("gadm:", "");
                       const subRegions = selectedAreas.filter(a => a.parentCode === code);
                       if (subRegions.length > 0) {
-                        return `${country.label} (+ ${subRegions.length} region${subRegions.length !== 1 ? "s" : ""})`;
+                        return `${subRegions.length} region${subRegions.length !== 1 ? "s" : ""} in ${country.label}`;
                       }
                       return country.label;
                     }).join(", ")}

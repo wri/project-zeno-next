@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { get as idbGet, set as idbSet, del as idbDel } from "idb-keyval";
 import { v4 as uuidv4 } from "uuid";
 import type { ReportBlock } from "@/app/types/report";
-import type { Dashboard, DashboardSetupMetadata } from "@/app/types/dashboard";
+import type { Dashboard, DashboardSetupMetadata, DatasetRawData } from "@/app/types/dashboard";
 
 // -- State & Actions --------------------------------------------------------
 
@@ -17,6 +17,7 @@ interface DashboardActions {
     title: string,
     setupMetadata: DashboardSetupMetadata,
     blocks: ReportBlock[],
+    rawData?: DatasetRawData[],
   ) => string;
   deleteDashboard: (id: string) => void;
   renameDashboard: (id: string, title: string) => void;
@@ -79,7 +80,7 @@ const useDashboardStore = create<DashboardState & DashboardActions>()(
     (set, get) => ({
       ...initialState,
 
-      createDashboard: (title, setupMetadata, blocks) => {
+      createDashboard: (title, setupMetadata, blocks, rawData) => {
         const id = uuidv4();
         const now = new Date().toISOString();
         const dashboard: Dashboard = {
@@ -87,6 +88,7 @@ const useDashboardStore = create<DashboardState & DashboardActions>()(
           title,
           blocks,
           setupMetadata,
+          rawData,
           createdAt: now,
           updatedAt: now,
         };

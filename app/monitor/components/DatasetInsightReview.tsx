@@ -20,6 +20,7 @@ import {
   ArrowRightIcon,
   ArrowLeftIcon,
   ArrowClockwiseIcon,
+  DownloadSimpleIcon,
   TableIcon,
 } from "@phosphor-icons/react";
 
@@ -32,6 +33,7 @@ import type {
   DatasetStreamState,
   DetectedChartConfig,
 } from "../types/stream";
+import { rowsToCSV, downloadCSV } from "../utils/downloadCsv";
 import ChartCard from "./ChartCard";
 
 // ---------------------------------------------------------------------------
@@ -231,13 +233,16 @@ export default function DatasetInsightReview({
   const isChartSelected = (label: string) =>
     selectedCharts.some((c) => c.chartLabel === label);
 
-  const handleToggle = (entry: ChartEntry) => {
+  const perAreaGroupKey = `per-area:${datasetId}`;
+
+  const handleToggle = (entry: ChartEntry, isPerArea = false) => {
     onToggleChart({
       datasetId,
       chartLabel: entry.config.label,
       config: entry.config,
       rows: entry.rows,
       isPrimary: entry.isPrimary,
+      ...(isPerArea ? { perAreaGroup: perAreaGroupKey } : {}),
     });
   };
 
@@ -282,7 +287,7 @@ export default function DatasetInsightReview({
       // If all selected → deselect all; if any unselected → select those
       const selected = isChartSelected(entry.config.label);
       if (allPerAreaSelected ? selected : !selected) {
-        handleToggle(entry);
+        handleToggle(entry, true);
       }
     }
   };
@@ -610,20 +615,36 @@ export default function DatasetInsightReview({
       {/* Raw data table — always shown as reference */}
       {rawRows.length > 0 && (
         <Box>
-          <HStack gap={2} mb={2}>
-            <TableIcon size={16} />
-            <Heading size="sm" fontWeight="medium">
-              Raw Data
-            </Heading>
-            <Badge size="xs" variant="outline">
-              {rawRows.length} rows
-            </Badge>
-            {areaCount > 1 && (
+          <Flex mb={2} align="center" justify="space-between">
+            <HStack gap={2}>
+              <TableIcon size={16} />
+              <Heading size="sm" fontWeight="medium">
+                Raw Data
+              </Heading>
               <Badge size="xs" variant="outline">
-                {areaCount} areas
+                {rawRows.length} rows
               </Badge>
-            )}
-          </HStack>
+              {areaCount > 1 && (
+                <Badge size="xs" variant="outline">
+                  {areaCount} areas
+                </Badge>
+              )}
+            </HStack>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => {
+                const csv = rowsToCSV(rawRows);
+                const slug = datasetName
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/^-|-$/g, "");
+                downloadCSV(csv, `${slug}-raw-data.csv`);
+              }}
+            >
+              <DownloadSimpleIcon size={14} /> Download CSV
+            </Button>
+          </Flex>
           <Box
             rounded="md"
             border="1px solid"
@@ -632,10 +653,6 @@ export default function DatasetInsightReview({
           >
             <RawDataPreview rows={rawRows} />
           </Box>
-          <Text fontSize="xs" color="fg.muted" mt={1}>
-            Full raw data will be available in the final dashboard&apos;s data
-            table with CSV export.
-          </Text>
         </Box>
       )}
 

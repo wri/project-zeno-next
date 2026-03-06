@@ -241,6 +241,9 @@ export interface ChartSelection {
   config: DetectedChartConfig;
   rows: Record<string, unknown>[];
   isPrimary: boolean;
+  /** When set, per-area charts sharing the same group key are merged into a
+   *  single dashboard block with an area selector. */
+  perAreaGroup?: string;
 }
 
 export interface DashboardState {

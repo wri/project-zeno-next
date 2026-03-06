@@ -12,6 +12,13 @@ export interface DashboardSetupMetadata {
   prompt: string;
 }
 
+/** Raw data snapshot for a single dataset, preserved for the data table. */
+export interface DatasetRawData {
+  datasetId: number;
+  datasetName: string;
+  rows: Record<string, unknown>[];
+}
+
 /**
  * A Dashboard is a Report created via the monitor wizard.
  * After creation, its blocks are ReportBlock[] rendered by the
@@ -22,6 +29,8 @@ export interface Dashboard {
   title: string;
   blocks: ReportBlock[];
   setupMetadata: DashboardSetupMetadata;
+  /** Raw analytics rows per dataset, preserved for the data table & CSV export. */
+  rawData?: DatasetRawData[];
   createdAt: string;
   updatedAt: string;
 }

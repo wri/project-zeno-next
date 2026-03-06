@@ -19,6 +19,11 @@ export interface PinnedWidget {
   truncatedFrom?: number;
   /** Widget metadata from the BE (dataset info, AOI, date range, etc.) */
   metadata?: InsightWidget["metadata"];
+  /** Per-area variants — when present the block renders an area selector
+   *  instead of duplicating one insight block per area. */
+  variants?: PinnedWidget[];
+  /** Short label for area-selector display (e.g. "Amapá"). */
+  areaLabel?: string;
 }
 
 export interface ReportBlock {
