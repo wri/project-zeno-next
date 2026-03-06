@@ -9,9 +9,43 @@ interface Props {
   block: ReportBlockType;
   reportId: string;
   index: number;
+  /** Whether this block is currently in AI generation mode */
+  isGenerating?: boolean;
+  /** The auto-prompt to generate with (for per-widget chat) */
+  autoPrompt?: string;
+  /** Called with a prompt; parent handles mock generation and returns text. */
+  onGenerate?: (prompt: string) => Promise<string>;
+  /** Called when generation completes */
+  onGenerationComplete?: () => void;
+  /** Called when user clicks "Chat" on an insight block */
+  onChat?: () => void;
+  /** Store action overrides for dashboard reuse */
+  onRemoveBlock?: (reportId: string, blockId: string) => void;
+  onResizeBlock?: (
+    reportId: string,
+    blockId: string,
+    size: "full" | "half",
+  ) => void;
+  onUpdateContent?: (
+    reportId: string,
+    blockId: string,
+    content: string,
+  ) => void;
 }
 
-function SortableBlockInner({ block, reportId, index }: Props) {
+function SortableBlockInner({
+  block,
+  reportId,
+  index,
+  isGenerating,
+  autoPrompt,
+  onGenerate,
+  onGenerationComplete,
+  onChat,
+  onRemoveBlock,
+  onResizeBlock,
+  onUpdateContent,
+}: Props) {
   const { ref, handleRef, isDragging } = useSortable({
     id: block.id,
     index,
@@ -33,6 +67,14 @@ function SortableBlockInner({ block, reportId, index }: Props) {
         block={block}
         reportId={reportId}
         dragHandleRef={handleRef}
+        isGenerating={isGenerating}
+        autoPrompt={autoPrompt}
+        onGenerate={onGenerate}
+        onGenerationComplete={onGenerationComplete}
+        onChat={onChat}
+        onRemoveBlock={onRemoveBlock}
+        onResizeBlock={onResizeBlock}
+        onUpdateContent={onUpdateContent}
       />
     </div>
   );
@@ -44,8 +86,11 @@ const SortableBlock = React.memo(SortableBlockInner, (prev, next) => {
     prev.block.content === next.block.content &&
     prev.block.order === next.block.order &&
     prev.block.size === next.block.size &&
+    prev.block.generatedByAi === next.block.generatedByAi &&
     prev.index === next.index &&
-    prev.reportId === next.reportId
+    prev.reportId === next.reportId &&
+    prev.isGenerating === next.isGenerating &&
+    prev.autoPrompt === next.autoPrompt
   );
 });
 

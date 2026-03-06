@@ -11,6 +11,7 @@ import {
   PushPinSlashIcon,
   XIcon,
   CheckIcon,
+  SparkleIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { Tooltip } from "@/app/components/ui/tooltip";
@@ -24,6 +25,16 @@ interface Props {
   dragHandleRef?: (element: Element | null) => void;
   /** Whether to show the toolbar (controlled by parent hover state) */
   visible: boolean;
+  /** Called when user clicks "Chat" on an insight block */
+  onChat?: () => void;
+  /** Override for removeBlock (defaults to useReportStore) */
+  onRemoveBlock?: (reportId: string, blockId: string) => void;
+  /** Override for resizeBlock (defaults to useReportStore) */
+  onResizeBlock?: (
+    reportId: string,
+    blockId: string,
+    size: "full" | "half",
+  ) => void;
 }
 
 export default function BlockToolbar({
@@ -31,8 +42,13 @@ export default function BlockToolbar({
   reportId,
   dragHandleRef,
   visible,
+  onChat,
+  onRemoveBlock,
+  onResizeBlock,
 }: Props) {
-  const { removeBlock, resizeBlock } = useReportStore();
+  const store = useReportStore();
+  const removeBlock = onRemoveBlock ?? store.removeBlock;
+  const resizeBlock = onResizeBlock ?? store.resizeBlock;
   const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   const isInsight = block.kind === "insight";
@@ -137,8 +153,31 @@ export default function BlockToolbar({
         </Tooltip>
       )}
 
-      {isInsight && (
-        <Box w="1px" h={4} bg="border.muted" flexShrink={0} />
+      {isInsight && <Box w="1px" h={4} bg="border.muted" flexShrink={0} />}
+
+      {/* Chat / generate text about this widget (insight blocks only) */}
+      {isInsight && onChat && (
+        <>
+          <Tooltip
+            content="Generate text about this widget"
+            positioning={{ placement: "top" }}
+          >
+            <Button
+              variant="ghost"
+              size="2xs"
+              color="fg.muted"
+              _hover={{ color: "fg" }}
+              px={1.5}
+              h={6}
+              fontSize="2xs"
+              onClick={onChat}
+            >
+              <SparkleIcon size={14} weight="fill" />
+              Chat
+            </Button>
+          </Tooltip>
+          <Box w="1px" h={4} bg="border.muted" flexShrink={0} />
+        </>
       )}
 
       {/* Resize toggle */}
