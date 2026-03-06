@@ -27,7 +27,9 @@ interface ReportActions {
 
   addBlock: (
     reportId: string,
-    block: Omit<ReportBlock, "id" | "order" | "createdAt">
+    block: Omit<ReportBlock, "id" | "order" | "createdAt" | "size"> & {
+      size?: "full" | "half";
+    }
   ) => void;
   removeBlock: (reportId: string, blockId: string) => void;
   updateBlockContent: (
@@ -36,10 +38,15 @@ interface ReportActions {
     content: string
   ) => void;
   reorderBlocks: (reportId: string, orderedBlockIds: string[]) => void;
+  resizeBlock: (
+    reportId: string,
+    blockId: string,
+    size: "full" | "half"
+  ) => void;
 
   /**
    * Pin a chat insight widget into a report.
-   * Returns `false` if the per-report insight cap has been reached.
+   * Returns the report title on success, or `null` if the cap has been reached.
    */
   pinWidget: (
     reportId: string,
@@ -47,7 +54,7 @@ interface ReportActions {
     threadId: string,
     traceId?: string,
     messageId?: string
-  ) => boolean;
+  ) => string | null;
 }
 
 // ── IndexedDB storage adapter ────────────────────────────────────────
@@ -130,6 +137,7 @@ const useReportStore = create<ReportState & ReportActions>()(
             const newBlock: ReportBlock = {
               ...block,
               id: uuidv4(),
+              size: block.size ?? "full",
               order: r.blocks.length,
               createdAt: new Date().toISOString(),
             };
@@ -189,18 +197,32 @@ const useReportStore = create<ReportState & ReportActions>()(
           }),
         })),
 
+      resizeBlock: (reportId, blockId, size) =>
+        set((s) => ({
+          reports: s.reports.map((r) => {
+            if (r.id !== reportId) return r;
+            return {
+              ...r,
+              blocks: r.blocks.map((b) =>
+                b.id === blockId ? { ...b, size } : b
+              ),
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        })),
+
       // ── Pin from chat ────────────────────────────────────────────
 
       pinWidget: (reportId, widget, threadId, traceId, messageId) => {
         const report = get().reports.find((r) => r.id === reportId);
-        if (!report) return false;
+        if (!report) return null;
 
         // Enforce per-report insight cap
         const insightCount = report.blocks.filter(
           (b) => b.kind === "insight"
         ).length;
         if (insightCount >= MAX_INSIGHT_BLOCKS) {
-          return false;
+          return null;
         }
 
         // For tables, truncate to MAX_TABLE_ROWS and record the original count
@@ -228,12 +250,27 @@ const useReportStore = create<ReportState & ReportActions>()(
         };
 
         get().addBlock(reportId, { kind: "insight", widget: pinned });
-        return true;
+        return report.title;
       },
     }),
     {
       name: "report-store",
       storage: idbStorage,
+      version: 1,
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as ReportState;
+        if (version === 0) {
+          // Backfill `size` for blocks created before the field existed
+          state.reports = state.reports.map((r) => ({
+            ...r,
+            blocks: r.blocks.map((b) => ({
+              ...b,
+              size: b.size ?? "full",
+            })),
+          }));
+        }
+        return state;
+      },
     }
   )
 );

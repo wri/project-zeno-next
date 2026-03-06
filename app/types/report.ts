@@ -26,6 +26,8 @@ export interface ReportBlock {
   content?: string;
   /** For "insight" blocks — snapshot of the widget at pin time */
   widget?: PinnedWidget;
+  /** Grid span — full width (2 cols) or half (1 col) */
+  size: "full" | "half";
   /** Position in the report (0-indexed) */
   order: number;
   createdAt: string;
