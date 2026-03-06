@@ -42,3 +42,10 @@ yarn-error.log*
 next-env.d.ts
 
 .prompts/*
+
+# agent working docs
+PRD.md
+PLAN.md
+NOTES.md
+PLAN_*.md
+PRD_*.md
