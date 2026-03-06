@@ -23,13 +23,21 @@ import { Tooltip } from "./ui/tooltip";
 
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { toaster } from "@/app/components/ui/toaster";
+
+const NAV_LINKS = [
+  { href: "/app", label: "Explore" },
+  { href: "/app/monitor", label: "Monitor" },
+  { href: "/app/report-builder", label: "Reports" },
+] as const;
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
+  const pathname = usePathname();
   const handleLogout = async () => {
     try {
       toaster.create({
@@ -84,6 +92,29 @@ function PageHeader() {
         </Badge>
 
       </Flex>
+
+      {/* Navigation links */}
+      <Flex gap="1" alignItems="center" hideBelow="md">
+        {NAV_LINKS.map((link) => {
+          const isActive =
+            link.href === "/app"
+              ? pathname === "/app" || pathname?.startsWith("/app/threads")
+              : pathname?.startsWith(link.href);
+          return (
+            <Button
+              key={link.href}
+              asChild
+              variant="ghost"
+              size="sm"
+              color={isPrototype ? "#451a03" : "fg.inverted"}
+              bg={isActive ? "whiteAlpha.200" : "transparent"}
+              _hover={{ bg: "whiteAlpha.200" }}
+            >
+              <Link href={link.href}>{link.label}</Link>
+            </Button>
+          );
+        })}
+      </Flex>
       {isPrototype && (
         <Text
           fontSize="xs"
@@ -91,10 +122,8 @@ function PageHeader() {
           letterSpacing="wider"
           textTransform="uppercase"
           color="#451a03"
-          position="absolute"
-          left="50%"
-          transform="translateX(-50%)"
           pointerEvents="none"
+          hideBelow="md"
         >
           NOT FOR PRODUCTION USE
         </Text>
@@ -141,8 +170,8 @@ function PageHeader() {
             daily prompts
             <Tooltip
               content={
-                totalPrompts > 5000 
-                  ? "You have unlimited prompts!" 
+                totalPrompts > 5000
+                  ? "You have unlimited prompts!"
                   : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
               }
               showArrow
