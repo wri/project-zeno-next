@@ -105,7 +105,7 @@ function buildPayload(
     // Tree cover gain: 5-year intervals, start_year, end_year, forest_filter
     case 5: {
       const snap = (y: number) => y - (y % 5);
-      let sy = snap(Number(startYear));
+      const sy = snap(Number(startYear));
       let ey = snap(Number(endYear));
       if (sy === ey) ey += 5;
       return {
