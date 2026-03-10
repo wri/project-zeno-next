@@ -8,6 +8,7 @@ import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
 import type { AOISelection } from "@/app/types/chat";
+import { LayerManagerSlice, createLayerManagerSlice } from "./layerManagerSlice";
 
 interface GeoJsonFeature {
   id: string;
@@ -62,7 +63,7 @@ interface MapSlice {
   clearSelectionMode: () => void;
 }
 
-export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice;
+export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice & LayerManagerSlice;
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   set,
@@ -258,6 +259,7 @@ const useMapStore = create<MapState>()((...a) => ({
   ...createMapSlice(...a),
   ...createDrawAreaSlice(...a),
   ...createUploadAreaSlice(...a),
+  ...createLayerManagerSlice(...a),
 }));
 
 export default useMapStore;
