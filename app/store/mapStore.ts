@@ -82,6 +82,8 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       geoJsonFeatures: [],
       selectAreaLayer: null,
       tileLayers: [],
+      layers: [],
+      geoJsonRegistry: [],
       aoiSelections: {},
     });
     get().clearSelectionMode();
