@@ -8,12 +8,15 @@ import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
+import PinToReportPopover from "./report/PinToReportPopover";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
+  traceId?: string;
+  messageId?: string;
 }
 
-export default function WidgetMessage({ widget }: WidgetMessageProps) {
+export default function WidgetMessage({ widget, traceId, messageId }: WidgetMessageProps) {
   const { open, onOpen, onClose } = useDisclosure();
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
@@ -53,8 +56,8 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           {widget.description}
         </Text>
         <Separator />
-        {widget.generation && (
-          <Flex justify="flex-end">
+        <Flex justify="flex-end" gap={2}>
+          {widget.generation && (
             <Button
               size="xs"
               variant="outline"
@@ -71,8 +74,15 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               <Microscope />
               View how this was generated
             </Button>
-          </Flex>
-        )}
+          )}
+          {showDisclaimer && (
+            <PinToReportPopover
+              widget={widget}
+              traceId={traceId}
+              messageId={messageId}
+            />
+          )}
+        </Flex>
         {isChartType && <ChartWidget widget={widget} />}
 
         {widget.type === "table" && (

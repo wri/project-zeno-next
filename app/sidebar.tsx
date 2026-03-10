@@ -19,7 +19,9 @@ import { sendGAEvent } from "@next/third-parties/google";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
+  ChartBarIcon,
   LifebuoyIcon,
+  NotepadIcon,
   NotePencilIcon,
   SidebarSimpleIcon,
   SignOutIcon,
@@ -247,18 +249,42 @@ export function Sidebar() {
         bg="bg.subtle"
         boxShadow="xs"
       >
-        <Button
-          asChild
-          variant="outline"
-          colorPalette="primary"
-          size="sm"
-          w={{ base: "full", md: "auto" }}
-        >
-          <Link href="/app" aria-label="New conversation">
-            New Conversation
-            <NotePencilIcon />
-          </Link>
-        </Button>
+        <Flex gap={2} align="center">
+          <Button
+            asChild
+            variant="outline"
+            colorPalette="primary"
+            size="sm"
+            w={{ base: "full", md: "auto" }}
+          >
+            <Link href="/app" aria-label="New conversation">
+              New Conversation
+              <NotePencilIcon />
+            </Link>
+          </Button>
+          <Tooltip
+            content="Monitor"
+            positioning={{ placement: "bottom" }}
+            showArrow
+          >
+            <IconButton asChild variant="ghost" size="sm">
+              <Link href="/app/monitor" aria-label="Monitor">
+                <ChartBarIcon />
+              </Link>
+            </IconButton>
+          </Tooltip>
+          <Tooltip
+            content="Reports"
+            positioning={{ placement: "bottom" }}
+            showArrow
+          >
+            <IconButton asChild variant="ghost" size="sm">
+              <Link href="/app/report-builder" aria-label="Reports">
+                <NotepadIcon />
+              </Link>
+            </IconButton>
+          </Tooltip>
+        </Flex>
         <Tooltip
           content="Close sidebar"
           positioning={{ placement: "right" }}

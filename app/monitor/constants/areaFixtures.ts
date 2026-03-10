@@ -1,0 +1,162 @@
+// ---------------------------------------------------------------------------
+// Hard-coded sub-region (GADM level-1) fixtures for demo countries.
+//
+// Replaces the /api/areas/{code}/children endpoint which requires the
+// dashboard-labs-test BE. This lets the AreaPicker expand sub-regions
+// without any backend dependency.
+//
+// Source: GADM v4.1 admin-1 boundaries.
+// ---------------------------------------------------------------------------
+
+interface ChildArea {
+  code: string;
+  name: string;
+  subtype: string;
+}
+
+interface AreaFixture {
+  parent: { code: string; name: string; subtype: string };
+  children: ChildArea[];
+}
+
+export const AREA_CHILDREN_FIXTURES: Record<string, AreaFixture> = {
+  BRA: {
+    parent: { code: "BRA", name: "Brazil", subtype: "country" },
+    children: [
+      { code: "BRA.1", name: "Acre", subtype: "state-province" },
+      { code: "BRA.2", name: "Alagoas", subtype: "state-province" },
+      { code: "BRA.3", name: "Amapá", subtype: "state-province" },
+      { code: "BRA.4", name: "Amazonas", subtype: "state-province" },
+      { code: "BRA.5", name: "Bahia", subtype: "state-province" },
+      { code: "BRA.6", name: "Ceará", subtype: "state-province" },
+      { code: "BRA.7", name: "Distrito Federal", subtype: "state-province" },
+      { code: "BRA.8", name: "Espírito Santo", subtype: "state-province" },
+      { code: "BRA.9", name: "Goiás", subtype: "state-province" },
+      { code: "BRA.10", name: "Maranhão", subtype: "state-province" },
+      { code: "BRA.11", name: "Mato Grosso", subtype: "state-province" },
+      { code: "BRA.12", name: "Mato Grosso do Sul", subtype: "state-province" },
+      { code: "BRA.13", name: "Minas Gerais", subtype: "state-province" },
+      { code: "BRA.14", name: "Pará", subtype: "state-province" },
+      { code: "BRA.15", name: "Paraíba", subtype: "state-province" },
+      { code: "BRA.16", name: "Paraná", subtype: "state-province" },
+      { code: "BRA.17", name: "Pernambuco", subtype: "state-province" },
+      { code: "BRA.18", name: "Piauí", subtype: "state-province" },
+      { code: "BRA.19", name: "Rio de Janeiro", subtype: "state-province" },
+      { code: "BRA.20", name: "Rio Grande do Norte", subtype: "state-province" },
+      { code: "BRA.21", name: "Rio Grande do Sul", subtype: "state-province" },
+      { code: "BRA.22", name: "Rondônia", subtype: "state-province" },
+      { code: "BRA.23", name: "Roraima", subtype: "state-province" },
+      { code: "BRA.24", name: "Santa Catarina", subtype: "state-province" },
+      { code: "BRA.25", name: "São Paulo", subtype: "state-province" },
+      { code: "BRA.26", name: "Sergipe", subtype: "state-province" },
+      { code: "BRA.27", name: "Tocantins", subtype: "state-province" },
+    ],
+  },
+  IDN: {
+    parent: { code: "IDN", name: "Indonesia", subtype: "country" },
+    children: [
+      { code: "IDN.1", name: "Aceh", subtype: "state-province" },
+      { code: "IDN.2", name: "Bali", subtype: "state-province" },
+      { code: "IDN.3", name: "Bangka Belitung", subtype: "state-province" },
+      { code: "IDN.4", name: "Banten", subtype: "state-province" },
+      { code: "IDN.5", name: "Bengkulu", subtype: "state-province" },
+      { code: "IDN.6", name: "Gorontalo", subtype: "state-province" },
+      { code: "IDN.7", name: "Jakarta Raya", subtype: "state-province" },
+      { code: "IDN.8", name: "Jambi", subtype: "state-province" },
+      { code: "IDN.9", name: "Jawa Barat", subtype: "state-province" },
+      { code: "IDN.10", name: "Jawa Tengah", subtype: "state-province" },
+      { code: "IDN.11", name: "Jawa Timur", subtype: "state-province" },
+      { code: "IDN.12", name: "Kalimantan Barat", subtype: "state-province" },
+      { code: "IDN.13", name: "Kalimantan Selatan", subtype: "state-province" },
+      { code: "IDN.14", name: "Kalimantan Tengah", subtype: "state-province" },
+      { code: "IDN.15", name: "Kalimantan Timur", subtype: "state-province" },
+      { code: "IDN.16", name: "Kalimantan Utara", subtype: "state-province" },
+      { code: "IDN.17", name: "Kepulauan Riau", subtype: "state-province" },
+      { code: "IDN.18", name: "Lampung", subtype: "state-province" },
+      { code: "IDN.19", name: "Maluku", subtype: "state-province" },
+      { code: "IDN.20", name: "Maluku Utara", subtype: "state-province" },
+      { code: "IDN.21", name: "Nusa Tenggara Barat", subtype: "state-province" },
+      { code: "IDN.22", name: "Nusa Tenggara Timur", subtype: "state-province" },
+      { code: "IDN.23", name: "Papua", subtype: "state-province" },
+      { code: "IDN.24", name: "Papua Barat", subtype: "state-province" },
+      { code: "IDN.25", name: "Riau", subtype: "state-province" },
+      { code: "IDN.26", name: "Sulawesi Barat", subtype: "state-province" },
+      { code: "IDN.27", name: "Sulawesi Selatan", subtype: "state-province" },
+      { code: "IDN.28", name: "Sulawesi Tengah", subtype: "state-province" },
+      { code: "IDN.29", name: "Sulawesi Tenggara", subtype: "state-province" },
+      { code: "IDN.30", name: "Sulawesi Utara", subtype: "state-province" },
+      { code: "IDN.31", name: "Sumatera Barat", subtype: "state-province" },
+      { code: "IDN.32", name: "Sumatera Selatan", subtype: "state-province" },
+      { code: "IDN.33", name: "Sumatera Utara", subtype: "state-province" },
+      { code: "IDN.34", name: "Yogyakarta", subtype: "state-province" },
+    ],
+  },
+  COD: {
+    parent: { code: "COD", name: "Democratic Republic of the Congo", subtype: "country" },
+    children: [
+      { code: "COD.1", name: "Bas-Uélé", subtype: "state-province" },
+      { code: "COD.2", name: "Équateur", subtype: "state-province" },
+      { code: "COD.3", name: "Haut-Katanga", subtype: "state-province" },
+      { code: "COD.4", name: "Haut-Lomami", subtype: "state-province" },
+      { code: "COD.5", name: "Haut-Uélé", subtype: "state-province" },
+      { code: "COD.6", name: "Ituri", subtype: "state-province" },
+      { code: "COD.7", name: "Kasaï", subtype: "state-province" },
+      { code: "COD.8", name: "Kasaï Central", subtype: "state-province" },
+      { code: "COD.9", name: "Kasaï Oriental", subtype: "state-province" },
+      { code: "COD.10", name: "Kinshasa", subtype: "state-province" },
+      { code: "COD.11", name: "Kongo Central", subtype: "state-province" },
+      { code: "COD.12", name: "Kwango", subtype: "state-province" },
+      { code: "COD.13", name: "Kwilu", subtype: "state-province" },
+      { code: "COD.14", name: "Lomami", subtype: "state-province" },
+      { code: "COD.15", name: "Lualaba", subtype: "state-province" },
+      { code: "COD.16", name: "Mai-Ndombe", subtype: "state-province" },
+      { code: "COD.17", name: "Maniema", subtype: "state-province" },
+      { code: "COD.18", name: "Mongala", subtype: "state-province" },
+      { code: "COD.19", name: "Nord-Kivu", subtype: "state-province" },
+      { code: "COD.20", name: "Nord-Ubangi", subtype: "state-province" },
+      { code: "COD.21", name: "Sankuru", subtype: "state-province" },
+      { code: "COD.22", name: "Sud-Kivu", subtype: "state-province" },
+      { code: "COD.23", name: "Sud-Ubangi", subtype: "state-province" },
+      { code: "COD.24", name: "Tanganyika", subtype: "state-province" },
+      { code: "COD.25", name: "Tshopo", subtype: "state-province" },
+      { code: "COD.26", name: "Tshuapa", subtype: "state-province" },
+    ],
+  },
+  COL: {
+    parent: { code: "COL", name: "Colombia", subtype: "country" },
+    children: [
+      { code: "COL.1", name: "Amazonas", subtype: "state-province" },
+      { code: "COL.2", name: "Antioquia", subtype: "state-province" },
+      { code: "COL.3", name: "Arauca", subtype: "state-province" },
+      { code: "COL.4", name: "Atlántico", subtype: "state-province" },
+      { code: "COL.5", name: "Bolívar", subtype: "state-province" },
+      { code: "COL.6", name: "Boyacá", subtype: "state-province" },
+      { code: "COL.7", name: "Caldas", subtype: "state-province" },
+      { code: "COL.8", name: "Caquetá", subtype: "state-province" },
+      { code: "COL.9", name: "Casanare", subtype: "state-province" },
+      { code: "COL.10", name: "Cauca", subtype: "state-province" },
+      { code: "COL.11", name: "Cesar", subtype: "state-province" },
+      { code: "COL.12", name: "Chocó", subtype: "state-province" },
+      { code: "COL.13", name: "Córdoba", subtype: "state-province" },
+      { code: "COL.14", name: "Cundinamarca", subtype: "state-province" },
+      { code: "COL.15", name: "Guainía", subtype: "state-province" },
+      { code: "COL.16", name: "Guaviare", subtype: "state-province" },
+      { code: "COL.17", name: "Huila", subtype: "state-province" },
+      { code: "COL.18", name: "La Guajira", subtype: "state-province" },
+      { code: "COL.19", name: "Magdalena", subtype: "state-province" },
+      { code: "COL.20", name: "Meta", subtype: "state-province" },
+      { code: "COL.21", name: "Nariño", subtype: "state-province" },
+      { code: "COL.22", name: "Norte de Santander", subtype: "state-province" },
+      { code: "COL.23", name: "Putumayo", subtype: "state-province" },
+      { code: "COL.24", name: "Quindío", subtype: "state-province" },
+      { code: "COL.25", name: "Risaralda", subtype: "state-province" },
+      { code: "COL.26", name: "San Andrés y Providencia", subtype: "state-province" },
+      { code: "COL.27", name: "Santander", subtype: "state-province" },
+      { code: "COL.28", name: "Sucre", subtype: "state-province" },
+      { code: "COL.29", name: "Tolima", subtype: "state-province" },
+      { code: "COL.30", name: "Valle del Cauca", subtype: "state-province" },
+      { code: "COL.31", name: "Vaupés", subtype: "state-province" },
+      { code: "COL.32", name: "Vichada", subtype: "state-province" },
+    ],
+  },
+};
