@@ -4,17 +4,19 @@ import useMapStore from "../mapStore";
 import useContextStore from "../contextStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import bbox from "@turf/bbox";
+import { GeoJsonEntry } from "../layerManagerSlice";
 
 /**
- * Fetch geometry for a single AOI and add it to the map.
+ * Fetch geometry for a single AOI and add it to the layer manager
  * Returns the raw geometry data (FeatureCollection or Feature) for combined
  * bounds computation.
  * @param selectionName - The name of the selection of AOIs. Used in multi-area selection.
  */
-async function fetchAndDisplayAoi(
+async function fetchAndRegisterAoi(
   aoi: AOI,
   addGeoJsonFeature: (feature: { id: string; name: string; selectionName?: string; data: FeatureCollection | Feature }) => void,
-  selectionName?: string
+  addToRegistry: (entry: GeoJsonEntry) => void,
+  selectionName?: string,
 ): Promise<FeatureCollection | Feature> {
   let geoJsonData: FeatureCollection;
 
@@ -35,6 +37,11 @@ async function fetchAndDisplayAoi(
     data: geoJsonData,
   });
 
+  addToRegistry({
+    ref: { name: aoi.name, source: aoi.source },
+    data: geoJsonData,
+  });
+
   return geoJsonData;
 }
 
@@ -43,7 +50,7 @@ export async function pickAoiTool(
   addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   try {
-    const { addGeoJsonFeature, flyToGeoJsonWithRetry, setAoiSelection } = useMapStore.getState();
+    const { addGeoJsonFeature, flyToGeoJsonWithRetry, setAoiSelection, addToRegistry, addLayer } = useMapStore.getState();
     const { upsertContextByType } = useContextStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
@@ -64,8 +71,24 @@ export async function pickAoiTool(
     // Fetch geometry for all AOIs in parallel
     // If there are multiple AOIs, forward the selection name to the addGeoJsonFeature function.
     const results = await Promise.allSettled(
-      aois.map((aoi) => fetchAndDisplayAoi(aoi, addGeoJsonFeature, aois.length > 1 ? selectionName : undefined))
-    );
+      aois.map((aoi) => fetchAndRegisterAoi(
+        aoi, addGeoJsonFeature, addToRegistry, aois.length > 1 ? selectionName : undefined
+      ))
+    )
+
+    // Add the layer to the layer manager
+    addLayer({
+      id: selectionName,
+      name: selectionName,
+      type: "geojson",
+      visible: true,
+      featureRefs: aois.map((aoi) => ({ name: aoi.name, source: aoi.source })),
+      // In case of multi-area selection, set the selection name and AOISelection
+      ...(aois.length > 1 && {
+        selectionName,
+        aoiSelection: selectionForContext,
+      }),
+    });
 
     // Collect all raw geometry data for combined bounds, track failures
     const allGeoData: (FeatureCollection | Feature)[] = [];
@@ -119,10 +142,7 @@ export async function pickAoiTool(
       aoiSelection: selectionForContext,
     });
 
-    // Add the AOISelection to the map store
-    if (aois.length > 1) {
-      setAoiSelection(selectionName, selectionForContext);
-    }
+
 
     // If some AOIs failed, show a partial-failure message
     if (failures.length > 0 && failures.length < aois.length) {
