@@ -12,6 +12,8 @@ export interface LegendLayer {
   symbology: ReactNode;
   children?: ReactNode;
   info?: string;
+  hideOpacityControl?: boolean;
+  hideRemoveControl?: boolean;
 }
 
 export type LayerActionArgs =

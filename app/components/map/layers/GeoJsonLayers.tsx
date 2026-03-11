@@ -127,13 +127,14 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
   const { isHovered, setHoverState } = useHoverState();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
   const displayName = layer.selectionName ?? layer.name;
-  const layerOpacity = layer.visible ? layer.opacity ?? 1 : 0;
   const areaInContext = areas.find(
     (a) => layer.selectionName
       ? a.aoiSelection?.name === layer.selectionName
       : a.content === layer.name || a.aoiData?.src_id === layer.name
   );
   const isInContext = !!areaInContext;
+  const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
+
   const fillColor = isInContext ? "#0A3785" : "#666E7B";
   const handleRemoveFromContext = () => {
     if (areaInContext) removeContext(areaInContext.id);
@@ -177,7 +178,14 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
               filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]]}
             />
             <MapLayer id={lineLayerId} type="line"
-              paint={{ "line-color": fillColor, "line-width": 2, "line-opacity": layerOpacity }}
+              paint={{ "line-color": fillColor, 
+                "line-width": ["interpolate", ["linear"], ["zoom"],
+                  3, 0.5,
+                  6, 1,
+                  10, 2,
+                  14, 3
+                ],
+                "line-opacity": lineOpacity }}
               filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]]}
             />
           </Source>
@@ -188,11 +196,11 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
         <Source id={`bbox-source-${groupId}`} type="geojson" data={bboxPolygon} generateId={true}>
           <MapLayer id={`bbox-line-${groupId}-dashed`} type="line"
             paint={{ "line-color": fillColor, "line-width": 1.5, "line-dasharray": [2, 1],
-              "line-opacity": isHovered || isInContext ? 0 : 0.75 * layerOpacity}}
+              "line-opacity": isHovered || isInContext ? 0 : 0.75 * lineOpacity }}
           />
           <MapLayer id={`bbox-line-${groupId}-solid`} type="line"
             paint={{ "line-color": fillColor, "line-width": 1.5,
-              "line-opacity": isHovered || isInContext ? 0.75 * layerOpacity : 0 }}
+              "line-opacity": isHovered || isInContext ? 0.75 * lineOpacity : 0 }}
           />
         </Source>
       )}

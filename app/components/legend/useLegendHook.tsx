@@ -65,6 +65,8 @@ export function useLegendHook() {
       title: l.selectionName ?? l.name,
       visible: l.visible,
       opacity: (l.opacity ?? 1) * 100,
+      hideOpacityControl: true,
+      hideRemoveControl: true,
       symbology: null
     }));
 
