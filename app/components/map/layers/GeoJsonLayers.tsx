@@ -105,7 +105,7 @@ interface GeoJsonLayersProps {
 export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
   const layers = useMapStore((s) => s.layers);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
-  const geoJsonLayers = layers.filter((l) => l.type === "geojson" && l.visible);
+  const geoJsonLayers = layers.filter((l) => l.type === "geojson");
 
   return (
     <>
@@ -127,6 +127,7 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
   const { isHovered, setHoverState } = useHoverState();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
   const displayName = layer.selectionName ?? layer.name;
+  const layerOpacity = layer.visible ? layer.opacity ?? 1 : 0;
   const areaInContext = areas.find(
     (a) => layer.selectionName
       ? a.aoiSelection?.name === layer.selectionName
@@ -166,9 +167,9 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
     <>
       {/* Polygon outlines per feature */}
       {entries.map((entry) => {
-        const sourceId = `geojson-source-${entry.ref.source}-${entry.ref.name}`;
-        const fillLayerId = `geojson-fill-${entry.ref.source}-${entry.ref.name}`;
-        const lineLayerId = `geojson-line-${entry.ref.source}-${entry.ref.name}-solid`;
+        const sourceId = `geojson-source-${groupId}-${entry.ref.source}-${entry.ref.name}`;
+        const fillLayerId = `geojson-fill-${groupId}-${entry.ref.source}-${entry.ref.name}`;
+        const lineLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-solid`;
         return (
           <Source key={sourceId} id={sourceId} type="geojson" data={entry.data} generateId={true}>
             <MapLayer id={fillLayerId} type="fill"
@@ -176,7 +177,7 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
               filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]]}
             />
             <MapLayer id={lineLayerId} type="line"
-              paint={{ "line-color": fillColor, "line-width": 2, "line-opacity": 1 }}
+              paint={{ "line-color": fillColor, "line-width": 2, "line-opacity": layerOpacity }}
               filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]]}
             />
           </Source>
@@ -187,16 +188,16 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
         <Source id={`bbox-source-${groupId}`} type="geojson" data={bboxPolygon} generateId={true}>
           <MapLayer id={`bbox-line-${groupId}-dashed`} type="line"
             paint={{ "line-color": fillColor, "line-width": 1.5, "line-dasharray": [2, 1],
-              "line-opacity": isHovered || isInContext ? 0 : 0.75 }}
+              "line-opacity": isHovered || isInContext ? 0 : 0.75 * layerOpacity}}
           />
           <MapLayer id={`bbox-line-${groupId}-solid`} type="line"
             paint={{ "line-color": fillColor, "line-width": 1.5,
-              "line-opacity": isHovered || isInContext ? 0.75 : 0 }}
+              "line-opacity": isHovered || isInContext ? 0.75 * layerOpacity : 0 }}
           />
         </Source>
       )}
       {/* Single label */}
-      {bboxCoords && (
+      {bboxCoords && layer.visible && (
         <Marker longitude={bboxCoords[0]} latitude={bboxCoords[3]} anchor="bottom-left">
           <Tag.Root
             colorPalette={isInContext ? "primary" : "gray"}

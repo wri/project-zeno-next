@@ -10,10 +10,11 @@ import useMapStore from "@/app/store/mapStore";
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import useContextStore from "@/app/store/contextStore";
 
+
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendLayer[]>([]);
 
-  const { tileLayers, setTileLayers } = useMapStore();
+  const { tileLayers, setTileLayers, layers: managedLayers, setLayerVisibility, setLayerOpacity, removeLayer } = useMapStore();
   const { context, removeContext } = useContextStore();
 
   useEffect(() => {
@@ -58,11 +59,40 @@ export function useLegendHook() {
       };
     });
 
-    setLayers(activeLayers);
-  }, [tileLayers]);
+    const geoJsonLegendLayers: LegendLayer[] = managedLayers
+    .filter((l) => l.type === "geojson").map((l) => ({
+      id: l.id,
+      title: l.selectionName ?? l.name,
+      visible: l.visible,
+      opacity: (l.opacity ?? 1) * 100,
+      symbology: null
+    }));
+
+    setLayers([...activeLayers, ...geoJsonLegendLayers]);
+  }, [tileLayers, managedLayers]);
 
   const handleLayerAction = useCallback<LayerActionHandler>(
     ({ action, payload }) => {
+
+      const isManagedLayer = managedLayers.some((l) => l.id === (payload as { id: string }).id);
+      if (isManagedLayer) {
+        switch (action) {
+          case "remove":
+            removeLayer(payload.id);
+            break;
+          case "visibility":
+            setLayerVisibility(payload.id, payload.visible);
+            break;
+          case "opacity":
+            setLayerOpacity(payload.id, payload.opacity / 100);
+            break;
+          case "reorder":
+            // handled below
+            break;
+        }
+        return;
+      }
+
       switch (action) {
         case "remove":
           const ctx = context.find(
