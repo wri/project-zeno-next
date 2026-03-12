@@ -51,7 +51,7 @@ interface ChatActions {
   ) => Promise<void>;
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
-  attachToolStepsToLastUserMessage: () => void;
+  attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
 }
 
 const initialState: ChatState = {
@@ -460,14 +460,22 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   clearToolSteps: () => set({ toolSteps: [] }),
 
-  attachToolStepsToLastUserMessage: () => {
+  attachToolStepsToLastUserMessage: (durationOverride?: number) => {
     set((state) => {
+      if (state.toolSteps.length === 0) return state;
+
       // Find the last user message
       const messages = [...state.messages];
-      const duration = state.reasoningStartTime
-        ? (Date.now() - state.reasoningStartTime) / 1000
-        : 0;
-      
+      let duration: number;
+
+      if (durationOverride !== undefined) {
+        duration = durationOverride;
+      } else if (state.reasoningStartTime) {
+        duration = (Date.now() - state.reasoningStartTime) / 1000;
+      } else {
+        duration = 0;
+      }
+
       for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].type === "user") {
           // Attach current tool steps and duration to this message
@@ -525,6 +533,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             const streamMessage: StreamMessage = JSON.parse(data);
 
             if (streamMessage.type === "human") {
+              // Flush accumulated tool steps for the previous user message,
+              // computing duration from the tool steps' own timestamps
+              const currentToolSteps = get().toolSteps;
+              if (currentToolSteps.length > 0) {
+                const first = new Date(currentToolSteps[0].timestamp).getTime();
+                const last = new Date(currentToolSteps[currentToolSteps.length - 1].timestamp).getTime();
+                const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+                get().attachToolStepsToLastUserMessage(historicalDuration);
+                get().clearToolSteps();
+              }
+
               if (streamMessage.aoi) {
                 const aoi = streamMessage.aoi as {
                   name: string;
@@ -634,11 +653,16 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
-      
-      // Attach tool steps to the user message before clearing loading state
-      const { attachToolStepsToLastUserMessage } = get();
-      attachToolStepsToLastUserMessage();
-      
+
+      // Flush any remaining tool steps for the last user message
+      const finalToolSteps = get().toolSteps;
+      if (finalToolSteps.length > 0) {
+        const first = new Date(finalToolSteps[0].timestamp).getTime();
+        const last = new Date(finalToolSteps[finalToolSteps.length - 1].timestamp).getTime();
+        const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+        get().attachToolStepsToLastUserMessage(historicalDuration);
+      }
+
       setLoading(false);
     }
   },
