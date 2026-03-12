@@ -1,5 +1,13 @@
 "use client";
-import { Box, Collapsible, Flex, Text, Timeline } from "@chakra-ui/react";
+import {
+  Box,
+  Collapsible,
+  Flex,
+  Heading,
+  Separator,
+  Text,
+  Timeline,
+} from "@chakra-ui/react";
 
 import {
   CaretDownIcon,
@@ -8,6 +16,17 @@ import {
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import { ToolStepData } from "@/app/types/chat";
+import Markdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
+
+// Strip leading whitespace from each line so indented template literals
+// in the API response don't get treated as Markdown code blocks (4+ spaces)
+function trimLines(content: string): string {
+  return content
+    .split("\n")
+    .map((l) => l.trimStart())
+    .join("\n");
+}
 
 // Helper function to format tool names for display
 function formatToolName(toolName: string): string {
@@ -33,6 +52,7 @@ function Reasoning({
   reasoningDuration,
 }: ReasoningProps) {
   const [isOpen, setIsOpen] = useState(false);
+  console.log(toolSteps);
 
   // Get current tool name for dynamic status
   const currentTool =
@@ -127,19 +147,36 @@ function Reasoning({
                   </Timeline.Connector>
                   <Timeline.Content>
                     <Timeline.Title>{formatToolName(tool.name)}</Timeline.Title>
-                    <Box
-                      as="pre"
-                      fontSize="xs"
-                      bg="bg.subtle"
-                      fontFamily="mono"
-                      overflow="auto"
-                      maxHeight="300px"
-                      padding={3}
-                      borderRadius="sm"
-                      whiteSpace="pre-wrap"
-                      wordBreak="break-word"
-                    >
-                      {JSON.stringify(tool, null, 2)}
+                    <Box fontSize="xs" maxW="100%">
+                      <Markdown
+                        remarkPlugins={[remarkBreaks]}
+                        components={{
+                          h1: ({ ...props }) => (
+                            <>
+                              <Separator my={2} borderColor="neutral.300" />
+                              <Heading as="h1" size="sm" mb={2} {...props} />
+                            </>
+                          ),
+                          h2: ({ ...props }) => (
+                            <>
+                              <Separator my={2} borderColor="neutral.300" />
+                              <Heading as="h2" size="xs" mb={2} {...props} />
+                            </>
+                          ),
+                          h3: ({ ...props }) => (
+                            <>
+                              <Separator my={2} borderColor="neutral.300" />
+                              <Heading as="h3" size="xs" mb={2} {...props} />
+                            </>
+                          ),
+                          p: ({ ...props }) => (
+                            <Text mb={2} {...props} />
+                          ),
+                          br: () => <Box h={2} />, // Add spacing for line breaks
+                        }}
+                      >
+                        {tool.content ? trimLines(tool.content) : ""}
+                      </Markdown>
                     </Box>
                   </Timeline.Content>
                 </Timeline.Item>
