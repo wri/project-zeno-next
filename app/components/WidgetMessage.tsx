@@ -1,7 +1,24 @@
 "use client";
-import { useRef, useState } from "react";
-import { Box, Text, Heading, Flex, Separator, Button, Menu, Dialog, Portal, CloseButton, useDisclosure } from "@chakra-ui/react";
-import { MicroscopeIcon as Microscope, ArrowsOutIcon, DownloadSimpleIcon, ImageIcon, TableIcon, ChartBarIcon, CaretDownIcon } from "@phosphor-icons/react";
+import { useState } from "react";
+import {
+  Box,
+  Text,
+  Heading,
+  Flex,
+  Separator,
+  Button,
+  Dialog,
+  Portal,
+  CloseButton,
+  useDisclosure,
+} from "@chakra-ui/react";
+import {
+  MicroscopeIcon as Microscope,
+  ArrowsOutIcon,
+  DownloadSimpleIcon,
+  TableIcon,
+  ChartBarIcon,
+} from "@phosphor-icons/react";
 
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
@@ -11,23 +28,30 @@ import { WidgetIcons } from "../ChatPanelHeader";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
-import exportChartPng from "@/app/utils/exportChartPng";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
 }
 
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
-  const chartRef = useRef<HTMLDivElement>(null);
   const [showAsTable, setShowAsTable] = useState(false);
   const { open, onOpen, onClose } = useDisclosure();
-  const { open: expanded, onOpen: onExpand, onClose: onCollapse } = useDisclosure();
+  const {
+    open: expanded,
+    onOpen: onExpand,
+    onClose: onCollapse,
+  } = useDisclosure();
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
-  
+
   const handleOpen = () => {
-    console.log("Opening drawer for widget:", widget.title, "Generation data:", widget.generation);
+    console.log(
+      "Opening drawer for widget:",
+      widget.title,
+      "Generation data:",
+      widget.generation,
+    );
     onOpen();
   };
 
@@ -47,10 +71,12 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               ? `"${str.replace(/"/g, '""')}"`
               : str;
           })
-          .join(",")
+          .join(","),
       ),
     ];
-    const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csvLines.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -97,7 +123,13 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}
           {isChartType && hasData && (
-            <Flex gap={0} border="1px solid" borderColor="border.emphasized" rounded="md" overflow="hidden">
+            <Flex
+              gap={0}
+              border="1px solid"
+              borderColor="border.emphasized"
+              rounded="md"
+              overflow="hidden"
+            >
               <Button
                 size="xs"
                 variant={!showAsTable ? "solid" : "ghost"}
@@ -139,17 +171,17 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           )}
         </Flex>
         {isChartType && !showAsTable && (
-          <Box ref={chartRef}>
-            <WidgetErrorBoundary fallbackTitle="Unable to render chart">
-              <ChartWidget widget={widget} />
-            </WidgetErrorBoundary>
-          </Box>
+          <WidgetErrorBoundary fallbackTitle="Unable to render chart">
+            <ChartWidget widget={widget} />
+          </WidgetErrorBoundary>
         )}
         {isChartType && showAsTable && Array.isArray(widget.data) && (
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
             <Box overflowX="auto" maxW="100%">
               <TableWidget
-                data={widget.data as Record<string, string | number | boolean>[]}
+                data={
+                  widget.data as Record<string, string | number | boolean>[]
+                }
                 caption={widget.title}
               />
             </Box>
@@ -160,14 +192,16 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
             <Box overflowX="auto" maxW="100%">
               <TableWidget
-                data={widget.data as Record<string, string | number | boolean>[]}
+                data={
+                  widget.data as Record<string, string | number | boolean>[]
+                }
                 caption={widget.title}
               />
             </Box>
           </WidgetErrorBoundary>
         )}
         {/* Bottom action row — provenance + download */}
-        {((isChartType || widget.type === "table") && hasData) && (
+        {(isChartType || widget.type === "table") && hasData && (
           <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
             {widget.generation && (
               <Button
@@ -187,44 +221,16 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                 View how this was generated
               </Button>
             )}
-            <Menu.Root positioning={{ placement: "bottom-start" }}>
-              <Menu.Trigger asChild>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  h={6}
-                  rounded="sm"
-                >
-                  <DownloadSimpleIcon size={14} />
-                  Download
-                  <CaretDownIcon size={12} />
-                </Button>
-              </Menu.Trigger>
-              <Portal>
-                <Menu.Positioner>
-                  <Menu.Content minW="140px">
-                    <Menu.Item value="csv" onClick={handleDownloadCsv}>
-                      <DownloadSimpleIcon size={14} />
-                      Data as CSV
-                    </Menu.Item>
-                    {isChartType && (
-                      <Menu.Item
-                        value="png"
-                        onClick={() => {
-                          if (chartRef.current) {
-                            const safeName = (widget.title || "chart").replace(/[^a-z0-9]/gi, "_");
-                            exportChartPng(chartRef.current, `${safeName}.png`);
-                          }
-                        }}
-                      >
-                        <ImageIcon size={14} />
-                        Chart as PNG
-                      </Menu.Item>
-                    )}
-                  </Menu.Content>
-                </Menu.Positioner>
-              </Portal>
-            </Menu.Root>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleDownloadCsv}
+              h={6}
+              rounded="sm"
+            >
+              <DownloadSimpleIcon size={14} />
+              Download CSV
+            </Button>
           </Flex>
         )}
         {showDisclaimer && <VisualizationDisclaimer />}
@@ -236,7 +242,11 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         title={widget.title}
       />
       {isChartType && (
-        <Dialog.Root open={expanded} onOpenChange={(e) => !e.open && onCollapse()} size="cover">
+        <Dialog.Root
+          open={expanded}
+          onOpenChange={(e) => !e.open && onCollapse()}
+          size="cover"
+        >
           <Portal>
             <Dialog.Backdrop />
             <Dialog.Positioner>
@@ -248,7 +258,12 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                       {widget.title}
                     </Dialog.Title>
                   </Flex>
-                  <Dialog.CloseTrigger asChild position="absolute" top={3} right={3}>
+                  <Dialog.CloseTrigger
+                    asChild
+                    position="absolute"
+                    top={3}
+                    right={3}
+                  >
                     <CloseButton size="sm" />
                   </Dialog.CloseTrigger>
                 </Dialog.Header>
