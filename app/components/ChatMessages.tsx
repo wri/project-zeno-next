@@ -11,32 +11,43 @@ function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, toolSteps: currentToolSteps } = useChatStore();
   const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
+  const shouldAutoScroll = useRef(true);
 
-  // Auto-scroll to bottom when new messages are added or loading state changes
+  const scrollToBottom = () => {
+    const parent = containerRef.current?.parentElement;
+    if (parent) parent.scrollTop = parent.scrollHeight;
+  };
+
+  // Track whether the user has manually scrolled away from the bottom
   useEffect(() => {
-    if (containerRef.current) {
-      const container = containerRef.current;
-      container.scrollTop = container.scrollHeight;
-    }
+    const parent = containerRef.current?.parentElement;
+    if (!parent) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = parent;
+      shouldAutoScroll.current = scrollHeight - scrollTop - clientHeight < 100;
+    };
+
+    parent.addEventListener("scroll", handleScroll);
+    return () => parent.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Always scroll to bottom on new messages or loading state changes
+  useEffect(() => {
+    shouldAutoScroll.current = true;
+    scrollToBottom();
   }, [messages, isLoading]);
 
+  // Scroll on content resize only if the user hasn't scrolled away
   useEffect(() => {
-    if (containerRef.current) {
-      const observer = new ResizeObserver((entries) => {
-        const e = entries[0];
-        const parentElement = e.target.parentElement;
-        const elementHeight = e.contentRect.height;
+    if (!containerRef.current) return;
 
-        if (parentElement && elementHeight > parentElement.clientHeight) {
-          parentElement.scrollTop = e.target.scrollHeight;
-        }
-      });
-      observer.observe(containerRef.current);
+    const observer = new ResizeObserver(() => {
+      if (shouldAutoScroll.current) scrollToBottom();
+    });
+    observer.observe(containerRef.current);
 
-      return () => {
-        observer.disconnect();
-      };
-    }
+    return () => observer.disconnect();
   }, []);
 
   // Show reasoning after the last user message when loading
