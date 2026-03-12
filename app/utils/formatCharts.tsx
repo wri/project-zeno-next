@@ -37,7 +37,7 @@ export default function formatChartData(
     | "area"
     | "scatter",
   xAxis?: string,
-  yAxis?: string
+  yAxis?: string,
 ): { data: ChartData[]; series: ChartSeries[] } {
   const empty = { data: [], series: [] };
 
@@ -64,10 +64,10 @@ export default function formatChartData(
   }
 
   const xAxisKey = xAxis || keys[0]; //identify dataset
-  
+
   const defaultColors = getChartColors();
   const chartColors = data.map(
-    (_, index) => defaultColors[index % defaultColors.length]
+    (_, index) => defaultColors[index % defaultColors.length],
   );
 
   // --- Logic for PIE charts ---
@@ -82,7 +82,7 @@ export default function formatChartData(
 
     if (colorPalette) {
       const valueToColorMap = new Map(
-        colorPalette.map((item) => [item.value, item.color])
+        colorPalette.map((item) => [item.value, item.color]),
       );
       pieChartColors = data.map((item, index) => {
         const key = String(item[xAxisKey]);
@@ -106,12 +106,12 @@ export default function formatChartData(
     if (colorPalette) {
       // Create a map for quick color lookup
       const valueToColorMap = new Map(
-        colorPalette.map((item) => [item.value, item.color])
+        colorPalette.map((item) => [item.value, item.color]),
       );
 
       // Create a map for the original data values for sorting
       const dataValueMap = new Map(
-        transformedData.map((item) => [item[xAxisKey], item])
+        transformedData.map((item) => [item[xAxisKey], item]),
       );
 
       // Sort the series based on the order in colorPalette
@@ -135,7 +135,7 @@ export default function formatChartData(
   if (type === "scatter") {
     if (!xAxis || !yAxis) {
       console.error(
-        "Scatter charts require both `xAxis` and `yAxis` props to be provided."
+        "Scatter charts require both `xAxis` and `yAxis` props to be provided.",
       );
       return { data: [], series: [] };
     }
@@ -145,7 +145,7 @@ export default function formatChartData(
 
     if (!nameKey) {
       console.error(
-        "Could not determine the name key for the scatter plot labels."
+        "Could not determine the name key for the scatter plot labels.",
       );
       return { data: [], series: [] };
     }
@@ -200,7 +200,7 @@ export default function formatChartData(
     const otherKeys = keys.filter((key) => key !== xAxisKey);
     if (otherKeys.length < 2) {
       console.error(
-        "Grouped chart data must have at least three columns: an x-axis, a grouping column, and a value column."
+        "Grouped chart data must have at least three columns: an x-axis, a grouping column, and a value column.",
       );
       return { data: [], series: [] };
     }
@@ -217,15 +217,18 @@ export default function formatChartData(
     }));
 
     // Pivot the data from "long" to "wide" format.
-    const pivotedDataMap = data.reduce((acc, item) => {
-      const xAxisValue = String(item[xAxisKey]);
-      const groupValue = String(item[groupKey]);
+    const pivotedDataMap = data.reduce(
+      (acc, item) => {
+        const xAxisValue = String(item[xAxisKey]);
+        const groupValue = String(item[groupKey]);
 
-      acc[xAxisValue] = acc[xAxisValue] || { [xAxisKey]: xAxisValue };
-      (acc[xAxisValue] as ChartData)[groupValue] = item[valueKey];
+        acc[xAxisValue] = acc[xAxisValue] || { [xAxisKey]: xAxisValue };
+        (acc[xAxisValue] as ChartData)[groupValue] = item[valueKey];
 
-      return acc;
-    }, {} as { [key: string]: unknown });
+        return acc;
+      },
+      {} as { [key: string]: unknown },
+    );
 
     return { data: Object.values(pivotedDataMap) as ChartData[], series };
   }
@@ -243,14 +246,11 @@ export const toAxisLabel = (key: string): string => {
 
   // Extract common unit suffixes and format them as parenthetical
   const unitPatterns: [RegExp, string][] = [
-    (/(_km2|_km²)$/i), ("km²"),
-    (/(_ha)$/i), ("ha"),
-    (/(_mt|_tonnes|_t)$/i), ("t"),
-    (/(_pct|_percent|_%|_percentage)$/i), ("%"),
-  ].reduce<[RegExp, string][]>((acc, val, i, arr) => {
-    if (i % 2 === 0) acc.push([arr[i] as RegExp, arr[i + 1] as string]);
-    return acc;
-  }, []);
+    [/(_km2|_km²)$/i, "km²"],
+    [/(_ha)$/i, "ha"],
+    [/(_mt|_tonnes|_t)$/i, "t"],
+    [/(_pct|_percent|_%|_percentage)$/i, "%"],
+  ];
 
   let label = key;
   let unit = "";

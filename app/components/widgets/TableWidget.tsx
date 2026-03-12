@@ -8,12 +8,13 @@ interface TableWidgetProps {
 export default function TableWidget({ data }: TableWidgetProps) {
   // Helper function to format numeric values
   const formatValue = (
-    value: string | number | boolean
+    value: string | number | boolean,
   ): string | number | boolean => {
     return typeof value === "number"
       ? new Intl.NumberFormat("en-US").format(value)
       : value;
   };
+  if (!data || data.length === 0) return null;
   const headers = Object.keys(data[0]);
   return (
     <Box>
@@ -38,7 +39,7 @@ export default function TableWidget({ data }: TableWidgetProps) {
           {data.map(
             (
               row: Record<string, string | number | boolean>,
-              rowIndex: number
+              rowIndex: number,
             ) => (
               <Table.Row key={rowIndex} bg="transparent">
                 {headers.map((key: string, cellIndex: number) => {
@@ -73,7 +74,7 @@ export default function TableWidget({ data }: TableWidgetProps) {
                   );
                 })}
               </Table.Row>
-            )
+            ),
           )}
         </Table.Body>
       </Table.Root>

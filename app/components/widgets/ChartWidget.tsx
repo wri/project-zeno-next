@@ -204,11 +204,30 @@ const CustomPieTooltip = ({
 
 export default function ChartWidget({ widget }: ChartWidgetProps) {
   const { data, xAxis, yAxis, type } = widget;
+
+  if (!xAxis || !yAxis) {
+    return (
+      <Flex
+        align="center"
+        justify="center"
+        minH="120px"
+        border="1px dashed"
+        borderColor="border"
+        borderRadius="md"
+        p={4}
+      >
+        <Text fontSize="sm" color="fg.muted">
+          Chart is missing axis configuration.
+        </Text>
+      </Flex>
+    );
+  }
+
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
   const { data: formattedData, series } = useMemo(
     () => formatChartData(data, type, xAxis, yAxis),
-    [data, type, xAxis, yAxis]
+    [data, type, xAxis, yAxis],
   );
 
   const chart = useChart({ data: formattedData, series: series });
@@ -379,7 +398,10 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
                   value={toAxisLabel(xAxis)}
                   position="insideBottom"
                   offset={-5}
-                  style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)" }}
+                  style={{
+                    fontSize: 11,
+                    fill: "var(--chakra-colors-fg-muted)",
+                  }}
                 />
               )}
             </XAxis>
@@ -400,7 +422,11 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
                   angle={-90}
                   position="insideLeft"
                   offset={10}
-                  style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)", textAnchor: "middle" }}
+                  style={{
+                    fontSize: 11,
+                    fill: "var(--chakra-colors-fg-muted)",
+                    textAnchor: "middle",
+                  }}
                 />
               )}
             </YAxis>
