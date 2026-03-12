@@ -82,8 +82,6 @@ export interface UiContext {
       source?: string;
     };
     aoi_name: string;
-    subregion_aois: null;
-    subregion: null;
     subtype?: string;
   };
   dataset_selected?: { dataset: DatasetInfo };
@@ -109,6 +107,7 @@ export interface StreamMessage {
   content?: string;
   dataset?: object;
   aoi?: object;
+  aoi_selection?: AOISelection;
   insights?: object[];
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
@@ -126,6 +125,11 @@ export interface AOI {
   source: string;
   subtype: string;
   geometry?: FeatureCollection; // Optional since it may not be included in the initial response
+}
+
+export interface AOISelection {
+  name: string;
+  aois: AOI[];
 }
 
 export interface DatasetInfo {
@@ -160,6 +164,7 @@ export interface LangChainResponse {
 export interface LangChainUpdate {
   dataset: object;
   aoi?: object;
+  aoi_selection?: AOISelection;
   start_date?: string;
   end_date?: string;
   insights: object[];
