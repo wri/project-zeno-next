@@ -100,6 +100,8 @@ export default function UnauthorizedPage() {
         <Heading size={{ base: "3xl", md: "5xl" }} {...commonStyles} mb={0}>
           {LANDING_PAGE_VERSION === "closed" && !isSignupOpen
             ? "Early access only"
+            : LANDING_PAGE_VERSION === "public"
+            ? "Access Denied"
             : "Coming soon"}
         </Heading>
         {LANDING_PAGE_VERSION === "closed" && !isSignupOpen ? (
@@ -108,11 +110,16 @@ export default function UnauthorizedPage() {
               Thank you for your interest in Global Nature Watch!
             </Text>
             <Text fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
-              Right now access is limited while we are in closed beta. We&apos;d
+              Right now access is limited while we are in closed preview. We&apos;d
               love for you to be part of what&apos;s next, so join the waitlist
               to be among the first to know when the tool becomes available.
             </Text>
           </>
+        ) : LANDING_PAGE_VERSION === "public" ? (
+          <Text px={3} maxW="xl" fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
+            We were unable to verify your access to Global Nature Watch.
+            Please try signing in again or contact support if the issue persists.
+          </Text>
         ) : (
           <Text px={3} maxW="xl" fontSize={{ base: "xl", md: "2xl"}} {...commonStyles}>
             Thank you for creating a Global Nature Watch account. Early access

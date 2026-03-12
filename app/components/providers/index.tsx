@@ -18,7 +18,13 @@ function AuthBootstrapper() {
     let cancelled = false;
     async function loadAuth() {
       try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const res = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        });
         if (!res.ok) {
           throw new Error("unauthorized");
         }
