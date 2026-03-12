@@ -9,7 +9,7 @@ interface TableWidgetProps {
 export default function TableWidget({ data, caption }: TableWidgetProps) {
   // Helper function to format numeric values
   const formatValue = (
-    value: string | number | boolean
+    value: string | number | boolean,
   ): string | number | boolean => {
     return typeof value === "number"
       ? new Intl.NumberFormat("en-US").format(value)
@@ -18,9 +18,22 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
   const headers = Object.keys(data[0]);
   return (
     <Box>
-      <Table.Root variant="line" striped bg="transparent" size="sm" aria-label={caption || "Data table"}>
+      <Table.Root
+        variant="line"
+        striped
+        bg="transparent"
+        size="sm"
+        aria-label={caption || "Data table"}
+      >
         {caption && (
-          <Table.Caption placement="top" textAlign="left" mt={0} mb={2} fontSize="xs" color="fg.muted">
+          <Table.Caption
+            captionSide="top"
+            textAlign="left"
+            mt={0}
+            mb={2}
+            fontSize="xs"
+            color="fg.muted"
+          >
             {caption}
           </Table.Caption>
         )}
@@ -45,7 +58,7 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
           {data.map(
             (
               row: Record<string, string | number | boolean>,
-              rowIndex: number
+              rowIndex: number,
             ) => (
               <Table.Row key={rowIndex} bg="transparent">
                 {headers.map((key: string, cellIndex: number) => {
@@ -80,7 +93,7 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
                   );
                 })}
               </Table.Row>
-            )
+            ),
           )}
         </Table.Body>
       </Table.Root>
