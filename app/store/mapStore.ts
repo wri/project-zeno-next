@@ -7,10 +7,12 @@ import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
+import type { AOISelection } from "@/app/types/chat";
 
 interface GeoJsonFeature {
   id: string;
   name?: string;
+  selectionName?: string; // Used in multi-area selection
   data: GeoJSON.FeatureCollection | GeoJSON.Feature;
 }
 
@@ -32,6 +34,8 @@ interface MapSlice {
   geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
   tileLayers: TileLayer[];
+  aoiSelections: Record<string, AOISelection>;
+  setAoiSelection: (name: string, selection: AOISelection) => void;
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
@@ -70,12 +74,14 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   tileLayers: [],
   selectedAreas: [],
   selectionMode: undefined,
+  aoiSelections: {},
 
   reset: () => {
     set({
       geoJsonFeatures: [],
       selectAreaLayer: null,
       tileLayers: [],
+      aoiSelections: {},
     });
     get().clearSelectionMode();
   
@@ -122,6 +128,11 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   clearGeoJsonFeatures: () => {
     set({ geoJsonFeatures: [] });
+  },
+
+  // AOI selections are stored in the map store to allow for multi-area selections.
+  setAoiSelection: (name, selection) => {
+    set((state) => ({ aoiSelections: { ...state.aoiSelections, [name]: selection } }));
   },
 
   addTileLayer: (layer) => {

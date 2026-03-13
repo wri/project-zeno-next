@@ -19,7 +19,6 @@ import {
   TableIcon,
   ChartBarIcon,
 } from "@phosphor-icons/react";
-
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
@@ -46,12 +45,6 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   }
 
   const handleOpen = () => {
-    console.log(
-      "Opening drawer for widget:",
-      widget.title,
-      "Generation data:",
-      widget.generation,
-    );
     onOpen();
   };
 
