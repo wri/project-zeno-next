@@ -54,8 +54,8 @@ function PageHeader() {
       px={{ base: 3, md: 5 }}
       py="2"
       h={{ base: 10, md: 12 }}
-      bg={isPrototype ? "#f59e0b" : "primary.solid"}
-      color={isPrototype ? "#451a03" : "fg.inverted"}
+      bg={isPrototype ? "#d1d5db" : "primary.solid"}
+      color={isPrototype ? "#1f2937" : "fg.inverted"}
       zIndex={1300}
       position="relative"
     >
@@ -67,22 +67,29 @@ function PageHeader() {
           transition="opacity 0.24s ease"
           _hover={{ opacity: 0.8 }}
         >
-          <LclLogo width={16} avatarOnly fill={isPrototype ? "#451a03" : "white"} />
-          <Heading as="h1" size="sm" color={isPrototype ? "#451a03" : "fg.inverted"}>
+          <LclLogo
+            width={16}
+            avatarOnly
+            fill={isPrototype ? "#1f2937" : "white"}
+          />
+          <Heading
+            as="h1"
+            size="sm"
+            color={isPrototype ? "#1f2937" : "fg.inverted"}
+          >
             Global Nature Watch
           </Heading>
         </ChakraLink>
         <Badge
-          colorPalette={isPrototype ? "orange" : "primary"}
-          bg={isPrototype ? "#451a03" : "primary.800"}
-          color={isPrototype ? "#fef3c7" : undefined}
+          colorPalette={isPrototype ? "gray" : "primary"}
+          bg={isPrototype ? "#1f2937" : "primary.800"}
+          color={isPrototype ? "#f3f4f6" : undefined}
           letterSpacing="wider"
           variant="solid"
           size="xs"
         >
           {isPrototype ? "PROTOTYPE" : "PREVIEW"}
         </Badge>
-
       </Flex>
       {isPrototype && (
         <Text
@@ -90,7 +97,7 @@ function PageHeader() {
           fontWeight="bold"
           letterSpacing="wider"
           textTransform="uppercase"
-          color="#451a03"
+          color="#1f2937"
           position="absolute"
           left="50%"
           transform="translateX(-50%)"
@@ -103,10 +110,10 @@ function PageHeader() {
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
             variant="solid"
-            colorPalette={isPrototype ? "orange" : "primary"}
-            bg={isPrototype ? "#d97706" : undefined}
-            color={isPrototype ? "#451a03" : undefined}
-            _hover={{ bg: isPrototype ? "#b45309" : "primary.fg" }}
+            colorPalette={isPrototype ? "gray" : "primary"}
+            bg={isPrototype ? "#9ca3af" : undefined}
+            color={isPrototype ? "#1f2937" : undefined}
+            _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
             size="sm"
           >
             <LifebuoyIcon />
@@ -128,7 +135,7 @@ function PageHeader() {
             mb="0.5"
             fontSize="xs"
             fontWeight="normal"
-            color={isPrototype ? "#78350f" : "primary.100"}
+            color={isPrototype ? "#6b7280" : "primary.100"}
           >
             {usedPrompts}/
             {totalPrompts > 5000 ? (
@@ -141,8 +148,8 @@ function PageHeader() {
             daily prompts
             <Tooltip
               content={
-                totalPrompts > 5000 
-                  ? "You have unlimited prompts!" 
+                totalPrompts > 5000
+                  ? "You have unlimited prompts!"
                   : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
               }
               showArrow
@@ -158,8 +165,11 @@ function PageHeader() {
               </Text>
             </Tooltip>
           </Progress.Label>
-          <Progress.Track bg={isPrototype ? "#78350f" : "primary.950"} maxH="4px">
-            <Progress.Range bg={isPrototype ? "#451a03" : "white"} />
+          <Progress.Track
+            bg={isPrototype ? "#6b7280" : "primary.950"}
+            maxH="4px"
+          >
+            <Progress.Range bg={isPrototype ? "#1f2937" : "white"} />
           </Progress.Track>
         </Progress.Root>
         {isAuthenticated ? (
@@ -167,10 +177,10 @@ function PageHeader() {
             <Menu.Trigger asChild>
               <Button
                 variant="solid"
-                colorPalette={isPrototype ? "orange" : "primary"}
-                bg={isPrototype ? "#d97706" : undefined}
-                color={isPrototype ? "#451a03" : undefined}
-                _hover={{ bg: isPrototype ? "#b45309" : "primary.fg" }}
+                colorPalette={isPrototype ? "gray" : "primary"}
+                bg={isPrototype ? "#9ca3af" : undefined}
+                color={isPrototype ? "#1f2937" : undefined}
+                _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
                 size="sm"
               >
                 <UserIcon />
@@ -206,10 +216,10 @@ function PageHeader() {
           <Button
             asChild
             variant="solid"
-            colorPalette={isPrototype ? "orange" : "primary"}
-            bg={isPrototype ? "#d97706" : undefined}
-            color={isPrototype ? "#451a03" : undefined}
-            _hover={{ bg: isPrototype ? "#b45309" : "primary.fg" }}
+            colorPalette={isPrototype ? "gray" : "primary"}
+            bg={isPrototype ? "#9ca3af" : undefined}
+            color={isPrototype ? "#1f2937" : undefined}
+            _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
             size="sm"
           >
             <Link href="/app">
