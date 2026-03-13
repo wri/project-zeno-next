@@ -57,6 +57,7 @@ const chartWrappers: Record<ChartType, ChartWrapperComponent> = {
 
 interface ChartWidgetProps {
   widget: InsightWidget;
+  expanded?: boolean;
 }
 interface CustomTooltipProps {
   active?: boolean;
@@ -203,7 +204,7 @@ const CustomPieTooltip = ({
   return null;
 };
 
-export default function ChartWidget({ widget }: ChartWidgetProps) {
+export default function ChartWidget({ widget, expanded = false }: ChartWidgetProps) {
   const { data, xAxis, yAxis, type } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
@@ -357,7 +358,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
 
   return (
     <Box role="img" aria-label={chartLabel} tabIndex={0}>
-    <Chart.Root maxH="280px" chart={chart} overflow="hidden">
+    <Chart.Root maxH={expanded ? "75vh" : "280px"} chart={chart} overflow="hidden">
       <ChartTypeWrapper data={chart.data}>
         {type !== "pie" && (
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
