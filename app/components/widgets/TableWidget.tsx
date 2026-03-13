@@ -18,6 +18,25 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
   const [sortDir, setSortDir] = useState<SortDir>(null);
   const [page, setPage] = useState(0);
 
+  const sortedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    if (!sortKey || !sortDir) return data;
+    return [...data].sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      if (aVal === bVal) return 0;
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      const cmp =
+        typeof aVal === "number" && typeof bVal === "number"
+          ? aVal - bVal
+          : String(aVal).localeCompare(String(bVal));
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [data, sortKey, sortDir]);
+
+  if (!data || data.length === 0) return null;
+
   const headers = Object.keys(data[0]);
 
   // Helper function to format numeric values
@@ -28,8 +47,6 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
       ? new Intl.NumberFormat("en-US").format(value)
       : value;
   };
-
-  if (!data || data.length === 0) return null;
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -45,22 +62,6 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
     }
     setPage(0);
   };
-
-  const sortedData = useMemo(() => {
-    if (!sortKey || !sortDir) return data;
-    return [...data].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      if (aVal === bVal) return 0;
-      if (aVal === null || aVal === undefined) return 1;
-      if (bVal === null || bVal === undefined) return -1;
-      const cmp =
-        typeof aVal === "number" && typeof bVal === "number"
-          ? aVal - bVal
-          : String(aVal).localeCompare(String(bVal));
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-  }, [data, sortKey, sortDir]);
 
   const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
   const needsPagination = sortedData.length > PAGE_SIZE;
