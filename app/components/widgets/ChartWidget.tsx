@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Chart, useChart } from "@chakra-ui/charts";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import {
@@ -13,6 +14,7 @@ import {
   ScatterChart,
   Scatter,
   CartesianGrid,
+  Label,
   Legend,
   Tooltip,
   XAxis,
@@ -21,6 +23,7 @@ import {
 import formatChartData, {
   formatYAxisLabel,
   formatXAxisLabel,
+  toAxisLabel,
 } from "@/app/utils/formatCharts";
 import { InsightWidget } from "@/app/types/chat";
 
@@ -71,13 +74,13 @@ const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
 
     return (
       <Box
-        bg="white"
+        bg="bg.panel"
         p={2}
         py={1}
         borderRadius="md"
         boxShadow="md"
         border="1px"
-        borderColor="gray.200"
+        borderColor="border"
       >
         {dataPoint.name && (
           <Heading size="xs" mb={1}>
@@ -103,7 +106,7 @@ const CustomScatterTooltip = ({ active, payload }: CustomTooltipProps) => {
           justifyContent="space-between"
           fontSize="xs"
           fontWeight="normal"
-          color="gray.600"
+          color="fg.muted"
         >
           <Text as="span" mr={4}>
             {yAxisPayload.name}
@@ -152,9 +155,19 @@ const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
   );
 };
 
-const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
+interface CustomPieTooltipWithTotalProps extends CustomTooltipProps {
+  total?: number;
+}
+
+const CustomPieTooltip = ({
+  active,
+  payload,
+  total,
+}: CustomPieTooltipWithTotalProps) => {
   if (active && payload && payload.length) {
     const dataPoint = payload[0];
+    const value = Number(dataPoint.value);
+    const pct = total && total > 0 ? ((value / total) * 100).toFixed(1) : null;
     return (
       <Box bg="bg.panel" p={2} py={1} borderRadius="sm" boxShadow="sm">
         <Flex
@@ -175,7 +188,12 @@ const CustomPieTooltip = ({ active, payload }: CustomTooltipProps) => {
             {dataPoint.name}
           </Text>
           <Text fontFamily="mono" textAlign="right">
-            {Number(dataPoint.value).toLocaleString()}
+            {value.toLocaleString()}
+            {pct !== null && (
+              <Text as="span" color="fg.subtle" ml={1}>
+                ({pct}%)
+              </Text>
+            )}
           </Text>
         </Flex>
       </Box>
@@ -188,14 +206,65 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
   const { data, xAxis, yAxis, type } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
-  const { data: formattedData, series } = formatChartData(
-    data,
-    type,
-    xAxis,
-    yAxis
+  const { data: formattedData, series } = useMemo(
+    () =>
+      xAxis && yAxis
+        ? formatChartData(data, type, xAxis, yAxis)
+        : { data: [], series: [] },
+    [data, type, xAxis, yAxis],
   );
 
-  const chart = useChart({ data: formattedData, series: series });
+  const chart = useChart({ data: formattedData, series });
+
+  const pieTotal = useMemo(() => {
+    if (type !== "pie" || !yAxis) return 0;
+    return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
+  }, [type, yAxis, formattedData]);
+
+  if (!xAxis || !yAxis) {
+    return (
+      <Flex
+        align="center"
+        justify="center"
+        minH="120px"
+        border="1px dashed"
+        borderColor="border"
+        borderRadius="md"
+        p={4}
+      >
+        <Text fontSize="sm" color="fg.muted">
+          Chart is missing axis configuration.
+        </Text>
+      </Flex>
+    );
+  }
+
+  if (!ChartTypeWrapper || formattedData.length === 0 || series.length === 0) {
+    return (
+      <Flex
+        align="center"
+        justify="center"
+        minH="120px"
+        border="1px dashed"
+        borderColor="border"
+        borderRadius="md"
+        p={4}
+      >
+        <Text fontSize="sm" color="fg.muted">
+          {!ChartTypeWrapper
+            ? `Unsupported chart type: "${type}"`
+            : "No data available for this chart."}
+        </Text>
+      </Flex>
+    );
+  }
+
+  // Determine if the x-axis has long categorical labels that need angling
+  const isNumericXAxis =
+    type === "scatter" ||
+    xAxis?.toLowerCase() === "year" ||
+    (formattedData.length > 0 && typeof formattedData[0][xAxis] === "number");
+  const needsAngledTicks = !isNumericXAxis && formattedData.length > 4;
 
   const renderChartItems = () => {
     switch (type) {
@@ -216,7 +285,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
                 key={`cell-${entry[xAxis]}`}
                 fill={chart.color(entry.color as string)}
                 strokeWidth={1}
-                stroke="#fff"
+                stroke="var(--chakra-colors-bg)"
               />
             ))}
           </Pie>
@@ -319,7 +388,24 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
                   : String(formatXAxisLabel(value, chart.key(xAxis)))
               }
               domain={type === "scatter" ? ["auto", "auto"] : undefined}
-            />
+              angle={needsAngledTicks ? -35 : 0}
+              textAnchor={needsAngledTicks ? "end" : "middle"}
+              height={needsAngledTicks ? 90 : 40}
+              interval={0}
+              fontSize={11}
+            >
+              {xAxis && (
+                <Label
+                  value={toAxisLabel(xAxis)}
+                  position="insideBottom"
+                  offset={-5}
+                  style={{
+                    fontSize: 11,
+                    fill: "var(--chakra-colors-fg-muted)",
+                  }}
+                />
+              )}
+            </XAxis>
             <YAxis
               dataKey={type === "scatter" ? chart.key(yAxis) : undefined}
               type="number"
@@ -330,7 +416,21 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
               axisLine={false}
               tickLine={false}
               domain={["auto", "auto"]}
-            />
+            >
+              {yAxis && (
+                <Label
+                  value={toAxisLabel(yAxis)}
+                  angle={-90}
+                  position="insideLeft"
+                  offset={10}
+                  style={{
+                    fontSize: 11,
+                    fill: "var(--chakra-colors-fg-muted)",
+                    textAnchor: "middle",
+                  }}
+                />
+              )}
+            </YAxis>
           </>
         )}
         <Tooltip
@@ -341,7 +441,7 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
             type === "scatter" ? (
               <CustomScatterTooltip />
             ) : type === "pie" ? (
-              <CustomPieTooltip />
+              <CustomPieTooltip total={pieTotal} />
             ) : (
               <Chart.Tooltip />
             )

@@ -1,5 +1,13 @@
 "use client";
-import { Box, Text, Heading, Flex, Separator, Button, useDisclosure } from "@chakra-ui/react";
+import {
+  Box,
+  Text,
+  Heading,
+  Flex,
+  Separator,
+  Button,
+  useDisclosure,
+} from "@chakra-ui/react";
 import { MicroscopeIcon as Microscope } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
@@ -8,6 +16,7 @@ import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
+import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -18,9 +27,8 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
-  
+
   const handleOpen = () => {
-    console.log("Opening drawer for widget:", widget.title, "Generation data:", widget.generation);
     onOpen();
   };
 
@@ -73,14 +81,22 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             </Button>
           </Flex>
         )}
-        {isChartType && <ChartWidget widget={widget} />}
+        {isChartType && (
+          <WidgetErrorBoundary fallbackTitle="Unable to render chart">
+            <ChartWidget widget={widget} />
+          </WidgetErrorBoundary>
+        )}
 
         {widget.type === "table" && (
-          <Box overflowX="auto" maxW="100%">
-            <TableWidget
-              data={widget.data as Record<string, string | number | boolean>[]}
-            />
-          </Box>
+          <WidgetErrorBoundary fallbackTitle="Unable to render table">
+            <Box overflowX="auto" maxW="100%">
+              <TableWidget
+                data={
+                  widget.data as Record<string, string | number | boolean>[]
+                }
+              />
+            </Box>
+          </WidgetErrorBoundary>
         )}
         {showDisclaimer && <VisualizationDisclaimer />}
       </Flex>

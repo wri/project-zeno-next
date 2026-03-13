@@ -1,4 +1,5 @@
 import getChartColors from "./ChartColors";
+import CHART_COLOR_MAPPING from "@/app/config/chartColorMappings";
 
 interface InputData {
   [key: string]: unknown | unknown;
@@ -6,11 +7,6 @@ interface InputData {
 
 interface ChartData {
   [key: string]: unknown;
-}
-
-interface ColorMapEntry {
-  value: string;
-  color: string;
 }
 
 interface ChartSeries {
@@ -28,54 +24,6 @@ interface ChartSeries {
  * @param yAxis The key to use for the y-axis (required for scatter charts).
  * @returns An object containing the transformed `data` and `series` arrays.
  */
-
-//TODO: Generate this from the DATASET_CARDS fixture or move to config
-const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
-  "land_cover_type": [
-    { value: "Tree cover", color: "#246E24" },
-    { value: "Short vegetation", color: "#B9B91E" },
-    { value: "Wetland – short vegetation", color: "#74D6B4" },
-    { value: "Bare and sparse vegetation", color: "#FEFECC" },
-    { value: "Water", color: "#6BAED6" },
-    { value: "Snow/ice", color: "#ACD1E8" },
-    { value: "Cropland", color: "#fff183" },
-    { value: "Cultivated grasslands", color: "#FFCD73" },
-    { value: "Built-up", color: "#e8765d" },
-  ],
-  "land_type": [
-    {value: "Natural forests", color: "#246E24" },
-    { value: "Natural peat forests", color: "#093D09" },
-    { value: "Natural peat short vegetation", color: "#99991A" },
-    { value: "Mangroves", color: "#06A285" },
-    { value: "Wet natural forests", color: "#589558" },
-    { value: "Wet natural short vegetation", color: "#DBDB7B" },
-    { value: "Natural short vegetation", color: "#B9B91E" },
-    { value: "Natural water", color: "#6BAED6" },
-    { value: "Bare", color: "#FEFECC" },
-    { value: "Snow", color: "#ACD1E8" },
-    { value: "Crop", color: "#D3D3D3" },
-    { value: "Built", color: "#D3D3D3" },
-    { value: "Non-natural tree cover", color: "#D3D3D3" },
-    { value: "Non-natural short vegetation", color: "#D3D3D3" },
-    { value: "Wet non-natural tree cover", color: "#D3D3D3" },
-    { value: "Non-natural peat tree cover", color: "#D3D3D3" },
-    { value: "Wet non-natural short vegetation", color: "#D3D3D3" },
-    { value: "Non-natural peat short vegetation", color: "#D3D3D3" },
-    { value: "Non-natural water", color: "#D3D3D3" },
-    { value: "Non-natural bare", color: "#D3D3D3" },
-    { value: "Other", color: "#D3D3D3" }],
-  "driver": [
-    { value: "Logging", color: "#52A44E"},
-    { value: "Shifting cultivation", color: "#E9D700"},
-    { value: "Wildfire", color: "#885128"},
-    { value: "Other natural disturbances", color: "#3B209A"},
-    { value: "Settlements & Infrastructure", color: "#A354A0"},
-    { value: "Hard commodities", color: "#E58074"},
-    { value: "Permanent agriculture", color: "#E39D29"},
-    { value: "Unknown", color: "#D3D3D3"},
-  ]
-
-}
 export default function formatChartData(
   data: InputData[] | unknown,
   type:
@@ -89,18 +37,37 @@ export default function formatChartData(
     | "area"
     | "scatter",
   xAxis?: string,
-  yAxis?: string
+  yAxis?: string,
 ): { data: ChartData[]; series: ChartSeries[] } {
+  const empty = { data: [], series: [] };
+
   if (!Array.isArray(data) || data.length === 0) {
-    return { data: [], series: [] };
+    return empty;
   }
-  
-  const keys = Object.keys(data[0]);
+
+  // Validate that the first element is a non-null object with keys
+  const firstRow = data[0];
+  if (
+    firstRow === null ||
+    firstRow === undefined ||
+    typeof firstRow !== "object" ||
+    Array.isArray(firstRow)
+  ) {
+    console.error("formatChartData: data[0] is not a valid object", firstRow);
+    return empty;
+  }
+
+  const keys = Object.keys(firstRow);
+  if (keys.length === 0) {
+    console.error("formatChartData: data[0] has no keys");
+    return empty;
+  }
+
   const xAxisKey = xAxis || keys[0]; //identify dataset
-  
+
   const defaultColors = getChartColors();
   const chartColors = data.map(
-    (_, index) => defaultColors[index % defaultColors.length]
+    (_, index) => defaultColors[index % defaultColors.length],
   );
 
   // --- Logic for PIE charts ---
@@ -115,7 +82,7 @@ export default function formatChartData(
 
     if (colorPalette) {
       const valueToColorMap = new Map(
-        colorPalette.map((item) => [item.value, item.color])
+        colorPalette.map((item) => [item.value, item.color]),
       );
       pieChartColors = data.map((item, index) => {
         const key = String(item[xAxisKey]);
@@ -139,12 +106,12 @@ export default function formatChartData(
     if (colorPalette) {
       // Create a map for quick color lookup
       const valueToColorMap = new Map(
-        colorPalette.map((item) => [item.value, item.color])
+        colorPalette.map((item) => [item.value, item.color]),
       );
 
       // Create a map for the original data values for sorting
       const dataValueMap = new Map(
-        transformedData.map((item) => [item[xAxisKey], item])
+        transformedData.map((item) => [item[xAxisKey], item]),
       );
 
       // Sort the series based on the order in colorPalette
@@ -168,7 +135,7 @@ export default function formatChartData(
   if (type === "scatter") {
     if (!xAxis || !yAxis) {
       console.error(
-        "Scatter charts require both `xAxis` and `yAxis` props to be provided."
+        "Scatter charts require both `xAxis` and `yAxis` props to be provided.",
       );
       return { data: [], series: [] };
     }
@@ -178,7 +145,7 @@ export default function formatChartData(
 
     if (!nameKey) {
       console.error(
-        "Could not determine the name key for the scatter plot labels."
+        "Could not determine the name key for the scatter plot labels.",
       );
       return { data: [], series: [] };
     }
@@ -233,7 +200,7 @@ export default function formatChartData(
     const otherKeys = keys.filter((key) => key !== xAxisKey);
     if (otherKeys.length < 2) {
       console.error(
-        "Grouped chart data must have at least three columns: an x-axis, a grouping column, and a value column."
+        "Grouped chart data must have at least three columns: an x-axis, a grouping column, and a value column.",
       );
       return { data: [], series: [] };
     }
@@ -250,15 +217,18 @@ export default function formatChartData(
     }));
 
     // Pivot the data from "long" to "wide" format.
-    const pivotedDataMap = data.reduce((acc, item) => {
-      const xAxisValue = String(item[xAxisKey]);
-      const groupValue = String(item[groupKey]);
+    const pivotedDataMap = data.reduce(
+      (acc, item) => {
+        const xAxisValue = String(item[xAxisKey]);
+        const groupValue = String(item[groupKey]);
 
-      acc[xAxisValue] = acc[xAxisValue] || { [xAxisKey]: xAxisValue };
-      (acc[xAxisValue] as ChartData)[groupValue] = item[valueKey];
+        acc[xAxisValue] = acc[xAxisValue] || { [xAxisKey]: xAxisValue };
+        (acc[xAxisValue] as ChartData)[groupValue] = item[valueKey];
 
-      return acc;
-    }, {} as { [key: string]: unknown });
+        return acc;
+      },
+      {} as { [key: string]: unknown },
+    );
 
     return { data: Object.values(pivotedDataMap) as ChartData[], series };
   }
@@ -267,14 +237,54 @@ export default function formatChartData(
   return { data: [], series: [] };
 }
 
+/**
+ * Convert a snake_case or camelCase field name into a readable axis label.
+ * e.g. "area_km2" → "Area (km²)", "tree_cover_loss_ha" → "Tree cover loss (ha)"
+ */
+export const toAxisLabel = (key: string): string => {
+  if (!key) return "";
+
+  // Extract common unit suffixes and format them as parenthetical
+  const unitPatterns: [RegExp, string][] = [
+    [/(_km2|_km²)$/i, "km²"],
+    [/(_ha)$/i, "ha"],
+    [/(_mt|_tonnes|_t)$/i, "t"],
+    [/(_pct|_percent|_%|_percentage)$/i, "%"],
+  ];
+
+  let label = key;
+  let unit = "";
+
+  for (const [pattern, unitStr] of unitPatterns) {
+    if (pattern.test(label)) {
+      label = label.replace(pattern, "");
+      unit = unitStr;
+      break;
+    }
+  }
+
+  // Convert snake_case / camelCase to space-separated words
+  label = label
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .trim();
+
+  // Sentence-case
+  if (label.length > 0) {
+    label = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
+  }
+
+  return unit ? `${label} (${unit})` : label;
+};
+
 // Custom label formatter for X-axis (truncate long names)
 export const formatXAxisLabel = (value: string | number, key?: string) => {
   // Check if the axis key is 'year' to prevent special formatting
   if (key?.toString().toLowerCase() === "year") {
     return value.toString();
   }
-  if (typeof value === "string" && value.length > 10) {
-    return `${value.slice(0, 10)}...`;
+  if (typeof value === "string" && value.length > 14) {
+    return `${value.slice(0, 12)}…`;
   }
   return value;
 };
