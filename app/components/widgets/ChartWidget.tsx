@@ -204,22 +204,45 @@ const CustomPieTooltip = ({
   return null;
 };
 
-export default function ChartWidget({ widget, expanded = false }: ChartWidgetProps) {
+export default function ChartWidget({
+  widget,
+  expanded = false,
+}: ChartWidgetProps) {
   const { data, xAxis, yAxis, type } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
   const { data: formattedData, series } = useMemo(
-    () => formatChartData(data, type, xAxis, yAxis, widget.datasetName),
-    [data, type, xAxis, yAxis, widget.datasetName]
+    () =>
+      xAxis && yAxis
+        ? formatChartData(data, type, xAxis, yAxis, widget.datasetName)
+        : { data: [], series: [] },
+    [data, type, xAxis, yAxis, widget.datasetName],
   );
 
-  const chart = useChart({ data: formattedData, series: series });
+  const chart = useChart({ data: formattedData, series });
 
-  // Compute pie total for percentage display in tooltips
   const pieTotal = useMemo(() => {
     if (type !== "pie" || !yAxis) return 0;
     return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
   }, [type, yAxis, formattedData]);
+
+  if (!xAxis || !yAxis) {
+    return (
+      <Flex
+        align="center"
+        justify="center"
+        minH="120px"
+        border="1px dashed"
+        borderColor="border"
+        borderRadius="md"
+        p={4}
+      >
+        <Text fontSize="sm" color="fg.muted">
+          Chart is missing axis configuration.
+        </Text>
+      </Flex>
+    );
+  }
 
   if (!ChartTypeWrapper || formattedData.length === 0 || series.length === 0) {
     return (
@@ -293,7 +316,9 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
             dataKey={chart.key(item.name)}
             stroke={chart.color(item.color)}
             strokeWidth={2}
-            strokeDasharray={STROKE_DASH_PATTERNS[idx % STROKE_DASH_PATTERNS.length]}
+            strokeDasharray={
+              STROKE_DASH_PATTERNS[idx % STROKE_DASH_PATTERNS.length]
+            }
             isAnimationActive={false}
           />
         ));
@@ -310,7 +335,9 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
             fillOpacity={0.2}
             stroke={chart.color(item.color)}
             strokeWidth={2}
-            strokeDasharray={STROKE_DASH_PATTERNS[idx % STROKE_DASH_PATTERNS.length]}
+            strokeDasharray={
+              STROKE_DASH_PATTERNS[idx % STROKE_DASH_PATTERNS.length]
+            }
             isAnimationActive={false}
           />
         ));
@@ -339,102 +366,114 @@ export default function ChartWidget({ widget, expanded = false }: ChartWidgetPro
     }
   };
 
-  const chartLabel = `${type} chart: ${widget.title || ""}. ${widget.description || ""}`.trim();
+  const chartLabel =
+    `${type} chart: ${widget.title || ""}. ${widget.description || ""}`.trim();
 
   return (
     <Box role="img" aria-label={chartLabel} tabIndex={0}>
-    <Chart.Root maxH={expanded ? "75vh" : "280px"} chart={chart} overflow="hidden">
-      <ChartTypeWrapper data={chart.data}>
-        {type !== "pie" && (
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        )}
-        <Legend
-          content={
-            type === "pie" ? (
-              <CustomPieLegend series={chart.series} />
-            ) : (
-              <Chart.Legend />
-            )
-          }
-          align={type === "pie" ? "right" : "left"}
-          layout={type === "pie" ? "vertical" : "horizontal"}
-          verticalAlign={type === "pie" ? "middle" : "top"}
-          wrapperStyle={{
-            paddingBottom: "0.5rem",
-            maxHeight: "100%",
-            maxWidth: "100%",
-            overflow: "auto",
-          }}
-        />
-        {type !== "pie" && (
-          <>
-            <XAxis
-              dataKey={chart.key(xAxis)}
-              type={type === "scatter" ? "number" : undefined}
-              name={xAxis}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(value: number) =>
-                type === "scatter"
-                  ? String(formatYAxisLabel(value, chart.key(xAxis)))
-                  : String(formatXAxisLabel(value, chart.key(xAxis)))
-              }
-              domain={type === "scatter" ? ["auto", "auto"] : undefined}
-              angle={needsAngledTicks ? -35 : 0}
-              textAnchor={needsAngledTicks ? "end" : "middle"}
-              height={needsAngledTicks ? 90 : 40}
-              interval={0}
-              fontSize={11}
-            >
-              {xAxis && (
-                <Label
-                  value={toAxisLabel(xAxis)}
-                  position="insideBottom"
-                  offset={-5}
-                  style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)" }}
-                />
-              )}
-            </XAxis>
-            <YAxis
-              dataKey={type === "scatter" ? chart.key(yAxis) : undefined}
-              type="number"
-              name={yAxis}
-              tickFormatter={(value: number) =>
-                String(formatYAxisLabel(value, chart.key(yAxis)))
-              }
-              axisLine={false}
-              tickLine={false}
-              domain={["auto", "auto"]}
-            >
-              {yAxis && (
-                <Label
-                  value={toAxisLabel(yAxis)}
-                  angle={-90}
-                  position="insideLeft"
-                  offset={10}
-                  style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)", textAnchor: "middle" }}
-                />
-              )}
-            </YAxis>
-          </>
-        )}
-        <Tooltip
-          cursor={{ fill: "var(--chakra-colors-black-alpha-200)" }}
-          animationDuration={100}
-          wrapperStyle={{ zIndex: 9000 }}
-          content={
-            type === "scatter" ? (
-              <CustomScatterTooltip />
-            ) : type === "pie" ? (
-              <CustomPieTooltip total={pieTotal} />
-            ) : (
-              <Chart.Tooltip />
-            )
-          }
-        />
-        {renderChartItems()}
-      </ChartTypeWrapper>
-    </Chart.Root>
+      <Chart.Root
+        maxH={expanded ? "75vh" : "280px"}
+        chart={chart}
+        overflow="hidden"
+      >
+        <ChartTypeWrapper data={chart.data}>
+          {type !== "pie" && (
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          )}
+          <Legend
+            content={
+              type === "pie" ? (
+                <CustomPieLegend series={chart.series} />
+              ) : (
+                <Chart.Legend />
+              )
+            }
+            align={type === "pie" ? "right" : "left"}
+            layout={type === "pie" ? "vertical" : "horizontal"}
+            verticalAlign={type === "pie" ? "middle" : "top"}
+            wrapperStyle={{
+              paddingBottom: "0.5rem",
+              maxHeight: "100%",
+              maxWidth: "100%",
+              overflow: "auto",
+            }}
+          />
+          {type !== "pie" && (
+            <>
+              <XAxis
+                dataKey={chart.key(xAxis)}
+                type={type === "scatter" ? "number" : undefined}
+                name={xAxis}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(value: number) =>
+                  type === "scatter"
+                    ? String(formatYAxisLabel(value, chart.key(xAxis)))
+                    : String(formatXAxisLabel(value, chart.key(xAxis)))
+                }
+                domain={type === "scatter" ? ["auto", "auto"] : undefined}
+                angle={needsAngledTicks ? -35 : 0}
+                textAnchor={needsAngledTicks ? "end" : "middle"}
+                height={needsAngledTicks ? 90 : 40}
+                interval={0}
+                fontSize={11}
+              >
+                {xAxis && (
+                  <Label
+                    value={toAxisLabel(xAxis)}
+                    position="insideBottom"
+                    offset={-5}
+                    style={{
+                      fontSize: 11,
+                      fill: "var(--chakra-colors-fg-muted)",
+                    }}
+                  />
+                )}
+              </XAxis>
+              <YAxis
+                dataKey={type === "scatter" ? chart.key(yAxis) : undefined}
+                type="number"
+                name={yAxis}
+                tickFormatter={(value: number) =>
+                  String(formatYAxisLabel(value, chart.key(yAxis)))
+                }
+                axisLine={false}
+                tickLine={false}
+                domain={["auto", "auto"]}
+              >
+                {yAxis && (
+                  <Label
+                    value={toAxisLabel(yAxis)}
+                    angle={-90}
+                    position="insideLeft"
+                    offset={10}
+                    style={{
+                      fontSize: 11,
+                      fill: "var(--chakra-colors-fg-muted)",
+                      textAnchor: "middle",
+                    }}
+                  />
+                )}
+              </YAxis>
+            </>
+          )}
+          <Tooltip
+            cursor={{ fill: "var(--chakra-colors-black-alpha-200)" }}
+            animationDuration={100}
+            wrapperStyle={{ zIndex: 9000 }}
+            content={
+              type === "scatter" ? (
+                <CustomScatterTooltip />
+              ) : type === "pie" ? (
+                <CustomPieTooltip total={pieTotal} />
+              ) : (
+                <Chart.Tooltip />
+              )
+            }
+          />
+          {renderChartItems()}
+        </ChartTypeWrapper>
+      </Chart.Root>
     </Box>
   );
 }

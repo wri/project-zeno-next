@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { ChatContextType } from "@/app/components/ContextButton";
 import useMapStore from "./mapStore";
+import type { AOISelection } from "@/app/types/chat";
 
 export interface ContextItem {
   id: string;
@@ -16,6 +17,8 @@ export interface ContextItem {
     subtype?: string;
     source?: string;
   };
+  // For multi-AOI context, store the full selection (name + list of AOIs)
+  aoiSelection?: AOISelection;
   dateRange?: {
     start: Date;
     end: Date;

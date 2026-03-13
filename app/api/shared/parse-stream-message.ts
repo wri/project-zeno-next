@@ -31,6 +31,7 @@ export function parseStreamMessage(
       type: "human",
       text: content as string,
       aoi: langChainMessage.aoi || undefined,
+      aoi_selection: langChainMessage.aoi_selection || undefined,
       timestamp: timestamp.toISOString(),
       start_date: langChainMessage.start_date,
       end_date: langChainMessage.end_date,
@@ -63,6 +64,7 @@ export function parseStreamMessage(
       source_urls: langChainMessage.source_urls || [],
       insight_count: langChainMessage.insight_count || 0,
       aoi: langChainMessage.aoi || undefined,
+      aoi_selection: langChainMessage.aoi_selection || undefined,
       timestamp: timestamp.toISOString(),
       trace_id: traceId,
     };

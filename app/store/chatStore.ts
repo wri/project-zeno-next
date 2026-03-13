@@ -149,7 +149,10 @@ async function processStreamMessage(
       return;
     }
     // Special handling for pick_aoi tool (previously location-tool)
-    else if (streamMessage.name === "pick_aoi" && streamMessage.aoi) {
+    else if (
+      streamMessage.name === "pick_aoi" &&
+      (streamMessage.aoi_selection || streamMessage.aoi)
+    ) {
       // Non-blocking: geometry fetch can be slow; don't stall stream
       void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
       return;
@@ -224,23 +227,29 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const ui_context: UiContext = {};
 
     // Find area context and convert to aoi_selected format
+    // Supports both single-AOI (aoiData) and multi-AOI (aoiSelection)
     const areaContext = newContext.find(
-      (ctx) => ctx.contextType === "area" && ctx.aoiData
+      (ctx) => ctx.contextType === "area" && (ctx.aoiData || ctx.aoiSelection)
     );
-    if (areaContext && areaContext.aoiData) {
-      ui_context.aoi_selected = {
-        aoi: {
-          name: areaContext.aoiData.name,
-          gadm_id: areaContext.aoiData.gadm_id,
-          src_id: areaContext.aoiData.src_id,
-          subtype: areaContext.aoiData.subtype,
-          source: areaContext.aoiData.source,
-        },
-        aoi_name: areaContext.aoiData.name,
-        subregion_aois: null,
-        subregion: null,
-        subtype: areaContext.aoiData.subtype,
-      };
+    if (areaContext) {
+      // Use aoiSelection's first AOI if available, otherwise fall back to aoiData
+      const firstAoi = areaContext.aoiSelection?.aois?.[0];
+      const aoiData = areaContext.aoiData;
+      const aoi = firstAoi ?? aoiData;
+
+      if (aoi) {
+        ui_context.aoi_selected = {
+          aoi: {
+            name: aoi.name,
+            gadm_id: aoiData?.gadm_id,
+            src_id: aoi.src_id,
+            subtype: aoi.subtype,
+            source: aoi.source,
+          },
+          aoi_name: areaContext.aoiSelection?.name ?? aoi.name,
+          subtype: aoi.subtype,
+        };
+      }
     }
 
     const dateContext = newContext.find((ctx) => ctx.contextType === "date");
@@ -478,18 +487,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             const streamMessage: StreamMessage = JSON.parse(data);
 
             if (streamMessage.type === "human") {
-              if (streamMessage.aoi) {
-                const aoi = streamMessage.aoi as {
-                  name: string;
-                  gadm_id: string;
-                  src_id: string;
-                  subtype: string;
-                };
-                upsertContextByType({
-                  contextType: "area",
-                  content: aoi.name,
-                  aoiData: aoi,
-                });
+              if (streamMessage.aoi_selection || streamMessage.aoi) {
+                // pickAoiTool handles context upsert with aoiSelection,
+                // so we just call it and let it set context properly
                 await pickAoiTool(streamMessage, addMessage);
               }
 

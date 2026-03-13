@@ -18,11 +18,30 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
   const [sortDir, setSortDir] = useState<SortDir>(null);
   const [page, setPage] = useState(0);
 
+  const sortedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    if (!sortKey || !sortDir) return data;
+    return [...data].sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      if (aVal === bVal) return 0;
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+      const cmp =
+        typeof aVal === "number" && typeof bVal === "number"
+          ? aVal - bVal
+          : String(aVal).localeCompare(String(bVal));
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [data, sortKey, sortDir]);
+
+  if (!data || data.length === 0) return null;
+
   const headers = Object.keys(data[0]);
 
   // Helper function to format numeric values
   const formatValue = (
-    value: string | number | boolean
+    value: string | number | boolean,
   ): string | number | boolean => {
     return typeof value === "number"
       ? new Intl.NumberFormat("en-US").format(value)
@@ -43,22 +62,6 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
     }
     setPage(0);
   };
-
-  const sortedData = useMemo(() => {
-    if (!sortKey || !sortDir) return data;
-    return [...data].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      if (aVal === bVal) return 0;
-      if (aVal === null || aVal === undefined) return 1;
-      if (bVal === null || bVal === undefined) return -1;
-      const cmp =
-        typeof aVal === "number" && typeof bVal === "number"
-          ? aVal - bVal
-          : String(aVal).localeCompare(String(bVal));
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-  }, [data, sortKey, sortDir]);
 
   const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
   const needsPagination = sortedData.length > PAGE_SIZE;
@@ -124,7 +127,7 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
           {pageData.map(
             (
               row: Record<string, string | number | boolean>,
-              rowIndex: number
+              rowIndex: number,
             ) => (
               <Table.Row key={page * PAGE_SIZE + rowIndex} bg="transparent">
                 {headers.map((key: string, cellIndex: number) => {
@@ -159,7 +162,7 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
                   );
                 })}
               </Table.Row>
-            )
+            ),
           )}
         </Table.Body>
       </Table.Root>
