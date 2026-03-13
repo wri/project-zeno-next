@@ -3,9 +3,10 @@ import { Badge, Box, Table } from "@chakra-ui/react";
 
 interface TableWidgetProps {
   data: Record<string, string | number | boolean>[];
+  caption?: string;
 }
 
-export default function TableWidget({ data }: TableWidgetProps) {
+export default function TableWidget({ data, caption }: TableWidgetProps) {
   // Helper function to format numeric values
   const formatValue = (
     value: string | number | boolean,
@@ -18,7 +19,25 @@ export default function TableWidget({ data }: TableWidgetProps) {
   const headers = Object.keys(data[0]);
   return (
     <Box>
-      <Table.Root variant="line" striped bg="transparent" size="sm">
+      <Table.Root
+        variant="line"
+        striped
+        bg="transparent"
+        size="sm"
+        aria-label={caption || "Data table"}
+      >
+        {caption && (
+          <Table.Caption
+            captionSide="top"
+            textAlign="left"
+            mt={0}
+            mb={2}
+            fontSize="xs"
+            color="fg.muted"
+          >
+            {caption}
+          </Table.Caption>
+        )}
         <Table.Header>
           <Table.Row>
             {data &&
@@ -29,6 +48,7 @@ export default function TableWidget({ data }: TableWidgetProps) {
                   color="neutral.500"
                   fontWeight="normal"
                   whiteSpace="pre"
+                  scope="col"
                 >
                   {toSentenceCase(key)}
                 </Table.ColumnHeader>
