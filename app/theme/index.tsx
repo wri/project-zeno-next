@@ -25,6 +25,10 @@ export const config = defineConfig({
         from: { width: "0%" },
         to: { width: "100%" },
       },
+      shimmer: {
+        "0%": { backgroundPositionX: "100%" },
+        "100%": { backgroundPositionX: "-100%" },
+      },
       dynamicSlideLeft: {
         from: {
           transform: "translateX(var(--start-x))",
@@ -125,6 +129,7 @@ export const config = defineConfig({
       },
       animations: {
         fillWidth: { value: "fillWidth 10s linear infinite" },
+        shimmer: { value: "shimmer 1.5s infinite" },
       },
       gradients: {
         LCLGradientLight: {

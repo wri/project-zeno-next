@@ -8,6 +8,7 @@ import {
   StreamMessage,
   QueryType,
   UiContext,
+  ToolStepData,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/shared/read-data-stream";
@@ -28,8 +29,9 @@ interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
-  toolSteps: string[];
+  toolSteps: ToolStepData[];
   pendingTraceId: string | null;
+  reasoningStartTime: number | null; // Timestamp when reasoning started
 }
 
 interface ChatActions {
@@ -47,8 +49,9 @@ interface ChatActions {
     threadId: string,
     abortController?: AbortController
   ) => Promise<void>;
-  addToolStep: (toolName: string) => void;
+  addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
+  attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
 }
 
 const initialState: ChatState = {
@@ -69,13 +72,14 @@ const initialState: ChatState = {
   currentThreadId: null,
   toolSteps: [],
   pendingTraceId: null,
+  reasoningStartTime: null,
 };
 
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void,
-  addToolStep: (toolName: string) => void,
+  addToolStep: (toolData: StreamMessage) => void,
   getPendingTraceId: () => string | null,
   setPendingTraceId: (traceId: string | null) => void,
   attachTraceToLastAssistant: (traceId: string) => boolean
@@ -137,7 +141,7 @@ async function processStreamMessage(
   } else if (streamMessage.type === "tool") {
     // Add tool step to reasoning display
     if (streamMessage.name) {
-      addToolStep(streamMessage.name);
+      addToolStep(streamMessage);
     }
 
     // Special handling for generate_insights tool
@@ -220,6 +224,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
+    set({ reasoningStartTime: Date.now() });
     setLoading(true);
 
     // Build ui_context from current context
@@ -429,6 +434,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
     } finally {
       clearTimeout(timeoutId);
+      
+      // Attach tool steps to the user message before clearing loading state
+      const { attachToolStepsToLastUserMessage } = get();
+      attachToolStepsToLastUserMessage();
+      
       setLoading(false);
 
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
@@ -438,13 +448,57 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  addToolStep: (toolName: string) => {
+  addToolStep: (toolData: StreamMessage) => {
     set((state) => ({
-      toolSteps: [...state.toolSteps, toolName],
+      toolSteps: [
+        ...state.toolSteps,
+        {
+          name: toolData.name || "unknown",
+          content: toolData.content,
+          dataset: toolData.dataset,
+          insights: toolData.insights,
+          charts_data: toolData.charts_data,
+          codeact_parts: toolData.codeact_parts,
+          source_urls: toolData.source_urls,
+          aoi: toolData.aoi,
+          timestamp: toolData.timestamp,
+        },
+      ],
     }));
   },
 
   clearToolSteps: () => set({ toolSteps: [] }),
+
+  attachToolStepsToLastUserMessage: (durationOverride?: number) => {
+    set((state) => {
+      if (state.toolSteps.length === 0) return state;
+
+      // Find the last user message
+      const messages = [...state.messages];
+      let duration: number;
+
+      if (durationOverride !== undefined) {
+        duration = durationOverride;
+      } else if (state.reasoningStartTime) {
+        duration = (Date.now() - state.reasoningStartTime) / 1000;
+      } else {
+        duration = 0;
+      }
+
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].type === "user") {
+          // Attach current tool steps and duration to this message
+          messages[i] = {
+            ...messages[i],
+            toolSteps: [...state.toolSteps],
+            reasoningDuration: duration,
+          };
+          break;
+        }
+      }
+      return { messages, reasoningStartTime: null };
+    });
+  },
 
   fetchThread: async (threadId: string, abort?: AbortController) => {
     const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
@@ -452,6 +506,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
+    set({ reasoningStartTime: Date.now() });
     setLoading(true);
     // Set up abort controller for client-side timeout
     const abortController = abort || new AbortController();
@@ -487,6 +542,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             const streamMessage: StreamMessage = JSON.parse(data);
 
             if (streamMessage.type === "human") {
+              // Flush accumulated tool steps for the previous user message,
+              // computing duration from the tool steps' own timestamps
+              const currentToolSteps = get().toolSteps;
+              if (currentToolSteps.length > 0) {
+                const first = new Date(currentToolSteps[0].timestamp).getTime();
+                const last = new Date(currentToolSteps[currentToolSteps.length - 1].timestamp).getTime();
+                const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+                get().attachToolStepsToLastUserMessage(historicalDuration);
+                get().clearToolSteps();
+              }
+
               if (streamMessage.aoi_selection || streamMessage.aoi) {
                 // pickAoiTool handles context upsert with aoiSelection,
                 // so we just call it and let it set context properly
@@ -587,6 +653,16 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
+
+      // Flush any remaining tool steps for the last user message
+      const finalToolSteps = get().toolSteps;
+      if (finalToolSteps.length > 0) {
+        const first = new Date(finalToolSteps[0].timestamp).getTime();
+        const last = new Date(finalToolSteps[finalToolSteps.length - 1].timestamp).getTime();
+        const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+        get().attachToolStepsToLastUserMessage(historicalDuration);
+      }
+
       setLoading(false);
     }
   },

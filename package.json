@@ -12,7 +12,7 @@
   "dependencies": {
     "@ark-ui/react": "^5.18.3",
     "@chakra-ui/charts": "^3.22.0",
-    "@chakra-ui/react": "^3.19.1",
+    "@chakra-ui/react": "^3.31.0",
     "@fontsource/ibm-plex-mono": "^5.2.5",
     "@fontsource/ibm-plex-sans": "^5.2.5",
     "@next/third-parties": "^15.5.1",
