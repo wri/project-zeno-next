@@ -204,6 +204,22 @@ const CustomPieTooltip = ({
 
 export default function ChartWidget({ widget }: ChartWidgetProps) {
   const { data, xAxis, yAxis, type } = widget;
+  const ChartTypeWrapper = chartWrappers[type as ChartType];
+
+  const { data: formattedData, series } = useMemo(
+    () =>
+      xAxis && yAxis
+        ? formatChartData(data, type, xAxis, yAxis)
+        : { data: [], series: [] },
+    [data, type, xAxis, yAxis],
+  );
+
+  const chart = useChart({ data: formattedData, series });
+
+  const pieTotal = useMemo(() => {
+    if (type !== "pie" || !yAxis) return 0;
+    return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
+  }, [type, yAxis, formattedData]);
 
   if (!xAxis || !yAxis) {
     return (
@@ -222,21 +238,6 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
       </Flex>
     );
   }
-
-  const ChartTypeWrapper = chartWrappers[type as ChartType];
-
-  const { data: formattedData, series } = useMemo(
-    () => formatChartData(data, type, xAxis, yAxis),
-    [data, type, xAxis, yAxis],
-  );
-
-  const chart = useChart({ data: formattedData, series: series });
-
-  // Compute pie total for percentage display in tooltips
-  const pieTotal = useMemo(() => {
-    if (type !== "pie" || !yAxis) return 0;
-    return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
-  }, [type, yAxis, formattedData]);
 
   if (!ChartTypeWrapper || formattedData.length === 0 || series.length === 0) {
     return (
