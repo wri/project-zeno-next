@@ -46,7 +46,6 @@ const SUPPORT_TABS = [
 export default function SupportWorkTabsSection() {
   return (
     <Box
-      id="about"
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       bg="linear-gradient(0deg, rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.64) 85%), url(/landing-bg-image2.webp) lightgray 50% / cover no-repeat"

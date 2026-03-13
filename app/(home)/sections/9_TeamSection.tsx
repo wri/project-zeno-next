@@ -11,7 +11,6 @@ import {
 export default function TeamSection() {
   return (
     <Box
-      id="about"
       py={{ base: 14, md: 24 }}
       pb={{ base: 14, md: 28 }}
       borderBlockEnd="1px solid"

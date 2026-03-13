@@ -208,17 +208,37 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
   const { data: formattedData, series } = useMemo(
-    () => formatChartData(data, type, xAxis, yAxis),
-    [data, type, xAxis, yAxis]
+    () =>
+      xAxis && yAxis
+        ? formatChartData(data, type, xAxis, yAxis)
+        : { data: [], series: [] },
+    [data, type, xAxis, yAxis],
   );
 
-  const chart = useChart({ data: formattedData, series: series });
+  const chart = useChart({ data: formattedData, series });
 
-  // Compute pie total for percentage display in tooltips
   const pieTotal = useMemo(() => {
     if (type !== "pie" || !yAxis) return 0;
     return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
   }, [type, yAxis, formattedData]);
+
+  if (!xAxis || !yAxis) {
+    return (
+      <Flex
+        align="center"
+        justify="center"
+        minH="120px"
+        border="1px dashed"
+        borderColor="border"
+        borderRadius="md"
+        p={4}
+      >
+        <Text fontSize="sm" color="fg.muted">
+          Chart is missing axis configuration.
+        </Text>
+      </Flex>
+    );
+  }
 
   if (!ChartTypeWrapper || formattedData.length === 0 || series.length === 0) {
     return (
@@ -385,7 +405,10 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
                   value={toAxisLabel(xAxis)}
                   position="insideBottom"
                   offset={-5}
-                  style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)" }}
+                  style={{
+                    fontSize: 11,
+                    fill: "var(--chakra-colors-fg-muted)",
+                  }}
                 />
               )}
             </XAxis>
@@ -406,7 +429,11 @@ export default function ChartWidget({ widget }: ChartWidgetProps) {
                   angle={-90}
                   position="insideLeft"
                   offset={10}
-                  style={{ fontSize: 11, fill: "var(--chakra-colors-fg-muted)", textAnchor: "middle" }}
+                  style={{
+                    fontSize: 11,
+                    fill: "var(--chakra-colors-fg-muted)",
+                    textAnchor: "middle",
+                  }}
                 />
               )}
             </YAxis>

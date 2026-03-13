@@ -15,6 +15,7 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
       ? new Intl.NumberFormat("en-US").format(value)
       : value;
   };
+  if (!data || data.length === 0) return null;
   const headers = Object.keys(data[0]);
   return (
     <Box>
