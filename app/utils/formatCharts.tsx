@@ -1,5 +1,8 @@
 import getChartColors from "./ChartColors";
-import CHART_COLOR_MAPPING from "@/app/config/chartColorMappings";
+import CHART_COLOR_MAPPING, {
+  DATASET_SERIES_COLORS,
+  DATASET_DIVERGENT_COLORS,
+} from "@/app/config/chartColorMappings";
 
 interface InputData {
   [key: string]: unknown | unknown;
@@ -38,6 +41,7 @@ export default function formatChartData(
     | "scatter",
   xAxis?: string,
   yAxis?: string,
+  datasetName?: string,
 ): { data: ChartData[]; series: ChartSeries[] } {
   const empty = { data: [], series: [] };
 
@@ -156,10 +160,13 @@ export default function formatChartData(
       name: item[nameKey],
     }));
 
+    const datasetColor = datasetName
+      ? DATASET_SERIES_COLORS[datasetName]
+      : undefined;
     const series: ChartSeries[] = [
       {
         name: nameKey, // The series name can be derived from the label key
-        color: defaultColors[0],
+        color: datasetColor || defaultColors[0],
       },
     ];
 
@@ -179,11 +186,34 @@ export default function formatChartData(
     }
 
     // Single series
+    const divergent = datasetName
+      ? DATASET_DIVERGENT_COLORS[datasetName]
+      : undefined;
+    const datasetColor = datasetName
+      ? DATASET_SERIES_COLORS[datasetName]
+      : undefined;
+
+    // For bar charts with divergent colors, add per-bar _barColor based on value sign
+    if (type === "bar" && divergent && valueKeys.length === 1) {
+      const yKey = valueKeys[0];
+      const coloredData = (data as ChartData[]).map((item) => {
+        const val = Number(item[yKey]);
+        return {
+          ...item,
+          _barColor: val < 0 ? divergent.negative : divergent.positive,
+        };
+      });
+      const series: ChartSeries[] = [{ name: yKey, color: divergent.positive }];
+      return { data: coloredData, series };
+    }
+
+    // For line/area with divergent dataset, use the positive color as single series color
+    const seriesColor = divergent?.positive || datasetColor || defaultColors[0];
     const series: ChartSeries[] = valueKeys.length
       ? [
           {
             name: valueKeys[0],
-            color: defaultColors[0],
+            color: seriesColor,
           },
         ]
       : [];
