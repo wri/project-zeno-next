@@ -36,7 +36,7 @@ interface Metadata {
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { upsertContextByType } = useContextStore();
-  const { addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
+  const { addGeoJsonFeature, addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -131,6 +131,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 name: aoiName,
                 data: sourceFeatures[0],
               });
+              addToRegistry({ ref: { name: aoiName, source: layerId }, data: sourceFeatures[0] });
+              addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
             } else if (sourceFeatures.length > 1) {
               const collection: FeatureCollection<
                 Polygon | MultiPolygon,
@@ -149,6 +151,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                   name: aoiName,
                   data: f,
                 });
+                addToRegistry({ ref: { name: aoiName, source: layerId }, data: f });
+                addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
               }
             }
             // Extract AOI data for ui_context
@@ -211,6 +215,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     metadata,
     upsertContextByType,
     addGeoJsonFeature,
+    addToRegistry,
+    addLayer,
     layerId,
     url,
   ]);

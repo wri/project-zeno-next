@@ -27,6 +27,8 @@ function UploadAreaDialog() {
     isFileSelected,
     setCreateAreaFn,
     addGeoJsonFeature,
+    addToRegistry,
+    addLayer,
     flyToGeoJson,
   } = useMapStore();
   const { addContext } = useContextStore();
@@ -57,12 +59,13 @@ function UploadAreaDialog() {
         },
       };
 
-      // Add feature to the all features list to be highlighted on the map
       addGeoJsonFeature({
         id: id,
         name: name,
         data: feat,
       });
+      addToRegistry({ ref: { name, source: "custom" }, data: feat });
+      addLayer({ id, name, type: "geojson", visible: true, featureRefs: [{ name, source: "custom" }] });
 
       addContext({
         contextType: "area",
