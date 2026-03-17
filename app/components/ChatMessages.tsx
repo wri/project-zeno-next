@@ -9,13 +9,19 @@ import ChatDisclaimer from "./ChatDisclaimer";
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastUserMessageRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, toolSteps: currentToolSteps } = useChatStore();
   const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
   const shouldAutoScroll = useRef(true);
 
   const scrollToBottom = () => {
     const parent = containerRef.current?.parentElement;
-    if (parent) parent.scrollTop = parent.scrollHeight;
+    if (!parent) return;
+    // Exclude the spacer from the scroll target so auto-scroll lands at the
+    // bottom of real content, not the bottom of blank space.
+    const spacerHeight = spacerRef.current?.offsetHeight ?? 0;
+    parent.scrollTop = parent.scrollHeight - spacerHeight;
   };
 
   // Track whether the user has manually scrolled away from the bottom
@@ -32,10 +38,26 @@ function ChatMessages() {
     return () => parent.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Always scroll to bottom on new messages or loading state changes
+  // Scroll user message to top on send; scroll to bottom for AI streaming
   useEffect(() => {
-    shouldAutoScroll.current = true;
-    scrollToBottom();
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.type === "user" && lastUserMessageRef.current) {
+      // Pin user message to top. Do NOT re-enable shouldAutoScroll here — the
+      // ResizeObserver would otherwise immediately fire scrollToBottom() when
+      // the 60vh spacer is added, overriding this scroll.
+      shouldAutoScroll.current = false;
+      const parent = containerRef.current?.parentElement;
+      if (parent) {
+        const parentRect = parent.getBoundingClientRect();
+        const msgRect = lastUserMessageRef.current.getBoundingClientRect();
+        parent.scrollTop += msgRect.top - parentRect.top - 16;
+      }
+    } else {
+      // AI streaming or loading state change — re-enable auto-scroll and chase
+      // the bottom as new content streams in.
+      shouldAutoScroll.current = true;
+      scrollToBottom();
+    }
   }, [messages, isLoading]);
 
   // Scroll on content resize only if the user hasn't scrolled away
@@ -52,7 +74,7 @@ function ChatMessages() {
 
   // Show reasoning after the last user message when loading
   const lastUserMessageIndex = messages.findLastIndex(
-    (msg) => msg.type === "user"
+    (msg) => msg.type === "user",
   );
 
   return (
@@ -62,8 +84,11 @@ function ChatMessages() {
         const previousMessage = index > 0 ? messages[index - 1] : null;
         const isConsecutive = previousMessage?.type === message.type;
         const isFirst = index === 0;
+        const isLastUserMessage =
+          index === lastUserMessageIndex && message.type === "user";
         return (
           <Fragment key={message.id}>
+            {isLastUserMessage && <Box ref={lastUserMessageRef} />}
             {isFirst && displayDisclaimer && (
               <ChatDisclaimer
                 type="info"
@@ -74,13 +99,15 @@ function ChatMessages() {
                     <strong>Global Nature Watch preview</strong>
                   </Text>
                   <Text mb={{ base: 1, md: 2 }}>
-                    You&apos;re using a preview version that&apos;s still under active development.
-                    You may encounter errors or incomplete results, so verify results with primary sources.
-                    Features, datasets, and assistant behavior may change or be removed as we iterate.
+                    You&apos;re using a preview version that&apos;s still under
+                    active development. You may encounter errors or incomplete
+                    results, so verify results with primary sources. Features,
+                    datasets, and assistant behavior may change or be removed as
+                    we iterate.
                   </Text>
                   <Text>
-                    By using this preview, you&apos;re helping shape the future of Global Nature Watch.
-                    Share feedback via{" "}
+                    By using this preview, you&apos;re helping shape the future
+                    of Global Nature Watch. Share feedback via{" "}
                     <Link
                       color="primary.solid"
                       textDecor="underline"
@@ -95,8 +122,7 @@ function ChatMessages() {
                       href="mailto:landcarbonlab@wri.org"
                     >
                       landcarbonlab@wri.org
-                    </Link>
-                    {" "}
+                    </Link>{" "}
                     Visit the{" "}
                     <Link
                       color="primary.solid"
@@ -125,8 +151,8 @@ function ChatMessages() {
                 )}
                 {/* Show reasoning for completed queries (user messages with toolSteps) */}
                 {message.toolSteps && message.toolSteps.length > 0 && (
-                  <Reasoning 
-                    toolSteps={message.toolSteps} 
+                  <Reasoning
+                    toolSteps={message.toolSteps}
                     isLoading={false}
                     reasoningDuration={message.reasoningDuration}
                   />
@@ -135,12 +161,11 @@ function ChatMessages() {
             )}
 
             {/* Prompt options for first message, removed when sent */}
-            {messages.length < 2 && (
-              <SamplePrompts />
-            )}
+            {messages.length < 2 && <SamplePrompts />}
           </Fragment>
         );
       })}
+      {isLoading && <Box ref={spacerRef} height="100vh" />}
     </Box>
   );
 }
