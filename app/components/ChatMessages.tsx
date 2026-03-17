@@ -15,36 +15,41 @@ function ChatMessages() {
   const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
   const shouldAutoScroll = useRef(true);
 
+  // Scroll to the bottom of real content, ignoring the blank spacer.
   const scrollToBottom = () => {
     const parent = containerRef.current?.parentElement;
     if (!parent) return;
-    // Exclude the spacer from the scroll target so auto-scroll lands at the
-    // bottom of real content, not the bottom of blank space.
     const spacerHeight = spacerRef.current?.offsetHeight ?? 0;
-    parent.scrollTop = parent.scrollHeight - spacerHeight;
+    parent.scrollTop = Math.max(
+      0,
+      parent.scrollHeight - spacerHeight - parent.clientHeight,
+    );
   };
 
-  // Track whether the user has manually scrolled away from the bottom
+  // Track whether the user has manually scrolled away from the bottom.
+  // Subtract spacer height so the spacer doesn't inflate the distance-to-bottom
+  // and falsely mark the user as having scrolled away.
   useEffect(() => {
     const parent = containerRef.current?.parentElement;
     if (!parent) return;
 
     const handleScroll = () => {
+      const spacerHeight = spacerRef.current?.offsetHeight ?? 0;
       const { scrollTop, scrollHeight, clientHeight } = parent;
-      shouldAutoScroll.current = scrollHeight - scrollTop - clientHeight < 100;
+      shouldAutoScroll.current =
+        scrollHeight - spacerHeight - scrollTop - clientHeight < 100;
     };
 
     parent.addEventListener("scroll", handleScroll);
     return () => parent.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Scroll user message to top on send; scroll to bottom for AI streaming
+  // Pin user message to top on send; re-enable auto-scroll when AI arrives.
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.type === "user" && lastUserMessageRef.current) {
-      // Pin user message to top. Do NOT re-enable shouldAutoScroll here — the
-      // ResizeObserver would otherwise immediately fire scrollToBottom() when
-      // the 60vh spacer is added, overriding this scroll.
+      // Lock the viewport at the user message. ResizeObserver is suppressed
+      // (shouldAutoScroll=false) so the spacer addition doesn't scroll us away.
       shouldAutoScroll.current = false;
       const parent = containerRef.current?.parentElement;
       if (parent) {
@@ -53,19 +58,27 @@ function ChatMessages() {
         parent.scrollTop += msgRect.top - parentRect.top - 16;
       }
     } else {
-      // AI streaming or loading state change — re-enable auto-scroll and chase
-      // the bottom as new content streams in.
+      // AI has started or loading ended — re-enable auto-scroll.
+      // Don't call scrollToBottom here; the ResizeObserver will trigger it
+      // once AI content actually overflows the viewport.
       shouldAutoScroll.current = true;
-      scrollToBottom();
     }
   }, [messages, isLoading]);
 
-  // Scroll on content resize only if the user hasn't scrolled away
+  // Scroll on content resize — but only once AI content has grown past the
+  // visible fold. This lets messages fill the blank space before scrolling.
   useEffect(() => {
     if (!containerRef.current) return;
 
     const observer = new ResizeObserver(() => {
-      if (shouldAutoScroll.current) scrollToBottom();
+      const parent = containerRef.current?.parentElement;
+      if (!parent || !shouldAutoScroll.current) return;
+      const spacerHeight = spacerRef.current?.offsetHeight ?? 0;
+      const contentBottom = parent.scrollHeight - spacerHeight;
+      const viewportBottom = parent.scrollTop + parent.clientHeight;
+      if (contentBottom > viewportBottom) {
+        scrollToBottom();
+      }
     });
     observer.observe(containerRef.current);
 
