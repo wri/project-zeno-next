@@ -65,10 +65,7 @@ function Reasoning({
         justifyContent="flex-start"
         alignItems="center"
         gap="2"
-        border="1px solid"
-        borderColor="border"
         mb={4}
-        rounded="md"
         p={2}
         px={3}
       >
@@ -107,10 +104,7 @@ function Reasoning({
       <Collapsible.Root
         open={isOpen}
         onOpenChange={(e) => setIsOpen(e.open)}
-        border="1px solid"
-        borderColor="border.emphasized"
         mb={4}
-        rounded="md"
         p={2}
         px={3}
       >
@@ -169,9 +163,7 @@ function Reasoning({
                               <Heading as="h3" size="xs" mb={2} {...props} />
                             </>
                           ),
-                          p: ({ ...props }) => (
-                            <Text mb={2} {...props} />
-                          ),
+                          p: ({ ...props }) => <Text mb={2} {...props} />,
                           br: () => <Box h={2} />, // Add spacing for line breaks
                         }}
                       >
