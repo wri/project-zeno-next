@@ -6,6 +6,7 @@ import {
   IconButton,
   Popover,
   Portal,
+  Collapsible,
 } from "@chakra-ui/react";
 import {
   InfoIcon,
@@ -13,18 +14,24 @@ import {
   EyeClosedIcon,
   XIcon,
   CircleHalfIcon,
+  CaretDownIcon,
 } from "@phosphor-icons/react";
 import { OpacityControl } from "./OpacityControl";
 import type { LegendLayer, LayerActionHandler } from "./types";
 
 /**
  * LayerEntry component displaying details, controls, and legend swatches for a
- * map layer.
+ * map layer. Accordion-style: collapsed shows title + controls, expanded shows
+ * symbology and notes.
  *
  * @param props - LegendLayer properties and onLayerAction callback.
  */
 export function LayerEntry(
-  props: LegendLayer & { onLayerAction: LayerActionHandler }
+  props: LegendLayer & {
+    onLayerAction: LayerActionHandler;
+    expanded?: boolean;
+    onToggleExpand?: () => void;
+  }
 ) {
   const {
     id,
@@ -36,15 +43,42 @@ export function LayerEntry(
     opacity,
     onLayerAction,
     info,
+    expanded = false,
+    onToggleExpand,
   } = props;
+
   return (
-    <Flex flexDir="column" gap={2} pr={4} w="100%" fontFamily="body" lineHeight="shorter">
-      <Flex justifyContent="space-between" gap={2} alignItems="center" mr={-4}>
-        <Flex gap={1} alignItems="center" fontSize="sm">
-          <Heading as="h3" size="sm" m={0}>
+    <Flex flexDir="column" w="100%" minW={0} fontFamily="body" lineHeight="shorter">
+      {/* Header row — always visible */}
+      <Flex justifyContent="space-between" gap={1} alignItems="center">
+        {/* Clickable title area to toggle accordion */}
+        <Flex
+          gap={1}
+          alignItems="center"
+          fontSize="sm"
+          cursor="pointer"
+          onClick={onToggleExpand}
+          flex={1}
+          minW={0}
+        >
+          <IconButton
+            variant="ghost"
+            size="xs"
+            p={0}
+            minW="14px"
+            h="14px"
+            pointerEvents="none"
+            css={{
+              transform: expanded ? "rotate(0deg)" : "rotate(-90deg)",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            <CaretDownIcon size={12} />
+          </IconButton>
+          <Heading as="h3" size="sm" m={0} truncate>
             {title}{" "}
             {dateRange && (
-              <Text as="span" fontWeight="normal">
+              <Text as="span" fontWeight="normal" color="fg.muted">
                 {dateRange}
               </Text>
             )}
@@ -54,6 +88,7 @@ export function LayerEntry(
           variant="ghost"
           size="xs"
           gap={0}
+          flexShrink={0}
           css={{
             "& button": {
               h: 6,
@@ -115,8 +150,16 @@ export function LayerEntry(
           </IconButton>
         </ButtonGroup>
       </Flex>
-      {symbology}
-      {children}
+
+      {/* Collapsible body — symbology + notes */}
+      <Collapsible.Root open={expanded}>
+        <Collapsible.Content css={{ transition: "height 0.15s ease" }}>
+          <Flex flexDir="column" gap={2} pt={2} pr={4}>
+            {symbology}
+            {children}
+          </Flex>
+        </Collapsible.Content>
+      </Collapsible.Root>
     </Flex>
   );
 }
