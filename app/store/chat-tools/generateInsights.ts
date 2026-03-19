@@ -17,6 +17,8 @@ export function generateInsightsTool(
   try {
     // Handle charts_data from streamMessage
     if (streamMessage.charts_data && Array.isArray(streamMessage.charts_data)) {
+      const datasetName = (streamMessage.dataset as { dataset_name?: string })?.dataset_name;
+
       const widgets: InsightWidget[] = (
         streamMessage.charts_data as ChartData[]
       ).map((chart: ChartData) => ({
@@ -26,6 +28,7 @@ export function generateInsightsTool(
         data: chart.data,
         xAxis: chart.xAxis,
         yAxis: chart.yAxis,
+        ...(datasetName ? { datasetName } : {}),
         generation: {
           codeact_parts: streamMessage.codeact_parts,
           source_urls: streamMessage.source_urls,

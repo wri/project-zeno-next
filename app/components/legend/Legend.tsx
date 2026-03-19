@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Flex,
   Heading,
@@ -24,12 +25,61 @@ interface LegendProps {
 
 /**
  * Legend component displaying a draggable, reorderable list of map layers with
- * legend details.
+ * accordion-style expand/collapse. Only one layer is expanded at a time.
  *
  * @param props.layers - Array of LegendLayer objects to display.
  */
 export function Legend(props: LegendProps) {
   const { layers, onLayerAction } = props;
+
+  // Track which layers are expanded (multiple can be open).
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [prevLayerIds, setPrevLayerIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const currentIds = new Set(layers.map((l) => l.id));
+
+    // Detect newly added layers
+    const newIds = [...currentIds].filter((id) => !prevLayerIds.has(id));
+    if (newIds.length > 0) {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        // When adding a layer would result in ≥3 total layers, collapse
+        // existing items so only the new one is expanded.
+        if (currentIds.size >= 3) {
+          next.clear();
+        }
+        // Expand each newly added layer
+        for (const id of newIds) {
+          next.add(id);
+        }
+        return next;
+      });
+    } else {
+      // Remove expanded ids for layers that were removed
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        let changed = false;
+        for (const id of prev) {
+          if (!currentIds.has(id)) {
+            next.delete(id);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+
+      // If nothing is expanded and there are layers, expand the last one
+      setExpandedIds((prev) => {
+        if (prev.size === 0 && layers.length > 0) {
+          return new Set([layers[layers.length - 1].id]);
+        }
+        return prev;
+      });
+    }
+
+    setPrevLayerIds(currentIds);
+  }, [layers]);
 
   if (!layers.length) return null;
 
@@ -40,10 +90,12 @@ export function Legend(props: LegendProps) {
       bottom={{ base: "4.5rem", md: 12 }}
       zIndex={100}
       width={320}
+      maxH={{ base: "50vh", md: "60vh" }}
       bg="bg"
-      overflow="hidden"
       rounded="sm"
       shadow="sm"
+      flexDirection="column"
+      overflow="hidden"
     >
       <VisuallyHidden>
         <Heading>Map Legend</Heading>
@@ -59,11 +111,25 @@ export function Legend(props: LegendProps) {
         p={0}
         m={0}
         w="100%"
+        overflowY="auto"
+        flex={1}
       >
         {layers.map((item) => (
           <Item
             key={item.id}
             item={item}
+            expanded={expandedIds.has(item.id)}
+            onToggleExpand={() =>
+              setExpandedIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(item.id)) {
+                  next.delete(item.id);
+                } else {
+                  next.add(item.id);
+                }
+                return next;
+              })
+            }
             onLayerAction={(details) => onLayerAction?.(details)}
           />
         ))}
@@ -76,8 +142,13 @@ export function Legend(props: LegendProps) {
  * Item component representing a single draggable/reorderable layer entry in the
  * legend.
  */
-function Item(props: { item: LegendLayer; onLayerAction: LayerActionHandler }) {
-  const { item, onLayerAction } = props;
+function Item(props: {
+  item: LegendLayer;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onLayerAction: LayerActionHandler;
+}) {
+  const { item, expanded, onToggleExpand, onLayerAction } = props;
   const dragControls = useDragControls();
 
   return (
@@ -107,7 +178,12 @@ function Item(props: { item: LegendLayer; onLayerAction: LayerActionHandler }) {
       >
         <DotsSixVerticalIcon />
       </IconButton>
-      <LayerEntry {...item} onLayerAction={onLayerAction} />
+      <LayerEntry
+        {...item}
+        expanded={expanded}
+        onToggleExpand={onToggleExpand}
+        onLayerAction={onLayerAction}
+      />
     </ChReorderItem>
   );
 }

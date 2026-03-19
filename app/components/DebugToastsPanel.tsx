@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Button, Stack, Text } from "@chakra-ui/react";
+import { useState } from "react";
+import { Box, Button, CloseButton, Stack, Text } from "@chakra-ui/react";
 import {
   showApiError,
   showError,
@@ -11,14 +12,15 @@ import { toaster } from "@/app/components/ui/toaster";
 function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const envEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true";
   const active = enabled ?? envEnabled;
+  const [dismissed, setDismissed] = useState(false);
 
-  if (!active) return null;
+  if (!active || dismissed) return null;
 
   return (
     <Box
       position="fixed"
       bottom="4"
-      left="4"
+      right="4"
       zIndex={1000}
       bg="white"
       border="1px solid"
@@ -27,9 +29,12 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
       p="3"
       boxShadow="sm"
     >
-      <Text fontSize="xs" fontWeight="600" mb="2">
-        Debug: Trigger Toasts
-      </Text>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb="2">
+        <Text fontSize="xs" fontWeight="600">
+          Debug: Trigger Toasts
+        </Text>
+        <CloseButton size="2xs" onClick={() => setDismissed(true)} />
+      </Box>
       <Stack direction="row" gap="2" wrap="wrap">
         <Button
           size="xs"
