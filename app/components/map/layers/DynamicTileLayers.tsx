@@ -13,27 +13,27 @@ function layerId(id: string) {
  * so that react-map-gl calls `map.moveLayer()` on reorder.
  */
 function DynamicTileLayers() {
-  const { tileLayers } = useMapStore();
+  const rasterLayers = useMapStore((s) => s.layers.filter((l) => l.type === "raster" && l.tileUrl));
 
   return (
     <>
-      {tileLayers.map((tileLayer, index) => {
-        const id = layerId(tileLayer.id);
+      {rasterLayers.map((rasterLayer, index) => {
+        const id = layerId(rasterLayer.id);
 
         // Place this layer below the previous one in the array.
         // tileLayers[0] has no beforeId (topmost).
         // tileLayers[1] has beforeId = tileLayers[0]'s id (placed below it).
-        const aboveLayer = index > 0 ? tileLayers[index - 1] : undefined;
+        const aboveLayer = index > 0 ? rasterLayers[index - 1] : undefined;
         const beforeId = aboveLayer
           ? layerId(aboveLayer.id)
           : undefined;
 
         return (
           <Source
-            key={tileLayer.id}
-            id={`tile-source-${tileLayer.id}`}
+            key={rasterLayer.id}
+            id={`tile-source-${rasterLayer.id}`}
             type="raster"
-            tiles={[tileLayer.url]}
+            tiles={[rasterLayer.tileUrl ?? ""]}
             tileSize={256}
           >
             <Layer
@@ -41,8 +41,8 @@ function DynamicTileLayers() {
               type="raster"
               beforeId={beforeId}
               paint={{
-                "raster-opacity": tileLayer.visible
-                  ? tileLayer.opacity || 0.8
+                "raster-opacity": rasterLayer.visible
+                  ? rasterLayer.opacity || 0.8
                   : 0,
               }}
             />
