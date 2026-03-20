@@ -81,9 +81,8 @@ export async function pickAoiTool(
     });
 
     // Only add the layer if at least one AOI succeeded, with only successful refs
-    const successfulRefs = aois
-      .filter((_, idx) => results[idx].status === "fulfilled")
-      .map((aoi) => ({ name: aoi.name, source: aoi.source }));
+    const successfulAois = aois.filter((_, idx) => results[idx].status === "fulfilled");
+    const successfulRefs = successfulAois.map((aoi) => ({ name: aoi.name, source: aoi.source }));
 
     if (successfulRefs.length > 0) {
       addLayer({
@@ -92,9 +91,9 @@ export async function pickAoiTool(
         type: "geojson",
         visible: true,
         featureRefs: successfulRefs,
-        ...(aois.length > 1 && {
+        ...(successfulAois.length > 1 && {
           selectionName,
-          aoiSelection: selectionForContext,
+          aoiSelection: { name: selectionName, aois: successfulAois },
         }),
       });
     }
