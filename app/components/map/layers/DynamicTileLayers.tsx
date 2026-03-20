@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 import useMapStore from "@/app/store/mapStore";
+import type { Layer as ManagedLayer } from "@/app/store/layerManagerSlice";
 
 function layerId(id: string) {
   return `tile-layer-${id}`;
@@ -16,7 +17,9 @@ function layerId(id: string) {
 function DynamicTileLayers() {
   const allLayers = useMapStore((s) => s.layers);
   const rasterLayers = useMemo(
-    () => allLayers.filter((l) => l.type === "raster" && l.tileUrl),
+    () => allLayers.filter(
+      (l): l is ManagedLayer & { tileUrl: string } => l.type === "raster" && !!l.tileUrl
+    ),
     [allLayers]
   );
 
@@ -38,7 +41,7 @@ function DynamicTileLayers() {
             key={rasterLayer.id}
             id={`tile-source-${rasterLayer.id}`}
             type="raster"
-            tiles={[rasterLayer.tileUrl ?? ""]}
+            tiles={[rasterLayer.tileUrl]}
             tileSize={256}
           >
             <Layer
@@ -47,7 +50,7 @@ function DynamicTileLayers() {
               beforeId={beforeId}
               paint={{
                 "raster-opacity": rasterLayer.visible
-                  ? rasterLayer.opacity || 0.8
+                  ? rasterLayer.opacity ?? 0.8
                   : 0,
               }}
             />

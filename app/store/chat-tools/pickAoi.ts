@@ -64,20 +64,6 @@ export async function pickAoiTool(
       aois.map((aoi) => fetchAndRegisterAoi(aoi, addToRegistry))
     )
 
-    // Add the layer to the layer manager
-    addLayer({
-      id: selectionName,
-      name: selectionName,
-      type: "geojson",
-      visible: true,
-      featureRefs: aois.map((aoi) => ({ name: aoi.name, source: aoi.source })),
-      // In case of multi-area selection, set the selection name and AOISelection
-      ...(aois.length > 1 && {
-        selectionName,
-        aoiSelection: selectionForContext,
-      }),
-    });
-
     // Collect all raw geometry data for combined bounds, track failures
     const allGeoData: (FeatureCollection | Feature)[] = [];
     const failures: string[] = [];
@@ -91,6 +77,25 @@ export async function pickAoiTool(
         failures.push(aoiName);
       }
     });
+
+    // Only add the layer if at least one AOI succeeded, with only successful refs
+    const successfulRefs = aois
+      .filter((_, idx) => results[idx].status === "fulfilled")
+      .map((aoi) => ({ name: aoi.name, source: aoi.source }));
+
+    if (successfulRefs.length > 0) {
+      addLayer({
+        id: selectionName,
+        name: selectionName,
+        type: "geojson",
+        visible: true,
+        featureRefs: successfulRefs,
+        ...(aois.length > 1 && {
+          selectionName,
+          aoiSelection: selectionForContext,
+        }),
+      });
+    }
 
     // Compute a single combined bounding box across all geometries and fly to it
     if (allGeoData.length > 0) {
