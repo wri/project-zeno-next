@@ -6,6 +6,7 @@ import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
 import SamplePrompts from "./SamplePrompts";
 import ChatDisclaimer from "./ChatDisclaimer";
+import WhatsNewModal from "./WhatsNewModal";
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -151,6 +152,7 @@ function ChatMessages() {
                 </Box>
               </ChatDisclaimer>
             )}
+            {isFirst && <WhatsNewModal />}
             <MessageBubble
               message={message}
               isConsecutive={isConsecutive}
