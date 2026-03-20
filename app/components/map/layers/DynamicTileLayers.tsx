@@ -8,9 +8,10 @@ function layerId(id: string) {
 }
 
 /**
- * Renders tile layers on the map with z-ordering that matches the legend.
+ * Renders raster layers from the unified layer manager with z-ordering
+ * that matches the legend.
  *
- * tileLayers[0] = top of legend = top of map.
+ * rasterLayers[0] = top of legend = top of map.
  * Each layer uses `beforeId` to position itself below the previous layer,
  * so that react-map-gl calls `map.moveLayer()` on reorder.
  */
@@ -29,8 +30,8 @@ function DynamicTileLayers() {
         const id = layerId(rasterLayer.id);
 
         // Place this layer below the previous one in the array.
-        // tileLayers[0] has no beforeId (topmost).
-        // tileLayers[1] has beforeId = tileLayers[0]'s id (placed below it).
+        // rasterLayers[0] has no beforeId (topmost).
+        // rasterLayers[1] has beforeId = rasterLayers[0]'s id (placed below it).
         const aboveLayer = index > 0 ? rasterLayers[index - 1] : undefined;
         const beforeId = aboveLayer
           ? layerId(aboveLayer.id)
