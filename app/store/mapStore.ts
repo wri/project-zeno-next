@@ -7,22 +7,7 @@ import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
-import type { AOISelection } from "@/app/types/chat";
-
-interface GeoJsonFeature {
-  id: string;
-  name?: string;
-  selectionName?: string; // Used in multi-area selection
-  data: GeoJSON.FeatureCollection | GeoJSON.Feature;
-}
-
-interface TileLayer {
-  id: string;
-  name: string;
-  url: string;
-  visible: boolean;
-  opacity?: number;
-}
+import { LayerManagerSlice, createLayerManagerSlice } from "./layerManagerSlice";
 
 interface SelectionMode {
   type: "Selecting" | "Drawing" | "Uploading" | undefined;
@@ -31,22 +16,10 @@ interface SelectionMode {
 
 interface MapSlice {
   mapRef: MapRef | null;
-  geoJsonFeatures: GeoJsonFeature[];
   selectAreaLayer: LayerId | null;
-  tileLayers: TileLayer[];
-  aoiSelections: Record<string, AOISelection>;
-  setAoiSelection: (name: string, selection: AOISelection) => void;
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;
   setSelectAreaLayer: (layerId: LayerId | null) => void;
-  addGeoJsonFeature: (feature: GeoJsonFeature) => void;
-  removeGeoJsonFeature: (id: string) => void;
-  clearGeoJsonFeatures: () => void;
-  setTileLayers: (layers: TileLayer[]) => void;
-  addTileLayer: (layer: TileLayer) => void;
-  removeTileLayer: (id: string) => void;
-  toggleTileLayer: (id: string) => void;
-  clearTileLayers: () => void;
   flyToGeoJson: (geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature) => void;
   flyToCenter: (
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
@@ -62,30 +35,24 @@ interface MapSlice {
   clearSelectionMode: () => void;
 }
 
-export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice;
+export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice & LayerManagerSlice;
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   set,
   get
 ) => ({
   mapRef: null,
-  geoJsonFeatures: [],
   selectAreaLayer: null,
-  tileLayers: [],
-  selectedAreas: [],
   selectionMode: undefined,
-  aoiSelections: {},
 
   reset: () => {
     set({
-      geoJsonFeatures: [],
       selectAreaLayer: null,
-      tileLayers: [],
-      aoiSelections: {},
+      layers: [],
+      geoJsonRegistry: [],
     });
     get().clearSelectionMode();
-  
-    // Return map to the center point
+
     const { mapRef } = get();
     if (mapRef) {
       const map = mapRef.getMap();
@@ -107,60 +74,6 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
 
   setSelectionMode: (selectionMode) => {
     set({ selectionMode: selectionMode });
-  },
-
-  addGeoJsonFeature: (feature) => {
-    set((state) => ({
-      geoJsonFeatures: [
-        ...state.geoJsonFeatures.filter((f) => f.id !== feature.id),
-        feature,
-      ],
-      selectAreaLayer: null,
-    }));
-    get().clearSelectionMode();
-  },
-
-  removeGeoJsonFeature: (id) => {
-    set((state) => ({
-      geoJsonFeatures: state.geoJsonFeatures.filter((f) => f.id !== id),
-    }));
-  },
-
-  clearGeoJsonFeatures: () => {
-    set({ geoJsonFeatures: [] });
-  },
-
-  // AOI selections are stored in the map store to allow for multi-area selections.
-  setAoiSelection: (name, selection) => {
-    set((state) => ({ aoiSelections: { ...state.aoiSelections, [name]: selection } }));
-  },
-
-  addTileLayer: (layer) => {
-    set((state) => ({
-      tileLayers: [...state.tileLayers.filter((l) => l.id !== layer.id), layer],
-    }));
-  },
-
-  setTileLayers: (tileLayers) => {
-    set(() => ({ tileLayers }));
-  },
-
-  removeTileLayer: (id) => {
-    set((state) => ({
-      tileLayers: state.tileLayers.filter((l) => l.id !== id),
-    }));
-  },
-
-  toggleTileLayer: (id) => {
-    set((state) => ({
-      tileLayers: state.tileLayers.map((l) =>
-        l.id === id ? { ...l, visible: !l.visible } : l
-      ),
-    }));
-  },
-
-  clearTileLayers: () => {
-    set({ tileLayers: [] });
   },
 
   clearSelectionMode: () => {
@@ -258,6 +171,7 @@ const useMapStore = create<MapState>()((...a) => ({
   ...createMapSlice(...a),
   ...createDrawAreaSlice(...a),
   ...createUploadAreaSlice(...a),
+  ...createLayerManagerSlice(...a),
 }));
 
 export default useMapStore;

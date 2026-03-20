@@ -28,6 +28,7 @@ import { formatAreaWithUnits } from "../utils/formatArea";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 import useContextStore from "../store/contextStore";
 import { BasemapSelector } from "./map/BasemapSelector";
+import { FeatureRef } from "../store/layerManagerSlice";
 
 function Wrapper({
   children,
@@ -75,7 +76,8 @@ function MapAreaControls({
     confirmDrawing,
     toggleUploadAreaDialog,
     setCreateAreaFn,
-    addGeoJsonFeature,
+    addLayer,
+    addToRegistry,
     flyToGeoJson,
   } = useMapStore();
   const { addContext } = useContextStore();
@@ -119,11 +121,17 @@ function MapAreaControls({
           name: name,
         },
       };
-      addGeoJsonFeature({
-        id: id,
-        name: name,
-        data: feat,
+      const featureRef: FeatureRef = { name: name, source: "custom" };
+
+      addToRegistry({ ref: featureRef, data: feat, srcId: id, subtype: "custom-area" });
+      addLayer({
+        id: featureRef.name,
+        name: featureRef.name,
+        type: "geojson",
+        visible: true,
+        featureRefs: [featureRef],
       });
+
       addContext({
         contextType: "area",
         content: name,

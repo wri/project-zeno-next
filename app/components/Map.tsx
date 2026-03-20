@@ -24,9 +24,9 @@ import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
 import DynamicTileLayers from "./map/layers/DynamicTileLayers";
-import HighlightedFeaturesLayer from "./map/layers/HighlightedFeaturesLayer";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
+import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import { Legend } from "@/app/components/legend/Legend";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
@@ -39,7 +39,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const [basemapTiles, setBasemapTiles] = useState(
     "devseed/cmazl5ws500bz01scaa27dqi4"
   );
-  const { geoJsonFeatures, setMapRef, initializeTerraDraw } = useMapStore();
+  const { setMapRef, initializeTerraDraw } = useMapStore();
   const { layers, handleLayerAction } = useLegendHook();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
@@ -163,10 +163,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         </Box>
 
         <DynamicTileLayers />
-        <HighlightedFeaturesLayer
-          geoJsonFeatures={geoJsonFeatures}
-          areas={areas}
-        />
+        <GeoJsonLayers areas={areas} />
         <SelectAreaLayer />
 
         {!disableMapAreaControls && (

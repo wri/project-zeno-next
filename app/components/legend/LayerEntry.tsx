@@ -41,6 +41,8 @@ export function LayerEntry(
     children,
     visible,
     opacity,
+    hideOpacityControl,
+    hideRemoveControl,
     onLayerAction,
     info,
     expanded = false,
@@ -118,7 +120,7 @@ export function LayerEntry(
               </Portal>
             </Popover.Root>
           )}
-          <OpacityControl
+          {!hideOpacityControl && (<OpacityControl
             value={opacity}
             onValueChange={(value) =>
               onLayerAction({
@@ -130,7 +132,7 @@ export function LayerEntry(
             <IconButton>
               <CircleHalfIcon />
             </IconButton>
-          </OpacityControl>
+          </OpacityControl>)}
           <IconButton
             onClick={() =>
               onLayerAction({
@@ -141,13 +143,13 @@ export function LayerEntry(
           >
             {visible ? <EyeIcon /> : <EyeClosedIcon />}
           </IconButton>
-          <IconButton
+          {!hideRemoveControl && (<IconButton
             onClick={() =>
               onLayerAction({ action: "remove", payload: { id: id } })
             }
           >
             <XIcon />
-          </IconButton>
+          </IconButton>)}
         </ButtonGroup>
       </Flex>
 

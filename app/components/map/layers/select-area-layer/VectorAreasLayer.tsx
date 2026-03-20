@@ -36,7 +36,7 @@ interface Metadata {
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { upsertContextByType } = useContextStore();
-  const { addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
+  const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -120,17 +120,20 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           const feature = e.features.at(-1);
 
           if (feature) {
-            const id = aoiName;
+            const featureProps = feature.properties;
+            const layerConfig = selectLayerOptions.find(
+              (opt) => opt.id === layerId
+            );
+            const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
+            const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
+
             const sourceFeatures = map.querySourceFeatures(sourceId, {
               sourceLayer: sourceLayer,
               filter: ["in", "gfw_fid", feature.properties?.gfw_fid],
             });
             if (sourceFeatures.length === 1) {
-              addGeoJsonFeature({
-                id: id,
-                name: aoiName,
-                data: sourceFeatures[0],
-              });
+              addToRegistry({ ref: { name: aoiName, source: layerId }, data: sourceFeatures[0], srcId: dynamicSrcId, subtype: dynamicSubtype });
+              addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
             } else if (sourceFeatures.length > 1) {
               const collection: FeatureCollection<
                 Polygon | MultiPolygon,
@@ -144,22 +147,10 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               };
               const f = union(collection);
               if (f) {
-                addGeoJsonFeature({
-                  id: id,
-                  name: aoiName,
-                  data: f,
-                });
+                addToRegistry({ ref: { name: aoiName, source: layerId }, data: f, srcId: dynamicSrcId, subtype: dynamicSubtype });
+                addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
               }
             }
-            // Extract AOI data for ui_context
-            const featureProps = feature.properties;
-            const layerConfig = selectLayerOptions.find(
-              (opt) => opt.id === layerId
-            );
-
-            // Get dynamic src_id and subtype using metadata
-            const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
-            const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
             sendGAEvent("event", "map_area_selected", {
@@ -210,7 +201,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     setSelectAreaLayer,
     metadata,
     upsertContextByType,
-    addGeoJsonFeature,
+    addToRegistry,
+    addLayer,
     layerId,
     url,
   ]);
