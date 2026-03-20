@@ -31,6 +31,8 @@ async function fetchAndRegisterAoi(
   addToRegistry({
     ref: { name: aoi.name, source: aoi.source },
     data: geoJsonData,
+    srcId: aoi.src_id,
+    subtype: aoi.subtype,
   });
 
   return geoJsonData;

@@ -327,7 +327,7 @@ function AreaMenu() {
         area_name: selected.name,
         geometries: feature.geometry,
       });
-      addToRegistry({ ref: { name: selected.name, source: "custom" }, data: feature });
+      addToRegistry({ ref: { name: selected.name, source: "custom" }, data: feature, srcId: selected.id, subtype: "custom-area" });
       addLayer({ id: selected.id, name: selected.name, type: "geojson", visible: true, featureRefs: [{ name: selected.name, source: "custom" }] });
       flyToGeoJsonWithRetry(feature);
     }

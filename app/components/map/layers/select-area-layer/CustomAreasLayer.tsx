@@ -30,7 +30,7 @@ function CustomAreasLayer() {
             area_subtype: "custom-area",
           });
 
-          addToRegistry({ ref: { name, source: "custom" }, data: feature });
+          addToRegistry({ ref: { name, source: "custom" }, data: feature, srcId: id, subtype: "custom-area" });
           addLayer({ id, name, type: "geojson", visible: true, featureRefs: [{ name, source: "custom" }] });
 
           addContext({

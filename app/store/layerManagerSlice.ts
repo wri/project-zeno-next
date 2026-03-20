@@ -12,6 +12,8 @@ export interface FeatureRef {
 export interface GeoJsonEntry {
   ref: FeatureRef;
   data: FeatureCollection | Feature;
+  srcId?: string;
+  subtype?: string;
 }
 
 export type LayerType = "raster" | "geojson";

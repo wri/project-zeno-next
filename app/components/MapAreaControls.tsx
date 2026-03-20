@@ -123,7 +123,7 @@ function MapAreaControls({
       };
       const featureRef: FeatureRef = { name: name, source: "custom" };
 
-      addToRegistry({ ref: featureRef, data: feat });
+      addToRegistry({ ref: featureRef, data: feat, srcId: id, subtype: "custom-area" });
       addLayer({
         id: featureRef.name,
         name: featureRef.name,

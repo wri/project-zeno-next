@@ -148,14 +148,20 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
           aoiSelection: layer.aoiSelection,
         });
       } else {
+        // For single-area layers, look up the registry entry to get the
+        // correct src_id, source, and subtype for the context upsert.
+        const ref = layer.featureRefs?.[0];
+        const entry = ref
+          ? entries.find((e) => e.ref.name === ref.name && e.ref.source === ref.source)
+          : undefined;
         upsertContextByType({
           contextType: "area",
           content: displayName,
           aoiData: {
-            src_id: layer.name,
+            src_id: entry?.srcId ?? layer.id,
             name: displayName,
-            source: "custom",
-            subtype: "custom-area",
+            source: entry?.ref.source ?? "custom",
+            subtype: entry?.subtype ?? "custom-area",
           },
         });
       }
