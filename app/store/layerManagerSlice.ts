@@ -44,7 +44,8 @@ export interface LayerManagerSlice {
 
 export const createLayerManagerSlice: StateCreator<
 MapState, [], [], LayerManagerSlice>
-= (set, _get) => ({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+= (set, get) => ({
   layers: [],
   geoJsonRegistry: [],
 
