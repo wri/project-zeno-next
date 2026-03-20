@@ -261,7 +261,7 @@ function AreaCardList({
 
 function AreaMenu() {
   const { customAreas } = useCustomAreasListSuspense();
-  const { addGeoJsonFeature, addToRegistry, addLayer, flyToGeoJsonWithRetry } = useMapStore();
+  const { addToRegistry, addLayer, flyToGeoJsonWithRetry } = useMapStore();
   const { context, upsertContextByType } = useContextStore();
   const [query, setQuery] = useState("");
 
@@ -326,11 +326,6 @@ function AreaMenu() {
         area_id: selected.id,
         area_name: selected.name,
         geometries: feature.geometry,
-      });
-      addGeoJsonFeature({
-        id: selected.id,
-        name: selected.name,
-        data: feature,
       });
       addToRegistry({ ref: { name: selected.name, source: "custom" }, data: feature });
       addLayer({ id: selected.id, name: selected.name, type: "geojson", visible: true, featureRefs: [{ name: selected.name, source: "custom" }] });

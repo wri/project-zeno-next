@@ -26,7 +26,6 @@ function UploadAreaDialog() {
     isUploading,
     isFileSelected,
     setCreateAreaFn,
-    addGeoJsonFeature,
     addToRegistry,
     addLayer,
     flyToGeoJson,
@@ -59,11 +58,6 @@ function UploadAreaDialog() {
         },
       };
 
-      addGeoJsonFeature({
-        id: id,
-        name: name,
-        data: feat,
-      });
       addToRegistry({ ref: { name, source: "custom" }, data: feat });
       addLayer({ id, name, type: "geojson", visible: true, featureRefs: [{ name, source: "custom" }] });
 

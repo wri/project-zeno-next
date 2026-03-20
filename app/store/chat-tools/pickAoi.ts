@@ -14,9 +14,7 @@ import { GeoJsonEntry } from "../layerManagerSlice";
  */
 async function fetchAndRegisterAoi(
   aoi: AOI,
-  addGeoJsonFeature: (feature: { id: string; name: string; selectionName?: string; data: FeatureCollection | Feature }) => void,
   addToRegistry: (entry: GeoJsonEntry) => void,
-  selectionName?: string,
 ): Promise<FeatureCollection | Feature> {
   let geoJsonData: FeatureCollection;
 
@@ -29,13 +27,6 @@ async function fetchAndRegisterAoi(
     const geometryResponse = await fetchGeometry(aoi.source, aoi.src_id);
     geoJsonData = geometryResponse.geometry;
   }
-
-  addGeoJsonFeature({
-    id: aoi.name,
-    name: aoi.name,
-    selectionName: selectionName,
-    data: geoJsonData,
-  });
 
   addToRegistry({
     ref: { name: aoi.name, source: aoi.source },
@@ -50,7 +41,7 @@ export async function pickAoiTool(
   addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   try {
-    const { addGeoJsonFeature, flyToGeoJsonWithRetry, setAoiSelection, addToRegistry, addLayer } = useMapStore.getState();
+    const { flyToGeoJsonWithRetry, addToRegistry, addLayer } = useMapStore.getState();
     const { upsertContextByType } = useContextStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
@@ -69,11 +60,8 @@ export async function pickAoiTool(
     };
 
     // Fetch geometry for all AOIs in parallel
-    // If there are multiple AOIs, forward the selection name to the addGeoJsonFeature function.
     const results = await Promise.allSettled(
-      aois.map((aoi) => fetchAndRegisterAoi(
-        aoi, addGeoJsonFeature, addToRegistry, aois.length > 1 ? selectionName : undefined
-      ))
+      aois.map((aoi) => fetchAndRegisterAoi(aoi, addToRegistry))
     )
 
     // Add the layer to the layer manager

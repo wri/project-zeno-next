@@ -164,10 +164,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
 
         <DynamicTileLayers />
         <GeoJsonLayers areas={areas} />
-        {/* <HighlightedFeaturesLayer
-          geoJsonFeatures={geoJsonFeatures}
-          areas={areas}
-        /> */}
         <SelectAreaLayer />
 
         {!disableMapAreaControls && (

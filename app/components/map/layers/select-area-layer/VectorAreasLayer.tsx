@@ -36,7 +36,7 @@ interface Metadata {
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { upsertContextByType } = useContextStore();
-  const { addGeoJsonFeature, addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
+  const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -120,17 +120,11 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           const feature = e.features.at(-1);
 
           if (feature) {
-            const id = aoiName;
             const sourceFeatures = map.querySourceFeatures(sourceId, {
               sourceLayer: sourceLayer,
               filter: ["in", "gfw_fid", feature.properties?.gfw_fid],
             });
             if (sourceFeatures.length === 1) {
-              addGeoJsonFeature({
-                id: id,
-                name: aoiName,
-                data: sourceFeatures[0],
-              });
               addToRegistry({ ref: { name: aoiName, source: layerId }, data: sourceFeatures[0] });
               addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
             } else if (sourceFeatures.length > 1) {
@@ -146,11 +140,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               };
               const f = union(collection);
               if (f) {
-                addGeoJsonFeature({
-                  id: id,
-                  name: aoiName,
-                  data: f,
-                });
                 addToRegistry({ ref: { name: aoiName, source: layerId }, data: f });
                 addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
               }
@@ -214,7 +203,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     setSelectAreaLayer,
     metadata,
     upsertContextByType,
-    addGeoJsonFeature,
     addToRegistry,
     addLayer,
     layerId,

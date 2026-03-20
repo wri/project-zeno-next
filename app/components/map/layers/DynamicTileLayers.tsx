@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 import useMapStore from "@/app/store/mapStore";
 
@@ -13,7 +14,11 @@ function layerId(id: string) {
  * so that react-map-gl calls `map.moveLayer()` on reorder.
  */
 function DynamicTileLayers() {
-  const rasterLayers = useMapStore((s) => s.layers.filter((l) => l.type === "raster" && l.tileUrl));
+  const allLayers = useMapStore((s) => s.layers);
+  const rasterLayers = useMemo(
+    () => allLayers.filter((l) => l.type === "raster" && l.tileUrl),
+    [allLayers]
+  );
 
   return (
     <>
