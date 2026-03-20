@@ -44,7 +44,7 @@ export interface LayerManagerSlice {
 
 export const createLayerManagerSlice: StateCreator<
 MapState, [], [], LayerManagerSlice>
-= (set, get) => ({
+= (set, _get) => ({
   layers: [],
   geoJsonRegistry: [],
 

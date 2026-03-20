@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, FC } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
 import { Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "../../ContextButton";
