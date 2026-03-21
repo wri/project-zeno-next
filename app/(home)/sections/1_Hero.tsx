@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -37,6 +37,13 @@ export default function LandingHero({
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [ready, setReady] = useState(false);
   const [sendingPrompt, setSendingPrompt] = useState(false);
+  const hasPrompts = prompts.length > 0;
+  const activePrompt = hasPrompts ? prompts[promptIndex] : "";
+
+  const advancePrompt = useCallback(() => {
+    if (!hasPrompts) return;
+    setPromptIndex((idx) => (idx + 1) % prompts.length);
+  }, [hasPrompts, prompts.length, setPromptIndex]);
 
   useEffect(() => {
     setReady(true);
@@ -50,16 +57,7 @@ export default function LandingHero({
     if (!ready || isInputFocused || inputValue.length > 0 || sendingPrompt)
       return; // Pause timer if typing or sendingPrompt
     const interval = setInterval(() => {
-      setPromptTimer((prev) => {
-        if (prev > 1) {
-          return prev - 1;
-        } else {
-          // When timer resets, update prompt index
-          setPromptIndex((idx) => (idx + 1) % prompts.length);
-          setAnimationKey((k) => k + 1);
-          return 10;
-        }
-      });
+      setPromptTimer((prev) => (prev > 1 ? prev - 1 : 1));
     }, 1000);
     return () => clearInterval(interval);
   }, [
@@ -68,6 +66,24 @@ export default function LandingHero({
     isInputFocused,
     inputValue,
     sendingPrompt,
+    advancePrompt,
+    ready,
+  ]);
+
+  useEffect(() => {
+    if (!ready || isInputFocused || inputValue.length > 0 || sendingPrompt)
+      return;
+    if (promptTimer !== 1) return;
+    advancePrompt();
+    setAnimationKey((k) => k + 1);
+    setPromptTimer(10);
+  }, [
+    ready,
+    isInputFocused,
+    inputValue,
+    sendingPrompt,
+    promptTimer,
+    advancePrompt,
   ]);
   // Measure the width of one set of prompts after render
 
@@ -88,7 +104,7 @@ export default function LandingHero({
   const submitPrompt = async () => {
     if (sendingPrompt) return;
     setSendingPrompt(true);
-    const message = inputValue.trim() || prompts[promptIndex];
+    const message = inputValue.trim() || activePrompt;
     localStorage.setItem("bypassWelcomeModal", "true");
     const encodedMessage = encodeURI(message);
     router.push(`/app?prompt=${encodedMessage}`);
@@ -194,7 +210,7 @@ export default function LandingHero({
                   outline="none"
                   borderWidth="0"
                   size="lg"
-                  placeholder={prompts[promptIndex]}
+                  placeholder={activePrompt}
                   animationName="slide-from-bottom, fade-in"
                   animationDuration="0.32s"
                   animationTimingFunction="ease-in-out"
@@ -239,7 +255,7 @@ export default function LandingHero({
                       }}
                       onClick={() => {
                         setPromptTimer(10);
-                        setPromptIndex((idx) => (idx + 1) % prompts.length);
+                        advancePrompt();
                         setAnimationKey((k) => k + 1);
                       }}
                     >
