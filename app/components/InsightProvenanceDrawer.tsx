@@ -390,20 +390,24 @@ export default function InsightProvenanceDrawer({
                                   components={{
                                     // Use div instead of p to avoid invalid nesting when
                                     // remarkBreaks injects block-level br elements inside paragraphs
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                                     p: ({ node: _, ...props }) => <Box mb={2} {...props} />,
                                     br: () => <Box h={2} />,
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                                     h1: ({ node: _, ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
                                         <Heading as="h1" size="sm" mb={2} {...props} />
                                       </>
                                     ),
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                                     h2: ({ node: _, ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
                                         <Heading as="h2" size="xs" mb={2} {...props} />
                                       </>
                                     ),
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                                     h3: ({ node: _, ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
