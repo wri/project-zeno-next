@@ -163,6 +163,7 @@ function Reasoning({
                               <Heading as="h3" size="xs" mb={2} {...props} />
                             </>
                           ),
+                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
                           p: ({ node: _, ...props }) => <Box mb={2} {...props} />,
                           br: () => <Box h={2} />,
                         }}
