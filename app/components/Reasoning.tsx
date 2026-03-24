@@ -163,7 +163,7 @@ function Reasoning({
                               <Heading as="h3" size="xs" mb={2} {...props} />
                             </>
                           ),
-                          p: ({ node: _node, ...props }) => <Box mb={2} {...props} />,
+                          p: ({ node: _, ...props }) => <Box mb={2} {...props} />,
                           br: () => <Box h={2} />,
                         }}
                       >
