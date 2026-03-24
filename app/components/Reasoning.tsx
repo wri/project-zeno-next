@@ -163,8 +163,8 @@ function Reasoning({
                               <Heading as="h3" size="xs" mb={2} {...props} />
                             </>
                           ),
-                          p: ({ ...props }) => <Text mb={2} {...props} />,
-                          br: () => <Box h={2} />, // Add spacing for line breaks
+                          p: ({ node: _node, ...props }) => <Box mb={2} {...props} />,
+                          br: () => <Box h={2} />,
                         }}
                       >
                         {tool.content ? trimLines(tool.content) : ""}
