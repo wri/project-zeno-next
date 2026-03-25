@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Button, Flex, HStack, Portal, Text } from "@chakra-ui/react";
+import { Tooltip } from "@/app/components/ui/tooltip";
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -11,9 +12,12 @@ import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "whats-new-v1-dismissed";
 
-// TODO: Download and host these images in /public before Figma asset URLs expire (~7 days from 2026-03-25)
 const FEATURE_IMAGES: Record<number, string> = {
-  1: "https://www.figma.com/api/mcp/asset/9dcf39f2-e59e-4863-920d-ea0d2051d31d",
+  1: "/whats_new/whatsnew_01.png",
+  2: "/whats_new/whatsnew_02.png",
+  3: "/whats_new/whatsnew_03.png",
+  4: "/whats_new/whatsnew_04.png",
+  5: "/whats_new/whatsnew_05.png",
 };
 
 interface Feature {
@@ -243,20 +247,25 @@ const WhatsNewModal = () => {
           p={5}
           flexShrink={0}
         >
-          <Button
-            w="full"
-            h="44px"
-            bg="#0049aa"
-            color="white"
-            borderRadius="8px"
-            fontSize="16px"
-            fontWeight="medium"
-            fontFamily="'IBM Plex Sans', sans-serif"
-            onClick={dismiss}
-            _hover={{ bg: "#003a88" }}
+          <Tooltip
+            content="We ship updates regularly — thanks for being part of the preview!"
+            showArrow
           >
-            {"Got it! Let's explore!"}
-          </Button>
+            <Button
+              w="full"
+              h="44px"
+              bg="#0049aa"
+              color="white"
+              borderRadius="8px"
+              fontSize="16px"
+              fontWeight="medium"
+              fontFamily="'IBM Plex Sans', sans-serif"
+              onClick={dismiss}
+              _hover={{ bg: "#003a88" }}
+            >
+              {"Got it! Let's explore!"}
+            </Button>
+          </Tooltip>
         </Box>
       </Box>
     </Portal>
