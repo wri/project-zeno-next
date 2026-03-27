@@ -1,10 +1,17 @@
-import { Feature, FeatureCollection } from "geojson";
-import { ChatMessage, StreamMessage, AOI, AOISelection } from "@/app/types/chat";
+import { Feature, FeatureCollection, Polygon } from "geojson";
+import {
+  ChatMessage,
+  StreamMessage,
+  AOI,
+  AOISelection,
+} from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import useContextStore from "../contextStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import bbox from "@turf/bbox";
 import { GeoJsonEntry } from "../layerManagerSlice";
+
+export const GADM_GLOBAL_SRC_ID = "gadm-global";
 
 /**
  * Fetch geometry for a single AOI and add it to the layer manager
@@ -40,16 +47,20 @@ async function fetchAndRegisterAoi(
 
 export async function pickAoiTool(
   streamMessage: StreamMessage,
-  addMessage: (message: Omit<ChatMessage, "id">) => void
+  addMessage: (message: Omit<ChatMessage, "id">) => void,
 ) {
   try {
-    const { flyToGeoJsonWithRetry, addToRegistry, addLayer } = useMapStore.getState();
+    const { flyToGeoJsonWithRetry, addToRegistry, addLayer } =
+      useMapStore.getState();
     const { upsertContextByType } = useContextStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
     const aoiSelection: AOISelection | undefined = streamMessage.aoi_selection;
-    const aois: AOI[] = aoiSelection?.aois ?? (streamMessage.aoi ? [streamMessage.aoi as AOI] : []);
-    const selectionName: string = aoiSelection?.name ?? (aois[0]?.name || "Unknown");
+    const aois: AOI[] =
+      aoiSelection?.aois ??
+      (streamMessage.aoi ? [streamMessage.aoi as AOI] : []);
+    const selectionName: string =
+      aoiSelection?.name ?? (aois[0]?.name || "Unknown");
 
     if (aois.length === 0) {
       throw new Error("No AOI data found in stream message");
@@ -61,10 +72,47 @@ export async function pickAoiTool(
       aois,
     };
 
+    // Global selection — no geometry to fetch, render via GADM vector tiles
+    if (aois.some((a) => a.src_id === GADM_GLOBAL_SRC_ID)) {
+      addLayer({
+        id: selectionName,
+        name: selectionName,
+        type: "geojson",
+        visible: true,
+        featureRefs: [],
+        selectionName,
+        aoiSelection: selectionForContext,
+      });
+      const worldPolygon: Feature<Polygon> = {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [-180, -85],
+              [180, -85],
+              [180, 85],
+              [-180, 85],
+              [-180, -85],
+            ],
+          ],
+        },
+      };
+      flyToGeoJsonWithRetry(worldPolygon);
+      upsertContextByType({
+        contextType: "area",
+        content: selectionName,
+        isAiContext: true,
+        aoiSelection: selectionForContext,
+      });
+      return;
+    }
+
     // Fetch geometry for all AOIs in parallel
     const results = await Promise.allSettled(
-      aois.map((aoi) => fetchAndRegisterAoi(aoi, addToRegistry))
-    )
+      aois.map((aoi) => fetchAndRegisterAoi(aoi, addToRegistry)),
+    );
 
     // Collect all raw geometry data for combined bounds, track failures
     const allGeoData: (FeatureCollection | Feature)[] = [];
@@ -75,14 +123,22 @@ export async function pickAoiTool(
         allGeoData.push(result.value);
       } else {
         const aoiName = aois[idx]?.name ?? `AOI ${idx}`;
-        console.error(`Failed to fetch geometry for "${aoiName}":`, result.reason);
+        console.error(
+          `Failed to fetch geometry for "${aoiName}":`,
+          result.reason,
+        );
         failures.push(aoiName);
       }
     });
 
     // Only add the layer if at least one AOI succeeded, with only successful refs
-    const successfulAois = aois.filter((_, idx) => results[idx].status === "fulfilled");
-    const successfulRefs = successfulAois.map((aoi) => ({ name: aoi.name, source: aoi.source }));
+    const successfulAois = aois.filter(
+      (_, idx) => results[idx].status === "fulfilled",
+    );
+    const successfulRefs = successfulAois.map((aoi) => ({
+      name: aoi.name,
+      source: aoi.source,
+    }));
 
     if (successfulRefs.length > 0) {
       addLayer({
@@ -101,7 +157,10 @@ export async function pickAoiTool(
     // Compute a single combined bounding box across all geometries and fly to it
     if (allGeoData.length > 0) {
       // Compute individual bboxes and merge into one encompassing bbox
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
       for (const geoData of allGeoData) {
         const b = bbox(geoData);
         if (b[0] < minX) minX = b[0];
@@ -116,13 +175,15 @@ export async function pickAoiTool(
         properties: {},
         geometry: {
           type: "Polygon",
-          coordinates: [[
-            [minX, minY],
-            [maxX, minY],
-            [maxX, maxY],
-            [minX, maxY],
-            [minX, minY],
-          ]],
+          coordinates: [
+            [
+              [minX, minY],
+              [maxX, minY],
+              [maxX, maxY],
+              [minX, maxY],
+              [minX, minY],
+            ],
+          ],
         },
       };
       flyToGeoJsonWithRetry(bboxFeature);
@@ -135,8 +196,6 @@ export async function pickAoiTool(
       isAiContext: true,
       aoiSelection: selectionForContext,
     });
-
-
 
     // If some AOIs failed, show a partial-failure message
     if (failures.length > 0 && failures.length < aois.length) {

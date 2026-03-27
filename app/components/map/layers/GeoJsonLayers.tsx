@@ -15,7 +15,13 @@ import {
   GeoJsonEntry,
   FeatureRef,
 } from "@/app/store/layerManagerSlice";
+import { GADM_GLOBAL_SRC_ID } from "@/app/store/chat-tools/pickAoi";
 import bbox from "@turf/bbox";
+
+const GADM_TILES =
+  "https://tiles.globalforestwatch.org/gadm_administrative_boundaries/v4.1.85/default/{z}/{x}/{y}.pbf";
+const GADM_SOURCE_LAYER = "gadm_administrative_boundaries";
+const MULTI_AREA_COLOR = "#8EA4E8";
 
 // Create a rectangle polygon from bbox coordinates
 function createBboxPolygon(
@@ -121,11 +127,17 @@ export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
   return (
     <>
       {geoJsonLayers.map((layer) => {
+        if (
+          layer.aoiSelection?.aois.some((a) => a.src_id === GADM_GLOBAL_SRC_ID)
+        ) {
+          return (
+            <GlobalLayerGroup key={layer.id} layer={layer} areas={areas} />
+          );
+        }
         const entries = resolveFeatureRefs(
           layer.featureRefs ?? [],
           geoJsonRegistry,
         );
-
         return (
           <GeoJsonLayerGroup
             key={layer.id}
@@ -326,5 +338,34 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
         </Marker>
       )}
     </>
+  );
+}
+
+// Global selection — renders GADM vector tiles instead of individual GeoJSON features.
+// Used when the AI returns an AOI with src_id === GADM_GLOBAL_SRC_ID ("gadm-global").
+function GlobalLayerGroup({
+  layer,
+  areas,
+}: {
+  layer: ManagedLayer;
+  areas: ContextItem[];
+}) {
+  const displayName = layer.selectionName ?? layer.name;
+  const isInContext = areas.some((a) => a.aoiSelection?.name === displayName);
+  const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
+
+  return (
+    <Source id="gadm-global-source" type="vector" tiles={[GADM_TILES]}>
+      <MapLayer
+        id="gadm-global-line"
+        type="line"
+        source-layer={GADM_SOURCE_LAYER}
+        paint={{
+          "line-color": MULTI_AREA_COLOR,
+          "line-width": 1.5,
+          "line-opacity": lineOpacity,
+        }}
+      />
+    </Source>
   );
 }
