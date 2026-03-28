@@ -25,6 +25,7 @@ import Link from "next/link";
 import { Tooltip } from "./components/ui/tooltip";
 import useSidebarStore from "./store/sidebarStore";
 import useChatStore from "./store/chatStore";
+import { EraserIcon } from "@phosphor-icons/react";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import { sendGAEvent } from "@next/third-parties/google";
 
@@ -47,7 +48,7 @@ function ChatPanelHeader() {
     toggleSidebar,
     getThreadById,
   } = useSidebarStore();
-  const { currentThreadId, messages } = useChatStore();
+  const { currentThreadId, messages, isDevPrototype } = useChatStore();
 
   const currentThread = getThreadById(currentThreadId);
   const currentThreadName = currentThread
@@ -99,7 +100,7 @@ function ChatPanelHeader() {
       hideBelow="md"
       zIndex={100}
     >
-      {!sideBarVisible && (
+      {!isDevPrototype && !sideBarVisible && (
         <Tooltip
           content="Open sidebar"
           positioning={{ placement: "right" }}
@@ -273,7 +274,19 @@ function ChatPanelHeader() {
           </Portal>
         </Menu.Root>
       )}
-      {!sideBarVisible && (
+      {isDevPrototype && (
+        <Tooltip content="Clear conversation" showArrow>
+          <IconButton
+            variant="ghost"
+            size="sm"
+            aria-label="Clear conversation"
+            onClick={() => useChatStore.getState().devProtoClear?.()}
+          >
+            <EraserIcon />
+          </IconButton>
+        </Tooltip>
+      )}
+      {!isDevPrototype && !sideBarVisible && (
         <Tooltip content="New conversation" showArrow>
           <IconButton asChild variant="ghost" size="sm">
             <Link href="/app" aria-label="New conversation">

@@ -40,7 +40,7 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading } = useChatStore();
+  const { sendMessage, isLoading, isDevPrototype } = useChatStore();
   const { context, removeContext } = useContextStore();
 
   const openContextMenu = (type: ChatContextType) => {
@@ -65,7 +65,7 @@ export default function ChatInput({
     }
 
     const result = await sendMessage(message);
-    if (result.isNew) {
+    if (result.isNew && !isDevPrototype) {
       router.replace(`/app/threads/${result.id}`);
     }
   };

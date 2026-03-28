@@ -32,6 +32,8 @@ interface ChatState {
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
   reasoningStartTime: number | null; // Timestamp when reasoning started
+  isDevPrototype: boolean;
+  devProtoClear: (() => void) | null;
 }
 
 interface ChatActions {
@@ -73,6 +75,8 @@ const initialState: ChatState = {
   toolSteps: [],
   pendingTraceId: null,
   reasoningStartTime: null,
+  isDevPrototype: false,
+  devProtoClear: null,
 };
 
 // Helper function to process stream messages and add them to chat
@@ -145,7 +149,7 @@ async function processStreamMessage(
     }
 
     // Special handling for generate_insights tool
-    if (streamMessage.name === "generate_insights" && streamMessage.insights) {
+    if (streamMessage.name === "generate_insights" && streamMessage.charts_data) {
       // Non-blocking: do not await tool side-effects
       void Promise.resolve().then(() =>
         generateInsightsTool(streamMessage, addMessage)

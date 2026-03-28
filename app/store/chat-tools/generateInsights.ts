@@ -4,7 +4,6 @@ interface ChartData {
   id: string;
   title: string;
   type: "line" | "bar" | "table";
-  insight: string;
   data: unknown;
   xAxis: string;
   yAxis: string;
@@ -24,7 +23,7 @@ export function generateInsightsTool(
       ).map((chart: ChartData) => ({
         type: chart.type,
         title: chart.title,
-        description: chart.insight,
+        description: "",
         data: chart.data,
         xAxis: chart.xAxis,
         yAxis: chart.yAxis,

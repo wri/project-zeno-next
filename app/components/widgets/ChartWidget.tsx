@@ -440,21 +440,8 @@ export default function ChartWidget({
                 axisLine={false}
                 tickLine={false}
                 domain={["auto", "auto"]}
-              >
-                {yAxis && (
-                  <Label
-                    value={toAxisLabel(yAxis)}
-                    angle={-90}
-                    position="insideLeft"
-                    offset={10}
-                    style={{
-                      fontSize: 11,
-                      fill: "var(--chakra-colors-fg-muted)",
-                      textAnchor: "middle",
-                    }}
-                  />
-                )}
-              </YAxis>
+                width={65}
+              />
             </>
           )}
           <Tooltip

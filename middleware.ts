@@ -38,7 +38,8 @@ export async function middleware(request: NextRequest) {
 
   // General guard for /app, /onboarding, and /dashboard
   const isOnboarding = pathname.startsWith("/onboarding");
-  const isApp = pathname.startsWith("/app");
+  const isApp =
+    pathname.startsWith("/app") && !pathname.startsWith("/app/api-dev");
   const isDashboard = pathname.startsWith("/dashboard");
 
   if (isOnboarding || isApp || isDashboard) {

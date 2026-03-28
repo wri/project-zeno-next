@@ -107,9 +107,11 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
       <Flex gap={3} px={4} py={3} flexDir="column">
         {hasData && (
           <>
-            <Text fontSize="xs" color="fg.muted">
-              {widget.description}
-            </Text>
+            {widget.description && (
+              <Text fontSize="xs" color="fg.muted">
+                {widget.description}
+              </Text>
+            )}
             <Separator />
           </>
         )}

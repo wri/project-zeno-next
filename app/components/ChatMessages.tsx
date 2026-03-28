@@ -1,6 +1,8 @@
 "use client";
 import { Fragment, useState, useEffect, useRef } from "react";
 import { Box, Text, Link } from "@chakra-ui/react";
+import Markdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
@@ -11,7 +13,7 @@ function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
-  const { messages, isLoading, toolSteps: currentToolSteps } = useChatStore();
+  const { messages, isLoading, toolSteps: currentToolSteps, isDevPrototype } = useChatStore();
   const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
   const shouldAutoScroll = useRef(true);
 
@@ -102,7 +104,7 @@ function ChatMessages() {
         return (
           <Fragment key={message.id}>
             {isLastUserMessage && <Box ref={lastUserMessageRef} />}
-            {isFirst && displayDisclaimer && (
+            {isFirst && displayDisclaimer && !isDevPrototype && (
               <ChatDisclaimer
                 type="info"
                 setDisplayDisclaimer={setDisplayDisclaimer}
@@ -151,11 +153,17 @@ function ChatMessages() {
                 </Box>
               </ChatDisclaimer>
             )}
-            <MessageBubble
-              message={message}
-              isConsecutive={isConsecutive}
-              isFirst={isFirst}
-            />
+            {isFirst && isDevPrototype ? (
+              <ChatDisclaimer type="warning" my={4} mb={6}>
+                <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+              </ChatDisclaimer>
+            ) : (
+              <MessageBubble
+                message={message}
+                isConsecutive={isConsecutive}
+                isFirst={isFirst}
+              />
+            )}
             {message.type === "user" && (
               <>
                 {/* Show reasoning for current loading query (last user message) */}
