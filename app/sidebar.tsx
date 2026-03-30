@@ -29,6 +29,7 @@ import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
 import { toaster } from "@/app/components/ui/toaster";
+import { clearToken } from "@/app/lib/api-client";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
 
@@ -173,15 +174,12 @@ export function Sidebar() {
         duration: 8000,
       });
     } catch {}
-    (async () => {
-      try {
-        await fetch("/api/auth/logout", { method: "POST" });
-      } catch {}
-      const url = new URL("https://api.resourcewatch.org/auth/logout");
-      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-      url.searchParams.set("origin", "gnw");
-      window.location.href = url.toString();
-    })();
+    clearToken();
+    useAuthStore.getState().clearAuth();
+    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+    url.searchParams.set("origin", "gnw");
+    window.location.href = url.toString();
   };
 
   const hasTodayThreads = threadGroups.today.length > 0;

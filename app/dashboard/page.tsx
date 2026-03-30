@@ -32,6 +32,7 @@ import Link from "next/link";
 import LclLogo from "../components/LclLogo";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
+import { clearToken } from "@/app/lib/api-client";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -279,15 +280,11 @@ export default function UserSettingsPage() {
         duration: 8000,
       });
     } catch {}
-    (async () => {
-      try {
-        await fetch("/api/auth/logout", { method: "POST" });
-      } catch {}
-      const url = new URL("https://api.resourcewatch.org/auth/logout");
-      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-      url.searchParams.set("origin", "gnw");
-      window.location.href = url.toString();
-    })();
+    clearToken();
+    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+    url.searchParams.set("origin", "gnw");
+    window.location.href = url.toString();
   };
 
   return (
