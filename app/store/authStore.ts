@@ -6,13 +6,16 @@ interface AuthState {
   userId: string | null;
   userEmail: string | null;
   isAuthenticated: boolean;
+  hasProfile: boolean;
+  authLoaded: boolean;
   usedPrompts: number;
   totalPrompts: number;
   isSignupOpen: boolean;
   isLoadingMetadata: boolean;
   setPromptUsage: (used: number, total: number) => void;
   setUsageFromHeaders: (headers: Headers | Record<string, string>) => void;
-  setAuthStatus: (email: string, id: string) => void;
+  setAuthStatus: (email: string, id: string, hasProfile: boolean) => void;
+  setAuthLoaded: () => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
 }
@@ -21,6 +24,8 @@ const useAuthStore = create<AuthState>()((set) => ({
   userId: null,
   userEmail: null,
   isAuthenticated: false,
+  hasProfile: false,
+  authLoaded: false,
   usedPrompts: 0,
   totalPrompts: 10,
   isSignupOpen: false,
@@ -71,20 +76,26 @@ const useAuthStore = create<AuthState>()((set) => ({
       };
     });
   },
-  setAuthStatus: (email, id) => {
+  setAuthStatus: (email, id, hasProfile) => {
     set({
       userId: id,
       userEmail: email,
       isAuthenticated: true,
+      hasProfile,
+      authLoaded: true,
     });
-    // GA4 login event per @next/third-parties/google requires name first and params second
     sendGAEvent("event", "login", { method: "token", user_id: id });
+  },
+  setAuthLoaded: () => {
+    set({ authLoaded: true });
   },
   clearAuth: () => {
     set({
       userId: null,
       userEmail: null,
       isAuthenticated: false,
+      hasProfile: false,
+      authLoaded: true,
     });
   },
   fetchMetadata: async () => {

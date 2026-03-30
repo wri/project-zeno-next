@@ -14,14 +14,18 @@ import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
 const queryClient = new QueryClient();
 
 function AuthBootstrapper() {
-  const { setAuthStatus, clearAuth, setPromptUsage } = useAuthStore();
+  const { setAuthStatus, setAuthLoaded, clearAuth, setPromptUsage } =
+    useAuthStore();
 
   useEffect(() => {
     let cancelled = false;
     async function loadAuth() {
       try {
         const token = getToken();
-        if (!token) return;
+        if (!token) {
+          setAuthLoaded();
+          return;
+        }
 
         // Check token expiry client-side
         const decoded: Record<string, unknown> = jwtDecode(token);
@@ -50,8 +54,11 @@ function AuthBootstrapper() {
 
         const email = data?.email as string | undefined;
         const id = data?.id as string | undefined;
+        const hasProfile = Boolean(data?.hasProfile);
         if (email) {
-          setAuthStatus(email, id ?? "");
+          setAuthStatus(email, id ?? "", hasProfile);
+        } else {
+          setAuthLoaded();
         }
 
         const used =
@@ -77,7 +84,7 @@ function AuthBootstrapper() {
     return () => {
       cancelled = true;
     };
-  }, [setAuthStatus, clearAuth, setPromptUsage]);
+  }, [setAuthStatus, setAuthLoaded, clearAuth, setPromptUsage]);
 
   return null;
 }

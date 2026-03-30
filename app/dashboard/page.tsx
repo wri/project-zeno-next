@@ -33,6 +33,7 @@ import LclLogo from "../components/LclLogo";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
 import { clearToken } from "@/app/lib/api-client";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -62,6 +63,7 @@ type ProfileFormState = {
 type ValueChangeDetails = { value: string[] };
 
 export default function UserSettingsPage() {
+  const isReady = useAuthGuard();
   const [config, setConfig] = useState<ProfileConfig | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
     firstName: "",
@@ -286,6 +288,8 @@ export default function UserSettingsPage() {
     url.searchParams.set("origin", "gnw");
     window.location.href = url.toString();
   };
+
+  if (!isReady) return null;
 
   return (
     <Box
