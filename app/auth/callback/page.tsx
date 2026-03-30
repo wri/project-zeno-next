@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Center, Spinner, Text, VStack } from "@chakra-ui/react";
+import { setToken } from "@/app/lib/api-client";
 
 const REDIRECT_URL_KEY = "redirectUrl";
 
@@ -13,13 +14,7 @@ export default function AuthCallbackPage() {
 
       if (token) {
         try {
-          await fetch("/api/auth/set-token", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ token }),
-          });
+          setToken(token);
 
           // Clear any previous loop guard on successful auth
           sessionStorage.removeItem("authCallbackRedirects");
