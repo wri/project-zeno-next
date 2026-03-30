@@ -3,22 +3,36 @@
 import { useEffect } from "react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { jwtDecode } from "jwt-decode";
 
 import theme from "@/app/theme";
 import { Toaster } from "@/app/components/ui/toaster";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import useAuthStore from "@/app/store/authStore";
+import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
 
 const queryClient = new QueryClient();
 
 function AuthBootstrapper() {
-  const { setAuthStatus, setAnonymous, setPromptUsage } = useAuthStore();
+  const { setAuthStatus, clearAuth, setPromptUsage } = useAuthStore();
 
   useEffect(() => {
     let cancelled = false;
     async function loadAuth() {
       try {
-        const res = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+        const token = getToken();
+        if (!token) return;
+
+        // Check token expiry client-side
+        const decoded: Record<string, unknown> = jwtDecode(token);
+        const exp = typeof decoded.exp === "number" ? decoded.exp : null;
+        if (exp && exp * 1000 < Date.now()) {
+          clearToken();
+          clearAuth();
+          return;
+        }
+
+        const res = await apiFetch("/api/auth/me", {
           cache: "no-store",
           headers: {
             "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -26,16 +40,16 @@ function AuthBootstrapper() {
           },
         });
         if (!res.ok) {
-          throw new Error("unauthorized");
-        }
-
-        const data = await res.json();
-        if (cancelled) {
+          clearToken();
+          clearAuth();
           return;
         }
 
-        const email = data?.user?.email as string | undefined;
-        const id = data?.user?.id as string | undefined;
+        const data = await res.json();
+        if (cancelled) return;
+
+        const email = data?.email as string | undefined;
+        const id = data?.id as string | undefined;
         if (email) {
           setAuthStatus(email, id ?? "");
         }
@@ -54,7 +68,8 @@ function AuthBootstrapper() {
         }
       } catch {
         if (!cancelled) {
-          setAnonymous();
+          clearToken();
+          clearAuth();
         }
       }
     }
@@ -62,7 +77,7 @@ function AuthBootstrapper() {
     return () => {
       cancelled = true;
     };
-  }, [setAuthStatus, setAnonymous, setPromptUsage]);
+  }, [setAuthStatus, clearAuth, setPromptUsage]);
 
   return null;
 }

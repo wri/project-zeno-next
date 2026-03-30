@@ -6,7 +6,6 @@ interface AuthState {
   userId: string | null;
   userEmail: string | null;
   isAuthenticated: boolean;
-  isAnonymous: boolean;
   usedPrompts: number;
   totalPrompts: number;
   isSignupOpen: boolean;
@@ -14,7 +13,6 @@ interface AuthState {
   setPromptUsage: (used: number, total: number) => void;
   setUsageFromHeaders: (headers: Headers | Record<string, string>) => void;
   setAuthStatus: (email: string, id: string) => void;
-  setAnonymous: () => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
 }
@@ -23,7 +21,6 @@ const useAuthStore = create<AuthState>()((set) => ({
   userId: null,
   userEmail: null,
   isAuthenticated: false,
-  isAnonymous: false,
   usedPrompts: 0,
   totalPrompts: 10,
   isSignupOpen: false,
@@ -74,19 +71,11 @@ const useAuthStore = create<AuthState>()((set) => ({
       };
     });
   },
-  setAnonymous: () => {
-    set({
-      userEmail: null,
-      isAuthenticated: false,
-      isAnonymous: true,
-    });
-  },
   setAuthStatus: (email, id) => {
     set({
       userId: id,
       userEmail: email,
       isAuthenticated: true,
-      isAnonymous: false,
     });
     // GA4 login event per @next/third-parties/google requires name first and params second
     sendGAEvent("event", "login", { method: "token", user_id: id });
@@ -96,7 +85,6 @@ const useAuthStore = create<AuthState>()((set) => ({
       userId: null,
       userEmail: null,
       isAuthenticated: false,
-      isAnonymous: false,
     });
   },
   fetchMetadata: async () => {
