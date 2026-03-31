@@ -45,6 +45,20 @@ pnpm dev
 
 ✨ You can now access the app at [http://localhost:3000](http://localhost:3000)
 
+## Agent Sandbox
+
+A page at `/app/agent-sandbox` that renders the full GNW chat + map UI without authentication. It's intended for backend/agent developers working on [project-zeno](https://github.com/wri/project-zeno) who need to test local API changes against the real frontend.
+
+Point `NEXT_PUBLIC_API_HOST` in your `.env.local` at your local agent, start the dev server, and visit:
+
+```
+http://localhost:3000/app/agent-sandbox
+```
+
+No login required. The page is not available in production.
+
+See [`app/app/agent-sandbox/README.md`](app/app/agent-sandbox/README.md) for full usage details.
+
 ## Chart Debug Page
 
 A hidden page at `/chart-debug` renders every chart and table widget type with representative dummy data. Use it to visually QA chart rendering, test new features, and catch regressions.

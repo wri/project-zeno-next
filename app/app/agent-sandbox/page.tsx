@@ -14,7 +14,7 @@ import { usePromptStore } from "@/app/store/promptStore";
 import { API_CONFIG } from "@/app/config/api";
 
 const PROTO_MESSAGE = [
-  "**API Dev prototype** — no auth required.",
+  "**Agent sandbox** — no auth required.",
   "",
   `Requests go to \`${API_CONFIG.API_HOST}\` via \`NEXT_PUBLIC_API_HOST\` in \`.env.local\`.`,
   "",
@@ -22,6 +22,11 @@ const PROTO_MESSAGE = [
 ].join("\n");
 
 export default function ApiDevPrototype() {
+  // Guard: only available in development.
+  // Auth is bypassed via the middleware exemption for /app/agent-sandbox (not via an env var).
+  // process.env.NODE_ENV is inlined at build time by Next.js, so this tree-shakes in production.
+  if (process.env.NODE_ENV === "production") return null;
+
   useEffect(() => {
     const savedPrompts = usePromptStore.getState().prompts;
 
@@ -29,8 +34,8 @@ export default function ApiDevPrototype() {
       useChatStore.setState({
         messages: [{ id: "proto-init", type: "system", message: PROTO_MESSAGE, timestamp: new Date().toISOString() }],
         isDevPrototype: true,
-        devProtoClear: applyProtoState,
       });
+      useChatStore.getState().setDevProtoClear(applyProtoState);
       usePromptStore.setState({ prompts: [] });
     };
 
@@ -41,7 +46,8 @@ export default function ApiDevPrototype() {
     applyProtoState();
 
     return () => {
-      useChatStore.setState({ isDevPrototype: false, devProtoClear: null });
+      useChatStore.setState({ isDevPrototype: false });
+      useChatStore.getState().setDevProtoClear(null);
       usePromptStore.setState({ prompts: savedPrompts });
     };
   }, []);
@@ -77,7 +83,7 @@ export default function ApiDevPrototype() {
             variant="solid"
             size="xs"
           >
-            API DEV
+            AGENT SANDBOX
           </Badge>
         </Flex>
       </Flex>
