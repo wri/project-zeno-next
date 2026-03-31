@@ -54,6 +54,7 @@ interface ChatActions {
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
+  setDevProtoClear: (fn: (() => void) | null) => void;
 }
 
 const initialState: ChatState = {
@@ -472,6 +473,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   clearToolSteps: () => set({ toolSteps: [] }),
+
+  setDevProtoClear: (fn) => set({ devProtoClear: fn }),
 
   attachToolStepsToLastUserMessage: (durationOverride?: number) => {
     set((state) => {
