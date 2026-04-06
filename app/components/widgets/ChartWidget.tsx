@@ -269,7 +269,11 @@ export default function ChartWidget({
     type === "scatter" ||
     xAxis?.toLowerCase() === "year" ||
     (formattedData.length > 0 && typeof formattedData[0][xAxis] === "number");
-  const needsAngledTicks = !isNumericXAxis && formattedData.length > 4;
+  const needsAngledTicks =
+    (!isNumericXAxis && formattedData.length > 4) ||
+    (isNumericXAxis && formattedData.length > 10);
+  const xAxisInterval: number | "preserveStartEnd" =
+    isNumericXAxis && formattedData.length > 10 ? "preserveStartEnd" : 0;
 
   const renderChartItems = () => {
     switch (type) {
@@ -415,7 +419,7 @@ export default function ChartWidget({
                 angle={needsAngledTicks ? -35 : 0}
                 textAnchor={needsAngledTicks ? "end" : "middle"}
                 height={needsAngledTicks ? 90 : 40}
-                interval={0}
+                interval={xAxisInterval}
                 fontSize={11}
               >
                 {xAxis && (
