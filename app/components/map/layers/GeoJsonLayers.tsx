@@ -2,15 +2,24 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
 import { Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "../../ContextButton";
-import { Feature, FeatureCollection, Polygon, GeoJsonProperties } from "geojson";
+import {
+  Feature,
+  FeatureCollection,
+  Polygon,
+  GeoJsonProperties,
+} from "geojson";
 import useContextStore, { ContextItem } from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
-import { Layer as ManagedLayer, GeoJsonEntry, FeatureRef } from "@/app/store/layerManagerSlice";
+import {
+  Layer as ManagedLayer,
+  GeoJsonEntry,
+  FeatureRef,
+} from "@/app/store/layerManagerSlice";
 import bbox from "@turf/bbox";
 
 // Create a rectangle polygon from bbox coordinates
 function createBboxPolygon(
-  bboxCoords: [number, number, number, number]
+  bboxCoords: [number, number, number, number],
 ): Feature<Polygon, GeoJsonProperties> {
   const [minLng, minLat, maxLng, maxLat] = bboxCoords;
   return {
@@ -33,7 +42,7 @@ function createBboxPolygon(
 
 // Compute the combined bbox of a list of features
 function computeCombinedBbox(
-  features: { id: string; data: FeatureCollection | Feature }[]
+  features: { id: string; data: FeatureCollection | Feature }[],
 ): [number, number, number, number] | null {
   let combinedBbox: [number, number, number, number] | null = null;
   for (const f of features) {
@@ -73,7 +82,7 @@ function useHoverState() {
         setHoverTimeout(timeout);
       }
     },
-    [hoverTimeout]
+    [hoverTimeout],
   );
   useEffect(() => {
     return () => {
@@ -86,9 +95,11 @@ function useHoverState() {
 // Given a list of feature refs, resolve them to the corresponding geojson entries
 function resolveFeatureRefs(refs: FeatureRef[], registry: GeoJsonEntry[]) {
   return refs
-    .map((ref) => registry.find(
-      (e) => e.ref.name === ref.name && e.ref.source === ref.source
-    ))
+    .map((ref) =>
+      registry.find(
+        (e) => e.ref.name === ref.name && e.ref.source === ref.source,
+      ),
+    )
     .filter((e): e is GeoJsonEntry => !!e);
 }
 
@@ -109,15 +120,23 @@ export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
 
   return (
     <>
-    {geoJsonLayers.map((layer) => {
-      const entries = resolveFeatureRefs(layer.featureRefs ?? [], geoJsonRegistry);
+      {geoJsonLayers.map((layer) => {
+        const entries = resolveFeatureRefs(
+          layer.featureRefs ?? [],
+          geoJsonRegistry,
+        );
 
-      return (
-        <GeoJsonLayerGroup key={layer.id} layer={layer} entries={entries} areas={areas} />
-      )
-    })}
+        return (
+          <GeoJsonLayerGroup
+            key={layer.id}
+            layer={layer}
+            entries={entries}
+            areas={areas}
+          />
+        );
+      })}
     </>
-  )
+  );
 }
 
 // If the group is a single area, render a single label and polygon
@@ -127,15 +146,20 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
   const { isHovered, setHoverState } = useHoverState();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
   const displayName = layer.selectionName ?? layer.name;
-  const areaInContext = areas.find(
-    (a) => layer.selectionName
+  const areaInContext = areas.find((a) =>
+    layer.selectionName
       ? a.aoiSelection?.name === layer.selectionName
-      : a.content === layer.name || a.aoiData?.src_id === layer.name
+      : a.content === layer.name || a.aoiData?.src_id === layer.name,
   );
   const isInContext = !!areaInContext;
   const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
 
-  const fillColor = isInContext ? "#0A3785" : "#666E7B";
+  const isMultiArea = !!layer.selectionName;
+  const fillColor = isInContext
+    ? isMultiArea
+      ? "#8EA4E8"
+      : "#0A3785"
+    : "#666E7B";
   const handleRemoveFromContext = () => {
     if (areaInContext) removeContext(areaInContext.id);
   };
@@ -152,7 +176,9 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
         // correct src_id, source, and subtype for the context upsert.
         const ref = layer.featureRefs?.[0];
         const entry = ref
-          ? entries.find((e) => e.ref.name === ref.name && e.ref.source === ref.source)
+          ? entries.find(
+              (e) => e.ref.name === ref.name && e.ref.source === ref.source,
+            )
           : undefined;
         upsertContextByType({
           contextType: "area",
@@ -167,7 +193,9 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
       }
     }
   };
-  const bboxCoords = computeCombinedBbox(entries.map((e) => ({ id: e.ref.name, data: e.data })));
+  const bboxCoords = computeCombinedBbox(
+    entries.map((e) => ({ id: e.ref.name, data: e.data })),
+  );
   const bboxPolygon = bboxCoords ? createBboxPolygon(bboxCoords) : null;
   const groupId = layer.id.replace(/\s+/g, "-").toLowerCase();
   return (
@@ -178,57 +206,118 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
         const fillLayerId = `geojson-fill-${groupId}-${entry.ref.source}-${entry.ref.name}`;
         const lineLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-solid`;
         return (
-          <Source key={sourceId} id={sourceId} type="geojson" data={entry.data} generateId={true}>
-            <MapLayer id={fillLayerId} type="fill"
+          <Source
+            key={sourceId}
+            id={sourceId}
+            type="geojson"
+            data={entry.data}
+            generateId={true}
+          >
+            <MapLayer
+              id={fillLayerId}
+              type="fill"
               paint={{ "fill-color": fillColor, "fill-opacity": 0 }}
-              filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]]}
+              filter={[
+                "any",
+                ["==", ["geometry-type"], "Polygon"],
+                ["==", ["geometry-type"], "MultiPolygon"],
+              ]}
             />
-            <MapLayer id={lineLayerId} type="line"
-              paint={{ "line-color": fillColor, 
-                "line-width": ["interpolate", ["linear"], ["zoom"],
-                  3, 0.5,
-                  6, 1,
-                  10, 2,
-                  14, 3
-                ],
-                "line-opacity": lineOpacity }}
-              filter={["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]]}
+            <MapLayer
+              id={lineLayerId}
+              type="line"
+              paint={{
+                "line-color": fillColor,
+                "line-width": isMultiArea
+                  ? 1.5
+                  : [
+                      "interpolate",
+                      ["linear"],
+                      ["zoom"],
+                      3,
+                      0.5,
+                      6,
+                      1,
+                      10,
+                      2,
+                      14,
+                      3,
+                    ],
+                "line-opacity": lineOpacity,
+              }}
+              filter={[
+                "any",
+                ["==", ["geometry-type"], "Polygon"],
+                ["==", ["geometry-type"], "MultiPolygon"],
+              ]}
             />
           </Source>
         );
       })}
       {/* Combined bbox */}
       {bboxPolygon && (
-        <Source id={`bbox-source-${groupId}`} type="geojson" data={bboxPolygon} generateId={true}>
-          <MapLayer id={`bbox-line-${groupId}-dashed`} type="line"
-            paint={{ "line-color": fillColor, "line-width": 1.5, "line-dasharray": [2, 1],
-              "line-opacity": isHovered || isInContext ? 0 : 0.75 * lineOpacity }}
+        <Source
+          id={`bbox-source-${groupId}`}
+          type="geojson"
+          data={bboxPolygon}
+          generateId={true}
+        >
+          <MapLayer
+            id={`bbox-line-${groupId}-dashed`}
+            type="line"
+            paint={{
+              "line-color": fillColor,
+              "line-width": 1.5,
+              "line-dasharray": [2, 1],
+              "line-opacity": isHovered || isInContext ? 0 : 0.75 * lineOpacity,
+            }}
           />
-          <MapLayer id={`bbox-line-${groupId}-solid`} type="line"
-            paint={{ "line-color": fillColor, "line-width": 1.5,
-              "line-opacity": isHovered || isInContext ? 0.75 * lineOpacity : 0 }}
+          <MapLayer
+            id={`bbox-line-${groupId}-solid`}
+            type="line"
+            paint={{
+              "line-color": fillColor,
+              "line-width": 1.5,
+              "line-opacity": isHovered || isInContext ? 0.75 * lineOpacity : 0,
+            }}
           />
         </Source>
       )}
       {/* Single label */}
       {bboxCoords && layer.visible && (
-        <Marker longitude={bboxCoords[0]} latitude={bboxCoords[3]} anchor="bottom-left">
+        <Marker
+          longitude={bboxCoords[0]}
+          latitude={bboxCoords[3]}
+          anchor="bottom-left"
+        >
           <Tag.Root
             colorPalette={isInContext ? "primary" : "gray"}
-            px={2} py={1} size="md"
+            px={2}
+            py={1}
+            size="md"
             variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
-            roundedBottom="none" cursor="pointer"
+            roundedBottom="none"
+            cursor="pointer"
             onMouseEnter={() => setHoverState(true)}
             onMouseLeave={() => setHoverState(false)}
             onClick={handleSelectFromLabel}
           >
-            {isInContext && <Tag.StartElement>{ChatContextOptions.area.icon}</Tag.StartElement>}
+            {isInContext && (
+              <Tag.StartElement>
+                {ChatContextOptions.area.icon}
+              </Tag.StartElement>
+            )}
             <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
             {isInContext && (
               <Tag.EndElement>
                 <Tag.CloseTrigger
-                  opacity={isHovered ? 1 : 0.25} cursor="pointer"
-                  onClick={(e) => { e.stopPropagation(); handleRemoveFromContext(); setHoverState(false); }}
+                  opacity={isHovered ? 1 : 0.25}
+                  cursor="pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFromContext();
+                    setHoverState(false);
+                  }}
                   aria-label="Remove from context"
                 />
               </Tag.EndElement>
