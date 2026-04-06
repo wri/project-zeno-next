@@ -163,8 +163,9 @@ function Reasoning({
                               <Heading as="h3" size="xs" mb={2} {...props} />
                             </>
                           ),
-                          p: ({ ...props }) => <Text mb={2} {...props} />,
-                          br: () => <Box h={2} />, // Add spacing for line breaks
+                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                          p: ({ node: _, ...props }) => <Box mb={2} {...props} />,
+                          br: () => <Box h={2} />,
                         }}
                       >
                         {tool.content ? trimLines(tool.content) : ""}
