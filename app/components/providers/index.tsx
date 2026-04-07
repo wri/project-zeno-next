@@ -43,9 +43,18 @@ function AuthBootstrapper() {
             Pragma: "no-cache",
           },
         });
-        if (!res.ok) {
+
+        // Only clear the token on explicit auth rejection -- not on transient errors
+        if (res.status === 401 || res.status === 403) {
           clearToken();
           clearAuth();
+          return;
+        }
+
+        if (!res.ok) {
+          // Transient error (5xx, network issue) -- keep the token, mark loaded
+          // useAuthGuard will show a spinner rather than redirect to login
+          if (!cancelled) setAuthLoaded();
           return;
         }
 
@@ -74,10 +83,8 @@ function AuthBootstrapper() {
           setPromptUsage(used || 0, quota);
         }
       } catch {
-        if (!cancelled) {
-          clearToken();
-          clearAuth();
-        }
+        // Network/CORS error -- keep the token, mark loaded without authenticating
+        if (!cancelled) setAuthLoaded();
       }
     }
     loadAuth();
