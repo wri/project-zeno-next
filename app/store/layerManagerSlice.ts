@@ -16,7 +16,7 @@ export interface GeoJsonEntry {
   subtype?: string;
 }
 
-export type LayerType = "raster" | "geojson";
+export type LayerType = "raster" | "geojson" | "vector";
 
 export interface Layer {
   id: string;
@@ -25,6 +25,7 @@ export interface Layer {
   visible: boolean;
   opacity?: number;
   tileUrl?: string;
+  sourceLayer?: string;
   featureRefs?: FeatureRef[];
   selectionName?: string;
   aoiSelection?: AOISelection;
