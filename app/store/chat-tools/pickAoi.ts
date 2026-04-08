@@ -5,6 +5,14 @@ import useContextStore from "../contextStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import bbox from "@turf/bbox";
 import { GeoJsonEntry } from "../layerManagerSlice";
+import { selectLayerOptions } from "@/app/types/map";
+
+const GLOBAL_LAYER_ID = "global-layer";
+const GLOBAL_LAYER_NAME = "Global Layer";
+
+function isGlobalQuery(name: string): boolean {
+  return name.toLowerCase() === "all countries in the world";
+}
 
 /**
  * Fetch geometry for a single AOI and add it to the layer manager
@@ -53,6 +61,41 @@ export async function pickAoiTool(
 
     if (aois.length === 0) {
       throw new Error("No AOI data found in stream message");
+    }
+
+    // Global query: render a vector tile layer instead of fetching per-country GeoJSON
+    if (isGlobalQuery(selectionName)) {
+      const gadm = selectLayerOptions.find((o) => o.id === "GADM")!;
+      const worldBbox: Feature = {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [[
+            [-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85],
+          ]],
+        },
+      };
+
+      addLayer({
+        id: GLOBAL_LAYER_ID,
+        name: GLOBAL_LAYER_NAME,
+        type: "vector",
+        visible: true,
+        tileUrl: gadm.url,
+        sourceLayer: gadm.sourceLayer,
+      });
+
+      flyToGeoJsonWithRetry(worldBbox);
+
+      upsertContextByType({
+        contextType: "area",
+        content: GLOBAL_LAYER_NAME,
+        isAiContext: true,
+        aoiSelection: aoiSelection ?? { name: GLOBAL_LAYER_NAME, aois },
+      });
+
+      return;
     }
 
     // Build an AOISelection to store on the context (even for single-AOI fallback)
