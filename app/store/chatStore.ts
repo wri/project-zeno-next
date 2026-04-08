@@ -8,6 +8,7 @@ import {
   StreamMessage,
   QueryType,
   UiContext,
+  ToolStepData,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "../api/shared/read-data-stream";
@@ -28,8 +29,9 @@ interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   currentThreadId: string | null;
-  toolSteps: string[];
+  toolSteps: ToolStepData[];
   pendingTraceId: string | null;
+  reasoningStartTime: number | null; // Timestamp when reasoning started
 }
 
 interface ChatActions {
@@ -47,8 +49,9 @@ interface ChatActions {
     threadId: string,
     abortController?: AbortController
   ) => Promise<void>;
-  addToolStep: (toolName: string) => void;
+  addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
+  attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
 }
 
 const initialState: ChatState = {
@@ -69,13 +72,14 @@ const initialState: ChatState = {
   currentThreadId: null,
   toolSteps: [],
   pendingTraceId: null,
+  reasoningStartTime: null,
 };
 
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void,
-  addToolStep: (toolName: string) => void,
+  addToolStep: (toolData: StreamMessage) => void,
   getPendingTraceId: () => string | null,
   setPendingTraceId: (traceId: string | null) => void,
   attachTraceToLastAssistant: (traceId: string) => boolean
@@ -137,7 +141,7 @@ async function processStreamMessage(
   } else if (streamMessage.type === "tool") {
     // Add tool step to reasoning display
     if (streamMessage.name) {
-      addToolStep(streamMessage.name);
+      addToolStep(streamMessage);
     }
 
     // Special handling for generate_insights tool
@@ -149,7 +153,10 @@ async function processStreamMessage(
       return;
     }
     // Special handling for pick_aoi tool (previously location-tool)
-    else if (streamMessage.name === "pick_aoi" && streamMessage.aoi) {
+    else if (
+      streamMessage.name === "pick_aoi" &&
+      (streamMessage.aoi_selection || streamMessage.aoi)
+    ) {
       // Non-blocking: geometry fetch can be slow; don't stall stream
       void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
       return;
@@ -217,6 +224,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
+    set({ reasoningStartTime: Date.now() });
     setLoading(true);
 
     // Build ui_context from current context
@@ -224,23 +232,29 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const ui_context: UiContext = {};
 
     // Find area context and convert to aoi_selected format
+    // Supports both single-AOI (aoiData) and multi-AOI (aoiSelection)
     const areaContext = newContext.find(
-      (ctx) => ctx.contextType === "area" && ctx.aoiData
+      (ctx) => ctx.contextType === "area" && (ctx.aoiData || ctx.aoiSelection)
     );
-    if (areaContext && areaContext.aoiData) {
-      ui_context.aoi_selected = {
-        aoi: {
-          name: areaContext.aoiData.name,
-          gadm_id: areaContext.aoiData.gadm_id,
-          src_id: areaContext.aoiData.src_id,
-          subtype: areaContext.aoiData.subtype,
-          source: areaContext.aoiData.source,
-        },
-        aoi_name: areaContext.aoiData.name,
-        subregion_aois: null,
-        subregion: null,
-        subtype: areaContext.aoiData.subtype,
-      };
+    if (areaContext) {
+      // Use aoiSelection's first AOI if available, otherwise fall back to aoiData
+      const firstAoi = areaContext.aoiSelection?.aois?.[0];
+      const aoiData = areaContext.aoiData;
+      const aoi = firstAoi ?? aoiData;
+
+      if (aoi) {
+        ui_context.aoi_selected = {
+          aoi: {
+            name: aoi.name,
+            gadm_id: aoiData?.gadm_id,
+            src_id: aoi.src_id,
+            subtype: aoi.subtype,
+            source: aoi.source,
+          },
+          aoi_name: areaContext.aoiSelection?.name ?? aoi.name,
+          subtype: aoi.subtype,
+        };
+      }
     }
 
     const dateContext = newContext.find((ctx) => ctx.contextType === "date");
@@ -420,6 +434,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
     } finally {
       clearTimeout(timeoutId);
+      
+      // Attach tool steps to the user message before clearing loading state
+      const { attachToolStepsToLastUserMessage } = get();
+      attachToolStepsToLastUserMessage();
+      
       setLoading(false);
 
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
@@ -429,13 +448,57 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  addToolStep: (toolName: string) => {
+  addToolStep: (toolData: StreamMessage) => {
     set((state) => ({
-      toolSteps: [...state.toolSteps, toolName],
+      toolSteps: [
+        ...state.toolSteps,
+        {
+          name: toolData.name || "unknown",
+          content: toolData.content,
+          dataset: toolData.dataset,
+          insights: toolData.insights,
+          charts_data: toolData.charts_data,
+          codeact_parts: toolData.codeact_parts,
+          source_urls: toolData.source_urls,
+          aoi: toolData.aoi,
+          timestamp: toolData.timestamp,
+        },
+      ],
     }));
   },
 
   clearToolSteps: () => set({ toolSteps: [] }),
+
+  attachToolStepsToLastUserMessage: (durationOverride?: number) => {
+    set((state) => {
+      if (state.toolSteps.length === 0) return state;
+
+      // Find the last user message
+      const messages = [...state.messages];
+      let duration: number;
+
+      if (durationOverride !== undefined) {
+        duration = durationOverride;
+      } else if (state.reasoningStartTime) {
+        duration = (Date.now() - state.reasoningStartTime) / 1000;
+      } else {
+        duration = 0;
+      }
+
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].type === "user") {
+          // Attach current tool steps and duration to this message
+          messages[i] = {
+            ...messages[i],
+            toolSteps: [...state.toolSteps],
+            reasoningDuration: duration,
+          };
+          break;
+        }
+      }
+      return { messages, reasoningStartTime: null };
+    });
+  },
 
   fetchThread: async (threadId: string, abort?: AbortController) => {
     const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
@@ -443,6 +506,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
+    set({ reasoningStartTime: Date.now() });
     setLoading(true);
     // Set up abort controller for client-side timeout
     const abortController = abort || new AbortController();
@@ -478,18 +542,20 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             const streamMessage: StreamMessage = JSON.parse(data);
 
             if (streamMessage.type === "human") {
-              if (streamMessage.aoi) {
-                const aoi = streamMessage.aoi as {
-                  name: string;
-                  gadm_id: string;
-                  src_id: string;
-                  subtype: string;
-                };
-                upsertContextByType({
-                  contextType: "area",
-                  content: aoi.name,
-                  aoiData: aoi,
-                });
+              // Flush accumulated tool steps for the previous user message,
+              // computing duration from the tool steps' own timestamps
+              const currentToolSteps = get().toolSteps;
+              if (currentToolSteps.length > 0) {
+                const first = new Date(currentToolSteps[0].timestamp).getTime();
+                const last = new Date(currentToolSteps[currentToolSteps.length - 1].timestamp).getTime();
+                const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+                get().attachToolStepsToLastUserMessage(historicalDuration);
+                get().clearToolSteps();
+              }
+
+              if (streamMessage.aoi_selection || streamMessage.aoi) {
+                // pickAoiTool handles context upsert with aoiSelection,
+                // so we just call it and let it set context properly
                 await pickAoiTool(streamMessage, addMessage);
               }
 
@@ -587,6 +653,16 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
+
+      // Flush any remaining tool steps for the last user message
+      const finalToolSteps = get().toolSteps;
+      if (finalToolSteps.length > 0) {
+        const first = new Date(finalToolSteps[0].timestamp).getTime();
+        const last = new Date(finalToolSteps[finalToolSteps.length - 1].timestamp).getTime();
+        const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+        get().attachToolStepsToLastUserMessage(historicalDuration);
+      }
+
       setLoading(false);
     }
   },

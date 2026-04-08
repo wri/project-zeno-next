@@ -1,6 +1,23 @@
 "use client";
-import { Box, Text, Heading, Flex, Separator, Button, useDisclosure } from "@chakra-ui/react";
-import { MicroscopeIcon as Microscope } from "@phosphor-icons/react";
+import { useState } from "react";
+import {
+  Box,
+  Heading,
+  Flex,
+  Separator,
+  Button,
+  Dialog,
+  Portal,
+  CloseButton,
+  useDisclosure,
+} from "@chakra-ui/react";
+import {
+  MicroscopeIcon as Microscope,
+  ArrowsOutIcon,
+  DownloadSimpleIcon,
+  TableIcon,
+  ChartBarIcon,
+} from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
@@ -8,20 +25,57 @@ import ChartWidget from "./widgets/ChartWidget";
 import { WidgetIcons } from "../ChatPanelHeader";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
+import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
+import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
 }
 
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
+  const [showAsTable, setShowAsTable] = useState(false);
   const { open, onOpen, onClose } = useDisclosure();
+  const {
+    open: expanded,
+    onOpen: onExpand,
+    onClose: onCollapse,
+  } = useDisclosure();
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
-  
+
   const handleOpen = () => {
-    console.log("Opening drawer for widget:", widget.title, "Generation data:", widget.generation);
     onOpen();
+  };
+
+  const handleDownloadCsv = () => {
+    const data = widget.data;
+    if (!Array.isArray(data) || data.length === 0) return;
+    const rows = data as Record<string, unknown>[];
+    const headers = Object.keys(rows[0]);
+    const csvLines = [
+      headers.join(","),
+      ...rows.map((row) =>
+        headers
+          .map((h) => {
+            const val = row[h];
+            const str = val === null || val === undefined ? "" : String(val);
+            return str.includes(",") || str.includes('"') || str.includes("\n")
+              ? `"${str.replace(/"/g, '""')}"`
+              : str;
+          })
+          .join(","),
+      ),
+    ];
+    const blob = new Blob([csvLines.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(widget.title || "data").replace(/[^a-z0-9]/gi, "_")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const chartTypes: InsightWidget["type"][] = [
@@ -34,7 +88,8 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
     "scatter",
   ];
   const isChartType = chartTypes.includes(widget.type);
-  const showDisclaimer = isChartType || widget.type === "table";
+  const hasData = Array.isArray(widget.data) && widget.data.length > 0;
+  const showDisclaimer = (isChartType || widget.type === "table") && hasData;
   return (
     <Box
       rounded="md"
@@ -49,38 +104,120 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         </Heading>
       </Flex>
       <Flex gap={3} px={4} py={3} flexDir="column">
-        <Text fontSize="xs" color="fg.muted">
-          {widget.description}
-        </Text>
-        <Separator />
-        {widget.generation && (
-          <Flex justify="flex-end">
+        {hasData && <Separator />}
+        {/* Toolbar row — segmented toggle + full-screen */}
+        <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
+          {/* Segmented Chart / Table toggle */}
+          {isChartType && hasData && (
+            <Flex
+              gap={0}
+              border="1px solid"
+              borderColor="border.emphasized"
+              rounded="md"
+              overflow="hidden"
+            >
+              <Button
+                size="xs"
+                variant={!showAsTable ? "solid" : "ghost"}
+                colorPalette={!showAsTable ? "primary" : undefined}
+                onClick={() => setShowAsTable(false)}
+                h={6}
+                rounded="none"
+                fontWeight="medium"
+              >
+                <ChartBarIcon size={14} />
+                Chart
+              </Button>
+              <Button
+                size="xs"
+                variant={showAsTable ? "solid" : "ghost"}
+                colorPalette={showAsTable ? "primary" : undefined}
+                onClick={() => setShowAsTable(true)}
+                h={6}
+                rounded="none"
+                fontWeight="medium"
+              >
+                <TableIcon size={14} />
+                Table
+              </Button>
+            </Flex>
+          )}
+          {/* Show full-screen */}
+          {isChartType && hasData && (
             <Button
               size="xs"
               variant="outline"
-              onClick={handleOpen}
-              bg={open ? "bg.info" : undefined}
-              borderColor={open ? "border.info" : undefined}
-              color={open ? "fg.info" : undefined}
+              onClick={onExpand}
               h={6}
               rounded="sm"
-              _hover={{
-                bg: open ? "blue.100" : undefined,
-              }}
             >
-              <Microscope />
-              View how this was generated
+              <ArrowsOutIcon size={14} />
+              Show full-screen
             </Button>
-          </Flex>
+          )}
+        </Flex>
+        {isChartType && !showAsTable && (
+          <WidgetErrorBoundary fallbackTitle="Unable to render chart">
+            <ChartWidget widget={widget} />
+          </WidgetErrorBoundary>
         )}
-        {isChartType && <ChartWidget widget={widget} />}
+        {isChartType && showAsTable && Array.isArray(widget.data) && (
+          <WidgetErrorBoundary fallbackTitle="Unable to render table">
+            <ScrollableTableWrapper>
+              <TableWidget
+                data={
+                  widget.data as Record<string, string | number | boolean>[]
+                }
+                caption={widget.title}
+              />
+            </ScrollableTableWrapper>
+          </WidgetErrorBoundary>
+        )}
 
         {widget.type === "table" && (
-          <Box overflowX="auto" maxW="100%">
-            <TableWidget
-              data={widget.data as Record<string, string | number | boolean>[]}
-            />
-          </Box>
+          <WidgetErrorBoundary fallbackTitle="Unable to render table">
+            <ScrollableTableWrapper>
+              <TableWidget
+                data={
+                  widget.data as Record<string, string | number | boolean>[]
+                }
+                caption={widget.title}
+              />
+            </ScrollableTableWrapper>
+          </WidgetErrorBoundary>
+        )}
+        {/* Bottom action row — provenance + download */}
+        {(isChartType || widget.type === "table") && hasData && (
+          <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
+            {widget.generation && (
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={handleOpen}
+                bg={open ? "bg.info" : undefined}
+                borderColor={open ? "border.info" : undefined}
+                color={open ? "fg.info" : undefined}
+                h={6}
+                rounded="sm"
+                _hover={{
+                  bg: open ? "blue.100" : undefined,
+                }}
+              >
+                <Microscope />
+                View how this was generated
+              </Button>
+            )}
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={handleDownloadCsv}
+              h={6}
+              rounded="sm"
+            >
+              <DownloadSimpleIcon size={14} />
+              Download CSV
+            </Button>
+          </Flex>
         )}
         {showDisclaimer && <VisualizationDisclaimer />}
       </Flex>
@@ -90,6 +227,42 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         generation={widget.generation}
         title={widget.title}
       />
+      {isChartType && (
+        <Dialog.Root
+          open={expanded}
+          onOpenChange={(e) => !e.open && onCollapse()}
+          size="cover"
+        >
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content p={4}>
+                <Dialog.Header px={0} pt={0} pb={3}>
+                  <Flex align="center" gap={2}>
+                    {WidgetIcons[widget.type]}
+                    <Dialog.Title fontSize="md" fontWeight="medium">
+                      {widget.title}
+                    </Dialog.Title>
+                  </Flex>
+                  <Dialog.CloseTrigger
+                    asChild
+                    position="absolute"
+                    top={3}
+                    right={3}
+                  >
+                    <CloseButton size="sm" />
+                  </Dialog.CloseTrigger>
+                </Dialog.Header>
+                <Dialog.Body px={0} pb={0}>
+                  <WidgetErrorBoundary fallbackTitle="Unable to render chart">
+                    <ChartWidget widget={widget} expanded />
+                  </WidgetErrorBoundary>
+                </Dialog.Body>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
+      )}
     </Box>
   );
 }

@@ -12,7 +12,7 @@ const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
 
 function CustomAreasLayer() {
   const { customAreas, isLoading, error } = useCustomAreasList();
-  const { mapRef, addGeoJsonFeature, setSelectAreaLayer } = useMapStore();
+  const { mapRef, addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
   const { addContext } = useContextStore();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
 
@@ -30,12 +30,8 @@ function CustomAreasLayer() {
             area_subtype: "custom-area",
           });
 
-          // Add feature to the all features list to be highlighted on the map
-          addGeoJsonFeature({
-            id: id,
-            name: name,
-            data: feature,
-          });
+          addToRegistry({ ref: { name, source: "custom" }, data: feature, srcId: id, subtype: "custom-area" });
+          addLayer({ id, name, type: "geojson", visible: true, featureRefs: [{ name, source: "custom" }] });
 
           addContext({
             contextType: "area",
@@ -50,7 +46,7 @@ function CustomAreasLayer() {
         }
       }
     },
-    [addContext, addGeoJsonFeature]
+    [addContext, addToRegistry, addLayer]
   );
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { ChatContextType } from "@/app/components/ContextButton";
 import useMapStore from "./mapStore";
+import type { AOISelection } from "@/app/types/chat";
 
 export interface ContextItem {
   id: string;
@@ -16,6 +17,8 @@ export interface ContextItem {
     subtype?: string;
     source?: string;
   };
+  // For multi-AOI context, store the full selection (name + list of AOIs)
+  aoiSelection?: AOISelection;
   dateRange?: {
     start: Date;
     end: Date;
@@ -65,11 +68,13 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
         typeof item.datasetId === "number" &&
         item.tileUrl
       ) {
-        useMapStore.getState().addTileLayer({
+        useMapStore.getState().addLayer({
           id: `dataset-${item.datasetId}`,
           name: item.layerName || String(item.datasetId),
-          url: item.tileUrl,
+          type: "raster",
           visible: true,
+          tileUrl: item.tileUrl,
+          datasetId: item.datasetId,
         });
       }
 
@@ -89,9 +94,7 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
       const itemToRemove = state.context.find((c) => c.id === id);
       if (typeof itemToRemove?.datasetId === "number") {
         // Remove corresponding map layer if this context item represents a dataset layer
-        useMapStore
-          .getState()
-          .removeTileLayer(`dataset-${itemToRemove.datasetId}`);
+        useMapStore.getState().removeLayer(`dataset-${itemToRemove.datasetId}`);
       }
       return {
         context: state.context.filter((c) => c.id !== id),
@@ -115,10 +118,10 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
   clearContext: () =>
     set((state) => {
       // Remove any map layers tied to context entries before clearing
-      const { removeTileLayer } = useMapStore.getState();
+      const { removeLayer } = useMapStore.getState();
       state.context.forEach((c) => {
         if (typeof c.datasetId === "number")
-          removeTileLayer(`dataset-${c.datasetId}`);
+          removeLayer(`dataset-${c.datasetId}`);
       });
       return { context: [] };
     }),

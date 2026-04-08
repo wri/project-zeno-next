@@ -1,5 +1,5 @@
 {
-  "prompts": [
+  "prompts_v1": [
     "Show changes in grassland extent in Montana.",
     "Analyse forest loss trends in the Rusizi Basin, Rwanda, over the last 10 years.",
     "How much of the Democratic Republic of Congo is natural land?",
@@ -11,5 +11,20 @@
     "Compare disturbances in France last month: natural events vs human activity.",
     "What were the top three causes of tree loss in Brazil last year?",
     "Show the biggest changes in land cover in Kenya between 2015 and 2024."
+  ],
+  "prompts": [
+    "What are the trends in natural grassland area in Bolivia since 2015?",
+    "What were the top three causes of tree loss in Brazil?",
+    "Show the biggest changes in land cover in Kenya between 2015 and 2024.",
+    "How much of the Democratic Republic of Congo is natural land?",
+    "In which provinces of Indonesia have restoration efforts focused most?",
+    "Show changes in grassland extent in Mongolia.",
+    "Show how much forest loss is due to wildfires in Portugal?",
+    "How much natural land was converted to cropland in Spain between 2015 and 2024?",
+    "What are the net carbon emissions from deforestation in Peru?",
+    "Show recent forest disturbance alerts in Cambodia.",
+    "How much deforestation is linked to cocoa production in Côte d'Ivoire?",
+    "What percentage of the Phillippines was covered by trees in 2000?",
+    "What are the top 3 land cover types in Colombia?"
   ]
 }

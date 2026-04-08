@@ -10,16 +10,28 @@ import useMapStore from "@/app/store/mapStore";
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import useContextStore from "@/app/store/contextStore";
 
+
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendLayer[]>([]);
 
-  const { tileLayers, setTileLayers } = useMapStore();
+  const { layers: managedLayers, setLayerVisibility, setLayerOpacity, removeLayer, reorderLayers } = useMapStore();
   const { context, removeContext } = useContextStore();
 
   useEffect(() => {
-    const activeLayers = tileLayers.flatMap((tileLayer) => {
+    const legendLayers: LegendLayer[] = managedLayers.flatMap(layer => {
+      if (layer.type === "geojson") {
+        return {
+          id: layer.id,
+          title: layer.selectionName ?? layer.name,
+          visible: layer.visible,
+          opacity: (layer.opacity ?? 1) * 100,
+          hideOpacityControl: true,
+          hideRemoveControl: true,
+          symbology: null
+        };
+      }
       const relatedDataset = DATASET_CARDS.find(
-        (d) => `dataset-${d.dataset_id}` === tileLayer.id
+        (d) => `dataset-${d.dataset_id}` === layer.id
       );
       if (!relatedDataset?.legend) return [];
 
@@ -27,10 +39,10 @@ export function useLegendHook() {
         relatedDataset.legend;
 
       return {
-        id: tileLayer.id,
+        id: layer.id,
         title: title,
-        visible: tileLayer.visible,
-        opacity: (tileLayer.opacity ?? 1) * 80,
+        visible: layer.visible,
+        opacity: (layer.opacity ?? 1) * 80,
         info,
         symbology:
           type === "categorical" && items ? (
@@ -58,11 +70,17 @@ export function useLegendHook() {
       };
     });
 
-    setLayers(activeLayers);
-  }, [tileLayers]);
+    setLayers(legendLayers);
+  }, [managedLayers]);
 
   const handleLayerAction = useCallback<LayerActionHandler>(
     ({ action, payload }) => {
+
+      if (action === "reorder") {
+        reorderLayers(payload.layers.map((l) => l.id));
+        return;
+      }
+
       switch (action) {
         case "remove":
           const ctx = context.find(
@@ -73,35 +91,18 @@ export function useLegendHook() {
           if (ctx) {
             removeContext(ctx.id);
           }
+          removeLayer(payload.id);
           break;
         case "visibility":
           // Go through the tile layers and update their visibility
-          const updatedLayers = tileLayers.map((layer) =>
-            layer.id === payload.id
-              ? { ...layer, visible: payload.visible }
-              : layer
-          );
-          setTileLayers(updatedLayers);
+          setLayerVisibility(payload.id, payload.visible);
           break;
         case "opacity":
-          const layersWithUpdatedOpacity = tileLayers.map((layer) =>
-            layer.id === payload.id
-              ? { ...layer, opacity: payload.opacity / 100 }
-              : layer
-          );
-          setTileLayers(layersWithUpdatedOpacity);
-          break;
-        case "reorder":
-          // Reorder tileLayers to match the new order in payload.layers.
-          const reorderedLayers = payload.layers
-            .map((l) => tileLayers.find((tl) => tl.id === l.id))
-            // Filter out undefined although it shouldn't happen.
-            .filter((l): l is NonNullable<typeof l> => !!l);
-          setTileLayers(reorderedLayers);
+          setLayerOpacity(payload.id, payload.opacity / 100);
           break;
       }
     },
-    [context, removeContext, tileLayers, setTileLayers]
+    [context, removeContext, removeLayer, setLayerVisibility, setLayerOpacity, reorderLayers]
   );
 
   return { layers, handleLayerAction };
