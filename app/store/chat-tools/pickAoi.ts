@@ -59,10 +59,6 @@ export async function pickAoiTool(
     const aois: AOI[] = aoiSelection?.aois ?? (streamMessage.aoi ? [streamMessage.aoi as AOI] : []);
     const selectionName: string = aoiSelection?.name ?? (aois[0]?.name || "Unknown");
 
-    if (aois.length === 0) {
-      throw new Error("No AOI data found in stream message");
-    }
-
     // Global query: render a vector tile layer instead of fetching per-country GeoJSON
     if (isGlobalQuery(selectionName)) {
       const gadm = selectLayerOptions.find((o) => o.id === "GADM")!;
@@ -96,6 +92,10 @@ export async function pickAoiTool(
       });
 
       return;
+    }
+
+    if (aois.length === 0) {
+      throw new Error("No AOI data found in stream message");
     }
 
     // Build an AOISelection to store on the context (even for single-AOI fallback)
