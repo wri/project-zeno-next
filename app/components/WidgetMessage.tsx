@@ -2,7 +2,6 @@
 import { useState } from "react";
 import {
   Box,
-  Text,
   Heading,
   Flex,
   Separator,
@@ -105,14 +104,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         </Heading>
       </Flex>
       <Flex gap={3} px={4} py={3} flexDir="column">
-        {hasData && (
-          <>
-            <Text fontSize="xs" color="fg.muted">
-              {widget.description}
-            </Text>
-            <Separator />
-          </>
-        )}
+        {hasData && <Separator />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}
@@ -262,11 +254,6 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                   </Dialog.CloseTrigger>
                 </Dialog.Header>
                 <Dialog.Body px={0} pb={0}>
-                  {widget.description && (
-                    <Text fontSize="xs" color="fg.muted" mb={3}>
-                      {widget.description}
-                    </Text>
-                  )}
                   <WidgetErrorBoundary fallbackTitle="Unable to render chart">
                     <ChartWidget widget={widget} expanded />
                   </WidgetErrorBoundary>
