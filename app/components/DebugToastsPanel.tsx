@@ -8,11 +8,38 @@ import {
   showServiceUnavailableError,
 } from "@/app/hooks/useErrorHandler";
 import { toaster } from "@/app/components/ui/toaster";
+import { pickAoiTool } from "@/app/store/chat-tools/pickAoi";
+import useMapStore from "@/app/store/mapStore";
+
+const GLOBAL_LAYER_ID = "global-layer";
 
 function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const envEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true";
   const active = enabled ?? envEnabled;
   const [dismissed, setDismissed] = useState(false);
+  const layers = useMapStore((s) => s.layers);
+  const removeLayer = useMapStore((s) => s.removeLayer);
+
+  const globalLayerActive = layers.some((l) => l.id === GLOBAL_LAYER_ID);
+
+  const handleToggleGlobalLayer = () => {
+    if (globalLayerActive) {
+      removeLayer(GLOBAL_LAYER_ID);
+    } else {
+      pickAoiTool(
+        {
+          type: "tool",
+          name: "pick_aoi",
+          timestamp: new Date().toISOString(),
+          aoi_selection: {
+            name: "All countries in the world",
+            aois: [],
+          },
+        },
+        () => {},
+      );
+    }
+  };
 
   if (!active || dismissed) return null;
 
@@ -36,6 +63,14 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         <CloseButton size="2xs" onClick={() => setDismissed(true)} />
       </Box>
       <Stack direction="row" gap="2" wrap="wrap">
+        <Button
+          size="xs"
+          colorPalette={globalLayerActive ? "red" : "blue"}
+          variant="subtle"
+          onClick={handleToggleGlobalLayer}
+        >
+          {globalLayerActive ? "Remove Global Layer" : "Toggle Global Layer"}
+        </Button>
         <Button
           size="xs"
           onClick={() => showServiceUnavailableError("Demo Service")}

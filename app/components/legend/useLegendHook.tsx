@@ -19,7 +19,7 @@ export function useLegendHook() {
 
   useEffect(() => {
     const legendLayers: LegendLayer[] = managedLayers.flatMap(layer => {
-      if (layer.type === "geojson") {
+      if (layer.type === "geojson" || layer.type === "vector") {
         return {
           id: layer.id,
           title: layer.selectionName ?? layer.name,
