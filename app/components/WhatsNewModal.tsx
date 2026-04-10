@@ -31,7 +31,7 @@ const FEATURES: Feature[] = [
     step: 1,
     title: "Compare multiple areas",
     description:
-      'Select multiple areas at once — including global level queries — and ask questions like "Which country has the most natural grasslands?" The assistant and the charts handle the rest.',
+      'Select multiple areas at once and ask global-level questions like "Which country has the most natural grasslands?" The assistant and the charts handle the rest.',
   },
   {
     step: 2,
