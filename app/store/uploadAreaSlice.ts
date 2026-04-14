@@ -288,15 +288,6 @@ export const createUploadAreaSlice: StateCreator<
     set({ isUploading: true });
 
     try {
-      const areaSizeKm2 = calculateAreaKm2({
-        type: "FeatureCollection",
-        features: validatedGeoJson.map((g) => ({
-          type: "Feature",
-          geometry: g,
-          properties: {},
-        })),
-      });
-
       const requestData: CreateCustomAreaRequest = {
         name: generateRandomName(),
         geometries: validatedGeoJson,
