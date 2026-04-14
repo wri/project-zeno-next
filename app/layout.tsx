@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
-import Analytics from "@/app/components/Analytics";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
 import "./theme/cookies.css";
 
@@ -73,7 +72,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </noscript>
         {/* End Google Tag Manager (noscript) */}
         <Providers>
-          <Analytics />
           {children}
           <HotjarTrigger />
         </Providers>

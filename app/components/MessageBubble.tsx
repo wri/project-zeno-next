@@ -14,7 +14,6 @@ import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
-import { sendGAEvent } from "@next/third-parties/google";
 import {
   ArrowBendDownRightIcon,
   CheckIcon,
@@ -125,7 +124,7 @@ function MessageBubble({
         setIsRating(false);
       }
     },
-    [isRating, message.traceId, currentThreadId]
+    [isRating, message.traceId, currentThreadId],
   );
 
   const submitFeedback = useCallback(async () => {
@@ -273,12 +272,6 @@ function MessageBubble({
                   size="xs"
                   onClick={() => {
                     clipboard.copy();
-                    sendGAEvent("event", "response_feedback_copy", {
-                      message_id: message.id,
-                      trace_id: message.traceId,
-                      copied: clipboard.copied,
-                      message: message.message,
-                    });
                   }}
                 >
                   {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
@@ -290,11 +283,6 @@ function MessageBubble({
                   size="xs"
                   onClick={() => {
                     rateMessage(1);
-                    sendGAEvent("event", "response_feedback_positive", {
-                      message_id: message.id,
-                      trace_id: message.traceId,
-                      message: message.message,
-                    });
                   }}
                   disabled={isRating || !message.traceId}
                 >
@@ -316,11 +304,6 @@ function MessageBubble({
                         onClick={async () => {
                           await rateMessage(-1);
                           setFeedbackOpen(true);
-                          sendGAEvent("event", "response_feedback_negative", {
-                            message_id: message.id,
-                            trace_id: message.traceId,
-                            message: message.message,
-                          });
                         }}
                       >
                         <ThumbsDownIcon />

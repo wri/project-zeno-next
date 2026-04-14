@@ -21,7 +21,6 @@ import {
   Polygon,
 } from "geojson";
 import AreaTooltip, { HoverInfo } from "../../../ui/AreaTooltip";
-import { sendGAEvent } from "@next/third-parties/google";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
 interface SourceLayerProps {
@@ -42,7 +41,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
 
   const selectAreaLayerConfig = selectLayerOptions.find(
-    ({ id }) => id === layerId
+    ({ id }) => id === layerId,
   );
   const {
     id,
@@ -89,13 +88,13 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           if (hoverId !== undefined) {
             map.setFeatureState(
               { source: sourceId, sourceLayer, id: hoverId },
-              { hover: false }
+              { hover: false },
             );
           }
           hoverId = feature!.id;
           map.setFeatureState(
             { source: sourceId, sourceLayer, id: hoverId },
-            { hover: true }
+            { hover: true },
           );
         }
       };
@@ -105,7 +104,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         if (hoverId !== undefined) {
           map.setFeatureState(
             { source: sourceId, sourceLayer, id: hoverId },
-            { hover: false }
+            { hover: false },
           );
         }
         hoverId = undefined;
@@ -122,7 +121,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           if (feature) {
             const featureProps = feature.properties;
             const layerConfig = selectLayerOptions.find(
-              (opt) => opt.id === layerId
+              (opt) => opt.id === layerId,
             );
             const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
             const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
@@ -132,8 +131,19 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               filter: ["in", "gfw_fid", feature.properties?.gfw_fid],
             });
             if (sourceFeatures.length === 1) {
-              addToRegistry({ ref: { name: aoiName, source: layerId }, data: sourceFeatures[0], srcId: dynamicSrcId, subtype: dynamicSubtype });
-              addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
+              addToRegistry({
+                ref: { name: aoiName, source: layerId },
+                data: sourceFeatures[0],
+                srcId: dynamicSrcId,
+                subtype: dynamicSubtype,
+              });
+              addLayer({
+                id: aoiName,
+                name: aoiName,
+                type: "geojson",
+                visible: true,
+                featureRefs: [{ name: aoiName, source: layerId }],
+              });
             } else if (sourceFeatures.length > 1) {
               const collection: FeatureCollection<
                 Polygon | MultiPolygon,
@@ -147,17 +157,23 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               };
               const f = union(collection);
               if (f) {
-                addToRegistry({ ref: { name: aoiName, source: layerId }, data: f, srcId: dynamicSrcId, subtype: dynamicSubtype });
-                addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
+                addToRegistry({
+                  ref: { name: aoiName, source: layerId },
+                  data: f,
+                  srcId: dynamicSrcId,
+                  subtype: dynamicSubtype,
+                });
+                addLayer({
+                  id: aoiName,
+                  name: aoiName,
+                  type: "geojson",
+                  visible: true,
+                  featureRefs: [{ name: aoiName, source: layerId }],
+                });
               }
             }
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
-            sendGAEvent("event", "map_area_selected", {
-              area_name: aoiName,
-              area_source: layerConfig?.id.toLowerCase(),
-              area_subtype: dynamicSubtype,
-            });
 
             upsertContextByType({
               contextType: "area",

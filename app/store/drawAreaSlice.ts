@@ -13,7 +13,6 @@ import type {
   CreateCustomAreaResponse,
 } from "../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
-import { sendGAEvent } from "@next/third-parties/google";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -42,7 +41,7 @@ export interface DrawAreaSlice {
   endDrawing: () => void;
   clearValidationError: () => void;
   setCreateAreaFn: (
-    fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>
+    fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>,
   ) => void;
 }
 
@@ -107,7 +106,7 @@ export const createDrawAreaSlice: StateCreator<
 
     // Filter for polygon features and cast to our type
     const polygons = drawnFeatures.filter(
-      (feature) => feature.geometry.type === "Polygon"
+      (feature) => feature.geometry.type === "Polygon",
     ) as PolygonFeature[];
 
     // Safeguard against no valid polygons found
@@ -146,27 +145,29 @@ export const createDrawAreaSlice: StateCreator<
     }
 
     // Calculate bbox for each feature
-    const bboxFeatures = features.map(feature => {
+    const bboxFeatures = features.map((feature) => {
       const bounds = bbox(feature);
       return {
         type: "Feature",
         properties: {},
         geometry: {
           type: "Polygon",
-          coordinates: [[
-            [bounds[0], bounds[1]],
-            [bounds[0], bounds[3]],
-            [bounds[2], bounds[3]],
-            [bounds[2], bounds[1]],
-            [bounds[0], bounds[1]]
-          ]]
-        }
+          coordinates: [
+            [
+              [bounds[0], bounds[1]],
+              [bounds[0], bounds[3]],
+              [bounds[2], bounds[3]],
+              [bounds[2], bounds[1]],
+              [bounds[0], bounds[1]],
+            ],
+          ],
+        },
       } as GeoJSON.Feature;
     });
 
     const bboxCollection: GeoJSON.FeatureCollection = {
       type: "FeatureCollection",
-      features: bboxFeatures
+      features: bboxFeatures,
     };
 
     let areaName: string;
@@ -209,12 +210,6 @@ export const createDrawAreaSlice: StateCreator<
     if (createAreaFn) {
       result = await createAreaFn(requestData);
     }
-
-    sendGAEvent("event", "map_area_drawn", {
-      area_name: newArea.name,
-      area_size_km2: areaSizeKm2,
-      area_bbox_km2: bboxCollection
-    });
 
     get().endDrawing();
     return result;

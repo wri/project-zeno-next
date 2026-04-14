@@ -12,14 +12,12 @@ import {
 import ThreadDeleteDialog from "./ThreadDeleteDialog";
 import ThreadRenameDialog from "./ThreadRenameDialog";
 import ThreadShareDialog from "./ThreadShareDialog";
-import { sendGAEvent } from "@next/third-parties/google";
-import { sendGAEventAsync } from "@/app/utils/analytics";
 
 function ThreadActionsMenu({
   thread,
   children,
 }: {
-  thread: { id: string; name: string, is_public?: boolean };
+  thread: { id: string; name: string; is_public?: boolean };
   children?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -32,28 +30,20 @@ function ThreadActionsMenu({
 
   const onRename = useCallback(
     async (name: string) => {
-      sendGAEvent("event", "thread_renamed", {
-        old_thread_name: thread.name,
-        new_thread_name: name,
-        thread_id: thread.id,
-      });
       await renameThread(thread.id, name);
       setRenameOpen(false);
     },
-    [thread.id, thread.name, renameThread]
+    [thread.id, thread.name, renameThread],
   );
 
   const onShare = useCallback(
     async (is_public: boolean) => {
       await shareThread(thread.id, is_public);
-    }, [thread.id, shareThread]
-  )
+    },
+    [thread.id, shareThread],
+  );
 
   const onDelete = useCallback(async () => {
-    await sendGAEventAsync("thread_deleted", { 
-      thread_name: thread.name,
-      thread_id: thread.id,
-     });
     try {
       await deleteThread(thread.id);
       if (currentThreadId === thread.id) {
@@ -85,35 +75,35 @@ function ThreadActionsMenu({
             </IconButton>
           )}
         </Menu.Trigger>
-          <Menu.Positioner>
-            <Menu.Content>
-              <Menu.Item
-                value="rename conversation"
-                color="fg.muted"
-                onSelect={() => setRenameOpen(true)}
-              >
-                <PencilSimpleIcon />
-                Rename
-              </Menu.Item>
-              <Menu.Item
-                value="share conversation"
-                color="fg.muted"
-                onSelect={() => setShareOpen(true)}
-              >
-                <ShareIcon />
-                Share
-              </Menu.Item>
-              <Menu.Item
-                value="delete"
-                color="fg.error"
-                _hover={{ bg: "bg.error", color: "fg.error" }}
-                onSelect={() => setDeleteOpen(true)}
-              >
-                <TrashIcon />
-                Delete
-              </Menu.Item>
-            </Menu.Content>
-          </Menu.Positioner>
+        <Menu.Positioner>
+          <Menu.Content>
+            <Menu.Item
+              value="rename conversation"
+              color="fg.muted"
+              onSelect={() => setRenameOpen(true)}
+            >
+              <PencilSimpleIcon />
+              Rename
+            </Menu.Item>
+            <Menu.Item
+              value="share conversation"
+              color="fg.muted"
+              onSelect={() => setShareOpen(true)}
+            >
+              <ShareIcon />
+              Share
+            </Menu.Item>
+            <Menu.Item
+              value="delete"
+              color="fg.error"
+              _hover={{ bg: "bg.error", color: "fg.error" }}
+              onSelect={() => setDeleteOpen(true)}
+            >
+              <TrashIcon />
+              Delete
+            </Menu.Item>
+          </Menu.Content>
+        </Menu.Positioner>
       </Menu.Root>
       <ThreadRenameDialog
         name={thread.name}

@@ -27,7 +27,6 @@ import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { sendGAEventAsync } from "@/app/utils/analytics";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -218,26 +217,33 @@ export default function OnboardingForm() {
 
       // Submit to Ortto directly from client (no secrets needed)
       const topicLabels = form.topics.map(
-        (code) => config?.topics?.[code] || code
+        (code) => config?.topics?.[code] || code,
       );
 
       try {
-        const orttoRes = await fetch("https://ortto.wri.org/custom-forms/gnw/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: form.email,
-            firstName: form.firstName,
-            lastName: form.lastName,
-            sector: form.sector,
-            jobTitle: form.jobTitle,
-            companyOrganization: form.company,
-            countryCode: form.country,
-            Topics: topicLabels,
-            receiveNewsEmails: form.receiveNewsEmails,
-          }),
-        });
-        console.log("[Client] Ortto submission status:", orttoRes.status, orttoRes.ok ? "OK" : "FAILED");
+        const orttoRes = await fetch(
+          "https://ortto.wri.org/custom-forms/gnw/",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: form.email,
+              firstName: form.firstName,
+              lastName: form.lastName,
+              sector: form.sector,
+              jobTitle: form.jobTitle,
+              companyOrganization: form.company,
+              countryCode: form.country,
+              Topics: topicLabels,
+              receiveNewsEmails: form.receiveNewsEmails,
+            }),
+          },
+        );
+        console.log(
+          "[Client] Ortto submission status:",
+          orttoRes.status,
+          orttoRes.ok ? "OK" : "FAILED",
+        );
       } catch (e) {
         console.error("[Client] Ortto submission error:", e);
       }
@@ -245,7 +251,7 @@ export default function OnboardingForm() {
       // Poll for hasProfile to avoid middleware redirect race
       const waitForProfileCompletion = async (
         maxAttempts = 20,
-        delayMs = 500
+        delayMs = 500,
       ) => {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
           try {
@@ -271,15 +277,6 @@ export default function OnboardingForm() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
-        await sendGAEventAsync("sign_up", {
-          sector: payload.sector_code,
-          role: payload.role_code,
-          country: payload.country_code,
-          expertise_level: payload.gis_expertise_level,
-          topics: (payload.topics || []).join(","),
-          news_opt_in: payload.receive_news_emails,
-          testing_opt_in: payload.help_test_features,
-        });
         const queryString = searchParams.toString();
         const destination = queryString ? `/app?${queryString}` : "/app";
         router.push(destination);
@@ -340,8 +337,8 @@ export default function OnboardingForm() {
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
           We use this information to make Global Nature Watch more useful to
-          you. This tool is experimental, and knowing you better helps
-          us improve. Features may change or be removed over time.
+          you. This tool is experimental, and knowing you better helps us
+          improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
           <Grid
@@ -608,13 +605,19 @@ export default function OnboardingForm() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="preferred-language" required={fieldRequired("preferredLanguage")}>
+              <Field.Root
+                id="preferred-language"
+                required={fieldRequired("preferredLanguage")}
+              >
                 <Select.Root
                   collection={languages}
                   size="sm"
                   value={form.preferredLanguage ? [form.preferredLanguage] : []}
                   onValueChange={(d: ValueChangeDetails) =>
-                    setForm((p) => ({ ...p, preferredLanguage: d.value[0] ?? "" }))
+                    setForm((p) => ({
+                      ...p,
+                      preferredLanguage: d.value[0] ?? "",
+                    }))
                   }
                 >
                   <Select.HiddenSelect />
@@ -752,8 +755,9 @@ export default function OnboardingForm() {
                   rel="noopener noreferrer"
                   textDecoration="underline"
                 >
-                Global Nature Watch AI Terms of Use
-                </Link>{", "}
+                  Global Nature Watch AI Terms of Use
+                </Link>
+                {", "}
                 and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"

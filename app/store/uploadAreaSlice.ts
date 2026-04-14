@@ -15,7 +15,6 @@ import type {
   CreateCustomAreaResponse,
 } from "../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
-import { sendGAEvent } from "@next/third-parties/google";
 
 type UploadErrorType =
   | "none"
@@ -45,7 +44,7 @@ export interface UploadAreaSlice {
   uploadFile: () => Promise<CreateCustomAreaResponse | undefined>;
   clearFileState: () => void;
   setCreateAreaFn: (
-    fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>
+    fn: (data: CreateCustomAreaRequest) => Promise<CreateCustomAreaResponse>,
   ) => void;
 }
 
@@ -92,7 +91,7 @@ export const createUploadAreaSlice: StateCreator<
     if (file.size > MAX_FILE_SIZE) {
       get().setError(
         "file-too-large",
-        `File size exceeds ${MAX_FILE_SIZE_MB}MB limit`
+        `File size exceeds ${MAX_FILE_SIZE_MB}MB limit`,
       );
       set({
         selectedFile: null,
@@ -114,12 +113,12 @@ export const createUploadAreaSlice: StateCreator<
 
     if (
       !ACCEPTED_FILE_TYPES.some((type) =>
-        file.name.toLowerCase().endsWith(type)
+        file.name.toLowerCase().endsWith(type),
       )
     ) {
       get().setError(
         "file-format-invalid",
-        `Only ${ACCEPTED_FILE_TYPES.join(", ")} files are supported`
+        `Only ${ACCEPTED_FILE_TYPES.join(", ")} files are supported`,
       );
       set({
         selectedFile: null,
@@ -171,8 +170,8 @@ export const createUploadAreaSlice: StateCreator<
           ...featureCollection.features.filter(
             (feature) =>
               feature.geometry?.type === "Polygon" ||
-              feature.geometry?.type === "MultiPolygon"
-          )
+              feature.geometry?.type === "MultiPolygon",
+          ),
         );
       } else if (
         geoJsonData.type === "Polygon" ||
@@ -188,7 +187,7 @@ export const createUploadAreaSlice: StateCreator<
       if (features.length === 0) {
         get().setError(
           "file-format-invalid",
-          "No valid Polygon or MultiPolygon features found"
+          "No valid Polygon or MultiPolygon features found",
         );
         set({
           selectedFile: null,
@@ -209,8 +208,8 @@ export const createUploadAreaSlice: StateCreator<
         get().setError(
           "file-area-too-small",
           `Area is too small (${formatAreaWithUnits(
-            areaSizeKm2
-          )}). Minimum area is ${formatAreaWithUnits(MIN_AREA_KM2)}.`
+            areaSizeKm2,
+          )}). Minimum area is ${formatAreaWithUnits(MIN_AREA_KM2)}.`,
         );
         set({
           selectedFile: null,
@@ -224,8 +223,8 @@ export const createUploadAreaSlice: StateCreator<
         get().setError(
           "file-area-too-large",
           `Area is too large (${formatAreaWithUnits(
-            areaSizeKm2
-          )}). Maximum area is ${formatAreaWithUnits(MAX_AREA_KM2)}.`
+            areaSizeKm2,
+          )}). Maximum area is ${formatAreaWithUnits(MAX_AREA_KM2)}.`,
         );
         set({
           selectedFile: null,
@@ -243,7 +242,7 @@ export const createUploadAreaSlice: StateCreator<
       if (polygonGeometries.length === 0) {
         get().setError(
           "file-format-invalid",
-          "No valid Polygon features found"
+          "No valid Polygon features found",
         );
         set({
           selectedFile: null,
@@ -296,11 +295,6 @@ export const createUploadAreaSlice: StateCreator<
           geometry: g,
           properties: {},
         })),
-      });
-      sendGAEvent("event", "map_area_uploaded", {
-        file_name: get().filename,
-        totalarea_size_km2: areaSizeKm2,
-        area_count: validatedGeoJson.length,
       });
 
       const requestData: CreateCustomAreaRequest = {

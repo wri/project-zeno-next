@@ -5,7 +5,6 @@ import { useCallback, useEffect, useState } from "react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
-import { sendGAEvent } from "@next/third-parties/google";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
 const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
@@ -20,18 +19,24 @@ function CustomAreasLayer() {
     (e: MapMouseEvent) => {
       if (e.features && e.features.length > 0) {
         const feature = e.features.find(
-          (f) => f.source === CUSTOM_AREAS_SOURCE_ID
+          (f) => f.source === CUSTOM_AREAS_SOURCE_ID,
         );
         if (feature) {
           const { name, id } = feature.properties;
-          sendGAEvent("event", "map_area_selected", {
-            area_name: name,
-            area_source: "custom",
-            area_subtype: "custom-area",
-          });
 
-          addToRegistry({ ref: { name, source: "custom" }, data: feature, srcId: id, subtype: "custom-area" });
-          addLayer({ id, name, type: "geojson", visible: true, featureRefs: [{ name, source: "custom" }] });
+          addToRegistry({
+            ref: { name, source: "custom" },
+            data: feature,
+            srcId: id,
+            subtype: "custom-area",
+          });
+          addLayer({
+            id,
+            name,
+            type: "geojson",
+            visible: true,
+            featureRefs: [{ name, source: "custom" }],
+          });
 
           addContext({
             contextType: "area",
@@ -46,7 +51,7 @@ function CustomAreasLayer() {
         }
       }
     },
-    [addContext, addToRegistry, addLayer]
+    [addContext, addToRegistry, addLayer],
   );
 
   useEffect(() => {
@@ -60,7 +65,7 @@ function CustomAreasLayer() {
 
       if (e.features && e.features.length > 0) {
         const feature = e.features.find(
-          (f) => f.source === CUSTOM_AREAS_SOURCE_ID
+          (f) => f.source === CUSTOM_AREAS_SOURCE_ID,
         );
         if (feature) {
           const { lat, lng } = e.lngLat;
@@ -74,7 +79,7 @@ function CustomAreasLayer() {
           hoverId = feature.id;
           map.setFeatureState(
             { source: CUSTOM_AREAS_SOURCE_ID, id: hoverId },
-            { hover: true }
+            { hover: true },
           );
         }
       }
@@ -87,7 +92,7 @@ function CustomAreasLayer() {
       if (hoverId !== undefined) {
         map.setFeatureState(
           { source: CUSTOM_AREAS_SOURCE_ID, id: hoverId },
-          { hover: false }
+          { hover: false },
         );
         hoverId = undefined;
       }
@@ -129,7 +134,7 @@ function CustomAreasLayer() {
         id,
         name,
       },
-    }))
+    })),
   );
 
   const customAreasCollection: FeatureCollection = {

@@ -14,7 +14,6 @@ import {
 } from "@chakra-ui/react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";
-import { sendGAEvent } from "@next/third-parties/google";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
@@ -27,7 +26,7 @@ const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
     type,
     label: ChatContextOptions[type].label,
     icon: ChatContextOptions[type].icon,
-  })
+  }),
 );
 
 import { DATASET_CARDS } from "../constants/datasets";
@@ -130,7 +129,12 @@ function ContextMenu({
       <Portal>
         <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner zIndex={1500}>
-          <Dialog.Content maxH="75vh" minH="30rem" overflow="hidden" mx={{ base: 2, md: "auto" }}>
+          <Dialog.Content
+            maxH="75vh"
+            minH="30rem"
+            overflow="hidden"
+            mx={{ base: 2, md: "auto" }}
+          >
             <Dialog.Body
               p={0}
               h="full"
@@ -175,7 +179,7 @@ export function LayerMenu() {
   const cards: LayerCardItem[] = useMemo(() => {
     return LAYER_CARDS.map((c) => {
       const isSelected = context.some(
-        (ctx) => ctx.contextType === "layer" && ctx.datasetId === c.dataset_id
+        (ctx) => ctx.contextType === "layer" && ctx.datasetId === c.dataset_id,
       );
       return { ...c, selected: isSelected } as LayerCardItem;
     });
@@ -184,14 +188,10 @@ export function LayerMenu() {
   const handleToggleCard = (card: LayerCardItem) => {
     // mapTileLayerId is derived inside context store when needed
     const existingCtx = context.find(
-      (ctx) => ctx.contextType === "layer" && ctx.datasetId === card.dataset_id
+      (ctx) => ctx.contextType === "layer" && ctx.datasetId === card.dataset_id,
     );
 
     if (!card.selected) {
-      sendGAEvent("event", "manual_layer_selected", {
-        dataset_id: card.dataset_id,
-        dataset_name: card.dataset_name,
-      });
       addContext({
         contextType: "layer",
         content: card.dataset_name,
@@ -274,7 +274,7 @@ function AreaMenu() {
 
   const sorted = useMemo(() => {
     const list = filtered.sort(
-     (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
+      (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at)),
     );
     return list;
   }, [filtered]);
@@ -288,11 +288,11 @@ function AreaMenu() {
             ((c.aoiData?.src_id &&
               c.aoiData.src_id === a.id &&
               c.aoiData.source === "custom") ||
-              (typeof c.content === "string" && c.content === a.name))
+              (typeof c.content === "string" && c.content === a.name)),
         );
         return { id: a.id, name: a.name, selected: isSelected };
       }),
-    [sorted, context]
+    [sorted, context],
   );
 
   const handleSelectArea = (area: { id: string; name: string }) => {
@@ -309,7 +309,7 @@ function AreaMenu() {
 
     // Build a single MultiPolygon Feature from the selected custom area's geometries
     const selected = (customAreas as unknown as CustomArea[] | undefined)?.find(
-      (a) => a.id === area.id
+      (a) => a.id === area.id,
     );
     if (selected) {
       const multi: MultiPolygon = {
@@ -322,13 +322,19 @@ function AreaMenu() {
         geometry: multi,
         properties: { id: selected.id, name: selected.name },
       };
-      sendGAEvent("event", "manual_area_selected", {
-        area_id: selected.id,
-        area_name: selected.name,
-        geometries: feature.geometry,
+      addToRegistry({
+        ref: { name: selected.name, source: "custom" },
+        data: feature,
+        srcId: selected.id,
+        subtype: "custom-area",
       });
-      addToRegistry({ ref: { name: selected.name, source: "custom" }, data: feature, srcId: selected.id, subtype: "custom-area" });
-      addLayer({ id: selected.id, name: selected.name, type: "geojson", visible: true, featureRefs: [{ name: selected.name, source: "custom" }] });
+      addLayer({
+        id: selected.id,
+        name: selected.name,
+        type: "geojson",
+        visible: true,
+        featureRefs: [{ name: selected.name, source: "custom" }],
+      });
       flyToGeoJsonWithRetry(feature);
     }
   };
@@ -376,33 +382,29 @@ function DateMenu() {
   const contextStore = useContextStore();
 
   const currentCtxDate = contextStore.context.find(
-    (item) => item.contextType === "date"
+    (item) => item.contextType === "date",
   );
   // Start with context date if available, otherwise empty array.
   const [dateValue, setDateValue] = useState<Date[]>(
     currentCtxDate?.dateRange
       ? [currentCtxDate.dateRange.start, currentCtxDate.dateRange.end]
-      : []
+      : [],
   );
 
   useEffect(() => {
     if (dateValue.length === 2) {
       // Remove previously set date.
       const ctxId = contextStore.context.find(
-        (item) => item.contextType === "date"
+        (item) => item.contextType === "date",
       )?.id;
       if (ctxId) {
         contextStore.removeContext(ctxId);
       }
-      sendGAEvent("event", "manual_date_selected", {
-        start_date: format(dateValue[0], "yyyy-MM-dd"),
-        end_date: format(dateValue[1], "yyyy-MM-dd"),
-      });
       contextStore.addContext({
         contextType: "date",
         content: `${format(dateValue[0], "yyyy-MM-dd")} — ${format(
           dateValue[1],
-          "yyyy-MM-dd"
+          "yyyy-MM-dd",
         )}`,
         dateRange: {
           start: dateValue[0],

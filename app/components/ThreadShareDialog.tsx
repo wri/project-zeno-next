@@ -20,7 +20,6 @@ import {
   CopyIcon,
   CheckIcon,
 } from "@phosphor-icons/react";
-import { sendGAEvent } from "@next/third-parties/google";
 import ChatDisclaimer from "./ChatDisclaimer";
 
 interface ThreadShareDialogProps {
@@ -76,7 +75,7 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
         console.error("Failed to update thread visibility:", error);
       }
     },
-    [onShare, threadId]
+    [onShare, threadId],
   );
 
   const shareOptions = createListCollection({
@@ -114,9 +113,9 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
             <Dialog.Body pb="4" display="flex" flexDir="column" gap="4">
               <ChatDisclaimer m={0}>
                 Sharing creates a public, view-only link to this conversation.
-                Make sure it contains no personal or sensitive information.
-                You can switch Visibility back to private later.
-                For more information, read our{' '}
+                Make sure it contains no personal or sensitive information. You
+                can switch Visibility back to private later. For more
+                information, read our{" "}
                 <Link
                   textDecoration="underline"
                   textDecorationStyle="dotted"
@@ -126,7 +125,8 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
                   href="https://www.wri.org/about/legal/general-terms-use"
                 >
                   Terms of use
-                </Link>.
+                </Link>
+                .
               </ChatDisclaimer>
               <Field.Root id="visibility" w="full">
                 <Select.Root
@@ -185,9 +185,6 @@ function ThreadShareDialog(props: ThreadShareDialogProps) {
                   colorPalette="primary"
                   onClick={() => {
                     clipboard.copy();
-                    sendGAEvent("event", "share_link_copied", {
-                      share_url: shareUrl,
-                    });
                   }}
                 >
                   {clipboard.copied ? <CheckIcon /> : <CopyIcon />}

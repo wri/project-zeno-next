@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { sendGAEvent } from "@next/third-parties/google";
 import { API_CONFIG } from "@/app/config/api";
 
 interface AuthState {
@@ -42,7 +41,7 @@ const useAuthStore = create<AuthState>()((set) => ({
       } else {
         const rec = headers as Record<string, string>;
         const match = Object.keys(rec).find(
-          (k) => k.toLowerCase() === name.toLowerCase()
+          (k) => k.toLowerCase() === name.toLowerCase(),
         );
         return match ? rec[match] : null;
       }
@@ -60,13 +59,6 @@ const useAuthStore = create<AuthState>()((set) => ({
         typeof quota === "number" && !Number.isNaN(quota)
           ? quota
           : totalPrompts;
-
-      if (newUsed >= newTotal) {
-        sendGAEvent("event", "prompt_limit_reached", {
-          prompts_remaining: newTotal - newUsed,
-          quota: newTotal,
-        });
-      }
 
       return {
         usedPrompts: newUsed,
@@ -88,8 +80,6 @@ const useAuthStore = create<AuthState>()((set) => ({
       isAuthenticated: true,
       isAnonymous: false,
     });
-    // GA4 login event per @next/third-parties/google requires name first and params second
-    sendGAEvent("event", "login", { method: "token", user_id: id });
   },
   clearAuth: () => {
     set({
