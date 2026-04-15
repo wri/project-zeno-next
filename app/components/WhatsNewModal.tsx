@@ -31,7 +31,7 @@ const FEATURES: Feature[] = [
     step: 1,
     title: "Compare multiple areas",
     description:
-      'Select multiple areas at once and ask questions like "Which Brazilian state has the most cropland?" The assistant and the charts handle the rest.',
+      'Select multiple areas at once and ask global-level questions like "Which country has the most natural grasslands?" The assistant and the charts handle the rest.',
   },
   {
     step: 2,
@@ -144,16 +144,11 @@ const WhatsNewModal = () => {
             const image = FEATURE_IMAGES[feature.step];
 
             return (
-              <Box
-                key={feature.step}
-                borderBottom="1px solid #e0e2e5"
-              >
+              <Box key={feature.step} borderBottom="1px solid #e0e2e5">
                 {/* Row */}
                 <Flex
                   as="button"
-                  onClick={() =>
-                    setExpandedStep(isExpanded ? 0 : feature.step)
-                  }
+                  onClick={() => setExpandedStep(isExpanded ? 0 : feature.step)}
                   align="center"
                   justify="space-between"
                   px={6}
@@ -242,11 +237,7 @@ const WhatsNewModal = () => {
         </Box>
 
         {/* Footer */}
-        <Box
-          borderTop="1px solid #e0e2e5"
-          p={5}
-          flexShrink={0}
-        >
+        <Box borderTop="1px solid #e0e2e5" p={5} flexShrink={0}>
           <Tooltip
             content="We ship updates regularly — thanks for being part of the preview!"
             showArrow

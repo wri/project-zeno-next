@@ -24,6 +24,7 @@ import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
 import DynamicTileLayers from "./map/layers/DynamicTileLayers";
+import VectorTileLayers from "./map/layers/VectorTileLayers";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
@@ -163,6 +164,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         </Box>
 
         <DynamicTileLayers />
+        <VectorTileLayers areas={areas} />
         <GeoJsonLayers areas={areas} />
         <SelectAreaLayer />
 
