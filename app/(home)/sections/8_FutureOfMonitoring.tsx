@@ -33,13 +33,7 @@ export default function FutureOfMonitoringSection() {
           </Container>
           <Container display="flex" maxW="5xl">
           <Text fontSize="lg" mb="4">
-          <Text as="b">We know that monitoring works.</Text> For more than a decade, Global Forest Watch has
-          transformed how the world monitors nature, driving impact across the world&rsquo;s forests.
-          Global Nature Watch is the next major leap in land monitoring, transforming world-leading
-          research into an open, AI-powered system that extends beyond forests to include all ecosystems.
-          For the first time, anyone working to protect, restore or sustainably manage land can monitor
-          the changes that are happening everywhere on Earth by asking questions in plain language and
-          receiving authoritative answers with satellite imagery, maps, statistics and context.
+          <Text as="b">We know that monitoring works.</Text> Global Forest Watch has helped transform how the world monitors forests, putting timely, open data into the hands of users worldwide. Global Nature Watch builds on that foundation — bringing together research from Land & Carbon Lab and Global Forest Watch in an experimental, open, AI-powered system that expands monitoring beyond forests to include other ecosystems and land dynamics. Anyone working to protect, restore or sustainably manage land can explore change happening across Earth by asking questions in plain language and receiving responses supported by satellite imagery, maps, statistics and context.
           </Text>
         </Container>
         <Container display="flex" gap="14" flexDir={"column"} maxW="5xl">
@@ -99,7 +93,7 @@ export default function FutureOfMonitoringSection() {
               <Text fontSize="lg" mb="4">
                 With so much geospatial data available, it can be hard to know where to start.
                 Global Nature Watch places the power of a personal geospatial assistant in your pocket.
-                AI trained on trusted datasets helps both experts and newcomers navigate,
+                AI trained on peer-reviewed datasets helps both experts and newcomers navigate,
                 analyze and apply insights.
               </Text>
             </Box>
@@ -158,7 +152,7 @@ export default function FutureOfMonitoringSection() {
                 Interoperable technology (coming soon)
               </Heading>
               <Text fontSize="lg" mb="4">
-               We believe the future of monitoring is open, extensible and integrative.
+               We believe the future of monitoring is open, scalable and integrative.
                 That&apos;s why Global Nature Watch will be able to connect with your
                 own systems, extending the power of your data.
               </Text>
