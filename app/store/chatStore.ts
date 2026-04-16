@@ -2,16 +2,21 @@ import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import { format } from "date-fns";
 
+import JSON5 from "json5";
 import {
   ChatMessage,
   ChatPrompt,
+  LangChainResponse,
+  LangChainUpdate,
   StreamMessage,
   QueryType,
   UiContext,
   ToolStepData,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
-import { readDataStream } from "../api/shared/read-data-stream";
+import { readDataStream } from "@/app/lib/read-data-stream";
+import { parseStreamMessage } from "@/app/lib/parse-stream-message";
+import { apiFetch } from "@/app/lib/api-client";
 import { DATASET_BY_ID } from "../constants/datasets";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
@@ -74,6 +79,49 @@ const initialState: ChatState = {
   pendingTraceId: null,
   reasoningStartTime: null,
 };
+
+/**
+ * Parses a raw NDJSON line from the FastAPI LangChain stream into a
+ * simplified StreamMessage. Returns null for unhandled / unrecognised lines.
+ */
+function parseLangChainLine(rawLine: string): StreamMessage | null {
+  const langChainMessage: LangChainResponse = JSON.parse(rawLine);
+  const updateObject = JSON5.parse(langChainMessage.update) as LangChainUpdate &
+    Record<string, unknown>;
+  const date = langChainMessage.timestamp
+    ? new Date(langChainMessage.timestamp)
+    : new Date();
+
+  // Upstream emits trace metadata as a standalone update with no messages array
+  if (updateObject.trace_id) {
+    return {
+      type: "other",
+      name: "trace",
+      timestamp: date.toISOString(),
+      trace_id: updateObject.trace_id as string,
+      ...(updateObject.trace_url
+        ? { content: updateObject.trace_url as string }
+        : {}),
+    } as StreamMessage;
+  }
+
+  const lastMessage = updateObject.messages?.at(-1);
+  const rawType = lastMessage?.kwargs?.type as
+    | "ai"
+    | "tool"
+    | "human"
+    | undefined;
+  const messageType = rawType
+    ? ({ ai: "agent", tool: "tools", human: "human" }[rawType] as
+        | "agent"
+        | "tools"
+        | "human")
+    : undefined;
+
+  if (!messageType) return null;
+
+  return parseStreamMessage(updateObject, messageType, date);
+}
 
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
@@ -289,7 +337,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }, 310000); // 5 minutes 10 seconds (slightly longer than server timeout)
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await apiFetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -320,10 +368,13 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         abortController,
         reader,
         onData: async (data, isFinal) => {
-          // Log the raw data received
           console.log("API Stream message:", data);
           try {
-            const streamMessage: StreamMessage = JSON.parse(data);
+            const streamMessage = parseLangChainLine(data);
+            if (!streamMessage) {
+              console.log("Unhandled LangChain message:", data);
+              return;
+            }
             await processStreamMessage(
               streamMessage,
               addMessage,
@@ -348,13 +399,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             );
           } catch (err) {
             if (isFinal) {
-              console.error(
-                "Failed to parse final simplified message",
-                data,
-                err
-              );
+              console.error("Failed to parse final LangChain message", data, err);
             } else {
-              console.error("Failed to parse simplified message", data, err);
+              console.error("Failed to parse LangChain message", data, err);
             }
           }
         },
@@ -518,7 +565,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }, 310000); // 5 minutes 10 seconds (slightly longer than server timeout)
 
     try {
-      const response = await fetch(`/api/threads/${threadId}`, {
+      const response = await apiFetch(`/api/threads/${threadId}`, {
         signal: abortController.signal,
       });
 
@@ -539,7 +586,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         reader,
         onData: async (data, isFinal) => {
           try {
-            const streamMessage: StreamMessage = JSON.parse(data);
+            const streamMessage = parseLangChainLine(data);
+            if (!streamMessage) {
+              console.log("Unhandled LangChain message:", data);
+              return;
+            }
 
             if (streamMessage.type === "human") {
               // Flush accumulated tool steps for the previous user message,
@@ -606,20 +657,15 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             );
           } catch (err) {
             if (isFinal) {
-              console.error(
-                "Failed to parse final simplified message",
-                data,
-                err
-              );
+              console.error("Failed to parse final LangChain message", data, err);
             } else {
-              console.error("Failed to parse simplified message", data, err);
+              console.error("Failed to parse LangChain message", data, err);
             }
           }
         },
       });
 
       const { done: readerDone } = await reader.read();
-      // Log why the loop ended
       if (readerDone) {
         console.log("FRONTEND: Stream ended normally (readerDone = true)");
       } else if (abortController.signal.aborted) {
