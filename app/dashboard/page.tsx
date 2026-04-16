@@ -32,7 +32,7 @@ import Link from "next/link";
 import LclLogo from "../components/LclLogo";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
-import { clearToken } from "@/app/lib/api-client";
+import { clearToken, apiFetch } from "@/app/lib/api-client";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 
 type ProfileConfig = {
@@ -90,8 +90,8 @@ export default function UserSettingsPage() {
     const load = async () => {
       try {
         const [meRes, cfgRes] = await Promise.all([
-          fetch("/api/proxy/auth/me", { cache: "no-store" }),
-          fetch("/api/proxy/profile/config", { cache: "no-store" }),
+          apiFetch("/api/auth/me", { cache: "no-store" }),
+          apiFetch("/api/profile/config", { cache: "no-store" }),
         ]);
         if (cfgRes.ok) {
           const cfg: ProfileConfig = await cfgRes.json();
@@ -220,7 +220,7 @@ export default function UserSettingsPage() {
         has_profile: true,
       });
 
-      const res = await fetch(`/api/proxy/auth/profile`, {
+      const res = await apiFetch(`/api/auth/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

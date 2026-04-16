@@ -14,6 +14,7 @@ import type {
 } from "../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
 import { sendGAEvent } from "@next/third-parties/google";
+import { apiFetch } from "@/app/lib/api-client";
 
 // Type for polygon features from TerraDraw
 type PolygonFeature = {
@@ -172,7 +173,7 @@ export const createDrawAreaSlice: StateCreator<
     let areaName: string;
     try {
       // Get area name from API
-      const response = await fetch("/api/proxy/custom_area_name", {
+      const response = await apiFetch("/api/custom_area_name", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(bboxCollection),

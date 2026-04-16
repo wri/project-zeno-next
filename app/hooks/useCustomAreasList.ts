@@ -5,9 +5,10 @@ import {
   type ListCustomAreasResponse,
 } from "../schemas/api/custom_areas/get";
 import { useErrorHandler } from "./useErrorHandler";
+import { apiFetch } from "@/app/lib/api-client";
 
 async function fetchCustomAreas(): Promise<ListCustomAreasResponse> {
-  const res = await fetch("/api/proxy/custom_areas", {
+  const res = await apiFetch("/api/custom_areas", {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   });
