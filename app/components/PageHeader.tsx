@@ -41,7 +41,6 @@ function PageHeader() {
       });
     } catch {}
     clearToken();
-    useAuthStore.getState().clearAuth();
     const url = new URL("https://api.resourcewatch.org/auth/logout");
     url.searchParams.set("callbackUrl", `${window.location.origin}/`);
     url.searchParams.set("origin", "gnw");
