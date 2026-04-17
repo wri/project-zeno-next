@@ -15,7 +15,7 @@ const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 const FEATURE_TABS = [
   {
     value: "feature-tab-1",
-    label: "Explore trusted data with an AI assistant",
+    label: "Explore peer-reviewed data with an AI assistant",
     description:
       "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
     caption:
