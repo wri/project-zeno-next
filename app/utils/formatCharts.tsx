@@ -174,7 +174,11 @@ export default function formatChartData(
   }
   // --- Logic for a standard BAR chart ---
   if (type === "bar" || type === "area" || type === "line") {
-    const valueKeys = keys.filter((key) => key !== xAxisKey);
+    const candidateValueKeys = keys.filter((key) => key !== xAxisKey);
+    const valueKeys =
+      yAxis && candidateValueKeys.includes(yAxis)
+        ? [yAxis]
+        : candidateValueKeys;
 
     // Multi-series: more than one value column → create a series per column
     if (valueKeys.length > 1) {
