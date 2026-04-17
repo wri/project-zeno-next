@@ -17,7 +17,7 @@ import {
   QuestionIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";
-import GlobalHeader from "../../components/GlobalHeader";
+import GlobalHeader from "../../../components/GlobalHeader";
 
 type PromptMarqueeProps = {
   prompts: string[];

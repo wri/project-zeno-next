@@ -8,7 +8,7 @@ import {
   IconButton,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { Carousel } from "../../components/ui/carousel";
+import { Carousel } from "../../../components/ui/carousel";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 const PARTNER_ORGS = [
   {
