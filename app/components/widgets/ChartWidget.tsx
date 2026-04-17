@@ -443,7 +443,7 @@ export default function ChartWidget({
                 }
                 axisLine={false}
                 tickLine={false}
-                domain={["auto", "auto"]}
+                domain={[0, "auto"]}
               >
                 {yAxis && (
                   <Label
