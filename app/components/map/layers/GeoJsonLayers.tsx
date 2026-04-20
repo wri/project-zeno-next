@@ -16,6 +16,7 @@ import {
   FeatureRef,
 } from "@/app/store/layerManagerSlice";
 import bbox from "@turf/bbox";
+import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 
 // Create a rectangle polygon from bbox coordinates
 function createBboxPolygon(
@@ -196,18 +197,10 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
   // Prefer backend-provided bbox (handles antimeridian); fall back to turf.
   const bboxCoords: [number, number, number, number] | null = (() => {
     const aois = layer.aoiSelection?.aois;
-    if (aois && aois.length > 0 && aois.every((a) => a.bbox)) {
-      let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity;
-      for (const aoi of aois) {
-        const [w, s, e, n] = aoi.bbox!;
-        if (w < west) west = w;
-        if (s < south) south = s;
-        if (e > east) east = e;
-        if (n > north) north = n;
-      }
-      // Normalise antimeridian crossing: west > east means bbox crosses the dateline.
-      if (west > east) east += 360;
-      return [west, south, east, north];
+    if (aois && aois.length > 0) {
+      // east may exceed 180 for antimeridian-crossing unions — createBboxPolygon
+      // and MapLibre GeoJSON both handle coords > 180 natively.
+      return unionAoiBboxes(aois);
     }
     return computeCombinedBbox(entries.map((e) => ({ id: e.ref.name, data: e.data })));
   })();

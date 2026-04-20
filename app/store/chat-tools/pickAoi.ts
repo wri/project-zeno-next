@@ -3,6 +3,7 @@ import { ChatMessage, StreamMessage, AOI, AOISelection } from "@/app/types/chat"
 import useMapStore from "../mapStore";
 import useContextStore from "../contextStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
+import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 import { GeoJsonEntry } from "../layerManagerSlice";
 import { selectLayerOptions } from "@/app/types/map";
 
@@ -144,16 +145,12 @@ export async function pickAoiTool(
     // Fly to the combined bounds using backend-provided bbox values.
     // Using aoi.bbox directly preserves dateline-crossing extents (west > east),
     // which fitBounds handles natively. Turf bbox would wrap around the world instead.
-    const successfulBboxAois = successfulAois.filter((aoi) => aoi.bbox);
-    if (successfulBboxAois.length > 0) {
-      let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity;
-      for (const aoi of successfulBboxAois) {
-        const [w, s, e, n] = aoi.bbox!;
-        if (w < west) west = w;
-        if (s < south) south = s;
-        if (e > east) east = e;
-        if (n > north) north = n;
-      }
+    const unionBbox = unionAoiBboxes(successfulAois);
+    if (unionBbox) {
+      let [west, south, east, north] = unionBbox;
+      // flyToBounds (and mapStore's fitBounds wrapper) expects east <= 180;
+      // subtract 360 to re-wrap when the union crossed the antimeridian.
+      if (east > 180) east -= 360;
       console.log("[pickAoi] calling flyToBounds:", typeof flyToBounds, [[west, south], [east, north]]);
       flyToBounds([[west, south], [east, north]]);
     } else if (allGeoData.length > 0) {
