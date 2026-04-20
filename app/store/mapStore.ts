@@ -120,10 +120,11 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       console.warn("Map ref not available for flyToBounds");
       return;
     }
-    let [[west, south], [east, north]] = bounds;
+    const [[west, south], [east, north]] = bounds;
+    let eastUpdated = east;
     // MapLibre doesn't handle west > east wrapping — normalise by adding 360 to east.
-    if (west > east) east += 360;
-    mapRef.getMap().fitBounds([[west, south], [east, north]], {
+    if (west > east) eastUpdated += 360;
+    mapRef.getMap().fitBounds([[west, south], [eastUpdated, north]], {
       linear: true,
       padding: { top: 50, bottom: 50, left: 50, right: 50 },
       maxZoom: 16,
