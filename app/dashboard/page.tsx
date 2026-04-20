@@ -30,6 +30,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import LclLogo from "../components/LclLogo";
+import { API_CONFIG } from "@/app/config/api";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
 import { clearToken, apiFetch } from "@/app/lib/api-client";
@@ -283,7 +284,7 @@ export default function UserSettingsPage() {
       });
     } catch {}
     clearToken();
-    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
     url.searchParams.set("callbackUrl", `${window.location.origin}/`);
     url.searchParams.set("origin", "gnw");
     window.location.href = url.toString();

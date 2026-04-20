@@ -22,6 +22,7 @@ import {
 import { Tooltip } from "./ui/tooltip";
 
 import useAuthStore from "../store/authStore";
+import { API_CONFIG } from "@/app/config/api";
 import Link from "next/link";
 import { toaster } from "@/app/components/ui/toaster";
 import { clearToken } from "@/app/lib/api-client";
@@ -41,7 +42,7 @@ function PageHeader() {
       });
     } catch {}
     clearToken();
-    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
     url.searchParams.set("callbackUrl", `${window.location.origin}/`);
     url.searchParams.set("origin", "gnw");
     window.location.href = url.toString();

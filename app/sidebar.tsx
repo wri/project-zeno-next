@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_CONFIG } from "@/app/config/api";
 import {
   Button,
   Flex,
@@ -175,7 +176,7 @@ export function Sidebar() {
       });
     } catch {}
     clearToken();
-    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
     url.searchParams.set("callbackUrl", `${window.location.origin}/`);
     url.searchParams.set("origin", "gnw");
     window.location.href = url.toString();
