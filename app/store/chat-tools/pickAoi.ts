@@ -147,7 +147,8 @@ export async function pickAoiTool(
     // which fitBounds handles natively. Turf bbox would wrap around the world instead.
     const unionBbox = unionAoiBboxes(successfulAois);
     if (unionBbox) {
-      let [west, south, east, north] = unionBbox;
+      const [west, south, north] = [unionBbox[0], unionBbox[1], unionBbox[3]];
+      let east = unionBbox[2];
       // flyToBounds (and mapStore's fitBounds wrapper) expects east <= 180;
       // subtract 360 to re-wrap when the union crossed the antimeridian.
       if (east > 180) east -= 360;
