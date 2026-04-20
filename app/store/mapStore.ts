@@ -29,6 +29,7 @@ interface MapSlice {
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
     maxRetries?: number
   ) => void;
+  flyToBounds: (bounds: [[number, number], [number, number]]) => void;
 
   selectionMode: SelectionMode | undefined;
   setSelectionMode: (mode: SelectionMode | undefined) => void;
@@ -111,6 +112,22 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
         duration: 5000,
       });
     }
+  },
+
+  flyToBounds: (bounds) => {
+    const { mapRef } = get();
+    if (!mapRef) {
+      console.warn("Map ref not available for flyToBounds");
+      return;
+    }
+    let [[west, south], [east, north]] = bounds;
+    // MapLibre doesn't handle west > east wrapping — normalise by adding 360 to east.
+    if (west > east) east += 360;
+    mapRef.getMap().fitBounds([[west, south], [east, north]], {
+      linear: true,
+      padding: { top: 50, bottom: 50, left: 50, right: 50 },
+      maxZoom: 16,
+    });
   },
 
   flyToGeoJsonWithRetry: (geoJson, maxRetries = 5) => {

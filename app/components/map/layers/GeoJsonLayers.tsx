@@ -193,9 +193,24 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
       }
     }
   };
-  const bboxCoords = computeCombinedBbox(
-    entries.map((e) => ({ id: e.ref.name, data: e.data })),
-  );
+  // Prefer backend-provided bbox (handles antimeridian); fall back to turf.
+  const bboxCoords: [number, number, number, number] | null = (() => {
+    const aois = layer.aoiSelection?.aois;
+    if (aois && aois.length > 0 && aois.every((a) => a.bbox)) {
+      let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity;
+      for (const aoi of aois) {
+        const [w, s, e, n] = aoi.bbox!;
+        if (w < west) west = w;
+        if (s < south) south = s;
+        if (e > east) east = e;
+        if (n > north) north = n;
+      }
+      // Normalise antimeridian crossing: west > east means bbox crosses the dateline.
+      if (west > east) east += 360;
+      return [west, south, east, north];
+    }
+    return computeCombinedBbox(entries.map((e) => ({ id: e.ref.name, data: e.data })));
+  })();
   const bboxPolygon = bboxCoords ? createBboxPolygon(bboxCoords) : null;
   const groupId = layer.id.replace(/\s+/g, "-").toLowerCase();
   return (
