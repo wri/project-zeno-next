@@ -30,8 +30,11 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import LclLogo from "../components/LclLogo";
+import { API_CONFIG } from "@/app/config/api";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
+import { clearToken, apiFetch } from "@/app/lib/api-client";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -61,6 +64,7 @@ type ProfileFormState = {
 type ValueChangeDetails = { value: string[] };
 
 export default function UserSettingsPage() {
+  const isReady = useAuthGuard();
   const [config, setConfig] = useState<ProfileConfig | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
     firstName: "",
@@ -87,8 +91,8 @@ export default function UserSettingsPage() {
     const load = async () => {
       try {
         const [meRes, cfgRes] = await Promise.all([
-          fetch("/api/proxy/auth/me", { cache: "no-store" }),
-          fetch("/api/proxy/profile/config", { cache: "no-store" }),
+          apiFetch("/api/auth/me", { cache: "no-store" }),
+          apiFetch("/api/profile/config", { cache: "no-store" }),
         ]);
         if (cfgRes.ok) {
           const cfg: ProfileConfig = await cfgRes.json();
@@ -217,7 +221,7 @@ export default function UserSettingsPage() {
         has_profile: true,
       });
 
-      const res = await fetch(`/api/proxy/auth/profile`, {
+      const res = await apiFetch(`/api/auth/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -279,16 +283,14 @@ export default function UserSettingsPage() {
         duration: 8000,
       });
     } catch {}
-    (async () => {
-      try {
-        await fetch("/api/auth/logout", { method: "POST" });
-      } catch {}
-      const url = new URL("https://api.resourcewatch.org/auth/logout");
-      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-      url.searchParams.set("origin", "gnw");
-      window.location.href = url.toString();
-    })();
+    clearToken();
+    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
+    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+    url.searchParams.set("origin", "gnw");
+    window.location.href = url.toString();
   };
+
+  if (!isReady) return null;
 
   return (
     <Box

@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 
 import PageHeader from "@/app/components/PageHeader";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import Map from "@/app/components/Map";
 import ChatStatusInfo from "@/app/components/ChatStatusInfo";
 import { LayerMenu } from "@/app/components/ContextMenu";
@@ -24,7 +25,10 @@ import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import useContextStore from "@/app/store/contextStore";
 
 export default function ClassicLayout() {
+  const isReady = useAuthGuard();
   const { layers, handleLayerAction } = useLegendHook();
+
+  if (!isReady) return null;
 
   return (
     <Grid

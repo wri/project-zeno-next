@@ -31,6 +31,7 @@ import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
+import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 
 interface MessageBubbleProps {
@@ -83,7 +84,7 @@ function MessageBubble({
         }
         // Only attempt rating for assistant messages with a traceId
         if (!message.traceId) return;
-        const res = await fetch(`/api/threads/${threadId}/rating`, {
+        const res = await apiFetch(`/api/threads/${threadId}/rating`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

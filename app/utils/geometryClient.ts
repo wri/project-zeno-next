@@ -1,4 +1,5 @@
 import { FeatureCollection } from "geojson";
+import { apiFetch } from "@/app/lib/api-client";
 
 export interface GeometryResponse {
   geometry: FeatureCollection;
@@ -19,7 +20,7 @@ export async function fetchGeometry(
   source: string,
   srcId: string
 ): Promise<GeometryResponse> {
-  const response = await fetch(`/api/proxy/geometry/${source}/${srcId}`);
+  const response = await apiFetch(`/api/geometry/${source}/${srcId}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch geometry: ${response.status} ${response.statusText}`);
@@ -33,7 +34,7 @@ export async function fetchGeometry(
  * @returns Promise resolving to the mapping object
  */
 export async function fetchSourceToIdMapping(): Promise<SourceToIdMapping> {
-  const response = await fetch(`/api/proxy/metadata`);
+  const response = await apiFetch(`/api/metadata`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch metadata: ${response.status} ${response.statusText}`);
