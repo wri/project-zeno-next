@@ -418,7 +418,7 @@ export default function ChartWidget({
                 domain={type === "scatter" ? ["auto", "auto"] : undefined}
                 angle={needsAngledTicks ? -35 : 0}
                 textAnchor={needsAngledTicks ? "end" : "middle"}
-                height={needsAngledTicks ? 90 : 40}
+                height={needsAngledTicks ? (isNumericXAxis ? 50 : 90) : 40}
                 interval={xAxisInterval}
                 fontSize={11}
               >
