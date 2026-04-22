@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toSentenceCase } from "./formatText";
+import { toSentenceCase } from "../formatText";
 
 describe("toSentenceCase", () => {
   it("converts snake_case to sentence case", () => {
