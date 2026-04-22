@@ -126,6 +126,7 @@ export interface AOI {
   source: string;
   subtype: string;
   geometry?: FeatureCollection; // Optional since it may not be included in the initial response
+  bbox?: [number, number, number, number]; // [west, south, east, north] — may cross dateline (west > east)
 }
 
 export interface AOISelection {
