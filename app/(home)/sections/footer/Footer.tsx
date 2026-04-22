@@ -5,7 +5,7 @@ import {
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
-import LclLogo from "../../components/LclLogo";
+import LclLogo from "../../../components/LclLogo";
 
 export default function FooterSection() {
   return (

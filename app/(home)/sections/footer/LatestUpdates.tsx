@@ -12,7 +12,7 @@ import {
   Skeleton,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { Carousel } from "../../components/ui/carousel";
+import { Carousel } from "../../../components/ui/carousel";
 
 import Link from "next/link";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";

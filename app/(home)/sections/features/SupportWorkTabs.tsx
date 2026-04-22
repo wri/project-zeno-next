@@ -8,7 +8,7 @@ import {
   Text,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { Carousel } from "../../components/ui/carousel";
+import { Carousel } from "../../../components/ui/carousel";
 import { CaretRightIcon, CaretLeftIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
