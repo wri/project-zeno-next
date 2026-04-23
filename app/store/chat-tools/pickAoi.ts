@@ -3,7 +3,7 @@ import { ChatMessage, StreamMessage, AOI, AOISelection } from "@/app/types/chat"
 import useMapStore from "../mapStore";
 import useContextStore from "../contextStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
-import bbox from "@turf/bbox";
+import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 import { GeoJsonEntry } from "../layerManagerSlice";
 import { selectLayerOptions } from "@/app/types/map";
 
@@ -50,8 +50,9 @@ export async function pickAoiTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
+  console.log("[pickAoi] called with:", JSON.stringify({ aoi: streamMessage.aoi, aoi_selection: streamMessage.aoi_selection }, null, 2));
   try {
-    const { flyToGeoJsonWithRetry, addToRegistry, addLayer } = useMapStore.getState();
+    const { flyToGeoJsonWithRetry, flyToBounds, addToRegistry, addLayer } = useMapStore.getState();
     const { upsertContextByType } = useContextStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
@@ -134,41 +135,27 @@ export async function pickAoiTool(
         type: "geojson",
         visible: true,
         featureRefs: successfulRefs,
-        ...(successfulAois.length > 1 && {
-          selectionName,
-          aoiSelection: { name: selectionName, aois: successfulAois },
-        }),
+        selectionName,
+        aoiSelection: { name: selectionName, aois: successfulAois },
       });
     }
 
-    // Compute a single combined bounding box across all geometries and fly to it
-    if (allGeoData.length > 0) {
-      // Compute individual bboxes and merge into one encompassing bbox
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (const geoData of allGeoData) {
-        const b = bbox(geoData);
-        if (b[0] < minX) minX = b[0];
-        if (b[1] < minY) minY = b[1];
-        if (b[2] > maxX) maxX = b[2];
-        if (b[3] > maxY) maxY = b[3];
-      }
+    console.log("[pickAoi] successfulAois bbox check:", successfulAois.map((a) => ({ name: a.name, bbox: a.bbox })));
 
-      // Create a simple bbox polygon feature to fly to
-      const bboxFeature: Feature = {
-        type: "Feature",
-        properties: {},
-        geometry: {
-          type: "Polygon",
-          coordinates: [[
-            [minX, minY],
-            [maxX, minY],
-            [maxX, maxY],
-            [minX, maxY],
-            [minX, minY],
-          ]],
-        },
-      };
-      flyToGeoJsonWithRetry(bboxFeature);
+    // Fly to the combined bounds using backend-provided bbox values.
+    // Using aoi.bbox directly preserves dateline-crossing extents (west > east),
+    // which fitBounds handles natively. Turf bbox would wrap around the world instead.
+    const unionBbox = unionAoiBboxes(successfulAois);
+    if (unionBbox) {
+      const [west, south, north] = [unionBbox[0], unionBbox[1], unionBbox[3]];
+      let east = unionBbox[2];
+      // flyToBounds (and mapStore's fitBounds wrapper) expects east <= 180;
+      // subtract 360 to re-wrap when the union crossed the antimeridian.
+      if (east > 180) east -= 360;
+      console.log("[pickAoi] calling flyToBounds:", typeof flyToBounds, [[west, south], [east, north]]);
+      flyToBounds([[west, south], [east, north]]);
+    } else if (allGeoData.length > 0) {
+      flyToGeoJsonWithRetry(allGeoData[0]);
     }
 
     // Update area context with the selection name and full AOI selection data

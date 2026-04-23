@@ -13,7 +13,7 @@ import useAuthStore from "./store/authStore";
 const [minWidth, maxWidth, defaultWidth] = [384, 624, 592];
 
 function ChatPanel() {
-  const { usedPrompts, totalPrompts, isAnonymous } = useAuthStore();
+  const { usedPrompts, totalPrompts } = useAuthStore();
 
   const promptsExhausted = usedPrompts >= totalPrompts;
   const [width, setWidth] = useState(defaultWidth);
@@ -87,43 +87,22 @@ function ChatPanel() {
             <ChatMessages />
           </Box>
           <Box mt="auto" position="sticky" bottom="2">
-            {promptsExhausted &&
-              (isAnonymous ? (
-                <ChatStatusInfo type="error">
-                  <Text>
-                    <strong>You&apos;ve used all your guest prompts.</strong>
-                    <br />
-                    <ChLink
-                      as={Link}
-                      href="/login"
-                      color="blue.600"
-                      textDecoration="underline"
-                    >
-                      Log in or sign up for free
-                    </ChLink>{" "}
-                    to unlock extra daily prompts, or{" "}
-                    <ChLink as={Link} href="/app/classic">
-                      continue without AI
-                    </ChLink>
-                    .
-                  </Text>
-                </ChatStatusInfo>
-              ) : (
-                <ChatStatusInfo type="error">
-                  <Text>
-                    <strong>
-                      You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}
-                      prompts.
-                    </strong>
-                    <br />
-                    Wait until tomorrow for new prompts, or{" "}
-                    <ChLink as={Link} href="/app/classic">
-                      continue without AI
-                    </ChLink>
-                    .
-                  </Text>
-                </ChatStatusInfo>
-              ))}
+            {promptsExhausted && (
+              <ChatStatusInfo type="error">
+                <Text>
+                  <strong>
+                    You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}
+                    prompts.
+                  </strong>
+                  <br />
+                  Wait until tomorrow for new prompts, or{" "}
+                  <ChLink as={Link} href="/app/classic">
+                    continue without AI
+                  </ChLink>
+                  .
+                </Text>
+              </ChatStatusInfo>
+            )}
 
             <ChatInput isChatDisabled={promptsExhausted} />
             <Flex

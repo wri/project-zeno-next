@@ -28,6 +28,7 @@ import { showApiError } from "@/app/hooks/useErrorHandler";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { sendGAEventAsync } from "@/app/utils/analytics";
+import { apiFetch } from "@/app/lib/api-client";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -85,10 +86,10 @@ export default function OnboardingForm() {
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await apiFetch("/api/auth/me");
         if (res.ok) {
           const data = await res.json();
-          const email: string | undefined = data?.user?.email;
+          const email: string | undefined = data?.email;
           if (email) {
             setForm((prev) => ({ ...prev, email }));
           }
@@ -106,7 +107,7 @@ export default function OnboardingForm() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const res = await fetch("/api/proxy/profile/config");
+        const res = await apiFetch("/api/profile/config");
         if (res.ok) {
           const data: ProfileConfig = await res.json();
           setConfig(data);
@@ -206,7 +207,7 @@ export default function OnboardingForm() {
         has_profile: true,
       });
 
-      const res = await fetch(`/api/proxy/auth/profile`, {
+      const res = await apiFetch(`/api/auth/profile`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -249,8 +250,7 @@ export default function OnboardingForm() {
       ) => {
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
           try {
-            // Cache-busting timestamp prevents stale responses
-            const check = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+            const check = await apiFetch("/api/auth/me", {
               cache: "no-store",
               headers: {
                 "Cache-Control": "no-cache, no-store, must-revalidate",

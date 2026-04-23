@@ -4,11 +4,12 @@ import {
   type CreateCustomAreaResponse,
 } from "../schemas/api/custom_areas/post";
 import { useErrorHandler } from "./useErrorHandler";
+import { apiFetch } from "@/app/lib/api-client";
 
 async function createCustomArea(
   data: CreateCustomAreaRequest
 ): Promise<CreateCustomAreaResponse> {
-  const res = await fetch("/api/proxy/custom_areas", {
+  const res = await apiFetch("/api/custom_areas", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

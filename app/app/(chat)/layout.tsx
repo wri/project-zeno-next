@@ -16,6 +16,7 @@ import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
@@ -26,6 +27,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const isReady = useAuthGuard();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -117,6 +119,8 @@ export default function DashboardLayout({
       </DraggableBottomSheet>
     </Box>
   );
+
+  if (!isReady) return null;
 
   return (
     <Grid

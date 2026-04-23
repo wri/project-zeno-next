@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { API_CONFIG } from "@/app/config/api";
 import { showApiError } from "@/app/hooks/useErrorHandler";
+import { apiFetch } from "@/app/lib/api-client";
 
 interface ThreadEntry {
   agent_id: "UniGuana";
@@ -77,10 +78,11 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
 
   fetchThreads: async () => {
     try {
-      const response = await fetch("/api/threads");
+      const response = await apiFetch("/api/threads");
 
       if (response.ok) {
-        const data: ThreadEntry[] = await response.json();
+        const raw: ThreadEntry[] = await response.json();
+        const data = raw.map((t) => ({ ...t, is_public: t.is_public ?? false }));
         const groupedThreads = computeThreadGroups(data);
         set({ threadGroups: groupedThreads, threads: data });
       } else {
@@ -97,7 +99,7 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
   },
 
   renameThread: async (threadId: string, newName: string) => {
-    const response = await fetch(`/api/threads/${threadId}`, {
+    const response = await apiFetch(`/api/threads/${threadId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -118,8 +120,8 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
     }
   },
 
-   shareThread: async (threadId: string, isPublic: boolean) => {
-    const response = await fetch(`/api/threads/${threadId}`, {
+  shareThread: async (threadId: string, isPublic: boolean) => {
+    const response = await apiFetch(`/api/threads/${threadId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -141,7 +143,7 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
   },
 
   deleteThread: async (threadId: string) => {
-    const response = await fetch(`/api/threads/${threadId}`, {
+    const response = await apiFetch(`/api/threads/${threadId}`, {
       method: "DELETE",
     });
 

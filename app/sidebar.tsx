@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_CONFIG } from "@/app/config/api";
 import {
   Button,
   Flex,
@@ -29,6 +30,7 @@ import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
 import { toaster } from "@/app/components/ui/toaster";
+import { clearToken } from "@/app/lib/api-client";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
 
@@ -173,15 +175,11 @@ export function Sidebar() {
         duration: 8000,
       });
     } catch {}
-    (async () => {
-      try {
-        await fetch("/api/auth/logout", { method: "POST" });
-      } catch {}
-      const url = new URL("https://api.resourcewatch.org/auth/logout");
-      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-      url.searchParams.set("origin", "gnw");
-      window.location.href = url.toString();
-    })();
+    clearToken();
+    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
+    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+    url.searchParams.set("origin", "gnw");
+    window.location.href = url.toString();
   };
 
   const hasTodayThreads = threadGroups.today.length > 0;

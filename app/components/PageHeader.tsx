@@ -22,15 +22,17 @@ import {
 import { Tooltip } from "./ui/tooltip";
 
 import useAuthStore from "../store/authStore";
+import { API_CONFIG } from "@/app/config/api";
 import Link from "next/link";
 import { toaster } from "@/app/components/ui/toaster";
+import { clearToken } from "@/app/lib/api-client";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
-  const handleLogout = async () => {
+  const handleLogout = () => {
     try {
       toaster.create({
         title: "Logging out",
@@ -39,10 +41,8 @@ function PageHeader() {
         duration: 8000,
       });
     } catch {}
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {}
-    const url = new URL("https://api.resourcewatch.org/auth/logout");
+    clearToken();
+    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
     url.searchParams.set("callbackUrl", `${window.location.origin}/`);
     url.searchParams.set("origin", "gnw");
     window.location.href = url.toString();

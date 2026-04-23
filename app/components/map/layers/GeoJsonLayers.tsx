@@ -16,6 +16,7 @@ import {
   FeatureRef,
 } from "@/app/store/layerManagerSlice";
 import bbox from "@turf/bbox";
+import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 
 // Create a rectangle polygon from bbox coordinates
 function createBboxPolygon(
@@ -193,9 +194,16 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
       }
     }
   };
-  const bboxCoords = computeCombinedBbox(
-    entries.map((e) => ({ id: e.ref.name, data: e.data })),
-  );
+  // Prefer backend-provided bbox (handles antimeridian); fall back to turf.
+  const bboxCoords: [number, number, number, number] | null = (() => {
+    const aois = layer.aoiSelection?.aois;
+    if (aois && aois.length > 0) {
+      // east may exceed 180 for antimeridian-crossing unions — createBboxPolygon
+      // and MapLibre GeoJSON both handle coords > 180 natively.
+      return unionAoiBboxes(aois);
+    }
+    return computeCombinedBbox(entries.map((e) => ({ id: e.ref.name, data: e.data })));
+  })();
   const bboxPolygon = bboxCoords ? createBboxPolygon(bboxCoords) : null;
   const groupId = layer.id.replace(/\s+/g, "-").toLowerCase();
   return (

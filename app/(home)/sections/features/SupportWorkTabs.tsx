@@ -8,7 +8,7 @@ import {
   Text,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { Carousel } from "../../components/ui/carousel";
+import { Carousel } from "../../../components/ui/carousel";
 import { CaretRightIcon, CaretLeftIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 
@@ -17,11 +17,11 @@ const SUPPORT_TABS = [
   {
     title: "Track the vegetation disturbances that matter most",
     content:
-      "View near real-time disturbance alerts anywhere in the world and filter by type, such as wildfire, conversion, or flooding, to focus on the events most relevant to your project or region.",
+      "View near real-time disturbance alerts anywhere in the world and filter by type, such as wildfire, conversion or flooding, to focus on the events most relevant to your project or region.",
     image: "/carousel-1.png",
   },
   {
-    title: "Understand natural ecosystem",
+    title: "Understand changes to natural ecosystems",
     content:
       "Identify remaining natural lands in your area of interest and track alerts that flag likely conversion to agriculture, mining, or urban expansion, critical for meeting conservation and compliance goals.",
     image: "/carousel-2.png",
@@ -29,7 +29,7 @@ const SUPPORT_TABS = [
   {
     title: "Monitor grassland health and conversion",
     content:
-    "See how grasslands are changing over time, whether from degradation or conversion, and assess likely causes, supporting sustainable agriculture and land-use planning.",
+    "See how grasslands are changing over time, whether due to degradation or conversion, and assess likely causes, supporting sustainable agriculture and land-use planning.",
     image: "/carousel-3.png",
   },
   {
