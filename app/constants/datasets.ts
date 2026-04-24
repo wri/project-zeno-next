@@ -153,11 +153,11 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     threshold: 30,
     img: "/dataset_card_tree_cover_loss_drivers.webp",
     description:
-      "Shows the primary driver or cause of tree cover loss over the entire range 2001-2024. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
+      "Shows the primary driver or cause of tree cover loss over the entire range 2001-2025. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
       "https://tiles.globalforestwatch.org/wri_google_tree_cover_loss_drivers/v1.12/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
     legend: {
-      title: "Tree cover loss by dominant driver (2001-2024)",
+      title: "Tree cover loss by dominant driver (2001-2025)",
       color: "#DC6C9A",
       items: [
         { label: "logging", color: "#52A44E"},
@@ -169,8 +169,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "permanent agriculture", color: "#E39D29"}
       ],
       type: "symbol",
-      info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2024. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
-      note: "Shows the dominant driver of deforestation between 2001 and 2024 at the selected canopy density."
+      info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2025. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
+      note: "Shows the dominant driver of deforestation between 2001 and 2025 at the selected canopy density."
     },
   },
   {
@@ -217,13 +217,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
   {
     dataset_id: 6,
-    dataset_name: "Forest greenhouse gas net flux (2001-2024)",
+    dataset_name: "Forest greenhouse gas net flux (2001-2025)",
     data_layer: "Forest greenhouse gas net flux",
     context_layer: null,
     threshold: 30,
     img: "/dataset_card_net_flux.webp",
     description:
-      "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2024, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
+      "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2025, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_forest_carbon_net_flux/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30",
       legend: {
