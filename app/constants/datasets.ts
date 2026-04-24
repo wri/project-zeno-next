@@ -141,7 +141,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       items: [{label: "Tree cover loss", color: "#DC6C9A" }],
       type: "symbol",
       info: "Tree cover loss dataset can detect stand-replacement disturbances including plantations and supports monitoring forestry practices. The driver context layer would help distinguish harvesting from other causes of tree loss, making it ideal for tracking plantation harvesting cycles.",
-      note: "Annual locations of tree cover removal across both natural forests and plantations. Tree cover canopy >30%.",
+      note: "Annual locations of tree cover removal across both natural forests and plantations at the selected canopy density threshold.",
       unit: "ha",
     },
   },
@@ -170,7 +170,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       ],
       type: "symbol",
       info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2024. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
-      note: "Shows the dominant driver of deforestation between 2001 and 2024. Tree cover canopy >30%."
+      note: "Shows the dominant driver of deforestation between 2001 and 2024 at the selected canopy density."
     },
   },
   {
@@ -211,7 +211,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       items: [{ label: "Tree cover", color: "#97BD3D" }],
       type: "symbol",
       info: "Tree cover gain dataset can detect natural forest regrowth and tree plantation cycles. It is useful for tracking large-scale forest recovery trends.",
-      note: "Baseline percent tree canopy cover showing density of woody vegetation. Tree cover canopy >30%.",
+      note: "Baseline percent tree canopy cover showing density of woody vegetation at the selected canopy density.",
       unit: "ha",
     },
   },
@@ -294,7 +294,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
           { label: `>1500 (source)`, color: "#39082a" },
         ],
       info: "This dataset maps the balance between emissions from forest disturbances and carbon removals from forest growth, making it ideal for identifying where forests are contributing to or helping mitigate climate change.",
-      note: "Balance between forest emissions and removals. Tree cover canopy >30%.",
+      note: "Balance between forest emissions and removals at the selected canopy density.",
       unit: "tCO2e/ha",
     },
   },
