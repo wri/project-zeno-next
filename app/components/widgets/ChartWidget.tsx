@@ -278,8 +278,21 @@ export default function ChartWidget({
   const needsAngledTicks =
     (!isNumericXAxis && formattedData.length > 4) ||
     (isNumericXAxis && formattedData.length > 10);
-  const xAxisInterval: number | "preserveStartEnd" =
-    isNumericXAxis && formattedData.length > 10 ? "preserveStartEnd" : 0;
+
+  // Compute explicit ticks for dense numeric axes so the last data point is
+  // always labeled and Recharts' preserveStartEnd doesn't drop a tick mid-axis.
+  let xTicks: (string | number)[] | undefined;
+  if (isNumericXAxis && type !== "scatter" && formattedData.length > 10) {
+    const step = Math.ceil((formattedData.length - 1) / 12);
+    xTicks = [];
+    for (let i = 0; i < formattedData.length; i += step) {
+      xTicks.push(formattedData[i][xAxis] as string | number);
+    }
+    const last = formattedData[formattedData.length - 1][xAxis] as
+      | string
+      | number;
+    if (xTicks[xTicks.length - 1] !== last) xTicks.push(last);
+  }
 
   // Sized from the longest formatted tick so titles hug the ticks regardless
   // of content — fixed sizes leave dead bands or cause overlap.
@@ -452,6 +465,11 @@ export default function ChartWidget({
                 axisLine={false}
                 tickLine={false}
                 tickMargin={TICK_MARGIN}
+                tick={
+                  needsAngledTicks
+                    ? { dx: -3, dy: 4, fontSize: TICK_FONT_PX }
+                    : { fontSize: TICK_FONT_PX }
+                }
                 tickFormatter={(value: number) =>
                   type === "scatter"
                     ? String(formatYAxisLabel(value, chart.key(xAxis)))
@@ -461,7 +479,13 @@ export default function ChartWidget({
                 angle={needsAngledTicks ? -35 : 0}
                 textAnchor={needsAngledTicks ? "end" : "middle"}
                 height={xAxisHeight}
-                interval={xAxisInterval}
+                ticks={xTicks}
+                interval={0}
+                padding={
+                  isNumericXAxis
+                    ? { left: 10, right: needsAngledTicks ? 14 : 18 }
+                    : undefined
+                }
                 fontSize={TICK_FONT_PX}
               >
                 {xAxis && (
