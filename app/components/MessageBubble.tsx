@@ -28,7 +28,7 @@ import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
 import { useEffect, useState, useCallback } from "react";
 import remarkBreaks from "remark-breaks";
-import { WarningIcon } from "@phosphor-icons/react";
+import { WarningIcon, InfoIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
@@ -142,7 +142,10 @@ function MessageBubble({
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
   const isError = message.type === "error";
+  const isWarning = message.type === "warning";
   const hasContext = isUser && message.context && message.context.length > 0;
+  const showFooter =
+    !isUser && !isConsecutive && !isError && !isWarning && !isFirst;
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
     return message.widgets.map((widget, idx) => (
@@ -170,15 +173,27 @@ function MessageBubble({
         alignItems={isUser ? "flex-end" : "flex-start"}
         w={isUser ? "fit-content" : "100%"}
         maxW={isUser ? "80%" : "none"}
-        bg={isError ? "red.50" : isUser ? "gray.100" : "transparent"}
-        color={isError ? "red.800" : "fg"}
-        px={isUser || isError ? 4 : 0}
-        py={isUser || isError ? 3 : 0}
+        bg={
+          isError
+            ? "red.50"
+            : isWarning
+            ? "white"
+            : isUser
+            ? "gray.100"
+            : "transparent"
+        }
+        color={isError ? "red.800" : isWarning ? "fg.subtle" : "fg"}
+        fontSize={isWarning ? "xs" : undefined}
+        fontStyle={isWarning ? "italic" : undefined}
+        px={isUser || isError || isWarning ? 4 : 0}
+        py={isUser || isError || isWarning ? 3 : 0}
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
-        border={isError ? "1px solid" : "none"}
-        borderColor={isError ? "red.200" : "transparent"}
+        border={isError || isWarning ? "1px solid" : "none"}
+        borderColor={
+          isError ? "red.200" : isWarning ? "gray.200" : "transparent"
+        }
       >
         {hasContext && (
           <Flex gap="2" wrap="wrap" mb="1">
@@ -216,6 +231,11 @@ function MessageBubble({
               </Markdown>
             </Box>
           </Flex>
+        ) : isWarning ? (
+          <Flex alignItems="center" gap="2">
+            <InfoIcon />
+            <Box>{message.message}</Box>
+          </Flex>
         ) : (
           <Box
             css={{
@@ -242,7 +262,7 @@ function MessageBubble({
             </CopySelectionTooltip>
           </Box>
         )}
-        {!isUser && !isConsecutive && !isError && !isFirst && (
+        {showFooter && (
           <Flex
             alignItems="center"
             w="full"
