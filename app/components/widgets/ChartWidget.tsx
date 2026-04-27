@@ -37,6 +37,13 @@ type ChartType =
   | "pie"
   | "scatter";
 
+const TICK_FONT_PX = 11;
+const CHAR_PX = 6.5; // empirical sans-serif glyph width at 11px
+const TICK_MARGIN = 6; // gap between tick text and axis line
+const TITLE_BAND = 22; // reserved column: title (~14px) + breathing room
+const TICK_ANGLE_RAD = (35 * Math.PI) / 180;
+const MAX_X_TICKS = 12; // density target before we thin tick labels
+
 // Chart wrapper components
 type ChartWrapperComponent =
   | typeof BarChart
@@ -272,8 +279,56 @@ export default function ChartWidget({
   const needsAngledTicks =
     (!isNumericXAxis && formattedData.length > 4) ||
     (isNumericXAxis && formattedData.length > 10);
-  const xAxisInterval: number | "preserveStartEnd" =
-    isNumericXAxis && formattedData.length > 10 ? "preserveStartEnd" : 0;
+
+  // preserveStartEnd silently drops a mid-axis tick when (N-1) doesn't
+  // divide evenly; build explicit ticks so the last data point is labeled.
+  let xTicks: (string | number)[] | undefined;
+  if (isNumericXAxis && type !== "scatter" && formattedData.length > 10) {
+    const step = Math.ceil((formattedData.length - 1) / MAX_X_TICKS);
+    xTicks = [];
+    for (let i = 0; i < formattedData.length; i += step) {
+      xTicks.push(formattedData[i][xAxis] as string | number);
+    }
+    const last = formattedData[formattedData.length - 1][xAxis] as
+      | string
+      | number;
+    if (xTicks[xTicks.length - 1] !== last) xTicks.push(last);
+  }
+
+  // Sized from the longest formatted tick so titles hug the ticks regardless
+  // of content — fixed sizes leave dead bands or cause overlap.
+  const yKeys = type === "scatter" ? [yAxis] : series.map((s) => s.name);
+  let longestXTickChars = 0;
+  let longestYTickChars = 0;
+  for (const row of formattedData) {
+    const xFormatted =
+      type === "scatter"
+        ? formatYAxisLabel(Number(row[xAxis]), xAxis)
+        : formatXAxisLabel(row[xAxis] as string | number, xAxis);
+    longestXTickChars = Math.max(longestXTickChars, String(xFormatted).length);
+
+    for (const k of yKeys) {
+      const v = Number(row[k]);
+      if (!Number.isFinite(v)) continue;
+      longestYTickChars = Math.max(
+        longestYTickChars,
+        formatYAxisLabel(v, yAxis).length,
+      );
+    }
+  }
+
+  const xAxisHeight = needsAngledTicks
+    ? Math.ceil(
+        TICK_MARGIN +
+          longestXTickChars * CHAR_PX * Math.sin(TICK_ANGLE_RAD) +
+          TICK_FONT_PX * Math.cos(TICK_ANGLE_RAD) +
+          TITLE_BAND,
+      )
+    : TICK_MARGIN + TICK_FONT_PX + TITLE_BAND;
+
+  const yAxisWidth = Math.ceil(
+    longestYTickChars * CHAR_PX + TICK_MARGIN + TITLE_BAND,
+  );
 
   const renderChartItems = () => {
     switch (type) {
@@ -410,6 +465,12 @@ export default function ChartWidget({
                 name={xAxis}
                 axisLine={false}
                 tickLine={false}
+                tickMargin={TICK_MARGIN}
+                tick={
+                  needsAngledTicks
+                    ? { dx: -3, dy: 4, fontSize: TICK_FONT_PX }
+                    : { fontSize: TICK_FONT_PX }
+                }
                 tickFormatter={(value: number) =>
                   type === "scatter"
                     ? String(formatYAxisLabel(value, chart.key(xAxis)))
@@ -418,17 +479,23 @@ export default function ChartWidget({
                 domain={type === "scatter" ? ["auto", "auto"] : undefined}
                 angle={needsAngledTicks ? -35 : 0}
                 textAnchor={needsAngledTicks ? "end" : "middle"}
-                height={needsAngledTicks ? 90 : 40}
-                interval={xAxisInterval}
-                fontSize={11}
+                height={xAxisHeight}
+                ticks={xTicks}
+                interval={0}
+                padding={
+                  isNumericXAxis
+                    ? { left: 10, right: needsAngledTicks ? 14 : 18 }
+                    : undefined
+                }
+                fontSize={TICK_FONT_PX}
               >
                 {xAxis && (
                   <Label
                     value={toAxisLabel(xAxis)}
                     position="insideBottom"
-                    offset={-5}
+                    offset={2}
                     style={{
-                      fontSize: 11,
+                      fontSize: TICK_FONT_PX,
                       fill: "var(--chakra-colors-fg-muted)",
                     }}
                   />
@@ -438,21 +505,24 @@ export default function ChartWidget({
                 dataKey={type === "scatter" ? chart.key(yAxis) : undefined}
                 type="number"
                 name={yAxis}
+                width={yAxisWidth}
+                tickMargin={TICK_MARGIN}
                 tickFormatter={(value: number) =>
                   String(formatYAxisLabel(value, chart.key(yAxis)))
                 }
                 axisLine={false}
                 tickLine={false}
                 domain={[0, "auto"]}
+                fontSize={TICK_FONT_PX}
               >
                 {yAxis && (
                   <Label
                     value={toAxisLabel(yAxis)}
                     angle={-90}
                     position="insideLeft"
-                    offset={10}
+                    offset={0}
                     style={{
-                      fontSize: 11,
+                      fontSize: TICK_FONT_PX,
                       fill: "var(--chakra-colors-fg-muted)",
                       textAnchor: "middle",
                     }}

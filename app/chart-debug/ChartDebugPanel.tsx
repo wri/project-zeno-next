@@ -121,6 +121,36 @@ const AREA_DATA = [
   { year: 2023, forest_area_km2: 35600 },
 ];
 
+// Long year span (25 points) — exercises tick-interval logic, last-tick clipping,
+// and angled-label placement on year axes.
+const TCL_LONG_YEARS = [
+  { year: 2001, area_ha: 1_320_000 },
+  { year: 2002, area_ha: 1_810_000 },
+  { year: 2003, area_ha: 2_460_000 },
+  { year: 2004, area_ha: 2_870_000 },
+  { year: 2005, area_ha: 3_290_000 },
+  { year: 2006, area_ha: 2_710_000 },
+  { year: 2007, area_ha: 2_290_000 },
+  { year: 2008, area_ha: 2_640_000 },
+  { year: 2009, area_ha: 2_180_000 },
+  { year: 2010, area_ha: 2_460_000 },
+  { year: 2011, area_ha: 2_120_000 },
+  { year: 2012, area_ha: 1_960_000 },
+  { year: 2013, area_ha: 2_330_000 },
+  { year: 2014, area_ha: 2_780_000 },
+  { year: 2015, area_ha: 3_120_000 },
+  { year: 2016, area_ha: 5_380_000 },
+  { year: 2017, area_ha: 4_490_000 },
+  { year: 2018, area_ha: 3_270_000 },
+  { year: 2019, area_ha: 3_950_000 },
+  { year: 2020, area_ha: 4_180_000 },
+  { year: 2021, area_ha: 3_710_000 },
+  { year: 2022, area_ha: 3_540_000 },
+  { year: 2023, area_ha: 3_280_000 },
+  { year: 2024, area_ha: 4_220_000 },
+  { year: 2025, area_ha: 4_510_000 },
+];
+
 const PIE_LAND_COVER = [
   { land_cover_type: "Tree cover", area_km2: 42000 },
   { land_cover_type: "Short vegetation", area_km2: 18500 },
@@ -312,6 +342,32 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = 
       data: LINE_DATA,
       xAxis: "year",
       yAxis: "carbon_emissions_mt",
+    },
+  },
+  {
+    label: "Line chart — long year span (2001–2025)",
+    notes: "25 yearly points. Tests angled-tick placement, last-tick clipping at the right edge, and ensures every other year stays in sync with the final year.",
+    widget: {
+      type: "line",
+      title: "Annual tree cover loss in Brazil (2001–2025)",
+      description: "Annual tree cover loss for Brazil over a 25-year span.",
+      data: TCL_LONG_YEARS,
+      xAxis: "year",
+      yAxis: "area_ha",
+      datasetName: "Tree cover loss",
+    },
+  },
+  {
+    label: "Bar chart — long year span (2001–2025)",
+    notes: "Same 25-year data as a bar chart. The last bar (2025) often gets its label clipped at the chart's right edge.",
+    widget: {
+      type: "bar",
+      title: "Annual tree cover loss in Brazil (2001–2025)",
+      description: "Annual tree cover loss for Brazil shown as bars.",
+      data: TCL_LONG_YEARS,
+      xAxis: "year",
+      yAxis: "area_ha",
+      datasetName: "Tree cover loss",
     },
   },
   {
@@ -646,7 +702,7 @@ export default function ChartDebugPanel() {
 
   return (
     <Box bg="bg.subtle" minH="100vh" py={8}>
-      <Container maxW="4xl">
+      <Container maxW="592px">
         <Flex align="center" gap={3} mb={2}>
           <Heading size="lg" m={0}>
             Chart Debug Panel
