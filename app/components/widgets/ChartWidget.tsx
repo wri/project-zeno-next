@@ -42,6 +42,7 @@ const CHAR_PX = 6.5; // empirical sans-serif glyph width at 11px
 const TICK_MARGIN = 6; // gap between tick text and axis line
 const TITLE_BAND = 22; // reserved column: title (~14px) + breathing room
 const TICK_ANGLE_RAD = (35 * Math.PI) / 180;
+const MAX_X_TICKS = 12; // density target before we thin tick labels
 
 // Chart wrapper components
 type ChartWrapperComponent =
@@ -279,11 +280,11 @@ export default function ChartWidget({
     (!isNumericXAxis && formattedData.length > 4) ||
     (isNumericXAxis && formattedData.length > 10);
 
-  // Compute explicit ticks for dense numeric axes so the last data point is
-  // always labeled and Recharts' preserveStartEnd doesn't drop a tick mid-axis.
+  // preserveStartEnd silently drops a mid-axis tick when (N-1) doesn't
+  // divide evenly; build explicit ticks so the last data point is labeled.
   let xTicks: (string | number)[] | undefined;
   if (isNumericXAxis && type !== "scatter" && formattedData.length > 10) {
-    const step = Math.ceil((formattedData.length - 1) / 12);
+    const step = Math.ceil((formattedData.length - 1) / MAX_X_TICKS);
     xTicks = [];
     for (let i = 0; i < formattedData.length; i += step) {
       xTicks.push(formattedData[i][xAxis] as string | number);
