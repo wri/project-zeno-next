@@ -13,7 +13,6 @@ import type {
   CreateCustomAreaResponse,
 } from "../schemas/api/custom_areas/post";
 import { Polygon } from "geojson";
-import { sendGAEvent } from "@next/third-parties/google";
 import { apiFetch } from "@/app/lib/api-client";
 
 // Type for polygon features from TerraDraw
@@ -210,12 +209,6 @@ export const createDrawAreaSlice: StateCreator<
     if (createAreaFn) {
       result = await createAreaFn(requestData);
     }
-
-    sendGAEvent("event", "map_area_drawn", {
-      area_name: newArea.name,
-      area_size_km2: areaSizeKm2,
-      area_bbox_km2: bboxCollection
-    });
 
     get().endDrawing();
     return result;

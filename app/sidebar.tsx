@@ -16,7 +16,6 @@ import {
   Progress,
 } from "@chakra-ui/react";
 import Link from "next/link";
-import { sendGAEvent } from "@next/third-parties/google";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
@@ -122,15 +121,6 @@ function ThreadSection({
                   href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
-                  onClick={() => {
-                    if (!isActive) {
-                      sendGAEvent("event", "saved_conversation_loaded", {
-                        conversation_id: thread.id,
-                        updated_at: thread.updated_at,
-                        is_public: thread.is_public,
-                      });
-                    }
-                  }}
                 >
                   {thread.name}
                 </ThreadLink>
