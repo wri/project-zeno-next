@@ -2,6 +2,7 @@ import { DatasetInfo } from "@/app/types/chat";
 import useContextStore from "@/app/store/contextStore";
 import { DatasetCard } from "@/app/components/DatasetCard";
 import { DATASET_CARDS } from "@/app/constants/datasets";
+import { getDatasetLayerContextProps } from "@/app/utils/datasetLayerContext";
 
 interface DatasetCardWidgetProps {
   dataset: DatasetInfo;
@@ -26,6 +27,7 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
         datasetId: dataset.dataset_id,
         tileUrl: dataset.tile_url,
         layerName: dataset.dataset_name,
+        ...getDatasetLayerContextProps(dataset), // we add the context layer(s) if any.
       });
       return;
     }
