@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
-import Analytics from "@/app/components/Analytics";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
 import "./theme/cookies.css"
 
@@ -34,6 +33,17 @@ export default function RootLayout({
       className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
     >
       <head>
+        <Script
+          id="gtm"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-5VC3GLCQ');`,
+          }}
+        />
         <Script src="https://cmp.osano.com/AzyfddTRtqi1560Dk/1543dfc1-f73d-43a2-8296-3849161e9ff5/osano.js" />
         <script
           dangerouslySetInnerHTML={{
@@ -51,8 +61,15 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-5VC3GLCQ"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
         <Providers>
-          <Analytics />
           {children}
           <HotjarTrigger />
         </Providers>

@@ -12,8 +12,6 @@ import {
 import ThreadDeleteDialog from "./ThreadDeleteDialog";
 import ThreadRenameDialog from "./ThreadRenameDialog";
 import ThreadShareDialog from "./ThreadShareDialog";
-import { sendGAEvent } from "@next/third-parties/google";
-import { sendGAEventAsync } from "@/app/utils/analytics";
 
 function ThreadActionsMenu({
   thread,
@@ -32,15 +30,10 @@ function ThreadActionsMenu({
 
   const onRename = useCallback(
     async (name: string) => {
-      sendGAEvent("event", "thread_renamed", {
-        old_thread_name: thread.name,
-        new_thread_name: name,
-        thread_id: thread.id,
-      });
       await renameThread(thread.id, name);
       setRenameOpen(false);
     },
-    [thread.id, thread.name, renameThread]
+    [thread.id, renameThread]
   );
 
   const onShare = useCallback(
@@ -50,10 +43,6 @@ function ThreadActionsMenu({
   )
 
   const onDelete = useCallback(async () => {
-    await sendGAEventAsync("thread_deleted", { 
-      thread_name: thread.name,
-      thread_id: thread.id,
-     });
     try {
       await deleteThread(thread.id);
       if (currentThreadId === thread.id) {
@@ -62,7 +51,7 @@ function ThreadActionsMenu({
     } catch (e) {
       console.error("Failed to delete thread", e);
     }
-  }, [currentThreadId, thread.id, thread.name, router, deleteThread]);
+  }, [currentThreadId, thread.id, router, deleteThread]);
 
   return (
     <>
