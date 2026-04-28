@@ -37,6 +37,7 @@ export function LayerEntry(
     id,
     title,
     dateRange,
+    parametersText,
     symbology,
     children,
     visible,
@@ -48,6 +49,7 @@ export function LayerEntry(
     expanded = false,
     onToggleExpand,
   } = props;
+  const metadataText = [dateRange, parametersText].filter(Boolean).join(" · ");
 
   return (
     <Flex flexDir="column" w="100%" minW={0} fontFamily="body" lineHeight="shorter">
@@ -77,14 +79,16 @@ export function LayerEntry(
           >
             <CaretDownIcon size={12} />
           </IconButton>
-          <Heading as="h3" size="sm" m={0} truncate>
-            {title}{" "}
-            {dateRange && (
-              <Text as="span" fontWeight="normal" color="fg.muted">
-                {dateRange}
+          <Flex flexDir="column" minW={0}>
+            <Heading as="h3" size="sm" m={0} truncate>
+              {title}
+            </Heading>
+            {metadataText && (
+              <Text fontSize="xs" fontWeight="normal" color="fg.muted" truncate>
+                {metadataText}
               </Text>
             )}
-          </Heading>
+          </Flex>
         </Flex>
         <ButtonGroup
           variant="ghost"
