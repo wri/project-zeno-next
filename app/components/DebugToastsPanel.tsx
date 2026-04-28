@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, CloseButton, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, CloseButton, Menu, Stack, Text } from "@chakra-ui/react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 import {
   showApiError,
   showError,
@@ -10,8 +11,18 @@ import {
 import { toaster } from "@/app/components/ui/toaster";
 import { pickAoiTool } from "@/app/store/chat-tools/pickAoi";
 import useMapStore from "@/app/store/mapStore";
+import useChatStore from "@/app/store/chatStore";
+import { getToolErrorMessage } from "@/app/lib/tool-display";
 
 const GLOBAL_LAYER_ID = "global-layer";
+
+const TOOL_ERROR_OPTIONS: Array<{ name: string; label: string }> = [
+  { name: "generate_insights", label: "Insights" },
+  { name: "pick_aoi", label: "AOI" },
+  { name: "pick_dataset", label: "Dataset" },
+  { name: "pull_data", label: "Data" },
+  { name: "unknown_tool", label: "Unknown" },
+];
 
 function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const envEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true";
@@ -19,8 +30,17 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const [dismissed, setDismissed] = useState(false);
   const layers = useMapStore((s) => s.layers);
   const removeLayer = useMapStore((s) => s.removeLayer);
+  const addMessage = useChatStore((s) => s.addMessage);
 
   const globalLayerActive = layers.some((l) => l.id === GLOBAL_LAYER_ID);
+
+  const triggerToolError = (toolName: string) => {
+    addMessage({
+      type: "warning",
+      message: getToolErrorMessage(toolName),
+      timestamp: new Date().toISOString(),
+    });
+  };
 
   const handleToggleGlobalLayer = () => {
     if (globalLayerActive) {
@@ -130,6 +150,26 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         >
           Info
         </Button>
+        <Menu.Root positioning={{ strategy: "fixed", hideWhenDetached: true }}>
+          <Menu.Trigger asChild>
+            <Button size="xs" variant="subtle">
+              Tool Error <CaretDownIcon size={12} />
+            </Button>
+          </Menu.Trigger>
+          <Menu.Positioner>
+            <Menu.Content>
+              {TOOL_ERROR_OPTIONS.map(({ name, label }) => (
+                <Menu.Item
+                  key={name}
+                  value={name}
+                  onSelect={() => triggerToolError(name)}
+                >
+                  {label}
+                </Menu.Item>
+              ))}
+            </Menu.Content>
+          </Menu.Positioner>
+        </Menu.Root>
       </Stack>
     </Box>
   );
