@@ -28,7 +28,7 @@ import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
 import { useEffect, useState, useCallback } from "react";
 import remarkBreaks from "remark-breaks";
-import { WarningIcon, InfoIcon } from "@phosphor-icons/react";
+import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
@@ -233,7 +233,7 @@ function MessageBubble({
           </Flex>
         ) : isWarning ? (
           <Flex alignItems="center" gap="2">
-            <InfoIcon />
+            <WarningIcon />
             <Box>{message.message}</Box>
           </Flex>
         ) : (
