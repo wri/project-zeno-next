@@ -1,4 +1,5 @@
 import type { DatasetInfo } from "@/app/types/chat";
+import { DATASET_CARDS } from "@/app/constants/datasets";
 import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
 
 // Route primary forest tiles through the `pf://` protocol so the
@@ -16,14 +17,25 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
     ? dataset.context_layers?.find((c) => c.name === ctxName)
     : undefined;
 
-  // parameters for example coverage percentage
-  const parameters = dataset.parameters
-    ? Object.fromEntries(
-        dataset.parameters
-          .filter((p) => Array.isArray(p.values) && p.values.length > 0)
-          .map((p) => [p.name, p.values[0]])
-      )
-    : undefined;
+  // Parameters from the backend are authoritative; otherwise use the dataset's
+  // default canopy threshold so the legend can still describe the rendered tile.
+  const explicitParameters = Object.fromEntries(
+    (dataset.parameters ?? [])
+      .filter((p) => Array.isArray(p.values) && p.values.length > 0)
+      .map((p) => [p.name, p.values[0]])
+  );
+  const datasetDefaults = DATASET_CARDS.find(
+    (d) =>
+      d.dataset_id === dataset.dataset_id ||
+      d.dataset_name === dataset.dataset_name
+  );
+  const defaultCanopyCover = dataset.threshold ?? datasetDefaults?.threshold;
+  const parameters =
+    Object.keys(explicitParameters).length > 0
+      ? explicitParameters
+      : typeof defaultCanopyCover === "number"
+        ? { canopy_cover: defaultCanopyCover }
+        : undefined;
 
   return {
     contextLayer: ctxMeta
@@ -32,8 +44,7 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
           tileUrl: patchPrimaryForestTileUrl(ctxMeta.tile_url),
         }
       : undefined,
-    parameters:
-      parameters && Object.keys(parameters).length > 0 ? parameters : undefined,
+    parameters,
     startDate: dataset.start_date,
     endDate: dataset.end_date,
   };
