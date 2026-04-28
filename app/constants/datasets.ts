@@ -1,10 +1,23 @@
-import { DatasetInfo } from "@/app/types/chat";
+import type { DatasetInfo } from "@/app/types/chat";
 
 const EOAPI_HOST =
   process.env.NEXT_PUBLIC_EOAPI_HOST ||
   "https://eoapi-cache.globalnaturewatch.org/";
 
 // UI card config that may omit some DatasetInfo fields; we'll fill defaults
+export type DatasetLegendConfig = {
+  title: string;
+  color: string;
+  items?: {
+    color: string;
+    label?: string | "";
+  }[];
+  type: "symbol" | "categorical" | "sequential" | "divergent";
+  info: string;
+  note: string;
+  unit?: string | null;
+};
+
 export type DatasetCardConfig = {
   dataset_id: number;
   dataset_name: string;
@@ -14,18 +27,34 @@ export type DatasetCardConfig = {
   data_layer?: string;
   context_layer?: string | null;
   threshold?: number | null;
-  legend?: {
-    title: string;
-    color: string;
-    items?: {
-      color: string;
-      label?: string | "";
-    }[];
-    type: "symbol" | "categorical" | "sequential" | "divergent";
-    info: string;
-    note: string;
-    unit?: string | null;
-  };
+  legend?: DatasetLegendConfig;
+};
+
+export type ContextLayerMetadata = {
+  dataset_id: number;
+  dataset_name: string;
+  context_layer: string | null;
+  description: string;
+  tile_url?: string;
+  legend: DatasetLegendConfig;
+};
+
+export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
+  primary_forest: {
+    dataset_id: 9,
+    dataset_name: "Primary Forests",
+    context_layer: null as string | null,
+    description:
+      "Primary forests are among the most biodiverse forests, providing a multitude of ecosystem services, making them crucial to monitor for national land use planning and carbon accounting. This dataset defines primary forests as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. Researchers classified Landsat images into primary forest data using a separate algorithm for each region. The dataset maps the extent of primary forests in the global pan-tropical regions in 2001 at 30-meter resolution.",
+    legend: {
+      title: "Primary Forests (2001)",
+      color: "#054A29",
+      items: [{ label: "Primary forest", color: "#054A29" }],
+      type: "symbol",
+      info: "Primary forests are defined as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. This layer maps their pan-tropical extent in 2001 and is useful as a baseline for assessing forest integrity and biodiversity value.",
+      note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
+    },
+  },
 };
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [

@@ -8,7 +8,8 @@ import MapGl, {
   ScaleControl,
   MapRef,
 } from "react-map-gl/maplibre";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
   Code,
@@ -43,6 +44,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
     "devseed/cmazl5ws500bz01scaa27dqi4",
   );
   const { setMapRef, initializeTerraDraw } = useMapStore();
+  useEffect(() => {
+    registerPrimaryForestProtocol();
+  }, []);
   const { layers, handleLayerAction } = useLegendHook();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");

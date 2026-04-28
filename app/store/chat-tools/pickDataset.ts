@@ -5,6 +5,7 @@ import {
   InsightWidget,
 } from "@/app/types/chat";
 import useContextStore from "../contextStore";
+import { getDatasetLayerContextProps } from "@/app/utils/datasetLayerContext";
 
 export function pickDatasetTool(
   streamMessage: StreamMessage,
@@ -26,12 +27,15 @@ export function pickDatasetTool(
         yAxis: "",
       };
 
+      const layerContextProps = getDatasetLayerContextProps(dataset);
+
       upsertContextByType({
         contextType: "layer",
         content: dataset.dataset_name,
         datasetId: dataset.dataset_id,
         tileUrl: dataset.tile_url,
         layerName: dataset.dataset_name,
+        ...layerContextProps, // we add the context layer(s) if any.
         isAiContext: true,
       });
 
