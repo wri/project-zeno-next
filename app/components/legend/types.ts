@@ -9,6 +9,7 @@ export interface LegendLayer {
   visible: boolean;
   opacity: number;
   dateRange?: string;
+  parametersText?: string;
   symbology: ReactNode;
   children?: ReactNode;
   info?: string;

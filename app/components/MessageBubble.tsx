@@ -14,7 +14,6 @@ import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import Markdown from "react-markdown";
-import { sendGAEvent } from "@next/third-parties/google";
 import {
   ArrowBendDownRightIcon,
   CheckIcon,
@@ -142,7 +141,10 @@ function MessageBubble({
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
   const isError = message.type === "error";
+  const isWarning = message.type === "warning";
   const hasContext = isUser && message.context && message.context.length > 0;
+  const showFooter =
+    !isUser && !isConsecutive && !isError && !isWarning && !isFirst;
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
     return message.widgets.map((widget, idx) => (
@@ -170,15 +172,27 @@ function MessageBubble({
         alignItems={isUser ? "flex-end" : "flex-start"}
         w={isUser ? "fit-content" : "100%"}
         maxW={isUser ? "80%" : "none"}
-        bg={isError ? "red.50" : isUser ? "gray.100" : "transparent"}
-        color={isError ? "red.800" : "fg"}
-        px={isUser || isError ? 4 : 0}
-        py={isUser || isError ? 3 : 0}
+        bg={
+          isError
+            ? "red.50"
+            : isWarning
+            ? "white"
+            : isUser
+            ? "gray.100"
+            : "transparent"
+        }
+        color={isError ? "red.800" : isWarning ? "fg.subtle" : "fg"}
+        fontSize={isWarning ? "xs" : undefined}
+        fontStyle={isWarning ? "italic" : undefined}
+        px={isUser || isError || isWarning ? 4 : 0}
+        py={isUser || isError || isWarning ? 3 : 0}
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
-        border={isError ? "1px solid" : "none"}
-        borderColor={isError ? "red.200" : "transparent"}
+        border={isError || isWarning ? "1px solid" : "none"}
+        borderColor={
+          isError ? "red.200" : isWarning ? "gray.200" : "transparent"
+        }
       >
         {hasContext && (
           <Flex gap="2" wrap="wrap" mb="1">
@@ -216,6 +230,11 @@ function MessageBubble({
               </Markdown>
             </Box>
           </Flex>
+        ) : isWarning ? (
+          <Flex alignItems="center" gap="2">
+            <WarningIcon />
+            <Box>{message.message}</Box>
+          </Flex>
         ) : (
           <Box
             css={{
@@ -242,7 +261,7 @@ function MessageBubble({
             </CopySelectionTooltip>
           </Box>
         )}
-        {!isUser && !isConsecutive && !isError && !isFirst && (
+        {showFooter && (
           <Flex
             alignItems="center"
             w="full"
@@ -274,12 +293,6 @@ function MessageBubble({
                   size="xs"
                   onClick={() => {
                     clipboard.copy();
-                    sendGAEvent("event", "response_feedback_copy", {
-                      message_id: message.id,
-                      trace_id: message.traceId,
-                      copied: clipboard.copied,
-                      message: message.message,
-                    });
                   }}
                 >
                   {clipboard.copied ? <CheckIcon /> : <CopyIcon />}
@@ -291,11 +304,6 @@ function MessageBubble({
                   size="xs"
                   onClick={() => {
                     rateMessage(1);
-                    sendGAEvent("event", "response_feedback_positive", {
-                      message_id: message.id,
-                      trace_id: message.traceId,
-                      message: message.message,
-                    });
                   }}
                   disabled={isRating || !message.traceId}
                 >
@@ -317,11 +325,6 @@ function MessageBubble({
                         onClick={async () => {
                           await rateMessage(-1);
                           setFeedbackOpen(true);
-                          sendGAEvent("event", "response_feedback_negative", {
-                            message_id: message.id,
-                            trace_id: message.traceId,
-                            message: message.message,
-                          });
                         }}
                       >
                         <ThumbsDownIcon />

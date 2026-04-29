@@ -21,7 +21,6 @@ import {
   Polygon,
 } from "geojson";
 import AreaTooltip, { HoverInfo } from "../../../ui/AreaTooltip";
-import { sendGAEvent } from "@next/third-parties/google";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
 interface SourceLayerProps {
@@ -153,11 +152,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             }
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
-            sendGAEvent("event", "map_area_selected", {
-              area_name: aoiName,
-              area_source: layerConfig?.id.toLowerCase(),
-              area_subtype: dynamicSubtype,
-            });
 
             upsertContextByType({
               contextType: "area",

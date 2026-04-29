@@ -28,6 +28,12 @@ export interface ContextItem {
   // Optional display properties for map layers
   tileUrl?: string;
   layerName?: string;
+  // Optional sub-layer (e.g. "primary_forest" for TCL) rendered alongside the main dataset layer.
+  contextLayer?: { name: string; tileUrl: string };
+  // Runtime metadata surfaced in the legend
+  parameters?: Record<string, unknown>;
+  startDate?: string;
+  endDate?: string;
 }
 
 interface ContextState {
@@ -63,19 +69,39 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
       }
 
       // If adding a dataset layer context, ensure the map layer is added
+      // We need to add the dataset layer first and then the context layer(s) if any.
       if (
         item.contextType === "layer" &&
         typeof item.datasetId === "number" &&
         item.tileUrl
       ) {
+        const mainLayerId = `dataset-${item.datasetId}`;
+        // Add the dataset layer first. DynamicTileLayers renders rasterLayers[0]
+        // on top of the map; addLayer appends, so the first added layer ends up
+        // at index 0 (rendered on top). The context sub-layer is added after so
+        // it renders beneath the dataset layer.
         useMapStore.getState().addLayer({
-          id: `dataset-${item.datasetId}`,
+          id: mainLayerId,
           name: item.layerName || String(item.datasetId),
           type: "raster",
           visible: true,
           tileUrl: item.tileUrl,
           datasetId: item.datasetId,
+          parameters: item.parameters,
+          startDate: item.startDate,
+          endDate: item.endDate,
         });
+        if (item.contextLayer) {
+          useMapStore.getState().addLayer({
+            id: `dataset-${item.datasetId}-ctx-${item.contextLayer.name}`,
+            name: item.contextLayer.name,
+            type: "raster",
+            visible: true,
+            tileUrl: item.contextLayer.tileUrl,
+            datasetId: item.datasetId,
+            parentLayerId: mainLayerId,
+          });
+        }
       }
 
       return {
@@ -93,8 +119,14 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
     set((state) => {
       const itemToRemove = state.context.find((c) => c.id === id);
       if (typeof itemToRemove?.datasetId === "number") {
+        const { removeLayer } = useMapStore.getState();
         // Remove corresponding map layer if this context item represents a dataset layer
-        useMapStore.getState().removeLayer(`dataset-${itemToRemove.datasetId}`);
+        removeLayer(`dataset-${itemToRemove.datasetId}`);
+        if (itemToRemove.contextLayer) {
+          removeLayer(
+            `dataset-${itemToRemove.datasetId}-ctx-${itemToRemove.contextLayer.name}`
+          );
+        }
       }
       return {
         context: state.context.filter((c) => c.id !== id),
@@ -120,8 +152,12 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
       // Remove any map layers tied to context entries before clearing
       const { removeLayer } = useMapStore.getState();
       state.context.forEach((c) => {
-        if (typeof c.datasetId === "number")
+        if (typeof c.datasetId === "number") {
           removeLayer(`dataset-${c.datasetId}`);
+          if (c.contextLayer) {
+            removeLayer(`dataset-${c.datasetId}-ctx-${c.contextLayer.name}`);
+          }
+        }
       });
       return { context: [] };
     }),

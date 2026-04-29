@@ -17,6 +17,7 @@ import useContextStore from "./contextStore";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { apiFetch } from "@/app/lib/api-client";
+import { getToolErrorMessage } from "@/app/lib/tool-display";
 import { DATASET_BY_ID } from "../constants/datasets";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
@@ -158,17 +159,13 @@ async function processStreamMessage(
         { title: "Request Timed Out" }
       );
     } else {
-      // Handle other error messages from LangChain tools
+      // No toast: the agent recovers with a follow-up assistant message,
+      // so a toast would falsely suggest the chat itself is broken.
       addMessage({
-        type: "error",
-        message:
-          "I encountered an error while processing your request. Please try rephrasing your question or try again.",
+        type: "warning",
+        message: getToolErrorMessage(streamMessage.name),
         timestamp: streamMessage.timestamp,
       });
-      showError(
-        "I encountered an error while processing your request. Please try rephrasing your question or try again.",
-        { title: "Processing Error" }
-      );
     }
     // TODO: StreamMessage.type "text" currently represents assistant messages.
     // Consider renaming server-emitted type to "assistant" and updating this

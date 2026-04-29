@@ -30,6 +30,12 @@ export interface Layer {
   selectionName?: string;
   aoiSelection?: AOISelection;
   datasetId?: number;
+  // Runtime metadata for legend display (set when added from pick_dataset)
+  parameters?: Record<string, unknown>;
+  startDate?: string;
+  endDate?: string;
+  // Set on a context-layer sub-layer to mark it as a child of `parentLayerId`
+  parentLayerId?: string;
 }
 
 export interface LayerManagerSlice {

@@ -8,7 +8,8 @@ import MapGl, {
   ScaleControl,
   MapRef,
 } from "react-map-gl/maplibre";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
   Code,
@@ -23,7 +24,9 @@ import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
 import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
-import DynamicTileLayers from "./map/layers/DynamicTileLayers";
+import DynamicTileLayers, {
+  RASTER_TOP_SENTINEL_ID,
+} from "./map/layers/DynamicTileLayers";
 import VectorTileLayers from "./map/layers/VectorTileLayers";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
@@ -38,9 +41,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const [showLegend, setShowLegend] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [basemapTiles, setBasemapTiles] = useState(
-    "devseed/cmazl5ws500bz01scaa27dqi4"
+    "devseed/cmazl5ws500bz01scaa27dqi4",
   );
   const { setMapRef, initializeTerraDraw } = useMapStore();
+  useEffect(() => {
+    registerPrimaryForestProtocol();
+  }, []);
   const { layers, handleLayerAction } = useLegendHook();
   const { context } = useContextStore();
   const areas = context.filter((c) => c.contextType === "area");
@@ -163,6 +169,16 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Legend layers={layers} onLayerAction={handleLayerAction} />
         </Box>
 
+        {/* Sentinel layer: caps raster layers below AOI/GeoJSON outlines.
+            Must be added before DynamicTileLayers so the sentinel exists
+            when the topmost raster layer references it as beforeId. */}
+        <Source
+          id="raster-top-sentinel-source"
+          type="geojson"
+          data={{ type: "FeatureCollection", features: [] }}
+        >
+          <Layer id={RASTER_TOP_SENTINEL_ID} type="line" paint={{}} />
+        </Source>
         <DynamicTileLayers />
         <VectorTileLayers areas={areas} />
         <GeoJsonLayers areas={areas} />

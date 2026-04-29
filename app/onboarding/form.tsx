@@ -27,7 +27,6 @@ import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { sendGAEventAsync } from "@/app/utils/analytics";
 import { apiFetch } from "@/app/lib/api-client";
 
 type ProfileConfig = {
@@ -271,15 +270,6 @@ export default function OnboardingForm() {
 
       const verified = await waitForProfileCompletion();
       if (verified) {
-        await sendGAEventAsync("sign_up", {
-          sector: payload.sector_code,
-          role: payload.role_code,
-          country: payload.country_code,
-          expertise_level: payload.gis_expertise_level,
-          topics: (payload.topics || []).join(","),
-          news_opt_in: payload.receive_news_emails,
-          testing_opt_in: payload.help_test_features,
-        });
         const queryString = searchParams.toString();
         const destination = queryString ? `/app?${queryString}` : "/app";
         router.push(destination);

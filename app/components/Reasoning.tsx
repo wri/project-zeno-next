@@ -18,6 +18,7 @@ import { useState } from "react";
 import { ToolStepData } from "@/app/types/chat";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import { formatToolName } from "@/app/lib/tool-display";
 
 // Strip leading whitespace from each line so indented template literals
 // in the API response don't get treated as Markdown code blocks (4+ spaces)
@@ -26,18 +27,6 @@ function trimLines(content: string): string {
     .split("\n")
     .map((l) => l.trimStart())
     .join("\n");
-}
-
-// Helper function to format tool names for display
-function formatToolName(toolName: string): string {
-  const toolNameMap: Record<string, string> = {
-    generate_insights: "Generating insights",
-    pick_aoi: "Picking area of interest",
-    pick_dataset: "Selecting dataset",
-    pull_data: "Pulling data",
-  };
-
-  return toolNameMap[toolName] || `Processing ${toolName}`;
 }
 
 interface ReasoningProps {

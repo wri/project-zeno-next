@@ -16,7 +16,7 @@ export interface ToolStepData {
 
 export interface ChatMessage {
   id: string;
-  type: "user" | "assistant" | "system" | "widget" | "error";
+  type: "user" | "assistant" | "system" | "widget" | "error" | "warning";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
@@ -134,6 +134,16 @@ export interface AOISelection {
   aois: AOI[];
 }
 
+export interface DatasetContextLayer {
+  name: string;
+  tile_url: string;
+}
+
+export interface DatasetParameter {
+  name: string;
+  values: unknown[];
+}
+
 export interface DatasetInfo {
   dataset_id: number;
   dataset_name: string;
@@ -142,6 +152,10 @@ export interface DatasetInfo {
   data_layer?: string;
   tile_url: string;
   context_layer?: string | null;
+  context_layers?: DatasetContextLayer[];
+  parameters?: DatasetParameter[] | null;
+  start_date?: string;
+  end_date?: string;
   threshold?: number | null;
   description?: string;
   methodology?: string;

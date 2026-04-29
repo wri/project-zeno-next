@@ -14,7 +14,6 @@ import {
 } from "@chakra-ui/react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";
-import { sendGAEvent } from "@next/third-parties/google";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
@@ -188,10 +187,6 @@ export function LayerMenu() {
     );
 
     if (!card.selected) {
-      sendGAEvent("event", "manual_layer_selected", {
-        dataset_id: card.dataset_id,
-        dataset_name: card.dataset_name,
-      });
       addContext({
         contextType: "layer",
         content: card.dataset_name,
@@ -322,11 +317,6 @@ function AreaMenu() {
         geometry: multi,
         properties: { id: selected.id, name: selected.name },
       };
-      sendGAEvent("event", "manual_area_selected", {
-        area_id: selected.id,
-        area_name: selected.name,
-        geometries: feature.geometry,
-      });
       addToRegistry({ ref: { name: selected.name, source: "custom" }, data: feature, srcId: selected.id, subtype: "custom-area" });
       addLayer({ id: selected.id, name: selected.name, type: "geojson", visible: true, featureRefs: [{ name: selected.name, source: "custom" }] });
       flyToGeoJsonWithRetry(feature);
@@ -394,10 +384,6 @@ function DateMenu() {
       if (ctxId) {
         contextStore.removeContext(ctxId);
       }
-      sendGAEvent("event", "manual_date_selected", {
-        start_date: format(dateValue[0], "yyyy-MM-dd"),
-        end_date: format(dateValue[1], "yyyy-MM-dd"),
-      });
       contextStore.addContext({
         contextType: "date",
         content: `${format(dateValue[0], "yyyy-MM-dd")} — ${format(

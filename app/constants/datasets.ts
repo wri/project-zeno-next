@@ -1,10 +1,23 @@
-import { DatasetInfo } from "@/app/types/chat";
+import type { DatasetInfo } from "@/app/types/chat";
 
 const EOAPI_HOST =
   process.env.NEXT_PUBLIC_EOAPI_HOST ||
   "https://eoapi-cache.globalnaturewatch.org/";
 
 // UI card config that may omit some DatasetInfo fields; we'll fill defaults
+export type DatasetLegendConfig = {
+  title: string;
+  color: string;
+  items?: {
+    color: string;
+    label?: string | "";
+  }[];
+  type: "symbol" | "categorical" | "sequential" | "divergent";
+  info: string;
+  note: string;
+  unit?: string | null;
+};
+
 export type DatasetCardConfig = {
   dataset_id: number;
   dataset_name: string;
@@ -14,18 +27,34 @@ export type DatasetCardConfig = {
   data_layer?: string;
   context_layer?: string | null;
   threshold?: number | null;
-  legend?: {
-    title: string;
-    color: string;
-    items?: {
-      color: string;
-      label?: string | "";
-    }[];
-    type: "symbol" | "categorical" | "sequential" | "divergent";
-    info: string;
-    note: string;
-    unit?: string | null;
-  };
+  legend?: DatasetLegendConfig;
+};
+
+export type ContextLayerMetadata = {
+  dataset_id: number;
+  dataset_name: string;
+  context_layer: string | null;
+  description: string;
+  tile_url?: string;
+  legend: DatasetLegendConfig;
+};
+
+export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
+  primary_forest: {
+    dataset_id: 9,
+    dataset_name: "Primary Forests",
+    context_layer: null as string | null,
+    description:
+      "Primary forests are among the most biodiverse forests, providing a multitude of ecosystem services, making them crucial to monitor for national land use planning and carbon accounting. This dataset defines primary forests as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. Researchers classified Landsat images into primary forest data using a separate algorithm for each region. The dataset maps the extent of primary forests in the global pan-tropical regions in 2001 at 30-meter resolution.",
+    legend: {
+      title: "Primary Forests (2001)",
+      color: "#054A29",
+      items: [{ label: "Primary forest", color: "#054A29" }],
+      type: "symbol",
+      info: "Primary forests are defined as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. This layer maps their pan-tropical extent in 2001 and is useful as a baseline for assessing forest integrity and biodiversity value.",
+      note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
+    },
+  },
 };
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
@@ -132,16 +161,16 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     threshold: 30,
     img: "/dataset_card_tree_cover_loss.webp",
     description:
-      "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2024 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
+      "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2025 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
       "https://tiles.globalforestwatch.org/umd_tree_cover_loss/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
     legend: {
-      title: "Tree cover loss (2001-2024)",
+      title: "Tree cover loss (2001-2025)",
       color: "#DC6C9A",
       items: [{label: "Tree cover loss", color: "#DC6C9A" }],
       type: "symbol",
       info: "Tree cover loss dataset can detect stand-replacement disturbances including plantations and supports monitoring forestry practices. The driver context layer would help distinguish harvesting from other causes of tree loss, making it ideal for tracking plantation harvesting cycles.",
-      note: "Annual locations of tree cover removal across both natural forests and plantations. Tree cover canopy >30%.",
+      note: "Annual locations of tree cover removal across both natural forests and plantations at the selected canopy density threshold.",
       unit: "ha",
     },
   },
@@ -153,11 +182,11 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     threshold: 30,
     img: "/dataset_card_tree_cover_loss_drivers.webp",
     description:
-      "Shows the primary driver or cause of tree cover loss over the entire range 2001-2024. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
+      "Shows the primary driver or cause of tree cover loss over the entire range 2001-2025. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
       "https://tiles.globalforestwatch.org/wri_google_tree_cover_loss_drivers/v1.12/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
     legend: {
-      title: "Tree cover loss by dominant driver (2001-2024)",
+      title: "Tree cover loss by dominant driver (2001-2025)",
       color: "#DC6C9A",
       items: [
         { label: "logging", color: "#52A44E"},
@@ -169,8 +198,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         { label: "permanent agriculture", color: "#E39D29"}
       ],
       type: "symbol",
-      info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2024. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
-      note: "Shows the dominant driver of deforestation between 2001 and 2024. Tree cover canopy >30%."
+      info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2025. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
+      note: "Shows the dominant driver of deforestation between 2001 and 2025 at the selected canopy density."
     },
   },
   {
@@ -211,19 +240,19 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       items: [{ label: "Tree cover", color: "#97BD3D" }],
       type: "symbol",
       info: "Tree cover gain dataset can detect natural forest regrowth and tree plantation cycles. It is useful for tracking large-scale forest recovery trends.",
-      note: "Baseline percent tree canopy cover showing density of woody vegetation. Tree cover canopy >30%.",
+      note: "Baseline percent tree canopy cover showing density of woody vegetation at the selected canopy density.",
       unit: "ha",
     },
   },
   {
     dataset_id: 6,
-    dataset_name: "Forest greenhouse gas net flux (2001-2024)",
+    dataset_name: "Forest greenhouse gas net flux (2001-2025)",
     data_layer: "Forest greenhouse gas net flux",
     context_layer: null,
     threshold: 30,
     img: "/dataset_card_net_flux.webp",
     description:
-      "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2024, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
+      "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2025, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_forest_carbon_net_flux/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30",
       legend: {
@@ -294,7 +323,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
           { label: `>1500 (source)`, color: "#39082a" },
         ],
       info: "This dataset maps the balance between emissions from forest disturbances and carbon removals from forest growth, making it ideal for identifying where forests are contributing to or helping mitigate climate change.",
-      note: "Balance between forest emissions and removals. Tree cover canopy >30%.",
+      note: "Balance between forest emissions and removals at the selected canopy density.",
       unit: "tCO2e/ha",
     },
   },

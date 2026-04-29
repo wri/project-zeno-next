@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { sendGAEvent } from "@next/third-parties/google";
 import { API_CONFIG } from "@/app/config/api";
 
 interface AuthState {
@@ -63,13 +62,6 @@ const useAuthStore = create<AuthState>()((set) => ({
           ? quota
           : totalPrompts;
 
-      if (newUsed >= newTotal) {
-        sendGAEvent("event", "prompt_limit_reached", {
-          prompts_remaining: newTotal - newUsed,
-          quota: newTotal,
-        });
-      }
-
       return {
         usedPrompts: newUsed,
         totalPrompts: newTotal,
@@ -84,7 +76,6 @@ const useAuthStore = create<AuthState>()((set) => ({
       hasProfile,
       authLoaded: true,
     });
-    sendGAEvent("event", "login", { method: "token", user_id: id });
   },
   setAuthLoaded: () => {
     set({ authLoaded: true });
