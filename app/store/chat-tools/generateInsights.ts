@@ -8,6 +8,8 @@ interface ChartData {
   data: unknown;
   xAxis: string;
   yAxis: string;
+  stackField?: string;
+  seriesFields?: string[];
 }
 
 export function generateInsightsTool(
@@ -28,6 +30,8 @@ export function generateInsightsTool(
         data: chart.data,
         xAxis: chart.xAxis,
         yAxis: chart.yAxis,
+        ...(chart.stackField ? { stackField: chart.stackField } : {}),
+        ...(chart.seriesFields?.length ? { seriesFields: chart.seriesFields } : {}),
         ...(datasetName ? { datasetName } : {}),
         generation: {
           codeact_parts: streamMessage.codeact_parts,

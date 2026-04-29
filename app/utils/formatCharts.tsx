@@ -42,6 +42,8 @@ export default function formatChartData(
   xAxis?: string,
   yAxis?: string,
   datasetName?: string,
+  stackField?: string,
+  seriesFields?: string[],
 ): { data: ChartData[]; series: ChartSeries[] } {
   const empty = { data: [], series: [] };
 
@@ -226,14 +228,40 @@ export default function formatChartData(
 
   // --- Logic for STACKED charts ---
   if (type === "stacked-bar") {
-    // For stacked charts, series are all columns except the xAxisKey.
-    const seriesKeys = keys.filter((key) => key !== xAxisKey);
+    if (stackField && yAxis) {
+      // Long format: pivot (xAxis, stackField, yAxis) → wide format
+      const uniqueGroups = [
+        ...new Set(data.map((item) => String(item[stackField]))),
+      ].sort();
+      const series: ChartSeries[] = uniqueGroups.map((group, index) => ({
+        name: group,
+        color: defaultColors[index % defaultColors.length],
+        stackId: "a",
+      }));
+
+      const pivotedDataMap = data.reduce(
+        (acc, item) => {
+          const xAxisValue = String(item[xAxisKey]);
+          const groupValue = String(item[stackField]);
+          acc[xAxisValue] = acc[xAxisValue] || { [xAxisKey]: xAxisValue };
+          (acc[xAxisValue] as ChartData)[groupValue] = item[yAxis];
+          return acc;
+        },
+        {} as { [key: string]: unknown },
+      );
+
+      return { data: Object.values(pivotedDataMap) as ChartData[], series };
+    }
+
+    // Wide format: series are explicitly listed or all columns except the xAxisKey.
+    const seriesKeys = seriesFields?.length
+      ? seriesFields
+      : keys.filter((key) => key !== xAxisKey);
     const series: ChartSeries[] = seriesKeys.map((key, index) => ({
       name: key,
       color: defaultColors[index % defaultColors.length],
-      stackId: "a", // All items in a stacked chart share a stackId
+      stackId: "a",
     }));
-    // The data format is already correct for stacked charts.
     return { data: data as ChartData[], series };
   }
 

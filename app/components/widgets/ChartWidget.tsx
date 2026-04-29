@@ -214,9 +214,9 @@ export default function ChartWidget({
   const { data: formattedData, series } = useMemo(
     () =>
       xAxis && yAxis
-        ? formatChartData(data, type, xAxis, yAxis, widget.datasetName)
+        ? formatChartData(data, type, xAxis, yAxis, widget.datasetName, widget.stackField, widget.seriesFields)
         : { data: [], series: [] },
-    [data, type, xAxis, yAxis, widget.datasetName],
+    [data, type, xAxis, yAxis, widget.datasetName, widget.stackField, widget.seriesFields],
   );
 
   const chart = useChart({ data: formattedData, series });

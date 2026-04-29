@@ -43,6 +43,8 @@ export interface InsightWidget {
   data: unknown;
   xAxis: string;
   yAxis: string;
+  stackField?: string;
+  seriesFields?: string[];
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
 }
