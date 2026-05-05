@@ -15,11 +15,26 @@ function ChatMessages() {
   const { messages, isLoading, toolSteps: currentToolSteps } = useChatStore();
   const [displayDisclaimer, setDisplayDisclaimer] = useState(true);
   const shouldAutoScroll = useRef(true);
+  const prefersReducedMotion = useRef(false);
+
+  // Track reduced-motion preference live so callbacks always see the current value.
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotion.current = mq.matches;
+    const handler = (e: MediaQueryListEvent) => {
+      prefersReducedMotion.current = e.matches;
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   // Scroll to the bottom of real content, ignoring the blank spacer.
+  // Always instant — smooth scroll here causes jitter during streaming because
+  // ResizeObserver fires this dozens of times per second.
   const scrollToBottom = () => {
     const parent = containerRef.current?.parentElement;
     if (!parent) return;
+    parent.style.scrollBehavior = "auto";
     const spacerHeight = spacerRef.current?.offsetHeight ?? 0;
     parent.scrollTop = Math.max(
       0,
@@ -35,6 +50,8 @@ function ChatMessages() {
     if (!parent) return;
 
     const handleScroll = () => {
+      // Kill any in-flight smooth scroll so user intent takes over immediately.
+      parent.style.scrollBehavior = "auto";
       const spacerHeight = spacerRef.current?.offsetHeight ?? 0;
       const { scrollTop, scrollHeight, clientHeight } = parent;
       shouldAutoScroll.current =
@@ -56,7 +73,25 @@ function ChatMessages() {
       if (parent) {
         const parentRect = parent.getBoundingClientRect();
         const msgRect = lastUserMessageRef.current.getBoundingClientRect();
-        parent.scrollTop += msgRect.top - parentRect.top - 16;
+        const delta = msgRect.top - parentRect.top - 16;
+
+        if (delta !== 0 && !prefersReducedMotion.current) {
+          parent.style.scrollBehavior = "smooth";
+          parent.scrollTop += delta;
+          // Restore instant scroll as soon as the animation finishes so
+          // streaming updates remain snappy. scrollend is exact; fall back to
+          // a conservative timeout for Safari < 17.4.
+          const restore = () => {
+            parent.style.scrollBehavior = "auto";
+          };
+          if ("onscrollend" in parent) {
+            parent.addEventListener("scrollend", restore, { once: true });
+          } else {
+            setTimeout(restore, 400);
+          }
+        } else {
+          parent.scrollTop += delta;
+        }
       }
     } else {
       // AI has started or loading ended — re-enable auto-scroll.
