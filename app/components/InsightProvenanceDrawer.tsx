@@ -13,7 +13,7 @@ import {
   IconButton,
   Button,
 } from "@chakra-ui/react";
-import { DownloadSimpleIcon as DownloadSimple, CopyIcon as Copy, CheckIcon as Check, TerminalWindowIcon as Terminal, XIcon as X } from "@phosphor-icons/react";
+import { DownloadSimpleIcon as DownloadSimple, CopyIcon as Copy, CheckIcon as Check, TerminalWindowIcon as Terminal, XIcon as X, LinkIcon as LinkSimple, ArrowSquareOutIcon as ArrowSquareOut } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import type { InsightGeneration } from "@/app/types/chat";
 import Markdown from "react-markdown";
@@ -24,6 +24,8 @@ import { fetchExternalData } from "@/app/actions/fetch-data";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import JSZip from "jszip";
 import Image from "next/image";
+
+const API_DOCS_URL = "https://analytics.globalnaturewatch.org/docs";
 
 interface InsightProvenanceDrawerProps {
   isOpen: boolean;
@@ -62,7 +64,7 @@ async function fetchAndConvertToCsv(url: string): Promise<{ csv: string; filenam
   if (columns.length === 0) throw new Error("No data found");
 
   const rowCount = result[columns[0]].length;
-  
+
   const csvRows = [columns.join(",")];
 
   for (let i = 0; i < rowCount; i++) {
@@ -112,7 +114,7 @@ function extractDataUrls(code: string): string[] {
 function CodeBlockViewer({ code }: { code: string }) {
   const { copy, copied } = useClipboard({ value: code });
   const [downloading, setDownloading] = useState(false);
-  
+
   const dataUrls = useMemo(() => extractDataUrls(code), [code]);
 
   const handleDownload = async () => {
@@ -130,11 +132,11 @@ function CodeBlockViewer({ code }: { code: string }) {
         const results = await Promise.all(
           dataUrls.map(url => fetchAndConvertToCsv(url))
         );
-        
+
         results.forEach(({ csv, filename }) => {
           zip.file(filename, csv);
         });
-        
+
         const zipBlob = await zip.generateAsync({ type: "blob" });
         triggerDownload(zipBlob, "source_files.zip");
       }
@@ -214,6 +216,68 @@ function CodeBlockViewer({ code }: { code: string }) {
   );
 }
 
+
+function ApiSourceCard({ url }: { url: string }) {
+  const { copy, copied } = useClipboard({ value: url });
+  let baseUrl = url;
+  let params: [string, string][] = [];
+  try {
+    const parsed = new URL(url);
+    baseUrl = `${parsed.origin}${parsed.pathname}`;
+    params = Array.from(parsed.searchParams.entries());
+  } catch {
+    // keep url as-is
+  }
+
+  return (
+    <Box border="1px solid" borderColor="neutral.300" rounded="md" overflow="hidden">
+      <Flex
+        justify="space-between"
+        align="center"
+        bg="neutral.50"
+        px={3}
+        py={2}
+        borderBottomWidth="1px"
+        borderColor="neutral.300"
+      >
+        <Flex gap={2} align="center">
+          <LinkSimple size={14} />
+          <Text fontSize="xs" color="neutral.600">API Source</Text>
+        </Flex>
+        <Flex gap={2}>
+          <Tooltip content="Open in new tab">
+            <Link href={url} target="_blank" rel="noopener noreferrer">
+              <IconButton size="xs" variant="outline" aria-label="Open API source">
+                <ArrowSquareOut />
+              </IconButton>
+            </Link>
+          </Tooltip>
+          <Tooltip content="Copy URL">
+            <IconButton size="xs" variant="outline" onClick={copy} aria-label="Copy URL">
+              {copied ? <Check /> : <Copy />}
+            </IconButton>
+          </Tooltip>
+        </Flex>
+      </Flex>
+      <Box p={3} bg="white">
+        <Code fontSize="xs" color="neutral.700" bg="transparent" display="block" wordBreak="break-all" mb={params.length > 0 ? 2 : 0}>
+          {baseUrl}
+        </Code>
+        {params.length > 0 && (
+          <Flex direction="column" gap={0.5}>
+            {params.map(([key, value]) => (
+              <Flex key={key} gap={2} align="baseline">
+                <Code fontSize="xs" color="neutral.500" bg="transparent" fontWeight="medium" flexShrink={0}>{key}</Code>
+                <Code fontSize="xs" color="neutral.600" bg="transparent" wordBreak="break-all">{value}</Code>
+              </Flex>
+            ))}
+          </Flex>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 export default function InsightProvenanceDrawer({
   isOpen,
   onClose,
@@ -221,6 +285,16 @@ export default function InsightProvenanceDrawer({
   title,
 }: InsightProvenanceDrawerProps) {
   const parts = generation?.codeact_parts || [];
+
+  const apiUrls = useMemo(() => {
+    if (generation?.source_urls && generation.source_urls.length > 0) {
+      return generation.source_urls;
+    }
+    const codeBlocks = (generation?.codeact_parts || [])
+      .filter((p) => p.type === "code_block")
+      .map((p) => safeBase64Decode(p.content));
+    return codeBlocks.flatMap((code) => extractDataUrls(code));
+  }, [generation]);
 
   return (
     <Drawer.Root
@@ -241,9 +315,7 @@ export default function InsightProvenanceDrawer({
               pb={3}
             >
               <Heading size="sm" m={0} maxW="calc(100% - 80px)">
-                {title
-                  ? `${title}`
-                  : "How this was generated"}
+                {title ? `${title}` : "How this was generated"}
               </Heading>
               <Drawer.CloseTrigger asChild>
                 <Button
@@ -261,6 +333,38 @@ export default function InsightProvenanceDrawer({
               </Drawer.CloseTrigger>
             </Drawer.Header>
             <Drawer.Body bg="neutral.200" pt={0}>
+              {/* Approach B: always-visible API info banner */}
+              {apiUrls.length > 0 && (
+                <Box
+                  mx={-6}
+                  mt={-2}
+                  mb={4}
+                  px={6}
+                  py={2.5}
+                  bg="blue.50"
+                  borderBottomWidth="1px"
+                  borderColor="blue.100"
+                >
+                  <Flex align="center" justify="space-between" gap={3}>
+                    <Text fontSize="xs" fontWeight="medium" color="blue.700">
+                      {apiUrls.length} {apiUrls.length === 1 ? "API call" : "API calls"} made to generate this insight
+                    </Text>
+                    <Link
+                      href={API_DOCS_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      fontSize="xs"
+                      color="blue.600"
+                      fontWeight="medium"
+                      textDecoration="underline"
+                      whiteSpace="nowrap"
+                      _hover={{ color: "blue.800" }}
+                    >
+                      API docs →
+                    </Link>
+                  </Flex>
+                </Box>
+              )}
               {parts.length === 0 ? (
                 <Text fontSize="sm" color="neutral.600">
                   No generation details available.
@@ -278,26 +382,33 @@ export default function InsightProvenanceDrawer({
                               <Box
                                 fontSize="sm"
                                 css={{
-                                  "& p": { mb: 2 },
                                   "& ul, & ol": { pl: 4, mb: 2 },
                                 }}
                               >
                                 <Markdown
                                   remarkPlugins={[remarkBreaks]}
                                   components={{
-                                    h1: ({ ...props }) => (
+                                    // Use div instead of p to avoid invalid nesting when
+                                    // remarkBreaks injects block-level br elements inside paragraphs
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                    p: ({ node: _, ...props }) => <Box mb={2} {...props} />,
+                                    br: () => <Box h={2} />,
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                    h1: ({ node: _, ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
                                         <Heading as="h1" size="sm" mb={2} {...props} />
                                       </>
                                     ),
-                                    h2: ({ ...props }) => (
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                    h2: ({ node: _, ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
                                         <Heading as="h2" size="xs" mb={2} {...props} />
                                       </>
                                     ),
-                                    h3: ({ ...props }) => (
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                    h3: ({ node: _, ...props }) => (
                                       <>
                                         <Separator my={4} borderColor="neutral.300" />
                                         <Heading as="h3" size="xs" mb={2} {...props} />
@@ -363,28 +474,9 @@ export default function InsightProvenanceDrawer({
                       </Box>
                     );
                   })}
-                  {generation?.source_urls &&
-                    generation.source_urls.length > 0 && (
-                      <Box>
-                        <Heading size="xs" mb={2}>
-                          Sources
-                        </Heading>
-                        <Flex direction="column" gap={1}>
-                          {generation.source_urls.map((url, idx) => (
-                            <Link
-                              key={idx}
-                              fontSize="xs"
-                              color="blue.600"
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {url}
-                            </Link>
-                          ))}
-                        </Flex>
-                      </Box>
-                    )}
+                  {apiUrls.length > 0 && apiUrls.map((url, idx) => (
+                    <ApiSourceCard key={idx} url={url} />
+                  ))}
                 </Flex>
               )}
             </Drawer.Body>
