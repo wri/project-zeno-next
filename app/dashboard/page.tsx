@@ -113,7 +113,8 @@ export default function UserSettingsPage() {
             company: user?.companyOrganization ?? p.company,
             country: user?.countryCode ?? p.country,
             expertise: user?.gisExpertiseLevel ?? p.expertise,
-            preferredLanguage: user?.preferredLanguageCode ?? p.preferredLanguage,
+            preferredLanguage:
+              user?.preferredLanguageCode ?? p.preferredLanguage,
             topics: Array.isArray(user?.topics) ? user.topics : p.topics,
             receiveNewsEmails: Boolean(
               user?.receiveNewsEmails ?? p.receiveNewsEmails
@@ -235,22 +236,29 @@ export default function UserSettingsPage() {
         (code) => config?.topics?.[code] || code
       );
       try {
-        const orttoRes = await fetch("https://ortto.wri.org/custom-forms/gnw/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: form.email,
-            firstName: form.firstName,
-            lastName: form.lastName,
-            sector: form.sector,
-            jobTitle: form.jobTitle,
-            companyOrganization: form.company,
-            countryCode: form.country,
-            Topics: topicLabels,
-            receiveNewsEmails: form.receiveNewsEmails,
-          }),
-        });
-        console.log("[Client] Ortto submission status:", orttoRes.status, orttoRes.ok ? "OK" : "FAILED");
+        const orttoRes = await fetch(
+          "https://ortto.wri.org/custom-forms/gnw/",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: form.email,
+              firstName: form.firstName,
+              lastName: form.lastName,
+              sector: form.sector,
+              jobTitle: form.jobTitle,
+              companyOrganization: form.company,
+              countryCode: form.country,
+              Topics: topicLabels,
+              receiveNewsEmails: form.receiveNewsEmails,
+            }),
+          }
+        );
+        console.log(
+          "[Client] Ortto submission status:",
+          orttoRes.status,
+          orttoRes.ok ? "OK" : "FAILED"
+        );
       } catch (e) {
         console.error("[Client] Ortto submission error:", e);
       }
@@ -677,7 +685,10 @@ export default function UserSettingsPage() {
                   width="320px"
                   value={form.preferredLanguage ? [form.preferredLanguage] : []}
                   onValueChange={(d: ValueChangeDetails) =>
-                    setForm((p) => ({ ...p, preferredLanguage: d.value[0] ?? "" }))
+                    setForm((p) => ({
+                      ...p,
+                      preferredLanguage: d.value[0] ?? "",
+                    }))
                   }
                 >
                   <Select.HiddenSelect />

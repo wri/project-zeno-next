@@ -25,23 +25,27 @@ const PARTNER_ORGS = [
   {
     name: "Land & Carbon Lab",
     logo: "/LCL-logo.svg",
-    description: "A leading global research initiative for land and carbon monitoring.",
+    description:
+      "A leading global research initiative for land and carbon monitoring.",
   },
   {
     name: "Placeholder 1",
     logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+1",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+    description:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
   },
   {
     name: "Placeholder 2",
     logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+2",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+    description:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
   },
   {
     name: "Placeholder 3",
     logo: "https://placehold.co/500x300/F0F4B4/000000?text=Placeholder+3",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
-  }
+    description:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec ante vel ante feugiat placerat. Nullam nec ante vel ante feugiat placerat.",
+  },
 ];
 
 export default function TrustedPlatformsSection() {
@@ -59,10 +63,10 @@ export default function TrustedPlatformsSection() {
             trusted platforms
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch is built on the trusted data and research of Global
-            Forest Watch and Land & Carbon Lab, as trusted by NGOs, governments,
-            journalists, communities, companies and geospatial experts
-            worldwide for over a decade.
+            Global Nature Watch is built on the trusted data and research of
+            Global Forest Watch and Land & Carbon Lab, as trusted by NGOs,
+            governments, journalists, communities, companies and geospatial
+            experts worldwide for over a decade.
           </Text>
         </Container>
         <Container

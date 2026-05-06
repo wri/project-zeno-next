@@ -1,12 +1,14 @@
 ## Legend Symbology types
 
 ### Symbol List
+
 Can be:
+
 - a solid color
 - a line
 - a dashed line
 - an icon
-  
+
 ```tsx
 <LegendSymbolList
   unit="ha"
@@ -36,10 +38,11 @@ Can be:
       icon: <LeafIcon size={16} />,
     },
   ]}
- />
- ```
+/>
+```
 
 ### Categorical
+
 Renders a categorical legend with color blocks. Labels are truncated and on hover a tooltip is shown.
 
 ```tsx
@@ -53,10 +56,11 @@ Renders a categorical legend with color blocks. Labels are truncated and on hove
     { color: "#0a986b", value: "Tundra" },
     { color: "#e4e0e0", value: "Snowy" },
   ]}
- />
+/>
 ```
 
 ### Sequential
+
 Renders a sequential legend with a gradient color scale.
 When providing the colors as an array they're evenly distributed.
 
@@ -83,6 +87,7 @@ When providing the colors as an array of objects, the colors' position is mapped
 ```
 
 ### Divergent
+
 Renders a divergent legend with a gradient color scale.
 The colors are mirrored around the center, so only the first part of the divergent scale is needed.
 
@@ -94,4 +99,3 @@ The colors are mirrored around the center, so only the first part of the diverge
   color={["#2196F3", "#b41919", "#ff00dd"]}
 />
 ```
- 

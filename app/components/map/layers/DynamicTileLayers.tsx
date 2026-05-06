@@ -26,9 +26,9 @@ function DynamicTileLayers() {
     () =>
       allLayers.filter(
         (l): l is ManagedLayer & { tileUrl: string } =>
-          l.type === "raster" && !!l.tileUrl,
+          l.type === "raster" && !!l.tileUrl
       ),
-    [allLayers],
+    [allLayers]
   );
 
   return (

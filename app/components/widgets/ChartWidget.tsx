@@ -223,7 +223,7 @@ export default function ChartWidget({
       xAxis && yAxis
         ? formatChartData(data, type, xAxis, yAxis, widget.datasetName)
         : { data: [], series: [] },
-    [data, type, xAxis, yAxis, widget.datasetName],
+    [data, type, xAxis, yAxis, widget.datasetName]
   );
 
   const chart = useChart({ data: formattedData, series });
@@ -312,7 +312,7 @@ export default function ChartWidget({
       if (!Number.isFinite(v)) continue;
       longestYTickChars = Math.max(
         longestYTickChars,
-        formatYAxisLabel(v, yAxis).length,
+        formatYAxisLabel(v, yAxis).length
       );
     }
   }
@@ -322,12 +322,12 @@ export default function ChartWidget({
         TICK_MARGIN +
           longestXTickChars * CHAR_PX * Math.sin(TICK_ANGLE_RAD) +
           TICK_FONT_PX * Math.cos(TICK_ANGLE_RAD) +
-          TITLE_BAND,
+          TITLE_BAND
       )
     : TICK_MARGIN + TICK_FONT_PX + TITLE_BAND;
 
   const yAxisWidth = Math.ceil(
-    longestYTickChars * CHAR_PX + TICK_MARGIN + TITLE_BAND,
+    longestYTickChars * CHAR_PX + TICK_MARGIN + TITLE_BAND
   );
 
   const renderChartItems = () => {

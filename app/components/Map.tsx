@@ -41,7 +41,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const [showLegend, setShowLegend] = useState(false);
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [basemapTiles, setBasemapTiles] = useState(
-    "devseed/cmazl5ws500bz01scaa27dqi4",
+    "devseed/cmazl5ws500bz01scaa27dqi4"
   );
   const { setMapRef, initializeTerraDraw } = useMapStore();
   useEffect(() => {

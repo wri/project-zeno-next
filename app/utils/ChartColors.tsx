@@ -46,14 +46,14 @@ export default function getChartColors(): string[] {
  * Index 0 = solid (primary series), then increasingly distinctive dashes.
  */
 export const STROKE_DASH_PATTERNS: string[] = [
-  "0",         // solid
-  "6 3",       // short dash
-  "2 2",       // dotted
-  "10 4",      // long dash
-  "10 4 2 4",  // dash-dot
+  "0", // solid
+  "6 3", // short dash
+  "2 2", // dotted
+  "10 4", // long dash
+  "10 4 2 4", // dash-dot
   "6 3 2 3 2 3", // dash-dot-dot
-  "14 4",      // extra-long dash
-  "4 4",       // medium dash
-  "8 3 2 3",   // long-dash-dot
-  "2 6",       // sparse dot
+  "14 4", // extra-long dash
+  "4 4", // medium dash
+  "8 3 2 3", // long-dash-dot
+  "2 6", // sparse dot
 ];

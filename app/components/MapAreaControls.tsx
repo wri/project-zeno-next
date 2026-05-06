@@ -123,7 +123,12 @@ function MapAreaControls({
       };
       const featureRef: FeatureRef = { name: name, source: "custom" };
 
-      addToRegistry({ ref: featureRef, data: feat, srcId: id, subtype: "custom-area" });
+      addToRegistry({
+        ref: featureRef,
+        data: feat,
+        srcId: id,
+        subtype: "custom-area",
+      });
       addLayer({
         id: featureRef.name,
         name: featureRef.name,
@@ -256,7 +261,9 @@ function MapAreaControls({
                   </IconButton>
                   <Menu.Root
                     positioning={{ placement: "bottom-end" }}
-                    onSelect={({ value }) => setSelectAreaLayer(value as LayerId)}
+                    onSelect={({ value }) =>
+                      setSelectAreaLayer(value as LayerId)
+                    }
                   >
                     <Menu.Trigger asChild>
                       <IconButton

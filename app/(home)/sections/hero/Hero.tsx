@@ -140,7 +140,14 @@ export default function LandingHero({
           },
         }}
       >
-        <video autoPlay loop muted playsInline preload="auto" poster="/landing-hero-poster.jpg">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          poster="/landing-hero-poster.jpg"
+        >
           <source src={"/landing-hero-bg.webm"} type="video/webm" />
           <source src={"/landing-hero-bg.mp4"} type="video/mp4" />
         </video>
@@ -180,9 +187,10 @@ export default function LandingHero({
               fontSize="lg"
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
-              Global Nature Watch is an experimental, open, AI-powered system that transforms groundbreaking
-              land monitoring data into intelligence for understanding Earth&rsquo;s landscapes.
-              Test the preview and help shape the future of land monitoring.
+              Global Nature Watch is an experimental, open, AI-powered system
+              that transforms groundbreaking land monitoring data into
+              intelligence for understanding Earth&rsquo;s landscapes. Test the
+              preview and help shape the future of land monitoring.
             </Text>
           </Container>
           <Container
@@ -304,8 +312,8 @@ export default function LandingHero({
                 {LANDING_PAGE_VERSION === "closed"
                   ? " in closed preview."
                   : LANDING_PAGE_VERSION === "limited"
-                  ? " in limited preview."
-                  : " in preview."}
+                    ? " in limited preview."
+                    : " in preview."}
               </Text>
               <Tooltip
                 openDelay={100}

@@ -58,8 +58,19 @@ function UploadAreaDialog() {
         },
       };
 
-      addToRegistry({ ref: { name, source: "custom" }, data: feat, srcId: id, subtype: "custom-area" });
-      addLayer({ id, name, type: "geojson", visible: true, featureRefs: [{ name, source: "custom" }] });
+      addToRegistry({
+        ref: { name, source: "custom" },
+        data: feat,
+        srcId: id,
+        subtype: "custom-area",
+      });
+      addLayer({
+        id,
+        name,
+        type: "geojson",
+        visible: true,
+        featureRefs: [{ name, source: "custom" }],
+      });
 
       addContext({
         contextType: "area",

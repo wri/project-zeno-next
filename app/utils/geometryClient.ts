@@ -21,11 +21,13 @@ export async function fetchGeometry(
   srcId: string
 ): Promise<GeometryResponse> {
   const response = await apiFetch(`/api/geometry/${source}/${srcId}`);
-  
+
   if (!response.ok) {
-    throw new Error(`Failed to fetch geometry: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch geometry: ${response.status} ${response.statusText}`
+    );
   }
-  
+
   return response.json();
 }
 
@@ -35,11 +37,13 @@ export async function fetchGeometry(
  */
 export async function fetchSourceToIdMapping(): Promise<SourceToIdMapping> {
   const response = await apiFetch(`/api/metadata`);
-  
+
   if (!response.ok) {
-    throw new Error(`Failed to fetch metadata: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch metadata: ${response.status} ${response.statusText}`
+    );
   }
-  
+
   const data = await response.json();
   return data.layer_id_mapping;
 }

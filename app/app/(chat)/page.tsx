@@ -35,7 +35,7 @@ function NewThread() {
       router.replace(`/app/threads/${result.id}`);
     }
   };
-  
+
   useEffect(() => {
     if (!hasMounted) return;
     const prompt = searchParams.get("prompt");

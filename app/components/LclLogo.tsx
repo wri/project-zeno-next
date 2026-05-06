@@ -1,4 +1,12 @@
-function LclLogo({ width = 14, fill = "currentColor", avatarOnly }: {width?: number, fill?: string, avatarOnly?: boolean}) {
+function LclLogo({
+  width = 14,
+  fill = "currentColor",
+  avatarOnly,
+}: {
+  width?: number;
+  fill?: string;
+  avatarOnly?: boolean;
+}) {
   if (avatarOnly) {
     return (
       <svg

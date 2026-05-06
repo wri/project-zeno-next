@@ -146,27 +146,29 @@ export const createDrawAreaSlice: StateCreator<
     }
 
     // Calculate bbox for each feature
-    const bboxFeatures = features.map(feature => {
+    const bboxFeatures = features.map((feature) => {
       const bounds = bbox(feature);
       return {
         type: "Feature",
         properties: {},
         geometry: {
           type: "Polygon",
-          coordinates: [[
-            [bounds[0], bounds[1]],
-            [bounds[0], bounds[3]],
-            [bounds[2], bounds[3]],
-            [bounds[2], bounds[1]],
-            [bounds[0], bounds[1]]
-          ]]
-        }
+          coordinates: [
+            [
+              [bounds[0], bounds[1]],
+              [bounds[0], bounds[3]],
+              [bounds[2], bounds[3]],
+              [bounds[2], bounds[1]],
+              [bounds[0], bounds[1]],
+            ],
+          ],
+        },
       } as GeoJSON.Feature;
     });
 
     const bboxCollection: GeoJSON.FeatureCollection = {
       type: "FeatureCollection",
-      features: bboxFeatures
+      features: bboxFeatures,
     };
 
     let areaName: string;

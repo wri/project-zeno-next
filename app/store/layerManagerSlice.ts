@@ -3,7 +3,6 @@ import { FeatureCollection, Feature } from "geojson";
 import type { AOISelection } from "@/app/types/chat";
 import type { MapState } from "./mapStore";
 
-
 export interface FeatureRef {
   name: string;
   source: string;
@@ -52,55 +51,63 @@ export interface LayerManagerSlice {
 }
 
 export const createLayerManagerSlice: StateCreator<
-MapState, [], [], LayerManagerSlice>
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-= (set, get) => ({
-  layers: [],
-  geoJsonRegistry: [],
+  MapState,
+  [],
+  [],
+  LayerManagerSlice
+> =
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  (set, get) => ({
+    layers: [],
+    geoJsonRegistry: [],
 
-  addLayer: (layer) => {
-    const newLayer = { ...layer, opacity: layer.opacity ?? 1 };
-    set((state) => ({ 
-      layers: [...state.layers.filter((l) => l.id !== layer.id), newLayer]
-    }));
-  },
-  removeLayer: (id) => {
-    set((state) => ({
-      layers: state.layers.filter((l) => l.id !== id),
-    }));
-  },
-  setLayerVisibility: (id, visible) => {
-    set((state) => ({
-      layers: state.layers.map((l) => l.id === id ? { ...l, visible } : l)
-    }));
-  },
-  setLayerOpacity: (id, opacity) => {
-    set((state) => ({
-      layers: state.layers.map((l) => l.id === id ? { ...l, opacity } : l)
-    }));
-  },
-  reorderLayers: (ids) => {
-    set((state) => ({
-      layers: ids
-        .map((id) => state.layers.find((l) => l.id === id))
-        .filter((l): l is Layer => !!l),
-    }));
-  },
-  addToRegistry: (entry) => {
-    set((state) => ({
-      geoJsonRegistry: [
-        ...state.geoJsonRegistry.filter(
-          (e) => !(e.ref.name === entry.ref.name && e.ref.source === entry.ref.source)
+    addLayer: (layer) => {
+      const newLayer = { ...layer, opacity: layer.opacity ?? 1 };
+      set((state) => ({
+        layers: [...state.layers.filter((l) => l.id !== layer.id), newLayer],
+      }));
+    },
+    removeLayer: (id) => {
+      set((state) => ({
+        layers: state.layers.filter((l) => l.id !== id),
+      }));
+    },
+    setLayerVisibility: (id, visible) => {
+      set((state) => ({
+        layers: state.layers.map((l) => (l.id === id ? { ...l, visible } : l)),
+      }));
+    },
+    setLayerOpacity: (id, opacity) => {
+      set((state) => ({
+        layers: state.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),
+      }));
+    },
+    reorderLayers: (ids) => {
+      set((state) => ({
+        layers: ids
+          .map((id) => state.layers.find((l) => l.id === id))
+          .filter((l): l is Layer => !!l),
+      }));
+    },
+    addToRegistry: (entry) => {
+      set((state) => ({
+        geoJsonRegistry: [
+          ...state.geoJsonRegistry.filter(
+            (e) =>
+              !(
+                e.ref.name === entry.ref.name &&
+                e.ref.source === entry.ref.source
+              )
+          ),
+          entry,
+        ],
+      }));
+    },
+    removeFromRegistry: (ref) => {
+      set((state) => ({
+        geoJsonRegistry: state.geoJsonRegistry.filter(
+          (e) => !(e.ref.name === ref.name && e.ref.source === ref.source)
         ),
-        entry,
-      ],
-    }));
-  },
-  removeFromRegistry: (ref) => {
-    set((state) => ({
-      geoJsonRegistry: state.geoJsonRegistry.filter(
-        (e) => !(e.ref.name === ref.name && e.ref.source === ref.source)
-      ),
-    }));
-  },
-});
+      }));
+    },
+  });

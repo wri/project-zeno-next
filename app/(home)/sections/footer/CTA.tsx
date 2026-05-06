@@ -37,7 +37,9 @@ export default function CTASection() {
             </Box>
             <Button asChild variant="solid" colorPalette="primary" rounded="lg">
               <Link href="/app">
-                {LANDING_PAGE_VERSION === "public" ? "Explore the preview" : "Try the preview"}
+                {LANDING_PAGE_VERSION === "public"
+                  ? "Explore the preview"
+                  : "Try the preview"}
                 <CaretRightIcon weight="bold" />
               </Link>
             </Button>

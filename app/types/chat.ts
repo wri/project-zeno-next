@@ -205,7 +205,7 @@ export interface LangChainUpdate {
         name?: string;
         status?: string; // For tool error detection
       };
-    }
+    },
   ];
 }
 

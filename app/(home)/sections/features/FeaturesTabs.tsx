@@ -18,8 +18,7 @@ const FEATURE_TABS = [
     label: "Explore peer-reviewed data with an AI assistant",
     description:
       "Ask a question in plain language and our assistant will suggest the most useful available datasets and analyses for your work.",
-    caption:
-      "Quickly find the most relevant data for your work.",
+    caption: "Quickly find the most relevant data for your work.",
     image: "/feature-tab-1.webp",
   },
   {
@@ -27,8 +26,7 @@ const FEATURE_TABS = [
     label: "Tailored answers to your context",
     description:
       "Explore how Global Nature Watch's assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
-    caption:
-      "Shape responses to your needs.",
+    caption: "Shape responses to your needs.",
     image: "/feature-tab-2.webp",
   },
   {
@@ -36,8 +34,7 @@ const FEATURE_TABS = [
     label: "Insights you can act on",
     description:
       "Global Nature Watch's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies or field decisions while opening the door to dive deeper.",
-    caption:
-      "Generate clear takeaways from complex data.",
+    caption: "Generate clear takeaways from complex data.",
     image: "/feature-tab-3.webp",
   },
 ];
@@ -53,11 +50,13 @@ export default function FeaturesTabsSection() {
       <Container id="use-cases">
         <Container textAlign="center" maxW="3xl" px={0}>
           <Heading size={{ base: "3xl", md: "4xl" }}>
-          Get answers to your toughest questions about landscapes, backed by data
+            Get answers to your toughest questions about landscapes, backed by
+            data
           </Heading>
           <Text fontSize="lg">
-          Global Nature Watch is testing new ways to make geospatial information easier to use.
-          Try asking in plain language and explore the insights it can provide.
+            Global Nature Watch is testing new ways to make geospatial
+            information easier to use. Try asking in plain language and explore
+            the insights it can provide.
           </Text>
           {LANDING_PAGE_VERSION !== "closed" && (
             <Button

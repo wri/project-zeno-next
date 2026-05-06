@@ -82,7 +82,10 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
 
       if (response.ok) {
         const raw: ThreadEntry[] = await response.json();
-        const data = raw.map((t) => ({ ...t, is_public: t.is_public ?? false }));
+        const data = raw.map((t) => ({
+          ...t,
+          is_public: t.is_public ?? false,
+        }));
         const groupedThreads = computeThreadGroups(data);
         set({ threadGroups: groupedThreads, threads: data });
       } else {

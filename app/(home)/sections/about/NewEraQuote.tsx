@@ -32,9 +32,9 @@ export default function NewEraQuoteSection() {
       </Container>
       <Container mt="8" maxW="2xl">
         <Box
-          bg={{base: "secondary.100", md: "bg.muted"}}
+          bg={{ base: "secondary.100", md: "bg.muted" }}
           border="1px solid"
-          borderColor={{base: "secondary.400", md: "transparent"}}
+          borderColor={{ base: "secondary.400", md: "transparent" }}
           shadow={{ base: "sm", md: "none" }}
           rounded="xl"
           p="6"
@@ -44,7 +44,7 @@ export default function NewEraQuoteSection() {
         >
           <Heading
             borderStart="2px solid"
-            borderColor={{base: "secondary.500", md: "primary.500"}}
+            borderColor={{ base: "secondary.500", md: "primary.500" }}
             pl="4"
             size="xl"
             as="blockquote"

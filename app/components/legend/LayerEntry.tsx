@@ -52,7 +52,13 @@ export function LayerEntry(
   const metadataText = [dateRange, parametersText].filter(Boolean).join(" · ");
 
   return (
-    <Flex flexDir="column" w="100%" minW={0} fontFamily="body" lineHeight="shorter">
+    <Flex
+      flexDir="column"
+      w="100%"
+      minW={0}
+      fontFamily="body"
+      lineHeight="shorter"
+    >
       {/* Header row — always visible */}
       <Flex justifyContent="space-between" gap={1} alignItems="center">
         {/* Clickable title area to toggle accordion */}
@@ -124,19 +130,21 @@ export function LayerEntry(
               </Portal>
             </Popover.Root>
           )}
-          {!hideOpacityControl && (<OpacityControl
-            value={opacity}
-            onValueChange={(value) =>
-              onLayerAction({
-                action: "opacity",
-                payload: { id: id, opacity: value },
-              })
-            }
-          >
-            <IconButton>
-              <CircleHalfIcon />
-            </IconButton>
-          </OpacityControl>)}
+          {!hideOpacityControl && (
+            <OpacityControl
+              value={opacity}
+              onValueChange={(value) =>
+                onLayerAction({
+                  action: "opacity",
+                  payload: { id: id, opacity: value },
+                })
+              }
+            >
+              <IconButton>
+                <CircleHalfIcon />
+              </IconButton>
+            </OpacityControl>
+          )}
           <IconButton
             onClick={() =>
               onLayerAction({
@@ -147,13 +155,15 @@ export function LayerEntry(
           >
             {visible ? <EyeIcon /> : <EyeClosedIcon />}
           </IconButton>
-          {!hideRemoveControl && (<IconButton
-            onClick={() =>
-              onLayerAction({ action: "remove", payload: { id: id } })
-            }
-          >
-            <XIcon />
-          </IconButton>)}
+          {!hideRemoveControl && (
+            <IconButton
+              onClick={() =>
+                onLayerAction({ action: "remove", payload: { id: id } })
+              }
+            >
+              <XIcon />
+            </IconButton>
+          )}
         </ButtonGroup>
       </Flex>
 

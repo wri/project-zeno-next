@@ -131,8 +131,19 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               filter: ["in", "gfw_fid", feature.properties?.gfw_fid],
             });
             if (sourceFeatures.length === 1) {
-              addToRegistry({ ref: { name: aoiName, source: layerId }, data: sourceFeatures[0], srcId: dynamicSrcId, subtype: dynamicSubtype });
-              addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
+              addToRegistry({
+                ref: { name: aoiName, source: layerId },
+                data: sourceFeatures[0],
+                srcId: dynamicSrcId,
+                subtype: dynamicSubtype,
+              });
+              addLayer({
+                id: aoiName,
+                name: aoiName,
+                type: "geojson",
+                visible: true,
+                featureRefs: [{ name: aoiName, source: layerId }],
+              });
             } else if (sourceFeatures.length > 1) {
               const collection: FeatureCollection<
                 Polygon | MultiPolygon,
@@ -146,8 +157,19 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               };
               const f = union(collection);
               if (f) {
-                addToRegistry({ ref: { name: aoiName, source: layerId }, data: f, srcId: dynamicSrcId, subtype: dynamicSubtype });
-                addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
+                addToRegistry({
+                  ref: { name: aoiName, source: layerId },
+                  data: f,
+                  srcId: dynamicSrcId,
+                  subtype: dynamicSubtype,
+                });
+                addLayer({
+                  id: aoiName,
+                  name: aoiName,
+                  type: "geojson",
+                  visible: true,
+                  featureRefs: [{ name: aoiName, source: layerId }],
+                });
               }
             }
 

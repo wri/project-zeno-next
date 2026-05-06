@@ -176,10 +176,10 @@ function MessageBubble({
           isError
             ? "red.50"
             : isWarning
-            ? "white"
-            : isUser
-            ? "gray.100"
-            : "transparent"
+              ? "white"
+              : isUser
+                ? "gray.100"
+                : "transparent"
         }
         color={isError ? "red.800" : isWarning ? "fg.subtle" : "fg"}
         fontSize={isWarning ? "xs" : undefined}

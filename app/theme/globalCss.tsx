@@ -1,6 +1,6 @@
 const globalCss = {
   '[data-scope="date-picker"][data-part="positioner"]': {
-    '--z-index': '2000 !important',
+    "--z-index": "2000 !important",
   },
   h2: {
     marginBottom: 4,

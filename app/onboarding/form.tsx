@@ -222,22 +222,29 @@ export default function OnboardingForm() {
       );
 
       try {
-        const orttoRes = await fetch("https://ortto.wri.org/custom-forms/gnw/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: form.email,
-            firstName: form.firstName,
-            lastName: form.lastName,
-            sector: form.sector,
-            jobTitle: form.jobTitle,
-            companyOrganization: form.company,
-            countryCode: form.country,
-            Topics: topicLabels,
-            receiveNewsEmails: form.receiveNewsEmails,
-          }),
-        });
-        console.log("[Client] Ortto submission status:", orttoRes.status, orttoRes.ok ? "OK" : "FAILED");
+        const orttoRes = await fetch(
+          "https://ortto.wri.org/custom-forms/gnw/",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: form.email,
+              firstName: form.firstName,
+              lastName: form.lastName,
+              sector: form.sector,
+              jobTitle: form.jobTitle,
+              companyOrganization: form.company,
+              countryCode: form.country,
+              Topics: topicLabels,
+              receiveNewsEmails: form.receiveNewsEmails,
+            }),
+          }
+        );
+        console.log(
+          "[Client] Ortto submission status:",
+          orttoRes.status,
+          orttoRes.ok ? "OK" : "FAILED"
+        );
       } catch (e) {
         console.error("[Client] Ortto submission error:", e);
       }
@@ -330,8 +337,8 @@ export default function OnboardingForm() {
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
           We use this information to make Global Nature Watch more useful to
-          you. This tool is experimental, and knowing you better helps
-          us improve. Features may change or be removed over time.
+          you. This tool is experimental, and knowing you better helps us
+          improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
           <Grid
@@ -598,13 +605,19 @@ export default function OnboardingForm() {
               </Field.Root>
             </GridItem>
             <GridItem>
-              <Field.Root id="preferred-language" required={fieldRequired("preferredLanguage")}>
+              <Field.Root
+                id="preferred-language"
+                required={fieldRequired("preferredLanguage")}
+              >
                 <Select.Root
                   collection={languages}
                   size="sm"
                   value={form.preferredLanguage ? [form.preferredLanguage] : []}
                   onValueChange={(d: ValueChangeDetails) =>
-                    setForm((p) => ({ ...p, preferredLanguage: d.value[0] ?? "" }))
+                    setForm((p) => ({
+                      ...p,
+                      preferredLanguage: d.value[0] ?? "",
+                    }))
                   }
                 >
                   <Select.HiddenSelect />
@@ -742,8 +755,9 @@ export default function OnboardingForm() {
                   rel="noopener noreferrer"
                   textDecoration="underline"
                 >
-                Global Nature Watch AI Terms of Use
-                </Link>{", "}
+                  Global Nature Watch AI Terms of Use
+                </Link>
+                {", "}
                 and I acknowledge the privacy practices described in the{" "}
                 <Link
                   href="https://www.wri.org/about/privacy-policy"

@@ -12,4 +12,3 @@ export async function fetchExternalData(url: string) {
     throw new Error("Failed to fetch external data");
   }
 }
-

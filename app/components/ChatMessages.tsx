@@ -23,7 +23,7 @@ function ChatMessages() {
     const spacerHeight = spacerRef.current?.offsetHeight ?? 0;
     parent.scrollTop = Math.max(
       0,
-      parent.scrollHeight - spacerHeight - parent.clientHeight,
+      parent.scrollHeight - spacerHeight - parent.clientHeight
     );
   };
 
@@ -88,7 +88,7 @@ function ChatMessages() {
 
   // Show reasoning after the last user message when loading
   const lastUserMessageIndex = messages.findLastIndex(
-    (msg) => msg.type === "user",
+    (msg) => msg.type === "user"
   );
 
   return (

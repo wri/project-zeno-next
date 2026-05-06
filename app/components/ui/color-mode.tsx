@@ -7,14 +7,16 @@ import { useState, useEffect } from "react";
 import * as React from "react";
 import { Moon, Sun } from "@phosphor-icons/react";
 
-export function ColorModeProvider(props: React.ComponentProps<typeof ThemeProvider>) {
+export function ColorModeProvider(
+  props: React.ComponentProps<typeof ThemeProvider>
+) {
   return (
-    <ThemeProvider 
-      attribute="class" 
-      disableTransitionOnChange 
+    <ThemeProvider
+      attribute="class"
+      disableTransitionOnChange
       enableSystem={false}
       defaultTheme="light"
-      {...props} 
+      {...props}
     />
   );
 }
@@ -22,7 +24,7 @@ export function ColorModeProvider(props: React.ComponentProps<typeof ThemeProvid
 export function useColorMode() {
   const [mounted, setMounted] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
-  
+
   // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
     setMounted(true);
@@ -42,23 +44,23 @@ export function useColorMode() {
 
 export function useColorModeValue<T>(light: T, dark: T): T | undefined {
   const { colorMode, mounted } = useColorMode();
-  
+
   // Return undefined during SSR and initial client render to prevent hydration mismatch
   if (!mounted) {
     return undefined;
   }
-  
+
   return colorMode === "dark" ? dark : light;
 }
 
 export function ColorModeIcon() {
   const { colorMode, mounted } = useColorMode();
-  
+
   // Return a placeholder during SSR/initial render
   if (!mounted) {
     return <Sun />; // Default to sun icon to prevent layout shift
   }
-  
+
   return colorMode === "dark" ? <Moon /> : <Sun />;
 }
 
@@ -67,15 +69,10 @@ export const ColorModeButton = React.forwardRef<
   React.ComponentProps<typeof IconButton>
 >(function ColorModeButton(props, ref) {
   const { toggleColorMode, mounted } = useColorMode();
-  
+
   // Show skeleton until mounted to prevent layout shift
   if (!mounted) {
-    return (
-      <Skeleton 
-        boxSize="8" 
-        rounded="md"
-      />
-    );
+    return <Skeleton boxSize="8" rounded="md" />;
   }
 
   return (
@@ -127,18 +124,18 @@ export const DarkMode = React.forwardRef(function DarkMode(props, ref) {
 });
 
 // Safe themed component wrapper that handles hydration properly
-export function ThemedComponent({ 
-  children, 
-  fallback 
-}: { 
+export function ThemedComponent({
+  children,
+  fallback,
+}: {
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }) {
   const { mounted } = useColorMode();
-  
+
   if (!mounted) {
     return <>{fallback || null}</>;
   }
-  
+
   return <>{children}</>;
 }

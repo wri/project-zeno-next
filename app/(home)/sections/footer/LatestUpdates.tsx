@@ -65,7 +65,7 @@ const POSTS = [
     image:
       "https://www.datocms-assets.com/135908/1743777114-greenfleet-australia_flickr.jpg?auto=compress,format,enhance",
     url: "https://landcarbonlab.org/insights/protecting-secondary-forests-climate-solution/",
-  }
+  },
 ];
 
 export default function LatestUpdatesSection() {
@@ -84,8 +84,9 @@ export default function LatestUpdatesSection() {
             Latest updates & research
           </Heading>
           <Text fontSize="lg" mb="4">
-            Global Nature Watch serves up the latest breakthroughs in geospatial data
-            from the field-leading research and technology partners behind Land & Carbon Lab and Global Forest Watch.
+            Global Nature Watch serves up the latest breakthroughs in geospatial
+            data from the field-leading research and technology partners behind
+            Land & Carbon Lab and Global Forest Watch.
           </Text>
         </Container>
         <Container maxW="5xl" px={0}>
@@ -183,7 +184,11 @@ export default function LatestUpdatesSection() {
               size="md"
               ml={{ base: "inherit", md: "auto" }}
             >
-              <Link href="https://landcarbonlab.org/" target="_blank" rel="noopener noreferrer">
+              <Link
+                href="https://landcarbonlab.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Visit Land & Carbon Lab
               </Link>
             </Button>
@@ -194,7 +199,11 @@ export default function LatestUpdatesSection() {
               rounded="lg"
               size="md"
             >
-              <Link href="https://www.globalforestwatch.org/" target="_blank" rel="noopener noreferrer">
+              <Link
+                href="https://www.globalforestwatch.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Visit Global Forest Watch
               </Link>
             </Button>

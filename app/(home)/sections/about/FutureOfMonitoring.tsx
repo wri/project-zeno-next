@@ -1,11 +1,5 @@
 import NextImage from "next/image";
-import {
-  Box,
-  Container,
-  Heading,
-  Flex,
-  Text,
-} from "@chakra-ui/react";
+import { Box, Container, Heading, Flex, Text } from "@chakra-ui/react";
 
 export default function FutureOfMonitoringSection() {
   return (
@@ -27,13 +21,24 @@ export default function FutureOfMonitoringSection() {
             About Global Nature Watch
           </Heading>
           <Text fontSize="lg" mb="4">
-          We&apos;re making environmental geospatial data faster,
-          more accessible and easier to use for everyone working to protect and restore nature.
+            We&apos;re making environmental geospatial data faster, more
+            accessible and easier to use for everyone working to protect and
+            restore nature.
           </Text>
-          </Container>
-          <Container display="flex" maxW="5xl">
+        </Container>
+        <Container display="flex" maxW="5xl">
           <Text fontSize="lg" mb="4">
-          <Text as="b">We know that monitoring works.</Text> Global Forest Watch has helped transform how the world monitors forests, putting timely, open data into the hands of users worldwide. Global Nature Watch builds on that foundation — bringing together research from Land & Carbon Lab and Global Forest Watch in an experimental, open, AI-powered system that expands monitoring beyond forests to include other ecosystems and land dynamics. Anyone working to protect, restore or sustainably manage land can explore change happening across Earth by asking questions in plain language and receiving responses supported by satellite imagery, maps, statistics and context.
+            <Text as="b">We know that monitoring works.</Text> Global Forest
+            Watch has helped transform how the world monitors forests, putting
+            timely, open data into the hands of users worldwide. Global Nature
+            Watch builds on that foundation — bringing together research from
+            Land & Carbon Lab and Global Forest Watch in an experimental, open,
+            AI-powered system that expands monitoring beyond forests to include
+            other ecosystems and land dynamics. Anyone working to protect,
+            restore or sustainably manage land can explore change happening
+            across Earth by asking questions in plain language and receiving
+            responses supported by satellite imagery, maps, statistics and
+            context.
           </Text>
         </Container>
         <Container display="flex" gap="14" flexDir={"column"} maxW="5xl">
@@ -47,15 +52,22 @@ export default function FutureOfMonitoringSection() {
                 Cutting-edge data
               </Heading>
               <Text fontSize="lg" mb="4">
-                We tackle the hardest challenges in monitoring nature,
-                providing globally consistent data built by some of the world&rsquo;s
-                most talented experts.
-                Our data is designed to empower real-world action, today and into the future.
+                We tackle the hardest challenges in monitoring nature, providing
+                globally consistent data built by some of the world&rsquo;s most
+                talented experts. Our data is designed to empower real-world
+                action, today and into the future.
               </Text>
             </Box>
             <Box position="relative" h="72" w="full">
               {/* Images in the "Cuting edge data" section will animate in from container sides */}
-              <Box position="absolute" h="121px" w="201px" top="0.5" rounded="md" overflow="hidden">
+              <Box
+                position="absolute"
+                h="121px"
+                w="201px"
+                top="0.5"
+                rounded="md"
+                overflow="hidden"
+              >
                 <NextImage
                   src="/fm-1a.webp"
                   alt="image of a field"
@@ -63,7 +75,15 @@ export default function FutureOfMonitoringSection() {
                   style={{ objectFit: "cover" }}
                 />
               </Box>
-              <Box position="absolute" h="127px" w="178px" top="25%" right="0" rounded="md" overflow="hidden">
+              <Box
+                position="absolute"
+                h="127px"
+                w="178px"
+                top="25%"
+                right="0"
+                rounded="md"
+                overflow="hidden"
+              >
                 <NextImage
                   src="/fm-1b.webp"
                   alt="image of a field"
@@ -71,7 +91,15 @@ export default function FutureOfMonitoringSection() {
                   style={{ objectFit: "cover" }}
                 />
               </Box>
-              <Box position="absolute" h="124px" w="172px" bottom="5%" left="15%" rounded="md" overflow="hidden">
+              <Box
+                position="absolute"
+                h="124px"
+                w="172px"
+                bottom="5%"
+                left="15%"
+                rounded="md"
+                overflow="hidden"
+              >
                 <NextImage
                   src="/fm-1c.webp"
                   alt="image of a field"
@@ -91,10 +119,11 @@ export default function FutureOfMonitoringSection() {
                 Monitoring intelligence
               </Heading>
               <Text fontSize="lg" mb="4">
-                With so much geospatial data available, it can be hard to know where to start.
-                Global Nature Watch places the power of a personal geospatial assistant in your pocket.
-                AI trained on peer-reviewed datasets helps both experts and newcomers navigate,
-                analyze and apply insights.
+                With so much geospatial data available, it can be hard to know
+                where to start. Global Nature Watch places the power of a
+                personal geospatial assistant in your pocket. AI trained on
+                peer-reviewed datasets helps both experts and newcomers
+                navigate, analyze and apply insights.
               </Text>
             </Box>
             <Box position="relative" h="72" w="full">
@@ -152,9 +181,9 @@ export default function FutureOfMonitoringSection() {
                 Interoperable technology (coming soon)
               </Heading>
               <Text fontSize="lg" mb="4">
-               We believe the future of monitoring is open, scalable and integrative.
-                That&apos;s why Global Nature Watch will be able to connect with your
-                own systems, extending the power of your data.
+                We believe the future of monitoring is open, scalable and
+                integrative. That&apos;s why Global Nature Watch will be able to
+                connect with your own systems, extending the power of your data.
               </Text>
             </Box>
             <Box
@@ -162,7 +191,7 @@ export default function FutureOfMonitoringSection() {
               display="grid"
               placeContent="center"
               w="full"
-              h={{base: "14rem", md: "17rem"}}
+              h={{ base: "14rem", md: "17rem" }}
             >
               <NextImage
                 style={{

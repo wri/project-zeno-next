@@ -17,7 +17,8 @@ export function generateInsightsTool(
   try {
     // Handle charts_data from streamMessage
     if (streamMessage.charts_data && Array.isArray(streamMessage.charts_data)) {
-      const datasetName = (streamMessage.dataset as { dataset_name?: string })?.dataset_name;
+      const datasetName = (streamMessage.dataset as { dataset_name?: string })
+        ?.dataset_name;
 
       const widgets: InsightWidget[] = (
         streamMessage.charts_data as ChartData[]

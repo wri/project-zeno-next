@@ -13,7 +13,13 @@ import {
   IconButton,
   Button,
 } from "@chakra-ui/react";
-import { DownloadSimpleIcon as DownloadSimple, CopyIcon as Copy, CheckIcon as Check, TerminalWindowIcon as Terminal, XIcon as X } from "@phosphor-icons/react";
+import {
+  DownloadSimpleIcon as DownloadSimple,
+  CopyIcon as Copy,
+  CheckIcon as Check,
+  TerminalWindowIcon as Terminal,
+  XIcon as X,
+} from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import type { InsightGeneration } from "@/app/types/chat";
 import Markdown from "react-markdown";
@@ -50,7 +56,9 @@ function safeBase64Decode(str: string): string {
 
 // --- Data Fetching & CSV Conversion ---
 
-async function fetchAndConvertToCsv(url: string): Promise<{ csv: string; filename: string }> {
+async function fetchAndConvertToCsv(
+  url: string
+): Promise<{ csv: string; filename: string }> {
   const json = await fetchExternalData(url);
 
   // Access nested result structure
@@ -62,11 +70,11 @@ async function fetchAndConvertToCsv(url: string): Promise<{ csv: string; filenam
   if (columns.length === 0) throw new Error("No data found");
 
   const rowCount = result[columns[0]].length;
-  
+
   const csvRows = [columns.join(",")];
 
   for (let i = 0; i < rowCount; i++) {
-    const row = columns.map(col => {
+    const row = columns.map((col) => {
       const val = result[col][i];
       if (val === null || val === undefined) return "";
       const strVal = String(val);
@@ -112,7 +120,7 @@ function extractDataUrls(code: string): string[] {
 function CodeBlockViewer({ code }: { code: string }) {
   const { copy, copied } = useClipboard({ value: code });
   const [downloading, setDownloading] = useState(false);
-  
+
   const dataUrls = useMemo(() => extractDataUrls(code), [code]);
 
   const handleDownload = async () => {
@@ -128,13 +136,13 @@ function CodeBlockViewer({ code }: { code: string }) {
         // Multiple files - ZIP
         const zip = new JSZip();
         const results = await Promise.all(
-          dataUrls.map(url => fetchAndConvertToCsv(url))
+          dataUrls.map((url) => fetchAndConvertToCsv(url))
         );
-        
+
         results.forEach(({ csv, filename }) => {
           zip.file(filename, csv);
         });
-        
+
         const zipBlob = await zip.generateAsync({ type: "blob" });
         triggerDownload(zipBlob, "source_files.zip");
       }
@@ -241,9 +249,7 @@ export default function InsightProvenanceDrawer({
               pb={3}
             >
               <Heading size="sm" m={0} maxW="calc(100% - 80px)">
-                {title
-                  ? `${title}`
-                  : "How this was generated"}
+                {title ? `${title}` : "How this was generated"}
               </Heading>
               <Drawer.CloseTrigger asChild>
                 <Button
@@ -287,20 +293,44 @@ export default function InsightProvenanceDrawer({
                                   components={{
                                     h1: ({ ...props }) => (
                                       <>
-                                        <Separator my={4} borderColor="neutral.300" />
-                                        <Heading as="h1" size="sm" mb={2} {...props} />
+                                        <Separator
+                                          my={4}
+                                          borderColor="neutral.300"
+                                        />
+                                        <Heading
+                                          as="h1"
+                                          size="sm"
+                                          mb={2}
+                                          {...props}
+                                        />
                                       </>
                                     ),
                                     h2: ({ ...props }) => (
                                       <>
-                                        <Separator my={4} borderColor="neutral.300" />
-                                        <Heading as="h2" size="xs" mb={2} {...props} />
+                                        <Separator
+                                          my={4}
+                                          borderColor="neutral.300"
+                                        />
+                                        <Heading
+                                          as="h2"
+                                          size="xs"
+                                          mb={2}
+                                          {...props}
+                                        />
                                       </>
                                     ),
                                     h3: ({ ...props }) => (
                                       <>
-                                        <Separator my={4} borderColor="neutral.300" />
-                                        <Heading as="h3" size="xs" mb={2} {...props} />
+                                        <Separator
+                                          my={4}
+                                          borderColor="neutral.300"
+                                        />
+                                        <Heading
+                                          as="h3"
+                                          size="xs"
+                                          mb={2}
+                                          {...props}
+                                        />
                                       </>
                                     ),
                                   }}
@@ -340,7 +370,9 @@ export default function InsightProvenanceDrawer({
                                     <IconButton
                                       size="xs"
                                       variant="outline"
-                                      onClick={() => navigator.clipboard.writeText(content)}
+                                      onClick={() =>
+                                        navigator.clipboard.writeText(content)
+                                      }
                                       aria-label="Copy output"
                                     >
                                       <Copy />
@@ -355,7 +387,13 @@ export default function InsightProvenanceDrawer({
                                 bg="white"
                                 overflowX="auto"
                               >
-                                <Code whiteSpace="pre" bg="transparent" display="block">{content}</Code>
+                                <Code
+                                  whiteSpace="pre"
+                                  bg="transparent"
+                                  display="block"
+                                >
+                                  {content}
+                                </Code>
                               </Box>
                             </Box>
                           )}
