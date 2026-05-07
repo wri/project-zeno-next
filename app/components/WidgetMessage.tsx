@@ -64,7 +64,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               ? `"${str.replace(/"/g, '""')}"`
               : str;
           })
-          .join(","),
+          .join(",")
       ),
     ];
     const blob = new Blob([csvLines.join("\n")], {

@@ -1,12 +1,5 @@
 import { useCallback, useMemo } from "react";
-import {
-  Flex,
-  IconButton,
-  Menu,
-  Button,
-  Portal,
-  Text,
-} from "@chakra-ui/react";
+import { Flex, IconButton, Menu, Button, Portal, Text } from "@chakra-ui/react";
 import {
   CaretDownIcon,
   NotePencilIcon,
@@ -28,24 +21,20 @@ import useChatStore from "./store/chatStore";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 
 export const WidgetIcons = {
-  "line": <ChartLineIcon />,
-  "table": <ListNumbersIcon />,
-  "bar": <ChartBarIcon />,
+  line: <ChartLineIcon />,
+  table: <ListNumbersIcon />,
+  bar: <ChartBarIcon />,
   "stacked-bar": <ChartBarIcon />,
   "grouped-bar": <ChartBarIcon />,
-  "pie": <ChartPieSliceIcon />,
-  "insight": <PresentationChartIcon />,
+  pie: <ChartPieSliceIcon />,
+  insight: <PresentationChartIcon />,
   "dataset-card": <StackIcon />,
-  "scatter": <ChartScatterIcon />,
-  "area": <ChartPolarIcon />,
-}
+  scatter: <ChartScatterIcon />,
+  area: <ChartPolarIcon />,
+};
 
 function ChatPanelHeader() {
-  const {
-    sideBarVisible,
-    toggleSidebar,
-    getThreadById,
-  } = useSidebarStore();
+  const { sideBarVisible, toggleSidebar, getThreadById } = useSidebarStore();
   const { currentThreadId, messages } = useChatStore();
 
   const currentThread = getThreadById(currentThreadId);
@@ -72,7 +61,10 @@ function ChatPanelHeader() {
   const formatWidgetMeta = useCallback((isoTs?: string) => {
     if (!isoTs) return "";
     const d = new Date(isoTs);
-    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const time = d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     const day = d.toLocaleDateString([], { day: "2-digit", month: "short" });
     return `${time} on ${day}`;
   }, []);
@@ -115,9 +107,7 @@ function ChatPanelHeader() {
         </Tooltip>
       )}
       {currentThreadId && currentThread ? (
-        <ThreadActionsMenu
-          thread={currentThread}
-        >
+        <ThreadActionsMenu thread={currentThread}>
           <Button
             variant="ghost"
             size="sm"

@@ -53,7 +53,8 @@ export function LegendSymbolList(props: {
           ) : (
             <ColorSwatch size="xs" value={item.color} />
           )}{" "}
-          {item.label}{unit && ` (${unit})`}
+          {item.label}
+          {unit && ` (${unit})`}
         </Flex>
       ))}
     </Flex>

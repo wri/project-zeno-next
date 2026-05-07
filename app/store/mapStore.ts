@@ -7,7 +7,10 @@ import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
-import { LayerManagerSlice, createLayerManagerSlice } from "./layerManagerSlice";
+import {
+  LayerManagerSlice,
+  createLayerManagerSlice,
+} from "./layerManagerSlice";
 
 interface SelectionMode {
   type: "Selecting" | "Drawing" | "Uploading" | undefined;
@@ -36,7 +39,10 @@ interface MapSlice {
   clearSelectionMode: () => void;
 }
 
-export type MapState = MapSlice & DrawAreaSlice & UploadAreaSlice & LayerManagerSlice;
+export type MapState = MapSlice &
+  DrawAreaSlice &
+  UploadAreaSlice &
+  LayerManagerSlice;
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   set,
@@ -124,11 +130,17 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     let eastUpdated = east;
     // MapLibre doesn't handle west > east wrapping — normalise by adding 360 to east.
     if (west > east) eastUpdated += 360;
-    mapRef.getMap().fitBounds([[west, south], [eastUpdated, north]], {
-      linear: true,
-      padding: { top: 50, bottom: 50, left: 50, right: 50 },
-      maxZoom: 16,
-    });
+    mapRef.getMap().fitBounds(
+      [
+        [west, south],
+        [eastUpdated, north],
+      ],
+      {
+        linear: true,
+        padding: { top: 50, bottom: 50, left: 50, right: 50 },
+        maxZoom: 16,
+      }
+    );
   },
 
   flyToGeoJsonWithRetry: (geoJson, maxRetries = 5) => {

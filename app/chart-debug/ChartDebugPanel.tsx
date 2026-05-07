@@ -16,7 +16,10 @@ import {
 import { CaretDownIcon, XIcon } from "@phosphor-icons/react";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import type { InsightWidget, InsightGeneration } from "@/app/types/chat";
-import CHART_COLOR_MAPPING, { DATASET_SERIES_COLORS, DATASET_DIVERGENT_COLORS } from "@/app/config/chartColorMappings";
+import CHART_COLOR_MAPPING, {
+  DATASET_SERIES_COLORS,
+  DATASET_DIVERGENT_COLORS,
+} from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
 
 // ---------------------------------------------------------------------------
@@ -77,12 +80,12 @@ const BAR_DATA = [
 ];
 
 const STACKED_BAR_DATA = [
-  { year: 2018, "Natural forests": 3200, "Plantations": 800, "Other": 400 },
-  { year: 2019, "Natural forests": 3400, "Plantations": 900, "Other": 350 },
-  { year: 2020, "Natural forests": 2900, "Plantations": 750, "Other": 500 },
-  { year: 2021, "Natural forests": 3100, "Plantations": 820, "Other": 420 },
-  { year: 2022, "Natural forests": 2700, "Plantations": 680, "Other": 380 },
-  { year: 2023, "Natural forests": 2500, "Plantations": 600, "Other": 300 },
+  { year: 2018, "Natural forests": 3200, Plantations: 800, Other: 400 },
+  { year: 2019, "Natural forests": 3400, Plantations: 900, Other: 350 },
+  { year: 2020, "Natural forests": 2900, Plantations: 750, Other: 500 },
+  { year: 2021, "Natural forests": 3100, Plantations: 820, Other: 420 },
+  { year: 2022, "Natural forests": 2700, Plantations: 680, Other: 380 },
+  { year: 2023, "Natural forests": 2500, Plantations: 600, Other: 300 },
 ];
 
 const GROUPED_BAR_DATA = [
@@ -182,16 +185,76 @@ const SCATTER_DATA = [
 ];
 
 const TABLE_DATA = [
-  { rank: 1, country: "Brazil", tree_cover_loss_ha: 4812000, primary_forest_loss_ha: 1695000, pct_of_total: 26.5 },
-  { rank: 2, country: "Indonesia", tree_cover_loss_ha: 2610000, primary_forest_loss_ha: 930000, pct_of_total: 14.4 },
-  { rank: 3, country: "DR Congo", tree_cover_loss_ha: 1100000, primary_forest_loss_ha: 510000, pct_of_total: 6.1 },
-  { rank: 4, country: "Bolivia", tree_cover_loss_ha: 590000, primary_forest_loss_ha: 189000, pct_of_total: 3.3 },
-  { rank: 5, country: "Malaysia", tree_cover_loss_ha: 475000, primary_forest_loss_ha: 173000, pct_of_total: 2.6 },
-  { rank: 6, country: "Peru", tree_cover_loss_ha: 310000, primary_forest_loss_ha: 155000, pct_of_total: 1.7 },
-  { rank: 7, country: "Colombia", tree_cover_loss_ha: 295000, primary_forest_loss_ha: 120000, pct_of_total: 1.6 },
-  { rank: 8, country: "Cameroon", tree_cover_loss_ha: 270000, primary_forest_loss_ha: 95000, pct_of_total: 1.5 },
-  { rank: 9, country: "Laos", tree_cover_loss_ha: 220000, primary_forest_loss_ha: 70000, pct_of_total: 1.2 },
-  { rank: 10, country: "Myanmar", tree_cover_loss_ha: 210000, primary_forest_loss_ha: 68000, pct_of_total: 1.2 },
+  {
+    rank: 1,
+    country: "Brazil",
+    tree_cover_loss_ha: 4812000,
+    primary_forest_loss_ha: 1695000,
+    pct_of_total: 26.5,
+  },
+  {
+    rank: 2,
+    country: "Indonesia",
+    tree_cover_loss_ha: 2610000,
+    primary_forest_loss_ha: 930000,
+    pct_of_total: 14.4,
+  },
+  {
+    rank: 3,
+    country: "DR Congo",
+    tree_cover_loss_ha: 1100000,
+    primary_forest_loss_ha: 510000,
+    pct_of_total: 6.1,
+  },
+  {
+    rank: 4,
+    country: "Bolivia",
+    tree_cover_loss_ha: 590000,
+    primary_forest_loss_ha: 189000,
+    pct_of_total: 3.3,
+  },
+  {
+    rank: 5,
+    country: "Malaysia",
+    tree_cover_loss_ha: 475000,
+    primary_forest_loss_ha: 173000,
+    pct_of_total: 2.6,
+  },
+  {
+    rank: 6,
+    country: "Peru",
+    tree_cover_loss_ha: 310000,
+    primary_forest_loss_ha: 155000,
+    pct_of_total: 1.7,
+  },
+  {
+    rank: 7,
+    country: "Colombia",
+    tree_cover_loss_ha: 295000,
+    primary_forest_loss_ha: 120000,
+    pct_of_total: 1.6,
+  },
+  {
+    rank: 8,
+    country: "Cameroon",
+    tree_cover_loss_ha: 270000,
+    primary_forest_loss_ha: 95000,
+    pct_of_total: 1.5,
+  },
+  {
+    rank: 9,
+    country: "Laos",
+    tree_cover_loss_ha: 220000,
+    primary_forest_loss_ha: 70000,
+    pct_of_total: 1.2,
+  },
+  {
+    rank: 10,
+    country: "Myanmar",
+    tree_cover_loss_ha: 210000,
+    primary_forest_loss_ha: 68000,
+    pct_of_total: 1.2,
+  },
 ];
 
 const DRIVER_PIE = [
@@ -210,26 +273,39 @@ const LARGE_TABLE_DATA = Array.from({ length: 50 }, (_, i) => ({
   rank: i + 1,
   province: `Province ${String.fromCharCode(65 + (i % 26))}${i >= 26 ? "2" : ""}`,
   area_ha: Math.round(50000 - i * 800 + Math.random() * 200),
-  change_pct: +((-2 - Math.random() * 8).toFixed(1)),
+  change_pct: +(-2 - Math.random() * 8).toFixed(1),
 }));
 
 // Multi-series line for dash-pattern testing
 const MULTI_LINE_DATA = [
-  { year: 2015, "Brazil": 4200, "Indonesia": 2400, "DR Congo": 800, "Bolivia": 420 },
-  { year: 2016, "Brazil": 4500, "Indonesia": 2300, "DR Congo": 850, "Bolivia": 450 },
-  { year: 2017, "Brazil": 4100, "Indonesia": 2100, "DR Congo": 900, "Bolivia": 480 },
-  { year: 2018, "Brazil": 4800, "Indonesia": 2600, "DR Congo": 950, "Bolivia": 500 },
-  { year: 2019, "Brazil": 5200, "Indonesia": 2500, "DR Congo": 1000, "Bolivia": 520 },
-  { year: 2020, "Brazil": 4600, "Indonesia": 2200, "DR Congo": 1050, "Bolivia": 550 },
-  { year: 2021, "Brazil": 4300, "Indonesia": 2000, "DR Congo": 1100, "Bolivia": 570 },
-  { year: 2022, "Brazil": 4000, "Indonesia": 1900, "DR Congo": 1150, "Bolivia": 590 },
-  { year: 2023, "Brazil": 3700, "Indonesia": 1800, "DR Congo": 1200, "Bolivia": 600 },
+  { year: 2015, Brazil: 4200, Indonesia: 2400, "DR Congo": 800, Bolivia: 420 },
+  { year: 2016, Brazil: 4500, Indonesia: 2300, "DR Congo": 850, Bolivia: 450 },
+  { year: 2017, Brazil: 4100, Indonesia: 2100, "DR Congo": 900, Bolivia: 480 },
+  { year: 2018, Brazil: 4800, Indonesia: 2600, "DR Congo": 950, Bolivia: 500 },
+  { year: 2019, Brazil: 5200, Indonesia: 2500, "DR Congo": 1000, Bolivia: 520 },
+  { year: 2020, Brazil: 4600, Indonesia: 2200, "DR Congo": 1050, Bolivia: 550 },
+  { year: 2021, Brazil: 4300, Indonesia: 2000, "DR Congo": 1100, Bolivia: 570 },
+  { year: 2022, Brazil: 4000, Indonesia: 1900, "DR Congo": 1150, Bolivia: 590 },
+  { year: 2023, Brazil: 3700, Indonesia: 1800, "DR Congo": 1200, Bolivia: 600 },
 ];
 
 // Wide table for scroll-indicator testing
 const WIDE_TABLE_DATA = Array.from({ length: 12 }, (_, i) => ({
   rank: i + 1,
-  country: ["Brazil", "Indonesia", "DR Congo", "Bolivia", "Malaysia", "Peru", "Colombia", "Cameroon", "Laos", "Myanmar", "Paraguay", "Mexico"][i],
+  country: [
+    "Brazil",
+    "Indonesia",
+    "DR Congo",
+    "Bolivia",
+    "Malaysia",
+    "Peru",
+    "Colombia",
+    "Cameroon",
+    "Laos",
+    "Myanmar",
+    "Paraguay",
+    "Mexico",
+  ][i],
   tree_loss_2018_ha: Math.round(4000000 - i * 350000 + Math.random() * 50000),
   tree_loss_2019_ha: Math.round(3800000 - i * 320000 + Math.random() * 50000),
   tree_loss_2020_ha: Math.round(3600000 - i * 300000 + Math.random() * 50000),
@@ -237,7 +313,7 @@ const WIDE_TABLE_DATA = Array.from({ length: 12 }, (_, i) => ({
   tree_loss_2022_ha: Math.round(3200000 - i * 260000 + Math.random() * 50000),
   tree_loss_2023_ha: Math.round(3000000 - i * 240000 + Math.random() * 50000),
   primary_loss_ha: Math.round(1500000 - i * 120000 + Math.random() * 30000),
-  pct_global: +((25 - i * 2.2 + Math.random()).toFixed(1)),
+  pct_global: +(25 - i * 2.2 + Math.random()).toFixed(1),
 }));
 
 // Long category names for label testing
@@ -269,255 +345,287 @@ const GHG_NET_FLUX_DATA = [
 // Widget fixtures
 // ---------------------------------------------------------------------------
 
-const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] = [
-  {
-    label: "Bar chart",
-    notes: "Simple bar with country-level data. Tests axis labels, Y-axis unit extraction (_ha), and tooltip. Uses dataset color for 'Tree cover loss'.",
-    widget: {
-      type: "bar",
-      title: "Tree cover loss by country (2023)",
-      description: "Top countries by tree cover loss in hectares during 2023.",
-      data: BAR_DATA,
-      xAxis: "country",
-      yAxis: "tree_cover_loss_ha",
-      datasetName: "Tree cover loss",
+const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
+  [
+    {
+      label: "Bar chart",
+      notes:
+        "Simple bar with country-level data. Tests axis labels, Y-axis unit extraction (_ha), and tooltip. Uses dataset color for 'Tree cover loss'.",
+      widget: {
+        type: "bar",
+        title: "Tree cover loss by country (2023)",
+        description:
+          "Top countries by tree cover loss in hectares during 2023.",
+        data: BAR_DATA,
+        xAxis: "country",
+        yAxis: "tree_cover_loss_ha",
+        datasetName: "Tree cover loss",
+      },
     },
-  },
-  {
-    label: "Bar chart — long labels",
-    notes: "Stress test for X-axis label truncation and angling with long biome names.",
-    widget: {
-      type: "bar",
-      title: "Forest area by biome type",
-      description: "Distribution of forest area across major biome categories.",
-      data: LONG_LABEL_BAR_DATA,
-      xAxis: "land_cover_type",
-      yAxis: "area_km2",
+    {
+      label: "Bar chart — long labels",
+      notes:
+        "Stress test for X-axis label truncation and angling with long biome names.",
+      widget: {
+        type: "bar",
+        title: "Forest area by biome type",
+        description:
+          "Distribution of forest area across major biome categories.",
+        data: LONG_LABEL_BAR_DATA,
+        xAxis: "land_cover_type",
+        yAxis: "area_km2",
+      },
     },
-  },
-  {
-    label: "GHG net flux (divergent bars)",
-    notes: "Per-bar coloring: green = sink (negative), purple = source (positive).",
-    widget: {
-      type: "bar",
-      title: "Forest greenhouse gas net flux by country",
-      description: "Net GHG flux in tCO₂e. Positive values are sources (emissions), negative values are sinks (removals).",
-      data: GHG_NET_FLUX_DATA,
-      xAxis: "country",
-      yAxis: "net_flux_tCO2e",
-      datasetName: "Forest greenhouse gas net flux (2001-2024)",
+    {
+      label: "GHG net flux (divergent bars)",
+      notes:
+        "Per-bar coloring: green = sink (negative), purple = source (positive).",
+      widget: {
+        type: "bar",
+        title: "Forest greenhouse gas net flux by country",
+        description:
+          "Net GHG flux in tCO₂e. Positive values are sources (emissions), negative values are sinks (removals).",
+        data: GHG_NET_FLUX_DATA,
+        xAxis: "country",
+        yAxis: "net_flux_tCO2e",
+        datasetName: "Forest greenhouse gas net flux (2001-2024)",
+      },
     },
-  },
-  {
-    label: "Stacked bar chart",
-    notes: "Multi-series stacked bar. Tests legend, series colors, and stacking.",
-    widget: {
-      type: "stacked-bar",
-      title: "Forest loss by type (2018–2023)",
-      description: "Annual tree cover loss disaggregated by forest type in thousands of hectares.",
-      data: STACKED_BAR_DATA,
-      xAxis: "year",
-      yAxis: "Natural forests",
+    {
+      label: "Stacked bar chart",
+      notes:
+        "Multi-series stacked bar. Tests legend, series colors, and stacking.",
+      widget: {
+        type: "stacked-bar",
+        title: "Forest loss by type (2018–2023)",
+        description:
+          "Annual tree cover loss disaggregated by forest type in thousands of hectares.",
+        data: STACKED_BAR_DATA,
+        xAxis: "year",
+        yAxis: "Natural forests",
+      },
     },
-  },
-  {
-    label: "Grouped bar chart",
-    notes: "Tests the long-to-wide pivot in formatChartData and multi-year grouping.",
-    widget: {
-      type: "grouped-bar",
-      title: "Deforestation by region and year",
-      description: "Comparing deforestation trends across three tropical regions.",
-      data: GROUPED_BAR_DATA,
-      xAxis: "region",
-      yAxis: "area_km2",
+    {
+      label: "Grouped bar chart",
+      notes:
+        "Tests the long-to-wide pivot in formatChartData and multi-year grouping.",
+      widget: {
+        type: "grouped-bar",
+        title: "Deforestation by region and year",
+        description:
+          "Comparing deforestation trends across three tropical regions.",
+        data: GROUPED_BAR_DATA,
+        xAxis: "region",
+        yAxis: "area_km2",
+      },
     },
-  },
-  {
-    label: "Line chart",
-    notes: "Simple time-series line. Tests year axis formatting and monotone curve.",
-    widget: {
-      type: "line",
-      title: "Carbon emissions from land use (2015–2023)",
-      description: "Annual CO₂ emissions from deforestation and land degradation.",
-      data: LINE_DATA,
-      xAxis: "year",
-      yAxis: "carbon_emissions_mt",
+    {
+      label: "Line chart",
+      notes:
+        "Simple time-series line. Tests year axis formatting and monotone curve.",
+      widget: {
+        type: "line",
+        title: "Carbon emissions from land use (2015–2023)",
+        description:
+          "Annual CO₂ emissions from deforestation and land degradation.",
+        data: LINE_DATA,
+        xAxis: "year",
+        yAxis: "carbon_emissions_mt",
+      },
     },
-  },
-  {
-    label: "Line chart — long year span (2001–2025)",
-    notes: "25 yearly points. Tests angled-tick placement, last-tick clipping at the right edge, and ensures every other year stays in sync with the final year.",
-    widget: {
-      type: "line",
-      title: "Annual tree cover loss in Brazil (2001–2025)",
-      description: "Annual tree cover loss for Brazil over a 25-year span.",
-      data: TCL_LONG_YEARS,
-      xAxis: "year",
-      yAxis: "area_ha",
-      datasetName: "Tree cover loss",
+    {
+      label: "Line chart — long year span (2001–2025)",
+      notes:
+        "25 yearly points. Tests angled-tick placement, last-tick clipping at the right edge, and ensures every other year stays in sync with the final year.",
+      widget: {
+        type: "line",
+        title: "Annual tree cover loss in Brazil (2001–2025)",
+        description: "Annual tree cover loss for Brazil over a 25-year span.",
+        data: TCL_LONG_YEARS,
+        xAxis: "year",
+        yAxis: "area_ha",
+        datasetName: "Tree cover loss",
+      },
     },
-  },
-  {
-    label: "Bar chart — long year span (2001–2025)",
-    notes: "Same 25-year data as a bar chart. The last bar (2025) often gets its label clipped at the chart's right edge.",
-    widget: {
-      type: "bar",
-      title: "Annual tree cover loss in Brazil (2001–2025)",
-      description: "Annual tree cover loss for Brazil shown as bars.",
-      data: TCL_LONG_YEARS,
-      xAxis: "year",
-      yAxis: "area_ha",
-      datasetName: "Tree cover loss",
+    {
+      label: "Bar chart — long year span (2001–2025)",
+      notes:
+        "Same 25-year data as a bar chart. The last bar (2025) often gets its label clipped at the chart's right edge.",
+      widget: {
+        type: "bar",
+        title: "Annual tree cover loss in Brazil (2001–2025)",
+        description: "Annual tree cover loss for Brazil shown as bars.",
+        data: TCL_LONG_YEARS,
+        xAxis: "year",
+        yAxis: "area_ha",
+        datasetName: "Tree cover loss",
+      },
     },
-  },
-  {
-    label: "Area chart",
-    notes: "Filled area chart showing decline. Tests fill opacity and stacking. Uses dataset color for 'Tree cover'.",
-    widget: {
-      type: "area",
-      title: "Forest area decline in Borneo",
-      description: "Total forest cover in km² showing steady decline over 9 years.",
-      data: AREA_DATA,
-      xAxis: "year",
-      yAxis: "forest_area_km2",
-      datasetName: "Tree cover",
+    {
+      label: "Area chart",
+      notes:
+        "Filled area chart showing decline. Tests fill opacity and stacking. Uses dataset color for 'Tree cover'.",
+      widget: {
+        type: "area",
+        title: "Forest area decline in Borneo",
+        description:
+          "Total forest cover in km² showing steady decline over 9 years.",
+        data: AREA_DATA,
+        xAxis: "year",
+        yAxis: "forest_area_km2",
+        datasetName: "Tree cover",
+      },
     },
-  },
-  {
-    label: "Pie chart — domain colors",
-    notes: "Uses land_cover_type which has a domain color mapping in chartColorMappings.ts.",
-    widget: {
-      type: "pie",
-      title: "Land cover composition — Kalimantan",
-      description: "Breakdown of land cover types by area in km².",
-      data: PIE_LAND_COVER,
-      xAxis: "land_cover_type",
-      yAxis: "area_km2",
+    {
+      label: "Pie chart — domain colors",
+      notes:
+        "Uses land_cover_type which has a domain color mapping in chartColorMappings.ts.",
+      widget: {
+        type: "pie",
+        title: "Land cover composition — Kalimantan",
+        description: "Breakdown of land cover types by area in km².",
+        data: PIE_LAND_COVER,
+        xAxis: "land_cover_type",
+        yAxis: "area_km2",
+      },
     },
-  },
-  {
-    label: "Pie chart — driver colors",
-    notes: "Uses driver field with its own domain color mapping.",
-    widget: {
-      type: "pie",
-      title: "Deforestation drivers — Indonesia",
-      description: "Area of forest loss attributed to each driver category.",
-      data: DRIVER_PIE,
-      xAxis: "driver",
-      yAxis: "area_ha",
+    {
+      label: "Pie chart — driver colors",
+      notes: "Uses driver field with its own domain color mapping.",
+      widget: {
+        type: "pie",
+        title: "Deforestation drivers — Indonesia",
+        description: "Area of forest loss attributed to each driver category.",
+        data: DRIVER_PIE,
+        xAxis: "driver",
+        yAxis: "area_ha",
+      },
     },
-  },
-  {
-    label: "Pie chart — generic",
-    notes: "No domain color mapping — falls back to theme palette.",
-    widget: {
-      type: "pie",
-      title: "Emissions by sector",
-      description: "Percentage share of greenhouse gas emissions.",
-      data: PIE_GENERIC,
-      xAxis: "category",
-      yAxis: "value",
+    {
+      label: "Pie chart — generic",
+      notes: "No domain color mapping — falls back to theme palette.",
+      widget: {
+        type: "pie",
+        title: "Emissions by sector",
+        description: "Percentage share of greenhouse gas emissions.",
+        data: PIE_GENERIC,
+        xAxis: "category",
+        yAxis: "value",
+      },
     },
-  },
-  {
-    label: "Scatter chart",
-    notes: "GDP vs deforestation. Tests scatter tooltip, 3-column (name/x/y) layout.",
-    widget: {
-      type: "scatter",
-      title: "GDP per capita vs deforestation",
-      description: "Relationship between economic output and forest loss across countries.",
-      data: SCATTER_DATA,
-      xAxis: "gdp_per_capita",
-      yAxis: "deforestation_ha",
+    {
+      label: "Scatter chart",
+      notes:
+        "GDP vs deforestation. Tests scatter tooltip, 3-column (name/x/y) layout.",
+      widget: {
+        type: "scatter",
+        title: "GDP per capita vs deforestation",
+        description:
+          "Relationship between economic output and forest loss across countries.",
+        data: SCATTER_DATA,
+        xAxis: "gdp_per_capita",
+        yAxis: "deforestation_ha",
+      },
     },
-  },
-  {
-    label: "Table",
-    notes: "Standard table with rank column. Tests badge, number formatting, sorting.",
-    widget: {
-      type: "table",
-      title: "Top 10 countries by tree cover loss",
-      description: "Ranked list of countries with the highest tree cover loss in 2023.",
-      data: TABLE_DATA as unknown as InsightWidget["data"],
-      xAxis: "",
-      yAxis: "",
+    {
+      label: "Table",
+      notes:
+        "Standard table with rank column. Tests badge, number formatting, sorting.",
+      widget: {
+        type: "table",
+        title: "Top 10 countries by tree cover loss",
+        description:
+          "Ranked list of countries with the highest tree cover loss in 2023.",
+        data: TABLE_DATA as unknown as InsightWidget["data"],
+        xAxis: "",
+        yAxis: "",
+      },
     },
-  },
-  {
-    label: "Table — large (pagination)",
-    notes: "50 rows to test pagination controls and sort stability.",
-    widget: {
-      type: "table",
-      title: "Province-level deforestation data",
-      description: "Simulated dataset with 50 rows to exercise table pagination.",
-      data: LARGE_TABLE_DATA as unknown as InsightWidget["data"],
-      xAxis: "",
-      yAxis: "",
+    {
+      label: "Table — large (pagination)",
+      notes: "50 rows to test pagination controls and sort stability.",
+      widget: {
+        type: "table",
+        title: "Province-level deforestation data",
+        description:
+          "Simulated dataset with 50 rows to exercise table pagination.",
+        data: LARGE_TABLE_DATA as unknown as InsightWidget["data"],
+        xAxis: "",
+        yAxis: "",
+      },
     },
-  },
-  {
-    label: "Multi-series line (dash patterns + palette)",
-    notes: "4 overlapping line series — each gets a unique stroke dash pattern (solid, short-dash, dotted, long-dash) and a colour from the reordered colorblind-safe palette (blue → orange → green → pink).",
-    widget: {
-      type: "line",
-      title: "Tree cover loss by country (2015–2023)",
-      description: "Multi-country comparison with distinct dash patterns per series.",
-      data: MULTI_LINE_DATA,
-      xAxis: "year",
-      yAxis: "Brazil",
+    {
+      label: "Multi-series line (dash patterns + palette)",
+      notes:
+        "4 overlapping line series — each gets a unique stroke dash pattern (solid, short-dash, dotted, long-dash) and a colour from the reordered colorblind-safe palette (blue → orange → green → pink).",
+      widget: {
+        type: "line",
+        title: "Tree cover loss by country (2015–2023)",
+        description:
+          "Multi-country comparison with distinct dash patterns per series.",
+        data: MULTI_LINE_DATA,
+        xAxis: "year",
+        yAxis: "Brazil",
+      },
     },
-  },
-  {
-    label: "Multi-series area (dash patterns + palette)",
-    notes: "Area variant — stroke dashes visible on the area outlines; fill colours use the same palette.",
-    widget: {
-      type: "area",
-      title: "Tree cover loss by country (area)",
-      description: "Multi-country stacked area chart with dash-pattern differentiation.",
-      data: MULTI_LINE_DATA,
-      xAxis: "year",
-      yAxis: "Brazil",
+    {
+      label: "Multi-series area (dash patterns + palette)",
+      notes:
+        "Area variant — stroke dashes visible on the area outlines; fill colours use the same palette.",
+      widget: {
+        type: "area",
+        title: "Tree cover loss by country (area)",
+        description:
+          "Multi-country stacked area chart with dash-pattern differentiation.",
+        data: MULTI_LINE_DATA,
+        xAxis: "year",
+        yAxis: "Brazil",
+      },
     },
-  },
-  {
-    label: "Multi-series stacked bar (palette)",
-    notes: "Stacked bar with the same 4-country data — shows the palette across bar segments.",
-    widget: {
-      type: "stacked-bar",
-      title: "Tree cover loss by country (stacked bar)",
-      description: "Same data as the line/area fixtures, rendered as stacked bar.",
-      data: MULTI_LINE_DATA,
-      xAxis: "year",
-      yAxis: "Brazil",
+    {
+      label: "Multi-series stacked bar (palette)",
+      notes:
+        "Stacked bar with the same 4-country data — shows the palette across bar segments.",
+      widget: {
+        type: "stacked-bar",
+        title: "Tree cover loss by country (stacked bar)",
+        description:
+          "Same data as the line/area fixtures, rendered as stacked bar.",
+        data: MULTI_LINE_DATA,
+        xAxis: "year",
+        yAxis: "Brazil",
+      },
     },
-  },
-  {
-    label: "Wide table (scroll indicator)",
-    notes: "Table with 8+ columns to test horizontal scroll fade indicators.",
-    widget: {
-      type: "table",
-      title: "Country-level tree loss (2018–2023)",
-      description: "Wide table that should show gradient fades when scrollable.",
-      data: WIDE_TABLE_DATA as unknown as InsightWidget["data"],
-      xAxis: "",
-      yAxis: "",
+    {
+      label: "Wide table (scroll indicator)",
+      notes: "Table with 8+ columns to test horizontal scroll fade indicators.",
+      widget: {
+        type: "table",
+        title: "Country-level tree loss (2018–2023)",
+        description:
+          "Wide table that should show gradient fades when scrollable.",
+        data: WIDE_TABLE_DATA as unknown as InsightWidget["data"],
+        xAxis: "",
+        yAxis: "",
+      },
     },
-  },
-  {
-    label: "Empty data",
-    notes: "Tests the empty-state fallback when data is an empty array.",
-    widget: {
-      type: "bar",
-      title: "No data available",
-      description: "This chart intentionally has no data to verify the empty state.",
-      data: [],
-      xAxis: "x",
-      yAxis: "y",
+    {
+      label: "Empty data",
+      notes: "Tests the empty-state fallback when data is an empty array.",
+      widget: {
+        type: "bar",
+        title: "No data available",
+        description:
+          "This chart intentionally has no data to verify the empty state.",
+        data: [],
+        xAxis: "x",
+        yAxis: "y",
+      },
     },
-  },
-];
+  ];
 
-const LOREM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.";
+const LOREM =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.";
 
 // Inject fake generation data and extended descriptions into every fixture
 const FIXTURES = RAW_FIXTURES.map((f) => ({
@@ -553,7 +661,11 @@ function useDatasetOptions(chartType: string) {
     // Divergent colors only make sense for bar charts
     if (chartType === "bar") {
       for (const [name, colors] of Object.entries(DATASET_DIVERGENT_COLORS)) {
-        options.push({ label: `${name} (divergent)`, value: name, swatch: colors.positive });
+        options.push({
+          label: `${name} (divergent)`,
+          value: name,
+          swatch: colors.positive,
+        });
       }
     }
 
@@ -712,8 +824,8 @@ export default function ChartDebugPanel() {
           </Badge>
         </Flex>
         <Text fontSize="sm" color="fg.muted" mb={6}>
-          Visual review of every chart type with representative dummy data.
-          Only accessible when <code>NEXT_PUBLIC_ENABLE_DEBUG_TOOLS=true</code>.
+          Visual review of every chart type with representative dummy data. Only
+          accessible when <code>NEXT_PUBLIC_ENABLE_DEBUG_TOOLS=true</code>.
         </Text>
 
         {/* Filter bar */}
@@ -815,49 +927,59 @@ export default function ChartDebugPanel() {
                   <code>DATASET_DIVERGENT_COLORS</code>
                 </Text>
                 <Flex direction="column" gap={2}>
-                  {Object.entries(DATASET_DIVERGENT_COLORS).map(([name, colors]) => (
-                    <Box key={name}>
-                      <Text fontSize="xs" fontWeight="medium" mb={1}>
-                        {name}
-                      </Text>
-                      <Flex gap={4}>
-                        <Flex align="center" gap={2}>
-                          <Box
-                            w="16px"
-                            h="16px"
-                            minW="16px"
-                            rounded="sm"
-                            bg={colors.positive}
-                            border="1px solid"
-                            borderColor="border"
-                          />
-                          <Text fontSize="xs" color="fg.muted">
-                            Positive (source)
-                          </Text>
-                          <Text fontSize="xs" color="fg.muted" fontFamily="mono">
-                            {colors.positive}
-                          </Text>
+                  {Object.entries(DATASET_DIVERGENT_COLORS).map(
+                    ([name, colors]) => (
+                      <Box key={name}>
+                        <Text fontSize="xs" fontWeight="medium" mb={1}>
+                          {name}
+                        </Text>
+                        <Flex gap={4}>
+                          <Flex align="center" gap={2}>
+                            <Box
+                              w="16px"
+                              h="16px"
+                              minW="16px"
+                              rounded="sm"
+                              bg={colors.positive}
+                              border="1px solid"
+                              borderColor="border"
+                            />
+                            <Text fontSize="xs" color="fg.muted">
+                              Positive (source)
+                            </Text>
+                            <Text
+                              fontSize="xs"
+                              color="fg.muted"
+                              fontFamily="mono"
+                            >
+                              {colors.positive}
+                            </Text>
+                          </Flex>
+                          <Flex align="center" gap={2}>
+                            <Box
+                              w="16px"
+                              h="16px"
+                              minW="16px"
+                              rounded="sm"
+                              bg={colors.negative}
+                              border="1px solid"
+                              borderColor="border"
+                            />
+                            <Text fontSize="xs" color="fg.muted">
+                              Negative (sink)
+                            </Text>
+                            <Text
+                              fontSize="xs"
+                              color="fg.muted"
+                              fontFamily="mono"
+                            >
+                              {colors.negative}
+                            </Text>
+                          </Flex>
                         </Flex>
-                        <Flex align="center" gap={2}>
-                          <Box
-                            w="16px"
-                            h="16px"
-                            minW="16px"
-                            rounded="sm"
-                            bg={colors.negative}
-                            border="1px solid"
-                            borderColor="border"
-                          />
-                          <Text fontSize="xs" color="fg.muted">
-                            Negative (sink)
-                          </Text>
-                          <Text fontSize="xs" color="fg.muted" fontFamily="mono">
-                            {colors.negative}
-                          </Text>
-                        </Flex>
-                      </Flex>
-                    </Box>
-                  ))}
+                      </Box>
+                    )
+                  )}
                 </Flex>
               </Box>
 
@@ -906,8 +1028,8 @@ export default function ChartDebugPanel() {
 
         <Separator my={8} />
         <Text fontSize="xs" color="fg.subtle" textAlign="center">
-          {FIXTURES.length} fixtures · showing {filtered.length} ·
-          rendered at {new Date().toLocaleTimeString()}
+          {FIXTURES.length} fixtures · showing {filtered.length} · rendered at{" "}
+          {new Date().toLocaleTimeString()}
         </Text>
       </Container>
     </Box>

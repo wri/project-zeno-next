@@ -20,7 +20,7 @@ import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 
 // Create a rectangle polygon from bbox coordinates
 function createBboxPolygon(
-  bboxCoords: [number, number, number, number],
+  bboxCoords: [number, number, number, number]
 ): Feature<Polygon, GeoJsonProperties> {
   const [minLng, minLat, maxLng, maxLat] = bboxCoords;
   return {
@@ -43,7 +43,7 @@ function createBboxPolygon(
 
 // Compute the combined bbox of a list of features
 function computeCombinedBbox(
-  features: { id: string; data: FeatureCollection | Feature }[],
+  features: { id: string; data: FeatureCollection | Feature }[]
 ): [number, number, number, number] | null {
   let combinedBbox: [number, number, number, number] | null = null;
   for (const f of features) {
@@ -83,7 +83,7 @@ function useHoverState() {
         setHoverTimeout(timeout);
       }
     },
-    [hoverTimeout],
+    [hoverTimeout]
   );
   useEffect(() => {
     return () => {
@@ -98,8 +98,8 @@ function resolveFeatureRefs(refs: FeatureRef[], registry: GeoJsonEntry[]) {
   return refs
     .map((ref) =>
       registry.find(
-        (e) => e.ref.name === ref.name && e.ref.source === ref.source,
-      ),
+        (e) => e.ref.name === ref.name && e.ref.source === ref.source
+      )
     )
     .filter((e): e is GeoJsonEntry => !!e);
 }
@@ -124,7 +124,7 @@ export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
       {geoJsonLayers.map((layer) => {
         const entries = resolveFeatureRefs(
           layer.featureRefs ?? [],
-          geoJsonRegistry,
+          geoJsonRegistry
         );
 
         return (
@@ -150,7 +150,7 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
   const areaInContext = areas.find((a) =>
     layer.selectionName
       ? a.aoiSelection?.name === layer.selectionName
-      : a.content === layer.name || a.aoiData?.src_id === layer.name,
+      : a.content === layer.name || a.aoiData?.src_id === layer.name
   );
   const isInContext = !!areaInContext;
   const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
@@ -178,7 +178,7 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
         const ref = layer.featureRefs?.[0];
         const entry = ref
           ? entries.find(
-              (e) => e.ref.name === ref.name && e.ref.source === ref.source,
+              (e) => e.ref.name === ref.name && e.ref.source === ref.source
             )
           : undefined;
         upsertContextByType({
@@ -202,7 +202,9 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
       // and MapLibre GeoJSON both handle coords > 180 natively.
       return unionAoiBboxes(aois);
     }
-    return computeCombinedBbox(entries.map((e) => ({ id: e.ref.name, data: e.data })));
+    return computeCombinedBbox(
+      entries.map((e) => ({ id: e.ref.name, data: e.data }))
+    );
   })();
   const bboxPolygon = bboxCoords ? createBboxPolygon(bboxCoords) : null;
   const groupId = layer.id.replace(/\s+/g, "-").toLowerCase();

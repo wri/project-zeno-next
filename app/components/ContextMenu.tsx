@@ -129,7 +129,12 @@ function ContextMenu({
       <Portal>
         <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner zIndex={1500}>
-          <Dialog.Content maxH="75vh" minH="30rem" overflow="hidden" mx={{ base: 2, md: "auto" }}>
+          <Dialog.Content
+            maxH="75vh"
+            minH="30rem"
+            overflow="hidden"
+            mx={{ base: 2, md: "auto" }}
+          >
             <Dialog.Body
               p={0}
               h="full"
@@ -269,7 +274,7 @@ function AreaMenu() {
 
   const sorted = useMemo(() => {
     const list = filtered.sort(
-     (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
+      (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
     );
     return list;
   }, [filtered]);
@@ -317,8 +322,19 @@ function AreaMenu() {
         geometry: multi,
         properties: { id: selected.id, name: selected.name },
       };
-      addToRegistry({ ref: { name: selected.name, source: "custom" }, data: feature, srcId: selected.id, subtype: "custom-area" });
-      addLayer({ id: selected.id, name: selected.name, type: "geojson", visible: true, featureRefs: [{ name: selected.name, source: "custom" }] });
+      addToRegistry({
+        ref: { name: selected.name, source: "custom" },
+        data: feature,
+        srcId: selected.id,
+        subtype: "custom-area",
+      });
+      addLayer({
+        id: selected.id,
+        name: selected.name,
+        type: "geojson",
+        visible: true,
+        featureRefs: [{ name: selected.name, source: "custom" }],
+      });
       flyToGeoJsonWithRetry(feature);
     }
   };

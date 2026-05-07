@@ -59,7 +59,14 @@ function ChatPanel() {
   }, [width]);
 
   return (
-    <Flex minH="100%" maxH="100%" gridArea="chat" zIndex={1000} position="relative" bg="bg">
+    <Flex
+      minH="100%"
+      maxH="100%"
+      gridArea="chat"
+      zIndex={1000}
+      position="relative"
+      bg="bg"
+    >
       <Flex
         minH="100%"
         maxH="100%"
@@ -114,8 +121,8 @@ function ChatPanel() {
               gap={2}
             >
               <Text>
-                AI makes mistakes. Verify outputs and do not share
-                any sensitive or personal information.
+                AI makes mistakes. Verify outputs and do not share any sensitive
+                or personal information.
               </Text>
             </Flex>
           </Box>

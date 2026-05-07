@@ -19,9 +19,9 @@ function VectorTileLayers({ areas }: VectorTileLayersProps) {
     () =>
       allLayers.filter(
         (l): l is ManagedLayer & { tileUrl: string; sourceLayer: string } =>
-          l.type === "vector" && !!l.tileUrl && !!l.sourceLayer,
+          l.type === "vector" && !!l.tileUrl && !!l.sourceLayer
       ),
-    [allLayers],
+    [allLayers]
   );
 
   return (
@@ -32,8 +32,7 @@ function VectorTileLayers({ areas }: VectorTileLayersProps) {
         const lineLayerId = `vector-tile-line-${layer.id}`;
 
         const isInContext = areas.some(
-          (a) =>
-            a.aoiSelection?.name === layer.name || a.content === layer.name,
+          (a) => a.aoiSelection?.name === layer.name || a.content === layer.name
         );
 
         const lineColor = isInContext ? "#8EA4E8" : "#666E7B";

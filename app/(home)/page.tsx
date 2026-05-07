@@ -16,7 +16,7 @@ import FooterSection from "./sections/footer/Footer";
 export default function LandingPage() {
   const [promptIndex, setPromptIndex] = useState(0);
   const { prompts } = usePromptStore();
-  
+
   return (
     <>
       <LandingHero
@@ -24,9 +24,7 @@ export default function LandingPage() {
         promptIndex={promptIndex}
         setPromptIndex={setPromptIndex}
       />
-      <PromptMarquee
-        prompts={prompts}
-      />
+      <PromptMarquee prompts={prompts} />
       <FeaturesTabsSection />
       <SupportWorkTabsSection />
       <HowItWorksSection />

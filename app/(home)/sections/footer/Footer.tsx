@@ -29,7 +29,11 @@ export default function FooterSection() {
         >
           <Flex alignItems="center" gap={4}>
             <LclLogo width={32} avatarOnly />
-            <Text fontSize={{ base: "3xl", md: "5xl" }} fontWeight="semibold" lineHeight="1">
+            <Text
+              fontSize={{ base: "3xl", md: "5xl" }}
+              fontWeight="semibold"
+              lineHeight="1"
+            >
               Global Nature Watch
             </Text>
           </Flex>
@@ -40,7 +44,7 @@ export default function FooterSection() {
           gap={4}
           pb="4"
           flexDir={{ base: "column", md: "row" }}
-          >
+        >
           <Flex
             alignItems="center"
             justifyContent="flex-start"
@@ -49,13 +53,14 @@ export default function FooterSection() {
             flexWrap="wrap"
             w={{ base: "full", md: "auto" }}
             flex={{ md: 2 }}
-            >
-              <Text>{new Date().getFullYear()} Global Nature Watch</Text>
+          >
+            <Text>{new Date().getFullYear()} Global Nature Watch</Text>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
-              target="_blank" rel="noopener noreferrer"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Privacy Policy
             </ChakraLink>
@@ -63,7 +68,8 @@ export default function FooterSection() {
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
-              target="_blank" rel="noopener noreferrer"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               AI Privacy Policy
             </ChakraLink>
@@ -71,7 +77,8 @@ export default function FooterSection() {
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://www.wri.org/about/legal/general-terms-use"
-              target="_blank" rel="noopener noreferrer"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Terms of Use
             </ChakraLink>
@@ -79,7 +86,8 @@ export default function FooterSection() {
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
-              target="_blank" rel="noopener noreferrer"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               AI Terms of Use
             </ChakraLink>
@@ -92,12 +100,13 @@ export default function FooterSection() {
             flexWrap="wrap"
             w={{ base: "full", md: "auto" }}
             flex={{ md: 1 }}
-            >
+          >
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://www.instagram.com/landcarbonlab/"
-              target="_blank" rel="noopener noreferrer"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Instagram
             </ChakraLink>
@@ -105,7 +114,8 @@ export default function FooterSection() {
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://www.linkedin.com/showcase/land-carbon-lab/"
-              target="_blank" rel="noopener noreferrer"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Linkedin
             </ChakraLink>
@@ -113,7 +123,8 @@ export default function FooterSection() {
               textDecoration="underline"
               textDecorationStyle="dotted"
               href="https://x.com/landcarbonlab"
-              target="_blank" rel="noopener noreferrer"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Twitter
             </ChakraLink>

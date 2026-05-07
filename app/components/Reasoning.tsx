@@ -153,7 +153,9 @@ function Reasoning({
                             </>
                           ),
                           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                          p: ({ node: _, ...props }) => <Box mb={2} {...props} />,
+                          p: ({ node: _, ...props }) => (
+                            <Box mb={2} {...props} />
+                          ),
                           br: () => <Box h={2} />,
                         }}
                       >

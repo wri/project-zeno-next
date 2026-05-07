@@ -82,9 +82,12 @@ export const DATASET_SERIES_COLORS: Record<string, string> = {
  * Used for per-bar coloring in bar charts based on value sign.
  * For line/area charts, falls back to the positive color as a single series color.
  */
-export const DATASET_DIVERGENT_COLORS: Record<string, { positive: string; negative: string }> = {
+export const DATASET_DIVERGENT_COLORS: Record<
+  string,
+  { positive: string; negative: string }
+> = {
   "Forest greenhouse gas net flux (2001-2024)": {
-    negative: "#137375",  // teal-green (sink/removals)
-    positive: "#9a65c0",  // purple (source/emissions)
+    negative: "#137375", // teal-green (sink/removals)
+    positive: "#9a65c0", // purple (source/emissions)
   },
 };

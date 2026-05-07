@@ -65,8 +65,7 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message:
-      `**Welcome to Global Nature Watch!**
+      message: `**Welcome to Global Nature Watch!**
       &nbsp;
       Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
       &nbsp;
@@ -396,7 +395,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             );
           } catch (err) {
             if (isFinal) {
-              console.error("Failed to parse final LangChain message", data, err);
+              console.error(
+                "Failed to parse final LangChain message",
+                data,
+                err
+              );
             } else {
               console.error("Failed to parse LangChain message", data, err);
             }
@@ -478,11 +481,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
     } finally {
       clearTimeout(timeoutId);
-      
+
       // Attach tool steps to the user message before clearing loading state
       const { attachToolStepsToLastUserMessage } = get();
       attachToolStepsToLastUserMessage();
-      
+
       setLoading(false);
 
       useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
@@ -595,8 +598,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               const currentToolSteps = get().toolSteps;
               if (currentToolSteps.length > 0) {
                 const first = new Date(currentToolSteps[0].timestamp).getTime();
-                const last = new Date(currentToolSteps[currentToolSteps.length - 1].timestamp).getTime();
-                const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+                const last = new Date(
+                  currentToolSteps[currentToolSteps.length - 1].timestamp
+                ).getTime();
+                const historicalDuration =
+                  isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
                 get().attachToolStepsToLastUserMessage(historicalDuration);
                 get().clearToolSteps();
               }
@@ -654,7 +660,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             );
           } catch (err) {
             if (isFinal) {
-              console.error("Failed to parse final LangChain message", data, err);
+              console.error(
+                "Failed to parse final LangChain message",
+                data,
+                err
+              );
             } else {
               console.error("Failed to parse LangChain message", data, err);
             }
@@ -701,8 +711,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       const finalToolSteps = get().toolSteps;
       if (finalToolSteps.length > 0) {
         const first = new Date(finalToolSteps[0].timestamp).getTime();
-        const last = new Date(finalToolSteps[finalToolSteps.length - 1].timestamp).getTime();
-        const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+        const last = new Date(
+          finalToolSteps[finalToolSteps.length - 1].timestamp
+        ).getTime();
+        const historicalDuration =
+          isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
         get().attachToolStepsToLastUserMessage(historicalDuration);
       }
 

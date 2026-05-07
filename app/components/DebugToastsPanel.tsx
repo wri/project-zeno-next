@@ -56,7 +56,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
             aois: [],
           },
         },
-        () => {},
+        () => {}
       );
     }
   };
@@ -76,7 +76,12 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
       p="3"
       boxShadow="sm"
     >
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb="2">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb="2"
+      >
         <Text fontSize="xs" fontWeight="600">
           Debug: Trigger Toasts
         </Text>

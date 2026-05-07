@@ -24,7 +24,7 @@ export function LegendCategorical(props: { items: SymbolColorValue[] }) {
       {items.map((item) => (
         <GridItem key={item.color} as="li" flexDir="column" maxW="100%">
           <Tooltip.Root positioning={{ placement: "top" }} openDelay={50}>
-            <Tooltip.Trigger width="100%" >
+            <Tooltip.Trigger width="100%">
               <ColorBar color={item.color} borderRadius="3px" />
               <Text textOverflow="ellipsis" textWrap="nowrap" overflow="hidden">
                 {item.value}

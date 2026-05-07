@@ -14,7 +14,6 @@ import {
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
 import useContextStore from "@/app/store/contextStore";
 
-
 const PARAMETER_LABELS: Record<string, string> = {
   canopy_cover: "Canopy ≥",
 };
@@ -71,7 +70,13 @@ function renderLegendSymbology(legend: DatasetLegendConfig) {
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendLayer[]>([]);
 
-  const { layers: managedLayers, setLayerVisibility, setLayerOpacity, removeLayer, reorderLayers } = useMapStore();
+  const {
+    layers: managedLayers,
+    setLayerVisibility,
+    setLayerOpacity,
+    removeLayer,
+    reorderLayers,
+  } = useMapStore();
   const { context, removeContext } = useContextStore();
 
   useEffect(() => {
@@ -118,9 +123,10 @@ export function useLegendHook() {
 
         const { title, info, note } = relatedDataset.legend;
 
-        const dateRange = layer.startDate && layer.endDate
-          ? `${layer.startDate.slice(0, 4)}–${layer.endDate.slice(0, 4)}`
-          : undefined;
+        const dateRange =
+          layer.startDate && layer.endDate
+            ? `${layer.startDate.slice(0, 4)}–${layer.endDate.slice(0, 4)}`
+            : undefined;
         const parametersText = layer.parameters
           ? formatParameters(layer.parameters)
           : undefined;
@@ -172,7 +178,6 @@ export function useLegendHook() {
 
   const handleLayerAction = useCallback<LayerActionHandler>(
     ({ action, payload }) => {
-
       if (action === "reorder") {
         reorderLayers(payload.layers.map((l) => l.id));
         return;
@@ -199,7 +204,14 @@ export function useLegendHook() {
           break;
       }
     },
-    [context, removeContext, removeLayer, setLayerVisibility, setLayerOpacity, reorderLayers]
+    [
+      context,
+      removeContext,
+      removeLayer,
+      setLayerVisibility,
+      setLayerOpacity,
+      reorderLayers,
+    ]
   );
 
   return { layers, handleLayerAction };
