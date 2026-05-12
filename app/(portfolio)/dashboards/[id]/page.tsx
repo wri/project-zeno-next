@@ -33,7 +33,6 @@ export default function DashboardDetailPage() {
   const seedIfEmpty = useInsightStore((s) => s.seedIfEmpty);
   const insights = useInsightStore((s) => s.insights);
   const updateAnnotation = useDashboardStore((s) => s.updateAnnotation);
-  const resizeBlock = useDashboardStore((s) => s.resizeBlock);
   const removeBlock = useDashboardStore((s) => s.removeBlock);
   const reorderBlocks = useDashboardStore((s) => s.reorderBlocks);
 
@@ -56,23 +55,35 @@ export default function DashboardDetailPage() {
 
   return (
     <Box display="grid" gridTemplateColumns="1fr 340px" minH="calc(100vh - 56px)">
-      <Box overflowY="auto" maxH="calc(100vh - 56px)" p={5}>
-        {/* Slim banner that calls out the design intent */}
-        <Box
-          bg="green.subtle"
-          border="1px solid"
-          borderColor="green.muted"
-          rounded="md"
-          px={3}
-          py={2}
-          mb={4}
-          fontSize="xs"
-          color="green.fg"
-        >
-          <strong>Same pattern as Explore</strong> — chat narrates against this
-          dashboard instead of the map.
-        </Box>
+      <Box
+        overflowY="auto"
+        maxH="calc(100vh - 56px)"
+        bg="bg.subtle"
+        p={{ base: 4, md: 6 }}
+      >
+        <Box maxW="820px" mx="auto">
+          {/* Slim banner that calls out the design intent */}
+          <Box
+            bg="green.subtle"
+            border="1px solid"
+            borderColor="green.muted"
+            rounded="md"
+            px={3}
+            py={2}
+            mb={4}
+            fontSize="xs"
+            color="green.fg"
+          >
+            <strong>Same pattern as Explore</strong> — chat narrates against this
+            dashboard instead of the map.
+          </Box>
 
+          <Box
+            bg="bg"
+            rounded="md"
+            boxShadow="md"
+            p={{ base: 5, md: 8 }}
+          >
         <Flex
           justify="space-between"
           align="flex-start"
@@ -123,20 +134,18 @@ export default function DashboardDetailPage() {
               border="1.5px dashed"
               borderColor="border"
               rounded="md"
-              h="160px"
+              py={3}
               display="flex"
-              flexDir="column"
+              gap={2}
               alignItems="center"
               justifyContent="center"
               color="fg.muted"
               fontSize="xs"
               textAlign="center"
-              p={2}
+              px={3}
             >
               <Text>↓ Chat to generate</Text>
-              <Text fontSize="2xs" mt={0.5}>
-                insights pin here
-              </Text>
+              <Text fontSize="2xs">insights pin here</Text>
             </Box>
           }
         >
@@ -145,11 +154,7 @@ export default function DashboardDetailPage() {
               block.type === "insight" &&
               block.insightId === dashboard.seededFromInsightId;
             return (
-              <SortableBlock
-                key={block.id}
-                id={block.id}
-                size={block.size ?? "default"}
-              >
+              <SortableBlock key={block.id} id={block.id}>
                 {(handle) => {
                   if (block.type === "annotation") {
                     return (
@@ -163,10 +168,6 @@ export default function DashboardDetailPage() {
                         source="chat"
                         workspace={dashboard}
                         blockId={block.id}
-                        size={block.size ?? "default"}
-                        onResize={(s) =>
-                          resizeBlock(dashboard.id, block.id, s)
-                        }
                       />
                     );
                   }
@@ -202,10 +203,6 @@ export default function DashboardDetailPage() {
                           : () => removeBlock(dashboard.id, block.id)
                       }
                       dragHandleProps={handle}
-                      size={block.size ?? "default"}
-                      onResize={(s) =>
-                        resizeBlock(dashboard.id, block.id, s)
-                      }
                     />
                   );
                 }}
@@ -213,6 +210,8 @@ export default function DashboardDetailPage() {
             );
           })}
         </CanvasGrid>
+          </Box>
+        </Box>
       </Box>
 
       <Box

@@ -12,25 +12,19 @@ import {
 import {
   arrayMove,
   SortableContext,
-  rectSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Box, SimpleGrid } from "@chakra-ui/react";
-import type { BlockSize } from "@/app/types/portfolio";
+import { Box, Stack } from "@chakra-ui/react";
 
 type SortableBlockProps = {
   id: string;
-  size?: BlockSize;
   children: (handle: React.HTMLAttributes<HTMLDivElement>) => React.ReactNode;
 };
 
-export function SortableBlock({
-  id,
-  size = "default",
-  children,
-}: SortableBlockProps) {
+export function SortableBlock({ id, children }: SortableBlockProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -39,10 +33,6 @@ export function SortableBlock({
     transition,
     opacity: isDragging ? 0.4 : 1,
     zIndex: isDragging ? 10 : "auto",
-    // Wide blocks span 2 of the 3 columns on md+. On sm the grid is 2 cols
-    // so wide becomes full-width; on base the grid is 1 col so the span is
-    // naturally capped.
-    gridColumn: size === "wide" ? "span 2" : undefined,
   };
 
   return (
@@ -56,11 +46,13 @@ type CanvasGridProps = {
   ids: string[];
   onReorder: (orderedIds: string[]) => void;
   children: React.ReactNode;
-  // Allow callers to extend the grid with a trailing placeholder
+  // Allow callers to extend the list with a trailing placeholder
   // (e.g. "+ Pin or drop here") that is NOT part of the sortable list.
   trailing?: React.ReactNode;
 };
 
+// Page-style vertical sortable list. Each block flows at its natural
+// height so chart blocks aren't clipped by a uniform grid row.
 export default function CanvasGrid({
   ids,
   onReorder,
@@ -87,15 +79,11 @@ export default function CanvasGrid({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={ids} strategy={rectSortingStrategy}>
-        <SimpleGrid
-          columns={{ base: 1, sm: 2, md: 3 }}
-          gap={3}
-          css={{ gridAutoFlow: "row dense" }}
-        >
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <Stack gap={4}>
           {children}
           {trailing}
-        </SimpleGrid>
+        </Stack>
       </SortableContext>
     </DndContext>
   );

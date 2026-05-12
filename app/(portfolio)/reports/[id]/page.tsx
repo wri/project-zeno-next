@@ -43,7 +43,6 @@ export default function ReportCanvasPage() {
   const addInsightBlock = useReportStore((s) => s.addInsightBlock);
   const addAnnotationBlock = useReportStore((s) => s.addAnnotationBlock);
   const updateAnnotation = useReportStore((s) => s.updateAnnotation);
-  const resizeBlock = useReportStore((s) => s.resizeBlock);
   const removeBlock = useReportStore((s) => s.removeBlock);
   const reorderBlocks = useReportStore((s) => s.reorderBlocks);
 
@@ -138,7 +137,20 @@ export default function ReportCanvasPage() {
       </Box>
 
       {/* Main canvas */}
-      <Box overflowY="auto" maxH="calc(100vh - 56px)" p={5}>
+      <Box
+        overflowY="auto"
+        maxH="calc(100vh - 56px)"
+        bg="bg.subtle"
+        p={{ base: 4, md: 6 }}
+      >
+        <Box
+          maxW="820px"
+          mx="auto"
+          bg="bg"
+          rounded="md"
+          boxShadow="md"
+          p={{ base: 5, md: 8 }}
+        >
         <Flex justify="space-between" align="flex-start" gap={4} flexWrap="wrap" mb={4}>
           <Box minW={0}>
             <HStack gap={2} mb={1}>
@@ -234,7 +246,7 @@ export default function ReportCanvasPage() {
                 border="1.5px dashed"
                 borderColor="border"
                 rounded="md"
-                h="160px"
+                py={3}
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
@@ -247,11 +259,7 @@ export default function ReportCanvasPage() {
             }
           >
             {report.blocks.map((block) => (
-              <SortableBlock
-                key={block.id}
-                id={block.id}
-                size={block.size ?? "default"}
-              >
+              <SortableBlock key={block.id} id={block.id}>
                 {(handle) => {
                   if (block.type === "annotation") {
                     return (
@@ -264,8 +272,6 @@ export default function ReportCanvasPage() {
                         dragHandleProps={handle}
                         workspace={report}
                         blockId={block.id}
-                        size={block.size ?? "default"}
-                        onResize={(s) => resizeBlock(report.id, block.id, s)}
                       />
                     );
                   }
@@ -296,8 +302,6 @@ export default function ReportCanvasPage() {
                       insight={insight}
                       onRemove={() => removeBlock(report.id, block.id)}
                       dragHandleProps={handle}
-                      size={block.size ?? "default"}
-                      onResize={(s) => resizeBlock(report.id, block.id, s)}
                     />
                   );
                 }}
@@ -305,6 +309,7 @@ export default function ReportCanvasPage() {
             ))}
           </CanvasGrid>
         )}
+        </Box>
       </Box>
     </Box>
   );

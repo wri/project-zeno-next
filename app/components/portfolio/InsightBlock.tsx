@@ -10,13 +10,8 @@ import {
   Text,
   Badge,
 } from "@chakra-ui/react";
-import {
-  DotsSixVerticalIcon,
-  XIcon,
-  ArrowsOutLineHorizontalIcon,
-  ArrowsInLineHorizontalIcon,
-} from "@phosphor-icons/react";
-import type { BlockSize, PinnedInsight } from "@/app/types/portfolio";
+import { DotsSixVerticalIcon, XIcon } from "@phosphor-icons/react";
+import type { PinnedInsight } from "@/app/types/portfolio";
 import type { InsightWidget } from "@/app/types/chat";
 import ChartIcon from "./ChartIcon";
 import ChartWidget from "@/app/components/widgets/ChartWidget";
@@ -28,8 +23,6 @@ type Props = {
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   isSeed?: boolean;
   onRemove?: () => void;
-  size?: BlockSize;
-  onResize?: (size: BlockSize) => void;
 };
 
 // Reconstruct an InsightWidget from the persisted PinnedInsight so we can
@@ -49,17 +42,14 @@ function toInsightWidget(insight: PinnedInsight): InsightWidget {
 }
 
 // Mirrors the chat's WidgetMessage chrome (blue border, LCLGradientLight
-// header, WidgetIcons icon + title), with the canvas controls (drag,
-// resize, remove, isSeed) tucked into the header's right edge.
+// header, WidgetIcons icon + title). Renders at its natural height so it
+// can sit inside the page-style sortable list without clipping.
 export default function InsightBlock({
   insight,
   dragHandleProps,
   isSeed = false,
   onRemove,
-  size = "default",
-  onResize,
 }: Props) {
-  const isWide = size === "wide";
   const widget = useMemo(() => toInsightWidget(insight), [insight]);
   const hasData =
     Array.isArray(insight.data) && (insight.data as unknown[]).length > 0;
@@ -71,9 +61,6 @@ export default function InsightBlock({
       borderColor={isSeed ? "green.fg" : "blue.fg"}
       overflow="hidden"
       bg="bg"
-      h="260px"
-      display="flex"
-      flexDir="column"
     >
       <Flex
         px={3}
@@ -109,21 +96,6 @@ export default function InsightBlock({
               Seed
             </Badge>
           )}
-          {onResize && (
-            <IconButton
-              aria-label={isWide ? "Make block default size" : "Make block wide"}
-              size="2xs"
-              variant="ghost"
-              onClick={() => onResize(isWide ? "default" : "wide")}
-              title={isWide ? "Shrink" : "Expand to 2 columns"}
-            >
-              {isWide ? (
-                <ArrowsInLineHorizontalIcon size={12} />
-              ) : (
-                <ArrowsOutLineHorizontalIcon size={12} />
-              )}
-            </IconButton>
-          )}
           {onRemove && (
             <IconButton
               aria-label="Remove block"
@@ -151,14 +123,14 @@ export default function InsightBlock({
         </Flex>
       </Flex>
       <Separator />
-      <Box flex="1" minH={0} px={3} py={2}>
+      <Box px={3} py={3}>
         {hasData ? (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <ChartWidget widget={widget} />
           </WidgetErrorBoundary>
         ) : (
           <Flex
-            h="100%"
+            h="160px"
             align="center"
             justify="center"
             bg="bg.subtle"

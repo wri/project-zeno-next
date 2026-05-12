@@ -17,19 +17,13 @@ import {
   PencilSimpleIcon,
   SparkleIcon,
   PaperPlaneTiltIcon,
-  ArrowsOutLineHorizontalIcon,
-  ArrowsInLineHorizontalIcon,
 } from "@phosphor-icons/react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import mockGenerateText, {
   MOCK_TEXT_PREFIX,
 } from "@/app/lib/portfolio/mockGenerateText";
-import type {
-  Report,
-  AreaDashboard,
-  BlockSize,
-} from "@/app/types/portfolio";
+import type { Report, AreaDashboard } from "@/app/types/portfolio";
 
 type Props = {
   text: string;
@@ -42,8 +36,6 @@ type Props = {
   // affordance is hidden (read-only contexts).
   workspace?: Report | AreaDashboard;
   blockId?: string;
-  size?: BlockSize;
-  onResize?: (size: BlockSize) => void;
 };
 
 // Used to render generated mock copy with a distinctive "AI" label.
@@ -69,8 +61,6 @@ export default function AnnotationBlock({
   source = "user",
   workspace,
   blockId,
-  size = "default",
-  onResize,
 }: Props) {
   const [editing, setEditing] = useState(text.length === 0);
   const [generating, setGenerating] = useState(false);
@@ -79,7 +69,6 @@ export default function AnnotationBlock({
 
   const isGenerated = isMockGenerated(text);
   const canGenerate = Boolean(workspace && blockId);
-  const isWide = size === "wide";
 
   async function handleGenerate(promptOverride?: string) {
     if (!workspace || !blockId) return;
@@ -110,7 +99,7 @@ export default function AnnotationBlock({
       borderColor={isGenerated ? "purple.muted" : "orange.muted"}
       rounded="md"
       p={3}
-      h="260px"
+      minH="120px"
       display="flex"
       flexDir="column"
     >
@@ -150,21 +139,6 @@ export default function AnnotationBlock({
               onClick={() => setShowPrompt((v) => !v)}
             >
               <SparkleIcon size={12} />
-            </IconButton>
-          )}
-          {onResize && (
-            <IconButton
-              aria-label={isWide ? "Make block default size" : "Make block wide"}
-              size="2xs"
-              variant="ghost"
-              onClick={() => onResize(isWide ? "default" : "wide")}
-              title={isWide ? "Shrink" : "Expand to 2 columns"}
-            >
-              {isWide ? (
-                <ArrowsInLineHorizontalIcon size={12} />
-              ) : (
-                <ArrowsOutLineHorizontalIcon size={12} />
-              )}
             </IconButton>
           )}
           {onRemove && (
@@ -234,7 +208,7 @@ export default function AnnotationBlock({
 
       {generating ? (
         <Flex
-          flex="1"
+          minH="80px"
           align="center"
           justify="center"
           gap={2}
@@ -256,7 +230,8 @@ export default function AnnotationBlock({
               ? "Type your annotation, or use ✨ to generate one…"
               : "Type your annotation…"
           }
-          flex="1"
+          autoresize
+          rows={3}
           resize="none"
           size="xs"
           bg="transparent"
@@ -269,8 +244,6 @@ export default function AnnotationBlock({
         />
       ) : (
         <Box
-          flex="1"
-          overflowY="auto"
           cursor="text"
           onClick={() => setEditing(true)}
           css={markdownCss}
