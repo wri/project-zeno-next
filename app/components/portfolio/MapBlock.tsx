@@ -69,7 +69,7 @@ export default function MapBlock({
           <Text fontSize="2xs" color="fg.muted" lineHeight="short" truncate>
             {aoi.isMultiArea ? `${aoi.src_ids.length} areas` : "Area"} ·{" "}
             {aoi.source}
-            {!aoi.geometry && " · placeholder"}
+            {!aoi.geometry && !aoi.bbox && " · no location data"}
           </Text>
         </Box>
         <Flex gap={0.5} align="center" flexShrink={0}>

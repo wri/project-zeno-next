@@ -72,22 +72,6 @@ export default function DashboardDetailPage() {
         p={{ base: 4, md: 6 }}
       >
         <Box maxW="820px" mx="auto">
-          {/* Slim banner that calls out the design intent */}
-          <Box
-            bg="green.subtle"
-            border="1px solid"
-            borderColor="green.muted"
-            rounded="md"
-            px={3}
-            py={2}
-            mb={4}
-            fontSize="xs"
-            color="green.fg"
-          >
-            <strong>Same pattern as Explore</strong> — chat narrates against this
-            dashboard instead of the map.
-          </Box>
-
           <Box
             bg="bg"
             rounded="md"

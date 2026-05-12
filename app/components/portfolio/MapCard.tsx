@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import MapGl, { Layer, Source } from "react-map-gl/maplibre";
+import type { FeatureCollection } from "geojson";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { MapPinIcon } from "@phosphor-icons/react";
 import bbox from "@turf/bbox";
@@ -19,35 +20,51 @@ type Props = {
   bare?: boolean;
 };
 
-function PlaceholderSvg() {
-  return (
-    <svg
-      viewBox="0 0 160 64"
-      width="100%"
-      height="100%"
-      preserveAspectRatio="xMidYMid slice"
-      style={{ display: "block", borderRadius: "4px" }}
-      aria-hidden
-    >
-      <rect width="160" height="64" fill="#dceee4" rx="3" />
-      <polygon
-        points="22,52 38,18 62,12 90,24 118,14 138,40 122,56 72,60 34,58"
-        fill="#8cc4a4"
-        opacity="0.7"
-        stroke="#4a9a6a"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <circle cx="78" cy="36" r="4" fill="#2a8a50" />
-    </svg>
-  );
+// Build a rectangular FeatureCollection from a bbox so AOIs that lack a
+// real polygon snapshot (e.g. the seed insights, or pins where the
+// geoJsonRegistry was empty) still render on a basemap.
+function bboxToFeatureCollection(
+  b: [number, number, number, number]
+): FeatureCollection {
+  const [west, south, east, north] = b;
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [west, south],
+              [east, south],
+              [east, north],
+              [west, north],
+              [west, south],
+            ],
+          ],
+        },
+      },
+    ],
+  };
 }
 
-// Read-only maplibre embed rendering the AOI polygon. Falls back to a
-// stylised SVG when the geometry snapshot is missing.
+// Read-only maplibre embed rendering the AOI polygon. Synthesises a
+// rectangle from bbox when no real polygon is available so we always
+// show a real basemap.
 export default function MapCard({ aoi, height = 180, bare = false }: Props) {
+  // Prefer the real polygon snapshot; otherwise approximate with a
+  // bbox rectangle. The result is always a FeatureCollection or
+  // undefined (only when we have neither).
+  const geometry: FeatureCollection | undefined = useMemo(() => {
+    if (aoi.geometry) return aoi.geometry;
+    if (aoi.bbox) return bboxToFeatureCollection(aoi.bbox);
+    return undefined;
+  }, [aoi]);
+
   const initialView = useMemo(() => {
-    const b = aoi.geometry ? bbox(aoi.geometry) : aoi.bbox;
+    const b = geometry ? bbox(geometry) : undefined;
     if (!b) return { longitude: 0, latitude: 0, zoom: 1 };
     const [west, south, east, north] = b as [number, number, number, number];
     let eastUpdated = east;
@@ -55,14 +72,23 @@ export default function MapCard({ aoi, height = 180, bare = false }: Props) {
     const lng = (west + eastUpdated) / 2;
     const lat = (south + north) / 2;
     return { longitude: lng, latitude: lat, zoom: 4 };
-  }, [aoi]);
+  }, [geometry]);
 
   const heightStyle = typeof height === "number" ? `${height}px` : height;
 
-  // Inner map / placeholder, no chrome.
-  const inner = !aoi.geometry ? (
-    <Box rounded="sm" overflow="hidden" h={heightStyle}>
-      <PlaceholderSvg />
+  const inner = !geometry ? (
+    <Box
+      rounded="sm"
+      overflow="hidden"
+      h={heightStyle}
+      bg="bg.subtle"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      color="fg.muted"
+      fontSize="xs"
+    >
+      No location data
     </Box>
   ) : (
     <Box rounded="sm" overflow="hidden" h={heightStyle}>
@@ -84,7 +110,7 @@ export default function MapCard({ aoi, height = 180, bare = false }: Props) {
         >
           <Layer id="basemap-tiles" type="raster" />
         </Source>
-        <Source id="aoi" type="geojson" data={aoi.geometry}>
+        <Source id="aoi" type="geojson" data={geometry}>
           <Layer
             id="aoi-fill"
             type="fill"

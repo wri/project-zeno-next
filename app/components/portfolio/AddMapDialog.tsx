@@ -96,7 +96,7 @@ export default function AddMapDialog({ open, onClose, onPick }: Props) {
                           {aoi.isMultiArea
                             ? `${aoi.src_ids.length} areas · ${aoi.source}`
                             : aoi.source}
-                          {!aoi.geometry && " · placeholder"}
+                          {!aoi.geometry && !aoi.bbox && " · no location data"}
                         </Text>
                       </Box>
                       {aoi.isMultiArea && (
