@@ -57,8 +57,12 @@ export function matchMockResponse(
   const lower = message.toLowerCase();
   for (const r of MOCK_RESPONSES) {
     if (r.keywords.some((k) => lower.includes(k))) {
-      const { keywords: _k, ...rest } = r;
-      return rest;
+      return {
+        insight_title: r.insight_title,
+        dataset: r.dataset,
+        chart_type: r.chart_type,
+        narration: r.narration,
+      };
     }
   }
   return FALLBACK_RESPONSE;

@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useParams, useRouter, notFound } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import {
   Box,
   Flex,
-  Heading,
   Text,
   Input,
   Button,
@@ -33,7 +32,6 @@ import { REPORT_INSIGHT_LIMIT } from "@/app/types/portfolio";
 
 export default function ReportCanvasPage() {
   const params = useParams();
-  const router = useRouter();
   const id = String(params?.id ?? "");
 
   const insights = useInsightStore((s) => s.insights);
