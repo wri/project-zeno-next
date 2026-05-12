@@ -19,6 +19,7 @@ import {
 import { CaretDownIcon, TrayIcon } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
 import useDashboardStore from "@/app/store/dashboardStore";
+import useReportStore from "@/app/store/reportStore";
 import InsightCard from "@/app/components/portfolio/InsightCard";
 import AddToReportDialog from "@/app/components/portfolio/AddToReportDialog";
 import { REPORT_INSIGHT_LIMIT } from "@/app/types/portfolio";
@@ -30,6 +31,7 @@ export default function InboxPage() {
   const seedIfEmpty = useInsightStore((s) => s.seedIfEmpty);
   const hasHydrated = useInsightStore((s) => s.hasHydrated);
   const createDashboard = useDashboardStore((s) => s.createDashboard);
+  const createReport = useReportStore((s) => s.createReport);
 
   const [search, setSearch] = useState("");
   const [datasetFilter, setDatasetFilter] = useState<string | null>(null);
@@ -100,6 +102,19 @@ export default function InboxPage() {
       duration: 2500,
     });
     router.push(`/dashboards/${d.id}`);
+  }
+
+  function handleCreateReportFromInsight(insightId: string) {
+    const insight = insights.find((i) => i.id === insightId);
+    if (!insight) return;
+    const report = createReport(undefined, [insightId]);
+    toaster.create({
+      title: "Report created",
+      description: `Started from "${insight.title}"`,
+      type: "success",
+      duration: 2500,
+    });
+    router.push(`/reports/${report.id}`);
   }
 
   const selectedArray = useMemo(
@@ -189,6 +204,7 @@ export default function InboxPage() {
             selected={selectedIds.has(insight.id)}
             onSelectChange={(s) => toggleSelect(insight.id, s)}
             onSeedDashboard={() => handleSeedDashboard(insight.id)}
+            onCreateReport={() => handleCreateReportFromInsight(insight.id)}
             onViewSource={() => {
               toaster.create({
                 title: "Coming soon",

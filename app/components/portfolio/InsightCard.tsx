@@ -9,6 +9,11 @@ import {
   Badge,
   Button,
 } from "@chakra-ui/react";
+import {
+  ChatCircleIcon,
+  FilePlusIcon,
+  MapPinPlusIcon,
+} from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 import type { PinnedInsight } from "@/app/types/portfolio";
 import ChartIcon from "./ChartIcon";
@@ -20,6 +25,7 @@ type Props = {
   selected?: boolean;
   onSelectChange?: (selected: boolean) => void;
   onSeedDashboard?: () => void;
+  onCreateReport?: () => void;
   onPinToCanvas?: () => void;
   onViewSource?: () => void;
   variant?: Variant;
@@ -41,6 +47,7 @@ export default function InsightCard({
   selected = false,
   onSelectChange,
   onSeedDashboard,
+  onCreateReport,
   onPinToCanvas,
   onViewSource,
   variant = "default",
@@ -117,16 +124,38 @@ export default function InsightCard({
               <Button
                 size="2xs"
                 variant="plain"
-                color="primary.fg"
+                color="fg.muted"
+                gap={1}
                 px={0}
                 h="auto"
                 fontWeight="medium"
+                _hover={{ color: "fg" }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onViewSource?.();
                 }}
               >
-                ↗ View source
+                <ChatCircleIcon size={13} />
+                View source
+              </Button>
+            )}
+            {!compact && onCreateReport && (
+              <Button
+                size="2xs"
+                variant="plain"
+                color="purple.fg"
+                gap={1}
+                px={0}
+                h="auto"
+                fontWeight="medium"
+                _hover={{ color: "purple.solid" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCreateReport();
+                }}
+              >
+                <FilePlusIcon size={13} />
+                Create new report
               </Button>
             )}
             {!compact && onSeedDashboard && (
@@ -134,15 +163,18 @@ export default function InsightCard({
                 size="2xs"
                 variant="plain"
                 color="green.fg"
+                gap={1}
                 px={0}
                 h="auto"
                 fontWeight="medium"
+                _hover={{ color: "green.solid" }}
                 onClick={(e) => {
                   e.stopPropagation();
                   onSeedDashboard();
                 }}
               >
-                ⊕ Seed area dashboard
+                <MapPinPlusIcon size={13} />
+                Seed area dashboard
               </Button>
             )}
             {compact && onPinToCanvas && (
