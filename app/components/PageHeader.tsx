@@ -3,6 +3,7 @@
 import {
   Flex,
   Heading,
+  HStack,
   Button,
   Progress,
   Badge,
@@ -18,14 +19,88 @@ import {
   SignOutIcon,
   UserIcon,
   InfoIcon,
+  MapTrifoldIcon,
+  TrayIcon,
+  FileTextIcon,
+  SquaresFourIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
 
 import useAuthStore from "../store/authStore";
 import { API_CONFIG } from "@/app/config/api";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { toaster } from "@/app/components/ui/toaster";
 import { clearToken } from "@/app/lib/api-client";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; weight?: "regular" | "fill" }>;
+  matchPrefix: string;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/app", label: "Explore", icon: MapTrifoldIcon, matchPrefix: "/app" },
+  { href: "/inbox", label: "Inbox", icon: TrayIcon, matchPrefix: "/inbox" },
+  {
+    href: "/reports",
+    label: "Reports",
+    icon: FileTextIcon,
+    matchPrefix: "/reports",
+  },
+  {
+    href: "/dashboards",
+    label: "Dashboards",
+    icon: SquaresFourIcon,
+    matchPrefix: "/dashboards",
+  },
+];
+
+function HeaderNav({ isPrototype }: { isPrototype: boolean }) {
+  const pathname = usePathname() || "";
+  return (
+    <HStack gap={1} hideBelow="md">
+      {NAV_ITEMS.map((item) => {
+        const Icon = item.icon;
+        const active =
+          item.matchPrefix === "/app"
+            ? pathname === "/app" || pathname.startsWith("/app/")
+            : pathname === item.matchPrefix ||
+              pathname.startsWith(`${item.matchPrefix}/`);
+        const activeBg = isPrototype ? "#1f2937" : "primary.900";
+        const activeFg = isPrototype ? "#f3f4f6" : "white";
+        const inactiveFg = isPrototype ? "#374151" : "primary.100";
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            style={{ textDecoration: "none" }}
+          >
+            <HStack
+              gap={1.5}
+              px={3}
+              py={1.5}
+              rounded="md"
+              bg={active ? activeBg : "transparent"}
+              color={active ? activeFg : inactiveFg}
+              fontSize="sm"
+              fontWeight="medium"
+              _hover={{
+                bg: active ? activeBg : isPrototype ? "#9ca3af" : "primary.fg",
+                color: activeFg,
+              }}
+              transition="background 0.12s, color 0.12s"
+            >
+              <Icon size={14} weight={active ? "fill" : "regular"} />
+              <Text>{item.label}</Text>
+            </HStack>
+          </Link>
+        );
+      })}
+    </HStack>
+  );
+}
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 
@@ -90,6 +165,7 @@ function PageHeader() {
         >
           {isPrototype ? "PROTOTYPE" : "PREVIEW"}
         </Badge>
+        <HeaderNav isPrototype={isPrototype} />
       </Flex>
       {isPrototype && (
         <Text
