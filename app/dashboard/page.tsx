@@ -32,6 +32,7 @@ import Link from "next/link";
 import LclLogo from "../components/LclLogo";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
+import { useLogout } from "@/app/hooks/useLogout";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -109,13 +110,14 @@ export default function UserSettingsPage() {
             company: user?.companyOrganization ?? p.company,
             country: user?.countryCode ?? p.country,
             expertise: user?.gisExpertiseLevel ?? p.expertise,
-            preferredLanguage: user?.preferredLanguageCode ?? p.preferredLanguage,
+            preferredLanguage:
+              user?.preferredLanguageCode ?? p.preferredLanguage,
             topics: Array.isArray(user?.topics) ? user.topics : p.topics,
             receiveNewsEmails: Boolean(
-              user?.receiveNewsEmails ?? p.receiveNewsEmails
+              user?.receiveNewsEmails ?? p.receiveNewsEmails,
             ),
             helpTestFeatures: Boolean(
-              user?.helpTestFeatures ?? p.helpTestFeatures
+              user?.helpTestFeatures ?? p.helpTestFeatures,
             ),
           }));
 
@@ -228,25 +230,32 @@ export default function UserSettingsPage() {
 
       // Submit to Ortto directly from client (no secrets needed)
       const topicLabels = form.topics.map(
-        (code) => config?.topics?.[code] || code
+        (code) => config?.topics?.[code] || code,
       );
       try {
-        const orttoRes = await fetch("https://ortto.wri.org/custom-forms/gnw/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: form.email,
-            firstName: form.firstName,
-            lastName: form.lastName,
-            sector: form.sector,
-            jobTitle: form.jobTitle,
-            companyOrganization: form.company,
-            countryCode: form.country,
-            Topics: topicLabels,
-            receiveNewsEmails: form.receiveNewsEmails,
-          }),
-        });
-        console.log("[Client] Ortto submission status:", orttoRes.status, orttoRes.ok ? "OK" : "FAILED");
+        const orttoRes = await fetch(
+          "https://ortto.wri.org/custom-forms/gnw/",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: form.email,
+              firstName: form.firstName,
+              lastName: form.lastName,
+              sector: form.sector,
+              jobTitle: form.jobTitle,
+              companyOrganization: form.company,
+              countryCode: form.country,
+              Topics: topicLabels,
+              receiveNewsEmails: form.receiveNewsEmails,
+            }),
+          },
+        );
+        console.log(
+          "[Client] Ortto submission status:",
+          orttoRes.status,
+          orttoRes.ok ? "OK" : "FAILED",
+        );
       } catch (e) {
         console.error("[Client] Ortto submission error:", e);
       }
@@ -270,25 +279,7 @@ export default function UserSettingsPage() {
     }
   };
 
-  const handleLogout = () => {
-    try {
-      toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
-        type: "info",
-        duration: 8000,
-      });
-    } catch {}
-    (async () => {
-      try {
-        await fetch("/api/auth/logout", { method: "POST" });
-      } catch {}
-      const url = new URL("https://api.resourcewatch.org/auth/logout");
-      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-      url.searchParams.set("origin", "gnw");
-      window.location.href = url.toString();
-    })();
-  };
+  const { logout } = useLogout();
 
   return (
     <Box
@@ -385,7 +376,7 @@ export default function UserSettingsPage() {
           gap={2}
           variant="outline"
           justifyContent="flex-start"
-          onClick={handleLogout}
+          onClick={logout}
           title="Sign Out"
         >
           <UserIcon />
@@ -675,7 +666,10 @@ export default function UserSettingsPage() {
                   width="320px"
                   value={form.preferredLanguage ? [form.preferredLanguage] : []}
                   onValueChange={(d: ValueChangeDetails) =>
-                    setForm((p) => ({ ...p, preferredLanguage: d.value[0] ?? "" }))
+                    setForm((p) => ({
+                      ...p,
+                      preferredLanguage: d.value[0] ?? "",
+                    }))
                   }
                 >
                   <Select.HiddenSelect />

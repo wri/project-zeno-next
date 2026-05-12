@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   Button,
   Flex,
@@ -28,7 +28,7 @@ import {
 import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
-import { toaster } from "@/app/components/ui/toaster";
+import { useLogout } from "./hooks/useLogout";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
 
@@ -161,28 +161,7 @@ export function Sidebar() {
     fetchApiStatus();
   }, [fetchThreads, fetchApiStatus]);
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const handleLogout = () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-    try {
-      toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
-        type: "info",
-        duration: 8000,
-      });
-    } catch {}
-    (async () => {
-      try {
-        await fetch("/api/auth/logout", { method: "POST" });
-      } catch {}
-      const url = new URL("https://api.resourcewatch.org/auth/logout");
-      url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-      url.searchParams.set("origin", "gnw");
-      window.location.href = url.toString();
-    })();
-  };
+  const { logout, isLoggingOut } = useLogout();
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -354,7 +333,7 @@ export function Sidebar() {
           </Button>
           <Button
             variant="ghost"
-            onClick={handleLogout}
+            onClick={logout}
             size="sm"
             loading={isLoggingOut}
             disabled={isLoggingOut}

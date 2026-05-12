@@ -23,30 +23,14 @@ import { Tooltip } from "./ui/tooltip";
 
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
-import { toaster } from "@/app/components/ui/toaster";
+import { useLogout } from "@/app/hooks/useLogout";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
-  const handleLogout = async () => {
-    try {
-      toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
-        type: "info",
-        duration: 8000,
-      });
-    } catch {}
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {}
-    const url = new URL("https://api.resourcewatch.org/auth/logout");
-    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-    url.searchParams.set("origin", "gnw");
-    window.location.href = url.toString();
-  };
+  const { logout } = useLogout();
   return (
     <Flex
       alignItems="center"
@@ -202,7 +186,7 @@ function PageHeader() {
                     cursor="pointer"
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
-                    onClick={handleLogout}
+                    onClick={logout}
                     title="Log Out"
                   >
                     <SignOutIcon />
