@@ -17,6 +17,7 @@ import {
   DownloadSimpleIcon,
   TableIcon,
   ChartBarIcon,
+  PushPinIcon,
 } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
@@ -27,6 +28,15 @@ import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
+import useInsightStore, { buildAoiKey } from "@/app/store/insightStore";
+import useContextStore from "@/app/store/contextStore";
+import useChatStore from "@/app/store/chatStore";
+import useMapStore from "@/app/store/mapStore";
+import { toaster } from "./ui/toaster";
+import { isPinnable, toChartType } from "@/app/lib/portfolio/chartTypeMap";
+import type { PinnedAoi } from "@/app/types/portfolio";
+import type { AOI } from "@/app/types/chat";
+import type { FeatureCollection, Feature } from "geojson";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -90,6 +100,90 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   const isChartType = chartTypes.includes(widget.type);
   const hasData = Array.isArray(widget.data) && widget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
+
+  const handlePinToInbox = () => {
+    if (!isPinnable(widget.type)) return;
+    const ctxStore = useContextStore.getState();
+    const chatStoreState = useChatStore.getState();
+    const mapState = useMapStore.getState();
+
+    // Find an AOI snapshot from the active context. AOIs aren't required to
+    // pin (the inbox tolerates "No area"), but when available we capture the
+    // full selection so multi-area insights round-trip correctly.
+    const areaCtx = ctxStore.context.find((c) => c.contextType === "area");
+    const selection = areaCtx?.aoiSelection;
+    const firstAoi: AOI | undefined = selection?.aois?.[0];
+    const aoiName =
+      selection?.name ??
+      (typeof areaCtx?.content === "string" ? areaCtx.content : undefined) ??
+      "No area";
+    const isMulti = (selection?.aois?.length ?? 0) > 1;
+    const src_ids = (selection?.aois ?? [])
+      .map((a) => a.src_id)
+      .filter((s): s is string => Boolean(s));
+
+    // Pull the geometry snapshot from the geoJsonRegistry — registered by
+    // pickAoiTool when the AOI was selected. For multi-AOI we merge feature
+    // collections so the dashboard map card can render the union.
+    const aois = selection?.aois ?? [];
+    const collected: Feature[] = [];
+    aois.forEach((a) => {
+      const entry = mapState.geoJsonRegistry.find(
+        (e) => e.ref.name === a.name && e.ref.source === a.source
+      );
+      if (!entry) return;
+      if (entry.data.type === "FeatureCollection") {
+        collected.push(...entry.data.features);
+      } else if (entry.data.type === "Feature") {
+        collected.push(entry.data);
+      }
+    });
+    const geometry: FeatureCollection | undefined =
+      collected.length > 0
+        ? { type: "FeatureCollection", features: collected }
+        : undefined;
+
+    const aoi: PinnedAoi = {
+      name: aoiName,
+      src_ids,
+      source: firstAoi?.source ?? "unknown",
+      isMultiArea: isMulti,
+      bbox: firstAoi?.bbox,
+      geometry,
+    };
+
+    const store = useInsightStore.getState();
+    const aoiKey = buildAoiKey(src_ids, aoiName);
+    const existing = store.findDuplicate(widget.title, aoiKey, widget.datasetName);
+    if (existing) {
+      toaster.create({
+        title: "Already saved",
+        description: "This insight is already in your inbox.",
+        type: "info",
+        duration: 2000,
+      });
+      return;
+    }
+
+    store.addInsight({
+      title: widget.title,
+      description: widget.description,
+      datasetName: widget.datasetName,
+      chartType: toChartType(widget.type),
+      aoi,
+      threadId: chatStoreState.currentThreadId ?? undefined,
+      data: widget.data,
+      xAxis: widget.xAxis,
+      yAxis: widget.yAxis,
+    });
+
+    toaster.create({
+      title: "Saved to inbox",
+      description: widget.title,
+      type: "success",
+      duration: 2000,
+    });
+  };
   return (
     <Box
       rounded="md"
@@ -217,6 +311,19 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               <DownloadSimpleIcon size={14} />
               Download CSV
             </Button>
+            {isPinnable(widget.type) && (
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={handlePinToInbox}
+                h={6}
+                rounded="sm"
+                title="Pin this insight to your inbox"
+              >
+                <PushPinIcon size={14} />
+                Pin to inbox
+              </Button>
+            )}
           </Flex>
         )}
         {showDisclaimer && <VisualizationDisclaimer />}
