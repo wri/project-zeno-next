@@ -165,23 +165,31 @@ function PageHeader() {
         >
           {isPrototype ? "PROTOTYPE" : "PREVIEW"}
         </Badge>
-        <HeaderNav isPrototype={isPrototype} />
       </Flex>
-      {isPrototype && (
-        <Text
-          fontSize="xs"
-          fontWeight="bold"
-          letterSpacing="wider"
-          textTransform="uppercase"
-          color="#1f2937"
-          position="absolute"
-          left="50%"
-          transform="translateX(-50%)"
-          pointerEvents="none"
-        >
-          NOT FOR PRODUCTION USE
-        </Text>
-      )}
+      <Flex
+        position="absolute"
+        left="50%"
+        top="50%"
+        transform="translate(-50%, -50%)"
+        alignItems="center"
+        gap={4}
+        pointerEvents="auto"
+      >
+        <HeaderNav isPrototype={isPrototype} />
+        {isPrototype && (
+          <Text
+            fontSize="xs"
+            fontWeight="bold"
+            letterSpacing="wider"
+            textTransform="uppercase"
+            color="#1f2937"
+            pointerEvents="none"
+            hideBelow="lg"
+          >
+            NOT FOR PRODUCTION USE
+          </Text>
+        )}
+      </Flex>
       <Flex gap="6" alignItems="center" hideBelow="md">
         <Link href="https://help.globalnaturewatch.org/" target="_blank">
           <Button
