@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toaster } from "@/app/components/ui/toaster";
 import { clearToken } from "@/app/lib/api-client";
+import { API_CONFIG } from "@/app/config/api";
 
 export function useLogout() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -15,9 +16,14 @@ export function useLogout() {
         type: "info",
         duration: 8000,
       });
-    } catch {}
+    } catch (error) {
+      console.error("Failed to show logout toast:", error);
+    }
     clearToken();
-    window.location.href = "/";
+    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
+    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
+    url.searchParams.set("origin", "gnw");
+    window.location.href = url.toString();
   };
 
   return { logout, isLoggingOut };
