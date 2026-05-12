@@ -342,7 +342,12 @@ export default function ReportCanvasPage() {
                       onResize={(s) =>
                         resizeBlock(report.id, block.id, s)
                       }
-                      onAddMap={() => addMapBlock(report.id, insight.aoi)}
+                      onAddMap={() =>
+                        addMapBlock(report.id, insight.aoi, {
+                          afterBlockId: block.id,
+                          size: "default",
+                        })
+                      }
                     />
                   );
                 }}

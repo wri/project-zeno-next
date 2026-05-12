@@ -2,7 +2,11 @@
 
 import { useMemo } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
-import MapGl, { Layer, Source } from "react-map-gl/maplibre";
+import MapGl, {
+  Layer,
+  Source,
+  NavigationControl,
+} from "react-map-gl/maplibre";
 import type { FeatureCollection } from "geojson";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { MapPinIcon } from "@phosphor-icons/react";
@@ -96,10 +100,6 @@ export default function MapCard({ aoi, height = 180, bare = false }: Props) {
         initialViewState={initialView}
         style={{ width: "100%", height: "100%" }}
         attributionControl={false}
-        interactive={false}
-        dragPan={false}
-        scrollZoom={false}
-        doubleClickZoom={false}
       >
         <Source
           id="basemap"
@@ -128,6 +128,7 @@ export default function MapCard({ aoi, height = 180, bare = false }: Props) {
             }}
           />
         </Source>
+        <NavigationControl position="top-right" showCompass={false} />
       </MapGl>
     </Box>
   );

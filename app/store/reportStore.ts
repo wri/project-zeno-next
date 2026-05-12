@@ -20,7 +20,11 @@ interface ReportActions {
   getById: (id: string) => Report | undefined;
   addInsightBlock: (reportId: string, insightId: string) => void;
   addAnnotationBlock: (reportId: string, text?: string) => void;
-  addMapBlock: (reportId: string, aoi: PinnedAoi) => void;
+  addMapBlock: (
+    reportId: string,
+    aoi: PinnedAoi,
+    opts?: { afterBlockId?: string; size?: BlockSize }
+  ) => void;
   updateAnnotation: (reportId: string, blockId: string, text: string) => void;
   resizeBlock: (reportId: string, blockId: string, size: BlockSize) => void;
   removeBlock: (reportId: string, blockId: string) => void;
@@ -107,7 +111,7 @@ const useReportStore = create<ReportState & ReportActions>()(
           }),
         })),
 
-      addMapBlock: (reportId, aoi) =>
+      addMapBlock: (reportId, aoi, opts) =>
         set((state) => ({
           reports: state.reports.map((r) => {
             if (r.id !== reportId) return r;
@@ -115,8 +119,18 @@ const useReportStore = create<ReportState & ReportActions>()(
               id: uuidv4(),
               type: "map",
               aoi,
-              size: "wide",
+              size: opts?.size ?? "wide",
             };
+            if (opts?.afterBlockId) {
+              const idx = r.blocks.findIndex(
+                (b) => b.id === opts.afterBlockId
+              );
+              if (idx >= 0) {
+                const next = [...r.blocks];
+                next.splice(idx + 1, 0, block);
+                return touch({ ...r, blocks: next });
+              }
+            }
             return touch({ ...r, blocks: [...r.blocks, block] });
           }),
         })),
