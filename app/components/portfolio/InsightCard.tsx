@@ -6,7 +6,6 @@ import {
   HStack,
   Text,
   Checkbox,
-  Badge,
   Button,
 } from "@chakra-ui/react";
 import {
@@ -17,6 +16,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import type { PinnedInsight } from "@/app/types/portfolio";
 import ChartIcon from "./ChartIcon";
+import MetadataChips from "./MetadataChips";
 
 type Variant = "default" | "compact";
 
@@ -105,20 +105,11 @@ export default function InsightCard({
             lineHeight="short"
             truncate
           >
-            {insight.datasetName ? `${insight.datasetName} · ` : ""}
-            {aoiLabel}
-            {!compact && ` · ${relativeTime(insight.pinnedAt)}`}
+            {compact
+              ? `${insight.datasetName ? `${insight.datasetName} · ` : ""}${aoiLabel}`
+              : relativeTime(insight.pinnedAt)}
           </Text>
-          {!compact && insight.aoi.isMultiArea && (
-            <Badge
-              variant="subtle"
-              colorPalette="orange"
-              fontSize="2xs"
-              mt={1.5}
-            >
-              Multi-area
-            </Badge>
-          )}
+          {!compact && <MetadataChips insight={insight} />}
           <HStack gap={3} mt={compact ? 1.5 : 2} fontSize="xs">
             {!compact && (
               <Button

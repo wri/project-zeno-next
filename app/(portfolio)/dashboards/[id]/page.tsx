@@ -249,6 +249,7 @@ export default function DashboardDetailPage() {
                       onResize={(s) =>
                         resizeBlock(dashboard.id, block.id, s)
                       }
+                      onAddMap={() => addMapBlock(dashboard.id, insight.aoi)}
                     />
                   );
                 }}

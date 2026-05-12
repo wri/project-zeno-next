@@ -7,7 +7,6 @@ import {
   Heading,
   IconButton,
   Separator,
-  Text,
   Badge,
 } from "@chakra-ui/react";
 import {
@@ -15,6 +14,7 @@ import {
   XIcon,
   ArrowsOutLineHorizontalIcon,
   ArrowsInLineHorizontalIcon,
+  MapPinPlusIcon,
 } from "@phosphor-icons/react";
 import type { BlockSize, PinnedInsight } from "@/app/types/portfolio";
 import type { InsightWidget } from "@/app/types/chat";
@@ -22,6 +22,7 @@ import ChartIcon from "./ChartIcon";
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import WidgetErrorBoundary from "@/app/components/widgets/WidgetErrorBoundary";
 import { WidgetIcons } from "@/app/ChatPanelHeader";
+import MetadataChips from "./MetadataChips";
 
 type Props = {
   insight: PinnedInsight;
@@ -30,6 +31,9 @@ type Props = {
   onRemove?: () => void;
   size?: BlockSize;
   onResize?: (size: BlockSize) => void;
+  // Optional one-click "Add map of this AOI". Wired by report/dashboard
+  // pages — calls addMapBlock(workspaceId, insight.aoi) directly.
+  onAddMap?: () => void;
 };
 
 // Reconstruct an InsightWidget from the persisted PinnedInsight so we can
@@ -58,6 +62,7 @@ export default function InsightBlock({
   onRemove,
   size = "default",
   onResize,
+  onAddMap,
 }: Props) {
   const isWide = size === "wide";
   const widget = useMemo(() => toInsightWidget(insight), [insight]);
@@ -93,18 +98,24 @@ export default function InsightBlock({
           >
             {insight.title}
           </Heading>
-          <Text fontSize="2xs" color="fg.muted" lineHeight="short" truncate>
-            {insight.datasetName ? `${insight.datasetName} · ` : ""}
-            {insight.aoi.isMultiArea
-              ? `Multi-area · ${insight.aoi.src_ids.length}`
-              : insight.aoi.name}
-          </Text>
         </Box>
         <Flex gap={0.5} align="center" flexShrink={0}>
           {isSeed && (
             <Badge size="xs" colorPalette="green" variant="subtle" mr={1}>
               Seed
             </Badge>
+          )}
+          {onAddMap && (
+            <IconButton
+              aria-label="Add map of this AOI"
+              size="2xs"
+              variant="ghost"
+              color="green.fg"
+              onClick={onAddMap}
+              title="Add map of this AOI"
+            >
+              <MapPinPlusIcon size={12} />
+            </IconButton>
           )}
           {onResize && (
             <IconButton
@@ -152,7 +163,10 @@ export default function InsightBlock({
         </Flex>
       </Flex>
       <Separator />
-      <Box px={3} py={3}>
+      <Box px={3} pt={2} pb={1}>
+        <MetadataChips insight={insight} />
+      </Box>
+      <Box px={3} pb={3}>
         {hasData ? (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <ChartWidget widget={widget} />
