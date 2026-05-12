@@ -24,6 +24,9 @@ import {
   SidebarSimpleIcon,
   SignOutIcon,
   UserIcon,
+  TrayIcon,
+  FileTextIcon,
+  SquaresFourIcon,
 } from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
@@ -272,6 +275,55 @@ export function Sidebar() {
           },
         }}
       >
+        <Stack gap={1} px={2} pb={2}>
+          <Text
+            fontSize="xs"
+            fontWeight="semibold"
+            color="fg.muted"
+            textTransform="uppercase"
+            letterSpacing="wider"
+            px={2}
+            pb={1}
+          >
+            Portfolio
+          </Text>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            justifyContent="flex-start"
+            gap={2}
+          >
+            <Link href="/inbox">
+              <TrayIcon />
+              Inbox
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            justifyContent="flex-start"
+            gap={2}
+          >
+            <Link href="/reports">
+              <FileTextIcon />
+              Reports
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            justifyContent="flex-start"
+            gap={2}
+          >
+            <Link href="/dashboards">
+              <SquaresFourIcon />
+              Dashboards
+            </Link>
+          </Button>
+        </Stack>
         <Accordion.Root
           multiple
           defaultValue={["today", "previousWeek", "older"]}
