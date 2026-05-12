@@ -50,6 +50,13 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
     onOpen: onExpand,
     onClose: onCollapse,
   } = useDisclosure();
+  // These two subscriptions feed the "Pin / Pinned" active state below.
+  // They must run unconditionally so we keep them before the dataset-card
+  // early return — dataset-card widgets aren't pinnable but the hooks still
+  // need to be called.
+  const insights = useInsightStore((s) => s.insights);
+  const removeInsight = useInsightStore((s) => s.removeInsight);
+  const contextItems = useContextStore((s) => s.context);
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
@@ -101,8 +108,45 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   const hasData = Array.isArray(widget.data) && widget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
 
-  const handlePinToInbox = () => {
+  // Compute the dedupe key from the live context. Reactivity is driven by
+  // the insights / contextItems subscriptions established before the
+  // dataset-card early return above.
+  const currentPinKey = (() => {
+    const areaCtx = contextItems.find((c) => c.contextType === "area");
+    const selection = areaCtx?.aoiSelection;
+    const aoiName =
+      selection?.name ??
+      (typeof areaCtx?.content === "string" ? areaCtx.content : undefined) ??
+      "No area";
+    const src_ids = (selection?.aois ?? [])
+      .map((a) => a.src_id)
+      .filter((s): s is string => Boolean(s));
+    return buildAoiKey(src_ids, aoiName);
+  })();
+  const existingPin = insights.find((i) => {
+    const otherKey = buildAoiKey(i.aoi.src_ids, i.aoi.name);
+    return (
+      i.title === widget.title &&
+      otherKey === currentPinKey &&
+      (i.datasetName ?? "") === (widget.datasetName ?? "")
+    );
+  });
+  const isPinned = Boolean(existingPin);
+
+  const handlePinToggle = () => {
     if (!isPinnable(widget.type)) return;
+
+    if (existingPin) {
+      removeInsight(existingPin.id);
+      toaster.create({
+        title: "Removed from inbox",
+        description: widget.title,
+        type: "info",
+        duration: 2000,
+      });
+      return;
+    }
+
     const ctxStore = useContextStore.getState();
     const chatStoreState = useChatStore.getState();
     const mapState = useMapStore.getState();
@@ -152,20 +196,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
       geometry,
     };
 
-    const store = useInsightStore.getState();
-    const aoiKey = buildAoiKey(src_ids, aoiName);
-    const existing = store.findDuplicate(widget.title, aoiKey, widget.datasetName);
-    if (existing) {
-      toaster.create({
-        title: "Already saved",
-        description: "This insight is already in your inbox.",
-        type: "info",
-        duration: 2000,
-      });
-      return;
-    }
-
-    store.addInsight({
+    useInsightStore.getState().addInsight({
       title: widget.title,
       description: widget.description,
       datasetName: widget.datasetName,
@@ -314,14 +345,22 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             {isPinnable(widget.type) && (
               <Button
                 size="xs"
-                variant="outline"
-                onClick={handlePinToInbox}
+                variant={isPinned ? "subtle" : "outline"}
+                colorPalette={isPinned ? "primary" : undefined}
+                onClick={handlePinToggle}
                 h={6}
                 rounded="sm"
-                title="Pin this insight to your inbox"
+                title={
+                  isPinned
+                    ? "Remove from inbox"
+                    : "Pin this insight to your inbox"
+                }
+                _hover={{
+                  bg: isPinned ? "primary.muted" : undefined,
+                }}
               >
-                <PushPinIcon size={14} />
-                Pin to inbox
+                <PushPinIcon size={14} weight={isPinned ? "fill" : "regular"} />
+                {isPinned ? "Pinned" : "Pin to inbox"}
               </Button>
             )}
           </Flex>
