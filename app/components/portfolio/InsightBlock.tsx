@@ -10,8 +10,13 @@ import {
   Text,
   Badge,
 } from "@chakra-ui/react";
-import { DotsSixVerticalIcon, XIcon } from "@phosphor-icons/react";
-import type { PinnedInsight } from "@/app/types/portfolio";
+import {
+  DotsSixVerticalIcon,
+  XIcon,
+  ArrowsOutLineHorizontalIcon,
+  ArrowsInLineHorizontalIcon,
+} from "@phosphor-icons/react";
+import type { BlockSize, PinnedInsight } from "@/app/types/portfolio";
 import type { InsightWidget } from "@/app/types/chat";
 import ChartIcon from "./ChartIcon";
 import ChartWidget from "@/app/components/widgets/ChartWidget";
@@ -23,6 +28,8 @@ type Props = {
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   isSeed?: boolean;
   onRemove?: () => void;
+  size?: BlockSize;
+  onResize?: (size: BlockSize) => void;
 };
 
 // Reconstruct an InsightWidget from the persisted PinnedInsight so we can
@@ -49,7 +56,10 @@ export default function InsightBlock({
   dragHandleProps,
   isSeed = false,
   onRemove,
+  size = "default",
+  onResize,
 }: Props) {
+  const isWide = size === "wide";
   const widget = useMemo(() => toInsightWidget(insight), [insight]);
   const hasData =
     Array.isArray(insight.data) && (insight.data as unknown[]).length > 0;
@@ -95,6 +105,25 @@ export default function InsightBlock({
             <Badge size="xs" colorPalette="green" variant="subtle" mr={1}>
               Seed
             </Badge>
+          )}
+          {onResize && (
+            <IconButton
+              aria-label={
+                isWide ? "Shrink to half width" : "Expand to full width"
+              }
+              size="2xs"
+              variant="ghost"
+              onClick={() => onResize(isWide ? "default" : "wide")}
+              title={
+                isWide ? "Shrink to half width" : "Expand to full width"
+              }
+            >
+              {isWide ? (
+                <ArrowsInLineHorizontalIcon size={12} />
+              ) : (
+                <ArrowsOutLineHorizontalIcon size={12} />
+              )}
+            </IconButton>
           )}
           {onRemove && (
             <IconButton

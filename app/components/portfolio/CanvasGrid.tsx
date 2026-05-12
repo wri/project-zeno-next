@@ -12,19 +12,25 @@ import {
 import {
   arrayMove,
   SortableContext,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Box, Stack } from "@chakra-ui/react";
+import { Box, SimpleGrid } from "@chakra-ui/react";
+import type { BlockSize } from "@/app/types/portfolio";
 
 type SortableBlockProps = {
   id: string;
+  size?: BlockSize;
   children: (handle: React.HTMLAttributes<HTMLDivElement>) => React.ReactNode;
 };
 
-export function SortableBlock({ id, children }: SortableBlockProps) {
+export function SortableBlock({
+  id,
+  size = "default",
+  children,
+}: SortableBlockProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -33,6 +39,12 @@ export function SortableBlock({ id, children }: SortableBlockProps) {
     transition,
     opacity: isDragging ? 0.4 : 1,
     zIndex: isDragging ? 10 : "auto",
+    // Wide blocks fill the whole sheet width; default blocks sit half-width
+    // and pair up side-by-side.
+    gridColumn: size === "wide" ? "span 2" : undefined,
+    // Don't stretch a block to fill row height when its neighbour is taller —
+    // each block stays at its natural size.
+    alignSelf: "start",
   };
 
   return (
@@ -46,13 +58,15 @@ type CanvasGridProps = {
   ids: string[];
   onReorder: (orderedIds: string[]) => void;
   children: React.ReactNode;
-  // Allow callers to extend the list with a trailing placeholder
-  // (e.g. "+ Pin or drop here") that is NOT part of the sortable list.
+  // Trailing placeholder (e.g. "+ Pin or drop here") rendered after the
+  // sortable items. Always spans the full sheet width.
   trailing?: React.ReactNode;
 };
 
-// Page-style vertical sortable list. Each block flows at its natural
-// height so chart blocks aren't clipped by a uniform grid row.
+// Two-column sheet layout. Default blocks take half the sheet so two sit
+// side-by-side; "wide" blocks span the full width. dnd-kit reorders via
+// rectSortingStrategy and grid-auto-flow:row dense fills gaps wide blocks
+// would otherwise leave behind.
 export default function CanvasGrid({
   ids,
   onReorder,
@@ -79,11 +93,18 @@ export default function CanvasGrid({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <Stack gap={4}>
+      <SortableContext items={ids} strategy={rectSortingStrategy}>
+        <SimpleGrid
+          columns={{ base: 1, md: 2 }}
+          gap={4}
+          alignItems="start"
+          css={{ gridAutoFlow: "row dense" }}
+        >
           {children}
-          {trailing}
-        </Stack>
+          {trailing ? (
+            <Box gridColumn={{ base: "span 1", md: "span 2" }}>{trailing}</Box>
+          ) : null}
+        </SimpleGrid>
       </SortableContext>
     </DndContext>
   );
