@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import { Box, Flex, IconButton, Text, Badge } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Heading,
+  IconButton,
+  Separator,
+  Text,
+  Badge,
+} from "@chakra-ui/react";
 import {
   DotsSixVerticalIcon,
   XIcon,
@@ -13,6 +21,7 @@ import type { InsightWidget } from "@/app/types/chat";
 import ChartIcon from "./ChartIcon";
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import WidgetErrorBoundary from "@/app/components/widgets/WidgetErrorBoundary";
+import { WidgetIcons } from "@/app/ChatPanelHeader";
 
 type Props = {
   insight: PinnedInsight;
@@ -39,9 +48,9 @@ function toInsightWidget(insight: PinnedInsight): InsightWidget {
   };
 }
 
-// Canvas block representing a pinned insight. Renders a real ChartWidget
-// inside the block so reports and dashboards show the actual chart, not a
-// stylised placeholder.
+// Mirrors the chat's WidgetMessage chrome (blue border, LCLGradientLight
+// header, WidgetIcons icon + title), with the canvas controls (drag,
+// resize, remove, isSeed) tucked into the header's right edge.
 export default function InsightBlock({
   insight,
   dragHandleProps,
@@ -57,45 +66,46 @@ export default function InsightBlock({
 
   return (
     <Box
-      position="relative"
-      bg="bg"
-      border="1px solid"
-      borderColor="border"
-      borderLeft="3px solid"
-      borderLeftColor={isSeed ? "green.solid" : "primary.solid"}
       rounded="md"
-      p={3}
-      h="260px"
+      border="1px solid"
+      borderColor={isSeed ? "green.fg" : "blue.fg"}
       overflow="hidden"
+      bg="bg"
+      h="260px"
       display="flex"
       flexDir="column"
     >
-      <Flex justify="space-between" align="flex-start" gap={2} mb={1}>
+      <Flex
+        px={3}
+        py={2}
+        gap={2}
+        bgGradient="LCLGradientLight"
+        align="center"
+        flexShrink={0}
+      >
+        <Box color="primary.fg" flexShrink={0} fontSize="md" lineHeight="1">
+          {WidgetIcons[widget.type] ?? WidgetIcons.bar}
+        </Box>
         <Box minW={0} flex="1">
-          <Text
-            fontSize="xs"
-            fontWeight="semibold"
-            color="fg"
-            lineHeight="short"
-            css={{
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-            }}
+          <Heading
+            size="xs"
+            fontWeight="medium"
+            color="primary.fg"
+            m={0}
+            truncate
           >
             {insight.title}
-          </Text>
-          <Text fontSize="2xs" color="fg.muted" mt={0.5} truncate>
+          </Heading>
+          <Text fontSize="2xs" color="fg.muted" lineHeight="short" truncate>
             {insight.datasetName ? `${insight.datasetName} · ` : ""}
             {insight.aoi.isMultiArea
               ? `Multi-area · ${insight.aoi.src_ids.length}`
               : insight.aoi.name}
           </Text>
         </Box>
-        <Flex gap={1} align="center" flexShrink={0}>
+        <Flex gap={0.5} align="center" flexShrink={0}>
           {isSeed && (
-            <Badge size="xs" colorPalette="green" variant="subtle">
+            <Badge size="xs" colorPalette="green" variant="subtle" mr={1}>
               Seed
             </Badge>
           )}
@@ -132,13 +142,16 @@ export default function InsightBlock({
               opacity={0.5}
               _hover={{ opacity: 1 }}
               touchAction="none"
+              display="flex"
+              alignItems="center"
             >
               <DotsSixVerticalIcon size={14} />
             </Box>
           )}
         </Flex>
       </Flex>
-      <Box flex="1" minH={0} mt={1}>
+      <Separator />
+      <Box flex="1" minH={0} px={3} py={2}>
         {hasData ? (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <ChartWidget widget={widget} />
