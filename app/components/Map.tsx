@@ -32,6 +32,7 @@ import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import { Legend } from "@/app/components/legend/Legend";
+import InsightWorkspace from "./InsightWorkspace";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -210,6 +211,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             <NavigationControl showCompass={false} position="bottom-left" />
           </>
         )}
+        <InsightWorkspace />
         <Flex
           pos="absolute"
           bottom="4"
