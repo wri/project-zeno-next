@@ -18,13 +18,19 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Box, SimpleGrid } from "@chakra-ui/react";
+import type { BlockSize } from "@/app/types/portfolio";
 
 type SortableBlockProps = {
   id: string;
+  size?: BlockSize;
   children: (handle: React.HTMLAttributes<HTMLDivElement>) => React.ReactNode;
 };
 
-export function SortableBlock({ id, children }: SortableBlockProps) {
+export function SortableBlock({
+  id,
+  size = "default",
+  children,
+}: SortableBlockProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -33,6 +39,10 @@ export function SortableBlock({ id, children }: SortableBlockProps) {
     transition,
     opacity: isDragging ? 0.4 : 1,
     zIndex: isDragging ? 10 : "auto",
+    // Wide blocks span 2 of the 3 columns on md+. On sm the grid is 2 cols
+    // so wide becomes full-width; on base the grid is 1 col so the span is
+    // naturally capped.
+    gridColumn: size === "wide" ? "span 2" : undefined,
   };
 
   return (
@@ -78,7 +88,11 @@ export default function CanvasGrid({
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={ids} strategy={rectSortingStrategy}>
-        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} gap={3}>
+        <SimpleGrid
+          columns={{ base: 1, sm: 2, md: 3 }}
+          gap={3}
+          css={{ gridAutoFlow: "row dense" }}
+        >
           {children}
           {trailing}
         </SimpleGrid>

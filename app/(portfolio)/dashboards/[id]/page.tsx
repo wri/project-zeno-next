@@ -33,6 +33,7 @@ export default function DashboardDetailPage() {
   const seedIfEmpty = useInsightStore((s) => s.seedIfEmpty);
   const insights = useInsightStore((s) => s.insights);
   const updateAnnotation = useDashboardStore((s) => s.updateAnnotation);
+  const resizeBlock = useDashboardStore((s) => s.resizeBlock);
   const removeBlock = useDashboardStore((s) => s.removeBlock);
   const reorderBlocks = useDashboardStore((s) => s.reorderBlocks);
 
@@ -144,7 +145,11 @@ export default function DashboardDetailPage() {
               block.type === "insight" &&
               block.insightId === dashboard.seededFromInsightId;
             return (
-              <SortableBlock key={block.id} id={block.id}>
+              <SortableBlock
+                key={block.id}
+                id={block.id}
+                size={block.size ?? "default"}
+              >
                 {(handle) => {
                   if (block.type === "annotation") {
                     return (
@@ -158,6 +163,10 @@ export default function DashboardDetailPage() {
                         source="chat"
                         workspace={dashboard}
                         blockId={block.id}
+                        size={block.size ?? "default"}
+                        onResize={(s) =>
+                          resizeBlock(dashboard.id, block.id, s)
+                        }
                       />
                     );
                   }
@@ -193,6 +202,10 @@ export default function DashboardDetailPage() {
                           : () => removeBlock(dashboard.id, block.id)
                       }
                       dragHandleProps={handle}
+                      size={block.size ?? "default"}
+                      onResize={(s) =>
+                        resizeBlock(dashboard.id, block.id, s)
+                      }
                     />
                   );
                 }}

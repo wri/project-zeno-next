@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
-import type { AreaDashboard, Block, PinnedAoi } from "@/app/types/portfolio";
+import type {
+  AreaDashboard,
+  Block,
+  BlockSize,
+  PinnedAoi,
+} from "@/app/types/portfolio";
 
 interface DashboardState {
   dashboards: AreaDashboard[];
@@ -23,6 +28,7 @@ interface DashboardActions {
     blockId: string,
     text: string
   ) => void;
+  resizeBlock: (dashboardId: string, blockId: string, size: BlockSize) => void;
   removeBlock: (dashboardId: string, blockId: string) => void;
   reorderBlocks: (dashboardId: string, orderedBlockIds: string[]) => void;
   setHasHydrated: (v: boolean) => void;
@@ -107,6 +113,20 @@ const useDashboardStore = create<DashboardState & DashboardActions>()(
                     b.id === blockId && b.type === "annotation"
                       ? { ...b, text }
                       : b
+                  ),
+                })
+          ),
+        })),
+
+      resizeBlock: (dashboardId, blockId, size) =>
+        set((state) => ({
+          dashboards: state.dashboards.map((d) =>
+            d.id !== dashboardId
+              ? d
+              : touch({
+                  ...d,
+                  blocks: d.blocks.map((b) =>
+                    b.id === blockId ? { ...b, size } : b
                   ),
                 })
           ),

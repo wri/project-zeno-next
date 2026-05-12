@@ -43,6 +43,7 @@ export default function ReportCanvasPage() {
   const addInsightBlock = useReportStore((s) => s.addInsightBlock);
   const addAnnotationBlock = useReportStore((s) => s.addAnnotationBlock);
   const updateAnnotation = useReportStore((s) => s.updateAnnotation);
+  const resizeBlock = useReportStore((s) => s.resizeBlock);
   const removeBlock = useReportStore((s) => s.removeBlock);
   const reorderBlocks = useReportStore((s) => s.reorderBlocks);
 
@@ -246,7 +247,11 @@ export default function ReportCanvasPage() {
             }
           >
             {report.blocks.map((block) => (
-              <SortableBlock key={block.id} id={block.id}>
+              <SortableBlock
+                key={block.id}
+                id={block.id}
+                size={block.size ?? "default"}
+              >
                 {(handle) => {
                   if (block.type === "annotation") {
                     return (
@@ -259,6 +264,8 @@ export default function ReportCanvasPage() {
                         dragHandleProps={handle}
                         workspace={report}
                         blockId={block.id}
+                        size={block.size ?? "default"}
+                        onResize={(s) => resizeBlock(report.id, block.id, s)}
                       />
                     );
                   }
@@ -289,6 +296,8 @@ export default function ReportCanvasPage() {
                       insight={insight}
                       onRemove={() => removeBlock(report.id, block.id)}
                       dragHandleProps={handle}
+                      size={block.size ?? "default"}
+                      onResize={(s) => resizeBlock(report.id, block.id, s)}
                     />
                   );
                 }}

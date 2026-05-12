@@ -37,11 +37,17 @@ export interface PinnedInsight {
 
 export type BlockType = "insight" | "annotation";
 
+// Block size in the 3-column canvas grid. "default" spans 1 column,
+// "wide" spans 2 columns. Persisted blocks may omit this — treat
+// missing as "default".
+export type BlockSize = "default" | "wide";
+
 export interface Block {
   id: string;
   type: BlockType;
   insightId?: string; // when type === "insight"
   text?: string; // when type === "annotation"
+  size?: BlockSize;
 }
 
 export interface Report {

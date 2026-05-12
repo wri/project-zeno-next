@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
-import type { Block, Report } from "@/app/types/portfolio";
+import type { Block, BlockSize, Report } from "@/app/types/portfolio";
 
 interface ReportState {
   reports: Report[];
@@ -16,6 +16,7 @@ interface ReportActions {
   addInsightBlock: (reportId: string, insightId: string) => void;
   addAnnotationBlock: (reportId: string, text?: string) => void;
   updateAnnotation: (reportId: string, blockId: string, text: string) => void;
+  resizeBlock: (reportId: string, blockId: string, size: BlockSize) => void;
   removeBlock: (reportId: string, blockId: string) => void;
   reorderBlocks: (reportId: string, orderedBlockIds: string[]) => void;
   setHasHydrated: (v: boolean) => void;
@@ -111,6 +112,20 @@ const useReportStore = create<ReportState & ReportActions>()(
                     b.id === blockId && b.type === "annotation"
                       ? { ...b, text }
                       : b
+                  ),
+                })
+          ),
+        })),
+
+      resizeBlock: (reportId, blockId, size) =>
+        set((state) => ({
+          reports: state.reports.map((r) =>
+            r.id !== reportId
+              ? r
+              : touch({
+                  ...r,
+                  blocks: r.blocks.map((b) =>
+                    b.id === blockId ? { ...b, size } : b
                   ),
                 })
           ),
