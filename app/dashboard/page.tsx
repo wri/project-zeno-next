@@ -30,11 +30,11 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import LclLogo from "../components/LclLogo";
-import { API_CONFIG } from "@/app/config/api";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
-import { clearToken, apiFetch } from "@/app/lib/api-client";
+import { apiFetch } from "@/app/lib/api-client";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
+import { useLogout } from "@/app/hooks/useLogout";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -282,21 +282,7 @@ export default function UserSettingsPage() {
     }
   };
 
-  const handleLogout = () => {
-    try {
-      toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
-        type: "info",
-        duration: 8000,
-      });
-    } catch {}
-    clearToken();
-    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
-    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-    url.searchParams.set("origin", "gnw");
-    window.location.href = url.toString();
-  };
+  const { logout } = useLogout();
 
   if (!isReady) return null;
 
@@ -395,7 +381,7 @@ export default function UserSettingsPage() {
           gap={2}
           variant="outline"
           justifyContent="flex-start"
-          onClick={handleLogout}
+          onClick={logout}
           title="Sign Out"
         >
           <UserIcon />

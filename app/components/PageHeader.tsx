@@ -22,31 +22,15 @@ import {
 import { Tooltip } from "./ui/tooltip";
 
 import useAuthStore from "../store/authStore";
-import { API_CONFIG } from "@/app/config/api";
 import Link from "next/link";
-import { toaster } from "@/app/components/ui/toaster";
-import { clearToken } from "@/app/lib/api-client";
+import { useLogout } from "@/app/hooks/useLogout";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
-  const handleLogout = () => {
-    try {
-      toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
-        type: "info",
-        duration: 8000,
-      });
-    } catch {}
-    clearToken();
-    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
-    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-    url.searchParams.set("origin", "gnw");
-    window.location.href = url.toString();
-  };
+  const { logout } = useLogout();
   return (
     <Flex
       alignItems="center"
@@ -202,7 +186,7 @@ function PageHeader() {
                     cursor="pointer"
                     color="fg.error"
                     _hover={{ bg: "bg.error", color: "fg.error" }}
-                    onClick={handleLogout}
+                    onClick={logout}
                     title="Log Out"
                   >
                     <SignOutIcon />
