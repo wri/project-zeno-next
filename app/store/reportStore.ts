@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
-import type { Block, BlockSize, Report } from "@/app/types/portfolio";
+import type {
+  Block,
+  BlockSize,
+  PinnedAoi,
+  Report,
+} from "@/app/types/portfolio";
 
 interface ReportState {
   reports: Report[];
@@ -15,6 +20,7 @@ interface ReportActions {
   getById: (id: string) => Report | undefined;
   addInsightBlock: (reportId: string, insightId: string) => void;
   addAnnotationBlock: (reportId: string, text?: string) => void;
+  addMapBlock: (reportId: string, aoi: PinnedAoi) => void;
   updateAnnotation: (reportId: string, blockId: string, text: string) => void;
   resizeBlock: (reportId: string, blockId: string, size: BlockSize) => void;
   removeBlock: (reportId: string, blockId: string) => void;
@@ -96,6 +102,20 @@ const useReportStore = create<ReportState & ReportActions>()(
               id: uuidv4(),
               type: "annotation",
               text,
+            };
+            return touch({ ...r, blocks: [...r.blocks, block] });
+          }),
+        })),
+
+      addMapBlock: (reportId, aoi) =>
+        set((state) => ({
+          reports: state.reports.map((r) => {
+            if (r.id !== reportId) return r;
+            const block: Block = {
+              id: uuidv4(),
+              type: "map",
+              aoi,
+              size: "wide",
             };
             return touch({ ...r, blocks: [...r.blocks, block] });
           }),

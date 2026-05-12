@@ -18,12 +18,15 @@ import {
   PlusIcon,
   PencilSimpleIcon,
   DownloadSimpleIcon,
+  MapPinIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import useInsightStore from "@/app/store/insightStore";
 import useReportStore from "@/app/store/reportStore";
 import InsightBlock from "@/app/components/portfolio/InsightBlock";
 import AnnotationBlock from "@/app/components/portfolio/AnnotationBlock";
+import MapBlock from "@/app/components/portfolio/MapBlock";
+import AddMapDialog from "@/app/components/portfolio/AddMapDialog";
 import InsightCard from "@/app/components/portfolio/InsightCard";
 import CanvasGrid, {
   SortableBlock,
@@ -42,12 +45,14 @@ export default function ReportCanvasPage() {
   const renameReport = useReportStore((s) => s.renameReport);
   const addInsightBlock = useReportStore((s) => s.addInsightBlock);
   const addAnnotationBlock = useReportStore((s) => s.addAnnotationBlock);
+  const addMapBlock = useReportStore((s) => s.addMapBlock);
   const updateAnnotation = useReportStore((s) => s.updateAnnotation);
   const resizeBlock = useReportStore((s) => s.resizeBlock);
   const removeBlock = useReportStore((s) => s.removeBlock);
   const reorderBlocks = useReportStore((s) => s.reorderBlocks);
 
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
 
   useEffect(() => {
     if (insightsHydrated) seedIfEmpty();
@@ -215,6 +220,15 @@ export default function ReportCanvasPage() {
             <Button
               size="xs"
               variant="outline"
+              colorPalette="green"
+              onClick={() => setMapDialogOpen(true)}
+            >
+              <MapPinIcon size={12} />
+              Add map
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
               disabled
               title="Coming soon"
             >
@@ -284,6 +298,19 @@ export default function ReportCanvasPage() {
                       />
                     );
                   }
+                  if (block.type === "map" && block.aoi) {
+                    return (
+                      <MapBlock
+                        aoi={block.aoi}
+                        onRemove={() => removeBlock(report.id, block.id)}
+                        dragHandleProps={handle}
+                        size={block.size ?? "default"}
+                        onResize={(s) =>
+                          resizeBlock(report.id, block.id, s)
+                        }
+                      />
+                    );
+                  }
                   const insight = block.insightId
                     ? insightById.get(block.insightId)
                     : undefined;
@@ -324,6 +351,12 @@ export default function ReportCanvasPage() {
         )}
         </Box>
       </Box>
+
+      <AddMapDialog
+        open={mapDialogOpen}
+        onClose={() => setMapDialogOpen(false)}
+        onPick={(aoi) => addMapBlock(report.id, aoi)}
+      />
     </Box>
   );
 }

@@ -23,6 +23,7 @@ interface DashboardActions {
   getById: (id: string) => AreaDashboard | undefined;
   addInsightBlock: (dashboardId: string, insightId: string) => void;
   addAnnotationBlock: (dashboardId: string, text?: string) => void;
+  addMapBlock: (dashboardId: string, aoi: PinnedAoi) => void;
   updateAnnotation: (
     dashboardId: string,
     blockId: string,
@@ -97,6 +98,20 @@ const useDashboardStore = create<DashboardState & DashboardActions>()(
               id: uuidv4(),
               type: "annotation",
               text,
+            };
+            return touch({ ...d, blocks: [...d.blocks, block] });
+          }),
+        })),
+
+      addMapBlock: (dashboardId, aoi) =>
+        set((state) => ({
+          dashboards: state.dashboards.map((d) => {
+            if (d.id !== dashboardId) return d;
+            const block: Block = {
+              id: uuidv4(),
+              type: "map",
+              aoi,
+              size: "wide",
             };
             return touch({ ...d, blocks: [...d.blocks, block] });
           }),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -12,11 +12,17 @@ import {
   HStack,
   Badge,
 } from "@chakra-ui/react";
-import { ArrowLeftIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
+import {
+  ArrowLeftIcon,
+  DownloadSimpleIcon,
+  MapPinIcon,
+} from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
 import useDashboardStore from "@/app/store/dashboardStore";
 import InsightBlock from "@/app/components/portfolio/InsightBlock";
 import AnnotationBlock from "@/app/components/portfolio/AnnotationBlock";
+import MapBlock from "@/app/components/portfolio/MapBlock";
+import AddMapDialog from "@/app/components/portfolio/AddMapDialog";
 import CanvasGrid, {
   SortableBlock,
 } from "@/app/components/portfolio/CanvasGrid";
@@ -33,9 +39,12 @@ export default function DashboardDetailPage() {
   const seedIfEmpty = useInsightStore((s) => s.seedIfEmpty);
   const insights = useInsightStore((s) => s.insights);
   const updateAnnotation = useDashboardStore((s) => s.updateAnnotation);
+  const addMapBlock = useDashboardStore((s) => s.addMapBlock);
   const resizeBlock = useDashboardStore((s) => s.resizeBlock);
   const removeBlock = useDashboardStore((s) => s.removeBlock);
   const reorderBlocks = useDashboardStore((s) => s.reorderBlocks);
+
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
 
   useEffect(() => {
     if (insightsHydrated) seedIfEmpty();
@@ -116,10 +125,21 @@ export default function DashboardDetailPage() {
               you chat
             </Text>
           </Box>
-          <Button size="xs" variant="outline" disabled title="Coming soon">
-            <DownloadSimpleIcon size={12} />
-            Export PDF
-          </Button>
+          <HStack>
+            <Button
+              size="xs"
+              variant="outline"
+              colorPalette="green"
+              onClick={() => setMapDialogOpen(true)}
+            >
+              <MapPinIcon size={12} />
+              Add map
+            </Button>
+            <Button size="xs" variant="outline" disabled title="Coming soon">
+              <DownloadSimpleIcon size={12} />
+              Export PDF
+            </Button>
+          </HStack>
         </Flex>
 
         <Box mb={4}>
@@ -173,6 +193,19 @@ export default function DashboardDetailPage() {
                         source="chat"
                         workspace={dashboard}
                         blockId={block.id}
+                        size={block.size ?? "default"}
+                        onResize={(s) =>
+                          resizeBlock(dashboard.id, block.id, s)
+                        }
+                      />
+                    );
+                  }
+                  if (block.type === "map" && block.aoi) {
+                    return (
+                      <MapBlock
+                        aoi={block.aoi}
+                        onRemove={() => removeBlock(dashboard.id, block.id)}
+                        dragHandleProps={handle}
                         size={block.size ?? "default"}
                         onResize={(s) =>
                           resizeBlock(dashboard.id, block.id, s)
@@ -234,6 +267,12 @@ export default function DashboardDetailPage() {
       >
         <MockChatPanel dashboard={dashboard} />
       </Box>
+
+      <AddMapDialog
+        open={mapDialogOpen}
+        onClose={() => setMapDialogOpen(false)}
+        onPick={(aoi) => addMapBlock(dashboard.id, aoi)}
+      />
     </Box>
   );
 }
