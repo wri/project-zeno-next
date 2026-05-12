@@ -30,6 +30,7 @@ import {
   showServiceUnavailableError,
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
+import useInsightStore from "./insightStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -225,7 +226,10 @@ async function processStreamMessage(
 const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   ...initialState,
 
-  reset: () => set(initialState),
+  reset: () => {
+    set(initialState);
+    useInsightStore.getState().clearInsights();
+  },
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
