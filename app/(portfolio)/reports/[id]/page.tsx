@@ -257,6 +257,8 @@ export default function ReportCanvasPage() {
                         }
                         onRemove={() => removeBlock(report.id, block.id)}
                         dragHandleProps={handle}
+                        workspace={report}
+                        blockId={block.id}
                       />
                     );
                   }

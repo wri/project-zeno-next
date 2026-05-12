@@ -156,6 +156,8 @@ export default function DashboardDetailPage() {
                         onRemove={() => removeBlock(dashboard.id, block.id)}
                         dragHandleProps={handle}
                         source="chat"
+                        workspace={dashboard}
+                        blockId={block.id}
                       />
                     );
                   }
