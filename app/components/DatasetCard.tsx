@@ -1,4 +1,4 @@
-import { Box, Card, Image, useDisclosure } from "@chakra-ui/react";
+import { Card, Image, Text, useDisclosure } from "@chakra-ui/react";
 import { InfoIcon } from "@phosphor-icons/react";
 import { DatasetInfo } from "@/app/types/chat";
 import { DatasetInfoModal } from "./DatasetInfoModal";
@@ -11,16 +11,10 @@ export type DatasetCardProps = {
   size?: "sm" | "md" | "lg";
 };
 
-export function DatasetCard({
-  dataset,
-  img,
-  selected,
-  onClick,
-  size = "sm",
-}: DatasetCardProps) {
+export function DatasetCard({ dataset, img, size = "sm" }: DatasetCardProps) {
   const { open, onOpen, onClose } = useDisclosure();
   const effectiveImg = img ?? "/globe.svg";
-  const cardText = dataset.reason || dataset.description;
+  const cardText = "Yearly · Global · WRI";
 
   return (
     <>
@@ -31,45 +25,41 @@ export function DatasetCard({
         flexShrink={0}
         overflow="hidden"
         maxW="xl"
+        height="5rem"
         border="2px solid"
-        borderColor={selected ? "primary.solid" : "border.muted"}
-        _hover={{
-          cursor: onClick ? "pointer" : "initial",
-          borderColor: "primary.300",
-        }}
-        onClick={onClick}
+        borderColor="primary.solid"
       >
         <Image
           objectFit="cover"
-          maxW="8rem"
+          width="5rem"
           src={effectiveImg}
           alt={dataset.dataset_name}
         />
         <Card.Body
           display="flex"
           flexDir="column"
-          px={5}
-          py={4}
+          px={4}
+          py={3}
           position="relative"
         >
-          <Card.Title fontSize="sm" pr="6">
-            {dataset.dataset_name}
-          </Card.Title>
-          <Box
-            as="button"
-            onClick={(e) => {
-              e.stopPropagation(); // prevent card click
-              onOpen();
-            }}
-            aria-label="Show dataset info"
-            pos="absolute"
-            top="4"
-            right="5"
+          <Card.Title
+            fontSize="xs"
+            pr="6"
+            display="flex"
+            alignItems="center"
+            gap="1.5"
+            marginBottom={0}
           >
-            <InfoIcon cursor="pointer" />
-          </Box>
+            <Text>{dataset.dataset_name}</Text>
+            <InfoIcon
+              cursor="pointer"
+              size={18}
+              onClick={onOpen}
+              style={{ marginBottom: 4 }}
+            />
+          </Card.Title>
           {cardText && (
-            <Card.Description fontSize="xs" color="fg.muted" mt="1">
+            <Card.Description fontSize="x-small" color="fg.muted" mt="1">
               {cardText}
             </Card.Description>
           )}
