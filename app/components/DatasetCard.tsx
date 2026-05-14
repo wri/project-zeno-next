@@ -6,15 +6,24 @@ import { DatasetInfoModal } from "./DatasetInfoModal";
 export type DatasetCardProps = {
   dataset: DatasetInfo;
   img?: string;
-  selected?: boolean;
-  onClick?: () => void;
   size?: "sm" | "md" | "lg";
+  label?: string;
+  labelColor?: string;
 };
 
-export function DatasetCard({ dataset, img, size = "sm" }: DatasetCardProps) {
+export function DatasetCard({
+  dataset,
+  img,
+  size = "sm",
+  label = "DATA",
+  labelColor = "#1AA915",
+}: DatasetCardProps) {
   const { open, onOpen, onClose } = useDisclosure();
   const effectiveImg = img ?? "/globe.svg";
-  const cardText = "Yearly · Global · WRI";
+  const cardText =
+    [dataset.cadence, dataset.geographic_coverage, dataset.provider]
+      .filter(Boolean)
+      .join(" · ") || null;
 
   return (
     <>
@@ -41,6 +50,14 @@ export function DatasetCard({ dataset, img, size = "sm" }: DatasetCardProps) {
           py={3}
           position="relative"
         >
+          <Text
+            fontSize="x-small"
+            fontWeight="bold"
+            color={labelColor}
+            mb="0.5"
+          >
+            {label}
+          </Text>
           <Card.Title
             fontSize="xs"
             pr="6"
@@ -58,7 +75,7 @@ export function DatasetCard({ dataset, img, size = "sm" }: DatasetCardProps) {
             />
           </Card.Title>
           {cardText && (
-            <Card.Description fontSize="x-small" color="fg.muted" mt="1">
+            <Card.Description fontSize="x-small" color="fg.muted">
               {cardText}
             </Card.Description>
           )}

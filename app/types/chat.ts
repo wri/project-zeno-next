@@ -161,6 +161,10 @@ export interface DatasetInfo {
   methodology?: string;
   cautions?: string;
   citation?: string;
+  cadence?: string;
+  resolution?: string;
+  geographic_coverage?: string;
+  provider?: string;
   [key: string]: unknown; // Allow other properties
 }
 
