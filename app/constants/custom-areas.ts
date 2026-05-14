@@ -1,3 +1,6 @@
+export const CUSTOM_AREA_SOURCE = "custom" as const;
+export const CUSTOM_AREA_SUBTYPE = "custom-area" as const;
+
 export const ACCEPTED_FILE_TYPES = [".geojson"];
 export const MAX_FILE_SIZE_MB = 1;
 export const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
