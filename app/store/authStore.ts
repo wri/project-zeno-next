@@ -1,9 +1,17 @@
 import { create } from "zustand";
 import { API_CONFIG } from "@/app/config/api";
 
+export type UserType =
+  | "regular"
+  | "admin"
+  | "pro"
+  | "superuser"
+  | "machine";
+
 interface AuthState {
   userId: string | null;
   userEmail: string | null;
+  userType: UserType | null;
   isAuthenticated: boolean;
   hasProfile: boolean;
   authLoaded: boolean;
@@ -13,7 +21,12 @@ interface AuthState {
   isLoadingMetadata: boolean;
   setPromptUsage: (used: number, total: number) => void;
   setUsageFromHeaders: (headers: Headers | Record<string, string>) => void;
-  setAuthStatus: (email: string, id: string, hasProfile: boolean) => void;
+  setAuthStatus: (args: {
+    email: string;
+    id: string;
+    hasProfile: boolean;
+    userType: UserType | null;
+  }) => void;
   setAuthLoaded: () => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
@@ -22,6 +35,7 @@ interface AuthState {
 const useAuthStore = create<AuthState>()((set) => ({
   userId: null,
   userEmail: null,
+  userType: null,
   isAuthenticated: false,
   hasProfile: false,
   authLoaded: false,
@@ -68,10 +82,11 @@ const useAuthStore = create<AuthState>()((set) => ({
       };
     });
   },
-  setAuthStatus: (email, id, hasProfile) => {
+  setAuthStatus: ({ email, id, hasProfile, userType }) => {
     set({
       userId: id,
       userEmail: email,
+      userType,
       isAuthenticated: true,
       hasProfile,
       authLoaded: true,
@@ -84,6 +99,7 @@ const useAuthStore = create<AuthState>()((set) => ({
     set({
       userId: null,
       userEmail: null,
+      userType: null,
       isAuthenticated: false,
       hasProfile: false,
       authLoaded: true,
