@@ -39,6 +39,15 @@ export function pickDatasetTool(
         isAiContext: true,
       });
 
+      const trimmedReason = dataset.reason?.trim();
+      if (trimmedReason) {
+        addMessage({
+          type: "assistant",
+          message: trimmedReason,
+          timestamp: streamMessage.timestamp,
+        });
+      }
+
       addMessage({
         type: "widget",
         message: "",

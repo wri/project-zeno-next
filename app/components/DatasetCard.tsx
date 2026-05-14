@@ -9,6 +9,7 @@ export type DatasetCardProps = {
   selected?: boolean;
   onClick?: () => void;
   size?: "sm" | "md" | "lg";
+  subtitleParts?: (string | undefined | null)[];
 };
 
 export function DatasetCard({
@@ -17,10 +18,11 @@ export function DatasetCard({
   selected,
   onClick,
   size = "sm",
+  subtitleParts,
 }: DatasetCardProps) {
   const { open, onOpen, onClose } = useDisclosure();
   const effectiveImg = img ?? "/globe.svg";
-  const cardText = dataset.reason || dataset.description;
+  const subtitle = subtitleParts?.filter(Boolean).join(" · ");
 
   return (
     <>
@@ -68,9 +70,9 @@ export function DatasetCard({
           >
             <InfoIcon cursor="pointer" />
           </Box>
-          {cardText && (
+          {subtitle && (
             <Card.Description fontSize="xs" color="fg.muted" mt="1">
-              {cardText}
+              {subtitle}
             </Card.Description>
           )}
         </Card.Body>

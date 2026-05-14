@@ -35,14 +35,17 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
     if (existingLayerContext) removeContext(existingLayerContext.id);
   };
 
-  const img =
-    DATASET_CARDS.find((c) => c.dataset_name === dataset.dataset_name)?.img ??
-    "/globe.svg";
+  const card = DATASET_CARDS.find((c) => c.dataset_id === dataset.dataset_id);
+  const img = card?.img ?? "/globe.svg";
+  const subtitleParts = card
+    ? [card.cadence, card.resolution, card.geographic_coverage, card.provider]
+    : undefined;
 
   return (
     <DatasetCard
       dataset={dataset}
       img={img}
+      subtitleParts={subtitleParts}
       selected={isInContext}
       onClick={handleAddToMap}
       size="md"
