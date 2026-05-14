@@ -26,8 +26,7 @@ export function DatasetCard({ dataset, img, size = "sm" }: DatasetCardProps) {
         overflow="hidden"
         maxW="xl"
         height="5rem"
-        border="2px solid"
-        borderColor="primary.solid"
+        border="1px solid {colors.neutral.900/30}"
       >
         <Image
           objectFit="cover"
