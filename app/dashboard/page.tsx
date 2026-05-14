@@ -1,13 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Box,
   Button,
-  ButtonGroup,
   Flex,
   Heading,
   Select,
-  Progress,
   Checkbox,
   Grid,
   GridItem,
@@ -16,25 +13,14 @@ import {
   Field,
   Separator,
   createListCollection,
-  Text,
   Container,
-  Link as ChakraLink,
 } from "@chakra-ui/react";
-import {
-  FloppyDiskIcon,
-  GearIcon,
-  LifebuoyIcon,
-  MapTrifoldIcon,
-  SignOutIcon,
-  UserIcon,
-} from "@phosphor-icons/react";
-import Link from "next/link";
-import LclLogo from "../components/LclLogo";
+import { FloppyDiskIcon, GearIcon } from "@phosphor-icons/react";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
-import { useLogout } from "@/app/hooks/useLogout";
+import SettingsShell from "@/app/components/SettingsShell";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -82,10 +68,6 @@ export default function UserSettingsPage() {
     helpTestFeatures: false,
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [promptUsage, setPromptUsage] = useState<{
-    used: number;
-    quota: number;
-  }>({ used: 0, quota: 100 });
 
   useEffect(() => {
     const load = async () => {
@@ -99,9 +81,7 @@ export default function UserSettingsPage() {
           setConfig(cfg);
         }
         if (meRes.ok) {
-          const data = await meRes.json();
-          const user = data;
-          console.log("user", user);
+          const user = await meRes.json();
           setForm((p) => ({
             ...p,
             firstName: user?.firstName ?? p.firstName,
@@ -123,13 +103,6 @@ export default function UserSettingsPage() {
               user?.helpTestFeatures ?? p.helpTestFeatures
             ),
           }));
-
-          const used =
-            typeof user?.promptsUsed === "number" ? user.promptsUsed : 0;
-          const quotaRaw =
-            typeof user?.promptQuota === "number" ? user.promptQuota : 0;
-          const quota = quotaRaw > 0 ? quotaRaw : 100;
-          setPromptUsage({ used: Math.max(0, Math.min(used, quota)), quota });
         }
       } catch {
         // ignore
@@ -236,29 +209,22 @@ export default function UserSettingsPage() {
         (code) => config?.topics?.[code] || code
       );
       try {
-        const orttoRes = await fetch(
-          "https://ortto.wri.org/custom-forms/gnw/",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: form.email,
-              firstName: form.firstName,
-              lastName: form.lastName,
-              sector: form.sector,
-              jobTitle: form.jobTitle,
-              companyOrganization: form.company,
-              countryCode: form.country,
-              Topics: topicLabels,
-              receiveNewsEmails: form.receiveNewsEmails,
-            }),
-          }
-        );
-        console.log(
-          "[Client] Ortto submission status:",
-          orttoRes.status,
-          orttoRes.ok ? "OK" : "FAILED"
-        );
+        const orttoRes = await fetch("https://ortto.wri.org/custom-forms/gnw/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: form.email,
+            firstName: form.firstName,
+            lastName: form.lastName,
+            sector: form.sector,
+            jobTitle: form.jobTitle,
+            companyOrganization: form.company,
+            countryCode: form.country,
+            Topics: topicLabels,
+            receiveNewsEmails: form.receiveNewsEmails,
+          }),
+        });
+        console.log("[Client] Ortto submission status:", orttoRes.status, orttoRes.ok ? "OK" : "FAILED");
       } catch (e) {
         console.error("[Client] Ortto submission error:", e);
       }
@@ -282,115 +248,11 @@ export default function UserSettingsPage() {
     }
   };
 
-  const { logout } = useLogout();
-
   if (!isReady) return null;
 
   return (
-    <Box
-      display="grid"
-      gridTemplateColumns="20rem 1fr"
-      height="100vh"
-      maxH="100vh"
-    >
-      <Flex flexDir="column" bg="bg.subtle" px={6} py={8} maxH="100%" gap={6}>
-        <ChakraLink
-          as={Link}
-          href="/"
-          display="flex"
-          alignItems="center"
-          gap="2"
-          transition="opacity 0.24s ease"
-          _hover={{ opacity: 0.8, textDecor: "none" }}
-        >
-          <LclLogo width={16} avatarOnly />
-          <Heading m={0}>Global Nature Watch</Heading>
-        </ChakraLink>
-        <ButtonGroup
-          size="sm"
-          w="full"
-          gap={2}
-          variant="outline"
-          _hover={{ "& > :not(:hover)": { opacity: "0.5" } }}
-          css={{ "& > *": { justifyContent: "flex-start", width: "100%" } }}
-          colorPalette="gray"
-          orientation="vertical"
-          alignItems="stretch"
-        >
-          {/* <Button asChild>
-            <Link href="#">
-              <ChatsIcon />
-              Conversations
-            </Link>
-          </Button> */}
-          {/* <Button asChild>
-            <Link href="#">
-              <ShapesIcon />
-              Templates
-            </Link>
-          </Button> */}
-          <Button asChild bg="white">
-            <Link href="#">
-              {" "}
-              <GearIcon />
-              User Settings
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="https://help.globalnaturewatch.org/" target="_blank">
-              <LifebuoyIcon />
-              Help
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/app">
-              <MapTrifoldIcon />
-              Back to Application
-            </Link>
-          </Button>
-        </ButtonGroup>
-        <Box p={4} mt="auto" bg="bg" rounded="lg">
-          <Heading size="xs" as="p" color="fg.muted">
-            Available Prompts
-          </Heading>
-          <Progress.Root
-            size="xs"
-            min={0}
-            max={promptUsage.quota}
-            value={promptUsage.used}
-            minW="6rem"
-            rounded="full"
-            colorPalette="primary"
-          >
-            <Progress.Label
-              mb={2}
-              fontSize="xs"
-              fontWeight="normal"
-              color="fg.subtle"
-            >
-              {promptUsage.used}/{promptUsage.quota}
-            </Progress.Label>
-            <Progress.Track>
-              <Progress.Range />
-            </Progress.Track>
-          </Progress.Root>
-        </Box>
-        <Button
-          size="sm"
-          w="full"
-          gap={2}
-          variant="outline"
-          justifyContent="flex-start"
-          onClick={logout}
-          title="Sign Out"
-        >
-          <UserIcon />
-          <Text mr="auto">{form.email || "User"}</Text>
-          <SignOutIcon />
-        </Button>
-      </Flex>
-      <Box maxH="100%" overflowY="auto">
-        <Container maxW="4xl" display="flex" flexDirection="column" py={16}>
+    <SettingsShell activePath="/dashboard">
+      <Container maxW="4xl" display="flex" flexDirection="column" py={16}>
           {/* Header Section */}
           <Flex
             justifyContent="space-between"
@@ -671,10 +533,7 @@ export default function UserSettingsPage() {
                   width="320px"
                   value={form.preferredLanguage ? [form.preferredLanguage] : []}
                   onValueChange={(d: ValueChangeDetails) =>
-                    setForm((p) => ({
-                      ...p,
-                      preferredLanguage: d.value[0] ?? "",
-                    }))
+                    setForm((p) => ({ ...p, preferredLanguage: d.value[0] ?? "" }))
                   }
                 >
                   <Select.HiddenSelect />
@@ -776,8 +635,7 @@ export default function UserSettingsPage() {
               </Flex>
             </GridItem>
           </Grid>
-        </Container>
-      </Box>
-    </Box>
+      </Container>
+    </SettingsShell>
   );
 }
