@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Button,
   Flex,
@@ -15,6 +15,10 @@ import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
+import SlashCommandMenu, {
+  parseSlashCommand,
+  type SlashCommandMenuHandle,
+} from "./SlashCommandMenu";
 import useContextStore from "../store/contextStore";
 import { useRouter } from "next/navigation";
 
@@ -27,7 +31,8 @@ export default function ChatInput({
   const [contextModalOpen, setContextModalOpen] = useState(false);
   const [selectedContextType, setSelectedContextType] =
     useState<ChatContextType | null>(null);
-
+  const [slashActiveIndex, setSlashActiveIndex] = useState(0);
+  const slashMenuRef = useRef<SlashCommandMenuHandle>(null);
   const router = useRouter();
 
   // Hooks for responsive modal behavior
@@ -42,6 +47,8 @@ export default function ChatInput({
 
   const { sendMessage, isLoading } = useChatStore();
   const { context, removeContext } = useContextStore();
+
+  const slashState = useMemo(() => parseSlashCommand(inputValue), [inputValue]);
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -70,20 +77,47 @@ export default function ChatInput({
     }
   };
 
+  const handleCommandSelect = (cmd: string) => {
+    setInputValue(`/${cmd} `);
+    setSlashActiveIndex(0);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (slashState) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSlashActiveIndex((i) => i + 1);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSlashActiveIndex((i) => i - 1);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setInputValue("");
+        return;
+      }
+      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+        e.preventDefault();
+        slashMenuRef.current?.selectActive();
+        return;
+      }
+    }
     // Submit on Enter (without Shift) or Command+Enter
     if (
       (e.key === "Enter" && !e.shiftKey && !e.metaKey) ||
       (e.key === "Enter" && e.metaKey)
     ) {
-      e.preventDefault(); // Prevents newline
+      e.preventDefault();
       submitPrompt();
     }
     // If Shift+Enter, do nothing: allow newline
   };
 
   const disabled = isLoading || isChatDisabled;
-  const message = isLoading ? "Sending..." : "Ask a question...";
+  const message = isLoading ? "Sending..." : "Ask a question or try / to focus on a dataset or area...";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
   const hasContext = context.length > 0;
@@ -126,6 +160,15 @@ export default function ChatInput({
           ))}
         </Flex>
       )}
+      {slashState && !disabled && (
+        <SlashCommandMenu
+          ref={slashMenuRef}
+          slashState={slashState}
+          activeIndex={slashActiveIndex}
+          onClose={() => setInputValue("")}
+          onCommandSelect={handleCommandSelect}
+        />
+      )}
       <Textarea
         ref={setFocusEl}
         aria-label="Ask a question..."
@@ -137,7 +180,10 @@ export default function ChatInput({
         border="none"
         p={0}
         value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
+        onChange={(e) => {
+          if (slashState) setSlashActiveIndex(0);
+          setInputValue(e.target.value);
+        }}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         _disabled={{ opacity: 1 }}
