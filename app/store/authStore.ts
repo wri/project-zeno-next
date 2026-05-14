@@ -1,12 +1,7 @@
 import { create } from "zustand";
 import { API_CONFIG } from "@/app/config/api";
 
-export type UserType =
-  | "regular"
-  | "admin"
-  | "pro"
-  | "superuser"
-  | "machine";
+export type UserType = "regular" | "admin" | "pro" | "superuser" | "machine";
 
 interface AuthState {
   userId: string | null;

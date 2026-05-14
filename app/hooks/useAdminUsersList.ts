@@ -5,9 +5,7 @@ import {
 } from "@/app/schemas/api/admin/users/get";
 import { apiFetch } from "@/app/lib/api-client";
 
-async function fetchAdminUsers(
-  emailQuery: string
-): Promise<ListUsersResponse> {
+async function fetchAdminUsers(emailQuery: string): Promise<ListUsersResponse> {
   const params = new URLSearchParams();
   if (emailQuery) params.set("email", emailQuery);
   params.set("limit", "50");

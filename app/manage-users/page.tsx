@@ -180,8 +180,7 @@ export default function ManageUsersPage() {
             {data.map((user) => {
               const isSelf = user.id === userId;
               const isPending =
-                mutation.isPending &&
-                mutation.variables?.userId === user.id;
+                mutation.isPending && mutation.variables?.userId === user.id;
               return (
                 <Flex
                   key={user.id}
