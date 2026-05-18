@@ -92,18 +92,7 @@ export function DatasetCard({
               content="Show dataset info"
               positioning={{ placement: "top" }}
               showArrow
-              contentProps={{
-                bg: "#131619",
-                borderRadius: "8px",
-                px: "8px",
-                py: "8px",
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: "12px",
-                fontWeight: "400",
-                lineHeight: "150%",
-                color: "#B2B6BD",
-                filter: "drop-shadow(0px 4px 16px rgba(0, 0, 0, 0.15))",
-              }}
+              variant="dark"
             >
               <InfoIcon
                 cursor="pointer"
