@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Button,
   Container,
   Field,
   Flex,
@@ -12,12 +13,13 @@ import {
   Text,
   createListCollection,
 } from "@chakra-ui/react";
-import { UsersThreeIcon } from "@phosphor-icons/react";
+import { DownloadSimpleIcon, UsersThreeIcon } from "@phosphor-icons/react";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import useAuthStore from "@/app/store/authStore";
 import SettingsShell from "@/app/components/SettingsShell";
 import { useAdminUsersList } from "@/app/hooks/useAdminUsersList";
 import { useAdminUserTypeUpdate } from "@/app/hooks/useAdminUserTypeUpdate";
+import { useAdminUsersExport } from "@/app/hooks/useAdminUsersExport";
 import { toaster } from "@/app/components/ui/toaster";
 import { type UserModel } from "@/app/schemas/api/admin/users/get";
 import { type AssignableUserType } from "@/app/schemas/api/admin/users/patch";
@@ -107,6 +109,37 @@ export default function ManageUsersPage() {
 
   const { data, isLoading, isError, error } = useAdminUsersList(debouncedQuery);
   const mutation = useAdminUserTypeUpdate();
+  const exportMutation = useAdminUsersExport();
+
+  const handleDownloadCsv = () => {
+    exportMutation.mutate(undefined, {
+      onSuccess: ({ blob, filename }) => {
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        toaster.create({
+          title: "Download started",
+          description: filename,
+          type: "success",
+          duration: 3000,
+        });
+      },
+      onError: (err) => {
+        toaster.create({
+          title: "Download failed",
+          description: (err as Error)?.message || "Could not download CSV.",
+          type: "error",
+          duration: 5000,
+        });
+      },
+    });
+  };
 
   const handleChange = (user: UserModel, newType: AssignableUserType) => {
     mutation.mutate(
@@ -146,11 +179,23 @@ export default function ManageUsersPage() {
         py={16}
         gap={6}
       >
-        <Flex alignItems="center" gap={2} color="fg.muted">
-          <UsersThreeIcon size={24} />
-          <Heading as="h1" size="2xl" fontWeight="normal">
-            Manage Users
-          </Heading>
+        <Flex alignItems="center" justifyContent="space-between" gap={4}>
+          <Flex alignItems="center" gap={2} color="fg.muted">
+            <UsersThreeIcon size={24} />
+            <Heading as="h1" size="2xl" fontWeight="normal">
+              Manage Users
+            </Heading>
+          </Flex>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleDownloadCsv}
+            loading={exportMutation.isPending}
+            disabled={exportMutation.isPending}
+          >
+            <DownloadSimpleIcon />
+            Download CSV
+          </Button>
         </Flex>
 
         <Field.Root id="search" maxW="md">
