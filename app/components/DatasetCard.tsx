@@ -43,7 +43,11 @@ export function DatasetCard({
         borderRadius="4px"
         onClick={onClick}
         cursor={onClick ? "pointer" : "default"}
-        _hover={onClick ? { borderColor: "primary.300", border: "2px solid" } : undefined}
+        _hover={
+          onClick
+            ? { borderColor: "primary.300", border: "2px solid" }
+            : undefined
+        }
       >
         <Image
           objectFit="cover"

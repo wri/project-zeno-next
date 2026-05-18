@@ -79,8 +79,7 @@ function LayerCardList({
 }: {
   cards: (DatasetCardConfig & { img?: string })[];
 }) {
-  const { context, upsertContextByType, removeContext } =
-    useContextStore();
+  const { context, upsertContextByType, removeContext } = useContextStore();
 
   function handleToggle(card: DatasetCardConfig & { img?: string }) {
     const existing = context.find(
