@@ -2,6 +2,7 @@ import { Card, Image, Text, useDisclosure } from "@chakra-ui/react";
 import { InfoIcon } from "@phosphor-icons/react";
 import { DatasetInfo } from "@/app/types/chat";
 import { DatasetInfoModal } from "./DatasetInfoModal";
+import { Tooltip } from "./ui/tooltip";
 
 export type DatasetCardProps = {
   dataset: DatasetInfo;
@@ -87,12 +88,30 @@ export function DatasetCard({
             >
               {dataset.dataset_name}
             </Text>
-            <InfoIcon
-              cursor="pointer"
-              size={16}
-              color="#656E7B"
-              onClick={onOpen}
-            />
+            <Tooltip
+              content="Show dataset info"
+              positioning={{ placement: "top" }}
+              showArrow
+              contentProps={{
+                bg: "#131619",
+                borderRadius: "8px",
+                px: "8px",
+                py: "8px",
+                fontFamily: "'IBM Plex Sans', sans-serif",
+                fontSize: "12px",
+                fontWeight: "400",
+                lineHeight: "150%",
+                color: "#B2B6BD",
+                filter: "drop-shadow(0px 4px 16px rgba(0, 0, 0, 0.15))",
+              }}
+            >
+              <InfoIcon
+                cursor="pointer"
+                size={16}
+                color="#656E7B"
+                onClick={onOpen}
+              />
+            </Tooltip>
           </Card.Title>
           {cardText && (
             <Card.Description
