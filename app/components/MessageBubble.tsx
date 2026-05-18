@@ -149,7 +149,7 @@ function MessageBubble({
   if (isWidget && message.widgets) {
     return message.widgets.map((widget, idx) => (
       <Box
-        mb={4}
+        my={4}
         key={`${widget.title} ${message.id}`}
         id={`widget-${message.id}-${idx}`}
         scrollMarginTop="32px"

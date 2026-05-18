@@ -45,6 +45,15 @@ export function pickDatasetTool(
         widgets: [datasetWidget],
         timestamp: streamMessage.timestamp,
       });
+
+      const trimmedReason = dataset.reason?.trim();
+      if (trimmedReason) {
+        addMessage({
+          type: "assistant",
+          message: trimmedReason,
+          timestamp: streamMessage.timestamp,
+        });
+      }
     }
   } catch (error) {
     console.error("Error processing pick_dataset tool:", error);
