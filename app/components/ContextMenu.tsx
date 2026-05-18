@@ -79,15 +79,43 @@ function LayerCardList({
 }: {
   cards: (DatasetCardConfig & { img?: string })[];
 }) {
+  const { context, upsertContextByType, removeContext } =
+    useContextStore();
+
+  function handleToggle(card: DatasetCardConfig & { img?: string }) {
+    const existing = context.find(
+      (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
+    );
+    if (existing) {
+      removeContext(existing.id);
+    } else {
+      upsertContextByType({
+        contextType: "layer",
+        content: card.dataset_name,
+        datasetId: card.dataset_id,
+        tileUrl: card.tile_url,
+        layerName: card.dataset_name,
+        isAiContext: false,
+      });
+    }
+  }
+
   return (
     <Stack minH={0} overflowY="auto">
-      {cards.map((card) => (
-        <DatasetCard
-          key={card.dataset_name}
-          dataset={card as unknown as DatasetInfo}
-          img={card.img ?? "/globe.svg"}
-        />
-      ))}
+      {cards.map((card) => {
+        const isSelected = context.some(
+          (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
+        );
+        return (
+          <DatasetCard
+            key={card.dataset_name}
+            dataset={card as unknown as DatasetInfo}
+            img={card.img ?? "/globe.svg"}
+            selected={isSelected}
+            onClick={() => handleToggle(card)}
+          />
+        );
+      })}
     </Stack>
   );
 }

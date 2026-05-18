@@ -9,14 +9,17 @@ export type DatasetCardProps = {
   size?: "sm" | "md" | "lg";
   label?: string;
   labelColor?: string;
+  selected?: boolean;
+  onClick?: () => void;
 };
 
 export function DatasetCard({
   dataset,
   img,
-  size = "sm",
   label = "DATA",
   labelColor = "#1AA915",
+  selected,
+  onClick,
 }: DatasetCardProps) {
   const { open, onOpen, onClose } = useDisclosure();
   const effectiveImg = img ?? "/globe.svg";
@@ -29,53 +32,76 @@ export function DatasetCard({
     <>
       <DatasetInfoModal isOpen={open} onClose={onClose} dataset={dataset} />
       <Card.Root
-        size={size}
         flexDirection="row"
         flexShrink={0}
         overflow="hidden"
-        maxW="xl"
-        height="5rem"
-        border="1px solid {colors.neutral.900/30}"
+        width="100%"
+        height="80px"
+        border={selected ? "2px solid" : "1px solid rgba(19, 22, 25, 0.3)"}
+        borderColor={selected ? "primary.solid" : undefined}
+        borderRadius="4px"
+        onClick={onClick}
+        cursor={onClick ? "pointer" : "default"}
+        _hover={onClick ? { borderColor: "primary.300", border: "2px solid" } : undefined}
       >
         <Image
           objectFit="cover"
-          width="5rem"
+          width="80px"
+          minHeight="80px"
+          flexShrink={0}
           src={effectiveImg}
           alt={dataset.dataset_name}
+          borderRight="1px solid rgba(19, 22, 25, 0.1)"
+          borderRadius={0}
         />
         <Card.Body
           display="flex"
           flexDir="column"
-          px={4}
-          py={3}
-          position="relative"
+          px="16px"
+          py={0}
+          gap="2px"
+          justifyContent="center"
         >
           <Text
-            fontSize="x-small"
-            fontWeight="bold"
+            fontFamily="'IBM Plex Mono', monospace"
+            fontSize="10px"
+            fontWeight="400"
+            letterSpacing="0.5px"
+            lineHeight="16px"
             color={labelColor}
-            mb="0.5"
           >
             {label}
           </Text>
           <Card.Title
-            fontSize="xs"
-            pr="6"
             display="flex"
             alignItems="center"
-            gap="1.5"
+            gap="8px"
             marginBottom={0}
           >
-            <Text>{dataset.dataset_name}</Text>
+            <Text
+              fontFamily="'IBM Plex Sans', sans-serif"
+              fontSize="12px"
+              fontWeight="500"
+              lineHeight="150%"
+              color="#3A4048"
+            >
+              {dataset.dataset_name}
+            </Text>
             <InfoIcon
               cursor="pointer"
-              size={18}
+              size={16}
+              color="#656E7B"
               onClick={onOpen}
-              style={{ marginBottom: 4 }}
             />
           </Card.Title>
           {cardText && (
-            <Card.Description fontSize="x-small" color="fg.muted">
+            <Card.Description
+              fontFamily="'IBM Plex Mono', monospace"
+              fontSize="10px"
+              fontWeight="400"
+              lineHeight="16px"
+              color="#656E7B"
+            >
               {cardText}
             </Card.Description>
           )}
