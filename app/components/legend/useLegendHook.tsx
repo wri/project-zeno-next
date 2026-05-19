@@ -89,6 +89,12 @@ function renderLegendSymbology(legend: DatasetLegendConfig) {
   ) : null;
 }
 
+export interface LegendAoi {
+  /** Unique id of the context item this AOI belongs to — used to remove it. */
+  contextId: string;
+  name: string;
+}
+
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendLayer[]>([]);
 
@@ -102,6 +108,20 @@ export function useLegendHook() {
 
   useEffect(() => {
     const buildEntries = (): LegendLayer[] => {
+      // Context is the single source of truth for "is this layer an AOI?".
+      // We build two sets to cover both cases:
+      //   - aoiLayerNames: matches assistant-picked AOI layers (layer.id === selection name)
+      //   - aoiLayerIds:   matches custom-area layers (layer.id === aoiData.src_id, a DB id)
+      const areaItems = context.filter((c) => c.contextType === "area");
+      const aoiLayerNames = new Set(
+        areaItems.map(
+          (c) => c.aoiSelection?.name ?? c.aoiData?.name ?? String(c.content)
+        )
+      );
+      const aoiLayerIds = new Set(
+        areaItems.map((c) => c.aoiData?.src_id).filter(Boolean)
+      );
+
       // First pass: build a map of parentLayerId → contextLayer data so we can
       // attach sub-layers to their parent entries in the second pass.
       const contextLayerByParentId = new Map<string, LegendContextLayer>();
@@ -121,24 +141,26 @@ export function useLegendHook() {
         });
       }
 
-      // Second pass: build root-level legend entries, skipping sub-layers
-      // (they are now embedded via contextLayer on their parent).
+      // Second pass: build root-level legend entries.
+      // AOI layers are surfaced as chips separately — skip them.
+      // Sub-layers are embedded in their parent via contextLayer — skip them too.
       const entries: LegendLayer[] = [];
       for (const layer of managedLayers) {
+        if (aoiLayerNames.has(layer.name) || aoiLayerIds.has(layer.id))
+          continue;
+        if (layer.parentLayerId) continue;
+
+        // Non-dataset vector/geojson layers (e.g. boundary overlays) get a
+        // minimal card with no symbology — just title + opacity control.
         if (layer.type === "geojson" || layer.type === "vector") {
           entries.push({
             id: layer.id,
             title: layer.selectionName ?? layer.name,
             opacity: (layer.opacity ?? 1) * 100,
-            hideOpacityControl: true,
-            hideRemoveControl: true,
             symbology: null,
           });
           continue;
         }
-
-        // Sub-layers are handled via their parent — skip them here.
-        if (layer.parentLayerId) continue;
 
         const relatedDataset = DATASET_CARDS.find(
           (d) => `dataset-${d.dataset_id}` === layer.id
@@ -169,7 +191,21 @@ export function useLegendHook() {
     };
 
     setLayers(buildEntries());
-  }, [managedLayers]);
+  }, [managedLayers, context]);
+
+  // One chip per selection (context item), using the selection name as the label.
+  // Removing a chip removes the whole selection and its map layer.
+  const aois: LegendAoi[] = context
+    .filter((c) => c.contextType === "area")
+    .map((c) => ({
+      contextId: c.id,
+      name: c.aoiSelection?.name ?? c.aoiData?.name ?? String(c.content),
+    }));
+
+  const handleRemoveAoi = useCallback(
+    (contextId: string) => removeContext(contextId),
+    [removeContext]
+  );
 
   const handleLayerAction = useCallback<LayerActionHandler>(
     ({ action, payload }) => {
@@ -198,5 +234,5 @@ export function useLegendHook() {
     [context, removeContext, removeLayer, setLayerOpacity, reorderLayers]
   );
 
-  return { layers, handleLayerAction };
+  return { layers, handleLayerAction, aois, handleRemoveAoi };
 }

@@ -118,14 +118,25 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
   removeContext: (id) =>
     set((state) => {
       const itemToRemove = state.context.find((c) => c.id === id);
-      if (typeof itemToRemove?.datasetId === "number") {
+      if (itemToRemove) {
         const { removeLayer } = useMapStore.getState();
-        // Remove corresponding map layer if this context item represents a dataset layer
-        removeLayer(`dataset-${itemToRemove.datasetId}`);
-        if (itemToRemove.contextLayer) {
-          removeLayer(
-            `dataset-${itemToRemove.datasetId}-ctx-${itemToRemove.contextLayer.name}`
-          );
+        if (typeof itemToRemove.datasetId === "number") {
+          // Remove the dataset layer and its optional context sub-layer
+          removeLayer(`dataset-${itemToRemove.datasetId}`);
+          if (itemToRemove.contextLayer) {
+            removeLayer(
+              `dataset-${itemToRemove.datasetId}-ctx-${itemToRemove.contextLayer.name}`
+            );
+          }
+        } else if (itemToRemove.contextType === "area") {
+          // For custom areas, src_id is the map layer id (added via ContextMenu).
+          // For AOI selections from the assistant, the layer id equals the selection name.
+          const layerId =
+            itemToRemove.aoiData?.src_id ??
+            itemToRemove.aoiSelection?.name ??
+            itemToRemove.aoiData?.name ??
+            String(itemToRemove.content);
+          removeLayer(layerId);
         }
       }
       return {

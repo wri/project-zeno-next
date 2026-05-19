@@ -1,14 +1,23 @@
 import { useEffect, useState } from "react";
-import { Flex, Text, IconButton, chakra, Collapsible } from "@chakra-ui/react";
+import {
+  Flex,
+  Box,
+  Text,
+  IconButton,
+  chakra,
+  Collapsible,
+} from "@chakra-ui/react";
 import {
   DotsSixVerticalIcon,
   StackIcon,
   CaretDownIcon,
   CaretUpIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import { Reorder, useDragControls } from "motion/react";
 
 import { LayerActionHandler, LegendLayer } from "./types";
+import type { LegendAoi } from "./useLegendHook";
 import { LayerEntry } from "./LayerEntry";
 
 const ChReorderGroup = chakra(Reorder.Group);
@@ -20,6 +29,8 @@ const ChReorderItem = chakra(Reorder.Item);
 interface LegendProps {
   layers: LegendLayer[];
   onLayerAction?: LayerActionHandler;
+  aois?: LegendAoi[];
+  onRemoveAoi?: (contextId: string) => void;
 }
 
 /**
@@ -29,7 +40,7 @@ interface LegendProps {
  * @param props.layers - Array of LegendLayer objects to display.
  */
 export function Legend(props: LegendProps) {
-  const { layers, onLayerAction } = props;
+  const { layers, onLayerAction, aois, onRemoveAoi } = props;
 
   // Controls whether the whole legend body is collapsed to just the header.
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -177,6 +188,58 @@ export function Legend(props: LegendProps) {
               />
             ))}
           </ChReorderGroup>
+          {aois && aois.length > 0 && (
+            <>
+              <Box h="1px" bg="border" />
+              <Flex gap={1} flexWrap="wrap" p={2}>
+                {aois.map((aoi) => (
+                  <Flex
+                    key={`${aoi.contextId}-${aoi.name}`}
+                    alignItems="center"
+                    gap="4px"
+                    h="20px"
+                    pl="6px"
+                    pr="4px"
+                    borderRadius="sm"
+                    border="1px solid"
+                    borderColor="#E0E2E5"
+                    fontFamily="mono"
+                    fontSize="10px"
+                    flexShrink={0}
+                  >
+                    <Text
+                      as="span"
+                      fontWeight="normal"
+                      lineHeight="16px"
+                      letterSpacing="0.5px"
+                      color="#A51EC7"
+                    >
+                      AREA
+                    </Text>
+                    <Text
+                      as="span"
+                      fontWeight="500"
+                      lineHeight="16px"
+                      letterSpacing="0"
+                    >
+                      {aoi.name}
+                    </Text>
+                    <IconButton
+                      variant="ghost"
+                      size="xs"
+                      p={0}
+                      minW="12px"
+                      h="12px"
+                      aria-label={`Remove ${aoi.name}`}
+                      onClick={() => onRemoveAoi?.(aoi.contextId)}
+                    >
+                      <XIcon size={10} />
+                    </IconButton>
+                  </Flex>
+                ))}
+              </Flex>
+            </>
+          )}
         </Collapsible.Content>
       </Collapsible.Root>
     </Flex>
