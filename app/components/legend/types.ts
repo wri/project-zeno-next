@@ -10,6 +10,18 @@ export interface LegendParam {
 }
 
 /**
+ * A contextual sub-layer shown indented under a parent layer card with a
+ * "within" prefix. e.g. "within ■ Primary Forests (2001)".
+ */
+export interface LegendContextLayer {
+  id: string;
+  title: string;
+  color: string;
+  opacity: number;
+  info?: string;
+}
+
+/**
  * Represents a single layer in the legend.
  */
 export interface LegendLayer {
@@ -17,6 +29,7 @@ export interface LegendLayer {
   title: string;
   opacity: number;
   params?: LegendParam[];
+  contextLayer?: LegendContextLayer;
   symbology: ReactNode;
   children?: ReactNode;
   info?: string;

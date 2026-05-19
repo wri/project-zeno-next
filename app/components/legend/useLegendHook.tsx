@@ -3,6 +3,7 @@ import { Text } from "@chakra-ui/react";
 
 import {
   LayerActionHandler,
+  LegendContextLayer,
   LegendLayer,
   LegendParam,
 } from "@/app/components/legend/types";
@@ -101,6 +102,27 @@ export function useLegendHook() {
 
   useEffect(() => {
     const buildEntries = (): LegendLayer[] => {
+      // First pass: build a map of parentLayerId → contextLayer data so we can
+      // attach sub-layers to their parent entries in the second pass.
+      const contextLayerByParentId = new Map<string, LegendContextLayer>();
+      for (const layer of managedLayers) {
+        if (!layer.parentLayerId) continue;
+        const metadata = CONTEXT_LAYER_METADATA[layer.name];
+        const legend = metadata?.legend;
+        // Use the first item's colour as the swatch, falling back to the
+        // legend's top-level color field.
+        const color = legend?.items?.[0]?.color ?? legend?.color ?? "#888";
+        contextLayerByParentId.set(layer.parentLayerId, {
+          id: layer.id,
+          title: legend?.title ?? layer.name,
+          color,
+          opacity: (layer.opacity ?? 1) * 100,
+          info: legend?.info,
+        });
+      }
+
+      // Second pass: build root-level legend entries, skipping sub-layers
+      // (they are now embedded via contextLayer on their parent).
       const entries: LegendLayer[] = [];
       for (const layer of managedLayers) {
         if (layer.type === "geojson" || layer.type === "vector") {
@@ -115,24 +137,8 @@ export function useLegendHook() {
           continue;
         }
 
-        // Sub-layer (e.g. primary_forest under TCL): rendered as a child row,
-        // no remove control (lifecycle owned by the parent dataset's context chip).
-        if (layer.parentLayerId) {
-          const metadata = CONTEXT_LAYER_METADATA[layer.name];
-          const legend = metadata?.legend;
-          entries.push({
-            id: layer.id,
-            title: legend?.title ?? layer.name,
-            opacity: (layer.opacity ?? 1) * 100,
-            info: legend?.info,
-            hideRemoveControl: true,
-            symbology: legend ? renderLegendSymbology(legend) : null,
-            children: legend?.note ? (
-              <Text fontSize="xs">{legend.note}</Text>
-            ) : undefined,
-          });
-          continue;
-        }
+        // Sub-layers are handled via their parent — skip them here.
+        if (layer.parentLayerId) continue;
 
         const relatedDataset = DATASET_CARDS.find(
           (d) => `dataset-${d.dataset_id}` === layer.id
@@ -149,42 +155,17 @@ export function useLegendHook() {
 
         entries.push({
           id: layer.id,
-          title: title,
+          title,
           opacity: (layer.opacity ?? 1) * 80,
           info,
           params: params.length > 0 ? params : undefined,
+          contextLayer: contextLayerByParentId.get(layer.id),
           symbology: renderLegendSymbology(relatedDataset.legend),
           children: note ? <Text fontSize="xs">{note}</Text> : undefined,
         });
       }
 
-      // Place each sub-layer directly after its parent so the legend reads top-down.
-      const byId = new Map(entries.map((e) => [e.id, e]));
-      const subsByParent = new Map<string, LegendLayer[]>();
-      const rootEntries: LegendLayer[] = [];
-      for (const layer of managedLayers) {
-        const e = byId.get(layer.id);
-        if (!e) continue;
-        if (layer.parentLayerId) {
-          if (!subsByParent.has(layer.parentLayerId)) {
-            subsByParent.set(layer.parentLayerId, []);
-          }
-          subsByParent.get(layer.parentLayerId)!.push(e);
-        } else {
-          rootEntries.push(e);
-        }
-      }
-      const ordered: LegendLayer[] = [];
-      for (const root of rootEntries) {
-        ordered.push(root);
-        const subs = subsByParent.get(root.id);
-        if (subs) ordered.push(...subs);
-      }
-      // Append any orphaned sub-layers (parent missing) at the end.
-      for (const [parentId, subs] of subsByParent) {
-        if (!rootEntries.some((r) => r.id === parentId)) ordered.push(...subs);
-      }
-      return ordered;
+      return entries;
     };
 
     setLayers(buildEntries());
