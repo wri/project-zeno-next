@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
+import { Flex, Text, IconButton, chakra, Collapsible } from "@chakra-ui/react";
 import {
-  Flex,
-  Heading,
-  VisuallyHidden,
-  IconButton,
-  chakra,
-} from "@chakra-ui/react";
-import { DotsSixVerticalIcon } from "@phosphor-icons/react";
+  DotsSixVerticalIcon,
+  StackIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+} from "@phosphor-icons/react";
 import { Reorder, useDragControls } from "motion/react";
 
 import { LayerActionHandler, LegendLayer } from "./types";
@@ -31,6 +30,9 @@ interface LegendProps {
  */
 export function Legend(props: LegendProps) {
   const { layers, onLayerAction } = props;
+
+  // Controls whether the whole legend body is collapsed to just the header.
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Track which layers are expanded (multiple can be open).
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -97,43 +99,86 @@ export function Legend(props: LegendProps) {
       flexDirection="column"
       overflow="hidden"
     >
-      <VisuallyHidden>
-        <Heading>Map Legend</Heading>
-      </VisuallyHidden>
-      <ChReorderGroup
-        axis="y"
-        values={layers}
-        onReorder={(layers: LegendLayer[]) =>
-          onLayerAction?.({ action: "reorder", payload: { layers } })
-        }
-        listStyleType="none"
-        fontSize="xs"
-        p={0}
-        m={0}
-        w="100%"
-        overflowY="auto"
-        flex={1}
+      {/* Always-visible header — click the caret to collapse/expand */}
+      <Flex
+        px={3}
+        py={2}
+        alignItems="center"
+        justifyContent="space-between"
+        borderBottom="1px solid"
+        borderColor="border"
+        flexShrink={0}
       >
-        {layers.map((item) => (
-          <Item
-            key={item.id}
-            item={item}
-            expanded={expandedIds.has(item.id)}
-            onToggleExpand={() =>
-              setExpandedIds((prev) => {
-                const next = new Set(prev);
-                if (next.has(item.id)) {
-                  next.delete(item.id);
-                } else {
-                  next.add(item.id);
-                }
-                return next;
-              })
+        {/* Icon + label group (matches Figma: width 83, height 16, gap 8px) */}
+        <Flex alignItems="center" gap={2}>
+          <StackIcon size={12} color="#0049AA" />
+          <Text
+            fontSize="10px"
+            fontWeight="400"
+            fontFamily="mono"
+            letterSpacing="wider"
+            textTransform="uppercase"
+            color="fg.muted"
+          >
+            Map layers
+          </Text>
+        </Flex>
+        <IconButton
+          variant="ghost"
+          size="xs"
+          p={0}
+          minW="16px"
+          h="16px"
+          aria-label={isCollapsed ? "Expand legend" : "Collapse legend"}
+          onClick={() => setIsCollapsed((prev) => !prev)}
+        >
+          {isCollapsed ? (
+            <CaretDownIcon size={12} />
+          ) : (
+            <CaretUpIcon size={12} />
+          )}
+        </IconButton>
+      </Flex>
+
+      {/* Collapsible body — animates height on open/close */}
+      <Collapsible.Root open={!isCollapsed}>
+        <Collapsible.Content>
+          <ChReorderGroup
+            axis="y"
+            values={layers}
+            onReorder={(layers: LegendLayer[]) =>
+              onLayerAction?.({ action: "reorder", payload: { layers } })
             }
-            onLayerAction={(details) => onLayerAction?.(details)}
-          />
-        ))}
-      </ChReorderGroup>
+            listStyleType="none"
+            fontSize="xs"
+            p={0}
+            m={0}
+            w="100%"
+            overflowY="auto"
+            maxH="200px"
+          >
+            {layers.map((item) => (
+              <Item
+                key={item.id}
+                item={item}
+                expanded={expandedIds.has(item.id)}
+                onToggleExpand={() =>
+                  setExpandedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(item.id)) {
+                      next.delete(item.id);
+                    } else {
+                      next.add(item.id);
+                    }
+                    return next;
+                  })
+                }
+                onLayerAction={(details) => onLayerAction?.(details)}
+              />
+            ))}
+          </ChReorderGroup>
+        </Collapsible.Content>
+      </Collapsible.Root>
     </Flex>
   );
 }
