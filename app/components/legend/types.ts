@@ -1,15 +1,22 @@
 import { ReactNode } from "react";
 
 /**
+ * A single read-only parameter chip shown beneath a layer title.
+ * e.g. { label: "YEAR", value: "2025" } or { label: "CANOPY", value: ">= 30%" }
+ */
+export interface LegendParam {
+  label: string;
+  value: string;
+}
+
+/**
  * Represents a single layer in the legend.
  */
 export interface LegendLayer {
   id: string;
   title: string;
-  visible: boolean;
   opacity: number;
-  dateRange?: string;
-  parametersText?: string;
+  params?: LegendParam[];
   symbology: ReactNode;
   children?: ReactNode;
   info?: string;
@@ -21,10 +28,6 @@ export type LayerActionArgs =
   | {
       action: "remove";
       payload: { id: string };
-    }
-  | {
-      action: "visibility";
-      payload: { id: string; visible: boolean };
     }
   | {
       action: "opacity";

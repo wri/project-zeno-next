@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Text } from "@chakra-ui/react";
 
-import { LayerActionHandler, LegendLayer } from "@/app/components/legend/types";
+import {
+  LayerActionHandler,
+  LegendLayer,
+  LegendParam,
+} from "@/app/components/legend/types";
 import { LegendSequential } from "@/app/components/legend/LegendSequential";
 import { LegendSymbolList } from "@/app/components/legend/LegendSymbolList";
 import { LegendCategorical } from "@/app/components/legend/LegendCategorical";
@@ -14,23 +18,40 @@ import {
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
 import useContextStore from "@/app/store/contextStore";
 
+// Maps internal parameter keys to the badge label shown in the legend.
 const PARAMETER_LABELS: Record<string, string> = {
-  canopy_cover: "Canopy ≥",
+  canopy_cover: "CANOPY",
 };
 
-const PARAMETER_UNITS: Record<string, string> = {
-  canopy_cover: "%",
+// Maps internal parameter keys to a formatting function that produces the value string.
+const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
+  canopy_cover: (v) => `>= ${v}%`,
 };
 
-function formatParameters(params: Record<string, unknown>): string | undefined {
-  const parts = Object.entries(params)
-    .filter(([, v]) => v !== null && v !== undefined && v !== "")
-    .map(([k, v]) => {
-      const label = PARAMETER_LABELS[k] ?? k;
-      const unit = PARAMETER_UNITS[k] ?? "";
-      return `${label} ${v}${unit}`;
-    });
-  return parts.length > 0 ? parts.join(" · ") : undefined;
+/**
+ * Converts a layer's raw parameters object into structured LegendParam chips.
+ * Each entry becomes a { label, value } pair rendered as a badge in the card.
+ */
+function buildParams(
+  params: Record<string, unknown>,
+  dateRange?: string
+): LegendParam[] {
+  const result: LegendParam[] = [];
+
+  if (dateRange) {
+    // Use "YEARS" for a range, "YEAR" for a single year.
+    const label = dateRange.includes("–") ? "YEARS" : "YEAR";
+    result.push({ label, value: dateRange });
+  }
+
+  for (const [k, v] of Object.entries(params)) {
+    if (v === null || v === undefined || v === "") continue;
+    const label = PARAMETER_LABELS[k] ?? k.toUpperCase();
+    const format = PARAMETER_FORMATTERS[k];
+    result.push({ label, value: format ? format(v) : String(v) });
+  }
+
+  return result;
 }
 
 function renderLegendSymbology(legend: DatasetLegendConfig) {
@@ -72,7 +93,6 @@ export function useLegendHook() {
 
   const {
     layers: managedLayers,
-    setLayerVisibility,
     setLayerOpacity,
     removeLayer,
     reorderLayers,
@@ -87,7 +107,6 @@ export function useLegendHook() {
           entries.push({
             id: layer.id,
             title: layer.selectionName ?? layer.name,
-            visible: layer.visible,
             opacity: (layer.opacity ?? 1) * 100,
             hideOpacityControl: true,
             hideRemoveControl: true,
@@ -104,7 +123,6 @@ export function useLegendHook() {
           entries.push({
             id: layer.id,
             title: legend?.title ?? layer.name,
-            visible: layer.visible,
             opacity: (layer.opacity ?? 1) * 100,
             info: legend?.info,
             hideRemoveControl: true,
@@ -127,18 +145,14 @@ export function useLegendHook() {
           layer.startDate && layer.endDate
             ? `${layer.startDate.slice(0, 4)}–${layer.endDate.slice(0, 4)}`
             : undefined;
-        const parametersText = layer.parameters
-          ? formatParameters(layer.parameters)
-          : undefined;
+        const params = buildParams(layer.parameters ?? {}, dateRange);
 
         entries.push({
           id: layer.id,
           title: title,
-          visible: layer.visible,
           opacity: (layer.opacity ?? 1) * 80,
           info,
-          dateRange,
-          parametersText,
+          params: params.length > 0 ? params : undefined,
           symbology: renderLegendSymbology(relatedDataset.legend),
           children: note ? <Text fontSize="xs">{note}</Text> : undefined,
         });
@@ -195,23 +209,12 @@ export function useLegendHook() {
           }
           removeLayer(payload.id);
           break;
-        case "visibility":
-          // Go through the tile layers and update their visibility
-          setLayerVisibility(payload.id, payload.visible);
-          break;
         case "opacity":
           setLayerOpacity(payload.id, payload.opacity / 100);
           break;
       }
     },
-    [
-      context,
-      removeContext,
-      removeLayer,
-      setLayerVisibility,
-      setLayerOpacity,
-      reorderLayers,
-    ]
+    [context, removeContext, removeLayer, setLayerOpacity, reorderLayers]
   );
 
   return { layers, handleLayerAction };

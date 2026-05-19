@@ -10,8 +10,6 @@ import {
 } from "@chakra-ui/react";
 import {
   InfoIcon,
-  EyeIcon,
-  EyeClosedIcon,
   XIcon,
   CircleHalfIcon,
   CaretDownIcon,
@@ -36,11 +34,9 @@ export function LayerEntry(
   const {
     id,
     title,
-    dateRange,
-    parametersText,
+    params,
     symbology,
     children,
-    visible,
     opacity,
     hideOpacityControl,
     hideRemoveControl,
@@ -49,7 +45,6 @@ export function LayerEntry(
     expanded = false,
     onToggleExpand,
   } = props;
-  const metadataText = [dateRange, parametersText].filter(Boolean).join(" · ");
 
   return (
     <Flex
@@ -85,16 +80,9 @@ export function LayerEntry(
           >
             <CaretDownIcon size={12} />
           </IconButton>
-          <Flex flexDir="column" minW={0}>
-            <Heading as="h3" size="sm" m={0} truncate>
-              {title}
-            </Heading>
-            {metadataText && (
-              <Text fontSize="xs" fontWeight="normal" color="fg.muted" truncate>
-                {metadataText}
-              </Text>
-            )}
-          </Flex>
+          <Heading as="h3" size="sm" m={0} truncate>
+            {title}
+          </Heading>
         </Flex>
         <ButtonGroup
           variant="ghost"
@@ -145,16 +133,6 @@ export function LayerEntry(
               </IconButton>
             </OpacityControl>
           )}
-          <IconButton
-            onClick={() =>
-              onLayerAction({
-                action: "visibility",
-                payload: { id: id, visible: !visible },
-              })
-            }
-          >
-            {visible ? <EyeIcon /> : <EyeClosedIcon />}
-          </IconButton>
           {!hideRemoveControl && (
             <IconButton
               onClick={() =>
@@ -167,10 +145,48 @@ export function LayerEntry(
         </ButtonGroup>
       </Flex>
 
-      {/* Collapsible body — symbology + notes */}
+      {/* Collapsible body — params, symbology + notes */}
       <Collapsible.Root open={expanded}>
         <Collapsible.Content css={{ transition: "height 0.15s ease" }}>
           <Flex flexDir="column" gap={2} pt={2} pr={4}>
+            {params && params.length > 0 && (
+              <Flex gap={1} flexWrap="wrap" alignItems="center">
+                {params.map((p) => (
+                  <Flex
+                    key={p.label}
+                    alignItems="center"
+                    gap="4px"
+                    h="20px"
+                    px="6px"
+                    borderRadius="sm"
+                    border="1px solid"
+                    borderColor="#E0E2E5"
+                    fontFamily="mono"
+                    fontSize="10px"
+                    flexShrink={0}
+                  >
+                    <Text
+                      as="span"
+                      fontWeight="normal"
+                      lineHeight="16px"
+                      letterSpacing="0.5px"
+                      color="#A51EC7"
+                    >
+                      {p.label}
+                    </Text>
+                    <Text
+                      as="span"
+                      fontWeight="500"
+                      lineHeight="16px"
+                      letterSpacing="0"
+                      textAlign="center"
+                    >
+                      {p.value}
+                    </Text>
+                  </Flex>
+                ))}
+              </Flex>
+            )}
             {symbology}
             {children}
           </Flex>
