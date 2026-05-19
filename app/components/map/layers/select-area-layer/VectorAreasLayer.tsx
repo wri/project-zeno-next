@@ -34,7 +34,7 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { upsertContextByType } = useContextStore();
+  const { context, addContext } = useContextStore();
   const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
@@ -175,17 +175,25 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
 
-            upsertContextByType({
-              contextType: "area",
-              content: aoiName,
-              aoiData: {
-                name: aoiName,
-                ...(idField ? { [idField]: dynamicSrcId } : {}),
-                src_id: dynamicSrcId,
-                subtype: dynamicSubtype,
-                source: layerConfig?.id.toLowerCase(),
-              },
-            });
+            // Areas stack. Skip if this src_id is already in context to avoid
+            // duplicate chips when the user clicks the same region twice.
+            const alreadyInContext = context.some(
+              (c) =>
+                c.contextType === "area" && c.aoiData?.src_id === dynamicSrcId
+            );
+            if (!alreadyInContext) {
+              addContext({
+                contextType: "area",
+                content: aoiName,
+                aoiData: {
+                  name: aoiName,
+                  ...(idField ? { [idField]: dynamicSrcId } : {}),
+                  src_id: dynamicSrcId,
+                  subtype: dynamicSubtype,
+                  source: layerConfig?.id.toLowerCase(),
+                },
+              });
+            }
           }
         }
       };
@@ -216,7 +224,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     nameKeys,
     setSelectAreaLayer,
     metadata,
-    upsertContextByType,
+    addContext,
+    context,
     addToRegistry,
     addLayer,
     layerId,
