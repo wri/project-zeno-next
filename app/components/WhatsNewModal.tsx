@@ -18,11 +18,12 @@ const LEGACY_STORAGE_KEYS = [
 
 const FEATURE_IMAGES: Record<number, string> = {
   1: "/whats_new/smarter_agent.png",
-  2: "/whats_new/tcl_2025.png",
-  3: "/whats_new/multi_area.png",
-  4: "/whats_new/reasoning.png",
-  5: "/whats_new/provenance.png",
-  6: "/whats_new/charts.png",
+  2: "/whats_new/map_workspace.png",
+  3: "/whats_new/tcl_2025.png",
+  4: "/whats_new/multi_area.png",
+  5: "/whats_new/reasoning.png",
+  6: "/whats_new/provenance.png",
+  7: "/whats_new/charts.png",
 };
 
 interface Feature {
@@ -87,30 +88,38 @@ const FEATURES: Feature[] = [
   },
   {
     step: 2,
-    title: "Tree cover loss data updated to 2025",
+    title: "Insights and layers live on the map",
     description:
-      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest, or set a specific canopy threshold to match how you define forest.",
+      "Insights now appear on the map where the analysis happened, instead of scrolling away in chat. A redesigned legend shows the agent's choices at a glance — active layers, the area in focus, and the dataset and date range in use — so it's always clear what's driving each result, and you can adjust it directly. Chat stays a clean thread of what the agent did and why; the map is where you explore.",
+    isNew: true,
   },
   {
     step: 3,
+    title: "Tree cover loss data updated to 2025",
+    description:
+      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest, or set a specific canopy threshold to match how you define forest.",
+      isNew: true,
+  },
+  {
+    step: 4,
     title: "Compare multiple areas",
     description:
       'Select multiple areas at once and ask global-level questions like "Which country has the most natural grasslands?" The assistant and the charts handle the rest.',
   },
   {
-    step: 4,
+    step: 5,
     title: "See the AI's reasoning",
     description:
       "Expand the reasoning panel to see the agent's chain of thought and tool calls as they happen, step by step. More transparency, more trust.",
   },
   {
-    step: 5,
+    step: 6,
     title: "Fully reproducible analysis results",
     description:
       "Every insight comes with a full provenance trail. See exactly what data was used and how it was processed, so your results are fully reproducible.",
   },
   {
-    step: 6,
+    step: 7,
     title: "Improved charts",
     description:
       "Switch between chart and table views, export data to share with your team, and enjoy improved accessibility across all visualisations.",
