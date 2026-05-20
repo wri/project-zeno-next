@@ -70,7 +70,7 @@ export default function SettingsShell({
         >
           <Button
             asChild
-            bg={activePath === "/dashboard" ? "white" : undefined}
+            bg={activePath === "/dashboard" ? "bg.muted" : undefined}
           >
             <Link href="/dashboard">
               <GearIcon />
@@ -80,7 +80,7 @@ export default function SettingsShell({
           {userType === "superuser" && (
             <Button
               asChild
-              bg={activePath === "/manage-users" ? "white" : undefined}
+              bg={activePath === "/manage-users" ? "bg.muted" : undefined}
             >
               <Link href="/manage-users">
                 <UsersThreeIcon />
