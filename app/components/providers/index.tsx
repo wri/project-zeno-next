@@ -8,22 +8,12 @@ import { jwtDecode } from "jwt-decode";
 import theme from "@/app/theme";
 import { Toaster } from "@/app/components/ui/toaster";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
-import useAuthStore, { type UserType } from "@/app/store/authStore";
+import useAuthStore from "@/app/store/authStore";
+import { UserTypeEnum, type UserType } from "@/app/schemas/api/admin/users/get";
 import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
 
-const VALID_USER_TYPES: ReadonlyArray<UserType> = [
-  "regular",
-  "admin",
-  "pro",
-  "superuser",
-  "machine",
-];
-
 function coerceUserType(value: unknown): UserType | null {
-  return typeof value === "string" &&
-    (VALID_USER_TYPES as ReadonlyArray<string>).includes(value)
-    ? (value as UserType)
-    : null;
+  return UserTypeEnum.safeParse(value).data ?? null;
 }
 
 const queryClient = new QueryClient();

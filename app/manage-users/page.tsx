@@ -22,14 +22,12 @@ import { useAdminUserTypeUpdate } from "@/app/hooks/useAdminUserTypeUpdate";
 import { useAdminUsersExport } from "@/app/hooks/useAdminUsersExport";
 import { toaster } from "@/app/components/ui/toaster";
 import { type UserModel } from "@/app/schemas/api/admin/users/get";
-import { type AssignableUserType } from "@/app/schemas/api/admin/users/patch";
+import {
+  AssignableUserTypeEnum,
+  type AssignableUserType,
+} from "@/app/schemas/api/admin/users/patch";
 
-const ASSIGNABLE_TYPES: AssignableUserType[] = [
-  "regular",
-  "pro",
-  "admin",
-  "superuser",
-];
+const ASSIGNABLE_TYPES = AssignableUserTypeEnum.options;
 
 type ValueChangeDetails = { value: string[] };
 
