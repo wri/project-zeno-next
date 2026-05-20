@@ -27,6 +27,9 @@ import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
+import AnalysisParameters, {
+  AnalysisParamsChips,
+} from "./widgets/AnalysisParameters";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -34,6 +37,7 @@ interface WidgetMessageProps {
 
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
+  const [paramsExpanded, setParamsExpanded] = useState(false);
   const { open, onOpen, onClose } = useDisclosure();
   const {
     open: expanded,
@@ -97,13 +101,29 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
       borderColor="blue.fg"
       overflow="hidden"
     >
-      <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight">
+      <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight" align="center">
         {WidgetIcons[widget.type]}
-        <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
+        <Heading
+          size="xs"
+          fontWeight="medium"
+          color="primary.fg"
+          m={0}
+          flex={1}
+        >
           {widget.title}
         </Heading>
+        {widget.analysisParams && (
+          <AnalysisParameters
+            params={widget.analysisParams}
+            expanded={paramsExpanded}
+            onToggle={() => setParamsExpanded((v) => !v)}
+          />
+        )}
       </Flex>
       <Flex gap={3} px={4} py={3} flexDir="column">
+        {widget.analysisParams && paramsExpanded && (
+          <AnalysisParamsChips params={widget.analysisParams} />
+        )}
         {hasData && <Separator />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
