@@ -10,16 +10,19 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "whats-new-v2-dismissed";
-const LEGACY_STORAGE_KEYS = ["whats-new-v1-dismissed"];
+const STORAGE_KEY = "whats-new-v3-dismissed";
+const LEGACY_STORAGE_KEYS = [
+  "whats-new-v1-dismissed",
+  "whats-new-v2-dismissed",
+];
 
 const FEATURE_IMAGES: Record<number, string> = {
-  1: "/whats_new/tcl_2025.png",
-  2: "/whats_new/multi_area.png",
-  3: "/whats_new/reasoning.png",
-  4: "/whats_new/provenance.png",
-  5: "/whats_new/charts.png",
-  6: "/whats_new/performance.png",
+  1: "/whats_new/smarter_agent.png",
+  2: "/whats_new/tcl_2025.png",
+  3: "/whats_new/multi_area.png",
+  4: "/whats_new/reasoning.png",
+  5: "/whats_new/provenance.png",
+  6: "/whats_new/charts.png",
 };
 
 interface Feature {
@@ -77,40 +80,40 @@ const Pill = ({
 const FEATURES: Feature[] = [
   {
     step: 1,
-    title: "Tree cover loss data updated to 2025",
+    title: "A sharper, more focused assistant",
     description:
-      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest, or set a specific canopy threshold to match how you define forest.",
+      "Ask for exactly what you need. \"Pull tree cover loss for Brazil\" now fetches the data and stops; \"analyze it\" continues through to a chart with insights. The assistant also keeps better track of your current area, dataset and dates between turns — so it skips work you've already done, picks places and datasets more reliably, and feels faster and more responsive.",
     isNew: true,
   },
   {
     step: 2,
+    title: "Tree cover loss data updated to 2025",
+    description:
+      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest, or set a specific canopy threshold to match how you define forest.",
+  },
+  {
+    step: 3,
     title: "Compare multiple areas",
     description:
       'Select multiple areas at once and ask global-level questions like "Which country has the most natural grasslands?" The assistant and the charts handle the rest.',
   },
   {
-    step: 3,
+    step: 4,
     title: "See the AI's reasoning",
     description:
       "Expand the reasoning panel to see the agent's chain of thought and tool calls as they happen, step by step. More transparency, more trust.",
   },
   {
-    step: 4,
+    step: 5,
     title: "Fully reproducible analysis results",
     description:
       "Every insight comes with a full provenance trail. See exactly what data was used and how it was processed, so your results are fully reproducible.",
   },
   {
-    step: 5,
+    step: 6,
     title: "Improved charts",
     description:
       "Switch between chart and table views, export data to share with your team, and enjoy improved accessibility across all visualisations.",
-  },
-  {
-    step: 6,
-    title: "Faster and smarter",
-    description:
-      "Faster responses and higher quality answers: improvements across the board to speed, dataset selection, interpretation, and chart generation.",
   },
 ];
 
@@ -172,7 +175,7 @@ const WhatsNewModal = () => {
             </Text>
           </HStack>
           <HStack gap={3}>
-            <Pill label="APRIL 2026" color="#4a64cb" />
+            <Pill label="MAY 2026" color="#4a64cb" />
             <Box
               as="button"
               onClick={dismiss}
