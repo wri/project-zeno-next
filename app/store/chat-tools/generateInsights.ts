@@ -100,6 +100,7 @@ export function generateInsightsTool(
         type: "assistant",
         message: "I've created an insight you can view on the map.",
         timestamp: streamMessage.timestamp,
+        widgets,
       });
     }
   } catch (error) {
