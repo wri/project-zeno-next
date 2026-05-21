@@ -6,7 +6,6 @@ import {
   Text,
   Heading,
   IconButton,
-  Button,
   useDisclosure,
 } from "@chakra-ui/react";
 import {
@@ -14,8 +13,6 @@ import {
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
 } from "@phosphor-icons/react";
-import Markdown from "react-markdown";
-import remarkBreaks from "remark-breaks";
 import useInsightStore from "@/app/store/insightStore";
 import WidgetMessage from "./WidgetMessage";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
@@ -27,7 +24,7 @@ import { buildChips } from "./widgets/analysis-params-utils";
 export default function InsightWorkspace() {
   const { insights } = useInsightStore();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { open, onOpen, onClose } = useDisclosure();
+  const { open, onClose } = useDisclosure();
   const [paramsExpanded, setParamsExpanded] = useState(false);
 
   useEffect(() => {
