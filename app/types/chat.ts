@@ -45,6 +45,16 @@ export interface InsightWidget {
   yAxis: string;
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
+  analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
+}
+
+// Parameters the agent used to produce an insight (read-only transparency)
+export interface AnalysisParams {
+  areas?: string[]; // e.g. ["Pará, Brazil", "KBAs"]
+  dataset?: string; // e.g. "Tree cover loss"
+  canopyThreshold?: number; // e.g. 30 (percentage)
+  startYear?: number;
+  endYear?: number;
 }
 
 // Raw insight data from API (before conversion to InsightWidget)

@@ -27,6 +27,10 @@ import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
+import AnalysisParametersToggle, {
+  AnalysisParamsChips,
+} from "./widgets/AnalysisParameters";
+import { buildChips } from "./widgets/analysis-params-utils";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -34,6 +38,9 @@ interface WidgetMessageProps {
 
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
+  const [paramsExpanded, setParamsExpanded] = useState(false);
+  const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
+  const hasChips = chips.length > 0;
   const { open, onOpen, onClose } = useDisclosure();
   const {
     open: expanded,
@@ -97,13 +104,26 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
       borderColor="blue.fg"
       overflow="hidden"
     >
-      <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight">
+      <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight" align="center">
         {WidgetIcons[widget.type]}
-        <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
+        <Heading
+          size="xs"
+          fontWeight="medium"
+          color="primary.fg"
+          m={0}
+          flex={1}
+        >
           {widget.title}
         </Heading>
+        {hasChips && (
+          <AnalysisParametersToggle
+            expanded={paramsExpanded}
+            onToggle={() => setParamsExpanded((v) => !v)}
+          />
+        )}
       </Flex>
       <Flex gap={3} px={4} py={3} flexDir="column">
+        {hasChips && paramsExpanded && <AnalysisParamsChips chips={chips} />}
         {hasData && <Separator />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
