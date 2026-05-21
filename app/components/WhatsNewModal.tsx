@@ -97,7 +97,7 @@ const FEATURES: Feature[] = [
     step: 3,
     title: "Tree cover loss data updated to 2025",
     description:
-      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest, or set a specific canopy threshold to match how you define forest.",
+      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest or intact forest landscapes, as well as set a specific canopy threshold to match how you define forest.",
       isNew: true,
   },
   {
