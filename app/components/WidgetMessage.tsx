@@ -164,6 +164,7 @@ export default function WidgetMessage({
               onClick={onExpand}
               h={6}
               rounded="sm"
+              color="neutral.500"
             >
               <ArrowsOutIcon size={14} />
               Show full-screen
@@ -235,7 +236,7 @@ export default function WidgetMessage({
               color="neutral.500"
             >
               <DownloadSimpleIcon size={14} />
-              Download data
+              Download
               <CaretDownIcon size={12} />
             </Button>
           </Flex>

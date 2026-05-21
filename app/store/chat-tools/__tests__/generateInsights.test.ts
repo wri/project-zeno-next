@@ -1,4 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// contextStore imports a React component (ContextButton) — mock to avoid JSX
+// in the node test environment
+vi.mock("@/app/store/contextStore", () => ({
+  default: { getState: () => ({ context: [] }) },
+}));
+
 import { generateInsightsTool } from "../generateInsights";
 import useInsightStore from "../../insightStore";
 import { StreamMessage, ChatMessage } from "@/app/types/chat";

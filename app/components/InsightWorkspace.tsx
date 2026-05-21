@@ -1,21 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
+import { Box, Flex, Text, Heading, IconButton, Link } from "@chakra-ui/react";
 import {
-  Box,
-  Flex,
-  Text,
-  Heading,
-  IconButton,
-  useDisclosure,
-} from "@chakra-ui/react";
-import {
-  SparkleIcon,
+  CaretDownIcon,
+  CaretUpIcon,
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
 import WidgetMessage from "./WidgetMessage";
-import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
+import { WidgetIcons } from "@/app/ChatPanelHeader";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
@@ -24,7 +18,7 @@ import { buildChips } from "./widgets/analysis-params-utils";
 export default function InsightWorkspace() {
   const { insights } = useInsightStore();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { open, onClose } = useDisclosure();
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
 
   useEffect(() => {
@@ -45,110 +39,152 @@ export default function InsightWorkspace() {
     <Box
       position="absolute"
       top={4}
-      right={4}
-      w="420px"
-      maxH="calc(100vh - 6rem)"
-      overflowY="auto"
+      right={3}
       zIndex={400}
-      bg="primary.25"
-      border="2px solid"
-      borderColor="primary.solid"
-      borderRadius="md"
-      boxShadow="0 4px 20px -4px {colors.primary.solid/40}"
-      pointerEvents="all"
+      pointerEvents="none"
     >
-      {/* Title row */}
-      <Flex px={4} pt={3} pb={2} justify="space-between" align="flex-start">
-        <Heading
-          size="sm"
-          fontWeight="semibold"
-          color="#172B7A"
-          flex={1}
-          mr={2}
-          mb={0}
-        >
-          {widget.title}
-        </Heading>
-        {total > 1 && (
-          <Flex gap={1} flexShrink={0}>
-            <IconButton
-              size="xs"
-              variant="ghost"
-              aria-label="Previous insight"
-              border="1px solid #E0E2E5"
-              disabled={!canGoPrev}
-              onClick={() => setCurrentIndex((i) => i + 1)}
-            >
-              <ArrowArcLeftIcon size={14} />
-            </IconButton>
-            <IconButton
-              size="xs"
-              variant="ghost"
-              aria-label="Next insight"
-              disabled={!canGoNext}
-              border="1px solid #E0E2E5"
-              onClick={() => setCurrentIndex((i) => i - 1)}
-            >
-              <ArrowArcRightIcon size={14} />
-            </IconButton>
-          </Flex>
-        )}
-      </Flex>
-
-      {/* Sub-header row */}
-      <Flex
-        px={4}
-        justify="space-between"
-        align="center"
-        borderBottom="1px dashed"
-        borderColor="border"
+      {/* Panel */}
+      <Box
+        w="420px"
+        maxH="calc(100vh - 6rem)"
+        overflowY="auto"
+        bg="primary.25"
+        border="1px solid"
+        borderColor="#DDE2F5"
+        borderRadius="md"
+        boxShadow="0 4px 20px -4px {colors.primary.solid/40}"
+        pointerEvents="all"
       >
-        <Flex align="center" gap={1.5}>
-          <SparkleIcon size={12} weight="fill" />
-          <Text
-            fontSize="10px"
-            fontFamily="mono"
-            textTransform="uppercase"
-            letterSpacing="wider"
-            color="fg.muted"
-          >
-            AI-Assisted Analysis
-          </Text>
-        </Flex>
-        {hasChips && (
-          <AnalysisParametersToggle
-            expanded={paramsExpanded}
-            onToggle={() => setParamsExpanded((v) => !v)}
-          />
-        )}
-        {/* {widget.generation && (
-          <Button
+        {/* Header row */}
+        <Flex
+          px={4}
+          py={2}
+          justify="space-between"
+          align="center"
+          borderBottom="1px solid"
+          borderColor="#DDE2F5"
+        >
+          <Flex align="center" gap={1.5} flexWrap="nowrap" overflow="hidden">
+            {WidgetIcons[widget.type]}
+            <Text
+              fontSize="10px"
+              fontFamily="mono"
+              textTransform="uppercase"
+              letterSpacing="wider"
+              color="fg.muted"
+              whiteSpace="nowrap"
+            >
+              AI-Assisted Analysis{" · "}
+              <Link
+                href="https://help.globalnaturewatch.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                fontSize="10px"
+                fontFamily="mono"
+                textDecoration="underline"
+                textTransform="none"
+              >
+                learn more
+              </Link>
+            </Text>
+          </Flex>
+          <IconButton
             size="xs"
             variant="ghost"
-            color="fg.muted"
-            h={5}
-            px={1}
-            fontWeight="normal"
-            textDecoration="underline"
-            onClick={onOpen}
+            aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
+            flexShrink={0}
+            onClick={() => setIsCollapsed((v) => !v)}
           >
-            Parameters
-          </Button>
-        )} */}
-      </Flex>
+            {isCollapsed ? (
+              <CaretDownIcon size={14} />
+            ) : (
+              <CaretUpIcon size={14} />
+            )}
+          </IconButton>
+        </Flex>
 
-      {/* Inner chart card */}
-      <Box px={2} pb={3} pt={1}>
-        {hasChips && paramsExpanded && <AnalysisParamsChips chips={chips} />}
-        <WidgetMessage widget={widget} inWorkspace />
+        {!isCollapsed && (
+          <>
+            {/* Title row */}
+            <Flex
+              px={4}
+              pt={3}
+              pb={2}
+              justify="space-between"
+              align="flex-start"
+              borderBottom="1px solid"
+              borderColor="#DDE2F5"
+            >
+              <Heading
+                size="sm"
+                fontWeight="semibold"
+                color="primary.fg"
+                flex={1}
+                mr={2}
+                mb={0}
+              >
+                {widget.title}
+              </Heading>
+              {hasChips && (
+                <AnalysisParametersToggle
+                  expanded={paramsExpanded}
+                  onToggle={() => setParamsExpanded((v) => !v)}
+                />
+              )}
+            </Flex>
+
+            {/* Params chips section */}
+            {hasChips && paramsExpanded && (
+              <Box px={4} py={2} borderBottom="1px solid" borderColor="#DDE2F5">
+                <AnalysisParamsChips chips={chips} />
+              </Box>
+            )}
+
+            {/* Inner chart card */}
+            <Box px={2} py={2}>
+              <WidgetMessage widget={widget} inWorkspace />
+            </Box>
+
+            {/* Navigation footer */}
+            {total > 1 && (
+              <Flex
+                px={4}
+                py={2}
+                borderTop="1px solid"
+                borderColor="#DDE2F5"
+                justify="space-between"
+                align="center"
+              >
+                <IconButton
+                  size="xs"
+                  variant="ghost"
+                  border="1px solid"
+                  borderColor="border.emphasized"
+                  aria-label="Previous insight"
+                  disabled={!canGoPrev}
+                  onClick={() => setCurrentIndex((i) => i + 1)}
+                >
+                  <ArrowArcLeftIcon size={14} />
+                </IconButton>
+                <Text fontSize="xs" color="neutral.500">
+                  {currentIndex + 1} of {total} available analyses
+                </Text>
+                <IconButton
+                  size="xs"
+                  variant="ghost"
+                  border="1px solid"
+                  borderColor="border.emphasized"
+                  aria-label="Next insight"
+                  disabled={!canGoNext}
+                  onClick={() => setCurrentIndex((i) => i - 1)}
+                >
+                  <ArrowArcRightIcon size={14} />
+                </IconButton>
+              </Flex>
+            )}
+          </>
+        )}
       </Box>
-
-      <InsightProvenanceDrawer
-        isOpen={open}
-        onClose={onClose}
-        generation={widget.generation}
-        title="Parameters"
-      />
     </Box>
   );
 }
