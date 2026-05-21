@@ -59,8 +59,10 @@ export default function InsightWorkspace() {
   const widget = insights[total - 1 - currentIndex];
   const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
   const hasChips = chips.length > 0;
-  const canGoPrev = currentIndex < total - 1;
-  const canGoNext = currentIndex > 0;
+  // currentIndex 0 = newest (shown as "1 of N"). The Left/Prev arrow
+  // disables at 1/N; Right/Next advances through the stack to older entries.
+  const canGoPrev = currentIndex > 0;
+  const canGoNext = currentIndex < total - 1;
   const HeaderIcon = WidgetIconComponent[widget.type];
 
   return (
@@ -212,7 +214,7 @@ export default function InsightWorkspace() {
                   borderColor="border.emphasized"
                   aria-label="Previous insight"
                   disabled={!canGoPrev}
-                  onClick={() => setCurrentIndex((i) => i + 1)}
+                  onClick={() => setCurrentIndex((i) => i - 1)}
                 >
                   <ArrowArcLeftIcon size={14} />
                 </IconButton>
@@ -226,7 +228,7 @@ export default function InsightWorkspace() {
                   borderColor="border.emphasized"
                   aria-label="Next insight"
                   disabled={!canGoNext}
-                  onClick={() => setCurrentIndex((i) => i - 1)}
+                  onClick={() => setCurrentIndex((i) => i + 1)}
                 >
                   <ArrowArcRightIcon size={14} />
                 </IconButton>
