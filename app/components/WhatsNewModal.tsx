@@ -90,7 +90,7 @@ const FEATURES: Feature[] = [
     step: 2,
     title: "The map as a workspace",
     description:
-      "Insights now appear on the map where the analysis happened, instead of scrolling away in chat. A redesigned legend shows the agent's choices at a glance — active layers, the area in focus, and the dataset and date range in use — so it's always clear what's driving each result, and you can adjust it directly. Chat stays a clean thread of what the agent did and why; the map is where you explore.",
+      "Chat is a clean thread of what the assistant did and why; the map is where you explore. Insights now live on the map alongside a redesigned legend — both show the parameters selected, so it's always clear what's driving each result.",
     isNew: true,
   },
   {
