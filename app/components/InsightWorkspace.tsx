@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Box, Flex, Text, Heading, IconButton, Link } from "@chakra-ui/react";
+import { Box, Flex, Text, Heading, IconButton } from "@chakra-ui/react";
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -9,11 +9,38 @@ import {
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
 import WidgetMessage from "./WidgetMessage";
-import { WidgetIcons } from "@/app/ChatPanelHeader";
+import { Tooltip } from "./ui/tooltip";
+import { WidgetIconComponent } from "@/app/utils/widgetIcons";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
+
+const AI_DISCLAIMER =
+  "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.";
+
+const aiDisclaimerTooltip = (
+  <Box display="flex" flexDirection="column" gap="2px" maxW="296px">
+    <Text
+      fontFamily="body"
+      fontSize="12px"
+      lineHeight="150%"
+      fontWeight="medium"
+      color="#FFFFFF"
+    >
+      AI-Assisted Analysis
+    </Text>
+    <Text
+      fontFamily="body"
+      fontSize="12px"
+      lineHeight="150%"
+      fontWeight="normal"
+      color="#B2B6BD"
+    >
+      {AI_DISCLAIMER}
+    </Text>
+  </Box>
+);
 
 export default function InsightWorkspace() {
   const { insights } = useInsightStore();
@@ -34,6 +61,7 @@ export default function InsightWorkspace() {
   const hasChips = chips.length > 0;
   const canGoPrev = currentIndex < total - 1;
   const canGoNext = currentIndex > 0;
+  const HeaderIcon = WidgetIconComponent[widget.type];
 
   return (
     <Box
@@ -51,53 +79,77 @@ export default function InsightWorkspace() {
         bg="primary.25"
         border="1px solid"
         borderColor="#DDE2F5"
-        borderRadius="md"
-        boxShadow="0 4px 20px -4px {colors.primary.solid/40}"
+        rounded="4px"
         pointerEvents="all"
+        display="flex"
+        flexDirection="column"
       >
-        {/* Header row */}
+        {/* Header row — 28px section header */}
         <Flex
-          px={4}
+          h="28px"
+          px="16px"
+          py="6px"
+          gap="8px"
           justify="space-between"
           align="center"
           borderBottom="1px solid"
           borderColor="#DDE2F5"
         >
-          <Flex align="center" gap={1.5} flexWrap="nowrap" overflow="hidden">
-            {WidgetIcons[widget.type]}
+          <Flex
+            align="center"
+            gap="8px"
+            h="16px"
+            flexWrap="nowrap"
+            overflow="hidden"
+          >
+            <HeaderIcon size={12} color="#0049AA" />
             <Text
               fontSize="10px"
               fontFamily="mono"
-              textTransform="uppercase"
-              letterSpacing="wider"
+              fontWeight="normal"
+              lineHeight="16px"
+              letterSpacing="0.03em"
               color="fg.muted"
               whiteSpace="nowrap"
             >
-              AI-Assisted Analysis{" · "}
-              <Link
-                href="https://help.globalnaturewatch.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                fontSize="10px"
-                fontFamily="mono"
-                textDecoration="underline"
-                textTransform="none"
+              AI-Assisted Analysis
+              {" · "}
+              <Tooltip
+                variant="dark"
+                content={aiDisclaimerTooltip}
+                showArrow
+                positioning={{ placement: "bottom" }}
+                openDelay={100}
+                closeDelay={100}
               >
-                learn more
-              </Link>
+                <Box
+                  as="span"
+                  color="#4A64CB"
+                  textDecoration="underline"
+                  cursor="help"
+                  tabIndex={0}
+                  aria-label="Learn more about AI-Assisted Analysis"
+                >
+                  learn more
+                </Box>
+              </Tooltip>
             </Text>
           </Flex>
           <IconButton
-            size="xs"
+            size="2xs"
             variant="ghost"
+            h="16px"
+            minW="16px"
+            w="16px"
+            color="#656E7B"
             aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
             flexShrink={0}
             onClick={() => setIsCollapsed((v) => !v)}
           >
             {isCollapsed ? (
-              <CaretDownIcon size={14} />
+              <CaretDownIcon size={12} weight="bold" />
             ) : (
-              <CaretUpIcon size={14} />
+              <CaretUpIcon size={12} weight="bold" />
             )}
           </IconButton>
         </Flex>
