@@ -83,7 +83,7 @@ const FEATURES: Feature[] = [
     step: 1,
     title: "A more collaborative assistant",
     description:
-      "The assistant now works more closely with you in conversation, giving you finer control over how it acts. Ask it to zoom to a place (\"zoom to Pará\"), pick a dataset by topic (\"tree cover loss in rainforests\"), or run a full analysis (\"analyze tree cover loss in Pará over the last 5 years\") — and it does exactly that, nothing more.",
+      'The assistant now works more closely with you in conversation, giving you finer control over how it acts. Ask it to zoom to a place ("zoom to Pará"), pick a dataset by topic ("tree cover loss in rainforests"), or run a full analysis ("analyze tree cover loss in Pará over the last 5 years") — and it does exactly that, nothing more.',
     isNew: true,
   },
   {
@@ -98,7 +98,7 @@ const FEATURES: Feature[] = [
     title: "Tree cover loss data updated to 2025",
     description:
       "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest or intact forest landscapes, as well as set a specific canopy threshold to match how you define forest.",
-      isNew: true,
+    isNew: true,
   },
   {
     step: 4,

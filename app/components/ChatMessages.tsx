@@ -98,6 +98,7 @@ function ChatMessages() {
         const previousMessage = index > 0 ? messages[index - 1] : null;
         const isConsecutive = previousMessage?.type === message.type;
         const isFirst = index === 0;
+        const isLast = index === messages.length - 1;
         const isLastUserMessage =
           index === lastUserMessageIndex && message.type === "user";
         return (
@@ -157,6 +158,7 @@ function ChatMessages() {
               message={message}
               isConsecutive={isConsecutive}
               isFirst={isFirst}
+              isLast={isLast}
             />
             {message.type === "user" && (
               <>

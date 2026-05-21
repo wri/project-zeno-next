@@ -143,7 +143,7 @@ export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
 // If the group is a single area, render a single label and polygon
 // If the group is a multi-area selection, render a bbox polygon and a label for the selection name
 function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
-  const { upsertContextByType, removeContext } = useContextStore();
+  const { addContext, removeContext } = useContextStore();
   const { isHovered, setHoverState } = useHoverState();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
   const displayName = layer.selectionName ?? layer.name;
@@ -166,22 +166,24 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
   };
   const handleSelectFromLabel = () => {
     if (!isInContext) {
+      // Areas stack — addContext keeps existing area chips and adds a new one.
+      // The `isInContext` guard above already prevents re-adding the same layer.
       if (layer.aoiSelection) {
-        upsertContextByType({
+        addContext({
           contextType: "area",
           content: displayName,
           aoiSelection: layer.aoiSelection,
         });
       } else {
         // For single-area layers, look up the registry entry to get the
-        // correct src_id, source, and subtype for the context upsert.
+        // correct src_id, source, and subtype for the context entry.
         const ref = layer.featureRefs?.[0];
         const entry = ref
           ? entries.find(
               (e) => e.ref.name === ref.name && e.ref.source === ref.source
             )
           : undefined;
-        upsertContextByType({
+        addContext({
           contextType: "area",
           content: displayName,
           aoiData: {

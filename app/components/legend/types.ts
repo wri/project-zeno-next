@@ -1,15 +1,35 @@
 import { ReactNode } from "react";
 
 /**
+ * A single read-only parameter chip shown beneath a layer title.
+ * e.g. { label: "YEAR", value: "2025" } or { label: "CANOPY", value: ">= 30%" }
+ */
+export interface LegendParam {
+  label: string;
+  value: string;
+}
+
+/**
+ * A contextual sub-layer shown indented under a parent layer card with a
+ * "within" prefix. e.g. "within ■ Primary Forests (2001)".
+ */
+export interface LegendContextLayer {
+  id: string;
+  title: string;
+  color: string;
+  opacity: number;
+  info?: string;
+}
+
+/**
  * Represents a single layer in the legend.
  */
 export interface LegendLayer {
   id: string;
   title: string;
-  visible: boolean;
   opacity: number;
-  dateRange?: string;
-  parametersText?: string;
+  params?: LegendParam[];
+  contextLayer?: LegendContextLayer;
   symbology: ReactNode;
   children?: ReactNode;
   info?: string;
@@ -21,10 +41,6 @@ export type LayerActionArgs =
   | {
       action: "remove";
       payload: { id: string };
-    }
-  | {
-      action: "visibility";
-      payload: { id: string; visible: boolean };
     }
   | {
       action: "opacity";

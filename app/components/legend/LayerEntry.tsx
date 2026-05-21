@@ -2,6 +2,7 @@ import {
   Flex,
   Heading,
   Text,
+  Box,
   ButtonGroup,
   IconButton,
   Popover,
@@ -10,14 +11,17 @@ import {
 } from "@chakra-ui/react";
 import {
   InfoIcon,
-  EyeIcon,
-  EyeClosedIcon,
   XIcon,
   CircleHalfIcon,
   CaretDownIcon,
+  ArrowBendDownRightIcon,
 } from "@phosphor-icons/react";
 import { OpacityControl } from "./OpacityControl";
-import type { LegendLayer, LayerActionHandler } from "./types";
+import type {
+  LegendLayer,
+  LegendContextLayer,
+  LayerActionHandler,
+} from "./types";
 
 /**
  * LayerEntry component displaying details, controls, and legend swatches for a
@@ -36,11 +40,10 @@ export function LayerEntry(
   const {
     id,
     title,
-    dateRange,
-    parametersText,
+    params,
+    contextLayer,
     symbology,
     children,
-    visible,
     opacity,
     hideOpacityControl,
     hideRemoveControl,
@@ -49,7 +52,6 @@ export function LayerEntry(
     expanded = false,
     onToggleExpand,
   } = props;
-  const metadataText = [dateRange, parametersText].filter(Boolean).join(" · ");
 
   return (
     <Flex
@@ -85,16 +87,9 @@ export function LayerEntry(
           >
             <CaretDownIcon size={12} />
           </IconButton>
-          <Flex flexDir="column" minW={0}>
-            <Heading as="h3" size="sm" m={0} truncate>
-              {title}
-            </Heading>
-            {metadataText && (
-              <Text fontSize="xs" fontWeight="normal" color="fg.muted" truncate>
-                {metadataText}
-              </Text>
-            )}
-          </Flex>
+          <Heading as="h3" size="sm" m={0} truncate>
+            {title}
+          </Heading>
         </Flex>
         <ButtonGroup
           variant="ghost"
@@ -145,16 +140,6 @@ export function LayerEntry(
               </IconButton>
             </OpacityControl>
           )}
-          <IconButton
-            onClick={() =>
-              onLayerAction({
-                action: "visibility",
-                payload: { id: id, visible: !visible },
-              })
-            }
-          >
-            {visible ? <EyeIcon /> : <EyeClosedIcon />}
-          </IconButton>
           {!hideRemoveControl && (
             <IconButton
               onClick={() =>
@@ -167,15 +152,139 @@ export function LayerEntry(
         </ButtonGroup>
       </Flex>
 
-      {/* Collapsible body — symbology + notes */}
+      {/* Collapsible body — symbology → params → within → notes */}
       <Collapsible.Root open={expanded}>
         <Collapsible.Content css={{ transition: "height 0.15s ease" }}>
           <Flex flexDir="column" gap={2} pt={2} pr={4}>
             {symbology}
+            {params && params.length > 0 && (
+              <Flex gap={1} flexWrap="wrap" alignItems="center">
+                {params.map((p) => (
+                  <Flex
+                    key={p.label}
+                    alignItems="center"
+                    gap="4px"
+                    h="20px"
+                    px="6px"
+                    borderRadius="sm"
+                    border="1px solid"
+                    borderColor="#E0E2E5"
+                    fontFamily="mono"
+                    fontSize="10px"
+                    flexShrink={0}
+                  >
+                    <Text
+                      as="span"
+                      fontWeight="normal"
+                      lineHeight="16px"
+                      letterSpacing="0.5px"
+                      color="#A51EC7"
+                    >
+                      {p.label}
+                    </Text>
+                    <Text
+                      as="span"
+                      fontWeight="500"
+                      lineHeight="16px"
+                      letterSpacing="0"
+                      textAlign="center"
+                    >
+                      {p.value}
+                    </Text>
+                  </Flex>
+                ))}
+              </Flex>
+            )}
+            {contextLayer && (
+              <ContextLayerRow
+                contextLayer={contextLayer}
+                onLayerAction={onLayerAction}
+              />
+            )}
             {children}
           </Flex>
         </Collapsible.Content>
       </Collapsible.Root>
+    </Flex>
+  );
+}
+
+/**
+ * Indented "within" row shown inside an expanded layer card when a contextual
+ * sub-layer is active. e.g. "↳ within ■ Primary Forests (2001)"
+ */
+function ContextLayerRow(props: {
+  contextLayer: LegendContextLayer;
+  onLayerAction: LayerActionHandler;
+}) {
+  const { contextLayer, onLayerAction } = props;
+
+  return (
+    <Flex flexDir="column" gap={1}>
+      <Box h="1px" bg="border" mx={-4} />
+      <Flex alignItems="center" gap={1.5} pl={3}>
+        <ArrowBendDownRightIcon
+          size={12}
+          color="var(--chakra-colors-fg-muted)"
+        />
+        <Text fontSize="xs" color="fg.muted" fontStyle="italic" flexShrink={0}>
+          within
+        </Text>
+        {/* Colour swatch */}
+        <Box
+          w="10px"
+          h="10px"
+          borderRadius="2px"
+          bg={contextLayer.color}
+          flexShrink={0}
+        />
+        <Text fontSize="xs" truncate flex={1}>
+          {contextLayer.title}
+        </Text>
+        <ButtonGroup
+          variant="ghost"
+          size="xs"
+          gap={0}
+          flexShrink={0}
+          css={{ "& button": { h: 5, minW: 5 } }}
+        >
+          {contextLayer.info && (
+            <Popover.Root>
+              <Popover.Trigger asChild>
+                <IconButton>
+                  <InfoIcon />
+                </IconButton>
+              </Popover.Trigger>
+              <Portal>
+                <Popover.Positioner>
+                  <Popover.Content>
+                    <Popover.Arrow />
+                    <Popover.Body>
+                      <Popover.Title fontWeight="medium">
+                        Layer information
+                      </Popover.Title>
+                      <Text my="4">{contextLayer.info}</Text>
+                    </Popover.Body>
+                  </Popover.Content>
+                </Popover.Positioner>
+              </Portal>
+            </Popover.Root>
+          )}
+          <OpacityControl
+            value={contextLayer.opacity}
+            onValueChange={(value) =>
+              onLayerAction({
+                action: "opacity",
+                payload: { id: contextLayer.id, opacity: value },
+              })
+            }
+          >
+            <IconButton>
+              <CircleHalfIcon />
+            </IconButton>
+          </OpacityControl>
+        </ButtonGroup>
+      </Flex>
     </Flex>
   );
 }

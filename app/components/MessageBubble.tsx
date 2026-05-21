@@ -13,6 +13,7 @@ import {
 import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
+import { AnalysisCard } from "./AnalysisCard";
 import Markdown from "react-markdown";
 import {
   ArrowBendDownRightIcon,
@@ -37,12 +38,14 @@ interface MessageBubbleProps {
   message: ChatMessage;
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
   isFirst?: boolean;
+  isLast?: boolean;
 }
 
 function MessageBubble({
   message,
   isConsecutive = false,
   isFirst = false,
+  isLast = false,
 }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const clipboard = useClipboard({ value: message.message });
@@ -142,9 +145,17 @@ function MessageBubble({
   const isWidget = message.type === "widget";
   const isError = message.type === "error";
   const isWarning = message.type === "warning";
+  const isAssistant = message.type === "assistant";
+  const analysisWidgets = isAssistant
+    ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
+    : [];
   const hasContext = isUser && message.context && message.context.length > 0;
   const showFooter =
-    !isUser && !isConsecutive && !isError && !isWarning && !isFirst;
+    !isUser &&
+    !isError &&
+    !isWarning &&
+    !isFirst &&
+    (!isConsecutive || analysisWidgets.length > 0 || isLast);
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
     return message.widgets.map((widget, idx) => (
@@ -260,6 +271,16 @@ function MessageBubble({
               </Markdown>
             </CopySelectionTooltip>
           </Box>
+        )}
+        {analysisWidgets.length > 0 && (
+          <Flex direction="column" gap="2" mt="2" w="100%">
+            {analysisWidgets.map((widget, idx) => (
+              <AnalysisCard
+                key={`${message.id}-analysis-${idx}`}
+                widget={widget}
+              />
+            ))}
+          </Flex>
         )}
         {showFooter && (
           <Flex
