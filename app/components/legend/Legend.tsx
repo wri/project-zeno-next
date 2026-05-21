@@ -103,51 +103,57 @@ export function Legend(props: LegendProps) {
       right={3}
       bottom={{ base: "4.5rem", md: 12 }}
       zIndex={100}
-      width={320}
+      width={420}
       maxH={{ base: "50vh", md: "60vh" }}
-      bg="bg"
-      rounded="sm"
-      shadow="sm"
+      bg="#F7F9FF"
+      border="1px solid"
+      borderColor="#D7D3D0"
+      rounded="4px"
       flexDirection="column"
       overflow="hidden"
     >
-      {/* Always-visible header — click the caret to collapse/expand */}
+      {/* Always-visible header — 28px section header per Figma */}
       <Flex
-        px={3}
-        py={2}
+        h="28px"
+        px="16px"
+        py="6px"
+        gap="8px"
         alignItems="center"
         justifyContent="space-between"
         borderBottom="1px solid"
-        borderColor="border"
+        borderColor="#DDE2F5"
         flexShrink={0}
       >
         {/* Icon + label group (matches Figma: width 83, height 16, gap 8px) */}
-        <Flex alignItems="center" gap={2}>
+        <Flex alignItems="center" gap="8px" h="16px">
           <StackIcon size={12} color="#0049AA" />
           <Text
             fontSize="10px"
             fontWeight="400"
             fontFamily="mono"
-            letterSpacing="wider"
+            lineHeight="16px"
+            letterSpacing="0.03em"
             textTransform="uppercase"
-            color="fg.muted"
+            color="#656E7B"
           >
             Map layers
           </Text>
         </Flex>
         <IconButton
           variant="ghost"
-          size="xs"
+          size="2xs"
           p={0}
           minW="16px"
           h="16px"
+          w="16px"
+          color="#656E7B"
           aria-label={isCollapsed ? "Expand legend" : "Collapse legend"}
           onClick={() => setIsCollapsed((prev) => !prev)}
         >
           {isCollapsed ? (
-            <CaretDownIcon size={12} />
+            <CaretDownIcon size={12} weight="bold" />
           ) : (
-            <CaretUpIcon size={12} />
+            <CaretUpIcon size={12} weight="bold" />
           )}
         </IconButton>
       </Flex>
@@ -193,19 +199,28 @@ export function Legend(props: LegendProps) {
           )}
           {hasAois && (
             <>
-              {layers.length > 0 && <Box h="1px" bg="border" />}
-              <Flex gap={1} flexWrap="wrap" p={2}>
+              {layers.length > 0 && <Box h="1px" bg="#DDE2F5" />}
+              <Flex
+                bg="#F7F9FF"
+                flexWrap="wrap"
+                gap="8px"
+                pt="8px"
+                pr={0}
+                pb="8px"
+                pl="24px"
+              >
                 {aois.map((aoi) => (
                   <Flex
                     key={`${aoi.contextId}-${aoi.name}`}
                     alignItems="center"
                     gap="4px"
                     h="20px"
-                    pl="6px"
-                    pr="4px"
-                    borderRadius="sm"
+                    px="6px"
+                    py="2px"
+                    borderRadius="6px"
                     border="1px solid"
                     borderColor="#E0E2E5"
+                    bg="#FFFFFF"
                     fontFamily="mono"
                     fontSize="10px"
                     flexShrink={0}
@@ -215,7 +230,7 @@ export function Legend(props: LegendProps) {
                       fontWeight="normal"
                       lineHeight="16px"
                       letterSpacing="0.5px"
-                      color="#A51EC7"
+                      color="#4A64CB"
                     >
                       AREA
                     </Text>

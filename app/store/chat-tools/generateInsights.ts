@@ -32,8 +32,17 @@ export function generateInsightsTool(
       const analysisParams: AnalysisParams = {};
 
       const aoiFromStream = streamMessage.aoi_selection?.aois;
+      const selectionFromStream = streamMessage.aoi_selection?.name;
       const areaItem = context.find((c) => c.contextType === "area");
-      if (aoiFromStream?.length) {
+      const selectionFromContext = areaItem?.aoiSelection?.name;
+      // Prefer the selection name (one chip) over the per-AOI list so the
+      // chip matches the legend, which always shows one chip per selection.
+      // Falls back to the AOI list / content string when no name is given.
+      if (selectionFromStream) {
+        analysisParams.areas = [selectionFromStream];
+      } else if (selectionFromContext) {
+        analysisParams.areas = [selectionFromContext];
+      } else if (aoiFromStream?.length) {
         analysisParams.areas = aoiFromStream.map((a) => a.name);
       } else if (areaItem?.aoiSelection?.aois?.length) {
         analysisParams.areas = areaItem.aoiSelection.aois.map((a) => a.name);
@@ -100,6 +109,7 @@ export function generateInsightsTool(
         type: "assistant",
         message: "I've created an insight you can view on the map.",
         timestamp: streamMessage.timestamp,
+        widgets,
       });
     }
   } catch (error) {

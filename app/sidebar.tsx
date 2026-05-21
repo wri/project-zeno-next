@@ -253,10 +253,7 @@ export function Sidebar() {
           },
         }}
       >
-        <Accordion.Root
-          multiple
-          defaultValue={["today", "previousWeek", "older"]}
-        >
+        <Accordion.Root multiple defaultValue={["today", "previousWeek"]}>
           {hasTodayThreads && (
             <ThreadSection
               threads={threadGroups.today}

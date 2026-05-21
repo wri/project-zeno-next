@@ -32,13 +32,12 @@ export default function AnalysisParametersToggle({
       fontSize="10px"
       fontWeight="400"
       lineHeight="16px"
-      color="fg.muted"
+      color="#4A64CB"
       textDecoration="underline"
       textDecorationStyle="solid"
       whiteSpace="nowrap"
       flexShrink={0}
       cursor="pointer"
-      _hover={{ color: "fg" }}
     >
       {expanded ? "Hide params" : "Show params"}
     </Text>
@@ -79,7 +78,9 @@ export function AnalysisParamsChips({ chips }: { chips: ParamChip[] }) {
             fontSize="10px"
             fontWeight="500"
             lineHeight="16px"
-            color="fg"
+            color={
+              chip.label === "AREA" ? chipLabelColor[chip.colorScheme] : "fg"
+            }
           >
             {chip.value}
           </Text>
