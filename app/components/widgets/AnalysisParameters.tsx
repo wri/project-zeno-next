@@ -59,6 +59,8 @@ export function AnalysisParamsChips({ chips }: { chips: ParamChip[] }) {
           pr="6px"
           pl={2}
           rounded="sm"
+          border="1px solid"
+          borderColor="neutral.300"
         >
           <Text
             fontFamily="mono"
