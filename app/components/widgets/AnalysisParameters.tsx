@@ -76,7 +76,9 @@ export function AnalysisParamsChips({ chips }: { chips: ParamChip[] }) {
             fontSize="10px"
             fontWeight="500"
             lineHeight="16px"
-            color="fg"
+            color={
+              chip.label === "AREA" ? chipLabelColor[chip.colorScheme] : "fg"
+            }
           >
             {chip.value}
           </Text>
