@@ -58,7 +58,6 @@ export default function InsightWorkspace() {
         {/* Header row */}
         <Flex
           px={4}
-          py={2}
           justify="space-between"
           align="center"
           borderBottom="1px solid"
@@ -108,8 +107,7 @@ export default function InsightWorkspace() {
             {/* Title row */}
             <Flex
               px={4}
-              pt={3}
-              pb={2}
+              py={1}
               justify="space-between"
               align="flex-start"
               borderBottom="1px solid"
