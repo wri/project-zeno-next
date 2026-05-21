@@ -1,13 +1,6 @@
 "use client";
 import { Flex, Text } from "@chakra-ui/react";
-import { AnalysisParams } from "@/app/types/chat";
-import { buildChips, ParamChip } from "./analysis-params-utils";
-
-interface AnalysisParametersProps {
-  params: AnalysisParams;
-  expanded: boolean;
-  onToggle: () => void;
-}
+import { ParamChip } from "./analysis-params-utils";
 
 // Label text colors mapped from Figma spec to nearest theme tokens:
 // AREA #4A64CB → primary.400 (#3361C0)
@@ -20,15 +13,16 @@ const chipLabelColor: Record<ParamChip["colorScheme"], string> = {
   purple: "purple.500",
 };
 
+interface AnalysisParametersToggleProps {
+  expanded: boolean;
+  onToggle: () => void;
+}
+
 /** Toggle button rendered in the widget header row */
-export default function AnalysisParameters({
-  params,
+export default function AnalysisParametersToggle({
   expanded,
   onToggle,
-}: AnalysisParametersProps) {
-  const chips = buildChips(params);
-  if (chips.length === 0) return null;
-
+}: AnalysisParametersToggleProps) {
   return (
     <Text
       as="button"
@@ -51,10 +45,7 @@ export default function AnalysisParameters({
 }
 
 /** Chips panel rendered below the header row when expanded */
-export function AnalysisParamsChips({ params }: { params: AnalysisParams }) {
-  const chips = buildChips(params);
-  if (chips.length === 0) return null;
-
+export function AnalysisParamsChips({ chips }: { chips: ParamChip[] }) {
   return (
     <Flex gap={1.5} flexWrap="wrap">
       {chips.map((chip, idx) => (
