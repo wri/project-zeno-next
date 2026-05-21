@@ -12,7 +12,7 @@ import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 import { GeoJsonEntry } from "../layerManagerSlice";
 import { selectLayerOptions } from "@/app/types/map";
 
-const GLOBAL_LAYER_ID = "global-layer";
+const GLOBAL_LAYER_ID = "Global Layer";
 const GLOBAL_LAYER_NAME = "Global Layer";
 
 function isGlobalQuery(name: string): boolean {
@@ -66,7 +66,7 @@ export async function pickAoiTool(
   try {
     const { flyToGeoJsonWithRetry, flyToBounds, addToRegistry, addLayer } =
       useMapStore.getState();
-    const { upsertContextByType } = useContextStore.getState();
+    const { context, addContext } = useContextStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
     const aoiSelection: AOISelection | undefined = streamMessage.aoi_selection;
@@ -107,12 +107,19 @@ export async function pickAoiTool(
 
       flyToGeoJsonWithRetry(worldBbox);
 
-      upsertContextByType({
-        contextType: "area",
-        content: GLOBAL_LAYER_NAME,
-        isAiContext: true,
-        aoiSelection: aoiSelection ?? { name: GLOBAL_LAYER_NAME, aois },
-      });
+      // Areas stack — skip if the global layer is already in context.
+      const globalAlreadyInContext = context.some(
+        (c) =>
+          c.contextType === "area" && c.aoiSelection?.name === GLOBAL_LAYER_NAME
+      );
+      if (!globalAlreadyInContext) {
+        addContext({
+          contextType: "area",
+          content: GLOBAL_LAYER_NAME,
+          isAiContext: true,
+          aoiSelection: aoiSelection ?? { name: GLOBAL_LAYER_NAME, aois },
+        });
+      }
 
       return;
     }
@@ -197,13 +204,19 @@ export async function pickAoiTool(
       flyToGeoJsonWithRetry(allGeoData[0]);
     }
 
-    // Update area context with the selection name and full AOI selection data
-    upsertContextByType({
-      contextType: "area",
-      content: selectionName,
-      isAiContext: true,
-      aoiSelection: selectionForContext,
-    });
+    // Areas stack — add this AOI selection alongside any existing ones.
+    // Skip if a selection with this same name is already in context.
+    const selectionAlreadyInContext = context.some(
+      (c) => c.contextType === "area" && c.aoiSelection?.name === selectionName
+    );
+    if (!selectionAlreadyInContext) {
+      addContext({
+        contextType: "area",
+        content: selectionName,
+        isAiContext: true,
+        aoiSelection: selectionForContext,
+      });
+    }
 
     // If some AOIs failed, show a partial-failure message
     if (failures.length > 0 && failures.length < aois.length) {

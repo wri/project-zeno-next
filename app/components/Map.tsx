@@ -22,8 +22,9 @@ import {
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
-import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
+import { useShallow } from "zustand/react/shallow";
+import MapAreaControls from "./MapAreaControls";
 import DynamicTileLayers, {
   RASTER_TOP_SENTINEL_ID,
 } from "./map/layers/DynamicTileLayers";
@@ -48,9 +49,10 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   useEffect(() => {
     registerPrimaryForestProtocol();
   }, []);
-  const { layers, handleLayerAction } = useLegendHook();
-  const { context } = useContextStore();
-  const areas = context.filter((c) => c.contextType === "area");
+  const { layers, handleLayerAction, aois, handleRemoveAoi } = useLegendHook();
+  const areas = useContextStore(
+    useShallow((s) => s.context.filter((c) => c.contextType === "area"))
+  );
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -139,7 +141,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        {layers.length > 0 && (
+        {(layers.length > 0 || aois.length > 0) && (
           <Button
             variant="subtle"
             position="absolute"
@@ -167,7 +169,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           </Button>
         )}
         <Box display={{ base: showLegend ? "inherit" : "none", md: "inherit" }}>
-          <Legend layers={layers} onLayerAction={handleLayerAction} />
+          <Legend
+            layers={layers}
+            onLayerAction={handleLayerAction}
+            aois={aois}
+            onRemoveAoi={handleRemoveAoi}
+          />
         </Box>
 
         {/* Sentinel layer: caps raster layers below AOI/GeoJSON outlines.

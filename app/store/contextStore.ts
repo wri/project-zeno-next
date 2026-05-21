@@ -118,14 +118,49 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
   removeContext: (id) =>
     set((state) => {
       const itemToRemove = state.context.find((c) => c.id === id);
-      if (typeof itemToRemove?.datasetId === "number") {
+      if (itemToRemove) {
+        // TODO: sever the context-store ↔ layer-manager coupling.
+        // The block below (and the matching `addLayer` calls in `addContext`)
+        // exist because `addContext` was wired up as the entry point for
+        // adding/removing map layers. That coupling is the reason `ContextItem`
+        // carries layer-construction fields (`tileUrl`, `layerName`,
+        // `contextLayer`, etc.) and the reason this branch has to guess the
+        // map layer's id from up to four context fields below — each
+        // add-area call site picked its own convention for `layer.id`, and
+        // there's no single context field that always matches it.
+        //
+        // The fix is to make `addContext`/`removeContext` pure context
+        // operations and let each add-area / add-dataset call site manage its
+        // own layer lifecycle.
         const { removeLayer } = useMapStore.getState();
-        // Remove corresponding map layer if this context item represents a dataset layer
-        removeLayer(`dataset-${itemToRemove.datasetId}`);
-        if (itemToRemove.contextLayer) {
-          removeLayer(
-            `dataset-${itemToRemove.datasetId}-ctx-${itemToRemove.contextLayer.name}`
-          );
+        if (typeof itemToRemove.datasetId === "number") {
+          // Remove the dataset layer and its optional context sub-layer
+          removeLayer(`dataset-${itemToRemove.datasetId}`);
+          if (itemToRemove.contextLayer) {
+            removeLayer(
+              `dataset-${itemToRemove.datasetId}-ctx-${itemToRemove.contextLayer.name}`
+            );
+          }
+        } else if (itemToRemove.contextType === "area") {
+          // Different add-area paths register the map layer under different ids:
+          //   - ContextMenu.AreaMenu / CustomAreasLayer: layer.id === aoiData.src_id
+          //   - VectorAreasLayer (admin boundary click):  layer.id === aoiData.name
+          //   - pickAoiTool (assistant selection):        layer.id === aoiSelection.name
+          //   - Global vector layer:                      layer.id === "Global Layer"
+          // `??` would short-circuit on the wrong id (notably for admin clicks where
+          // src_id is set but isn't the layer id). Try every candidate — removeLayer
+          // is a no-op when the id doesn't match an existing layer.
+          const candidates = [
+            itemToRemove.aoiData?.src_id,
+            itemToRemove.aoiData?.name,
+            itemToRemove.aoiSelection?.name,
+            typeof itemToRemove.content === "string"
+              ? itemToRemove.content
+              : undefined,
+          ].filter((id): id is string => !!id);
+          for (const id of candidates) {
+            removeLayer(id);
+          }
         }
       }
       return {
