@@ -59,7 +59,7 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
       note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
     },
   },
-  ifl: {
+  intact_forest: {
     dataset_id: 10,
     dataset_name: "Intact Forest Landscapes",
     context_layer: null as string | null,
