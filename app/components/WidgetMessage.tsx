@@ -104,7 +104,13 @@ export default function WidgetMessage({
       bg="neutral.100"
     >
       {!inWorkspace && (
-        <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight" align="center">
+        <Flex
+          px={4}
+          py={3}
+          gap={2}
+          bgGradient="LCLGradientLight"
+          align="center"
+        >
           {WidgetIcons[widget.type]}
           <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
             {widget.title}
