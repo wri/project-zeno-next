@@ -2,6 +2,7 @@
 import { Flex, Text } from "@chakra-ui/react";
 import { ParamChip } from "./analysis-params-utils";
 
+// TODO: Extract these colors to a shared util since they're used in DatasetCards too
 // Label text colors mapped from Figma spec to nearest theme tokens:
 // AREA #4A64CB → primary.400 (#3361C0)
 // DATA #1AA815 → green.500  (#00A651)
