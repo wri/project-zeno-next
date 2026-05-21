@@ -242,7 +242,7 @@ function AreaCardList({
 function AreaMenu() {
   const { customAreas } = useCustomAreasListSuspense();
   const { addToRegistry, addLayer, flyToGeoJsonWithRetry } = useMapStore();
-  const { context, upsertContextByType } = useContextStore();
+  const { context, addContext } = useContextStore();
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -276,7 +276,9 @@ function AreaMenu() {
   );
 
   const handleSelectArea = (area: { id: string; name: string }) => {
-    upsertContextByType({
+    // Areas stack — each selection is its own context item rendered as a chip.
+    // The existing `cards` lookup prevents re-selecting the same area twice.
+    addContext({
       contextType: "area",
       content: area.name,
       aoiData: {
