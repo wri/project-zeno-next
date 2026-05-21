@@ -50,6 +50,7 @@ export const config = defineConfig({
       },
       colors: {
         primary: {
+          25: { value: "#F7F9FF" },
           50: { value: "#E0E8FF" },
           100: { value: "#D7DFF2" },
           200: { value: "#AFBFE6" },
@@ -68,7 +69,7 @@ export const config = defineConfig({
           200: { value: "#F4F5F7" },
           300: { value: "#E1E2E6" },
           400: { value: "#B2B7BD" },
-          500: { value: "#666E7B" },
+          500: { value: "#656E7B" },
           600: { value: "#394048" },
           700: { value: "#282D33" },
           800: { value: "#212629" },

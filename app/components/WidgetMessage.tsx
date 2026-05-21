@@ -17,6 +17,7 @@ import {
   DownloadSimpleIcon,
   TableIcon,
   ChartBarIcon,
+  CaretDownIcon,
 } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
@@ -27,20 +28,17 @@ import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
-import AnalysisParametersToggle, {
-  AnalysisParamsChips,
-} from "./widgets/AnalysisParameters";
-import { buildChips } from "./widgets/analysis-params-utils";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
+  inWorkspace?: boolean;
 }
 
-export default function WidgetMessage({ widget }: WidgetMessageProps) {
+export default function WidgetMessage({
+  widget,
+  inWorkspace,
+}: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
-  const [paramsExpanded, setParamsExpanded] = useState(false);
-  const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
-  const hasChips = chips.length > 0;
   const { open, onOpen, onClose } = useDisclosure();
   const {
     open: expanded,
@@ -101,29 +99,25 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
     <Box
       rounded="md"
       border="1px solid"
-      borderColor="blue.fg"
+      borderColor={inWorkspace ? "border.emphasized" : "blue.fg"}
       overflow="hidden"
+      bg="neutral.100"
     >
-      <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight" align="center">
-        {WidgetIcons[widget.type]}
-        <Heading
-          size="xs"
-          fontWeight="medium"
-          color="primary.fg"
-          m={0}
-          flex={1}
+      {!inWorkspace && (
+        <Flex
+          px={4}
+          py={3}
+          gap={2}
+          bgGradient="LCLGradientLight"
+          align="center"
         >
-          {widget.title}
-        </Heading>
-        {hasChips && (
-          <AnalysisParametersToggle
-            expanded={paramsExpanded}
-            onToggle={() => setParamsExpanded((v) => !v)}
-          />
-        )}
-      </Flex>
+          {WidgetIcons[widget.type]}
+          <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
+            {widget.title}
+          </Heading>
+        </Flex>
+      )}
       <Flex gap={3} px={4} py={3} flexDir="column">
-        {hasChips && paramsExpanded && <AnalysisParamsChips chips={chips} />}
         {hasData && <Separator />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
@@ -170,6 +164,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               onClick={onExpand}
               h={6}
               rounded="sm"
+              color="neutral.500"
             >
               <ArrowsOutIcon size={14} />
               Show full-screen
@@ -208,7 +203,12 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         )}
         {/* Bottom action row — provenance + download */}
         {(isChartType || widget.type === "table") && hasData && (
-          <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
+          <Flex
+            justify="flex-start"
+            gap={2}
+            flexWrap={inWorkspace ? "nowrap" : "wrap"}
+            align="center"
+          >
             {widget.generation && (
               <Button
                 size="xs"
@@ -216,7 +216,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                 onClick={handleOpen}
                 bg={open ? "bg.info" : undefined}
                 borderColor={open ? "border.info" : undefined}
-                color={open ? "fg.info" : undefined}
+                color="neutral.500"
                 h={6}
                 rounded="sm"
                 _hover={{
@@ -233,13 +233,15 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               onClick={handleDownloadCsv}
               h={6}
               rounded="sm"
+              color="neutral.500"
             >
               <DownloadSimpleIcon size={14} />
-              Download CSV
+              Download
+              <CaretDownIcon size={12} />
             </Button>
           </Flex>
         )}
-        {showDisclaimer && <VisualizationDisclaimer />}
+        {showDisclaimer && !inWorkspace && <VisualizationDisclaimer />}
       </Flex>
       <InsightProvenanceDrawer
         isOpen={open}

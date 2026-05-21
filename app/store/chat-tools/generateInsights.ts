@@ -6,6 +6,7 @@ import {
   DatasetInfo,
 } from "@/app/types/chat";
 import useContextStore from "../contextStore";
+import useInsightStore from "../insightStore";
 
 interface ChartData {
   id: string;
@@ -93,10 +94,11 @@ export function generateInsightsTool(
 
       console.log("FRONTEND: Received charts_data message:", widgets);
 
+      useInsightStore.getState().addInsights(widgets);
+
       addMessage({
-        type: "widget",
-        message: "Charts generated",
-        widgets: widgets,
+        type: "assistant",
+        message: "I've created an insight you can view on the map.",
         timestamp: streamMessage.timestamp,
       });
     }
