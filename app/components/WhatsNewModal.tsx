@@ -10,16 +10,20 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "whats-new-v2-dismissed";
-const LEGACY_STORAGE_KEYS = ["whats-new-v1-dismissed"];
+const STORAGE_KEY = "whats-new-v3-dismissed";
+const LEGACY_STORAGE_KEYS = [
+  "whats-new-v1-dismissed",
+  "whats-new-v2-dismissed",
+];
 
 const FEATURE_IMAGES: Record<number, string> = {
-  1: "/whats_new/tcl_2025.png",
-  2: "/whats_new/multi_area.png",
-  3: "/whats_new/reasoning.png",
-  4: "/whats_new/provenance.png",
-  5: "/whats_new/charts.png",
-  6: "/whats_new/performance.png",
+  1: "/whats_new/smarter_agent.png",
+  2: "/whats_new/map_workspace.png",
+  3: "/whats_new/tcl_2025.png",
+  4: "/whats_new/multi_area.png",
+  5: "/whats_new/reasoning.png",
+  6: "/whats_new/provenance.png",
+  7: "/whats_new/charts.png",
 };
 
 interface Feature {
@@ -77,40 +81,48 @@ const Pill = ({
 const FEATURES: Feature[] = [
   {
     step: 1,
-    title: "Tree cover loss data updated to 2025",
+    title: "A more collaborative assistant",
     description:
-      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest, or set a specific canopy threshold to match how you define forest.",
+      "The assistant now works more closely with you in conversation, giving you finer control over how it acts. Ask it to zoom to a place (\"zoom to Pará\"), pick a dataset by topic (\"tree cover loss in rainforests\"), or run a full analysis (\"analyze tree cover loss in Pará over the last 5 years\") — and it does exactly that, nothing more.",
     isNew: true,
   },
   {
     step: 2,
+    title: "The map as a workspace",
+    description:
+      "Chat is a clean thread of what the assistant did and why; the map is where you explore. Insights now live on the map alongside a redesigned legend — both show the parameters selected, so it's always clear what's driving each result.",
+    isNew: true,
+  },
+  {
+    step: 3,
+    title: "Tree cover loss data updated to 2025",
+    description:
+      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest or intact forest landscapes, as well as set a specific canopy threshold to match how you define forest.",
+      isNew: true,
+  },
+  {
+    step: 4,
     title: "Compare multiple areas",
     description:
       'Select multiple areas at once and ask global-level questions like "Which country has the most natural grasslands?" The assistant and the charts handle the rest.',
   },
   {
-    step: 3,
+    step: 5,
     title: "See the AI's reasoning",
     description:
       "Expand the reasoning panel to see the agent's chain of thought and tool calls as they happen, step by step. More transparency, more trust.",
   },
   {
-    step: 4,
+    step: 6,
     title: "Fully reproducible analysis results",
     description:
       "Every insight comes with a full provenance trail. See exactly what data was used and how it was processed, so your results are fully reproducible.",
   },
   {
-    step: 5,
+    step: 7,
     title: "Improved charts",
     description:
       "Switch between chart and table views, export data to share with your team, and enjoy improved accessibility across all visualisations.",
-  },
-  {
-    step: 6,
-    title: "Faster and smarter",
-    description:
-      "Faster responses and higher quality answers: improvements across the board to speed, dataset selection, interpretation, and chart generation.",
   },
 ];
 
@@ -172,7 +184,7 @@ const WhatsNewModal = () => {
             </Text>
           </HStack>
           <HStack gap={3}>
-            <Pill label="APRIL 2026" color="#4a64cb" />
+            <Pill label="MAY 2026" color="#4a64cb" />
             <Box
               as="button"
               onClick={dismiss}
