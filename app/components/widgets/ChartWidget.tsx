@@ -220,7 +220,7 @@ export default function ChartWidget({
 
   const { data: formattedData, series } = useMemo(
     () =>
-      xAxis && yAxis
+      xAxis
         ? formatChartData(data, type, xAxis, yAxis, widget.datasetName)
         : { data: [], series: [] },
     [data, type, xAxis, yAxis, widget.datasetName]
@@ -233,7 +233,7 @@ export default function ChartWidget({
     return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
   }, [type, yAxis, formattedData]);
 
-  if (!xAxis || !yAxis) {
+  if (!xAxis || (type === "scatter" && !yAxis)) {
     return (
       <Flex
         align="center"
