@@ -22,12 +22,14 @@ const chartData = (title = "Forest Loss") => ({
   yAxis: "area",
 });
 
+type AddMessageFn = (message: Omit<ChatMessage, "id">) => void;
+
 describe("generateInsightsTool", () => {
-  let addMessage: ReturnType<typeof vi.fn>;
+  let addMessage: ReturnType<typeof vi.fn<AddMessageFn>>;
 
   beforeEach(() => {
     useInsightStore.getState().clearInsights();
-    addMessage = vi.fn();
+    addMessage = vi.fn<AddMessageFn>();
   });
 
   it("stores widgets in insightStore when charts_data is present", () => {
