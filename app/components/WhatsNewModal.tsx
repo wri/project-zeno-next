@@ -81,9 +81,9 @@ const Pill = ({
 const FEATURES: Feature[] = [
   {
     step: 1,
-    title: "A sharper, more focused assistant",
+    title: "A more collaborative assistant",
     description:
-      "Ask for exactly what you need. \"Pull tree cover loss for Brazil\" now fetches the data and stops; \"analyze it\" continues through to a chart with insights. The assistant also keeps better track of your current area, dataset and dates between turns — so it skips work you've already done, picks places and datasets more reliably, and feels faster and more responsive.",
+      "The assistant now works more closely with you in conversation, giving you finer control over how it acts. Tell it exactly what you want — \"pull tree cover loss for Brazil\" fetches the data and stops, \"analyze it\" continues through to a chart and insights. And it keeps track of your active area, dataset and dates, so follow-ups like \"what about the last 10 years?\" just work without restating context.",
     isNew: true,
   },
   {
