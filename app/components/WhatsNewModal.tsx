@@ -83,7 +83,7 @@ const FEATURES: Feature[] = [
     step: 1,
     title: "A more collaborative assistant",
     description:
-      "The assistant now works more closely with you in conversation, giving you finer control over how it acts. Tell it exactly what you want — \"pull tree cover loss for Brazil\" fetches the data and stops, \"analyze it\" continues through to a chart and insights. And it keeps track of your active area, dataset and dates, so follow-ups like \"what about the last 10 years?\" just work without restating context.",
+      "The assistant now works more closely with you in conversation, giving you finer control over how it acts. Ask it to zoom to a place (\"zoom to Pará\"), pick a dataset by topic (\"tree cover loss in rainforests\"), or run a full analysis (\"analyze tree cover loss in Pará over the last 5 years\") — and it does exactly that, nothing more.",
     isNew: true,
   },
   {
