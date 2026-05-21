@@ -96,28 +96,42 @@ export async function pickAoiTool(
         },
       };
 
+      // Use selectionName (the assistant-provided name, e.g. "All countries
+      // in the world") for the layer's display name so it matches the
+      // aoiSelection.name we put on the context below. The id stays as the
+      // stable GLOBAL_LAYER_ID constant so removeContext's layer cleanup
+      // still finds it. Without this, the legend's AOI filter (which keys
+      // off aoiSelection.name) doesn't recognise the global vector layer
+      // and ends up rendering it as a card *and* as a chip.
       addLayer({
         id: GLOBAL_LAYER_ID,
-        name: GLOBAL_LAYER_NAME,
+        name: selectionName,
         type: "vector",
         visible: true,
         tileUrl: gadm.url,
         sourceLayer: gadm.sourceLayer,
+        selectionName,
+        aoiSelection: aoiSelection ?? { name: selectionName, aois },
       });
 
       flyToGeoJsonWithRetry(worldBbox);
 
-      // Areas stack — skip if the global layer is already in context.
+      // Areas stack — skip if a global context with this selection name is
+      // already present. Match by the same field the context will carry
+      // (aoiSelection.name === selectionName) so the dedup works regardless
+      // of whether the assistant used the canonical "All countries in the
+      // world" wording or a different phrasing that still resolves to a
+      // global query.
       const globalAlreadyInContext = context.some(
         (c) =>
-          c.contextType === "area" && c.aoiSelection?.name === GLOBAL_LAYER_NAME
+          c.contextType === "area" && c.aoiSelection?.name === selectionName
       );
       if (!globalAlreadyInContext) {
         addContext({
           contextType: "area",
           content: GLOBAL_LAYER_NAME,
           isAiContext: true,
-          aoiSelection: aoiSelection ?? { name: GLOBAL_LAYER_NAME, aois },
+          aoiSelection: aoiSelection ?? { name: selectionName, aois },
         });
       }
 
