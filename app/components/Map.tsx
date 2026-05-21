@@ -140,7 +140,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        {layers.length > 0 && (
+        {(layers.length > 0 || aois.length > 0) && (
           <Button
             variant="subtle"
             position="absolute"

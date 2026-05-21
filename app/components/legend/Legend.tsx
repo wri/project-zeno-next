@@ -94,7 +94,8 @@ export function Legend(props: LegendProps) {
     setPrevLayerIds(currentIds);
   }, [layers]);
 
-  if (!layers.length) return null;
+  const hasAois = !!aois && aois.length > 0;
+  if (!layers.length && !hasAois) return null;
 
   return (
     <Flex
@@ -154,43 +155,45 @@ export function Legend(props: LegendProps) {
       {/* Collapsible body — animates height on open/close */}
       <Collapsible.Root open={!isCollapsed}>
         <Collapsible.Content>
-          <ChReorderGroup
-            axis="y"
-            values={layers}
-            onReorder={(layers: LegendLayer[]) =>
-              onLayerAction?.({ action: "reorder", payload: { layers } })
-            }
-            listStyleType="none"
-            fontSize="xs"
-            p={0}
-            m={0}
-            w="100%"
-            overflowY="auto"
-            maxH="200px"
-          >
-            {layers.map((item) => (
-              <Item
-                key={item.id}
-                item={item}
-                expanded={expandedIds.has(item.id)}
-                onToggleExpand={() =>
-                  setExpandedIds((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(item.id)) {
-                      next.delete(item.id);
-                    } else {
-                      next.add(item.id);
-                    }
-                    return next;
-                  })
-                }
-                onLayerAction={(details) => onLayerAction?.(details)}
-              />
-            ))}
-          </ChReorderGroup>
-          {aois && aois.length > 0 && (
+          {layers.length > 0 && (
+            <ChReorderGroup
+              axis="y"
+              values={layers}
+              onReorder={(layers: LegendLayer[]) =>
+                onLayerAction?.({ action: "reorder", payload: { layers } })
+              }
+              listStyleType="none"
+              fontSize="xs"
+              p={0}
+              m={0}
+              w="100%"
+              overflowY="auto"
+              maxH="200px"
+            >
+              {layers.map((item) => (
+                <Item
+                  key={item.id}
+                  item={item}
+                  expanded={expandedIds.has(item.id)}
+                  onToggleExpand={() =>
+                    setExpandedIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(item.id)) {
+                        next.delete(item.id);
+                      } else {
+                        next.add(item.id);
+                      }
+                      return next;
+                    })
+                  }
+                  onLayerAction={(details) => onLayerAction?.(details)}
+                />
+              ))}
+            </ChReorderGroup>
+          )}
+          {hasAois && (
             <>
-              <Box h="1px" bg="border" />
+              {layers.length > 0 && <Box h="1px" bg="border" />}
               <Flex gap={1} flexWrap="wrap" p={2}>
                 {aois.map((aoi) => (
                   <Flex
