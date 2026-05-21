@@ -27,9 +27,10 @@ import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
-import AnalysisParameters, {
+import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
+import { buildChips } from "./widgets/analysis-params-utils";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -38,6 +39,8 @@ interface WidgetMessageProps {
 export default function WidgetMessage({ widget }: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
+  const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
+  const hasChips = chips.length > 0;
   const { open, onOpen, onClose } = useDisclosure();
   const {
     open: expanded,
@@ -112,18 +115,15 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         >
           {widget.title}
         </Heading>
-        {widget.analysisParams && (
-          <AnalysisParameters
-            params={widget.analysisParams}
+        {hasChips && (
+          <AnalysisParametersToggle
             expanded={paramsExpanded}
             onToggle={() => setParamsExpanded((v) => !v)}
           />
         )}
       </Flex>
       <Flex gap={3} px={4} py={3} flexDir="column">
-        {widget.analysisParams && paramsExpanded && (
-          <AnalysisParamsChips params={widget.analysisParams} />
-        )}
+        {hasChips && paramsExpanded && <AnalysisParamsChips chips={chips} />}
         {hasData && <Separator />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
