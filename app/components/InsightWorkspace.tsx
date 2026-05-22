@@ -28,7 +28,7 @@ const aiDisclaimerTooltip = (
       fontWeight="medium"
       color="#FFFFFF"
     >
-      AI-Assisted Analysis
+      AI-ASSISTED ANALYSIS
     </Text>
     <Text
       fontFamily="body"
@@ -114,7 +114,7 @@ export default function InsightWorkspace() {
               color="fg.muted"
               whiteSpace="nowrap"
             >
-              AI-Assisted Analysis
+              AI-ASSISTED ANALYSIS
               {" · "}
               <Tooltip
                 variant="dark"
