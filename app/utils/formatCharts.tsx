@@ -147,8 +147,7 @@ export default function formatChartData(
   const xAxisKey = xAxis || keys[0]; //identify dataset
   const valueKeys = resolveValueKeys(keys, xAxisKey, yAxis, seriesFields);
   const shouldScopeColumns =
-    Boolean(seriesFields?.length) ||
-    (Boolean(yAxis) && type !== "grouped-bar");
+    Boolean(seriesFields?.length) || (Boolean(yAxis) && type !== "grouped-bar");
   const scopedData = shouldScopeColumns
     ? filterChartDataColumns(data, [xAxisKey, ...valueKeys])
     : data;
@@ -347,7 +346,9 @@ export default function formatChartData(
       return { data: [], series: [] };
     }
 
-    const numericKeys = otherKeys.filter((key) => isNumericColumn(chartRows, key));
+    const numericKeys = otherKeys.filter((key) =>
+      isNumericColumn(chartRows, key)
+    );
     const wideSeriesKeys = numericKeys.filter(
       (key) => !isGroupColumn(chartRows, xAxisKey, key)
     );
