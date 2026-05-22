@@ -215,15 +215,22 @@ export default function ChartWidget({
   widget,
   expanded = false,
 }: ChartWidgetProps) {
-  const { data, xAxis, yAxis, type } = widget;
+  const { data, xAxis, yAxis, type, seriesFields } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
   const { data: formattedData, series } = useMemo(
     () =>
       xAxis
-        ? formatChartData(data, type, xAxis, yAxis, widget.datasetName)
+        ? formatChartData(
+            data,
+            type,
+            xAxis,
+            yAxis,
+            widget.datasetName,
+            seriesFields
+          )
         : { data: [], series: [] },
-    [data, type, xAxis, yAxis, widget.datasetName]
+    [data, type, xAxis, yAxis, widget.datasetName, seriesFields]
   );
 
   const chart = useChart({ data: formattedData, series });
