@@ -137,7 +137,7 @@ export default function SettingsShell({
           title="Sign Out"
         >
           <UserIcon />
-          <Text mr="auto">{userEmail || "User"}</Text>
+          <Text mr="auto" truncate maxW="180px">{userEmail || "User"}</Text>
           <SignOutIcon />
         </Button>
       </Flex>
