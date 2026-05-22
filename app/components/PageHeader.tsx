@@ -168,7 +168,9 @@ function PageHeader() {
                 size="sm"
               >
                 <UserIcon />
-                <Text truncate maxW="180px">{userEmail || "User name"}</Text>
+                <Text truncate maxW="180px">
+                  {userEmail || "User name"}
+                </Text>
               </Button>
             </Menu.Trigger>
             <Portal>
