@@ -24,10 +24,12 @@ export interface ChatMessage {
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
+  suppressFooter?: boolean; // Non-terminal segment of a [Chart uuid] split — no footer, tight spacing
 }
 
 // Widget types for insights
 export interface InsightWidget {
+  id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
   type:
     | "line"
     | "bar"

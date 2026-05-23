@@ -87,6 +87,7 @@ export function generateInsightsTool(
       const widgets: InsightWidget[] = (
         streamMessage.charts_data as ChartData[]
       ).map((chart: ChartData) => ({
+        id: chart.id,
         type: chart.type,
         title: chart.title,
         description: chart.insight,
@@ -104,13 +105,6 @@ export function generateInsightsTool(
       console.log("FRONTEND: Received charts_data message:", widgets);
 
       useInsightStore.getState().addInsights(widgets);
-
-      addMessage({
-        type: "assistant",
-        message: "I've created an insight you can view on the map.",
-        timestamp: streamMessage.timestamp,
-        widgets,
-      });
     }
   } catch (error) {
     console.error("Error processing generate_insights:", error);

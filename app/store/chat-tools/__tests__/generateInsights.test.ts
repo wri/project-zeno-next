@@ -49,17 +49,22 @@ describe("generateInsightsTool", () => {
     expect(insights[0].title).toBe("Forest Loss");
   });
 
-  it("adds the static reference message to chat as assistant type", () => {
+  it("does not call addMessage in the happy path", () => {
     generateInsightsTool(
       baseMessage({ charts_data: [chartData()] }),
       addMessage
     );
-    expect(addMessage).toHaveBeenCalledOnce();
-    const msg = addMessage.mock.calls[0][0] as Omit<ChatMessage, "id">;
-    expect(msg.type).toBe("assistant");
-    expect(msg.message).toBe(
-      "I've created an insight you can view on the map."
+    expect(addMessage).not.toHaveBeenCalled();
+  });
+
+  it("sets pendingBatch to the newly added widgets", () => {
+    generateInsightsTool(
+      baseMessage({ charts_data: [chartData("Tree Cover"), chartData("Fires")] }),
+      addMessage
     );
+    const { pendingBatch } = useInsightStore.getState();
+    expect(pendingBatch).toHaveLength(2);
+    expect(pendingBatch[0].title).toBe("Tree Cover");
   });
 
   it("does nothing when charts_data is absent", () => {
