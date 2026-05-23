@@ -16,6 +16,13 @@ interface ChartData {
   data: unknown;
   xAxis: string;
   yAxis: string;
+  seriesFields?: string[];
+  series_fields?: string[];
+}
+
+function getSeriesFields(chart: ChartData): string[] | undefined {
+  const fields = chart.seriesFields ?? chart.series_fields;
+  return Array.isArray(fields) && fields.length > 0 ? fields : undefined;
 }
 
 export function generateInsightsTool(
@@ -86,20 +93,24 @@ export function generateInsightsTool(
 
       const widgets: InsightWidget[] = (
         streamMessage.charts_data as ChartData[]
-      ).map((chart: ChartData) => ({
-        type: chart.type,
-        title: chart.title,
-        description: chart.insight,
-        data: chart.data,
-        xAxis: chart.xAxis,
-        yAxis: chart.yAxis,
-        ...(datasetName ? { datasetName } : {}),
-        generation: {
-          codeact_parts: streamMessage.codeact_parts,
-          source_urls: streamMessage.source_urls,
-        },
-        ...(hasParams ? { analysisParams } : {}),
-      }));
+      ).map((chart: ChartData) => {
+        const seriesFields = getSeriesFields(chart);
+        return {
+          type: chart.type,
+          title: chart.title,
+          description: chart.insight,
+          data: chart.data,
+          xAxis: chart.xAxis,
+          yAxis: chart.yAxis,
+          ...(seriesFields ? { seriesFields } : {}),
+          ...(datasetName ? { datasetName } : {}),
+          generation: {
+            codeact_parts: streamMessage.codeact_parts,
+            source_urls: streamMessage.source_urls,
+          },
+          ...(hasParams ? { analysisParams } : {}),
+        };
+      });
 
       console.log("FRONTEND: Received charts_data message:", widgets);
 

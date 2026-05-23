@@ -215,15 +215,22 @@ export default function ChartWidget({
   widget,
   expanded = false,
 }: ChartWidgetProps) {
-  const { data, xAxis, yAxis, type } = widget;
+  const { data, xAxis, yAxis, type, seriesFields } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
   const { data: formattedData, series } = useMemo(
     () =>
-      xAxis && yAxis
-        ? formatChartData(data, type, xAxis, yAxis, widget.datasetName)
+      xAxis
+        ? formatChartData(
+            data,
+            type,
+            xAxis,
+            yAxis,
+            widget.datasetName,
+            seriesFields
+          )
         : { data: [], series: [] },
-    [data, type, xAxis, yAxis, widget.datasetName]
+    [data, type, xAxis, yAxis, widget.datasetName, seriesFields]
   );
 
   const chart = useChart({ data: formattedData, series });
@@ -233,7 +240,7 @@ export default function ChartWidget({
     return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
   }, [type, yAxis, formattedData]);
 
-  if (!xAxis || !yAxis) {
+  if (!xAxis || (type === "scatter" && !yAxis)) {
     return (
       <Flex
         align="center"
