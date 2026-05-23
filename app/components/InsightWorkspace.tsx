@@ -66,37 +66,35 @@ export default function InsightWorkspace() {
   const HeaderIcon = WidgetIconComponent[widget.type];
 
   return (
+    /* Card is the scroll container: grows to content, scrolls when flex-shrunk */
     <Box
-      position="absolute"
-      top={4}
-      right={3}
-      zIndex={400}
-      pointerEvents="none"
+      flex="0 1 auto"
+      minH="0"
+      overflowY="auto"
+      w="100%"
+      bg="primary.25"
+      border="1px solid"
+      borderColor="#DDE2F5"
+      rounded="4px"
+      pointerEvents="all"
+      display="flex"
+      flexDirection="column"
     >
-      {/* Panel */}
-      <Box
-        w="420px"
-        maxH="calc(100vh - 6rem)"
-        overflowY="auto"
+      {/* Header — sticky so it never scrolls away */}
+      <Flex
+        position="sticky"
+        top={0}
+        zIndex={1}
         bg="primary.25"
-        border="1px solid"
+        h="28px"
+        px="16px"
+        py="6px"
+        gap="8px"
+        justify="space-between"
+        align="center"
+        borderBottom="1px solid"
         borderColor="#DDE2F5"
-        rounded="4px"
-        pointerEvents="all"
-        display="flex"
-        flexDirection="column"
       >
-        {/* Header row — 28px section header */}
-        <Flex
-          h="28px"
-          px="16px"
-          py="6px"
-          gap="8px"
-          justify="space-between"
-          align="center"
-          borderBottom="1px solid"
-          borderColor="#DDE2F5"
-        >
           <Flex
             align="center"
             gap="8px"
@@ -156,87 +154,90 @@ export default function InsightWorkspace() {
           </IconButton>
         </Flex>
 
-        {!isCollapsed && (
-          <>
-            {/* Title row */}
-            <Flex
-              px={4}
-              py={1}
-              justify="space-between"
-              align="flex-start"
-              borderBottom="1px solid"
-              borderColor="#DDE2F5"
+      {!isCollapsed && (
+        <>
+          {/* Title row */}
+          <Flex
+            px={4}
+            py={1}
+            justify="space-between"
+            align="flex-start"
+            borderBottom="1px solid"
+            borderColor="#DDE2F5"
+          >
+            <Heading
+              size="sm"
+              fontWeight="semibold"
+              color="primary.fg"
+              flex={1}
+              mr={2}
+              mb={0}
             >
-              <Heading
-                size="sm"
-                fontWeight="semibold"
-                color="primary.fg"
-                flex={1}
-                mr={2}
-                mb={0}
-              >
-                {widget.title}
-              </Heading>
-              {hasChips && (
-                <AnalysisParametersToggle
-                  expanded={paramsExpanded}
-                  onToggle={() => setParamsExpanded((v) => !v)}
-                />
-              )}
-            </Flex>
-
-            {/* Params chips section */}
-            {hasChips && paramsExpanded && (
-              <Box px={4} py={2} borderBottom="1px solid" borderColor="#DDE2F5">
-                <AnalysisParamsChips chips={chips} />
-              </Box>
+              {widget.title}
+            </Heading>
+            {hasChips && (
+              <AnalysisParametersToggle
+                expanded={paramsExpanded}
+                onToggle={() => setParamsExpanded((v) => !v)}
+              />
             )}
+          </Flex>
 
-            {/* Inner chart card */}
-            <Box px={2} py={2}>
-              <WidgetMessage widget={widget} inWorkspace />
+          {/* Params chips section */}
+          {hasChips && paramsExpanded && (
+            <Box px={4} py={2} borderBottom="1px solid" borderColor="#DDE2F5">
+              <AnalysisParamsChips chips={chips} />
             </Box>
+          )}
 
-            {/* Navigation footer */}
-            {total > 1 && (
-              <Flex
-                px={4}
-                py={2}
-                borderTop="1px solid"
-                borderColor="#DDE2F5"
-                justify="space-between"
-                align="center"
+          {/* Inner chart card */}
+          <Box px={2} py={2}>
+            <WidgetMessage widget={widget} inWorkspace />
+          </Box>
+
+          {/* Navigation footer — sticky so it never scrolls away */}
+          {total > 1 && (
+            <Flex
+              position="sticky"
+              bottom={0}
+              zIndex={1}
+              bg="primary.25"
+              px={4}
+              py={2}
+              borderTop="1px solid"
+              borderColor="#DDE2F5"
+              justify="space-between"
+              align="center"
+            >
+              <IconButton
+                size="xs"
+                variant="ghost"
+                border="1px solid"
+                borderColor="border.emphasized"
+                aria-label="Previous insight"
+                disabled={!canGoPrev}
+                onClick={() => setCurrentIndex((i) => i - 1)}
               >
-                <IconButton
-                  size="xs"
-                  variant="ghost"
-                  border="1px solid"
-                  borderColor="border.emphasized"
-                  aria-label="Previous insight"
-                  disabled={!canGoPrev}
-                  onClick={() => setCurrentIndex((i) => i - 1)}
-                >
-                  <ArrowArcLeftIcon size={14} />
-                </IconButton>
-                <Text fontSize="xs" color="neutral.500">
-                  {currentIndex + 1} of {total} available analyses
-                </Text>
-                <IconButton
-                  size="xs"
-                  variant="ghost"
-                  border="1px solid"
-                  borderColor="border.emphasized"
-                  aria-label="Next insight"
-                  disabled={!canGoNext}
-                  onClick={() => setCurrentIndex((i) => i + 1)}
-                >
-                  <ArrowArcRightIcon size={14} />
-                </IconButton>
-              </Flex>
-            )}
-          </>
-        )}
-      </Box>
+                <ArrowArcLeftIcon size={14} />
+              </IconButton>
+              <Text fontSize="xs" color="neutral.500">
+                {currentIndex + 1} of {total} available analyses
+              </Text>
+              <IconButton
+                size="xs"
+                variant="ghost"
+                border="1px solid"
+                borderColor="border.emphasized"
+                aria-label="Next insight"
+                disabled={!canGoNext}
+                onClick={() => setCurrentIndex((i) => i + 1)}
+              >
+                <ArrowArcRightIcon size={14} />
+              </IconButton>
+            </Flex>
+          )}
+        </>
+      )}
     </Box>
   );
 }
