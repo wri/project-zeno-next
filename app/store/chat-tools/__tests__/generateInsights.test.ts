@@ -73,6 +73,26 @@ describe("generateInsightsTool", () => {
     expect(addMessage).not.toHaveBeenCalled();
   });
 
+  it("passes seriesFields through to insight widgets", () => {
+    generateInsightsTool(
+      baseMessage({
+        charts_data: [
+          {
+            ...chartData("Emissions"),
+            yAxis: "",
+            seriesFields: ["indonesia_emissions_co2", "malaysia_emissions_co2"],
+          },
+        ],
+      }),
+      addMessage
+    );
+    const { insights } = useInsightStore.getState();
+    expect(insights[0].seriesFields).toEqual([
+      "indonesia_emissions_co2",
+      "malaysia_emissions_co2",
+    ]);
+  });
+
   it("adds an error message and does not throw when chart items are malformed", () => {
     generateInsightsTool(
       baseMessage({ charts_data: [null as unknown as object] }),

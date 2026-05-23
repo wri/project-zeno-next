@@ -18,6 +18,81 @@ interface ChartSeries {
   stackId?: string;
 }
 
+function isNumericValue(value: unknown): boolean {
+  if (value === null || value === undefined || value === "") return false;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "string") {
+    const normalized = value.replace(/,/g, "");
+    return normalized !== "" && !Number.isNaN(Number(normalized));
+  }
+  return false;
+}
+
+function isNumericColumn(data: InputData[], key: string): boolean {
+  return data.every((item) => isNumericValue(item[key]));
+}
+
+/** True when the same column value appears under multiple x-axis categories (long-format group key). */
+function isGroupColumn(
+  data: InputData[],
+  xAxisKey: string,
+  key: string
+): boolean {
+  const valueToXValues = new Map<string, Set<string>>();
+
+  for (const item of data) {
+    const groupValue = String(item[key]);
+    const xValue = String(item[xAxisKey]);
+    const xValues = valueToXValues.get(groupValue) ?? new Set<string>();
+    xValues.add(xValue);
+    valueToXValues.set(groupValue, xValues);
+  }
+
+  return [...valueToXValues.values()].some((xValues) => xValues.size > 1);
+}
+
+function buildMultiSeriesBar(
+  data: ChartData[],
+  seriesKeys: string[],
+  defaultColors: string[]
+): { data: ChartData[]; series: ChartSeries[] } {
+  const series: ChartSeries[] = seriesKeys.map((key, index) => ({
+    name: key,
+    color: defaultColors[index % defaultColors.length],
+  }));
+  return { data, series };
+}
+
+function resolveValueKeys(
+  keys: string[],
+  xAxisKey: string,
+  yAxis?: string,
+  seriesFields?: string[]
+): string[] {
+  const candidateValueKeys = keys.filter((key) => key !== xAxisKey);
+  if (seriesFields?.length) {
+    return seriesFields.filter((key) => candidateValueKeys.includes(key));
+  }
+  if (yAxis && candidateValueKeys.includes(yAxis)) {
+    return [yAxis];
+  }
+  return candidateValueKeys;
+}
+
+function filterChartDataColumns(
+  data: InputData[],
+  columns: string[]
+): InputData[] {
+  const keep = new Set(columns);
+  return data.map((row) => {
+    const filtered: InputData = {};
+    for (const key of keep) {
+      if (key in row) filtered[key] = row[key];
+    }
+    return filtered;
+  });
+}
+
 /**
  * Transforms data into a format suitable for Chakra UI Charts.
  *
@@ -25,6 +100,7 @@ interface ChartSeries {
  * @param type The type of chart: "stacked", "grouped", "bar", or "scatter".
  * @param xAxis The key to use for the x-axis.
  * @param yAxis The key to use for the y-axis (required for scatter charts).
+ * @param seriesFields Explicit metric columns for multi-series charts.
  * @returns An object containing the transformed `data` and `series` arrays.
  */
 export default function formatChartData(
@@ -41,7 +117,8 @@ export default function formatChartData(
     | "scatter",
   xAxis?: string,
   yAxis?: string,
-  datasetName?: string
+  datasetName?: string,
+  seriesFields?: string[]
 ): { data: ChartData[]; series: ChartSeries[] } {
   const empty = { data: [], series: [] };
 
@@ -68,15 +145,32 @@ export default function formatChartData(
   }
 
   const xAxisKey = xAxis || keys[0]; //identify dataset
+  const valueKeys = resolveValueKeys(keys, xAxisKey, yAxis, seriesFields);
+  const shouldScopeColumns =
+    Boolean(seriesFields?.length) || (Boolean(yAxis) && type !== "grouped-bar");
+  const scopedData = shouldScopeColumns
+    ? filterChartDataColumns(data, [xAxisKey, ...valueKeys])
+    : data;
+  const scopedFirstRow = scopedData[0];
+  if (
+    scopedFirstRow === null ||
+    scopedFirstRow === undefined ||
+    typeof scopedFirstRow !== "object" ||
+    Array.isArray(scopedFirstRow)
+  ) {
+    return empty;
+  }
+  const scopedKeys = Object.keys(scopedFirstRow);
+  const chartRows = scopedData as InputData[];
 
   const defaultColors = getChartColors();
-  const chartColors = data.map(
+  const chartColors = chartRows.map(
     (_, index) => defaultColors[index % defaultColors.length]
   );
 
   // --- Logic for PIE charts ---
   if (type === "pie") {
-    const valueKey = yAxis || keys.find((key) => key !== xAxisKey);
+    const valueKey = yAxis || scopedKeys.find((key) => key !== xAxisKey);
     if (!valueKey) {
       return { data: [], series: [] };
     }
@@ -88,7 +182,7 @@ export default function formatChartData(
       const valueToColorMap = new Map(
         colorPalette.map((item) => [item.value, item.color])
       );
-      pieChartColors = data.map((item, index) => {
+      pieChartColors = chartRows.map((item, index) => {
         const key = String(item[xAxisKey]);
         return (
           valueToColorMap.get(key) ||
@@ -100,10 +194,10 @@ export default function formatChartData(
     }
 
     // For Pie charts, we need to add a color to each data point.
-    const transformedData = data.map((item, index) => ({
+    const transformedData = chartRows.map((item, index) => ({
       ...item,
       color: pieChartColors[index % pieChartColors.length],
-    }));
+    })) as ChartData[];
 
     let series: ChartSeries[];
 
@@ -145,7 +239,7 @@ export default function formatChartData(
     }
 
     // The name key is the one that is not the x or y axis.
-    const nameKey = keys.find((k) => k !== xAxis && k !== yAxis);
+    const nameKey = scopedKeys.find((k) => k !== xAxis && k !== yAxis);
 
     if (!nameKey) {
       console.error(
@@ -154,7 +248,7 @@ export default function formatChartData(
       return { data: [], series: [] };
     }
 
-    const transformedData = data.map((item) => ({
+    const transformedData = chartRows.map((item) => ({
       [xAxis]: item[xAxis],
       [yAxis]: item[yAxis],
       name: item[nameKey],
@@ -174,19 +268,20 @@ export default function formatChartData(
   }
   // --- Logic for a standard BAR chart ---
   if (type === "bar" || type === "area" || type === "line") {
-    const candidateValueKeys = keys.filter((key) => key !== xAxisKey);
-    const valueKeys =
-      yAxis && candidateValueKeys.includes(yAxis)
-        ? [yAxis]
-        : candidateValueKeys;
+    const chartValueKeys = resolveValueKeys(
+      scopedKeys,
+      xAxisKey,
+      yAxis,
+      seriesFields
+    );
 
     // Multi-series: more than one value column → create a series per column
-    if (valueKeys.length > 1) {
-      const series: ChartSeries[] = valueKeys.map((key, index) => ({
-        name: key,
-        color: defaultColors[index % defaultColors.length],
-      }));
-      return { data: data as ChartData[], series };
+    if (chartValueKeys.length > 1) {
+      return buildMultiSeriesBar(
+        chartRows as ChartData[],
+        chartValueKeys,
+        defaultColors
+      );
     }
 
     // Single series
@@ -198,9 +293,9 @@ export default function formatChartData(
       : undefined;
 
     // For bar charts with divergent colors, add per-bar _barColor based on value sign
-    if (type === "bar" && divergent && valueKeys.length === 1) {
-      const yKey = valueKeys[0];
-      const coloredData = (data as ChartData[]).map((item) => {
+    if (type === "bar" && divergent && chartValueKeys.length === 1) {
+      const yKey = chartValueKeys[0];
+      const coloredData = (chartRows as ChartData[]).map((item) => {
         const val = Number(item[yKey]);
         return {
           ...item,
@@ -213,45 +308,78 @@ export default function formatChartData(
 
     // For line/area with divergent dataset, use the positive color as single series color
     const seriesColor = divergent?.positive || datasetColor || defaultColors[0];
-    const series: ChartSeries[] = valueKeys.length
+    const series: ChartSeries[] = chartValueKeys.length
       ? [
           {
-            name: valueKeys[0],
+            name: chartValueKeys[0],
             color: seriesColor,
           },
         ]
       : [];
-    return { data: data as ChartData[], series };
+    return { data: chartRows as ChartData[], series };
   }
 
   // --- Logic for STACKED charts ---
   if (type === "stacked-bar") {
-    // For stacked charts, series are all columns except the xAxisKey.
-    const seriesKeys = keys.filter((key) => key !== xAxisKey);
+    const seriesKeys = resolveValueKeys(
+      scopedKeys,
+      xAxisKey,
+      yAxis,
+      seriesFields
+    );
     const series: ChartSeries[] = seriesKeys.map((key, index) => ({
       name: key,
       color: defaultColors[index % defaultColors.length],
       stackId: "a", // All items in a stacked chart share a stackId
     }));
     // The data format is already correct for stacked charts.
-    return { data: data as ChartData[], series };
+    return { data: chartRows as ChartData[], series };
   }
 
   // --- Logic for GROUPED charts ---
   if (type === "grouped-bar") {
-    const otherKeys = keys.filter((key) => key !== xAxisKey);
+    const otherKeys = scopedKeys.filter((key) => key !== xAxisKey);
     if (otherKeys.length < 2) {
       console.error(
         "Grouped chart data must have at least three columns: an x-axis, a grouping column, and a value column."
       );
       return { data: [], series: [] };
     }
-    const groupKey = otherKeys[0];
-    const valueKey = otherKeys[1];
+
+    const numericKeys = otherKeys.filter((key) =>
+      isNumericColumn(chartRows, key)
+    );
+    const wideSeriesKeys = numericKeys.filter(
+      (key) => !isGroupColumn(chartRows, xAxisKey, key)
+    );
+
+    // Wide format (e.g. Category + Mali Area Ha + Niger Area Ha): treat as multi-series bar.
+    if (wideSeriesKeys.length >= 2) {
+      return buildMultiSeriesBar(
+        chartRows as ChartData[],
+        wideSeriesKeys,
+        defaultColors
+      );
+    }
+
+    const groupKey =
+      otherKeys.find((key) => isGroupColumn(chartRows, xAxisKey, key)) ??
+      otherKeys.find((key) => !isNumericColumn(chartRows, key)) ??
+      otherKeys[0];
+    const valueKey =
+      numericKeys.find((key) => key !== groupKey) ??
+      otherKeys.find((key) => key !== groupKey);
+
+    if (!valueKey) {
+      console.error(
+        "Grouped chart data must include a numeric value column in long format."
+      );
+      return { data: [], series: [] };
+    }
 
     // Series are the unique values from the group column (e.g., years).
     const uniqueGroups = [
-      ...new Set(data.map((item) => String(item[groupKey]))),
+      ...new Set(chartRows.map((item) => String(item[groupKey]))),
     ].sort();
     const series: ChartSeries[] = uniqueGroups.map((group, index) => ({
       name: group,
@@ -259,7 +387,7 @@ export default function formatChartData(
     }));
 
     // Pivot the data from "long" to "wide" format.
-    const pivotedDataMap = data.reduce(
+    const pivotedDataMap = chartRows.reduce(
       (acc, item) => {
         const xAxisValue = String(item[xAxisKey]);
         const groupValue = String(item[groupKey]);

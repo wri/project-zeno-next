@@ -45,6 +45,7 @@ export interface InsightWidget {
   data: unknown;
   xAxis: string;
   yAxis: string;
+  seriesFields?: string[];
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
   analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
