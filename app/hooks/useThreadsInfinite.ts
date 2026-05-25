@@ -3,7 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/app/lib/api-client";
 import useAuthStore from "@/app/store/authStore";
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 100;
 
 export interface ThreadEntry {
   agent_id: "UniGuana";
