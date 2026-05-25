@@ -59,7 +59,9 @@ describe("generateInsightsTool", () => {
 
   it("sets pendingBatch to the newly added widgets", () => {
     generateInsightsTool(
-      baseMessage({ charts_data: [chartData("Tree Cover"), chartData("Fires")] }),
+      baseMessage({
+        charts_data: [chartData("Tree Cover"), chartData("Fires")],
+      }),
       addMessage
     );
     const { pendingBatch } = useInsightStore.getState();

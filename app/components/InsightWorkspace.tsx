@@ -95,64 +95,64 @@ export default function InsightWorkspace() {
         borderBottom="1px solid"
         borderColor="#DDE2F5"
       >
-          <Flex
-            align="center"
-            gap="8px"
-            h="16px"
-            flexWrap="nowrap"
-            overflow="hidden"
+        <Flex
+          align="center"
+          gap="8px"
+          h="16px"
+          flexWrap="nowrap"
+          overflow="hidden"
+        >
+          <HeaderIcon size={12} color="#0049AA" />
+          <Text
+            fontSize="10px"
+            fontFamily="mono"
+            fontWeight="normal"
+            lineHeight="16px"
+            letterSpacing="0.03em"
+            color="fg.muted"
+            whiteSpace="nowrap"
           >
-            <HeaderIcon size={12} color="#0049AA" />
-            <Text
-              fontSize="10px"
-              fontFamily="mono"
-              fontWeight="normal"
-              lineHeight="16px"
-              letterSpacing="0.03em"
-              color="fg.muted"
-              whiteSpace="nowrap"
+            AI-ASSISTED ANALYSIS
+            {" · "}
+            <Tooltip
+              variant="dark"
+              content={aiDisclaimerTooltip}
+              showArrow
+              positioning={{ placement: "bottom" }}
+              openDelay={100}
+              closeDelay={100}
             >
-              AI-ASSISTED ANALYSIS
-              {" · "}
-              <Tooltip
-                variant="dark"
-                content={aiDisclaimerTooltip}
-                showArrow
-                positioning={{ placement: "bottom" }}
-                openDelay={100}
-                closeDelay={100}
+              <Box
+                as="span"
+                color="#4A64CB"
+                textDecoration="underline"
+                cursor="help"
+                tabIndex={0}
+                aria-label="Learn more about AI-Assisted Analysis"
               >
-                <Box
-                  as="span"
-                  color="#4A64CB"
-                  textDecoration="underline"
-                  cursor="help"
-                  tabIndex={0}
-                  aria-label="Learn more about AI-Assisted Analysis"
-                >
-                  learn more
-                </Box>
-              </Tooltip>
-            </Text>
-          </Flex>
-          <IconButton
-            size="2xs"
-            variant="ghost"
-            h="16px"
-            minW="16px"
-            w="16px"
-            color="#656E7B"
-            aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
-            flexShrink={0}
-            onClick={() => setIsCollapsed((v) => !v)}
-          >
-            {isCollapsed ? (
-              <CaretDownIcon size={12} weight="bold" />
-            ) : (
-              <CaretUpIcon size={12} weight="bold" />
-            )}
-          </IconButton>
+                learn more
+              </Box>
+            </Tooltip>
+          </Text>
         </Flex>
+        <IconButton
+          size="2xs"
+          variant="ghost"
+          h="16px"
+          minW="16px"
+          w="16px"
+          color="#656E7B"
+          aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
+          flexShrink={0}
+          onClick={() => setIsCollapsed((v) => !v)}
+        >
+          {isCollapsed ? (
+            <CaretDownIcon size={12} weight="bold" />
+          ) : (
+            <CaretUpIcon size={12} weight="bold" />
+          )}
+        </IconButton>
+      </Flex>
 
       {!isCollapsed && (
         <>
