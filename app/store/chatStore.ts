@@ -25,7 +25,7 @@ import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
-import useSidebarStore from "./sidebarStore";
+import { queryClient } from "@/app/lib/query-client";
 import {
   showApiError,
   showError,
@@ -526,7 +526,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
       setLoading(false);
 
-      useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };
     }
   },

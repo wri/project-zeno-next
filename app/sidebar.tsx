@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   Button,
   Flex,
@@ -13,6 +13,7 @@ import {
   Box,
   Badge,
   Progress,
+  Spinner,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -30,6 +31,8 @@ import useChatStore from "./store/chatStore";
 import { useLogout } from "./hooks/useLogout";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
+import { useThreadsInfinite } from "./hooks/useThreadsInfinite";
+import { useIntersectionObserver } from "./hooks/useIntersectionObserver";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
   const { href, children, isActive, ...rest } = props;
@@ -137,21 +140,27 @@ function ThreadSection({
 }
 
 export function Sidebar() {
-  const {
-    sideBarVisible,
-    toggleSidebar,
-    threadGroups,
-    fetchThreads,
-    apiStatus,
-    fetchApiStatus,
-  } = useSidebarStore();
+  const { sideBarVisible, toggleSidebar, apiStatus, fetchApiStatus } =
+    useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
+  const { threadGroups, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useThreadsInfinite();
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleLoadMore = useCallback(() => {
+    fetchNextPage();
+  }, [fetchNextPage]);
+
+  useIntersectionObserver(sentinelRef, handleLoadMore, {
+    enabled: hasNextPage && !isFetchingNextPage,
+    rootMargin: "200px",
+  });
 
   useEffect(() => {
-    fetchThreads();
     fetchApiStatus();
-  }, [fetchThreads, fetchApiStatus]);
+  }, [fetchApiStatus]);
 
   const { logout, isLoggingOut } = useLogout();
 
@@ -282,6 +291,12 @@ export function Sidebar() {
             />
           )}
         </Accordion.Root>
+        <div ref={sentinelRef} />
+        {isFetchingNextPage && (
+          <Flex justify="center" py="2">
+            <Spinner size="sm" color="fg.subtle" />
+          </Flex>
+        )}
         <Status.Root
           colorPalette={apiStatus === "OK" ? "green" : "red"}
           m="3"
