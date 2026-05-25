@@ -173,12 +173,59 @@ async function processStreamMessage(
   } else if (streamMessage.type === "text" && streamMessage.text) {
     const pending = getPendingTraceId();
     const traceToUse = streamMessage.trace_id || pending || undefined;
-    addMessage({
-      type: "assistant",
-      message: streamMessage.text,
-      timestamp: streamMessage.timestamp,
-      traceId: traceToUse,
-    });
+
+    const chartRefRe = /\[Chart\s+[a-f0-9-]+\]/gi;
+    if (chartRefRe.test(streamMessage.text)) {
+      // Split the text on [Chart <uuid>] markers and inject insight cards positionally
+      const re = /\[Chart\s+[a-f0-9-]+\]/gi;
+      const pendingWidgets = useInsightStore.getState().consumePendingBatch();
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      let widgetIdx = 0;
+      const segments: Array<{ text?: string; widgetIdx?: number }> = [];
+      while ((match = re.exec(streamMessage.text)) !== null) {
+        const textBefore = streamMessage.text.slice(lastIndex, match.index);
+        if (textBefore.trim()) {
+          segments.push({ text: textBefore });
+        }
+        segments.push({ widgetIdx: widgetIdx++ });
+        lastIndex = re.lastIndex;
+      }
+      const textAfter = streamMessage.text.slice(lastIndex);
+      if (textAfter.trim()) {
+        segments.push({ text: textAfter });
+      }
+      segments.forEach((seg, i) => {
+        const isLast = i === segments.length - 1;
+        if (seg.text !== undefined) {
+          addMessage({
+            type: "assistant",
+            message: seg.text,
+            timestamp: streamMessage.timestamp,
+            ...(!isLast ? { suppressFooter: true } : {}),
+            ...(isLast && traceToUse ? { traceId: traceToUse } : {}),
+          });
+        } else if (seg.widgetIdx !== undefined) {
+          const widget = pendingWidgets[seg.widgetIdx];
+          if (widget) {
+            addMessage({
+              type: "assistant",
+              message: "",
+              timestamp: streamMessage.timestamp,
+              widgets: [widget],
+              ...(isLast && traceToUse ? { traceId: traceToUse } : {}),
+            });
+          }
+        }
+      });
+    } else {
+      addMessage({
+        type: "assistant",
+        message: streamMessage.text,
+        timestamp: streamMessage.timestamp,
+        traceId: traceToUse,
+      });
+    }
     // Clear pending trace id once used
     if (pending && pending === traceToUse) {
       setPendingTraceId(null);

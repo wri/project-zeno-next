@@ -41,13 +41,13 @@ function Wrapper({
       position="absolute"
       pt={2}
       pb={{ base: 4, md: 0 }}
-      pl={{ base: 2, md: 0 }}
+      pl={{ base: 2, md: 3 }}
       gap={2}
       width="100%"
       height="100%"
       pointerEvents="none"
       justifyContent={{ base: "flex-end", md: "flex-start" }}
-      alignItems={{ base: "flex-start", md: "center" }}
+      alignItems="flex-start"
       zIndex={100}
       borderWidth="4px"
       {...props}

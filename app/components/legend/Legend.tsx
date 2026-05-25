@@ -99,11 +99,7 @@ export function Legend(props: LegendProps) {
 
   return (
     <Flex
-      position="absolute"
-      right={3}
-      bottom={{ base: "4.5rem", md: 12 }}
-      zIndex={100}
-      width={420}
+      w="100%"
       maxH={{ base: "50vh", md: "60vh" }}
       bg="#F7F9FF"
       border="1px solid"
@@ -111,6 +107,8 @@ export function Legend(props: LegendProps) {
       rounded="4px"
       flexDirection="column"
       overflow="hidden"
+      pointerEvents="all"
+      flexShrink={0}
     >
       {/* Always-visible header — 28px section header per Figma */}
       <Flex

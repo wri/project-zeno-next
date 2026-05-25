@@ -34,6 +34,7 @@ import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
+import useInsightStore from "@/app/store/insightStore";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -50,6 +51,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
     registerPrimaryForestProtocol();
   }, []);
   const { layers, handleLayerAction, aois, handleRemoveAoi } = useLegendHook();
+  const hasInsights = useInsightStore((s) => s.insights.length > 0);
   const areas = useContextStore(
     useShallow((s) => s.context.filter((c) => c.contextType === "area"))
   );
@@ -168,14 +170,33 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             Legend
           </Button>
         )}
-        <Box display={{ base: showLegend ? "inherit" : "none", md: "inherit" }}>
-          <Legend
-            layers={layers}
-            onLayerAction={handleLayerAction}
-            aois={aois}
-            onRemoveAoi={handleRemoveAoi}
-          />
-        </Box>
+        {/* Right overlay column: insight panel (top, scrollable) + legend (bottom) */}
+        <Flex
+          position="absolute"
+          top={4}
+          right={3}
+          bottom={{ base: "4.5rem", md: 12 }}
+          zIndex={400}
+          w="420px"
+          flexDirection="column"
+          gap={2}
+          pointerEvents="none"
+        >
+          {hasInsights && <InsightWorkspace />}
+          {/* Spacer: pushes legend to the bottom */}
+          <Box flex="1 1 0" minH="0" />
+          <Box
+            flexShrink={0}
+            display={{ base: showLegend ? "block" : "none", md: "block" }}
+          >
+            <Legend
+              layers={layers}
+              onLayerAction={handleLayerAction}
+              aois={aois}
+              onRemoveAoi={handleRemoveAoi}
+            />
+          </Box>
+        </Flex>
 
         {/* Sentinel layer: caps raster layers below AOI/GeoJSON outlines.
             Must be added before DynamicTileLayers so the sentinel exists
@@ -218,7 +239,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             <NavigationControl showCompass={false} position="bottom-left" />
           </>
         )}
-        <InsightWorkspace />
         <Flex
           pos="absolute"
           bottom="4"

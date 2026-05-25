@@ -155,6 +155,7 @@ function MessageBubble({
     !isError &&
     !isWarning &&
     !isFirst &&
+    !message.suppressFooter &&
     (!isConsecutive || analysisWidgets.length > 0 || isLast);
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
@@ -174,7 +175,7 @@ function MessageBubble({
     <Box
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
-      mb={isConsecutive ? 1 : 4} // Reduced margin for consecutive messages
+      mb={isConsecutive || message.suppressFooter ? 1 : 4}
       _first={{ base: { mt: 3 }, md: { mt: 6 } }}
     >
       <Box
