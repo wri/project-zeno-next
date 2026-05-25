@@ -25,19 +25,16 @@ interface SidebarState {
 function updateThreadInCache(
   updater: (threads: ThreadEntry[]) => ThreadEntry[]
 ) {
-  queryClient.setQueryData<InfiniteData<ThreadsPage>>(
-    ["threads"],
-    (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        pages: old.pages.map((page) => ({
-          ...page,
-          threads: updater(page.threads),
-        })),
-      };
-    }
-  );
+  queryClient.setQueryData<InfiniteData<ThreadsPage>>(["threads"], (old) => {
+    if (!old) return old;
+    return {
+      ...old,
+      pages: old.pages.map((page) => ({
+        ...page,
+        threads: updater(page.threads),
+      })),
+    };
+  });
 }
 
 const useSidebarStore = create<SidebarState>(() => ({
