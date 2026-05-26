@@ -110,24 +110,10 @@ export default function MapCard({ aoi, height = 180, bare = false }: Props) {
         >
           <Layer id="basemap-tiles" type="raster" />
         </Source>
-        <Source id="aoi" type="geojson" data={geometry}>
-          <Layer
-            id="aoi-fill"
-            type="fill"
-            paint={{
-              "fill-color": "#2a8a50",
-              "fill-opacity": 0.3,
-            }}
-          />
-          <Layer
-            id="aoi-line"
-            type="line"
-            paint={{
-              "line-color": "#2a8a50",
-              "line-width": 1.8,
-            }}
-          />
-        </Source>
+        {/* AOI fill/line layers intentionally omitted — the map still
+            centers on the AOI's bbox but the polygon overlay is hidden
+            for now per UX direction. Re-add the <Source id="aoi"> block
+            when geometry display is wanted again. */}
         <NavigationControl position="top-right" showCompass={false} />
       </MapGl>
     </Box>
