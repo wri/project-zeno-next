@@ -20,7 +20,6 @@ import {
   UserIcon,
   InfoIcon,
   MapTrifoldIcon,
-  TrayIcon,
   FileTextIcon,
   SquaresFourIcon,
 } from "@phosphor-icons/react";
@@ -38,9 +37,12 @@ type NavItem = {
   matchPrefix: string;
 };
 
+// Inbox no longer has its own nav entry — user research showed the
+// standalone inbox page wasn't valuable on its own. The pinned-insight
+// inbox panel lives inside the Reports detail page (and dashboards
+// receive insights via the pin destination picker).
 const NAV_ITEMS: NavItem[] = [
   { href: "/app", label: "Explore", icon: MapTrifoldIcon, matchPrefix: "/app" },
-  { href: "/inbox", label: "Inbox", icon: TrayIcon, matchPrefix: "/inbox" },
   {
     href: "/reports",
     label: "Reports",

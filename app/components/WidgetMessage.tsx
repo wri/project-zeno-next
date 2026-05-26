@@ -37,9 +37,10 @@ import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { toaster } from "./ui/toaster";
 import { isPinnable, toChartType } from "@/app/lib/portfolio/chartTypeMap";
-import type { PinnedAoi } from "@/app/types/portfolio";
+import type { PinnedAoi, PinnedInsight } from "@/app/types/portfolio";
 import type { AOI } from "@/app/types/chat";
 import type { FeatureCollection, Feature } from "geojson";
+import PinDestinationDialog from "./portfolio/PinDestinationDialog";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -51,6 +52,10 @@ export default function WidgetMessage({
   inWorkspace,
 }: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pendingPin, setPendingPin] = useState<
+    Omit<PinnedInsight, "id" | "pinnedAt"> | null
+  >(null);
   const { open, onOpen, onClose } = useDisclosure();
   const {
     open: expanded,
@@ -140,27 +145,14 @@ export default function WidgetMessage({
   });
   const isPinned = Boolean(existingPin);
 
-  const handlePinToggle = () => {
-    if (!isPinnable(widget.type)) return;
-
-    if (existingPin) {
-      removeInsight(existingPin.id);
-      toaster.create({
-        title: "Removed from inbox",
-        description: widget.title,
-        type: "info",
-        duration: 2000,
-      });
-      return;
-    }
-
+  // Snapshots the widget + current AOI/dataset context into the PinnedInsight
+  // shape the destination dialog expects. Geometry is read from the live
+  // geoJsonRegistry so dashboards can render the AOI without a round-trip.
+  const buildPendingPin = (): Omit<PinnedInsight, "id" | "pinnedAt"> => {
     const ctxStore = useContextStore.getState();
     const chatStoreState = useChatStore.getState();
     const mapState = useMapStore.getState();
 
-    // Find an AOI snapshot from the active context. AOIs aren't required to
-    // pin (the inbox tolerates "No area"), but when available we capture the
-    // full selection so multi-area insights round-trip correctly.
     const areaCtx = ctxStore.context.find((c) => c.contextType === "area");
     const selection = areaCtx?.aoiSelection;
     const firstAoi: AOI | undefined = selection?.aois?.[0];
@@ -173,9 +165,6 @@ export default function WidgetMessage({
       .map((a) => a.src_id)
       .filter((s): s is string => Boolean(s));
 
-    // Pull the geometry snapshot from the geoJsonRegistry — registered by
-    // pickAoiTool when the AOI was selected. For multi-AOI we merge feature
-    // collections so the dashboard map card can render the union.
     const aois = selection?.aois ?? [];
     const collected: Feature[] = [];
     aois.forEach((a) => {
@@ -203,7 +192,7 @@ export default function WidgetMessage({
       geometry,
     };
 
-    usePinnedInsightStore.getState().addInsight({
+    return {
       title: widget.title,
       description: widget.description,
       datasetName: widget.datasetName,
@@ -213,14 +202,28 @@ export default function WidgetMessage({
       data: widget.data,
       xAxis: widget.xAxis,
       yAxis: widget.yAxis,
-    });
+    };
+  };
 
-    toaster.create({
-      title: "Saved to inbox",
-      description: widget.title,
-      type: "success",
-      duration: 2000,
-    });
+  // Pinned widgets unpin on click (no dialog). Fresh pins open the
+  // destination picker so the user can drop the insight straight onto
+  // an existing report/dashboard — or close it and just hit the inbox.
+  const handlePinClick = () => {
+    if (!isPinnable(widget.type)) return;
+
+    if (existingPin) {
+      removeInsight(existingPin.id);
+      toaster.create({
+        title: "Removed from inbox",
+        description: widget.title,
+        type: "info",
+        duration: 2000,
+      });
+      return;
+    }
+
+    setPendingPin(buildPendingPin());
+    setPinDialogOpen(true);
   };
   return (
     <Box
@@ -297,6 +300,29 @@ export default function WidgetMessage({
               Show full-screen
             </Button>
           )}
+          {/* Pin to inbox — sits alongside Show full-screen so the bottom
+              action row can't overflow it on narrow widget cards. */}
+          {isPinnable(widget.type) && hasData && (
+            <Button
+              size="xs"
+              variant={isPinned ? "subtle" : "outline"}
+              colorPalette={isPinned ? "primary" : undefined}
+              onClick={handlePinClick}
+              h={6}
+              rounded="sm"
+              title={
+                isPinned
+                  ? "Remove from inbox"
+                  : "Pin this insight to a report or dashboard"
+              }
+              _hover={{
+                bg: isPinned ? "primary.muted" : undefined,
+              }}
+            >
+              <PushPinIcon size={14} weight={isPinned ? "fill" : "regular"} />
+              {isPinned ? "Pinned" : "Pin"}
+            </Button>
+          )}
         </Flex>
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
@@ -366,27 +392,6 @@ export default function WidgetMessage({
               Download
               <CaretDownIcon size={12} />
             </Button>
-            {isPinnable(widget.type) && (
-              <Button
-                size="xs"
-                variant={isPinned ? "subtle" : "outline"}
-                colorPalette={isPinned ? "primary" : undefined}
-                onClick={handlePinToggle}
-                h={6}
-                rounded="sm"
-                title={
-                  isPinned
-                    ? "Remove from inbox"
-                    : "Pin this insight to your inbox"
-                }
-                _hover={{
-                  bg: isPinned ? "primary.muted" : undefined,
-                }}
-              >
-                <PushPinIcon size={14} weight={isPinned ? "fill" : "regular"} />
-                {isPinned ? "Pinned" : "Pin to inbox"}
-              </Button>
-            )}
           </Flex>
         )}
         {showDisclaimer && !inWorkspace && <VisualizationDisclaimer />}
@@ -433,6 +438,14 @@ export default function WidgetMessage({
           </Portal>
         </Dialog.Root>
       )}
+      <PinDestinationDialog
+        open={pinDialogOpen}
+        pendingPin={pendingPin}
+        onClose={() => {
+          setPinDialogOpen(false);
+          setPendingPin(null);
+        }}
+      />
     </Box>
   );
 }
