@@ -142,20 +142,27 @@ const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
   if (!series) return null;
 
   return (
-    <Flex direction="column" gap={2} as="ul" listStyleType="none" m={0} p={0}>
+    <Flex direction="column" gap={1} as="ul" listStyleType="none" m={0} p={0}>
       {series
         .filter((entry) => entry.name && entry.color)
         .map((entry, index) => (
-          <Flex as="li" key={`item-${index}`} align="center" gap={2}>
+          <Flex as="li" key={`item-${index}`} align="center" gap={1.5}>
             <Box
-              w={4}
-              h={4}
+              w={2.5}
+              h={2.5}
               bg={entry.color}
               border="1px solid"
               borderColor="neutral.400"
               rounded="sm"
+              flexShrink={0}
             />
-            <Text fontSize="xs" color="neutral.500">
+            <Text
+              fontSize="2xs"
+              color="neutral.500"
+              overflow="hidden"
+              textOverflow="ellipsis"
+              whiteSpace="nowrap"
+            >
               {String(entry.name)}
             </Text>
           </Flex>
@@ -345,8 +352,8 @@ export default function ChartWidget({
             data={chart.data}
             nameKey={chart.key(xAxis)}
             dataKey={chart.key(yAxis)}
-            innerRadius={50}
-            outerRadius={100}
+            innerRadius={35}
+            outerRadius={75}
             isAnimationActive={false}
             startAngle={90}
             endAngle={-270}
@@ -438,7 +445,7 @@ export default function ChartWidget({
   return (
     <Box role="img" aria-label={chartLabel} tabIndex={0}>
       <Chart.Root
-        maxH={expanded ? "75vh" : "280px"}
+        maxH={expanded ? "75vh" : type === "pie" ? "190px" : "280px"}
         chart={chart}
         overflow="hidden"
       >
@@ -460,8 +467,8 @@ export default function ChartWidget({
             wrapperStyle={{
               paddingBottom: "0.5rem",
               maxHeight: "100%",
-              maxWidth: "100%",
-              overflow: "auto",
+              width: type === "pie" ? "42%" : undefined,
+              overflow: "hidden",
             }}
           />
           {type !== "pie" && (
