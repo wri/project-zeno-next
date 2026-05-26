@@ -55,6 +55,59 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
       { year: 2024, loss_ha: 40500 },
     ],
   },
+  {
+    id: "tree-cover-gain",
+    topic: "Forests",
+    title: "Tree cover gain — 5-year periods",
+    description:
+      "Hectares of tree cover gain aggregated into five-year windows from 2000 to 2020. Bar height reads as the area regained in that window.",
+    datasetName: "Tree cover gain",
+    chartType: "bar",
+    xAxis: "period",
+    yAxis: "gain_ha",
+    data: [
+      { period: "2000–2005", gain_ha: 8200 },
+      { period: "2005–2010", gain_ha: 10400 },
+      { period: "2010–2015", gain_ha: 12100 },
+      { period: "2015–2020", gain_ha: 14800 },
+    ],
+  },
+  {
+    id: "tree-cover-extent-2000",
+    topic: "Forests",
+    title: "Tree cover extent (year 2000)",
+    description:
+      "Area binned by canopy density at the year-2000 baseline. Bars by 25% bins show how much of the area is densely forested versus sparse.",
+    datasetName: "Tree cover",
+    chartType: "bar",
+    xAxis: "cover_band",
+    yAxis: "area_ha",
+    data: [
+      { cover_band: "0–25%", area_ha: 142000 },
+      { cover_band: "25–50%", area_ha: 268000 },
+      { cover_band: "50–75%", area_ha: 410000 },
+      { cover_band: "75–100%", area_ha: 1080000 },
+    ],
+  },
+  {
+    id: "tcl-by-driver",
+    topic: "Forests",
+    title: "Tree cover loss by dominant driver",
+    description:
+      "Total tree cover loss between 2001 and 2024 attributed to its dominant driver. Useful for seeing what's responsible for most of the loss in the area.",
+    datasetName: "Tree cover loss by dominant driver",
+    chartType: "pie",
+    xAxis: "driver",
+    yAxis: "share_pct",
+    data: [
+      { driver: "Commodity-driven deforestation", share_pct: 38 },
+      { driver: "Shifting agriculture", share_pct: 24 },
+      { driver: "Forestry", share_pct: 18 },
+      { driver: "Wildfire", share_pct: 12 },
+      { driver: "Urbanization", share_pct: 5 },
+      { driver: "Unknown", share_pct: 3 },
+    ],
+  },
 
   // ── Land Cover ──────────────────────────────────────────────────────
   {
@@ -75,6 +128,22 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
       { class: "Built-up", share_pct: 5 },
       { class: "Bare / sparse", share_pct: 4 },
       { class: "Water", share_pct: 2 },
+    ],
+  },
+  {
+    id: "sbtn-natural-lands",
+    topic: "Land Cover",
+    title: "SBTN Natural Lands (2020)",
+    description:
+      "Share of the area classified as natural vs. modified land per the SBTN Natural Lands Map (year 2020 only). Useful for baselining no-conversion claims.",
+    datasetName: "SBTN Natural Lands Map",
+    chartType: "pie",
+    xAxis: "class",
+    yAxis: "share_pct",
+    data: [
+      { class: "Natural forest", share_pct: 64 },
+      { class: "Other natural cover", share_pct: 17 },
+      { class: "Modified (non-natural)", share_pct: 19 },
     ],
   },
 
@@ -119,6 +188,27 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
       { year: 2021, net_flux_mtco2e: 3.9 },
       { year: 2022, net_flux_mtco2e: 5.6 },
       { year: 2023, net_flux_mtco2e: 7.1 },
+    ],
+  },
+  {
+    id: "sluc-emission-factors",
+    topic: "Emissions & Carbon",
+    title: "Deforestation emission factors by crop",
+    description:
+      "Average sLUC (statistical land-use change) emission factor per hectare for the major agricultural commodities driving forest loss. Tonnes CO₂e per hectare.",
+    datasetName:
+      "Deforestation (sLUC) Emission Factors by Agricultural Crop",
+    chartType: "bar",
+    xAxis: "crop",
+    yAxis: "emission_factor_tco2e_ha",
+    data: [
+      { crop: "Cattle", emission_factor_tco2e_ha: 18.4 },
+      { crop: "Soybean", emission_factor_tco2e_ha: 4.2 },
+      { crop: "Oil palm", emission_factor_tco2e_ha: 3.8 },
+      { crop: "Cocoa", emission_factor_tco2e_ha: 2.9 },
+      { crop: "Coffee", emission_factor_tco2e_ha: 2.1 },
+      { crop: "Rubber", emission_factor_tco2e_ha: 1.6 },
+      { crop: "Sugar", emission_factor_tco2e_ha: 1.2 },
     ],
   },
 
