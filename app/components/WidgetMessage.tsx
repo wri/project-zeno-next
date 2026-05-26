@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Heading,
@@ -9,6 +9,7 @@ import {
   Dialog,
   Portal,
   CloseButton,
+  Text,
   useDisclosure,
 } from "@chakra-ui/react";
 import {
@@ -42,12 +43,6 @@ import type { AOI } from "@/app/types/chat";
 import type { FeatureCollection, Feature } from "geojson";
 import PinDestinationDialog from "./portfolio/PinDestinationDialog";
 
-// localStorage flag — flips true on the first Pin interaction so the
-// "NEW" badge disappears for good. Scoped to the Pin feature so it can
-// outlive the inbox/destination redesign without colliding with other
-// onboarding flags.
-const PIN_BADGE_DISMISSED_KEY = "gnw_pin_badge_dismissed";
-
 interface WidgetMessageProps {
   widget: InsightWidget;
   inWorkspace?: boolean;
@@ -62,28 +57,6 @@ export default function WidgetMessage({
   const [pendingPin, setPendingPin] = useState<
     Omit<PinnedInsight, "id" | "pinnedAt"> | null
   >(null);
-  // "NEW" badge on the pin button — visible until the user interacts with
-  // Pin for the first time. Initialised after hydration to avoid an SSR
-  // mismatch when localStorage already has the flag set.
-  const [pinBadgeDismissed, setPinBadgeDismissed] = useState(true);
-  useEffect(() => {
-    try {
-      setPinBadgeDismissed(
-        localStorage.getItem(PIN_BADGE_DISMISSED_KEY) === "true"
-      );
-    } catch {
-      // Private mode / SSR — leave dismissed=true so we don't keep nagging.
-    }
-  }, []);
-  const dismissPinBadge = () => {
-    if (pinBadgeDismissed) return;
-    setPinBadgeDismissed(true);
-    try {
-      localStorage.setItem(PIN_BADGE_DISMISSED_KEY, "true");
-    } catch {
-      // localStorage unavailable — fine, badge will reappear next reload.
-    }
-  };
   const { open, onOpen, onClose } = useDisclosure();
   const {
     open: expanded,
@@ -238,7 +211,6 @@ export default function WidgetMessage({
   // an existing report/dashboard — or close it and just hit the inbox.
   const handlePinClick = () => {
     if (!isPinnable(widget.type)) return;
-    dismissPinBadge();
 
     if (existingPin) {
       removeInsight(existingPin.id);
@@ -352,18 +324,40 @@ export default function WidgetMessage({
                 <PushPinIcon size={14} weight={isPinned ? "fill" : "regular"} />
                 {isPinned ? "Unpin" : "Pin"}
               </Button>
-              {!isPinned && !pinBadgeDismissed && (
-                <Box
-                  position="absolute"
-                  top="-3px"
-                  right="-3px"
-                  w="8px"
-                  h="8px"
-                  bg="red.solid"
-                  rounded="full"
-                  pointerEvents="none"
-                  aria-hidden="true"
-                />
+              {!isPinned && (
+                <>
+                  {/* Notification dot — top-right of the button */}
+                  <Box
+                    position="absolute"
+                    top="-3px"
+                    right="-3px"
+                    w="8px"
+                    h="8px"
+                    bg="red.solid"
+                    rounded="full"
+                    pointerEvents="none"
+                    aria-hidden="true"
+                  />
+                  {/* "NEW" label sits just below the button, centered.
+                      Absolute so it doesn't push the toolbar row taller. */}
+                  <Text
+                    position="absolute"
+                    top="100%"
+                    left="50%"
+                    transform="translateX(-50%)"
+                    mt="2px"
+                    fontSize="10px"
+                    fontWeight="bold"
+                    letterSpacing="0.05em"
+                    color="red.solid"
+                    textTransform="uppercase"
+                    pointerEvents="none"
+                    whiteSpace="nowrap"
+                    aria-hidden="true"
+                  >
+                    New
+                  </Text>
+                </>
               )}
             </Box>
           )}
