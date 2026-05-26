@@ -120,10 +120,59 @@ export default function MapCard({ aoi, height = 180, bare = false }: Props) {
         >
           <Layer id="basemap-tiles" type="raster" />
         </Source>
-        {/* Dashed bbox outline matching the /app map's AOI affordance.
-            Polygon geometry itself is intentionally hidden per UX
-            direction; the bbox + label give location context without
-            the full polygon overlay. */}
+        {/* AOI polygon outline — matches the in-context single-area
+            paint from GeoJsonLayers on the /app map: zero-opacity fill
+            for hit-testing parity, zoom-interpolated solid line for
+            single areas, flat 1.5 for multi-area groups. */}
+        {aoi.geometry && (
+          <Source id="aoi-polygon" type="geojson" data={aoi.geometry}>
+            <Layer
+              id="aoi-polygon-fill"
+              type="fill"
+              paint={{
+                "fill-color": AOI_BBOX_COLOR,
+                "fill-opacity": 0,
+              }}
+              filter={[
+                "any",
+                ["==", ["geometry-type"], "Polygon"],
+                ["==", ["geometry-type"], "MultiPolygon"],
+              ]}
+            />
+            <Layer
+              id="aoi-polygon-line"
+              type="line"
+              paint={{
+                "line-color": AOI_BBOX_COLOR,
+                "line-width": aoi.isMultiArea
+                  ? 1.5
+                  : [
+                      "interpolate",
+                      ["linear"],
+                      ["zoom"],
+                      3,
+                      0.5,
+                      6,
+                      1,
+                      10,
+                      2,
+                      14,
+                      3,
+                    ],
+                "line-opacity": 1,
+              }}
+              filter={[
+                "any",
+                ["==", ["geometry-type"], "Polygon"],
+                ["==", ["geometry-type"], "MultiPolygon"],
+              ]}
+            />
+          </Source>
+        )}
+        {/* Dashed bbox outline — kept alongside the polygon so AOIs
+            without a stored geometry still show a bounding rectangle,
+            and so multi-area groups read as a single grouped region
+            just like on /app. */}
         {bboxPolygon && (
           <Source id="aoi-bbox" type="geojson" data={bboxPolygon}>
             <Layer
