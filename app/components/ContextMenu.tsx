@@ -88,12 +88,23 @@ function LayerCardList({
     if (existing) {
       removeContext(existing.id);
     } else {
+      const year = card.defaultYear;
+      const tileUrl =
+        year && card.tile_url
+          ? `${card.tile_url}&start_year=${year}&end_year=${year}`
+          : card.tile_url;
       upsertContextByType({
         contextType: "layer",
         content: card.dataset_name,
         datasetId: card.dataset_id,
-        tileUrl: card.tile_url,
+        tileUrl,
         layerName: card.dataset_name,
+        ...(year
+          ? {
+              startDate: `${year}-01-01`,
+              endDate: `${year}-12-31`,
+            }
+          : {}),
         isAiContext: false,
       });
     }
@@ -112,6 +123,9 @@ function LayerCardList({
             img={card.img ?? "/globe.svg"}
             selected={isSelected}
             onClick={() => handleToggle(card)}
+            {...(card.viewOnly
+              ? { label: "VIEW ONLY", labelColor: "#656E7B" }
+              : {})}
           />
         );
       })}

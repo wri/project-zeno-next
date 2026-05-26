@@ -169,10 +169,14 @@ export function useLegendHook() {
 
         const { title, info, note } = relatedDataset.legend;
 
-        const dateRange =
-          layer.startDate && layer.endDate
-            ? `${layer.startDate.slice(0, 4)}–${layer.endDate.slice(0, 4)}`
-            : undefined;
+        const dateRange = (() => {
+          if (!layer.startDate || !layer.endDate) return undefined;
+          const startYear = layer.startDate.slice(0, 4);
+          const endYear = layer.endDate.slice(0, 4);
+          return startYear === endYear
+            ? startYear
+            : `${startYear}\u2013${endYear}`;
+        })();
         const params = buildParams(layer.parameters ?? {}, dateRange);
 
         entries.push({

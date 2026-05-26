@@ -32,6 +32,10 @@ export type DatasetCardConfig = {
   resolution?: string;
   geographic_coverage?: string;
   provider?: string;
+  methodology?: string;
+  citation?: string;
+  viewOnly?: boolean;
+  defaultYear?: number;
 };
 
 export type ContextLayerMetadata = {
@@ -295,6 +299,37 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       type: "symbol",
       info: "Tree cover gain dataset can detect natural forest regrowth and tree plantation cycles. It is useful for tracking large-scale forest recovery trends.",
       note: "Baseline percent tree canopy cover showing density of woody vegetation at the selected canopy density.",
+      unit: "ha",
+    },
+  },
+  {
+    dataset_id: 11,
+    dataset_name: "Tree cover loss due to fires",
+    data_layer: "Tree cover loss due to fires",
+    context_layer: null,
+    threshold: 30,
+    img: "/dataset_card_tree_cover_loss.webp",
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "UMD",
+    viewOnly: true,
+    defaultYear: 2025,
+    description:
+      "Tree Cover Loss due to Fires (Hansen/UMD/GLAD) maps annual global tree cover loss attributed to fire from 2001 to 2025 at 30-meter resolution. This subset of the broader Tree Cover Loss dataset isolates fire-driven stand-replacement disturbances in vegetation over 5 meters tall, helping users understand where fire is a dominant driver of forest loss.",
+    tile_url:
+      "https://tiles.globalforestwatch.org/umd_tree_cover_loss_from_fires/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
+    methodology:
+      "Tree cover loss due to fires is derived by overlaying the Hansen/UMD/GLAD global annual tree cover loss dataset with the MCD64A1 burned area product (MODIS). A tree cover loss pixel (30 m) is attributed to fire when a MODIS burned area detection occurs within the same 500 m grid cell and calendar year. Only stand-replacement disturbances in woody vegetation taller than 5 m are included, at the selected canopy density threshold.",
+    citation:
+      'Hansen, M. C., P. V. Potapov, R. Moore, M. Hancher, S. A. Turubanova, A. Tyukavina, D. Thau, S. V. Stehman, S. J. Goetz, T. R. Loveland, A. Kommareddy, A. Egorov, L. Chini, C. O. Justice, and J. R. G. Townshend. 2013. "High-Resolution Global Maps of 21st-Century Forest Cover Change." *Science* 342 (6160): 850–53. https://doi.org/10.1126/science.1244693',
+    legend: {
+      title: "Tree cover loss due to fires (2001-2025)",
+      color: "#9A5B50 ",
+      items: [{ label: "Tree cover loss due to fire", color: "#9A5B50" }],
+      type: "symbol",
+      info: "This dataset isolates fire as a cause of tree cover loss, showing annual locations where fire-driven stand-replacement disturbances have occurred in forests. Useful for understanding the spatial extent and temporal trends of fire impact on forests.",
+      note: "Annual locations of fire-driven tree cover removal at the selected canopy density threshold.",
       unit: "ha",
     },
   },
