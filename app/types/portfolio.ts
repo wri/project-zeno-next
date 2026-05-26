@@ -63,7 +63,10 @@ export interface AreaDashboard {
   id: string;
   name: string;
   aoi: PinnedAoi;
-  seededFromInsightId: string;
+  // Optional — when dashboards are created from /dashboards "+ New",
+  // there is no seed insight; blocks start empty and the user adds
+  // analyses via the chat panel or a future "Add insight" flow.
+  seededFromInsightId?: string;
   blocks: Block[];
   createdAt: string;
   updatedAt: string;

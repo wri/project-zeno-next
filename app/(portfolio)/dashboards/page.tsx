@@ -1,23 +1,31 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Container,
   Flex,
   Heading,
   Text,
   Box,
+  Button,
   SimpleGrid,
   HStack,
   Badge,
 } from "@chakra-ui/react";
 import { formatDistanceToNow } from "date-fns";
-import { SquaresFourIcon, MapPinIcon } from "@phosphor-icons/react";
+import { SquaresFourIcon, MapPinIcon, PlusIcon } from "@phosphor-icons/react";
 import useDashboardStore from "@/app/store/dashboardStore";
+import NewDashboardDialog from "@/app/components/portfolio/NewDashboardDialog";
+import { toaster } from "@/app/components/ui/toaster";
+import type { PinnedAoi } from "@/app/types/portfolio";
 
 export default function DashboardsIndexPage() {
+  const router = useRouter();
   const dashboards = useDashboardStore((s) => s.dashboards);
+  const createDashboard = useDashboardStore((s) => s.createDashboard);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const sorted = useMemo(
     () =>
@@ -28,17 +36,44 @@ export default function DashboardsIndexPage() {
     [dashboards]
   );
 
+  function handleCreate(aoi: PinnedAoi, name?: string) {
+    const d = createDashboard({ aoi, name });
+    toaster.create({
+      title: "Dashboard created",
+      description: d.name,
+      type: "success",
+      duration: 2200,
+    });
+    router.push(`/dashboards/${d.id}`);
+  }
+
   return (
     <Container maxW="5xl" py={8}>
-      <Flex align="center" gap={2} mb={1}>
-        <SquaresFourIcon size={20} />
-        <Heading as="h1" size="lg" m={0}>
-          Area Dashboards
-        </Heading>
+      <Flex
+        align="center"
+        justify="space-between"
+        gap={2}
+        mb={1}
+        flexWrap="wrap"
+      >
+        <Flex align="center" gap={2}>
+          <SquaresFourIcon size={20} />
+          <Heading as="h1" size="lg" m={0}>
+            Area Dashboards
+          </Heading>
+        </Flex>
+        <Button
+          colorPalette="primary"
+          size="sm"
+          onClick={() => setDialogOpen(true)}
+        >
+          <PlusIcon size={16} />
+          New dashboard
+        </Button>
       </Flex>
       <Text fontSize="sm" color="fg.muted" mb={6}>
         {dashboards.length} dashboard{dashboards.length === 1 ? "" : "s"} ·
-        Created from the Insight Inbox
+        One AOI per dashboard
       </Text>
 
       {sorted.length === 0 && (
@@ -50,15 +85,17 @@ export default function DashboardsIndexPage() {
           textAlign="center"
           color="fg.muted"
         >
-          <Text mb={3}>
-            No dashboards yet.
-          </Text>
-          <Text fontSize="xs">
-            Dashboards are seeded from a single inbox insight — visit{" "}
-            <Link href="/inbox" style={{ textDecoration: "underline" }}>
-              /inbox
-            </Link>{" "}
-            and click <em>Seed area dashboard</em> on any insight.
+          <Text mb={3}>No dashboards yet.</Text>
+          <Button
+            colorPalette="primary"
+            size="sm"
+            onClick={() => setDialogOpen(true)}
+          >
+            <PlusIcon size={14} />
+            Create your first dashboard
+          </Button>
+          <Text fontSize="xs" mt={3}>
+            Or seed one from any pinned insight via the pin → dashboard option.
           </Text>
         </Box>
       )}
@@ -101,6 +138,12 @@ export default function DashboardsIndexPage() {
           </Link>
         ))}
       </SimpleGrid>
+
+      <NewDashboardDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onCreate={handleCreate}
+      />
     </Container>
   );
 }

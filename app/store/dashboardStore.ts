@@ -17,7 +17,8 @@ interface DashboardActions {
   createDashboard: (input: {
     name?: string;
     aoi: PinnedAoi;
-    seededFromInsightId: string;
+    // Omit to create a blank dashboard ("+ New dashboard" path).
+    seededFromInsightId?: string;
   }) => AreaDashboard;
   deleteDashboard: (id: string) => void;
   getById: (id: string) => AreaDashboard | undefined;
@@ -60,13 +61,17 @@ const useDashboardStore = create<DashboardState & DashboardActions>()(
           name: name?.trim() || aoi.name,
           aoi,
           seededFromInsightId,
-          blocks: [
-            {
-              id: uuidv4(),
-              type: "insight",
-              insightId: seededFromInsightId,
-            },
-          ],
+          // Seeded dashboards drop the seed insight as the first block;
+          // blank dashboards open with an empty canvas.
+          blocks: seededFromInsightId
+            ? [
+                {
+                  id: uuidv4(),
+                  type: "insight",
+                  insightId: seededFromInsightId,
+                },
+              ]
+            : [],
           createdAt: ts,
           updatedAt: ts,
         };

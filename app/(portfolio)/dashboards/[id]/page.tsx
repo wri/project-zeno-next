@@ -11,11 +11,13 @@ import {
   Button,
   HStack,
   Badge,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import {
   ArrowLeftIcon,
   DownloadSimpleIcon,
   MapPinIcon,
+  PlusIcon,
 } from "@phosphor-icons/react";
 import usePinnedInsightStore from "@/app/store/pinnedInsightStore";
 import useDashboardStore from "@/app/store/dashboardStore";
@@ -40,6 +42,7 @@ export default function DashboardDetailPage() {
   const insights = usePinnedInsightStore((s) => s.insights);
   const updateAnnotation = useDashboardStore((s) => s.updateAnnotation);
   const addMapBlock = useDashboardStore((s) => s.addMapBlock);
+  const addAnnotationBlock = useDashboardStore((s) => s.addAnnotationBlock);
   const resizeBlock = useDashboardStore((s) => s.resizeBlock);
   const removeBlock = useDashboardStore((s) => s.removeBlock);
   const reorderBlocks = useDashboardStore((s) => s.reorderBlocks);
@@ -63,6 +66,14 @@ export default function DashboardDetailPage() {
   if (dashboardsHydrated && !dashboard) return notFound();
   if (!dashboard) return null;
 
+  const insightBlockCount = dashboard.blocks.filter(
+    (b) => b.type === "insight"
+  ).length;
+  const annotationBlockCount = dashboard.blocks.filter(
+    (b) => b.type === "annotation"
+  ).length;
+  const mapBlockCount = dashboard.blocks.filter((b) => b.type === "map").length;
+
   return (
     <Box display="grid" gridTemplateColumns="1fr 340px" minH="calc(100vh - 56px)">
       <Box
@@ -71,47 +82,50 @@ export default function DashboardDetailPage() {
         bg="bg.subtle"
         p={{ base: 4, md: 6 }}
       >
-        <Box maxW="820px" mx="auto">
-          <Box
-            bg="bg"
-            rounded="md"
-            boxShadow="md"
-            p={{ base: 5, md: 8 }}
-          >
+        {/* Header band — full width, sits on the page bg (no paper sheet) */}
         <Flex
           justify="space-between"
           align="flex-start"
           gap={4}
           flexWrap="wrap"
-          mb={3}
+          mb={4}
         >
           <Box minW={0}>
-            <Button size="xs" variant="ghost" asChild mb={1}>
+            <Button size="xs" variant="ghost" asChild mb={2}>
               <Link href="/dashboards">
                 <ArrowLeftIcon size={14} />
                 Dashboards
               </Link>
             </Button>
-            <HStack gap={2}>
-              <Heading as="h1" size="lg" m={0} truncate>
+            <HStack gap={2} mb={1} flexWrap="wrap">
+              <Heading as="h1" size="xl" m={0} truncate>
                 {dashboard.name}
               </Heading>
-              <Badge colorPalette="green">Area fixed</Badge>
+              <Badge colorPalette="green" size="md">
+                <MapPinIcon size={12} />
+                {dashboard.aoi.name}
+              </Badge>
               {dashboard.aoi.isMultiArea && (
-                <Badge colorPalette="orange" variant="subtle">
+                <Badge colorPalette="orange" variant="subtle" size="md">
                   Multi-area · {dashboard.aoi.src_ids.length}
                 </Badge>
               )}
             </HStack>
-            <Text fontSize="xs" color="fg.muted" mt={1}>
-              {dashboard.blocks.length} block
-              {dashboard.blocks.length === 1 ? "" : "s"} · insights auto-pin as
-              you chat
+            <Text fontSize="xs" color="fg.muted">
+              Area fixed · insights auto-pin as you chat
             </Text>
           </Box>
           <HStack>
             <Button
-              size="xs"
+              size="sm"
+              variant="outline"
+              onClick={() => addAnnotationBlock(dashboard.id)}
+            >
+              <PlusIcon size={12} />
+              Add annotation
+            </Button>
+            <Button
+              size="sm"
               variant="outline"
               colorPalette="green"
               onClick={() => setMapDialogOpen(true)}
@@ -119,15 +133,42 @@ export default function DashboardDetailPage() {
               <MapPinIcon size={12} />
               Add map
             </Button>
-            <Button size="xs" variant="outline" disabled title="Coming soon">
+            <Button size="sm" variant="outline" disabled title="Coming soon">
               <DownloadSimpleIcon size={12} />
               Export PDF
             </Button>
           </HStack>
         </Flex>
 
-        <Box mb={4}>
-          <MapCard aoi={dashboard.aoi} />
+        {/* KPI tiles + hero AOI map — dashboard-style summary band */}
+        <SimpleGrid
+          columns={{ base: 1, md: 4 }}
+          gap={3}
+          mb={4}
+          gridAutoRows="1fr"
+        >
+          <KpiTile label="Insights" value={insightBlockCount} accent="primary" />
+          <KpiTile
+            label="Annotations"
+            value={annotationBlockCount}
+            accent="purple"
+          />
+          <KpiTile label="Maps" value={mapBlockCount} accent="green" />
+          <KpiTile
+            label="Areas"
+            value={dashboard.aoi.isMultiArea ? dashboard.aoi.src_ids.length : 1}
+            accent="orange"
+          />
+        </SimpleGrid>
+
+        <Box
+          rounded="md"
+          overflow="hidden"
+          border="1px solid"
+          borderColor="green.muted"
+          mb={5}
+        >
+          <MapCard aoi={dashboard.aoi} height={220} bare />
         </Box>
 
         <CanvasGrid
@@ -246,8 +287,6 @@ export default function DashboardDetailPage() {
             );
           })}
         </CanvasGrid>
-          </Box>
-        </Box>
       </Box>
 
       <Box
@@ -263,6 +302,67 @@ export default function DashboardDetailPage() {
         onClose={() => setMapDialogOpen(false)}
         onPick={(aoi) => addMapBlock(dashboard.id, aoi)}
       />
+    </Box>
+  );
+}
+
+type KpiAccent = "primary" | "purple" | "green" | "orange";
+
+const ACCENT_BORDER: Record<KpiAccent, string> = {
+  primary: "primary.solid",
+  purple: "purple.solid",
+  green: "green.solid",
+  orange: "orange.solid",
+};
+
+const ACCENT_FG: Record<KpiAccent, string> = {
+  primary: "primary.fg",
+  purple: "purple.fg",
+  green: "green.fg",
+  orange: "orange.fg",
+};
+
+// Small summary tile for the dashboard header band. Borrows a token-coloured
+// left rule per accent so the four-up strip reads as a status row at a glance.
+function KpiTile({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent: KpiAccent;
+}) {
+  return (
+    <Box
+      bg="bg"
+      border="1px solid"
+      borderColor="border"
+      borderLeft="3px solid"
+      borderLeftColor={ACCENT_BORDER[accent]}
+      rounded="md"
+      px={4}
+      py={3}
+    >
+      <Text
+        fontSize="2xs"
+        fontFamily="mono"
+        fontWeight="semibold"
+        letterSpacing="wider"
+        textTransform="uppercase"
+        color="fg.muted"
+        mb={0.5}
+      >
+        {label}
+      </Text>
+      <Text
+        fontSize="2xl"
+        fontWeight="bold"
+        lineHeight="1"
+        color={ACCENT_FG[accent]}
+      >
+        {value}
+      </Text>
     </Box>
   );
 }
