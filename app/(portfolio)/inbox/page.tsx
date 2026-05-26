@@ -128,7 +128,7 @@ export default function InboxPage() {
       <Flex align="center" gap={2} mb={1}>
         <TrayIcon size={20} />
         <Heading as="h1" size="lg" m={0}>
-          Insight Inbox
+          Pinned Insights
         </Heading>
       </Flex>
       <Text fontSize="sm" color="fg.muted" mb={5}>

@@ -22,6 +22,9 @@ export interface InsightTemplate {
   id: string;
   topic: InsightTopic;
   title: string;
+  // Short, human-readable one-liner shown under the title on the side-pane
+  // card. Should complement the title rather than echo the dataset name.
+  subtitle: string;
   description: string;
   datasetName: string;
   chartType: ChartType;
@@ -35,7 +38,8 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
   {
     id: "tcl-yearly",
     topic: "Forests",
-    title: "Tree cover loss — yearly",
+    title: "Annual Tree cover loss",
+    subtitle: "Yearly loss trajectory",
     description:
       "Annual Hansen tree cover loss in hectares. Bars for each year give a quick read on the loss trajectory across the last decade.",
     datasetName: "Tree cover loss",
@@ -59,6 +63,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "tree-cover-gain",
     topic: "Forests",
     title: "Tree cover gain — 5-year periods",
+    subtitle: "Area regained per window",
     description:
       "Hectares of tree cover gain aggregated into five-year windows from 2000 to 2020. Bar height reads as the area regained in that window.",
     datasetName: "Tree cover gain",
@@ -76,6 +81,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "tree-cover-extent-2000",
     topic: "Forests",
     title: "Tree cover extent (year 2000)",
+    subtitle: "Canopy density baseline",
     description:
       "Area binned by canopy density at the year-2000 baseline. Bars by 25% bins show how much of the area is densely forested versus sparse.",
     datasetName: "Tree cover",
@@ -93,6 +99,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "tcl-by-driver",
     topic: "Forests",
     title: "Tree cover loss by dominant driver",
+    subtitle: "What's driving the loss",
     description:
       "Total tree cover loss between 2001 and 2024 attributed to its dominant driver. Useful for seeing what's responsible for most of the loss in the area.",
     datasetName: "Tree cover loss by dominant driver",
@@ -114,6 +121,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "land-cover-composition",
     topic: "Land Cover",
     title: "Land cover composition (2024)",
+    subtitle: "Mix of cover classes",
     description:
       "Share of the area covered by each land-cover class in the latest available year. A quick snapshot of how mixed the landscape is.",
     datasetName: "Global land cover",
@@ -134,6 +142,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "sbtn-natural-lands",
     topic: "Land Cover",
     title: "SBTN Natural Lands (2020)",
+    subtitle: "Natural vs modified shares",
     description:
       "Share of the area classified as natural vs. modified land per the SBTN Natural Lands Map (year 2020 only). Useful for baselining no-conversion claims.",
     datasetName: "SBTN Natural Lands Map",
@@ -152,6 +161,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "grassland-extent",
     topic: "Grasslands",
     title: "Grassland extent over time",
+    subtitle: "Annual area trend",
     description:
       "Total natural and semi-natural grassland area each year. Useful to track whether grasslands are expanding, holding, or losing ground.",
     datasetName: "Natural / semi-natural grasslands",
@@ -175,6 +185,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "ghg-net-flux",
     topic: "Emissions & Carbon",
     title: "Forest GHG net flux",
+    subtitle: "Net source or sink, by year",
     description:
       "Net forest greenhouse-gas flux per year (MtCO₂e). Positive values are emissions, negative values are removals — the balance reveals whether forests in the area are a net source or sink.",
     datasetName: "Forest greenhouse gas net flux",
@@ -194,6 +205,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "sluc-emission-factors",
     topic: "Emissions & Carbon",
     title: "Deforestation emission factors by crop",
+    subtitle: "tCO₂e per hectare by commodity",
     description:
       "Average sLUC (statistical land-use change) emission factor per hectare for the major agricultural commodities driving forest loss. Tonnes CO₂e per hectare.",
     datasetName:
@@ -217,6 +229,7 @@ export const INSIGHT_TEMPLATES: InsightTemplate[] = [
     id: "dist-alerts",
     topic: "Alerts",
     title: "Ecosystem disturbance alerts (DIST-ALERT)",
+    subtitle: "Weekly detections trend",
     description:
       "Weekly count of DIST-ALERT detections across the area. Spikes typically signal active disturbance events worth investigating.",
     datasetName: "Global all ecosystem disturbance alerts (DIST-ALERT)",

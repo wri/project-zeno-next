@@ -110,7 +110,7 @@ function TemplateCard({
             {template.title}
           </Text>
           <Text fontSize="2xs" color="fg.muted" lineHeight="short" truncate>
-            {template.datasetName}
+            {template.subtitle}
           </Text>
         </Box>
         <Box
