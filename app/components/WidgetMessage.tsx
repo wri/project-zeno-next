@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
-  Badge,
   Box,
   Heading,
   Flex,
@@ -354,23 +353,17 @@ export default function WidgetMessage({
                 {isPinned ? "Unpin" : "Pin"}
               </Button>
               {!isPinned && !pinBadgeDismissed && (
-                <Badge
+                <Box
                   position="absolute"
-                  top="-6px"
-                  right="-8px"
-                  colorPalette="red"
-                  variant="solid"
-                  rounded="sm"
-                  fontSize="9px"
-                  fontWeight="bold"
-                  lineHeight="1.4"
-                  px={1}
-                  py={0}
+                  top="-3px"
+                  right="-3px"
+                  w="8px"
+                  h="8px"
+                  bg="red.solid"
+                  rounded="full"
                   pointerEvents="none"
                   aria-hidden="true"
-                >
-                  NEW
-                </Badge>
+                />
               )}
             </Box>
           )}
