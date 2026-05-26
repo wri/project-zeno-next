@@ -11,7 +11,6 @@ import {
   Button,
   HStack,
   Badge,
-  SimpleGrid,
 } from "@chakra-ui/react";
 import {
   ArrowLeftIcon,
@@ -65,14 +64,6 @@ export default function DashboardDetailPage() {
 
   if (dashboardsHydrated && !dashboard) return notFound();
   if (!dashboard) return null;
-
-  const insightBlockCount = dashboard.blocks.filter(
-    (b) => b.type === "insight"
-  ).length;
-  const annotationBlockCount = dashboard.blocks.filter(
-    (b) => b.type === "annotation"
-  ).length;
-  const mapBlockCount = dashboard.blocks.filter((b) => b.type === "map").length;
 
   return (
     <Box display="grid" gridTemplateColumns="1fr 340px" minH="calc(100vh - 56px)">
@@ -140,27 +131,6 @@ export default function DashboardDetailPage() {
           </HStack>
         </Flex>
 
-        {/* KPI tiles + hero AOI map — dashboard-style summary band */}
-        <SimpleGrid
-          columns={{ base: 1, md: 4 }}
-          gap={3}
-          mb={4}
-          gridAutoRows="1fr"
-        >
-          <KpiTile label="Insights" value={insightBlockCount} accent="primary" />
-          <KpiTile
-            label="Annotations"
-            value={annotationBlockCount}
-            accent="purple"
-          />
-          <KpiTile label="Maps" value={mapBlockCount} accent="green" />
-          <KpiTile
-            label="Areas"
-            value={dashboard.aoi.isMultiArea ? dashboard.aoi.src_ids.length : 1}
-            accent="orange"
-          />
-        </SimpleGrid>
-
         <Box
           rounded="md"
           overflow="hidden"
@@ -172,6 +142,7 @@ export default function DashboardDetailPage() {
         </Box>
 
         <CanvasGrid
+          columns={4}
           ids={dashboard.blocks.map((b) => b.id)}
           onReorder={(ids) => reorderBlocks(dashboard.id, ids)}
           trailing={
@@ -302,67 +273,6 @@ export default function DashboardDetailPage() {
         onClose={() => setMapDialogOpen(false)}
         onPick={(aoi) => addMapBlock(dashboard.id, aoi)}
       />
-    </Box>
-  );
-}
-
-type KpiAccent = "primary" | "purple" | "green" | "orange";
-
-const ACCENT_BORDER: Record<KpiAccent, string> = {
-  primary: "primary.solid",
-  purple: "purple.solid",
-  green: "green.solid",
-  orange: "orange.solid",
-};
-
-const ACCENT_FG: Record<KpiAccent, string> = {
-  primary: "primary.fg",
-  purple: "purple.fg",
-  green: "green.fg",
-  orange: "orange.fg",
-};
-
-// Small summary tile for the dashboard header band. Borrows a token-coloured
-// left rule per accent so the four-up strip reads as a status row at a glance.
-function KpiTile({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: number;
-  accent: KpiAccent;
-}) {
-  return (
-    <Box
-      bg="bg"
-      border="1px solid"
-      borderColor="border"
-      borderLeft="3px solid"
-      borderLeftColor={ACCENT_BORDER[accent]}
-      rounded="md"
-      px={4}
-      py={3}
-    >
-      <Text
-        fontSize="2xs"
-        fontFamily="mono"
-        fontWeight="semibold"
-        letterSpacing="wider"
-        textTransform="uppercase"
-        color="fg.muted"
-        mb={0.5}
-      >
-        {label}
-      </Text>
-      <Text
-        fontSize="2xl"
-        fontWeight="bold"
-        lineHeight="1"
-        color={ACCENT_FG[accent]}
-      >
-        {value}
-      </Text>
     </Box>
   );
 }

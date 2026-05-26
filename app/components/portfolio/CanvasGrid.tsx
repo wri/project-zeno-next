@@ -59,19 +59,24 @@ type CanvasGridProps = {
   onReorder: (orderedIds: string[]) => void;
   children: React.ReactNode;
   // Trailing placeholder (e.g. "+ Pin or drop here") rendered after the
-  // sortable items. Always spans the full sheet width.
+  // sortable items. Always spans the full grid width.
   trailing?: React.ReactNode;
+  // Column count for the md+ viewport. Reports stay at 2 (default blocks
+  // are half-width, wide blocks span the full width). Dashboards pass 4
+  // so default blocks become quarter-width and wide blocks become
+  // half-width — SortableBlock keeps "wide = span 2" either way.
+  columns?: 2 | 4;
 };
 
-// Two-column sheet layout. Default blocks take half the sheet so two sit
-// side-by-side; "wide" blocks span the full width. dnd-kit reorders via
-// rectSortingStrategy and grid-auto-flow:row dense fills gaps wide blocks
-// would otherwise leave behind.
+// Sortable grid layout used by both reports and dashboards. dnd-kit reorders
+// via rectSortingStrategy; grid-auto-flow:row dense fills gaps that wide
+// blocks would otherwise leave behind.
 export default function CanvasGrid({
   ids,
   onReorder,
   children,
   trailing,
+  columns = 2,
 }: CanvasGridProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -95,14 +100,18 @@ export default function CanvasGrid({
     >
       <SortableContext items={ids} strategy={rectSortingStrategy}>
         <SimpleGrid
-          columns={{ base: 1, md: 2 }}
+          columns={{ base: 1, md: columns }}
           gap={4}
           alignItems="start"
           css={{ gridAutoFlow: "row dense" }}
         >
           {children}
           {trailing ? (
-            <Box gridColumn={{ base: "span 1", md: "span 2" }}>{trailing}</Box>
+            <Box
+              gridColumn={{ base: "span 1", md: `span ${columns}` }}
+            >
+              {trailing}
+            </Box>
           ) : null}
         </SimpleGrid>
       </SortableContext>
