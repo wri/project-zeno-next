@@ -17,6 +17,7 @@ import {
   DownloadSimpleIcon,
   TableIcon,
   ChartBarIcon,
+  CaretDownIcon,
   PushPinIcon,
 } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
@@ -28,7 +29,9 @@ import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
-import useInsightStore, { buildAoiKey } from "@/app/store/insightStore";
+import usePinnedInsightStore, {
+  buildAoiKey,
+} from "@/app/store/pinnedInsightStore";
 import useContextStore from "@/app/store/contextStore";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
@@ -40,9 +43,13 @@ import type { FeatureCollection, Feature } from "geojson";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
+  inWorkspace?: boolean;
 }
 
-export default function WidgetMessage({ widget }: WidgetMessageProps) {
+export default function WidgetMessage({
+  widget,
+  inWorkspace,
+}: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
   const { open, onOpen, onClose } = useDisclosure();
   const {
@@ -54,8 +61,8 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
   // They must run unconditionally so we keep them before the dataset-card
   // early return — dataset-card widgets aren't pinnable but the hooks still
   // need to be called.
-  const insights = useInsightStore((s) => s.insights);
-  const removeInsight = useInsightStore((s) => s.removeInsight);
+  const insights = usePinnedInsightStore((s) => s.insights);
+  const removeInsight = usePinnedInsightStore((s) => s.removeInsight);
   const contextItems = useContextStore((s) => s.context);
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
@@ -196,7 +203,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
       geometry,
     };
 
-    useInsightStore.getState().addInsight({
+    usePinnedInsightStore.getState().addInsight({
       title: widget.title,
       description: widget.description,
       datasetName: widget.datasetName,
@@ -219,16 +226,25 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
     <Box
       rounded="md"
       border="1px solid"
-      borderColor="blue.fg"
+      borderColor={inWorkspace ? "border.emphasized" : "blue.fg"}
       overflow="hidden"
+      bg="neutral.100"
     >
-      <Flex px={4} py={3} gap={2} bgGradient="LCLGradientLight">
-        {WidgetIcons[widget.type]}
-        <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
-          {widget.title}
-        </Heading>
-      </Flex>
-      <Flex gap={3} px={4} py={3} flexDir="column">
+      {!inWorkspace && (
+        <Flex
+          px={4}
+          py={3}
+          gap={2}
+          bgGradient="LCLGradientLight"
+          align="center"
+        >
+          {WidgetIcons[widget.type]}
+          <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
+            {widget.title}
+          </Heading>
+        </Flex>
+      )}
+      <Flex gap={3} px={4} py={2} flexDir="column">
         {hasData && <Separator />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
@@ -275,6 +291,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               onClick={onExpand}
               h={6}
               rounded="sm"
+              color="neutral.500"
             >
               <ArrowsOutIcon size={14} />
               Show full-screen
@@ -313,7 +330,12 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
         )}
         {/* Bottom action row — provenance + download */}
         {(isChartType || widget.type === "table") && hasData && (
-          <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
+          <Flex
+            justify="flex-start"
+            gap={2}
+            flexWrap={inWorkspace ? "nowrap" : "wrap"}
+            align="center"
+          >
             {widget.generation && (
               <Button
                 size="xs"
@@ -321,7 +343,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
                 onClick={handleOpen}
                 bg={open ? "bg.info" : undefined}
                 borderColor={open ? "border.info" : undefined}
-                color={open ? "fg.info" : undefined}
+                color="neutral.500"
                 h={6}
                 rounded="sm"
                 _hover={{
@@ -338,9 +360,11 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
               onClick={handleDownloadCsv}
               h={6}
               rounded="sm"
+              color="neutral.500"
             >
               <DownloadSimpleIcon size={14} />
-              Download CSV
+              Download
+              <CaretDownIcon size={12} />
             </Button>
             {isPinnable(widget.type) && (
               <Button
@@ -365,7 +389,7 @@ export default function WidgetMessage({ widget }: WidgetMessageProps) {
             )}
           </Flex>
         )}
-        {showDisclaimer && <VisualizationDisclaimer />}
+        {showDisclaimer && !inWorkspace && <VisualizationDisclaimer />}
       </Flex>
       <InsightProvenanceDrawer
         isOpen={open}

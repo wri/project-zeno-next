@@ -13,7 +13,7 @@ import {
   CloseButton,
 } from "@chakra-ui/react";
 import { MapPinIcon } from "@phosphor-icons/react";
-import useInsightStore from "@/app/store/insightStore";
+import usePinnedInsightStore from "@/app/store/pinnedInsightStore";
 import type { PinnedAoi } from "@/app/types/portfolio";
 
 type Props = {
@@ -28,7 +28,7 @@ type Props = {
 // key is the one offered — its geometry snapshot will travel into the
 // new map block.
 export default function AddMapDialog({ open, onClose, onPick }: Props) {
-  const insights = useInsightStore((s) => s.insights);
+  const insights = usePinnedInsightStore((s) => s.insights);
 
   const aois = useMemo(() => {
     const seen = new Map<string, PinnedAoi>();

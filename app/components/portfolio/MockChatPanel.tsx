@@ -22,7 +22,7 @@ import {
   matchMockResponse,
   type MockResponse,
 } from "./mockChatResponses";
-import useInsightStore from "@/app/store/insightStore";
+import usePinnedInsightStore from "@/app/store/pinnedInsightStore";
 import useDashboardStore from "@/app/store/dashboardStore";
 import { toaster } from "@/app/components/ui/toaster";
 
@@ -55,8 +55,8 @@ export default function MockChatPanel({ dashboard }: Props) {
   const [thinking, setThinking] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const addInsight = useInsightStore((s) => s.addInsight);
-  const findDuplicate = useInsightStore((s) => s.findDuplicate);
+  const addInsight = usePinnedInsightStore((s) => s.addInsight);
+  const findDuplicate = usePinnedInsightStore((s) => s.findDuplicate);
   const addInsightBlock = useDashboardStore((s) => s.addInsightBlock);
   const addAnnotationBlock = useDashboardStore((s) => s.addAnnotationBlock);
 

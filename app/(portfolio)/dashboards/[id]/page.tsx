@@ -17,7 +17,7 @@ import {
   DownloadSimpleIcon,
   MapPinIcon,
 } from "@phosphor-icons/react";
-import useInsightStore from "@/app/store/insightStore";
+import usePinnedInsightStore from "@/app/store/pinnedInsightStore";
 import useDashboardStore from "@/app/store/dashboardStore";
 import InsightBlock from "@/app/components/portfolio/InsightBlock";
 import AnnotationBlock from "@/app/components/portfolio/AnnotationBlock";
@@ -35,9 +35,9 @@ export default function DashboardDetailPage() {
 
   const dashboards = useDashboardStore((s) => s.dashboards);
   const dashboardsHydrated = useDashboardStore((s) => s.hasHydrated);
-  const insightsHydrated = useInsightStore((s) => s.hasHydrated);
-  const seedIfEmpty = useInsightStore((s) => s.seedIfEmpty);
-  const insights = useInsightStore((s) => s.insights);
+  const insightsHydrated = usePinnedInsightStore((s) => s.hasHydrated);
+  const seedIfEmpty = usePinnedInsightStore((s) => s.seedIfEmpty);
+  const insights = usePinnedInsightStore((s) => s.insights);
   const updateAnnotation = useDashboardStore((s) => s.updateAnnotation);
   const addMapBlock = useDashboardStore((s) => s.addMapBlock);
   const resizeBlock = useDashboardStore((s) => s.resizeBlock);

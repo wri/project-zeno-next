@@ -14,7 +14,7 @@ import useMapStore from "@/app/store/mapStore";
 import useChatStore from "@/app/store/chatStore";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 
-const GLOBAL_LAYER_ID = "global-layer";
+const GLOBAL_LAYER_ID = "Global Layer";
 
 const TOOL_ERROR_OPTIONS: Array<{ name: string; label: string }> = [
   { name: "generate_insights", label: "Insights" },

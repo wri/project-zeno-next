@@ -16,15 +16,15 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
 import useReportStore from "@/app/store/reportStore";
-import useInsightStore from "@/app/store/insightStore";
+import usePinnedInsightStore from "@/app/store/pinnedInsightStore";
 import { REPORTS_PER_USER_LIMIT } from "@/app/types/portfolio";
 
 export default function ReportsIndexPage() {
   const router = useRouter();
   const reports = useReportStore((s) => s.reports);
   const createReport = useReportStore((s) => s.createReport);
-  const seedIfEmpty = useInsightStore((s) => s.seedIfEmpty);
-  const insightsHydrated = useInsightStore((s) => s.hasHydrated);
+  const seedIfEmpty = usePinnedInsightStore((s) => s.seedIfEmpty);
+  const insightsHydrated = usePinnedInsightStore((s) => s.hasHydrated);
 
   useEffect(() => {
     if (insightsHydrated) seedIfEmpty();

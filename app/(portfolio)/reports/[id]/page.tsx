@@ -21,7 +21,7 @@ import {
   MapPinIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import useInsightStore from "@/app/store/insightStore";
+import usePinnedInsightStore from "@/app/store/pinnedInsightStore";
 import useReportStore from "@/app/store/reportStore";
 import InsightBlock from "@/app/components/portfolio/InsightBlock";
 import AnnotationBlock from "@/app/components/portfolio/AnnotationBlock";
@@ -37,9 +37,9 @@ export default function ReportCanvasPage() {
   const params = useParams();
   const id = String(params?.id ?? "");
 
-  const insights = useInsightStore((s) => s.insights);
-  const seedIfEmpty = useInsightStore((s) => s.seedIfEmpty);
-  const insightsHydrated = useInsightStore((s) => s.hasHydrated);
+  const insights = usePinnedInsightStore((s) => s.insights);
+  const seedIfEmpty = usePinnedInsightStore((s) => s.seedIfEmpty);
+  const insightsHydrated = usePinnedInsightStore((s) => s.hasHydrated);
   const reportsHydrated = useReportStore((s) => s.hasHydrated);
   const reports = useReportStore((s) => s.reports);
   const renameReport = useReportStore((s) => s.renameReport);

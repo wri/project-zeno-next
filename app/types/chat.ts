@@ -24,10 +24,12 @@ export interface ChatMessage {
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
+  suppressFooter?: boolean; // Non-terminal segment of a [Chart uuid] split — no footer, tight spacing
 }
 
 // Widget types for insights
 export interface InsightWidget {
+  id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
   type:
     | "line"
     | "bar"
@@ -43,8 +45,19 @@ export interface InsightWidget {
   data: unknown;
   xAxis: string;
   yAxis: string;
+  seriesFields?: string[];
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
+  analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
+}
+
+// Parameters the agent used to produce an insight (read-only transparency)
+export interface AnalysisParams {
+  areas?: string[]; // e.g. ["Pará, Brazil", "KBAs"]
+  dataset?: string; // e.g. "Tree cover loss"
+  canopyThreshold?: number; // e.g. 30 (percentage)
+  startYear?: number;
+  endYear?: number;
 }
 
 // Raw insight data from API (before conversion to InsightWidget)
@@ -161,6 +174,10 @@ export interface DatasetInfo {
   methodology?: string;
   cautions?: string;
   citation?: string;
+  cadence?: string;
+  resolution?: string;
+  geographic_coverage?: string;
+  provider?: string;
   [key: string]: unknown; // Allow other properties
 }
 

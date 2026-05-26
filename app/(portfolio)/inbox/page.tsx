@@ -17,7 +17,7 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { CaretDownIcon, TrayIcon } from "@phosphor-icons/react";
-import useInsightStore from "@/app/store/insightStore";
+import usePinnedInsightStore from "@/app/store/pinnedInsightStore";
 import useDashboardStore from "@/app/store/dashboardStore";
 import useReportStore from "@/app/store/reportStore";
 import InsightCard from "@/app/components/portfolio/InsightCard";
@@ -27,9 +27,9 @@ import { toaster } from "@/app/components/ui/toaster";
 
 export default function InboxPage() {
   const router = useRouter();
-  const insights = useInsightStore((s) => s.insights);
-  const seedIfEmpty = useInsightStore((s) => s.seedIfEmpty);
-  const hasHydrated = useInsightStore((s) => s.hasHydrated);
+  const insights = usePinnedInsightStore((s) => s.insights);
+  const seedIfEmpty = usePinnedInsightStore((s) => s.seedIfEmpty);
+  const hasHydrated = usePinnedInsightStore((s) => s.hasHydrated);
   const createDashboard = useDashboardStore((s) => s.createDashboard);
   const createReport = useReportStore((s) => s.createReport);
 
