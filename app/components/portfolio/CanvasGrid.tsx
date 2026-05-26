@@ -62,10 +62,10 @@ type CanvasGridProps = {
   // sortable items. Always spans the full grid width.
   trailing?: React.ReactNode;
   // Column count for the md+ viewport. Reports stay at 2 (default blocks
-  // are half-width, wide blocks span the full width). Dashboards pass 4
-  // so default blocks become quarter-width and wide blocks become
-  // half-width — SortableBlock keeps "wide = span 2" either way.
-  columns?: 2 | 4;
+  // are half-width, wide blocks span the full width). Dashboards pass 3
+  // so default blocks are 1/3-width and wide blocks are 2/3-width —
+  // SortableBlock keeps "wide = span 2" regardless of column count.
+  columns?: 2 | 3 | 4;
 };
 
 // Sortable grid layout used by both reports and dashboards. dnd-kit reorders

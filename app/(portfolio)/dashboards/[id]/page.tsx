@@ -187,7 +187,7 @@ export default function DashboardDetailPage() {
         </Box>
 
         <CanvasGrid
-          columns={4}
+          columns={3}
           ids={dashboard.blocks.map((b) => b.id)}
           onReorder={(ids) => reorderBlocks(dashboard.id, ids)}
           trailing={
