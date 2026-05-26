@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  Badge,
   Box,
   Heading,
   Flex,
@@ -42,6 +43,12 @@ import type { AOI } from "@/app/types/chat";
 import type { FeatureCollection, Feature } from "geojson";
 import PinDestinationDialog from "./portfolio/PinDestinationDialog";
 
+// localStorage flag — flips true on the first Pin interaction so the
+// "NEW" badge disappears for good. Scoped to the Pin feature so it can
+// outlive the inbox/destination redesign without colliding with other
+// onboarding flags.
+const PIN_BADGE_DISMISSED_KEY = "gnw_pin_badge_dismissed";
+
 interface WidgetMessageProps {
   widget: InsightWidget;
   inWorkspace?: boolean;
@@ -56,6 +63,28 @@ export default function WidgetMessage({
   const [pendingPin, setPendingPin] = useState<
     Omit<PinnedInsight, "id" | "pinnedAt"> | null
   >(null);
+  // "NEW" badge on the pin button — visible until the user interacts with
+  // Pin for the first time. Initialised after hydration to avoid an SSR
+  // mismatch when localStorage already has the flag set.
+  const [pinBadgeDismissed, setPinBadgeDismissed] = useState(true);
+  useEffect(() => {
+    try {
+      setPinBadgeDismissed(
+        localStorage.getItem(PIN_BADGE_DISMISSED_KEY) === "true"
+      );
+    } catch {
+      // Private mode / SSR — leave dismissed=true so we don't keep nagging.
+    }
+  }, []);
+  const dismissPinBadge = () => {
+    if (pinBadgeDismissed) return;
+    setPinBadgeDismissed(true);
+    try {
+      localStorage.setItem(PIN_BADGE_DISMISSED_KEY, "true");
+    } catch {
+      // localStorage unavailable — fine, badge will reappear next reload.
+    }
+  };
   const { open, onOpen, onClose } = useDisclosure();
   const {
     open: expanded,
@@ -210,6 +239,7 @@ export default function WidgetMessage({
   // an existing report/dashboard — or close it and just hit the inbox.
   const handlePinClick = () => {
     if (!isPinnable(widget.type)) return;
+    dismissPinBadge();
 
     if (existingPin) {
       removeInsight(existingPin.id);
@@ -297,31 +327,52 @@ export default function WidgetMessage({
               color="neutral.500"
             >
               <ArrowsOutIcon size={14} />
-              Show full-screen
+              Full-screen
             </Button>
           )}
           {/* Pin to inbox — sits alongside Show full-screen so the bottom
               action row can't overflow it on narrow widget cards. */}
           {isPinnable(widget.type) && hasData && (
-            <Button
-              size="xs"
-              variant={isPinned ? "subtle" : "outline"}
-              colorPalette={isPinned ? "primary" : undefined}
-              onClick={handlePinClick}
-              h={6}
-              rounded="sm"
-              title={
-                isPinned
-                  ? "Remove from inbox"
-                  : "Pin this insight to a report or dashboard"
-              }
-              _hover={{
-                bg: isPinned ? "primary.muted" : undefined,
-              }}
-            >
-              <PushPinIcon size={14} weight={isPinned ? "fill" : "regular"} />
-              {isPinned ? "Pinned" : "Pin"}
-            </Button>
+            <Box position="relative" display="inline-flex">
+              <Button
+                size="xs"
+                variant={isPinned ? "subtle" : "outline"}
+                colorPalette={isPinned ? "primary" : undefined}
+                onClick={handlePinClick}
+                h={6}
+                rounded="sm"
+                title={
+                  isPinned
+                    ? "Remove from inbox"
+                    : "Pin this insight to a report or dashboard"
+                }
+                _hover={{
+                  bg: isPinned ? "primary.muted" : undefined,
+                }}
+              >
+                <PushPinIcon size={14} weight={isPinned ? "fill" : "regular"} />
+                {isPinned ? "Unpin" : "Pin"}
+              </Button>
+              {!isPinned && !pinBadgeDismissed && (
+                <Badge
+                  position="absolute"
+                  top="-6px"
+                  right="-8px"
+                  colorPalette="red"
+                  variant="solid"
+                  rounded="sm"
+                  fontSize="9px"
+                  fontWeight="bold"
+                  lineHeight="1.4"
+                  px={1}
+                  py={0}
+                  pointerEvents="none"
+                  aria-hidden="true"
+                >
+                  NEW
+                </Badge>
+              )}
+            </Box>
           )}
         </Flex>
         {isChartType && !showAsTable && (
