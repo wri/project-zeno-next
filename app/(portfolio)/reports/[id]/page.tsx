@@ -111,7 +111,7 @@ export default function ReportCanvasPage() {
       >
         <Flex justify="space-between" align="center" mb={2}>
           <Text fontSize="sm" fontWeight="semibold">
-            Insight Inbox
+            Pinned Insights
           </Text>
           <Text fontSize="xs" color="fg.muted">
             {insightBlockCount} of {REPORT_INSIGHT_LIMIT}
@@ -253,25 +253,10 @@ export default function ReportCanvasPage() {
           <CanvasGrid
             ids={report.blocks.map((b) => b.id)}
             onReorder={(ids) => reorderBlocks(report.id, ids)}
-            trailing={
-              <Box
-                onClick={() => addAnnotationBlock(report.id)}
-                cursor="pointer"
-                bg="bg.subtle"
-                border="1.5px dashed"
-                borderColor="border"
-                rounded="md"
-                py={3}
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                color="fg.muted"
-                fontSize="xs"
-                _hover={{ borderColor: "primary.solid", color: "primary.fg" }}
-              >
-                + Add annotation
-              </Box>
-            }
+            emptyCellAction={{
+              label: "Annotate",
+              onClick: () => addAnnotationBlock(report.id),
+            }}
           >
             {report.blocks.map((block) => (
               <SortableBlock

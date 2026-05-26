@@ -17,7 +17,8 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Box, SimpleGrid } from "@chakra-ui/react";
+import { Box, Flex, SimpleGrid, Text } from "@chakra-ui/react";
+import { PlusIcon } from "@phosphor-icons/react";
 import type { BlockSize } from "@/app/types/portfolio";
 
 type SortableBlockProps = {
@@ -66,6 +67,14 @@ type CanvasGridProps = {
   // so default blocks are 1/3-width and wide blocks are 2/3-width —
   // SortableBlock keeps "wide = span 2" regardless of column count.
   columns?: 2 | 3 | 4;
+  // When set, the grid renders `columns`-count of invisible filler cells
+  // after the blocks. Each cell reveals a dashed border + label on hover
+  // and calls onClick when activated. Used by reports/dashboards to give
+  // the user an inline "Annotate here" affordance per empty slot.
+  emptyCellAction?: {
+    label: string;
+    onClick: () => void;
+  };
 };
 
 // Sortable grid layout used by both reports and dashboards. dnd-kit reorders
@@ -77,6 +86,7 @@ export default function CanvasGrid({
   children,
   trailing,
   columns = 2,
+  emptyCellAction,
 }: CanvasGridProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -106,6 +116,14 @@ export default function CanvasGrid({
           css={{ gridAutoFlow: "row dense" }}
         >
           {children}
+          {emptyCellAction &&
+            Array.from({ length: columns }).map((_, i) => (
+              <EmptyCellSlot
+                key={`empty-cell-${i}`}
+                label={emptyCellAction.label}
+                onClick={emptyCellAction.onClick}
+              />
+            ))}
           {trailing ? (
             <Box
               gridColumn={{ base: "span 1", md: `span ${columns}` }}
@@ -116,5 +134,53 @@ export default function CanvasGrid({
         </SimpleGrid>
       </SortableContext>
     </DndContext>
+  );
+}
+
+// Invisible-by-default hover target rendered into empty grid cells. Hover
+// surfaces a dashed border + label; activation triggers the parent's
+// addAnnotation handler.
+function EmptyCellSlot({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <Box
+      as="button"
+      onClick={onClick}
+      minH="140px"
+      w="100%"
+      bg="transparent"
+      border="1px dashed transparent"
+      rounded="md"
+      cursor="pointer"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      color="transparent"
+      transition="border-color 0.12s ease, color 0.12s ease, background 0.12s ease"
+      _hover={{
+        borderColor: "border.emphasized",
+        color: "fg.muted",
+        bg: "bg.subtle",
+      }}
+      _focusVisible={{
+        outline: "none",
+        borderColor: "primary.solid",
+        color: "fg",
+        bg: "bg.subtle",
+      }}
+      aria-label={label}
+    >
+      <Flex align="center" gap={1.5}>
+        <PlusIcon size={14} />
+        <Text fontSize="xs" fontWeight="medium">
+          {label}
+        </Text>
+      </Flex>
+    </Box>
   );
 }

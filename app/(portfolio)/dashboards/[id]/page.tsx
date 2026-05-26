@@ -190,6 +190,10 @@ export default function DashboardDetailPage() {
           columns={3}
           ids={dashboard.blocks.map((b) => b.id)}
           onReorder={(ids) => reorderBlocks(dashboard.id, ids)}
+          emptyCellAction={{
+            label: "Annotate",
+            onClick: () => addAnnotationBlock(dashboard.id),
+          }}
           trailing={
             <Box
               bg="bg.subtle"
