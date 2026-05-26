@@ -29,6 +29,9 @@ import CanvasGrid, {
 } from "@/app/components/portfolio/CanvasGrid";
 import MapCard from "@/app/components/portfolio/MapCard";
 import MockChatPanel from "@/app/components/portfolio/MockChatPanel";
+import TemplateLibraryPane from "@/app/components/portfolio/TemplateLibraryPane";
+import type { InsightTemplate } from "@/app/lib/portfolio/insightTemplates";
+import { toaster } from "@/app/components/ui/toaster";
 
 export default function DashboardDetailPage() {
   const params = useParams();
@@ -39,9 +42,11 @@ export default function DashboardDetailPage() {
   const insightsHydrated = usePinnedInsightStore((s) => s.hasHydrated);
   const seedIfEmpty = usePinnedInsightStore((s) => s.seedIfEmpty);
   const insights = usePinnedInsightStore((s) => s.insights);
+  const addInsight = usePinnedInsightStore((s) => s.addInsight);
   const updateAnnotation = useDashboardStore((s) => s.updateAnnotation);
   const addMapBlock = useDashboardStore((s) => s.addMapBlock);
   const addAnnotationBlock = useDashboardStore((s) => s.addAnnotationBlock);
+  const addInsightBlock = useDashboardStore((s) => s.addInsightBlock);
   const resizeBlock = useDashboardStore((s) => s.resizeBlock);
   const removeBlock = useDashboardStore((s) => s.removeBlock);
   const reorderBlocks = useDashboardStore((s) => s.reorderBlocks);
@@ -65,8 +70,48 @@ export default function DashboardDetailPage() {
   if (dashboardsHydrated && !dashboard) return notFound();
   if (!dashboard) return null;
 
+  // Materialise a template into a real PinnedInsight bound to this
+  // dashboard's AOI, then append it as an insight block. The data is
+  // reused verbatim — only the title is reframed with the AOI name so
+  // the resulting card reads as scoped to the area.
+  function handlePickTemplate(template: InsightTemplate) {
+    if (!dashboard) return;
+    const record = addInsight({
+      title: `${template.title} — ${dashboard.aoi.name}`,
+      description: template.description,
+      datasetName: template.datasetName,
+      chartType: template.chartType,
+      aoi: dashboard.aoi,
+      data: template.data,
+      xAxis: template.xAxis,
+      yAxis: template.yAxis,
+    });
+    addInsightBlock(dashboard.id, record.id);
+    toaster.create({
+      title: "Insight added",
+      description: template.title,
+      type: "success",
+      duration: 2200,
+    });
+  }
+
   return (
-    <Box display="grid" gridTemplateColumns="1fr 340px" minH="calc(100vh - 56px)">
+    <Box
+      display="grid"
+      gridTemplateColumns="260px 1fr 340px"
+      minH="calc(100vh - 56px)"
+    >
+      {/* Templates side pane — mirrors the report-detail inbox sidebar */}
+      <Box
+        bg="bg"
+        borderRight="1px solid"
+        borderColor="border"
+        overflowY="auto"
+        maxH="calc(100vh - 56px)"
+      >
+        <TemplateLibraryPane onPick={handlePickTemplate} />
+      </Box>
+
       <Box
         overflowY="auto"
         maxH="calc(100vh - 56px)"

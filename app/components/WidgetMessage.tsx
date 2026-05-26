@@ -9,7 +9,6 @@ import {
   Dialog,
   Portal,
   CloseButton,
-  Text,
   useDisclosure,
 } from "@chakra-ui/react";
 import {
@@ -325,39 +324,18 @@ export default function WidgetMessage({
                 {isPinned ? "Unpin" : "Pin"}
               </Button>
               {!isPinned && (
-                <>
-                  {/* Notification dot — top-right of the button */}
-                  <Box
-                    position="absolute"
-                    top="-3px"
-                    right="-3px"
-                    w="8px"
-                    h="8px"
-                    bg="red.solid"
-                    rounded="full"
-                    pointerEvents="none"
-                    aria-hidden="true"
-                  />
-                  {/* "NEW" label sits just below the button, centered.
-                      Absolute so it doesn't push the toolbar row taller. */}
-                  <Text
-                    position="absolute"
-                    top="100%"
-                    left="50%"
-                    transform="translateX(-50%)"
-                    mt="2px"
-                    fontSize="10px"
-                    fontWeight="bold"
-                    letterSpacing="0.05em"
-                    color="red.solid"
-                    textTransform="uppercase"
-                    pointerEvents="none"
-                    whiteSpace="nowrap"
-                    aria-hidden="true"
-                  >
-                    New
-                  </Text>
-                </>
+                /* Notification dot — top-right of the button */
+                <Box
+                  position="absolute"
+                  top="-3px"
+                  right="-3px"
+                  w="8px"
+                  h="8px"
+                  bg="red.solid"
+                  rounded="full"
+                  pointerEvents="none"
+                  aria-hidden="true"
+                />
               )}
             </Box>
           )}
