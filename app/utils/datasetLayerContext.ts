@@ -52,7 +52,7 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
         : undefined;
 
   return {
-    contextLayer: ctxMeta
+    contextLayer: ctxMeta?.tile_url
       ? {
           name: ctxMeta.name,
           tileUrl: patchPrimaryForestTileUrl(ctxMeta.tile_url),

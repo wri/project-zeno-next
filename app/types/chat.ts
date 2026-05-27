@@ -149,7 +149,7 @@ export interface AOISelection {
 
 export interface DatasetContextLayer {
   name: string;
-  tile_url: string;
+  tile_url: string | null;
 }
 
 export interface DatasetParameter {
