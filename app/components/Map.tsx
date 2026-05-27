@@ -34,6 +34,7 @@ import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
+import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
@@ -170,6 +171,19 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             Legend
           </Button>
         )}
+        {/* Top-left overlay: disclaimer panel */}
+        <Box
+          position="absolute"
+          top={4}
+          left={4}
+          zIndex={400}
+          maxW="380px"
+          w="calc(100% - 2rem)"
+          pointerEvents="all"
+          hideBelow="md"
+        >
+          <DisclaimerPanel />
+        </Box>
         {/* Right overlay column: insight panel (top, scrollable) + legend (bottom) */}
         <Flex
           position="absolute"
