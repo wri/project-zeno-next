@@ -10,7 +10,7 @@ import {
   Text,
   Portal,
 } from "@chakra-ui/react";
-import { ArrowBendRightUpIcon } from "@phosphor-icons/react";
+import { ArrowBendRightUpIcon, StopIcon } from "@phosphor-icons/react";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
@@ -40,7 +40,7 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading } = useChatStore();
+  const { sendMessage, isLoading, cancelRequest } = useChatStore();
   const { context, removeContext } = useContextStore();
 
   const openContextMenu = (type: ChatContextType) => {
@@ -162,24 +162,40 @@ export default function ChatInput({
             disabled={disabled}
           />
         </Flex>
-        <Button
-          p="0"
-          ml="auto"
-          borderRadius="full"
-          variant="solid"
-          colorPalette="primary"
-          _disabled={{
-            opacity: 0.36,
-          }}
-          type="button"
-          size="xs"
-          aria-label="Send prompt"
-          onClick={submitPrompt}
-          disabled={isButtonDisabled}
-          loading={isLoading}
-        >
-          <ArrowBendRightUpIcon weight="bold" />
-        </Button>
+        {isLoading ? (
+          <Button
+            p="0"
+            ml="auto"
+            borderRadius="full"
+            variant="solid"
+            colorPalette="red"
+            type="button"
+            size="xs"
+            aria-label="Cancel request"
+            onClick={cancelRequest}
+            title="Cancel request"
+          >
+            <StopIcon weight="fill" />
+          </Button>
+        ) : (
+          <Button
+            p="0"
+            ml="auto"
+            borderRadius="full"
+            variant="solid"
+            colorPalette="primary"
+            _disabled={{
+              opacity: 0.36,
+            }}
+            type="button"
+            size="xs"
+            aria-label="Send prompt"
+            onClick={submitPrompt}
+            disabled={isButtonDisabled}
+          >
+            <ArrowBendRightUpIcon weight="bold" />
+          </Button>
+        )}
       </Flex>
     </Flex>
   );
@@ -267,28 +283,48 @@ export default function ChatInput({
               disabled={disabled}
             />
           </Flex>
-          <Button
-            p={0}
-            flexShrink={0}
-            colorPalette="primary"
-            title="Send message"
-            aria-label="Send prompt"
-            aria-hidden
-            ml="auto"
-            borderRadius="full"
-            variant="solid"
-            _disabled={{ opacity: 0.36, cursor: "not-allowed" }}
-            type="button"
-            size="xs"
-            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-              e.stopPropagation();
-              submitPrompt();
-            }}
-            disabled={isButtonDisabled}
-            loading={isLoading}
-          >
-            <ArrowBendRightUpIcon weight="bold" />
-          </Button>
+          {isLoading ? (
+            <Button
+              p={0}
+              flexShrink={0}
+              colorPalette="red"
+              title="Cancel request"
+              aria-label="Cancel request"
+              ml="auto"
+              borderRadius="full"
+              variant="solid"
+              type="button"
+              size="xs"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                cancelRequest();
+              }}
+            >
+              <StopIcon weight="fill" />
+            </Button>
+          ) : (
+            <Button
+              p={0}
+              flexShrink={0}
+              colorPalette="primary"
+              title="Send message"
+              aria-label="Send prompt"
+              aria-hidden
+              ml="auto"
+              borderRadius="full"
+              variant="solid"
+              _disabled={{ opacity: 0.36, cursor: "not-allowed" }}
+              type="button"
+              size="xs"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                submitPrompt();
+              }}
+              disabled={isButtonDisabled}
+            >
+              <ArrowBendRightUpIcon weight="bold" />
+            </Button>
+          )}
         </Flex>
       </Flex>
       {contextMenu}
