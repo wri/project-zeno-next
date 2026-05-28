@@ -59,6 +59,7 @@ interface ChatActions {
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
+  simulateDatasetNudge: () => void;
 }
 
 const initialState: ChatState = {
@@ -772,6 +773,38 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
       setLoading(false);
     }
+  },
+
+  simulateDatasetNudge: () => {
+    const { addMessage } = get();
+    const mockStreamMessage: StreamMessage = {
+      type: "tool",
+      name: "pick_dataset",
+      content:
+        "No single dataset directly matches the query. Here are the closest available options:\n- Tree cover loss: Annual tree cover loss driven by fires, 2001 onwards.",
+      suggested_datasets: [
+        {
+          dataset_id: 4,
+          dataset_name: "Tree cover loss",
+          context_layer: "primary_forest",
+          start_date: "2002-01-01",
+          end_date: "2025-12-31",
+          reason:
+            "Annual tree cover loss driven by fires, 2001 onwards. Forest scope only.",
+        },
+        {
+          dataset_id: 7,
+          dataset_name: "DIST Alerts (driver)",
+          context_layer: null,
+          start_date: "2023-01-01",
+          end_date: "2025-12-31",
+          reason:
+            "Daily land disturbance alerts with driver attribution. Finer resolution, covers more than just forest.",
+        },
+      ],
+      timestamp: new Date().toISOString(),
+    };
+    pickDatasetTool(mockStreamMessage, addMessage);
   },
 }));
 

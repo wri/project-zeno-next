@@ -3,6 +3,7 @@ import {
   StreamMessage,
   DatasetInfo,
   InsightWidget,
+  SuggestedDataset,
 } from "@/app/types/chat";
 import useContextStore from "../contextStore";
 import { getDatasetLayerContextProps } from "@/app/utils/datasetLayerContext";
@@ -15,6 +16,22 @@ export function pickDatasetTool(
   try {
     // Check if we have dataset information with a tile_url
     const dataset = streamMessage.dataset as DatasetInfo | undefined;
+
+    const suggestedDatasets = streamMessage.suggested_datasets as
+      | SuggestedDataset[]
+      | undefined;
+
+    if (suggestedDatasets && suggestedDatasets.length > 0 && !dataset) {
+      const datasetList = suggestedDatasets
+        .map((d) => `**${d.dataset_name}**\n${d.reason ?? ""}`)
+        .join("\n\n");
+      addMessage({
+        type: "assistant",
+        message: `A few datasets could work here, but they're not interchangeable. Before I run the analysis I want to make sure we use the one that actually fits your question.\n\n${datasetList}\n\nPick one to continue and I'll run the analysis.`,
+        timestamp: streamMessage.timestamp,
+      });
+      return;
+    }
 
     if (dataset && dataset.tile_url) {
       // Create a dataset card widget for interactive tile layer adding
