@@ -100,6 +100,7 @@ export const config = defineConfig({
         lime: {
           100: { value: "#F7FBD9" },
           400: { value: "#E3F37F" },
+          700: { value: "#8E9954" },
         },
         mint: {
           50: { value: "#e2fff8" },
@@ -230,6 +231,9 @@ export const config = defineConfig({
               _light: "{colors.primary.600}",
               _dark: "{colors.primary.300}",
             },
+          },
+          link: {
+            value: { _light: "#0049aa", _dark: "#0049aa" },
           },
         },
         border: {

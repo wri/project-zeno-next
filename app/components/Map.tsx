@@ -174,10 +174,10 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         {/* Top-left overlay: disclaimer panel */}
         <Box
           position="absolute"
-          top={4}
-          left={4}
+          top={2}
+          left={3}
           zIndex={400}
-          maxW="380px"
+          maxW="400px"
           w="calc(100% - 2rem)"
           pointerEvents="all"
           hideBelow="md"
