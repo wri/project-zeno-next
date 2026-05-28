@@ -16,10 +16,18 @@ export interface ToolStepData {
 
 export interface ChatMessage {
   id: string;
-  type: "user" | "assistant" | "system" | "widget" | "error" | "warning";
+  type:
+    | "user"
+    | "assistant"
+    | "system"
+    | "widget"
+    | "error"
+    | "warning"
+    | "dataset-nudge";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
+  suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   context?: ContextItem[];
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
@@ -166,6 +174,7 @@ export interface SuggestedDataset {
   start_date?: string;
   end_date?: string;
   reason?: string;
+  recommended?: boolean;
 }
 
 export interface DatasetInfo {

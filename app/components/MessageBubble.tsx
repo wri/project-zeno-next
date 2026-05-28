@@ -33,6 +33,7 @@ import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
+import DatasetNudgeWidget from "./DatasetNudgeWidget";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -157,6 +158,14 @@ function MessageBubble({
     !isFirst &&
     !message.suppressFooter &&
     (!isConsecutive || analysisWidgets.length > 0 || isLast);
+  if (message.type === "dataset-nudge" && message.suggestedDatasets) {
+    return (
+      <Box my={2}>
+        <DatasetNudgeWidget datasets={message.suggestedDatasets} />
+      </Box>
+    );
+  }
+
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
     return message.widgets.map((widget, idx) => (

@@ -22,12 +22,10 @@ export function pickDatasetTool(
       | undefined;
 
     if (suggestedDatasets && suggestedDatasets.length > 0 && !dataset) {
-      const datasetList = suggestedDatasets
-        .map((d) => `**${d.dataset_name}**\n${d.reason ?? ""}`)
-        .join("\n\n");
       addMessage({
-        type: "assistant",
-        message: `A few datasets could work here, but they're not interchangeable. Before I run the analysis I want to make sure we use the one that actually fits your question.\n\n${datasetList}\n\nPick one to continue and I'll run the analysis.`,
+        type: "dataset-nudge",
+        message: "",
+        suggestedDatasets,
         timestamp: streamMessage.timestamp,
       });
       return;
