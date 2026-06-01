@@ -5,6 +5,7 @@ import {
   Flex,
   Heading,
   Button,
+  IconButton,
   Progress,
   Badge,
   Menu,
@@ -14,8 +15,11 @@ import {
 } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
 import {
+  CaretDownIcon,
+  ClockCounterClockwiseIcon,
   GearSixIcon,
   LifebuoyIcon,
+  PlusIcon,
   SignOutIcon,
   UserIcon,
   InfoIcon,
@@ -25,6 +29,9 @@ import { useState, useEffect, useRef } from "react";
 import PreviewInfoPanel from "./PreviewInfoPanel";
 
 import useAuthStore from "../store/authStore";
+import useChatStore from "../store/chatStore";
+import useSidebarStore from "../store/sidebarStore";
+import ThreadActionsMenu from "./ThreadActionsMenu";
 import Link from "next/link";
 import { useLogout } from "@/app/hooks/useLogout";
 
@@ -34,7 +41,20 @@ const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
+  const { toggleSidebar, getThreadById } = useSidebarStore();
+  const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
+
+  const currentThread = currentThreadId
+    ? getThreadById(currentThreadId)
+    : undefined;
+  const currentThreadName = currentThread
+    ? currentThread.name
+    : "New Conversation";
+
+  const inverseColor = isPrototype ? "#1f2937" : "fg.inverted";
+  const inverseHoverBg = isPrototype ? "#6b7280" : "primary.fg";
+
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const badgeRef = useRef<HTMLDivElement>(null);
@@ -64,84 +84,157 @@ function PageHeader() {
     <Flex
       alignItems="center"
       justifyContent="space-between"
-      px={{ base: 3, md: 5 }}
-      py="2"
-      h={{ base: 10, md: 12 }}
+      gap="4"
+      px="3"
+      h="40px"
       bg={isPrototype ? "#d1d5db" : "primary.solid"}
       color={isPrototype ? "#1f2937" : "fg.inverted"}
       zIndex={1300}
       position="relative"
     >
-      <Flex gap="2" alignItems="center">
-        <ChakraLink
-          as={Link}
-          href="/"
-          display="flex"
-          transition="opacity 0.24s ease"
-          _hover={{ opacity: 0.8 }}
-        >
-          <LclLogo
-            width={16}
-            avatarOnly
-            fill={isPrototype ? "#1f2937" : "white"}
-          />
-          <Heading
-            as="h1"
-            size="sm"
-            color={isPrototype ? "#1f2937" : "fg.inverted"}
+      <Flex gap="5" alignItems="center" minW={0}>
+        <Flex gap="2" alignItems="center">
+          <ChakraLink
+            as={Link}
+            href="/"
+            display="flex"
+            transition="opacity 0.24s ease"
+            _hover={{ opacity: 0.8 }}
           >
-            Global Nature Watch
-          </Heading>
-        </ChakraLink>
-        {isPrototype ? (
-          <Badge
-            colorPalette="gray"
-            bg="#1f2937"
-            color="#f3f4f6"
-            letterSpacing="wider"
-            variant="solid"
-            size="xs"
-          >
-            PROTOTYPE
-          </Badge>
-        ) : (
-          <Box position="relative" ref={badgeRef}>
-            <Flex
-              as={disclaimerDismissed ? "button" : "span"}
-              align="center"
-              gap="4px"
-              h="20px"
-              px="4px"
-              py="2px"
-              borderRadius="4px"
-              bg="#E0E2E5"
-              border="none"
-              cursor={disclaimerDismissed ? "pointer" : "default"}
-              onClick={
-                disclaimerDismissed ? () => setPanelOpen(!panelOpen) : undefined
-              }
-              aria-label={disclaimerDismissed ? "Open preview info" : undefined}
+            <LclLogo
+              width={16}
+              avatarOnly
+              fill={isPrototype ? "#1f2937" : "white"}
+            />
+            <Heading as="h1" size="sm" color={inverseColor}>
+              Global Nature Watch
+            </Heading>
+          </ChakraLink>
+          {isPrototype ? (
+            <Badge
+              colorPalette="gray"
+              bg="#1f2937"
+              color="#f3f4f6"
+              letterSpacing="wider"
+              variant="solid"
+              size="xs"
             >
-              <Text
-                fontFamily="'IBM Plex Sans', sans-serif"
-                fontStyle="normal"
-                fontWeight="500"
-                fontSize="10px"
-                lineHeight="16px"
-                color="#3A4048"
-                flexShrink={0}
+              PROTOTYPE
+            </Badge>
+          ) : (
+            <Box position="relative" ref={badgeRef}>
+              <Flex
+                as={disclaimerDismissed ? "button" : "span"}
+                align="center"
+                gap="4px"
+                h="20px"
+                px="4px"
+                py="2px"
+                borderRadius="4px"
+                bg="#E0E2E5"
+                border="none"
+                cursor={disclaimerDismissed ? "pointer" : "default"}
+                onClick={
+                  disclaimerDismissed
+                    ? () => setPanelOpen(!panelOpen)
+                    : undefined
+                }
+                aria-label={
+                  disclaimerDismissed ? "Open preview info" : undefined
+                }
               >
-                PREVIEW
-              </Text>
-              {disclaimerDismissed && (
-                <InfoIcon size={13} color="#3A4048" weight="fill" />
+                <Text
+                  fontFamily="'IBM Plex Sans', sans-serif"
+                  fontStyle="normal"
+                  fontWeight="500"
+                  fontSize="10px"
+                  lineHeight="16px"
+                  color="#3A4048"
+                  flexShrink={0}
+                >
+                  PREVIEW
+                </Text>
+                {disclaimerDismissed && (
+                  <InfoIcon size={13} color="#3A4048" weight="fill" />
+                )}
+              </Flex>
+              {panelOpen && (
+                <PreviewInfoPanel onClose={() => setPanelOpen(false)} />
               )}
-            </Flex>
-            {panelOpen && (
-              <PreviewInfoPanel onClose={() => setPanelOpen(false)} />
-            )}
-          </Box>
-        )}
+            </Box>
+          )}
+        </Flex>
+        <Flex gap="1" alignItems="center" hideBelow="md" minW={0}>
+          <Tooltip content="Conversation history" showArrow>
+            <IconButton
+              size="xs"
+              variant="ghost"
+              color={inverseColor}
+              _hover={{ bg: inverseHoverBg }}
+              onClick={toggleSidebar}
+              aria-label="Toggle conversation history"
+            >
+              <ClockCounterClockwiseIcon size={16} />
+            </IconButton>
+          </Tooltip>
+          {currentThread ? (
+            <ThreadActionsMenu thread={currentThread}>
+              <Button
+                variant="ghost"
+                size="xs"
+                color={inverseColor}
+                _hover={{ bg: inverseHoverBg }}
+                px={0}
+                minW={0}
+                maxW="280px"
+                justifyContent="flex-start"
+                fontWeight="normal"
+                fontSize="xs"
+                gap="1"
+              >
+                <Tooltip content={currentThreadName} showArrow>
+                  <Text
+                    as="span"
+                    flex="1"
+                    minW={0}
+                    whiteSpace="nowrap"
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                  >
+                    {currentThreadName}
+                  </Text>
+                </Tooltip>
+                <CaretDownIcon size={12} />
+              </Button>
+            </ThreadActionsMenu>
+          ) : (
+            <Text
+              fontSize="xs"
+              color={inverseColor}
+              opacity={0.8}
+              px={0}
+              maxW="240px"
+              whiteSpace="nowrap"
+              overflow="hidden"
+              textOverflow="ellipsis"
+            >
+              {currentThreadName}
+            </Text>
+          )}
+          <Tooltip content="New conversation" showArrow>
+            <IconButton
+              asChild
+              size="xs"
+              variant="ghost"
+              color={inverseColor}
+              _hover={{ bg: inverseHoverBg }}
+            >
+              <Link href="/app" aria-label="New conversation">
+                <PlusIcon size={16} />
+              </Link>
+            </IconButton>
+          </Tooltip>
+        </Flex>
       </Flex>
       {isPrototype && (
         <Text
@@ -166,9 +259,14 @@ function PageHeader() {
             bg={isPrototype ? "#9ca3af" : undefined}
             color={isPrototype ? "#1f2937" : undefined}
             _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
-            size="sm"
+            h="40px"
+            px="2"
+            gap="2"
+            fontSize="xs"
+            fontWeight="medium"
+            rounded="sm"
           >
-            <LifebuoyIcon />
+            <LifebuoyIcon size={16} />
             Help
           </Button>
         </Link>
@@ -177,8 +275,10 @@ function PageHeader() {
           size="xs"
           min={0}
           max={100}
-          value={(usedPrompts / totalPrompts) * 100}
-          minW="6rem"
+          value={totalPrompts > 0 ? (usedPrompts / totalPrompts) * 100 : 0}
+          minW="100px"
+          mt="1"
+          mb="2"
           textAlign="center"
           rounded="full"
           colorPalette="primary"
@@ -186,18 +286,13 @@ function PageHeader() {
           <Progress.Label
             mb="0.5"
             fontSize="xs"
+            lineHeight="1.5"
             fontWeight="normal"
+            whiteSpace="nowrap"
             color={isPrototype ? "#6b7280" : "primary.100"}
           >
-            {usedPrompts}/
-            {totalPrompts > 5000 ? (
-              <Text as="span" fontSize="xl" verticalAlign="bottom">
-                ∞
-              </Text>
-            ) : (
-              totalPrompts
-            )}{" "}
-            daily prompts
+            {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} daily
+            prompts
             <Tooltip
               content={
                 totalPrompts > 5000
@@ -213,7 +308,7 @@ function PageHeader() {
                 verticalAlign="text-bottom"
                 cursor="help"
               >
-                <InfoIcon />
+                <InfoIcon size={12} />
               </Text>
             </Tooltip>
           </Progress.Label>
@@ -233,9 +328,14 @@ function PageHeader() {
                 bg={isPrototype ? "#9ca3af" : undefined}
                 color={isPrototype ? "#1f2937" : undefined}
                 _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
-                size="sm"
+                h="40px"
+                px="2"
+                gap="2"
+                fontSize="xs"
+                fontWeight="medium"
+                rounded="sm"
               >
-                <UserIcon />
+                <UserIcon size={16} />
                 <Text truncate maxW="180px">
                   {userEmail || "User name"}
                 </Text>

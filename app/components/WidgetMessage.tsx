@@ -23,7 +23,7 @@ import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget from "./widgets/ChartWidget";
-import { WidgetIcons } from "../ChatPanelHeader";
+import { WidgetIcons } from "../utils/widgetIcons";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
