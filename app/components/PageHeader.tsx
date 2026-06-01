@@ -232,7 +232,7 @@ function PageHeader() {
             whiteSpace="nowrap"
             color={isPrototype ? "#6b7280" : "primary.100"}
           >
-            {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} prompts
+            {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} daily prompts
             <Tooltip
               content={
                 totalPrompts > 5000

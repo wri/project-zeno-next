@@ -9,13 +9,13 @@ function ChatPanelHeader() {
       mx="3"
       px="3"
       py="1"
-      bg="#f4f5f6"
+      bg="neutral.200"
       rounded="sm"
       alignItems="center"
       gap="2"
       hideBelow="md"
     >
-      <SparkleIcon size={16} color="#656e7b" />
+      <SparkleIcon size={16} color="var(--chakra-colors-neutral-500)" />
       <Text
         fontFamily="mono"
         fontSize="10px"
@@ -23,7 +23,7 @@ function ChatPanelHeader() {
         fontWeight="normal"
         letterSpacing="0.3px"
         textTransform="uppercase"
-        color="#656e7b"
+        color="neutral.500"
       >
         AI Assistant
       </Text>
