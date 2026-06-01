@@ -782,20 +782,23 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // Simulate the AI text message that precedes the tool response
     const mockNarrative =
       "Three of our datasets cover forest fires, and they're not interchangeable. " +
-      "Before I run the analysis I want to make sure we use the one that actually fits your question rather than guessing.\n\n" +
+      "Before I run the analysis I want to make sure we use the one that actually fits your question rather than guessing.\n" +
+      "&nbsp;\n" +
       "**TCL Drivers (snapshot)**\n" +
       "Attributes tree cover loss to one of seven drivers. A single global snapshot, not a time series.\n" +
-      "*Useful for ranking fire against other drivers, but no trend.*\n\n" +
+      "*Useful for ranking fire against other drivers, but no trend.*\n" +
+      "&nbsp;\n" +
       "**TCL Fires**\n" +
       "Annual tree cover loss driven by fires, 2001 onwards. Forest scope only.\n" +
-      "*Best fit. Annual fire-loss series for Borneo.*\n\n" +
+      "*Best fit. Annual fire-loss series for Borneo.*\n" +
+      "&nbsp;\n" +
       "**DIST Alerts (driver)**\n" +
       "Daily land disturbance alerts with driver attribution. Finer resolution, covers more than just forest.\n" +
-      "*Pick if you want recent or ongoing fires.*\n\n" +
+      "*Pick if you want recent or ongoing fires.*\n" +
+      "&nbsp;\n" +
       "> **MY TAKE** — TCL Fires is probably the closest match here, since \"what's been happening\" suggests you want a trend over time and that's the only one of the three that's annual. " +
-      "If you really mean recent or current activity, DIST Alerts is a better fit (daily, 10m). I'd skip TCL Drivers (snapshot) for a trend question.\n\n" +
-      "Pick one to continue and I'll run the analysis.";
-
+      "If you really mean recent or current activity, DIST Alerts is a better fit (daily, 10m). I'd skip TCL Drivers (snapshot) for a trend question.\n" +
+      "&nbsp;\n";
     addMessage({ type: "assistant", message: mockNarrative, timestamp });
 
     // Simulate the pick_dataset tool response with suggested_datasets

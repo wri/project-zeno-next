@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Flex, Button, Text, Badge } from "@chakra-ui/react";
+import { Flex, Text } from "@chakra-ui/react";
+import { CheckIcon } from "@phosphor-icons/react";
 import { SuggestedDataset } from "@/app/types/chat";
 import useChatStore from "@/app/store/chatStore";
 import useContextStore from "@/app/store/contextStore";
@@ -18,7 +19,6 @@ export default function DatasetNudgeWidget({
     if (pickedId !== null) return;
     setPickedId(selected.dataset_id);
 
-    // Merge backend-supplied fields (context_layer, dates) over local registry entry
     const localDataset = DATASET_BY_ID[selected.dataset_id];
     if (localDataset) {
       const merged = {
@@ -47,35 +47,71 @@ export default function DatasetNudgeWidget({
   };
 
   return (
-    <Flex direction="column" gap={2} mt={1}>
-      <Text
-        fontSize="xs"
-        fontWeight="semibold"
-        color="fg.muted"
-        letterSpacing="wider"
-      >
-        SUGGESTED
+    <Flex direction="column" gap={3} w="full">
+      <Text fontSize="xs" color="fg.muted" lineHeight="18px">
+        Pick one to continue and I&apos;ll run the analysis:
       </Text>
-      <Flex gap={2} flexWrap="wrap">
+      <Flex direction="column" gap={3}>
         {datasets.map((d) => {
           const isPicked = pickedId === d.dataset_id;
           const isDisabled = pickedId !== null && !isPicked;
           return (
-            <Button
+            <Flex
               key={d.dataset_id}
-              size="sm"
-              variant={isPicked ? "solid" : "outline"}
-              colorPalette={isPicked ? "primary" : "gray"}
-              disabled={isDisabled}
+              align="center"
+              gap={2}
+              w="full"
+              px={3}
+              py={2}
+              bg={isPicked ? "primary.500" : "bg.panel"}
+              border="1px solid"
+              borderColor={
+                isPicked
+                  ? "primary.500"
+                  : d.recommended
+                    ? "primary.emphasized"
+                    : "neutral.400"
+              }
+              borderRadius="lg"
+              cursor={isDisabled ? "default" : "pointer"}
+              opacity={isDisabled ? 0.4 : 1}
+              pointerEvents={isDisabled ? "none" : "auto"}
+              transition="border-color 0.15s ease"
+              _hover={
+                !isDisabled && !isPicked
+                  ? { borderColor: "primary.emphasized" }
+                  : undefined
+              }
               onClick={() => handlePick(d)}
             >
-              {d.dataset_name}
-              {d.recommended && (
-                <Badge ml={1} size="xs" colorPalette="teal" variant="solid">
-                  REC
-                </Badge>
+              <Flex direction="column" gap={1} flex={1} minW={0}>
+                <Text
+                  fontSize="xs"
+                  fontWeight="semibold"
+                  color={isPicked ? "primary.contrast" : "fg"}
+                  lineHeight="16px"
+                >
+                  {d.dataset_name}
+                </Text>
+                {d.reason && (
+                  <Text
+                    fontSize="xs"
+                    color={isPicked ? "primary.contrast" : "fg"}
+                    lineHeight="16px"
+                  >
+                    {d.reason}
+                  </Text>
+                )}
+              </Flex>
+              {isPicked && (
+                <CheckIcon
+                  size={16}
+                  weight="bold"
+                  color="var(--chakra-colors-primary-contrast)"
+                  style={{ flexShrink: 0 }}
+                />
               )}
-            </Button>
+            </Flex>
           );
         })}
       </Flex>
