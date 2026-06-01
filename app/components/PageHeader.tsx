@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Box,
   Flex,
   Heading,
   Button,
@@ -20,17 +21,45 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
+import { useState, useEffect, useRef } from "react";
+import PreviewInfoPanel from "./PreviewInfoPanel";
 
 import useAuthStore from "../store/authStore";
 import Link from "next/link";
 import { useLogout } from "@/app/hooks/useLogout";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
+const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
   const { logout } = useLogout();
+  const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const badgeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem(DISCLAIMER_STORAGE_KEY) === "true";
+    setDisclaimerDismissed(dismissed);
+
+    const handleDismiss = () => setDisclaimerDismissed(true);
+    window.addEventListener("gnw-disclaimer-dismissed", handleDismiss);
+    return () =>
+      window.removeEventListener("gnw-disclaimer-dismissed", handleDismiss);
+  }, []);
+
+  useEffect(() => {
+    if (!panelOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (badgeRef.current && !badgeRef.current.contains(e.target as Node)) {
+        setPanelOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [panelOpen]);
+
   return (
     <Flex
       alignItems="center"
@@ -64,16 +93,55 @@ function PageHeader() {
             Global Nature Watch
           </Heading>
         </ChakraLink>
-        <Badge
-          colorPalette={isPrototype ? "gray" : "primary"}
-          bg={isPrototype ? "#1f2937" : "primary.800"}
-          color={isPrototype ? "#f3f4f6" : undefined}
-          letterSpacing="wider"
-          variant="solid"
-          size="xs"
-        >
-          {isPrototype ? "PROTOTYPE" : "PREVIEW"}
-        </Badge>
+        {isPrototype ? (
+          <Badge
+            colorPalette="gray"
+            bg="#1f2937"
+            color="#f3f4f6"
+            letterSpacing="wider"
+            variant="solid"
+            size="xs"
+          >
+            PROTOTYPE
+          </Badge>
+        ) : (
+          <Box position="relative" ref={badgeRef}>
+            <Flex
+              as={disclaimerDismissed ? "button" : "span"}
+              align="center"
+              gap="4px"
+              h="20px"
+              px="4px"
+              py="2px"
+              borderRadius="4px"
+              bg="#E0E2E5"
+              border="none"
+              cursor={disclaimerDismissed ? "pointer" : "default"}
+              onClick={
+                disclaimerDismissed ? () => setPanelOpen(!panelOpen) : undefined
+              }
+              aria-label={disclaimerDismissed ? "Open preview info" : undefined}
+            >
+              <Text
+                fontFamily="'IBM Plex Sans', sans-serif"
+                fontStyle="normal"
+                fontWeight="500"
+                fontSize="10px"
+                lineHeight="16px"
+                color="#3A4048"
+                flexShrink={0}
+              >
+                PREVIEW
+              </Text>
+              {disclaimerDismissed && (
+                <InfoIcon size={13} color="#3A4048" weight="fill" />
+              )}
+            </Flex>
+            {panelOpen && (
+              <PreviewInfoPanel onClose={() => setPanelOpen(false)} />
+            )}
+          </Box>
+        )}
       </Flex>
       {isPrototype && (
         <Text
