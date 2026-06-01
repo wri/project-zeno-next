@@ -12,6 +12,7 @@ import {
   QueryType,
   UiContext,
   ToolStepData,
+  SuggestedDataset,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "@/app/lib/read-data-stream";
@@ -131,7 +132,9 @@ async function processStreamMessage(
   addToolStep: (toolData: StreamMessage) => void,
   getPendingTraceId: () => string | null,
   setPendingTraceId: (traceId: string | null) => void,
-  attachTraceToLastAssistant: (traceId: string) => boolean
+  attachTraceToLastAssistant: (traceId: string) => boolean,
+  getPendingNudge: () => SuggestedDataset[] | null,
+  setPendingNudge: (datasets: SuggestedDataset[] | null) => void
 ) {
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
@@ -226,6 +229,17 @@ async function processStreamMessage(
         traceId: traceToUse,
       });
     }
+    // Flush any buffered nudge immediately after the assistant message
+    const pendingNudge = getPendingNudge();
+    if (pendingNudge) {
+      addMessage({
+        type: "dataset-nudge",
+        message: "",
+        suggestedDatasets: pendingNudge,
+        timestamp: streamMessage.timestamp,
+      });
+      setPendingNudge(null);
+    }
     // Clear pending trace id once used
     if (pending && pending === traceToUse) {
       setPendingTraceId(null);
@@ -256,7 +270,14 @@ async function processStreamMessage(
     // Handling for pick_dataset tool
     else if (streamMessage.name === "pick_dataset") {
       void Promise.resolve().then(() =>
-        pickDatasetTool(streamMessage, addMessage)
+        pickDatasetTool(streamMessage, (message) => {
+          // Buffer dataset-nudge messages so they appear after the assistant narrative
+          if (message.type === "dataset-nudge" && message.suggestedDatasets) {
+            setPendingNudge(message.suggestedDatasets);
+          } else {
+            addMessage(message);
+          }
+        })
       );
       return;
     }
@@ -410,6 +431,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       useAuthStore.getState().setUsageFromHeaders(response.headers);
 
       const reader = response.body.getReader();
+      let pendingNudge: SuggestedDataset[] | null = null;
 
       await readDataStream({
         abortController,
@@ -442,6 +464,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                   return state;
                 });
                 return attached;
+              },
+              () => pendingNudge,
+              (datasets) => {
+                pendingNudge = datasets;
               }
             );
           } catch (err) {
@@ -631,6 +657,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       const reader = response.body.getReader();
+      let pendingNudgeThread: SuggestedDataset[] | null = null;
 
       await readDataStream({
         abortController,
@@ -707,6 +734,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                   return state;
                 });
                 return attached;
+              },
+              () => pendingNudgeThread,
+              (datasets) => {
+                pendingNudgeThread = datasets;
               }
             );
           } catch (err) {
