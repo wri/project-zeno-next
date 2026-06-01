@@ -1,28 +1,5 @@
 import { Flex, Text } from "@chakra-ui/react";
-import {
-  SparkleIcon,
-  ChartLineIcon,
-  ListNumbersIcon,
-  ChartBarIcon,
-  ChartPieSliceIcon,
-  PresentationChartIcon,
-  StackIcon,
-  ChartScatterIcon,
-  ChartPolarIcon,
-} from "@phosphor-icons/react";
-
-export const WidgetIcons = {
-  line: <ChartLineIcon />,
-  table: <ListNumbersIcon />,
-  bar: <ChartBarIcon />,
-  "stacked-bar": <ChartBarIcon />,
-  "grouped-bar": <ChartBarIcon />,
-  pie: <ChartPieSliceIcon />,
-  insight: <PresentationChartIcon />,
-  "dataset-card": <StackIcon />,
-  scatter: <ChartScatterIcon />,
-  area: <ChartPolarIcon />,
-};
+import { SparkleIcon } from "@phosphor-icons/react";
 
 function ChatPanelHeader() {
   return (
