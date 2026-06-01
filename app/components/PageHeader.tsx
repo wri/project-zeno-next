@@ -54,9 +54,9 @@ function PageHeader() {
     <Flex
       alignItems="center"
       justifyContent="space-between"
-      px={{ base: 3, md: 5 }}
-      py="2"
-      h={{ base: 10, md: 12 }}
+      gap="4"
+      px="3"
+      h="40px"
       bg={isPrototype ? "#d1d5db" : "primary.solid"}
       color={isPrototype ? "#1f2937" : "fg.inverted"}
       zIndex={1300}
@@ -86,36 +86,43 @@ function PageHeader() {
             color={isPrototype ? "#f3f4f6" : undefined}
             letterSpacing="wider"
             variant="solid"
-            size="xs"
+            fontSize="10px"
+            lineHeight="16px"
+            fontWeight="medium"
+            px="1"
+            py="0.5"
+            rounded="sm"
           >
             {isPrototype ? "PROTOTYPE" : "PREVIEW"}
           </Badge>
         </Flex>
-        <Flex gap="1" alignItems="center" hideBelow="md" minW={0}>
+        <Flex gap="3" alignItems="center" hideBelow="md" minW={0}>
           <Tooltip content="Conversation history" showArrow>
             <IconButton
-              size="sm"
+              size="xs"
               variant="ghost"
               color={inverseColor}
               _hover={{ bg: inverseHoverBg }}
               onClick={toggleSidebar}
               aria-label="Toggle conversation history"
             >
-              <ClockCounterClockwiseIcon />
+              <ClockCounterClockwiseIcon size={16} />
             </IconButton>
           </Tooltip>
-          {currentThreadId && currentThread ? (
+          {currentThread ? (
             <ThreadActionsMenu thread={currentThread}>
               <Button
                 variant="ghost"
-                size="sm"
+                size="xs"
                 color={inverseColor}
                 _hover={{ bg: inverseHoverBg }}
-                px={2}
+                px={1}
                 minW={0}
                 maxW="280px"
                 justifyContent="flex-start"
                 fontWeight="normal"
+                fontSize="xs"
+                gap="1"
               >
                 <Tooltip content={currentThreadName} showArrow>
                   <Text
@@ -129,15 +136,15 @@ function PageHeader() {
                     {currentThreadName}
                   </Text>
                 </Tooltip>
-                <CaretDownIcon />
+                <CaretDownIcon size={12} />
               </Button>
             </ThreadActionsMenu>
           ) : (
             <Text
-              fontSize="sm"
+              fontSize="xs"
               color={inverseColor}
               opacity={0.8}
-              px={2}
+              px={1}
               maxW="240px"
               whiteSpace="nowrap"
               overflow="hidden"
@@ -149,13 +156,13 @@ function PageHeader() {
           <Tooltip content="New conversation" showArrow>
             <IconButton
               asChild
-              size="sm"
+              size="xs"
               variant="ghost"
               color={inverseColor}
               _hover={{ bg: inverseHoverBg }}
             >
               <Link href="/app" aria-label="New conversation">
-                <PlusIcon />
+                <PlusIcon size={16} />
               </Link>
             </IconButton>
           </Tooltip>
@@ -184,9 +191,14 @@ function PageHeader() {
             bg={isPrototype ? "#9ca3af" : undefined}
             color={isPrototype ? "#1f2937" : undefined}
             _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
-            size="sm"
+            h="40px"
+            px="2"
+            gap="2"
+            fontSize="xs"
+            fontWeight="medium"
+            rounded="sm"
           >
-            <LifebuoyIcon />
+            <LifebuoyIcon size={16} />
             Help
           </Button>
         </Link>
@@ -195,8 +207,10 @@ function PageHeader() {
           size="xs"
           min={0}
           max={100}
-          value={(usedPrompts / totalPrompts) * 100}
-          minW="6rem"
+          value={totalPrompts > 0 ? (usedPrompts / totalPrompts) * 100 : 0}
+          minW="100px"
+          mt="1"
+          mb="2"
           textAlign="center"
           rounded="full"
           colorPalette="primary"
@@ -204,18 +218,12 @@ function PageHeader() {
           <Progress.Label
             mb="0.5"
             fontSize="xs"
+            lineHeight="1.5"
             fontWeight="normal"
+            whiteSpace="nowrap"
             color={isPrototype ? "#6b7280" : "primary.100"}
           >
-            {usedPrompts}/
-            {totalPrompts > 5000 ? (
-              <Text as="span" fontSize="xl" verticalAlign="bottom">
-                ∞
-              </Text>
-            ) : (
-              totalPrompts
-            )}{" "}
-            daily prompts
+            {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} prompts
             <Tooltip
               content={
                 totalPrompts > 5000
@@ -231,7 +239,7 @@ function PageHeader() {
                 verticalAlign="text-bottom"
                 cursor="help"
               >
-                <InfoIcon />
+                <InfoIcon size={12} />
               </Text>
             </Tooltip>
           </Progress.Label>
@@ -251,9 +259,14 @@ function PageHeader() {
                 bg={isPrototype ? "#9ca3af" : undefined}
                 color={isPrototype ? "#1f2937" : undefined}
                 _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
-                size="sm"
+                h="40px"
+                px="2"
+                gap="2"
+                fontSize="xs"
+                fontWeight="medium"
+                rounded="sm"
               >
-                <UserIcon />
+                <UserIcon size={16} />
                 <Text truncate maxW="180px">
                   {userEmail || "User name"}
                 </Text>
