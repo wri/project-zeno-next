@@ -40,8 +40,7 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading, simulateDatasetNudge } = useChatStore();
-  const isDebug = process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true";
+  const { sendMessage, isLoading } = useChatStore();
   const { context, removeContext } = useContextStore();
 
   const openContextMenu = (type: ChatContextType) => {
@@ -162,17 +161,6 @@ export default function ChatInput({
             onClick={() => openContextMenu("date")}
             disabled={disabled}
           />
-          {isDebug && (
-            <Button
-              size="xs"
-              variant="outline"
-              colorPalette="gray"
-              onClick={simulateDatasetNudge}
-              title="[Debug] Simulate dataset nudge"
-            >
-              nudge
-            </Button>
-          )}
         </Flex>
         <Button
           p="0"

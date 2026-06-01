@@ -59,7 +59,6 @@ interface ChatActions {
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
-  simulateDatasetNudge: () => void;
 }
 
 const initialState: ChatState = {
@@ -773,72 +772,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
       setLoading(false);
     }
-  },
-
-  simulateDatasetNudge: () => {
-    const { addMessage } = get();
-    const timestamp = new Date().toISOString();
-
-    // Simulate the AI text message that precedes the tool response
-    const mockNarrative =
-      "Three of our datasets cover forest fires, and they're not interchangeable. " +
-      "Before I run the analysis I want to make sure we use the one that actually fits your question rather than guessing.\n" +
-      "&nbsp;\n" +
-      "**TCL Drivers (snapshot)**\n" +
-      "Attributes tree cover loss to one of seven drivers. A single global snapshot, not a time series.\n" +
-      "*Useful for ranking fire against other drivers, but no trend.*\n" +
-      "&nbsp;\n" +
-      "**TCL Fires**\n" +
-      "Annual tree cover loss driven by fires, 2001 onwards. Forest scope only.\n" +
-      "*Best fit. Annual fire-loss series for Borneo.*\n" +
-      "&nbsp;\n" +
-      "**DIST Alerts (driver)**\n" +
-      "Daily land disturbance alerts with driver attribution. Finer resolution, covers more than just forest.\n" +
-      "*Pick if you want recent or ongoing fires.*\n" +
-      "&nbsp;\n" +
-      "> **MY TAKE** — TCL Fires is probably the closest match here, since \"what's been happening\" suggests you want a trend over time and that's the only one of the three that's annual. " +
-      "If you really mean recent or current activity, DIST Alerts is a better fit (daily, 10m). I'd skip TCL Drivers (snapshot) for a trend question.\n" +
-      "&nbsp;\n";
-    addMessage({ type: "assistant", message: mockNarrative, timestamp });
-
-    // Simulate the pick_dataset tool response with suggested_datasets
-    pickDatasetTool(
-      {
-        type: "tool",
-        name: "pick_dataset",
-        content:
-          "No single dataset directly matches the query. Here are the closest available options.",
-        suggested_datasets: [
-          {
-            dataset_id: 3,
-            dataset_name: "TCL Drivers (snapshot)",
-            context_layer: null,
-            start_date: "2001-01-01",
-            end_date: "2023-12-31",
-            reason: "Attributes tree cover loss to one of seven drivers.",
-          },
-          {
-            dataset_id: 4,
-            dataset_name: "TCL Fires",
-            context_layer: null,
-            start_date: "2001-01-01",
-            end_date: "2024-12-31",
-            reason: "Annual tree cover loss driven by fires, 2001 onwards.",
-            recommended: true,
-          },
-          {
-            dataset_id: 7,
-            dataset_name: "DIST Alerts (driver)",
-            context_layer: null,
-            start_date: "2023-01-01",
-            end_date: "2025-12-31",
-            reason: "Daily land disturbance alerts with driver attribution.",
-          },
-        ],
-        timestamp,
-      },
-      addMessage
-    );
   },
 }));
 
