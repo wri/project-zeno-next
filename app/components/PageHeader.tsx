@@ -123,12 +123,13 @@ function PageHeader() {
               aria-label={disclaimerDismissed ? "Open preview info" : undefined}
             >
               <Text
-                fontFamily="sans-serif"
-                fontWeight="medium"
+                fontFamily="'IBM Plex Sans', sans-serif"
+                fontStyle="normal"
+                fontWeight="500"
                 fontSize="10px"
                 lineHeight="16px"
                 color="#3A4048"
-                letterSpacing="0"
+                flexShrink={0}
               >
                 PREVIEW
               </Text>
