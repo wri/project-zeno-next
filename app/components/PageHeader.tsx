@@ -4,6 +4,7 @@ import {
   Flex,
   Heading,
   Button,
+  IconButton,
   Progress,
   Badge,
   Menu,
@@ -13,8 +14,11 @@ import {
 } from "@chakra-ui/react";
 import LclLogo from "./LclLogo";
 import {
+  CaretDownIcon,
+  ClockCounterClockwiseIcon,
   GearSixIcon,
   LifebuoyIcon,
+  PlusIcon,
   SignOutIcon,
   UserIcon,
   InfoIcon,
@@ -22,6 +26,9 @@ import {
 import { Tooltip } from "./ui/tooltip";
 
 import useAuthStore from "../store/authStore";
+import useChatStore from "../store/chatStore";
+import useSidebarStore from "../store/sidebarStore";
+import ThreadActionsMenu from "./ThreadActionsMenu";
 import Link from "next/link";
 import { useLogout } from "@/app/hooks/useLogout";
 
@@ -30,7 +37,19 @@ const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
+  const { toggleSidebar, getThreadById } = useSidebarStore();
+  const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
+
+  const currentThread = currentThreadId
+    ? getThreadById(currentThreadId)
+    : undefined;
+  const currentThreadName = currentThread
+    ? currentThread.name
+    : "New Conversation";
+
+  const inverseColor = isPrototype ? "#1f2937" : "fg.inverted";
+  const inverseHoverBg = isPrototype ? "#6b7280" : "primary.fg";
   return (
     <Flex
       alignItems="center"
@@ -43,37 +62,104 @@ function PageHeader() {
       zIndex={1300}
       position="relative"
     >
-      <Flex gap="2" alignItems="center">
-        <ChakraLink
-          as={Link}
-          href="/"
-          display="flex"
-          transition="opacity 0.24s ease"
-          _hover={{ opacity: 0.8 }}
-        >
-          <LclLogo
-            width={16}
-            avatarOnly
-            fill={isPrototype ? "#1f2937" : "white"}
-          />
-          <Heading
-            as="h1"
-            size="sm"
-            color={isPrototype ? "#1f2937" : "fg.inverted"}
+      <Flex gap="5" alignItems="center" minW={0}>
+        <Flex gap="2" alignItems="center">
+          <ChakraLink
+            as={Link}
+            href="/"
+            display="flex"
+            transition="opacity 0.24s ease"
+            _hover={{ opacity: 0.8 }}
           >
-            Global Nature Watch
-          </Heading>
-        </ChakraLink>
-        <Badge
-          colorPalette={isPrototype ? "gray" : "primary"}
-          bg={isPrototype ? "#1f2937" : "primary.800"}
-          color={isPrototype ? "#f3f4f6" : undefined}
-          letterSpacing="wider"
-          variant="solid"
-          size="xs"
-        >
-          {isPrototype ? "PROTOTYPE" : "PREVIEW"}
-        </Badge>
+            <LclLogo
+              width={16}
+              avatarOnly
+              fill={isPrototype ? "#1f2937" : "white"}
+            />
+            <Heading as="h1" size="sm" color={inverseColor}>
+              Global Nature Watch
+            </Heading>
+          </ChakraLink>
+          <Badge
+            colorPalette={isPrototype ? "gray" : "primary"}
+            bg={isPrototype ? "#1f2937" : "primary.800"}
+            color={isPrototype ? "#f3f4f6" : undefined}
+            letterSpacing="wider"
+            variant="solid"
+            size="xs"
+          >
+            {isPrototype ? "PROTOTYPE" : "PREVIEW"}
+          </Badge>
+        </Flex>
+        <Flex gap="1" alignItems="center" hideBelow="md" minW={0}>
+          <Tooltip content="Conversation history" showArrow>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              color={inverseColor}
+              _hover={{ bg: inverseHoverBg }}
+              onClick={toggleSidebar}
+              aria-label="Toggle conversation history"
+            >
+              <ClockCounterClockwiseIcon />
+            </IconButton>
+          </Tooltip>
+          {currentThreadId && currentThread ? (
+            <ThreadActionsMenu thread={currentThread}>
+              <Button
+                variant="ghost"
+                size="sm"
+                color={inverseColor}
+                _hover={{ bg: inverseHoverBg }}
+                px={2}
+                minW={0}
+                maxW="280px"
+                justifyContent="flex-start"
+                fontWeight="normal"
+              >
+                <Tooltip content={currentThreadName} showArrow>
+                  <Text
+                    as="span"
+                    flex="1"
+                    minW={0}
+                    whiteSpace="nowrap"
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                  >
+                    {currentThreadName}
+                  </Text>
+                </Tooltip>
+                <CaretDownIcon />
+              </Button>
+            </ThreadActionsMenu>
+          ) : (
+            <Text
+              fontSize="sm"
+              color={inverseColor}
+              opacity={0.8}
+              px={2}
+              maxW="240px"
+              whiteSpace="nowrap"
+              overflow="hidden"
+              textOverflow="ellipsis"
+            >
+              {currentThreadName}
+            </Text>
+          )}
+          <Tooltip content="New conversation" showArrow>
+            <IconButton
+              asChild
+              size="sm"
+              variant="ghost"
+              color={inverseColor}
+              _hover={{ bg: inverseHoverBg }}
+            >
+              <Link href="/app" aria-label="New conversation">
+                <PlusIcon />
+              </Link>
+            </IconButton>
+          </Tooltip>
+        </Flex>
       </Flex>
       {isPrototype && (
         <Text
