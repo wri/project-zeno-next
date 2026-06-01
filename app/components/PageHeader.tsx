@@ -96,7 +96,7 @@ function PageHeader() {
             {isPrototype ? "PROTOTYPE" : "PREVIEW"}
           </Badge>
         </Flex>
-        <Flex gap="3" alignItems="center" hideBelow="md" minW={0}>
+        <Flex gap="1" alignItems="center" hideBelow="md" minW={0}>
           <Tooltip content="Conversation history" showArrow>
             <IconButton
               size="xs"
@@ -116,7 +116,7 @@ function PageHeader() {
                 size="xs"
                 color={inverseColor}
                 _hover={{ bg: inverseHoverBg }}
-                px={1}
+                px={0}
                 minW={0}
                 maxW="280px"
                 justifyContent="flex-start"
@@ -144,7 +144,7 @@ function PageHeader() {
               fontSize="xs"
               color={inverseColor}
               opacity={0.8}
-              px={1}
+              px={0}
               maxW="240px"
               whiteSpace="nowrap"
               overflow="hidden"
