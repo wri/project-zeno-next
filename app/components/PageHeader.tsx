@@ -54,6 +54,12 @@ function PageHeader() {
 
   const inverseColor = isPrototype ? "#1f2937" : "fg.inverted";
   const inverseHoverBg = isPrototype ? "#6b7280" : "primary.fg";
+  const focusRing = {
+    outline: "2px solid",
+    outlineColor: inverseColor,
+    outlineOffset: "2px",
+    borderRadius: "sm",
+  };
 
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -100,6 +106,7 @@ function PageHeader() {
             display="flex"
             transition="opacity 0.24s ease"
             _hover={{ opacity: 0.8 }}
+            _focusVisible={focusRing}
           >
             <LclLogo
               width={16}
@@ -171,6 +178,7 @@ function PageHeader() {
               variant="ghost"
               color={inverseColor}
               _hover={{ bg: inverseHoverBg }}
+              _focusVisible={focusRing}
               onClick={toggleSidebar}
               aria-label="Toggle conversation history"
             >
@@ -184,6 +192,7 @@ function PageHeader() {
                 size="xs"
                 color={inverseColor}
                 _hover={{ bg: inverseHoverBg }}
+                _focusVisible={focusRing}
                 px={0}
                 minW={0}
                 maxW="280px"
@@ -228,6 +237,7 @@ function PageHeader() {
               variant="ghost"
               color={inverseColor}
               _hover={{ bg: inverseHoverBg }}
+              _focusVisible={focusRing}
             >
               <Link href="/app" aria-label="New conversation">
                 <PlusIcon size={16} />
@@ -252,24 +262,23 @@ function PageHeader() {
         </Text>
       )}
       <Flex gap="6" alignItems="center" hideBelow="md">
-        <Link href="https://help.globalnaturewatch.org/" target="_blank">
-          <Button
-            variant="solid"
-            colorPalette={isPrototype ? "gray" : "primary"}
-            bg={isPrototype ? "#9ca3af" : undefined}
-            color={isPrototype ? "#1f2937" : undefined}
-            _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
-            h="40px"
-            px="2"
-            gap="2"
-            fontSize="xs"
-            fontWeight="medium"
-            rounded="sm"
-          >
-            <LifebuoyIcon size={16} />
-            Help
-          </Button>
-        </Link>
+        <ChakraLink
+          as={Link}
+          href="https://help.globalnaturewatch.org/"
+          target="_blank"
+          display="flex"
+          alignItems="center"
+          gap="2"
+          color={inverseColor}
+          fontSize="xs"
+          fontWeight="medium"
+          transition="opacity 0.24s ease"
+          _hover={{ opacity: 0.8 }}
+          _focusVisible={focusRing}
+        >
+          <LifebuoyIcon size={16} />
+          Help
+        </ChakraLink>
 
         <Progress.Root
           size="xs"
@@ -328,6 +337,7 @@ function PageHeader() {
                 bg={isPrototype ? "#9ca3af" : undefined}
                 color={isPrototype ? "#1f2937" : undefined}
                 _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
+                _focusVisible={focusRing}
                 h="40px"
                 px="2"
                 gap="2"
@@ -367,20 +377,22 @@ function PageHeader() {
             </Portal>
           </Menu.Root>
         ) : (
-          <Button
-            asChild
-            variant="solid"
-            colorPalette={isPrototype ? "gray" : "primary"}
-            bg={isPrototype ? "#9ca3af" : undefined}
-            color={isPrototype ? "#1f2937" : undefined}
-            _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
-            size="sm"
+          <ChakraLink
+            as={Link}
+            href="/app"
+            display="flex"
+            alignItems="center"
+            gap="2"
+            color={inverseColor}
+            fontSize="xs"
+            fontWeight="medium"
+            transition="opacity 0.24s ease"
+            _hover={{ opacity: 0.8 }}
+            _focusVisible={focusRing}
           >
-            <Link href="/app">
-              <UserIcon />
-              Log in / Sign Up
-            </Link>
-          </Button>
+            <UserIcon size={16} />
+            Log in / Sign Up
+          </ChakraLink>
         )}
       </Flex>
     </Flex>
