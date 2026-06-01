@@ -8,7 +8,7 @@ import useContextStore from "@/app/store/contextStore";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
 import { getDatasetLayerContextProps } from "@/app/utils/datasetLayerContext";
 
-export default function DatasetNudgeWidget({
+export default function DatasetNudge({
   datasets,
 }: {
   datasets: SuggestedDataset[];
