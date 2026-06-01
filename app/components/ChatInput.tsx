@@ -173,6 +173,7 @@ export default function ChatInput({
           }}
           type="button"
           size="xs"
+          aria-label="Send prompt"
           onClick={submitPrompt}
           disabled={isButtonDisabled}
           loading={isLoading}
@@ -271,6 +272,7 @@ export default function ChatInput({
             flexShrink={0}
             colorPalette="primary"
             title="Send message"
+            aria-label="Send prompt"
             aria-hidden
             ml="auto"
             borderRadius="full"
