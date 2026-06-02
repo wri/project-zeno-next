@@ -19,10 +19,10 @@ export default function DatasetNudge({
     if (pickedId !== null) return;
     setPickedId(selected.dataset_id);
 
-    const localDataset = DATASET_BY_ID[selected.dataset_id];
-    if (localDataset) {
+    const datasetMetadata = DATASET_BY_ID[selected.dataset_id];
+    if (datasetMetadata) {
       const merged = {
-        ...localDataset,
+        ...datasetMetadata,
         ...(selected.context_layer !== undefined && {
           context_layer: selected.context_layer,
         }),
