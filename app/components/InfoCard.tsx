@@ -108,6 +108,8 @@ export function InfoCard({
           <Flex align="center" gap="8px" minW={0}>
             {description && (
               <Text
+                flex="1"
+                minW={0}
                 fontFamily="mono"
                 fontSize="10px"
                 fontWeight="normal"

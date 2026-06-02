@@ -1,5 +1,5 @@
 "use client";
-import { Box, Image } from "@chakra-ui/react";
+import { Image } from "@chakra-ui/react";
 import { CrosshairIcon, PolygonIcon } from "@phosphor-icons/react";
 import { AOISelection } from "@/app/types/chat";
 import { Tooltip } from "./ui/tooltip";
@@ -84,6 +84,9 @@ function buildStaticMapUrl(
   const bbox = unionAoiBboxes(aoiSelection.aois);
   if (!bbox) return null;
   const [west, south, east, north] = bbox;
+
+  // Static API can't render a dateline-crossing bbox camera; skip thumbnail.
+  if (east > 180) return null;
 
   const w = Math.max(west, -180).toFixed(4);
   const s = Math.max(south, -85).toFixed(4);
@@ -215,16 +218,22 @@ export function AreaCard({ aoiSelection }: AreaCardProps) {
       showArrow
       variant="dark"
     >
-      <Box
-        as="button"
+      <button
+        type="button"
+        aria-label="Center on map"
         onClick={handleLocate}
-        display="inline-flex"
-        alignItems="center"
-        cursor="pointer"
-        flexShrink={0}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          cursor: "pointer",
+          flexShrink: 0,
+          background: "transparent",
+          border: "none",
+          padding: 0,
+        }}
       >
         <CrosshairIcon size={16} color="#656E7B" />
-      </Box>
+      </button>
     </Tooltip>
   );
 
