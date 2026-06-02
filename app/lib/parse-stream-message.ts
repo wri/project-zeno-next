@@ -58,6 +58,7 @@ export function parseStreamMessage(
       name: kwargs.name,
       content: typeof content === "string" ? content : String(content),
       dataset: langChainMessage.dataset || undefined,
+      suggested_datasets: langChainMessage.suggested_datasets || undefined,
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
       codeact_parts: langChainMessage.codeact_parts || [],

@@ -34,6 +34,7 @@ import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
+import DatasetNudge from "./DatasetNudge";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -165,6 +166,14 @@ function MessageBubble({
     return (
       <Box my={2} width="100%">
         <AreaCard aoiSelection={message.aoiSelection} />
+      </Box>
+    );
+  }
+
+  if (message.type === "dataset-nudge" && message.suggestedDatasets) {
+    return (
+      <Box my={2}>
+        <DatasetNudge datasets={message.suggestedDatasets} />
       </Box>
     );
   }

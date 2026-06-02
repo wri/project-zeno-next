@@ -3,6 +3,7 @@ import {
   StreamMessage,
   DatasetInfo,
   InsightWidget,
+  SuggestedDataset,
 } from "@/app/types/chat";
 import useContextStore from "../contextStore";
 import { getDatasetLayerContextProps } from "@/app/utils/datasetLayerContext";
@@ -15,6 +16,20 @@ export function pickDatasetTool(
   try {
     // Check if we have dataset information with a tile_url
     const dataset = streamMessage.dataset as DatasetInfo | undefined;
+
+    const suggestedDatasets = streamMessage.suggested_datasets as
+      | SuggestedDataset[]
+      | undefined;
+
+    if (suggestedDatasets && suggestedDatasets.length > 0 && !dataset) {
+      addMessage({
+        type: "dataset-nudge",
+        message: "",
+        suggestedDatasets,
+        timestamp: streamMessage.timestamp,
+      });
+      return;
+    }
 
     if (dataset && dataset.tile_url) {
       // Create a dataset card widget for interactive tile layer adding

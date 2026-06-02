@@ -23,11 +23,13 @@ export interface ChatMessage {
     | "widget"
     | "area-card"
     | "error"
-    | "warning";
+    | "warning"
+    | "dataset-nudge";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   aoiSelection?: AOISelection; // For area-card messages
+  suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   context?: ContextItem[];
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
@@ -128,6 +130,7 @@ export interface StreamMessage {
   name?: string;
   content?: string;
   dataset?: object;
+  suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
   insights?: object[];
@@ -163,6 +166,17 @@ export interface DatasetContextLayer {
 export interface DatasetParameter {
   name: string;
   values: unknown[];
+}
+
+export interface SuggestedDataset {
+  dataset_id: number;
+  dataset_name: string;
+  context_layer?: string | null;
+  parameters?: DatasetParameter[] | null;
+  start_date?: string;
+  end_date?: string;
+  reason?: string;
+  recommended?: boolean;
 }
 
 export interface DatasetInfo {
@@ -204,6 +218,7 @@ export interface LangChainResponse {
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
+  suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
   start_date?: string;
