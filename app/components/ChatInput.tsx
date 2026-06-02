@@ -40,7 +40,7 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading } = useChatStore();
+  const { sendMessage, isLoading, messages } = useChatStore();
   const { context, removeContext } = useContextStore();
 
   const openContextMenu = (type: ChatContextType) => {
@@ -83,7 +83,12 @@ export default function ChatInput({
   };
 
   const disabled = isLoading || isChatDisabled;
-  const message = isLoading ? "Sending..." : "Ask a question...";
+  const hasNudge = messages.at(-1)?.type === "dataset-nudge";
+  const message = isLoading
+    ? "Sending..."
+    : hasNudge
+      ? "Or ask a different question..."
+      : "Ask a question...";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
   const hasContext = context.length > 0;
