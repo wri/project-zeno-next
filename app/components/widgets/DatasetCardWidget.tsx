@@ -20,5 +20,5 @@ export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
     provider: dataset.provider ?? cardConfig?.provider,
   };
 
-  return <DatasetCard dataset={enrichedDataset} img={img} size="md" />;
+  return <DatasetCard dataset={enrichedDataset} img={img} />;
 }

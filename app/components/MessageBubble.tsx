@@ -14,6 +14,7 @@ import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import { AnalysisCard } from "./AnalysisCard";
+import { AreaCard } from "./AreaCard";
 import Markdown from "react-markdown";
 import {
   ArrowBendDownRightIcon,
@@ -143,6 +144,7 @@ function MessageBubble({
 
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
+  const isAreaCard = message.type === "area-card";
   const isError = message.type === "error";
   const isWarning = message.type === "warning";
   const isAssistant = message.type === "assistant";
@@ -152,11 +154,21 @@ function MessageBubble({
   const hasContext = isUser && message.context && message.context.length > 0;
   const showFooter =
     !isUser &&
+    !isAreaCard &&
     !isError &&
     !isWarning &&
     !isFirst &&
     !message.suppressFooter &&
     (!isConsecutive || analysisWidgets.length > 0 || isLast);
+
+  if (isAreaCard && message.aoiSelection) {
+    return (
+      <Box my={2} width="100%">
+        <AreaCard aoiSelection={message.aoiSelection} />
+      </Box>
+    );
+  }
+
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
     return message.widgets.map((widget, idx) => (

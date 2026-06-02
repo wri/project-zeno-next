@@ -135,6 +135,13 @@ export async function pickAoiTool(
         });
       }
 
+      addMessage({
+        type: "area-card",
+        message: "",
+        aoiSelection: aoiSelection ?? { name: selectionName, aois },
+        timestamp: streamMessage.timestamp,
+      });
+
       return;
     }
 
@@ -231,6 +238,13 @@ export async function pickAoiTool(
         aoiSelection: selectionForContext,
       });
     }
+
+    addMessage({
+      type: "area-card",
+      message: "",
+      aoiSelection: selectionForContext,
+      timestamp: streamMessage.timestamp,
+    });
 
     // If some AOIs failed, show a partial-failure message
     if (failures.length > 0 && failures.length < aois.length) {

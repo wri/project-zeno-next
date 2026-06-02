@@ -16,10 +16,18 @@ export interface ToolStepData {
 
 export interface ChatMessage {
   id: string;
-  type: "user" | "assistant" | "system" | "widget" | "error" | "warning";
+  type:
+    | "user"
+    | "assistant"
+    | "system"
+    | "widget"
+    | "area-card"
+    | "error"
+    | "warning";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
+  aoiSelection?: AOISelection; // For area-card messages
   context?: ContextItem[];
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
