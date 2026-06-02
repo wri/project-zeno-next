@@ -21,12 +21,14 @@ export interface ChatMessage {
     | "assistant"
     | "system"
     | "widget"
+    | "area-card"
     | "error"
     | "warning"
     | "dataset-nudge";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
+  aoiSelection?: AOISelection; // For area-card messages
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   context?: ContextItem[];
   traceId?: string;

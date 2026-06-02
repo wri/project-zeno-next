@@ -20,6 +20,8 @@ export interface InfoCardProps {
   selected?: boolean;
   /** Optional action node (e.g. info icon) anchored to the right of the title row. */
   titleActions?: React.ReactNode;
+  /** Optional action node placed inline after the description text. */
+  descriptionActions?: React.ReactNode;
 }
 
 export function InfoCard({
@@ -32,6 +34,7 @@ export function InfoCard({
   onClick,
   selected = false,
   titleActions,
+  descriptionActions,
 }: InfoCardProps) {
   return (
     <Flex
@@ -93,8 +96,6 @@ export function InfoCard({
             fontWeight="medium"
             lineHeight="150%"
             color="#3A4048"
-            flex="1"
-            minW={0}
             whiteSpace="nowrap"
             overflow="hidden"
             textOverflow="ellipsis"
@@ -103,19 +104,26 @@ export function InfoCard({
           </Text>
           {titleActions}
         </Flex>
-        {description && (
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            fontWeight="normal"
-            lineHeight="16px"
-            color="#656E7B"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-          >
-            {description}
-          </Text>
+        {(description || descriptionActions) && (
+          <Flex align="center" gap="8px" minW={0}>
+            {description && (
+              <Text
+                flex="1"
+                minW={0}
+                fontFamily="mono"
+                fontSize="10px"
+                fontWeight="normal"
+                lineHeight="16px"
+                color="#656E7B"
+                whiteSpace="nowrap"
+                overflow="hidden"
+                textOverflow="ellipsis"
+              >
+                {description}
+              </Text>
+            )}
+            {descriptionActions}
+          </Flex>
         )}
       </Box>
     </Flex>
