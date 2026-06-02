@@ -67,6 +67,7 @@ function ThreadSection({
   label,
   value,
   currentThreadId,
+  footer,
 }: {
   threads: {
     id: string;
@@ -77,9 +78,10 @@ function ThreadSection({
   label: string;
   value: string;
   currentThreadId: string | null;
+  footer?: React.ReactNode;
 }) {
   const { toggleSidebar } = useSidebarStore();
-  if (!threads.length) return null;
+  if (!threads.length && !footer) return null;
   return (
     <Accordion.Item value={value} border="none">
       <Accordion.ItemTrigger px="3" py="1" cursor="pointer">
@@ -134,6 +136,7 @@ function ThreadSection({
             );
           })}
         </Stack>
+        {footer}
       </Accordion.ItemContent>
     </Accordion.Item>
   );
@@ -282,21 +285,25 @@ export function Sidebar() {
               currentThreadId={currentThreadId}
             />
           )}
-          {hasOlderThreads && (
+          {(hasOlderThreads || hasNextPage) && (
             <ThreadSection
               threads={threadGroups.older}
               label="Older Conversations"
               value="older"
               currentThreadId={currentThreadId}
+              footer={
+                <>
+                  <div ref={sentinelRef} />
+                  {isFetchingNextPage && (
+                    <Flex justify="center" py="2">
+                      <Spinner size="sm" color="fg.subtle" />
+                    </Flex>
+                  )}
+                </>
+              }
             />
           )}
         </Accordion.Root>
-        <div ref={sentinelRef} />
-        {isFetchingNextPage && (
-          <Flex justify="center" py="2">
-            <Spinner size="sm" color="fg.subtle" />
-          </Flex>
-        )}
         <Status.Root
           colorPalette={apiStatus === "OK" ? "green" : "red"}
           m="3"
