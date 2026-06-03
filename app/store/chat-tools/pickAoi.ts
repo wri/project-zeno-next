@@ -135,6 +135,13 @@ export async function pickAoiTool(
         });
       }
 
+      addMessage({
+        type: "area-card",
+        message: "",
+        aoiSelection: aoiSelection ?? { name: selectionName, aois },
+        timestamp: streamMessage.timestamp,
+      });
+
       return;
     }
 
@@ -229,6 +236,17 @@ export async function pickAoiTool(
         content: selectionName,
         isAiContext: true,
         aoiSelection: selectionForContext,
+      });
+    }
+
+    // Only show the area card if at least one AOI rendered successfully,
+    // and only include the successful AOIs in the card.
+    if (successfulAois.length > 0) {
+      addMessage({
+        type: "area-card",
+        message: "",
+        aoiSelection: { name: selectionName, aois: successfulAois },
+        timestamp: streamMessage.timestamp,
       });
     }
 
