@@ -4,7 +4,7 @@ import useMapStore from "@/app/store/mapStore";
 import type { Layer as ManagedLayer } from "@/app/store/layerManagerSlice";
 import type { ContextItem } from "@/app/store/contextStore";
 
-interface VectorTileLayersProps {
+interface AoiVectorTileLayersProps {
   areas: ContextItem[];
 }
 
@@ -13,7 +13,7 @@ interface VectorTileLayersProps {
  * Applies context-aware styling: blue when the layer is the active area
  * context, gray otherwise — consistent with GeoJsonLayers.
  */
-function VectorTileLayers({ areas }: VectorTileLayersProps) {
+function AoiVectorTileLayers({ areas }: AoiVectorTileLayersProps) {
   const allLayers = useMapStore((s) => s.layers);
   const vectorLayers = useMemo(
     () =>
@@ -83,4 +83,4 @@ function VectorTileLayers({ areas }: VectorTileLayersProps) {
   );
 }
 
-export default VectorTileLayers;
+export default AoiVectorTileLayers;
