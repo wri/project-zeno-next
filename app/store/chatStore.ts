@@ -17,6 +17,7 @@ import {
 import useContextStore from "./contextStore";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
+import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 import { DATASET_BY_ID } from "../constants/datasets";
@@ -177,58 +178,18 @@ async function processStreamMessage(
     const pending = getPendingTraceId();
     const traceToUse = streamMessage.trace_id || pending || undefined;
 
-    const chartRefRe = /\[Chart\s+[a-f0-9-]+\]/gi;
-    if (chartRefRe.test(streamMessage.text)) {
-      // Split the text on [Chart <uuid>] markers and inject insight cards positionally
-      const re = /\[Chart\s+[a-f0-9-]+\]/gi;
-      const pendingWidgets = useInsightStore.getState().consumePendingBatch();
-      let lastIndex = 0;
-      let match: RegExpExecArray | null;
-      let widgetIdx = 0;
-      const segments: Array<{ text?: string; widgetIdx?: number }> = [];
-      while ((match = re.exec(streamMessage.text)) !== null) {
-        const textBefore = streamMessage.text.slice(lastIndex, match.index);
-        if (textBefore.trim()) {
-          segments.push({ text: textBefore });
-        }
-        segments.push({ widgetIdx: widgetIdx++ });
-        lastIndex = re.lastIndex;
-      }
-      const textAfter = streamMessage.text.slice(lastIndex);
-      if (textAfter.trim()) {
-        segments.push({ text: textAfter });
-      }
-      segments.forEach((seg, i) => {
-        const isLast = i === segments.length - 1;
-        if (seg.text !== undefined) {
-          addMessage({
-            type: "assistant",
-            message: seg.text,
-            timestamp: streamMessage.timestamp,
-            ...(!isLast ? { suppressFooter: true } : {}),
-            ...(isLast && traceToUse ? { traceId: traceToUse } : {}),
-          });
-        } else if (seg.widgetIdx !== undefined) {
-          const widget = pendingWidgets[seg.widgetIdx];
-          if (widget) {
-            addMessage({
-              type: "assistant",
-              message: "",
-              timestamp: streamMessage.timestamp,
-              widgets: [widget],
-              ...(isLast && traceToUse ? { traceId: traceToUse } : {}),
-            });
-          }
-        }
-      });
-    } else {
-      addMessage({
-        type: "assistant",
-        message: streamMessage.text,
-        timestamp: streamMessage.timestamp,
-        traceId: traceToUse,
-      });
-    }
+    // Consume the most recent generate_insights batch and render it with the
+    // assistant text. When the reply contains [Chart N] markers, cards are
+    // placed positionally; otherwise (e.g. current staging, which emits chart
+    // data but no markers) they are appended after the text. See
+    // buildInsightChatMessages for the full contract.
+    const pendingWidgets = useInsightStore.getState().consumePendingBatch();
+    buildInsightChatMessages(
+      streamMessage.text,
+      pendingWidgets,
+      streamMessage.timestamp,
+      traceToUse
+    ).forEach(addMessage);
     // Flush any buffered nudge immediately after the assistant message
     const pendingNudge = getPendingNudge();
     if (pendingNudge) {
