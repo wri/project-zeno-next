@@ -8,7 +8,8 @@ interface DatasetCardWidgetProps {
 
 export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
   const cardConfig = DATASET_CARDS.find(
-    (c) => c.dataset_name === dataset.dataset_name
+    // TODO: Update this to use a slug or uuid when we have those in the API
+    (c) => c.dataset_id === dataset.dataset_id
   );
   const img = cardConfig?.img ?? "/globe.svg";
   const enrichedDataset = {
