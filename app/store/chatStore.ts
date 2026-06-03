@@ -481,9 +481,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         const wasUserCancel = get().abortController === null;
         if (wasUserCancel) {
           console.log("FRONTEND: Request cancelled by user");
+          // A user-initiated stop is not a failure — render a neutral status
+          // (no red alert), not the red error treatment.
           addMessage({
-            type: "error",
-            message: "Request cancelled.",
+            type: "stopped",
+            message: "Response stopped",
           });
         } else {
           console.log("FRONTEND: Request aborted due to timeout");

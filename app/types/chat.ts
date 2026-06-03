@@ -16,7 +16,14 @@ export interface ToolStepData {
 
 export interface ChatMessage {
   id: string;
-  type: "user" | "assistant" | "system" | "widget" | "error" | "warning";
+  type:
+    | "user"
+    | "assistant"
+    | "system"
+    | "widget"
+    | "error"
+    | "warning"
+    | "stopped";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages

@@ -168,7 +168,7 @@ export default function ChatInput({
             ml="auto"
             borderRadius="full"
             variant="solid"
-            colorPalette="red"
+            colorPalette="primary"
             type="button"
             size="xs"
             aria-label="Cancel request"
@@ -287,7 +287,7 @@ export default function ChatInput({
             <Button
               p={0}
               flexShrink={0}
-              colorPalette="red"
+              colorPalette="primary"
               title="Cancel request"
               aria-label="Cancel request"
               ml="auto"
