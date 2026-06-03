@@ -88,10 +88,14 @@ function LayerCardList({
     if (existing) {
       removeContext(existing.id);
     } else {
-      const year = card.defaultYear;
+      const startYear = card.defaultStartYear;
+      const endYear = card.defaultEndYear;
+      // Only scope the layer when both bounds are present, so a half-configured
+      // card falls back to the unfiltered tile_url rather than a broken range.
+      const hasYears = startYear != null && endYear != null;
       const tileUrl =
-        year && card.tile_url
-          ? `${card.tile_url}&start_year=${year}&end_year=${year}`
+        hasYears && card.tile_url
+          ? `${card.tile_url}&start_year=${startYear}&end_year=${endYear}`
           : card.tile_url;
       upsertContextByType({
         contextType: "layer",
@@ -99,10 +103,10 @@ function LayerCardList({
         datasetId: card.dataset_id,
         tileUrl,
         layerName: card.dataset_name,
-        ...(year
+        ...(hasYears
           ? {
-              startDate: `${year}-01-01`,
-              endDate: `${year}-12-31`,
+              startDate: `${startYear}-01-01`,
+              endDate: `${endYear}-12-31`,
             }
           : {}),
         isAiContext: false,
