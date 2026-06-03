@@ -35,7 +35,8 @@ export type DatasetCardConfig = {
   methodology?: string;
   citation?: string;
   viewOnly?: boolean;
-  defaultYear?: number;
+  defaultStartYear?: number;
+  defaultEndYear?: number;
 };
 
 export type ContextLayerMetadata = {
@@ -206,6 +207,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
+    defaultStartYear: 2001,
+    defaultEndYear: 2025,
     description:
       "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2025 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
@@ -313,7 +316,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    defaultYear: 2025,
+    defaultStartYear: 2001,
+    defaultEndYear: 2025,
     description:
       "Tree Cover Loss due to Fires (Hansen/UMD/GLAD) maps annual global tree cover loss attributed to fire from 2001 to 2025 at 30-meter resolution. This subset of the broader Tree Cover Loss dataset isolates fire-driven stand-replacement disturbances in vegetation over 5 meters tall, helping users understand where fire is a dominant driver of forest loss.",
     tile_url:
