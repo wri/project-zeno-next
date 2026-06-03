@@ -49,7 +49,7 @@ export type ContextLayerMetadata = {
 
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
-    dataset_id: 9,
+    dataset_id: 100,
     dataset_name: "Primary Forests",
     context_layer: null as string | null,
     description:
@@ -64,7 +64,7 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     },
   },
   intact_forest: {
-    dataset_id: 10,
+    dataset_id: 101,
     dataset_name: "Intact Forest Landscapes",
     context_layer: null as string | null,
     description:
@@ -303,7 +303,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     },
   },
   {
-    dataset_id: 11,
+    dataset_id: 10,
     dataset_name: "Tree cover loss due to fires",
     data_layer: "Tree cover loss due to fires",
     context_layer: null,
@@ -313,7 +313,6 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    viewOnly: true,
     defaultYear: 2025,
     description:
       "Tree Cover Loss due to Fires (Hansen/UMD/GLAD) maps annual global tree cover loss attributed to fire from 2001 to 2025 at 30-meter resolution. This subset of the broader Tree Cover Loss dataset isolates fire-driven stand-replacement disturbances in vegetation over 5 meters tall, helping users understand where fire is a dominant driver of forest loss.",
