@@ -79,7 +79,7 @@ export default function DashboardLayout({
         placement="start"
         open={sideBarVisible}
         onOpenChange={(e) => {
-          if (!e.open) toggleSidebar();
+          if (!e.open && sideBarVisible) toggleSidebar();
         }}
       >
         <Portal>

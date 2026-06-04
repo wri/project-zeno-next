@@ -119,6 +119,11 @@ export default function ChatInput({
       borderRadius={bordered ? "sm" : undefined}
       className="group"
       transition="all 0.32s ease-in-out"
+      _focusWithin={
+        bordered
+          ? { borderColor: "primary.focusRing", outline: "none" }
+          : undefined
+      }
     >
       {hasContext && (
         <Flex gap={1} wrap="wrap" mb={1}>

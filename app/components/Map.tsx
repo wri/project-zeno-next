@@ -82,11 +82,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       bg={mapRef.current ? "transparent" : "neutral.200"}
       css={{
         _dark: {
-          "& .maplibregl-ctrl-scale": {
-            bgColor: "black/20",
-            color: "fg",
-            borderColor: "bg.subtle",
-          },
           "& .maplibregl-ctrl.maplibregl-ctrl-attrib": {
             bgColor: "black/40",
             "& a": { color: "fg" },

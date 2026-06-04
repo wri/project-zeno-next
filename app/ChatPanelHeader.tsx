@@ -22,6 +22,7 @@ interface ChatPanelHeaderProps {
 
 function ChatPanelHeader({
   isFullSize = false,
+  hasConversation,
   onToggleSize,
   isCollapsed = false,
   onToggleCollapse,
@@ -68,8 +69,7 @@ function ChatPanelHeader({
             <SidebarSimpleIcon size={16} />
           </IconButton>
         </Tooltip>
-        {/* Caret in compact — always shown */}
-        {!isFullSize && (
+        {!isFullSize && hasConversation && (
           <Tooltip
             content={isCollapsed ? "Expand panel" : "Collapse panel"}
             showArrow

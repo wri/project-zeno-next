@@ -82,8 +82,8 @@ function MapAreaControls({
     addLayer,
     addToRegistry,
     flyToGeoJson,
+    mapRef,
   } = useMapStore();
-  const { mapRef } = useMapStore();
   const { addContext } = useContextStore();
   const { isChatFullSize } = useSidebarStore();
 
