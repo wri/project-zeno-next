@@ -57,16 +57,17 @@ export default function DashboardLayout({
       <Map />
       <Box
         position="absolute"
+        top={2}
         bottom={1}
         left={2}
         zIndex={1100}
         display="flex"
         flexDir="column"
+        justifyContent="flex-end"
         gap={0}
-        maxH="calc(100% - 1.5rem)"
         pointerEvents="none"
       >
-        <Box pointerEvents="auto">
+        <Box pointerEvents="auto" minH={0} display="flex" flexDir="column">
           <ChatPanel />
         </Box>
         {/* Frosted-glass disclaimer — unconstrained width, 16px below cards */}

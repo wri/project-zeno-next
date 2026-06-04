@@ -20,8 +20,10 @@ import { useRouter } from "next/navigation";
 
 export default function ChatInput({
   isChatDisabled,
+  transparent,
 }: {
   isChatDisabled?: boolean;
+  transparent?: boolean;
 }) {
   const [inputValue, setInputValue] = useState("");
   const [contextModalOpen, setContextModalOpen] = useState(false);
@@ -101,7 +103,7 @@ export default function ChatInput({
       position="relative"
       m={0}
       p={4}
-      bg="gray.100"
+      bg={transparent ? "transparent" : "gray.100"}
       className="group"
       transition="all 0.32s ease-in-out"
     >

@@ -7,7 +7,7 @@ import {
 import useSidebarStore from "./store/sidebarStore";
 import { Tooltip } from "./components/ui/tooltip";
 
-function ChatPanelHeader() {
+function ChatPanelHeader({ hasConversation }: { hasConversation: boolean }) {
   const { toggleSidebar } = useSidebarStore();
   return (
     <Flex
@@ -44,17 +44,19 @@ function ChatPanelHeader() {
             <SidebarSimpleIcon size={16} />
           </IconButton>
         </Tooltip>
-        <Tooltip content="Minimise panel" showArrow>
-          <IconButton
-            size="2xs"
-            variant="ghost"
-            color="neutral.600"
-            aria-label="Minimise panel"
-            onClick={() => {}}
-          >
-            <CaretDownIcon size={16} />
-          </IconButton>
-        </Tooltip>
+        {hasConversation && (
+          <Tooltip content="Minimise panel" showArrow>
+            <IconButton
+              size="2xs"
+              variant="ghost"
+              color="neutral.600"
+              aria-label="Minimise panel"
+              onClick={() => {}}
+            >
+              <CaretDownIcon size={16} />
+            </IconButton>
+          </Tooltip>
+        )}
       </Flex>
     </Flex>
   );
