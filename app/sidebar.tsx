@@ -75,6 +75,7 @@ function ThreadSection({
   value: string;
   currentThreadId: string | null;
 }) {
+  const { toggleSidebar } = useSidebarStore();
   if (!threads.length) return null;
   return (
     <Accordion.Item value={value} border="none">
@@ -119,6 +120,7 @@ function ThreadSection({
                   href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
+                  onClick={toggleSidebar}
                 >
                   {thread.name}
                 </ThreadLink>
@@ -222,6 +224,7 @@ export function Sidebar() {
           colorPalette="primary"
           size="sm"
           w={{ base: "full", md: "auto" }}
+          onClick={toggleSidebar}
         >
           <Link href="/app" aria-label="New conversation">
             New Conversation

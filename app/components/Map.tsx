@@ -249,8 +249,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         />
         {!isMobile && (
           <>
-            <ScaleControl position="bottom-left" />
-            <NavigationControl showCompass={false} position="bottom-left" />
+            <ScaleControl position="bottom-right" />
+            <NavigationControl showCompass={false} position="bottom-right" />
           </>
         )}
         <Flex

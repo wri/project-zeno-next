@@ -1,19 +1,24 @@
-import { Flex, Text } from "@chakra-ui/react";
-import { SparkleIcon } from "@phosphor-icons/react";
+import { Flex, IconButton, Text } from "@chakra-ui/react";
+import {
+  SidebarSimpleIcon,
+  SparkleIcon,
+  CaretDownIcon,
+} from "@phosphor-icons/react";
+import useSidebarStore from "./store/sidebarStore";
+import { Tooltip } from "./components/ui/tooltip";
 
 function ChatPanelHeader() {
+  const { toggleSidebar } = useSidebarStore();
   return (
     <Flex
       h="40px"
-      mt="3"
-      mx="3"
       px="3"
       py="1"
       bg="neutral.200"
-      rounded="sm"
       alignItems="center"
       gap="2"
       hideBelow="md"
+      flexShrink={0}
     >
       <SparkleIcon size={16} color="var(--chakra-colors-neutral-500)" />
       <Text
@@ -27,6 +32,30 @@ function ChatPanelHeader() {
       >
         AI Assistant
       </Text>
+      <Flex ml="auto" gap={1}>
+        <Tooltip content="Toggle conversation history" showArrow>
+          <IconButton
+            size="2xs"
+            variant="ghost"
+            color="neutral.600"
+            aria-label="Toggle conversation history"
+            onClick={toggleSidebar}
+          >
+            <SidebarSimpleIcon size={16} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip content="Minimise panel" showArrow>
+          <IconButton
+            size="2xs"
+            variant="ghost"
+            color="neutral.600"
+            aria-label="Minimise panel"
+            onClick={() => {}}
+          >
+            <CaretDownIcon size={16} />
+          </IconButton>
+        </Tooltip>
+      </Flex>
     </Flex>
   );
 }

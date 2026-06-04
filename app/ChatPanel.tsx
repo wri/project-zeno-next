@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { Flex, Box, Text, Link as ChLink } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -9,148 +8,109 @@ import ChatMessages from "./components/ChatMessages";
 import ChatStatusInfo from "./components/ChatStatusInfo";
 import ChatPanelHeader from "./ChatPanelHeader";
 import useAuthStore from "./store/authStore";
+import useChatStore from "./store/chatStore";
+import useContextStore from "./store/contextStore";
 
-const [minWidth, maxWidth, defaultWidth] = [384, 624, 592];
+const PANEL_WIDTH = 400;
 
 function ChatPanel() {
   const { usedPrompts, totalPrompts } = useAuthStore();
+  const { messages } = useChatStore();
+  const { context } = useContextStore();
 
   const promptsExhausted = usedPrompts >= totalPrompts;
-  const [width, setWidth] = useState(defaultWidth);
-  const isDragged = useRef(false);
+  // Treat the seed system message as "no conversation yet" — the panel should
+  // shrink to fit content (welcome / sample prompts) rather than expand to
+  // full height. Once the user has sent a message, expand to full height.
+  const hasUserConversation = messages.some(
+    (m) => m.type === "user" || m.type === "assistant"
+  );
+  // State 2: user has selected context but not started a conversation —
+  // collapse the welcome card so only the input is visible.
+  const showWelcomeContent = !hasUserConversation && context.length === 0;
 
-  // Function to resize chat panel and store width in localStorage
-  useEffect(() => {
-    if (localStorage.getItem("sidebarWidth")) {
-      setWidth(Number(localStorage.getItem("sidebarWidth")));
-    }
-  }, []);
-
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDragged.current) {
-        return;
-      }
-
-      setWidth((previousWidth) => {
-        const newWidth = previousWidth + e.movementX / 2;
-        const isWidthInRange = newWidth >= minWidth && newWidth <= maxWidth;
-
-        return isWidthInRange ? newWidth : previousWidth;
-      });
-    };
-    window.addEventListener("mousemove", onMouseMove);
-
-    const onMouseUp = () => {
-      document.body.style.userSelect = "auto";
-      isDragged.current = false;
-    };
-
-    window.addEventListener("mouseup", onMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("sidebarWidth", width.toString());
-  }, [width]);
+  const cardStyle = {
+    w: { base: "full", md: `${PANEL_WIDTH}px` } as const,
+    bg: "bg",
+    borderRadius: { base: 0, md: "sm" } as const,
+    borderWidth: { base: 0, md: "1px" } as const,
+    borderColor: "border.emphasized",
+    overflow: "hidden",
+  };
 
   return (
     <Flex
-      minH="100%"
-      maxH="100%"
-      gridArea="chat"
-      zIndex={1000}
-      position="relative"
-      bg="bg"
+      flexDir="column"
+      gap="0.5"
+      w={{ base: "full", md: `${PANEL_WIDTH}px` }}
     >
+      {/* Top card: header + messages/welcome */}
       <Flex
-        minH="100%"
-        maxH="100%"
-        w={{ base: "full", md: `${width}px` }}
         flexDir="column"
+        h={hasUserConversation ? "full" : "auto"}
+        maxH={hasUserConversation ? "60vh" : "none"}
+        {...cardStyle}
       >
         <ChatPanelHeader />
         <Flex
-          px={{ base: 2, md: 4 }}
+          px={{ base: 2, md: 3 }}
           py={0}
           position="relative"
-          flex="1"
+          flex={hasUserConversation ? "1" : "0 1 auto"}
           flexDir="column"
-          height="100%"
-          overflow="auto"
+          minH={0}
+          overflow="hidden"
         >
-          <Box
-            flex="1"
-            overflowY="auto"
-            height="100%"
-            mx={{ base: -2, md: -4 }}
-            px={{ base: 4, md: 6 }}
-            pb={{ base: 4, md: 8 }}
-          >
-            <ChatMessages />
-          </Box>
-          <Box mt="auto" position="sticky" bottom="2">
-            {promptsExhausted && (
-              <ChatStatusInfo type="error">
-                <Text>
-                  <strong>
-                    You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}
-                    prompts.
-                  </strong>
-                  <br />
-                  Wait until tomorrow for new prompts, or{" "}
-                  <ChLink as={Link} href="/app/classic">
-                    continue without AI
-                  </ChLink>
-                  .
-                </Text>
-              </ChatStatusInfo>
-            )}
-
-            <ChatInput isChatDisabled={promptsExhausted} />
-            <Flex
-              fontSize="xs"
-              color="fg.subtle"
-              hideBelow="md"
-              whiteSpace="pre"
-              overflowX="auto"
-              gap={2}
+          {hasUserConversation && (
+            <Box
+              flex="1"
+              overflowY="auto"
+              mx={{ base: -2, md: -3 }}
+              px={{ base: 4, md: 4 }}
+              pt={4}
+              pb={{ base: 4, md: 4 }}
+              minH={0}
             >
-              <Text>
-                AI makes mistakes. Verify outputs and do not share any sensitive
-                or personal information.
-              </Text>
-            </Flex>
-          </Box>
+              <ChatMessages />
+            </Box>
+          )}
+          {showWelcomeContent && (
+            <Box
+              overflowY="auto"
+              mx={{ base: -2, md: -3 }}
+              px={{ base: 4, md: 4 }}
+              pt={4}
+              pb={4}
+              maxH="60vh"
+            >
+              <ChatMessages />
+            </Box>
+          )}
         </Flex>
       </Flex>
-      {/* Panel resize handle */}
-      <Box
-        h="full"
-        title="Drag to resize chat panel"
-        w={1 / 2}
-        ml={-1}
-        mr={1 / 2}
-        zIndex={10}
-        bg="transparent"
-        transition="background 0.16s ease"
-        _hover={{
-          bg: "primary.500/50",
-          cursor: "col-resize",
-        }}
-        _active={{
-          bg: "primary.500/50",
-          cursor: "col-resize",
-        }}
-        onMouseDown={() => {
-          isDragged.current = true;
-        }}
-        hideBelow="md"
-      />
+
+      {/* Bottom card: input */}
+      <Flex flexDir="column" {...cardStyle} boxShadow="none" overflow="hidden">
+        {promptsExhausted && (
+          <Box px={3} pt={3}>
+            <ChatStatusInfo type="error">
+              <Text>
+                <strong>
+                  You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}
+                  prompts.
+                </strong>
+                <br />
+                Wait until tomorrow for new prompts, or{" "}
+                <ChLink as={Link} href="/app/classic">
+                  continue without AI
+                </ChLink>
+                .
+              </Text>
+            </ChatStatusInfo>
+          </Box>
+        )}
+        <ChatInput isChatDisabled={promptsExhausted} />
+      </Flex>
     </Flex>
   );
 }

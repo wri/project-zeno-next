@@ -146,6 +146,7 @@ function MessageBubble({
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
   const isAreaCard = message.type === "area-card";
+  const isSystem = message.type === "system";
   const isError = message.type === "error";
   const isWarning = message.type === "warning";
   const isAssistant = message.type === "assistant";
@@ -161,6 +162,32 @@ function MessageBubble({
     !isFirst &&
     !message.suppressFooter &&
     (!isConsecutive || analysisWidgets.length > 0 || isLast);
+
+  if (isSystem) {
+    return (
+      <Box
+        mb={4}
+        css={{
+          "& p": { fontSize: "12px", lineHeight: "1.5" },
+          "& p:first-of-type > strong": {
+            display: "block",
+            fontSize: "16px",
+            fontWeight: "500",
+            color: "fg.link",
+            lineHeight: "1.5",
+            marginBottom: "8px",
+          },
+          "& > p:not(:last-of-type)": { marginBottom: "8px" },
+          "& a": {
+            textDecoration: "underline",
+            color: "fg.link",
+          },
+        }}
+      >
+        <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+      </Box>
+    );
+  }
 
   if (isAreaCard && message.aoiSelection) {
     return (

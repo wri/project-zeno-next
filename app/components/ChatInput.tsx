@@ -102,17 +102,8 @@ export default function ChatInput({
       m={0}
       p={4}
       bg="gray.100"
-      borderColor="gray.300"
-      borderRadius="lg"
-      borderWidth="1px"
       className="group"
       transition="all 0.32s ease-in-out"
-      _active={{
-        borderColor: "primary.focusRing",
-      }}
-      _focusWithin={{
-        borderColor: "primary.focusRing",
-      }}
     >
       {hasContext && (
         <Flex gap={1} wrap="wrap" mb={1}>
@@ -159,11 +150,6 @@ export default function ChatInput({
           <ContextButton
             contextType="area"
             onClick={() => openContextMenu("area")}
-            disabled={disabled}
-          />
-          <ContextButton
-            contextType="date"
-            onClick={() => openContextMenu("date")}
             disabled={disabled}
           />
         </Flex>
@@ -260,14 +246,6 @@ export default function ChatInput({
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 openContextMenu("area");
-              }}
-              disabled={disabled}
-            />
-            <ContextButton
-              contextType="date"
-              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                e.stopPropagation();
-                openContextMenu("date");
               }}
               disabled={disabled}
             />

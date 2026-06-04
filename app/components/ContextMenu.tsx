@@ -22,13 +22,13 @@ import useContextStore from "../store/contextStore";
 import { DatasetCard } from "./DatasetCard";
 
 // Constants for navigation and dummy content
-const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
-  (type) => ({
+const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[])
+  .filter((type) => type !== "date")
+  .map((type) => ({
     type,
     label: ChatContextOptions[type].label,
     icon: ChatContextOptions[type].icon,
-  })
-);
+  }));
 
 import { DATASET_CARDS, DatasetCardConfig } from "../constants/datasets";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
