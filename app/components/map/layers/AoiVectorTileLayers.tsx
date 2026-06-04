@@ -19,7 +19,10 @@ function AoiVectorTileLayers({ areas }: AoiVectorTileLayersProps) {
     () =>
       allLayers.filter(
         (l): l is ManagedLayer & { tileUrl: string; sourceLayer: string } =>
-          l.type === "vector" && !!l.tileUrl && !!l.sourceLayer
+          l.type === "vector" &&
+          !!l.tileUrl &&
+          !!l.sourceLayer &&
+          !l.vectorStyle
       ),
     [allLayers]
   );
