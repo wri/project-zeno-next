@@ -28,6 +28,7 @@ import MapAreaControls from "./MapAreaControls";
 import DynamicTileLayers, {
   RASTER_TOP_SENTINEL_ID,
 } from "./map/layers/DynamicTileLayers";
+import VectorDataLayers from "./map/layers/VectorDataLayers";
 import AoiVectorTileLayers from "./map/layers/AoiVectorTileLayers";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
@@ -223,6 +224,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Layer id={RASTER_TOP_SENTINEL_ID} type="line" paint={{}} />
         </Source>
         <DynamicTileLayers />
+        <VectorDataLayers />
         <AoiVectorTileLayers areas={areas} />
         <GeoJsonLayers areas={areas} />
         <SelectAreaLayer />
