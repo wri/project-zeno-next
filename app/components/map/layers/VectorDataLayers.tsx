@@ -36,10 +36,6 @@ function buildColorExpression(spec: VectorStyleSpec): unknown[] {
 /**
  * Generic, descriptor-driven renderer for styled vector (MVT) data layers.
  *
- * Reads exclusively from the managed Layer model — no contextStore, no areas,
- * no CONTEXT_LAYER_METADATA lookup — so it is unaffected by future removals of
- * isInContext / contextStore (see "Future / second pass" in the MVT plan).
- *
  * Selects layers where type:"vector" AND tileUrl AND sourceLayer AND vectorStyle
  * are all set. AOI/GADM vectors have no vectorStyle and stay on the
  * AoiVectorTileLayers path, keeping the two renderers' inputs disjoint.
