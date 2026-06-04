@@ -22,10 +22,14 @@ function ContextButton({ contextType = "area", ...props }: ContextButtonProps) {
     <Button
       size="xs"
       variant="outline"
-      borderRadius="full"
-      borderColor="gray.300"
-      py="1"
-      h="auto"
+      borderRadius="sm"
+      borderColor="#E0E2E5"
+      borderWidth="1px"
+      px="2"
+      h="8"
+      gap="1"
+      fontSize="sm"
+      fontWeight="normal"
       {...props}
     >
       {ChatContextOptions[contextType].icon}

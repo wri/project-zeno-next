@@ -57,36 +57,22 @@ export default function DashboardLayout({
       <Map />
       <Box
         position="absolute"
-        top={2}
-        bottom={1}
-        left={2}
+        top={0}
+        bottom={0}
+        left={0}
         zIndex={1100}
         display="flex"
         flexDir="column"
-        justifyContent="flex-end"
-        gap={0}
         pointerEvents="none"
       >
-        <Box pointerEvents="auto" minH={0} display="flex" flexDir="column">
-          <ChatPanel />
-        </Box>
-        {/* Frosted-glass disclaimer — unconstrained width, 16px below cards */}
         <Box
-          pointerEvents="auto"
-          px={2}
-          py={1}
-          mt={4}
-          borderRadius="sm"
-          backdropFilter="blur(24px)"
-          bg="whiteAlpha.200"
-          fontSize="10px"
-          lineHeight="20px"
-          color="#131619"
-          opacity={0.5}
-          whiteSpace="nowrap"
+          pointerEvents="none"
+          minH={0}
+          display="flex"
+          flexDir="column"
+          h="100%"
         >
-          AI makes mistakes. Verify outputs and do not share any sensitive or
-          personal information.
+          <ChatPanel />
         </Box>
       </Box>
       <Drawer.Root

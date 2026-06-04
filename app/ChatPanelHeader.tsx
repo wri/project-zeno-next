@@ -3,12 +3,29 @@ import {
   SidebarSimpleIcon,
   SparkleIcon,
   CaretDownIcon,
+  CaretUpIcon,
 } from "@phosphor-icons/react";
-import useSidebarStore from "./store/sidebarStore";
 import { Tooltip } from "./components/ui/tooltip";
 
-function ChatPanelHeader({ hasConversation }: { hasConversation: boolean }) {
-  const { toggleSidebar } = useSidebarStore();
+interface ChatPanelHeaderProps {
+  /** Whether the panel is in full-size mode (vs compact) */
+  isFullSize?: boolean;
+  /** Whether there is active chat data — controls caret visibility in compact */
+  hasConversation: boolean;
+  /** Called when the user clicks the SidebarSimpleIcon (size toggle) */
+  onToggleSize: () => void;
+  /** Whether compact panel is currently collapsed (header-only). Compact only. */
+  isCollapsed?: boolean;
+  /** Called when the user clicks the caret (collapse/expand compact). Compact only. */
+  onToggleCollapse?: () => void;
+}
+
+function ChatPanelHeader({
+  isFullSize = false,
+  onToggleSize,
+  isCollapsed = false,
+  onToggleCollapse,
+}: ChatPanelHeaderProps) {
   return (
     <Flex
       h="40px"
@@ -33,27 +50,42 @@ function ChatPanelHeader({ hasConversation }: { hasConversation: boolean }) {
         AI Assistant
       </Text>
       <Flex ml="auto" gap={1}>
-        <Tooltip content="Toggle conversation history" showArrow>
+        <Tooltip
+          content={
+            isFullSize ? "Switch to compact view" : "Switch to full-size view"
+          }
+          showArrow
+        >
           <IconButton
             size="2xs"
             variant="ghost"
             color="neutral.600"
-            aria-label="Toggle conversation history"
-            onClick={toggleSidebar}
+            aria-label={
+              isFullSize ? "Switch to compact view" : "Switch to full-size view"
+            }
+            onClick={onToggleSize}
           >
             <SidebarSimpleIcon size={16} />
           </IconButton>
         </Tooltip>
-        {hasConversation && (
-          <Tooltip content="Minimise panel" showArrow>
+        {/* Caret in compact — always shown */}
+        {!isFullSize && (
+          <Tooltip
+            content={isCollapsed ? "Expand panel" : "Collapse panel"}
+            showArrow
+          >
             <IconButton
               size="2xs"
               variant="ghost"
               color="neutral.600"
-              aria-label="Minimise panel"
-              onClick={() => {}}
+              aria-label={isCollapsed ? "Expand panel" : "Collapse panel"}
+              onClick={onToggleCollapse}
             >
-              <CaretDownIcon size={16} />
+              {isCollapsed ? (
+                <CaretDownIcon size={16} />
+              ) : (
+                <CaretUpIcon size={16} />
+              )}
             </IconButton>
           </Tooltip>
         )}

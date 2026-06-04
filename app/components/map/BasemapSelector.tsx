@@ -44,15 +44,21 @@ const basemapOptions: BasemapOption[] = [
 ];
 
 interface BasemapSelectorProps {
-  display: Record<string, string> | string;
+  display?: Record<string, string> | string;
   currentBasemap: string;
   onBasemapChange: (tileUrl: string) => void;
+  leftMd?: string | number;
+  bottomMd?: string | number;
+  inline?: boolean;
 }
 
 export function BasemapSelector({
   display,
   currentBasemap,
   onBasemapChange,
+  leftMd = "calc(0.5rem - 2px)",
+  bottomMd = "calc(7rem - 2px)",
+  inline = false,
 }: BasemapSelectorProps) {
   const currentOption =
     basemapOptions.find((option) => option.tileUrl === currentBasemap) ||
@@ -67,20 +73,24 @@ export function BasemapSelector({
           size="lg"
           bg={currentOption ? `url(${currentOption.thumbnailUrl})` : "bg"}
           bgSize="cover"
-          position="absolute"
+          position={inline ? "relative" : "absolute"}
           pointerEvents="all"
-          bottom={{ base: "4.25rem", md: "calc(7rem - 2px)" }}
-          left={{ base: 3.5, md: "calc(0.5rem - 2px)" }}
-          zIndex={510}
+          bottom={inline ? undefined : { base: "4.25rem", md: bottomMd }}
+          left={inline ? undefined : { base: 3.5, md: leftMd }}
+          zIndex={inline ? undefined : 510}
           boxShadow="md"
           border="1px solid"
           borderColor={
             currentOption.id === "light" ? "border" : "border.inverted"
           }
-          animation={{
-            base: "0.16s ease-out 1 forwards slide-from-bottom-full, 0.24s ease-out 1 forwards fade-in",
-            md: "none",
-          }}
+          animation={
+            inline
+              ? undefined
+              : {
+                  base: "0.16s ease-out 1 forwards slide-from-bottom-full, 0.24s ease-out 1 forwards fade-in",
+                  md: "none",
+                }
+          }
         >
           <MapTrifoldIcon
             fill={

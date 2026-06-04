@@ -11,7 +11,11 @@ import useAuthStore from "./store/authStore";
 
 const PANEL_WIDTH = 428;
 
-function ChatPanelConversation() {
+interface ChatPanelFullSizeProps {
+  onToggleSize: () => void;
+}
+
+function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
   const { usedPrompts, totalPrompts } = useAuthStore();
   const promptsExhausted = usedPrompts >= totalPrompts;
 
@@ -27,8 +31,13 @@ function ChatPanelConversation() {
       borderColor="border.emphasized"
       borderRadius={{ base: 0, md: "sm" }}
       overflow="hidden"
+      pointerEvents="auto"
     >
-      <ChatPanelHeader hasConversation={true} onToggleSize={() => {}} />
+      <ChatPanelHeader
+        isFullSize={true}
+        hasConversation={true}
+        onToggleSize={onToggleSize}
+      />
 
       {/* Scrollable message area */}
       <Box flex="1" overflowY="auto" px={3} pt={3} pb={0} minH={0}>
@@ -78,4 +87,4 @@ function ChatPanelConversation() {
   );
 }
 
-export default ChatPanelConversation;
+export default ChatPanelFullSize;

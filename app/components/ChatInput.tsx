@@ -20,10 +20,14 @@ import { useRouter } from "next/navigation";
 
 export default function ChatInput({
   isChatDisabled,
-  transparent,
+  bordered,
+  onAfterSend,
 }: {
   isChatDisabled?: boolean;
-  transparent?: boolean;
+  /** Render the input box as a standalone rounded card (conversation panel) */
+  bordered?: boolean;
+  /** Called immediately before sending, e.g. to expand a collapsed panel */
+  onAfterSend?: () => void;
 }) {
   const [inputValue, setInputValue] = useState("");
   const [contextModalOpen, setContextModalOpen] = useState(false);
@@ -60,6 +64,7 @@ export default function ChatInput({
 
     const message = inputValue.trim();
     setInputValue("");
+    onAfterSend?.();
 
     // Close the modal on mobile after sending a message
     if (isMobile) {
@@ -86,11 +91,16 @@ export default function ChatInput({
 
   const disabled = isLoading || isChatDisabled;
   const hasNudge = messages.at(-1)?.type === "dataset-nudge";
+  const hasConversation = messages.some(
+    (m) => m.type === "user" || m.type === "assistant"
+  );
   const message = isLoading
     ? "Sending..."
     : hasNudge
       ? "Or ask a different question..."
-      : "Ask a question...";
+      : hasConversation
+        ? "Ask a follow-up question…"
+        : "Or describe what you want to explore…";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
   const hasContext = context.length > 0;
@@ -103,7 +113,10 @@ export default function ChatInput({
       position="relative"
       m={0}
       p={4}
-      bg={transparent ? "transparent" : "gray.100"}
+      bg={bordered ? "#F4F5F6" : "gray.100"}
+      borderWidth={bordered ? "1px" : 0}
+      borderColor={bordered ? "#E0E2E5" : undefined}
+      borderRadius={bordered ? "sm" : undefined}
       className="group"
       transition="all 0.32s ease-in-out"
     >
