@@ -51,4 +51,15 @@ describe("useAnalysis", () => {
     expect(result.current.error).toBe(boom);
     expect(result.current.result).toBeNull();
   });
+
+  it("uses a default service when none is injected (composition root)", async () => {
+    const { result } = renderHook(() => useAnalysis());
+
+    act(() => {
+      result.current.run(selection);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+    expect(result.current.result?.id).toMatch(/^stub:/);
+  });
 });
