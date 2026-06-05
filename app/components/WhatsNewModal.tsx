@@ -10,10 +10,10 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "whats-new-v3-dismissed";
 const LEGACY_STORAGE_KEYS = [
   "whats-new-v1-dismissed",
   "whats-new-v2-dismissed",
+  "whats-new-v3-dismissed",
 ];
 
 const FEATURE_IMAGES: Record<number, string> = {
@@ -132,15 +132,15 @@ const WhatsNewModal = () => {
 
   useEffect(() => {
     LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
-    if (localStorage.getItem(STORAGE_KEY) !== "true") {
-      setIsOpen(true);
-    }
   }, []);
 
-  const dismiss = () => {
-    localStorage.setItem(STORAGE_KEY, "true");
-    setIsOpen(false);
-  };
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener("gnw-whats-new-open", handleOpen);
+    return () => window.removeEventListener("gnw-whats-new-open", handleOpen);
+  }, []);
+
+  const dismiss = () => setIsOpen(false);
 
   if (!isOpen) return null;
 

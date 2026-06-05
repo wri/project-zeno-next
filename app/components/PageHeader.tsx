@@ -38,6 +38,7 @@ import { useLogout } from "@/app/hooks/useLogout";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
+const WHATS_NEW_STORAGE_KEY = "whats-new-v3-dismissed";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
@@ -64,6 +65,7 @@ function PageHeader() {
 
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [showWhatsNewDot, setShowWhatsNewDot] = useState(false);
   const badgeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,6 +76,14 @@ function PageHeader() {
     window.addEventListener("gnw-disclaimer-dismissed", handleDismiss);
     return () =>
       window.removeEventListener("gnw-disclaimer-dismissed", handleDismiss);
+  }, []);
+
+  useEffect(() => {
+    setShowWhatsNewDot(localStorage.getItem(WHATS_NEW_STORAGE_KEY) !== "true");
+    const handleDismissed = () => setShowWhatsNewDot(false);
+    window.addEventListener("gnw-whats-new-dismissed", handleDismissed);
+    return () =>
+      window.removeEventListener("gnw-whats-new-dismissed", handleDismissed);
   }, []);
 
   useEffect(() => {
@@ -278,12 +288,23 @@ function PageHeader() {
           gap="2"
           fontWeight="medium"
           fontSize="xs"
-          onClick={() =>
-            window.dispatchEvent(new CustomEvent("gnw-whats-new-open"))
-          }
+          onClick={() => {
+            localStorage.setItem(WHATS_NEW_STORAGE_KEY, "true");
+            window.dispatchEvent(new CustomEvent("gnw-whats-new-dismissed"));
+            window.dispatchEvent(new CustomEvent("gnw-whats-new-open"));
+          }}
         >
           <ShootingStarIcon size={16} />
           {"What's new"}
+          {showWhatsNewDot && (
+            <Box
+              w="8px"
+              h="8px"
+              borderRadius="8px"
+              bg="#C3D16F"
+              flexShrink={0}
+            />
+          )}
         </Button>
         <ChakraLink
           as={Link}
