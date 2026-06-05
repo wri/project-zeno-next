@@ -35,4 +35,20 @@ describe("useAnalysis", () => {
     expect(result.current.result).toEqual({ id: "analysis-1" });
     expect(service.run).toHaveBeenCalledWith(selection);
   });
+
+  it("surfaces an error when the analysis fails", async () => {
+    const boom = new Error("backend exploded");
+    const service: AnalysisService = {
+      run: vi.fn().mockRejectedValue(boom),
+    };
+    const { result } = renderHook(() => useAnalysis(service));
+
+    act(() => {
+      result.current.run(selection);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current.error).toBe(boom);
+    expect(result.current.result).toBeNull();
+  });
 });
