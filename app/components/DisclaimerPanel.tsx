@@ -22,6 +22,14 @@ export default function DisclaimerPanel() {
     }
   }, []);
 
+  // Notify the compact chat panel once we're actually rendered so it can
+  // reserve the space below this banner and avoid overlapping it.
+  useEffect(() => {
+    if (visible) {
+      window.dispatchEvent(new Event("gnw-disclaimer-shown"));
+    }
+  }, [visible]);
+
   if (!visible) return null;
 
   const dismiss = () => {
@@ -32,6 +40,7 @@ export default function DisclaimerPanel() {
 
   return (
     <Box
+      id="gnw-disclaimer-panel"
       px={2}
       pt={2}
       pb={3}
