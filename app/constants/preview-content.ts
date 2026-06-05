@@ -12,8 +12,14 @@ export const PREVIEW_LINKS = [
     label: "FAQs",
     href: "https://help.globalnaturewatch.org/support/faqs",
   },
-  { label: "Capabilities", href: "https://help.globalnaturewatch.org/get-started/capabilities-and-datasets" },
-  { label: "Accuracy", href: "https://help.globalnaturewatch.org/get-started/accuracy-and-performance" },
+  {
+    label: "Capabilities",
+    href: "https://help.globalnaturewatch.org/get-started/capabilities-and-datasets",
+  },
+  {
+    label: "Accuracy",
+    href: "https://help.globalnaturewatch.org/get-started/accuracy-and-performance",
+  },
   {
     label: "Known Issues",
     href: "https://help.globalnaturewatch.org/resources/known-issues",
