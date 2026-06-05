@@ -47,7 +47,9 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
   const topCardRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const inputCardRef = useRef<HTMLDivElement>(null);
-  const [messagesMaxH, setMessagesMaxH] = useState(`${MESSAGES_MAX_VH * 100}vh`);
+  const [messagesMaxH, setMessagesMaxH] = useState(
+    `${MESSAGES_MAX_VH * 100}vh`
+  );
 
   // The disclaimer lives in a sibling map overlay, not in this panel's flex
   // flow, so layout can't keep them apart. Shrink the message list so the whole
@@ -174,8 +176,8 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
           />
         </Flex>
       </Flex>
-
-      {/* Frosted-glass disclaimer — 16px below cards */}
+      {/* Frosted-glass disclaimer — 16px below cards 
+        // TODO: use chakra styles and theming for this */}
       <Box
         px={2}
         py={1}
