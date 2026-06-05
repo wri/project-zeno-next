@@ -1,0 +1,119 @@
+classDiagram
+    direction LR
+
+    class AreaSelection {
+        <<value object>>
+        +name string
+        +srcId string
+        +subtype string
+        +source string
+        +lngLat LngLat
+        +geometryRef GeometryRef
+    }
+    class AnalysisRequest {
+        <<value object>>
+        +params AnalysisParams
+        +requestKey string
+    }
+    class AnalysisHandle {
+        <<value object>>
+        +pollUri string
+        +retryAfterMs number
+    }
+    class AnalysisStatus {
+        <<value object>>
+        +state PendingOrSucceededOrFailed
+        +retryAfterMs number
+        +resultUri string
+    }
+    class AnalysisResult {
+        <<value object>>
+        +charts List~ChartDTO~
+        +params AnalysisParams
+        +resultId string
+    }
+    class AnalysisState {
+        <<discriminated union — FSM>>
+        Idle
+        Submitting
+        Polling
+        Succeeded
+        Failed
+        TimedOut
+        Canceled
+    }
+
+    class AnalysisGateway {
+        <<interface · port>>
+        +submit(req AnalysisRequest) Promise~AnalysisHandle~
+        +poll(handle AnalysisHandle) Promise~AnalysisStatus~
+        +fetchResult(uri string) Promise~AnalysisResult~
+    }
+    class Clock {
+        <<interface · port>>
+        +wait(ms number) Promise~void~
+    }
+    class TelemetrySink {
+        <<interface · port>>
+        +record(t AnalysisTransition) void
+    }
+
+    class AnalysisService {
+        <<application service · core>>
+        -gateway AnalysisGateway
+        -clock Clock
+        -telemetry TelemetrySink
+        -inFlight Map~string,Promise~
+        +run(selection AreaSelection) Promise~AnalysisResult~
+        +cancel() void
+    }
+    class RequestKey {
+        <<pure domain>>
+        +of(params AnalysisParams) string
+    }
+
+    class RestAnalysisGateway {
+        <<driven adapter>>
+    }
+    class SystemClock {
+        <<driven adapter>>
+    }
+    class FaroTelemetry {
+        <<driven adapter · planned>>
+    }
+
+    class useAnalysis {
+        <<driving adapter · hook>>
+        +run(selection) void
+        +cancel() void
+        +state AnalysisState
+    }
+    class toAreaSelection {
+        <<driving adapter · ACL>>
+        +from(features, config, meta) AreaSelection
+    }
+    class analysisResultToWidgets {
+        <<presentation ACL>>
+        +from(result AnalysisResult) List~InsightWidget~
+    }
+
+    AnalysisService ..> AnalysisGateway : depends
+    AnalysisService ..> Clock : depends
+    AnalysisService ..> TelemetrySink : depends
+    AnalysisService ..> RequestKey : uses
+    AnalysisService --> AnalysisState : emits
+    AnalysisService ..> AreaSelection : input
+    AnalysisService ..> AnalysisResult : returns
+
+    RestAnalysisGateway ..|> AnalysisGateway
+    SystemClock ..|> Clock
+    FaroTelemetry ..|> TelemetrySink
+
+    useAnalysis ..> AnalysisService : drives
+    useAnalysis ..> analysisResultToWidgets : uses
+    toAreaSelection ..> AreaSelection : produces
+
+    AnalysisGateway ..> AnalysisRequest
+    AnalysisGateway ..> AnalysisHandle
+    AnalysisGateway ..> AnalysisStatus
+    AnalysisGateway ..> AnalysisResult
