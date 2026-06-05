@@ -55,6 +55,9 @@ jobs:
       - name: Run linting
         run: pnpm lint
 
+      - name: Architecture fitness functions
+        run: pnpm test:arch
+
   typecheck:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
