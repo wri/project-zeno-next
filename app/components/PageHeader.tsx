@@ -20,6 +20,7 @@ import {
   GearSixIcon,
   LifebuoyIcon,
   PlusIcon,
+  ShootingStarIcon,
   SignOutIcon,
   UserIcon,
   InfoIcon,
@@ -267,6 +268,23 @@ function PageHeader() {
         </Text>
       )}
       <Flex gap="6" alignItems="center" hideBelow="md">
+        <Button
+          variant="ghost"
+          size="xs"
+          color={isPrototype ? "#1f2937" : "#656E7B"}
+          fill={isPrototype ? "#1f2937" : "#F4F5F6"}
+          _hover={{ bg: inverseHoverBg }}
+          _focusVisible={focusRing}
+          gap="2"
+          fontWeight="medium"
+          fontSize="xs"
+          onClick={() =>
+            window.dispatchEvent(new CustomEvent("gnw-whats-new-open"))
+          }
+        >
+          <ShootingStarIcon size={16} />
+          {"What's new"}
+        </Button>
         <ChakraLink
           as={Link}
           href="https://help.globalnaturewatch.org/"
