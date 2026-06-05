@@ -35,6 +35,7 @@ import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import type { Feature, MultiPolygon } from "geojson";
+import { getLayerContextFromDatasetCard } from "../utils/datasetCardLayerContext";
 
 const LAYER_CARDS = DATASET_CARDS;
 
@@ -88,27 +89,9 @@ function LayerCardList({
     if (existing) {
       removeContext(existing.id);
     } else {
-      const startYear = card.defaultStartYear;
-      const endYear = card.defaultEndYear;
-      // Only scope the layer when both bounds are present, so a half-configured
-      // card falls back to the unfiltered tile_url rather than a broken range.
-      const hasYears = startYear != null && endYear != null;
-      const tileUrl =
-        hasYears && card.tile_url
-          ? `${card.tile_url}&start_year=${startYear}&end_year=${endYear}`
-          : card.tile_url;
       upsertContextByType({
         contextType: "layer",
-        content: card.dataset_name,
-        datasetId: card.dataset_id,
-        tileUrl,
-        layerName: card.dataset_name,
-        ...(hasYears
-          ? {
-              startDate: `${startYear}-01-01`,
-              endDate: `${endYear}-12-31`,
-            }
-          : {}),
+        ...getLayerContextFromDatasetCard(card),
         isAiContext: false,
       });
     }
