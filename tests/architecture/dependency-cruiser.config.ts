@@ -73,6 +73,8 @@ export const forbidden = [
 export const options = {
   // Without this, cruise() silently ignores the ruleSet (default is false).
   validate: true,
+  // The guard is about production dependency direction, not test code.
+  exclude: { path: "(/__tests__/|\\.test\\.[tj]sx?$)" },
   doNotFollow: { path: "node_modules" },
   tsConfig: { fileName: "tsconfig.json" },
   enhancedResolveOptions: { extensions: [".ts", ".tsx", ".js", ".jsx"] },
