@@ -52,8 +52,8 @@ function PageHeader() {
     ? currentThread.name
     : "New Conversation";
 
-  const inverseColor = isPrototype ? "#1f2937" : "fg.inverted";
-  const inverseHoverBg = isPrototype ? "#6b7280" : "primary.fg";
+  const inverseColor = isPrototype ? "#1f2937" : "#3A4048";
+  const inverseHoverBg = isPrototype ? "#6b7280" : "#F0F1F2";
   const focusRing = {
     outline: "2px solid",
     outlineColor: inverseColor,
@@ -93,8 +93,9 @@ function PageHeader() {
       gap="4"
       px="3"
       h="40px"
-      bg={isPrototype ? "#d1d5db" : "primary.solid"}
-      color={isPrototype ? "#1f2937" : "fg.inverted"}
+      bg={isPrototype ? "#d1d5db" : "white"}
+      color={isPrototype ? "#1f2937" : "#131E47"}
+      borderTop={isPrototype ? undefined : "4px solid #E3F37F"}
       zIndex={1300}
       position="relative"
     >
@@ -111,9 +112,13 @@ function PageHeader() {
             <LclLogo
               width={16}
               avatarOnly
-              fill={isPrototype ? "#1f2937" : "white"}
+              fill={isPrototype ? "#1f2937" : "#131E47"}
             />
-            <Heading as="h1" size="sm" color={inverseColor}>
+            <Heading
+              as="h1"
+              size="sm"
+              color={isPrototype ? "#1f2937" : "#131E47"}
+            >
               Global Nature Watch
             </Heading>
           </ChakraLink>
@@ -269,7 +274,7 @@ function PageHeader() {
           display="flex"
           alignItems="center"
           gap="2"
-          color={inverseColor}
+          color={isPrototype ? "#1f2937" : "#656E7B"}
           fontSize="xs"
           fontWeight="medium"
           transition="opacity 0.24s ease"
@@ -298,7 +303,7 @@ function PageHeader() {
             lineHeight="1.5"
             fontWeight="normal"
             whiteSpace="nowrap"
-            color={isPrototype ? "#6b7280" : "primary.100"}
+            color={isPrototype ? "#6b7280" : "#656E7B"}
           >
             {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} daily
             prompts
@@ -321,22 +326,19 @@ function PageHeader() {
               </Text>
             </Tooltip>
           </Progress.Label>
-          <Progress.Track
-            bg={isPrototype ? "#6b7280" : "primary.950"}
-            maxH="4px"
-          >
-            <Progress.Range bg={isPrototype ? "#1f2937" : "white"} />
+          <Progress.Track bg={isPrototype ? "#6b7280" : "#E0E2E5"} maxH="4px">
+            <Progress.Range bg={isPrototype ? "#1f2937" : "#0049AA"} />
           </Progress.Track>
         </Progress.Root>
         {isAuthenticated ? (
           <Menu.Root positioning={{ placement: "bottom-end" }}>
             <Menu.Trigger asChild>
               <Button
-                variant="solid"
-                colorPalette={isPrototype ? "gray" : "primary"}
+                variant={isPrototype ? "solid" : "ghost"}
+                colorPalette={isPrototype ? "gray" : undefined}
                 bg={isPrototype ? "#9ca3af" : undefined}
-                color={isPrototype ? "#1f2937" : undefined}
-                _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
+                color={isPrototype ? "#1f2937" : "#656E7B"}
+                _hover={{ bg: isPrototype ? "#6b7280" : "#F0F1F2" }}
                 _focusVisible={focusRing}
                 h="40px"
                 px="2"
@@ -383,7 +385,7 @@ function PageHeader() {
             display="flex"
             alignItems="center"
             gap="2"
-            color={inverseColor}
+            color={isPrototype ? "#1f2937" : "#656E7B"}
             fontSize="xs"
             fontWeight="medium"
             transition="opacity 0.24s ease"
