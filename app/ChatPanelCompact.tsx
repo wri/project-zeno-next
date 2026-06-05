@@ -43,7 +43,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
       h="100%"
       pt={2}
       pb={1}
-      pl={{ base: 0, md: 2 }}
+      pl={{ base: 0, md: 3 }}
       pointerEvents="none"
     >
       <Flex
@@ -72,7 +72,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
                 transition={{ duration: 0.22, ease: "easeInOut" }}
                 style={{ overflow: "hidden" }}
               >
-                <Box overflowY="auto" px={4} pt={4} pb={4} maxH="590px">
+                <Box overflowY="auto" px={4} pt={4} pb={4} maxH="50vh">
                   <ChatMessages />
                 </Box>
               </motion.div>
