@@ -163,19 +163,19 @@ const WhatsNewModal = () => {
         <Flex
           bg="#f4f5f6"
           px={6}
-          h="48px"
+          h="40px"
           align="center"
           justify="space-between"
           flexShrink={0}
         >
           <HStack gap={2}>
-            <ShootingStarIcon size={20} color="#172b7a" />
+            <ShootingStarIcon size={16} color="#172b7a" />
             <Text
-              fontSize="18px"
+              fontSize="14px"
               color="#172b7a"
               fontFamily="'IBM Plex Sans', sans-serif"
               fontWeight="normal"
-              lineHeight="40px"
+              lineHeight="1"
             >
               {"What's "}
               <Box as="span" fontWeight="medium">
