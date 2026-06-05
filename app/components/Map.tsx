@@ -4,8 +4,6 @@ import MapGl, {
   Layer,
   Source,
   AttributionControl,
-  NavigationControl,
-  ScaleControl,
   MapRef,
 } from "react-map-gl/maplibre";
 import { useState, useRef, useEffect } from "react";
@@ -84,11 +82,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       bg={mapRef.current ? "transparent" : "neutral.200"}
       css={{
         _dark: {
-          "& .maplibregl-ctrl-scale": {
-            bgColor: "black/20",
-            color: "fg",
-            borderColor: "bg.subtle",
-          },
           "& .maplibregl-ctrl.maplibregl-ctrl-attrib": {
             bgColor: "black/40",
             "& a": { color: "fg" },
@@ -211,7 +204,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             />
           </Box>
         </Flex>
-
         {/* Sentinel layer: caps raster layers below AOI/GeoJSON outlines.
             Must be added before DynamicTileLayers so the sentinel exists
             when the topmost raster layer references it as beforeId. */}
@@ -247,12 +239,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             color: "gray",
           }}
         />
-        {!isMobile && (
-          <>
-            <ScaleControl position="bottom-left" />
-            <NavigationControl showCompass={false} position="bottom-left" />
-          </>
-        )}
+
         <Flex
           pos="absolute"
           bottom="4"

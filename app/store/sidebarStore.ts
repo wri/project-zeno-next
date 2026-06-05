@@ -34,6 +34,8 @@ interface SidebarState {
   toggleSidebar: () => void;
   fetchApiStatus: () => Promise<void>;
   apiStatus: "Idle" | "OK" | "Error";
+  isChatFullSize: boolean;
+  setChatFullSize: (value: boolean) => void;
 }
 
 const computeThreadGroups = (data: ThreadEntry[]): ThreadGroups => {
@@ -68,6 +70,8 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
     older: [],
   },
   apiStatus: "Idle",
+  isChatFullSize: false,
+  setChatFullSize: (value) => set({ isChatFullSize: value }),
   toggleSidebar: () =>
     set((state) => ({ sideBarVisible: !state.sideBarVisible })),
 

@@ -29,15 +29,13 @@ export default function DashboardLayout({
 }) {
   const isReady = useAuthGuard();
   const [sheetHeight, setSheetHeight] = useState(400);
-  const { toggleSidebar } = useSidebarStore();
+  const { toggleSidebar, sideBarVisible } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
-  const [desktopHeight, setDesktopHeight] = useState("0");
 
   useEffect(() => {
     // Set layout heights after mount to avoid flash of both layouts at once
     setMobileHeight("min(100dvh, 100vh)");
-    setDesktopHeight("auto");
   }, []);
 
   function DebugToastsMount() {
@@ -49,18 +47,51 @@ export default function DashboardLayout({
   }
 
   const DesktopLayout = (
-    <Grid
-      templateColumns="auto min-content 1fr"
-      templateAreas="'sidebar chat map'"
-      templateRows="1fr"
-      h={{ base: 0, md: desktopHeight }}
-      maxH="calc(100vh - 3rem)"
-      display={{ base: "none", md: "grid" }}
+    <Box
+      position="relative"
+      w="100vw"
+      h="100%"
+      overflow="hidden"
+      display={{ base: "none", md: "block" }}
     >
-      <Sidebar />
-      <ChatPanel />
       <Map />
-    </Grid>
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        left={0}
+        zIndex={1100}
+        display="flex"
+        flexDir="column"
+        pointerEvents="none"
+      >
+        <Box
+          pointerEvents="none"
+          minH={0}
+          display="flex"
+          flexDir="column"
+          h="100%"
+        >
+          <ChatPanel />
+        </Box>
+      </Box>
+      <Drawer.Root
+        placement="start"
+        open={sideBarVisible}
+        onOpenChange={(e) => {
+          if (!e.open && sideBarVisible) toggleSidebar();
+        }}
+      >
+        <Portal>
+          <Drawer.Backdrop backdropFilter="blur(2px)" />
+          <Drawer.Positioner>
+            <Drawer.Content maxW="16rem" w="16rem">
+              <Sidebar />
+            </Drawer.Content>
+          </Drawer.Positioner>
+        </Portal>
+      </Drawer.Root>
+    </Box>
   );
 
   const MobileLayout = (

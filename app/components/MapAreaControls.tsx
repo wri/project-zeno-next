@@ -13,6 +13,8 @@ import {
 import {
   CaretDownIcon,
   HandPointingIcon,
+  MinusIcon,
+  PlusIcon,
   SelectionPlusIcon,
   UploadSimpleIcon,
   XIcon,
@@ -28,6 +30,7 @@ import { formatAreaWithUnits } from "../utils/formatArea";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 import useContextStore from "../store/contextStore";
 import { BasemapSelector } from "./map/BasemapSelector";
+import useSidebarStore from "../store/sidebarStore";
 import { FeatureRef } from "../store/layerManagerSlice";
 
 function Wrapper({
@@ -79,8 +82,10 @@ function MapAreaControls({
     addLayer,
     addToRegistry,
     flyToGeoJson,
+    mapRef,
   } = useMapStore();
   const { addContext } = useContextStore();
+  const { isChatFullSize } = useSidebarStore();
 
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
   const [showTools, setShowTools] = useState(false);
@@ -155,8 +160,67 @@ function MapAreaControls({
   };
 
   return (
-    <Wrapper borderColor={selectionMode ? "secondary.400" : "transparent"}>
-      <Flex>
+    <Wrapper
+      borderColor={selectionMode ? "secondary.400" : "transparent"}
+      pl={{ base: 2, md: isChatFullSize ? 0 : 3 }}
+    >
+      {/* Chat-panel-adjacent controls: basemap + zoom — desktop only */}
+      <Flex
+        display={{ base: "none", md: "flex" }}
+        position="absolute"
+        bottom={12}
+        left={{ base: 2, md: isChatFullSize ? "436px" : "416px" }}
+        flexDirection="column"
+        gap={1}
+        pointerEvents="auto"
+        zIndex={200}
+        alignItems="center"
+      >
+        <BasemapSelector
+          inline
+          currentBasemap={basemapTiles}
+          onBasemapChange={setBasemapTiles}
+        />
+        <Box
+          bg="white"
+          borderRadius="4px"
+          boxShadow="0 0 0 2px rgba(0,0,0,0.1)"
+          overflow="hidden"
+        >
+          <Tooltip content="Zoom in" positioning={{ placement: "right" }}>
+            <IconButton
+              aria-label="Zoom in"
+              size="sm"
+              variant="ghost"
+              bg="white"
+              color="black"
+              borderRadius={0}
+              _hover={{ bg: "gray.100" }}
+              onClick={() => mapRef?.getMap().zoomIn()}
+            >
+              <PlusIcon />
+            </IconButton>
+          </Tooltip>
+          <Box h="1px" bg="rgba(0,0,0,0.1)" />
+          <Tooltip content="Zoom out" positioning={{ placement: "right" }}>
+            <IconButton
+              aria-label="Zoom out"
+              size="sm"
+              variant="ghost"
+              bg="white"
+              color="black"
+              borderRadius={0}
+              _hover={{ bg: "gray.100" }}
+              onClick={() => mapRef?.getMap().zoomOut()}
+            >
+              <MinusIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Flex>
+      {/* Area tools: in full-size mode, anchor just right of the chat panel
+          (aligned with the zoom/basemap controls above); otherwise top-left. */}
+      <Flex ml={{ base: 0, md: isChatFullSize ? "436px" : 0 }}>
         <Button
           position="relative"
           variant="subtle"
@@ -182,7 +246,7 @@ function MapAreaControls({
         <BasemapSelector
           currentBasemap={basemapTiles}
           onBasemapChange={setBasemapTiles}
-          display={{ base: showTools ? "inherit" : "none", md: "inherit" }}
+          display={{ base: showTools ? "inherit" : "none", md: "none" }}
         />
         <ButtonGroup
           size="sm"
