@@ -2,6 +2,7 @@
 export interface AreaSelection {
   name: string;
   source: string;
-  srcId: string;
-  subtype: string;
+  // Undefined is possible: the source feature may not carry an id/subtype.
+  srcId?: string;
+  subtype?: string;
 }
