@@ -218,14 +218,9 @@ function MapAreaControls({
           </Tooltip>
         </Box>
       </Flex>
-      <Flex
-        ml={{ base: 0, md: isChatFullSize ? "428px" : 0 }}
-        w={{ base: "auto", md: isChatFullSize ? "calc(100% - 428px)" : "auto" }}
-        justifyContent={{
-          base: "flex-start",
-          md: isChatFullSize ? "center" : "flex-start",
-        }}
-      >
+      {/* Area tools: in full-size mode, anchor just right of the chat panel
+          (aligned with the zoom/basemap controls above); otherwise top-left. */}
+      <Flex ml={{ base: 0, md: isChatFullSize ? "436px" : 0 }}>
         <Button
           position="relative"
           variant="subtle"
