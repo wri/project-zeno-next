@@ -231,7 +231,7 @@ function MapAreaControls({
       <Flex
         display={{ base: "none", md: "flex" }}
         position="absolute"
-        bottom={12}
+        bottom={8}
         left={{ base: 2, md: isChatFullSize ? "436px" : "416px" }}
         flexDirection="column"
         gap={1}
