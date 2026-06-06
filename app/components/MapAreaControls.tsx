@@ -22,7 +22,6 @@ import {
   MapTrifoldIcon,
 } from "@phosphor-icons/react";
 
-import { MapRef } from "react-map-gl/maplibre";
 import { LayerId, selectLayerOptions } from "../types/map";
 import useMapStore from "../store/mapStore";
 import { Tooltip } from "./ui/tooltip";
@@ -31,70 +30,9 @@ import { formatAreaWithUnits } from "../utils/formatArea";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 import useContextStore from "../store/contextStore";
 import { BasemapSelector } from "./map/BasemapSelector";
+import { ScaleBar } from "./map/ScaleBar";
 import useSidebarStore from "../store/sidebarStore";
 import { FeatureRef } from "../store/layerManagerSlice";
-
-const NICE_DISTANCES = [
-  1, 2, 5, 10, 20, 50, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000,
-  50_000, 100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000,
-  10_000_000,
-];
-const TARGET_WIDTH_PX = 80;
-
-function ScaleBar({ mapRef }: { mapRef: MapRef | null }) {
-  const [bar, setBar] = useState<{ label: string; width: number } | null>(null);
-
-  useEffect(() => {
-    if (!mapRef) return;
-    const map = mapRef.getMap();
-
-    const update = () => {
-      const zoom = map.getZoom();
-      const lat = map.getCenter().lat;
-      const metersPerPx =
-        (40075016.686 * Math.cos((lat * Math.PI) / 180)) /
-        Math.pow(2, zoom + 9);
-      const maxMeters = TARGET_WIDTH_PX * metersPerPx;
-      const nice =
-        [...NICE_DISTANCES].reverse().find((d) => d <= maxMeters) ??
-        NICE_DISTANCES[0];
-      const width = nice / metersPerPx;
-      const label = nice >= 1000 ? `${nice / 1000} km` : `${nice} m`;
-      setBar({ label, width });
-    };
-
-    update();
-    map.on("move", update);
-    return () => {
-      map.off("move", update);
-    };
-  }, [mapRef]);
-
-  if (!bar) return null;
-
-  return (
-    <Box
-      minW={`${bar.width}px`}
-      whiteSpace="nowrap"
-      borderBottom="2px solid"
-      borderLeft="2px solid"
-      borderRight="2px solid"
-      borderColor="rgba(0,0,0,0.5)"
-      bg="transparent"
-      px={1}
-      textAlign="center"
-      fontSize="0.6rem"
-      color="rgba(0,0,0,0.7)"
-      lineHeight="1.4"
-      _dark={{
-        borderColor: "bg.subtle",
-        color: "fg",
-      }}
-    >
-      {bar.label}
-    </Box>
-  );
-}
 
 function Wrapper({
   children,
@@ -227,7 +165,10 @@ function MapAreaControls({
       borderColor={selectionMode ? "secondary.400" : "transparent"}
       pl={{ base: 2, md: isChatFullSize ? 0 : 3 }}
     >
-      {/* Chat-panel-adjacent controls: basemap + zoom — desktop only */}
+      {/* Chat-panel-adjacent controls: basemap + zoom — desktop only.
+          bottom={8} (32px) aligns the stack with the bottom of ChatPanelCompact's
+          input card — i.e. its pb + disclaimer height + mt. If that disclaimer's
+          spacing changes, this offset must follow. */}
       <Flex
         display={{ base: "none", md: "flex" }}
         position="absolute"

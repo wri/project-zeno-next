@@ -228,12 +228,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           right="3"
           px="2"
           py="1"
-          fontSize="xs"
+          fontSize="0.675rem"
+          color="gray"
           bg="transparent"
           hideBelow="md"
           alignItems="center"
           gap={2}
-          style={{ fontSize: "0.675rem", color: "gray" }}
         >
           <ChLink
             href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
@@ -280,7 +280,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           >
             lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
           </Code>
-          <span style={{ marginLeft: "0.5rem" }}>
+          <Box as="span" ml={2}>
             Background tiles: ©{" "}
             <ChLink
               href="https://www.openstreetmap.org/copyright"
@@ -290,7 +290,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             >
               OpenStreetMap contributors
             </ChLink>
-          </span>
+          </Box>
         </Flex>
       </MapGl>
     </Box>
