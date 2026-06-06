@@ -175,7 +175,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           position="absolute"
           top={4}
           right={3}
-          bottom={{ base: "4.5rem", md: 12 }}
+          bottom={{ base: "4.5rem", md: 7 }}
           zIndex={400}
           w="420px"
           flexDirection="column"
