@@ -53,13 +53,23 @@ describe("useAnalysis", () => {
   });
 
   it("uses a default service when none is injected (composition root)", async () => {
-    const { result } = renderHook(() => useAnalysis());
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() => useAnalysis());
 
-    act(() => {
-      result.current.run(selection);
-    });
+      act(() => {
+        result.current.run(selection);
+      });
+      expect(result.current.status).toBe("running");
 
-    await waitFor(() => expect(result.current.status).toBe("done"));
-    expect(result.current.result?.id).toMatch(/^stub:/);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(result.current.status).toBe("done");
+      expect(result.current.result?.id).toMatch(/^stub:/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -8,7 +8,12 @@ import type { AnalysisResult } from "../domain/analysis-result";
  * state machine exist. Replace with the real AnalysisService (bottom of stack).
  */
 export class StubAnalysisService implements AnalysisService {
+  // Default delay simulates a slow operation so the running state is visible
+  // in the browser. Tests pass 0 (or use fake timers) to stay fast.
+  constructor(private readonly delayMs: number = 1000) {}
+
   async run(selection: AreaSelection): Promise<AnalysisResult> {
+    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
     return {
       id: `stub:${selection.source}:${selection.srcId ?? selection.name}`,
     };

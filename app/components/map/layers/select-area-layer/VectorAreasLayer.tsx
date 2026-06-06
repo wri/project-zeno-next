@@ -25,6 +25,11 @@ import {
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
+// Prototype popup path (future final solution) — kept wired behind ?ff=analysis
+// alongside the live analyse nudge. toAreaSelection (areaHelpers) returns the
+// same shape both consumers need, so it's reused for both.
+import { isFeatureEnabled } from "@/app/lib/feature-flags";
+import useSelectionStore from "@/app/features/analysis/ui/selection-store";
 
 interface SourceLayerProps {
   layerId: LayerId;
@@ -39,7 +44,7 @@ interface Metadata {
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
     useMapStore();
-
+  const selectArea = useSelectionStore((state) => state.select);
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -189,16 +194,30 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 .forEach((l) => removeLayer(l.id));
             }
 
-            // AnalysisCtaTrigger reacts to this selection and surfaces the
-            // analyse nudge once a dataset is also active.
+            // GADM-only analysis selection. Both paths consume the same
+            // normalized selection:
+            //  - live: AnalysisCtaTrigger reacts to setAnalysis and surfaces
+            //    the analyse nudge once a dataset is also active.
+            //  - prototype popup (future final solution): the selection store,
+            //    gated behind ?ff=analysis so it stays additive for now.
             if (layerId === "GADM" && metadata) {
-              setAnalysis(
-                toAreaSelection(
-                  layerId,
-                  (featureProps ?? {}) as Record<string, unknown>,
-                  metadata
-                )
+              const areaSelection = toAreaSelection(
+                layerId,
+                (featureProps ?? {}) as Record<string, unknown>,
+                metadata
               );
+              setAnalysis(areaSelection);
+              if (
+                isFeatureEnabled(
+                  new URLSearchParams(window.location.search),
+                  "analysis"
+                )
+              ) {
+                selectArea(areaSelection, {
+                  lng: e.lngLat.lng,
+                  lat: e.lngLat.lat,
+                });
+              }
             } else {
               useMapStore.getState().clearAnalysis();
             }
@@ -237,6 +256,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     layerId,
     url,
     setAnalysis,
+    selectArea,
   ]);
 
   return (
