@@ -44,8 +44,9 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
         <ChatMessages />
       </Box>
 
-      {/* Input area — 12px inset, rounded bordered box */}
-      <Flex flexDir="column" flexShrink={0} px={3} pb={3}>
+      {/* Input area — rounded bordered box. pb matches ChatPanelCompact so the
+          input box bottom lines up across compact/full-size. */}
+      <Flex flexDir="column" flexShrink={0} px={3} pb={1}>
         {promptsExhausted && (
           <Box pb={2}>
             <ChatStatusInfo type="error">
