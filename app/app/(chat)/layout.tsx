@@ -85,7 +85,7 @@ export default function DashboardLayout({
         <Portal>
           <Drawer.Backdrop backdropFilter="blur(2px)" />
           <Drawer.Positioner>
-            <Drawer.Content maxW="16rem" w="16rem">
+            <Drawer.Content maxW="428px" w="428px">
               <Sidebar />
             </Drawer.Content>
           </Drawer.Positioner>
