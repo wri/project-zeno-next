@@ -86,7 +86,7 @@ function MapAreaControls({
     mapRef,
   } = useMapStore();
   const { addContext } = useContextStore();
-  const { isChatFullSize } = useSidebarStore();
+  const { isChatFullSize, isChatPanelAtHome } = useSidebarStore();
 
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
   const [showTools, setShowTools] = useState(false);
@@ -173,7 +173,16 @@ function MapAreaControls({
         display={{ base: "none", md: "flex" }}
         position="absolute"
         bottom={8}
-        left={{ base: 2, md: isChatFullSize ? "436px" : "416px" }}
+        // [PROTOTYPE] When the compact panel has been dragged away from its
+        // default left position (isChatPanelAtHome=false), anchor the controls
+        // at 16px from the left edge so they're always reachable. When the
+        // panel is home they sit right of it at 416px (or 436px in full-size).
+        // CSS transition smooths the jump between the two positions.
+        left={{
+          base: 2,
+          md: isChatFullSize ? "436px" : isChatPanelAtHome ? "416px" : "16px",
+        }}
+        transition="left 0.2s ease-in-out"
         flexDirection="column"
         gap={1}
         pointerEvents="auto"
