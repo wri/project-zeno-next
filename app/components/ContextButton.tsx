@@ -28,7 +28,7 @@ function ContextButton({ contextType = "area", ...props }: ContextButtonProps) {
       px="2"
       h="8"
       gap="1"
-      fontSize="sm"
+      fontSize="xs"
       fontWeight="normal"
       {...props}
     >

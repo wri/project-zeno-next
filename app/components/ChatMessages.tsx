@@ -90,7 +90,7 @@ function ChatMessages() {
   );
 
   return (
-    <Box ref={containerRef} fontSize="sm">
+    <Box ref={containerRef} fontSize="xs">
       {messages.map((message, index) => {
         // Check if this message is consecutive to the previous one of the same type
         const previousMessage = index > 0 ? messages[index - 1] : null;
