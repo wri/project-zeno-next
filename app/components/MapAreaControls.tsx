@@ -30,6 +30,7 @@ import { formatAreaWithUnits } from "../utils/formatArea";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 import useContextStore from "../store/contextStore";
 import { BasemapSelector } from "./map/BasemapSelector";
+import { ScaleBar } from "./map/ScaleBar";
 import useSidebarStore from "../store/sidebarStore";
 import { FeatureRef } from "../store/layerManagerSlice";
 
@@ -164,17 +165,20 @@ function MapAreaControls({
       borderColor={selectionMode ? "secondary.400" : "transparent"}
       pl={{ base: 2, md: isChatFullSize ? 0 : 3 }}
     >
-      {/* Chat-panel-adjacent controls: basemap + zoom — desktop only */}
+      {/* Chat-panel-adjacent controls: basemap + zoom — desktop only.
+          bottom={8} (32px) aligns the stack with the bottom of ChatPanelCompact's
+          input card — i.e. its pb + disclaimer height + mt. If that disclaimer's
+          spacing changes, this offset must follow. */}
       <Flex
         display={{ base: "none", md: "flex" }}
         position="absolute"
-        bottom={12}
+        bottom={8}
         left={{ base: 2, md: isChatFullSize ? "436px" : "416px" }}
         flexDirection="column"
         gap={1}
         pointerEvents="auto"
         zIndex={200}
-        alignItems="center"
+        alignItems="flex-start"
       >
         <BasemapSelector
           inline
@@ -217,6 +221,7 @@ function MapAreaControls({
             </IconButton>
           </Tooltip>
         </Box>
+        <ScaleBar mapRef={mapRef} />
       </Flex>
       {/* Area tools: in full-size mode, anchor just right of the chat panel
           (aligned with the zoom/basemap controls above); otherwise top-left. */}
