@@ -3,6 +3,8 @@ import type { AnalysisService } from "../application/analysis-service";
 import type { AreaSelection } from "../domain/area-selection";
 import type { AnalysisResult } from "../domain/analysis-result";
 import { StubAnalysisService } from "../adapters/stub-analysis-service";
+import { analysisResultToWidgets } from "./analysis-result-to-widgets";
+import useInsightStore from "@/app/store/insightStore";
 
 // Composition root: the default wiring. Swapped for the real REST-backed
 // service later; tests inject their own fake.
@@ -36,6 +38,16 @@ export function useAnalysis(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
+          // TODO(arch): this hook should not know about insightStore directly.
+          // The correct design is an InsightSink output port injected at the
+          // composition root, with ZustandInsightSink as the adapter. Deferred
+          // because the rest of the app uses imperative .getState() calls in the
+          // same pattern — introducing a port here in isolation would be
+          // inconsistent. Revisit when the composition root is wired properly.
+          const widgets = analysisResultToWidgets(analysisResult);
+          if (widgets.length > 0) {
+            useInsightStore.getState().addInsights(widgets);
+          }
         },
         (cause: unknown) => {
           setError(cause instanceof Error ? cause : new Error(String(cause)));
