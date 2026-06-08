@@ -49,12 +49,12 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   get
 ) => ({
   mapRef: null,
-  selectAreaLayer: null,
+  selectAreaLayer: "GADM",
   selectionMode: undefined,
 
   reset: () => {
     set({
-      selectAreaLayer: null,
+      selectAreaLayer: "GADM",
       layers: [],
       geoJsonRegistry: [],
     });
