@@ -137,7 +137,7 @@ function ContextMenu({
 
   return (
     <Dialog.Root
-      placement="bottom"
+      placement={{ base: "bottom", md: "center" }}
       motionPreset="slide-in-bottom"
       size={{ base: "xs", md: "lg" }}
       open={open}
@@ -148,8 +148,11 @@ function ContextMenu({
         <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner zIndex={1500}>
           <Dialog.Content
+            // Square modal on desktop; maxH caps it on short viewports so the
+            // body scrolls (scrollBehavior="inside") rather than overflowing.
+            boxSize={{ md: "38rem" }}
+            minH={{ base: "30rem" }}
             maxH="75vh"
-            minH="30rem"
             overflow="hidden"
             mx={{ base: 2, md: "auto" }}
           >
