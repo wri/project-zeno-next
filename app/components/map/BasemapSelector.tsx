@@ -23,7 +23,7 @@ const basemapOptions: BasemapOption[] = [
     tileUrl: "devseed/cmazl5ws500bz01scaa27dqi4",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/static/0,0,0,0,0/200x200@2x?access_token=" +
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN + "&attribution=false&logo=false",
   },
   {
     id: "satellite",
@@ -31,7 +31,8 @@ const basemapOptions: BasemapOption[] = [
     tileUrl: "mapbox/satellite-v9",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/0,0,0,0,0/200x200@2x?access_token=" +
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN +
+      "&attribution=false&logo=false",
   },
   {
     id: "dark",
@@ -39,7 +40,8 @@ const basemapOptions: BasemapOption[] = [
     tileUrl: "devseed/cm7nk8rlu01bm01qvb6pues5y",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/devseed/cm7nk8rlu01bm01qvb6pues5y/static/0,0,0,0,0/200x200@2x?access_token=" +
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN +
+      "&attribution=false&logo=false",
   },
 ];
 
