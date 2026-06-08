@@ -11,7 +11,45 @@ describe("StubAnalysisService", () => {
       srcId: "BRA",
     });
 
-    expect(result).toEqual({ id: "stub:gadm:BRA" });
+    expect(result).toMatchObject({ id: "stub:gadm:BRA" });
+  });
+
+  it("returns a canned result with exactly two charts", async () => {
+    const service = new StubAnalysisService(0);
+
+    const result = await service.run({
+      name: "Brazil",
+      source: "gadm",
+      srcId: "BRA",
+    });
+
+    expect(result.charts).toHaveLength(2);
+  });
+
+  it("returns charts with the InsightChartResponse field shape", async () => {
+    const service = new StubAnalysisService(0);
+
+    const result = await service.run({
+      name: "Brazil",
+      source: "gadm",
+      srcId: "BRA",
+    });
+
+    for (const chart of result.charts) {
+      expect(chart).toMatchObject({
+        id: expect.any(String),
+        position: expect.any(Number),
+        title: expect.any(String),
+        type: expect.any(String),
+        xAxis: expect.any(String),
+        yAxis: expect.any(String),
+        colorField: expect.any(String),
+        stackField: expect.any(String),
+        groupField: expect.any(String),
+        seriesFields: expect.any(Array),
+        data: expect.any(Array),
+      });
+    }
   });
 
   it("falls back to the name when the selection has no id", async () => {
@@ -19,7 +57,7 @@ describe("StubAnalysisService", () => {
 
     const result = await service.run({ name: "My Area", source: "custom" });
 
-    expect(result).toEqual({ id: "stub:custom:My Area" });
+    expect(result).toMatchObject({ id: "stub:custom:My Area" });
   });
 
   it("waits for the configured delay before resolving", async () => {
@@ -39,7 +77,7 @@ describe("StubAnalysisService", () => {
 
       await vi.advanceTimersByTimeAsync(1);
       expect(resolved).toBe(true);
-      await expect(promise).resolves.toEqual({ id: "stub:gadm:BRA" });
+      await expect(promise).resolves.toMatchObject({ id: "stub:gadm:BRA" });
     } finally {
       vi.useRealTimers();
     }

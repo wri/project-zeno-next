@@ -23,7 +23,7 @@ describe("useAnalysis", () => {
 
   it("runs an analysis and surfaces the result", async () => {
     const service: AnalysisService = {
-      run: vi.fn().mockResolvedValue({ id: "analysis-1" }),
+      run: vi.fn().mockResolvedValue({ id: "analysis-1", charts: [] }),
     };
     const { result } = renderHook(() => useAnalysis(service));
 
@@ -32,7 +32,7 @@ describe("useAnalysis", () => {
     });
 
     await waitFor(() => expect(result.current.status).toBe("done"));
-    expect(result.current.result).toEqual({ id: "analysis-1" });
+    expect(result.current.result).toMatchObject({ id: "analysis-1" });
     expect(service.run).toHaveBeenCalledWith(selection);
   });
 
