@@ -12,11 +12,9 @@ interface ChatPanelDisclaimerProps {
   variant: "inline" | "frosted";
 }
 
-// Shared base: same copy size, position offset and colour in both variants.
+// Shared base: same copy size and colour in both variants; spacing/position
+// and opacity differ per variant below.
 const baseStyle = {
-  px: 2,
-  py: 0,
-  mt: 1,
   fontSize: "10px",
   lineHeight: "20px",
   color: "#131619",
@@ -25,13 +23,18 @@ const baseStyle = {
 
 const variantStyle = {
   inline: {
-    opacity: 0.5,
+    px: 3,
+    py: 1,
+    mt: -1,
     flexShrink: 0,
     overflow: "hidden",
     textOverflow: "ellipsis",
   },
   frosted: {
-    opacity: 0.6,
+    px: 2,
+    py: 0,
+    mt: 1,
+    opacity: 0.8,
     borderRadius: "sm",
     backdropFilter: "blur(24px)",
     bg: "whiteAlpha.200",
