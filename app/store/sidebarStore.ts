@@ -36,6 +36,11 @@ interface SidebarState {
   apiStatus: "Idle" | "OK" | "Error";
   isChatFullSize: boolean;
   setChatFullSize: (value: boolean) => void;
+  // [PROTOTYPE] Tracks whether the floating compact panel is at its default
+  // bottom-left position (x=0, y=0). MapAreaControls reads this to shift the
+  // zoom/basemap controls to the left when the panel has been dragged away.
+  isChatPanelAtHome: boolean;
+  setChatPanelAtHome: (value: boolean) => void;
 }
 
 const computeThreadGroups = (data: ThreadEntry[]): ThreadGroups => {
@@ -72,6 +77,8 @@ const useSidebarStore = create<SidebarState>((set, get) => ({
   apiStatus: "Idle",
   isChatFullSize: false,
   setChatFullSize: (value) => set({ isChatFullSize: value }),
+  isChatPanelAtHome: true,
+  setChatPanelAtHome: (value) => set({ isChatPanelAtHome: value }),
   toggleSidebar: () =>
     set((state) => ({ sideBarVisible: !state.sideBarVisible })),
 

@@ -1,11 +1,6 @@
 "use client";
 import "maplibre-gl/dist/maplibre-gl.css";
-import MapGl, {
-  Layer,
-  Source,
-  AttributionControl,
-  MapRef,
-} from "react-map-gl/maplibre";
+import MapGl, { Layer, Source, MapRef } from "react-map-gl/maplibre";
 import { useState, useRef, useEffect } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
@@ -13,7 +8,6 @@ import {
   Code,
   Box,
   Button,
-  useBreakpointValue,
   Flex,
   Link as ChLink,
   Spinner,
@@ -41,7 +35,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
   const [showLegend, setShowLegend] = useState(false);
-  const isMobile = useBreakpointValue({ base: true, md: false });
   const [basemapTiles, setBasemapTiles] = useState(
     "devseed/cmazl5ws500bz01scaa27dqi4"
   );
@@ -182,7 +175,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           position="absolute"
           top={4}
           right={3}
-          bottom={{ base: "4.5rem", md: 12 }}
+          bottom={{ base: "4.5rem", md: 7 }}
           zIndex={400}
           w="420px"
           flexDirection="column"
@@ -229,26 +222,17 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         <AbsoluteCenter fontSize="sm" opacity={0.375} hideBelow="md">
           <PlusIcon />
         </AbsoluteCenter>
-        <AttributionControl
-          customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
-          position="bottom-right"
-          compact={isMobile ? true : false}
-          style={{
-            background: "transparent",
-            fontSize: "0.675rem",
-            color: "gray",
-          }}
-        />
-
         <Flex
           pos="absolute"
-          bottom="4"
+          bottom="0"
           right="3"
-          p="2"
-          fontSize="xs"
+          px="2"
+          py="1"
+          fontSize="0.675rem"
+          color="gray"
           bg="transparent"
           hideBelow="md"
-          alignItems="baseline"
+          alignItems="center"
           gap={2}
         >
           <ChLink
@@ -296,6 +280,17 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           >
             lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
           </Code>
+          <Box as="span" ml={2}>
+            Background tiles: ©{" "}
+            <ChLink
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener noreferrer"
+              color="inherit"
+            >
+              OpenStreetMap contributors
+            </ChLink>
+          </Box>
         </Flex>
       </MapGl>
     </Box>
