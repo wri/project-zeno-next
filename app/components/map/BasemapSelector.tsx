@@ -23,7 +23,8 @@ const basemapOptions: BasemapOption[] = [
     tileUrl: "devseed/cmazl5ws500bz01scaa27dqi4",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/static/0,0,0,0,0/200x200@2x?access_token=" +
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN + "&attribution=false&logo=false",
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN +
+      "&attribution=false&logo=false",
   },
   {
     id: "satellite",
