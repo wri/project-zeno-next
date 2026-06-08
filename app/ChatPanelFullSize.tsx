@@ -70,8 +70,9 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
 
       {/* Disclaimer — compact single-line at bottom */}
       <Box
-        px={3}
-        py={1}
+        px={2}
+        py={0}
+        mt={1}
         fontSize="10px"
         lineHeight="20px"
         color="#131619"
@@ -81,7 +82,7 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
         overflow="hidden"
         textOverflow="ellipsis"
       >
-        AI makes mistakes. Verify outputs and do not share any sensitive or
+        AI makes mistakes. Verify outputs and do not share sensitive or
         personal information.
       </Box>
     </Flex>

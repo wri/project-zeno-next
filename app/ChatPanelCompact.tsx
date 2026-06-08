@@ -181,7 +181,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
       <Box
         px={2}
         py={0}
-        mt={2}
+        mt={1}
         borderRadius="sm"
         backdropFilter="blur(24px)"
         bg="whiteAlpha.200"
