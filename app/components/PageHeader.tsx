@@ -54,8 +54,8 @@ function PageHeader() {
     ? currentThread.name
     : "New Conversation";
 
-  const inverseColor = isPrototype ? "#1f2937" : "#3A4048";
-  const inverseHoverBg = isPrototype ? "#6b7280" : "#F0F1F2";
+  const inverseColor = isPrototype ? "#1f2937" : "neutral.600";
+  const inverseHoverBg = isPrototype ? "#6b7280" : "neutral.200";
   const focusRing = {
     outline: "2px solid",
     outlineColor: inverseColor,
