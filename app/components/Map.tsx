@@ -119,10 +119,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       <MapGl
         ref={mapRef}
         style={{ width: "100%", height: "100%" }}
+        minZoom={2}
         initialViewState={{
-          longitude: 0,
-          latitude: 0,
-          zoom: 0,
+          longitude: -10,
+          latitude: 15,
+          zoom: 2,
         }}
         onLoad={onMapLoad}
         onMove={onMapMove}
