@@ -15,6 +15,7 @@ import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
+import WhatsNewModal from "@/app/components/WhatsNewModal";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import { useSearchParams } from "next/navigation";
@@ -161,6 +162,7 @@ export default function DashboardLayout({
       bg="bg"
     >
       <UploadAreaDialog />
+      <WhatsNewModal />
 
       {!isMobile && <PageHeader />}
       {isMobile ? MobileLayout : DesktopLayout}
