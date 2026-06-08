@@ -6,8 +6,8 @@ import {
 } from "@phosphor-icons/react";
 
 export const ChatContextOptions = {
-  layer: { icon: <StackSimpleIcon />, label: "Open data catalog" },
-  area: { icon: <PolygonIcon />, label: "Open area tools" },
+  layer: { icon: <StackSimpleIcon />, label: "Data catalog" },
+  area: { icon: <PolygonIcon />, label: "Area tools" },
   date: { icon: <CalendarBlankIcon />, label: "Date" },
 } as const;
 
@@ -28,8 +28,9 @@ function ContextButton({ contextType = "area", ...props }: ContextButtonProps) {
       px="2"
       h="8"
       gap="1"
-      fontSize="sm"
+      fontSize="xs"
       fontWeight="normal"
+      aria-label={ChatContextOptions[contextType].label}
       {...props}
     >
       {ChatContextOptions[contextType].icon}
