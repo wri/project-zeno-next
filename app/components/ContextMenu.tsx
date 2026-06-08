@@ -104,16 +104,20 @@ function LayerCardList({
           (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
         );
         return (
-          <DatasetCard
-            key={card.dataset_name}
-            dataset={card as unknown as DatasetInfo}
-            img={card.img ?? "/globe.svg"}
-            selected={isSelected}
-            onClick={() => handleToggle(card)}
-            {...(card.viewOnly
-              ? { label: "VIEW ONLY", labelColor: "#656E7B" }
-              : {})}
-          />
+          // flexShrink={0} pins the card height in the scrollable list so the
+          // 80px thumbnail stays square instead of being squished on overflow.
+          // No type label in the context menu — everything here is a layer,
+          // except view-only layers which keep their "VIEW ONLY" badge.
+          <Box key={card.dataset_name} flexShrink={0}>
+            <DatasetCard
+              dataset={card as unknown as DatasetInfo}
+              img={card.img ?? "/globe.svg"}
+              selected={isSelected}
+              onClick={() => handleToggle(card)}
+              label={card.viewOnly ? "VIEW ONLY" : ""}
+              {...(card.viewOnly ? { labelColor: "#656E7B" } : {})}
+            />
+          </Box>
         );
       })}
     </Stack>
