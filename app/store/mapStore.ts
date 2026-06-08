@@ -64,8 +64,8 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     if (mapRef) {
       const map = mapRef.getMap();
       map.flyTo({
-        center: [0, 0],
-        zoom: 0,
+        center: [15, -10],
+        zoom: 2,
       });
     }
   },
