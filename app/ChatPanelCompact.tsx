@@ -176,23 +176,23 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
           />
         </Flex>
       </Flex>
-      {/* Frosted-glass disclaimer — 16px below cards 
+      {/* Frosted-glass disclaimer — sits just below the input card
         // TODO: use chakra styles and theming for this */}
       <Box
         px={2}
-        py={1}
-        mt={4}
+        py={0}
+        mt={2}
         borderRadius="sm"
         backdropFilter="blur(24px)"
         bg="whiteAlpha.200"
         fontSize="10px"
         lineHeight="20px"
         color="#131619"
-        opacity={0.5}
+        opacity={0.6}
         whiteSpace="nowrap"
       >
-        AI makes mistakes. Verify outputs and do not share any sensitive or
-        personal information.
+        AI makes mistakes. Verify outputs and do not share sensitive or personal
+        information.
       </Box>
     </Flex>
   );
