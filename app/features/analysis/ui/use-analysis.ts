@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnalysisService } from "../application/analysis-service";
 import type { AnalysisSelection } from "../domain/analysis-selection";
 import type { AnalysisResult } from "../domain/analysis-result";
@@ -22,11 +22,18 @@ export interface UseAnalysis {
   result: AnalysisResult | null;
   error: Error | null;
   run: (selection: AnalysisSelection) => void;
+  /** Aborts an in-flight analysis and resets status to "idle". No-op when idle. */
+  cancel: () => void;
 }
 
 /**
  * Driving adapter: binds the analysis use-case to React. The service is
  * injected (composition root passes the real one; tests pass a fake).
+ *
+ * Cancellation: each call to `run` creates a fresh `AbortController`. The
+ * previous controller (if any) is aborted before the new one is wired up,
+ * preventing concurrent analyses. `cancel()` aborts the current controller
+ * and resets state to idle. The controller is also aborted on unmount.
  */
 export function useAnalysis(
   service: AnalysisService = defaultService
@@ -34,12 +41,35 @@ export function useAnalysis(
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight analysis when the component unmounts.
+  useEffect(() => {
+    return () => {
+      controllerRef.current?.abort();
+    };
+  }, []);
+
+  const cancel = useCallback(() => {
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+    setStatus("idle");
+    setResult(null);
+    setError(null);
+  }, []);
 
   const run = useCallback(
     (selection: AnalysisSelection) => {
+      // Abort any previous in-flight analysis before starting a new one.
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+
       setStatus("running");
+      setResult(null);
       setError(null);
-      service.run(selection).then(
+
+      service.run(selection, controller.signal).then(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
@@ -55,6 +85,12 @@ export function useAnalysis(
           }
         },
         (cause: unknown) => {
+          // An AbortError means the user cancelled or the component unmounted —
+          // not a failure. Silently return to idle so the UI stays clean.
+          if (cause instanceof Error && cause.name === "AbortError") {
+            setStatus("idle");
+            return;
+          }
           setError(cause instanceof Error ? cause : new Error(String(cause)));
           setStatus("error");
         }
@@ -63,5 +99,5 @@ export function useAnalysis(
     [service]
   );
 
-  return { status, result, error, run };
+  return { status, result, error, run, cancel };
 }

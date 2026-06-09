@@ -36,11 +36,11 @@ export type PollOutcome =
  */
 export interface AnalysisGateway {
   /** Submits an analysis job and returns its opaque identifier. */
-  submit(selection: AnalysisSelection): Promise<JobRef>;
+  submit(selection: AnalysisSelection, signal?: AbortSignal): Promise<JobRef>;
 
   /** Checks the current status of a previously submitted job. */
-  poll(jobId: string): Promise<PollOutcome>;
+  poll(jobId: string, signal?: AbortSignal): Promise<PollOutcome>;
 
   /** Retrieves the completed analysis result at the given resource reference. */
-  fetchResult(resourceUrl: string): Promise<AnalysisResult>;
+  fetchResult(resourceUrl: string, signal?: AbortSignal): Promise<AnalysisResult>;
 }
