@@ -23,8 +23,8 @@ export function AnalysisCTA() {
     run({
       area: selection,
       dataset: { id: 4 },
-      startDate: "2020-01-01",
-      endDate: "2022-12-31",
+      startDate: "2001-01-01",
+      endDate: "2025-12-31",
     });
   };
 
