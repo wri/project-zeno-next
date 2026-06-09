@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
 import {
@@ -48,6 +49,11 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
+
+  // Evaluate the flag once at render time so event handlers don't read
+  // window.location directly and the value is stable within a render cycle.
+  const searchParams = useSearchParams();
+  const analysisEnabled = isFeatureEnabled(searchParams, "analysis");
 
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
@@ -207,12 +213,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 metadata
               );
               setAnalysis(areaSelection);
-              if (
-                isFeatureEnabled(
-                  new URLSearchParams(window.location.search),
-                  "analysis"
-                )
-              ) {
+              if (analysisEnabled) {
                 selectArea(areaSelection, {
                   lng: e.lngLat.lng,
                   lat: e.lngLat.lat,
@@ -257,6 +258,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     url,
     setAnalysis,
     selectArea,
+    analysisEnabled,
   ]);
 
   return (
