@@ -1,5 +1,6 @@
 import { AnalysisParams } from "@/app/types/chat";
 import { ParamChipColorScheme } from "@/app/components/ui/ParamChip";
+import { shortDatasetName } from "@/app/constants/datasets";
 
 export interface ParamChipData {
   label: string;
@@ -17,9 +18,13 @@ export function buildChips(params: AnalysisParams): ParamChipData[] {
     }
   }
 
-  // Dataset chip
+  // Dataset chip — use the short label where one is defined for the dataset
   if (params.dataset) {
-    chips.push({ label: "DATA", value: params.dataset, colorScheme: "green" });
+    chips.push({
+      label: "DATA",
+      value: shortDatasetName(params.dataset),
+      colorScheme: "green",
+    });
   }
 
   // Canopy threshold chip (only if present — omit for non-tree-cover datasets)
