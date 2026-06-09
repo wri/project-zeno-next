@@ -25,13 +25,13 @@ export class LROAnalysisService implements AnalysisService {
     private readonly timeoutSecs: number = DEFAULT_TIMEOUT_SECS
   ) {}
 
-  async run(selection: AnalysisSelection): Promise<AnalysisResult> {
-    const job = await this.gateway.submit(selection);
+  async run(selection: AnalysisSelection, signal?: AbortSignal): Promise<AnalysisResult> {
+    const job = await this.gateway.submit(selection, signal);
     let waitedSecs = 0;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const outcome = await this.gateway.poll(job.id);
+      const outcome = await this.gateway.poll(job.id, signal);
 
       if (outcome.status === "completed") {
         if (outcome.resources.length === 0) {
@@ -40,7 +40,8 @@ export class LROAnalysisService implements AnalysisService {
 
         // Multiple-resource jobs are not yet supported — take the first.
         const result = await this.gateway.fetchResult(
-          outcome.resources[0].resourceUrl
+          outcome.resources[0].resourceUrl,
+          signal
         );
 
         // Enrich with provenance from the selection (the gateway doesn't have
@@ -64,7 +65,7 @@ export class LROAnalysisService implements AnalysisService {
         );
       }
 
-      await this.clock.wait(outcome.retryAfterSecs);
+      await this.clock.wait(outcome.retryAfterSecs, signal);
     }
   }
 }

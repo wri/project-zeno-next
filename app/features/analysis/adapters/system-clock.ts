@@ -5,7 +5,21 @@ import type { Clock } from "../application/clock";
  * should inject a faster alternative (e.g. a no-op or fake-timer version).
  */
 export class SystemClock implements Clock {
-  wait(secs: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, secs * 1000));
+  wait(secs: number, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new DOMException("Aborted", "AbortError"));
+        return;
+      }
+      const id = setTimeout(resolve, secs * 1000);
+      signal?.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(id);
+          reject(new DOMException("Aborted", "AbortError"));
+        },
+        { once: true }
+      );
+    });
   }
 }

@@ -168,7 +168,10 @@ describe("RestAnalysisGateway.poll", () => {
 
     await gateway.poll(JOB_ID);
 
-    expect(fetch).toHaveBeenCalledWith(`/api/jobs/${JOB_ID}`);
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/jobs/${JOB_ID}`,
+      expect.objectContaining({})
+    );
   });
 
   it("throws when the backend returns a non-2xx status", async () => {
@@ -268,7 +271,10 @@ describe("RestAnalysisGateway.fetchResult", () => {
 
     await gateway.fetchResult(RESOURCE_URL);
 
-    expect(fetch).toHaveBeenCalledWith(RESOURCE_URL);
+    expect(fetch).toHaveBeenCalledWith(
+      RESOURCE_URL,
+      expect.objectContaining({})
+    );
   });
 
   it("throws when the backend returns a non-2xx status", async () => {

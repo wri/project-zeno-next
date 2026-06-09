@@ -13,7 +13,7 @@ export function AnalysisCTA() {
   const selection = useSelectionStore((state) => state.selection);
   const lngLat = useSelectionStore((state) => state.lngLat);
   const clear = useSelectionStore((state) => state.clear);
-  const { status, error, run } = useAnalysis();
+  const { status, error, run, cancel } = useAnalysis();
 
   if (!selection || !lngLat) return null;
 
@@ -41,6 +41,7 @@ export function AnalysisCTA() {
         status={status}
         error={error}
         onAnalyze={handleAnalyze}
+        onCancel={cancel}
       />
     </Popup>
   );

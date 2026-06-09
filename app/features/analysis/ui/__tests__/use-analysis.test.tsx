@@ -33,7 +33,7 @@ describe("useAnalysis", () => {
 
     await waitFor(() => expect(result.current.status).toBe("done"));
     expect(result.current.result).toMatchObject({ id: "analysis-1" });
-    expect(service.run).toHaveBeenCalledWith(selection);
+    expect(service.run).toHaveBeenCalledWith(selection, expect.any(AbortSignal));
   });
 
   it("surfaces an error when the analysis fails", async () => {
@@ -50,6 +50,68 @@ describe("useAnalysis", () => {
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.error).toBe(boom);
     expect(result.current.result).toBeNull();
+  });
+
+  it("resets result to null when run is called a second time", async () => {
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({ id: "analysis-1", charts: [] }),
+    };
+    const { result } = renderHook(() => useAnalysis(service));
+
+    act(() => {
+      result.current.run(selection);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+    expect(result.current.result).not.toBeNull();
+
+    // Second run should clear the previous result while running.
+    act(() => {
+      result.current.run(selection);
+    });
+
+    expect(result.current.result).toBeNull();
+    expect(result.current.status).toBe("running");
+  });
+
+  it("returns to idle and clears error when cancel is called during a run", async () => {
+    let rejectRun!: (reason: unknown) => void;
+    const service: AnalysisService = {
+      run: vi.fn().mockReturnValue(
+        new Promise<never>((_, reject) => {
+          rejectRun = reject;
+        })
+      ),
+    };
+    const { result } = renderHook(() => useAnalysis(service));
+
+    act(() => {
+      result.current.run(selection);
+    });
+
+    expect(result.current.status).toBe("running");
+
+    act(() => {
+      result.current.cancel();
+      // Simulate the service honouring the abort signal.
+      rejectRun(new DOMException("Aborted", "AbortError"));
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("idle"));
+    expect(result.current.error).toBeNull();
+    expect(result.current.result).toBeNull();
+  });
+
+  it("cancel is a no-op when idle", () => {
+    const service: AnalysisService = { run: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service));
+
+    // Should not throw.
+    act(() => {
+      result.current.cancel();
+    });
+
+    expect(result.current.status).toBe("idle");
   });
 
   it("initialises idle when no service is injected (composition root wires without error)", () => {

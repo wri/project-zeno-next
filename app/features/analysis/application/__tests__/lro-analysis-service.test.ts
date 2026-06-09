@@ -55,8 +55,8 @@ describe("LROAnalysisService", () => {
 
     const result = await service.run(SELECTION);
 
-    expect(gateway.submit).toHaveBeenCalledWith(SELECTION);
-    expect(gateway.fetchResult).toHaveBeenCalledWith(RESOURCE_URL);
+    expect(gateway.submit).toHaveBeenCalledWith(SELECTION, undefined);
+    expect(gateway.fetchResult).toHaveBeenCalledWith(RESOURCE_URL, undefined);
     expect(result.id).toBe("insight-456");
   });
 
@@ -67,7 +67,7 @@ describe("LROAnalysisService", () => {
     await service.run(SELECTION);
 
     expect(gateway.poll).toHaveBeenCalledTimes(1);
-    expect(gateway.poll).toHaveBeenCalledWith(JOB_ID);
+    expect(gateway.poll).toHaveBeenCalledWith(JOB_ID, undefined);
   });
 
   it("waits and retries when the job is pending", async () => {
@@ -87,7 +87,7 @@ describe("LROAnalysisService", () => {
     await service.run(SELECTION);
 
     expect(gateway.poll).toHaveBeenCalledTimes(2);
-    expect(waitSpy).toHaveBeenCalledWith(5);
+    expect(waitSpy).toHaveBeenCalledWith(5, undefined);
   });
 
   it("waits and retries when the job is running", async () => {
@@ -109,7 +109,7 @@ describe("LROAnalysisService", () => {
 
     expect(gateway.poll).toHaveBeenCalledTimes(3);
     expect(waitSpy).toHaveBeenCalledTimes(2);
-    expect(waitSpy).toHaveBeenCalledWith(3);
+    expect(waitSpy).toHaveBeenCalledWith(3, undefined);
   });
 
   it("does not call clock.wait when the job completes on the first poll", async () => {
@@ -201,6 +201,60 @@ describe("LROAnalysisService", () => {
     await expect(service.run(SELECTION)).rejects.toThrow(/10 s/);
     expect(gateway.poll).toHaveBeenCalledTimes(1);
     expect(waitSpy).not.toHaveBeenCalled();
+  });
+
+  it("aborts during clock.wait and throws AbortError", async () => {
+    const controller = new AbortController();
+    // A clock that registers the abort listener first, then triggers the abort,
+    // ensuring the event fires and the promise rejects with AbortError.
+    const abortingClock: Clock = {
+      wait(_secs, signal) {
+        return new Promise<void>((_, reject) => {
+          if (signal?.aborted) {
+            reject(new DOMException("Aborted", "AbortError"));
+            return;
+          }
+          signal?.addEventListener(
+            "abort",
+            () => reject(new DOMException("Aborted", "AbortError")),
+            { once: true }
+          );
+          // Abort after the listener is in place.
+          controller.abort();
+        });
+      },
+    };
+    const gateway = makeGateway({
+      poll: vi
+        .fn()
+        .mockResolvedValue({ status: "pending", retryAfterSecs: 5 }),
+    });
+    const service = new LROAnalysisService(gateway, abortingClock);
+
+    const err = await service
+      .run(SELECTION, controller.signal)
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DOMException);
+    expect((err as DOMException).name).toBe("AbortError");
+  });
+
+  it("aborts during gateway.poll and throws AbortError", async () => {
+    const controller = new AbortController();
+    const gateway = makeGateway({
+      poll: vi.fn().mockImplementation(() => {
+        controller.abort();
+        return Promise.reject(new DOMException("Aborted", "AbortError"));
+      }),
+    });
+    const service = new LROAnalysisService(gateway, new NoopClock());
+
+    const err = await service
+      .run(SELECTION, controller.signal)
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(DOMException);
+    expect((err as DOMException).name).toBe("AbortError");
   });
 
   it("succeeds when the job completes before the timeout budget is exhausted", async () => {

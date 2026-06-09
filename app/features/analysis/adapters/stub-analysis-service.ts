@@ -12,8 +12,22 @@ export class StubAnalysisService implements AnalysisService {
   // in the browser. Tests pass 0 (or use fake timers) to stay fast.
   constructor(private readonly delayMs: number = 1000) {}
 
-  async run(selection: AnalysisSelection): Promise<AnalysisResult> {
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+  async run(selection: AnalysisSelection, signal?: AbortSignal): Promise<AnalysisResult> {
+    await new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) {
+        reject(new DOMException("Aborted", "AbortError"));
+        return;
+      }
+      const id = setTimeout(resolve, this.delayMs);
+      signal?.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(id);
+          reject(new DOMException("Aborted", "AbortError"));
+        },
+        { once: true }
+      );
+    });
     const { area } = selection;
     return {
       id: `stub:${area.source}:${area.srcId ?? area.name}`,

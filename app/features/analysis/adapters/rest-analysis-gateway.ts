@@ -59,7 +59,7 @@ const DEFAULT_RETRY_AFTER_SECS = 5;
 export class RestAnalysisGateway implements AnalysisGateway {
   constructor(private readonly fetch: FetchFn = apiFetch) {}
 
-  async submit(selection: AnalysisSelection): Promise<JobRef> {
+  async submit(selection: AnalysisSelection, signal?: AbortSignal): Promise<JobRef> {
     const response = await this.fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -75,6 +75,7 @@ export class RestAnalysisGateway implements AnalysisGateway {
         start_date: selection.startDate,
         end_date: selection.endDate,
       }),
+      signal,
     });
 
     if (!response.ok) {
@@ -106,8 +107,8 @@ export class RestAnalysisGateway implements AnalysisGateway {
     return { id: body.id };
   }
 
-  async poll(jobId: string): Promise<PollOutcome> {
-    const response = await this.fetch(`/api/jobs/${jobId}`);
+  async poll(jobId: string, signal?: AbortSignal): Promise<PollOutcome> {
+    const response = await this.fetch(`/api/jobs/${jobId}`, { signal });
 
     if (!response.ok) {
       let responseBody: unknown;
@@ -158,8 +159,8 @@ export class RestAnalysisGateway implements AnalysisGateway {
     return { status: body.status, retryAfterSecs };
   }
 
-  async fetchResult(resourceUrl: string): Promise<AnalysisResult> {
-    const response = await this.fetch(resourceUrl);
+  async fetchResult(resourceUrl: string, signal?: AbortSignal): Promise<AnalysisResult> {
+    const response = await this.fetch(resourceUrl, { signal });
 
     if (!response.ok) {
       let responseBody: unknown;
