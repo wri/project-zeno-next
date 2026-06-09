@@ -63,7 +63,7 @@ export function ParamChip({
   bg,
   onRemove,
   removeLabel,
-  maxValueWidth = "20ch",
+  maxValueWidth = "15ch",
   tooltip,
 }: ParamChipProps) {
   const labelColor = LABEL_COLOR[colorScheme];
