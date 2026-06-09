@@ -68,7 +68,9 @@ describe("RestAnalysisGateway.submit", () => {
     const fetch = mockFetch({ detail: "Bad request" }, { status: 422 });
     const gateway = new RestAnalysisGateway(fetch);
 
-    await expect(gateway.submit(SELECTION)).rejects.toThrow("422");
+    await expect(gateway.submit(SELECTION)).rejects.toMatchObject({
+      status: 422,
+    });
   });
 });
 
@@ -173,7 +175,7 @@ describe("RestAnalysisGateway.poll", () => {
     const fetch = mockFetch({ detail: "Not found" }, { status: 404 });
     const gateway = new RestAnalysisGateway(fetch);
 
-    await expect(gateway.poll(JOB_ID)).rejects.toThrow("404");
+    await expect(gateway.poll(JOB_ID)).rejects.toMatchObject({ status: 404 });
   });
 });
 
@@ -273,6 +275,8 @@ describe("RestAnalysisGateway.fetchResult", () => {
     const fetch = mockFetch({ detail: "Not found" }, { status: 404 });
     const gateway = new RestAnalysisGateway(fetch);
 
-    await expect(gateway.fetchResult(RESOURCE_URL)).rejects.toThrow("404");
+    await expect(gateway.fetchResult(RESOURCE_URL)).rejects.toMatchObject({
+      status: 404,
+    });
   });
 });
