@@ -1,17 +1,19 @@
 "use client";
 
-import { Flex, Box, Text, Link as ChLink } from "@chakra-ui/react";
-import Link from "next/link";
+import { Flex, Box } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
-import ChatStatusInfo from "./components/ChatStatusInfo";
 import ChatPanelHeader from "./ChatPanelHeader";
-import useAuthStore from "./store/authStore";
+import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
+import PromptQuotaNotice from "./PromptQuotaNotice";
+import { chatPanelCardStyle } from "./chatPanelShared";
+import { usePromptQuota } from "./hooks/usePromptQuota";
 import useChatStore from "./store/chatStore";
 import { useState, useEffect, useRef, useCallback } from "react";
 
+// Intentionally narrower than the full-size panel (see FULLSIZE_PANEL_WIDTH).
 const PANEL_WIDTH = 400;
 
 // Cap the scrollable message list at ~50vh per design (~440px on a 900px-tall
@@ -24,11 +26,7 @@ const DISCLAIMER_CLEARANCE = 12; // px of breathing room below the disclaimer
 
 const cardStyle = {
   w: { base: "full", md: `${PANEL_WIDTH}px` } as const,
-  bg: "bg",
-  borderRadius: { base: 0, md: "sm" } as const,
-  borderWidth: { base: 0, md: "1px" } as const,
-  borderColor: "border.emphasized",
-  overflow: "hidden",
+  ...chatPanelCardStyle,
 };
 
 interface ChatPanelCompactProps {
@@ -36,8 +34,7 @@ interface ChatPanelCompactProps {
 }
 
 function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
-  const { usedPrompts, totalPrompts } = useAuthStore();
-  const promptsExhausted = usedPrompts >= totalPrompts;
+  const { promptsExhausted } = usePromptQuota();
   const { messages } = useChatStore();
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
@@ -152,48 +149,15 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
           boxShadow="none"
           overflow="hidden"
         >
-          {promptsExhausted && (
-            <Box px={3} pt={3}>
-              <ChatStatusInfo type="error">
-                <Text>
-                  <strong>
-                    You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}
-                    prompts.
-                  </strong>
-                  <br />
-                  Wait until tomorrow for new prompts, or{" "}
-                  <ChLink as={Link} href="/app/classic">
-                    continue without AI
-                  </ChLink>
-                  .
-                </Text>
-              </ChatStatusInfo>
-            </Box>
-          )}
+          <PromptQuotaNotice px={3} pt={3} />
           <ChatInput
             isChatDisabled={promptsExhausted}
             onAfterSend={isCollapsed ? () => setIsCollapsed(false) : undefined}
           />
         </Flex>
       </Flex>
-      {/* Frosted-glass disclaimer — sits just below the input card
-        // TODO: use chakra styles and theming for this */}
-      <Box
-        px={2}
-        py={0}
-        mt={2}
-        borderRadius="sm"
-        backdropFilter="blur(24px)"
-        bg="whiteAlpha.200"
-        fontSize="10px"
-        lineHeight="20px"
-        color="#131619"
-        opacity={0.6}
-        whiteSpace="nowrap"
-      >
-        AI makes mistakes. Verify outputs and do not share sensitive or personal
-        information.
-      </Box>
+      {/* Frosted-glass disclaimer — sits just below the input card */}
+      <ChatPanelDisclaimer variant="frosted" />
     </Flex>
   );
 }
