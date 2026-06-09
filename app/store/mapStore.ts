@@ -5,6 +5,10 @@ import center from "@turf/center";
 import { LayerId } from "../types/map";
 import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
+import {
+  SelectAnalysisSlice,
+  createSelectAnalysisSlice,
+} from "./selectAnalysisSlice";
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
 import {
@@ -42,7 +46,8 @@ interface MapSlice {
 export type MapState = MapSlice &
   DrawAreaSlice &
   UploadAreaSlice &
-  LayerManagerSlice;
+  LayerManagerSlice &
+  SelectAnalysisSlice;
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   set,
@@ -202,6 +207,7 @@ const useMapStore = create<MapState>()((...a) => ({
   ...createDrawAreaSlice(...a),
   ...createUploadAreaSlice(...a),
   ...createLayerManagerSlice(...a),
+  ...createSelectAnalysisSlice(...a),
 }));
 
 export default useMapStore;
