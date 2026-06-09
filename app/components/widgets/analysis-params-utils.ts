@@ -9,15 +9,22 @@ export interface ParamChipData {
   colorScheme: ParamChipColorScheme;
   /** Full text for the hover tooltip when `value` is an abbreviation. */
   tooltip?: string;
+  /** Render the value in the label colour too (AREA chips). */
+  highlightValue?: boolean;
 }
 
 export function buildChips(params: AnalysisParams): ParamChipData[] {
   const chips: ParamChipData[] = [];
 
-  // Area chips — one per AOI
+  // Area chips — one per AOI (value coloured like the label)
   if (params.areas?.length) {
     for (const area of params.areas) {
-      chips.push({ label: "AREA", value: area, colorScheme: "blue" });
+      chips.push({
+        label: "AREA",
+        value: area,
+        colorScheme: "blue",
+        highlightValue: true,
+      });
     }
   }
 

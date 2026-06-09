@@ -484,13 +484,12 @@ export const DATASET_BY_ID: Record<number, DatasetInfo> = Object.fromEntries(
 // Full dataset_name -> short label, for the datasets that define one. Keyed by
 // name (not id) because the only handle available at chip-build time is the
 // name string (dataset.dataset_name or a layer's layerName).
-export const DATASET_SHORTNAME_BY_NAME: Record<string, string> =
-  Object.fromEntries(
-    DATASET_CARDS.filter((c) => c.shortName).map((c) => [
-      c.dataset_name,
-      c.shortName as string,
-    ])
-  );
+const DATASET_SHORTNAME_BY_NAME: Record<string, string> = Object.fromEntries(
+  DATASET_CARDS.filter((c) => c.shortName).map((c) => [
+    c.dataset_name,
+    c.shortName as string,
+  ])
+);
 
 /**
  * Returns the short label for a dataset name when one is defined, otherwise the

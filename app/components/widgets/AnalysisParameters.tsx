@@ -43,7 +43,7 @@ export function AnalysisParamsChips({ chips }: { chips: ParamChipData[] }) {
           label={chip.label}
           value={chip.value}
           colorScheme={chip.colorScheme}
-          highlightValue={chip.label === "AREA"}
+          highlightValue={chip.highlightValue}
           tooltip={chip.tooltip}
         />
       ))}

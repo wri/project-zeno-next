@@ -17,6 +17,10 @@ const LABEL_COLOR: Record<ParamChipColorScheme, string> = {
   purple: "purple.500",
 };
 
+// Matches a `ch`-unit width (e.g. "15ch") so it doubles as a char-count
+// truncation threshold. Module-scoped so it isn't recompiled per render.
+const CH_UNIT_PATTERN = /^(\d+(?:\.\d+)?)ch$/;
+
 export interface ParamChipProps {
   label: string;
   value: string;
@@ -35,7 +39,7 @@ export interface ParamChipProps {
   /**
    * Maximum width of the value text before it truncates with an ellipsis.
    * Long AOI/dataset names would otherwise blow the chip out. Defaults to
-   * "20ch". A `ch` value also sets the truncation threshold for the tooltip
+   * "15ch". A `ch` value also sets the truncation threshold for the tooltip
    * (mono font ⇒ 1 char ≈ 1ch).
    */
   maxValueWidth?: string;
@@ -72,7 +76,7 @@ export function ParamChip({
   // Only tooltip when it reveals something not already visible: a distinct
   // full text, or a value wide enough to be truncated. For a `ch` maxWidth and
   // this mono font, 1 char ≈ 1ch, so a char-count threshold is accurate.
-  const chMatch = /^(\d+(?:\.\d+)?)ch$/.exec(maxValueWidth);
+  const chMatch = CH_UNIT_PATTERN.exec(maxValueWidth);
   const maxChars = chMatch ? parseFloat(chMatch[1]) : Infinity;
   const showTooltip = tooltipText !== value || value.length > maxChars;
 

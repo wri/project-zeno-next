@@ -11,16 +11,14 @@ export interface YearParam {
   value: string;
 }
 
-/** Extract a 4-digit year from a year number or a date-ish string. */
+/** Extract a 4-digit year from a year number or an ISO date string. */
 function toYear(value: number | string): number | null {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : null;
   }
-  // ISO dates start "YYYY-…"; use that prefix directly, else fall back to Date.
+  // Callers pass either year numbers or ISO dates ("YYYY-…"); read the prefix.
   const prefix = value.slice(0, 4);
-  if (/^\d{4}$/.test(prefix)) return Number(prefix);
-  const year = new Date(value).getUTCFullYear();
-  return Number.isNaN(year) ? null : year;
+  return /^\d{4}$/.test(prefix) ? Number(prefix) : null;
 }
 
 /**
