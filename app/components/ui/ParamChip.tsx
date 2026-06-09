@@ -31,6 +31,12 @@ export interface ParamChipProps {
   onRemove?: () => void;
   /** Accessible label for the remove button; defaults to `Remove {value}`. */
   removeLabel?: string;
+  /**
+   * Maximum width of the value text before it truncates with an ellipsis.
+   * Long AOI/dataset names would otherwise blow the chip out; the full value
+   * stays available via the native title tooltip. Defaults to "20ch".
+   */
+  maxValueWidth?: string;
 }
 
 /**
@@ -47,6 +53,7 @@ export function ParamChip({
   bg,
   onRemove,
   removeLabel,
+  maxValueWidth = "20ch",
 }: ParamChipProps) {
   const labelColor = LABEL_COLOR[colorScheme];
   return (
@@ -78,6 +85,9 @@ export function ParamChip({
         fontWeight="500"
         lineHeight="16px"
         color={highlightValue ? labelColor : "fg"}
+        maxW={maxValueWidth}
+        truncate
+        title={value}
       >
         {value}
       </Text>
