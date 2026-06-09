@@ -40,6 +40,23 @@ export interface Layer {
   vectorStyle?: VectorStyleSpec;
 }
 
+// The two MVT renderers partition vector layers by whether they carry a
+// data-driven `vectorStyle`. Mutually exclusive by construction:
+//  - styled vectors → VectorDataLayers   (context/dataset fills)
+//  - AOI vectors    → AoiVectorTileLayers (boundary selection styling)
+export const isStyledVectorLayer = (
+  l: Layer
+): l is Layer & {
+  tileUrl: string;
+  sourceLayer: string;
+  vectorStyle: VectorStyleSpec;
+} => l.type === "vector" && !!l.tileUrl && !!l.sourceLayer && !!l.vectorStyle;
+
+export const isAoiVectorLayer = (
+  l: Layer
+): l is Layer & { tileUrl: string; sourceLayer: string } =>
+  l.type === "vector" && !!l.tileUrl && !!l.sourceLayer && !l.vectorStyle;
+
 export interface LayerManagerSlice {
   layers: Layer[];
   geoJsonRegistry: GeoJsonEntry[];

@@ -1,15 +1,9 @@
 import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 import useMapStore from "@/app/store/mapStore";
-import type { Layer as ManagedLayer } from "@/app/store/layerManagerSlice";
+import { isStyledVectorLayer } from "@/app/store/layerManagerSlice";
 import type { VectorStyleSpec } from "@/app/constants/datasets";
 import { layerId, RASTER_TOP_SENTINEL_ID } from "./DynamicTileLayers";
-
-type StyledVectorLayer = ManagedLayer & {
-  tileUrl: string;
-  sourceLayer: string;
-  vectorStyle: VectorStyleSpec;
-};
 
 /**
  * Builds a MapLibre data-driven `match` expression from a VectorStyleSpec.
@@ -48,14 +42,7 @@ function VectorDataLayers() {
   const allLayers = useMapStore((s) => s.layers);
 
   const styledVectorLayers = useMemo(
-    () =>
-      allLayers.filter(
-        (l): l is StyledVectorLayer =>
-          l.type === "vector" &&
-          !!l.tileUrl &&
-          !!l.sourceLayer &&
-          !!l.vectorStyle
-      ),
+    () => allLayers.filter(isStyledVectorLayer),
     [allLayers]
   );
 

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 import useMapStore from "@/app/store/mapStore";
-import type { Layer as ManagedLayer } from "@/app/store/layerManagerSlice";
+import { isAoiVectorLayer } from "@/app/store/layerManagerSlice";
 import type { ContextItem } from "@/app/store/contextStore";
 
 interface AoiVectorTileLayersProps {
@@ -16,14 +16,7 @@ interface AoiVectorTileLayersProps {
 function AoiVectorTileLayers({ areas }: AoiVectorTileLayersProps) {
   const allLayers = useMapStore((s) => s.layers);
   const vectorLayers = useMemo(
-    () =>
-      allLayers.filter(
-        (l): l is ManagedLayer & { tileUrl: string; sourceLayer: string } =>
-          l.type === "vector" &&
-          !!l.tileUrl &&
-          !!l.sourceLayer &&
-          !l.vectorStyle
-      ),
+    () => allLayers.filter(isAoiVectorLayer),
     [allLayers]
   );
 
