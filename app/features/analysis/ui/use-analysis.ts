@@ -6,14 +6,28 @@ import { LROAnalysisService } from "../application/lro-analysis-service";
 import { RestAnalysisGateway } from "../adapters/rest-analysis-gateway";
 import { SystemClock } from "../adapters/system-clock";
 import { analysisResultToWidgets } from "./analysis-result-to-widgets";
+import type { InsightSink } from "./insight-sink";
 import useInsightStore from "@/app/store/insightStore";
 
-// Composition root: wire the real application service with its driven adapters.
-// Tests inject their own fake via the service parameter.
+// ── Composition root ──────────────────────────────────────────────────────────
+// Wire the real application service and the real insight sink with their driven
+// adapters. Tests inject their own fakes via the hook parameters.
+
 const defaultService: AnalysisService = new LROAnalysisService(
   new RestAnalysisGateway(),
   new SystemClock()
 );
+
+const defaultSink: InsightSink = {
+  // Guard against empty arrays so the store isn't notified with nothing to add.
+  add: (widgets) => {
+    if (widgets.length > 0) {
+      useInsightStore.getState().addInsights(widgets);
+    }
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export type AnalysisStatus = "idle" | "running" | "done" | "error";
 
@@ -27,8 +41,8 @@ export interface UseAnalysis {
 }
 
 /**
- * Driving adapter: binds the analysis use-case to React. The service is
- * injected (composition root passes the real one; tests pass a fake).
+ * Driving adapter: binds the analysis use-case to React. Both dependencies are
+ * injected (composition root passes the real ones; tests pass fakes).
  *
  * Cancellation: each call to `run` creates a fresh `AbortController`. The
  * previous controller (if any) is aborted before the new one is wired up,
@@ -36,7 +50,8 @@ export interface UseAnalysis {
  * and resets state to idle. The controller is also aborted on unmount.
  */
 export function useAnalysis(
-  service: AnalysisService = defaultService
+  service: AnalysisService = defaultService,
+  sink: InsightSink = defaultSink
 ): UseAnalysis {
   const [status, setStatus] = useState<AnalysisStatus>("idle");
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -73,16 +88,8 @@ export function useAnalysis(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
-          // TODO(arch): this hook should not know about insightStore directly.
-          // The correct design is an InsightSink output port injected at the
-          // composition root, with ZustandInsightSink as the adapter. Deferred
-          // because the rest of the app uses imperative .getState() calls in the
-          // same pattern — introducing a port here in isolation would be
-          // inconsistent. Revisit when the composition root is wired properly.
           const widgets = analysisResultToWidgets(analysisResult);
-          if (widgets.length > 0) {
-            useInsightStore.getState().addInsights(widgets);
-          }
+          sink.add(widgets);
         },
         (cause: unknown) => {
           // An AbortError means the user cancelled or the component unmounted —
@@ -96,7 +103,7 @@ export function useAnalysis(
         }
       );
     },
-    [service]
+    [service, sink]
   );
 
   return { status, result, error, run, cancel };
