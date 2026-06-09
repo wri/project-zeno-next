@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { AnalysisService } from "../../application/analysis-service";
 import type { AnalysisSelection } from "../../domain/analysis-selection";
+import type { InsightSink } from "../insight-sink";
 import { useAnalysis } from "../use-analysis";
 
 const selection: AnalysisSelection = {
@@ -33,7 +34,10 @@ describe("useAnalysis", () => {
 
     await waitFor(() => expect(result.current.status).toBe("done"));
     expect(result.current.result).toMatchObject({ id: "analysis-1" });
-    expect(service.run).toHaveBeenCalledWith(selection, expect.any(AbortSignal));
+    expect(service.run).toHaveBeenCalledWith(
+      selection,
+      expect.any(AbortSignal)
+    );
   });
 
   it("surfaces an error when the analysis fails", async () => {
@@ -112,6 +116,54 @@ describe("useAnalysis", () => {
     });
 
     expect(result.current.status).toBe("idle");
+  });
+
+  it("calls sink.add with mapped widgets when the analysis returns charts", async () => {
+    const chart = {
+      id: "c1",
+      position: 0,
+      type: "bar",
+      title: "Tree cover loss",
+      xAxis: "year",
+      yAxis: "area_ha",
+      colorField: "",
+      stackField: "",
+      groupField: "",
+      seriesFields: ["area_ha"],
+      data: [{ year: "2020", area_ha: 100 }],
+    };
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({ id: "r1", charts: [chart] }),
+    };
+    const sink: InsightSink = { add: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service, sink));
+
+    act(() => {
+      result.current.run(selection);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+    expect(sink.add).toHaveBeenCalledTimes(1);
+    expect(sink.add).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "c1", type: "bar" }),
+      ])
+    );
+  });
+
+  it("calls sink.add with an empty array when the analysis returns no charts", async () => {
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({ id: "r1", charts: [] }),
+    };
+    const sink: InsightSink = { add: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service, sink));
+
+    act(() => {
+      result.current.run(selection);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+    expect(sink.add).toHaveBeenCalledWith([]);
   });
 
   it("initialises idle when no service is injected (composition root wires without error)", () => {
