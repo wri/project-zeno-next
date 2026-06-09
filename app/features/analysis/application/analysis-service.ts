@@ -1,4 +1,4 @@
-import type { AreaSelection } from "../domain/area-selection";
+import type { AnalysisSelection } from "../domain/analysis-selection";
 import type { AnalysisResult } from "../domain/analysis-result";
 
 /**
@@ -7,5 +7,5 @@ import type { AnalysisResult } from "../domain/analysis-result";
  * For now the hook depends only on this shape, so it can be faked in tests.
  */
 export interface AnalysisService {
-  run(selection: AreaSelection): Promise<AnalysisResult>;
+  run(selection: AnalysisSelection): Promise<AnalysisResult>;
 }

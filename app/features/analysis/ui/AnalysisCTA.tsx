@@ -28,7 +28,15 @@ export function AnalysisCTA() {
       <AnalysisCTAContent
         name={selection.name}
         status={status}
-        onAnalyze={() => run(selection)}
+        onAnalyze={() =>
+          run({
+            area: selection,
+            // TODO: wire real dataset + date range from context (follow-up step).
+            dataset: { id: 4 },
+            startDate: "2020-01-01",
+            endDate: "2022-12-31",
+          })
+        }
       />
     </Popup>
   );
