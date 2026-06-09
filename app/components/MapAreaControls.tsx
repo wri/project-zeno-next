@@ -70,6 +70,7 @@ function MapAreaControls({
   setBasemapTiles,
 }: MapAreaControlsProps) {
   const {
+    selectAreaLayer,
     setSelectAreaLayer,
     isDrawingMode,
     startDrawing,
@@ -353,6 +354,7 @@ function MapAreaControls({
                             <Menu.Item
                               key={id}
                               value={id}
+                              disabled={id === selectAreaLayer}
                               onClick={() =>
                                 setSelectionMode({
                                   type: "Selecting",
