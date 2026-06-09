@@ -8,6 +8,7 @@ import type {
 import type { AnalysisSelection } from "../domain/analysis-selection";
 import type { AnalysisResult } from "../domain/analysis-result";
 import type { ChartDTO } from "../domain/chart-dto";
+import { AnalysisError } from "../domain/analysis-error";
 
 // ── Raw API shapes (anti-corruption layer — never leave this file) ─────────────
 
@@ -77,7 +78,28 @@ export class RestAnalysisGateway implements AnalysisGateway {
     });
 
     if (!response.ok) {
-      throw new Error(`Analysis submission failed: ${response.status}`);
+      let responseBody: unknown;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+      console.error("[RestAnalysisGateway] submit failed", {
+        url: response.url,
+        method: "POST",
+        status: response.status,
+        statusText: response.statusText,
+        body: responseBody,
+        selection,
+      });
+      throw new AnalysisError(
+        "Unable to start the analysis. Please try again.",
+        {
+          status: response.status,
+          url: response.url,
+          method: "POST",
+        }
+      );
     }
 
     const body = (await response.json()) as { id: string };
@@ -88,7 +110,28 @@ export class RestAnalysisGateway implements AnalysisGateway {
     const response = await this.fetch(`/api/jobs/${jobId}`);
 
     if (!response.ok) {
-      throw new Error(`Job poll failed: ${response.status}`);
+      let responseBody: unknown;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+      console.error("[RestAnalysisGateway] poll failed", {
+        url: response.url,
+        method: "GET",
+        status: response.status,
+        statusText: response.statusText,
+        jobId,
+        body: responseBody,
+      });
+      throw new AnalysisError(
+        "Unable to check analysis progress. Please try again.",
+        {
+          status: response.status,
+          url: response.url,
+          method: "GET",
+        }
+      );
     }
 
     const body = (await response.json()) as RawJobResponse;
@@ -119,7 +162,28 @@ export class RestAnalysisGateway implements AnalysisGateway {
     const response = await this.fetch(resourceUrl);
 
     if (!response.ok) {
-      throw new Error(`Result fetch failed: ${response.status}`);
+      let responseBody: unknown;
+      try {
+        responseBody = await response.json();
+      } catch {
+        responseBody = null;
+      }
+      console.error("[RestAnalysisGateway] fetchResult failed", {
+        url: response.url,
+        method: "GET",
+        status: response.status,
+        statusText: response.statusText,
+        resourceUrl,
+        body: responseBody,
+      });
+      throw new AnalysisError(
+        "Unable to retrieve analysis results. Please try again.",
+        {
+          status: response.status,
+          url: response.url,
+          method: "GET",
+        }
+      );
     }
 
     const body = (await response.json()) as RawInsightResponse;

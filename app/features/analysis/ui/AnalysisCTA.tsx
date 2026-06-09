@@ -13,7 +13,7 @@ export function AnalysisCTA() {
   const selection = useSelectionStore((state) => state.selection);
   const lngLat = useSelectionStore((state) => state.lngLat);
   const clear = useSelectionStore((state) => state.clear);
-  const { status, run } = useAnalysis();
+  const { status, error, run } = useAnalysis();
 
   if (!selection || !lngLat) return null;
 
@@ -39,6 +39,7 @@ export function AnalysisCTA() {
       <AnalysisCTAContent
         name={selection.name}
         status={status}
+        error={error}
         onAnalyze={handleAnalyze}
       />
     </Popup>
