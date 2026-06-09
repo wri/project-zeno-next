@@ -1,6 +1,7 @@
 import { AnalysisParams } from "@/app/types/chat";
 import { ParamChipColorScheme } from "@/app/components/ui/ParamChip";
 import { shortDatasetName } from "@/app/constants/datasets";
+import { buildYearParam } from "@/app/utils/formatYearRange";
 
 export interface ParamChipData {
   label: string;
@@ -39,13 +40,10 @@ export function buildChips(params: AnalysisParams): ParamChipData[] {
     });
   }
 
-  // Year range chip
-  if (params.startYear != null && params.endYear != null) {
-    chips.push({
-      label: "YEARS",
-      value: `${params.startYear}–${params.endYear}`,
-      colorScheme: "purple",
-    });
+  // Year chip — shared with the legend so labelling/format stay identical
+  const yearParam = buildYearParam(params.startYear, params.endYear);
+  if (yearParam) {
+    chips.push({ ...yearParam, colorScheme: "purple" });
   }
 
   return chips;

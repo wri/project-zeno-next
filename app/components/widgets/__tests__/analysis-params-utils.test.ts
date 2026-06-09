@@ -33,6 +33,6 @@ describe("buildChips", () => {
       ["Pará, Brazil", "Acre, Brazil"]
     );
     expect(chips.find((c) => c.label === "CANOPY")?.value).toBe("≥ 30%");
-    expect(chips.find((c) => c.label === "YEARS")?.value).toBe("2020–2023");
+    expect(chips.find((c) => c.label === "YEARS")?.value).toBe("2020–23");
   });
 });

@@ -16,6 +16,7 @@ import {
   CONTEXT_LAYER_METADATA,
   DATASET_CARDS,
 } from "@/app/constants/datasets";
+import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
 import useContextStore from "@/app/store/contextStore";
 
@@ -35,14 +36,12 @@ const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
  */
 function buildParams(
   params: Record<string, unknown>,
-  dateRange?: string
+  yearParam?: YearParam
 ): LegendParam[] {
   const result: LegendParam[] = [];
 
-  if (dateRange) {
-    // Use "YEARS" for a range, "YEAR" for a single year.
-    const label = dateRange.includes("–") ? "YEARS" : "YEAR";
-    result.push({ label, value: dateRange });
+  if (yearParam) {
+    result.push(yearParam);
   }
 
   for (const [k, v] of Object.entries(params)) {
@@ -169,15 +168,8 @@ export function useLegendHook() {
 
         const { title, info, note } = relatedDataset.legend;
 
-        const dateRange = (() => {
-          if (!layer.startDate || !layer.endDate) return undefined;
-          const startYear = layer.startDate.slice(0, 4);
-          const endYear = layer.endDate.slice(0, 4);
-          return startYear === endYear
-            ? startYear
-            : `${startYear}\u2013${endYear}`;
-        })();
-        const params = buildParams(layer.parameters ?? {}, dateRange);
+        const yearParam = buildYearParam(layer.startDate, layer.endDate);
+        const params = buildParams(layer.parameters ?? {}, yearParam);
 
         entries.push({
           id: layer.id,
