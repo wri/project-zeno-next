@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import type { AnalysisService } from "../application/analysis-service";
-import type { AreaSelection } from "../domain/area-selection";
+import type { AnalysisSelection } from "../domain/analysis-selection";
 import type { AnalysisResult } from "../domain/analysis-result";
 import { StubAnalysisService } from "../adapters/stub-analysis-service";
 import { analysisResultToWidgets } from "./analysis-result-to-widgets";
@@ -16,7 +16,7 @@ export interface UseAnalysis {
   status: AnalysisStatus;
   result: AnalysisResult | null;
   error: Error | null;
-  run: (selection: AreaSelection) => void;
+  run: (selection: AnalysisSelection) => void;
 }
 
 /**
@@ -31,7 +31,7 @@ export function useAnalysis(
   const [error, setError] = useState<Error | null>(null);
 
   const run = useCallback(
-    (selection: AreaSelection) => {
+    (selection: AnalysisSelection) => {
       setStatus("running");
       setError(null);
       service.run(selection).then(

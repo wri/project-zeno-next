@@ -2,14 +2,14 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { AnalysisService } from "../../application/analysis-service";
-import type { AreaSelection } from "../../domain/area-selection";
+import type { AnalysisSelection } from "../../domain/analysis-selection";
 import { useAnalysis } from "../use-analysis";
 
-const selection: AreaSelection = {
-  name: "Brazil",
-  source: "gadm",
-  srcId: "BRA",
-  subtype: "country",
+const selection: AnalysisSelection = {
+  area: { name: "Brazil", source: "gadm", srcId: "BRA", subtype: "country" },
+  dataset: { id: 4 },
+  startDate: "2020-01-01",
+  endDate: "2022-12-31",
 };
 
 describe("useAnalysis", () => {

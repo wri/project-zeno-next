@@ -1,5 +1,5 @@
 import type { AnalysisService } from "../application/analysis-service";
-import type { AreaSelection } from "../domain/area-selection";
+import type { AnalysisSelection } from "../domain/analysis-selection";
 import type { AnalysisResult } from "../domain/analysis-result";
 
 /**
@@ -12,15 +12,16 @@ export class StubAnalysisService implements AnalysisService {
   // in the browser. Tests pass 0 (or use fake timers) to stay fast.
   constructor(private readonly delayMs: number = 1000) {}
 
-  async run(selection: AreaSelection): Promise<AnalysisResult> {
+  async run(selection: AnalysisSelection): Promise<AnalysisResult> {
     await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    const { area } = selection;
     return {
-      id: `stub:${selection.source}:${selection.srcId ?? selection.name}`,
+      id: `stub:${area.source}:${area.srcId ?? area.name}`,
       charts: [
         {
           id: "stub-chart-1",
           position: 0,
-          title: `Tree cover loss — ${selection.name}`,
+          title: `Tree cover loss — ${area.name}`,
           type: "bar",
           xAxis: "year",
           yAxis: "area_ha",
@@ -38,7 +39,7 @@ export class StubAnalysisService implements AnalysisService {
         {
           id: "stub-chart-2",
           position: 1,
-          title: `Cumulative tree cover loss — ${selection.name}`,
+          title: `Cumulative tree cover loss — ${area.name}`,
           type: "line",
           xAxis: "year",
           yAxis: "cumulative_ha",
@@ -55,10 +56,10 @@ export class StubAnalysisService implements AnalysisService {
         },
       ],
       params: {
-        source: selection.source,
-        srcId: selection.srcId,
-        subtype: selection.subtype,
-        name: selection.name,
+        source: area.source,
+        srcId: area.srcId,
+        subtype: area.subtype,
+        name: area.name,
       },
     };
   }

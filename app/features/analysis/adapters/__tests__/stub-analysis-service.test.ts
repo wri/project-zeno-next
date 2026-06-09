@@ -1,39 +1,38 @@
 import { describe, expect, it, vi } from "vitest";
 import { StubAnalysisService } from "../stub-analysis-service";
 
+const BRAZIL: Parameters<InstanceType<typeof StubAnalysisService>["run"]>[0] = {
+  area: { name: "Brazil", source: "gadm", srcId: "BRA" },
+  dataset: { id: 4 },
+  startDate: "2020-01-01",
+  endDate: "2022-12-31",
+};
+
+const CUSTOM_AREA: Parameters<
+  InstanceType<typeof StubAnalysisService>["run"]
+>[0] = {
+  area: { name: "My Area", source: "custom" },
+  dataset: { id: 1 },
+  startDate: "2020-01-01",
+  endDate: "2022-12-31",
+};
+
 describe("StubAnalysisService", () => {
   it("resolves a canned result derived from the selection's id", async () => {
     const service = new StubAnalysisService(0);
-
-    const result = await service.run({
-      name: "Brazil",
-      source: "gadm",
-      srcId: "BRA",
-    });
-
+    const result = await service.run(BRAZIL);
     expect(result).toMatchObject({ id: "stub:gadm:BRA" });
   });
 
   it("returns a canned result with exactly two charts", async () => {
     const service = new StubAnalysisService(0);
-
-    const result = await service.run({
-      name: "Brazil",
-      source: "gadm",
-      srcId: "BRA",
-    });
-
+    const result = await service.run(BRAZIL);
     expect(result.charts).toHaveLength(2);
   });
 
   it("returns charts with the InsightChartResponse field shape", async () => {
     const service = new StubAnalysisService(0);
-
-    const result = await service.run({
-      name: "Brazil",
-      source: "gadm",
-      srcId: "BRA",
-    });
+    const result = await service.run(BRAZIL);
 
     for (const chart of result.charts) {
       expect(chart).toMatchObject({
@@ -54,9 +53,7 @@ describe("StubAnalysisService", () => {
 
   it("falls back to the name when the selection has no id", async () => {
     const service = new StubAnalysisService(0);
-
-    const result = await service.run({ name: "My Area", source: "custom" });
-
+    const result = await service.run(CUSTOM_AREA);
     expect(result).toMatchObject({ id: "stub:custom:My Area" });
   });
 
@@ -65,12 +62,10 @@ describe("StubAnalysisService", () => {
     try {
       const service = new StubAnalysisService(1000);
       let resolved = false;
-      const promise = service
-        .run({ name: "Brazil", source: "gadm", srcId: "BRA" })
-        .then((result) => {
-          resolved = true;
-          return result;
-        });
+      const promise = service.run(BRAZIL).then((result) => {
+        resolved = true;
+        return result;
+      });
 
       await vi.advanceTimersByTimeAsync(999);
       expect(resolved).toBe(false);
