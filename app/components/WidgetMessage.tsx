@@ -118,8 +118,7 @@ export default function WidgetMessage({
         </Flex>
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">
-        {hasData && <Separator />}
-        {/* Toolbar row — segmented toggle + full-screen */}
+        {/* Toolbar row — segmented toggle + full-screen */} 
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}
           {isChartType && hasData && (
