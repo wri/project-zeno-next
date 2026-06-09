@@ -6,6 +6,8 @@ export interface ParamChipData {
   label: string;
   value: string;
   colorScheme: ParamChipColorScheme;
+  /** Full text for the hover tooltip when `value` is an abbreviation. */
+  tooltip?: string;
 }
 
 export function buildChips(params: AnalysisParams): ParamChipData[] {
@@ -18,12 +20,13 @@ export function buildChips(params: AnalysisParams): ParamChipData[] {
     }
   }
 
-  // Dataset chip — use the short label where one is defined for the dataset
+  // Dataset chip — show the short label, tooltip the full dataset name
   if (params.dataset) {
     chips.push({
       label: "DATA",
       value: shortDatasetName(params.dataset),
       colorScheme: "green",
+      tooltip: params.dataset,
     });
   }
 

@@ -44,6 +44,7 @@ export function AnalysisParamsChips({ chips }: { chips: ParamChipData[] }) {
           value={chip.value}
           colorScheme={chip.colorScheme}
           highlightValue={chip.label === "AREA"}
+          tooltip={chip.tooltip}
         />
       ))}
     </Flex>
