@@ -107,9 +107,10 @@ export class RestAnalysisGateway implements AnalysisGateway {
     }
 
     const retryAfterRaw = response.headers.get("Retry-After");
-    const retryAfterSecs = retryAfterRaw
+    const parsed = retryAfterRaw
       ? parseInt(retryAfterRaw, 10)
       : DEFAULT_RETRY_AFTER_SECS;
+    const retryAfterSecs = parsed > 0 ? parsed : 1;
 
     return { status: body.status, retryAfterSecs };
   }
