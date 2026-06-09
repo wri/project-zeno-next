@@ -2,6 +2,7 @@ import { AnalysisParams } from "@/app/types/chat";
 import { ParamChipColorScheme } from "@/app/components/ui/ParamChip";
 import { shortDatasetName } from "@/app/constants/datasets";
 import { buildYearParam } from "@/app/utils/formatYearRange";
+import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 
 export interface ParamChipData {
   label: string;
@@ -42,7 +43,7 @@ export function buildChips(params: AnalysisParams): ParamChipData[] {
   if (params.canopyThreshold != null) {
     chips.push({
       label: "CANOPY",
-      value: `≥ ${params.canopyThreshold}%`,
+      value: formatCanopyThreshold(params.canopyThreshold),
       colorScheme: "purple",
     });
   }

@@ -17,6 +17,7 @@ import {
   DATASET_CARDS,
 } from "@/app/constants/datasets";
 import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
+import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
 import useContextStore from "@/app/store/contextStore";
 
@@ -25,9 +26,10 @@ const PARAMETER_LABELS: Record<string, string> = {
   canopy_cover: "CANOPY",
 };
 
-// Maps internal parameter keys to a formatting function that produces the value string.
+// Maps internal parameter keys to a formatting function that produces the value
+// string. Shares the canopy formatter with the insights CANOPY chip.
 const PARAMETER_FORMATTERS: Record<string, (v: unknown) => string> = {
-  canopy_cover: (v) => `>= ${v}%`,
+  canopy_cover: (v) => formatCanopyThreshold(v as number),
 };
 
 /**

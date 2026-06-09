@@ -32,7 +32,7 @@ describe("buildChips", () => {
     expect(chips.filter((c) => c.label === "AREA").map((c) => c.value)).toEqual(
       ["Pará, Brazil", "Acre, Brazil"]
     );
-    expect(chips.find((c) => c.label === "CANOPY")?.value).toBe("≥ 30%");
+    expect(chips.find((c) => c.label === "CANOPY")?.value).toBe("> 30%");
     expect(chips.find((c) => c.label === "YEARS")?.value).toBe("2020–23");
   });
 });
