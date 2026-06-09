@@ -1,13 +1,14 @@
 import { AnalysisParams } from "@/app/types/chat";
+import { ParamChipColorScheme } from "@/app/components/ui/ParamChip";
 
-export interface ParamChip {
+export interface ParamChipData {
   label: string;
   value: string;
-  colorScheme: "blue" | "green" | "purple";
+  colorScheme: ParamChipColorScheme;
 }
 
-export function buildChips(params: AnalysisParams): ParamChip[] {
-  const chips: ParamChip[] = [];
+export function buildChips(params: AnalysisParams): ParamChipData[] {
+  const chips: ParamChipData[] = [];
 
   // Area chips — one per AOI
   if (params.areas?.length) {
