@@ -1,23 +1,24 @@
 "use client";
 
-import { Flex, Box, Text, Link as ChLink } from "@chakra-ui/react";
-import Link from "next/link";
+import { Flex, Box } from "@chakra-ui/react";
 
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
-import ChatStatusInfo from "./components/ChatStatusInfo";
 import ChatPanelHeader from "./ChatPanelHeader";
-import useAuthStore from "./store/authStore";
+import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
+import PromptQuotaNotice from "./PromptQuotaNotice";
+import { chatPanelCardStyle } from "./chatPanelShared";
+import { usePromptQuota } from "./hooks/usePromptQuota";
 
-const PANEL_WIDTH = 428;
+// Intentionally wider than the compact panel (see COMPACT_PANEL_WIDTH).
+const FULLSIZE_PANEL_WIDTH = 428;
 
 interface ChatPanelFullSizeProps {
   onToggleSize: () => void;
 }
 
 function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
-  const { usedPrompts, totalPrompts } = useAuthStore();
-  const promptsExhausted = usedPrompts >= totalPrompts;
+  const { promptsExhausted } = usePromptQuota();
 
   return (
     <Flex
@@ -25,12 +26,8 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
       flex="1 1 auto"
       minH={0}
       h="100%"
-      w={{ base: "full", md: `${PANEL_WIDTH}px` }}
-      bg="bg"
-      borderWidth={{ base: 0, md: "1px" }}
-      borderColor="border.emphasized"
-      borderRadius={{ base: 0, md: "sm" }}
-      overflow="hidden"
+      w={{ base: "full", md: `${FULLSIZE_PANEL_WIDTH}px` }}
+      {...chatPanelCardStyle}
       pointerEvents="auto"
     >
       <ChatPanelHeader
@@ -44,45 +41,15 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
         <ChatMessages />
       </Box>
 
-      {/* Input area — 12px inset, rounded bordered box */}
-      <Flex flexDir="column" flexShrink={0} px={3} pb={3}>
-        {promptsExhausted && (
-          <Box pb={2}>
-            <ChatStatusInfo type="error">
-              <Text>
-                <strong>
-                  You&apos;ve reached today&apos;s limit of {totalPrompts}{" "}
-                  prompts.
-                </strong>
-                <br />
-                Wait until tomorrow for new prompts, or{" "}
-                <ChLink as={Link} href="/app/classic">
-                  continue without AI
-                </ChLink>
-                .
-              </Text>
-            </ChatStatusInfo>
-          </Box>
-        )}
+      {/* Input area — rounded bordered box. pb matches ChatPanelCompact so the
+          input box bottom lines up across compact/full-size. */}
+      <Flex flexDir="column" flexShrink={0} px={3} pb={1}>
+        <PromptQuotaNotice pb={2} />
         <ChatInput isChatDisabled={promptsExhausted} bordered />
       </Flex>
 
       {/* Disclaimer — compact single-line at bottom */}
-      <Box
-        px={3}
-        py={1}
-        fontSize="10px"
-        lineHeight="20px"
-        color="#131619"
-        opacity={0.5}
-        flexShrink={0}
-        whiteSpace="nowrap"
-        overflow="hidden"
-        textOverflow="ellipsis"
-      >
-        AI makes mistakes. Verify outputs and do not share any sensitive or
-        personal information.
-      </Box>
+      <ChatPanelDisclaimer variant="inline" />
     </Flex>
   );
 }

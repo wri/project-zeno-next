@@ -35,6 +35,7 @@ import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import type { Feature, MultiPolygon } from "geojson";
+import { getLayerContextFromDatasetCard } from "../utils/datasetCardLayerContext";
 
 const LAYER_CARDS = DATASET_CARDS;
 
@@ -88,27 +89,9 @@ function LayerCardList({
     if (existing) {
       removeContext(existing.id);
     } else {
-      const startYear = card.defaultStartYear;
-      const endYear = card.defaultEndYear;
-      // Only scope the layer when both bounds are present, so a half-configured
-      // card falls back to the unfiltered tile_url rather than a broken range.
-      const hasYears = startYear != null && endYear != null;
-      const tileUrl =
-        hasYears && card.tile_url
-          ? `${card.tile_url}&start_year=${startYear}&end_year=${endYear}`
-          : card.tile_url;
       upsertContextByType({
         contextType: "layer",
-        content: card.dataset_name,
-        datasetId: card.dataset_id,
-        tileUrl,
-        layerName: card.dataset_name,
-        ...(hasYears
-          ? {
-              startDate: `${startYear}-01-01`,
-              endDate: `${endYear}-12-31`,
-            }
-          : {}),
+        ...getLayerContextFromDatasetCard(card),
         isAiContext: false,
       });
     }
@@ -121,16 +104,20 @@ function LayerCardList({
           (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
         );
         return (
-          <DatasetCard
-            key={card.dataset_name}
-            dataset={card as unknown as DatasetInfo}
-            img={card.img ?? "/globe.svg"}
-            selected={isSelected}
-            onClick={() => handleToggle(card)}
-            {...(card.viewOnly
-              ? { label: "VIEW ONLY", labelColor: "#656E7B" }
-              : {})}
-          />
+          // flexShrink={0} pins the card height in the scrollable list so the
+          // 80px thumbnail stays square instead of being squished on overflow.
+          // No type label in the context menu — everything here is a layer,
+          // except view-only layers which keep their "VIEW ONLY" badge.
+          <Box key={card.dataset_name} flexShrink={0}>
+            <DatasetCard
+              dataset={card as unknown as DatasetInfo}
+              img={card.img ?? "/globe.svg"}
+              selected={isSelected}
+              onClick={() => handleToggle(card)}
+              label={card.viewOnly ? "VIEW ONLY" : ""}
+              {...(card.viewOnly ? { labelColor: "#656E7B" } : {})}
+            />
+          </Box>
         );
       })}
     </Stack>
@@ -150,7 +137,7 @@ function ContextMenu({
 
   return (
     <Dialog.Root
-      placement="bottom"
+      placement={{ base: "bottom", md: "center" }}
       motionPreset="slide-in-bottom"
       size={{ base: "xs", md: "lg" }}
       open={open}
@@ -161,8 +148,11 @@ function ContextMenu({
         <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner zIndex={1500}>
           <Dialog.Content
+            // Square modal on desktop; maxH caps it on short viewports so the
+            // body scrolls (scrollBehavior="inside") rather than overflowing.
+            boxSize={{ md: "38rem" }}
+            minH={{ base: "30rem" }}
             maxH="75vh"
-            minH="30rem"
             overflow="hidden"
             mx={{ base: 2, md: "auto" }}
           >

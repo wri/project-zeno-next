@@ -34,7 +34,7 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { context, addContext } = useContextStore();
+  const { context, addContext, removeContext } = useContextStore();
   const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
@@ -175,13 +175,22 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
 
-            // Areas stack. Skip if this src_id is already in context to avoid
-            // duplicate chips when the user clicks the same region twice.
+            // Only one vector-click AOI at a time. Skip entirely if this src_id is
+            // already the active selection (avoids remove+re-add on double-click).
+            // Custom (drawn/uploaded) areas — identified by aoiData.source === "custom"
+            // — are left untouched.
             const alreadyInContext = context.some(
               (c) =>
                 c.contextType === "area" && c.aoiData?.src_id === dynamicSrcId
             );
             if (!alreadyInContext) {
+              context
+                .filter(
+                  (c) =>
+                    c.contextType === "area" && c.aoiData?.source !== "custom"
+                )
+                .forEach((c) => removeContext(c.id));
+
               addContext({
                 contextType: "area",
                 content: aoiName,
@@ -225,6 +234,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     setSelectAreaLayer,
     metadata,
     addContext,
+    removeContext,
     context,
     addToRegistry,
     addLayer,

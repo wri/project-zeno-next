@@ -49,12 +49,12 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   get
 ) => ({
   mapRef: null,
-  selectAreaLayer: null,
+  selectAreaLayer: "GADM",
   selectionMode: undefined,
 
   reset: () => {
     set({
-      selectAreaLayer: null,
+      selectAreaLayer: "GADM",
       layers: [],
       geoJsonRegistry: [],
     });
@@ -64,8 +64,8 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     if (mapRef) {
       const map = mapRef.getMap();
       map.flyTo({
-        center: [0, 0],
-        zoom: 0,
+        center: [15, -10],
+        zoom: 2,
       });
     }
   },
