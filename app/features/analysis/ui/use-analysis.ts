@@ -2,13 +2,18 @@ import { useCallback, useState } from "react";
 import type { AnalysisService } from "../application/analysis-service";
 import type { AnalysisSelection } from "../domain/analysis-selection";
 import type { AnalysisResult } from "../domain/analysis-result";
-import { StubAnalysisService } from "../adapters/stub-analysis-service";
+import { LROAnalysisService } from "../application/lro-analysis-service";
+import { RestAnalysisGateway } from "../adapters/rest-analysis-gateway";
+import { SystemClock } from "../adapters/system-clock";
 import { analysisResultToWidgets } from "./analysis-result-to-widgets";
 import useInsightStore from "@/app/store/insightStore";
 
-// Composition root: the default wiring. Swapped for the real REST-backed
-// service later; tests inject their own fake.
-const defaultService: AnalysisService = new StubAnalysisService();
+// Composition root: wire the real application service with its driven adapters.
+// Tests inject their own fake via the service parameter.
+const defaultService: AnalysisService = new LROAnalysisService(
+  new RestAnalysisGateway(),
+  new SystemClock()
+);
 
 export type AnalysisStatus = "idle" | "running" | "done" | "error";
 

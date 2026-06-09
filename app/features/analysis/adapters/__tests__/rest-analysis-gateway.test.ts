@@ -108,6 +108,30 @@ describe("RestAnalysisGateway.poll", () => {
     expect(outcome).toMatchObject({ retryAfterSecs: 5 });
   });
 
+  it("overrides a zero Retry-After to 1 second", async () => {
+    const fetch = mockFetch(
+      { id: JOB_ID, status: "pending", resources: [] },
+      { headers: { "Retry-After": "0" } }
+    );
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const outcome = await gateway.poll(JOB_ID);
+
+    expect(outcome).toMatchObject({ retryAfterSecs: 1 });
+  });
+
+  it("overrides a negative Retry-After to 1 second", async () => {
+    const fetch = mockFetch(
+      { id: JOB_ID, status: "pending", resources: [] },
+      { headers: { "Retry-After": "-5" } }
+    );
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const outcome = await gateway.poll(JOB_ID);
+
+    expect(outcome).toMatchObject({ retryAfterSecs: 1 });
+  });
+
   it("returns a completed outcome with mapped resources", async () => {
     const fetch = mockFetch({
       id: JOB_ID,
