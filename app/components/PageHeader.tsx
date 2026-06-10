@@ -35,6 +35,7 @@ import useSidebarStore from "../store/sidebarStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
 import Link from "next/link";
 import { useLogout } from "@/app/hooks/useLogout";
+import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -43,12 +44,13 @@ const WHATS_NEW_STORAGE_KEY = "whats-new-v3-dismissed";
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
-  const { toggleSidebar, getThreadById } = useSidebarStore();
+  const { toggleSidebar } = useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
+  const { threads } = useThreadsInfinite();
 
   const currentThread = currentThreadId
-    ? getThreadById(currentThreadId)
+    ? threads.find((t) => t.id === currentThreadId)
     : undefined;
   const currentThreadName = currentThread
     ? currentThread.name

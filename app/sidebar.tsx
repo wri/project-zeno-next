@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   Button,
   Flex,
@@ -13,6 +13,7 @@ import {
   Box,
   Badge,
   Progress,
+  Spinner,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -30,6 +31,8 @@ import useChatStore from "./store/chatStore";
 import { useLogout } from "./hooks/useLogout";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
+import { useThreadsInfinite } from "./hooks/useThreadsInfinite";
+import { useIntersectionObserver } from "./hooks/useIntersectionObserver";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
   const { href, children, isActive, ...rest } = props;
@@ -64,6 +67,7 @@ function ThreadSection({
   label,
   value,
   currentThreadId,
+  footer,
 }: {
   threads: {
     id: string;
@@ -74,9 +78,10 @@ function ThreadSection({
   label: string;
   value: string;
   currentThreadId: string | null;
+  footer?: React.ReactNode;
 }) {
   const { toggleSidebar } = useSidebarStore();
-  if (!threads.length) return null;
+  if (!threads.length && !footer) return null;
   return (
     <Accordion.Item value={value} border="none">
       <Accordion.ItemTrigger px="3" py="1" cursor="pointer">
@@ -131,27 +136,34 @@ function ThreadSection({
             );
           })}
         </Stack>
+        {footer}
       </Accordion.ItemContent>
     </Accordion.Item>
   );
 }
 
 export function Sidebar() {
-  const {
-    sideBarVisible,
-    toggleSidebar,
-    threadGroups,
-    fetchThreads,
-    apiStatus,
-    fetchApiStatus,
-  } = useSidebarStore();
+  const { sideBarVisible, toggleSidebar, apiStatus, fetchApiStatus } =
+    useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
+  const { threadGroups, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useThreadsInfinite();
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleLoadMore = useCallback(() => {
+    fetchNextPage();
+  }, [fetchNextPage]);
+
+  useIntersectionObserver(sentinelRef, handleLoadMore, {
+    enabled: hasNextPage && !isFetchingNextPage,
+    rootMargin: "200px",
+  });
 
   useEffect(() => {
-    fetchThreads();
     fetchApiStatus();
-  }, [fetchThreads, fetchApiStatus]);
+  }, [fetchApiStatus]);
 
   const { logout, isLoggingOut } = useLogout();
 
@@ -273,12 +285,22 @@ export function Sidebar() {
               currentThreadId={currentThreadId}
             />
           )}
-          {hasOlderThreads && (
+          {(hasOlderThreads || hasNextPage) && (
             <ThreadSection
               threads={threadGroups.older}
               label="Older Conversations"
               value="older"
               currentThreadId={currentThreadId}
+              footer={
+                <>
+                  <div ref={sentinelRef} />
+                  {isFetchingNextPage && (
+                    <Flex justify="center" py="2">
+                      <Spinner size="sm" color="fg.subtle" />
+                    </Flex>
+                  )}
+                </>
+              }
             />
           )}
         </Accordion.Root>
