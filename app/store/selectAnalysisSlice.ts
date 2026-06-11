@@ -16,7 +16,7 @@ export interface AnalysisSelection {
 
 export interface SelectAnalysisSlice {
   /** The area selected for analysis, or null when nothing is selected. */
-  selection: AnalysisSelection | null;
+  analysisSelection: AnalysisSelection | null;
   /** Where to anchor the CTA popup (the clicked point). */
   lngLat: LngLat | null;
   setAnalysis: (selection: AnalysisSelection, lngLat: LngLat) => void;
@@ -33,8 +33,9 @@ export const createSelectAnalysisSlice: StateCreator<
   [],
   SelectAnalysisSlice
 > = (set) => ({
-  selection: null,
+  analysisSelection: null,
   lngLat: null,
-  setAnalysis: (selection, lngLat) => set({ selection, lngLat }),
-  clearAnalysis: () => set({ selection: null, lngLat: null }),
+  setAnalysis: (selection, lngLat) =>
+    set({ analysisSelection: selection, lngLat }),
+  clearAnalysis: () => set({ analysisSelection: null, lngLat: null }),
 });
