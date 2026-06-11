@@ -117,7 +117,10 @@ interface GeoJsonLayersProps {
   basemapTheme: BasemapTheme;
 }
 
-export default function GeoJsonLayers({ areas, basemapTheme }: GeoJsonLayersProps) {
+export default function GeoJsonLayers({
+  areas,
+  basemapTheme,
+}: GeoJsonLayersProps) {
   const layers = useMapStore((s) => s.layers);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
   const geoJsonLayers = layers.filter((l) => l.type === "geojson");

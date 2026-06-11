@@ -37,12 +37,11 @@ function VectorTileLayers({ areas, basemapTheme }: VectorTileLayersProps) {
           (a) => a.aoiSelection?.name === layer.name || a.content === layer.name
         );
 
-        const lineColor =
-          isInContext
-            ? basemapTheme === "dark"
-              ? "#FFFFFF"
-              : "#8EA4E8"
-            : "#666E7B";
+        const lineColor = isInContext
+          ? basemapTheme === "dark"
+            ? "#FFFFFF"
+            : "#8EA4E8"
+          : "#666E7B";
         const casingColor = basemapTheme === "dark" ? "#0049aa" : "#FFFFFF";
         const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
         const opacity = layer.opacity ?? 1;
