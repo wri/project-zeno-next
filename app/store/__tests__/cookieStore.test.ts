@@ -132,13 +132,11 @@ describe("cookieStore", () => {
   });
 
   it("savePreferences with only analytics true yields accepted", () => {
-    useCookieStore
-      .getState()
-      .savePreferences({
-        analytics: true,
-        targetedAdvertising: false,
-        personalization: false,
-      });
+    useCookieStore.getState().savePreferences({
+      analytics: true,
+      targetedAdvertising: false,
+      personalization: false,
+    });
     expect(useCookieStore.getState().consentStatus).toBe("accepted");
   });
 
