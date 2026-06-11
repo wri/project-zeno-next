@@ -15,6 +15,7 @@ import {
   GeoJsonEntry,
   FeatureRef,
 } from "@/app/store/layerManagerSlice";
+import { BasemapTheme } from "../BasemapSelector";
 import bbox from "@turf/bbox";
 import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 
@@ -108,13 +109,15 @@ interface GeoJsonLayerGroupProps {
   layer: ManagedLayer;
   entries: GeoJsonEntry[];
   areas: ContextItem[];
+  basemapTheme: BasemapTheme;
 }
 
 interface GeoJsonLayersProps {
   areas: ContextItem[];
+  basemapTheme: BasemapTheme;
 }
 
-export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
+export default function GeoJsonLayers({ areas, basemapTheme }: GeoJsonLayersProps) {
   const layers = useMapStore((s) => s.layers);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
   const geoJsonLayers = layers.filter((l) => l.type === "geojson");
@@ -133,6 +136,7 @@ export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
             layer={layer}
             entries={entries}
             areas={areas}
+            basemapTheme={basemapTheme}
           />
         );
       })}
@@ -142,7 +146,12 @@ export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
 
 // If the group is a single area, render a single label and polygon
 // If the group is a multi-area selection, render a bbox polygon and a label for the selection name
-function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
+function GeoJsonLayerGroup({
+  layer,
+  entries,
+  areas,
+  basemapTheme,
+}: GeoJsonLayerGroupProps) {
   const { addContext, removeContext } = useContextStore();
   const { isHovered, setHoverState } = useHoverState();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
@@ -156,11 +165,18 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
   const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
 
   const isMultiArea = !!layer.selectionName;
-  const fillColor = isInContext
-    ? isMultiArea
-      ? "#8EA4E8"
-      : "#0A3785"
+
+  // On dark basemaps (dark, satellite) boundaries use white lines + blue casing
+  // to maximise contrast. On light basemaps the colours are inverted.
+  const casingColor = basemapTheme === "dark" ? "#0049aa" : "#FFFFFF";
+  const mainLineColor = isInContext
+    ? basemapTheme === "dark"
+      ? "#FFFFFF"
+      : isMultiArea
+        ? "#8EA4E8"
+        : "#0A3785"
     : "#666E7B";
+
   const handleRemoveFromContext = () => {
     if (areaInContext) removeContext(areaInContext.id);
   };
@@ -216,6 +232,7 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
       {entries.map((entry) => {
         const sourceId = `geojson-source-${groupId}-${entry.ref.source}-${entry.ref.name}`;
         const fillLayerId = `geojson-fill-${groupId}-${entry.ref.source}-${entry.ref.name}`;
+        const casingLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-casing`;
         const lineLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-solid`;
         return (
           <Source
@@ -228,7 +245,32 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
             <MapLayer
               id={fillLayerId}
               type="fill"
-              paint={{ "fill-color": fillColor, "fill-opacity": 0 }}
+              paint={{ "fill-color": mainLineColor, "fill-opacity": 0 }}
+              filter={[
+                "any",
+                ["==", ["geometry-type"], "Polygon"],
+                ["==", ["geometry-type"], "MultiPolygon"],
+              ]}
+            />
+            {/* Casing layer (wider, contrasting colour) rendered below the main line */}
+            <MapLayer
+              id={casingLayerId}
+              type="line"
+              paint={{
+                "line-color": casingColor,
+                "line-width": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  2,
+                  3.3,
+                  10,
+                  6.7,
+                  14,
+                  10,
+                ],
+                "line-opacity": lineOpacity,
+              }}
               filter={[
                 "any",
                 ["==", ["geometry-type"], "Polygon"],
@@ -239,22 +281,18 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
               id={lineLayerId}
               type="line"
               paint={{
-                "line-color": fillColor,
-                "line-width": isMultiArea
-                  ? 1.5
-                  : [
-                      "interpolate",
-                      ["linear"],
-                      ["zoom"],
-                      3,
-                      0.5,
-                      6,
-                      1,
-                      10,
-                      2,
-                      14,
-                      3,
-                    ],
+                "line-color": mainLineColor,
+                "line-width": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  2,
+                  1,
+                  10,
+                  2,
+                  14,
+                  3,
+                ],
                 "line-opacity": lineOpacity,
               }}
               filter={[
@@ -278,7 +316,7 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
             id={`bbox-line-${groupId}-dashed`}
             type="line"
             paint={{
-              "line-color": fillColor,
+              "line-color": mainLineColor,
               "line-width": 1.5,
               "line-dasharray": [2, 1],
               "line-opacity": isHovered || isInContext ? 0 : 0.75 * lineOpacity,
@@ -288,7 +326,7 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
             id={`bbox-line-${groupId}-solid`}
             type="line"
             paint={{
-              "line-color": fillColor,
+              "line-color": mainLineColor,
               "line-width": 1.5,
               "line-opacity": isHovered || isInContext ? 0.75 * lineOpacity : 0,
             }}
