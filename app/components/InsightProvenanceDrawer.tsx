@@ -238,9 +238,9 @@ export default function InsightProvenanceDrawer({
       placement="end"
     >
       <Portal>
-        <Drawer.Backdrop zIndex={1000} top={{ md: 12 }} />
-        <Drawer.Positioner zIndex={1200} top={{ md: 12 }}>
-          <Drawer.Content bg="neutral.200" maxH="calc(100vh - 3rem)">
+        <Drawer.Backdrop zIndex={1000} top={{ md: 10 }} />
+        <Drawer.Positioner zIndex={1200} top={{ md: 10 }}>
+          <Drawer.Content bg="neutral.200" maxH="calc(100vh - 40px)">
             <Drawer.Header
               display="flex"
               justifyContent="space-between"
