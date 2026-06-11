@@ -29,17 +29,19 @@ const SUPPORT_TABS = [
   {
     title: "Monitor grassland health and conversion",
     content:
-    "See how grasslands are changing over time, whether due to degradation or conversion, and assess likely causes, supporting sustainable agriculture and land-use planning.",
+      "See how grasslands are changing over time, whether due to degradation or conversion, and assess likely causes, supporting sustainable agriculture and land-use planning.",
     image: "/carousel-3.png",
   },
   {
     title: "Assess land cover change",
-    content: "Get a clear snapshot of land cover anywhere on Earth and see how it has shifted over the past decade, helping you evaluate ecosystem trends and land-use trade-offs.",
+    content:
+      "Get a clear snapshot of land cover anywhere on Earth and see how it has shifted over the past decade, helping you evaluate ecosystem trends and land-use trade-offs.",
     image: "/carousel-4.png",
   },
   {
     title: "Analyze drivers of forest change",
-    content: "Pinpoint the causes of tree cover loss, from commodity production to wildfire, and quickly understand the pressures shaping forests in your region.",
+    content:
+      "Pinpoint the causes of tree cover loss, from commodity production to wildfire, and quickly understand the pressures shaping forests in your region.",
     image: "/carousel-5.png",
   },
 ];
@@ -50,11 +52,7 @@ export default function SupportWorkTabsSection() {
       pb={{ base: 14, md: 28 }}
       bg="linear-gradient(0deg, rgba(0, 0, 0, 0.10) 0%, rgba(0, 0, 0, 0.64) 85%), url(/landing-bg-image2.webp) lightgray 50% / cover no-repeat"
     >
-      <Container
-        css={{ "& > *": { px: 0 } }}
-        display="flex"
-        flexDir="column"
-      >
+      <Container css={{ "& > *": { px: 0 } }} display="flex" flexDir="column">
         <Container
           textAlign="center"
           maxW="2xl"

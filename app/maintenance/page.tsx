@@ -66,7 +66,7 @@ export default function NotFound() {
         as="footer"
         display="flex"
         flexDirection={{ base: "column", md: "row" }}
-        justifyContent={{ base: "center", md: "space-between"}}
+        justifyContent={{ base: "center", md: "space-between" }}
         alignItems="center"
         mt="auto"
         bg="white"

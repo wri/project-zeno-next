@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
+import type { DatasetInfo } from "@/app/types/chat";
 import {
   Box,
   Card,
@@ -21,19 +22,20 @@ import useContextStore from "../store/contextStore";
 import { DatasetCard } from "./DatasetCard";
 
 // Constants for navigation and dummy content
-const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
-  (type) => ({
+const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[])
+  .filter((type) => type !== "date")
+  .map((type) => ({
     type,
     label: ChatContextOptions[type].label,
     icon: ChatContextOptions[type].icon,
-  })
-);
+  }));
 
-import { DATASET_CARDS } from "../constants/datasets";
+import { DATASET_CARDS, DatasetCardConfig } from "../constants/datasets";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import type { Feature, MultiPolygon } from "geojson";
+import { getLayerContextFromDatasetCard } from "../utils/datasetCardLayerContext";
 
 const LAYER_CARDS = DATASET_CARDS;
 
@@ -73,35 +75,51 @@ function ContextNav({
   );
 }
 
-type LayerCardItem = {
-  dataset_id: number;
-  dataset_name: string;
-  context_layer: string | null;
-  img?: string;
-  description: string;
-  tile_url: string;
-  selected?: boolean;
-  reason?: string;
-};
-
 function LayerCardList({
   cards,
-  onCardClick,
 }: {
-  cards: LayerCardItem[];
-  onCardClick?: (card: LayerCardItem) => void;
+  cards: (DatasetCardConfig & { img?: string })[];
 }) {
+  const { context, upsertContextByType, removeContext } = useContextStore();
+
+  function handleToggle(card: DatasetCardConfig & { img?: string }) {
+    const existing = context.find(
+      (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
+    );
+    if (existing) {
+      removeContext(existing.id);
+    } else {
+      upsertContextByType({
+        contextType: "layer",
+        ...getLayerContextFromDatasetCard(card),
+        isAiContext: false,
+      });
+    }
+  }
+
   return (
     <Stack minH={0} overflowY="auto">
-      {cards.map((card) => (
-        <DatasetCard
-          key={card.dataset_name}
-          dataset={card}
-          img={card.img ?? "/globe.svg"}
-          selected={card.selected}
-          onClick={onCardClick ? () => onCardClick(card) : undefined}
-        />
-      ))}
+      {cards.map((card) => {
+        const isSelected = context.some(
+          (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
+        );
+        return (
+          // flexShrink={0} pins the card height in the scrollable list so the
+          // 80px thumbnail stays square instead of being squished on overflow.
+          // No type label in the context menu — everything here is a layer,
+          // except view-only layers which keep their "VIEW ONLY" badge.
+          <Box key={card.dataset_name} flexShrink={0}>
+            <DatasetCard
+              dataset={card as unknown as DatasetInfo}
+              img={card.img ?? "/globe.svg"}
+              selected={isSelected}
+              onClick={() => handleToggle(card)}
+              label={card.viewOnly ? "VIEW ONLY" : ""}
+              {...(card.viewOnly ? { labelColor: "#656E7B" } : {})}
+            />
+          </Box>
+        );
+      })}
     </Stack>
   );
 }
@@ -119,7 +137,7 @@ function ContextMenu({
 
   return (
     <Dialog.Root
-      placement="bottom"
+      placement={{ base: "bottom", md: "center" }}
       motionPreset="slide-in-bottom"
       size={{ base: "xs", md: "lg" }}
       open={open}
@@ -129,7 +147,15 @@ function ContextMenu({
       <Portal>
         <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner zIndex={1500}>
-          <Dialog.Content maxH="75vh" minH="30rem" overflow="hidden" mx={{ base: 2, md: "auto" }}>
+          <Dialog.Content
+            // Square modal on desktop; maxH caps it on short viewports so the
+            // body scrolls (scrollBehavior="inside") rather than overflowing.
+            boxSize={{ md: "38rem" }}
+            minH={{ base: "30rem" }}
+            maxH="75vh"
+            overflow="hidden"
+            mx={{ base: 2, md: "auto" }}
+          >
             <Dialog.Body
               p={0}
               h="full"
@@ -168,45 +194,12 @@ function ContextMenu({
 export default ContextMenu;
 
 export function LayerMenu() {
-  const { context, addContext, removeContext } = useContextStore();
-
-  // Compute selected state from context so cards reflect external context changes
-  const cards: LayerCardItem[] = useMemo(() => {
-    return LAYER_CARDS.map((c) => {
-      const isSelected = context.some(
-        (ctx) => ctx.contextType === "layer" && ctx.datasetId === c.dataset_id
-      );
-      return { ...c, selected: isSelected } as LayerCardItem;
-    });
-  }, [context]);
-
-  const handleToggleCard = (card: LayerCardItem) => {
-    // mapTileLayerId is derived inside context store when needed
-    const existingCtx = context.find(
-      (ctx) => ctx.contextType === "layer" && ctx.datasetId === card.dataset_id
-    );
-
-    if (!card.selected) {
-      addContext({
-        contextType: "layer",
-        content: card.dataset_name,
-        datasetId: card.dataset_id,
-        tileUrl: card.tile_url,
-        layerName: card.dataset_name,
-      });
-      return;
-    }
-
-    // Currently selected → remove from context (which also removes map layer if datasetId is present)
-    if (existingCtx) {
-      removeContext(existingCtx.id);
-    }
-  };
+  const cards = LAYER_CARDS;
 
   return (
     <Stack bg="bg.subtle" pt={3} minW={0} w="100%">
       <Stack px={4} pt={3} borderTopWidth="1px" borderColor="border" minH={0}>
-        <LayerCardList cards={cards} onCardClick={handleToggleCard} />
+        <LayerCardList cards={cards} />
       </Stack>
     </Stack>
   );
@@ -257,7 +250,7 @@ function AreaCardList({
 function AreaMenu() {
   const { customAreas } = useCustomAreasListSuspense();
   const { addToRegistry, addLayer, flyToGeoJsonWithRetry } = useMapStore();
-  const { context, upsertContextByType } = useContextStore();
+  const { context, addContext } = useContextStore();
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -269,7 +262,7 @@ function AreaMenu() {
 
   const sorted = useMemo(() => {
     const list = filtered.sort(
-     (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
+      (a, b) => Number(new Date(b.created_at)) - Number(new Date(a.created_at))
     );
     return list;
   }, [filtered]);
@@ -291,7 +284,9 @@ function AreaMenu() {
   );
 
   const handleSelectArea = (area: { id: string; name: string }) => {
-    upsertContextByType({
+    // Areas stack — each selection is its own context item rendered as a chip.
+    // The existing `cards` lookup prevents re-selecting the same area twice.
+    addContext({
       contextType: "area",
       content: area.name,
       aoiData: {
@@ -317,8 +312,19 @@ function AreaMenu() {
         geometry: multi,
         properties: { id: selected.id, name: selected.name },
       };
-      addToRegistry({ ref: { name: selected.name, source: "custom" }, data: feature, srcId: selected.id, subtype: "custom-area" });
-      addLayer({ id: selected.id, name: selected.name, type: "geojson", visible: true, featureRefs: [{ name: selected.name, source: "custom" }] });
+      addToRegistry({
+        ref: { name: selected.name, source: "custom" },
+        data: feature,
+        srcId: selected.id,
+        subtype: "custom-area",
+      });
+      addLayer({
+        id: selected.id,
+        name: selected.name,
+        type: "geojson",
+        visible: true,
+        featureRefs: [{ name: selected.name, source: "custom" }],
+      });
       flyToGeoJsonWithRetry(feature);
     }
   };

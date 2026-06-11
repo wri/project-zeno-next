@@ -29,9 +29,21 @@ export function DatasetInfoModal({
         <Dialog.Backdrop backdropFilter="blur(8px)" />
         <Dialog.Positioner zIndex={1600}>
           <Dialog.Content maxW="3xl" p="10" borderRadius="8px">
-            <Dialog.Title mb="4" fontSize="xl" fontWeight="bold" pr="6">{dataset.dataset_name}</Dialog.Title>
-            <Dialog.Description asChild css={{ "& p": { whiteSpace: "pre-wrap" } }}>
-              <VStack gap="5" align="stretch" maxH="70vh" overflowY="auto" pr="6" pb="6">
+            <Dialog.Title mb="4" fontSize="xl" fontWeight="bold" pr="6">
+              {dataset.dataset_name}
+            </Dialog.Title>
+            <Dialog.Description
+              asChild
+              css={{ "& p": { whiteSpace: "pre-wrap" } }}
+            >
+              <VStack
+                gap="5"
+                align="stretch"
+                maxH="70vh"
+                overflowY="auto"
+                pr="6"
+                pb="6"
+              >
                 <Box>
                   <Heading size="sm" mb={3} color="gray.500">
                     Description

@@ -1,4 +1,3 @@
-/* eslint-disable react/no-array-index-key, react/no-unused-prop-types */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -15,7 +14,11 @@ import {
 } from "@ark-ui/react/date-picker";
 import { format, isValid } from "date-fns";
 import { withMask } from "use-mask-input";
-import { CalendarDotsIcon, CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
+import {
+  CalendarDotsIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+} from "@phosphor-icons/react";
 
 const DatePickerContent = chakra(ArcDatePicker.Content, {
   base: {

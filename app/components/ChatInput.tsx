@@ -20,8 +20,14 @@ import { useRouter } from "next/navigation";
 
 export default function ChatInput({
   isChatDisabled,
+  bordered,
+  onAfterSend,
 }: {
   isChatDisabled?: boolean;
+  /** Render the input box as a standalone rounded card (conversation panel) */
+  bordered?: boolean;
+  /** Called immediately before sending, e.g. to expand a collapsed panel */
+  onAfterSend?: () => void;
 }) {
   const [inputValue, setInputValue] = useState("");
   const [contextModalOpen, setContextModalOpen] = useState(false);
@@ -40,7 +46,7 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading } = useChatStore();
+  const { sendMessage, isLoading, messages } = useChatStore();
   const { context, removeContext } = useContextStore();
 
   const openContextMenu = (type: ChatContextType) => {
@@ -58,6 +64,7 @@ export default function ChatInput({
 
     const message = inputValue.trim();
     setInputValue("");
+    onAfterSend?.();
 
     // Close the modal on mobile after sending a message
     if (isMobile) {
@@ -83,7 +90,17 @@ export default function ChatInput({
   };
 
   const disabled = isLoading || isChatDisabled;
-  const message = isLoading ? "Sending..." : "Ask a question...";
+  const hasNudge = messages.at(-1)?.type === "dataset-nudge";
+  const hasConversation = messages.some(
+    (m) => m.type === "user" || m.type === "assistant"
+  );
+  const message = isLoading
+    ? "Sending..."
+    : hasNudge
+      ? "Or ask a different question..."
+      : hasConversation
+        ? "Ask a follow-up question…"
+        : "Or describe what you want to explore…";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
   const hasContext = context.length > 0;
@@ -96,18 +113,17 @@ export default function ChatInput({
       position="relative"
       m={0}
       p={4}
-      bg="gray.100"
-      borderColor="gray.300"
-      borderRadius="lg"
-      borderWidth="1px"
+      bg={bordered ? "#F4F5F6" : "gray.100"}
+      borderWidth={bordered ? "1px" : 0}
+      borderColor={bordered ? "#E0E2E5" : undefined}
+      borderRadius={bordered ? "sm" : undefined}
       className="group"
       transition="all 0.32s ease-in-out"
-      _active={{
-        borderColor: "primary.focusRing",
-      }}
-      _focusWithin={{
-        borderColor: "primary.focusRing",
-      }}
+      _focusWithin={
+        bordered
+          ? { borderColor: "primary.focusRing", outline: "none" }
+          : undefined
+      }
     >
       {hasContext && (
         <Flex gap={1} wrap="wrap" mb={1}>
@@ -156,11 +172,6 @@ export default function ChatInput({
             onClick={() => openContextMenu("area")}
             disabled={disabled}
           />
-          <ContextButton
-            contextType="date"
-            onClick={() => openContextMenu("date")}
-            disabled={disabled}
-          />
         </Flex>
         <Button
           p="0"
@@ -173,6 +184,7 @@ export default function ChatInput({
           }}
           type="button"
           size="xs"
+          aria-label="Send prompt"
           onClick={submitPrompt}
           disabled={isButtonDisabled}
           loading={isLoading}
@@ -257,20 +269,13 @@ export default function ChatInput({
               }}
               disabled={disabled}
             />
-            <ContextButton
-              contextType="date"
-              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                e.stopPropagation();
-                openContextMenu("date");
-              }}
-              disabled={disabled}
-            />
           </Flex>
           <Button
             p={0}
             flexShrink={0}
             colorPalette="primary"
             title="Send message"
+            aria-label="Send prompt"
             aria-hidden
             ml="auto"
             borderRadius="full"

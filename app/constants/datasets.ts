@@ -21,6 +21,11 @@ export type DatasetLegendConfig = {
 export type DatasetCardConfig = {
   dataset_id: number;
   dataset_name: string;
+  /**
+   * Short label used in compact UI such as analysis-parameter chips, where the
+   * full dataset_name is too long. Omit when the full name is already short.
+   */
+  shortName?: string;
   description: string;
   img?: string;
   tile_url?: string;
@@ -28,6 +33,15 @@ export type DatasetCardConfig = {
   context_layer?: string | null;
   threshold?: number | null;
   legend?: DatasetLegendConfig;
+  cadence?: string;
+  resolution?: string;
+  geographic_coverage?: string;
+  provider?: string;
+  methodology?: string;
+  citation?: string;
+  viewOnly?: boolean;
+  defaultStartYear?: number;
+  defaultEndYear?: number;
 };
 
 export type ContextLayerMetadata = {
@@ -41,7 +55,7 @@ export type ContextLayerMetadata = {
 
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
-    dataset_id: 9,
+    dataset_id: 100,
     dataset_name: "Primary Forests",
     context_layer: null as string | null,
     description:
@@ -55,15 +69,40 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
       note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
     },
   },
+  intact_forest: {
+    dataset_id: 101,
+    dataset_name: "Intact Forest Landscapes",
+    context_layer: null as string | null,
+    description:
+      "The Intact Forest Landscapes (IFL) data set identifies unbroken expanses of natural ecosystems within the zone of forest extent that show no signs of significant human activity and are large enough that all native biodiversity, including viable populations of wide-ranging species, could be maintained.",
+    legend: {
+      title: "Intact Forest Landscapes (2000-2020)",
+      color: "#5C8C50",
+      items: [
+        { label: "Intact Forest Landscapes", color: "#5C8C50" },
+        { label: "Reduction in extent 2000-2013", color: "#91896F" },
+        { label: "Reduction in extent 2013-2016", color: "#969904" },
+        { label: "Reduction in extent 2016-2020", color: "#635731" },
+      ],
+      type: "symbol",
+      info: "Identifies the world's last remaining unfragmented forest landscapes, large enough to retain all native biodiversity and showing no signs of human alteration.",
+      note: "Extent of Intact Forest Landscapes (IFL) in 2000-2020. Global coverage, IFL Mapping Team.",
+    },
+  },
 };
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 0,
     dataset_name: "Global all ecosystem disturbance alerts (DIST-ALERT)",
+    shortName: "DIST-ALERT",
     data_layer: "Global all ecosystem disturbance alerts (DIST-ALERT)",
     context_layer: null as string | null,
     img: "/dataset_card_dist_alerts.webp",
+    cadence: "weekly",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "UMD",
     description:
       "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present.",
     tile_url:
@@ -80,8 +119,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 1,
     dataset_name: "Global land cover",
+    shortName: "Land cover",
     context_layer: null as string | null,
     img: "/dataset_card_land_cover.webp",
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "GLAD / GPW",
     description:
       "This Global Land Cover dataset is a combination of two global datasets: the GLAD Land Cover and Land Use Change annual data and the Global Pasture Watch Grassland Class Collection 2 Cultivated Grasslands annual data. This combination is annual from 2015 through 2024. This dataset shows land covers and uses including: bare ground and sparsevegetation, short vegetation, tree cover, wetlands, water, snow/ice, cropland, cultivated grasslands, and built-up land.",
     tile_url: `${EOAPI_HOST}/raster/collections/global-land-cover-v-2/items/global-land-cover-2024/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%221%22%3A%20%5B254%2C%20254%2C%20204%5D%2C%222%22%3A%20%5B185%2C%20185%2C%2030%5D%2C%223%22%3A%20%5B36%2C%20110%2C%2036%5D%2C%224%22%3A%20%5B116%2C%20214%2C%20180%5D%2C%225%22%3A%20%5B107%2C%20174%2C%20214%5D%2C%226%22%3A%20%5B172%2C%20209%2C%20232%5D%2C%227%22%3A%20%5B255%2C%20241%2C%20131%5D%2C%228%22%3A%20%5B232%2C%20118%2C%2093%5D%2C%229%22%3A%20%5B255%2C%20205%2C%20115%5D%7D&assets=asset&expression=asset%2A%28asset%3C10%29%2A%28asset%3E0%29&asset_as_band=True`,
@@ -107,17 +151,20 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 2,
     dataset_name: "Global natural/semi-natural grassland extent",
+    shortName: "Grasslands",
     context_layer: null as string | null,
     img: "/dataset_card_grasslands.webp",
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "GPW Consortium, LCL",
     description:
       "Annual 30 m maps of global natural/semi-natural grassland extent from 2000 to 2022. This dataset defines grasslands very broadly such that they encompass grasslands, shrublands, and savannas by including any land cover type which contains at least 30% of dry or wet low vegetation, dominated by grasses and forbs (less than 3 meters) and a: maximum of 50% tree canopy cover (greater than 5 meters), a maximum of 70% of other woody vegetation (scrubs and open shrubland), and a maximum of 50% active cropland cover in mosaic landscapes of cropland & other vegetation.",
     tile_url: `${EOAPI_HOST}/raster/collections/grasslands-v-1/items/grasslands-2022/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%220%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%221%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%2C%20%222%22%3A%20%5B255%2C%20153%2C%2022%2C%20255%5D%2C%20%223%22%3A%20%5B0%2C%200%2C%200%2C%200%5D%7D&assets=asset&expression=asset%2A%28asset%3C4%29%2A%28asset%3E%3D0%29&asset_as_band=True`,
     legend: {
       title: "Global Grasslands (2000-2022)",
       color: "#ff9916",
-      items: [
-        { label: "Natural/semi-natural grassland", color: "#ff9916" },
-      ],
+      items: [{ label: "Natural/semi-natural grassland", color: "#ff9916" }],
       type: "symbol",
       info: "This dataset provides global coverage with annual data from 2000-2024, making it the most appropriate dataset to answer questions about grassland area extent worldwide.",
       note: "Annual maps of natural and semi-natural grasslands including savannas and shrublands.",
@@ -127,8 +174,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 3,
     dataset_name: "SBTN Natural Lands Map",
+    shortName: "Natural lands",
     context_layer: null as string | null,
     img: "/dataset_card_natural_lands.webp",
+    cadence: "2020",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "SBTN, WRI",
     description:
       "The SBTN Natural Lands Map v1.1 is a 2020 baseline map of natural and non-natural land covers intended for use by companies setting science-based targets for nature, specifically the SBTN Land target #1: no conversion of natural ecosystems. This map is global with 30m resolution and was made by compiling existing global and regional data including the GLAD Global Land Cover and Change data, ESA WorldCover, and many other land cover and use datasets.",
     tile_url: `${EOAPI_HOST}/raster/collections/natural-lands-v-1-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%222%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%20%223%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%20%224%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%20%225%22%3A%20%5B6%2C%20162%2C%20133%2C%20255%5D%2C%20%226%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%20%227%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%20%228%22%3A%20%5B88%2C%20149%2C%2088%2C%20255%5D%2C%20%229%22%3A%20%5B9%2C%2061%2C%209%2C%20255%5D%2C%20%2210%22%3A%20%5B219%2C%20219%2C%20123%2C%20255%5D%2C%20%2211%22%3A%20%5B153%2C%20153%2C%2026%2C%20255%5D%2C%20%2212%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2213%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2214%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2215%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2216%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2217%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2218%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2219%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2220%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2221%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C22%29%2A%28asset%3E1%29&asset_as_band=True`,
@@ -150,7 +202,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       ],
       type: "symbol",
       info: 'The Natural lands dataset is the best match because it provides a 2020 baseline map of natural vs non-natural land covers at 30m resolution, which can be used to identify intact/natural landscapes. This dataset specifically defines "natural" ecosystems as those that substantially resemble what would be found without major human impacts, making it ideal for assessing landscape intactness across Canadian provinces.',
-      note: "Baseline map separating natural from non-natural lands for conversion assessments. This map may overestimate the extent of natural lands."
+      note: "Baseline map separating natural from non-natural lands for conversion assessments. This map may overestimate the extent of natural lands.",
     },
   },
   {
@@ -160,6 +212,12 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     threshold: 30,
     img: "/dataset_card_tree_cover_loss.webp",
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "UMD",
+    defaultStartYear: 2001,
+    defaultEndYear: 2025,
     description:
       "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2025 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
@@ -167,7 +225,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: {
       title: "Tree cover loss (2001-2025)",
       color: "#DC6C9A",
-      items: [{label: "Tree cover loss", color: "#DC6C9A" }],
+      items: [{ label: "Tree cover loss", color: "#DC6C9A" }],
       type: "symbol",
       info: "Tree cover loss dataset can detect stand-replacement disturbances including plantations and supports monitoring forestry practices. The driver context layer would help distinguish harvesting from other causes of tree loss, making it ideal for tracking plantation harvesting cycles.",
       note: "Annual locations of tree cover removal across both natural forests and plantations at the selected canopy density threshold.",
@@ -177,10 +235,15 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 8,
     dataset_name: "Tree cover loss by dominant driver",
+    shortName: "TCL by driver",
     data_layer: "Tree cover loss by dominant driver",
     context_layer: null,
     threshold: 30,
     img: "/dataset_card_tree_cover_loss_drivers.webp",
+    cadence: "2001-2025",
+    resolution: "1 km",
+    geographic_coverage: "global",
+    provider: "WRI / Google",
     description:
       "Shows the primary driver or cause of tree cover loss over the entire range 2001-2025. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
@@ -189,17 +252,17 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       title: "Tree cover loss by dominant driver (2001-2025)",
       color: "#DC6C9A",
       items: [
-        { label: "logging", color: "#52A44E"},
-        { label: "shifting cultivation", color: "#E9D700"},
-        { label: "wildfire", color: "#885128"},
-        { label: "other natural disturbances", color: "#3B209A"},
-        { label: "settlements & infrastructure", color: "#A354A0"},
-        { label: "hard commodities", color: "#E58074"},
-        { label: "permanent agriculture", color: "#E39D29"}
+        { label: "logging", color: "#52A44E" },
+        { label: "shifting cultivation", color: "#E9D700" },
+        { label: "wildfire", color: "#885128" },
+        { label: "other natural disturbances", color: "#3B209A" },
+        { label: "settlements & infrastructure", color: "#A354A0" },
+        { label: "hard commodities", color: "#E58074" },
+        { label: "permanent agriculture", color: "#E39D29" },
       ],
       type: "symbol",
       info: "This dataset shows the dominant driver of tree cover loss over the time period 2001-2025. The dominant driver is defined as the direct driver that caused the majority of tree cover loss within each 1 km cell over the time period.",
-      note: "Shows the dominant driver of deforestation between 2001 and 2025 at the selected canopy density."
+      note: "Shows the dominant driver of deforestation between 2001 and 2025 at the selected canopy density.",
     },
   },
   {
@@ -209,6 +272,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     threshold: 30,
     img: "/dataset_card_tree_cover_gain.webp",
+    cadence: "20 years",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "UMD",
     description:
       "Tree Cover Gain (Hansen/UMD/GLAD) identifies areas where new tree canopy was established between 2000 and 2012 at 30-meter resolution, using Landsat 7 imagery. It captures both  natural forest regrowth and tree plantation cycles, and is useful for tracking large-scale forest recovery trends. Users should note that it is a cumulative layer and should not be combined directly with loss or tree cover data to calculate net change.",
     tile_url:
@@ -230,6 +297,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     threshold: 30,
     img: "/dataset_card_tree_cover.webp",
+    cadence: "2000",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "UMD",
     description:
       "Tree Cover provides global percent tree canopy cover at 30-meter resolution for the year 2000 based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
@@ -245,83 +316,120 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     },
   },
   {
+    dataset_id: 10,
+    dataset_name: "Tree cover loss due to fires",
+    shortName: "TCL from fires",
+    data_layer: "Tree cover loss due to fires",
+    context_layer: null,
+    threshold: 30,
+    img: "/dataset_card_tree_cover_loss.webp",
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "UMD",
+    defaultStartYear: 2001,
+    defaultEndYear: 2025,
+    description:
+      "Tree Cover Loss due to Fires (Hansen/UMD/GLAD) maps annual global tree cover loss attributed to fire from 2001 to 2025 at 30-meter resolution. This subset of the broader Tree Cover Loss dataset isolates fire-driven stand-replacement disturbances in vegetation over 5 meters tall, helping users understand where fire is a dominant driver of forest loss.",
+    tile_url:
+      "https://tiles.globalforestwatch.org/umd_tree_cover_loss_from_fires/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
+    methodology:
+      "Tree cover loss due to fires is derived by overlaying the Hansen/UMD/GLAD global annual tree cover loss dataset with the MCD64A1 burned area product (MODIS). A tree cover loss pixel (30 m) is attributed to fire when a MODIS burned area detection occurs within the same 500 m grid cell and calendar year. Only stand-replacement disturbances in woody vegetation taller than 5 m are included, at the selected canopy density threshold.",
+    citation:
+      'Hansen, M. C., P. V. Potapov, R. Moore, M. Hancher, S. A. Turubanova, A. Tyukavina, D. Thau, S. V. Stehman, S. J. Goetz, T. R. Loveland, A. Kommareddy, A. Egorov, L. Chini, C. O. Justice, and J. R. G. Townshend. 2013. "High-Resolution Global Maps of 21st-Century Forest Cover Change." *Science* 342 (6160): 850–53. https://doi.org/10.1126/science.1244693',
+    legend: {
+      title: "Tree cover loss due to fires (2001-2025)",
+      color: "#9A5B50 ",
+      items: [{ label: "Tree cover loss due to fire", color: "#9A5B50" }],
+      type: "symbol",
+      info: "This dataset isolates fire as a cause of tree cover loss, showing annual locations where fire-driven stand-replacement disturbances have occurred in forests. Useful for understanding the spatial extent and temporal trends of fire impact on forests.",
+      note: "Annual locations of fire-driven tree cover removal at the selected canopy density threshold.",
+      unit: "ha",
+    },
+  },
+  {
     dataset_id: 6,
     dataset_name: "Forest greenhouse gas net flux (2001-2025)",
+    shortName: "GHG net flux",
     data_layer: "Forest greenhouse gas net flux",
     context_layer: null,
     threshold: 30,
     img: "/dataset_card_net_flux.webp",
+    cadence: "",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
     description:
       "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2025, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
     tile_url:
       "https://tiles.globalforestwatch.org/gfw_forest_carbon_net_flux/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30",
-      legend: {
-        title: "GHG net flux",
-        type: "divergent",
-        color: "#39082a",
-        items: [
-          { label: "<-1500 (sink)", color: "#151d44" },
-          { color: "#172447" },
-          { color: "#182c4c" },
-          { color: "#1a3350" },
-          { color: "#1b3a54" },
-          { color: "#1c4259" },
-          { color: "#1c485d" },
-          { color: "#1c4f62" },
-          { color: "#1b5766" },
-          { color: "#1a5d6a" },
-          { color: "#18656e" },
-          { color: "#156c72" },
-          { color: "#137375" },
-          { color: "#117a78" },
-          { color: "#12827b" },
-          { color: "#17887d" },
-          { color: "#25917f" },
-          { color: "#349880" },
-          { color: "#419d82" },
-          { color: "#52a384" },
-          { color: "#61a987" },
-          { color: "#6fad8b" },
-          { color: "#7db390" },
-          { color: "#8bb896" },
-          { color: "#97bd9c" },
-          { color: "#a4c3a3" },
-          { color: "#b1c8ac" },
-          { color: "#bcceb4" },
-          { color: "#c8d4be" },
-          { color: "#d3dac8" },
-          { color: "#dde0d1" },
-          { color: "#e9e7dd" },
-          { color: "#ece4ec" },
-          { color: "#e3dce7" },
-          { color: "#dcd4e5" },
-          { color: "#d3cce3" },
-          { color: "#ccc3e3" },
-          { color: "#c5bbe4" },
-          { color: "#beb2e6" },
-          { color: "#b9a8e8" },
-          { color: "#b4a0e8" },
-          { color: "#b097e7" },
-          { color: "#ac8de4" },
-          { color: "#a885e0" },
-          { color: "#a57dd9" },
-          { color: "#a174d2" },
-          { color: "#9e6dca" },
-          { color: "#9a65c0" },
-          { color: "#945cb4" },
-          { color: "#9056ab" },
-          { color: "#8c4fa0" },
-          { color: "#864896" },
-          { color: "#82438c" },
-          { color: "#7c3d82" },
-          { color: "#763777" },
-          { color: "#70326e" },
-          { color: "#6a2d64" },
-          { color: "#63275a" },
-          { color: "#5c2352" },
-          { color: "#551e48" },
-          { label: `>1500 (source)`, color: "#39082a" },
-        ],
+    legend: {
+      title: "GHG net flux",
+      type: "divergent",
+      color: "#39082a",
+      items: [
+        { label: "<-1500 (sink)", color: "#151d44" },
+        { color: "#172447" },
+        { color: "#182c4c" },
+        { color: "#1a3350" },
+        { color: "#1b3a54" },
+        { color: "#1c4259" },
+        { color: "#1c485d" },
+        { color: "#1c4f62" },
+        { color: "#1b5766" },
+        { color: "#1a5d6a" },
+        { color: "#18656e" },
+        { color: "#156c72" },
+        { color: "#137375" },
+        { color: "#117a78" },
+        { color: "#12827b" },
+        { color: "#17887d" },
+        { color: "#25917f" },
+        { color: "#349880" },
+        { color: "#419d82" },
+        { color: "#52a384" },
+        { color: "#61a987" },
+        { color: "#6fad8b" },
+        { color: "#7db390" },
+        { color: "#8bb896" },
+        { color: "#97bd9c" },
+        { color: "#a4c3a3" },
+        { color: "#b1c8ac" },
+        { color: "#bcceb4" },
+        { color: "#c8d4be" },
+        { color: "#d3dac8" },
+        { color: "#dde0d1" },
+        { color: "#e9e7dd" },
+        { color: "#ece4ec" },
+        { color: "#e3dce7" },
+        { color: "#dcd4e5" },
+        { color: "#d3cce3" },
+        { color: "#ccc3e3" },
+        { color: "#c5bbe4" },
+        { color: "#beb2e6" },
+        { color: "#b9a8e8" },
+        { color: "#b4a0e8" },
+        { color: "#b097e7" },
+        { color: "#ac8de4" },
+        { color: "#a885e0" },
+        { color: "#a57dd9" },
+        { color: "#a174d2" },
+        { color: "#9e6dca" },
+        { color: "#9a65c0" },
+        { color: "#945cb4" },
+        { color: "#9056ab" },
+        { color: "#8c4fa0" },
+        { color: "#864896" },
+        { color: "#82438c" },
+        { color: "#7c3d82" },
+        { color: "#763777" },
+        { color: "#70326e" },
+        { color: "#6a2d64" },
+        { color: "#63275a" },
+        { color: "#5c2352" },
+        { color: "#551e48" },
+        { label: `>1500 (source)`, color: "#39082a" },
+      ],
       info: "This dataset maps the balance between emissions from forest disturbances and carbon removals from forest growth, making it ideal for identifying where forests are contributing to or helping mitigate climate change.",
       note: "Balance between forest emissions and removals at the selected canopy density.",
       unit: "tCO2e/ha",
@@ -372,3 +480,21 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
 export const DATASET_BY_ID: Record<number, DatasetInfo> = Object.fromEntries(
   DATASETS.map((d) => [d.dataset_id, d])
 );
+
+// Full dataset_name -> short label, for the datasets that define one. Keyed by
+// name (not id) because the only handle available at chip-build time is the
+// name string (dataset.dataset_name or a layer's layerName).
+const DATASET_SHORTNAME_BY_NAME: Record<string, string> = Object.fromEntries(
+  DATASET_CARDS.filter((c) => c.shortName).map((c) => [
+    c.dataset_name,
+    c.shortName as string,
+  ])
+);
+
+/**
+ * Returns the short label for a dataset name when one is defined, otherwise the
+ * original name unchanged. Long unmapped names still truncate at the chip.
+ */
+export function shortDatasetName(name: string): string {
+  return DATASET_SHORTNAME_BY_NAME[name] ?? name;
+}

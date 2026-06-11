@@ -14,7 +14,7 @@ import useMapStore from "@/app/store/mapStore";
 import useChatStore from "@/app/store/chatStore";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 
-const GLOBAL_LAYER_ID = "global-layer";
+const GLOBAL_LAYER_ID = "Global Layer";
 
 const TOOL_ERROR_OPTIONS: Array<{ name: string; label: string }> = [
   { name: "generate_insights", label: "Insights" },
@@ -56,7 +56,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
             aois: [],
           },
         },
-        () => {},
+        () => {}
       );
     }
   };
@@ -76,7 +76,12 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
       p="3"
       boxShadow="sm"
     >
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb="2">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb="2"
+      >
         <Text fontSize="xs" fontWeight="600">
           Debug: Trigger Toasts
         </Text>

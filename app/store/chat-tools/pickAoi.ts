@@ -1,5 +1,10 @@
 import { Feature, FeatureCollection } from "geojson";
-import { ChatMessage, StreamMessage, AOI, AOISelection } from "@/app/types/chat";
+import {
+  ChatMessage,
+  StreamMessage,
+  AOI,
+  AOISelection,
+} from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import useContextStore from "../contextStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
@@ -7,11 +12,11 @@ import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 import { GeoJsonEntry } from "../layerManagerSlice";
 import { selectLayerOptions } from "@/app/types/map";
 
-const GLOBAL_LAYER_ID = "global-layer";
+const GLOBAL_LAYER_ID = "Global Layer";
 const GLOBAL_LAYER_NAME = "Global Layer";
 
 function isGlobalQuery(name: string): boolean {
-  return name.toLowerCase() === "all countries in the world";
+  return name.toLowerCase() === "all countries";
 }
 
 /**
@@ -22,7 +27,7 @@ function isGlobalQuery(name: string): boolean {
  */
 async function fetchAndRegisterAoi(
   aoi: AOI,
-  addToRegistry: (entry: GeoJsonEntry) => void,
+  addToRegistry: (entry: GeoJsonEntry) => void
 ): Promise<FeatureCollection | Feature> {
   let geoJsonData: FeatureCollection;
 
@@ -50,15 +55,26 @@ export async function pickAoiTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
-  console.log("[pickAoi] called with:", JSON.stringify({ aoi: streamMessage.aoi, aoi_selection: streamMessage.aoi_selection }, null, 2));
+  console.log(
+    "[pickAoi] called with:",
+    JSON.stringify(
+      { aoi: streamMessage.aoi, aoi_selection: streamMessage.aoi_selection },
+      null,
+      2
+    )
+  );
   try {
-    const { flyToGeoJsonWithRetry, flyToBounds, addToRegistry, addLayer } = useMapStore.getState();
-    const { upsertContextByType } = useContextStore.getState();
+    const { flyToGeoJsonWithRetry, flyToBounds, addToRegistry, addLayer } =
+      useMapStore.getState();
+    const { context, addContext } = useContextStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
     const aoiSelection: AOISelection | undefined = streamMessage.aoi_selection;
-    const aois: AOI[] = aoiSelection?.aois ?? (streamMessage.aoi ? [streamMessage.aoi as AOI] : []);
-    const selectionName: string = aoiSelection?.name ?? (aois[0]?.name || "Unknown");
+    const aois: AOI[] =
+      aoiSelection?.aois ??
+      (streamMessage.aoi ? [streamMessage.aoi as AOI] : []);
+    const selectionName: string =
+      aoiSelection?.name ?? (aois[0]?.name || "Unknown");
 
     // Global query: render a vector tile layer instead of fetching per-country GeoJSON
     if (isGlobalQuery(selectionName)) {
@@ -68,28 +84,62 @@ export async function pickAoiTool(
         properties: {},
         geometry: {
           type: "Polygon",
-          coordinates: [[
-            [-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85],
-          ]],
+          coordinates: [
+            [
+              [-180, -85],
+              [180, -85],
+              [180, 85],
+              [-180, 85],
+              [-180, -85],
+            ],
+          ],
         },
       };
 
+      // Use selectionName (the assistant-provided name, e.g. "All countries
+      // in the world") for the layer's display name so it matches the
+      // aoiSelection.name we put on the context below. The id stays as the
+      // stable GLOBAL_LAYER_ID constant so removeContext's layer cleanup
+      // still finds it. Without this, the legend's AOI filter (which keys
+      // off aoiSelection.name) doesn't recognise the global vector layer
+      // and ends up rendering it as a card *and* as a chip.
       addLayer({
         id: GLOBAL_LAYER_ID,
-        name: GLOBAL_LAYER_NAME,
+        name: selectionName,
         type: "vector",
         visible: true,
         tileUrl: gadm.url,
         sourceLayer: gadm.sourceLayer,
+        selectionName,
+        aoiSelection: aoiSelection ?? { name: selectionName, aois },
       });
 
       flyToGeoJsonWithRetry(worldBbox);
 
-      upsertContextByType({
-        contextType: "area",
-        content: GLOBAL_LAYER_NAME,
-        isAiContext: true,
-        aoiSelection: aoiSelection ?? { name: GLOBAL_LAYER_NAME, aois },
+      // Areas stack — skip if a global context with this selection name is
+      // already present. Match by the same field the context will carry
+      // (aoiSelection.name === selectionName) so the dedup works regardless
+      // of whether the assistant used the canonical "All countries in the
+      // world" wording or a different phrasing that still resolves to a
+      // global query.
+      const globalAlreadyInContext = context.some(
+        (c) =>
+          c.contextType === "area" && c.aoiSelection?.name === selectionName
+      );
+      if (!globalAlreadyInContext) {
+        addContext({
+          contextType: "area",
+          content: GLOBAL_LAYER_NAME,
+          isAiContext: true,
+          aoiSelection: aoiSelection ?? { name: selectionName, aois },
+        });
+      }
+
+      addMessage({
+        type: "area-card",
+        message: "",
+        aoiSelection: aoiSelection ?? { name: selectionName, aois },
+        timestamp: streamMessage.timestamp,
       });
 
       return;
@@ -108,7 +158,7 @@ export async function pickAoiTool(
     // Fetch geometry for all AOIs in parallel
     const results = await Promise.allSettled(
       aois.map((aoi) => fetchAndRegisterAoi(aoi, addToRegistry))
-    )
+    );
 
     // Collect all raw geometry data for combined bounds, track failures
     const allGeoData: (FeatureCollection | Feature)[] = [];
@@ -119,14 +169,22 @@ export async function pickAoiTool(
         allGeoData.push(result.value);
       } else {
         const aoiName = aois[idx]?.name ?? `AOI ${idx}`;
-        console.error(`Failed to fetch geometry for "${aoiName}":`, result.reason);
+        console.error(
+          `Failed to fetch geometry for "${aoiName}":`,
+          result.reason
+        );
         failures.push(aoiName);
       }
     });
 
     // Only add the layer if at least one AOI succeeded, with only successful refs
-    const successfulAois = aois.filter((_, idx) => results[idx].status === "fulfilled");
-    const successfulRefs = successfulAois.map((aoi) => ({ name: aoi.name, source: aoi.source }));
+    const successfulAois = aois.filter(
+      (_, idx) => results[idx].status === "fulfilled"
+    );
+    const successfulRefs = successfulAois.map((aoi) => ({
+      name: aoi.name,
+      source: aoi.source,
+    }));
 
     if (successfulRefs.length > 0) {
       addLayer({
@@ -140,7 +198,10 @@ export async function pickAoiTool(
       });
     }
 
-    console.log("[pickAoi] successfulAois bbox check:", successfulAois.map((a) => ({ name: a.name, bbox: a.bbox })));
+    console.log(
+      "[pickAoi] successfulAois bbox check:",
+      successfulAois.map((a) => ({ name: a.name, bbox: a.bbox }))
+    );
 
     // Fly to the combined bounds using backend-provided bbox values.
     // Using aoi.bbox directly preserves dateline-crossing extents (west > east),
@@ -152,21 +213,42 @@ export async function pickAoiTool(
       // flyToBounds (and mapStore's fitBounds wrapper) expects east <= 180;
       // subtract 360 to re-wrap when the union crossed the antimeridian.
       if (east > 180) east -= 360;
-      console.log("[pickAoi] calling flyToBounds:", typeof flyToBounds, [[west, south], [east, north]]);
-      flyToBounds([[west, south], [east, north]]);
+      console.log("[pickAoi] calling flyToBounds:", typeof flyToBounds, [
+        [west, south],
+        [east, north],
+      ]);
+      flyToBounds([
+        [west, south],
+        [east, north],
+      ]);
     } else if (allGeoData.length > 0) {
       flyToGeoJsonWithRetry(allGeoData[0]);
     }
 
-    // Update area context with the selection name and full AOI selection data
-    upsertContextByType({
-      contextType: "area",
-      content: selectionName,
-      isAiContext: true,
-      aoiSelection: selectionForContext,
-    });
+    // Areas stack — add this AOI selection alongside any existing ones.
+    // Skip if a selection with this same name is already in context.
+    const selectionAlreadyInContext = context.some(
+      (c) => c.contextType === "area" && c.aoiSelection?.name === selectionName
+    );
+    if (!selectionAlreadyInContext) {
+      addContext({
+        contextType: "area",
+        content: selectionName,
+        isAiContext: true,
+        aoiSelection: selectionForContext,
+      });
+    }
 
-
+    // Only show the area card if at least one AOI rendered successfully,
+    // and only include the successful AOIs in the card.
+    if (successfulAois.length > 0) {
+      addMessage({
+        type: "area-card",
+        message: "",
+        aoiSelection: { name: selectionName, aois: successfulAois },
+        timestamp: streamMessage.timestamp,
+      });
+    }
 
     // If some AOIs failed, show a partial-failure message
     if (failures.length > 0 && failures.length < aois.length) {

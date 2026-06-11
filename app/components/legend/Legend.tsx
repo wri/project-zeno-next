@@ -1,16 +1,24 @@
 import { useEffect, useState } from "react";
 import {
   Flex,
-  Heading,
-  VisuallyHidden,
+  Box,
+  Text,
   IconButton,
   chakra,
+  Collapsible,
 } from "@chakra-ui/react";
-import { DotsSixVerticalIcon } from "@phosphor-icons/react";
+import {
+  DotsSixVerticalIcon,
+  StackIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+} from "@phosphor-icons/react";
 import { Reorder, useDragControls } from "motion/react";
 
 import { LayerActionHandler, LegendLayer } from "./types";
+import type { LegendAoi } from "./useLegendHook";
 import { LayerEntry } from "./LayerEntry";
+import { ParamChip } from "@/app/components/ui/ParamChip";
 
 const ChReorderGroup = chakra(Reorder.Group);
 const ChReorderItem = chakra(Reorder.Item);
@@ -21,6 +29,8 @@ const ChReorderItem = chakra(Reorder.Item);
 interface LegendProps {
   layers: LegendLayer[];
   onLayerAction?: LayerActionHandler;
+  aois?: LegendAoi[];
+  onRemoveAoi?: (contextId: string) => void;
 }
 
 /**
@@ -30,7 +40,10 @@ interface LegendProps {
  * @param props.layers - Array of LegendLayer objects to display.
  */
 export function Legend(props: LegendProps) {
-  const { layers, onLayerAction } = props;
+  const { layers, onLayerAction, aois, onRemoveAoi } = props;
+
+  // Controls whether the whole legend body is collapsed to just the header.
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Track which layers are expanded (multiple can be open).
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -81,59 +94,137 @@ export function Legend(props: LegendProps) {
     setPrevLayerIds(currentIds);
   }, [layers]);
 
-  if (!layers.length) return null;
+  const hasAois = !!aois && aois.length > 0;
+  if (!layers.length && !hasAois) return null;
 
   return (
     <Flex
-      position="absolute"
-      right={3}
-      bottom={{ base: "4.5rem", md: 12 }}
-      zIndex={100}
-      width={320}
+      w="100%"
       maxH={{ base: "50vh", md: "60vh" }}
-      bg="bg"
-      rounded="sm"
-      shadow="sm"
+      bg="#F7F9FF"
+      border="1px solid"
+      borderColor="#D7D3D0"
+      rounded="4px"
       flexDirection="column"
       overflow="hidden"
+      pointerEvents="all"
+      flexShrink={0}
     >
-      <VisuallyHidden>
-        <Heading>Map Legend</Heading>
-      </VisuallyHidden>
-      <ChReorderGroup
-        axis="y"
-        values={layers}
-        onReorder={(layers: LegendLayer[]) =>
-          onLayerAction?.({ action: "reorder", payload: { layers } })
-        }
-        listStyleType="none"
-        fontSize="xs"
-        p={0}
-        m={0}
-        w="100%"
-        overflowY="auto"
-        flex={1}
+      {/* Always-visible header — 28px section header per Figma */}
+      <Flex
+        h="28px"
+        px="16px"
+        py="6px"
+        gap="8px"
+        alignItems="center"
+        justifyContent="space-between"
+        borderBottom="1px solid"
+        borderColor="#DDE2F5"
+        flexShrink={0}
       >
-        {layers.map((item) => (
-          <Item
-            key={item.id}
-            item={item}
-            expanded={expandedIds.has(item.id)}
-            onToggleExpand={() =>
-              setExpandedIds((prev) => {
-                const next = new Set(prev);
-                if (next.has(item.id)) {
-                  next.delete(item.id);
-                } else {
-                  next.add(item.id);
-                }
-                return next;
-              })
-            }
-            onLayerAction={(details) => onLayerAction?.(details)}
-          />
-        ))}
-      </ChReorderGroup>
+        {/* Icon + label group (matches Figma: width 83, height 16, gap 8px) */}
+        <Flex alignItems="center" gap="8px" h="16px">
+          <StackIcon size={12} color="#0049AA" />
+          <Text
+            fontSize="10px"
+            fontWeight="400"
+            fontFamily="mono"
+            lineHeight="16px"
+            letterSpacing="0.03em"
+            textTransform="uppercase"
+            color="#656E7B"
+          >
+            Map layers
+          </Text>
+        </Flex>
+        <IconButton
+          variant="ghost"
+          size="2xs"
+          p={0}
+          minW="16px"
+          h="16px"
+          w="16px"
+          color="#656E7B"
+          aria-label={isCollapsed ? "Expand legend" : "Collapse legend"}
+          onClick={() => setIsCollapsed((prev) => !prev)}
+        >
+          {isCollapsed ? (
+            <CaretDownIcon size={12} weight="bold" />
+          ) : (
+            <CaretUpIcon size={12} weight="bold" />
+          )}
+        </IconButton>
+      </Flex>
+
+      {/* Collapsible body — animates height on open/close */}
+      <Collapsible.Root open={!isCollapsed}>
+        <Collapsible.Content>
+          {layers.length > 0 && (
+            <ChReorderGroup
+              axis="y"
+              values={layers}
+              onReorder={(layers: LegendLayer[]) =>
+                onLayerAction?.({ action: "reorder", payload: { layers } })
+              }
+              listStyleType="none"
+              fontSize="xs"
+              p={0}
+              m={0}
+              w="100%"
+              overflowY="auto"
+              maxH="200px"
+            >
+              {layers.map((item) => (
+                <Item
+                  key={item.id}
+                  item={item}
+                  expanded={expandedIds.has(item.id)}
+                  onToggleExpand={() =>
+                    setExpandedIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(item.id)) {
+                        next.delete(item.id);
+                      } else {
+                        next.add(item.id);
+                      }
+                      return next;
+                    })
+                  }
+                  onLayerAction={(details) => onLayerAction?.(details)}
+                />
+              ))}
+            </ChReorderGroup>
+          )}
+          {hasAois && (
+            <>
+              {layers.length > 0 && <Box h="1px" bg="#DDE2F5" />}
+              <Flex
+                bg="#F7F9FF"
+                flexWrap="wrap"
+                gap="8px"
+                pt="8px"
+                pr={0}
+                pb="8px"
+                pl="24px"
+              >
+                {aois.map((aoi) => (
+                  <ParamChip
+                    key={`${aoi.contextId}-${aoi.name}`}
+                    label="AREA"
+                    value={aoi.name}
+                    colorScheme="blue"
+                    bg="white"
+                    onRemove={
+                      onRemoveAoi ? () => onRemoveAoi(aoi.contextId) : undefined
+                    }
+                    removeLabel={`Remove ${aoi.name}`}
+                  />
+                ))}
+              </Flex>
+            </>
+          )}
+        </Collapsible.Content>
+      </Collapsible.Root>
     </Flex>
   );
 }

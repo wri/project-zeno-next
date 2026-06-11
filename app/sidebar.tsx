@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { API_CONFIG } from "@/app/config/api";
+import { useCallback, useEffect, useRef } from "react";
 import {
   Button,
   Flex,
@@ -14,6 +13,7 @@ import {
   Box,
   Badge,
   Progress,
+  Spinner,
 } from "@chakra-ui/react";
 import Link from "next/link";
 
@@ -28,10 +28,11 @@ import {
 import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
-import { toaster } from "@/app/components/ui/toaster";
-import { clearToken } from "@/app/lib/api-client";
+import { useLogout } from "./hooks/useLogout";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
+import { useThreadsInfinite } from "./hooks/useThreadsInfinite";
+import { useIntersectionObserver } from "./hooks/useIntersectionObserver";
 
 function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
   const { href, children, isActive, ...rest } = props;
@@ -66,6 +67,7 @@ function ThreadSection({
   label,
   value,
   currentThreadId,
+  footer,
 }: {
   threads: {
     id: string;
@@ -76,8 +78,10 @@ function ThreadSection({
   label: string;
   value: string;
   currentThreadId: string | null;
+  footer?: React.ReactNode;
 }) {
-  if (!threads.length) return null;
+  const { toggleSidebar } = useSidebarStore();
+  if (!threads.length && !footer) return null;
   return (
     <Accordion.Item value={value} border="none">
       <Accordion.ItemTrigger px="3" py="1" cursor="pointer">
@@ -121,6 +125,7 @@ function ThreadSection({
                   href={`/app/threads/${thread.id}`}
                   isActive={isActive}
                   _hover={{ textDecor: "none" }}
+                  onClick={toggleSidebar}
                 >
                   {thread.name}
                 </ThreadLink>
@@ -131,46 +136,36 @@ function ThreadSection({
             );
           })}
         </Stack>
+        {footer}
       </Accordion.ItemContent>
     </Accordion.Item>
   );
 }
 
 export function Sidebar() {
-  const {
-    sideBarVisible,
-    toggleSidebar,
-    threadGroups,
-    fetchThreads,
-    apiStatus,
-    fetchApiStatus,
-  } = useSidebarStore();
+  const { sideBarVisible, toggleSidebar, apiStatus, fetchApiStatus } =
+    useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
+  const { threadGroups, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useThreadsInfinite();
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleLoadMore = useCallback(() => {
+    fetchNextPage();
+  }, [fetchNextPage]);
+
+  useIntersectionObserver(sentinelRef, handleLoadMore, {
+    enabled: hasNextPage && !isFetchingNextPage,
+    rootMargin: "200px",
+  });
 
   useEffect(() => {
-    fetchThreads();
     fetchApiStatus();
-  }, [fetchThreads, fetchApiStatus]);
+  }, [fetchApiStatus]);
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const handleLogout = () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-    try {
-      toaster.create({
-        title: "Logging out",
-        description: "Signing you out and redirecting…",
-        type: "info",
-        duration: 8000,
-      });
-    } catch {}
-    clearToken();
-    const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/logout`);
-    url.searchParams.set("callbackUrl", `${window.location.origin}/`);
-    url.searchParams.set("origin", "gnw");
-    window.location.href = url.toString();
-  };
+  const { logout, isLoggingOut } = useLogout();
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -180,7 +175,7 @@ export function Sidebar() {
     <Flex
       flexDir="column"
       bg="bg.subtle"
-      w={{ base: "full", md: !sideBarVisible ? "0px" : "16rem" }}
+      w={{ base: "full", md: !sideBarVisible ? "0px" : "428px" }}
       h="100%"
       gridArea="sidebar"
       overflow="hidden"
@@ -241,6 +236,7 @@ export function Sidebar() {
           colorPalette="primary"
           size="sm"
           w={{ base: "full", md: "auto" }}
+          onClick={toggleSidebar}
         >
           <Link href="/app" aria-label="New conversation">
             New Conversation
@@ -272,10 +268,7 @@ export function Sidebar() {
           },
         }}
       >
-        <Accordion.Root
-          multiple
-          defaultValue={["today", "previousWeek", "older"]}
-        >
+        <Accordion.Root multiple defaultValue={["today", "previousWeek"]}>
           {hasTodayThreads && (
             <ThreadSection
               threads={threadGroups.today}
@@ -292,12 +285,22 @@ export function Sidebar() {
               currentThreadId={currentThreadId}
             />
           )}
-          {hasOlderThreads && (
+          {(hasOlderThreads || hasNextPage) && (
             <ThreadSection
               threads={threadGroups.older}
               label="Older Conversations"
               value="older"
               currentThreadId={currentThreadId}
+              footer={
+                <>
+                  <div ref={sentinelRef} />
+                  {isFetchingNextPage && (
+                    <Flex justify="center" py="2">
+                      <Spinner size="sm" color="fg.subtle" />
+                    </Flex>
+                  )}
+                </>
+              }
             />
           )}
         </Accordion.Root>
@@ -342,7 +345,7 @@ export function Sidebar() {
           </Button>
           <Button
             variant="ghost"
-            onClick={handleLogout}
+            onClick={logout}
             size="sm"
             loading={isLoggingOut}
             disabled={isLoggingOut}

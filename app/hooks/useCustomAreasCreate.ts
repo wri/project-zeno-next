@@ -17,7 +17,9 @@ async function createCustomArea(
 
   if (!res.ok) {
     const error = await res.json();
-    const errorWithStatus = new Error(error.error || `Request failed: ${res.statusText}`);
+    const errorWithStatus = new Error(
+      error.error || `Request failed: ${res.statusText}`
+    );
     (errorWithStatus as Error & { status?: number }).status = res.status;
     throw errorWithStatus;
   }
@@ -40,7 +42,11 @@ export function useCustomAreasCreate() {
       queryClient.invalidateQueries({ queryKey: ["customAreas"] });
     },
     onError: (error: Error & { status?: number }) => {
-      if (error.status === 400 || error.status === 401 || error.status === 403) {
+      if (
+        error.status === 400 ||
+        error.status === 401 ||
+        error.status === 403
+      ) {
         showServiceUnavailableError("Custom Areas");
       } else if (error.status && error.status >= 400 && error.status < 500) {
         showApiError(error, { title: "Unable to Create Area" });

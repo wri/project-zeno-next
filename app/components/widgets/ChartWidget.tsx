@@ -142,20 +142,27 @@ const CustomPieLegend = ({ series }: CustomPieLegendProps) => {
   if (!series) return null;
 
   return (
-    <Flex direction="column" gap={2} as="ul" listStyleType="none" m={0} p={0}>
+    <Flex direction="column" gap={1} as="ul" listStyleType="none" m={0} p={0}>
       {series
         .filter((entry) => entry.name && entry.color)
         .map((entry, index) => (
-          <Flex as="li" key={`item-${index}`} align="center" gap={2}>
+          <Flex as="li" key={`item-${index}`} align="center" gap={1.5}>
             <Box
-              w={4}
-              h={4}
+              w={2.5}
+              h={2.5}
               bg={entry.color}
               border="1px solid"
               borderColor="neutral.400"
               rounded="sm"
+              flexShrink={0}
             />
-            <Text fontSize="xs" color="neutral.500">
+            <Text
+              fontSize="2xs"
+              color="neutral.500"
+              overflow="hidden"
+              textOverflow="ellipsis"
+              whiteSpace="nowrap"
+            >
               {String(entry.name)}
             </Text>
           </Flex>
@@ -215,15 +222,22 @@ export default function ChartWidget({
   widget,
   expanded = false,
 }: ChartWidgetProps) {
-  const { data, xAxis, yAxis, type } = widget;
+  const { data, xAxis, yAxis, type, seriesFields } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
   const { data: formattedData, series } = useMemo(
     () =>
-      xAxis && yAxis
-        ? formatChartData(data, type, xAxis, yAxis, widget.datasetName)
+      xAxis
+        ? formatChartData(
+            data,
+            type,
+            xAxis,
+            yAxis,
+            widget.datasetName,
+            seriesFields
+          )
         : { data: [], series: [] },
-    [data, type, xAxis, yAxis, widget.datasetName],
+    [data, type, xAxis, yAxis, widget.datasetName, seriesFields]
   );
 
   const chart = useChart({ data: formattedData, series });
@@ -233,7 +247,7 @@ export default function ChartWidget({
     return formattedData.reduce((sum, d) => sum + (Number(d[yAxis]) || 0), 0);
   }, [type, yAxis, formattedData]);
 
-  if (!xAxis || !yAxis) {
+  if (!xAxis || (type === "scatter" && !yAxis)) {
     return (
       <Flex
         align="center"
@@ -312,7 +326,7 @@ export default function ChartWidget({
       if (!Number.isFinite(v)) continue;
       longestYTickChars = Math.max(
         longestYTickChars,
-        formatYAxisLabel(v, yAxis).length,
+        formatYAxisLabel(v, yAxis).length
       );
     }
   }
@@ -322,12 +336,12 @@ export default function ChartWidget({
         TICK_MARGIN +
           longestXTickChars * CHAR_PX * Math.sin(TICK_ANGLE_RAD) +
           TICK_FONT_PX * Math.cos(TICK_ANGLE_RAD) +
-          TITLE_BAND,
+          TITLE_BAND
       )
     : TICK_MARGIN + TICK_FONT_PX + TITLE_BAND;
 
   const yAxisWidth = Math.ceil(
-    longestYTickChars * CHAR_PX + TICK_MARGIN + TITLE_BAND,
+    longestYTickChars * CHAR_PX + TICK_MARGIN + TITLE_BAND
   );
 
   const renderChartItems = () => {
@@ -338,8 +352,8 @@ export default function ChartWidget({
             data={chart.data}
             nameKey={chart.key(xAxis)}
             dataKey={chart.key(yAxis)}
-            innerRadius={50}
-            outerRadius={100}
+            innerRadius={35}
+            outerRadius={75}
             isAnimationActive={false}
             startAngle={90}
             endAngle={-270}
@@ -431,7 +445,7 @@ export default function ChartWidget({
   return (
     <Box role="img" aria-label={chartLabel} tabIndex={0}>
       <Chart.Root
-        maxH={expanded ? "75vh" : "280px"}
+        maxH={expanded ? "75vh" : type === "pie" ? "190px" : "280px"}
         chart={chart}
         overflow="hidden"
       >
@@ -453,8 +467,8 @@ export default function ChartWidget({
             wrapperStyle={{
               paddingBottom: "0.5rem",
               maxHeight: "100%",
-              maxWidth: "100%",
-              overflow: "auto",
+              width: type === "pie" ? "42%" : undefined,
+              overflow: "hidden",
             }}
           />
           {type !== "pie" && (

@@ -9,50 +9,65 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon, MapTrifoldIcon } from "@phosphor-icons/react";
 
+export type BasemapTheme = "light" | "dark";
+
 export interface BasemapOption {
   id: string;
   name: string;
   tileUrl: string;
   thumbnailUrl: string;
+  theme: BasemapTheme;
 }
 
-const basemapOptions: BasemapOption[] = [
+export const basemapOptions: BasemapOption[] = [
   {
     id: "light",
     name: "Light",
+    theme: "light",
     tileUrl: "devseed/cmazl5ws500bz01scaa27dqi4",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/static/0,0,0,0,0/200x200@2x?access_token=" +
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN +
+      "&attribution=false&logo=false",
   },
   {
     id: "satellite",
     name: "Satellite",
+    theme: "dark",
     tileUrl: "mapbox/satellite-v9",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/0,0,0,0,0/200x200@2x?access_token=" +
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN +
+      "&attribution=false&logo=false",
   },
   {
     id: "dark",
     name: "Dark",
+    theme: "dark",
     tileUrl: "devseed/cm7nk8rlu01bm01qvb6pues5y",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/devseed/cm7nk8rlu01bm01qvb6pues5y/static/0,0,0,0,0/200x200@2x?access_token=" +
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN +
+      "&attribution=false&logo=false",
   },
 ];
 
 interface BasemapSelectorProps {
-  display: Record<string, string> | string;
+  display?: Record<string, string> | string;
   currentBasemap: string;
   onBasemapChange: (tileUrl: string) => void;
+  leftMd?: string | number;
+  bottomMd?: string | number;
+  inline?: boolean;
 }
 
 export function BasemapSelector({
   display,
   currentBasemap,
   onBasemapChange,
+  leftMd = "calc(0.5rem - 2px)",
+  bottomMd = "calc(7rem - 2px)",
+  inline = false,
 }: BasemapSelectorProps) {
   const currentOption =
     basemapOptions.find((option) => option.tileUrl === currentBasemap) ||
@@ -67,20 +82,24 @@ export function BasemapSelector({
           size="lg"
           bg={currentOption ? `url(${currentOption.thumbnailUrl})` : "bg"}
           bgSize="cover"
-          position="absolute"
+          position={inline ? "relative" : "absolute"}
           pointerEvents="all"
-          bottom={{ base: "4.25rem", md: "calc(7rem - 2px)" }}
-          left={{ base: 3.5, md: "calc(0.5rem - 2px)" }}
-          zIndex={510}
+          bottom={inline ? undefined : { base: "4.25rem", md: bottomMd }}
+          left={inline ? undefined : { base: 3.5, md: leftMd }}
+          zIndex={inline ? undefined : 510}
           boxShadow="md"
           border="1px solid"
           borderColor={
             currentOption.id === "light" ? "border" : "border.inverted"
           }
-          animation={{
-            base: "0.16s ease-out 1 forwards slide-from-bottom-full, 0.24s ease-out 1 forwards fade-in",
-            md: "none",
-          }}
+          animation={
+            inline
+              ? undefined
+              : {
+                  base: "0.16s ease-out 1 forwards slide-from-bottom-full, 0.24s ease-out 1 forwards fade-in",
+                  md: "none",
+                }
+          }
         >
           <MapTrifoldIcon
             fill={

@@ -12,10 +12,12 @@ import {
   QueryType,
   UiContext,
   ToolStepData,
+  SuggestedDataset,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
+import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 import { DATASET_BY_ID } from "../constants/datasets";
@@ -23,13 +25,14 @@ import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
-import useSidebarStore from "./sidebarStore";
+import { queryClient } from "@/app/lib/query-client";
 import {
   showApiError,
   showError,
   showServiceUnavailableError,
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
+import useInsightStore from "./insightStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -65,12 +68,11 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message:
-      `**Welcome to Global Nature Watch!**
-      &nbsp;
-      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
-      &nbsp;
-      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
+      message: `**Welcome to Global Nature Watch!**
+
+Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
+
+You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
       timestamp: new Date().toISOString(),
     },
   ],
@@ -131,7 +133,9 @@ async function processStreamMessage(
   addToolStep: (toolData: StreamMessage) => void,
   getPendingTraceId: () => string | null,
   setPendingTraceId: (traceId: string | null) => void,
-  attachTraceToLastAssistant: (traceId: string) => boolean
+  attachTraceToLastAssistant: (traceId: string) => boolean,
+  getPendingNudge: () => SuggestedDataset[] | null,
+  setPendingNudge: (datasets: SuggestedDataset[] | null) => void
 ) {
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
@@ -173,12 +177,30 @@ async function processStreamMessage(
   } else if (streamMessage.type === "text" && streamMessage.text) {
     const pending = getPendingTraceId();
     const traceToUse = streamMessage.trace_id || pending || undefined;
-    addMessage({
-      type: "assistant",
-      message: streamMessage.text,
-      timestamp: streamMessage.timestamp,
-      traceId: traceToUse,
-    });
+
+    // Consume the most recent generate_insights batch and render it with the
+    // assistant text. When the reply contains [Chart N] markers, cards are
+    // placed positionally; otherwise (e.g. current staging, which emits chart
+    // data but no markers) they are appended after the text. See
+    // buildInsightChatMessages for the full contract.
+    const pendingWidgets = useInsightStore.getState().consumePendingBatch();
+    buildInsightChatMessages(
+      streamMessage.text,
+      pendingWidgets,
+      streamMessage.timestamp,
+      traceToUse
+    ).forEach(addMessage);
+    // Flush any buffered nudge immediately after the assistant message
+    const pendingNudge = getPendingNudge();
+    if (pendingNudge) {
+      addMessage({
+        type: "dataset-nudge",
+        message: "",
+        suggestedDatasets: pendingNudge,
+        timestamp: streamMessage.timestamp,
+      });
+      setPendingNudge(null);
+    }
     // Clear pending trace id once used
     if (pending && pending === traceToUse) {
       setPendingTraceId(null);
@@ -209,7 +231,14 @@ async function processStreamMessage(
     // Handling for pick_dataset tool
     else if (streamMessage.name === "pick_dataset") {
       void Promise.resolve().then(() =>
-        pickDatasetTool(streamMessage, addMessage)
+        pickDatasetTool(streamMessage, (message) => {
+          // Buffer dataset-nudge messages so they appear after the assistant narrative
+          if (message.type === "dataset-nudge" && message.suggestedDatasets) {
+            setPendingNudge(message.suggestedDatasets);
+          } else {
+            addMessage(message);
+          }
+        })
       );
       return;
     }
@@ -226,7 +255,10 @@ async function processStreamMessage(
 const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   ...initialState,
 
-  reset: () => set(initialState),
+  reset: () => {
+    set(initialState);
+    useInsightStore.getState().clearInsights();
+  },
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
@@ -360,6 +392,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       useAuthStore.getState().setUsageFromHeaders(response.headers);
 
       const reader = response.body.getReader();
+      let pendingNudge: SuggestedDataset[] | null = null;
 
       await readDataStream({
         abortController,
@@ -392,11 +425,19 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                   return state;
                 });
                 return attached;
+              },
+              () => pendingNudge,
+              (datasets) => {
+                pendingNudge = datasets;
               }
             );
           } catch (err) {
             if (isFinal) {
-              console.error("Failed to parse final LangChain message", data, err);
+              console.error(
+                "Failed to parse final LangChain message",
+                data,
+                err
+              );
             } else {
               console.error("Failed to parse LangChain message", data, err);
             }
@@ -478,14 +519,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
     } finally {
       clearTimeout(timeoutId);
-      
+
       // Attach tool steps to the user message before clearing loading state
       const { attachToolStepsToLastUserMessage } = get();
       attachToolStepsToLastUserMessage();
-      
+
       setLoading(false);
 
-      useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };
     }
   },
@@ -577,6 +618,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       const reader = response.body.getReader();
+      let pendingNudgeThread: SuggestedDataset[] | null = null;
 
       await readDataStream({
         abortController,
@@ -595,8 +637,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               const currentToolSteps = get().toolSteps;
               if (currentToolSteps.length > 0) {
                 const first = new Date(currentToolSteps[0].timestamp).getTime();
-                const last = new Date(currentToolSteps[currentToolSteps.length - 1].timestamp).getTime();
-                const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+                const last = new Date(
+                  currentToolSteps[currentToolSteps.length - 1].timestamp
+                ).getTime();
+                const historicalDuration =
+                  isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
                 get().attachToolStepsToLastUserMessage(historicalDuration);
                 get().clearToolSteps();
               }
@@ -650,11 +695,19 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                   return state;
                 });
                 return attached;
+              },
+              () => pendingNudgeThread,
+              (datasets) => {
+                pendingNudgeThread = datasets;
               }
             );
           } catch (err) {
             if (isFinal) {
-              console.error("Failed to parse final LangChain message", data, err);
+              console.error(
+                "Failed to parse final LangChain message",
+                data,
+                err
+              );
             } else {
               console.error("Failed to parse LangChain message", data, err);
             }
@@ -701,8 +754,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       const finalToolSteps = get().toolSteps;
       if (finalToolSteps.length > 0) {
         const first = new Date(finalToolSteps[0].timestamp).getTime();
-        const last = new Date(finalToolSteps[finalToolSteps.length - 1].timestamp).getTime();
-        const historicalDuration = isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+        const last = new Date(
+          finalToolSteps[finalToolSteps.length - 1].timestamp
+        ).getTime();
+        const historicalDuration =
+          isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
         get().attachToolStepsToLastUserMessage(historicalDuration);
       }
 

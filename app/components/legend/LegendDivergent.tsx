@@ -18,9 +18,7 @@ export function LegendDivergent(props: {
   color: SymbolColor[] | SymbolColorValue[];
 }) {
   const { unit, minLabel, maxLabel, color } = props;
-  const colorRamp = makeColorRamp(
-    color as SymbolColor[] | SymbolColorValue[]
-  );
+  const colorRamp = makeColorRamp(color as SymbolColor[] | SymbolColorValue[]);
   if (!colorRamp) return null;
 
   return (
@@ -32,15 +30,25 @@ export function LegendDivergent(props: {
       </Flex>
       <ColorBar color={colorRamp} />
       <Box position="relative" h="20px">
-        <Flex justifyContent="space-between" fontSize="xs" position="absolute" w="100%">
-            <VisuallyHidden>From</VisuallyHidden>
-            <Text as="span">{minLabel}</Text>
-            <VisuallyHidden>to</VisuallyHidden>
-            <Text as="span">{maxLabel}</Text>
+        <Flex
+          justifyContent="space-between"
+          fontSize="xs"
+          position="absolute"
+          w="100%"
+        >
+          <VisuallyHidden>From</VisuallyHidden>
+          <Text as="span">{minLabel}</Text>
+          <VisuallyHidden>to</VisuallyHidden>
+          <Text as="span">{maxLabel}</Text>
         </Flex>
-        <Flex justifyContent="center" fontSize="xs" position="absolute" w="100%">
-            <VisuallyHidden>0</VisuallyHidden>
-            <Text as="span">0</Text>
+        <Flex
+          justifyContent="center"
+          fontSize="xs"
+          position="absolute"
+          w="100%"
+        >
+          <VisuallyHidden>0</VisuallyHidden>
+          <Text as="span">0</Text>
         </Flex>
       </Box>
     </Box>

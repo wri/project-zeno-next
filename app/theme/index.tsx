@@ -50,6 +50,7 @@ export const config = defineConfig({
       },
       colors: {
         primary: {
+          25: { value: "#F7F9FF" },
           50: { value: "#E0E8FF" },
           100: { value: "#D7DFF2" },
           200: { value: "#AFBFE6" },
@@ -68,7 +69,7 @@ export const config = defineConfig({
           200: { value: "#F4F5F7" },
           300: { value: "#E1E2E6" },
           400: { value: "#B2B7BD" },
-          500: { value: "#666E7B" },
+          500: { value: "#656E7B" },
           600: { value: "#394048" },
           700: { value: "#282D33" },
           800: { value: "#212629" },
@@ -99,6 +100,7 @@ export const config = defineConfig({
         lime: {
           100: { value: "#F7FBD9" },
           400: { value: "#E3F37F" },
+          700: { value: "#8E9954" },
         },
         mint: {
           50: { value: "#e2fff8" },
@@ -229,6 +231,9 @@ export const config = defineConfig({
               _light: "{colors.primary.600}",
               _dark: "{colors.primary.300}",
             },
+          },
+          link: {
+            value: { _light: "#0049aa", _dark: "#0049aa" },
           },
         },
         border: {

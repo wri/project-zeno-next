@@ -34,7 +34,7 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { upsertContextByType } = useContextStore();
+  const { context, addContext, removeContext } = useContextStore();
   const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
@@ -131,8 +131,19 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               filter: ["in", "gfw_fid", feature.properties?.gfw_fid],
             });
             if (sourceFeatures.length === 1) {
-              addToRegistry({ ref: { name: aoiName, source: layerId }, data: sourceFeatures[0], srcId: dynamicSrcId, subtype: dynamicSubtype });
-              addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
+              addToRegistry({
+                ref: { name: aoiName, source: layerId },
+                data: sourceFeatures[0],
+                srcId: dynamicSrcId,
+                subtype: dynamicSubtype,
+              });
+              addLayer({
+                id: aoiName,
+                name: aoiName,
+                type: "geojson",
+                visible: true,
+                featureRefs: [{ name: aoiName, source: layerId }],
+              });
             } else if (sourceFeatures.length > 1) {
               const collection: FeatureCollection<
                 Polygon | MultiPolygon,
@@ -146,24 +157,52 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               };
               const f = union(collection);
               if (f) {
-                addToRegistry({ ref: { name: aoiName, source: layerId }, data: f, srcId: dynamicSrcId, subtype: dynamicSubtype });
-                addLayer({ id: aoiName, name: aoiName, type: "geojson", visible: true, featureRefs: [{ name: aoiName, source: layerId }] });
+                addToRegistry({
+                  ref: { name: aoiName, source: layerId },
+                  data: f,
+                  srcId: dynamicSrcId,
+                  subtype: dynamicSubtype,
+                });
+                addLayer({
+                  id: aoiName,
+                  name: aoiName,
+                  type: "geojson",
+                  visible: true,
+                  featureRefs: [{ name: aoiName, source: layerId }],
+                });
               }
             }
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
 
-            upsertContextByType({
-              contextType: "area",
-              content: aoiName,
-              aoiData: {
-                name: aoiName,
-                ...(idField ? { [idField]: dynamicSrcId } : {}),
-                src_id: dynamicSrcId,
-                subtype: dynamicSubtype,
-                source: layerConfig?.id.toLowerCase(),
-              },
-            });
+            // Only one vector-click AOI at a time. Skip entirely if this src_id is
+            // already the active selection (avoids remove+re-add on double-click).
+            // Custom (drawn/uploaded) areas — identified by aoiData.source === "custom"
+            // — are left untouched.
+            const alreadyInContext = context.some(
+              (c) =>
+                c.contextType === "area" && c.aoiData?.src_id === dynamicSrcId
+            );
+            if (!alreadyInContext) {
+              context
+                .filter(
+                  (c) =>
+                    c.contextType === "area" && c.aoiData?.source !== "custom"
+                )
+                .forEach((c) => removeContext(c.id));
+
+              addContext({
+                contextType: "area",
+                content: aoiName,
+                aoiData: {
+                  name: aoiName,
+                  ...(idField ? { [idField]: dynamicSrcId } : {}),
+                  src_id: dynamicSrcId,
+                  subtype: dynamicSubtype,
+                  source: layerConfig?.id.toLowerCase(),
+                },
+              });
+            }
           }
         }
       };
@@ -194,7 +233,9 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     nameKeys,
     setSelectAreaLayer,
     metadata,
-    upsertContextByType,
+    addContext,
+    removeContext,
+    context,
     addToRegistry,
     addLayer,
     layerId,

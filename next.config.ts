@@ -5,13 +5,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     rules: {
       // Additional optimizations for SVG handling
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
       },
     },
   },
-  
+
   images: {
     remotePatterns: [
       {
@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
 
   // Experimental features - @phosphor-icons/react is optimized by default
   experimental: {
-    optimizePackageImports: ['@chakra-ui/react'],
+    optimizePackageImports: ["@chakra-ui/react"],
   },
 };
 

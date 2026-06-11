@@ -1,51 +1,25 @@
 import { DatasetInfo } from "@/app/types/chat";
-import useContextStore from "@/app/store/contextStore";
 import { DatasetCard } from "@/app/components/DatasetCard";
 import { DATASET_CARDS } from "@/app/constants/datasets";
-import { getDatasetLayerContextProps } from "@/app/utils/datasetLayerContext";
 
 interface DatasetCardWidgetProps {
   dataset: DatasetInfo;
 }
 
 export default function DatasetCardWidget({ dataset }: DatasetCardWidgetProps) {
-  const { context, addContext, removeContext } = useContextStore();
-
-  const existingLayerContext = context.find(
-    (c) =>
-      c.contextType === "layer" &&
-      (c.datasetId === dataset.dataset_id || c.content === dataset.dataset_name)
+  const cardConfig = DATASET_CARDS.find(
+    // TODO: Update this to use a slug or uuid when we have those in the API
+    (c) => c.dataset_id === dataset.dataset_id
   );
-  const isInContext = Boolean(existingLayerContext);
-
-  const handleAddToMap = () => {
-    if (!isInContext) {
-      // Single source of truth: adding context adds the map layer
-      addContext({
-        contextType: "layer",
-        content: dataset.dataset_name,
-        datasetId: dataset.dataset_id,
-        tileUrl: dataset.tile_url,
-        layerName: dataset.dataset_name,
-        ...getDatasetLayerContextProps(dataset), // we add the context layer(s) if any.
-      });
-      return;
-    }
-    // If already in context, remove it (which also removes the map layer)
-    if (existingLayerContext) removeContext(existingLayerContext.id);
+  const img = cardConfig?.img ?? "/globe.svg";
+  const enrichedDataset = {
+    ...dataset,
+    cadence: dataset.cadence ?? cardConfig?.cadence,
+    resolution: dataset.resolution ?? cardConfig?.resolution,
+    geographic_coverage:
+      dataset.geographic_coverage ?? cardConfig?.geographic_coverage,
+    provider: dataset.provider ?? cardConfig?.provider,
   };
 
-  const img =
-    DATASET_CARDS.find((c) => c.dataset_name === dataset.dataset_name)?.img ??
-    "/globe.svg";
-
-  return (
-    <DatasetCard
-      dataset={dataset}
-      img={img}
-      selected={isInContext}
-      onClick={handleAddToMap}
-      size="md"
-    />
-  );
+  return <DatasetCard dataset={enrichedDataset} img={img} />;
 }

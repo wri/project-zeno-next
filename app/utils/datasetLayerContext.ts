@@ -9,6 +9,20 @@ function patchPrimaryForestTileUrl(url: string): string {
   return wrapPrimaryForestTileUrl(url);
 }
 
+/**
+ * Derives the map layer props needed to add a dataset to the map and legend.
+ *
+ * Returns three things:
+ *  - `contextLayer` — optional sub-layer rendered beneath the main dataset
+ *    (e.g. Primary Forests mask under Tree Cover Loss). Resolved from
+ *    `dataset.context_layer` + `dataset.context_layers[]`.
+ *  - `parameters` — key/value record of display parameters shown as legend
+ *    chips (e.g. `{ canopy_cover: 30 }`). Backend-supplied values take
+ *    priority; falls back to `dataset.threshold` then the card default in
+ *    `DATASET_CARDS`. Will be `undefined` if the dataset has no threshold.
+ *  - `startDate` / `endDate` — ISO date strings forwarded from the backend,
+ *    shown as the YEAR/YEARS chip in the legend.
+ */
 export function getDatasetLayerContextProps(dataset: DatasetInfo) {
   // In the example of primary_forest, context_layer is "primary_forest" and context_layers is an array of context layers.
   // ctxMeta is the metadata for the context layer such as name, tile_url, description, legend, parameters, start_date, end_date.
@@ -38,7 +52,7 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
         : undefined;
 
   return {
-    contextLayer: ctxMeta
+    contextLayer: ctxMeta?.tile_url
       ? {
           name: ctxMeta.name,
           tileUrl: patchPrimaryForestTileUrl(ctxMeta.tile_url),

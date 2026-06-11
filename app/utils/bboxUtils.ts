@@ -6,9 +6,12 @@
  * flyToBounds) should subtract 360 from east if east > 180.
  */
 export function unionAoiBboxes(
-  aois: { bbox?: [number, number, number, number] }[],
+  aois: { bbox?: [number, number, number, number] }[]
 ): [number, number, number, number] | null {
-  let west = Infinity, south = Infinity, east = -Infinity, north = -Infinity;
+  let west = Infinity,
+    south = Infinity,
+    east = -Infinity,
+    north = -Infinity;
   let found = false;
   for (const aoi of aois) {
     if (!aoi.bbox) continue;

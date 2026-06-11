@@ -1,13 +1,6 @@
 "use client";
 import "maplibre-gl/dist/maplibre-gl.css";
-import MapGl, {
-  Layer,
-  Source,
-  AttributionControl,
-  NavigationControl,
-  ScaleControl,
-  MapRef,
-} from "react-map-gl/maplibre";
+import MapGl, { Layer, Source, MapRef } from "react-map-gl/maplibre";
 import { useState, useRef, useEffect } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
@@ -15,15 +8,16 @@ import {
   Code,
   Box,
   Button,
-  useBreakpointValue,
   Flex,
   Link as ChLink,
   Spinner,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
-import MapAreaControls from "./MapAreaControls";
 import useContextStore from "@/app/store/contextStore";
+import { useShallow } from "zustand/react/shallow";
+import MapAreaControls from "./MapAreaControls";
+import { basemapOptions } from "./map/BasemapSelector";
 import DynamicTileLayers, {
   RASTER_TOP_SENTINEL_ID,
 } from "./map/layers/DynamicTileLayers";
@@ -32,6 +26,9 @@ import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import { Legend } from "@/app/components/legend/Legend";
+import InsightWorkspace from "./InsightWorkspace";
+import DisclaimerPanel from "./DisclaimerPanel";
+import useInsightStore from "@/app/store/insightStore";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -39,17 +36,20 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
   const [showLegend, setShowLegend] = useState(false);
-  const isMobile = useBreakpointValue({ base: true, md: false });
   const [basemapTiles, setBasemapTiles] = useState(
-    "devseed/cmazl5ws500bz01scaa27dqi4",
+    "devseed/cmazl5ws500bz01scaa27dqi4"
   );
   const { setMapRef, initializeTerraDraw } = useMapStore();
   useEffect(() => {
     registerPrimaryForestProtocol();
   }, []);
-  const { layers, handleLayerAction } = useLegendHook();
-  const { context } = useContextStore();
-  const areas = context.filter((c) => c.contextType === "area");
+  const { layers, handleLayerAction, aois, handleRemoveAoi } = useLegendHook();
+  const basemapTheme =
+    basemapOptions.find((o) => o.tileUrl === basemapTiles)?.theme ?? "light";
+  const hasInsights = useInsightStore((s) => s.insights.length > 0);
+  const areas = useContextStore(
+    useShallow((s) => s.context.filter((c) => c.contextType === "area"))
+  );
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -78,11 +78,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       bg={mapRef.current ? "transparent" : "neutral.200"}
       css={{
         _dark: {
-          "& .maplibregl-ctrl-scale": {
-            bgColor: "black/20",
-            color: "fg",
-            borderColor: "bg.subtle",
-          },
           "& .maplibregl-ctrl.maplibregl-ctrl-attrib": {
             bgColor: "black/40",
             "& a": { color: "fg" },
@@ -120,10 +115,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
       <MapGl
         ref={mapRef}
         style={{ width: "100%", height: "100%" }}
+        minZoom={2}
         initialViewState={{
-          longitude: 0,
-          latitude: 0,
-          zoom: 0,
+          longitude: -10,
+          latitude: 15,
+          zoom: 2,
         }}
         onLoad={onMapLoad}
         onMove={onMapMove}
@@ -138,7 +134,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        {layers.length > 0 && (
+        {(layers.length > 0 || aois.length > 0) && (
           <Button
             variant="subtle"
             position="absolute"
@@ -165,10 +161,46 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             Legend
           </Button>
         )}
-        <Box display={{ base: showLegend ? "inherit" : "none", md: "inherit" }}>
-          <Legend layers={layers} onLayerAction={handleLayerAction} />
+        {/* Top-left overlay: disclaimer panel */}
+        <Box
+          position="absolute"
+          top={2}
+          left={3}
+          zIndex={400}
+          maxW="400px"
+          w="calc(100% - 2rem)"
+          pointerEvents="all"
+          hideBelow="md"
+        >
+          <DisclaimerPanel />
         </Box>
-
+        {/* Right overlay column: insight panel (top, scrollable) + legend (bottom) */}
+        <Flex
+          position="absolute"
+          top={4}
+          right={3}
+          bottom={{ base: "4.5rem", md: 7 }}
+          zIndex={400}
+          w="420px"
+          flexDirection="column"
+          gap={2}
+          pointerEvents="none"
+        >
+          {hasInsights && <InsightWorkspace />}
+          {/* Spacer: pushes legend to the bottom */}
+          <Box flex="1 1 0" minH="0" />
+          <Box
+            flexShrink={0}
+            display={{ base: showLegend ? "block" : "none", md: "block" }}
+          >
+            <Legend
+              layers={layers}
+              onLayerAction={handleLayerAction}
+              aois={aois}
+              onRemoveAoi={handleRemoveAoi}
+            />
+          </Box>
+        </Flex>
         {/* Sentinel layer: caps raster layers below AOI/GeoJSON outlines.
             Must be added before DynamicTileLayers so the sentinel exists
             when the topmost raster layer references it as beforeId. */}
@@ -180,8 +212,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Layer id={RASTER_TOP_SENTINEL_ID} type="line" paint={{}} />
         </Source>
         <DynamicTileLayers />
-        <VectorTileLayers areas={areas} />
-        <GeoJsonLayers areas={areas} />
+        <VectorTileLayers areas={areas} basemapTheme={basemapTheme} />
+        <GeoJsonLayers areas={areas} basemapTheme={basemapTheme} />
         <SelectAreaLayer />
 
         {!disableMapAreaControls && (
@@ -194,31 +226,17 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         <AbsoluteCenter fontSize="sm" opacity={0.375} hideBelow="md">
           <PlusIcon />
         </AbsoluteCenter>
-        <AttributionControl
-          customAttribution="Background tiles: © <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap contributors</a>"
-          position="bottom-right"
-          compact={isMobile ? true : false}
-          style={{
-            background: "transparent",
-            fontSize: "0.675rem",
-            color: "gray",
-          }}
-        />
-        {!isMobile && (
-          <>
-            <ScaleControl position="bottom-left" />
-            <NavigationControl showCompass={false} position="bottom-left" />
-          </>
-        )}
         <Flex
           pos="absolute"
-          bottom="4"
+          bottom="0"
           right="3"
-          p="2"
-          fontSize="xs"
+          px="2"
+          py="1"
+          fontSize="0.675rem"
+          color="gray"
           bg="transparent"
           hideBelow="md"
-          alignItems="baseline"
+          alignItems="center"
           gap={2}
         >
           <ChLink
@@ -266,6 +284,17 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           >
             lat, lon: {mapCenter[1].toFixed(3)}, {mapCenter[0].toFixed(3)}
           </Code>
+          <Box as="span" ml={2}>
+            Background tiles: ©{" "}
+            <ChLink
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener noreferrer"
+              color="inherit"
+            >
+              OpenStreetMap contributors
+            </ChLink>
+          </Box>
         </Flex>
       </MapGl>
     </Box>
