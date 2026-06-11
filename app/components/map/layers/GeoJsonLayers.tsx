@@ -171,13 +171,13 @@ function GeoJsonLayerGroup({
 
   // On dark basemaps (dark, satellite) boundaries use white lines + blue casing
   // to maximise contrast. On light basemaps the colours are inverted.
-  const casingColor = basemapTheme === "dark" ? "#0049aa" : "#FFFFFF";
+  const casingColor = basemapTheme === "dark" ? "#172B7A" : "#FFFFFF";
   const mainLineColor = isInContext
     ? basemapTheme === "dark"
       ? "#FFFFFF"
       : isMultiArea
         ? "#8EA4E8"
-        : "#0A3785"
+        : "#172B7A"
     : "#666E7B";
 
   const handleRemoveFromContext = () => {
@@ -265,12 +265,12 @@ function GeoJsonLayerGroup({
                   "interpolate",
                   ["linear"],
                   ["zoom"],
-                  2,
-                  3.3,
+                  3,
+                  3.5,
+                  6,
+                  7,
                   10,
-                  6.7,
-                  14,
-                  10,
+                  11,
                 ],
                 "line-opacity": lineOpacity,
               }}
@@ -289,12 +289,12 @@ function GeoJsonLayerGroup({
                   "interpolate",
                   ["linear"],
                   ["zoom"],
-                  2,
+                  3,
                   1,
+                  6,
+                  1.5,
                   10,
                   2,
-                  14,
-                  3,
                 ],
                 "line-opacity": lineOpacity,
               }}
