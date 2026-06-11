@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 import useMapStore from "@/app/store/mapStore";
 import type { Layer as ManagedLayer } from "@/app/store/layerManagerSlice";
@@ -17,6 +17,9 @@ interface VectorTileLayersProps {
  */
 function VectorTileLayers({ areas, basemapTheme }: VectorTileLayersProps) {
   const allLayers = useMapStore((s) => s.layers);
+  const mapRef = useMapStore((s) => s.mapRef);
+  const [hoveredLayerId, setHoveredLayerId] = useState<string | null>(null);
+
   const vectorLayers = useMemo(
     () =>
       allLayers.filter(
@@ -25,6 +28,29 @@ function VectorTileLayers({ areas, basemapTheme }: VectorTileLayersProps) {
       ),
     [allLayers]
   );
+
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map) return;
+
+    const cleanups: Array<() => void> = [];
+
+    for (const layer of vectorLayers) {
+      const fillId = `vector-tile-fill-${layer.id}`;
+      const enter = () => setHoveredLayerId(layer.id);
+      const leave = () =>
+        setHoveredLayerId((prev) => (prev === layer.id ? null : prev));
+
+      map.on("mouseenter", fillId, enter);
+      map.on("mouseleave", fillId, leave);
+      cleanups.push(() => {
+        map.off("mouseenter", fillId, enter);
+        map.off("mouseleave", fillId, leave);
+      });
+    }
+
+    return () => cleanups.forEach((c) => c());
+  }, [mapRef, vectorLayers]);
 
   return (
     <>
@@ -36,6 +62,7 @@ function VectorTileLayers({ areas, basemapTheme }: VectorTileLayersProps) {
         const isInContext = areas.some(
           (a) => a.aoiSelection?.name === layer.name || a.content === layer.name
         );
+        const isHovered = hoveredLayerId === layer.id;
 
         const lineColor = isInContext
           ? basemapTheme === "dark"
@@ -53,14 +80,17 @@ function VectorTileLayers({ areas, basemapTheme }: VectorTileLayersProps) {
             type="vector"
             tiles={[layer.tileUrl]}
           >
-            {/* Subtle fill to make features selectable visually */}
             <Layer
               id={fillLayerId}
               type="fill"
               source-layer={layer.sourceLayer}
               paint={{
-                "fill-color": lineColor,
-                "fill-opacity": isInContext ? 0.06 * opacity : 0,
+                "fill-color": "#172B7A",
+                "fill-opacity": isHovered
+                  ? 0.1 * opacity
+                  : isInContext
+                    ? 0.06 * opacity
+                    : 0,
               }}
             />
             {/* Casing layer (wider, contrasting colour) rendered below the main line */}
