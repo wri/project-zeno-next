@@ -9,17 +9,21 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon, MapTrifoldIcon } from "@phosphor-icons/react";
 
+export type BasemapTheme = "light" | "dark";
+
 export interface BasemapOption {
   id: string;
   name: string;
   tileUrl: string;
   thumbnailUrl: string;
+  theme: BasemapTheme;
 }
 
-const basemapOptions: BasemapOption[] = [
+export const basemapOptions: BasemapOption[] = [
   {
     id: "light",
     name: "Light",
+    theme: "light",
     tileUrl: "devseed/cmazl5ws500bz01scaa27dqi4",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/devseed/cmazl5ws500bz01scaa27dqi4/static/0,0,0,0,0/200x200@2x?access_token=" +
@@ -29,6 +33,7 @@ const basemapOptions: BasemapOption[] = [
   {
     id: "satellite",
     name: "Satellite",
+    theme: "dark",
     tileUrl: "mapbox/satellite-v9",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/0,0,0,0,0/200x200@2x?access_token=" +
@@ -38,6 +43,7 @@ const basemapOptions: BasemapOption[] = [
   {
     id: "dark",
     name: "Dark",
+    theme: "dark",
     tileUrl: "devseed/cm7nk8rlu01bm01qvb6pues5y",
     thumbnailUrl:
       "https://api.mapbox.com/styles/v1/devseed/cm7nk8rlu01bm01qvb6pues5y/static/0,0,0,0,0/200x200@2x?access_token=" +

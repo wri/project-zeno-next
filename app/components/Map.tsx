@@ -17,6 +17,7 @@ import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
 import { useShallow } from "zustand/react/shallow";
 import MapAreaControls from "./MapAreaControls";
+import { basemapOptions } from "./map/BasemapSelector";
 import DynamicTileLayers, {
   RASTER_TOP_SENTINEL_ID,
 } from "./map/layers/DynamicTileLayers";
@@ -43,6 +44,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
     registerPrimaryForestProtocol();
   }, []);
   const { layers, handleLayerAction, aois, handleRemoveAoi } = useLegendHook();
+  const basemapTheme =
+    basemapOptions.find((o) => o.tileUrl === basemapTiles)?.theme ?? "light";
   const hasInsights = useInsightStore((s) => s.insights.length > 0);
   const areas = useContextStore(
     useShallow((s) => s.context.filter((c) => c.contextType === "area"))
@@ -209,8 +212,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Layer id={RASTER_TOP_SENTINEL_ID} type="line" paint={{}} />
         </Source>
         <DynamicTileLayers />
-        <VectorTileLayers areas={areas} />
-        <GeoJsonLayers areas={areas} />
+        <VectorTileLayers areas={areas} basemapTheme={basemapTheme} />
+        <GeoJsonLayers areas={areas} basemapTheme={basemapTheme} />
         <SelectAreaLayer />
 
         {!disableMapAreaControls && (
