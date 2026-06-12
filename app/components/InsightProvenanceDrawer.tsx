@@ -28,6 +28,10 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vs } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { fetchExternalData } from "@/app/actions/fetch-data";
 import { Tooltip } from "@/app/components/ui/tooltip";
+import {
+  buildProvenanceMarkdown,
+  provenanceFilename,
+} from "@/app/utils/provenanceRecord";
 import JSZip from "jszip";
 import Image from "next/image";
 
@@ -117,7 +121,7 @@ function extractDataUrls(code: string): string[] {
 
 // --- Components ---
 
-function CodeBlockViewer({ code }: { code: string }) {
+function CodeBlockViewer({ code, step }: { code: string; step?: number }) {
   const { copy, copied } = useClipboard({ value: code });
   const [downloading, setDownloading] = useState(false);
 
@@ -174,6 +178,11 @@ function CodeBlockViewer({ code }: { code: string }) {
           <Image src="/python-logo.svg" alt="Python" width={14} height={14} />
           <Text fontSize="xs" color="neutral.600">
             Code
+            {step !== undefined && (
+              <Text as="span" color="neutral.500" fontFamily="mono" ml={1}>
+                · step {step}
+              </Text>
+            )}
           </Text>
         </Flex>
         <Flex gap={2}>
@@ -230,6 +239,21 @@ export default function InsightProvenanceDrawer({
 }: InsightProvenanceDrawerProps) {
   const parts = generation?.codeact_parts || [];
 
+  const handleDownloadRecord = () => {
+    const markdown = buildProvenanceMarkdown({
+      title,
+      parts: parts.map((part) => ({
+        type: part.type,
+        content: safeBase64Decode(part.content),
+      })),
+      sourceUrls: generation?.source_urls,
+    });
+    const blob = new Blob([markdown], {
+      type: "text/markdown;charset=utf-8;",
+    });
+    triggerDownload(blob, provenanceFilename(title));
+  };
+
   return (
     <Drawer.Root
       open={isOpen}
@@ -248,23 +272,55 @@ export default function InsightProvenanceDrawer({
               pt={5}
               pb={3}
             >
-              <Heading size="sm" m={0} maxW="calc(100% - 80px)">
-                {title ? `${title}` : "How this was generated"}
-              </Heading>
-              <Drawer.CloseTrigger asChild>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  color="neutral.600"
-                  borderColor="neutral.300"
-                  bg="white"
-                  h={6}
-                  rounded="sm"
+              <Box maxW="calc(100% - 160px)">
+                <Heading size="sm" m={0}>
+                  {title ? `${title}` : "How this was generated"}
+                </Heading>
+                <Text
+                  fontSize="10px"
+                  fontFamily="mono"
+                  letterSpacing="0.03em"
+                  color="neutral.500"
+                  mt={1}
                 >
-                  <X />
-                  Close
-                </Button>
-              </Drawer.CloseTrigger>
+                  GENERATION RECORD · AI-ASSISTED ANALYSIS
+                </Text>
+              </Box>
+              <Flex gap={2}>
+                {parts.length > 0 && (
+                  <Tooltip content="Download this record as Markdown for archiving or audit">
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      color="neutral.600"
+                      borderColor="neutral.300"
+                      bg="white"
+                      h={6}
+                      rounded="sm"
+                      onClick={handleDownloadRecord}
+                    >
+                      <DownloadSimple />
+                      Save record
+                    </Button>
+                  </Tooltip>
+                )}
+                {/* position=static overrides the drawer recipe's absolute
+                    top-right placement so Close sits inline next to Save */}
+                <Drawer.CloseTrigger asChild position="static">
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    color="neutral.600"
+                    borderColor="neutral.300"
+                    bg="white"
+                    h={6}
+                    rounded="sm"
+                  >
+                    <X />
+                    Close
+                  </Button>
+                </Drawer.CloseTrigger>
+              </Flex>
             </Drawer.Header>
             <Drawer.Body bg="neutral.200" pt={0}>
               {parts.length === 0 ? (
@@ -341,7 +397,7 @@ export default function InsightProvenanceDrawer({
                             </Box>
                           )}
                           {part.type === "code_block" && (
-                            <CodeBlockViewer code={content} />
+                            <CodeBlockViewer code={content} step={i + 1} />
                           )}
                           {part.type === "execution_output" && (
                             <Box
@@ -363,6 +419,14 @@ export default function InsightProvenanceDrawer({
                                   <Terminal size={14} />
                                   <Text fontSize="xs" color="neutral.600">
                                     Execution output
+                                    <Text
+                                      as="span"
+                                      color="neutral.500"
+                                      fontFamily="mono"
+                                      ml={1}
+                                    >
+                                      · step {i + 1}
+                                    </Text>
                                   </Text>
                                 </Flex>
                                 <Flex gap={2}>
@@ -407,18 +471,28 @@ export default function InsightProvenanceDrawer({
                         <Heading size="xs" mb={2}>
                           Sources
                         </Heading>
-                        <Flex direction="column" gap={1}>
+                        <Flex direction="column" gap={1} as="ol" pl={0} m={0}>
                           {generation.source_urls.map((url, idx) => (
-                            <Link
-                              key={idx}
-                              fontSize="xs"
-                              color="blue.600"
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {url}
-                            </Link>
+                            <Flex as="li" key={idx} gap={2} align="baseline">
+                              <Text
+                                fontSize="xs"
+                                fontFamily="mono"
+                                color="neutral.500"
+                                flexShrink={0}
+                              >
+                                {idx + 1}.
+                              </Text>
+                              <Link
+                                fontSize="xs"
+                                color="blue.600"
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                wordBreak="break-all"
+                              >
+                                {url}
+                              </Link>
+                            </Flex>
                           ))}
                         </Flex>
                       </Box>
