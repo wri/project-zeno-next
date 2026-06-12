@@ -1,11 +1,6 @@
 import { StateCreator } from "zustand";
 import type { MapState } from "./mapStore";
 
-export interface LngLat {
-  lng: number;
-  lat: number;
-}
-
 export interface AnalysisSelection {
   name: string;
   source: string;
@@ -17,15 +12,13 @@ export interface AnalysisSelection {
 export interface SelectAnalysisSlice {
   /** The area selected for analysis, or null when nothing is selected. */
   analysisSelection: AnalysisSelection | null;
-  /** Where to anchor the CTA popup (the clicked point). */
-  lngLat: LngLat | null;
-  setAnalysis: (selection: AnalysisSelection, lngLat: LngLat) => void;
+  setAnalysis: (selection: AnalysisSelection) => void;
   clearAnalysis: () => void;
 }
 
 /**
  * Ephemeral UI state for the analysis CTA — deliberately separate from the
- * chat-context store. Holds only the current selection + anchor.
+ * chat-context store. Holds only the current selection (one at a time).
  */
 export const createSelectAnalysisSlice: StateCreator<
   MapState,
@@ -34,8 +27,6 @@ export const createSelectAnalysisSlice: StateCreator<
   SelectAnalysisSlice
 > = (set) => ({
   analysisSelection: null,
-  lngLat: null,
-  setAnalysis: (selection, lngLat) =>
-    set({ analysisSelection: selection, lngLat }),
-  clearAnalysis: () => set({ analysisSelection: null, lngLat: null }),
+  setAnalysis: (selection) => set({ analysisSelection: selection }),
+  clearAnalysis: () => set({ analysisSelection: null }),
 });
