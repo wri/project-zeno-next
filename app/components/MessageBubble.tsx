@@ -15,7 +15,7 @@ import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import { AnalysisCard } from "./AnalysisCard";
 import { AreaCard } from "./AreaCard";
-import Markdown from "react-markdown";
+import Markdown, { type Components } from "react-markdown";
 import {
   ArrowBendDownRightIcon,
   CheckIcon,
@@ -27,7 +27,7 @@ import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
 import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, ReactNode } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
@@ -35,6 +35,19 @@ import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
+import BlogCitation from "./BlogCitation";
+import { useBlogCitations } from "../hooks/useBlogCitations";
+import { isBlogCitation } from "@/app/lib/blog-citations";
+
+function nodeToText(children: ReactNode): string {
+  if (typeof children === "string" || typeof children === "number") {
+    return String(children);
+  }
+  if (Array.isArray(children)) {
+    return children.map(nodeToText).join("");
+  }
+  return "";
+}
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -150,6 +163,33 @@ function MessageBubble({
   const isError = message.type === "error";
   const isWarning = message.type === "warning";
   const isAssistant = message.type === "assistant";
+  const { articles: citedArticles, isLoading: citationsLoading } =
+    useBlogCitations(isAssistant ? message.message : "");
+
+  const markdownComponents = useMemo<Components>(
+    () => ({
+      a: ({ node, href, children, ...rest }) => {
+        void node; // not forwarded to the DOM element
+        const label = nodeToText(children);
+        if (href && isBlogCitation(href, label)) {
+          return (
+            <BlogCitation
+              number={label}
+              url={href}
+              article={citedArticles[href]}
+              isLoading={citationsLoading}
+            />
+          );
+        }
+        return (
+          <a href={href} {...rest}>
+            {children}
+          </a>
+        );
+      },
+    }),
+    [citedArticles, citationsLoading]
+  );
   const analysisWidgets = isAssistant
     ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
     : [];
@@ -304,18 +344,21 @@ function MessageBubble({
                 borderColor: "bg.muted",
                 pb: 2,
               },
-              "& a": {
+              "& a:not([data-citation])": {
                 textDecoration: "underline",
                 color: "primary.solid",
                 transition: "all 0.24s ease",
               },
-              "& a:hover": {
+              "& a:not([data-citation]):hover": {
                 opacity: 0.64,
               },
             }}
           >
             <CopySelectionTooltip enabled={!isUser}>
-              <Markdown remarkPlugins={[remarkBreaks]}>
+              <Markdown
+                remarkPlugins={[remarkBreaks]}
+                components={markdownComponents}
+              >
                 {message.message}
               </Markdown>
             </CopySelectionTooltip>
