@@ -1,6 +1,6 @@
 import { StateCreator } from "zustand";
 import { FeatureCollection, Feature } from "geojson";
-import type { AOISelection } from "@/app/types/chat";
+import type { AOISelection, ImageryInfo } from "@/app/types/chat";
 import type { MapState } from "./mapStore";
 
 export interface FeatureRef {
@@ -35,6 +35,15 @@ export interface Layer {
   endDate?: string;
   // Set on a context-layer sub-layer to mark it as a child of `parentLayerId`
   parentLayerId?: string;
+  // Raster source tuning, derived from the mosaic's TileJSON. Without the
+  // zoom range MapLibre would request tiles outside z8–14 and get 404s
+  // instead of overscaling.
+  minzoom?: number;
+  maxzoom?: number;
+  bounds?: [number, number, number, number];
+  attribution?: string;
+  // Set when added from show_imagery (Sentinel-2 mosaic legend metadata)
+  imagery?: ImageryInfo;
 }
 
 export interface LayerManagerSlice {

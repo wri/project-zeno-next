@@ -66,6 +66,7 @@ export function parseStreamMessage(
       insight_count: langChainMessage.insight_count || 0,
       aoi: langChainMessage.aoi || undefined,
       aoi_selection: langChainMessage.aoi_selection || undefined,
+      imagery: langChainMessage.imagery || undefined,
       timestamp: timestamp.toISOString(),
       trace_id: traceId,
     };

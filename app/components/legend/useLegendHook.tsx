@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Text } from "@chakra-ui/react";
+import { format, parseISO } from "date-fns";
 
 import {
   LayerActionHandler,
@@ -54,6 +55,18 @@ function buildParams(
   }
 
   return result;
+}
+
+// Backend default for show_imagery's max_cloud_cover; anything above it
+// means the agent loosened the search and clouds are expected.
+const IMAGERY_DEFAULT_MAX_CLOUD_COVER = 20;
+
+function formatImageryDate(isoDate: string): string {
+  try {
+    return format(parseISO(isoDate), "MMM d, yyyy");
+  } catch {
+    return isoDate;
+  }
 }
 
 function renderLegendSymbology(legend: DatasetLegendConfig) {
@@ -159,6 +172,59 @@ export function useLegendHook() {
             title: layer.selectionName ?? layer.name,
             opacity: (layer.opacity ?? 1) * 100,
             symbology: null,
+          });
+          continue;
+        }
+
+        // Sentinel-2 mosaics from the show_imagery tool have no DATASET_CARDS
+        // entry — build a card from the imagery metadata carried on the layer.
+        if (layer.imagery) {
+          const { imagery } = layer;
+          const params: LegendParam[] = [
+            {
+              label: "DATES",
+              value: `${formatImageryDate(imagery.date_start)} – ${formatImageryDate(imagery.date_end)}`,
+            },
+          ];
+          // Search constraints: absent on imagery payloads created before
+          // these fields existed (replayed old threads) — omit the chips.
+          if (imagery.window_days !== undefined) {
+            params.push({
+              label: "WINDOW",
+              value: `±${imagery.window_days} days`,
+            });
+          }
+          if (imagery.max_cloud_cover !== undefined) {
+            params.push({
+              label: "CLOUD",
+              value: `< ${imagery.max_cloud_cover}%`,
+            });
+          }
+          if (imagery.aoi_names.length > 0) {
+            params.push({
+              label: "AREA",
+              value: imagery.aoi_names.join(", "),
+            });
+          }
+          // Above the default 20% threshold the agent loosened the search,
+          // so partly obscured imagery is expected — flag it so it doesn't
+          // read as a rendering bug.
+          const mayContainClouds =
+            imagery.max_cloud_cover !== undefined &&
+            imagery.max_cloud_cover > IMAGERY_DEFAULT_MAX_CLOUD_COVER;
+          entries.push({
+            id: layer.id,
+            title: layer.name,
+            opacity: (layer.opacity ?? 1) * 100,
+            info: `Sentinel-2 true-colour mosaic built from ${imagery.item_count} scene${imagery.item_count === 1 ? "" : "s"} closest to ${formatImageryDate(imagery.target_date)}. Contains modified Copernicus Sentinel data.`,
+            params,
+            symbology: null,
+            children: mayContainClouds ? (
+              <Text fontSize="xs">
+                Searched with a loosened cloud-cover limit (
+                {imagery.max_cloud_cover}%) — imagery may contain clouds.
+              </Text>
+            ) : undefined,
           });
           continue;
         }

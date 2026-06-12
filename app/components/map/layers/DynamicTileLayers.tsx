@@ -22,14 +22,19 @@ function layerId(id: string) {
  */
 function DynamicTileLayers() {
   const allLayers = useMapStore((s) => s.layers);
-  const rasterLayers = useMemo(
-    () =>
-      allLayers.filter(
-        (l): l is ManagedLayer & { tileUrl: string } =>
-          l.type === "raster" && !!l.tileUrl
-      ),
-    [allLayers]
-  );
+  const rasterLayers = useMemo(() => {
+    const rasters = allLayers.filter(
+      (l): l is ManagedLayer & { tileUrl: string } =>
+        l.type === "raster" && !!l.tileUrl
+    );
+    // Imagery mosaics are opaque, basemap-like layers: keep them at the
+    // bottom of the raster stack regardless of insertion order so dataset
+    // and context overlays stay visible above them.
+    return [
+      ...rasters.filter((l) => !l.imagery),
+      ...rasters.filter((l) => l.imagery),
+    ];
+  }, [allLayers]);
 
   return (
     <>
@@ -45,6 +50,21 @@ function DynamicTileLayers() {
           ? layerId(aboveLayer.id)
           : RASTER_TOP_SENTINEL_ID;
 
+        // Optional source tuning (set on imagery layers from their TileJSON).
+        // Spread conditionally so unset keys stay out of the source spec.
+        const sourceOptions = {
+          ...(rasterLayer.minzoom !== undefined
+            ? { minzoom: rasterLayer.minzoom }
+            : {}),
+          ...(rasterLayer.maxzoom !== undefined
+            ? { maxzoom: rasterLayer.maxzoom }
+            : {}),
+          ...(rasterLayer.bounds ? { bounds: rasterLayer.bounds } : {}),
+          ...(rasterLayer.attribution
+            ? { attribution: rasterLayer.attribution }
+            : {}),
+        };
+
         return (
           <Source
             key={rasterLayer.id}
@@ -52,6 +72,7 @@ function DynamicTileLayers() {
             type="raster"
             tiles={[rasterLayer.tileUrl]}
             tileSize={256}
+            {...sourceOptions}
           >
             <Layer
               id={id}

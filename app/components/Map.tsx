@@ -29,8 +29,22 @@ import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
+import { API_CONFIG } from "@/app/config/api";
+import { getAuthHeaders } from "@/app/lib/api-client";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+
+// Attach the bearer token to map resource requests against the API origin
+// (mosaic tile/tilejson endpoints require auth). MapLibre captures this
+// function at construction, so it must read the token per request — via
+// getAuthHeaders, which hits localStorage — for mid-session token refreshes
+// to be picked up.
+const transformRequest = (url: string) => {
+  if (url.startsWith(API_CONFIG.API_HOST)) {
+    return { url, headers: getAuthHeaders() };
+  }
+  return { url };
+};
 
 function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
@@ -124,6 +138,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         onLoad={onMapLoad}
         onMove={onMapMove}
         attributionControl={false}
+        transformRequest={transformRequest}
       >
         <Source
           id="background"
