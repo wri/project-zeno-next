@@ -16,7 +16,6 @@ import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 
 import { useFeatureFlag } from "@/app/hooks/useFeatureFlag";
-import { showAnalysisCta } from "@/app/lib/analysis/showAnalysisCta";
 
 import {
   getAoiName,
@@ -215,16 +214,16 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
             // Analysis feature — hidden behind ?ff=analysis; GADM only.
             // Purely additive: with the flag off, behavior is unchanged.
+            // AnalysisCtaTrigger reacts to this selection and surfaces the
+            // analyse nudge once a dataset is also active.
             if (layerId === "GADM" && metadata && isAnalysisEnabled) {
-              const selection = toAreaSelection(
-                layerId,
-                (featureProps ?? {}) as Record<string, unknown>,
-                metadata
+              setAnalysis(
+                toAreaSelection(
+                  layerId,
+                  (featureProps ?? {}) as Record<string, unknown>,
+                  metadata
+                )
               );
-              setAnalysis(selection);
-              // Surfaces the analyse nudge in the chat stream when a dataset
-              // is active; without one, the selection alone is kept.
-              showAnalysisCta(selection);
             }
           }
         }

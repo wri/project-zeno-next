@@ -29,6 +29,20 @@ export function showAnalysisCta(selection: AnalysisSelection): boolean {
     DATASET_BY_ID[datasetId]?.dataset_name ?? datasetContext.layerName;
   if (!datasetName) return false;
 
+  // Idempotent for the live pending nudge: the reactive trigger re-runs on
+  // every context change, and an identical re-upsert would churn the card.
+  const pending = useChatStore
+    .getState()
+    .messages.find(
+      (m) => m.type === "analyse-nudge" && !m.analyseSuggestion?.accepted
+    );
+  if (
+    pending?.analyseSuggestion?.areaName === selection.name &&
+    pending.analyseSuggestion.datasetId === datasetId
+  ) {
+    return true;
+  }
+
   useChatStore.getState().upsertAnalyseNudge({
     areaName: selection.name,
     datasetId,

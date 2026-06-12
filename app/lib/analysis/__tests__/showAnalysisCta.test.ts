@@ -81,6 +81,49 @@ describe("showAnalysisCta", () => {
     expect(nudges[0].analyseSuggestion?.areaName).toBe("Acre, Brazil");
   });
 
+  it("is idempotent for an identical pending nudge (reactive trigger re-runs)", () => {
+    seedContext([layerContext()]);
+
+    showAnalysisCta(selection);
+    const firstId = analyseNudges()[0].id;
+
+    expect(showAnalysisCta(selection)).toBe(true);
+
+    const nudges = analyseNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].id).toBe(firstId);
+  });
+
+  it("keeps accepted nudges in history when a new selection arrives", () => {
+    seedContext([layerContext()]);
+
+    showAnalysisCta(selection);
+    useChatStore.getState().acceptAnalyseNudge(analyseNudges()[0].id);
+
+    showAnalysisCta({ name: "Acre, Brazil", source: "gadm" });
+
+    const nudges = analyseNudges();
+    expect(nudges).toHaveLength(2);
+    expect(nudges[0].analyseSuggestion).toMatchObject({
+      areaName: "Pará, Brazil",
+      accepted: true,
+    });
+    expect(nudges[1].analyseSuggestion?.areaName).toBe("Acre, Brazil");
+  });
+
+  it("re-offers the same area after the previous nudge was accepted", () => {
+    seedContext([layerContext()]);
+
+    showAnalysisCta(selection);
+    useChatStore.getState().acceptAnalyseNudge(analyseNudges()[0].id);
+
+    expect(showAnalysisCta(selection)).toBe(true);
+
+    const nudges = analyseNudges();
+    expect(nudges).toHaveLength(2);
+    expect(nudges[1].analyseSuggestion?.accepted).toBeUndefined();
+  });
+
   it("does nothing when no dataset is active (analysis stays gated)", () => {
     expect(showAnalysisCta(selection)).toBe(false);
     expect(analyseNudges()).toHaveLength(0);
