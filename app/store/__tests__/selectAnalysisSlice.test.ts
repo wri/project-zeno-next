@@ -51,4 +51,10 @@ describe("selectAnalysisSlice", () => {
     useMapStore.getState().clearAnalysis();
     expect(useMapStore.getState().analysisSelection).toBeNull();
   });
+
+  it("mapStore.reset() clears the selection (new thread)", () => {
+    useMapStore.getState().setAnalysis(selection);
+    useMapStore.getState().reset();
+    expect(useMapStore.getState().analysisSelection).toBeNull();
+  });
 });

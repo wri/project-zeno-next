@@ -62,6 +62,9 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       selectAreaLayer: "GADM",
       layers: [],
       geoJsonRegistry: [],
+      // Clear the analysis selection so a new thread (which reseeds the
+      // default dataset) doesn't resurrect a nudge from the previous one.
+      analysisSelection: null,
     });
     get().clearSelectionMode();
 
