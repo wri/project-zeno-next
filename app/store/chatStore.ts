@@ -13,6 +13,7 @@ import {
   UiContext,
   ToolStepData,
   SuggestedDataset,
+  AnalyseSuggestion,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "@/app/lib/read-data-stream";
@@ -48,6 +49,7 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
+  upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -270,6 +272,20 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     set((state) => ({
       messages: [...state.messages, newMessage],
     }));
+  },
+
+  // The analyse nudge is client-side only (never replayed from thread
+  // history): at most one is live at a time, so a new selection replaces any
+  // previous nudge instead of stacking.
+  upsertAnalyseNudge: (suggestion) => {
+    set((state) => ({
+      messages: state.messages.filter((m) => m.type !== "analyse-nudge"),
+    }));
+    get().addMessage({
+      type: "analyse-nudge",
+      message: "",
+      analyseSuggestion: suggestion,
+    });
   },
 
   generateNewThread: () => {
