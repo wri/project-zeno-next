@@ -57,4 +57,55 @@ describe("chatStore.upsertAnalyseNudge", () => {
     useChatStore.getState().reset();
     expect(analyseNudges()).toHaveLength(0);
   });
+
+  it("preserves accepted nudges and only replaces the pending one", () => {
+    useChatStore.getState().upsertAnalyseNudge(suggestion("Pará, Brazil"));
+    const accepted = analyseNudges()[0];
+    useChatStore.getState().acceptAnalyseNudge(accepted.id);
+
+    useChatStore.getState().upsertAnalyseNudge(suggestion("Acre, Brazil"));
+    useChatStore.getState().upsertAnalyseNudge(suggestion("Amazonas, Brazil"));
+
+    const nudges = analyseNudges();
+    expect(nudges).toHaveLength(2);
+    expect(nudges[0].analyseSuggestion).toMatchObject({
+      areaName: "Pará, Brazil",
+      accepted: true,
+    });
+    expect(nudges[1].analyseSuggestion?.areaName).toBe("Amazonas, Brazil");
+    expect(nudges[1].analyseSuggestion?.accepted).toBeUndefined();
+  });
+});
+
+describe("chatStore.acceptAnalyseNudge", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  it("marks the targeted nudge as accepted", () => {
+    useChatStore.getState().upsertAnalyseNudge(suggestion("Pará, Brazil"));
+    const nudge = analyseNudges()[0];
+
+    useChatStore.getState().acceptAnalyseNudge(nudge.id);
+
+    expect(analyseNudges()[0].analyseSuggestion?.accepted).toBe(true);
+  });
+
+  it("leaves other messages untouched", () => {
+    useChatStore
+      .getState()
+      .addMessage({ type: "assistant", message: "Narrative" });
+    useChatStore.getState().upsertAnalyseNudge(suggestion("Pará, Brazil"));
+
+    useChatStore.getState().acceptAnalyseNudge("not-a-real-id");
+
+    expect(analyseNudges()[0].analyseSuggestion?.accepted).toBeUndefined();
+    expect(
+      useChatStore
+        .getState()
+        .messages.some(
+          (m) => m.type === "assistant" && m.message === "Narrative"
+        )
+    ).toBe(true);
+  });
 });

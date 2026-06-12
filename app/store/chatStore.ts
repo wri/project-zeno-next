@@ -50,6 +50,7 @@ interface ChatActions {
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
+  acceptAnalyseNudge: (messageId: string) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -275,17 +276,33 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   // The analyse nudge is client-side only (never replayed from thread
-  // history): at most one is live at a time, so a new selection replaces any
-  // previous nudge instead of stacking.
+  // history): at most one is pending at a time, so a new selection replaces
+  // any pending nudge instead of stacking. Accepted nudges persist in the
+  // thread as a record of the analyses the user ran.
   upsertAnalyseNudge: (suggestion) => {
     set((state) => ({
-      messages: state.messages.filter((m) => m.type !== "analyse-nudge"),
+      messages: state.messages.filter(
+        (m) => m.type !== "analyse-nudge" || m.analyseSuggestion?.accepted
+      ),
     }));
     get().addMessage({
       type: "analyse-nudge",
       message: "",
       analyseSuggestion: suggestion,
     });
+  },
+
+  acceptAnalyseNudge: (messageId) => {
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === messageId && m.analyseSuggestion
+          ? {
+              ...m,
+              analyseSuggestion: { ...m.analyseSuggestion, accepted: true },
+            }
+          : m
+      ),
+    }));
   },
 
   generateNewThread: () => {

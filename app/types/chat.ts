@@ -177,6 +177,9 @@ export interface AnalyseSuggestion {
   areaName: string;
   datasetId: number;
   datasetName: string;
+  // Set once the user clicks Analyse: accepted nudges persist in the thread
+  // as a record of the run, while pending ones are replaced by new selections.
+  accepted?: boolean;
 }
 
 export interface SuggestedDataset {
