@@ -146,8 +146,12 @@ export default function formatChartData(
 
   const xAxisKey = xAxis || keys[0]; //identify dataset
   const valueKeys = resolveValueKeys(keys, xAxisKey, yAxis, seriesFields);
+  // Scatter needs a third (name/label) column beyond x and y, so scoping to
+  // [xAxis, yAxis] would discard it and leave the chart unable to render.
   const shouldScopeColumns =
-    Boolean(seriesFields?.length) || (Boolean(yAxis) && type !== "grouped-bar");
+    type !== "scatter" &&
+    (Boolean(seriesFields?.length) ||
+      (Boolean(yAxis) && type !== "grouped-bar"));
   const scopedData = shouldScopeColumns
     ? filterChartDataColumns(data, [xAxisKey, ...valueKeys])
     : data;
@@ -414,11 +418,18 @@ export default function formatChartData(
 export const toAxisLabel = (key: string): string => {
   if (!key) return "";
 
-  // Extract common unit suffixes and format them as parenthetical
+  // Extract common unit suffixes and format them as parenthetical.
+  // Ordered most-specific first: "_tco2e_per_tonne" must win over "_tonnes",
+  // and the CO₂e family over the bare "_t" / "_mt" patterns.
   const unitPatterns: [RegExp, string][] = [
+    [/(_tco2e_per_tonne)$/i, "tCO₂e/t"],
+    [/(_mgco2e)$/i, "MgCO₂e"],
+    [/(_tco2e)$/i, "tCO₂e"],
+    [/(_co2e)$/i, "CO₂e"],
     [/(_km2|_km²)$/i, "km²"],
     [/(_ha)$/i, "ha"],
-    [/(_mt|_tonnes|_t)$/i, "t"],
+    [/(_mt)$/i, "Mt"],
+    [/(_tonnes|_t)$/i, "t"],
     [/(_pct|_percent|_%|_percentage)$/i, "%"],
   ];
 
@@ -471,9 +482,31 @@ export const formatYAxisLabel = (value: number, key?: string) => {
   }
   if (Number(value)) {
     if (Math.abs(value) < 1000) return value.toLocaleString();
-    if (Math.abs(value) < 1e6) return `${(value / 1e3).toFixed(1)}K`;
-    if (Math.abs(value) < 1e9) return `${(value / 1e6).toFixed(1)}M`;
-    return `${(value / 1e9).toFixed(1)}B`;
+    // Pick the unit from the *rounded* magnitude so 999,950 → "1M", not "1000K"
+    const units: [number, string][] = [
+      [1e9, "B"],
+      [1e6, "M"],
+      [1e3, "K"],
+    ];
+    for (const [divisor, suffix] of units) {
+      const scaled = Math.round((value / divisor) * 10) / 10;
+      if (Math.abs(scaled) >= 1) {
+        return `${scaled.toFixed(1).replace(/\.0$/, "")}${suffix}`;
+      }
+    }
   }
   return value.toString();
+};
+
+/**
+ * Full-precision locale formatting for tooltips: "1234567.891" → "1,234,567.89".
+ * Years and non-numeric values pass through unchanged.
+ */
+export const formatTooltipValue = (value: unknown, key?: string): string => {
+  if (key?.toString().toLowerCase() === "year") return String(value);
+  const num = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(num) || value === "" || value === null) {
+    return String(value);
+  }
+  return num.toLocaleString("en-US", { maximumFractionDigits: 2 });
 };
