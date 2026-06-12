@@ -1,20 +1,24 @@
 "use client";
-import { useState } from "react";
 import { Button, Flex, Text } from "@chakra-ui/react";
 import { CheckIcon } from "@phosphor-icons/react";
 import { AnalyseSuggestion } from "@/app/types/chat";
+import useChatStore from "@/app/store/chatStore";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 
 export default function AnalyseNudge({
+  messageId,
   suggestion,
 }: {
+  messageId: string;
   suggestion: AnalyseSuggestion;
 }) {
-  const [accepted, setAccepted] = useState(false);
+  // Accepted state lives on the message so the card survives re-mounts and
+  // accepted nudges persist in the thread when a new selection is made.
+  const accepted = suggestion.accepted ?? false;
 
   const handleAnalyse = () => {
     if (accepted) return;
-    setAccepted(true);
+    useChatStore.getState().acceptAnalyseNudge(messageId);
     runAnalysis(suggestion);
   };
 

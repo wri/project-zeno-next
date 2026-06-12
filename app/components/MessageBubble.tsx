@@ -209,7 +209,10 @@ function MessageBubble({
   if (message.type === "analyse-nudge" && message.analyseSuggestion) {
     return (
       <Box my={2}>
-        <AnalyseNudge suggestion={message.analyseSuggestion} />
+        <AnalyseNudge
+          messageId={message.id}
+          suggestion={message.analyseSuggestion}
+        />
       </Box>
     );
   }
