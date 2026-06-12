@@ -25,6 +25,7 @@ import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
+import { showImageryTool } from "./chat-tools/showImagery";
 import { queryClient } from "@/app/lib/query-client";
 import {
   showApiError,
@@ -240,6 +241,12 @@ async function processStreamMessage(
           }
         })
       );
+      return;
+    }
+    // Handling for show_imagery tool: render the Sentinel-2 mosaic on the map
+    else if (streamMessage.name === "show_imagery" && streamMessage.imagery) {
+      // Non-blocking: TileJSON fetch shouldn't stall the stream
+      void Promise.resolve().then(() => showImageryTool(streamMessage));
       return;
     }
     // Handling for pull_data tool
