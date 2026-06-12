@@ -11,10 +11,13 @@ import {
   Flex,
   Link as ChLink,
   Spinner,
+  Text,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
+import useCookieStore from "@/app/store/cookieStore";
+import { URLS } from "@/app/constants/urls";
 import { useShallow } from "zustand/react/shallow";
 import MapAreaControls from "./MapAreaControls";
 import { basemapOptions } from "./map/BasemapSelector";
@@ -50,6 +53,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const areas = useContextStore(
     useShallow((s) => s.context.filter((c) => c.contextType === "area"))
   );
+  const consentStatus = useCookieStore((s) => s.consentStatus);
+  const openPreferences = useCookieStore((s) => s.openPreferences);
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -239,8 +244,25 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           alignItems="center"
           gap={2}
         >
+          {consentStatus !== "pending" && (
+            <Text
+              as="button"
+              onClick={openPreferences}
+              textDecoration="underline"
+              color="fg.muted"
+              cursor="pointer"
+              fontSize="inherit"
+              fontFamily="inherit"
+              lineHeight="inherit"
+              bg="transparent"
+              border="none"
+              p={0}
+            >
+              Cookie Policy
+            </Text>
+          )}
           <ChLink
-            href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
+            href={URLS.privacyPolicy}
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
@@ -249,7 +271,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             Privacy Policy
           </ChLink>
           <ChLink
-            href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
+            href={URLS.aiPrivacyPolicy}
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
@@ -258,7 +280,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             AI Privacy Policy
           </ChLink>
           <ChLink
-            href="https://www.wri.org/about/legal/general-terms-use"
+            href={URLS.termsOfUse}
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
@@ -267,7 +289,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             Terms of Use
           </ChLink>
           <ChLink
-            href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+            href={URLS.aiTermsOfUse}
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"

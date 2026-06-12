@@ -3,7 +3,8 @@ import Providers from "@/app/components/providers";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
-import "./theme/cookies.css";
+import CookieBanner from "@/app/components/CookieBanner";
+import CookiePreferencesDrawer from "@/app/components/CookiePreferencesDrawer";
 
 const ibmPlexSans = IBM_Plex_Sans({
   variable: "--font-IBMPlexSans",
@@ -44,7 +45,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-5VC3GLCQ');`,
           }}
         />
-        <Script src="https://cmp.osano.com/AzyfddTRtqi1560Dk/1543dfc1-f73d-43a2-8296-3849161e9ff5/osano.js" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -72,6 +72,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <Providers>
           {children}
           <HotjarTrigger />
+          <CookieBanner />
+          <CookiePreferencesDrawer />
         </Providers>
       </body>
     </html>
