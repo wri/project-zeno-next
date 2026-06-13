@@ -24,6 +24,15 @@ function AuthBootstrapper() {
   useEffect(() => {
     let cancelled = false;
     async function loadAuth() {
+      if (process.env.NEXT_PUBLIC_SKIP_AUTH === "true") {
+        setAuthStatus({
+          email: "dev@local",
+          id: "dev-user",
+          hasProfile: true,
+          userType: null,
+        });
+        return;
+      }
       try {
         const token = getToken();
         if (!token) {

@@ -4,6 +4,7 @@ import {
   Box,
   Flex,
   Heading,
+  HStack,
   Button,
   IconButton,
   Progress,
@@ -24,6 +25,9 @@ import {
   SignOutIcon,
   UserIcon,
   InfoIcon,
+  MapTrifoldIcon,
+  FileTextIcon,
+  SquaresFourIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
 import { useState, useEffect, useRef } from "react";
@@ -34,8 +38,81 @@ import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; weight?: "regular" | "fill" }>;
+  matchPrefix: string;
+};
+
+// Inbox no longer has its own nav entry — user research showed the
+// standalone inbox page wasn't valuable on its own. The pinned-insight
+// inbox panel lives inside the Reports detail page (and dashboards
+// receive insights via the pin destination picker).
+const NAV_ITEMS: NavItem[] = [
+  { href: "/app", label: "Explore", icon: MapTrifoldIcon, matchPrefix: "/app" },
+  {
+    href: "/reports",
+    label: "Reports",
+    icon: FileTextIcon,
+    matchPrefix: "/reports",
+  },
+  {
+    href: "/dashboards",
+    label: "Dashboards",
+    icon: SquaresFourIcon,
+    matchPrefix: "/dashboards",
+  },
+];
+
+function HeaderNav({ isPrototype }: { isPrototype: boolean }) {
+  const pathname = usePathname() || "";
+  return (
+    <HStack gap={1} hideBelow="md">
+      {NAV_ITEMS.map((item) => {
+        const Icon = item.icon;
+        const active =
+          item.matchPrefix === "/app"
+            ? pathname === "/app" || pathname.startsWith("/app/")
+            : pathname === item.matchPrefix ||
+              pathname.startsWith(`${item.matchPrefix}/`);
+        const activeBg = isPrototype ? "#1f2937" : "primary.900";
+        const activeFg = isPrototype ? "#f3f4f6" : "white";
+        const inactiveFg = isPrototype ? "#374151" : "primary.100";
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            style={{ textDecoration: "none" }}
+          >
+            <HStack
+              gap={1.5}
+              px={3}
+              py={1.5}
+              rounded="md"
+              bg={active ? activeBg : "transparent"}
+              color={active ? activeFg : inactiveFg}
+              fontSize="sm"
+              fontWeight="medium"
+              _hover={{
+                bg: active ? activeBg : isPrototype ? "#9ca3af" : "primary.fg",
+                color: activeFg,
+              }}
+              transition="background 0.12s, color 0.12s"
+            >
+              <Icon size={14} weight={active ? "fill" : "regular"} />
+              <Text>{item.label}</Text>
+            </HStack>
+          </Link>
+        );
+      })}
+    </HStack>
+  );
+}
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -264,21 +341,30 @@ function PageHeader() {
           </Tooltip>
         </Flex>
       </Flex>
-      {isPrototype && (
-        <Text
-          fontSize="xs"
-          fontWeight="bold"
-          letterSpacing="wider"
-          textTransform="uppercase"
-          color="#1f2937"
-          position="absolute"
-          left="50%"
-          transform="translateX(-50%)"
-          pointerEvents="none"
-        >
-          NOT FOR PRODUCTION USE
-        </Text>
-      )}
+      <Flex
+        position="absolute"
+        left="50%"
+        top="50%"
+        transform="translate(-50%, -50%)"
+        alignItems="center"
+        gap={4}
+        pointerEvents="auto"
+      >
+        <HeaderNav isPrototype={isPrototype} />
+        {isPrototype && (
+          <Text
+            fontSize="xs"
+            fontWeight="bold"
+            letterSpacing="wider"
+            textTransform="uppercase"
+            color="#1f2937"
+            pointerEvents="none"
+            hideBelow="lg"
+          >
+            NOT FOR PRODUCTION USE
+          </Text>
+        )}
+      </Flex>
       <Flex gap="6" alignItems="center" hideBelow="md">
         <Button
           variant="ghost"
