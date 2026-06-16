@@ -361,6 +361,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       query: message,
       query_type: queryType,
       thread_id: threadId,
+      // Hardcoded for this branch; revisit (URL param / store) before merge.
+      ff: "experimental",
     };
 
     // Set up abort controller for client-side timeout

@@ -180,12 +180,14 @@ export function useLegendHook() {
         // entry — build a card from the imagery metadata carried on the layer.
         if (layer.imagery) {
           const { imagery } = layer;
-          const params: LegendParam[] = [
-            {
+          const params: LegendParam[] = [];
+          // Acquired date range is absent on cache hits — omit the chip then.
+          if (imagery.date_start && imagery.date_end) {
+            params.push({
               label: "DATES",
               value: `${formatImageryDate(imagery.date_start)} – ${formatImageryDate(imagery.date_end)}`,
-            },
-          ];
+            });
+          }
           // Search constraints: absent on imagery payloads created before
           // these fields existed (replayed old threads) — omit the chips.
           if (imagery.window_days !== undefined) {
@@ -216,7 +218,11 @@ export function useLegendHook() {
             id: layer.id,
             title: layer.name,
             opacity: (layer.opacity ?? 1) * 100,
-            info: `Sentinel-2 true-colour mosaic built from ${imagery.item_count} scene${imagery.item_count === 1 ? "" : "s"} closest to ${formatImageryDate(imagery.target_date)}. Contains modified Copernicus Sentinel data.`,
+            info: `Sentinel-2 true-colour mosaic${
+              imagery.item_count !== undefined
+                ? ` built from ${imagery.item_count} scene${imagery.item_count === 1 ? "" : "s"}`
+                : ""
+            } closest to ${formatImageryDate(imagery.target_date)}. Contains modified Copernicus Sentinel data.`,
             params,
             symbology: null,
             children: mayContainClouds ? (

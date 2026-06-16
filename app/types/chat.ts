@@ -95,6 +95,8 @@ export interface ChatPrompt {
   query: string;
   query_type: string;
   thread_id: string;
+  // Feature flag selecting the agent tool profile (admin-gated server-side).
+  ff?: string;
 }
 export interface UiContext {
   aoi_selected?: {
@@ -153,9 +155,11 @@ export interface ImageryInfo {
   tile_url: string;
   tilejson_url: string;
   mosaic_id: string;
-  item_count: number;
-  date_start: string;
-  date_end: string;
+  // Scene count and acquired date range are only known when the mosaic is
+  // built; on a cache hit (mosaic already in S3) the backend omits them.
+  item_count?: number;
+  date_start?: string;
+  date_end?: string;
   target_date: string;
   aoi_names: string[];
   // Search constraints used to build the mosaic. Absent on payloads created
