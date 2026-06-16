@@ -7,5 +7,8 @@ export function buildBasemapTileUrl(
   pixelRatio: number
 ): string {
   const scale = pixelRatio > 1 ? "@2x" : "";
-  return `https://api.mapbox.com/styles/v1/${stylePath}/tiles/{z}/{x}/{y}${scale}?access_token=${accessToken}`;
+  const base = `https://api.mapbox.com/styles/v1/${stylePath}/tiles/{z}/{x}/{y}${scale}`;
+  return accessToken
+    ? `${base}?access_token=${encodeURIComponent(accessToken)}`
+    : base;
 }

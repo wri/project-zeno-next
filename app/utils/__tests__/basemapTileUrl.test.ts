@@ -19,4 +19,16 @@ describe("buildBasemapTileUrl", () => {
       "{z}/{x}/{y}@2x?"
     );
   });
+
+  it("omits the access_token query param when no token is provided", () => {
+    expect(buildBasemapTileUrl("devseed/abc123", undefined, 1)).toBe(
+      "https://api.mapbox.com/styles/v1/devseed/abc123/tiles/{z}/{x}/{y}"
+    );
+  });
+
+  it("URL-encodes the access token", () => {
+    expect(buildBasemapTileUrl("devseed/abc123", "a b&c", 1)).toBe(
+      "https://api.mapbox.com/styles/v1/devseed/abc123/tiles/{z}/{x}/{y}?access_token=a%20b%26c"
+    );
+  });
 });
