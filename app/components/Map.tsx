@@ -32,6 +32,7 @@ import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
+import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -134,7 +135,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           id="background"
           type="raster"
           tiles={[
-            `https://api.mapbox.com/styles/v1/${basemapTiles}/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
+            buildBasemapTileUrl(
+              basemapTiles,
+              MAPBOX_ACCESS_TOKEN,
+              typeof window === "undefined" ? 1 : window.devicePixelRatio
+            ),
           ]}
         >
           <Layer id="background-tiles" type="raster" />
