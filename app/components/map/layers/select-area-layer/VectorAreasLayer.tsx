@@ -216,14 +216,18 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             // Purely additive: with the flag off, behavior is unchanged.
             // AnalysisCtaTrigger reacts to this selection and surfaces the
             // analyse nudge once a dataset is also active.
-            if (layerId === "GADM" && metadata && isAnalysisEnabled) {
-              setAnalysis(
-                toAreaSelection(
-                  layerId,
-                  (featureProps ?? {}) as Record<string, unknown>,
-                  metadata
-                )
-              );
+            if (isAnalysisEnabled) {
+              if (layerId === "GADM" && metadata) {
+                setAnalysis(
+                  toAreaSelection(
+                    layerId,
+                    (featureProps ?? {}) as Record<string, unknown>,
+                    metadata
+                  )
+                );
+              } else {
+                useMapStore.getState().clearAnalysis();
+              }
             }
           }
         }
