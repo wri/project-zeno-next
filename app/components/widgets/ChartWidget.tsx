@@ -235,21 +235,11 @@ function DonutCenterLabel({
     <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
       <tspan
         x={cx}
-        dy="-0.3em"
         fontSize={expanded ? "22" : "14"}
         fontWeight="600"
         fill="var(--chakra-colors-fg)"
       >
         {formatYAxisLabel(total, axisKey)}
-      </tspan>
-      <tspan
-        x={cx}
-        dy="1.5em"
-        fontSize={expanded ? "12" : "9"}
-        letterSpacing="0.05em"
-        fill="var(--chakra-colors-fg-muted)"
-      >
-        TOTAL
       </tspan>
     </text>
   );
