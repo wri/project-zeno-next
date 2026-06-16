@@ -22,6 +22,7 @@ import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
 
 export default function DashboardLayout({
   children,
@@ -163,6 +164,7 @@ export default function DashboardLayout({
     >
       <UploadAreaDialog />
       <WhatsNewModal />
+      <AnalysisCtaTrigger />
 
       {!isMobile && <PageHeader />}
       {isMobile ? MobileLayout : DesktopLayout}
