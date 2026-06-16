@@ -280,16 +280,21 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   // any pending nudge instead of stacking. Accepted nudges persist in the
   // thread as a record of the analyses the user ran.
   upsertAnalyseNudge: (suggestion) => {
-    set((state) => ({
-      messages: state.messages.filter(
-        (m) => m.type !== "analyse-nudge" || m.analyseSuggestion?.accepted
-      ),
-    }));
-    get().addMessage({
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
       type: "analyse-nudge",
       message: "",
       analyseSuggestion: suggestion,
-    });
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter(
+          (m) => m.type !== "analyse-nudge" || m.analyseSuggestion?.accepted
+        ),
+        newMessage,
+      ],
+    }));
   },
 
   acceptAnalyseNudge: (messageId) => {
