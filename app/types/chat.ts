@@ -146,7 +146,9 @@ export interface StreamMessage {
 }
 
 // Sentinel-2 mosaic payload written to agent state by the show_imagery tool.
-// Both URLs are relative to the Zeno API host and require bearer auth.
+// tile_url / tilejson_url are absolute URLs to the titiler the backend is
+// configured to use (its MOSAIC_TILER_URL). When that titiler is the Zeno API
+// itself, the /mosaic routes require bearer auth.
 export interface ImageryInfo {
   tile_url: string;
   tilejson_url: string;

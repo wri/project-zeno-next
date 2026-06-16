@@ -2,7 +2,7 @@ import { format, parseISO } from "date-fns";
 import { StreamMessage } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { API_CONFIG } from "@/app/config/api";
-import { apiFetch } from "@/app/lib/api-client";
+import { getAuthHeaders } from "@/app/lib/api-client";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 
 export const IMAGERY_LAYER_ID_PREFIX = "imagery-";
@@ -24,6 +24,19 @@ function layerName(targetDate: string): string {
 }
 
 /**
+ * Fetches a titiler resource. The backend emits absolute titiler URLs whose
+ * host it controls via its own MOSAIC_TILER_URL setting (the Zeno API itself,
+ * or a standalone titiler) — so we consume them as-is rather than rewriting
+ * the origin on the frontend. When the titiler is the Zeno API, its /mosaic
+ * routes require bearer auth, so attach it for requests to the API origin,
+ * mirroring the map's transformRequest. Other titiler hosts are unauthenticated.
+ */
+function fetchTitiler(url: string): Promise<Response> {
+  const headers = url.startsWith(API_CONFIG.API_HOST) ? getAuthHeaders() : {};
+  return fetch(url, { headers });
+}
+
+/**
  * Handles the show_imagery tool: renders the Sentinel-2 mosaic from the
  * `imagery` agent-state entry as a raster layer.
  *
@@ -32,14 +45,15 @@ function layerName(targetDate: string): string {
  * imagery stack. Re-running an identical request yields the same mosaic_id
  * and simply upserts the existing layer.
  *
- * The TileJSON is fetched first (authenticated, like all mosaic endpoints)
- * to get the mosaic's bounds and zoom range. The mosaic_id is an opaque
- * recipe token, so payloads stay valid indefinitely (the server rebuilds
- * cold mosaics on demand — budget ~1–2s for this fetch when replaying an
- * old thread). A 401 means the session expired and is surfaced like any
- * other API auth error; a 404 is a rare hard error (deleted custom area,
- * malformed URL, or a pre-auth-change mosaic token) and the layer is simply
- * not shown.
+ * The backend emits absolute titiler URLs (tile_url / tilejson_url) pointing
+ * at whatever titiler it is configured to use; the frontend consumes them
+ * directly (see fetchTitiler). The TileJSON is fetched first to get the
+ * mosaic's bounds and zoom range. The mosaic_id is an opaque recipe token, so
+ * payloads stay valid indefinitely (the server rebuilds cold mosaics on demand
+ * — budget ~1–2s for this fetch when replaying an old thread). A 401 means the
+ * session expired and is surfaced like any other API auth error; any other
+ * non-ok response is a rare hard error (deleted custom area, malformed URL, or
+ * a mosaic the titiler cannot read) and the layer is simply not shown.
  */
 export async function showImageryTool(streamMessage: StreamMessage) {
   const imagery = streamMessage.imagery;
@@ -49,7 +63,7 @@ export async function showImageryTool(streamMessage: StreamMessage) {
 
   let tileJson: TileJson;
   try {
-    const res = await apiFetch(imagery.tilejson_url);
+    const res = await fetchTitiler(imagery.tilejson_url);
     if (res.status === 401 || res.status === 403) {
       showApiError(
         "Your session has expired. Please sign in again to view satellite imagery.",
@@ -76,7 +90,7 @@ export async function showImageryTool(streamMessage: StreamMessage) {
     name: layerName(imagery.target_date),
     type: "raster",
     visible: true,
-    tileUrl: `${API_CONFIG.API_HOST}${imagery.tile_url}`,
+    tileUrl: imagery.tile_url,
     minzoom: tileJson.minzoom ?? 8,
     maxzoom: tileJson.maxzoom ?? 14,
     bounds: tileJson.bounds,
