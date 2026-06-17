@@ -72,7 +72,7 @@ export function AnalysisCard({
         typeLabel="AI-INSIGHT ANALYSIS"
         typeLabelColor={TYPE_LABEL_COLOR}
         typeLabelIcon={
-          <SparkleIcon size={12} weight="fill" color={TYPE_LABEL_COLOR} />
+          <SparkleIcon size={12} weight="thin" color={TYPE_LABEL_COLOR} />
         }
         title={widget.title}
         description={buildSubtitle(widget)}

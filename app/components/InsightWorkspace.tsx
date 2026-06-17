@@ -16,7 +16,7 @@ import {
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
   SpinnerGapIcon,
-  SparkleIcon,
+  ChartLineIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
@@ -184,7 +184,7 @@ export default function InsightWorkspace() {
           flexWrap="nowrap"
           overflow="hidden"
         >
-          <SparkleIcon size={12} color="#0049AA" weight="fill" />
+          <ChartLineIcon size={12} color="#0049AA" weight="thin" />
           <Text
             fontSize="10px"
             fontFamily="mono"
@@ -194,7 +194,7 @@ export default function InsightWorkspace() {
             color="fg.muted"
             whiteSpace="nowrap"
           >
-            AI-INSIGHT ANALYSIS
+            ANALYSIS
             {" · "}
             <Tooltip
               variant="dark"
