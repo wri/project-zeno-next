@@ -5,8 +5,8 @@ import {
   Heading,
   Flex,
   Button,
-  Dialog,
   Menu,
+  Dialog,
   Portal,
   CloseButton,
   Text,
@@ -15,6 +15,8 @@ import {
 import {
   MicroscopeIcon as Microscope,
   ArrowsOutIcon,
+  ArrowSquareOutIcon,
+  SparkleIcon,
   DownloadSimpleIcon,
   FileCsvIcon,
   ImageIcon,
@@ -23,6 +25,14 @@ import {
   CaretDownIcon,
 } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
+import {
+  exportToAI,
+  AI_PROVIDERS,
+  type AIProvider,
+} from "@/app/utils/exportToAI";
+import { toaster } from "@/app/components/ui/toaster";
+import { AI_PROVIDER_ICONS } from "@/app/components/ui/AIProviderIcons";
+import { Tooltip } from "@/app/components/ui/tooltip";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
@@ -34,7 +44,6 @@ import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
-import { toaster } from "@/app/components/ui/toaster";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -131,6 +140,18 @@ export default function WidgetMessage({
     a.download = `${(widget.title || "data").replace(/[^a-z0-9]/gi, "_")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportToAI = (provider: AIProvider) => {
+    const method = exportToAI(widget, provider);
+    if (method === "clipboard") {
+      toaster.create({
+        title: "Prompt copied to clipboard",
+        description: `Paste it into ${AI_PROVIDERS[provider].label} to continue your analysis.`,
+        type: "info",
+        duration: 5000,
+      });
+    }
   };
 
   const chartTypes: InsightWidget["type"][] = [
@@ -242,7 +263,7 @@ export default function WidgetMessage({
               color="neutral.500"
             >
               <ArrowsOutIcon size={14} />
-              Show full-screen
+              Full-screen
             </Button>
           )}
         </Flex>
@@ -278,31 +299,38 @@ export default function WidgetMessage({
             </ScrollableTableWrapper>
           </WidgetErrorBoundary>
         )}
-        {/* Bottom action row — provenance + download */}
+        {/* Bottom action row — provenance + download + continue in AI */}
         {(isChartType || widget.type === "table") && hasData && (
           <Flex
             justify="flex-start"
-            gap={2}
+            gap={1}
             flexWrap={inWorkspace ? "nowrap" : "wrap"}
             align="center"
           >
             {widget.generation && (
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={handleOpen}
-                bg={open ? "bg.info" : undefined}
-                borderColor={open ? "border.info" : undefined}
-                color="neutral.500"
-                h={6}
-                rounded="sm"
-                _hover={{
-                  bg: open ? "blue.100" : undefined,
-                }}
+              <Tooltip
+                content="View how this was generated"
+                variant="dark"
+                showArrow
+                positioning={{ placement: "top" }}
+                openDelay={300}
               >
-                <Microscope />
-                View how this was generated
-              </Button>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={handleOpen}
+                  bg={open ? "bg.info" : undefined}
+                  borderColor={open ? "border.info" : undefined}
+                  color="neutral.500"
+                  h={6}
+                  rounded="sm"
+                  _hover={{ bg: open ? "blue.100" : undefined }}
+                  aria-label="View how this was generated"
+                >
+                  <Microscope size={12} />
+                  Show working
+                </Button>
+              </Tooltip>
             )}
             <Menu.Root positioning={{ placement: "bottom-start" }}>
               <Menu.Trigger asChild>
@@ -335,6 +363,58 @@ export default function WidgetMessage({
                   </Menu.Content>
                 </Menu.Positioner>
               </Portal>
+            </Menu.Root>
+            <Menu.Root positioning={{ strategy: "fixed" }}>
+              <Menu.Trigger asChild>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  h={6}
+                  rounded="sm"
+                  color="neutral.500"
+                  px={2}
+                  aria-label="Ask AI about this insight"
+                >
+                  <SparkleIcon size={10} />
+                  Continue in...
+                  <CaretDownIcon size={10} />
+                </Button>
+              </Menu.Trigger>
+              <Menu.Positioner>
+                <Menu.Content minW="140px">
+                  {(Object.keys(AI_PROVIDERS) as AIProvider[]).map(
+                    (provider) => {
+                      const ProviderIcon = AI_PROVIDER_ICONS[provider];
+                      return (
+                        <Menu.Item
+                          key={provider}
+                          value={provider}
+                          onSelect={() => handleExportToAI(provider)}
+                          color="fg.muted"
+                          aria-label={`Continue in ${AI_PROVIDERS[provider].label}`}
+                        >
+                          <Flex
+                            w="full"
+                            align="center"
+                            justify="space-between"
+                            gap={2}
+                          >
+                            <Flex align="center" gap={2}>
+                              <Box as="span" color="neutral.600">
+                                <ProviderIcon size={14} />
+                              </Box>
+                              {AI_PROVIDERS[provider].label}
+                            </Flex>
+                            <Box as="span" color="neutral.600">
+                              <ArrowSquareOutIcon size={11} />
+                            </Box>
+                          </Flex>
+                        </Menu.Item>
+                      );
+                    }
+                  )}
+                </Menu.Content>
+              </Menu.Positioner>
             </Menu.Root>
           </Flex>
         )}
