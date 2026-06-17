@@ -1,18 +1,26 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Box, Flex, Text, Heading, IconButton } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Text,
+  Heading,
+  IconButton,
+  Skeleton,
+  SkeletonText,
+} from "@chakra-ui/react";
 import {
   CaretDownIcon,
   CaretUpIcon,
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
   SpinnerGapIcon,
+  SparkleIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
 import { Tooltip } from "./ui/tooltip";
-import { WidgetIconComponent } from "@/app/utils/widgetIcons";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
@@ -30,7 +38,7 @@ const aiDisclaimerTooltip = (
       fontWeight="medium"
       color="#FFFFFF"
     >
-      AI-ASSISTED ANALYSIS
+      AI-INSIGHT ANALYSIS
     </Text>
     <Text
       fontFamily="body"
@@ -44,6 +52,88 @@ const aiDisclaimerTooltip = (
   </Box>
 );
 
+/**
+ * Placeholder shown while the very first analysis is generating (no chart in
+ * the store yet). Mirrors the real card's shell + sticky header so the layout
+ * doesn't jump when the chart replaces it.
+ */
+function WorkspaceSkeleton() {
+  return (
+    <Box
+      flex="0 1 auto"
+      minH="0"
+      overflowY="auto"
+      w="100%"
+      bg="primary.25"
+      border="1px solid"
+      borderColor="#DDE2F5"
+      rounded="4px"
+      pointerEvents="all"
+      display="flex"
+      flexDirection="column"
+    >
+      <Flex
+        position="sticky"
+        top={0}
+        zIndex={1}
+        bg="primary.25"
+        h="28px"
+        px="16px"
+        py="6px"
+        gap="8px"
+        justify="space-between"
+        align="center"
+        borderBottom="1px solid"
+        borderColor="#DDE2F5"
+      >
+        <Flex align="center" gap="8px" h="16px">
+          <SparkleIcon size={12} color="#0049AA" weight="fill" />
+          <Text
+            fontSize="10px"
+            fontFamily="mono"
+            fontWeight="normal"
+            lineHeight="16px"
+            letterSpacing="0.03em"
+            color="fg.muted"
+            whiteSpace="nowrap"
+          >
+            AI-INSIGHT ANALYSIS
+          </Text>
+        </Flex>
+        <Flex align="center" gap="4px" flexShrink={0}>
+          <Box
+            animation="spin 1s infinite"
+            animationTimingFunction="steps(8, end)"
+          >
+            <SpinnerGapIcon size={12} color="var(--chakra-colors-fg-muted)" />
+          </Box>
+          <Text
+            fontSize="10px"
+            fontFamily="mono"
+            lineHeight="16px"
+            letterSpacing="0.03em"
+            color="fg.muted"
+            whiteSpace="nowrap"
+          >
+            INSIGHTS LOADING
+          </Text>
+        </Flex>
+      </Flex>
+
+      {/* Title row placeholder */}
+      <Box px={4} py={2} borderBottom="1px solid" borderColor="#DDE2F5">
+        <Skeleton h="16px" w="70%" rounded="sm" />
+      </Box>
+
+      {/* Chart body placeholder */}
+      <Box px={4} py={3}>
+        <Skeleton h="180px" w="100%" rounded="md" mb={3} />
+        <SkeletonText noOfLines={2} gap="2" />
+      </Box>
+    </Box>
+  );
+}
+
 export default function InsightWorkspace() {
   const { insights } = useInsightStore();
   const isLoading = useChatStore((state) => state.isLoading);
@@ -56,7 +146,14 @@ export default function InsightWorkspace() {
   }, [insights.length]);
 
   const total = insights.length;
-  if (total === 0) return null;
+  // First analysis still generating: no chart to show yet, so present a
+  // skeleton card instead of an empty gap. Once a chart lands (total > 0),
+  // the normal card renders and the header "INSIGHTS LOADING" indicator
+  // covers any subsequent regeneration.
+  if (total === 0) {
+    if (!isLoading) return null;
+    return <WorkspaceSkeleton />;
+  }
 
   // currentIndex 0 = newest, total-1 = oldest
   const widget = insights[total - 1 - currentIndex];
@@ -66,7 +163,6 @@ export default function InsightWorkspace() {
   // disables at 1/N; Right/Next advances through the stack to older entries.
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < total - 1;
-  const HeaderIcon = WidgetIconComponent[widget.type];
 
   return (
     /* Card is the scroll container: grows to content, scrolls when flex-shrunk */
@@ -105,7 +201,7 @@ export default function InsightWorkspace() {
           flexWrap="nowrap"
           overflow="hidden"
         >
-          <HeaderIcon size={12} color="#0049AA" />
+          <SparkleIcon size={12} color="#0049AA" weight="fill" />
           <Text
             fontSize="10px"
             fontFamily="mono"
@@ -115,7 +211,7 @@ export default function InsightWorkspace() {
             color="fg.muted"
             whiteSpace="nowrap"
           >
-            AI-ASSISTED ANALYSIS
+            AI-INSIGHT ANALYSIS
             {" · "}
             <Tooltip
               variant="dark"
@@ -131,7 +227,7 @@ export default function InsightWorkspace() {
                 textDecoration="underline"
                 cursor="help"
                 tabIndex={0}
-                aria-label="Learn more about AI-Assisted Analysis"
+                aria-label="Learn more about AI-Insight Analysis"
               >
                 learn more
               </Box>
