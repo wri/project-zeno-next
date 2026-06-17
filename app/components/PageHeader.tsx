@@ -20,6 +20,7 @@ import {
   GearSixIcon,
   LifebuoyIcon,
   PlusIcon,
+  ShootingStarIcon,
   SignOutIcon,
   UserIcon,
   InfoIcon,
@@ -34,26 +35,29 @@ import useSidebarStore from "../store/sidebarStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
 import Link from "next/link";
 import { useLogout } from "@/app/hooks/useLogout";
+import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
+const WHATS_NEW_STORAGE_KEY = "whats-new-v3-dismissed";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
     useAuthStore();
-  const { toggleSidebar, getThreadById } = useSidebarStore();
+  const { toggleSidebar } = useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
+  const { threads } = useThreadsInfinite();
 
   const currentThread = currentThreadId
-    ? getThreadById(currentThreadId)
+    ? threads.find((t) => t.id === currentThreadId)
     : undefined;
   const currentThreadName = currentThread
     ? currentThread.name
     : "New Conversation";
 
-  const inverseColor = isPrototype ? "#1f2937" : "fg.inverted";
-  const inverseHoverBg = isPrototype ? "#6b7280" : "primary.fg";
+  const inverseColor = isPrototype ? "#1f2937" : "neutral.600";
+  const inverseHoverBg = isPrototype ? "#6b7280" : "neutral.200";
   const focusRing = {
     outline: "2px solid",
     outlineColor: inverseColor,
@@ -63,6 +67,7 @@ function PageHeader() {
 
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [showWhatsNewDot, setShowWhatsNewDot] = useState(false);
   const badgeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,6 +78,14 @@ function PageHeader() {
     window.addEventListener("gnw-disclaimer-dismissed", handleDismiss);
     return () =>
       window.removeEventListener("gnw-disclaimer-dismissed", handleDismiss);
+  }, []);
+
+  useEffect(() => {
+    setShowWhatsNewDot(localStorage.getItem(WHATS_NEW_STORAGE_KEY) !== "true");
+    const handleDismissed = () => setShowWhatsNewDot(false);
+    window.addEventListener("gnw-whats-new-dismissed", handleDismissed);
+    return () =>
+      window.removeEventListener("gnw-whats-new-dismissed", handleDismissed);
   }, []);
 
   useEffect(() => {
@@ -93,8 +106,9 @@ function PageHeader() {
       gap="4"
       px="3"
       h="40px"
-      bg={isPrototype ? "#d1d5db" : "primary.solid"}
-      color={isPrototype ? "#1f2937" : "fg.inverted"}
+      bg={isPrototype ? "#d1d5db" : "white"}
+      color={isPrototype ? "#1f2937" : "#131E47"}
+      borderTop={isPrototype ? undefined : "4px solid #E3F37F"}
       zIndex={1300}
       position="relative"
     >
@@ -111,9 +125,13 @@ function PageHeader() {
             <LclLogo
               width={16}
               avatarOnly
-              fill={isPrototype ? "#1f2937" : "white"}
+              fill={isPrototype ? "#1f2937" : "#131E47"}
             />
-            <Heading as="h1" size="sm" color={inverseColor}>
+            <Heading
+              as="h1"
+              size="sm"
+              color={isPrototype ? "#1f2937" : "#131E47"}
+            >
               Global Nature Watch
             </Heading>
           </ChakraLink>
@@ -262,6 +280,34 @@ function PageHeader() {
         </Text>
       )}
       <Flex gap="6" alignItems="center" hideBelow="md">
+        <Button
+          variant="ghost"
+          size="xs"
+          color={isPrototype ? "#1f2937" : "#656E7B"}
+          fill={isPrototype ? "#1f2937" : "#F4F5F6"}
+          _hover={{ bg: inverseHoverBg }}
+          _focusVisible={focusRing}
+          gap="2"
+          fontWeight="medium"
+          fontSize="xs"
+          onClick={() => {
+            localStorage.setItem(WHATS_NEW_STORAGE_KEY, "true");
+            window.dispatchEvent(new CustomEvent("gnw-whats-new-dismissed"));
+            window.dispatchEvent(new CustomEvent("gnw-whats-new-open"));
+          }}
+        >
+          <ShootingStarIcon size={16} />
+          {"What's new"}
+          {showWhatsNewDot && (
+            <Box
+              w="8px"
+              h="8px"
+              borderRadius="8px"
+              bg="#C3D16F"
+              flexShrink={0}
+            />
+          )}
+        </Button>
         <ChakraLink
           as={Link}
           href="https://help.globalnaturewatch.org/"
@@ -269,7 +315,7 @@ function PageHeader() {
           display="flex"
           alignItems="center"
           gap="2"
-          color={inverseColor}
+          color={isPrototype ? "#1f2937" : "#656E7B"}
           fontSize="xs"
           fontWeight="medium"
           transition="opacity 0.24s ease"
@@ -298,7 +344,7 @@ function PageHeader() {
             lineHeight="1.5"
             fontWeight="normal"
             whiteSpace="nowrap"
-            color={isPrototype ? "#6b7280" : "primary.100"}
+            color={isPrototype ? "#6b7280" : "#656E7B"}
           >
             {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} daily
             prompts
@@ -321,22 +367,19 @@ function PageHeader() {
               </Text>
             </Tooltip>
           </Progress.Label>
-          <Progress.Track
-            bg={isPrototype ? "#6b7280" : "primary.950"}
-            maxH="4px"
-          >
-            <Progress.Range bg={isPrototype ? "#1f2937" : "white"} />
+          <Progress.Track bg={isPrototype ? "#6b7280" : "#E0E2E5"} maxH="4px">
+            <Progress.Range bg={isPrototype ? "#1f2937" : "#0049AA"} />
           </Progress.Track>
         </Progress.Root>
         {isAuthenticated ? (
           <Menu.Root positioning={{ placement: "bottom-end" }}>
             <Menu.Trigger asChild>
               <Button
-                variant="solid"
-                colorPalette={isPrototype ? "gray" : "primary"}
+                variant={isPrototype ? "solid" : "ghost"}
+                colorPalette={isPrototype ? "gray" : undefined}
                 bg={isPrototype ? "#9ca3af" : undefined}
-                color={isPrototype ? "#1f2937" : undefined}
-                _hover={{ bg: isPrototype ? "#6b7280" : "primary.fg" }}
+                color={isPrototype ? "#1f2937" : "#656E7B"}
+                _hover={{ bg: isPrototype ? "#6b7280" : "#F0F1F2" }}
                 _focusVisible={focusRing}
                 h="40px"
                 px="2"
@@ -383,7 +426,7 @@ function PageHeader() {
             display="flex"
             alignItems="center"
             gap="2"
-            color={inverseColor}
+            color={isPrototype ? "#1f2937" : "#656E7B"}
             fontSize="xs"
             fontWeight="medium"
             transition="opacity 0.24s ease"

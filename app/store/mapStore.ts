@@ -5,6 +5,10 @@ import center from "@turf/center";
 import { LayerId } from "../types/map";
 import { DrawAreaSlice, createDrawAreaSlice } from "./drawAreaSlice";
 import { UploadAreaSlice, createUploadAreaSlice } from "./uploadAreaSlice";
+import {
+  SelectAnalysisSlice,
+  createSelectAnalysisSlice,
+} from "./selectAnalysisSlice";
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
 import {
@@ -42,21 +46,25 @@ interface MapSlice {
 export type MapState = MapSlice &
   DrawAreaSlice &
   UploadAreaSlice &
-  LayerManagerSlice;
+  LayerManagerSlice &
+  SelectAnalysisSlice;
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   set,
   get
 ) => ({
   mapRef: null,
-  selectAreaLayer: null,
+  selectAreaLayer: "GADM",
   selectionMode: undefined,
 
   reset: () => {
     set({
-      selectAreaLayer: null,
+      selectAreaLayer: "GADM",
       layers: [],
       geoJsonRegistry: [],
+      // Clear the analysis selection so a new thread (which reseeds the
+      // default dataset) doesn't resurrect a nudge from the previous one.
+      analysisSelection: null,
     });
     get().clearSelectionMode();
 
@@ -64,8 +72,8 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     if (mapRef) {
       const map = mapRef.getMap();
       map.flyTo({
-        center: [0, 0],
-        zoom: 0,
+        center: [15, -10],
+        zoom: 2,
       });
     }
   },
@@ -202,6 +210,7 @@ const useMapStore = create<MapState>()((...a) => ({
   ...createDrawAreaSlice(...a),
   ...createUploadAreaSlice(...a),
   ...createLayerManagerSlice(...a),
+  ...createSelectAnalysisSlice(...a),
 }));
 
 export default useMapStore;

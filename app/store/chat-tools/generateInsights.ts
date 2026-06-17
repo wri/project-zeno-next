@@ -113,8 +113,6 @@ export function generateInsightsTool(
         };
       });
 
-      console.log("FRONTEND: Received charts_data message:", widgets);
-
       useInsightStore.getState().addInsights(widgets);
     }
   } catch (error) {

@@ -5,7 +5,6 @@ import useChatStore from "@/app/store/chatStore";
 import MessageBubble from "./MessageBubble";
 import Reasoning from "./Reasoning";
 import SamplePrompts from "./SamplePrompts";
-import WhatsNewModal from "./WhatsNewModal";
 
 function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -102,7 +101,6 @@ function ChatMessages() {
         return (
           <Fragment key={message.id}>
             {isLastUserMessage && <Box ref={lastUserMessageRef} />}
-            {isFirst && <WhatsNewModal />}
             <MessageBubble
               message={message}
               isConsecutive={isConsecutive}

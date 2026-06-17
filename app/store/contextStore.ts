@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { ChatContextType } from "@/app/components/ContextButton";
 import useMapStore from "./mapStore";
 import type { AOISelection } from "@/app/types/chat";
+import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
 
 export interface ContextItem {
   id: string;
@@ -29,7 +30,7 @@ export interface ContextItem {
   tileUrl?: string;
   layerName?: string;
   // Optional sub-layer (e.g. "primary_forest" for TCL) rendered alongside the main dataset layer.
-  contextLayer?: { name: string; tileUrl: string };
+  contextLayer?: { name: string; tileUrl: string; sourceLayer?: string };
   // Runtime metadata surfaced in the legend
   parameters?: Record<string, unknown>;
   startDate?: string;
@@ -92,12 +93,18 @@ const useContextStore = create<ContextState & ContextActions>((set, get) => ({
           endDate: item.endDate,
         });
         if (item.contextLayer) {
+          const ctx = item.contextLayer;
+          const isVector = !!ctx.sourceLayer;
           useMapStore.getState().addLayer({
-            id: `dataset-${item.datasetId}-ctx-${item.contextLayer.name}`,
-            name: item.contextLayer.name,
-            type: "raster",
+            id: `dataset-${item.datasetId}-ctx-${ctx.name}`,
+            name: ctx.name,
+            type: isVector ? "vector" : "raster",
             visible: true,
-            tileUrl: item.contextLayer.tileUrl,
+            tileUrl: ctx.tileUrl,
+            sourceLayer: ctx.sourceLayer,
+            vectorStyle: isVector
+              ? CONTEXT_LAYER_METADATA[ctx.name]?.vectorStyle
+              : undefined,
             datasetId: item.datasetId,
             parentLayerId: mainLayerId,
           });

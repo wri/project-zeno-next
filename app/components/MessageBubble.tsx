@@ -36,6 +36,7 @@ import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
+import AnalyseNudge from "./AnalyseNudge";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -147,6 +148,7 @@ function MessageBubble({
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
   const isAreaCard = message.type === "area-card";
+  const isSystem = message.type === "system";
   const isError = message.type === "error";
   const isWarning = message.type === "warning";
   const isStopped = message.type === "stopped";
@@ -165,6 +167,32 @@ function MessageBubble({
     !message.suppressFooter &&
     (!isConsecutive || analysisWidgets.length > 0 || isLast);
 
+  if (isSystem) {
+    return (
+      <Box
+        mb={4}
+        css={{
+          "& p": { fontSize: "12px", lineHeight: "1.5" },
+          "& p:first-of-type > strong": {
+            display: "block",
+            fontSize: "16px",
+            fontWeight: "500",
+            color: "fg.link",
+            lineHeight: "1.5",
+            marginBottom: "8px",
+          },
+          "& > p:not(:last-of-type)": { marginBottom: "8px" },
+          "& a": {
+            textDecoration: "underline",
+            color: "fg.link",
+          },
+        }}
+      >
+        <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+      </Box>
+    );
+  }
+
   if (isAreaCard && message.aoiSelection) {
     return (
       <Box my={2} width="100%">
@@ -177,6 +205,17 @@ function MessageBubble({
     return (
       <Box my={2}>
         <DatasetNudge datasets={message.suggestedDatasets} />
+      </Box>
+    );
+  }
+
+  if (message.type === "analyse-nudge" && message.analyseSuggestion) {
+    return (
+      <Box my={2}>
+        <AnalyseNudge
+          messageId={message.id}
+          suggestion={message.analyseSuggestion}
+        />
       </Box>
     );
   }

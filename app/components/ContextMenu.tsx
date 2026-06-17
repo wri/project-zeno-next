@@ -22,19 +22,20 @@ import useContextStore from "../store/contextStore";
 import { DatasetCard } from "./DatasetCard";
 
 // Constants for navigation and dummy content
-const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
-  (type) => ({
+const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[])
+  .filter((type) => type !== "date")
+  .map((type) => ({
     type,
     label: ChatContextOptions[type].label,
     icon: ChatContextOptions[type].icon,
-  })
-);
+  }));
 
 import { DATASET_CARDS, DatasetCardConfig } from "../constants/datasets";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import type { Feature, MultiPolygon } from "geojson";
+import { getLayerContextFromDatasetCard } from "../utils/datasetCardLayerContext";
 
 const LAYER_CARDS = DATASET_CARDS;
 
@@ -88,23 +89,9 @@ function LayerCardList({
     if (existing) {
       removeContext(existing.id);
     } else {
-      const year = card.defaultYear;
-      const tileUrl =
-        year && card.tile_url
-          ? `${card.tile_url}&start_year=${year}&end_year=${year}`
-          : card.tile_url;
       upsertContextByType({
         contextType: "layer",
-        content: card.dataset_name,
-        datasetId: card.dataset_id,
-        tileUrl,
-        layerName: card.dataset_name,
-        ...(year
-          ? {
-              startDate: `${year}-01-01`,
-              endDate: `${year}-12-31`,
-            }
-          : {}),
+        ...getLayerContextFromDatasetCard(card),
         isAiContext: false,
       });
     }
@@ -117,16 +104,20 @@ function LayerCardList({
           (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
         );
         return (
-          <DatasetCard
-            key={card.dataset_name}
-            dataset={card as unknown as DatasetInfo}
-            img={card.img ?? "/globe.svg"}
-            selected={isSelected}
-            onClick={() => handleToggle(card)}
-            {...(card.viewOnly
-              ? { label: "VIEW ONLY", labelColor: "#656E7B" }
-              : {})}
-          />
+          // flexShrink={0} pins the card height in the scrollable list so the
+          // 80px thumbnail stays square instead of being squished on overflow.
+          // No type label in the context menu — everything here is a layer,
+          // except view-only layers which keep their "VIEW ONLY" badge.
+          <Box key={card.dataset_name} flexShrink={0}>
+            <DatasetCard
+              dataset={card as unknown as DatasetInfo}
+              img={card.img ?? "/globe.svg"}
+              selected={isSelected}
+              onClick={() => handleToggle(card)}
+              label={card.viewOnly ? "VIEW ONLY" : ""}
+              {...(card.viewOnly ? { labelColor: "#656E7B" } : {})}
+            />
+          </Box>
         );
       })}
     </Stack>
@@ -146,7 +137,7 @@ function ContextMenu({
 
   return (
     <Dialog.Root
-      placement="bottom"
+      placement={{ base: "bottom", md: "center" }}
       motionPreset="slide-in-bottom"
       size={{ base: "xs", md: "lg" }}
       open={open}
@@ -157,8 +148,11 @@ function ContextMenu({
         <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner zIndex={1500}>
           <Dialog.Content
+            // Square modal on desktop; maxH caps it on short viewports so the
+            // body scrolls (scrollBehavior="inside") rather than overflowing.
+            boxSize={{ md: "38rem" }}
+            minH={{ base: "30rem" }}
             maxH="75vh"
-            minH="30rem"
             overflow="hidden"
             mx={{ base: 2, md: "auto" }}
           >

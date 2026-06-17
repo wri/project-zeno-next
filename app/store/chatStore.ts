@@ -13,10 +13,12 @@ import {
   UiContext,
   ToolStepData,
   SuggestedDataset,
+  AnalyseSuggestion,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
+import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 import { DATASET_BY_ID } from "../constants/datasets";
@@ -24,7 +26,7 @@ import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
-import useSidebarStore from "./sidebarStore";
+import { queryClient } from "@/app/lib/query-client";
 import {
   showApiError,
   showError,
@@ -48,6 +50,8 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
+  upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
+  acceptAnalyseNudge: (messageId: string) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -70,10 +74,10 @@ const initialState: ChatState = {
       id: "1",
       type: "system",
       message: `**Welcome to Global Nature Watch!**
-      &nbsp;
-      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
-      &nbsp;
-      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
+
+Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
+
+You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
       timestamp: new Date().toISOString(),
     },
   ],
@@ -180,58 +184,18 @@ async function processStreamMessage(
     const pending = getPendingTraceId();
     const traceToUse = streamMessage.trace_id || pending || undefined;
 
-    const chartRefRe = /\[Chart\s+[a-f0-9-]+\]/gi;
-    if (chartRefRe.test(streamMessage.text)) {
-      // Split the text on [Chart <uuid>] markers and inject insight cards positionally
-      const re = /\[Chart\s+[a-f0-9-]+\]/gi;
-      const pendingWidgets = useInsightStore.getState().consumePendingBatch();
-      let lastIndex = 0;
-      let match: RegExpExecArray | null;
-      let widgetIdx = 0;
-      const segments: Array<{ text?: string; widgetIdx?: number }> = [];
-      while ((match = re.exec(streamMessage.text)) !== null) {
-        const textBefore = streamMessage.text.slice(lastIndex, match.index);
-        if (textBefore.trim()) {
-          segments.push({ text: textBefore });
-        }
-        segments.push({ widgetIdx: widgetIdx++ });
-        lastIndex = re.lastIndex;
-      }
-      const textAfter = streamMessage.text.slice(lastIndex);
-      if (textAfter.trim()) {
-        segments.push({ text: textAfter });
-      }
-      segments.forEach((seg, i) => {
-        const isLast = i === segments.length - 1;
-        if (seg.text !== undefined) {
-          addMessage({
-            type: "assistant",
-            message: seg.text,
-            timestamp: streamMessage.timestamp,
-            ...(!isLast ? { suppressFooter: true } : {}),
-            ...(isLast && traceToUse ? { traceId: traceToUse } : {}),
-          });
-        } else if (seg.widgetIdx !== undefined) {
-          const widget = pendingWidgets[seg.widgetIdx];
-          if (widget) {
-            addMessage({
-              type: "assistant",
-              message: "",
-              timestamp: streamMessage.timestamp,
-              widgets: [widget],
-              ...(isLast && traceToUse ? { traceId: traceToUse } : {}),
-            });
-          }
-        }
-      });
-    } else {
-      addMessage({
-        type: "assistant",
-        message: streamMessage.text,
-        timestamp: streamMessage.timestamp,
-        traceId: traceToUse,
-      });
-    }
+    // Consume the most recent generate_insights batch and render it with the
+    // assistant text. When the reply contains [Chart N] markers, cards are
+    // placed positionally; otherwise (e.g. current staging, which emits chart
+    // data but no markers) they are appended after the text. See
+    // buildInsightChatMessages for the full contract.
+    const pendingWidgets = useInsightStore.getState().consumePendingBatch();
+    buildInsightChatMessages(
+      streamMessage.text,
+      pendingWidgets,
+      streamMessage.timestamp,
+      traceToUse
+    ).forEach(addMessage);
     // Flush any buffered nudge immediately after the assistant message
     const pendingNudge = getPendingNudge();
     if (pendingNudge) {
@@ -311,6 +275,41 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     set((state) => ({
       messages: [...state.messages, newMessage],
+    }));
+  },
+
+  // The analyse nudge is client-side only (never replayed from thread
+  // history): at most one is pending at a time, so a new selection replaces
+  // any pending nudge instead of stacking. Accepted nudges persist in the
+  // thread as a record of the analyses the user ran.
+  upsertAnalyseNudge: (suggestion) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "analyse-nudge",
+      message: "",
+      analyseSuggestion: suggestion,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter(
+          (m) => m.type !== "analyse-nudge" || m.analyseSuggestion?.accepted
+        ),
+        newMessage,
+      ],
+    }));
+  },
+
+  acceptAnalyseNudge: (messageId) => {
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === messageId && m.analyseSuggestion
+          ? {
+              ...m,
+              analyseSuggestion: { ...m.analyseSuggestion, accepted: true },
+            }
+          : m
+      ),
     }));
   },
 
@@ -582,7 +581,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
       setLoading(false);
 
-      useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };
     }
   },

@@ -1,18 +1,6 @@
 import { useEffect, useState } from "react";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
-import "../../../../theme/popup.css";
-
-import { LayerId, selectLayerOptions } from "../../../../types/map";
-import useContextStore from "../../../../store/contextStore";
-import useMapStore from "../../../../store/mapStore";
-import { API_CONFIG } from "../../../../config/api";
-import {
-  getAoiName,
-  getSrcId,
-  getSubtype,
-  singularizeDatasetName,
-} from "../../../../utils/areaHelpers";
 import {
   Feature,
   FeatureCollection,
@@ -20,8 +8,26 @@ import {
   MultiPolygon,
   Polygon,
 } from "geojson";
-import AreaTooltip, { HoverInfo } from "../../../ui/AreaTooltip";
+
+import { LayerId, selectLayerOptions } from "@/app/types/map";
+import { API_CONFIG } from "@/app/config/api";
+
+import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
+
+import { useFeatureFlag } from "@/app/hooks/useFeatureFlag";
+
+import {
+  getAoiName,
+  getSrcId,
+  getSubtype,
+  singularizeDatasetName,
+  toAreaSelection,
+} from "@/app/utils/areaHelpers";
+
+import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
+import "@/app/theme/popup.css";
 
 interface SourceLayerProps {
   layerId: LayerId;
@@ -34,8 +40,10 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { context, addContext } = useContextStore();
-  const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
+  const { context, addContext, removeContext } = useContextStore();
+  const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
+    useMapStore();
+  const isAnalysisEnabled = useFeatureFlag("analysis");
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -175,13 +183,22 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
             const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
 
-            // Areas stack. Skip if this src_id is already in context to avoid
-            // duplicate chips when the user clicks the same region twice.
+            // Only one vector-click AOI at a time. Skip entirely if this src_id is
+            // already the active selection (avoids remove+re-add on double-click).
+            // Custom (drawn/uploaded) areas — identified by aoiData.source === "custom"
+            // — are left untouched.
             const alreadyInContext = context.some(
               (c) =>
                 c.contextType === "area" && c.aoiData?.src_id === dynamicSrcId
             );
             if (!alreadyInContext) {
+              context
+                .filter(
+                  (c) =>
+                    c.contextType === "area" && c.aoiData?.source !== "custom"
+                )
+                .forEach((c) => removeContext(c.id));
+
               addContext({
                 contextType: "area",
                 content: aoiName,
@@ -193,6 +210,24 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                   source: layerConfig?.id.toLowerCase(),
                 },
               });
+            }
+
+            // Analysis feature — hidden behind ?ff=analysis; GADM only.
+            // Purely additive: with the flag off, behavior is unchanged.
+            // AnalysisCtaTrigger reacts to this selection and surfaces the
+            // analyse nudge once a dataset is also active.
+            if (isAnalysisEnabled) {
+              if (layerId === "GADM" && metadata) {
+                setAnalysis(
+                  toAreaSelection(
+                    layerId,
+                    (featureProps ?? {}) as Record<string, unknown>,
+                    metadata
+                  )
+                );
+              } else {
+                useMapStore.getState().clearAnalysis();
+              }
             }
           }
         }
@@ -225,11 +260,14 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     setSelectAreaLayer,
     metadata,
     addContext,
+    removeContext,
     context,
     addToRegistry,
     addLayer,
     layerId,
     url,
+    isAnalysisEnabled,
+    setAnalysis,
   ]);
 
   return (

@@ -16,7 +16,7 @@ const GLOBAL_LAYER_ID = "Global Layer";
 const GLOBAL_LAYER_NAME = "Global Layer";
 
 function isGlobalQuery(name: string): boolean {
-  return name.toLowerCase() === "all countries in the world";
+  return name.toLowerCase() === "all countries";
 }
 
 /**

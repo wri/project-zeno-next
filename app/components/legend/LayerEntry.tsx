@@ -22,6 +22,7 @@ import type {
   LegendContextLayer,
   LayerActionHandler,
 } from "./types";
+import { ParamChip } from "@/app/components/ui/ParamChip";
 
 /**
  * LayerEntry component displaying details, controls, and legend swatches for a
@@ -160,38 +161,12 @@ export function LayerEntry(
             {params && params.length > 0 && (
               <Flex gap={1} flexWrap="wrap" alignItems="center">
                 {params.map((p) => (
-                  <Flex
+                  <ParamChip
                     key={p.label}
-                    alignItems="center"
-                    gap="4px"
-                    h="20px"
-                    px="6px"
-                    borderRadius="sm"
-                    border="1px solid"
-                    borderColor="#E0E2E5"
-                    fontFamily="mono"
-                    fontSize="10px"
-                    flexShrink={0}
-                  >
-                    <Text
-                      as="span"
-                      fontWeight="normal"
-                      lineHeight="16px"
-                      letterSpacing="0.5px"
-                      color="#A51EC7"
-                    >
-                      {p.label}
-                    </Text>
-                    <Text
-                      as="span"
-                      fontWeight="500"
-                      lineHeight="16px"
-                      letterSpacing="0"
-                      textAlign="center"
-                    >
-                      {p.value}
-                    </Text>
-                  </Flex>
+                    label={p.label}
+                    value={p.value}
+                    colorScheme="purple"
+                  />
                 ))}
               </Flex>
             )}
