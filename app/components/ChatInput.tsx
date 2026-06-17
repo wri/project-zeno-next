@@ -91,10 +91,12 @@ export default function ChatInput({
   };
 
   const disabled = isLoading || isChatDisabled;
-  // Only an in-flight chat request (sendMessage) stores an abortController, so
-  // gate the Stop button on its presence. Thread loading also toggles isLoading
-  // but isn't cancellable, so the Stop button must not render then.
-  const canCancelRequest = isLoading && abortController !== null;
+  // The abortController is the authoritative signal that a cancellable chat
+  // request is in flight: sendMessage sets it before fetching and nulls it in
+  // its finally, and nothing else touches it. We deliberately do NOT gate on
+  // isLoading, which is an overloaded flag also set during thread loading (not
+  // cancellable) and whose meaning could drift in the future.
+  const canCancelRequest = abortController !== null;
   const hasNudge = messages.at(-1)?.type === "dataset-nudge";
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
