@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { ChakraProvider } from "@chakra-ui/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { jwtDecode } from "jwt-decode";
 
 import theme from "@/app/theme";
@@ -11,12 +11,11 @@ import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import useAuthStore from "@/app/store/authStore";
 import { UserTypeEnum, type UserType } from "@/app/schemas/api/admin/users/get";
 import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
+import { queryClient } from "@/app/lib/query-client";
 
 function coerceUserType(value: unknown): UserType | null {
   return UserTypeEnum.safeParse(value).data ?? null;
 }
-
-const queryClient = new QueryClient();
 
 function AuthBootstrapper() {
   const { setAuthStatus, setAuthLoaded, clearAuth, setPromptUsage } =

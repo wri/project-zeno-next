@@ -6,8 +6,10 @@ import {
   CaretUpIcon,
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
+  SpinnerGapIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
+import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
 import { Tooltip } from "./ui/tooltip";
 import { WidgetIconComponent } from "@/app/utils/widgetIcons";
@@ -44,6 +46,7 @@ const aiDisclaimerTooltip = (
 
 export default function InsightWorkspace() {
   const { insights } = useInsightStore();
+  const isLoading = useChatStore((state) => state.isLoading);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
@@ -135,23 +138,48 @@ export default function InsightWorkspace() {
             </Tooltip>
           </Text>
         </Flex>
-        <IconButton
-          size="2xs"
-          variant="ghost"
-          h="16px"
-          minW="16px"
-          w="16px"
-          color="#656E7B"
-          aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
-          flexShrink={0}
-          onClick={() => setIsCollapsed((v) => !v)}
-        >
-          {isCollapsed ? (
-            <CaretDownIcon size={12} weight="bold" />
-          ) : (
-            <CaretUpIcon size={12} weight="bold" />
+        <Flex align="center" gap="8px" flexShrink={0}>
+          {isLoading && (
+            <Flex align="center" gap="4px">
+              <Box
+                animation="spin 1s infinite"
+                animationTimingFunction="steps(8, end)"
+              >
+                <SpinnerGapIcon
+                  size={12}
+                  color="var(--chakra-colors-fg-muted)"
+                />
+              </Box>
+              <Text
+                fontSize="10px"
+                fontFamily="mono"
+                lineHeight="16px"
+                letterSpacing="0.03em"
+                color="fg.muted"
+                whiteSpace="nowrap"
+              >
+                INSIGHTS LOADING
+              </Text>
+            </Flex>
           )}
-        </IconButton>
+          <IconButton
+            size="2xs"
+            variant="ghost"
+            h="16px"
+            minW="16px"
+            w="16px"
+            color="#656E7B"
+            aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
+            flexShrink={0}
+            onClick={() => setIsCollapsed((v) => !v)}
+          >
+            {isCollapsed ? (
+              <CaretDownIcon size={12} weight="bold" />
+            ) : (
+              <CaretUpIcon size={12} weight="bold" />
+            )}
+          </IconButton>
+        </Flex>
       </Flex>
 
       {!isCollapsed && (

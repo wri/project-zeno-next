@@ -13,6 +13,7 @@ import {
   UiContext,
   ToolStepData,
   SuggestedDataset,
+  AnalyseSuggestion,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "@/app/lib/read-data-stream";
@@ -25,7 +26,7 @@ import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
-import useSidebarStore from "./sidebarStore";
+import { queryClient } from "@/app/lib/query-client";
 import {
   showApiError,
   showError,
@@ -48,6 +49,8 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
+  upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
+  acceptAnalyseNudge: (messageId: string) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -69,10 +72,10 @@ const initialState: ChatState = {
       id: "1",
       type: "system",
       message: `**Welcome to Global Nature Watch!**
-      &nbsp;
-      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
-      &nbsp;
-      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
+
+Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
+
+You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
       timestamp: new Date().toISOString(),
     },
   ],
@@ -269,6 +272,41 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     set((state) => ({
       messages: [...state.messages, newMessage],
+    }));
+  },
+
+  // The analyse nudge is client-side only (never replayed from thread
+  // history): at most one is pending at a time, so a new selection replaces
+  // any pending nudge instead of stacking. Accepted nudges persist in the
+  // thread as a record of the analyses the user ran.
+  upsertAnalyseNudge: (suggestion) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "analyse-nudge",
+      message: "",
+      analyseSuggestion: suggestion,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter(
+          (m) => m.type !== "analyse-nudge" || m.analyseSuggestion?.accepted
+        ),
+        newMessage,
+      ],
+    }));
+  },
+
+  acceptAnalyseNudge: (messageId) => {
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === messageId && m.analyseSuggestion
+          ? {
+              ...m,
+              analyseSuggestion: { ...m.analyseSuggestion, accepted: true },
+            }
+          : m
+      ),
     }));
   },
 
@@ -526,7 +564,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
       setLoading(false);
 
-      useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };
     }
   },

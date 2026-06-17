@@ -24,7 +24,7 @@ pnpm test app/utils/__tests__/formatText.test.ts
 
 CI runs `format:check → lint → typecheck → build` in that order. All four must pass before merge.
 
-The pre-commit hook (Husky + lint-staged) runs ESLint and Prettier automatically on staged files. **Do not bypass it with `--no-verify`.**
+The pre-commit hook (Husky + lint-staged) runs ESLint and Prettier automatically on staged files. The pre-push hook runs `pnpm format:check` on the full repo (same as CI). **Do not bypass hooks with `--no-verify`.**
 
 ## Environment
 

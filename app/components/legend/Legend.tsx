@@ -12,13 +12,13 @@ import {
   StackIcon,
   CaretDownIcon,
   CaretUpIcon,
-  XIcon,
 } from "@phosphor-icons/react";
 import { Reorder, useDragControls } from "motion/react";
 
 import { LayerActionHandler, LegendLayer } from "./types";
 import type { LegendAoi } from "./useLegendHook";
 import { LayerEntry } from "./LayerEntry";
+import { ParamChip } from "@/app/components/ui/ParamChip";
 
 const ChReorderGroup = chakra(Reorder.Group);
 const ChReorderItem = chakra(Reorder.Item);
@@ -208,50 +208,17 @@ export function Legend(props: LegendProps) {
                 pl="24px"
               >
                 {aois.map((aoi) => (
-                  <Flex
+                  <ParamChip
                     key={`${aoi.contextId}-${aoi.name}`}
-                    alignItems="center"
-                    gap="4px"
-                    h="20px"
-                    px="6px"
-                    py="2px"
-                    borderRadius="6px"
-                    border="1px solid"
-                    borderColor="#E0E2E5"
-                    bg="#FFFFFF"
-                    fontFamily="mono"
-                    fontSize="10px"
-                    flexShrink={0}
-                  >
-                    <Text
-                      as="span"
-                      fontWeight="normal"
-                      lineHeight="16px"
-                      letterSpacing="0.5px"
-                      color="#4A64CB"
-                    >
-                      AREA
-                    </Text>
-                    <Text
-                      as="span"
-                      fontWeight="500"
-                      lineHeight="16px"
-                      letterSpacing="0"
-                    >
-                      {aoi.name}
-                    </Text>
-                    <IconButton
-                      variant="ghost"
-                      size="xs"
-                      p={0}
-                      minW="12px"
-                      h="12px"
-                      aria-label={`Remove ${aoi.name}`}
-                      onClick={() => onRemoveAoi?.(aoi.contextId)}
-                    >
-                      <XIcon size={10} />
-                    </IconButton>
-                  </Flex>
+                    label="AREA"
+                    value={aoi.name}
+                    colorScheme="blue"
+                    bg="white"
+                    onRemove={
+                      onRemoveAoi ? () => onRemoveAoi(aoi.contextId) : undefined
+                    }
+                    removeLabel={`Remove ${aoi.name}`}
+                  />
                 ))}
               </Flex>
             </>

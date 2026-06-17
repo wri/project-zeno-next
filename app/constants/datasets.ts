@@ -21,6 +21,11 @@ export type DatasetLegendConfig = {
 export type DatasetCardConfig = {
   dataset_id: number;
   dataset_name: string;
+  /**
+   * Short label used in compact UI such as analysis-parameter chips, where the
+   * full dataset_name is too long. Omit when the full name is already short.
+   */
+  shortName?: string;
   description: string;
   img?: string;
   tile_url?: string;
@@ -104,6 +109,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 0,
     dataset_name: "Global all ecosystem disturbance alerts (DIST-ALERT)",
+    shortName: "DIST-ALERT",
     data_layer: "Global all ecosystem disturbance alerts (DIST-ALERT)",
     context_layer: null as string | null,
     img: "/dataset_card_dist_alerts.webp",
@@ -127,6 +133,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 1,
     dataset_name: "Global land cover",
+    shortName: "Land cover",
     context_layer: null as string | null,
     img: "/dataset_card_land_cover.webp",
     cadence: "annual",
@@ -158,6 +165,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 2,
     dataset_name: "Global natural/semi-natural grassland extent",
+    shortName: "Grasslands",
     context_layer: null as string | null,
     img: "/dataset_card_grasslands.webp",
     cadence: "annual",
@@ -180,6 +188,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 3,
     dataset_name: "SBTN Natural Lands Map",
+    shortName: "Natural lands",
     context_layer: null as string | null,
     img: "/dataset_card_natural_lands.webp",
     cadence: "2020",
@@ -240,6 +249,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 8,
     dataset_name: "Tree cover loss by dominant driver",
+    shortName: "TCL by driver",
     data_layer: "Tree cover loss by dominant driver",
     context_layer: null,
     threshold: 30,
@@ -322,6 +332,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 10,
     dataset_name: "Tree cover loss due to fires",
+    shortName: "TCL from fires",
     data_layer: "Tree cover loss due to fires",
     context_layer: null,
     threshold: 30,
@@ -353,6 +364,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 6,
     dataset_name: "Forest greenhouse gas net flux (2001-2025)",
+    shortName: "GHG net flux",
     data_layer: "Forest greenhouse gas net flux",
     context_layer: null,
     threshold: 30,
@@ -482,3 +494,21 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
 export const DATASET_BY_ID: Record<number, DatasetInfo> = Object.fromEntries(
   DATASETS.map((d) => [d.dataset_id, d])
 );
+
+// Full dataset_name -> short label, for the datasets that define one. Keyed by
+// name (not id) because the only handle available at chip-build time is the
+// name string (dataset.dataset_name or a layer's layerName).
+const DATASET_SHORTNAME_BY_NAME: Record<string, string> = Object.fromEntries(
+  DATASET_CARDS.filter((c) => c.shortName).map((c) => [
+    c.dataset_name,
+    c.shortName as string,
+  ])
+);
+
+/**
+ * Returns the short label for a dataset name when one is defined, otherwise the
+ * original name unchanged. Long unmapped names still truncate at the chip.
+ */
+export function shortDatasetName(name: string): string {
+  return DATASET_SHORTNAME_BY_NAME[name] ?? name;
+}
