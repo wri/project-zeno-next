@@ -40,7 +40,8 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading, cancelRequest, messages } = useChatStore();
+  const { sendMessage, isLoading, cancelRequest, abortController, messages } =
+    useChatStore();
   const { context, removeContext } = useContextStore();
 
   const openContextMenu = (type: ChatContextType) => {
@@ -83,6 +84,10 @@ export default function ChatInput({
   };
 
   const disabled = isLoading || isChatDisabled;
+  // Only an in-flight chat request (sendMessage) stores an abortController, so
+  // gate the Stop button on its presence. Thread loading also toggles isLoading
+  // but isn't cancellable, so the Stop button must not render then.
+  const canCancelRequest = isLoading && abortController !== null;
   const hasNudge = messages.at(-1)?.type === "dataset-nudge";
   const message = isLoading
     ? "Sending..."
@@ -167,7 +172,7 @@ export default function ChatInput({
             disabled={disabled}
           />
         </Flex>
-        {isLoading ? (
+        {canCancelRequest ? (
           <Button
             p="0"
             ml="auto"
@@ -288,7 +293,7 @@ export default function ChatInput({
               disabled={disabled}
             />
           </Flex>
-          {isLoading ? (
+          {canCancelRequest ? (
             <Button
               p={0}
               flexShrink={0}
