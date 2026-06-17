@@ -8,6 +8,7 @@ import {
   IconButton,
   Skeleton,
   SkeletonText,
+  Progress,
 } from "@chakra-ui/react";
 import {
   CaretDownIcon,
@@ -54,8 +55,9 @@ const aiDisclaimerTooltip = (
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
- * the store yet). Mirrors the real card's shell + sticky header so the layout
- * doesn't jump when the chart replaces it.
+ * the store yet). Mirrors the real card's layout — indeterminate top bar,
+ * title, summary lines, toolbar, chart body and nav — so the panel doesn't
+ * jump when the chart replaces it.
  */
 function WorkspaceSkeleton() {
   return (
@@ -64,72 +66,53 @@ function WorkspaceSkeleton() {
       minH="0"
       overflowY="auto"
       w="100%"
-      bg="primary.25"
+      bg="bg.panel"
       border="1px solid"
       borderColor="#DDE2F5"
       rounded="4px"
       pointerEvents="all"
       display="flex"
       flexDirection="column"
+      overflow="hidden"
     >
-      <Flex
-        position="sticky"
-        top={0}
-        zIndex={1}
-        bg="primary.25"
-        h="28px"
-        px="16px"
-        py="6px"
-        gap="8px"
-        justify="space-between"
-        align="center"
-        borderBottom="1px solid"
-        borderColor="#DDE2F5"
-      >
-        <Flex align="center" gap="8px" h="16px">
-          <SparkleIcon size={12} color="#0049AA" weight="fill" />
-          <Text
-            fontSize="10px"
-            fontFamily="mono"
-            fontWeight="normal"
-            lineHeight="16px"
-            letterSpacing="0.03em"
-            color="fg.muted"
-            whiteSpace="nowrap"
-          >
-            AI-INSIGHT ANALYSIS
-          </Text>
+      {/* Indeterminate loading bar pinned to the top edge */}
+      <Progress.Root value={null} size="xs" colorPalette="primary">
+        <Progress.Track bg="transparent" h="3px">
+          <Progress.Range />
+        </Progress.Track>
+      </Progress.Root>
+
+      {/* Title placeholder */}
+      <Box px={4} pt={4} pb={2}>
+        <Skeleton h="16px" w="55%" rounded="sm" />
+      </Box>
+
+      {/* Summary lines placeholder */}
+      <Box px={4} pb={3}>
+        <SkeletonText noOfLines={2} gap="3" />
+      </Box>
+
+      {/* Toolbar placeholder — segmented toggle + full-screen button */}
+      <Flex px={4} pb={3} gap={3} align="center">
+        <Flex gap={0}>
+          <Skeleton h="24px" w="64px" roundedLeft="md" />
+          <Skeleton h="24px" w="64px" roundedRight="md" />
         </Flex>
-        <Flex align="center" gap="4px" flexShrink={0}>
-          <Box
-            animation="spin 1s infinite"
-            animationTimingFunction="steps(8, end)"
-          >
-            <SpinnerGapIcon size={12} color="var(--chakra-colors-fg-muted)" />
-          </Box>
-          <Text
-            fontSize="10px"
-            fontFamily="mono"
-            lineHeight="16px"
-            letterSpacing="0.03em"
-            color="fg.muted"
-            whiteSpace="nowrap"
-          >
-            INSIGHTS LOADING
-          </Text>
-        </Flex>
+        <Skeleton h="24px" w="150px" rounded="md" />
       </Flex>
 
-      {/* Title row placeholder */}
-      <Box px={4} py={2} borderBottom="1px solid" borderColor="#DDE2F5">
-        <Skeleton h="16px" w="70%" rounded="sm" />
-      </Box>
+      <Box borderTop="1px solid" borderColor="#DDE2F5" />
 
       {/* Chart body placeholder */}
       <Box px={4} py={3}>
-        <Skeleton h="180px" w="100%" rounded="md" mb={3} />
-        <SkeletonText noOfLines={2} gap="2" />
+        <Skeleton h="320px" w="100%" rounded="md" />
       </Box>
+
+      {/* Nav footer placeholder */}
+      <Flex px={4} py={2} justify="space-between" align="center">
+        <Skeleton boxSize="32px" rounded="md" />
+        <Skeleton boxSize="32px" rounded="md" />
+      </Flex>
     </Box>
   );
 }
