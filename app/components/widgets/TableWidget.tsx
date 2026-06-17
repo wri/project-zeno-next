@@ -1,8 +1,20 @@
 "use client";
 import { useMemo, useState } from "react";
 import { toSentenceCase } from "@/app/utils/formatText";
-import { Badge, Box, Button, Flex, Table, Text } from "@chakra-ui/react";
-import { CaretUpIcon, CaretDownIcon } from "@phosphor-icons/react";
+import {
+  Badge,
+  Box,
+  Button,
+  chakra,
+  Flex,
+  Table,
+  Text,
+} from "@chakra-ui/react";
+import {
+  CaretUpIcon,
+  CaretDownIcon,
+  CaretUpDownIcon,
+} from "@phosphor-icons/react";
 
 const PAGE_SIZE = 10;
 
@@ -38,6 +50,14 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
   if (!data || data.length === 0) return null;
 
   const headers = Object.keys(data[0]);
+
+  // Right-align a column when every non-null value in it is numeric, so
+  // magnitudes line up digit-for-digit (paired with tabular-nums below).
+  const numericColumns = new Set(
+    headers.filter((key) =>
+      data.every((row) => row[key] == null || typeof row[key] === "number")
+    )
+  );
 
   // Helper function to format numeric values
   const formatValue = (
@@ -99,9 +119,7 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
                 fontWeight="normal"
                 whiteSpace="pre"
                 scope="col"
-                cursor="pointer"
-                _hover={{ color: "fg" }}
-                onClick={() => handleSort(key)}
+                textAlign={numericColumns.has(key) ? "end" : undefined}
                 aria-sort={
                   sortKey === key
                     ? sortDir === "asc"
@@ -110,15 +128,36 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
                     : "none"
                 }
               >
-                <Flex align="center" gap={1} display="inline-flex">
+                <chakra.button
+                  type="button"
+                  display="inline-flex"
+                  alignItems="center"
+                  gap={1}
+                  cursor="pointer"
+                  color="inherit"
+                  onClick={() => handleSort(key)}
+                  _hover={{ color: "fg" }}
+                  _focusVisible={{
+                    outline: "2px solid",
+                    outlineColor: "primary.focusRing",
+                    outlineOffset: "1px",
+                    borderRadius: "xs",
+                  }}
+                  aria-label={`Sort by ${toSentenceCase(key)}`}
+                >
                   {toSentenceCase(key)}
-                  {sortKey === key &&
-                    (sortDir === "asc" ? (
+                  {sortKey === key ? (
+                    sortDir === "asc" ? (
                       <CaretUpIcon size={12} />
                     ) : (
                       <CaretDownIcon size={12} />
-                    ))}
-                </Flex>
+                    )
+                  ) : (
+                    <Box as="span" color="neutral.400" aria-hidden="true">
+                      <CaretUpDownIcon size={12} />
+                    </Box>
+                  )}
+                </chakra.button>
               </Table.ColumnHeader>
             ))}
           </Table.Row>
@@ -134,8 +173,11 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
                   const value = row[key];
 
                   const isRankKey = key.toLowerCase() === "rank";
+                  // Years are ordinary data, not ranks — don't badge them.
                   const isFirstNumericColumn =
-                    cellIndex === 0 && typeof value === "number";
+                    cellIndex === 0 &&
+                    typeof value === "number" &&
+                    key.toLowerCase() !== "year";
 
                   if (isRankKey || isFirstNumericColumn) {
                     return (
@@ -155,7 +197,11 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
                   return (
                     <Table.Cell
                       key={key}
-                      css={{ "&:nth-child(2)": { fontWeight: "medium" } }}
+                      textAlign={numericColumns.has(key) ? "end" : undefined}
+                      css={{
+                        "&:nth-child(2)": { fontWeight: "medium" },
+                        fontVariantNumeric: "tabular-nums",
+                      }}
                     >
                       {formatValue(value)}
                     </Table.Cell>

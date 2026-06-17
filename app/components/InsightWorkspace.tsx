@@ -6,8 +6,10 @@ import {
   CaretUpIcon,
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
+  SpinnerGapIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
+import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
 import { Tooltip } from "./ui/tooltip";
 import { WidgetIconComponent } from "@/app/utils/widgetIcons";
@@ -44,6 +46,7 @@ const aiDisclaimerTooltip = (
 
 export default function InsightWorkspace() {
   const { insights } = useInsightStore();
+  const isLoading = useChatStore((state) => state.isLoading);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
@@ -56,7 +59,8 @@ export default function InsightWorkspace() {
   if (total === 0) return null;
 
   // currentIndex 0 = newest, total-1 = oldest
-  const widget = insights[total - 1 - currentIndex];
+  const widgetIndex = total - 1 - currentIndex;
+  const widget = insights[widgetIndex];
   const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
   const hasChips = chips.length > 0;
   // currentIndex 0 = newest (shown as "1 of N"). The Left/Prev arrow
@@ -64,6 +68,20 @@ export default function InsightWorkspace() {
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < total - 1;
   const HeaderIcon = WidgetIconComponent[widget.type];
+
+  // Arrow keys page through insights while focus is anywhere in the card,
+  // mirroring the prev/next buttons. Charts/menus don't consume arrows, so
+  // this doesn't conflict with inner widgets.
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (total <= 1) return;
+    if (e.key === "ArrowLeft" && canGoPrev) {
+      e.preventDefault();
+      setCurrentIndex((i) => i - 1);
+    } else if (e.key === "ArrowRight" && canGoNext) {
+      e.preventDefault();
+      setCurrentIndex((i) => i + 1);
+    }
+  };
 
   return (
     /* Card is the scroll container: grows to content, scrolls when flex-shrunk */
@@ -79,6 +97,7 @@ export default function InsightWorkspace() {
       pointerEvents="all"
       display="flex"
       flexDirection="column"
+      onKeyDown={handleKeyDown}
     >
       {/* Header — sticky so it never scrolls away */}
       <Flex
@@ -135,64 +154,102 @@ export default function InsightWorkspace() {
             </Tooltip>
           </Text>
         </Flex>
-        <IconButton
-          size="2xs"
-          variant="ghost"
-          h="16px"
-          minW="16px"
-          w="16px"
-          color="#656E7B"
-          aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
-          flexShrink={0}
-          onClick={() => setIsCollapsed((v) => !v)}
-        >
-          {isCollapsed ? (
-            <CaretDownIcon size={12} weight="bold" />
-          ) : (
-            <CaretUpIcon size={12} weight="bold" />
+        <Flex align="center" gap="8px" flexShrink={0}>
+          {isLoading && (
+            <Flex align="center" gap="4px">
+              <Box
+                animation="spin 1s infinite"
+                animationTimingFunction="steps(8, end)"
+              >
+                <SpinnerGapIcon
+                  size={12}
+                  color="var(--chakra-colors-fg-muted)"
+                />
+              </Box>
+              <Text
+                fontSize="10px"
+                fontFamily="mono"
+                lineHeight="16px"
+                letterSpacing="0.03em"
+                color="fg.muted"
+                whiteSpace="nowrap"
+              >
+                INSIGHTS LOADING
+              </Text>
+            </Flex>
           )}
-        </IconButton>
+          <IconButton
+            size="2xs"
+            variant="ghost"
+            h="16px"
+            minW="16px"
+            w="16px"
+            color="#656E7B"
+            aria-label={isCollapsed ? "Expand insight" : "Collapse insight"}
+            flexShrink={0}
+            onClick={() => setIsCollapsed((v) => !v)}
+          >
+            {isCollapsed ? (
+              <CaretDownIcon size={12} weight="bold" />
+            ) : (
+              <CaretUpIcon size={12} weight="bold" />
+            )}
+          </IconButton>
+        </Flex>
       </Flex>
 
       {!isCollapsed && (
         <>
-          {/* Title row */}
-          <Flex
-            px={4}
-            py={1}
-            justify="space-between"
-            align="flex-start"
-            borderBottom="1px solid"
-            borderColor="#DDE2F5"
+          {/* Keyed on the active insight so switching re-runs the entry
+              animation; the media query keeps it off under reduced motion. */}
+          <Box
+            key={widget.id ?? widgetIndex}
+            css={{
+              "@media (prefers-reduced-motion: no-preference)": {
+                animationName: "fadeSlideIn",
+                animationDuration: "240ms",
+                animationTimingFunction: "ease-out",
+              },
+            }}
           >
-            <Heading
-              size="sm"
-              fontWeight="semibold"
-              color="primary.fg"
-              flex={1}
-              mr={2}
-              mb={0}
+            {/* Title row */}
+            <Flex
+              px={4}
+              py={1}
+              justify="space-between"
+              align="flex-start"
+              borderBottom="1px solid"
+              borderColor="#DDE2F5"
             >
-              {widget.title}
-            </Heading>
-            {hasChips && (
-              <AnalysisParametersToggle
-                expanded={paramsExpanded}
-                onToggle={() => setParamsExpanded((v) => !v)}
-              />
+              <Heading
+                size="sm"
+                fontWeight="semibold"
+                color="primary.fg"
+                flex={1}
+                mr={2}
+                mb={0}
+              >
+                {widget.title}
+              </Heading>
+              {hasChips && (
+                <AnalysisParametersToggle
+                  expanded={paramsExpanded}
+                  onToggle={() => setParamsExpanded((v) => !v)}
+                />
+              )}
+            </Flex>
+
+            {/* Params chips section */}
+            {hasChips && paramsExpanded && (
+              <Box px={4} py={2} borderBottom="1px solid" borderColor="#DDE2F5">
+                <AnalysisParamsChips chips={chips} />
+              </Box>
             )}
-          </Flex>
 
-          {/* Params chips section */}
-          {hasChips && paramsExpanded && (
-            <Box px={4} py={2} borderBottom="1px solid" borderColor="#DDE2F5">
-              <AnalysisParamsChips chips={chips} />
+            {/* Inner chart card */}
+            <Box px={2} py={2}>
+              <WidgetMessage widget={widget} inWorkspace />
             </Box>
-          )}
-
-          {/* Inner chart card */}
-          <Box px={2} py={2}>
-            <WidgetMessage widget={widget} inWorkspace />
           </Box>
 
           {/* Navigation footer — sticky so it never scrolls away */}
@@ -209,31 +266,40 @@ export default function InsightWorkspace() {
               justify="space-between"
               align="center"
             >
-              <IconButton
-                size="xs"
-                variant="ghost"
-                border="1px solid"
-                borderColor="border.emphasized"
-                aria-label="Previous insight"
-                disabled={!canGoPrev}
-                onClick={() => setCurrentIndex((i) => i - 1)}
+              <Tooltip content="Previous insight (←)" openDelay={400}>
+                <IconButton
+                  size="xs"
+                  variant="ghost"
+                  border="1px solid"
+                  borderColor="border.emphasized"
+                  aria-label="Previous insight"
+                  disabled={!canGoPrev}
+                  onClick={() => setCurrentIndex((i) => i - 1)}
+                >
+                  <ArrowArcLeftIcon size={14} />
+                </IconButton>
+              </Tooltip>
+              <Text
+                fontSize="xs"
+                color="neutral.500"
+                aria-live="polite"
+                css={{ fontVariantNumeric: "tabular-nums" }}
               >
-                <ArrowArcLeftIcon size={14} />
-              </IconButton>
-              <Text fontSize="xs" color="neutral.500">
                 {currentIndex + 1} of {total} available analyses
               </Text>
-              <IconButton
-                size="xs"
-                variant="ghost"
-                border="1px solid"
-                borderColor="border.emphasized"
-                aria-label="Next insight"
-                disabled={!canGoNext}
-                onClick={() => setCurrentIndex((i) => i + 1)}
-              >
-                <ArrowArcRightIcon size={14} />
-              </IconButton>
+              <Tooltip content="Next insight (→)" openDelay={400}>
+                <IconButton
+                  size="xs"
+                  variant="ghost"
+                  border="1px solid"
+                  borderColor="border.emphasized"
+                  aria-label="Next insight"
+                  disabled={!canGoNext}
+                  onClick={() => setCurrentIndex((i) => i + 1)}
+                >
+                  <ArrowArcRightIcon size={14} />
+                </IconButton>
+              </Tooltip>
             </Flex>
           )}
         </>

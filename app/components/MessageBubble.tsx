@@ -35,6 +35,7 @@ import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
+import AnalyseNudge from "./AnalyseNudge";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -201,6 +202,17 @@ function MessageBubble({
     return (
       <Box my={2}>
         <DatasetNudge datasets={message.suggestedDatasets} />
+      </Box>
+    );
+  }
+
+  if (message.type === "analyse-nudge" && message.analyseSuggestion) {
+    return (
+      <Box my={2}>
+        <AnalyseNudge
+          messageId={message.id}
+          suggestion={message.analyseSuggestion}
+        />
       </Box>
     );
   }
