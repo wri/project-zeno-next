@@ -1,6 +1,6 @@
 "use client";
-import { Button, Flex, Text } from "@chakra-ui/react";
-import { CheckIcon } from "@phosphor-icons/react";
+import { Button } from "@chakra-ui/react";
+import { CheckIcon, SparkleIcon } from "@phosphor-icons/react";
 import { AnalyseSuggestion } from "@/app/types/chat";
 import useChatStore from "@/app/store/chatStore";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
@@ -22,41 +22,36 @@ export default function AnalyseNudge({
     runAnalysis(suggestion);
   };
 
+  // Matches the agent prompt wording (buildAnalysisPrompt) so the message the
+  // user sends on accept reads identically to the button they clicked.
+  const label = `Analyse ${suggestion.datasetName} in ${suggestion.areaName}`;
+
   return (
-    <Flex
-      direction="column"
-      gap={3}
+    <Button
       w="full"
+      variant="outline"
+      justifyContent="flex-start"
+      gap={2}
       px={3}
       py={2}
-      bg="bg.panel"
-      border="1px solid"
-      borderColor={accepted ? "primary.500" : "primary.emphasized"}
-      borderRadius="lg"
+      h="auto"
+      minH={10}
+      fontSize="xs"
+      fontWeight="light"
+      textAlign="left"
+      whiteSpace="normal"
+      rounded="lg"
+      borderColor={accepted ? "primary.500" : "border.emphasized"}
+      _hover={accepted ? undefined : { borderColor: "primary.emphasized" }}
+      onClick={handleAnalyse}
+      disabled={accepted}
     >
-      <Flex direction="column" gap={1}>
-        <Text fontSize="xs" fontWeight="semibold" lineHeight="16px">
-          {suggestion.areaName}
-        </Text>
-        <Text fontSize="xs" color="fg.muted" lineHeight="16px">
-          Run an analysis of {suggestion.datasetName} for this area?
-        </Text>
-      </Flex>
-      <Button
-        size="xs"
-        colorPalette="primary"
-        alignSelf="flex-start"
-        onClick={handleAnalyse}
-        disabled={accepted}
-      >
-        {accepted ? (
-          <>
-            <CheckIcon weight="bold" /> Analysing
-          </>
-        ) : (
-          "Analyse"
-        )}
-      </Button>
-    </Flex>
+      {accepted ? (
+        <CheckIcon weight="bold" color="var(--chakra-colors-primary-solid)" />
+      ) : (
+        <SparkleIcon weight="thin" color="var(--chakra-colors-primary-solid)" />
+      )}
+      {label}
+    </Button>
   );
 }
