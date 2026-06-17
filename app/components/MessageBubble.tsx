@@ -20,6 +20,7 @@ import {
   ArrowBendDownRightIcon,
   CheckIcon,
   CopyIcon,
+  InfoIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "@phosphor-icons/react";
@@ -150,6 +151,7 @@ function MessageBubble({
   const isSystem = message.type === "system";
   const isError = message.type === "error";
   const isWarning = message.type === "warning";
+  const isStopped = message.type === "stopped";
   const isAssistant = message.type === "assistant";
   const analysisWidgets = isAssistant
     ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
@@ -160,6 +162,7 @@ function MessageBubble({
     !isAreaCard &&
     !isError &&
     !isWarning &&
+    !isStopped &&
     !isFirst &&
     !message.suppressFooter &&
     (!isConsecutive || analysisWidgets.length > 0 || isLast);
@@ -247,23 +250,29 @@ function MessageBubble({
         bg={
           isError
             ? "red.50"
-            : isWarning
-              ? "white"
-              : isUser
-                ? "gray.100"
-                : "transparent"
+            : isStopped
+              ? "gray.50"
+              : isWarning
+                ? "white"
+                : isUser
+                  ? "gray.100"
+                  : "transparent"
         }
-        color={isError ? "red.800" : isWarning ? "fg.subtle" : "fg"}
+        color={isError ? "red.800" : isStopped || isWarning ? "fg.muted" : "fg"}
         fontSize={isWarning ? "xs" : undefined}
         fontStyle={isWarning ? "italic" : undefined}
-        px={isUser || isError || isWarning ? 4 : 0}
-        py={isUser || isError || isWarning ? 3 : 0}
+        px={isUser || isError || isWarning || isStopped ? 4 : 0}
+        py={isUser || isError || isWarning || isStopped ? 3 : 0}
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
-        border={isError || isWarning ? "1px solid" : "none"}
+        border={isError || isWarning || isStopped ? "1px solid" : "none"}
         borderColor={
-          isError ? "red.200" : isWarning ? "gray.200" : "transparent"
+          isError
+            ? "red.200"
+            : isWarning || isStopped
+              ? "gray.200"
+              : "transparent"
         }
       >
         {hasContext && (
@@ -305,6 +314,11 @@ function MessageBubble({
         ) : isWarning ? (
           <Flex alignItems="center" gap="2">
             <WarningIcon />
+            <Box>{message.message}</Box>
+          </Flex>
+        ) : isStopped ? (
+          <Flex alignItems="center" gap="2">
+            <InfoIcon weight="regular" />
             <Box>{message.message}</Box>
           </Flex>
         ) : (

@@ -25,7 +25,8 @@ export interface ChatMessage {
     | "error"
     | "warning"
     | "dataset-nudge"
-    | "analyse-nudge";
+    | "analyse-nudge"
+    | "stopped";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
