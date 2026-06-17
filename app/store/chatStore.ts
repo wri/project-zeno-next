@@ -13,11 +13,13 @@ import {
   UiContext,
   ToolStepData,
   SuggestedDataset,
+  BlogArticle,
 } from "@/app/types/chat";
 import useContextStore from "./contextStore";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
+import { mergeCitedArticlesIntoMap } from "@/app/lib/blog-citations";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 import { DATASET_BY_ID } from "../constants/datasets";
@@ -33,6 +35,7 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
+import { AGENT_FEATURE_FLAG } from "@/app/config/feature-flags";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -41,6 +44,7 @@ interface ChatState {
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
   reasoningStartTime: number | null; // Timestamp when reasoning started
+  citedArticlesBySlug: Record<string, BlogArticle>;
 }
 
 interface ChatActions {
@@ -61,6 +65,7 @@ interface ChatActions {
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
+  mergeCitedArticles: (articles: BlogArticle[]) => void;
 }
 
 const initialState: ChatState = {
@@ -81,6 +86,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   toolSteps: [],
   pendingTraceId: null,
   reasoningStartTime: null,
+  citedArticlesBySlug: {},
 };
 
 /**
@@ -135,7 +141,8 @@ async function processStreamMessage(
   setPendingTraceId: (traceId: string | null) => void,
   attachTraceToLastAssistant: (traceId: string) => boolean,
   getPendingNudge: () => SuggestedDataset[] | null,
-  setPendingNudge: (datasets: SuggestedDataset[] | null) => void
+  setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
+  mergeCitedArticles: (articles: BlogArticle[]) => void
 ) {
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
@@ -206,6 +213,10 @@ async function processStreamMessage(
       setPendingTraceId(null);
     }
   } else if (streamMessage.type === "tool") {
+    if (streamMessage.cited_articles?.length) {
+      mergeCitedArticles(streamMessage.cited_articles);
+    }
+
     // Add tool step to reasoning display
     if (streamMessage.name) {
       addToolStep(streamMessage);
@@ -354,6 +365,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       query: message,
       query_type: queryType,
       thread_id: threadId,
+      ...(AGENT_FEATURE_FLAG && { ff: AGENT_FEATURE_FLAG }),
     };
 
     // Set up abort controller for client-side timeout
@@ -429,7 +441,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               () => pendingNudge,
               (datasets) => {
                 pendingNudge = datasets;
-              }
+              },
+              get().mergeCitedArticles
             );
           } catch (err) {
             if (isFinal) {
@@ -585,13 +598,28 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     });
   },
 
+  mergeCitedArticles: (articles) => {
+    set((state) => ({
+      citedArticlesBySlug: mergeCitedArticlesIntoMap(
+        state.citedArticlesBySlug,
+        articles
+      ),
+    }));
+  },
+
   fetchThread: async (threadId: string, abort?: AbortController) => {
-    const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
+    const {
+      setLoading,
+      addMessage,
+      addToolStep,
+      clearToolSteps,
+      mergeCitedArticles,
+    } = get();
     const { upsertContextByType } = useContextStore.getState();
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
-    set({ reasoningStartTime: Date.now() });
+    set({ reasoningStartTime: Date.now(), citedArticlesBySlug: {} });
     setLoading(true);
     // Set up abort controller for client-side timeout
     const abortController = abort || new AbortController();
@@ -699,7 +727,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               () => pendingNudgeThread,
               (datasets) => {
                 pendingNudgeThread = datasets;
-              }
+              },
+              mergeCitedArticles
             );
           } catch (err) {
             if (isFinal) {

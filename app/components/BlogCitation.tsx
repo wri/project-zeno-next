@@ -1,17 +1,7 @@
 "use client";
-import {
-  Box,
-  Flex,
-  HoverCard,
-  Image,
-  Portal,
-  Skeleton,
-  Text,
-  chakra,
-} from "@chakra-ui/react";
-import { ArrowSquareOutIcon } from "@phosphor-icons/react";
-import { format } from "date-fns";
+import { Flex, HoverCard, Image, Portal, Text, chakra } from "@chakra-ui/react";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+import { BlogArticleCard } from "./BlogArticleCard";
 
 const WRI_FAVICON = "/wri-favicon.ico";
 
@@ -20,111 +10,29 @@ interface BlogCitationProps {
   number: string;
   /** WRI Insights article URL the marker points to. */
   url: string;
-  /** Card metadata, when already resolved by useBlogCitations. */
+  /** Card metadata from agent state `cited_articles`. */
   article?: BlogArticle;
-  /** True while metadata is being fetched. */
-  isLoading?: boolean;
 }
 
-function formatLastmod(lastmod: string): string {
-  const date = new Date(lastmod);
-  if (isNaN(date.getTime())) return "";
-  return format(date, "MMM d, yyyy");
-}
-
-function CardBody({ article, url }: { article?: BlogArticle; url: string }) {
-  if (!article) {
-    // Unknown URL: still give the user somewhere to go.
-    return (
-      <Flex direction="column" gap="6px" p="12px 14px 14px">
-        <Flex align="center" gap="6px">
-          <Image src={WRI_FAVICON} alt="" boxSize="12px" />
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            letterSpacing="0.5px"
-            textTransform="uppercase"
-            color="fg.muted"
-          >
-            WRI Insights
-          </Text>
-        </Flex>
-        <Text fontSize="xs" color="fg.muted" wordBreak="break-all">
-          {url}
-        </Text>
-        <Flex
-          align="center"
-          gap="4px"
-          mt="2px"
-          color="primary.solid"
-          fontSize="xs"
-          fontWeight="500"
-        >
-          Read on wri.org <ArrowSquareOutIcon size={12} />
-        </Flex>
-      </Flex>
-    );
-  }
-
-  const date = formatLastmod(article.lastmod);
-
+function FallbackCard({ url }: { url: string }) {
   return (
-    <>
-      {article.image && (
-        <Box h="132px" overflow="hidden" bg="bg.muted">
-          <Image
-            src={article.image}
-            alt={article.image_alt || article.title}
-            w="100%"
-            h="100%"
-            objectFit="cover"
-          />
-        </Box>
-      )}
-      <Flex direction="column" gap="6px" p="12px 14px 14px">
-        <Flex align="center" gap="6px">
-          <Image src={WRI_FAVICON} alt="" boxSize="12px" />
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            letterSpacing="0.5px"
-            textTransform="uppercase"
-            color="fg.muted"
-          >
-            WRI Insights
-          </Text>
-          {date && (
-            <Text ml="auto" fontFamily="mono" fontSize="10px" color="fg.subtle">
-              {date}
-            </Text>
-          )}
-        </Flex>
+    <Flex direction="column" gap="6px" p="14px 16px 16px">
+      <Flex align="center" gap="6px">
+        <Image src={WRI_FAVICON} alt="" boxSize="12px" />
         <Text
-          fontSize="sm"
-          fontWeight="600"
-          lineHeight="1.35"
-          lineClamp={2}
-          color="fg"
+          fontFamily="mono"
+          fontSize="10px"
+          letterSpacing="0.5px"
+          textTransform="uppercase"
+          color="fg.muted"
         >
-          {article.title}
+          WRI Insights
         </Text>
-        {article.abstract && (
-          <Text fontSize="xs" color="fg.muted" lineHeight="1.5" lineClamp={3}>
-            {article.abstract}
-          </Text>
-        )}
-        <Flex
-          align="center"
-          gap="4px"
-          mt="2px"
-          color="primary.solid"
-          fontSize="xs"
-          fontWeight="500"
-        >
-          Read on wri.org <ArrowSquareOutIcon size={12} />
-        </Flex>
       </Flex>
-    </>
+      <Text fontSize="xs" color="fg.muted" wordBreak="break-all">
+        {url}
+      </Text>
+    </Flex>
   );
 }
 
@@ -133,12 +41,7 @@ function CardBody({ article, url }: { article?: BlogArticle; url: string }) {
  * assistant replies. Shows the article card on hover; clicking the chip
  * or the card opens the article in a new tab.
  */
-export function BlogCitation({
-  number,
-  url,
-  article,
-  isLoading = false,
-}: BlogCitationProps) {
+export function BlogCitation({ number, url, article }: BlogCitationProps) {
   return (
     <HoverCard.Root
       openDelay={200}
@@ -185,7 +88,7 @@ export function BlogCitation({
       <Portal>
         <HoverCard.Positioner>
           <HoverCard.Content
-            w="320px"
+            w="340px"
             maxW="90vw"
             p={0}
             overflow="hidden"
@@ -196,26 +99,21 @@ export function BlogCitation({
             <HoverCard.Arrow>
               <HoverCard.ArrowTip />
             </HoverCard.Arrow>
-            {isLoading && !article ? (
-              <Box p="14px">
-                <Skeleton h="10px" w="40%" mb="3" />
-                <Skeleton h="14px" w="90%" mb="2" />
-                <Skeleton h="10px" w="100%" mb="1" />
-                <Skeleton h="10px" w="75%" />
-              </Box>
-            ) : (
-              <chakra.a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                display="block"
-                color="inherit"
-                textDecoration="none"
-                _hover={{ textDecoration: "none" }}
-              >
-                <CardBody article={article} url={url} />
-              </chakra.a>
-            )}
+            <chakra.a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              display="block"
+              color="inherit"
+              textDecoration="none"
+              _hover={{ textDecoration: "none" }}
+            >
+              {article ? (
+                <BlogArticleCard article={article} href={url} variant="hover" />
+              ) : (
+                <FallbackCard url={url} />
+              )}
+            </chakra.a>
           </HoverCard.Content>
         </HoverCard.Positioner>
       </Portal>

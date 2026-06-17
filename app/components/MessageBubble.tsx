@@ -36,8 +36,13 @@ import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
 import BlogCitation from "./BlogCitation";
-import { useBlogCitations } from "../hooks/useBlogCitations";
-import { isBlogCitation } from "@/app/lib/blog-citations";
+import BlogCitationsList from "./BlogCitationsList";
+import {
+  getCitedArticlesInOrder,
+  isBlogCitation,
+  resolveCitedArticle,
+} from "@/app/lib/blog-citations";
+import { isExperimentalProfileEnabled } from "@/app/config/feature-flags";
 
 function nodeToText(children: ReactNode): string {
   if (typeof children === "string" || typeof children === "number") {
@@ -67,7 +72,7 @@ function MessageBubble({
   const [isRating, setIsRating] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
-  const { currentThreadId } = useChatStore();
+  const { currentThreadId, citedArticlesBySlug } = useChatStore();
 
   useEffect(() => {
     // This has to be done by a useEffect, otherwise there will be a hydration
@@ -163,21 +168,26 @@ function MessageBubble({
   const isError = message.type === "error";
   const isWarning = message.type === "warning";
   const isAssistant = message.type === "assistant";
-  const { articles: citedArticles, isLoading: citationsLoading } =
-    useBlogCitations(isAssistant ? message.message : "");
+  const blogCitationsEnabled = isExperimentalProfileEnabled();
+  const citedArticles = useMemo(
+    () =>
+      blogCitationsEnabled && isAssistant
+        ? getCitedArticlesInOrder(message.message, citedArticlesBySlug)
+        : [],
+    [blogCitationsEnabled, isAssistant, message.message, citedArticlesBySlug]
+  );
 
   const markdownComponents = useMemo<Components>(
     () => ({
       a: ({ node, href, children, ...rest }) => {
         void node; // not forwarded to the DOM element
         const label = nodeToText(children);
-        if (href && isBlogCitation(href, label)) {
+        if (blogCitationsEnabled && href && isBlogCitation(href, label)) {
           return (
             <BlogCitation
               number={label}
               url={href}
-              article={citedArticles[href]}
-              isLoading={citationsLoading}
+              article={resolveCitedArticle(href, citedArticlesBySlug)}
             />
           );
         }
@@ -188,7 +198,7 @@ function MessageBubble({
         );
       },
     }),
-    [citedArticles, citationsLoading]
+    [blogCitationsEnabled, citedArticlesBySlug]
   );
   const analysisWidgets = isAssistant
     ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
@@ -373,6 +383,9 @@ function MessageBubble({
               />
             ))}
           </Flex>
+        )}
+        {citedArticles.length > 0 && (
+          <BlogCitationsList articles={citedArticles} />
         )}
         {showFooter && (
           <Flex
