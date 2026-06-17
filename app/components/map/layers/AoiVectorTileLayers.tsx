@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 import useMapStore from "@/app/store/mapStore";
-import type { Layer as ManagedLayer } from "@/app/store/layerManagerSlice";
+import { isAoiVectorLayer } from "@/app/store/layerManagerSlice";
 import type { ContextItem } from "@/app/store/contextStore";
 import type { BasemapTheme } from "../BasemapSelector";
 
-interface VectorTileLayersProps {
+interface AoiVectorTileLayersProps {
   areas: ContextItem[];
   basemapTheme: BasemapTheme;
 }
@@ -15,14 +15,13 @@ interface VectorTileLayersProps {
  * Applies context-aware styling: blue when the layer is the active area
  * context, gray otherwise — consistent with GeoJsonLayers.
  */
-function VectorTileLayers({ areas, basemapTheme }: VectorTileLayersProps) {
+function AoiVectorTileLayers({
+  areas,
+  basemapTheme,
+}: AoiVectorTileLayersProps) {
   const allLayers = useMapStore((s) => s.layers);
   const vectorLayers = useMemo(
-    () =>
-      allLayers.filter(
-        (l): l is ManagedLayer & { tileUrl: string; sourceLayer: string } =>
-          l.type === "vector" && !!l.tileUrl && !!l.sourceLayer
-      ),
+    () => allLayers.filter(isAoiVectorLayer),
     [allLayers]
   );
 
@@ -101,4 +100,4 @@ function VectorTileLayers({ areas, basemapTheme }: VectorTileLayersProps) {
   );
 }
 
-export default VectorTileLayers;
+export default AoiVectorTileLayers;

@@ -44,6 +44,13 @@ export type DatasetCardConfig = {
   defaultEndYear?: number;
 };
 
+export type VectorStyleSpec = {
+  property: string; // feature attribute to key on, e.g. "year"
+  coerceToString?: boolean; // wrap in ["to-string", ...] for type-safe match
+  colorMap: { value: string | number; color: string }[];
+  fallbackColor?: string; // default "transparent" => unstyled
+};
+
 export type ContextLayerMetadata = {
   dataset_id: number;
   dataset_name: string;
@@ -51,6 +58,7 @@ export type ContextLayerMetadata = {
   description: string;
   tile_url?: string;
   legend: DatasetLegendConfig;
+  vectorStyle?: VectorStyleSpec;
 };
 
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
@@ -87,6 +95,12 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
       type: "symbol",
       info: "Identifies the world's last remaining unfragmented forest landscapes, large enough to retain all native biodiversity and showing no signs of human alteration.",
       note: "Extent of Intact Forest Landscapes (IFL) in 2000-2020. Global coverage, IFL Mapping Team.",
+    },
+    vectorStyle: {
+      property: "year",
+      coerceToString: true, // tiles may encode 2000 as number or string
+      colorMap: [{ value: 2000, color: "#5C8C50" }],
+      fallbackColor: "transparent", // every other year stays unstyled
     },
   },
 };

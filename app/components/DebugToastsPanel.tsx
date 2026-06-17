@@ -10,11 +10,69 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import { toaster } from "@/app/components/ui/toaster";
 import { pickAoiTool } from "@/app/store/chat-tools/pickAoi";
+import { pickDatasetTool } from "@/app/store/chat-tools/pickDataset";
+import type { DatasetInfo } from "@/app/types/chat";
 import useMapStore from "@/app/store/mapStore";
 import useChatStore from "@/app/store/chatStore";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 
 const GLOBAL_LAYER_ID = "Global Layer";
+
+// Dev-only mocks — exercise the full pickDataset → contextStore → map pipeline
+// without the backend. Both use an existing DATASET_CARDS entry so the legend
+// renders correctly.
+const MOCK_VECTOR_DATASET: DatasetInfo = {
+  dataset_id: 10,
+  dataset_name: "Tree cover loss due to fires",
+  tile_url:
+    "https://tiles.globalforestwatch.org/umd_tree_cover_loss_from_fires/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
+  context_layer: "intact_forest",
+  context_layers: [
+    {
+      name: "intact_forest",
+      tile_url:
+        "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2021/default/{z}/{x}/{y}.pbf",
+      source_layer: "ifl_intact_forest_landscapes",
+    },
+  ],
+  reason:
+    "Dev-only mock: vector (MVT) IFL context layer rendered beneath Tree Cover Loss due to fires.",
+};
+
+// Raster version of the same IFL layer — lets you compare MVT vs raster side-by-side.
+const MOCK_RASTER_IFL_DATASET: DatasetInfo = {
+  dataset_id: 10,
+  dataset_name: "Tree cover loss due to fires",
+  tile_url:
+    "https://tiles.globalforestwatch.org/umd_tree_cover_loss_from_fires/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
+  context_layer: "intact_forest",
+  context_layers: [
+    {
+      name: "intact_forest",
+      tile_url:
+        "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2025/default/{z}/{x}/{y}.png",
+    },
+  ],
+  reason:
+    "Dev-only mock: raster IFL context layer rendered beneath Tree Cover Loss due to fires.",
+};
+
+const MOCK_RASTER_PRIMARY_FOREST_DATASET: DatasetInfo = {
+  dataset_id: 10,
+  dataset_name: "Tree cover loss due to fires",
+  tile_url:
+    "https://tiles.globalforestwatch.org/umd_tree_cover_loss_from_fires/latest/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=30&render_type=true_color",
+  context_layer: "primary_forest",
+  context_layers: [
+    {
+      name: "primary_forest",
+      tile_url:
+        "https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png",
+    },
+  ],
+  reason:
+    "Dev-only mock: raster Primary Forests context layer rendered beneath Tree Cover Loss due to fires.",
+};
 
 const TOOL_ERROR_OPTIONS: Array<{ name: string; label: string }> = [
   { name: "generate_insights", label: "Insights" },
@@ -61,6 +119,42 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
     }
   };
 
+  const handleMockVectorDataset = () => {
+    pickDatasetTool(
+      {
+        type: "tool",
+        name: "pick_dataset",
+        timestamp: new Date().toISOString(),
+        dataset: MOCK_VECTOR_DATASET,
+      },
+      addMessage
+    );
+  };
+
+  const handleMockRasterIflDataset = () => {
+    pickDatasetTool(
+      {
+        type: "tool",
+        name: "pick_dataset",
+        timestamp: new Date().toISOString(),
+        dataset: MOCK_RASTER_IFL_DATASET,
+      },
+      addMessage
+    );
+  };
+
+  const handleMockRasterPrimaryForestDataset = () => {
+    pickDatasetTool(
+      {
+        type: "tool",
+        name: "pick_dataset",
+        timestamp: new Date().toISOString(),
+        dataset: MOCK_RASTER_PRIMARY_FOREST_DATASET,
+      },
+      addMessage
+    );
+  };
+
   if (!active || dismissed) return null;
 
   return (
@@ -95,6 +189,30 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           onClick={handleToggleGlobalLayer}
         >
           {globalLayerActive ? "Remove Global Layer" : "Toggle Global Layer"}
+        </Button>
+        <Button
+          size="xs"
+          colorPalette="green"
+          variant="subtle"
+          onClick={handleMockVectorDataset}
+        >
+          Mock MVT context
+        </Button>
+        <Button
+          size="xs"
+          colorPalette="orange"
+          variant="subtle"
+          onClick={handleMockRasterIflDataset}
+        >
+          Mock IFL raster
+        </Button>
+        <Button
+          size="xs"
+          colorPalette="orange"
+          variant="subtle"
+          onClick={handleMockRasterPrimaryForestDataset}
+        >
+          Mock primary forest raster
         </Button>
         <Button
           size="xs"
