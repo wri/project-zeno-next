@@ -16,7 +16,6 @@ import {
   MicroscopeIcon as Microscope,
   ArrowsOutIcon,
   ArrowSquareOutIcon,
-  ChatIcon,
   SparkleIcon,
   DownloadSimpleIcon,
   FileCsvIcon,
@@ -370,23 +369,13 @@ export default function WidgetMessage({
                 <Button
                   size="xs"
                   variant="outline"
-                  h={5}
+                  h={6}
                   rounded="sm"
                   color="neutral.500"
                   px={2}
                   aria-label="Ask AI about this insight"
                 >
-                  <Box position="relative" display="inline-flex">
-                    <ChatIcon size={12} />
-                    <Box
-                      position="absolute"
-                      top="1px"
-                      left="50%"
-                      transform="translateX(-50%)"
-                    >
-                      <SparkleIcon size={6} weight="fill" />
-                    </Box>
-                  </Box>
+                  <SparkleIcon size={10} />
                   Continue in...
                   <CaretDownIcon size={10} />
                 </Button>
