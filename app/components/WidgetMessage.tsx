@@ -295,6 +295,7 @@ export default function WidgetMessage({
                           value={provider}
                           onSelect={() => handleExportToAI(provider)}
                           color="fg.muted"
+                          aria-label={`Continue in ${AI_PROVIDERS[provider].label}`}
                         >
                           <Flex
                             w="full"
