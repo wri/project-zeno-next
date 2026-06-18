@@ -42,7 +42,11 @@ export default function AnalyseNudge({
       whiteSpace="normal"
       rounded="lg"
       borderColor={accepted ? "primary.500" : "border.emphasized"}
-      _hover={accepted ? undefined : { borderColor: "primary.emphasized" }}
+      _hover={
+        accepted
+          ? undefined
+          : { bg: "primary.50", borderColor: "primary.emphasized" }
+      }
       onClick={handleAnalyse}
       disabled={accepted}
     >
