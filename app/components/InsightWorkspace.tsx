@@ -48,6 +48,14 @@ function WorkspaceSkeleton() {
       display="flex"
       flexDirection="column"
       overflow="hidden"
+      // Lighten the skeleton tiling to the neutral palette (the default
+      // bg.muted→bg.emphasized gradient reads too dark against the white card).
+      css={{
+        "& .chakra-skeleton": {
+          "--start-color": "colors.neutral.200",
+          "--end-color": "colors.neutral.300",
+        },
+      }}
     >
       {/* Indeterminate loading bar pinned to the top edge */}
       <Progress.Root value={null} size="xs" colorPalette="primary">
