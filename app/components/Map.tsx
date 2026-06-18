@@ -1,7 +1,7 @@
 "use client";
 import "maplibre-gl/dist/maplibre-gl.css";
 import MapGl, { Layer, Source, MapRef } from "react-map-gl/maplibre";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
@@ -34,6 +34,7 @@ import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
+import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -204,6 +205,17 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             flexShrink={0}
             display={{ base: showLegend ? "block" : "none", md: "block" }}
           >
+            {/* Debug panel floats just left of this column, bottom-aligned */}
+            <Box
+              position="absolute"
+              bottom={0}
+              right="calc(100% + 0.5rem)"
+              pointerEvents="all"
+            >
+              <Suspense fallback={null}>
+                <DebugToastsPanel />
+              </Suspense>
+            </Box>
             <Legend
               layers={layers}
               onLayerAction={handleLayerAction}

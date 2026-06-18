@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, CloseButton, Menu, Stack, Text } from "@chakra-ui/react";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import { useSearchParams } from "next/navigation";
+import NextLink from "next/link";
+import { Box, Button, CloseButton, Link, Stack, Text } from "@chakra-ui/react";
+import {
+  BugIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+  ChartBarIcon,
+} from "@phosphor-icons/react";
 import {
   showApiError,
   showError,
@@ -82,10 +89,20 @@ const TOOL_ERROR_OPTIONS: Array<{ name: string; label: string }> = [
   { name: "unknown_tool", label: "Unknown" },
 ];
 
+const TOAST_TRIGGERS = [
+  { label: "Warning", type: "warning" },
+  { label: "Success", type: "success" },
+  { label: "Info", type: "info" },
+] as const;
+
 function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
-  const envEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true";
-  const active = enabled ?? envEnabled;
+  const params = useSearchParams();
+  const active =
+    enabled ??
+    (process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
+      params.get("debug") === "1");
   const [dismissed, setDismissed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const layers = useMapStore((s) => s.layers);
   const removeLayer = useMapStore((s) => s.removeLayer);
   const addMessage = useChatStore((s) => s.addMessage);
@@ -119,37 +136,13 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
     }
   };
 
-  const handleMockVectorDataset = () => {
+  const handleMockDataset = (dataset: DatasetInfo) => {
     pickDatasetTool(
       {
         type: "tool",
         name: "pick_dataset",
         timestamp: new Date().toISOString(),
-        dataset: MOCK_VECTOR_DATASET,
-      },
-      addMessage
-    );
-  };
-
-  const handleMockRasterIflDataset = () => {
-    pickDatasetTool(
-      {
-        type: "tool",
-        name: "pick_dataset",
-        timestamp: new Date().toISOString(),
-        dataset: MOCK_RASTER_IFL_DATASET,
-      },
-      addMessage
-    );
-  };
-
-  const handleMockRasterPrimaryForestDataset = () => {
-    pickDatasetTool(
-      {
-        type: "tool",
-        name: "pick_dataset",
-        timestamp: new Date().toISOString(),
-        dataset: MOCK_RASTER_PRIMARY_FOREST_DATASET,
+        dataset,
       },
       addMessage
     );
@@ -157,17 +150,25 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
 
   if (!active || dismissed) return null;
 
-  return (
+  const pill = (
+    <Button
+      size="xs"
+      variant="subtle"
+      colorPalette="gray"
+      onClick={() => setCollapsed((v) => !v)}
+    >
+      <BugIcon size={12} /> Debug{" "}
+      {collapsed ? <CaretDownIcon size={10} /> : <CaretUpIcon size={10} />}
+    </Button>
+  );
+
+  const panel = (
     <Box
-      position="fixed"
-      bottom="4"
-      right="4"
-      zIndex={1000}
       bg="white"
       border="1px solid"
       borderColor="#E0E2E5"
       borderRadius="md"
-      p="3"
+      p="2"
       boxShadow="sm"
     >
       <Box
@@ -176,124 +177,152 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         alignItems="center"
         mb="2"
       >
-        <Text fontSize="xs" fontWeight="600">
-          Debug: Trigger Toasts
+        <Text fontSize="xs" fontWeight="600" color="gray.600">
+          Debug
         </Text>
         <CloseButton size="2xs" onClick={() => setDismissed(true)} />
       </Box>
-      <Stack direction="row" gap="2" wrap="wrap">
-        <Button
-          size="xs"
-          colorPalette={globalLayerActive ? "red" : "blue"}
-          variant="subtle"
-          onClick={handleToggleGlobalLayer}
-        >
-          {globalLayerActive ? "Remove Global Layer" : "Toggle Global Layer"}
-        </Button>
-        <Button
-          size="xs"
-          colorPalette="green"
-          variant="subtle"
-          onClick={handleMockVectorDataset}
-        >
-          Mock MVT context
-        </Button>
-        <Button
-          size="xs"
-          colorPalette="orange"
-          variant="subtle"
-          onClick={handleMockRasterIflDataset}
-        >
-          Mock IFL raster
-        </Button>
-        <Button
-          size="xs"
-          colorPalette="orange"
-          variant="subtle"
-          onClick={handleMockRasterPrimaryForestDataset}
-        >
-          Mock primary forest raster
-        </Button>
-        <Button
-          size="xs"
-          onClick={() => showServiceUnavailableError("Demo Service")}
-        >
-          Service Unavailable
-        </Button>
-        <Button
-          size="xs"
-          onClick={() =>
-            showApiError("Example API error message", { title: "API Error" })
-          }
-        >
-          API Error
-        </Button>
-        <Button size="xs" onClick={() => showError("Generic error message")}>
-          Generic Error
-        </Button>
-        <Button
-          size="xs"
-          onClick={() =>
-            toaster.create({
-              title: "Warning",
-              description: "This is a warning toast",
-              type: "warning",
-              closable: true,
-              duration: 3000,
-            })
-          }
-        >
-          Warning
-        </Button>
-        <Button
-          size="xs"
-          onClick={() =>
-            toaster.create({
-              title: "Success",
-              description: "This is a success toast",
-              type: "success",
-              closable: true,
-              duration: 3000,
-            })
-          }
-        >
-          Success
-        </Button>
-        <Button
-          size="xs"
-          onClick={() =>
-            toaster.create({
-              title: "Info",
-              description: "This is an info toast",
-              type: "info",
-              closable: true,
-              duration: 3000,
-            })
-          }
-        >
-          Info
-        </Button>
-        <Menu.Root positioning={{ strategy: "fixed", hideWhenDetached: true }}>
-          <Menu.Trigger asChild>
-            <Button size="xs" variant="subtle">
-              Tool Error <CaretDownIcon size={12} />
+
+      <Stack direction="row" gap="3" align="flex-start">
+        <Box>
+          <Text fontSize="2xs" fontWeight="500" color="gray.400" mb="1">
+            Layers
+          </Text>
+          <Stack direction="column" gap="1">
+            <Button
+              size="2xs"
+              colorPalette={globalLayerActive ? "red" : "blue"}
+              variant="subtle"
+              onClick={handleToggleGlobalLayer}
+            >
+              {globalLayerActive ? "Remove Global" : "Global Layer"}
             </Button>
-          </Menu.Trigger>
-          <Menu.Positioner>
-            <Menu.Content>
-              {TOOL_ERROR_OPTIONS.map(({ name, label }) => (
-                <Menu.Item
-                  key={name}
-                  value={name}
-                  onSelect={() => triggerToolError(name)}
-                >
-                  {label}
-                </Menu.Item>
-              ))}
-            </Menu.Content>
-          </Menu.Positioner>
-        </Menu.Root>
+            <Button
+              size="2xs"
+              colorPalette="green"
+              variant="subtle"
+              onClick={() => handleMockDataset(MOCK_VECTOR_DATASET)}
+            >
+              MVT context
+            </Button>
+            <Button
+              size="2xs"
+              colorPalette="orange"
+              variant="subtle"
+              onClick={() => handleMockDataset(MOCK_RASTER_IFL_DATASET)}
+            >
+              IFL raster
+            </Button>
+            <Button
+              size="2xs"
+              colorPalette="orange"
+              variant="subtle"
+              onClick={() =>
+                handleMockDataset(MOCK_RASTER_PRIMARY_FOREST_DATASET)
+              }
+            >
+              Primary forest
+            </Button>
+          </Stack>
+        </Box>
+
+        <Box>
+          <Text fontSize="2xs" fontWeight="500" color="gray.400" mb="1">
+            Toasts
+          </Text>
+          <Stack direction="column" gap="1">
+            <Button
+              size="2xs"
+              onClick={() => showServiceUnavailableError("Demo Service")}
+            >
+              Unavailable
+            </Button>
+            <Button
+              size="2xs"
+              onClick={() =>
+                showApiError("Example API error message", {
+                  title: "API Error",
+                })
+              }
+            >
+              API Error
+            </Button>
+            <Button
+              size="2xs"
+              onClick={() => showError("Generic error message")}
+            >
+              Error
+            </Button>
+            {TOAST_TRIGGERS.map(({ label, type }) => (
+              <Button
+                key={type}
+                size="2xs"
+                onClick={() =>
+                  toaster.create({
+                    title: label,
+                    description: `This is a ${type} toast`,
+                    type,
+                    closable: true,
+                    duration: 3000,
+                  })
+                }
+              >
+                {label}
+              </Button>
+            ))}
+          </Stack>
+        </Box>
+
+        <Box>
+          <Text fontSize="2xs" fontWeight="500" color="gray.400" mb="1">
+            Tool errors
+          </Text>
+          <Stack direction="column" gap="1">
+            {TOOL_ERROR_OPTIONS.map(({ name, label }) => (
+              <Button
+                key={name}
+                size="2xs"
+                variant="subtle"
+                onClick={() => triggerToolError(name)}
+              >
+                {label}
+              </Button>
+            ))}
+          </Stack>
+        </Box>
       </Stack>
+
+      <Box borderTop="1px solid" borderColor="#E0E2E5" mt="2" pt="2">
+        <Link
+          as={NextLink}
+          href="/chart-debug"
+          fontSize="2xs"
+          color="gray.500"
+          _hover={{ color: "gray.800" }}
+          display="inline-flex"
+          alignItems="center"
+          gap="1"
+        >
+          <ChartBarIcon size={10} />
+          Go to Chart debugger →
+        </Link>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Box position="relative">
+      {pill}
+      {!collapsed && (
+        <Box
+          position="absolute"
+          bottom="calc(100% + 4px)"
+          right="0"
+          zIndex={9999}
+        >
+          {panel}
+        </Box>
+      )}
     </Box>
   );
 }
