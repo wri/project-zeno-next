@@ -210,13 +210,17 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           {hasInsights && <InsightWorkspace />}
           {/* Spacer: pushes legend to the bottom */}
           <Box flex="1 1 0" minH="0" />
-          <Flex
+          <Box
             flexShrink={0}
-            display={{ base: showLegend ? "flex" : "none", md: "flex" }}
-            alignItems="flex-end"
-            gap={2}
+            display={{ base: showLegend ? "block" : "none", md: "block" }}
           >
-            <Box pointerEvents="all" mb={1}>
+            {/* Debug panel floats just left of this column, bottom-aligned */}
+            <Box
+              position="absolute"
+              bottom={0}
+              right="calc(100% + 0.5rem)"
+              pointerEvents="all"
+            >
               <Suspense fallback={null}>
                 <DebugPanelInner />
               </Suspense>
@@ -227,7 +231,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
               aois={aois}
               onRemoveAoi={handleRemoveAoi}
             />
-          </Flex>
+          </Box>
         </Flex>
         {/* Sentinel layer: caps raster layers below AOI/GeoJSON outlines.
             Must be added before DynamicTileLayers so the sentinel exists
