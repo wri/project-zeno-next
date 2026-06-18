@@ -1,6 +1,7 @@
 import { StateCreator } from "zustand";
 import { FeatureCollection, Feature } from "geojson";
 import type { AOISelection } from "@/app/types/chat";
+import type { VectorStyleSpec } from "@/app/constants/datasets";
 import type { MapState } from "./mapStore";
 
 export interface FeatureRef {
@@ -35,7 +36,26 @@ export interface Layer {
   endDate?: string;
   // Set on a context-layer sub-layer to mark it as a child of `parentLayerId`
   parentLayerId?: string;
+  // Data-driven fill/line paint spec for type:"vector" context layers
+  vectorStyle?: VectorStyleSpec;
 }
+
+// The two MVT renderers partition vector layers by whether they carry a
+// data-driven `vectorStyle`. Mutually exclusive by construction:
+//  - styled vectors → VectorDataLayers   (context/dataset fills)
+//  - AOI vectors    → AoiVectorTileLayers (boundary selection styling)
+export const isStyledVectorLayer = (
+  l: Layer
+): l is Layer & {
+  tileUrl: string;
+  sourceLayer: string;
+  vectorStyle: VectorStyleSpec;
+} => l.type === "vector" && !!l.tileUrl && !!l.sourceLayer && !!l.vectorStyle;
+
+export const isAoiVectorLayer = (
+  l: Layer
+): l is Layer & { tileUrl: string; sourceLayer: string } =>
+  l.type === "vector" && !!l.tileUrl && !!l.sourceLayer && !l.vectorStyle;
 
 export interface LayerManagerSlice {
   layers: Layer[];

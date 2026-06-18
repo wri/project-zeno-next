@@ -8,7 +8,7 @@ import {
   IconButton,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
@@ -16,9 +16,7 @@ import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import WhatsNewModal from "@/app/components/WhatsNewModal";
-import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
-import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
@@ -39,14 +37,6 @@ export default function DashboardLayout({
     // Set layout heights after mount to avoid flash of both layouts at once
     setMobileHeight("min(100dvh, 100vh)");
   }, []);
-
-  function DebugToastsMount() {
-    const params = useSearchParams();
-    const debugEnabled =
-      process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
-      params.get("debug") === "1";
-    return <DebugToastsPanel enabled={debugEnabled} />;
-  }
 
   const DesktopLayout = (
     <Box
@@ -169,9 +159,6 @@ export default function DashboardLayout({
       {!isMobile && <PageHeader />}
       {isMobile ? MobileLayout : DesktopLayout}
 
-      <Suspense fallback={null}>
-        <DebugToastsMount />
-      </Suspense>
       {children}
     </Grid>
   );

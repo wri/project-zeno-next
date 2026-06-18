@@ -25,7 +25,8 @@ export interface ChatMessage {
     | "error"
     | "warning"
     | "dataset-nudge"
-    | "analyse-nudge";
+    | "analyse-nudge"
+    | "stopped";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
@@ -163,6 +164,8 @@ export interface AOISelection {
 export interface DatasetContextLayer {
   name: string;
   tile_url: string | null;
+  source_layer?: string | null; // present => render as MVT vector
+  type?: "raster" | "vector"; // optional explicit override from backend
 }
 
 export interface DatasetParameter {

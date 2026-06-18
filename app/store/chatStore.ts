@@ -38,6 +38,7 @@ import useInsightStore from "./insightStore";
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
+  abortController: AbortController | null;
   currentThreadId: string | null;
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
@@ -61,6 +62,7 @@ interface ChatActions {
     threadId: string,
     abortController?: AbortController
   ) => Promise<void>;
+  cancelRequest: () => void;
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
@@ -80,6 +82,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
     },
   ],
   isLoading: false,
+  abortController: null,
   currentThreadId: null,
   toolSteps: [],
   pendingTraceId: null,
@@ -394,8 +397,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       thread_id: threadId,
     };
 
-    // Set up abort controller for client-side timeout
+    // Set up abort controller for client-side timeout and user cancellation
     const abortController = new AbortController();
+    set({ abortController });
     const timeoutId = setTimeout(() => {
       console.log(
         "CLIENT TIMEOUT: Request exceeded 5 minutes 10 seconds - aborting request"
@@ -496,18 +500,30 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } catch (error) {
       console.error("Error sending message:", error);
 
-      // Check if error was due to abort/timeout
+      // Check if error was due to abort (user cancel or timeout)
+      // cancelRequest() nulls abortController before aborting, so null here means user cancel
       if (error instanceof Error && error.name === "AbortError") {
-        console.log("FRONTEND: Request aborted due to timeout");
-        addMessage({
-          type: "error",
-          message:
+        const wasUserCancel = get().abortController === null;
+        if (wasUserCancel) {
+          console.log("FRONTEND: Request cancelled by user");
+          // A user-initiated stop is not a failure — render a neutral status
+          // (no red alert), not the red error treatment.
+          addMessage({
+            type: "stopped",
+            message: "Response stopped",
+          });
+        } else {
+          console.log("FRONTEND: Request aborted due to timeout");
+          addMessage({
+            type: "error",
+            message:
+              "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
+          });
+          showApiError(
             "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
-        });
-        showApiError(
-          "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
-          { title: "Client Timeout" }
-        );
+            { title: "Client Timeout" }
+          );
+        }
       } else if (
         error instanceof TypeError &&
         error.message.includes("network")
@@ -557,6 +573,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
     } finally {
       clearTimeout(timeoutId);
+      set({ abortController: null });
 
       // Attach tool steps to the user message before clearing loading state
       const { attachToolStepsToLastUserMessage } = get();
@@ -570,6 +587,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  cancelRequest: () => {
+    const controller = get().abortController;
+    set({ abortController: null });
+    controller?.abort();
+  },
 
   addToolStep: (toolData: StreamMessage) => {
     set((state) => ({
