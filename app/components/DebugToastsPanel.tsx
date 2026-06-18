@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Box, Button, CloseButton, Stack, Text } from "@chakra-ui/react";
 import { BugIcon, CaretDownIcon, CaretUpIcon } from "@phosphor-icons/react";
 import {
@@ -82,15 +83,18 @@ const TOOL_ERROR_OPTIONS: Array<{ name: string; label: string }> = [
   { name: "unknown_tool", label: "Unknown" },
 ];
 
-function DebugToastsPanel({
-  enabled,
-  inline,
-}: {
-  enabled?: boolean;
-  inline?: boolean;
-}) {
-  const envEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true";
-  const active = enabled ?? envEnabled;
+const TOAST_TRIGGERS = [
+  { label: "Warning", type: "warning" },
+  { label: "Success", type: "success" },
+  { label: "Info", type: "info" },
+] as const;
+
+function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
+  const params = useSearchParams();
+  const active =
+    enabled ??
+    (process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
+      params.get("debug") === "1");
   const [dismissed, setDismissed] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const layers = useMapStore((s) => s.layers);
@@ -126,37 +130,13 @@ function DebugToastsPanel({
     }
   };
 
-  const handleMockVectorDataset = () => {
+  const handleMockDataset = (dataset: DatasetInfo) => {
     pickDatasetTool(
       {
         type: "tool",
         name: "pick_dataset",
         timestamp: new Date().toISOString(),
-        dataset: MOCK_VECTOR_DATASET,
-      },
-      addMessage
-    );
-  };
-
-  const handleMockRasterIflDataset = () => {
-    pickDatasetTool(
-      {
-        type: "tool",
-        name: "pick_dataset",
-        timestamp: new Date().toISOString(),
-        dataset: MOCK_RASTER_IFL_DATASET,
-      },
-      addMessage
-    );
-  };
-
-  const handleMockRasterPrimaryForestDataset = () => {
-    pickDatasetTool(
-      {
-        type: "tool",
-        name: "pick_dataset",
-        timestamp: new Date().toISOString(),
-        dataset: MOCK_RASTER_PRIMARY_FOREST_DATASET,
+        dataset,
       },
       addMessage
     );
@@ -176,8 +156,15 @@ function DebugToastsPanel({
     </Button>
   );
 
-  const panelContent = (
-    <>
+  const panel = (
+    <Box
+      bg="white"
+      border="1px solid"
+      borderColor="#E0E2E5"
+      borderRadius="md"
+      p="2"
+      boxShadow="sm"
+    >
       <Box
         display="flex"
         justifyContent="space-between"
@@ -208,7 +195,7 @@ function DebugToastsPanel({
               size="2xs"
               colorPalette="green"
               variant="subtle"
-              onClick={handleMockVectorDataset}
+              onClick={() => handleMockDataset(MOCK_VECTOR_DATASET)}
             >
               MVT context
             </Button>
@@ -216,7 +203,7 @@ function DebugToastsPanel({
               size="2xs"
               colorPalette="orange"
               variant="subtle"
-              onClick={handleMockRasterIflDataset}
+              onClick={() => handleMockDataset(MOCK_RASTER_IFL_DATASET)}
             >
               IFL raster
             </Button>
@@ -224,7 +211,9 @@ function DebugToastsPanel({
               size="2xs"
               colorPalette="orange"
               variant="subtle"
-              onClick={handleMockRasterPrimaryForestDataset}
+              onClick={() =>
+                handleMockDataset(MOCK_RASTER_PRIMARY_FOREST_DATASET)
+              }
             >
               Primary forest
             </Button>
@@ -258,48 +247,23 @@ function DebugToastsPanel({
             >
               Error
             </Button>
-            <Button
-              size="2xs"
-              onClick={() =>
-                toaster.create({
-                  title: "Warning",
-                  description: "This is a warning toast",
-                  type: "warning",
-                  closable: true,
-                  duration: 3000,
-                })
-              }
-            >
-              Warning
-            </Button>
-            <Button
-              size="2xs"
-              onClick={() =>
-                toaster.create({
-                  title: "Success",
-                  description: "This is a success toast",
-                  type: "success",
-                  closable: true,
-                  duration: 3000,
-                })
-              }
-            >
-              Success
-            </Button>
-            <Button
-              size="2xs"
-              onClick={() =>
-                toaster.create({
-                  title: "Info",
-                  description: "This is an info toast",
-                  type: "info",
-                  closable: true,
-                  duration: 3000,
-                })
-              }
-            >
-              Info
-            </Button>
+            {TOAST_TRIGGERS.map(({ label, type }) => (
+              <Button
+                key={type}
+                size="2xs"
+                onClick={() =>
+                  toaster.create({
+                    title: label,
+                    description: `This is a ${type} toast`,
+                    type,
+                    closable: true,
+                    duration: 3000,
+                  })
+                }
+              >
+                {label}
+              </Button>
+            ))}
           </Stack>
         </Box>
 
@@ -321,51 +285,22 @@ function DebugToastsPanel({
           </Stack>
         </Box>
       </Stack>
-    </>
-  );
-
-  const panelBox = (
-    <Box
-      bg="white"
-      border="1px solid"
-      borderColor="#E0E2E5"
-      borderRadius="md"
-      p="2"
-      boxShadow="sm"
-    >
-      {panelContent}
     </Box>
   );
 
-  if (inline) {
-    return (
-      <Box position="relative">
-        {pill}
-        {!collapsed && (
-          <Box
-            position="absolute"
-            bottom="calc(100% + 4px)"
-            right="0"
-            zIndex={9999}
-          >
-            {panelBox}
-          </Box>
-        )}
-      </Box>
-    );
-  }
-
-  if (collapsed) {
-    return (
-      <Box position="fixed" bottom="4" right="4" zIndex={9999}>
-        {pill}
-      </Box>
-    );
-  }
-
   return (
-    <Box position="fixed" bottom="4" right="4" zIndex={9999}>
-      {panelBox}
+    <Box position="relative">
+      {pill}
+      {!collapsed && (
+        <Box
+          position="absolute"
+          bottom="calc(100% + 4px)"
+          right="0"
+          zIndex={9999}
+        >
+          {panel}
+        </Box>
+      )}
     </Box>
   );
 }

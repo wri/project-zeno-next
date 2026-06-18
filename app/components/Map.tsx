@@ -2,7 +2,6 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import MapGl, { Layer, Source, MapRef } from "react-map-gl/maplibre";
 import { useState, useRef, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
@@ -38,14 +37,6 @@ import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-
-function DebugPanelInner() {
-  const params = useSearchParams();
-  const enabled =
-    process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
-    params.get("debug") === "1";
-  return <DebugToastsPanel enabled={enabled} inline />;
-}
 
 function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
@@ -222,7 +213,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
               pointerEvents="all"
             >
               <Suspense fallback={null}>
-                <DebugPanelInner />
+                <DebugToastsPanel />
               </Suspense>
             </Box>
             <Legend
