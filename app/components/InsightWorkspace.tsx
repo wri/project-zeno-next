@@ -21,37 +21,10 @@ import {
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
-import { Tooltip } from "./ui/tooltip";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
-
-const AI_DISCLAIMER =
-  "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.";
-
-const aiDisclaimerTooltip = (
-  <Box display="flex" flexDirection="column" gap="2px" maxW="296px">
-    <Text
-      fontFamily="body"
-      fontSize="12px"
-      lineHeight="150%"
-      fontWeight="medium"
-      color="#FFFFFF"
-    >
-      AI-INSIGHT ANALYSIS
-    </Text>
-    <Text
-      fontFamily="body"
-      fontSize="12px"
-      lineHeight="150%"
-      fontWeight="normal"
-      color="#B2B6BD"
-    >
-      {AI_DISCLAIMER}
-    </Text>
-  </Box>
-);
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -195,26 +168,6 @@ export default function InsightWorkspace() {
             whiteSpace="nowrap"
           >
             ANALYSIS
-            {" · "}
-            <Tooltip
-              variant="dark"
-              content={aiDisclaimerTooltip}
-              showArrow
-              positioning={{ placement: "bottom" }}
-              openDelay={100}
-              closeDelay={100}
-            >
-              <Box
-                as="span"
-                color="#4A64CB"
-                textDecoration="underline"
-                cursor="help"
-                tabIndex={0}
-                aria-label="Learn more about AI-Insight Analysis"
-              >
-                learn more
-              </Box>
-            </Tooltip>
           </Text>
         </Flex>
         <Flex align="center" gap="8px" flexShrink={0}>
