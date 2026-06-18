@@ -353,6 +353,7 @@ function MessageBubble({
               <AnalysisCard
                 key={`${message.id}-analysis-${idx}`}
                 widget={widget}
+                timestamp={message.timestamp}
               />
             ))}
           </Flex>

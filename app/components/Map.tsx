@@ -33,6 +33,7 @@ import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
+import useChatStore from "@/app/store/chatStore";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 
@@ -53,6 +54,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const basemapTheme =
     basemapOptions.find((o) => o.tileUrl === basemapTiles)?.theme ?? "light";
   const hasInsights = useInsightStore((s) => s.insights.length > 0);
+  // Also mount while the agent is processing so the workspace can show its
+  // generating skeleton on a first analysis (before any insight exists).
+  const isLoading = useChatStore((s) => s.isLoading);
   const areas = useContextStore(
     useShallow((s) => s.context.filter((c) => c.contextType === "area"))
   );
@@ -198,7 +202,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           gap={2}
           pointerEvents="none"
         >
-          {hasInsights && <InsightWorkspace />}
+          {(hasInsights || isLoading) && <InsightWorkspace />}
           {/* Spacer: pushes legend to the bottom */}
           <Box flex="1 1 0" minH="0" />
           <Box

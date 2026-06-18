@@ -1,48 +1,103 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Box, Flex, Text, Heading, IconButton } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Text,
+  Heading,
+  IconButton,
+  Skeleton,
+  SkeletonText,
+  Progress,
+} from "@chakra-ui/react";
 import {
   CaretDownIcon,
   CaretUpIcon,
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
   SpinnerGapIcon,
+  ChartLineIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
 import { Tooltip } from "./ui/tooltip";
-import { WidgetIconComponent } from "@/app/utils/widgetIcons";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 
-const AI_DISCLAIMER =
-  "This visualization includes AI-generated charts and data summaries. AI models may produce incomplete or incorrect information. Please verify all outputs before using them in your work.";
+/**
+ * Placeholder shown while the very first analysis is generating (no chart in
+ * the store yet). Mirrors the real card's layout — indeterminate top bar,
+ * title, summary lines, toolbar, chart body and nav — so the panel doesn't
+ * jump when the chart replaces it.
+ */
+function WorkspaceSkeleton() {
+  return (
+    <Box
+      flex="0 1 auto"
+      minH="0"
+      overflowY="auto"
+      w="100%"
+      bg="bg.panel"
+      border="1px solid"
+      borderColor="#DDE2F5"
+      rounded="4px"
+      pointerEvents="all"
+      display="flex"
+      flexDirection="column"
+      overflow="hidden"
+      // Lighten the skeleton tiling to the neutral palette (the default
+      // bg.muted→bg.emphasized gradient reads too dark against the white card).
+      css={{
+        "& .chakra-skeleton": {
+          "--start-color": "colors.neutral.200",
+          "--end-color": "colors.neutral.300",
+        },
+      }}
+    >
+      {/* Indeterminate loading bar pinned to the top edge */}
+      <Progress.Root value={null} size="xs" colorPalette="primary">
+        <Progress.Track bg="transparent" h="3px">
+          <Progress.Range />
+        </Progress.Track>
+      </Progress.Root>
 
-const aiDisclaimerTooltip = (
-  <Box display="flex" flexDirection="column" gap="2px" maxW="296px">
-    <Text
-      fontFamily="body"
-      fontSize="12px"
-      lineHeight="150%"
-      fontWeight="medium"
-      color="#FFFFFF"
-    >
-      AI-ASSISTED ANALYSIS
-    </Text>
-    <Text
-      fontFamily="body"
-      fontSize="12px"
-      lineHeight="150%"
-      fontWeight="normal"
-      color="#B2B6BD"
-    >
-      {AI_DISCLAIMER}
-    </Text>
-  </Box>
-);
+      {/* Title placeholder */}
+      <Box px={4} pt={4} pb={2}>
+        <Skeleton h="16px" w="55%" rounded="sm" />
+      </Box>
+
+      {/* Summary lines placeholder */}
+      <Box px={4} pb={3}>
+        <SkeletonText noOfLines={2} gap="3" />
+      </Box>
+
+      {/* Toolbar placeholder — segmented toggle + full-screen button */}
+      <Flex px={4} pb={3} gap={3} align="center">
+        <Flex gap={0}>
+          <Skeleton h="24px" w="64px" roundedLeft="md" />
+          <Skeleton h="24px" w="64px" roundedRight="md" />
+        </Flex>
+        <Skeleton h="24px" w="150px" rounded="md" />
+      </Flex>
+
+      <Box borderTop="1px solid" borderColor="#DDE2F5" />
+
+      {/* Chart body placeholder */}
+      <Box px={4} py={3}>
+        <Skeleton h="320px" w="100%" rounded="md" />
+      </Box>
+
+      {/* Nav footer placeholder */}
+      <Flex px={4} py={2} justify="space-between" align="center">
+        <Skeleton boxSize="32px" rounded="md" />
+        <Skeleton boxSize="32px" rounded="md" />
+      </Flex>
+    </Box>
+  );
+}
 
 export default function InsightWorkspace() {
   const { insights } = useInsightStore();
@@ -56,7 +111,14 @@ export default function InsightWorkspace() {
   }, [insights.length]);
 
   const total = insights.length;
-  if (total === 0) return null;
+  // First analysis still generating: no chart to show yet, so present a
+  // skeleton card instead of an empty gap. Once a chart lands (total > 0),
+  // the normal card renders and the header "INSIGHTS LOADING" indicator
+  // covers any subsequent regeneration.
+  if (total === 0) {
+    if (!isLoading) return null;
+    return <WorkspaceSkeleton />;
+  }
 
   // currentIndex 0 = newest, total-1 = oldest
   const widgetIndex = total - 1 - currentIndex;
@@ -67,7 +129,6 @@ export default function InsightWorkspace() {
   // disables at 1/N; Right/Next advances through the stack to older entries.
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < total - 1;
-  const HeaderIcon = WidgetIconComponent[widget.type];
 
   // Arrow keys page through insights while focus is anywhere in the card,
   // mirroring the prev/next buttons. Charts/menus don't consume arrows, so
@@ -121,7 +182,7 @@ export default function InsightWorkspace() {
           flexWrap="nowrap"
           overflow="hidden"
         >
-          <HeaderIcon size={12} color="#0049AA" />
+          <ChartLineIcon size={12} color="#0049AA" weight="thin" />
           <Text
             fontSize="10px"
             fontFamily="mono"
@@ -131,27 +192,7 @@ export default function InsightWorkspace() {
             color="fg.muted"
             whiteSpace="nowrap"
           >
-            AI-ASSISTED ANALYSIS
-            {" · "}
-            <Tooltip
-              variant="dark"
-              content={aiDisclaimerTooltip}
-              showArrow
-              positioning={{ placement: "bottom" }}
-              openDelay={100}
-              closeDelay={100}
-            >
-              <Box
-                as="span"
-                color="#4A64CB"
-                textDecoration="underline"
-                cursor="help"
-                tabIndex={0}
-                aria-label="Learn more about AI-Assisted Analysis"
-              >
-                learn more
-              </Box>
-            </Tooltip>
+            ANALYSIS
           </Text>
         </Flex>
         <Flex align="center" gap="8px" flexShrink={0}>

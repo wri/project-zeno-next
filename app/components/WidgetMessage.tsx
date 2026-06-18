@@ -25,6 +25,7 @@ import {
   CaretDownIcon,
 } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
+import AiAssistedLabel from "./AiAssistedLabel";
 import {
   exportToAI,
   AI_PROVIDERS,
@@ -193,6 +194,8 @@ export default function WidgetMessage({
         </Flex>
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">
+        {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
+        {inWorkspace && <AiAssistedLabel />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}
