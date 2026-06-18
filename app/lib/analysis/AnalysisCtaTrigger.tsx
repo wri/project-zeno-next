@@ -2,7 +2,6 @@
 import { useEffect } from "react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
-import { useFeatureFlag } from "@/app/hooks/useFeatureFlag";
 import { showAnalysisCta } from "./showAnalysisCta";
 
 /**
@@ -13,14 +12,13 @@ import { showAnalysisCta } from "./showAnalysisCta";
  * harmless.
  */
 export function AnalysisCtaTrigger() {
-  const enabled = useFeatureFlag("analysis");
   const analysisSelection = useMapStore((state) => state.analysisSelection);
   const context = useContextStore((state) => state.context);
 
   useEffect(() => {
-    if (!enabled || !analysisSelection) return;
+    if (!analysisSelection) return;
     showAnalysisCta(analysisSelection);
-  }, [enabled, analysisSelection, context]);
+  }, [analysisSelection, context]);
 
   return null;
 }
