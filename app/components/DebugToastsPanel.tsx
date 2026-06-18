@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Box, Button, CloseButton, Stack, Text } from "@chakra-ui/react";
-import { BugIcon, CaretDownIcon, CaretUpIcon } from "@phosphor-icons/react";
+import NextLink from "next/link";
+import { Box, Button, CloseButton, Link, Stack, Text } from "@chakra-ui/react";
+import {
+  BugIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+  ChartBarIcon,
+} from "@phosphor-icons/react";
 import {
   showApiError,
   showError,
@@ -285,6 +291,22 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           </Stack>
         </Box>
       </Stack>
+
+      <Box borderTop="1px solid" borderColor="#E0E2E5" mt="2" pt="2">
+        <Link
+          as={NextLink}
+          href="/chart-debug"
+          fontSize="2xs"
+          color="gray.500"
+          _hover={{ color: "gray.800" }}
+          display="inline-flex"
+          alignItems="center"
+          gap="1"
+        >
+          <ChartBarIcon size={10} />
+          Go to Chart debugger →
+        </Link>
+      </Box>
     </Box>
   );
 
