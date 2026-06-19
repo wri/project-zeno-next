@@ -29,7 +29,7 @@ function AreaTooltip({ hoverInfo }: AreaTooltipProps) {
       closeButton={false}
       anchor="left"
     >
-      <p className="hint">{isLoading ? "this area" : resolvedName}</p>
+      <p className="hint">{isLoading ? "..." : resolvedName}</p>
     </Popup>
   );
 }
