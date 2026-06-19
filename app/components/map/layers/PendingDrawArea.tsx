@@ -1,30 +1,7 @@
 import { Source, Layer as MapLayer } from "react-map-gl/maplibre";
-import { Feature, Polygon, GeoJsonProperties } from "geojson";
 import useMapStore from "@/app/store/mapStore";
+import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { BasemapTheme } from "../BasemapSelector";
-
-// Build a rectangle polygon from bbox coordinates (mirrors GeoJsonLayers).
-function createBboxPolygon(
-  bboxCoords: [number, number, number, number]
-): Feature<Polygon, GeoJsonProperties> {
-  const [minLng, minLat, maxLng, maxLat] = bboxCoords;
-  return {
-    type: "Feature",
-    properties: {},
-    geometry: {
-      type: "Polygon",
-      coordinates: [
-        [
-          [minLng, minLat],
-          [maxLng, minLat],
-          [maxLng, maxLat],
-          [minLng, maxLat],
-          [minLng, minLat],
-        ],
-      ],
-    },
-  };
-}
 
 interface PendingDrawAreaProps {
   basemapTheme: BasemapTheme;
@@ -56,11 +33,6 @@ function PendingDrawArea({ basemapTheme }: PendingDrawAreaProps) {
         data={pendingDrawnArea.geometry}
         generateId={true}
       >
-        <MapLayer
-          id="pending-draw-fill"
-          type="fill"
-          paint={{ "fill-color": mainLineColor, "fill-opacity": 0 }}
-        />
         {/* Casing layer (wider, contrasting colour) below the main line */}
         <MapLayer
           id="pending-draw-casing"

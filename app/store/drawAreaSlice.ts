@@ -40,7 +40,6 @@ export interface DrawAreaSlice {
   terraDraw: TerraDraw | null;
   isDrawingMode: boolean;
   pendingDrawnArea: PendingDrawnArea | null;
-  isResolvingName: boolean;
   validationError: {
     code: "too-small" | "too-large";
     area: number;
@@ -130,7 +129,6 @@ export const createDrawAreaSlice: StateCreator<
   terraDraw: null,
   isDrawingMode: false,
   pendingDrawnArea: null,
-  isResolvingName: false,
   validationError: null,
   createAreaFn: null,
 
@@ -158,7 +156,6 @@ export const createDrawAreaSlice: StateCreator<
       isDrawingMode: true,
       validationError: null,
       pendingDrawnArea: null,
-      isResolvingName: false,
     });
   },
 
@@ -170,7 +167,6 @@ export const createDrawAreaSlice: StateCreator<
     set({
       isDrawingMode: false,
       pendingDrawnArea: null,
-      isResolvingName: false,
     });
     get().clearSelectionMode();
   },
@@ -228,14 +224,14 @@ export const createDrawAreaSlice: StateCreator<
 
     const bounds = bbox(featureCollection) as [number, number, number, number];
 
-    // Show the preview immediately with a pending (null) name.
+    // Show the preview immediately with a pending (null) name — a null name is
+    // what signals "still resolving" to the UI.
     set({
       pendingDrawnArea: {
         geometry: featureCollection,
         bbox: bounds,
         name: null,
       },
-      isResolvingName: true,
     });
 
     // Stop terra-draw rendering its own polygon — the preview layer renders the
@@ -252,10 +248,7 @@ export const createDrawAreaSlice: StateCreator<
     fetchAreaName(buildBboxCollection(features)).then((name) => {
       const pending = get().pendingDrawnArea;
       if (!pending || pending.geometry !== featureCollection) return;
-      set({
-        pendingDrawnArea: { ...pending, name },
-        isResolvingName: false,
-      });
+      set({ pendingDrawnArea: { ...pending, name } });
     });
   },
 

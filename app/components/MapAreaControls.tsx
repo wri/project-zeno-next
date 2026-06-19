@@ -79,7 +79,6 @@ function MapAreaControls({
     isDrawingMode,
     startDrawing,
     pendingDrawnArea,
-    isResolvingName,
     selectionMode,
     setSelectionMode,
     clearSelectionMode,
@@ -416,7 +415,6 @@ function MapAreaControls({
         <PendingDrawControls
           name={pendingDrawnArea.name}
           bbox={pendingDrawnArea.bbox}
-          isResolvingName={isResolvingName}
           isConfirming={isCreating}
           onConfirm={handleConfirmDrawing}
           onCancel={cancelDrawing}
@@ -429,7 +427,6 @@ function MapAreaControls({
 interface PendingDrawControlsProps {
   name: string | null;
   bbox: [number, number, number, number];
-  isResolvingName: boolean;
   isConfirming: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -443,11 +440,12 @@ interface PendingDrawControlsProps {
 function PendingDrawControls({
   name,
   bbox,
-  isResolvingName,
   isConfirming,
   onConfirm,
   onCancel,
 }: PendingDrawControlsProps) {
+  // A null name means the name is still being fetched.
+  const isResolvingName = name === null;
   return (
     <Marker longitude={bbox[0]} latitude={bbox[3]} anchor="bottom-left">
       <Flex direction="column" align="flex-start" gap={1}>
