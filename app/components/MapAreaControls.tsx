@@ -8,8 +8,12 @@ import {
   IconButton,
   Menu,
   Portal,
+  Spinner,
+  Tag,
   Text,
 } from "@chakra-ui/react";
+import { Marker } from "react-map-gl/maplibre";
+import { ChatContextOptions } from "./ContextButton";
 import {
   CaretDownIcon,
   HandPointingIcon,
@@ -74,6 +78,8 @@ function MapAreaControls({
     setSelectAreaLayer,
     isDrawingMode,
     startDrawing,
+    pendingDrawnArea,
+    isResolvingName,
     selectionMode,
     setSelectionMode,
     clearSelectionMode,
@@ -264,7 +270,11 @@ function MapAreaControls({
           align="center"
         >
           {isDrawingMode ? (
-            <>
+            // While drawing, only cancel is available — the shape is completed
+            // by closing the polygon on the map, and its confirm control is
+            // then anchored to the shape (see the Marker below). The check is
+            // never shown here.
+            pendingDrawnArea ? null : (
               <Tooltip content="Cancel drawing">
                 <IconButton
                   bg="bg"
@@ -275,18 +285,7 @@ function MapAreaControls({
                   <XIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip content="Confirm area">
-                <IconButton
-                  bg="bg"
-                  _hover={{ bg: "bg.muted" }}
-                  aria-label="Confirm area"
-                  onClick={handleConfirmDrawing}
-                  disabled={isCreating}
-                >
-                  <CheckIcon />
-                </IconButton>
-              </Tooltip>
-            </>
+            )
           ) : (
             <>
               <Tooltip content="Upload area from file">
@@ -396,7 +395,9 @@ function MapAreaControls({
           )}
         </ButtonGroup>
       </Flex>
-      {selectionMode && (
+      {/* Hide the top-left mode indicator once a shape is pending — the
+          anchored label below shows the area name instead. */}
+      {selectionMode && !pendingDrawnArea && (
         <Box
           px={3}
           py={1}
@@ -411,7 +412,93 @@ function MapAreaControls({
         </Box>
       )}
       <ValidationErrorDisplay />
+      {pendingDrawnArea && (
+        <PendingDrawControls
+          name={pendingDrawnArea.name}
+          bbox={pendingDrawnArea.bbox}
+          isResolvingName={isResolvingName}
+          isConfirming={isCreating}
+          onConfirm={handleConfirmDrawing}
+          onCancel={cancelDrawing}
+        />
+      )}
     </Wrapper>
+  );
+}
+
+interface PendingDrawControlsProps {
+  name: string | null;
+  bbox: [number, number, number, number];
+  isResolvingName: boolean;
+  isConfirming: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+/**
+ * Confirm/cancel controls and the area-name label, anchored to the top-left
+ * corner of a just-completed drawn shape. The label shows a loading state
+ * ("Drawn shape" + spinner) until the name resolves, then the resolved name.
+ */
+function PendingDrawControls({
+  name,
+  bbox,
+  isResolvingName,
+  isConfirming,
+  onConfirm,
+  onCancel,
+}: PendingDrawControlsProps) {
+  return (
+    <Marker longitude={bbox[0]} latitude={bbox[3]} anchor="bottom-left">
+      <Flex direction="column" align="flex-start" gap={1}>
+        {/* Same button styling as the original draw controls (subtle group,
+            bg surface with muted hover). */}
+        <ButtonGroup size="sm" variant="subtle" pointerEvents="initial">
+          <Tooltip content="Cancel drawing" positioning={{ placement: "top" }}>
+            <IconButton
+              bg="bg"
+              _hover={{ bg: "bg.muted" }}
+              aria-label="Cancel drawing"
+              onClick={onCancel}
+            >
+              <XIcon />
+            </IconButton>
+          </Tooltip>
+          {/* Confirm is shown but disabled until the area name has resolved. */}
+          <Tooltip content="Confirm area" positioning={{ placement: "top" }}>
+            <IconButton
+              bg="bg"
+              _hover={{ bg: "bg.muted" }}
+              aria-label="Confirm area"
+              onClick={onConfirm}
+              disabled={isResolvingName || isConfirming}
+            >
+              <CheckIcon />
+            </IconButton>
+          </Tooltip>
+        </ButtonGroup>
+        {/* Label matches a selected AOI's chip in GeoJsonLayers. */}
+        <Tag.Root
+          colorPalette="primary"
+          variant="solid"
+          size="md"
+          px={2}
+          py={1}
+          roundedBottom="none"
+          maxW="14rem"
+          pointerEvents="initial"
+        >
+          <Tag.StartElement>
+            {isResolvingName ? (
+              <Spinner size="xs" />
+            ) : (
+              ChatContextOptions.area.icon
+            )}
+          </Tag.StartElement>
+          <Tag.Label fontWeight="medium">{name ?? "Drawn shape"}</Tag.Label>
+        </Tag.Root>
+      </Flex>
+    </Marker>
   );
 }
 
