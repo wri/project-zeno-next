@@ -19,7 +19,6 @@ import {
   getAoiName,
   getSrcId,
   getSubtype,
-  singularizeDatasetName,
   toAreaSelection,
 } from "@/app/utils/areaHelpers";
 
@@ -49,13 +48,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
   );
-  const {
-    id,
-    url,
-    sourceLayer,
-    name: datasetName,
-    nameKeys,
-  } = selectAreaLayerConfig!;
+  const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
@@ -285,12 +278,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           paint={selectAreaLinePaint}
         />
       </Source>
-      {hoverInfo && (
-        <AreaTooltip
-          hoverInfo={hoverInfo}
-          areaName={singularizeDatasetName(datasetName)}
-        />
-      )}
+      {hoverInfo && <AreaTooltip hoverInfo={hoverInfo} />}
     </>
   );
 }

@@ -8,13 +8,18 @@ export interface HoverInfo {
 
 interface AreaTooltipProps {
   hoverInfo: HoverInfo | undefined;
-  areaName?: string;
 }
 
-function AreaTooltip({ hoverInfo, areaName }: AreaTooltipProps) {
+function AreaTooltip({ hoverInfo }: AreaTooltipProps) {
   if (!hoverInfo) return null;
 
-  const displayName = hoverInfo?.name || areaName;
+  // The area name is resolved synchronously from vector-tile properties, but a
+  // feature's name props aren't always populated the instant it's hovered.
+  // Treat an empty name as "still resolving" and show a skeleton placeholder
+  // rather than a blank or generic label, swapping in the real name as soon as
+  // it's available.
+  const resolvedName = hoverInfo.name?.trim();
+  const isLoading = !resolvedName;
 
   return (
     <Popup
@@ -24,10 +29,7 @@ function AreaTooltip({ hoverInfo, areaName }: AreaTooltipProps) {
       closeButton={false}
       anchor="left"
     >
-      <p className="area-name">
-        <b>{displayName}</b>
-      </p>
-      <p className="hint">Click to select {displayName}. Esc to exit.</p>
+      <p className="hint">{isLoading ? "this area" : resolvedName}</p>
     </Popup>
   );
 }
