@@ -53,7 +53,12 @@ export default function SettingsShell({
           transition="opacity 0.24s ease"
           _hover={{ opacity: 0.8, textDecor: "none" }}
         >
-          <Heading m={0}>Global Nature Watch Horizon</Heading>
+          <Heading m={0}>
+            Global Nature Watch{" "}
+            <Text as="span" fontWeight="normal">
+              Horizon
+            </Text>
+          </Heading>
         </ChakraLink>
         <ButtonGroup
           size="sm"
