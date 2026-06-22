@@ -159,7 +159,10 @@ export default function GlobalHeader() {
             >
               <Drawer.Header>
                 <Drawer.Title color="fg.inverted" fontSize="2xl">
-                  Global Nature Watch
+                  Global Nature Watch{" "}
+                  <Text as="span" fontWeight="normal">
+                    Horizon
+                  </Text>
                 </Drawer.Title>
               </Drawer.Header>
               <Drawer.Body>{renderNavItems(true, setNavOpen)}</Drawer.Body>
