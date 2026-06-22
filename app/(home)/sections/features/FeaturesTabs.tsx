@@ -25,7 +25,7 @@ const FEATURE_TABS = [
     value: "feature-tab-2",
     label: "Tailored answers to your context",
     description:
-      "Explore how Global Nature Watch Horizon's assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
+      "Explore how Global Nature Watch's assistant can shape responses to your needs, from comparing regions to highlighting local patterns that may be most relevant to your work.",
     caption: "Shape responses to your needs.",
     image: "/feature-tab-2.webp",
   },
@@ -33,7 +33,7 @@ const FEATURE_TABS = [
     value: "feature-tab-3",
     label: "Insights you can act on",
     description:
-      "Global Nature Watch Horizon's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies or field decisions while opening the door to dive deeper.",
+      "Global Nature Watch's assistant helps translate analyses into clear takeaways. It offers a starting point for reports, policies or field decisions while opening the door to dive deeper.",
     caption: "Generate clear takeaways from complex data.",
     image: "/feature-tab-3.webp",
   },
@@ -54,7 +54,7 @@ export default function FeaturesTabsSection() {
             data
           </Heading>
           <Text fontSize="lg">
-            Global Nature Watch Horizon is testing new ways to make geospatial
+            Global Nature Watch is testing new ways to make geospatial
             information easier to use. Try asking in plain language and explore
             the insights it can provide.
           </Text>

@@ -187,8 +187,8 @@ export default function LandingHero({
               fontSize="lg"
               textShadow="2px 2px 5px hsla(225, 52%, 11%, 0.75)"
             >
-              Global Nature Watch Horizon is an experimental, open, AI-powered
-              system that transforms groundbreaking land monitoring data into
+              Global Nature Watch is an experimental, open, AI-powered system
+              that transforms groundbreaking land monitoring data into
               intelligence for understanding Earth&rsquo;s landscapes. Test the
               preview and help shape the future of land monitoring.
             </Text>
@@ -308,7 +308,7 @@ export default function LandingHero({
                 <Badge size="xs" fontSize="8px" rounded="4px" mr="1">
                   PREVIEW
                 </Badge>
-                Global Nature Watch Horizon is
+                Global Nature Watch is
                 {LANDING_PAGE_VERSION === "closed"
                   ? " in closed preview."
                   : LANDING_PAGE_VERSION === "limited"
@@ -318,7 +318,7 @@ export default function LandingHero({
               <Tooltip
                 openDelay={100}
                 closeDelay={300}
-                content="This is an early version of Global Nature Watch Horizon. Our agent may make mistakes and some features are still in development. Your usage and feedback will help us enhance it!"
+                content="This is an early version of Global Nature Watch. Our agent may make mistakes and some features are still in development. Your usage and feedback will help us enhance it!"
               >
                 <Box
                   color="fg.inverted"

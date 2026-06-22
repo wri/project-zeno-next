@@ -84,9 +84,9 @@ export default function LatestUpdatesSection() {
             Latest updates & research
           </Heading>
           <Text fontSize="lg" mb="4">
-            Global Nature Watch Horizon serves up the latest breakthroughs in
-            geospatial data from the field-leading research and technology
-            partners behind Land & Carbon Lab and Global Forest Watch.
+            Global Nature Watch serves up the latest breakthroughs in geospatial
+            data from the field-leading research and technology partners behind
+            Land & Carbon Lab and Global Forest Watch.
           </Text>
         </Container>
         <Container maxW="5xl" px={0}>

@@ -4,7 +4,7 @@ const HOW_STEPS = [
   {
     title: "Processing your intent",
     description:
-      "When you ask Global Nature Watch Horizon a question, our system of agents work together to understand your request and deliver the most accurate, relevant answers.",
+      "When you ask Global Nature Watch a question, our system of agents work together to understand your request and deliver the most accurate, relevant answers.",
     images: [
       { src: "/Langchain-logo.svg", alt: "Langchain logo", width: "80px" },
       { src: "/gemini-icon.svg", alt: "Gemini icon", width: "50px" },
