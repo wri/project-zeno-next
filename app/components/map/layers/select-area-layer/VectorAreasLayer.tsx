@@ -15,8 +15,6 @@ import { API_CONFIG } from "@/app/config/api";
 import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 
-import { useFeatureFlag } from "@/app/hooks/useFeatureFlag";
-
 import {
   getAoiName,
   getSrcId,
@@ -42,7 +40,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { context, addContext, removeContext } = useContextStore();
   const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
     useMapStore();
-  const isAnalysisEnabled = useFeatureFlag("analysis");
+
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -205,22 +203,18 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               });
             }
 
-            // Analysis feature — hidden behind ?ff=analysis; GADM only.
-            // Purely additive: with the flag off, behavior is unchanged.
             // AnalysisCtaTrigger reacts to this selection and surfaces the
             // analyse nudge once a dataset is also active.
-            if (isAnalysisEnabled) {
-              if (layerId === "GADM" && metadata) {
-                setAnalysis(
-                  toAreaSelection(
-                    layerId,
-                    (featureProps ?? {}) as Record<string, unknown>,
-                    metadata
-                  )
-                );
-              } else {
-                useMapStore.getState().clearAnalysis();
-              }
+            if (layerId === "GADM" && metadata) {
+              setAnalysis(
+                toAreaSelection(
+                  layerId,
+                  (featureProps ?? {}) as Record<string, unknown>,
+                  metadata
+                )
+              );
+            } else {
+              useMapStore.getState().clearAnalysis();
             }
           }
         }
@@ -259,7 +253,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     addLayer,
     layerId,
     url,
-    isAnalysisEnabled,
     setAnalysis,
   ]);
 
