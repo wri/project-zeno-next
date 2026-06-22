@@ -11,6 +11,8 @@ export interface InfoCardProps {
   typeLabel?: string;
   /** Hex color for the type label. */
   typeLabelColor?: string;
+  /** Optional icon rendered immediately before the type label. */
+  typeLabelIcon?: React.ReactNode;
   /** Bold sans-serif title text. */
   title: string;
   /** Mono caption shown under the title. */
@@ -29,6 +31,7 @@ export function InfoCard({
   thumbnailBg = "#FFFFFF",
   typeLabel,
   typeLabelColor = "#656E7B",
+  typeLabelIcon,
   title,
   description,
   onClick,
@@ -74,20 +77,23 @@ export function InfoCard({
         minW={0}
       >
         {typeLabel && (
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            fontWeight="normal"
-            lineHeight="16px"
-            letterSpacing="0.5px"
-            color={typeLabelColor}
-            textTransform="uppercase"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-          >
-            {typeLabel}
-          </Text>
+          <Flex align="center" gap="4px" minW={0}>
+            {typeLabelIcon}
+            <Text
+              fontFamily="mono"
+              fontSize="10px"
+              fontWeight="normal"
+              lineHeight="16px"
+              letterSpacing="0.5px"
+              color={typeLabelColor}
+              textTransform="uppercase"
+              whiteSpace="nowrap"
+              overflow="hidden"
+              textOverflow="ellipsis"
+            >
+              {typeLabel}
+            </Text>
+          </Flex>
         )}
         <Flex align="center" gap="8px" minW={0}>
           <Text

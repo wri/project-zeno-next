@@ -1,7 +1,7 @@
 "use client";
 import "maplibre-gl/dist/maplibre-gl.css";
 import MapGl, { Layer, Source, MapRef } from "react-map-gl/maplibre";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
@@ -11,17 +11,21 @@ import {
   Flex,
   Link as ChLink,
   Spinner,
+  Text,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
 import useContextStore from "@/app/store/contextStore";
+import useCookieStore from "@/app/store/cookieStore";
+import { URLS } from "@/app/constants/urls";
 import { useShallow } from "zustand/react/shallow";
 import MapAreaControls from "./MapAreaControls";
 import { basemapOptions } from "./map/BasemapSelector";
 import DynamicTileLayers, {
   RASTER_TOP_SENTINEL_ID,
 } from "./map/layers/DynamicTileLayers";
-import VectorTileLayers from "./map/layers/VectorTileLayers";
+import VectorDataLayers from "./map/layers/VectorDataLayers";
+import AoiVectorTileLayers from "./map/layers/AoiVectorTileLayers";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
@@ -29,6 +33,9 @@ import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
+import useChatStore from "@/app/store/chatStore";
+import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
+import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -47,9 +54,14 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const basemapTheme =
     basemapOptions.find((o) => o.tileUrl === basemapTiles)?.theme ?? "light";
   const hasInsights = useInsightStore((s) => s.insights.length > 0);
+  // Also mount while the agent is processing so the workspace can show its
+  // generating skeleton on a first analysis (before any insight exists).
+  const isLoading = useChatStore((s) => s.isLoading);
   const areas = useContextStore(
     useShallow((s) => s.context.filter((c) => c.contextType === "area"))
   );
+  const consentStatus = useCookieStore((s) => s.consentStatus);
+  const openPreferences = useCookieStore((s) => s.openPreferences);
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -129,7 +141,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           id="background"
           type="raster"
           tiles={[
-            `https://api.mapbox.com/styles/v1/${basemapTiles}/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
+            buildBasemapTileUrl(
+              basemapTiles,
+              MAPBOX_ACCESS_TOKEN,
+              typeof window === "undefined" ? 1 : window.devicePixelRatio
+            ),
           ]}
         >
           <Layer id="background-tiles" type="raster" />
@@ -186,13 +202,24 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           gap={2}
           pointerEvents="none"
         >
-          {hasInsights && <InsightWorkspace />}
+          {(hasInsights || isLoading) && <InsightWorkspace />}
           {/* Spacer: pushes legend to the bottom */}
           <Box flex="1 1 0" minH="0" />
           <Box
             flexShrink={0}
             display={{ base: showLegend ? "block" : "none", md: "block" }}
           >
+            {/* Debug panel floats just left of this column, bottom-aligned */}
+            <Box
+              position="absolute"
+              bottom={0}
+              right="calc(100% + 0.5rem)"
+              pointerEvents="all"
+            >
+              <Suspense fallback={null}>
+                <DebugToastsPanel />
+              </Suspense>
+            </Box>
             <Legend
               layers={layers}
               onLayerAction={handleLayerAction}
@@ -212,7 +239,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Layer id={RASTER_TOP_SENTINEL_ID} type="line" paint={{}} />
         </Source>
         <DynamicTileLayers />
-        <VectorTileLayers areas={areas} basemapTheme={basemapTheme} />
+        <VectorDataLayers />
+        <AoiVectorTileLayers areas={areas} basemapTheme={basemapTheme} />
         <GeoJsonLayers areas={areas} basemapTheme={basemapTheme} />
         <SelectAreaLayer />
 
@@ -239,8 +267,25 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           alignItems="center"
           gap={2}
         >
+          {consentStatus !== "pending" && (
+            <Text
+              as="button"
+              onClick={openPreferences}
+              textDecoration="underline"
+              color="fg.muted"
+              cursor="pointer"
+              fontSize="inherit"
+              fontFamily="inherit"
+              lineHeight="inherit"
+              bg="transparent"
+              border="none"
+              p={0}
+            >
+              Cookie Policy
+            </Text>
+          )}
           <ChLink
-            href="https://www.wri.org/about/privacy-policy?sitename=landcarbonlab.org&osanoid=5a6c3f87-bd10-4df7-80c7-375ce6a77691"
+            href={URLS.privacyPolicy}
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
@@ -249,7 +294,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             Privacy Policy
           </ChLink>
           <ChLink
-            href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
+            href={URLS.aiPrivacyPolicy}
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
@@ -258,7 +303,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             AI Privacy Policy
           </ChLink>
           <ChLink
-            href="https://www.wri.org/about/legal/general-terms-use"
+            href={URLS.termsOfUse}
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"
@@ -267,7 +312,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             Terms of Use
           </ChLink>
           <ChLink
-            href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+            href={URLS.aiTermsOfUse}
             target="_blank"
             rel="noopener noreferrer"
             textDecoration="underline"

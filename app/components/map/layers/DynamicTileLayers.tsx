@@ -8,7 +8,7 @@ import type { Layer as ManagedLayer } from "@/app/store/layerManagerSlice";
 // when the first raster layer references it as beforeId.
 export const RASTER_TOP_SENTINEL_ID = "raster-top-sentinel";
 
-function layerId(id: string) {
+export function layerId(id: string) {
   return `tile-layer-${id}`;
 }
 

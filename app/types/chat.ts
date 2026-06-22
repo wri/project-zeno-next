@@ -24,12 +24,15 @@ export interface ChatMessage {
     | "area-card"
     | "error"
     | "warning"
-    | "dataset-nudge";
+    | "dataset-nudge"
+    | "analyse-nudge"
+    | "stopped";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   aoiSelection?: AOISelection; // For area-card messages
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
+  analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: ContextItem[];
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
@@ -161,11 +164,25 @@ export interface AOISelection {
 export interface DatasetContextLayer {
   name: string;
   tile_url: string | null;
+  source_layer?: string | null; // present => render as MVT vector
+  type?: "raster" | "vector"; // optional explicit override from backend
 }
 
 export interface DatasetParameter {
   name: string;
   values: unknown[];
+}
+
+// Payload of an analyse-nudge message: a snapshot of the area + dataset the
+// CTA was created for, taken at injection time so the card stays stable even
+// if the live context changes afterwards.
+export interface AnalyseSuggestion {
+  areaName: string;
+  datasetId: number;
+  datasetName: string;
+  // Set once the user clicks Analyse: accepted nudges persist in the thread
+  // as a record of the run, while pending ones are replaced by new selections.
+  accepted?: boolean;
 }
 
 export interface SuggestedDataset {
