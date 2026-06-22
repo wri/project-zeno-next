@@ -9,6 +9,7 @@ import {
   CaretDownIcon,
   CaretUpIcon,
   ChartBarIcon,
+  UserPlusIcon,
 } from "@phosphor-icons/react";
 import {
   showApiError,
@@ -292,7 +293,29 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         </Box>
       </Stack>
 
-      <Box borderTop="1px solid" borderColor="#E0E2E5" mt="2" pt="2">
+      <Stack
+        direction="column"
+        gap="1"
+        align="flex-start"
+        borderTop="1px solid"
+        borderColor="#E0E2E5"
+        mt="2"
+        pt="2"
+      >
+        {/* Offline mirror: real form with mock config, no API/auth. */}
+        <Link
+          as={NextLink}
+          href="/onboarding-debug"
+          fontSize="2xs"
+          color="gray.500"
+          _hover={{ color: "gray.800" }}
+          display="inline-flex"
+          alignItems="center"
+          gap="1"
+        >
+          <UserPlusIcon size={10} />
+          Go to Onboarding debugger →
+        </Link>
         <Link
           as={NextLink}
           href="/chart-debug"
@@ -306,7 +329,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           <ChartBarIcon size={10} />
           Go to Chart debugger →
         </Link>
-      </Box>
+      </Stack>
     </Box>
   );
 
