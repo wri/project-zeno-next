@@ -13,7 +13,6 @@ import {
   Link as ChakraLink,
   Text,
 } from "@chakra-ui/react";
-import LclLogo from "./LclLogo";
 import {
   CaretDownIcon,
   ClockCounterClockwiseIcon,
@@ -117,22 +116,23 @@ function PageHeader() {
           <ChakraLink
             as={Link}
             href="/"
-            display="flex"
             transition="opacity 0.24s ease"
             _hover={{ opacity: 0.8 }}
             _focusVisible={focusRing}
           >
-            <LclLogo
-              width={16}
-              avatarOnly
-              fill={isPrototype ? "#1f2937" : "#131E47"}
-            />
             <Heading
               as="h1"
               size="sm"
               color={isPrototype ? "#1f2937" : "#131E47"}
             >
-              Global Nature Watch
+              Global Nature Watch{" "}
+              <Text
+                as="span"
+                fontWeight="normal"
+                color={isPrototype ? "#1f2937" : "neutral.600"}
+              >
+                Horizon
+              </Text>
             </Heading>
           </ChakraLink>
           {isPrototype ? (
