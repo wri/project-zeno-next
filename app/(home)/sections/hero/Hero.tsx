@@ -308,7 +308,7 @@ export default function LandingHero({
                 <Badge size="xs" fontSize="8px" rounded="4px" mr="1">
                   PREVIEW
                 </Badge>
-                Global Nature Watch is
+                Global Nature Watch Horizon is
                 {LANDING_PAGE_VERSION === "closed"
                   ? " in closed preview."
                   : LANDING_PAGE_VERSION === "limited"
