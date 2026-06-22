@@ -73,7 +73,7 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message: `**Welcome to Global Nature Watch!**
+      message: `**Welcome to Global Nature Watch Horizon!**
 
 Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
 

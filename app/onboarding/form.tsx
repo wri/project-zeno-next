@@ -25,7 +25,6 @@ import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch"
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
-import LclLogo from "../components/LclLogo";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { apiFetch } from "@/app/lib/api-client";
 
@@ -301,13 +300,11 @@ export default function OnboardingForm() {
       <Container maxW="3xl">
         <Flex justifyContent="space-between" mb={12}>
           <Flex gap="2" alignItems="center">
-            <LclLogo
-              width={16}
-              avatarOnly
-              fill="var(--chakra-colors-primary-fg)"
-            />
-            <Heading as="h1" size="md" color="primary.fg">
-              Global Nature Watch
+            <Heading m={0} as="h1" size="md" color="primary.fg">
+              Global Nature Watch{" "}
+              <Text as="span" fontWeight="normal">
+                Horizon
+              </Text>
             </Heading>
             <Badge
               colorPalette="primary"
@@ -331,14 +328,14 @@ export default function OnboardingForm() {
         <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
           Complete your{" "}
           <Text as="span" fontWeight="bold">
-            Global Nature Watch
+            Global Nature Watch Horizon
           </Text>{" "}
           user profile
         </Heading>
         <Text color="fg.muted" fontSize="sm" mb={10}>
-          We use this information to make Global Nature Watch more useful to
-          you. This tool is experimental, and knowing you better helps us
-          improve. Features may change or be removed over time.
+          We use this information to make Global Nature Watch Horizon more
+          useful to you. This tool is experimental, and knowing you better helps
+          us improve. Features may change or be removed over time.
         </Text>
         <form onSubmit={handleSubmit}>
           <Grid
