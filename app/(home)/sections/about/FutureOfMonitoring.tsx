@@ -18,7 +18,7 @@ export default function FutureOfMonitoringSection() {
       >
         <Container textAlign="center" maxW="2xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            About Global Nature Watch
+            About Global Nature Watch Horizon
           </Heading>
           <Text fontSize="lg" mb="4">
             We&apos;re making environmental geospatial data faster, more
@@ -120,8 +120,8 @@ export default function FutureOfMonitoringSection() {
               </Heading>
               <Text fontSize="lg" mb="4">
                 With so much geospatial data available, it can be hard to know
-                where to start. Global Nature Watch places the power of a
-                personal geospatial assistant in your pocket. AI trained on
+                where to start. Global Nature Watch Horizon places the power of
+                a personal geospatial assistant in your pocket. AI trained on
                 peer-reviewed datasets helps both experts and newcomers
                 navigate, analyze and apply insights.
               </Text>
@@ -182,8 +182,9 @@ export default function FutureOfMonitoringSection() {
               </Heading>
               <Text fontSize="lg" mb="4">
                 We believe the future of monitoring is open, scalable and
-                integrative. That&apos;s why Global Nature Watch will be able to
-                connect with your own systems, extending the power of your data.
+                integrative. That&apos;s why Global Nature Watch Horizon will be
+                able to connect with your own systems, extending the power of
+                your data.
               </Text>
             </Box>
             <Box
