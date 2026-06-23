@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import ChatPanel from "@/app/ChatPanel";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
+import DataCatalogPanel from "@/app/components/DataCatalogPanel";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import WhatsNewModal from "@/app/components/WhatsNewModal";
@@ -47,6 +48,17 @@ export default function DashboardLayout({
       display={{ base: "none", md: "block" }}
     >
       <Map />
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        left={0}
+        zIndex={1095}
+        pointerEvents="none"
+        display={{ base: "none", md: "block" }}
+      >
+        <DataCatalogPanel />
+      </Box>
       <Box
         position="absolute"
         top={0}

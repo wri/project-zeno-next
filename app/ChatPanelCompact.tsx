@@ -9,8 +9,10 @@ import ChatPanelHeader from "./ChatPanelHeader";
 import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
 import PromptQuotaNotice from "./PromptQuotaNotice";
 import { chatPanelCardStyle } from "./chatPanelShared";
+import { getCompactChatLeftPx } from "./explorationLayout";
 import { usePromptQuota } from "./hooks/usePromptQuota";
 import useChatStore from "./store/chatStore";
+import useSidebarStore from "./store/sidebarStore";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // Intentionally narrower than the full-size panel (see FULLSIZE_PANEL_WIDTH).
@@ -36,6 +38,8 @@ interface ChatPanelCompactProps {
 function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
   const { promptsExhausted } = usePromptQuota();
   const { messages } = useChatStore();
+  const { dataCatalogOpen } = useSidebarStore();
+  const chatLeftPx = getCompactChatLeftPx(dataCatalogOpen);
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
   );
@@ -97,7 +101,8 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
       h="100%"
       pt={2}
       pb={1}
-      pl={{ base: 0, md: 3 }}
+      pl={{ base: 0, md: `${chatLeftPx}px` }}
+      transition="padding-left 0.2s ease-in-out"
       pointerEvents="none"
     >
       <Flex

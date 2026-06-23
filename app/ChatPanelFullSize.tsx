@@ -9,6 +9,7 @@ import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
 import PromptQuotaNotice from "./PromptQuotaNotice";
 import { chatPanelCardStyle } from "./chatPanelShared";
 import { usePromptQuota } from "./hooks/usePromptQuota";
+import useSidebarStore from "./store/sidebarStore";
 
 // Intentionally wider than the compact panel (see COMPACT_PANEL_WIDTH).
 const FULLSIZE_PANEL_WIDTH = 428;
@@ -19,6 +20,7 @@ interface ChatPanelFullSizeProps {
 
 function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
   const { promptsExhausted } = usePromptQuota();
+  const { dataCatalogOpen } = useSidebarStore();
 
   return (
     <Flex
@@ -28,6 +30,7 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
       h="100%"
       w={{ base: "full", md: `${FULLSIZE_PANEL_WIDTH}px` }}
       {...chatPanelCardStyle}
+      borderRightWidth={{ base: 0, md: dataCatalogOpen ? 0 : "1px" }}
       pointerEvents="auto"
     >
       <ChatPanelHeader

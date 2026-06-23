@@ -16,6 +16,7 @@ import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import useContextStore from "../store/contextStore";
+import useSidebarStore from "../store/sidebarStore";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
@@ -49,10 +50,19 @@ export default function ChatInput({
   const { sendMessage, isLoading, cancelRequest, abortController, messages } =
     useChatStore();
   const { context, removeContext } = useContextStore();
+  const { dataCatalogOpen, toggleDataCatalog } = useSidebarStore();
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
     setContextModalOpen(true);
+  };
+
+  const openLayerPicker = () => {
+    if (isMobile) {
+      openContextMenu("layer");
+      return;
+    }
+    toggleDataCatalog();
   };
 
   const handleContextModalOpenChange = (e: { open: boolean }) => {
@@ -171,8 +181,11 @@ export default function ChatInput({
         <Flex gap="2">
           <ContextButton
             contextType="layer"
-            onClick={() => openContextMenu("layer")}
+            onClick={openLayerPicker}
             disabled={disabled}
+            borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
+            color={dataCatalogOpen ? "primary.solid" : undefined}
+            aria-expanded={dataCatalogOpen}
           />
           <ContextButton
             contextType="area"
@@ -280,9 +293,10 @@ export default function ChatInput({
               contextType="layer"
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
-                openContextMenu("layer");
+                openLayerPicker();
               }}
               disabled={disabled}
+              aria-expanded={dataCatalogOpen}
             />
             <ContextButton
               contextType="area"
