@@ -9,14 +9,16 @@ import ChatPanelHeader from "./ChatPanelHeader";
 import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
 import PromptQuotaNotice from "./PromptQuotaNotice";
 import { chatPanelCardStyle } from "./chatPanelShared";
-import { getCompactChatLeftPx } from "./explorationLayout";
+import {
+  COMPACT_CHAT_PANEL_WIDTH_PX,
+  getCompactChatLeftPx,
+} from "./explorationLayout";
 import { usePromptQuota } from "./hooks/usePromptQuota";
 import useChatStore from "./store/chatStore";
 import useSidebarStore from "./store/sidebarStore";
 import { useState, useEffect, useRef, useCallback } from "react";
 
-// Intentionally narrower than the full-size panel (see FULLSIZE_PANEL_WIDTH).
-const PANEL_WIDTH = 400;
+// Intentionally narrower than the full-size panel (see FULLSIZE_CHAT_PANEL_WIDTH_PX).
 
 // Cap the scrollable message list at ~50vh per design (~440px on a 900px-tall
 // viewport). The compact panel is bottom-anchored and grows upward, so when the
@@ -27,7 +29,7 @@ const MESSAGES_MAX_VH = 0.5;
 const DISCLAIMER_CLEARANCE = 12; // px of breathing room below the disclaimer
 
 const cardStyle = {
-  w: { base: "full", md: `${PANEL_WIDTH}px` } as const,
+  w: { base: "full", md: `${COMPACT_CHAT_PANEL_WIDTH_PX}px` } as const,
   ...chatPanelCardStyle,
 };
 
@@ -108,7 +110,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
       <Flex
         flexDir="column"
         gap="0.5"
-        w={{ base: "full", md: `${PANEL_WIDTH}px` }}
+        w={{ base: "full", md: `${COMPACT_CHAT_PANEL_WIDTH_PX}px` }}
         pointerEvents="auto"
       >
         {/* Top card: header + content */}

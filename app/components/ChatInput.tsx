@@ -296,7 +296,11 @@ export default function ChatInput({
                 openLayerPicker();
               }}
               disabled={disabled}
-              aria-expanded={dataCatalogOpen}
+              aria-expanded={
+                isMobile
+                  ? contextModalOpen && selectedContextType === "layer"
+                  : dataCatalogOpen
+              }
             />
             <ContextButton
               contextType="area"

@@ -63,9 +63,7 @@ describe("filterDatasetsByCategory", () => {
 describe("data catalog show-on-map wiring (contextStore ↔ mapStore)", () => {
   beforeEach(() => {
     useContextStore.getState().reset();
-    // mapStore has no global reset; remove any leftover dataset layers.
-    const ids = useMapStore.getState().layers.map((l) => l.id);
-    ids.forEach((id) => useMapStore.getState().removeLayer(id));
+    useMapStore.getState().reset();
   });
 
   it("adds a dataset layer to the map when a card is toggled on", () => {
