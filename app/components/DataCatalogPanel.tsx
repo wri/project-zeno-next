@@ -13,11 +13,12 @@ import {
   Wrap,
   useDisclosure,
 } from "@chakra-ui/react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   CircleHalfIcon,
   EyeIcon,
   EyeSlashIcon,
-  StackSimpleIcon,
+  StackPlusIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
@@ -44,6 +45,12 @@ import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { DataCatalogCard } from "./DataCatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
 import { Tooltip } from "./ui/tooltip";
+
+/** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
+const catalogPanelSlideTransition = {
+  duration: 0.2,
+  ease: "easeInOut",
+} as const;
 
 /** Scrollable list chrome: vertical scroll without visible scrollbars. */
 const catalogListScrollStyle = {
@@ -93,106 +100,143 @@ export default function DataCatalogPanel() {
     [category, activeDatasetIds]
   );
 
-  if (!dataCatalogOpen) {
-    return null;
-  }
+  const compactSlide = !isChatFullSize;
 
   return (
-    <Flex
-      position="absolute"
-      top={0}
-      bottom={0}
-      left={`${leftPx}px`}
-      w={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
-      minW={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
-      maxW={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
-      flexShrink={0}
-      zIndex={1095}
-      flexDirection="column"
-      pointerEvents="auto"
-      display={{ base: "none", md: "flex" }}
-      {...chatPanelCardStyle}
-      borderLeftWidth={{ base: 0, md: isChatFullSize ? "1px" : 0 }}
-      borderLeftColor="border.emphasized"
-      borderRadius={{
-        base: 0,
-        md: isChatFullSize ? "0 sm sm 0" : "sm",
-      }}
-    >
-      <Flex
-        flexShrink={0}
-        justifyContent="space-between"
-        alignItems="center"
-        px={3}
-        pt={6}
-        pb={3}
-        gap={2}
-      >
-        <Flex align="center" gap={2} minW={0}>
-          <StackSimpleIcon size={18} />
-          <Text
-            fontWeight="semibold"
-            fontSize="xs"
-            letterSpacing="0.08em"
-            textTransform="uppercase"
-            m={0}
+    <AnimatePresence>
+      {dataCatalogOpen && (
+        <motion.div
+          key="data-catalog-panel"
+          initial={compactSlide ? { opacity: 0, x: -16 } : false}
+          animate={{ opacity: 1, x: 0 }}
+          exit={compactSlide ? { opacity: 0, x: -16 } : { opacity: 0 }}
+          transition={catalogPanelSlideTransition}
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: leftPx,
+            zIndex: 1095,
+            pointerEvents: "auto",
+          }}
+        >
+          <Flex
+            h="100%"
+            w={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
+            minW={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
+            maxW={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
+            flexShrink={0}
+            flexDirection="column"
+            display={{ base: "none", md: "flex" }}
+            {...chatPanelCardStyle}
+            borderLeftWidth={{ base: 0, md: isChatFullSize ? "1px" : 0 }}
+            borderLeftColor="border.emphasized"
+            borderRadius={{
+              base: 0,
+              md: isChatFullSize ? "0 sm sm 0" : "sm",
+            }}
           >
-            Data catalog
-          </Text>
-        </Flex>
-        <IconButton
-          aria-label="Close data catalog"
-          variant="ghost"
-          size="xs"
-          onClick={() => setDataCatalogOpen(false)}
-        >
-          <XIcon size={16} />
-        </IconButton>
-      </Flex>
-      <Flex
-        flex={1}
-        minH={0}
-        minW={0}
-        flexDirection="column"
-        gap={3}
-        px={3}
-        pb={6}
-        overflow="hidden"
-      >
-        <Wrap gap={2} flexShrink={0} overflow="hidden">
-          {DATASET_CATEGORIES.map((cat) => (
-            <Button
-              key={cat.id}
-              size="xs"
-              variant={category === cat.id ? "solid" : "outline"}
-              colorPalette="primary"
-              borderRadius="full"
-              onClick={() => setCategory(cat.id)}
+            <Flex
+              flexShrink={0}
+              h="40px"
+              py="4px"
+              px={3}
+              justifyContent="space-between"
+              alignItems="center"
+              borderBottom="1px solid"
+              borderColor="#E0E2E5"
             >
-              {cat.label}
-            </Button>
-          ))}
-        </Wrap>
-        <Stack
-          gap={3}
-          flex={1}
-          minH={0}
-          minW={0}
-          pb={2}
-          css={catalogListScrollStyle}
-        >
-          {cards.length === 0 ? (
-            <Text fontSize="sm" color="fg.muted" mt={4}>
-              No datasets in this category yet.
-            </Text>
-          ) : (
-            cards.map((card) => (
-              <DataCatalogCardRow key={card.dataset_id} card={card} />
-            ))
-          )}
-        </Stack>
-      </Flex>
-    </Flex>
+              <Flex alignItems="center" gap="8px" minW={0}>
+                <StackPlusIcon size={16} color="#0049AA" />
+                <Text
+                  fontSize="10px"
+                  fontWeight="400"
+                  fontFamily="mono"
+                  lineHeight="16px"
+                  letterSpacing="0.03em"
+                  textTransform="uppercase"
+                  color="#656E7B"
+                  m={0}
+                >
+                  Data catalog
+                </Text>
+              </Flex>
+              <IconButton
+                aria-label="Close data catalog"
+                variant="ghost"
+                size="2xs"
+                p={0}
+                minW="16px"
+                h="16px"
+                w="16px"
+                color="#656E7B"
+                onClick={() => setDataCatalogOpen(false)}
+              >
+                <XIcon size={12} />
+              </IconButton>
+            </Flex>
+            <Flex
+              flex={1}
+              minH={0}
+              minW={0}
+              flexDirection="column"
+              gap={4}
+              pt={4}
+              px={3}
+              pb={6}
+              overflow="hidden"
+            >
+              <Wrap gap={1} flexShrink={0} overflow="hidden">
+                {DATASET_CATEGORIES.map((cat) => {
+                  const isActive = category === cat.id;
+                  return (
+                    <Button
+                      key={cat.id}
+                      h="24px"
+                      minH="24px"
+                      py="4px"
+                      px="8px"
+                      borderRadius="full"
+                      fontSize="12px"
+                      fontWeight="400"
+                      lineHeight="16px"
+                      bg={isActive ? "fg.link" : "neutral.300"}
+                      color={isActive ? "white" : "fg"}
+                      border="1px solid"
+                      borderColor={isActive ? "fg.link" : "neutral.300"}
+                      _hover={{
+                        bg: isActive ? "fg.link" : "neutral.400",
+                      }}
+                      onClick={() => setCategory(cat.id)}
+                    >
+                      {cat.label}
+                    </Button>
+                  );
+                })}
+              </Wrap>
+              <Stack
+                gap={4}
+                flex={1}
+                minH={0}
+                minW={0}
+                pb={2}
+                css={catalogListScrollStyle}
+              >
+                {cards.length === 0 ? (
+                  <Text fontSize="sm" color="fg.muted" mt={4}>
+                    No datasets in this category yet.
+                  </Text>
+                ) : (
+                  cards.map((card) => (
+                    <DataCatalogCardRow key={card.dataset_id} card={card} />
+                  ))
+                )}
+              </Stack>
+            </Flex>
+          </Flex>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

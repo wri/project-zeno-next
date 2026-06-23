@@ -32,7 +32,10 @@ import useContextStore from "../store/contextStore";
 import { BasemapSelector } from "./map/BasemapSelector";
 import { ScaleBar } from "./map/ScaleBar";
 import useSidebarStore from "../store/sidebarStore";
-import { getMapControlsLeftPx } from "../explorationLayout";
+import {
+  getMapAreaToolsLeftPx,
+  getMapControlsLeftPx,
+} from "../explorationLayout";
 import { FeatureRef } from "../store/layerManagerSlice";
 
 function Wrapper({
@@ -90,6 +93,7 @@ function MapAreaControls({
   const { addContext } = useContextStore();
   const { isChatFullSize, dataCatalogOpen } = useSidebarStore();
   const mapControlsLeft = `${getMapControlsLeftPx(isChatFullSize, dataCatalogOpen)}px`;
+  const mapAreaToolsLeft = `${getMapAreaToolsLeftPx(isChatFullSize, dataCatalogOpen)}px`;
 
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
   const [showTools, setShowTools] = useState(false);
@@ -231,7 +235,7 @@ function MapAreaControls({
       <Flex
         ml={{
           base: 0,
-          md: dataCatalogOpen || isChatFullSize ? mapControlsLeft : 0,
+          md: dataCatalogOpen || isChatFullSize ? mapAreaToolsLeft : 0,
         }}
       >
         <Button

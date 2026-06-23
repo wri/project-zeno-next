@@ -42,3 +42,29 @@ export function getMapControlsLeftPx(
     EXPLORATION_PANEL_GAP_PX
   );
 }
+
+/**
+ * Left margin for the top area-tool buttons (upload, select, draw).
+ * In compact mode the chat is bottom-anchored, so when the catalog is open
+ * these tools sit beside the catalog column — not past the shifted chat panel.
+ * `MapAreaControls` applies `COMPACT_CHAT_INSET_PX` via wrapper padding in
+ * compact mode, so this value is net of that inset.
+ */
+export function getMapAreaToolsLeftPx(
+  isChatFullSize: boolean,
+  isDataCatalogOpen: boolean
+): number {
+  if (!isChatFullSize && isDataCatalogOpen) {
+    return (
+      DATA_CATALOG_PANEL_WIDTH_PX +
+      EXPLORATION_PANEL_GAP_PX -
+      COMPACT_CHAT_INSET_PX
+    );
+  }
+
+  if (isChatFullSize || isDataCatalogOpen) {
+    return getMapControlsLeftPx(isChatFullSize, isDataCatalogOpen);
+  }
+
+  return 0;
+}

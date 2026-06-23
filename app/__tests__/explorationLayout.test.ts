@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   getCompactChatLeftPx,
   getDataCatalogLeftPx,
+  getMapAreaToolsLeftPx,
   getMapControlsLeftPx,
 } from "@/app/explorationLayout";
 
@@ -29,6 +30,18 @@ describe("explorationLayout", () => {
 
   it("offsets map controls past the pushed compact chat when the catalog is open", () => {
     expect(getMapControlsLeftPx(false, true)).toBe(816);
+  });
+
+  it("offsets area tools beside the catalog when compact chat and catalog are open", () => {
+    expect(getMapAreaToolsLeftPx(false, true)).toBe(396);
+  });
+
+  it("keeps area tools flush left when compact chat is open without catalog", () => {
+    expect(getMapAreaToolsLeftPx(false, false)).toBe(0);
+  });
+
+  it("offsets area tools past the full-size chat when the catalog is closed", () => {
+    expect(getMapAreaToolsLeftPx(true, false)).toBe(436);
   });
 
   it("offsets map controls past the full-size chat when the catalog is closed", () => {
