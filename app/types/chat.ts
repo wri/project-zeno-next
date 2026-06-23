@@ -141,6 +141,10 @@ export interface StreamMessage {
   codeact_parts?: CodeActPart[];
   source_urls?: string[];
   insight_count?: number;
+  // Names of the tools an AI message is about to call. The agent announces a
+  // tool call before its result streams back, so this is the earliest signal
+  // that e.g. an insight is being generated.
+  tool_calls?: string[];
   timestamp: string;
   start_date?: string;
   end_date?: string;
