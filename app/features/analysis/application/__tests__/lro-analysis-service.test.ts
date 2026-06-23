@@ -27,7 +27,7 @@ const STUB_RESULT = { id: "insight-456", charts: [] };
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 class NoopClock implements Clock {
-  wait(_secs: number): Promise<void> {
+  wait(): Promise<void> {
     return Promise.resolve();
   }
 }
@@ -225,9 +225,7 @@ describe("LROAnalysisService", () => {
       },
     };
     const gateway = makeGateway({
-      poll: vi
-        .fn()
-        .mockResolvedValue({ status: "pending", retryAfterSecs: 5 }),
+      poll: vi.fn().mockResolvedValue({ status: "pending", retryAfterSecs: 5 }),
     });
     const service = new LROAnalysisService(gateway, abortingClock);
 

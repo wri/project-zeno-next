@@ -59,7 +59,10 @@ const DEFAULT_RETRY_AFTER_SECS = 5;
 export class RestAnalysisGateway implements AnalysisGateway {
   constructor(private readonly fetch: FetchFn = apiFetch) {}
 
-  async submit(selection: AnalysisSelection, signal?: AbortSignal): Promise<JobRef> {
+  async submit(
+    selection: AnalysisSelection,
+    signal?: AbortSignal
+  ): Promise<JobRef> {
     const response = await this.fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -159,7 +162,10 @@ export class RestAnalysisGateway implements AnalysisGateway {
     return { status: body.status, retryAfterSecs };
   }
 
-  async fetchResult(resourceUrl: string, signal?: AbortSignal): Promise<AnalysisResult> {
+  async fetchResult(
+    resourceUrl: string,
+    signal?: AbortSignal
+  ): Promise<AnalysisResult> {
     const response = await this.fetch(resourceUrl, { signal });
 
     if (!response.ok) {

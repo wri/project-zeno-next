@@ -25,11 +25,13 @@ export class LROAnalysisService implements AnalysisService {
     private readonly timeoutSecs: number = DEFAULT_TIMEOUT_SECS
   ) {}
 
-  async run(selection: AnalysisSelection, signal?: AbortSignal): Promise<AnalysisResult> {
+  async run(
+    selection: AnalysisSelection,
+    signal?: AbortSignal
+  ): Promise<AnalysisResult> {
     const job = await this.gateway.submit(selection, signal);
     let waitedSecs = 0;
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const outcome = await this.gateway.poll(job.id, signal);
 

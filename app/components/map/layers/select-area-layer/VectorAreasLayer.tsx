@@ -213,6 +213,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 metadata
               );
               setAnalysis(areaSelection);
+
               if (analysisEnabled) {
                 selectArea(areaSelection, {
                   lng: e.lngLat.lng,
