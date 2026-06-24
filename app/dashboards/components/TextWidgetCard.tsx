@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Flex, Text, Button, Textarea } from "@chakra-ui/react";
+import { Box, Flex, Text, IconButton, Textarea } from "@chakra-ui/react";
 import {
   ArrowsOutCardinalIcon,
   ArrowsOutIcon,
   ArrowsInIcon,
   PencilSimpleIcon,
+  CheckIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/app/components/ui/tooltip";
@@ -49,29 +50,38 @@ export default function TextWidgetCard({
       overflow="hidden"
       h="100%"
     >
-      {/* Toolbar */}
-      <Flex px={2} py={1.5} align="center" justify="space-between">
+      {/* Toolbar — icon-only controls, matching the insight cards */}
+      <Flex
+        px={2}
+        py={1.5}
+        align="center"
+        justify="flex-end"
+        gap={0.5}
+        color="neutral.500"
+      >
         <Tooltip content="Drag to reorder" showArrow>
-          <Button
-            size="xs"
+          <IconButton
+            aria-label="Drag to reorder"
+            size="2xs"
             variant="ghost"
-            color="fg.muted"
-            gap={1}
             cursor="grab"
             onMouseDown={arrange?.onMouseDown}
             onMouseUp={arrange?.onMouseUp}
           >
             <ArrowsOutCardinalIcon size={14} />
-            Arrange
-          </Button>
+          </IconButton>
         </Tooltip>
-        <Flex gap={1}>
-          {onToggleExpand && (
-            <Button
-              size="xs"
+        {onToggleExpand && (
+          <Tooltip
+            content={
+              expanded ? "Collapse to one column" : "Expand to full width"
+            }
+            showArrow
+          >
+            <IconButton
+              aria-label="Toggle width"
+              size="2xs"
               variant="ghost"
-              color="fg.muted"
-              gap={1}
               onClick={onToggleExpand}
             >
               {expanded ? (
@@ -79,31 +89,27 @@ export default function TextWidgetCard({
               ) : (
                 <ArrowsOutIcon size={14} />
               )}
-              {expanded ? "Collapse" : "Expand"}
-            </Button>
-          )}
-          <Button
-            size="xs"
+            </IconButton>
+          </Tooltip>
+        )}
+        <Tooltip content={editing ? "Save" : "Edit"} showArrow>
+          <IconButton
+            aria-label={editing ? "Save note" : "Edit note"}
+            size="2xs"
             variant="ghost"
-            color="fg.muted"
-            gap={1}
             onClick={editing ? commit : startEdit}
           >
-            <PencilSimpleIcon size={14} />
-            {editing ? "Save" : "Edit"}
-          </Button>
-          <Button
-            size="xs"
-            variant="ghost"
-            color="fg.muted"
-            gap={1}
-            _hover={{ bg: "bg.error", color: "fg.error" }}
-            onClick={onDelete}
-          >
-            <TrashIcon size={14} />
-            Delete
-          </Button>
-        </Flex>
+            {editing ? <CheckIcon size={14} /> : <PencilSimpleIcon size={14} />}
+          </IconButton>
+        </Tooltip>
+        <IconButton
+          aria-label="Remove note"
+          size="2xs"
+          variant="ghost"
+          onClick={onDelete}
+        >
+          <TrashIcon size={14} />
+        </IconButton>
       </Flex>
 
       {/* Body */}
