@@ -30,7 +30,7 @@ import "@/app/theme/popup.css";
 // alongside the live analyse nudge. toAreaSelection (areaHelpers) returns the
 // same shape both consumers need, so it's reused for both.
 import { isFeatureEnabled } from "@/app/lib/feature-flags";
-import useSelectionStore from "@/app/features/analysis/ui/selection-store";
+import { useSelectionStore } from "@/src/features/analysis";
 
 interface SourceLayerProps {
   layerId: LayerId;
