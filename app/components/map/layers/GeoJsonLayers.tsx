@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
-import { Tag } from "@chakra-ui/react";
+import { Box, Tag } from "@chakra-ui/react";
+import AoiActionsMenu from "@/app/dashboards/components/AoiActionsMenu";
 import { ChatContextOptions } from "../../ContextButton";
 import {
   Feature,
@@ -361,8 +362,16 @@ function GeoJsonLayerGroup({
               </Tag.StartElement>
             )}
             <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
-            {isInContext && (
-              <Tag.EndElement>
+            <Tag.EndElement>
+              {/* "…" actions for this AOI (Create dashboard, etc.) */}
+              <Box
+                as="span"
+                display="inline-flex"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <AoiActionsMenu name={displayName} />
+              </Box>
+              {isInContext && (
                 <Tag.CloseTrigger
                   opacity={isHovered ? 1 : 0.25}
                   cursor="pointer"
@@ -373,8 +382,8 @@ function GeoJsonLayerGroup({
                   }}
                   aria-label="Remove from context"
                 />
-              </Tag.EndElement>
-            )}
+              )}
+            </Tag.EndElement>
           </Tag.Root>
         </Marker>
       )}
