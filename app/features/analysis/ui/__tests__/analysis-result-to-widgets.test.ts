@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { AnalysisResult } from "../../domain/analysis-result";
 import { analysisResultToWidgets } from "../analysis-result-to-widgets";
 
+// Not `as const`: that widens array literals to `readonly`, which isn't
+// assignable to ChartDTO's mutable `seriesFields: string[]` / `data[]`.
 const baseChart = {
   id: "c1",
   position: 0,
@@ -15,7 +17,7 @@ const baseChart = {
   groupField: "",
   seriesFields: ["value"],
   data: [{ year: "2020", value: 100 }],
-} as const;
+};
 
 describe("analysisResultToWidgets", () => {
   it("returns an empty array when there are no charts", () => {

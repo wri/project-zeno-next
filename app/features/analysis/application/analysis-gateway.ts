@@ -42,5 +42,8 @@ export interface AnalysisGateway {
   poll(jobId: string, signal?: AbortSignal): Promise<PollOutcome>;
 
   /** Retrieves the completed analysis result at the given resource reference. */
-  fetchResult(resourceUrl: string, signal?: AbortSignal): Promise<AnalysisResult>;
+  fetchResult(
+    resourceUrl: string,
+    signal?: AbortSignal
+  ): Promise<AnalysisResult>;
 }

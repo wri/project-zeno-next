@@ -12,5 +12,8 @@ export interface AnalysisService {
    * If `signal` is aborted before the analysis completes, the returned promise
    * rejects with a `DOMException` whose `name` is `"AbortError"`.
    */
-  run(selection: AnalysisSelection, signal?: AbortSignal): Promise<AnalysisResult>;
+  run(
+    selection: AnalysisSelection,
+    signal?: AbortSignal
+  ): Promise<AnalysisResult>;
 }

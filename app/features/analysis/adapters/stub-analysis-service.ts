@@ -12,7 +12,10 @@ export class StubAnalysisService implements AnalysisService {
   // in the browser. Tests pass 0 (or use fake timers) to stay fast.
   constructor(private readonly delayMs: number = 1000) {}
 
-  async run(selection: AnalysisSelection, signal?: AbortSignal): Promise<AnalysisResult> {
+  async run(
+    selection: AnalysisSelection,
+    signal?: AbortSignal
+  ): Promise<AnalysisResult> {
     await new Promise<void>((resolve, reject) => {
       if (signal?.aborted) {
         reject(new DOMException("Aborted", "AbortError"));
