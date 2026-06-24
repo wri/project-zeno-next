@@ -26,6 +26,7 @@ export interface ChatMessage {
     | "warning"
     | "dataset-nudge"
     | "analyse-nudge"
+    | "dashboard-nudge"
     | "stopped";
   message: string;
   timestamp: string;
@@ -33,6 +34,7 @@ export interface ChatMessage {
   aoiSelection?: AOISelection; // For area-card messages
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
+  dashboardSuggestion?: { areaName: string }; // For dashboard-nudge messages
   context?: ContextItem[];
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond

@@ -52,6 +52,7 @@ interface ChatActions {
   ) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   acceptAnalyseNudge: (messageId: string) => void;
+  upsertDashboardNudge: (areaName: string) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -310,6 +311,26 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             }
           : m
       ),
+    }));
+  },
+
+  // Surfaces a single "create a dashboard for this area" nudge. Idempotent for
+  // the same area; replaced when the area changes.
+  upsertDashboardNudge: (areaName) => {
+    const pending = get().messages.find((m) => m.type === "dashboard-nudge");
+    if (pending?.dashboardSuggestion?.areaName === areaName) return;
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "dashboard-nudge",
+      message: "",
+      dashboardSuggestion: { areaName },
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter((m) => m.type !== "dashboard-nudge"),
+        newMessage,
+      ],
     }));
   },
 
