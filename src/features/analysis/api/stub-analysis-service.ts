@@ -1,6 +1,6 @@
-import type { AnalysisService } from "../application/analysis-service";
-import type { AnalysisSelection } from "../domain/analysis-selection";
-import type { AnalysisResult } from "../domain/analysis-result";
+import type { AnalysisService } from "../model/analysis-service";
+import type { AnalysisSelection } from "../model/analysis-selection";
+import type { AnalysisResult } from "../model/analysis-result";
 
 /**
  * TEMPORARY stand-in for the real application service. Lets the feature be

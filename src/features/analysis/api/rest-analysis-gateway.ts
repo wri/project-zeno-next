@@ -4,11 +4,11 @@ import type {
   JobRef,
   JobResource,
   PollOutcome,
-} from "../application/analysis-gateway";
-import type { AnalysisSelection } from "../domain/analysis-selection";
-import type { AnalysisResult } from "../domain/analysis-result";
-import type { ChartDTO } from "../domain/chart-dto";
-import { AnalysisError } from "../domain/analysis-error";
+} from "../model/analysis-gateway";
+import type { AnalysisSelection } from "../model/analysis-selection";
+import type { AnalysisResult } from "../model/analysis-result";
+import type { ChartDTO } from "../model/chart-dto";
+import { AnalysisError } from "../model/analysis-error";
 
 // ── Raw API shapes (anti-corruption layer — never leave this file) ─────────────
 

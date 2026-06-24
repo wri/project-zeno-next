@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AnalysisResult } from "../../domain/analysis-result";
+import type { AnalysisResult } from "../../model/analysis-result";
 import { analysisResultToWidgets } from "../analysis-result-to-widgets";
 
 // Not `as const`: that widens array literals to `readonly`, which isn't

@@ -1,4 +1,4 @@
-import type { AnalysisResult } from "../domain/analysis-result";
+import type { AnalysisResult } from "../model/analysis-result";
 import type { InsightWidget } from "@/app/types/chat";
 
 /**

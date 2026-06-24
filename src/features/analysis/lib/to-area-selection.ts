@@ -1,6 +1,6 @@
 import { getAoiName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
 import { LayerId, selectLayerOptions } from "@/app/types/map";
-import type { AreaSelection } from "../domain/area-selection";
+import type { AreaSelection } from "../model/area-selection";
 
 /** Metadata the backend supplies for resolving ids/subtypes per layer. */
 export interface SelectionMetadata {

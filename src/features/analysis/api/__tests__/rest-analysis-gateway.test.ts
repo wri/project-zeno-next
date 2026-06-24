@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { RestAnalysisGateway } from "../rest-analysis-gateway";
-import type { AnalysisSelection } from "../../domain/analysis-selection";
+import type { AnalysisSelection } from "../../model/analysis-selection";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

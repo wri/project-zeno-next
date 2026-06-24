@@ -1,4 +1,4 @@
-import type { Clock } from "../application/clock";
+import type { Clock } from "../model/clock";
 
 /**
  * Driven adapter for timed waiting. Uses the real global timer so tests
