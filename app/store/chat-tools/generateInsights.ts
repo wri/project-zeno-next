@@ -6,6 +6,7 @@ import {
   DatasetInfo,
 } from "@/app/types/chat";
 import useContextStore from "../contextStore";
+import useMapStore from "../mapStore";
 import useInsightStore from "../insightStore";
 
 interface ChartData {
@@ -35,6 +36,13 @@ export function generateInsightsTool(
       // analysis. Prefer it over contextStore, which is updated asynchronously
       // by pickAoiTool/etc. and may not yet reflect this turn's choices.
       const context = useContextStore.getState().context;
+      // The active dataset is the visible main dataset layer (skip context
+      // sub-layers). Stream data still wins; this is the fallback source.
+      const datasetLayer = useMapStore
+        .getState()
+        .layers.find(
+          (l) => typeof l.datasetId === "number" && !l.parentLayerId
+        );
       const dataset = streamMessage.dataset as DatasetInfo | undefined;
       const analysisParams: AnalysisParams = {};
 
@@ -57,21 +65,20 @@ export function generateInsightsTool(
         analysisParams.areas = [areaItem.content];
       }
 
-      const layerItem = context.find((c) => c.contextType === "layer");
       if (dataset?.dataset_name) {
         analysisParams.dataset = dataset.dataset_name;
-      } else if (layerItem?.layerName) {
-        analysisParams.dataset = layerItem.layerName;
+      } else if (datasetLayer?.name) {
+        analysisParams.dataset = datasetLayer.name;
       }
 
       if (typeof dataset?.threshold === "number") {
         analysisParams.canopyThreshold = dataset.threshold;
-      } else if (typeof layerItem?.parameters?.canopy_cover === "number") {
-        analysisParams.canopyThreshold = layerItem.parameters.canopy_cover;
+      } else if (typeof datasetLayer?.parameters?.canopy_cover === "number") {
+        analysisParams.canopyThreshold = datasetLayer.parameters.canopy_cover;
       }
 
-      const startStr = streamMessage.start_date ?? layerItem?.startDate;
-      const endStr = streamMessage.end_date ?? layerItem?.endDate;
+      const startStr = streamMessage.start_date ?? datasetLayer?.startDate;
+      const endStr = streamMessage.end_date ?? datasetLayer?.endDate;
       if (startStr && endStr) {
         const startYear = new Date(startStr).getUTCFullYear();
         const endYear = new Date(endStr).getUTCFullYear();

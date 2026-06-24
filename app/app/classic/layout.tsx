@@ -22,7 +22,7 @@ import { LayerMenu } from "@/app/components/ContextMenu";
 
 import { Legend } from "@/app/components/legend/Legend";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
-import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
 
 export default function ClassicLayout() {
   const isReady = useAuthGuard();
@@ -82,9 +82,12 @@ export default function ClassicLayout() {
 }
 
 function LayerDialog() {
-  const { context, removeContext } = useContextStore();
-  const activeItems = context.filter((c) => c.contextType === "layer");
-  const selectedItems = activeItems.length;
+  const { layers, removeLayer } = useMapStore();
+  // Count datasets, not their context sub-layers (parentLayerId set).
+  const datasetLayers = layers.filter(
+    (l) => typeof l.datasetId === "number" && !l.parentLayerId
+  );
+  const selectedItems = datasetLayers.length;
 
   return (
     <Dialog.Root
@@ -134,7 +137,10 @@ function LayerDialog() {
                 ml="auto"
                 disabled={!selectedItems}
                 onClick={() => {
-                  activeItems.forEach((item) => removeContext(item.id));
+                  // Remove every dataset layer, including context sub-layers.
+                  layers
+                    .filter((l) => typeof l.datasetId === "number")
+                    .forEach((l) => removeLayer(l.id));
                 }}
               >
                 Clear all

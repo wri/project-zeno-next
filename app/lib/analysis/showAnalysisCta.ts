@@ -1,5 +1,5 @@
 import useChatStore from "@/app/store/chatStore";
-import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
 import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
 
@@ -15,18 +15,18 @@ import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
 export function showAnalysisCta(selection: AnalysisSelection): boolean {
   if (!selection.name) return false;
 
-  const datasetContext = useContextStore
+  // A visible dataset layer IS the active dataset. Skip context sub-layers
+  // (parentLayerId set) so we read the main dataset, not its sub-layer.
+  const datasetLayer = useMapStore
     .getState()
-    .context.find(
-      (ctx) => ctx.contextType === "layer" && typeof ctx.datasetId === "number"
-    );
-  if (!datasetContext) return false;
+    .layers.find((l) => typeof l.datasetId === "number" && !l.parentLayerId);
+  if (!datasetLayer) return false;
 
-  const datasetId = datasetContext.datasetId!;
+  const datasetId = datasetLayer.datasetId!;
   // Prefer the canonical catalogue name — it matches what sendMessage puts in
   // ui_context.dataset_selected — and fall back to the layer's display name.
   const datasetName =
-    DATASET_BY_ID[datasetId]?.dataset_name ?? datasetContext.layerName;
+    DATASET_BY_ID[datasetId]?.dataset_name ?? datasetLayer.name;
   if (!datasetName) return false;
 
   // Idempotent for the live pending nudge: the reactive trigger re-runs on

@@ -214,14 +214,11 @@ export function useLegendHook() {
 
       switch (action) {
         case "remove":
-          const ctx = context.find(
-            (c) =>
-              c.contextType === "layer" &&
-              `dataset-${c.datasetId}` === payload.id
-          );
-          if (ctx) {
-            removeContext(ctx.id);
-          }
+          // The visible layer IS the scope — removing it is the only mutation.
+          // Also drop any context sub-layers parented to this dataset layer.
+          managedLayers
+            .filter((l) => l.parentLayerId === payload.id)
+            .forEach((l) => removeLayer(l.id));
           removeLayer(payload.id);
           break;
         case "opacity":
@@ -229,7 +226,7 @@ export function useLegendHook() {
           break;
       }
     },
-    [context, removeContext, removeLayer, setLayerOpacity, reorderLayers]
+    [managedLayers, removeLayer, setLayerOpacity, reorderLayers]
   );
 
   return { layers, handleLayerAction, aois, handleRemoveAoi };

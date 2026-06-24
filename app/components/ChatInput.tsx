@@ -16,6 +16,7 @@ import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import useContextStore from "../store/contextStore";
+import useMapStore from "../store/mapStore";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
@@ -49,6 +50,21 @@ export default function ChatInput({
   const { sendMessage, isLoading, cancelRequest, abortController, messages } =
     useChatStore();
   const { context, removeContext } = useContextStore();
+  const { layers, removeLayer } = useMapStore();
+
+  // Dataset pills are derived from the visible dataset layers (the scope),
+  // excluding context sub-layers. Area/date pills still come from contextStore
+  const datasetPillLayers = layers.filter(
+    (l) => typeof l.datasetId === "number" && !l.parentLayerId
+  );
+  const nonLayerContext = context.filter((c) => c.contextType !== "layer");
+
+  // Removing a dataset pill removes the layer and any context sub-layers.
+  const removeDatasetLayer = (datasetId: number) => {
+    layers
+      .filter((l) => l.datasetId === datasetId)
+      .forEach((l) => removeLayer(l.id));
+  };
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -110,7 +126,7 @@ export default function ChatInput({
         : "Or describe what you want to explore…";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
-  const hasContext = context.length > 0;
+  const hasPills = datasetPillLayers.length > 0 || nonLayerContext.length > 0;
 
   // The core UI of the chat input is defined here so it can be reused
   // for both the desktop view and within the mobile modal.
@@ -132,9 +148,18 @@ export default function ChatInput({
           : undefined
       }
     >
-      {hasContext && (
+      {hasPills && (
         <Flex gap={1} wrap="wrap" mb={1}>
-          {context.map((c) => (
+          {datasetPillLayers.map((l) => (
+            <ContextTag
+              key={l.id}
+              contextType="layer"
+              content={l.name}
+              onClose={() => removeDatasetLayer(l.datasetId!)}
+              closeable
+            />
+          ))}
+          {nonLayerContext.map((c) => (
             <ContextTag
               key={c.id}
               contextType={c.contextType as ChatContextType}

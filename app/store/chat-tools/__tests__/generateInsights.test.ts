@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-// contextStore imports a React component (ContextButton) — mock to avoid JSX
-// in the node test environment
+// contextStore imports a React component (ContextButton) and mapStore's import
+// chain reaches the Chakra toaster (.tsx) — mock both to avoid JSX in the node
+// test environment.
 vi.mock("@/app/store/contextStore", () => ({
   default: { getState: () => ({ context: [] }) },
+}));
+
+vi.mock("@/app/store/mapStore", () => ({
+  default: { getState: () => ({ layers: [] }) },
 }));
 
 import { generateInsightsTool } from "../generateInsights";
