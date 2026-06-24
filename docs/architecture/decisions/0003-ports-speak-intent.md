@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-05
+- **Updated:** 2026-06-24 — re-expressed for Feature-Sliced Design (the port is a `model` contract; the adapter lives in the `api` segment). The decision is unchanged.
 
 ## Context
 
@@ -9,7 +10,7 @@ The backend interaction is REST — status codes, `Retry-After`, conditional req
 
 ## Decision
 
-The core depends on a port expressed in domain terms (submit / poll / fetch result). One adapter translates intent to HTTP and is the only place that knows status codes and headers.
+The core (`model`) depends on a port expressed in domain terms (submit / poll / fetch result). One adapter in the `api` segment translates intent to HTTP and is the only place that knows status codes and headers.
 
 ## Why
 

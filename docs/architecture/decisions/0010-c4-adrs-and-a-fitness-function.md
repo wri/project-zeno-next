@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-05
+- **Updated:** 2026-06-24 — the fitness function now asserts the Feature-Sliced Design direction instead of the hexagonal one (the C4/ADR + enforced-seam practice is unchanged).
 
 ## Context
 
@@ -9,7 +10,7 @@ A two-person team wants clean seams that survive change and stay legible to AI a
 
 ## Decision
 
-Architecture is described with Mermaid C4 and concise ADRs kept in-repo, and protected by a fitness function — a dependency-cruiser check run as a vitest test under `tests/architecture` (so it runs in CI, not as an eslint side-effect). It asserts the hexagonal direction: `domain`/`application` import no framework or HTTP, and dependencies point inward.
+Architecture is described with Mermaid C4 and concise ADRs kept in-repo, and protected by a fitness function — a dependency-cruiser check run as a vitest test under `tests/architecture` (so it runs in CI, not as an eslint side-effect). It asserts the FSD direction: `model`/`lib` import no framework or HTTP; within a slice imports point `ui → model → api/lib` (and `api` never imports `ui`); across layers the order `shared < entities < features < widgets < pages < app` holds (a lower layer never imports a higher one).
 
 ## Why
 

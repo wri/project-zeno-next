@@ -8,7 +8,7 @@ This folder is the source of truth for that design, kept in-repo so both the tea
 
 ## The one invariant
 
-> **The core (domain + application) never imports React, Next, or HTTP.** Adapters depend on the core's ports — never the reverse.
+> **The core (`model`) never imports React, Next, or HTTP.** `api`/`lib` depend on `model`'s ports — never the reverse; cross-slice imports go only through the slice's public API (`index.ts`).
 
 This is enforced as a build-time fitness function, not a guideline. If you only remember one thing, remember this.
 
@@ -16,11 +16,11 @@ This is enforced as a build-time fitness function, not a guideline. If you only 
 
 Rendered Mermaid sources (`.mermaid`):
 
-| File                                                                         | Shows                                                                                                                                        |
-| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| [diagrams/c4-component.mermaid](diagrams/c4-component.mermaid)               | The components and how they wire together — driving adapters, the framework-free core, driven adapters, and the shared presentation surface. |
-| [diagrams/class-hexagonal.mermaid](diagrams/class-hexagonal.mermaid)         | The hexagonal structure — ports as interfaces, the service depending only on them, adapters realizing them.                                  |
-| [diagrams/sequence-happy-path.mermaid](diagrams/sequence-happy-path.mermaid) | The happy path end to end: select → submit → poll → result → widgets → workspace.                                                            |
+| File                                                                         | Shows                                                                                                                                                         |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [diagrams/c4-component.mermaid](diagrams/c4-component.mermaid)               | The components and how they wire together — the `ui` segment, the framework-free `model` core, the `api`/`lib` adapters, and the shared presentation surface. |
+| [diagrams/class-fsd-slice.mermaid](diagrams/class-fsd-slice.mermaid)         | The slice structure — ports as interfaces in `model`, the service depending only on them, `api`/`lib` adapters realizing them.                                |
+| [diagrams/sequence-happy-path.mermaid](diagrams/sequence-happy-path.mermaid) | The happy path end to end: select → submit → poll → result → widgets → workspace.                                                                             |
 
 ## Decisions (the _why_)
 

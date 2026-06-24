@@ -1,8 +1,12 @@
+%% Feature-Sliced Design view of the `analysis` slice.
+%% Segments: model (types, ports, service, store) · lib (pure helpers) ·
+%% api (backend adapters) · ui (React edge + composition root).
+%% Imports point down: ui -> model + api + lib; api -> model + lib; lib -> model.
 classDiagram
     direction LR
 
     class AreaSelection {
-        <<value object>>
+        <<model · value object>>
         +name string
         +srcId string
         +subtype string
@@ -11,29 +15,29 @@ classDiagram
         +geometryRef GeometryRef
     }
     class AnalysisRequest {
-        <<value object>>
+        <<model · value object>>
         +params AnalysisParams
         +requestKey string
     }
     class AnalysisHandle {
-        <<value object>>
+        <<model · value object>>
         +pollUri string
         +retryAfterMs number
     }
     class AnalysisStatus {
-        <<value object>>
+        <<model · value object>>
         +state PendingOrSucceededOrFailed
         +retryAfterMs number
         +resultUri string
     }
     class AnalysisResult {
-        <<value object>>
+        <<model · value object>>
         +charts List~ChartDTO~
         +params AnalysisParams
         +resultId string
     }
     class AnalysisState {
-        <<discriminated union — FSM>>
+        <<model · discriminated union — FSM>>
         Idle
         Submitting
         Polling
@@ -44,22 +48,22 @@ classDiagram
     }
 
     class AnalysisGateway {
-        <<interface · port>>
+        <<model · port>>
         +submit(req AnalysisRequest) Promise~AnalysisHandle~
         +poll(handle AnalysisHandle) Promise~AnalysisStatus~
         +fetchResult(uri string) Promise~AnalysisResult~
     }
     class Clock {
-        <<interface · port>>
+        <<model · port>>
         +wait(ms number) Promise~void~
     }
     class TelemetrySink {
-        <<interface · port>>
+        <<model · port>>
         +record(t AnalysisTransition) void
     }
 
     class AnalysisService {
-        <<application service · core>>
+        <<model · service>>
         -gateway AnalysisGateway
         -clock Clock
         -telemetry TelemetrySink
@@ -68,32 +72,32 @@ classDiagram
         +cancel() void
     }
     class RequestKey {
-        <<pure domain>>
+        <<model · pure>>
         +of(params AnalysisParams) string
     }
 
     class RestAnalysisGateway {
-        <<driven adapter>>
+        <<api · adapter>>
     }
     class SystemClock {
-        <<driven adapter>>
+        <<lib · adapter>>
     }
     class FaroTelemetry {
-        <<driven adapter · planned>>
+        <<api · adapter · planned>>
     }
 
     class useAnalysis {
-        <<driving adapter · hook>>
+        <<ui · hook · composition root>>
         +run(selection) void
         +cancel() void
         +state AnalysisState
     }
     class toAreaSelection {
-        <<driving adapter · ACL>>
+        <<lib · ACL>>
         +from(features, config, meta) AreaSelection
     }
     class analysisResultToWidgets {
-        <<presentation ACL>>
+        <<lib · ACL>>
         +from(result AnalysisResult) List~InsightWidget~
     }
 

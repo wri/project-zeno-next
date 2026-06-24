@@ -5,32 +5,38 @@ C4Component
 
     Container_Boundary(fe, "Next.js Frontend") {
 
-        Boundary(drive, "Driving adapters — React / MapLibre", "boundary") {
+        Boundary(consumer, "app — map (consumer of the slice)", "boundary") {
             Component(map, "VectorAreasLayer (GADM)", "react-map-gl", "Map click → toAreaSelection()")
-            Component(xsel, "toAreaSelection()", "pure translator · ACL", "map feature → AreaSelection")
-            Component(selstore, "selectionStore", "zustand", "ephemeral { selection, lngLat }")
-            Component(cta, "AnalysisCTA", "react-map-gl Popup", "geo-anchored; persists until terminal")
-            Component(hook, "useAnalysis", "React hook", "run(selection)/cancel; surfaces state")
         }
 
-        Boundary(core, "Domain + Application — framework-free (fitness-guarded)", "boundary") {
-            Component(svc, "AnalysisService", "TS app service", "LRO FSM: submit→poll→terminal; in-flight dedup; honors Retry-After")
-            Component(idk, "RequestKey / normalization", "pure domain", "params → content hash")
+        Boundary(ui, "features/analysis · ui", "boundary") {
+            Component(cta, "AnalysisCTA", "react-map-gl Popup", "geo-anchored; persists until terminal")
+            Component(hook, "useAnalysis", "React hook · composition root", "run(selection)/cancel; surfaces state")
+        }
+
+        Boundary(model, "features/analysis · model — framework-free (fitness-guarded)", "boundary") {
+            Component(selstore, "selectionStore", "zustand", "ephemeral { selection, lngLat }")
+            Component(svc, "AnalysisService", "TS service", "LRO FSM: submit→poll→terminal; in-flight dedup; honors Retry-After")
+            Component(idk, "RequestKey / normalization", "pure", "params → content hash")
             Component(port, "AnalysisGateway", "port · interface", "submit / poll / fetchResult")
             Component(clkp, "Clock", "port", "wait()")
             Component(telp, "TelemetrySink", "port · planned", "record(event)")
         }
 
-        Boundary(driven, "Driven adapters", "boundary") {
-            Component(rest, "RestAnalysisGateway", "fetch · ACL", "intent→HTTP: 202+pollUri, Retry-After, 303→result, If-None-Match")
+        Boundary(libseg, "features/analysis · lib — pure helpers", "boundary") {
+            Component(xsel, "toAreaSelection()", "pure translator · ACL", "map feature → AreaSelection")
+            Component(xwid, "analysisResultToWidgets()", "pure presentation ACL", "AnalysisResult → InsightWidget[] (+ first-class analysisParams)")
             Component(clk, "SystemClock", "setTimeout", " ")
+        }
+
+        Boundary(apiseg, "features/analysis · api — backend adapters", "boundary") {
+            Component(rest, "RestAnalysisGateway", "fetch · ACL", "intent→HTTP: 202+pollUri, Retry-After, 303→result, If-None-Match")
             Component(faro, "FaroTelemetry", "Grafana Faro · planned", " ")
         }
 
-        Boundary(pres, "Presentation surface — shared with chat", "boundary") {
-            Component(xwid, "analysisResultToWidgets()", "pure presentation ACL", "AnalysisResult → InsightWidget[] (+ first-class analysisParams)")
-            Component(instore, "insightStore", "zustand", "addInsights(widgets) — append, no dedup (deferred)")
-            Component(ws, "InsightWorkspace / WidgetMessage", "React", "renders InsightWidget[] — reused untouched")
+        Boundary(pres, "Presentation surface — shared app layer (chat + analysis)", "boundary") {
+            Component(instore, "insightStore", "zustand · app", "addInsights(widgets) — append, no dedup (deferred)")
+            Component(ws, "InsightWorkspace / WidgetMessage", "React · app", "renders InsightWidget[] — reused untouched")
         }
     }
 

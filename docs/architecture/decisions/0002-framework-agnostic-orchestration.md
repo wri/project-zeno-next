@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-05
+- **Updated:** 2026-06-24 — re-expressed for Feature-Sliced Design (the service lives in the slice's `model` segment; the hook in `ui`). The decision is unchanged.
 
 ## Context
 
@@ -9,7 +10,7 @@ The long-running flow adds polling, cancellation, and timing — stateful logic 
 
 ## Decision
 
-The lifecycle is a plain TypeScript application service driving an explicit state machine. A thin React hook binds it to the UI.
+The lifecycle is a plain TypeScript service driving an explicit state machine, living in the feature's `model` segment (framework-free). A thin React hook in the `ui` segment binds it to the UI.
 
 ## Why
 
