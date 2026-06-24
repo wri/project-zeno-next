@@ -1,0 +1,60 @@
+C4Component
+    title C4 Component — GADM selection → analysis (LRO) → insight convergence
+
+    Person(user, "User", "Selects a political boundary")
+
+    Container_Boundary(fe, "Next.js Frontend") {
+
+        Boundary(drive, "Driving adapters — React / MapLibre", "boundary") {
+            Component(map, "VectorAreasLayer (GADM)", "react-map-gl", "Map click → toAreaSelection()")
+            Component(xsel, "toAreaSelection()", "pure translator · ACL", "map feature → AreaSelection")
+            Component(selstore, "selectionStore", "zustand", "ephemeral { selection, lngLat }")
+            Component(cta, "AnalysisCTA", "react-map-gl Popup", "geo-anchored; persists until terminal")
+            Component(hook, "useAnalysis", "React hook", "run(selection)/cancel; surfaces state")
+        }
+
+        Boundary(core, "Domain + Application — framework-free (fitness-guarded)", "boundary") {
+            Component(svc, "AnalysisService", "TS app service", "LRO FSM: submit→poll→terminal; in-flight dedup; honors Retry-After")
+            Component(idk, "RequestKey / normalization", "pure domain", "params → content hash")
+            Component(port, "AnalysisGateway", "port · interface", "submit / poll / fetchResult")
+            Component(clkp, "Clock", "port", "wait()")
+            Component(telp, "TelemetrySink", "port · planned", "record(event)")
+        }
+
+        Boundary(driven, "Driven adapters", "boundary") {
+            Component(rest, "RestAnalysisGateway", "fetch · ACL", "intent→HTTP: 202+pollUri, Retry-After, 303→result, If-None-Match")
+            Component(clk, "SystemClock", "setTimeout", " ")
+            Component(faro, "FaroTelemetry", "Grafana Faro · planned", " ")
+        }
+
+        Boundary(pres, "Presentation surface — shared with chat", "boundary") {
+            Component(xwid, "analysisResultToWidgets()", "pure presentation ACL", "AnalysisResult → InsightWidget[] (+ first-class analysisParams)")
+            Component(instore, "insightStore", "zustand", "addInsights(widgets) — append, no dedup (deferred)")
+            Component(ws, "InsightWorkspace / WidgetMessage", "React", "renders InsightWidget[] — reused untouched")
+        }
+    }
+
+    Container_Ext(edge, "CDN edge + browser HTTP cache", "Cache-Control + ETag", " ")
+    System_Ext(api, "Analysis Service", "backend you own — version knowledge, mints result URLs")
+    System_Ext(faroBe, "Grafana / Faro / Tempo", "planned")
+
+    Rel(user, map, "click boundary")
+    Rel(map, xsel, "features + meta")
+    Rel(map, selstore, "select(selection, lngLat)")
+    Rel(selstore, cta, "subscribe")
+    Rel(cta, hook, "Analyze → run(selection)")
+    Rel(hook, svc, "run / cancel")
+    Rel(svc, idk, "request key")
+    Rel(svc, port, "submit / poll / fetchResult")
+    Rel(svc, clkp, "wait(Retry-After)")
+    Rel(svc, telp, "emit transitions")
+    Rel(rest, port, "implements")
+    Rel(clk, clkp, "implements")
+    Rel(faro, telp, "implements")
+    Rel(hook, xwid, "result → widgets")
+    Rel(xwid, instore, "addInsights")
+    Rel(instore, ws, "subscribe")
+    Rel(rest, edge, "GET result (cacheable)")
+    Rel(rest, api, "POST submit · GET poll")
+    Rel(edge, api, "cache miss → origin")
+    Rel(faro, faroBe, "ship spans")
