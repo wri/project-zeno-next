@@ -36,6 +36,7 @@ import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import type { Feature, MultiPolygon } from "geojson";
 import { getLayerContextFromDatasetCard } from "../utils/datasetCardLayerContext";
+import { buildDatasetLayers } from "../utils/datasetLayerContext";
 
 const LAYER_CARDS = DATASET_CARDS;
 
@@ -80,29 +81,27 @@ function LayerCardList({
 }: {
   cards: (DatasetCardConfig & { img?: string })[];
 }) {
-  const { context, upsertContextByType, removeContext } = useContextStore();
+  const { layers, addLayer, removeLayer } = useMapStore();
 
   function handleToggle(card: DatasetCardConfig & { img?: string }) {
-    const existing = context.find(
-      (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
-    );
-    if (existing) {
-      removeContext(existing.id);
-    } else {
-      upsertContextByType({
-        contextType: "layer",
-        ...getLayerContextFromDatasetCard(card),
-        isAiContext: false,
-      });
+    const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
+    // Single-dataset selection: clear any existing dataset layers, then add the
+    // clicked one — unless it was already selected, in which case this is a
+    // toggle-off. The visible layer IS the scope (no separate context item).
+    layers
+      .filter((l) => typeof l.datasetId === "number")
+      .forEach((l) => removeLayer(l.id));
+    if (!isSelected) {
+      buildDatasetLayers(getLayerContextFromDatasetCard(card)).forEach(
+        addLayer
+      );
     }
   }
 
   return (
     <Stack minH={0} overflowY="auto">
       {cards.map((card) => {
-        const isSelected = context.some(
-          (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
-        );
+        const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
         return (
           // flexShrink={0} pins the card height in the scrollable list so the
           // 80px thumbnail stays square instead of being squished on overflow.

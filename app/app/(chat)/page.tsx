@@ -8,6 +8,7 @@ import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
+import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
 
 const DEFAULT_LANDING_DATASET_ID = 4;
 
@@ -17,12 +18,8 @@ function NewThread() {
     sendMessage,
     currentThreadId,
   } = useChatStore();
-  const {
-    reset: resetContextStore,
-    upsertContextByType,
-    context,
-  } = useContextStore();
-  const { reset: resetMapStore } = useMapStore();
+  const { reset: resetContextStore } = useContextStore();
+  const { reset: resetMapStore, addLayer, layers } = useMapStore();
   const searchParams = useSearchParams();
   const [hasMounted, setHasMounted] = useState(false);
   const defaultLayerSeededRef = useRef(false);
@@ -42,8 +39,8 @@ function NewThread() {
   useEffect(() => {
     if (defaultLayerSeededRef.current) return;
 
-    const hasLayerContext = context.some((c) => c.contextType === "layer");
-    if (hasLayerContext) {
+    const hasDatasetLayer = layers.some((l) => typeof l.datasetId === "number");
+    if (hasDatasetLayer) {
       defaultLayerSeededRef.current = true;
       return;
     }
@@ -53,13 +50,11 @@ function NewThread() {
     );
     if (!defaultCard) return;
 
-    upsertContextByType({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(defaultCard),
-      isAiContext: false,
-    });
+    buildDatasetLayers(getLayerContextFromDatasetCard(defaultCard)).forEach(
+      addLayer
+    );
     defaultLayerSeededRef.current = true;
-  }, [context, upsertContextByType]);
+  }, [layers, addLayer]);
 
   const submitPrompt = async (prompt: string) => {
     const result = await sendMessage(prompt);
