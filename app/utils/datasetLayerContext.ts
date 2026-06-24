@@ -1,6 +1,70 @@
 import type { DatasetInfo } from "@/app/types/chat";
-import { DATASET_CARDS } from "@/app/constants/datasets";
+import {
+  DATASET_CARDS,
+  CONTEXT_LAYER_METADATA,
+} from "@/app/constants/datasets";
+import type { Layer } from "@/app/store/layerManagerSlice";
 import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
+
+// Minimal description of a dataset's map presence. Produced by the dataset-card
+// / pick_dataset helpers and consumed by buildDatasetLayers — the layer-manager
+// replacement for the old contextStore.addContext side effect.
+export interface DatasetLayerSpec {
+  datasetId: number;
+  layerName?: string;
+  tileUrl?: string;
+  parameters?: Record<string, unknown>;
+  startDate?: string;
+  endDate?: string;
+  contextLayer?: { name: string; tileUrl: string; sourceLayer?: string };
+}
+
+/**
+ * Builds the managed map layers for a dataset: the main raster layer plus an
+ * optional context sub-layer (e.g. Primary Forests beneath Tree Cover Loss).
+ *
+ * Layers are returned main-first so callers can `forEach(addLayer)`: addLayer
+ * appends, so the main layer keeps index 0 and DynamicTileLayers renders it on
+ * top of its context sub-layer. Returns [] when there is no tile URL to render.
+ */
+export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
+  if (!spec.tileUrl) return [];
+
+  const mainLayerId = `dataset-${spec.datasetId}`;
+  const layers: Layer[] = [
+    {
+      id: mainLayerId,
+      name: spec.layerName || String(spec.datasetId),
+      type: "raster",
+      visible: true,
+      tileUrl: spec.tileUrl,
+      datasetId: spec.datasetId,
+      parameters: spec.parameters,
+      startDate: spec.startDate,
+      endDate: spec.endDate,
+    },
+  ];
+
+  if (spec.contextLayer) {
+    const ctx = spec.contextLayer;
+    const isVector = !!ctx.sourceLayer;
+    layers.push({
+      id: `dataset-${spec.datasetId}-ctx-${ctx.name}`,
+      name: ctx.name,
+      type: isVector ? "vector" : "raster",
+      visible: true,
+      tileUrl: ctx.tileUrl,
+      sourceLayer: ctx.sourceLayer,
+      vectorStyle: isVector
+        ? CONTEXT_LAYER_METADATA[ctx.name]?.vectorStyle
+        : undefined,
+      datasetId: spec.datasetId,
+      parentLayerId: mainLayerId,
+    });
+  }
+
+  return layers;
+}
 
 // Route primary forest tiles through the `pf://` protocol so the
 // black-background PNGs render with alpha — see primaryForestTileProtocol.
