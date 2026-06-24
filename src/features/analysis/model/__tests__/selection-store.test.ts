@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import useSelectionStore from "../selection-store";
-import type { AreaSelection } from "../../domain/area-selection";
+import type { AreaSelection } from "../area-selection";
 
 const selection: AreaSelection = {
   name: "Brazil",

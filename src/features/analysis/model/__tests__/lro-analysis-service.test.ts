@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { LROAnalysisService } from "../lro-analysis-service";
 import type { AnalysisGateway, JobResource } from "../analysis-gateway";
 import type { Clock } from "../clock";
-import type { AnalysisSelection } from "../../domain/analysis-selection";
+import type { AnalysisSelection } from "../analysis-selection";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

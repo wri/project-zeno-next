@@ -1,5 +1,5 @@
-import type { AnalysisSelection } from "../domain/analysis-selection";
-import type { AnalysisResult } from "../domain/analysis-result";
+import type { AnalysisSelection } from "./analysis-selection";
+import type { AnalysisResult } from "./analysis-result";
 
 /**
  * The driving port the UI calls. The real implementation — the LRO state

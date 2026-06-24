@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AreaSelection } from "../domain/area-selection";
+import type { AreaSelection } from "./area-selection";
 
 export interface LngLat {
   lng: number;

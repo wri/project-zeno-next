@@ -1,8 +1,8 @@
 import type { AnalysisService } from "./analysis-service";
 import type { AnalysisGateway } from "./analysis-gateway";
 import type { Clock } from "./clock";
-import type { AnalysisSelection } from "../domain/analysis-selection";
-import type { AnalysisResult } from "../domain/analysis-result";
+import type { AnalysisSelection } from "./analysis-selection";
+import type { AnalysisResult } from "./analysis-result";
 
 /** Stop polling once the sum of Retry-After values exceeds this many seconds. */
 const DEFAULT_TIMEOUT_SECS = 60;
