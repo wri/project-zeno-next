@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AnalysisService } from "../application/analysis-service";
-import type { AnalysisSelection } from "../domain/analysis-selection";
-import type { AnalysisResult } from "../domain/analysis-result";
-import { LROAnalysisService } from "../application/lro-analysis-service";
-import { RestAnalysisGateway } from "../adapters/rest-analysis-gateway";
-import { SystemClock } from "../adapters/system-clock";
-import { analysisResultToWidgets } from "./analysis-result-to-widgets";
-import type { InsightSink } from "./insight-sink";
+import type { AnalysisService } from "../model/analysis-service";
+import type { AnalysisSelection } from "../model/analysis-selection";
+import type { AnalysisResult } from "../model/analysis-result";
+import { LROAnalysisService } from "../model/lro-analysis-service";
+import { RestAnalysisGateway } from "../api/rest-analysis-gateway";
+import { SystemClock } from "../lib/system-clock";
+import { analysisResultToWidgets } from "../lib/analysis-result-to-widgets";
+import type { InsightSink } from "../model/insight-sink";
 import useInsightStore from "@/app/store/insightStore";
 
 // ── Composition root ──────────────────────────────────────────────────────────

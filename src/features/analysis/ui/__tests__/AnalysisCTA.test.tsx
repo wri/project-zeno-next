@@ -9,7 +9,7 @@ vi.mock("react-map-gl/maplibre", () => ({
   Popup: ({ children }: { children: ReactNode }) => children,
 }));
 
-import useSelectionStore from "../selection-store";
+import useSelectionStore from "../../model/selection-store";
 import { AnalysisCTA } from "../AnalysisCTA";
 
 const renderCTA = (ui: ReactElement) =>

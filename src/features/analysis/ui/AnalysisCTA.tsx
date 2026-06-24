@@ -1,6 +1,6 @@
 "use client";
 import { Popup } from "react-map-gl/maplibre";
-import useSelectionStore from "./selection-store";
+import useSelectionStore from "../model/selection-store";
 import { useAnalysis } from "./use-analysis";
 import { AnalysisCTAContent } from "./AnalysisCTAContent";
 
