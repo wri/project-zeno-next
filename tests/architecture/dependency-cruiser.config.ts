@@ -1,72 +1,76 @@
 /**
  * Architecture fitness function — see ADR 0010 (docs/architecture/decisions).
  *
- * Encodes the hexagonal dependency direction for `features/analysis`. Consumed
- * by `architecture.test.ts` through dependency-cruiser's `cruise()` API, so it
- * runs inside the normal `vitest` suite (and therefore CI) — no separate step.
+ * Encodes the Feature-Sliced Design (FSD) dependency direction for
+ * `src/features/analysis`. Consumed by `architecture.test.ts` through
+ * dependency-cruiser's `cruise()` API, so it runs inside the normal `vitest`
+ * suite (and therefore CI) — no separate step.
  *
- * Rings, dependencies pointing inward only:
- *   domain      → (nothing)
- *   application → domain
- *   adapters    → domain, application            (driven; never ui)
- *   ui          → domain, application, adapters   (driving side / composition root)
+ * Segment direction (imports point "down" only):
+ *   model  → (model only)                  pure core: types, ports, orchestrator, store
+ *   lib    → model                         pure helpers / generic impls
+ *   api    → model, lib                    backend adapters (HTTP allowed)
+ *   ui     → model, api, lib               React edge + composition root
+ *
+ * Cross-slice imports must go through the slice's public API (`index.ts`).
  *
  * Limitation: dependency-cruiser sees the import graph, not global calls. The
  * `fetch()` / `XMLHttpRequest` guard lives as a source scan in the test file.
  */
 
-const FEATURE = "^app/features/analysis";
+const FEATURE = "^src/features/analysis";
 
-// Matches the leaf `node_modules/<pkg>/` even through pnpm's `.pnpm` store.
-const FRAMEWORK_PKGS =
+// Frameworks the pure core (model/lib) must not touch. `zustand` is
+// intentionally NOT listed — a state library is acceptable in `model` (stores).
+const FORBIDDEN_PKGS_CORE =
   "node_modules/(react|react-dom|next|maplibre-gl|react-map-gl|terra-draw|" +
-  "zustand|@chakra-ui|@ark-ui|@tanstack|framer-motion|motion)(/|$)";
+  "@chakra-ui|@ark-ui|@tanstack|framer-motion|motion)(/|$)";
 
 export const forbidden = [
   {
-    name: "domain-is-innermost",
+    name: "model-is-core",
     comment:
-      "ADR 0002: domain is pure — no application, adapters, ui, framework, or app state.",
+      "FSD: model is the pure core — no ui/api/lib, no React/Next/map, no app store.",
     severity: "error",
-    from: { path: `${FEATURE}/domain` },
+    from: { path: `${FEATURE}/model` },
     to: {
       path: [
-        `${FEATURE}/(application|adapters|ui)`,
-        FRAMEWORK_PKGS,
+        `${FEATURE}/(ui|api|lib)`,
+        FORBIDDEN_PKGS_CORE,
         "^app/store",
         "^app/config/api",
       ],
     },
   },
   {
-    name: "application-stays-pure",
+    name: "lib-is-pure",
     comment:
-      "ADR 0002/0003: application orchestrates domain via ports — no framework, adapters, ui, or app state.",
+      "FSD: lib holds pure helpers — may use model, never ui/api or framework.",
     severity: "error",
-    from: { path: `${FEATURE}/application` },
+    from: { path: `${FEATURE}/lib` },
     to: {
       path: [
-        `${FEATURE}/(adapters|ui)`,
-        FRAMEWORK_PKGS,
+        `${FEATURE}/(ui|api)`,
+        FORBIDDEN_PKGS_CORE,
         "^app/store",
         "^app/config/api",
       ],
     },
+  },
+  {
+    name: "api-is-ui-blind",
+    comment: "A backend adapter must not import the screen (ui).",
+    severity: "error",
+    from: { path: `${FEATURE}/api` },
+    to: { path: `${FEATURE}/ui` },
   },
   {
     name: "core-makes-no-http",
     comment:
-      "ADR 0003: domain/application reach the backend only through the injected gateway port.",
+      "model/lib reach the backend only through the injected gateway port (implemented in api).",
     severity: "error",
-    from: { path: `${FEATURE}/(domain|application)` },
+    from: { path: `${FEATURE}/(model|lib)` },
     to: { dependencyTypes: ["core"], path: "^(http|https|http2|net|tls|dns)$" },
-  },
-  {
-    name: "adapters-are-ui-blind",
-    comment: "A driven adapter must not know the screen.",
-    severity: "error",
-    from: { path: `${FEATURE}/adapters` },
-    to: { path: `${FEATURE}/ui` },
   },
 ];
 

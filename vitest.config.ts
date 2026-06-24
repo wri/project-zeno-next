@@ -19,12 +19,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
-      include: ["app/**/*.{ts,tsx}"],
+      include: ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
       exclude: [
         "app/**/*.test.{ts,tsx}",
         "app/**/layout.tsx",
         "app/**/page.tsx",
         "app/**/not-found.tsx",
+        "src/**/*.test.{ts,tsx}",
       ],
     },
   },
