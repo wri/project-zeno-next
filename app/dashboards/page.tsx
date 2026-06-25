@@ -447,9 +447,11 @@ function DashboardListRow({ dashboard }: { dashboard: Dashboard }) {
             }}
           />
         ) : (
-          <Text fontWeight="medium" lineClamp={1}>
-            {dashboard.title}
-          </Text>
+          <Tooltip content={dashboard.title} showArrow openDelay={300}>
+            <Text fontWeight="medium" lineClamp={1} maxW="420px">
+              {dashboard.title}
+            </Text>
+          </Tooltip>
         )}
       </Table.Cell>
 
@@ -626,22 +628,29 @@ export default function DashboardsGalleryPage() {
   return (
     <Container maxW="6xl" py={10}>
       {/* Header: title + counter + view switcher */}
-      <Flex align="center" gap={3} mb={5} wrap="wrap">
-        <Flex align="center" gap={3}>
-          <Heading size="lg" lineHeight="1">
-            My dashboards
-          </Heading>
+      <Flex align="center" justify="space-between" gap={3} mb={5} wrap="wrap">
+        {/* Counter is an inline child of the heading with verticalAlign middle,
+            so it centers against the heading's x-height (its optical centre)
+            using the heading's own font metrics — not the line-box centre,
+            which leading asymmetry pushes below the visible glyphs. */}
+        <Heading size="lg" lineHeight="1">
+          My dashboards
           <Badge
+            as="span"
+            verticalAlign="middle"
+            ml={3}
             variant="surface"
             colorPalette="gray"
             rounded="full"
             px={2.5}
             py={1}
+            fontSize="sm"
+            fontWeight="medium"
           >
             {dashboards.length} / {DASHBOARD_LIMIT}
           </Badge>
-        </Flex>
-        <ButtonGroup ml="auto" size="sm" variant="outline" attached>
+        </Heading>
+        <ButtonGroup size="sm" variant="outline" attached>
           <Button
             aria-label="Card view"
             onClick={() => setView("card")}
