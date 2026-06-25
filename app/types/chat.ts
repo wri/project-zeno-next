@@ -27,6 +27,7 @@ export interface ChatMessage {
     | "dataset-nudge"
     | "analyse-nudge"
     | "dashboard-nudge"
+    | "view-analysis-nudge"
     | "stopped";
   message: string;
   timestamp: string;
@@ -35,6 +36,13 @@ export interface ChatMessage {
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   dashboardSuggestion?: { areaName: string }; // For dashboard-nudge messages
+  // For view-analysis-nudge messages — the area to run the default analysis on.
+  viewAnalysisSuggestion?: {
+    name: string;
+    source: string;
+    srcId?: string;
+    subtype?: string;
+  };
   context?: ContextItem[];
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond

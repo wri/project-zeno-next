@@ -38,6 +38,7 @@ import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
 import AnalyseNudge from "./AnalyseNudge";
 import DashboardNudge from "@/app/dashboards/components/DashboardNudge";
+import ViewAnalysisNudge from "./ViewAnalysisNudge";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -225,6 +226,17 @@ function MessageBubble({
     return (
       <Box my={2}>
         <DashboardNudge areaName={message.dashboardSuggestion.areaName} />
+      </Box>
+    );
+  }
+
+  if (
+    message.type === "view-analysis-nudge" &&
+    message.viewAnalysisSuggestion
+  ) {
+    return (
+      <Box my={2}>
+        <ViewAnalysisNudge area={message.viewAnalysisSuggestion} />
       </Box>
     );
   }

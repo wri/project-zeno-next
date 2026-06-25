@@ -22,6 +22,7 @@ import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
 import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
 import { DashboardCtaTrigger } from "@/app/dashboards/components/DashboardCtaTrigger";
+import { ViewAnalysisCtaTrigger } from "@/app/components/ViewAnalysisCtaTrigger";
 
 export default function DashboardLayout({
   children,
@@ -157,6 +158,7 @@ export default function DashboardLayout({
       <WhatsNewModal />
       <AnalysisCtaTrigger />
       <DashboardCtaTrigger />
+      <ViewAnalysisCtaTrigger />
 
       {!isMobile && <PageHeader />}
       {isMobile ? MobileLayout : DesktopLayout}

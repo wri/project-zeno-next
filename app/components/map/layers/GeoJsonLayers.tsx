@@ -1,12 +1,9 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
-import { Box, Flex, Tag } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
+import { XIcon } from "@phosphor-icons/react";
 import AoiActionsMenu from "@/app/dashboards/components/AoiActionsMenu";
-import {
-  useAnalysis,
-  ViewAnalysisChip,
-  type AreaSelection,
-} from "@/src/features/analysis";
+import { useAnalysis, type AreaSelection } from "@/src/features/analysis";
 import { ChatContextOptions } from "../../ContextButton";
 import {
   Feature,
@@ -239,11 +236,7 @@ function GeoJsonLayerGroup({
   // Default analysis (ported from feat/analysis-enhancements-PZB-957): build the
   // area to analyse from the selection (first AOI for multi-area), run the
   // default TCL analysis on demand, and surface results in the InsightWorkspace.
-  const {
-    status: analysisStatus,
-    error: analysisError,
-    run: runAnalysis,
-  } = useAnalysis();
+  const { status: analysisStatus, run: runAnalysis } = useAnalysis();
   const analysisArea: AreaSelection | null = (() => {
     const aois = layer.aoiSelection?.aois;
     if (aois && aois.length > 0) {
@@ -388,8 +381,7 @@ function GeoJsonLayerGroup({
           />
         </Source>
       )}
-      {/* Single label: chip (name + ×), a separate "…" button, and the
-          "View analysis" nudge — laid out in a row beside the bbox. */}
+      {/* AOI label: a chip (name + ×) and a separate "…" actions button. */}
       {bboxCoords && layer.visible && (
         <Marker
           longitude={bboxCoords[0]}
@@ -402,36 +394,51 @@ function GeoJsonLayerGroup({
             onMouseEnter={() => setHoverState(true)}
             onMouseLeave={() => setHoverState(false)}
           >
-            <Tag.Root
-              colorPalette={isInContext ? "primary" : "gray"}
-              px={2}
-              py={1}
-              size="md"
-              variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
-              roundedBottom="none"
+            {/* Label chip — solid blue when selected, with the × beside the name */}
+            <Flex
+              align="center"
+              gap={2}
+              h="34px"
+              px={3}
+              rounded="md"
+              boxShadow="sm"
               cursor="pointer"
+              bg={isInContext ? "#21509A" : "rgba(255,255,255,0.92)"}
+              color={isInContext ? "#FFFFFF" : "#3A4048"}
+              borderWidth={isInContext ? "0" : "1px"}
+              borderColor="rgba(19,22,25,0.12)"
+              _hover={{ bg: isInContext ? "#1B4382" : "#FFFFFF" }}
               onClick={handleSelectFromLabel}
             >
               {isInContext && (
-                <Tag.StartElement>
+                <Box as="span" display="inline-flex">
                   {ChatContextOptions.area.icon}
-                </Tag.StartElement>
+                </Box>
               )}
-              <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
+              <Text fontSize="sm" fontWeight="medium" lineHeight="1">
+                {displayName}
+              </Text>
               {isInContext && (
-                <Tag.CloseTrigger
+                <Box
+                  as="span"
+                  role="button"
+                  aria-label="Remove from context"
+                  display="inline-flex"
                   cursor="pointer"
+                  opacity={0.85}
+                  _hover={{ opacity: 1 }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRemoveFromContext();
                     setHoverState(false);
                   }}
-                  aria-label="Remove from context"
-                />
+                >
+                  <XIcon size={16} weight="bold" />
+                </Box>
               )}
-            </Tag.Root>
+            </Flex>
 
-            {/* "…" actions for this AOI (Create dashboard, View analysis, etc.) */}
+            {/* Separate "…" actions button (Create dashboard, View analysis, …) */}
             <Box onClick={(e) => e.stopPropagation()}>
               <AoiActionsMenu
                 name={displayName}
@@ -440,17 +447,6 @@ function GeoJsonLayerGroup({
                 onViewAnalysis={analysisArea ? viewAnalysis : undefined}
               />
             </Box>
-
-            {/* "View analysis" nudge for the selected AOI. */}
-            {analysisArea && isInContext && (
-              <Box onClick={(e) => e.stopPropagation()}>
-                <ViewAnalysisChip
-                  status={analysisStatus}
-                  error={analysisError}
-                  onClick={viewAnalysis}
-                />
-              </Box>
-            )}
           </Flex>
         </Marker>
       )}

@@ -9,6 +9,7 @@ import {
   ChartLineIcon,
 } from "@phosphor-icons/react";
 import { toaster } from "@/app/components/ui/toaster";
+import { Tooltip } from "@/app/components/ui/tooltip";
 import { createDashboardForAoi } from "@/app/dashboards/lib/createDashboardForAoi";
 
 /**
@@ -45,17 +46,26 @@ export default function AoiActionsMenu({
 
   return (
     <Menu.Root positioning={{ placement: "top-end" }}>
-      <Menu.Trigger asChild>
-        <IconButton
-          aria-label={`Actions for ${name}`}
-          size="sm"
-          rounded="md"
-          variant={isActive ? "solid" : "subtle"}
-          colorPalette={isActive ? "primary" : "gray"}
-        >
-          <DotsThreeVerticalIcon size={16} />
-        </IconButton>
-      </Menu.Trigger>
+      <Tooltip content="Map actions" variant="dark" showArrow openDelay={200}>
+        <Menu.Trigger asChild>
+          <IconButton
+            aria-label="Map actions"
+            variant="solid"
+            h="34px"
+            minW="34px"
+            w="34px"
+            rounded="md"
+            boxShadow="sm"
+            bg={isActive ? "#21509A" : "rgba(255,255,255,0.92)"}
+            color={isActive ? "#FFFFFF" : "#3A4048"}
+            borderWidth={isActive ? "0" : "1px"}
+            borderColor="rgba(19,22,25,0.12)"
+            _hover={{ bg: isActive ? "#1B4382" : "#FFFFFF" }}
+          >
+            <DotsThreeVerticalIcon size={16} />
+          </IconButton>
+        </Menu.Trigger>
+      </Tooltip>
       <Portal>
         <Menu.Positioner>
           <Menu.Content minW="220px">

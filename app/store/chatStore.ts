@@ -53,6 +53,12 @@ interface ChatActions {
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   acceptAnalyseNudge: (messageId: string) => void;
   upsertDashboardNudge: (areaName: string) => void;
+  upsertViewAnalysisNudge: (area: {
+    name: string;
+    source: string;
+    srcId?: string;
+    subtype?: string;
+  }) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -332,6 +338,36 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         newMessage,
       ],
     }));
+  },
+
+  // "View analysis" nudge — runs the default analysis for the selected area
+  // (same behaviour as the AOI "…" menu). Idempotent per area, and positioned
+  // right after the dashboard nudge so it reads as the second CTA in the chat.
+  upsertViewAnalysisNudge: (area) => {
+    const pending = get().messages.find(
+      (m) => m.type === "view-analysis-nudge"
+    );
+    if (pending?.viewAnalysisSuggestion?.name === area.name) return;
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "view-analysis-nudge",
+      message: "",
+      viewAnalysisSuggestion: area,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => {
+      const rest = state.messages.filter(
+        (m) => m.type !== "view-analysis-nudge"
+      );
+      const afterDashboard = rest.findIndex(
+        (m) => m.type === "dashboard-nudge"
+      );
+      if (afterDashboard === -1) return { messages: [...rest, newMessage] };
+      // Insert immediately after the dashboard nudge (→ second CTA).
+      const next = [...rest];
+      next.splice(afterDashboard + 1, 0, newMessage);
+      return { messages: next };
+    });
   },
 
   generateNewThread: () => {

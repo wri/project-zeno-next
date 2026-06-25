@@ -8,6 +8,5 @@
  * insightStore so they surface in the map's InsightWorkspace.
  */
 export { useAnalysis, type AnalysisStatus } from "./ui/use-analysis";
-export { ViewAnalysisChip } from "./ui/ViewAnalysisChip";
 export type { AreaSelection } from "./model/area-selection";
 export type { AnalysisSelection } from "./model/analysis-selection";
