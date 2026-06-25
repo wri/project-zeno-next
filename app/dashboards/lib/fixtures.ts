@@ -425,6 +425,8 @@ export const DEFAULT_DASHBOARDS: Dashboard[] = [
     subtitle: "Brazil",
     updatedAt: "2026-06-21T09:00:00.000Z",
     badge: "3 new alerts",
+    isPublic: true,
+    tags: ["Forests", "Alerts"],
     widgets: [
       w("parana-intro", {
         kind: "text",
@@ -455,6 +457,7 @@ export const DEFAULT_DASHBOARDS: Dashboard[] = [
     title: "Summer of 2025 wildfires in Spain",
     subtitle: "Spain",
     updatedAt: "2026-08-20T09:00:00.000Z",
+    tags: ["Wildfire", "Carbon"],
     widgets: [
       w("spain-intro", {
         kind: "text",
@@ -481,6 +484,7 @@ export const DEFAULT_DASHBOARDS: Dashboard[] = [
     subtitle: "Democratic Republic of the Congo",
     updatedAt: "2026-05-15T09:00:00.000Z",
     badge: "1 new alert",
+    tags: ["Deforestation", "Drivers"],
     widgets: [
       w("drc-intro", {
         kind: "text",
@@ -521,6 +525,23 @@ const MONTHS = [
   "Nov",
   "Dec",
 ];
+
+/** Faked "alerts data freshness" indicator, deterministic per dashboard id so
+ *  it stays stable across renders without storing a real timestamp. */
+const ALERTS_FRESHNESS = [
+  "12 minutes ago",
+  "1 hour ago",
+  "3 hours ago",
+  "6 hours ago",
+  "yesterday",
+  "2 days ago",
+];
+
+export function fakeAlertsUpdated(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return ALERTS_FRESHNESS[h % ALERTS_FRESHNESS.length];
+}
 
 /**
  * "Updated 2 days ago" for recent past, otherwise an absolute "Updated Aug 20,

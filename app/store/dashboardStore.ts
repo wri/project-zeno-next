@@ -81,6 +81,8 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
       subtitle: partial?.subtitle,
       updatedAt: new Date().toISOString(),
       badge: partial?.badge,
+      isPublic: partial?.isPublic,
+      tags: partial?.tags,
       widgets: partial?.widgets ?? [],
     };
     const dashboards = [dashboard, ...get().dashboards];

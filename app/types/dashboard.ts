@@ -43,5 +43,9 @@ export interface Dashboard {
   updatedAt: string;
   /** Optional status pill, e.g. "3 new alerts". */
   badge?: string;
+  /** Sharing visibility — drives the public/private icon and share dialog. */
+  isPublic?: boolean;
+  /** Free-form labels shown as chips in the gallery list view. */
+  tags?: string[];
   widgets: DashboardWidget[];
 }
