@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import useDashboardStore from "@/app/store/dashboardStore";
+import useInsightStore from "@/app/store/insightStore";
 import { WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { toaster } from "@/app/components/ui/toaster";
@@ -43,7 +44,7 @@ const LIBRARY: { topic: string; insight: InsightWidget }[] = [
   { topic: "Biodiversity", insight: WIDGET_FIXTURES.biodiversityBar },
 ];
 
-const TOPICS = ["All", ...Array.from(new Set(LIBRARY.map((r) => r.topic)))];
+const VERIFIED_TOPICS = Array.from(new Set(LIBRARY.map((r) => r.topic)));
 
 /** Thumbnail icon per chart type. */
 const TYPE_ICON: Record<string, React.ElementType> = {
@@ -209,9 +210,11 @@ function GalleryCard({
 
 function LibraryCard({
   insight,
+  verified,
   onAdd,
 }: {
   insight: InsightWidget;
+  verified: boolean;
   onAdd: () => void;
 }) {
   return (
@@ -228,7 +231,7 @@ function LibraryCard({
         <Thumb type={insight.type} />
         <Flex flex="1 1 auto" minW={0} direction="column" px={4} py={3} gap={2}>
           <Flex justify="space-between" align="center" gap={2}>
-            <TypeLabel verified />
+            <TypeLabel verified={verified} />
             <Tooltip content="Add to this dashboard" showArrow>
               <IconButton
                 aria-label="Add to dashboard"
@@ -288,8 +291,21 @@ export default function DashboardInsightsPanel({
     return true;
   });
 
-  // Detail: verified library filtered by topic (dataset).
-  const filteredLibrary = LIBRARY.filter(
+  // Detail: verified library + any AI-generated insights from the map session
+  // (insightStore is populated by the generate_insights tool and survives
+  // client-side navigation), filtered by topic.
+  const generated = useInsightStore((s) => s.insights);
+  const generatedEntries = generated
+    .filter((i) => i && i.type !== "dataset-card")
+    .map((insight) => ({ topic: "Generated", insight, verified: false }));
+  const verifiedEntries = LIBRARY.map((r) => ({ ...r, verified: true }));
+  const allLibrary = [...generatedEntries, ...verifiedEntries];
+  const topics = [
+    "All",
+    ...(generatedEntries.length ? ["Generated"] : []),
+    ...VERIFIED_TOPICS,
+  ];
+  const filteredLibrary = allLibrary.filter(
     (r) => topic === "All" || r.topic === topic
   );
 
@@ -301,12 +317,12 @@ export default function DashboardInsightsPanel({
       return next;
     });
 
-  const addToDashboard = (insight: InsightWidget) => {
+  const addToDashboard = (insight: InsightWidget, verified: boolean) => {
     if (!dashboardId) return;
     addWidget(dashboardId, {
       kind: "insight",
       span: 1,
-      verified: true,
+      verified,
       insight,
     });
     toaster.create({
@@ -366,7 +382,7 @@ export default function DashboardInsightsPanel({
           // Topic filter + flat list of verified analyses to add
           <>
             <Flex gap={2} mb={3} flexWrap="wrap">
-              {TOPICS.map((t) => (
+              {topics.map((t) => (
                 <FilterPill
                   key={t}
                   active={topic === t}
@@ -377,11 +393,12 @@ export default function DashboardInsightsPanel({
               ))}
             </Flex>
             <Flex flexDir="column" gap={2}>
-              {filteredLibrary.map((r) => (
+              {filteredLibrary.map((r, i) => (
                 <LibraryCard
-                  key={r.insight.title}
+                  key={r.insight.id ?? `${r.topic}-${r.insight.title}-${i}`}
                   insight={r.insight}
-                  onAdd={() => addToDashboard(r.insight)}
+                  verified={r.verified}
+                  onAdd={() => addToDashboard(r.insight, r.verified)}
                 />
               ))}
             </Flex>
