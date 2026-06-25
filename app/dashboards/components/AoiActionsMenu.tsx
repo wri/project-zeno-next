@@ -21,6 +21,7 @@ export default function AoiActionsMenu({
   isActive,
   analyzing,
   onViewAnalysis,
+  getAnchorRect,
 }: {
   name: string;
   /** Selected (in-context) AOI — drives the solid vs subtle trigger styling. */
@@ -29,6 +30,14 @@ export default function AoiActionsMenu({
   analyzing?: boolean;
   /** Runs the default analysis for this AOI. */
   onViewAnalysis?: () => void;
+  /** Anchors the dropdown to a point (e.g. the bbox corner) instead of the
+   *  trigger. Returns a viewport-space rect, or null to fall back to default. */
+  getAnchorRect?: () => {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null;
 }) {
   const router = useRouter();
 
@@ -45,7 +54,12 @@ export default function AoiActionsMenu({
   };
 
   return (
-    <Menu.Root positioning={{ placement: "bottom-start" }}>
+    <Menu.Root
+      positioning={{
+        placement: "bottom-start",
+        ...(getAnchorRect ? { getAnchorRect } : {}),
+      }}
+    >
       <Tooltip content="Map actions" variant="dark" showArrow openDelay={200}>
         <Menu.Trigger asChild>
           <IconButton

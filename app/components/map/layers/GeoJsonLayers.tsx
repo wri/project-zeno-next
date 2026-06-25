@@ -1,5 +1,10 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
+import {
+  Source,
+  Layer as MapLayer,
+  Marker,
+  useMap,
+} from "react-map-gl/maplibre";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import AoiActionsMenu from "@/app/dashboards/components/AoiActionsMenu";
@@ -160,6 +165,7 @@ function GeoJsonLayerGroup({
 }: GeoJsonLayerGroupProps) {
   const { addContext, removeContext } = useContextStore();
   const { isHovered, setHoverState } = useHoverState();
+  const { current: map } = useMap();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
   const displayName = layer.selectionName ?? layer.name;
   const areaInContext = areas.find((a) =>
@@ -274,6 +280,21 @@ function GeoJsonLayerGroup({
     });
   };
 
+  // Anchor the "…" dropdown to the bbox's top-left corner (inset by a small
+  // gap) rather than to the trigger, so the menu opens just inside the box.
+  const GAP = 8;
+  const menuAnchorRect = () => {
+    if (!map || !bboxCoords) return null;
+    const p = map.project([bboxCoords[0], bboxCoords[3]]);
+    const rect = map.getContainer().getBoundingClientRect();
+    return {
+      x: rect.left + p.x + GAP,
+      y: rect.top + p.y + GAP,
+      width: 0,
+      height: 0,
+    };
+  };
+
   return (
     <>
       {/* Polygon outlines per feature */}
@@ -381,14 +402,13 @@ function GeoJsonLayerGroup({
           />
         </Source>
       )}
-      {/* AOI label: a chip (name + ×) and a separate "…" actions button.
-          Anchored just inside the bbox's top-left corner with a small gap. */}
+      {/* AOI label: a chip (name + ×) and a separate "…" actions button,
+          sitting on top of the bbox's top-left corner. */}
       {bboxCoords && layer.visible && (
         <Marker
           longitude={bboxCoords[0]}
           latitude={bboxCoords[3]}
-          anchor="top-left"
-          offset={[8, 8]}
+          anchor="bottom-left"
         >
           <Flex
             align="center"
@@ -447,6 +467,7 @@ function GeoJsonLayerGroup({
                 isActive={isInContext}
                 analyzing={analysisStatus === "running"}
                 onViewAnalysis={analysisArea ? viewAnalysis : undefined}
+                getAnchorRect={menuAnchorRect}
               />
             </Box>
           </Flex>
