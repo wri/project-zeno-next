@@ -8,7 +8,7 @@ import {
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import AoiActionsMenu from "@/app/dashboards/components/AoiActionsMenu";
-import { useAnalysis, type AreaSelection } from "@/src/features/analysis";
+import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 import { ChatContextOptions } from "../../ContextButton";
 import {
   Feature,
@@ -239,44 +239,15 @@ function GeoJsonLayerGroup({
   const bboxPolygon = bboxCoords ? createBboxPolygon(bboxCoords) : null;
   const groupId = layer.id.replace(/\s+/g, "-").toLowerCase();
 
-  // Default analysis (ported from feat/analysis-enhancements-PZB-957): build the
-  // area to analyse from the selection (first AOI for multi-area), run the
-  // default TCL analysis on demand, and surface results in the InsightWorkspace.
-  const { status: analysisStatus, run: runAnalysis } = useAnalysis();
-  const analysisArea: AreaSelection | null = (() => {
-    const aois = layer.aoiSelection?.aois;
-    if (aois && aois.length > 0) {
-      const a = aois[0];
-      return {
-        name: a.name,
-        source: a.source,
-        srcId: a.src_id,
-        subtype: a.subtype,
-      };
-    }
-    const ref = layer.featureRefs?.[0];
-    const entry = ref
-      ? entries.find(
-          (e) => e.ref.name === ref.name && e.ref.source === ref.source
-        )
-      : undefined;
-    if (entry) {
-      return {
-        name: displayName,
-        source: entry.ref.source,
-        srcId: entry.srcId,
-        subtype: entry.subtype,
-      };
-    }
-    return null;
-  })();
-  const viewAnalysis = () => {
-    if (!analysisArea) return;
+  // "Generate analysis" injects a generative-analysis prompt into the chat — the
+  // same path as the chat AnalyseNudge (runAnalysis → sendMessage). The AOI name
+  // travels in the prompt; the AOI + dataset also ride along via ui_context.
+  // Defaults to Tree cover loss (the active dataset shown in the menu).
+  const generateAnalysis = () => {
     runAnalysis({
-      area: analysisArea,
-      dataset: { id: 4 }, // Tree cover loss — the default analysis
-      startDate: "2001-01-01",
-      endDate: "2025-12-31",
+      areaName: displayName,
+      datasetId: 4,
+      datasetName: "Tree cover loss",
     });
   };
 
@@ -465,8 +436,7 @@ function GeoJsonLayerGroup({
               <AoiActionsMenu
                 name={displayName}
                 isActive={isInContext}
-                analyzing={analysisStatus === "running"}
-                onViewAnalysis={analysisArea ? viewAnalysis : undefined}
+                onGenerateAnalysis={generateAnalysis}
                 getAnchorRect={menuAnchorRect}
               />
             </Box>

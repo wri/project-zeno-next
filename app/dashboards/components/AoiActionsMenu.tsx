@@ -7,6 +7,7 @@ import {
   BookmarkSimpleIcon,
   SquaresFourIcon,
   ChartLineIcon,
+  SparkleIcon,
 } from "@phosphor-icons/react";
 import { toaster } from "@/app/components/ui/toaster";
 import { Tooltip } from "@/app/components/ui/tooltip";
@@ -14,22 +15,20 @@ import { createDashboardForAoi } from "@/app/dashboards/lib/createDashboardForAo
 
 /**
  * "…" actions menu shown as a separate button beside an AOI label on the map.
- * "View analysis" runs the default analysis for this AOI (wired by the caller).
+ * "Generate analysis" injects a generative-analysis prompt into the chat for
+ * this AOI (wired by the caller) — the same path as the chat AnalyseNudge.
  */
 export default function AoiActionsMenu({
   name,
   isActive,
-  analyzing,
-  onViewAnalysis,
+  onGenerateAnalysis,
   getAnchorRect,
 }: {
   name: string;
   /** Selected (in-context) AOI — drives the solid vs subtle trigger styling. */
   isActive?: boolean;
-  /** True while an analysis is in flight for this AOI. */
-  analyzing?: boolean;
-  /** Runs the default analysis for this AOI. */
-  onViewAnalysis?: () => void;
+  /** Injects a generative-analysis prompt into the chat for this AOI. */
+  onGenerateAnalysis?: () => void;
   /** Anchors the dropdown to a point (e.g. the bbox corner) instead of the
    *  trigger. Returns a viewport-space rect, or null to fall back to default. */
   getAnchorRect?: () => {
@@ -93,12 +92,12 @@ export default function AoiActionsMenu({
             </Menu.Item>
             <Menu.Separator />
             <Menu.Item
-              value="view-analysis"
-              disabled={analyzing || !onViewAnalysis}
-              onClick={() => onViewAnalysis?.()}
+              value="generate-analysis"
+              disabled={!onGenerateAnalysis}
+              onClick={() => onGenerateAnalysis?.()}
             >
-              <ChartLineIcon size={16} color="#0049AA" />
-              {analyzing ? "Analyzing…" : "View analysis"}
+              <SparkleIcon size={16} color="#0049AA" />
+              Generate analysis
               <Box ml="auto" bg="#F7FBD9" rounded="sm" px="5px" py="2px">
                 <Text fontFamily="mono" fontSize="9px" color="#23271A">
                   Zeno
