@@ -381,12 +381,14 @@ function GeoJsonLayerGroup({
           />
         </Source>
       )}
-      {/* AOI label: a chip (name + ×) and a separate "…" actions button. */}
+      {/* AOI label: a chip (name + ×) and a separate "…" actions button.
+          Anchored just inside the bbox's top-left corner with a small gap. */}
       {bboxCoords && layer.visible && (
         <Marker
           longitude={bboxCoords[0]}
           latitude={bboxCoords[3]}
-          anchor="bottom-left"
+          anchor="top-left"
+          offset={[8, 8]}
         >
           <Flex
             align="center"
@@ -397,9 +399,9 @@ function GeoJsonLayerGroup({
             {/* Label chip — solid blue when selected, with the × beside the name */}
             <Flex
               align="center"
-              gap={2}
-              h="34px"
-              px={3}
+              gap={1.5}
+              h="24px"
+              px={2}
               rounded="md"
               boxShadow="sm"
               cursor="pointer"
@@ -411,11 +413,11 @@ function GeoJsonLayerGroup({
               onClick={handleSelectFromLabel}
             >
               {isInContext && (
-                <Box as="span" display="inline-flex">
+                <Box as="span" display="inline-flex" fontSize="12px">
                   {ChatContextOptions.area.icon}
                 </Box>
               )}
-              <Text fontSize="sm" fontWeight="medium" lineHeight="1">
+              <Text fontSize="12px" fontWeight="medium" lineHeight="1">
                 {displayName}
               </Text>
               {isInContext && (
@@ -433,7 +435,7 @@ function GeoJsonLayerGroup({
                     setHoverState(false);
                   }}
                 >
-                  <XIcon size={16} weight="bold" />
+                  <XIcon size={13} weight="bold" />
                 </Box>
               )}
             </Flex>
