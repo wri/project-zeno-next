@@ -1,8 +1,15 @@
 import { create } from "zustand";
 
+// Which context pane is docked beside the chat in the new-dashboard "setup"
+// flow. null = no setup pane (the dock shows just the chat, with Analyses
+// available as a slide-over). "areas" before an AOI is chosen, "analyses" once
+// it has been — driven by the detail page from the dashboard's AOI state.
+export type SetupPane = "areas" | "analyses" | null;
+
 // Shared bridge between the right-hand dashboard content and the left dock:
 // - @mention chips pushed from an insight card into the chat composer
 // - opening/closing the slide-out Analyses panel from anywhere
+// - the double-pane "setup" dock for a freshly created dashboard
 // - requesting focus of the chat input ("Ask AI")
 interface ComposerState {
   mentions: string[];
@@ -13,6 +20,12 @@ interface ComposerState {
   analysesOpen: boolean;
   openAnalyses: () => void;
   closeAnalyses: () => void;
+
+  // Setup dock: a second context pane (Areas or Analyses) shown to the left of
+  // the chat while a new dashboard is being set up.
+  setupPane: SetupPane;
+  openSetupPane: (pane: Exclude<SetupPane, null>) => void;
+  closeSetupPane: () => void;
 
   // Bumped to ask the chat panel to focus its input (also reveals chat).
   focusNonce: number;
@@ -32,6 +45,12 @@ const useComposerStore = create<ComposerState>((set) => ({
   analysesOpen: false,
   openAnalyses: () => set({ analysesOpen: true }),
   closeAnalyses: () => set({ analysesOpen: false }),
+
+  setupPane: null,
+  // The setup pane is docked, so the slide-over Analyses must be closed to
+  // avoid two analyses panels showing at once.
+  openSetupPane: (pane) => set({ setupPane: pane, analysesOpen: false }),
+  closeSetupPane: () => set({ setupPane: null }),
 
   focusNonce: 0,
   // Focusing the chat only makes sense when it's visible, so also close the
