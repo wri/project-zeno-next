@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -34,11 +34,14 @@ import {
   ArrowsInIcon,
 } from "@phosphor-icons/react";
 import DashboardInsightCard from "@/app/dashboards/components/DashboardInsightCard";
+import DashboardSkeleton from "@/app/dashboards/components/DashboardSkeleton";
 import MapWidgetPlaceholder from "@/app/dashboards/components/MapWidgetPlaceholder";
 import TextWidgetCard from "@/app/dashboards/components/TextWidgetCard";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import useDashboardStore from "@/app/store/dashboardStore";
-import useComposerStore from "@/app/dashboards/lib/composerStore";
+import useComposerStore, {
+  type SetupPane,
+} from "@/app/dashboards/lib/composerStore";
 import { formatUpdated } from "@/app/dashboards/lib/fixtures";
 import { toaster } from "@/app/components/ui/toaster";
 import type { DashboardWidget } from "@/app/types/dashboard";
@@ -231,9 +234,43 @@ export default function DashboardDetailPage() {
   const reorderWidgets = useDashboardStore((s) => s.reorderWidgets);
   const openAnalyses = useComposerStore((s) => s.openAnalyses);
   const requestFocus = useComposerStore((s) => s.requestFocus);
+  const openSetupPane = useComposerStore((s) => s.openSetupPane);
+  const closeSetupPane = useComposerStore((s) => s.closeSetupPane);
 
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
+
+  // AOI-selected ⟺ the dashboard has a subtitle (set by createDashboardForAoi
+  // from the map, or by picking an area in the setup Areas pane).
+  const hasAoi = !!dashboard?.subtitle;
+  const isEmpty = (dashboard?.widgets.length ?? 0) === 0;
+
+  // Brief "loading" shimmer when entering a dashboard so a freshly created one
+  // settles from skeleton → content instead of popping in.
+  const [booting, setBooting] = useState(true);
+  useEffect(() => {
+    setBooting(true);
+    const t = setTimeout(() => setBooting(false), 700);
+    return () => clearTimeout(t);
+  }, [dashboardId]);
+
+  // New-dashboard setup dock: while the dashboard is empty, dock the Areas pane
+  // (no AOI yet) or the Analyses pane (AOI chosen); collapse once the first
+  // widget lands. Computed as a single target so the effect fires only on real
+  // transitions (no flicker from a cleanup-then-reopen).
+  const setupTarget: SetupPane =
+    dashboard && isEmpty ? (hasAoi ? "analyses" : "areas") : null;
+  useEffect(() => {
+    if (setupTarget) openSetupPane(setupTarget);
+    else closeSetupPane();
+  }, [setupTarget, openSetupPane, closeSetupPane]);
+
+  // Close the setup dock when leaving the detail page.
+  useEffect(() => () => closeSetupPane(), [closeSetupPane]);
+
+  // Skeleton (Rectangle 147752) shows while booting, and stays until an area is
+  // chosen; with an AOI it gives way to the real empty-dashboard state.
+  const showSkeleton = isEmpty && (booting || !hasAoi);
 
   // Drag-to-reorder state.
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
@@ -360,230 +397,235 @@ export default function DashboardDetailPage() {
           </Text>
         </Flex>
 
-        {/* White content card — the blue top accent + grid come from the
-            header-zone SVG background. */}
-        <Box
-          bg="bg"
-          borderRadius="8px"
-          borderWidth="1px"
-          borderColor="rgba(19, 22, 25, 0.1)"
-          overflow="hidden"
-        >
-          {/* Header zone — Rectangle 147753 background (grid + blue accent) */}
+        {/* Content column — skeleton (Rectangle 147752) while loading or
+            awaiting an area, otherwise the real dashboard card. */}
+        {showSkeleton ? (
+          <DashboardSkeleton />
+        ) : (
           <Box
-            bgColor="#FFFFFF"
-            bgImage="url('/dashboard-header-bg.svg')"
-            bgSize="cover"
-            bgPos="top"
-            bgRepeat="no-repeat"
-            px={{ base: 5, md: 8 }}
-            pt={{ base: 5, md: 8 }}
-            pb={6}
+            bg="bg"
+            borderRadius="8px"
+            borderWidth="1px"
+            borderColor="rgba(19, 22, 25, 0.1)"
+            overflow="hidden"
           >
-            {/* Eyebrow */}
-            {dashboard.subtitle && (
-              <Text fontSize="14px" color="#565E7B" mb={2}>
-                {dashboard.subtitle}
-              </Text>
-            )}
-
-            {/* Title bar */}
-            <Flex
-              justify="space-between"
-              align="flex-start"
-              gap={4}
-              mb={4}
-              flexWrap="wrap"
+            {/* Header zone — Rectangle 147753 background (grid + blue accent) */}
+            <Box
+              bgColor="#FFFFFF"
+              bgImage="url('/dashboard-header-bg.svg')"
+              bgSize="cover"
+              bgPos="top"
+              bgRepeat="no-repeat"
+              px={{ base: 5, md: 8 }}
+              pt={{ base: 5, md: 8 }}
+              pb={6}
             >
-              <Box minW={0}>
-                {editing ? (
-                  <Flex align="center" gap={2}>
-                    <Input
-                      value={draftTitle}
-                      onChange={(e) => setDraftTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitEdit();
-                        if (e.key === "Escape") setEditing(false);
-                      }}
-                      size="lg"
-                      fontSize="30px"
-                      autoFocus
-                      maxW="640px"
-                    />
-                    <IconButton
-                      aria-label="Save title"
-                      size="sm"
-                      onClick={commitEdit}
-                    >
-                      <CheckIcon />
-                    </IconButton>
-                  </Flex>
-                ) : (
-                  <Flex align="center" gap={3}>
-                    <Heading
-                      fontSize="30px"
-                      fontWeight="normal"
-                      lineHeight="36px"
-                      color="#131619"
-                      lineClamp={2}
-                    >
-                      {dashboard.title}
-                    </Heading>
-                    <IconButton
-                      aria-label="Edit title"
-                      size="xs"
-                      variant="ghost"
-                      color="rgba(19,22,25,0.5)"
-                      onClick={startEdit}
-                    >
-                      <PencilSimpleIcon size={20} />
-                    </IconButton>
-                  </Flex>
-                )}
-                <Text
-                  fontFamily="mono"
-                  fontSize="10px"
-                  color="rgba(19,22,25,0.7)"
-                  mt={2}
-                >
-                  {formatUpdated(dashboard.updatedAt)}
+              {/* Eyebrow */}
+              {dashboard.subtitle && (
+                <Text fontSize="14px" color="#565E7B" mb={2}>
+                  {dashboard.subtitle}
                 </Text>
-              </Box>
+              )}
 
-              <Flex gap={3} flexShrink={0}>
-                {[
-                  { label: "Subscribe to alerts", icon: BellIcon },
-                  { label: "Export", icon: FilePdfIcon },
-                  { label: "Share", icon: ShareNetworkIcon },
-                ].map((a) => (
-                  <Button
-                    key={a.label}
-                    variant="outline"
-                    h="24px"
-                    px="8px"
-                    gap="4px"
-                    fontSize="12px"
-                    fontWeight="medium"
-                    bg="#FFFFFF"
-                    borderColor="rgba(19,22,25,0.2)"
-                    color="rgba(19,22,25,0.7)"
-                    _hover={{ bg: "#F4F5F6" }}
-                    onClick={() => stub(a.label)}
-                  >
-                    <a.icon size={16} />
-                    {a.label}
-                  </Button>
-                ))}
-              </Flex>
-            </Flex>
-
-            {/* Alert badge */}
-            {dashboard.badge && (
+              {/* Title bar */}
               <Flex
-                align="center"
-                gap="4px"
-                w="fit-content"
-                bg="#FEF2F2"
-                borderWidth="1px"
-                borderColor="#F8BABA"
-                rounded="4px"
-                px="6px"
-                py="2px"
-                mb={6}
-              >
-                <Box w="6px" h="6px" rounded="full" bg="#EF4444" />
-                <Text fontFamily="mono" fontSize="10px" color="#B91C1C">
-                  {dashboard.badge}
-                </Text>
-              </Flex>
-            )}
-          </Box>
-
-          {/* White body */}
-          <Box px={{ base: 5, md: 8 }} py={{ base: 5, md: 8 }}>
-            {/* Widget grid */}
-            {dashboard.widgets.length === 0 ? (
-              <Center
-                flexDir="column"
-                gap={2}
-                py={16}
-                borderWidth="2px"
-                borderStyle="dashed"
-                borderColor="border.emphasized"
-                rounded="md"
-                color="fg.muted"
-              >
-                <Text>This dashboard is empty.</Text>
-                <Text fontSize="sm">
-                  Use the assistant on the left, or add a widget below.
-                </Text>
-              </Center>
-            ) : (
-              <Grid
-                templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }}
+                justify="space-between"
+                align="flex-start"
                 gap={4}
+                mb={4}
+                flexWrap="wrap"
               >
-                {dashboard.widgets.map((wgt, i) => (
-                  <GridItem
-                    key={wgt.id}
-                    colSpan={wgt.span === 2 ? { base: 1, lg: 2 } : 1}
-                    draggable={grabbedId === wgt.id}
-                    onDragStart={() => setDragIndex(i)}
-                    onDragOver={(e) => {
-                      if (dragIndex === null) return;
-                      e.preventDefault();
-                      setOverIndex(i);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (dragIndex !== null && dragIndex !== i) {
-                        reorderWidgets(dashboard.id, dragIndex, i);
-                      }
-                      resetDrag();
-                    }}
-                    onDragEnd={resetDrag}
-                    opacity={dragIndex === i ? 0.4 : 1}
-                    outline={
-                      overIndex === i && dragIndex !== null && dragIndex !== i
-                        ? "2px dashed"
-                        : undefined
-                    }
-                    outlineColor="fg.link"
-                    outlineOffset="2px"
-                    rounded="md"
-                    position="relative"
-                    transition="opacity 0.1s ease"
-                    _hover={{ zIndex: 2 }}
+                <Box minW={0}>
+                  {editing ? (
+                    <Flex align="center" gap={2}>
+                      <Input
+                        value={draftTitle}
+                        onChange={(e) => setDraftTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEdit();
+                          if (e.key === "Escape") setEditing(false);
+                        }}
+                        size="lg"
+                        fontSize="30px"
+                        autoFocus
+                        maxW="640px"
+                      />
+                      <IconButton
+                        aria-label="Save title"
+                        size="sm"
+                        onClick={commitEdit}
+                      >
+                        <CheckIcon />
+                      </IconButton>
+                    </Flex>
+                  ) : (
+                    <Flex align="center" gap={3}>
+                      <Heading
+                        fontSize="30px"
+                        fontWeight="normal"
+                        lineHeight="36px"
+                        color="#131619"
+                        lineClamp={2}
+                      >
+                        {dashboard.title}
+                      </Heading>
+                      <IconButton
+                        aria-label="Edit title"
+                        size="xs"
+                        variant="ghost"
+                        color="rgba(19,22,25,0.5)"
+                        onClick={startEdit}
+                      >
+                        <PencilSimpleIcon size={20} />
+                      </IconButton>
+                    </Flex>
+                  )}
+                  <Text
+                    fontFamily="mono"
+                    fontSize="10px"
+                    color="rgba(19,22,25,0.7)"
+                    mt={2}
                   >
-                    {renderWidget(wgt)}
-                  </GridItem>
-                ))}
-              </Grid>
-            )}
+                    {formatUpdated(dashboard.updatedAt)}
+                  </Text>
+                </Box>
 
-            {/* Add block — lime divider with a centered + (per design) */}
-            <Flex align="center" mt={6}>
-              <Box flex="1" h="1px" bg="#E3F37F" />
-              <Tooltip content="Add a block" showArrow>
-                <IconButton
-                  aria-label="Add a block"
-                  size="xs"
-                  mx={3}
+                <Flex gap={3} flexShrink={0}>
+                  {[
+                    { label: "Subscribe to alerts", icon: BellIcon },
+                    { label: "Export", icon: FilePdfIcon },
+                    { label: "Share", icon: ShareNetworkIcon },
+                  ].map((a) => (
+                    <Button
+                      key={a.label}
+                      variant="outline"
+                      h="24px"
+                      px="8px"
+                      gap="4px"
+                      fontSize="12px"
+                      fontWeight="medium"
+                      bg="#FFFFFF"
+                      borderColor="rgba(19,22,25,0.2)"
+                      color="rgba(19,22,25,0.7)"
+                      _hover={{ bg: "#F4F5F6" }}
+                      onClick={() => stub(a.label)}
+                    >
+                      <a.icon size={16} />
+                      {a.label}
+                    </Button>
+                  ))}
+                </Flex>
+              </Flex>
+
+              {/* Alert badge */}
+              {dashboard.badge && (
+                <Flex
+                  align="center"
+                  gap="4px"
+                  w="fit-content"
+                  bg="#FEF2F2"
+                  borderWidth="1px"
+                  borderColor="#F8BABA"
                   rounded="4px"
-                  bg="#F0F9B9"
-                  color="#8E9954"
-                  _hover={{ bg: "#E3F37F" }}
-                  onClick={() =>
-                    addWidget(dashboard.id, { kind: "empty", span: 1 })
-                  }
+                  px="6px"
+                  py="2px"
+                  mb={6}
                 >
-                  <PlusIcon size={16} />
-                </IconButton>
-              </Tooltip>
-              <Box flex="1" h="1px" bg="#E3F37F" />
-            </Flex>
+                  <Box w="6px" h="6px" rounded="full" bg="#EF4444" />
+                  <Text fontFamily="mono" fontSize="10px" color="#B91C1C">
+                    {dashboard.badge}
+                  </Text>
+                </Flex>
+              )}
+            </Box>
+
+            {/* White body */}
+            <Box px={{ base: 5, md: 8 }} py={{ base: 5, md: 8 }}>
+              {/* Widget grid */}
+              {dashboard.widgets.length === 0 ? (
+                <Center
+                  flexDir="column"
+                  gap={2}
+                  py={16}
+                  borderWidth="2px"
+                  borderStyle="dashed"
+                  borderColor="border.emphasized"
+                  rounded="md"
+                  color="fg.muted"
+                >
+                  <Text>This dashboard is empty.</Text>
+                  <Text fontSize="sm">
+                    Add an insight from the Analyses panel, describe what you
+                    want to explore in the chat, or add a block below.
+                  </Text>
+                </Center>
+              ) : (
+                <Grid
+                  templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }}
+                  gap={4}
+                >
+                  {dashboard.widgets.map((wgt, i) => (
+                    <GridItem
+                      key={wgt.id}
+                      colSpan={wgt.span === 2 ? { base: 1, lg: 2 } : 1}
+                      draggable={grabbedId === wgt.id}
+                      onDragStart={() => setDragIndex(i)}
+                      onDragOver={(e) => {
+                        if (dragIndex === null) return;
+                        e.preventDefault();
+                        setOverIndex(i);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragIndex !== null && dragIndex !== i) {
+                          reorderWidgets(dashboard.id, dragIndex, i);
+                        }
+                        resetDrag();
+                      }}
+                      onDragEnd={resetDrag}
+                      opacity={dragIndex === i ? 0.4 : 1}
+                      outline={
+                        overIndex === i && dragIndex !== null && dragIndex !== i
+                          ? "2px dashed"
+                          : undefined
+                      }
+                      outlineColor="fg.link"
+                      outlineOffset="2px"
+                      rounded="md"
+                      position="relative"
+                      transition="opacity 0.1s ease"
+                      _hover={{ zIndex: 2 }}
+                    >
+                      {renderWidget(wgt)}
+                    </GridItem>
+                  ))}
+                </Grid>
+              )}
+
+              {/* Add block — lime divider with a centered + (per design) */}
+              <Flex align="center" mt={6}>
+                <Box flex="1" h="1px" bg="#E3F37F" />
+                <Tooltip content="Add a block" showArrow>
+                  <IconButton
+                    aria-label="Add a block"
+                    size="xs"
+                    mx={3}
+                    rounded="4px"
+                    bg="#F0F9B9"
+                    color="#8E9954"
+                    _hover={{ bg: "#E3F37F" }}
+                    onClick={() =>
+                      addWidget(dashboard.id, { kind: "empty", span: 1 })
+                    }
+                  >
+                    <PlusIcon size={16} />
+                  </IconButton>
+                </Tooltip>
+                <Box flex="1" h="1px" bg="#E3F37F" />
+              </Flex>
+            </Box>
           </Box>
-        </Box>
+        )}
       </Container>
     </Box>
   );
