@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
+  Button,
+  ButtonGroup,
   Container,
   Flex,
   Grid,
@@ -11,8 +13,8 @@ import {
   Text,
   Badge,
   Icon,
-  IconButton,
   Input,
+  InputGroup,
   Menu,
   Portal,
 } from "@chakra-ui/react";
@@ -22,13 +24,42 @@ import {
   ChartLineIcon,
   FireIcon,
   GlobeIcon,
-  DotsThreeVerticalIcon,
-  PencilSimpleIcon,
-  TrashIcon,
+  LockIcon,
+  SquaresFourIcon,
+  ListIcon,
+  MagnifyingGlassIcon,
+  ArrowsDownUpIcon,
 } from "@phosphor-icons/react";
 import useDashboardStore from "@/app/store/dashboardStore";
 import { formatUpdated, WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
+import { ParamChip } from "@/app/components/ui/ParamChip";
+import { Tooltip } from "@/app/components/ui/tooltip";
+import AlertsBadge from "@/app/dashboards/components/AlertsBadge";
+import DashboardActionsMenu from "@/app/dashboards/components/DashboardActionsMenu";
 import type { Dashboard, DashboardWidget } from "@/app/types/dashboard";
+
+// Soft cap surfaced as the "X / 20" counter next to the heading.
+const DASHBOARD_LIMIT = 20;
+
+const areaOf = (d: Dashboard) => d.subtitle ?? d.title;
+
+// Leading integer in a badge like "3 new alerts" (0 when there's no badge).
+function alertCountOf(d: Dashboard): number {
+  const m = d.badge?.match(/\d+/);
+  return m ? parseInt(m[0], 10) : 0;
+}
+
+type SortKey = "recent" | "name" | "alerts";
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "recent", label: "Last edited" },
+  { key: "name", label: "Name (A–Z)" },
+  { key: "alerts", label: "Most alerts" },
+];
+
+// Grid template shared by the list header row and each list row so columns
+// align: Name | Area | Alerts | Last edited | Visibility | Tags | Menu.
+const LIST_COLS =
+  "minmax(160px,1.8fr) 140px 116px 130px 70px minmax(120px,1.2fr) 36px";
 
 // ---------------------------------------------------------------------------
 // Templates — clicking one seeds a new dashboard and opens it immediately.
@@ -152,21 +183,68 @@ const TEMPLATES: Template[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Cards
+// Shared bits
 // ---------------------------------------------------------------------------
 
-function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
-  const router = useRouter();
+/** Public/private icon with a tooltip — used in both views. */
+function VisibilityIcon({ isPublic }: { isPublic?: boolean }) {
+  return (
+    <Tooltip content={isPublic ? "Public" : "Private"} showArrow>
+      <Box
+        as="span"
+        display="inline-flex"
+        color={isPublic ? "primary.solid" : "fg.muted"}
+      >
+        {isPublic ? <GlobeIcon size={16} /> : <LockIcon size={16} />}
+      </Box>
+    </Tooltip>
+  );
+}
+
+function TagChips({ tags }: { tags?: string[] }) {
+  if (!tags?.length) return null;
+  return (
+    <Flex gap={1} flexWrap="wrap">
+      {tags.map((t) => (
+        <Badge key={t} variant="surface" colorPalette="gray" size="sm">
+          {t}
+        </Badge>
+      ))}
+    </Flex>
+  );
+}
+
+// Inline rename input reused by card + row. Commits on Enter/blur.
+function useRename(dashboard: Dashboard) {
   const updateDashboard = useDashboardStore((s) => s.updateDashboard);
-  const deleteDashboard = useDashboardStore((s) => s.deleteDashboard);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(dashboard.title);
-
-  const commitRename = () => {
+  const start = () => {
+    setDraft(dashboard.title);
+    setRenaming(true);
+  };
+  const commit = () => {
     const t = draft.trim();
     if (t) updateDashboard(dashboard.id, { title: t });
     setRenaming(false);
   };
+  return {
+    renaming,
+    draft,
+    setDraft,
+    start,
+    commit,
+    cancel: () => setRenaming(false),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Card view
+// ---------------------------------------------------------------------------
+
+function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
+  const router = useRouter();
+  const rename = useRename(dashboard);
 
   return (
     <Box
@@ -180,9 +258,11 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
       borderColor="border"
       rounded="md"
       transition="box-shadow 0.15s ease, border-color 0.15s ease"
-      cursor={renaming ? "default" : "pointer"}
+      cursor={rename.renaming ? "default" : "pointer"}
       onClick={
-        renaming ? undefined : () => router.push(`/dashboards/${dashboard.id}`)
+        rename.renaming
+          ? undefined
+          : () => router.push(`/dashboards/${dashboard.id}`)
       }
       _hover={{ boxShadow: "md", borderColor: "border.emphasized" }}
     >
@@ -193,57 +273,21 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
         right={2}
         onClick={(e) => e.stopPropagation()}
       >
-        <Menu.Root positioning={{ placement: "bottom-end" }}>
-          <Menu.Trigger asChild>
-            <IconButton
-              aria-label="Dashboard actions"
-              size="xs"
-              variant="ghost"
-              color="fg.muted"
-            >
-              <DotsThreeVerticalIcon size={16} />
-            </IconButton>
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content minW="140px">
-                <Menu.Item
-                  value="rename"
-                  onClick={() => {
-                    setDraft(dashboard.title);
-                    setRenaming(true);
-                  }}
-                >
-                  <PencilSimpleIcon size={14} />
-                  Rename
-                </Menu.Item>
-                <Menu.Item
-                  value="delete"
-                  color="fg.error"
-                  _hover={{ bg: "bg.error", color: "fg.error" }}
-                  onClick={() => deleteDashboard(dashboard.id)}
-                >
-                  <TrashIcon size={14} />
-                  Delete
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
+        <DashboardActionsMenu dashboard={dashboard} onRename={rename.start} />
       </Box>
 
-      {renaming ? (
+      {rename.renaming ? (
         <Input
-          value={draft}
+          value={rename.draft}
           autoFocus
           fontWeight="medium"
           pr={8}
           onClick={(e) => e.stopPropagation()}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commitRename}
+          onChange={(e) => rename.setDraft(e.target.value)}
+          onBlur={rename.commit}
           onKeyDown={(e) => {
-            if (e.key === "Enter") commitRename();
-            if (e.key === "Escape") setRenaming(false);
+            if (e.key === "Enter") rename.commit();
+            if (e.key === "Escape") rename.cancel();
           }}
         />
       ) : (
@@ -254,17 +298,199 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
 
       <Box mt="auto" pt={4}>
         {dashboard.badge && (
-          <Badge colorPalette="red" variant="subtle" mb={2}>
-            {dashboard.badge}
-          </Badge>
+          <Box mb={2}>
+            <AlertsBadge label={dashboard.badge} seed={dashboard.id} />
+          </Box>
         )}
-        <Text fontSize="xs" color="fg.muted">
-          {formatUpdated(dashboard.updatedAt)}
-        </Text>
+        <Flex align="center" gap={2} color="fg.muted">
+          <VisibilityIcon isPublic={dashboard.isPublic} />
+          <Text fontSize="xs">{formatUpdated(dashboard.updatedAt)}</Text>
+        </Flex>
       </Box>
     </Box>
   );
 }
+
+// ---------------------------------------------------------------------------
+// List view
+// ---------------------------------------------------------------------------
+
+function DashboardListRow({ dashboard }: { dashboard: Dashboard }) {
+  const router = useRouter();
+  const rename = useRename(dashboard);
+
+  return (
+    <Box
+      display="grid"
+      gridTemplateColumns={LIST_COLS}
+      alignItems="center"
+      gap={3}
+      px={4}
+      py={2.5}
+      borderBottomWidth="1px"
+      borderColor="border"
+      cursor={rename.renaming ? "default" : "pointer"}
+      onClick={
+        rename.renaming
+          ? undefined
+          : () => router.push(`/dashboards/${dashboard.id}`)
+      }
+      _hover={{ bg: "bg.subtle" }}
+    >
+      {/* Name */}
+      <Flex minW={0} align="center" gap={2}>
+        {rename.renaming ? (
+          <Input
+            value={rename.draft}
+            autoFocus
+            size="sm"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => rename.setDraft(e.target.value)}
+            onBlur={rename.commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") rename.commit();
+              if (e.key === "Escape") rename.cancel();
+            }}
+          />
+        ) : (
+          <Text fontWeight="medium" lineClamp={1}>
+            {dashboard.title}
+          </Text>
+        )}
+      </Flex>
+
+      {/* Area */}
+      <Box minW={0}>
+        <ParamChip
+          label="AREA"
+          value={areaOf(dashboard)}
+          colorScheme="blue"
+          highlightValue
+          maxValueWidth="14ch"
+        />
+      </Box>
+
+      {/* New alerts */}
+      <Box>
+        {dashboard.badge && (
+          <AlertsBadge label={dashboard.badge} seed={dashboard.id} />
+        )}
+      </Box>
+
+      {/* Last edited */}
+      <Text fontSize="xs" color="fg.muted">
+        {formatUpdated(dashboard.updatedAt)}
+      </Text>
+
+      {/* Visibility */}
+      <Flex justify="center">
+        <VisibilityIcon isPublic={dashboard.isPublic} />
+      </Flex>
+
+      {/* Tags */}
+      <TagChips tags={dashboard.tags} />
+
+      {/* Menu */}
+      <Box onClick={(e) => e.stopPropagation()} justifySelf="end">
+        <DashboardActionsMenu
+          dashboard={dashboard}
+          onRename={rename.start}
+          size="2xs"
+        />
+      </Box>
+    </Box>
+  );
+}
+
+function ListHeaderCell({
+  children,
+  ...rest
+}: React.ComponentProps<typeof Text>) {
+  return (
+    <Text
+      fontSize="10px"
+      fontFamily="mono"
+      letterSpacing="0.5px"
+      textTransform="uppercase"
+      color="fg.muted"
+      {...rest}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function DashboardListView({
+  dashboards,
+  onNew,
+  atCap,
+}: {
+  dashboards: Dashboard[];
+  onNew: () => void;
+  atCap: boolean;
+}) {
+  return (
+    <Box
+      borderWidth="1px"
+      borderColor="border"
+      rounded="md"
+      overflow="hidden"
+      mb={12}
+    >
+      {/* Column headers */}
+      <Box
+        display="grid"
+        gridTemplateColumns={LIST_COLS}
+        gap={3}
+        px={4}
+        py={2}
+        bg="bg.subtle"
+        borderBottomWidth="1px"
+        borderColor="border"
+      >
+        <ListHeaderCell>Name</ListHeaderCell>
+        <ListHeaderCell>Area</ListHeaderCell>
+        <ListHeaderCell>Alerts</ListHeaderCell>
+        <ListHeaderCell>Last edited</ListHeaderCell>
+        <ListHeaderCell textAlign="center">Visibility</ListHeaderCell>
+        <ListHeaderCell>Tags</ListHeaderCell>
+        <Box />
+      </Box>
+
+      {dashboards.length === 0 ? (
+        <Box px={4} py={8} textAlign="center" color="fg.muted">
+          No dashboards match your search.
+        </Box>
+      ) : (
+        dashboards.map((d) => <DashboardListRow key={d.id} dashboard={d} />)
+      )}
+
+      {/* New dashboard row */}
+      <Box
+        as="button"
+        onClick={atCap ? undefined : onNew}
+        display="flex"
+        alignItems="center"
+        gap={2}
+        w="full"
+        px={4}
+        py={3}
+        color="fg.muted"
+        opacity={atCap ? 0.5 : 1}
+        cursor={atCap ? "not-allowed" : "pointer"}
+        transition="background 0.15s ease, color 0.15s ease"
+        _hover={atCap ? undefined : { bg: "bg.subtle", color: "fg" }}
+      >
+        <PlusIcon size={16} />
+        <Text fontWeight="medium">New dashboard</Text>
+      </Box>
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function DashboardsGalleryPage() {
   const router = useRouter();
@@ -272,7 +498,14 @@ export default function DashboardsGalleryPage() {
   const createDashboard = useDashboardStore((s) => s.createDashboard);
   const addWidget = useDashboardStore((s) => s.addWidget);
 
+  const [view, setView] = useState<"card" | "list">("card");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("recent");
+
+  const atCap = dashboards.length >= DASHBOARD_LIMIT;
+
   const startBlank = () => {
+    if (atCap) return;
     const id = createDashboard({ title: "Untitled dashboard" });
     router.push(`/dashboards/${id}`);
   };
@@ -283,48 +516,151 @@ export default function DashboardsGalleryPage() {
     router.push(`/dashboards/${id}`);
   };
 
+  // Search + sort only drive the list view (card view shows everything).
+  const listDashboards = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? dashboards.filter((d) =>
+          [d.title, areaOf(d), ...(d.tags ?? [])]
+            .join(" ")
+            .toLowerCase()
+            .includes(q)
+        )
+      : dashboards;
+    const sorted = [...filtered];
+    if (sort === "name") {
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sort === "alerts") {
+      sorted.sort(
+        (a, b) =>
+          alertCountOf(b) - alertCountOf(a) ||
+          b.updatedAt.localeCompare(a.updatedAt)
+      );
+    } else {
+      sorted.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    }
+    return sorted;
+  }, [dashboards, query, sort]);
+
+  const sortLabel = SORTS.find((s) => s.key === sort)?.label ?? "Sort";
+
   return (
     <Container maxW="6xl" py={10}>
-      {/* My dashboards */}
-      <Heading size="lg" mb={5}>
-        My dashboards
-      </Heading>
-      <Grid
-        templateColumns={{
-          base: "1fr",
-          sm: "repeat(2, 1fr)",
-          lg: "repeat(4, 1fr)",
-        }}
-        gap={4}
-        mb={12}
-      >
-        {dashboards.map((d) => (
-          <DashboardCard key={d.id} dashboard={d} />
-        ))}
+      {/* Header: title + counter + view switcher */}
+      <Flex align="center" gap={3} mb={5} wrap="wrap">
+        <Heading size="lg">My dashboards</Heading>
+        <Badge variant="surface" colorPalette="gray" rounded="full">
+          {dashboards.length} / {DASHBOARD_LIMIT}
+        </Badge>
+        <ButtonGroup ml="auto" size="sm" variant="outline" attached>
+          <Button
+            aria-label="Card view"
+            onClick={() => setView("card")}
+            variant={view === "card" ? "solid" : "outline"}
+            colorPalette={view === "card" ? "primary" : undefined}
+          >
+            <SquaresFourIcon size={16} />
+          </Button>
+          <Button
+            aria-label="List view"
+            onClick={() => setView("list")}
+            variant={view === "list" ? "solid" : "outline"}
+            colorPalette={view === "list" ? "primary" : undefined}
+          >
+            <ListIcon size={16} />
+          </Button>
+        </ButtonGroup>
+      </Flex>
 
-        {/* New dashboard */}
-        <Box
-          as="button"
-          onClick={startBlank}
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          gap={2}
-          minH="220px"
-          bg="bg"
-          borderWidth="2px"
-          borderStyle="dashed"
-          borderColor="border.emphasized"
-          rounded="md"
-          color="fg.muted"
-          transition="background 0.15s ease, color 0.15s ease"
-          _hover={{ bg: "bg.subtle", color: "fg" }}
+      {/* Search + sort (list view only) */}
+      {view === "list" && (
+        <Flex gap={3} mb={3} wrap="wrap" align="center">
+          <InputGroup
+            flex="1 1 280px"
+            maxW="420px"
+            startElement={<MagnifyingGlassIcon size={16} />}
+          >
+            <Input
+              size="sm"
+              placeholder="Search dashboards…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </InputGroup>
+          <Menu.Root positioning={{ placement: "bottom-end" }}>
+            <Menu.Trigger asChild>
+              <Button size="sm" variant="outline">
+                <ArrowsDownUpIcon size={16} />
+                {sortLabel}
+              </Button>
+            </Menu.Trigger>
+            <Portal>
+              <Menu.Positioner>
+                <Menu.Content minW="160px">
+                  {SORTS.map((s) => (
+                    <Menu.Item
+                      key={s.key}
+                      value={s.key}
+                      onClick={() => setSort(s.key)}
+                      fontWeight={sort === s.key ? "semibold" : "normal"}
+                    >
+                      {s.label}
+                    </Menu.Item>
+                  ))}
+                </Menu.Content>
+              </Menu.Positioner>
+            </Portal>
+          </Menu.Root>
+        </Flex>
+      )}
+
+      {/* My dashboards */}
+      {view === "list" ? (
+        <DashboardListView
+          dashboards={listDashboards}
+          onNew={startBlank}
+          atCap={atCap}
+        />
+      ) : (
+        <Grid
+          templateColumns={{
+            base: "1fr",
+            sm: "repeat(2, 1fr)",
+            lg: "repeat(4, 1fr)",
+          }}
+          gap={4}
+          mb={12}
         >
-          <Icon as={PlusIcon} boxSize={6} />
-          <Text fontWeight="medium">New dashboard</Text>
-        </Box>
-      </Grid>
+          {dashboards.map((d) => (
+            <DashboardCard key={d.id} dashboard={d} />
+          ))}
+
+          {/* New dashboard */}
+          <Box
+            as="button"
+            onClick={atCap ? undefined : startBlank}
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            gap={2}
+            minH="220px"
+            bg="bg"
+            borderWidth="2px"
+            borderStyle="dashed"
+            borderColor="border.emphasized"
+            rounded="md"
+            color="fg.muted"
+            opacity={atCap ? 0.5 : 1}
+            cursor={atCap ? "not-allowed" : "pointer"}
+            transition="background 0.15s ease, color 0.15s ease"
+            _hover={atCap ? undefined : { bg: "bg.subtle", color: "fg" }}
+          >
+            <Icon as={PlusIcon} boxSize={6} />
+            <Text fontWeight="medium">New dashboard</Text>
+          </Box>
+        </Grid>
+      )}
 
       {/* Start from a template */}
       <Heading size="lg" mb={1}>
