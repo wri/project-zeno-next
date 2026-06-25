@@ -13,6 +13,7 @@ import {
   Text,
   Badge,
   Icon,
+  IconButton,
   Input,
   InputGroup,
   Menu,
@@ -29,10 +30,10 @@ import {
   ListIcon,
   MagnifyingGlassIcon,
   ArrowsDownUpIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import useDashboardStore from "@/app/store/dashboardStore";
 import { formatUpdated, WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
-import { ParamChip } from "@/app/components/ui/ParamChip";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import AlertsBadge from "@/app/dashboards/components/AlertsBadge";
 import DashboardActionsMenu from "@/app/dashboards/components/DashboardActionsMenu";
@@ -58,8 +59,9 @@ const SORTS: { key: SortKey; label: string }[] = [
 
 // Grid template shared by the list header row and each list row so columns
 // align: Name | Area | Alerts | Last edited | Visibility | Tags | Menu.
+// Area is `auto` so it hugs the area-name pill instead of padding out the row.
 const LIST_COLS =
-  "minmax(160px,1.8fr) 140px 116px 130px 70px minmax(120px,1.2fr) 36px";
+  "minmax(160px,1.8fr) auto 116px 130px 70px minmax(120px,1.2fr) 36px";
 
 // ---------------------------------------------------------------------------
 // Templates — clicking one seeds a new dashboard and opens it immediately.
@@ -201,15 +203,96 @@ function VisibilityIcon({ isPublic }: { isPublic?: boolean }) {
   );
 }
 
-function TagChips({ tags }: { tags?: string[] }) {
-  if (!tags?.length) return null;
+/** Area name in a white pill — hugs its content so it doesn't pad out the row. */
+function AreaPill({ name }: { name: string }) {
   return (
-    <Flex gap={1} flexWrap="wrap">
+    <Box
+      display="inline-flex"
+      maxW="170px"
+      bg="#FFFFFF"
+      borderWidth="1px"
+      borderColor="border"
+      rounded="md"
+      px={2}
+      py="2px"
+    >
+      <Text fontSize="xs" color="fg" truncate>
+        {name}
+      </Text>
+    </Box>
+  );
+}
+
+/** Editable tag list — chips with a remove ×, plus an inline add input. */
+function DashboardTags({ dashboard }: { dashboard: Dashboard }) {
+  const updateDashboard = useDashboardStore((s) => s.updateDashboard);
+  const tags = dashboard.tags ?? [];
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const addTag = () => {
+    const t = draft.trim();
+    if (t && !tags.includes(t)) {
+      updateDashboard(dashboard.id, { tags: [...tags, t] });
+    }
+    setDraft("");
+    setAdding(false);
+  };
+  const removeTag = (t: string) =>
+    updateDashboard(dashboard.id, { tags: tags.filter((x) => x !== t) });
+
+  return (
+    <Flex
+      gap={1}
+      flexWrap="wrap"
+      align="center"
+      onClick={(e) => e.stopPropagation()}
+    >
       {tags.map((t) => (
-        <Badge key={t} variant="surface" colorPalette="gray" size="sm">
+        <Badge key={t} variant="surface" colorPalette="gray" size="sm" gap={1}>
           {t}
+          <Box
+            as="span"
+            display="inline-flex"
+            cursor="pointer"
+            color="fg.muted"
+            _hover={{ color: "fg" }}
+            onClick={() => removeTag(t)}
+          >
+            <XIcon size={10} />
+          </Box>
         </Badge>
       ))}
+      {adding ? (
+        <Input
+          size="xs"
+          autoFocus
+          w="84px"
+          placeholder="Tag…"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={addTag}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") addTag();
+            if (e.key === "Escape") {
+              setDraft("");
+              setAdding(false);
+            }
+          }}
+        />
+      ) : (
+        <Tooltip content="Add tag" showArrow>
+          <IconButton
+            aria-label="Add tag"
+            size="2xs"
+            variant="ghost"
+            color="fg.muted"
+            onClick={() => setAdding(true)}
+          >
+            <PlusIcon size={12} />
+          </IconButton>
+        </Tooltip>
+      )}
     </Flex>
   );
 }
@@ -361,13 +444,7 @@ function DashboardListRow({ dashboard }: { dashboard: Dashboard }) {
 
       {/* Area */}
       <Box minW={0}>
-        <ParamChip
-          label="AREA"
-          value={areaOf(dashboard)}
-          colorScheme="blue"
-          highlightValue
-          maxValueWidth="14ch"
-        />
+        <AreaPill name={areaOf(dashboard)} />
       </Box>
 
       {/* New alerts */}
@@ -388,7 +465,7 @@ function DashboardListRow({ dashboard }: { dashboard: Dashboard }) {
       </Flex>
 
       {/* Tags */}
-      <TagChips tags={dashboard.tags} />
+      <DashboardTags dashboard={dashboard} />
 
       {/* Menu */}
       <Box onClick={(e) => e.stopPropagation()} justifySelf="end">
@@ -548,8 +625,16 @@ export default function DashboardsGalleryPage() {
     <Container maxW="6xl" py={10}>
       {/* Header: title + counter + view switcher */}
       <Flex align="center" gap={3} mb={5} wrap="wrap">
-        <Heading size="lg">My dashboards</Heading>
-        <Badge variant="surface" colorPalette="gray" rounded="full">
+        <Heading size="lg" lineHeight="1">
+          My dashboards
+        </Heading>
+        <Badge
+          variant="surface"
+          colorPalette="gray"
+          rounded="full"
+          px={2.5}
+          py={1}
+        >
           {dashboards.length} / {DASHBOARD_LIMIT}
         </Badge>
         <ButtonGroup ml="auto" size="sm" variant="outline" attached>
