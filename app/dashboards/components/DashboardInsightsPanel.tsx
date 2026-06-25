@@ -16,6 +16,7 @@ import {
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import useDashboardStore from "@/app/store/dashboardStore";
 import useInsightStore from "@/app/store/insightStore";
+import { useUserInsights } from "@/app/hooks/useUserInsights";
 import {
   WIDGET_FIXTURES,
   AI_EXAMPLE_INSIGHTS,
@@ -305,13 +306,17 @@ export default function DashboardInsightsPanel({
   });
 
   // Detail library. Verified = the curated fixtures (topic-filterable).
-  // AI-generated = live insightStore (map session) + example insights, minus
-  // anything that duplicates a verified title. insightStore survives
-  // client-side navigation; the examples give a standalone visit content too.
+  // AI-generated = the user's persisted insights (GET /api/insights) + any
+  // generated live this session (insightStore), minus anything that duplicates
+  // a verified title. When neither source has data (logged out / offline) we
+  // fall back to the example fixtures so a standalone visit still has content.
+  const fetched = useUserInsights().insights;
   const generated = useInsightStore((s) => s.insights);
+  const realInsights = [...fetched, ...generated];
+  const pool = realInsights.length > 0 ? realInsights : AI_EXAMPLE_INSIGHTS;
   const libraryTitles = new Set(LIBRARY.map((r) => r.insight.title));
   const seenAi = new Set<string>();
-  const aiInsights = [...generated, ...AI_EXAMPLE_INSIGHTS].filter((i) => {
+  const aiInsights = pool.filter((i) => {
     if (!i || i.type === "dataset-card") return false;
     if (libraryTitles.has(i.title) || seenAi.has(i.title)) return false;
     seenAi.add(i.title);
