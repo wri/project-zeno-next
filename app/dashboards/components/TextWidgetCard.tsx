@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Flex, Text, IconButton, Textarea } from "@chakra-ui/react";
+import { Box, Flex, IconButton } from "@chakra-ui/react";
 import {
   ArrowsOutCardinalIcon,
   ArrowsOutIcon,
@@ -10,7 +10,10 @@ import {
   CheckIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
+import Markdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import { Tooltip } from "@/app/components/ui/tooltip";
+import MarkdownEditor from "@/app/dashboards/components/MarkdownEditor";
 
 // Text/narrative widget. Toolbar: Arrange (drag handle) / Expand / Edit /
 // Delete over a plain body — no titled header.
@@ -115,23 +118,29 @@ export default function TextWidgetCard({
       {/* Body */}
       <Box px={4} pb={4} pt={1}>
         {editing ? (
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setEditing(false);
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commit();
-            }}
-            onBlur={commit}
-            autoFocus
-            rows={6}
-            fontSize="sm"
-            resize="vertical"
-          />
+          <MarkdownEditor value={draft} onChange={setDraft} />
         ) : (
-          <Text fontSize="sm" whiteSpace="pre-wrap" color="fg.muted">
-            {text}
-          </Text>
+          <Box
+            fontSize="sm"
+            color="fg.muted"
+            css={{
+              "& > * + *": { marginTop: "8px" },
+              "& h1, & h2, & h3": {
+                fontWeight: 600,
+                color: "var(--chakra-colors-fg)",
+              },
+              "& h2": { fontSize: "18px" },
+              "& ul": { paddingLeft: "20px", listStyle: "disc" },
+              "& ol": { paddingLeft: "20px", listStyle: "decimal" },
+              "& strong": { fontWeight: 600 },
+              "& a": {
+                color: "var(--chakra-colors-fg-link)",
+                textDecoration: "underline",
+              },
+            }}
+          >
+            <Markdown remarkPlugins={[remarkBreaks]}>{text}</Markdown>
+          </Box>
         )}
       </Box>
     </Box>
