@@ -153,11 +153,11 @@ function EmptyBlock({
   ];
   return (
     <Box
-      rounded="md"
+      rounded="8px"
       borderWidth="1px"
       borderStyle="dashed"
-      borderColor="border.emphasized"
-      bg="bg"
+      borderColor="#8EA5EA"
+      bg="#F7F9FF"
       h="100%"
       minH="160px"
       display="flex"

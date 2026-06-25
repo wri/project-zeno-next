@@ -743,16 +743,16 @@ export default function DashboardsGalleryPage() {
             justifyContent="center"
             gap={2}
             minH="220px"
-            bg="bg"
-            borderWidth="2px"
+            bg="#F7F9FF"
+            borderWidth="1px"
             borderStyle="dashed"
-            borderColor="border.emphasized"
-            rounded="md"
-            color="fg.muted"
+            borderColor="#8EA5EA"
+            rounded="8px"
+            color="#0049AA"
             opacity={atCap ? 0.5 : 1}
             cursor={atCap ? "not-allowed" : "pointer"}
             transition="background 0.15s ease, color 0.15s ease"
-            _hover={atCap ? undefined : { bg: "bg.subtle", color: "fg" }}
+            _hover={atCap ? undefined : { bg: "#EEF2FF" }}
           >
             <Icon as={PlusIcon} boxSize={6} />
             <Text fontWeight="medium">New dashboard</Text>
