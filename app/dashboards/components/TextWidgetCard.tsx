@@ -14,9 +14,11 @@ import {
   TextHTwoIcon,
   ListBulletsIcon,
   ListNumbersIcon,
+  LinkIcon,
 } from "@phosphor-icons/react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Link from "@tiptap/extension-link";
 import { Markdown } from "tiptap-markdown";
 import { Tooltip } from "@/app/components/ui/tooltip";
 
@@ -43,6 +45,7 @@ export default function TextWidgetCard({
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
       Markdown.configure({ html: false, linkify: true, breaks: true }),
     ],
     content: text,
@@ -61,6 +64,16 @@ export default function TextWidgetCard({
   const save = () => {
     if (editor) onChange(editor.storage.markdown.getMarkdown().trim());
     setEditing(false);
+  };
+  // Add/edit/remove a link on the selection (markdown [text](url)).
+  const setLink = () => {
+    if (!editor) return;
+    const prev = editor.getAttributes("link").href as string | undefined;
+    const url = window.prompt("Link URL", prev ?? "https://");
+    if (url === null) return; // cancelled
+    const chain = editor.chain().focus().extendMarkRange("link");
+    if (url === "") chain.unsetLink().run();
+    else chain.setLink({ href: url }).run();
   };
 
   const fmt = (
@@ -125,6 +138,12 @@ export default function TextWidgetCard({
               () => editor.chain().focus().toggleOrderedList().run(),
               <ListNumbersIcon size={14} />,
               "Numbered list"
+            )}
+            {fmt(
+              editor.isActive("link"),
+              setLink,
+              <LinkIcon size={14} />,
+              "Link"
             )}
           </Flex>
         )}
