@@ -18,6 +18,7 @@ import {
   InputGroup,
   Menu,
   Portal,
+  Table,
 } from "@chakra-ui/react";
 import {
   PlusIcon,
@@ -56,12 +57,6 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "name", label: "Name (A–Z)" },
   { key: "alerts", label: "Most alerts" },
 ];
-
-// Grid template shared by the list header row and each list row so columns
-// align: Name | Area | Alerts | Last edited | Visibility | Tags | Menu.
-// Area is `auto` so it hugs the area-name pill instead of padding out the row.
-const LIST_COLS =
-  "minmax(160px,1.8fr) auto 116px 130px 70px minmax(120px,1.2fr) 36px";
 
 // ---------------------------------------------------------------------------
 // Templates — clicking one seeds a new dashboard and opens it immediately.
@@ -385,6 +380,9 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
             <AlertsBadge label={dashboard.badge} seed={dashboard.id} />
           </Box>
         )}
+        <Box mb={2} onClick={(e) => e.stopPropagation()}>
+          <DashboardTags dashboard={dashboard} />
+        </Box>
         <Flex align="center" gap={2} color="fg.muted">
           <VisibilityIcon isPublic={dashboard.isPublic} />
           <Text fontSize="xs">{formatUpdated(dashboard.updatedAt)}</Text>
@@ -398,20 +396,31 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
 // List view
 // ---------------------------------------------------------------------------
 
+// Number of columns — kept in sync with the header + the colSpan rows below.
+const LIST_COL_COUNT = 7;
+
+/** Compact uppercase column header matching the prototype's table style. */
+function HeadCell(props: React.ComponentProps<typeof Table.ColumnHeader>) {
+  return (
+    <Table.ColumnHeader
+      fontSize="10px"
+      fontFamily="mono"
+      letterSpacing="0.5px"
+      textTransform="uppercase"
+      color="fg.muted"
+      fontWeight="normal"
+      {...props}
+    />
+  );
+}
+
 function DashboardListRow({ dashboard }: { dashboard: Dashboard }) {
   const router = useRouter();
   const rename = useRename(dashboard);
 
   return (
-    <Box
-      display="grid"
-      gridTemplateColumns={LIST_COLS}
-      alignItems="center"
-      gap={3}
-      px={4}
-      py={2.5}
-      borderBottomWidth="1px"
-      borderColor="border"
+    <Table.Row
+      bg="transparent"
       cursor={rename.renaming ? "default" : "pointer"}
       onClick={
         rename.renaming
@@ -420,13 +429,15 @@ function DashboardListRow({ dashboard }: { dashboard: Dashboard }) {
       }
       _hover={{ bg: "bg.subtle" }}
     >
-      {/* Name */}
-      <Flex minW={0} align="center" gap={2}>
+      {/* Name — width:100% makes this column take the remaining space so the
+          others shrink to their content. */}
+      <Table.Cell width="100%">
         {rename.renaming ? (
           <Input
             value={rename.draft}
             autoFocus
             size="sm"
+            maxW="320px"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => rename.setDraft(e.target.value)}
             onBlur={rename.commit}
@@ -440,60 +451,44 @@ function DashboardListRow({ dashboard }: { dashboard: Dashboard }) {
             {dashboard.title}
           </Text>
         )}
-      </Flex>
+      </Table.Cell>
 
       {/* Area */}
-      <Box minW={0}>
+      <Table.Cell>
         <AreaPill name={areaOf(dashboard)} />
-      </Box>
+      </Table.Cell>
 
       {/* New alerts */}
-      <Box>
+      <Table.Cell>
         {dashboard.badge && (
           <AlertsBadge label={dashboard.badge} seed={dashboard.id} />
         )}
-      </Box>
+      </Table.Cell>
 
       {/* Last edited */}
-      <Text fontSize="xs" color="fg.muted">
+      <Table.Cell whiteSpace="nowrap" fontSize="xs" color="fg.muted">
         {formatUpdated(dashboard.updatedAt)}
-      </Text>
+      </Table.Cell>
 
       {/* Visibility */}
-      <Flex justify="center">
+      <Table.Cell textAlign="center">
         <VisibilityIcon isPublic={dashboard.isPublic} />
-      </Flex>
+      </Table.Cell>
 
       {/* Tags */}
-      <DashboardTags dashboard={dashboard} />
+      <Table.Cell>
+        <DashboardTags dashboard={dashboard} />
+      </Table.Cell>
 
       {/* Menu */}
-      <Box onClick={(e) => e.stopPropagation()} justifySelf="end">
+      <Table.Cell textAlign="end" onClick={(e) => e.stopPropagation()}>
         <DashboardActionsMenu
           dashboard={dashboard}
           onRename={rename.start}
           size="2xs"
         />
-      </Box>
-    </Box>
-  );
-}
-
-function ListHeaderCell({
-  children,
-  ...rest
-}: React.ComponentProps<typeof Text>) {
-  return (
-    <Text
-      fontSize="10px"
-      fontFamily="mono"
-      letterSpacing="0.5px"
-      textTransform="uppercase"
-      color="fg.muted"
-      {...rest}
-    >
-      {children}
-    </Text>
+      </Table.Cell>
+    </Table.Row>
   );
 }
 
@@ -508,59 +503,66 @@ function DashboardListView({
 }) {
   return (
     <Box
+      bg="bg"
       borderWidth="1px"
       borderColor="border"
       rounded="md"
       overflow="hidden"
       mb={12}
     >
-      {/* Column headers */}
-      <Box
-        display="grid"
-        gridTemplateColumns={LIST_COLS}
-        gap={3}
-        px={4}
-        py={2}
-        bg="bg.subtle"
-        borderBottomWidth="1px"
-        borderColor="border"
-      >
-        <ListHeaderCell>Name</ListHeaderCell>
-        <ListHeaderCell>Area</ListHeaderCell>
-        <ListHeaderCell>Alerts</ListHeaderCell>
-        <ListHeaderCell>Last edited</ListHeaderCell>
-        <ListHeaderCell textAlign="center">Visibility</ListHeaderCell>
-        <ListHeaderCell>Tags</ListHeaderCell>
-        <Box />
-      </Box>
+      <Table.Root variant="line" size="sm" bg="transparent">
+        <Table.Header>
+          <Table.Row bg="bg.subtle">
+            <HeadCell width="100%">Name</HeadCell>
+            <HeadCell>Area</HeadCell>
+            <HeadCell>Alerts</HeadCell>
+            <HeadCell whiteSpace="nowrap">Last edited</HeadCell>
+            <HeadCell textAlign="center">Visibility</HeadCell>
+            <HeadCell>Tags</HeadCell>
+            <HeadCell />
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {dashboards.length === 0 ? (
+            <Table.Row bg="transparent">
+              <Table.Cell
+                colSpan={LIST_COL_COUNT}
+                textAlign="center"
+                color="fg.muted"
+                py={8}
+              >
+                No dashboards match your search.
+              </Table.Cell>
+            </Table.Row>
+          ) : (
+            dashboards.map((d) => <DashboardListRow key={d.id} dashboard={d} />)
+          )}
 
-      {dashboards.length === 0 ? (
-        <Box px={4} py={8} textAlign="center" color="fg.muted">
-          No dashboards match your search.
-        </Box>
-      ) : (
-        dashboards.map((d) => <DashboardListRow key={d.id} dashboard={d} />)
-      )}
-
-      {/* New dashboard row */}
-      <Box
-        as="button"
-        onClick={atCap ? undefined : onNew}
-        display="flex"
-        alignItems="center"
-        gap={2}
-        w="full"
-        px={4}
-        py={3}
-        color="fg.muted"
-        opacity={atCap ? 0.5 : 1}
-        cursor={atCap ? "not-allowed" : "pointer"}
-        transition="background 0.15s ease, color 0.15s ease"
-        _hover={atCap ? undefined : { bg: "bg.subtle", color: "fg" }}
-      >
-        <PlusIcon size={16} />
-        <Text fontWeight="medium">New dashboard</Text>
-      </Box>
+          {/* New dashboard row — spans all columns */}
+          <Table.Row bg="transparent">
+            <Table.Cell colSpan={LIST_COL_COUNT} p={0}>
+              <Box
+                as="button"
+                onClick={atCap ? undefined : onNew}
+                display="flex"
+                alignItems="center"
+                gap={2}
+                w="full"
+                px={4}
+                py={3}
+                color="fg.muted"
+                opacity={atCap ? 0.5 : 1}
+                cursor={atCap ? "not-allowed" : "pointer"}
+                transition="background 0.15s ease, color 0.15s ease"
+                _hover={atCap ? undefined : { bg: "bg.subtle", color: "fg" }}
+              >
+                <PlusIcon size={16} />
+                <Text fontWeight="medium">New dashboard</Text>
+              </Box>
+            </Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table.Root>
     </Box>
   );
 }
@@ -625,18 +627,20 @@ export default function DashboardsGalleryPage() {
     <Container maxW="6xl" py={10}>
       {/* Header: title + counter + view switcher */}
       <Flex align="center" gap={3} mb={5} wrap="wrap">
-        <Heading size="lg" lineHeight="1">
-          My dashboards
-        </Heading>
-        <Badge
-          variant="surface"
-          colorPalette="gray"
-          rounded="full"
-          px={2.5}
-          py={1}
-        >
-          {dashboards.length} / {DASHBOARD_LIMIT}
-        </Badge>
+        <Flex align="center" gap={3}>
+          <Heading size="lg" lineHeight="1">
+            My dashboards
+          </Heading>
+          <Badge
+            variant="surface"
+            colorPalette="gray"
+            rounded="full"
+            px={2.5}
+            py={1}
+          >
+            {dashboards.length} / {DASHBOARD_LIMIT}
+          </Badge>
+        </Flex>
         <ButtonGroup ml="auto" size="sm" variant="outline" attached>
           <Button
             aria-label="Card view"
