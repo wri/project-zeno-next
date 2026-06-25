@@ -62,6 +62,8 @@ export default function DashboardChatPanel() {
   const removeMention = useComposerStore((s) => s.removeMention);
   const clearMentions = useComposerStore((s) => s.clearMentions);
   const openAnalyses = useComposerStore((s) => s.openAnalyses);
+  const setupPane = useComposerStore((s) => s.setupPane);
+  const openSetupPane = useComposerStore((s) => s.openSetupPane);
   const focusNonce = useComposerStore((s) => s.focusNonce);
 
   const [messages, setMessages] = useState<PanelMessage[]>([]);
@@ -136,6 +138,24 @@ export default function DashboardChatPanel() {
 
   const hasConversation = messages.length > 0;
 
+  // During the new-dashboard setup flow the heading/intro point the user at the
+  // docked context pane (Areas before an AOI, Analyses after); otherwise they
+  // fall back to the gallery/detail copy.
+  const heading =
+    setupPane === "areas"
+      ? "Set up your dashboard"
+      : setupPane === "analyses"
+        ? "Build your dashboard"
+        : context === "detail"
+          ? "Refine this dashboard"
+          : "What would you like to explore?";
+  const intro =
+    setupPane === "areas"
+      ? "Select an area on the left to base this dashboard on, or describe the dashboard you want and I'll set it up."
+      : setupPane === "analyses"
+        ? "Add an insight from the Analyses panel on the left, or describe what you want to explore and I'll build it."
+        : introText(context);
+
   return (
     <Flex
       flexDir="column"
@@ -176,12 +196,10 @@ export default function DashboardChatPanel() {
       {/* Intro + suggestions / conversation */}
       <Box ref={scrollRef} flex="1 1 auto" overflowY="auto" px={4} py={4}>
         <Text fontSize="md" fontWeight="medium" color="fg.link" mb={2}>
-          {context === "detail"
-            ? "Refine this dashboard"
-            : "What would you like to explore?"}
+          {heading}
         </Text>
         <Text fontSize="sm" color="fg" mb={4}>
-          {introText(context)}
+          {intro}
         </Text>
 
         {/* Empty state: full-width suggestion rows */}
@@ -318,15 +336,34 @@ export default function DashboardChatPanel() {
           <Flex justify="space-between" align="center">
             <Flex gap={2}>
               {[
-                // "Areas" is only relevant on the gallery; a dashboard's area
-                // is already fixed, so drop it on the detail page.
-                ...(context === "gallery"
-                  ? [{ label: "Areas", icon: PolygonIcon, onClick: undefined }]
-                  : []),
+                // "Areas": re-opens the docked Areas pane during setup; on the
+                // gallery it's a legacy no-op; otherwise (a fixed-area
+                // dashboard) it's dropped.
+                ...(setupPane
+                  ? [
+                      {
+                        label: "Areas",
+                        icon: PolygonIcon,
+                        onClick: () => openSetupPane("areas"),
+                      },
+                    ]
+                  : context === "gallery"
+                    ? [
+                        {
+                          label: "Areas",
+                          icon: PolygonIcon,
+                          onClick: undefined,
+                        },
+                      ]
+                    : []),
                 {
                   label: "Analyses",
                   icon: ChartBarIcon,
-                  onClick: openAnalyses,
+                  // In setup mode the Analyses pane is docked (re-open it);
+                  // otherwise slide it over the chat.
+                  onClick: setupPane
+                    ? () => openSetupPane("analyses")
+                    : openAnalyses,
                 },
               ].map((chip) => (
                 <Flex
