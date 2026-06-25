@@ -204,7 +204,13 @@ export default function DashboardInsightCard({
           >
             {insight.title}
           </Text>
-          <Flex gap={0.5} flexShrink={0} align="center" color="neutral.500">
+          <Flex gap={1.5} flexShrink={0} align="center" color="neutral.500">
+            {chips.length > 0 && (
+              <AnalysisParametersToggle
+                expanded={paramsExpanded}
+                onToggle={() => setParamsExpanded((v) => !v)}
+              />
+            )}
             <Tooltip content="Drag to reorder" showArrow>
               <IconButton
                 aria-label="Drag to reorder"
@@ -247,6 +253,15 @@ export default function DashboardInsightCard({
           </Flex>
         </Flex>
 
+        {/* Analysis parameter chips (area, dataset, canopy, years) — live in
+            the tinted outer container, below the title, like the workspace. */}
+        {chips.length > 0 && paramsExpanded && (
+          <>
+            <Box h="1px" bg="#DDE2F5" />
+            <AnalysisParamsChips chips={chips} />
+          </>
+        )}
+
         {/* White chart area — chart, disclaimer + controls; excluded from
             the mention click target. */}
         <Box
@@ -283,20 +298,7 @@ export default function DashboardInsightCard({
             <Text fontSize="10px" color="fg.muted">
               · Learn more
             </Text>
-            {chips.length > 0 && (
-              <Box ml="auto">
-                <AnalysisParametersToggle
-                  expanded={paramsExpanded}
-                  onToggle={() => setParamsExpanded((v) => !v)}
-                />
-              </Box>
-            )}
           </Flex>
-
-          {/* Analysis parameter chips (area, dataset, canopy, years) */}
-          {chips.length > 0 && paramsExpanded && (
-            <AnalysisParamsChips chips={chips} />
-          )}
 
           {/* View toggle: Chart | Table | Map */}
           <Flex
