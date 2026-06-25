@@ -1,7 +1,12 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
-import { Box, Tag } from "@chakra-ui/react";
+import { Box, Flex, Tag } from "@chakra-ui/react";
 import AoiActionsMenu from "@/app/dashboards/components/AoiActionsMenu";
+import {
+  useAnalysis,
+  ViewAnalysisChip,
+  type AreaSelection,
+} from "@/src/features/analysis";
 import { ChatContextOptions } from "../../ContextButton";
 import {
   Feature,
@@ -230,6 +235,52 @@ function GeoJsonLayerGroup({
   })();
   const bboxPolygon = bboxCoords ? createBboxPolygon(bboxCoords) : null;
   const groupId = layer.id.replace(/\s+/g, "-").toLowerCase();
+
+  // Default analysis (ported from feat/analysis-enhancements-PZB-957): build the
+  // area to analyse from the selection (first AOI for multi-area), run the
+  // default TCL analysis on demand, and surface results in the InsightWorkspace.
+  const {
+    status: analysisStatus,
+    error: analysisError,
+    run: runAnalysis,
+  } = useAnalysis();
+  const analysisArea: AreaSelection | null = (() => {
+    const aois = layer.aoiSelection?.aois;
+    if (aois && aois.length > 0) {
+      const a = aois[0];
+      return {
+        name: a.name,
+        source: a.source,
+        srcId: a.src_id,
+        subtype: a.subtype,
+      };
+    }
+    const ref = layer.featureRefs?.[0];
+    const entry = ref
+      ? entries.find(
+          (e) => e.ref.name === ref.name && e.ref.source === ref.source
+        )
+      : undefined;
+    if (entry) {
+      return {
+        name: displayName,
+        source: entry.ref.source,
+        srcId: entry.srcId,
+        subtype: entry.subtype,
+      };
+    }
+    return null;
+  })();
+  const viewAnalysis = () => {
+    if (!analysisArea) return;
+    runAnalysis({
+      area: analysisArea,
+      dataset: { id: 4 }, // Tree cover loss — the default analysis
+      startDate: "2001-01-01",
+      endDate: "2025-12-31",
+    });
+  };
+
   return (
     <>
       {/* Polygon outlines per feature */}
@@ -337,43 +388,38 @@ function GeoJsonLayerGroup({
           />
         </Source>
       )}
-      {/* Single label */}
+      {/* Single label: chip (name + ×), a separate "…" button, and the
+          "View analysis" nudge — laid out in a row beside the bbox. */}
       {bboxCoords && layer.visible && (
         <Marker
           longitude={bboxCoords[0]}
           latitude={bboxCoords[3]}
           anchor="bottom-left"
         >
-          <Tag.Root
-            colorPalette={isInContext ? "primary" : "gray"}
-            px={2}
-            py={1}
-            size="md"
-            variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
-            roundedBottom="none"
-            cursor="pointer"
+          <Flex
+            align="center"
+            gap={2}
             onMouseEnter={() => setHoverState(true)}
             onMouseLeave={() => setHoverState(false)}
-            onClick={handleSelectFromLabel}
           >
-            {isInContext && (
-              <Tag.StartElement>
-                {ChatContextOptions.area.icon}
-              </Tag.StartElement>
-            )}
-            <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
-            <Tag.EndElement>
-              {/* "…" actions for this AOI (Create dashboard, etc.) */}
-              <Box
-                as="span"
-                display="inline-flex"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <AoiActionsMenu name={displayName} />
-              </Box>
+            <Tag.Root
+              colorPalette={isInContext ? "primary" : "gray"}
+              px={2}
+              py={1}
+              size="md"
+              variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
+              roundedBottom="none"
+              cursor="pointer"
+              onClick={handleSelectFromLabel}
+            >
+              {isInContext && (
+                <Tag.StartElement>
+                  {ChatContextOptions.area.icon}
+                </Tag.StartElement>
+              )}
+              <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
               {isInContext && (
                 <Tag.CloseTrigger
-                  opacity={isHovered ? 1 : 0.25}
                   cursor="pointer"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -383,8 +429,29 @@ function GeoJsonLayerGroup({
                   aria-label="Remove from context"
                 />
               )}
-            </Tag.EndElement>
-          </Tag.Root>
+            </Tag.Root>
+
+            {/* "…" actions for this AOI (Create dashboard, View analysis, etc.) */}
+            <Box onClick={(e) => e.stopPropagation()}>
+              <AoiActionsMenu
+                name={displayName}
+                isActive={isInContext}
+                analyzing={analysisStatus === "running"}
+                onViewAnalysis={analysisArea ? viewAnalysis : undefined}
+              />
+            </Box>
+
+            {/* "View analysis" nudge for the selected AOI. */}
+            {analysisArea && isInContext && (
+              <Box onClick={(e) => e.stopPropagation()}>
+                <ViewAnalysisChip
+                  status={analysisStatus}
+                  error={analysisError}
+                  onClick={viewAnalysis}
+                />
+              </Box>
+            )}
+          </Flex>
         </Marker>
       )}
     </>
