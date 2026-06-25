@@ -377,7 +377,7 @@ export default function DashboardInsightCard({
         zIndex={3}
         transition="opacity 0.12s ease"
       >
-        <ChatCircleIcon size={16} />
+        <ChatCircleIcon size={14} />
         Ask AI...
       </Flex>
 
