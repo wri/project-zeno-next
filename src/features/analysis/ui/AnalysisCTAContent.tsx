@@ -3,6 +3,7 @@ import { Box, Button, Text } from "@chakra-ui/react";
 import type { AnalysisStatus } from "./use-analysis";
 
 interface AnalysisCTAContentProps {
+  datasetLabel?: string;
   name: string;
   status: AnalysisStatus;
   error: Error | null;
@@ -16,6 +17,7 @@ interface AnalysisCTAContentProps {
  * isolation; the geo-anchored Popup wrapper lives in AnalysisCTA.
  */
 export function AnalysisCTAContent({
+  datasetLabel,
   name,
   status,
   error,
@@ -27,6 +29,7 @@ export function AnalysisCTAContent({
   return (
     <Box>
       <Text fontWeight="medium">{name}</Text>
+      <Text fontWeight="medium">{datasetLabel}</Text>
       <Box display="flex" gap={1} mt={1}>
         <Button size="xs" onClick={onAnalyze} disabled={running}>
           {running ? "Analyzing…" : "Analyze"}

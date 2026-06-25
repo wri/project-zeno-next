@@ -1,6 +1,11 @@
 "use client";
 import { Popup } from "react-map-gl/maplibre";
+
 import useSelectionStore from "../model/selection-store";
+import useContextStore from "@/app/store/contextStore";
+
+import { DATASET_CARDS } from "@/app/constants/datasets";
+
 import { useAnalysis } from "./use-analysis";
 import { AnalysisCTAContent } from "./AnalysisCTAContent";
 
@@ -12,9 +17,16 @@ import { AnalysisCTAContent } from "./AnalysisCTAContent";
 export function AnalysisCTA() {
   const selection = useSelectionStore((state) => state.selection);
   const lngLat = useSelectionStore((state) => state.lngLat);
+  const datasetContext = useContextStore((state) =>
+    state.context.find(
+      (c) => c.contextType === "layer" && typeof c.datasetId === "number"
+    )
+  );
+  const datasetId = datasetContext?.datasetId;
+  const datasetCard = DATASET_CARDS.find((dc) => dc.dataset_id === datasetId);
+  const datasetLabel = datasetCard?.shortName || datasetCard?.dataset_name;
   const clear = useSelectionStore((state) => state.clear);
   const { status, error, run, cancel } = useAnalysis();
-
   if (!selection || !lngLat) return null;
 
   // TODO: source dataset and date range from context before wiring the
@@ -37,6 +49,7 @@ export function AnalysisCTA() {
       onClose={clear}
     >
       <AnalysisCTAContent
+        datasetLabel={datasetLabel}
         name={selection.name}
         status={status}
         error={error}
