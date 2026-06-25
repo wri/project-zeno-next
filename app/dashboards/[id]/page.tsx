@@ -298,6 +298,7 @@ export default function DashboardDetailPage() {
           onToggleExpand={toggleExpand}
           onDelete={onDelete}
           arrange={arrangeFor(wgt.id)}
+          areaName={dashboard.subtitle ?? dashboard.title}
         />
       );
     }

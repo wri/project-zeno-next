@@ -30,8 +30,13 @@ import WidgetErrorBoundary from "@/app/components/widgets/WidgetErrorBoundary";
 import InsightProvenanceDrawer from "@/app/components/InsightProvenanceDrawer";
 import MapWidgetPlaceholder from "@/app/dashboards/components/MapWidgetPlaceholder";
 import { Tooltip } from "@/app/components/ui/tooltip";
+import AnalysisParametersToggle, {
+  AnalysisParamsChips,
+} from "@/app/components/widgets/AnalysisParameters";
+import { buildChips } from "@/app/components/widgets/analysis-params-utils";
 import useComposerStore from "@/app/dashboards/lib/composerStore";
 import type { DashboardWidget } from "@/app/types/dashboard";
+import type { AnalysisParams } from "@/app/types/chat";
 
 type View = "chart" | "table" | "map";
 
@@ -82,6 +87,9 @@ interface DashboardInsightCardProps {
     onMouseDown?: () => void;
     onMouseUp?: () => void;
   };
+  /** Dashboard's AOI name — used as the AREA param chip when the insight
+   *  itself carries no area (default/fixture analyses). */
+  areaName?: string;
 }
 
 export default function DashboardInsightCard({
@@ -90,14 +98,29 @@ export default function DashboardInsightCard({
   onToggleExpand,
   onDelete,
   arrange,
+  areaName,
 }: DashboardInsightCardProps) {
   const insight = widget.insight!;
   const isChartType = CHART_TYPES.has(insight.type);
   const hasData = Array.isArray(insight.data) && insight.data.length > 0;
   const [view, setView] = useState<View>(isChartType ? "chart" : "table");
   const [hovered, setHovered] = useState(false);
+  const [paramsExpanded, setParamsExpanded] = useState(false);
   const provenance = useDisclosure();
   const verified = widget.verified;
+
+  // Analysis parameters surfaced as chips. The insight's own params win; we
+  // fall back to the dashboard's AOI for the AREA chip and to the widget's
+  // datasetName for DATA so default/fixture analyses still show something.
+  const params: AnalysisParams | undefined = (() => {
+    const base = insight.analysisParams;
+    if (!base && !insight.datasetName && !areaName) return undefined;
+    const p: AnalysisParams = { ...base };
+    if (!p.areas?.length && areaName) p.areas = [areaName];
+    if (!p.dataset && insight.datasetName) p.dataset = insight.datasetName;
+    return p;
+  })();
+  const chips = params ? buildChips(params) : [];
   const addMention = useComposerStore((s) => s.addMention);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -260,7 +283,20 @@ export default function DashboardInsightCard({
             <Text fontSize="10px" color="fg.muted">
               · Learn more
             </Text>
+            {chips.length > 0 && (
+              <Box ml="auto">
+                <AnalysisParametersToggle
+                  expanded={paramsExpanded}
+                  onToggle={() => setParamsExpanded((v) => !v)}
+                />
+              </Box>
+            )}
           </Flex>
+
+          {/* Analysis parameter chips (area, dataset, canopy, years) */}
+          {chips.length > 0 && paramsExpanded && (
+            <AnalysisParamsChips chips={chips} />
+          )}
 
           {/* View toggle: Chart | Table | Map */}
           <Flex

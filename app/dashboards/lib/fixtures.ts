@@ -88,6 +88,11 @@ const EMISSIONS_LINE: InsightWidget = {
   xAxis: "year",
   yAxis: "carbon_emissions_mt",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "Gross emissions from forest biomass loss",
+    startYear: 2015,
+    endYear: 2023,
+  },
 };
 
 const DRIVERS_PIE: InsightWidget = {
@@ -105,6 +110,12 @@ const DRIVERS_PIE: InsightWidget = {
   xAxis: "driver",
   yAxis: "area_ha",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "Tree cover loss by dominant driver",
+    canopyThreshold: 30,
+    startYear: 2001,
+    endYear: 2023,
+  },
 };
 
 const TCL_TABLE: InsightWidget = {
@@ -140,6 +151,12 @@ const TCL_TABLE: InsightWidget = {
   ] as unknown as InsightWidget["data"],
   xAxis: "",
   yAxis: "",
+  analysisParams: {
+    dataset: "Tree cover loss",
+    canopyThreshold: 30,
+    startYear: 2001,
+    endYear: 2023,
+  },
 };
 
 const TCL_BAR: InsightWidget = {
@@ -157,6 +174,12 @@ const TCL_BAR: InsightWidget = {
   yAxis: "tree_cover_loss_ha",
   datasetName: "Tree cover loss",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "Tree cover loss",
+    canopyThreshold: 30,
+    startYear: 2023,
+    endYear: 2023,
+  },
 };
 
 const LAND_COVER_PIE: InsightWidget = {
@@ -174,6 +197,11 @@ const LAND_COVER_PIE: InsightWidget = {
   xAxis: "land_cover_type",
   yAxis: "area_km2",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "Land cover",
+    startYear: 2023,
+    endYear: 2023,
+  },
 };
 
 const GHG_FLUX_BAR: InsightWidget = {
@@ -193,6 +221,11 @@ const GHG_FLUX_BAR: InsightWidget = {
   yAxis: "net_flux_mtco2e",
   datasetName: "Forest greenhouse gas net flux (2001-2024)",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "Forest greenhouse gas net flux (2001-2024)",
+    startYear: 2018,
+    endYear: 2023,
+  },
 };
 
 const TREE_GAIN_AREA: InsightWidget = {
@@ -214,6 +247,12 @@ const TREE_GAIN_AREA: InsightWidget = {
   yAxis: "gain_ha",
   datasetName: "Tree cover gain",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "Tree cover gain",
+    canopyThreshold: 30,
+    startYear: 2015,
+    endYear: 2023,
+  },
 };
 
 const FIRE_ALERTS_LINE: InsightWidget = {
@@ -235,6 +274,11 @@ const FIRE_ALERTS_LINE: InsightWidget = {
   yAxis: "alerts",
   datasetName: "VIIRS fire alerts",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "VIIRS fire alerts",
+    startYear: 2024,
+    endYear: 2024,
+  },
 };
 
 const GRASSLAND_AREA: InsightWidget = {
@@ -253,6 +297,11 @@ const GRASSLAND_AREA: InsightWidget = {
   yAxis: "extent_km2",
   datasetName: "Grasslands",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "Grasslands",
+    startYear: 2018,
+    endYear: 2023,
+  },
 };
 
 const BIODIVERSITY_BAR: InsightWidget = {
@@ -270,6 +319,9 @@ const BIODIVERSITY_BAR: InsightWidget = {
   yAxis: "species",
   datasetName: "Key Biodiversity Areas",
   generation: FAKE_GENERATION,
+  analysisParams: {
+    dataset: "Key Biodiversity Areas",
+  },
 };
 
 /** Named widget fixtures the canned engine can clone into a dashboard. */
@@ -311,6 +363,13 @@ export const AI_EXAMPLE_INSIGHTS: InsightWidget[] = [
     yAxis: "area_ha",
     datasetName: "Tree cover loss",
     generation: FAKE_GENERATION,
+    analysisParams: {
+      areas: ["Paraná, Brazil"],
+      dataset: "Tree cover loss",
+      canopyThreshold: 30,
+      startYear: 2019,
+      endYear: 2023,
+    },
   },
   {
     type: "bar",
@@ -325,6 +384,11 @@ export const AI_EXAMPLE_INSIGHTS: InsightWidget[] = [
     xAxis: "period",
     yAxis: "mtco2e",
     generation: FAKE_GENERATION,
+    analysisParams: {
+      dataset: "Gross emissions from forest biomass loss",
+      startYear: 2021,
+      endYear: 2023,
+    },
   },
   {
     type: "bar",
@@ -339,6 +403,9 @@ export const AI_EXAMPLE_INSIGHTS: InsightWidget[] = [
     xAxis: "cluster",
     yAxis: "alerts",
     generation: FAKE_GENERATION,
+    analysisParams: {
+      dataset: "Global all ecosystem disturbance alerts",
+    },
   },
 ];
 
