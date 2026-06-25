@@ -72,29 +72,6 @@ function downloadCsv(title: string, data: unknown) {
   URL.revokeObjectURL(url);
 }
 
-/** Speech bubble with an "@" inside — the mention affordance. */
-function MentionBubbleIcon() {
-  return (
-    <Box position="relative" w="16px" h="16px">
-      <ChatCircleIcon size={16} />
-      <Box
-        as="span"
-        position="absolute"
-        inset={0}
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        pb="2px"
-        fontSize="8px"
-        fontWeight="bold"
-        lineHeight="1"
-      >
-        @
-      </Box>
-    </Box>
-  );
-}
-
 interface DashboardInsightCardProps {
   widget: DashboardWidget; // kind === "insight"
   expanded: boolean;
@@ -392,7 +369,7 @@ export default function DashboardInsightCard({
         color="#FFFFFF"
         rounded="md"
         fontSize="xs"
-        fontWeight="medium"
+        fontWeight="light"
         whiteSpace="nowrap"
         boxShadow="md"
         pointerEvents="none"
@@ -400,8 +377,8 @@ export default function DashboardInsightCard({
         zIndex={3}
         transition="opacity 0.12s ease"
       >
-        <MentionBubbleIcon />
-        Mention insight
+        <ChatCircleIcon size={16} />
+        Ask AI...
       </Flex>
 
       <InsightProvenanceDrawer
