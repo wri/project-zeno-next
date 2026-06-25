@@ -290,6 +290,59 @@ export const WIDGET_FIXTURES = {
 export type WidgetFixtureKey = keyof typeof WIDGET_FIXTURES;
 
 // ---------------------------------------------------------------------------
+// Example AI-generated insights — stand in for analyses produced in the map
+// chat (insightStore) so a standalone /dashboards visit still has generated
+// insights to browse. Distinct titles from the verified library.
+// ---------------------------------------------------------------------------
+
+export const AI_EXAMPLE_INSIGHTS: InsightWidget[] = [
+  {
+    type: "line",
+    title: "Tree cover loss spike in 2023 — Paraná",
+    description: "Annual tree cover loss with a sharp uptick in 2023.",
+    data: [
+      { year: 2019, area_ha: 38400 },
+      { year: 2020, area_ha: 35900 },
+      { year: 2021, area_ha: 29800 },
+      { year: 2022, area_ha: 27300 },
+      { year: 2023, area_ha: 41000 },
+    ],
+    xAxis: "year",
+    yAxis: "area_ha",
+    datasetName: "Tree cover loss",
+    generation: FAKE_GENERATION,
+  },
+  {
+    type: "bar",
+    title: "Emissions vs. previous 3-year average",
+    description: "Recent land-use emissions compared to the prior average.",
+    data: [
+      { period: "2021", mtco2e: 3.1 },
+      { period: "2022", mtco2e: 3.4 },
+      { period: "2023", mtco2e: 3.0 },
+      { period: "3-yr avg", mtco2e: 2.6 },
+    ],
+    xAxis: "period",
+    yAxis: "mtco2e",
+    generation: FAKE_GENERATION,
+  },
+  {
+    type: "bar",
+    title: "Top disturbance-alert clusters this month",
+    description: "Where recent disturbance alerts are concentrating.",
+    data: [
+      { cluster: "Western frontier", alerts: 120 },
+      { cluster: "River basin", alerts: 86 },
+      { cluster: "Northern ridge", alerts: 54 },
+      { cluster: "Southern edge", alerts: 33 },
+    ],
+    xAxis: "cluster",
+    yAxis: "alerts",
+    generation: FAKE_GENERATION,
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Seed dashboards (match the three cards in the Figma gallery)
 // ---------------------------------------------------------------------------
 

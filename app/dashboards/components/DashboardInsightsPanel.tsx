@@ -16,7 +16,10 @@ import {
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import useDashboardStore from "@/app/store/dashboardStore";
 import useInsightStore from "@/app/store/insightStore";
-import { WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
+import {
+  WIDGET_FIXTURES,
+  AI_EXAMPLE_INSIGHTS,
+} from "@/app/dashboards/lib/fixtures";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
@@ -45,6 +48,15 @@ const LIBRARY: { topic: string; insight: InsightWidget }[] = [
 ];
 
 const VERIFIED_TOPICS = Array.from(new Set(LIBRARY.map((r) => r.topic)));
+
+type SourceKey = "all" | "verified" | "ai";
+const SOURCE_FILTERS: { key: SourceKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "verified", label: "Verified" },
+  { key: "ai", label: "AI generated" },
+];
+
+type LibEntry = { insight: InsightWidget; verified: boolean; topic?: string };
 
 /** Thumbnail icon per chart type. */
 const TYPE_ICON: Record<string, React.ElementType> = {
@@ -270,6 +282,7 @@ export default function DashboardInsightsPanel({
   const dashboards = useDashboardStore((s) => s.dashboards);
   const addWidget = useDashboardStore((s) => s.addWidget);
   const [filter, setFilter] = useState<FilterKey>("conversation");
+  const [source, setSource] = useState<SourceKey>("all");
   const [topic, setTopic] = useState("All");
   const [shownIds, setShownIds] = useState<Set<string>>(new Set());
 
@@ -291,23 +304,40 @@ export default function DashboardInsightsPanel({
     return true;
   });
 
-  // Detail: verified library + any AI-generated insights from the map session
-  // (insightStore is populated by the generate_insights tool and survives
-  // client-side navigation), filtered by topic.
+  // Detail library. Verified = the curated fixtures (topic-filterable).
+  // AI-generated = live insightStore (map session) + example insights, minus
+  // anything that duplicates a verified title. insightStore survives
+  // client-side navigation; the examples give a standalone visit content too.
   const generated = useInsightStore((s) => s.insights);
-  const generatedEntries = generated
-    .filter((i) => i && i.type !== "dataset-card")
-    .map((insight) => ({ topic: "Generated", insight, verified: false }));
-  const verifiedEntries = LIBRARY.map((r) => ({ ...r, verified: true }));
-  const allLibrary = [...generatedEntries, ...verifiedEntries];
-  const topics = [
-    "All",
-    ...(generatedEntries.length ? ["Generated"] : []),
-    ...VERIFIED_TOPICS,
-  ];
-  const filteredLibrary = allLibrary.filter(
-    (r) => topic === "All" || r.topic === topic
-  );
+  const libraryTitles = new Set(LIBRARY.map((r) => r.insight.title));
+  const seenAi = new Set<string>();
+  const aiInsights = [...generated, ...AI_EXAMPLE_INSIGHTS].filter((i) => {
+    if (!i || i.type === "dataset-card") return false;
+    if (libraryTitles.has(i.title) || seenAi.has(i.title)) return false;
+    seenAi.add(i.title);
+    return true;
+  });
+
+  const verifiedEntries: LibEntry[] = LIBRARY.map((r) => ({
+    insight: r.insight,
+    verified: true,
+    topic: r.topic,
+  }));
+  const aiEntries: LibEntry[] = aiInsights.map((insight) => ({
+    insight,
+    verified: false,
+  }));
+
+  let entries: LibEntry[];
+  if (source === "verified") {
+    entries = verifiedEntries.filter(
+      (e) => topic === "All" || e.topic === topic
+    );
+  } else if (source === "ai") {
+    entries = aiEntries;
+  } else {
+    entries = [...verifiedEntries, ...aiEntries];
+  }
 
   const toggleShown = (id: string) =>
     setShownIds((prev) => {
@@ -379,29 +409,50 @@ export default function DashboardInsightsPanel({
       {/* Body */}
       <Box flex="1 1 auto" overflowY="auto" px={4} py={3}>
         {isDetail ? (
-          // Topic filter + flat list of verified analyses to add
+          // Source filter (Verified reveals a topic sub-filter) + list to add
           <>
-            <Flex gap={2} mb={3} flexWrap="wrap">
-              {topics.map((t) => (
+            <Flex gap={2} mb={source === "verified" ? 2 : 3} flexWrap="wrap">
+              {SOURCE_FILTERS.map((s) => (
                 <FilterPill
-                  key={t}
-                  active={topic === t}
-                  onClick={() => setTopic(t)}
+                  key={s.key}
+                  active={source === s.key}
+                  onClick={() => setSource(s.key)}
                 >
-                  {t}
+                  {s.label}
                 </FilterPill>
               ))}
             </Flex>
-            <Flex flexDir="column" gap={2}>
-              {filteredLibrary.map((r, i) => (
-                <LibraryCard
-                  key={r.insight.id ?? `${r.topic}-${r.insight.title}-${i}`}
-                  insight={r.insight}
-                  verified={r.verified}
-                  onAdd={() => addToDashboard(r.insight, r.verified)}
-                />
-              ))}
-            </Flex>
+            {source === "verified" && (
+              <Flex gap={2} mb={3} pl={3} flexWrap="wrap">
+                {["All", ...VERIFIED_TOPICS].map((t) => (
+                  <FilterPill
+                    key={t}
+                    active={topic === t}
+                    onClick={() => setTopic(t)}
+                  >
+                    {t}
+                  </FilterPill>
+                ))}
+              </Flex>
+            )}
+            {entries.length === 0 ? (
+              <Text fontSize="sm" color="fg.muted" py={6} textAlign="center">
+                No analyses to show.
+              </Text>
+            ) : (
+              <Flex flexDir="column" gap={2}>
+                {entries.map((e, i) => (
+                  <LibraryCard
+                    key={
+                      e.insight.id ?? `${e.verified}-${e.insight.title}-${i}`
+                    }
+                    insight={e.insight}
+                    verified={e.verified}
+                    onAdd={() => addToDashboard(e.insight, e.verified)}
+                  />
+                ))}
+              </Flex>
+            )}
           </>
         ) : (
           // Gallery: source filter + cards with show-on-map
