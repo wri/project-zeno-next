@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, Suspense } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { Loader } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useChatStore from "@/app/store/chatStore";
@@ -61,15 +61,18 @@ function NewThread() {
     defaultLayerSeededRef.current = true;
   }, [context, upsertContextByType]);
 
-  const submitPrompt = async (prompt: string) => {
-    const result = await sendMessage(prompt);
-    if (result.isNew) {
-      router.replace(`/app/threads/${result.id}`);
-    }
-  };
+  const submitPrompt = useCallback(
+    async (prompt: string) => {
+      const result = await sendMessage(prompt);
+      if (result.isNew) {
+        router.replace(`/app/threads/${result.id}`);
+      }
+    },
+    [sendMessage, router]
+  );
 
   useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasMounted || !searchParams) return;
     const prompt = searchParams.get("prompt");
     if (prompt && !currentThreadId) {
       submitPrompt(prompt);

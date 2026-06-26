@@ -101,7 +101,12 @@ function WorkspaceSkeleton() {
 
 export default function InsightWorkspace() {
   const { insights } = useInsightStore();
-  const isLoading = useChatStore((state) => state.isLoading);
+  // Drive the loading affordances off the insight-specific flag, not the
+  // request-wide isLoading: the skeleton/spinner should appear only while an
+  // insight is actually being generated, not for every prompt.
+  const isGeneratingInsight = useChatStore(
+    (state) => state.isGeneratingInsight
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
@@ -114,9 +119,11 @@ export default function InsightWorkspace() {
   // First analysis still generating: no chart to show yet, so present a
   // skeleton card instead of an empty gap. Once a chart lands (total > 0),
   // the normal card renders and the header "INSIGHTS LOADING" indicator
-  // covers any subsequent regeneration.
+  // covers any subsequent regeneration. Gated on isGeneratingInsight so the
+  // skeleton appears only once the agent commits to generate_insights — not
+  // immediately on every prompt.
   if (total === 0) {
-    if (!isLoading) return null;
+    if (!isGeneratingInsight) return null;
     return <WorkspaceSkeleton />;
   }
 
@@ -196,7 +203,7 @@ export default function InsightWorkspace() {
           </Text>
         </Flex>
         <Flex align="center" gap="8px" flexShrink={0}>
-          {isLoading && (
+          {isGeneratingInsight && (
             <Flex align="center" gap="4px">
               <Box
                 animation="spin 1s infinite"
