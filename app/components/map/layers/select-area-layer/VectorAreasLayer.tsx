@@ -53,7 +53,10 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   // Evaluate the flag once at render time so event handlers don't read
   // window.location directly and the value is stable within a render cycle.
   const searchParams = useSearchParams();
-  const analysisEnabled = isFeatureEnabled(searchParams, "analysis");
+  const analysisEnabled = isFeatureEnabled(
+    new URLSearchParams(searchParams?.toString()),
+    "analysis"
+  );
 
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId

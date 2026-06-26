@@ -101,7 +101,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const active =
     enabled ??
     (process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
-      params.get("debug") === "1");
+      params?.get("debug") === "1");
   const [dismissed, setDismissed] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const layers = useMapStore((s) => s.layers);
