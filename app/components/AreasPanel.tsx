@@ -22,11 +22,12 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import type { Feature, MultiPolygon } from "geojson";
 
-import { chatPanelCardStyle } from "@/app/chatPanelShared";
+import {
+  getCatalogColumnMotionStyle,
+  getCatalogColumnPanelFlexProps,
+} from "@/app/chatPanelShared";
 import {
   CATALOG_CARD_WIDTH_PX,
-  CATALOG_COLUMN_Z_INDEX,
-  CATALOG_PANEL_WIDTH_PX,
   getCatalogLeftPx,
 } from "@/app/explorationLayout";
 import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
@@ -114,32 +115,9 @@ export default function AreasPanel() {
           animate={{ opacity: 1, x: 0 }}
           exit={compactSlide ? { opacity: 0, x: -16 } : { opacity: 0 }}
           transition={areasPanelSlideTransition}
-          style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: leftPx,
-            zIndex: CATALOG_COLUMN_Z_INDEX,
-            pointerEvents: "auto",
-          }}
+          style={getCatalogColumnMotionStyle(leftPx)}
         >
-          <Flex
-            h="100%"
-            w={`${CATALOG_PANEL_WIDTH_PX}px`}
-            minW={`${CATALOG_PANEL_WIDTH_PX}px`}
-            maxW={`${CATALOG_PANEL_WIDTH_PX}px`}
-            flexShrink={0}
-            flexDirection="column"
-            display={{ base: "none", md: "flex" }}
-            {...chatPanelCardStyle}
-            overflow="visible"
-            borderLeftWidth={{ base: 0, md: isChatFullSize ? "1px" : 0 }}
-            borderLeftColor="border.emphasized"
-            borderRadius={{
-              base: 0,
-              md: isChatFullSize ? "0 sm sm 0" : "sm",
-            }}
-          >
+          <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
             <AreasPanelHeader onClose={() => setAreasPanelOpen(false)} />
             <Flex
               flex={1}
@@ -223,8 +201,10 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
       alignItems="center"
       borderBottom="1px solid"
       borderColor="#E0E2E5"
+      overflow="hidden"
+      minW={0}
     >
-      <Flex alignItems="center" gap="8px" minW={0}>
+      <Flex alignItems="center" gap="8px" minW={0} flex="1" overflow="hidden">
         <PolygonIcon size={16} color={AREA_LABEL_COLOR} />
         <Text
           fontSize="10px"
