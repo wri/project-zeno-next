@@ -156,7 +156,7 @@ export default function DashboardChatPanel() {
     setupPane === "areas"
       ? "Select an area on the left to base this dashboard on, or describe the dashboard you want and I'll set it up."
       : setupPane === "analyses"
-        ? "Add an insight from the Analyses panel on the left, or describe what you want to explore and I'll build it."
+        ? "Start with a Template dashboard, select individual insights from the Analyses panel; or describe what you want to explore and I'll build it!"
         : introText(context);
 
   return (
