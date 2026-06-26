@@ -16,11 +16,16 @@ import {
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import useDashboardStore from "@/app/store/dashboardStore";
 import useInsightStore from "@/app/store/insightStore";
+import useComposerStore from "@/app/dashboards/lib/composerStore";
 import { useUserInsights } from "@/app/hooks/useUserInsights";
 import {
   WIDGET_FIXTURES,
   AI_EXAMPLE_INSIGHTS,
 } from "@/app/dashboards/lib/fixtures";
+import {
+  TEMPLATES,
+  type DashboardTemplate,
+} from "@/app/dashboards/lib/templates";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
@@ -268,6 +273,66 @@ function LibraryCard({
   );
 }
 
+// --- Template card (curated starting point) ----------------------------------
+
+function TemplateCard({
+  template,
+  onAdd,
+}: {
+  template: DashboardTemplate;
+  onAdd: () => void;
+}) {
+  const Icon = template.icon;
+  const count = template.widgets.length;
+  return (
+    <Box
+      as="button"
+      onClick={onAdd}
+      textAlign="left"
+      w="full"
+      borderWidth="1px"
+      borderColor="#DDE2F5"
+      bg="#FFFFFF"
+      rounded="4px"
+      overflow="hidden"
+      cursor="pointer"
+      transition="border-color 0.15s ease, background 0.15s ease"
+      _hover={{ bg: "#F0F4FF", borderColor: "#0049AA" }}
+    >
+      <Flex align="stretch">
+        <Flex
+          w="64px"
+          flexShrink={0}
+          align="center"
+          justify="center"
+          alignSelf="stretch"
+          bg={template.accent}
+          color="white"
+        >
+          <Icon size={24} />
+        </Flex>
+        <Flex flex="1 1 auto" minW={0} direction="column" px={4} py={3} gap={1}>
+          <Text
+            fontWeight="medium"
+            fontSize="12px"
+            lineHeight="1.5"
+            color="#3A4048"
+            lineClamp={1}
+          >
+            {template.label}
+          </Text>
+          <Text fontFamily="mono" fontSize="10px" color="#656E7B" lineClamp={2}>
+            {template.description}
+          </Text>
+          <Text fontFamily="mono" fontSize="10px" color="#94A0B8">
+            {count} {count === 1 ? "block" : "blocks"}
+          </Text>
+        </Flex>
+      </Flex>
+    </Box>
+  );
+}
+
 // --- Panel -------------------------------------------------------------------
 
 export default function DashboardInsightsPanel({
@@ -282,10 +347,17 @@ export default function DashboardInsightsPanel({
 
   const dashboards = useDashboardStore((s) => s.dashboards);
   const addWidget = useDashboardStore((s) => s.addWidget);
+  const setupPane = useComposerStore((s) => s.setupPane);
   const [filter, setFilter] = useState<FilterKey>("conversation");
   const [source, setSource] = useState<SourceKey>("all");
   const [topic, setTopic] = useState("All");
   const [shownIds, setShownIds] = useState<Set<string>>(new Set());
+  // Curated templates are the natural first step while setting up a new
+  // dashboard, so default the detail view to them in that flow. As a slide-over
+  // for an already-populated dashboard, default to the full insight library.
+  const [tab, setTab] = useState<"templates" | "insights">(
+    setupPane === "analyses" ? "templates" : "insights"
+  );
 
   // Gallery items: all analyses across dashboards.
   const galleryItems: GalleryItem[] = dashboards.flatMap((d) =>
@@ -368,6 +440,19 @@ export default function DashboardInsightsPanel({
     });
   };
 
+  // Append a curated template's blocks to the dashboard. Once it has widgets the
+  // setup dock auto-collapses, so this also "finishes" the creation flow.
+  const applyTemplate = (template: DashboardTemplate) => {
+    if (!dashboardId) return;
+    template.widgets.forEach((wgt) => addWidget(dashboardId, wgt));
+    toaster.create({
+      title: "Template added",
+      description: template.title,
+      type: "success",
+      duration: 2000,
+    });
+  };
+
   return (
     <Flex
       flexDir="column"
@@ -414,49 +499,88 @@ export default function DashboardInsightsPanel({
       {/* Body */}
       <Box flex="1 1 auto" overflowY="auto" px={4} py={3}>
         {isDetail ? (
-          // Source filter (Verified reveals a topic sub-filter) + list to add
+          // Templates (curated starting points) vs the full insight library
           <>
-            <Flex gap={2} mb={source === "verified" ? 2 : 3} flexWrap="wrap">
-              {SOURCE_FILTERS.map((s) => (
-                <FilterPill
-                  key={s.key}
-                  active={source === s.key}
-                  onClick={() => setSource(s.key)}
-                >
-                  {s.label}
-                </FilterPill>
-              ))}
+            <Flex gap={2} mb={3} flexWrap="wrap">
+              <FilterPill
+                active={tab === "templates"}
+                onClick={() => setTab("templates")}
+              >
+                Templates
+              </FilterPill>
+              <FilterPill
+                active={tab === "insights"}
+                onClick={() => setTab("insights")}
+              >
+                Insights
+              </FilterPill>
             </Flex>
-            {source === "verified" && (
-              <Flex gap={2} mb={3} pl={3} flexWrap="wrap">
-                {["All", ...VERIFIED_TOPICS].map((t) => (
-                  <FilterPill
-                    key={t}
-                    active={topic === t}
-                    onClick={() => setTopic(t)}
-                  >
-                    {t}
-                  </FilterPill>
-                ))}
-              </Flex>
-            )}
-            {entries.length === 0 ? (
-              <Text fontSize="sm" color="fg.muted" py={6} textAlign="center">
-                No analyses to show.
-              </Text>
-            ) : (
+
+            {tab === "templates" ? (
               <Flex flexDir="column" gap={2}>
-                {entries.map((e, i) => (
-                  <LibraryCard
-                    key={
-                      e.insight.id ?? `${e.verified}-${e.insight.title}-${i}`
-                    }
-                    insight={e.insight}
-                    verified={e.verified}
-                    onAdd={() => addToDashboard(e.insight, e.verified)}
+                {TEMPLATES.map((t) => (
+                  <TemplateCard
+                    key={t.key}
+                    template={t}
+                    onAdd={() => applyTemplate(t)}
                   />
                 ))}
               </Flex>
+            ) : (
+              <>
+                <Flex
+                  gap={2}
+                  mb={source === "verified" ? 2 : 3}
+                  flexWrap="wrap"
+                >
+                  {SOURCE_FILTERS.map((s) => (
+                    <FilterPill
+                      key={s.key}
+                      active={source === s.key}
+                      onClick={() => setSource(s.key)}
+                    >
+                      {s.label}
+                    </FilterPill>
+                  ))}
+                </Flex>
+                {source === "verified" && (
+                  <Flex gap={2} mb={3} pl={3} flexWrap="wrap">
+                    {["All", ...VERIFIED_TOPICS].map((t) => (
+                      <FilterPill
+                        key={t}
+                        active={topic === t}
+                        onClick={() => setTopic(t)}
+                      >
+                        {t}
+                      </FilterPill>
+                    ))}
+                  </Flex>
+                )}
+                {entries.length === 0 ? (
+                  <Text
+                    fontSize="sm"
+                    color="fg.muted"
+                    py={6}
+                    textAlign="center"
+                  >
+                    No analyses to show.
+                  </Text>
+                ) : (
+                  <Flex flexDir="column" gap={2}>
+                    {entries.map((e, i) => (
+                      <LibraryCard
+                        key={
+                          e.insight.id ??
+                          `${e.verified}-${e.insight.title}-${i}`
+                        }
+                        insight={e.insight}
+                        verified={e.verified}
+                        onAdd={() => addToDashboard(e.insight, e.verified)}
+                      />
+                    ))}
+                  </Flex>
+                )}
+              </>
             )}
           </>
         ) : (
