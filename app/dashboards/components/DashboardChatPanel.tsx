@@ -18,6 +18,7 @@ import {
   ChartBarIcon,
   XIcon,
 } from "@phosphor-icons/react";
+import type { DragControls } from "framer-motion";
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import useDashboardStore from "@/app/store/dashboardStore";
 import useComposerStore from "@/app/dashboards/lib/composerStore";
@@ -54,7 +55,18 @@ function introText(context: "detail" | "gallery"): string {
     : "I can help you find data, build dashboards, and track changes across your areas of interest.";
 }
 
-export default function DashboardChatPanel() {
+interface DashboardChatPanelProps {
+  /** Render as a self-contained floating card (rounded, capped height, shadow)
+   *  rather than a full-height docked column. */
+  floating?: boolean;
+  /** When provided, the header's drag handle starts a framer-motion drag. */
+  dragControls?: DragControls;
+}
+
+export default function DashboardChatPanel({
+  floating = false,
+  dragControls,
+}: DashboardChatPanelProps) {
   const router = useRouter();
   const { dashboardId, context } = useDashboardContext();
   const addWidget = useDashboardStore((s) => s.addWidget);
@@ -162,13 +174,16 @@ export default function DashboardChatPanel() {
   return (
     <Flex
       flexDir="column"
-      h="100%"
-      w={{ base: "full", md: "400px" }}
+      h={floating ? { base: "70dvh", md: "560px" } : "100%"}
+      maxH={floating ? "calc(100dvh - 96px)" : undefined}
+      w={floating ? { base: "full", md: "400px" } : "full"}
       flexShrink={0}
       {...chatPanelCardStyle}
-      borderRadius={0}
-      borderWidth={0}
-      borderRightWidth={{ base: 0, md: "1px" }}
+      borderRadius={floating ? "lg" : 0}
+      borderWidth={floating ? "1px" : 0}
+      borderRightWidth={floating ? "1px" : { base: 0, md: "1px" }}
+      boxShadow={floating ? "xl" : undefined}
+      overflow="hidden"
     >
       {/* Header — drag handle + AI ASSISTANT, matching the design */}
       <Flex
@@ -181,7 +196,15 @@ export default function DashboardChatPanel() {
         justify="space-between"
         flexShrink={0}
       >
-        <Flex align="center" gap={2}>
+        <Flex
+          align="center"
+          gap={2}
+          cursor={dragControls ? "grab" : undefined}
+          onPointerDown={
+            dragControls ? (e) => dragControls.start(e) : undefined
+          }
+          style={dragControls ? { touchAction: "none" } : undefined}
+        >
           <Icon as={DotsSixVerticalIcon} boxSize="16px" color="neutral.500" />
           <Text
             fontFamily="mono"
