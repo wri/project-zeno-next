@@ -29,11 +29,13 @@ import {
   type DatasetCardConfig,
   type DatasetCategoryId,
 } from "@/app/constants/datasets";
-import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import {
-  DATA_CATALOG_CARD_WIDTH_PX,
-  DATA_CATALOG_PANEL_WIDTH_PX,
-  getDataCatalogLeftPx,
+  getCatalogColumnMotionStyle,
+  getCatalogColumnPanelFlexProps,
+} from "@/app/chatPanelShared";
+import {
+  CATALOG_CARD_WIDTH_PX,
+  getCatalogLeftPx,
 } from "@/app/explorationLayout";
 import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
@@ -42,7 +44,7 @@ import type { DatasetInfo } from "@/app/types/chat";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 
-import { DataCatalogCard } from "./DataCatalogCard";
+import { CatalogCard } from "./CatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
 import { Tooltip } from "./ui/tooltip";
 
@@ -81,7 +83,7 @@ export default function DataCatalogPanel() {
   const [category, setCategory] = useState<DatasetCategoryId>("all");
   const { dataCatalogOpen, setDataCatalogOpen, isChatFullSize } =
     useSidebarStore();
-  const leftPx = getDataCatalogLeftPx(isChatFullSize);
+  const leftPx = getCatalogLeftPx(isChatFullSize);
 
   // Build the "in this conversation" set from the context store. `useShallow`
   // keeps re-renders stable across unrelated context changes (e.g. AOI edits).
@@ -111,31 +113,9 @@ export default function DataCatalogPanel() {
           animate={{ opacity: 1, x: 0 }}
           exit={compactSlide ? { opacity: 0, x: -16 } : { opacity: 0 }}
           transition={catalogPanelSlideTransition}
-          style={{
-            position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: leftPx,
-            zIndex: 1095,
-            pointerEvents: "auto",
-          }}
+          style={getCatalogColumnMotionStyle(leftPx)}
         >
-          <Flex
-            h="100%"
-            w={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
-            minW={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
-            maxW={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
-            flexShrink={0}
-            flexDirection="column"
-            display={{ base: "none", md: "flex" }}
-            {...chatPanelCardStyle}
-            borderLeftWidth={{ base: 0, md: isChatFullSize ? "1px" : 0 }}
-            borderLeftColor="border.emphasized"
-            borderRadius={{
-              base: 0,
-              md: isChatFullSize ? "0 sm sm 0" : "sm",
-            }}
-          >
+          <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
             <Flex
               flexShrink={0}
               h="40px"
@@ -228,7 +208,7 @@ export default function DataCatalogPanel() {
                   </Text>
                 ) : (
                   cards.map((card) => (
-                    <DataCatalogCardRow key={card.dataset_id} card={card} />
+                    <CatalogCardRow key={card.dataset_id} card={card} />
                   ))
                 )}
               </Stack>
@@ -245,7 +225,7 @@ export default function DataCatalogPanel() {
  * switch, with an expanded controls row (visibility + opacity slider) shown
  * only while the layer is on the map.
  */
-function DataCatalogCardRow({ card }: { card: DatasetCardConfig }) {
+function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
   const {
     open: infoOpen,
     onOpen: onInfoOpen,
@@ -293,13 +273,13 @@ function DataCatalogCardRow({ card }: { card: DatasetCardConfig }) {
       .join(" · ") || undefined;
 
   return (
-    <Box w={`${DATA_CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
+    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
       <DatasetInfoModal
         isOpen={infoOpen}
         onClose={onInfoClose}
         dataset={dataset}
       />
-      <DataCatalogCard
+      <CatalogCard
         thumbnail={
           <Image
             objectFit="cover"

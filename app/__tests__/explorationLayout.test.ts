@@ -2,18 +2,19 @@ import { describe, it, expect } from "vitest";
 
 import {
   getCompactChatLeftPx,
-  getDataCatalogLeftPx,
+  getCatalogLeftPx,
   getMapAreaToolsLeftPx,
   getMapControlsLeftPx,
+  getMapFeedbackLeftPx,
 } from "@/app/explorationLayout";
 
 describe("explorationLayout", () => {
   it("docks the catalog flush left when chat is compact", () => {
-    expect(getDataCatalogLeftPx(false)).toBe(0);
+    expect(getCatalogLeftPx(false)).toBe(0);
   });
 
   it("docks the catalog flush against the full-size chat panel", () => {
-    expect(getDataCatalogLeftPx(true)).toBe(428);
+    expect(getCatalogLeftPx(true)).toBe(428);
   });
 
   it("keeps the compact chat inset when the catalog is closed", () => {
@@ -50,5 +51,17 @@ describe("explorationLayout", () => {
 
   it("offsets map controls past chat and catalog in full-size mode", () => {
     expect(getMapControlsLeftPx(true, true)).toBe(836);
+  });
+
+  it("places map feedback past the catalog column when compact chat and catalog are open", () => {
+    expect(getMapFeedbackLeftPx(false, true)).toBe(408);
+  });
+
+  it("places map feedback past chat and catalog in full-size mode", () => {
+    expect(getMapFeedbackLeftPx(true, true)).toBe(836);
+  });
+
+  it("places map feedback past the full-size chat when the catalog is closed", () => {
+    expect(getMapFeedbackLeftPx(true, false)).toBe(436);
   });
 });

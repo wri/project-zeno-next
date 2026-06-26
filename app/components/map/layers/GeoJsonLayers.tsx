@@ -2,12 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
 import { Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "../../ContextButton";
-import {
-  Feature,
-  FeatureCollection,
-  Polygon,
-  GeoJsonProperties,
-} from "geojson";
+import { Feature, FeatureCollection } from "geojson";
 import useContextStore, { ContextItem } from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 import {
@@ -17,30 +12,7 @@ import {
 } from "@/app/store/layerManagerSlice";
 import { BasemapTheme } from "../BasemapSelector";
 import bbox from "@turf/bbox";
-import { unionAoiBboxes } from "@/app/utils/bboxUtils";
-
-// Create a rectangle polygon from bbox coordinates
-function createBboxPolygon(
-  bboxCoords: [number, number, number, number]
-): Feature<Polygon, GeoJsonProperties> {
-  const [minLng, minLat, maxLng, maxLat] = bboxCoords;
-  return {
-    type: "Feature",
-    properties: {},
-    geometry: {
-      type: "Polygon",
-      coordinates: [
-        [
-          [minLng, minLat],
-          [maxLng, minLat],
-          [maxLng, maxLat],
-          [minLng, maxLat],
-          [minLng, minLat],
-        ],
-      ],
-    },
-  };
-}
+import { createBboxPolygon, unionAoiBboxes } from "@/app/utils/bboxUtils";
 
 // Compute the combined bbox of a list of features
 function computeCombinedBbox(

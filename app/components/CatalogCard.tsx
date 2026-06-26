@@ -5,51 +5,65 @@ import { InfoIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import {
-  DATA_CATALOG_CARD_HEIGHT_PX,
-  DATA_CATALOG_CARD_WIDTH_PX,
+  CATALOG_CARD_HEIGHT_PX,
+  CATALOG_CARD_WIDTH_PX,
 } from "@/app/explorationLayout";
 
 import { Tooltip } from "./ui/tooltip";
 
-export interface DataCatalogCardProps {
+export interface CatalogCardProps {
   thumbnail: ReactNode;
   typeLabel?: string;
   typeLabelColor?: string;
   title: string;
   description?: string;
   selected?: boolean;
+  /** Optional background applied to the card when `selected` is true (e.g. a light tint). */
+  selectedBg?: string;
   showOnMap: boolean;
   onShowOnMapChange: (checked: boolean) => void;
-  onInfoClick: () => void;
+  /** Optional info button click handler. When omitted, the info button is hidden. */
+  onInfoClick?: () => void;
+  /** Optional info button tooltip / aria text. Defaults to "Show dataset info". */
+  infoTooltip?: string;
+  /**
+   * Optional action node rendered in the top-right of the card header (same row
+   * as the type label). Used by the Areas panel to show locate/menu actions.
+   */
+  titleActions?: ReactNode;
 }
 
 /**
- * Dataset card for the data-catalog panel — taller than the shared InfoCard,
- * with metadata stacked above a divider and a labelled show-on-map toggle.
+ * Generic catalog card primitive — taller than the shared `InfoCard`, with
+ * metadata stacked above a divider and a labelled show-on-map toggle. Used by
+ * both `CatalogPanel` (datasets) and `AreasPanel` (AOIs).
  */
-export function DataCatalogCard({
+export function CatalogCard({
   thumbnail,
   typeLabel = "DATA",
   typeLabelColor = "#1AA915",
   title,
   description,
   selected = false,
+  selectedBg,
   showOnMap,
   onShowOnMapChange,
   onInfoClick,
-}: DataCatalogCardProps) {
+  infoTooltip = "Show dataset info",
+  titleActions,
+}: CatalogCardProps) {
   return (
     <Flex
-      w={`${DATA_CATALOG_CARD_WIDTH_PX}px`}
+      w={`${CATALOG_CARD_WIDTH_PX}px`}
       maxW="100%"
-      h={`${DATA_CATALOG_CARD_HEIGHT_PX}px`}
+      h={`${CATALOG_CARD_HEIGHT_PX}px`}
       flexShrink={0}
-      bg="#FFFFFF"
+      bg={selected && selectedBg ? selectedBg : "#FFFFFF"}
       border={selected ? "2px solid" : "1px solid"}
       borderColor={selected ? "primary.solid" : "rgba(19, 22, 25, 0.3)"}
       borderRadius="4px"
       overflow="hidden"
-      transition="border-color 0.16s ease"
+      transition="border-color 0.16s ease, background-color 0.16s ease"
     >
       <Flex
         w="96px"
@@ -62,19 +76,24 @@ export function DataCatalogCard({
         {thumbnail}
       </Flex>
       <Flex flex="1" flexDirection="column" minW={0} h="100%">
-        <Box flex="1" px="16px" pt="12px" pb="8px" minW={0} minH={0}>
+        <Box px="16px" pt="12px" pb="8px" minW={0}>
           {typeLabel && (
-            <Text
-              fontFamily="mono"
-              fontSize="10px"
-              fontWeight="normal"
-              lineHeight="16px"
-              letterSpacing="0.5px"
-              color={typeLabelColor}
-              textTransform="uppercase"
-            >
-              {typeLabel}
-            </Text>
+            <Flex align="center" gap="8px" minW={0} h="16px">
+              <Text
+                flex="1"
+                minW={0}
+                fontFamily="mono"
+                fontSize="10px"
+                fontWeight="normal"
+                lineHeight="16px"
+                letterSpacing="0.5px"
+                color={typeLabelColor}
+                textTransform="uppercase"
+              >
+                {typeLabel}
+              </Text>
+              {titleActions}
+            </Flex>
           )}
           <Flex align="center" gap="8px" mt="2px" minW={0}>
             <Text
@@ -91,26 +110,28 @@ export function DataCatalogCard({
             >
               {title}
             </Text>
-            <Tooltip
-              content="Show dataset info"
-              positioning={{ placement: "top" }}
-              showArrow
-              variant="dark"
-            >
-              <IconButton
-                aria-label={`Show ${title} info`}
-                size="2xs"
-                variant="ghost"
-                color="#656E7B"
-                flexShrink={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onInfoClick();
-                }}
+            {onInfoClick && (
+              <Tooltip
+                content={infoTooltip}
+                positioning={{ placement: "top" }}
+                showArrow
+                variant="dark"
               >
-                <InfoIcon size={16} />
-              </IconButton>
-            </Tooltip>
+                <IconButton
+                  aria-label={`Show ${title} info`}
+                  size="2xs"
+                  variant="ghost"
+                  color="#656E7B"
+                  flexShrink={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onInfoClick();
+                  }}
+                >
+                  <InfoIcon size={16} />
+                </IconButton>
+              </Tooltip>
+            )}
           </Flex>
           {description && (
             <Text
@@ -128,7 +149,11 @@ export function DataCatalogCard({
             </Text>
           )}
         </Box>
-        <Box borderTop="1px solid" borderColor="rgba(19, 22, 25, 0.1)" />
+        <Box
+          mt="auto"
+          borderTop="1px solid"
+          borderColor="rgba(19, 22, 25, 0.1)"
+        />
         <Flex align="center" gap="8px" px="16px" py="10px" flexShrink={0}>
           <Switch.Root
             size="sm"

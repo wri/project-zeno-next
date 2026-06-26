@@ -20,9 +20,21 @@ interface SidebarState {
   apiStatus: "Idle" | "OK" | "Error";
   isChatFullSize: boolean;
   setChatFullSize: (value: boolean) => void;
+  /**
+   * Whether the Data Catalog panel is open. The Data Catalog and Areas panels
+   * share the same column slot in the exploration layout and are kept mutually
+   * exclusive — opening one closes the other.
+   */
   dataCatalogOpen: boolean;
   setDataCatalogOpen: (open: boolean) => void;
   toggleDataCatalog: () => void;
+  /**
+   * Whether the Areas panel is open. Mutually exclusive with `dataCatalogOpen`
+   * (same column slot).
+   */
+  areasPanelOpen: boolean;
+  setAreasPanelOpen: (open: boolean) => void;
+  toggleAreasPanel: () => void;
 }
 
 function updateThreadInCache(
@@ -48,11 +60,32 @@ const useSidebarStore = create<SidebarState>(() => ({
     useSidebarStore.setState({ isChatFullSize: value }),
   dataCatalogOpen: false,
   setDataCatalogOpen: (open) =>
-    useSidebarStore.setState({ dataCatalogOpen: open }),
+    useSidebarStore.setState(
+      open
+        ? { dataCatalogOpen: true, areasPanelOpen: false }
+        : { dataCatalogOpen: false }
+    ),
   toggleDataCatalog: () =>
-    useSidebarStore.setState((state) => ({
-      dataCatalogOpen: !state.dataCatalogOpen,
-    })),
+    useSidebarStore.setState((state) => {
+      const next = !state.dataCatalogOpen;
+      return next
+        ? { dataCatalogOpen: true, areasPanelOpen: false }
+        : { dataCatalogOpen: false };
+    }),
+  areasPanelOpen: false,
+  setAreasPanelOpen: (open) =>
+    useSidebarStore.setState(
+      open
+        ? { areasPanelOpen: true, dataCatalogOpen: false }
+        : { areasPanelOpen: false }
+    ),
+  toggleAreasPanel: () =>
+    useSidebarStore.setState((state) => {
+      const next = !state.areasPanelOpen;
+      return next
+        ? { areasPanelOpen: true, dataCatalogOpen: false }
+        : { areasPanelOpen: false };
+    }),
 
   toggleSidebar: () =>
     useSidebarStore.setState((state) => ({
