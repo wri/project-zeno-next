@@ -126,7 +126,7 @@ const WhatsNewModal = () => {
         <Flex
           bg="#f4f5f6"
           px={6}
-          minH="48px"
+          h="40px"
           align="center"
           justify="space-between"
           flexShrink={0}
