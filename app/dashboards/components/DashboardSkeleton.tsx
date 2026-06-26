@@ -8,24 +8,26 @@ import { Box, Flex, Grid } from "@chakra-ui/react";
 // real content card uses, so the skeleton settles into the real layout without
 // a jump). Placeholder blocks shimmer using the theme's `shimmer` animation.
 
-/** A single shimmering placeholder block: a soft white highlight band sweeps
- *  across a light-grey base (the theme `shimmer` keyframe pans background
- *  positionX). bgColor + backgroundImage are kept separate so the base colour
- *  shows through the gradient's transparent ends rather than being clobbered by
- *  the `background` shorthand. */
+/** A single shimmering placeholder block: a light-grey base with one soft,
+ *  angled white band swept across it. The band is an absolutely-positioned
+ *  overlay translated with `shimmerSweep` (a single pass per cycle), so there's
+ *  no double-band artefact that the background-position approach produced. */
 function Shimmer(props: React.ComponentProps<typeof Box>) {
   return (
     <Box
       rounded="4px"
       bgColor="#E6E9ED"
-      backgroundImage="linear-gradient(115deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%)"
-      backgroundSize="200% 100%"
-      backgroundRepeat="no-repeat"
-      // Slower, gentler sweep than the shared `shimmer` token (1.5s); the
-      // keyframe (named `shimmer`) is reused, only the timing is overridden.
-      animation="shimmer 3s ease-in-out infinite"
+      position="relative"
+      overflow="hidden"
       {...props}
-    />
+    >
+      <Box
+        position="absolute"
+        inset={0}
+        backgroundImage="linear-gradient(115deg, rgba(255,255,255,0) 35%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 65%)"
+        animation="shimmerSweep 3s ease-in-out infinite"
+      />
+    </Box>
   );
 }
 
