@@ -30,6 +30,7 @@ export function AreaToolbarButtons() {
     selectAreaLayer,
     setSelectAreaLayer,
     isDrawingMode,
+    pendingDrawnArea,
     startDrawing,
     setSelectionMode,
     cancelDrawing,
@@ -41,6 +42,11 @@ export function AreaToolbarButtons() {
   } = useMapStore();
   const { addContext } = useContextStore();
   const { isCreating } = useCustomAreasCreate();
+
+  // Match the shape-anchored controls (PendingDrawControls): confirm stays
+  // disabled until the polygon is closed and its name has resolved. A null
+  // name (or no pending area yet) means the shape is still resolving.
+  const isResolvingName = !pendingDrawnArea || pendingDrawnArea.name === null;
 
   const buttonProps = {
     variant: "ghost" as const,
@@ -132,7 +138,7 @@ export function AreaToolbarButtons() {
             aria-label="Confirm area"
             {...buttonProps}
             onClick={handleConfirmDrawing}
-            disabled={isCreating}
+            disabled={isResolvingName || isCreating}
           >
             <CheckIcon size={14} />
           </IconButton>
