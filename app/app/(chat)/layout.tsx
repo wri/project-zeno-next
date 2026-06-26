@@ -15,6 +15,7 @@ import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
+import SystemBanner from "@/app/components/SystemBanner";
 import WhatsNewModal from "@/app/components/WhatsNewModal";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
@@ -156,7 +157,17 @@ export default function DashboardLayout({
       <WhatsNewModal />
       <AnalysisCtaTrigger />
 
-      {!isMobile && <PageHeader />}
+      {!isMobile && (
+        <Box>
+          <PageHeader />
+          {/* Rebrand announcement sits full-width directly below the header and
+              supersedes the preview DisclaimerPanel while it is showing.
+              Desktop-only by design: it lives in the desktop header cell and
+              replaces the desktop-only DisclaimerPanel, leaving the mobile
+              bottom-sheet layout untouched. */}
+          <SystemBanner dismissible />
+        </Box>
+      )}
       {isMobile ? MobileLayout : DesktopLayout}
 
       {children}

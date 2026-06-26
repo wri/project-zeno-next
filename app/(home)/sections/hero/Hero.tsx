@@ -18,6 +18,7 @@ import {
 } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";
 import GlobalHeader from "../../../components/GlobalHeader";
+import SystemBanner from "../../../components/SystemBanner";
 
 type PromptMarqueeProps = {
   prompts: string[];
@@ -123,6 +124,10 @@ export default function LandingHero({
       backgroundImage="radial-gradient(circle at 80% 80%, hsl(225deg 70% 15%) 0%, hsl(224deg 65% 11%) 50%)"
     >
       <GlobalHeader />
+      {/* Rebrand announcement — full-width, not dismissible on the landing page */}
+      <Box position="relative" zIndex={10}>
+        <SystemBanner />
+      </Box>
       <Box
         width="100%"
         height="100%"
