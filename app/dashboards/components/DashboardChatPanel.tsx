@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Box,
   Flex,
@@ -55,6 +55,7 @@ function introText(context: "detail" | "gallery"): string {
 }
 
 export default function DashboardChatPanel() {
+  const router = useRouter();
   const { dashboardId, context } = useDashboardContext();
   const addWidget = useDashboardStore((s) => s.addWidget);
   const createDashboard = useDashboardStore((s) => s.createDashboard);
@@ -110,6 +111,8 @@ export default function DashboardChatPanel() {
       } else if (result.action.type === "createDashboard") {
         const id = createDashboard(result.action.dashboard);
         addWidget(id, result.action.widget);
+        // Take the user straight to the dashboard the chat just created.
+        router.push(`/dashboards/${id}`);
       }
       setMessages((prev) => [
         ...prev,
