@@ -175,7 +175,7 @@ export function Sidebar() {
     <Flex
       flexDir="column"
       bg="bg.subtle"
-      w={{ base: "full", md: !sideBarVisible ? "0px" : "428px" }}
+      w={{ base: "full", md: !sideBarVisible ? "0px" : "full" }}
       h="100%"
       gridArea="sidebar"
       overflow="hidden"
