@@ -16,6 +16,7 @@ import {
   ArrowBendRightUpIcon,
   PolygonIcon,
   ChartBarIcon,
+  StackIcon,
   XIcon,
   ArrowsOutIcon,
   ArrowsInIcon,
@@ -76,18 +77,11 @@ export default function DashboardChatPanel({
   const mentions = useComposerStore((s) => s.mentions);
   const removeMention = useComposerStore((s) => s.removeMention);
   const clearMentions = useComposerStore((s) => s.clearMentions);
-  const setupPane = useComposerStore((s) => s.setupPane);
-  const openSetupPane = useComposerStore((s) => s.openSetupPane);
+  const sidePane = useComposerStore((s) => s.sidePane);
+  const openSidePane = useComposerStore((s) => s.openSidePane);
   const chatMaximised = useComposerStore((s) => s.chatMaximised);
   const setChatMaximised = useComposerStore((s) => s.setChatMaximised);
   const focusNonce = useComposerStore((s) => s.focusNonce);
-
-  // Areas/Analyses chips point the chat at a context and open the double pane
-  // (maximise). The double pane is a larger floating card, not full screen.
-  const openContext = (pane: "areas" | "analyses") => {
-    openSetupPane(pane);
-    setChatMaximised(true);
-  };
 
   const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -164,20 +158,19 @@ export default function DashboardChatPanel({
   const hasConversation = messages.length > 0;
 
   // During the new-dashboard setup flow the heading/intro point the user at the
-  // Areas / Analyses chips (which open the double pane); otherwise they fall
-  // back to the gallery/detail copy.
+  // open side panel; otherwise they fall back to the gallery/detail copy.
   const heading =
-    setupPane === "areas"
+    sidePane === "areas"
       ? "Set up your dashboard"
-      : setupPane === "analyses"
+      : sidePane === "analysis"
         ? "Build your dashboard"
         : context === "detail"
           ? "Refine this dashboard"
           : "What would you like to explore?";
   const intro =
-    setupPane === "areas"
-      ? "Open Areas to choose a region for this dashboard, or describe the dashboard you want and I'll set it up."
-      : setupPane === "analyses"
+    sidePane === "areas"
+      ? "Choose a region in the Areas panel, or describe the dashboard you want and I'll set it up."
+      : sidePane === "analysis"
         ? "Start with a Template dashboard, select individual insights from the Analyses panel; or describe what you want to explore and I'll build it!"
         : introText(context);
 
@@ -384,21 +377,27 @@ export default function DashboardChatPanel({
           <Flex justify="space-between" align="center">
             <Flex gap={2}>
               {[
-                // "Areas" — only meaningful on a dashboard (sets its AOI); on
-                // the gallery there's no dashboard to pin, so it's dropped.
+                // Each chip opens its docked side panel — independent of the
+                // chat's floating/full-sized state. "Areas" only applies on a
+                // dashboard (sets its AOI), so it's dropped on the gallery.
                 ...(context === "detail"
                   ? [
                       {
                         label: "Areas",
                         icon: PolygonIcon,
-                        onClick: () => openContext("areas"),
+                        onClick: () => openSidePane("areas"),
                       },
                     ]
                   : []),
                 {
                   label: "Analyses",
                   icon: ChartBarIcon,
-                  onClick: () => openContext("analyses"),
+                  onClick: () => openSidePane("analysis"),
+                },
+                {
+                  label: "Data",
+                  icon: StackIcon,
+                  onClick: () => openSidePane("catalogue"),
                 },
               ].map((chip) => (
                 <Flex

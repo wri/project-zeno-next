@@ -1,15 +1,15 @@
 import { create } from "zustand";
 
-// Which context pane is docked beside the chat in the new-dashboard "setup"
-// flow. null = no setup pane (the dock shows just the chat, with Analyses
-// available as a slide-over). "areas" before an AOI is chosen, "analyses" once
-// it has been — driven by the detail page from the dashboard's AOI state.
-export type SetupPane = "areas" | "analyses" | null;
+// The full-height docked side panel: Areas, Analysis, or the Data Catalogue.
+// null = closed. This is INDEPENDENT of the AI chat — opening a side panel
+// never changes the chat, and vice versa.
+export type SidePane = "areas" | "analysis" | "catalogue" | null;
 
-// Shared bridge between the right-hand dashboard content and the left dock:
+// Shared bridge for the dashboards workspace:
 // - @mention chips pushed from an insight card into the chat composer
-// - opening/closing the slide-out Analyses panel from anywhere
-// - the double-pane "setup" dock for a freshly created dashboard
+// - the docked side panel (Areas / Analysis / Data Catalogue)
+// - whether the AI chat is full-sized (docked, left of the side panel) or
+//   floating — independent of the side panel
 // - requesting focus of the chat input ("Ask AI")
 interface ComposerState {
   mentions: string[];
@@ -17,24 +17,16 @@ interface ComposerState {
   removeMention: (title: string) => void;
   clearMentions: () => void;
 
-  analysesOpen: boolean;
-  openAnalyses: () => void;
-  closeAnalyses: () => void;
+  // Docked side panel — independent of the chat.
+  sidePane: SidePane;
+  openSidePane: (pane: Exclude<SidePane, null>) => void;
+  closeSidePane: () => void;
 
-  // Which context pane (Areas/Analyses) the chat is currently pointed at. Drives
-  // the right-hand pane when the floating chat is maximised, and the intro copy.
-  setupPane: SetupPane;
-  openSetupPane: (pane: Exclude<SetupPane, null>) => void;
-  closeSetupPane: () => void;
-
-  // Whether the floating chat is maximised into the double pane (chat + context
-  // side by side). Opening Areas/Analyses no longer forces this — it's an
-  // explicit toggle, and the double pane is a larger floating card, not a
-  // full-screen takeover.
+  // AI chat full-sized (docked) vs floating — independent of the side panel.
   chatMaximised: boolean;
   setChatMaximised: (value: boolean) => void;
 
-  // Bumped to ask the chat panel to focus its input (also reveals chat).
+  // Bumped to ask the chat panel to focus its input.
   focusNonce: number;
   requestFocus: () => void;
 }
@@ -49,22 +41,15 @@ const useComposerStore = create<ComposerState>((set) => ({
     set((s) => ({ mentions: s.mentions.filter((m) => m !== title) })),
   clearMentions: () => set({ mentions: [] }),
 
-  analysesOpen: false,
-  openAnalyses: () => set({ analysesOpen: true }),
-  closeAnalyses: () => set({ analysesOpen: false }),
-
-  setupPane: null,
-  openSetupPane: (pane) => set({ setupPane: pane, analysesOpen: false }),
-  closeSetupPane: () => set({ setupPane: null }),
+  sidePane: null,
+  openSidePane: (pane) => set({ sidePane: pane }),
+  closeSidePane: () => set({ sidePane: null }),
 
   chatMaximised: false,
   setChatMaximised: (value) => set({ chatMaximised: value }),
 
   focusNonce: 0,
-  // Focusing the chat only makes sense when it's visible, so also close the
-  // Analyses panel (which otherwise covers the composer).
-  requestFocus: () =>
-    set((s) => ({ focusNonce: s.focusNonce + 1, analysesOpen: false })),
+  requestFocus: () => set((s) => ({ focusNonce: s.focusNonce + 1 })),
 }));
 
 export default useComposerStore;

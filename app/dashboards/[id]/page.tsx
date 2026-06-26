@@ -40,7 +40,7 @@ import TextWidgetCard from "@/app/dashboards/components/TextWidgetCard";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import useDashboardStore from "@/app/store/dashboardStore";
 import useComposerStore, {
-  type SetupPane,
+  type SidePane,
 } from "@/app/dashboards/lib/composerStore";
 import { formatUpdated } from "@/app/dashboards/lib/fixtures";
 import { toaster } from "@/app/components/ui/toaster";
@@ -233,9 +233,8 @@ export default function DashboardDetailPage() {
   const updateWidget = useDashboardStore((s) => s.updateWidget);
   const reorderWidgets = useDashboardStore((s) => s.reorderWidgets);
   const requestFocus = useComposerStore((s) => s.requestFocus);
-  const openSetupPane = useComposerStore((s) => s.openSetupPane);
-  const closeSetupPane = useComposerStore((s) => s.closeSetupPane);
-  const setChatMaximised = useComposerStore((s) => s.setChatMaximised);
+  const openSidePane = useComposerStore((s) => s.openSidePane);
+  const closeSidePane = useComposerStore((s) => s.closeSidePane);
 
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -254,19 +253,20 @@ export default function DashboardDetailPage() {
     return () => clearTimeout(t);
   }, [dashboardId]);
 
-  // New-dashboard setup dock: while the dashboard is empty, dock the Areas pane
-  // (no AOI yet) or the Analyses pane (AOI chosen); collapse once the first
-  // widget lands. Computed as a single target so the effect fires only on real
-  // transitions (no flicker from a cleanup-then-reopen).
-  const setupTarget: SetupPane =
-    dashboard && isEmpty ? (hasAoi ? "analyses" : "areas") : null;
+  // New-dashboard setup: while the dashboard is empty, open the Areas side panel
+  // (no AOI yet) or the Analysis side panel (AOI chosen); close it once the
+  // first widget lands. Computed as a single target so the effect fires only on
+  // real transitions (no flicker from a cleanup-then-reopen). The chat is
+  // independent — it stays floating throughout.
+  const setupTarget: SidePane =
+    dashboard && isEmpty ? (hasAoi ? "analysis" : "areas") : null;
   useEffect(() => {
-    if (setupTarget) openSetupPane(setupTarget);
-    else closeSetupPane();
-  }, [setupTarget, openSetupPane, closeSetupPane]);
+    if (setupTarget) openSidePane(setupTarget);
+    else closeSidePane();
+  }, [setupTarget, openSidePane, closeSidePane]);
 
-  // Close the setup dock when leaving the detail page.
-  useEffect(() => () => closeSetupPane(), [closeSetupPane]);
+  // Close the side panel when leaving the detail page.
+  useEffect(() => () => closeSidePane(), [closeSidePane]);
 
   // Skeleton (Rectangle 147752) shows while booting, and stays until an area is
   // chosen; with an AOI it gives way to the real empty-dashboard state.
@@ -362,8 +362,7 @@ export default function DashboardDetailPage() {
             removeWidget(dashboard.id, wgt.id);
           }}
           onAddAnalysis={() => {
-            openSetupPane("analyses");
-            setChatMaximised(true);
+            openSidePane("analysis");
             removeWidget(dashboard.id, wgt.id);
           }}
           onAddNote={() =>

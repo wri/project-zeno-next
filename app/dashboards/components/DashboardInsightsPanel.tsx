@@ -347,8 +347,7 @@ export default function DashboardInsightsPanel({
 
   const dashboards = useDashboardStore((s) => s.dashboards);
   const addWidget = useDashboardStore((s) => s.addWidget);
-  const setupPane = useComposerStore((s) => s.setupPane);
-  const setChatMaximised = useComposerStore((s) => s.setChatMaximised);
+  const sidePane = useComposerStore((s) => s.sidePane);
   const [filter, setFilter] = useState<FilterKey>("conversation");
   const [source, setSource] = useState<SourceKey>("all");
   const [topic, setTopic] = useState("All");
@@ -357,7 +356,7 @@ export default function DashboardInsightsPanel({
   // dashboard, so default the detail view to them in that flow. As a slide-over
   // for an already-populated dashboard, default to the full insight library.
   const [tab, setTab] = useState<"templates" | "insights">(
-    setupPane === "analyses" ? "templates" : "insights"
+    sidePane === "analysis" ? "templates" : "insights"
   );
 
   // Gallery items: all analyses across dashboards.
@@ -439,9 +438,6 @@ export default function DashboardInsightsPanel({
       type: "success",
       duration: 2000,
     });
-    // Collapse the double pane back to the floating chat so the populated
-    // dashboard is visible.
-    setChatMaximised(false);
   };
 
   // Append a curated template's blocks to the dashboard. Once it has widgets the
@@ -455,7 +451,6 @@ export default function DashboardInsightsPanel({
       type: "success",
       duration: 2000,
     });
-    setChatMaximised(false);
   };
 
   return (
