@@ -18,10 +18,12 @@ function Shimmer(props: React.ComponentProps<typeof Box>) {
     <Box
       rounded="4px"
       bgColor="#E6E9ED"
-      backgroundImage="linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%)"
+      backgroundImage="linear-gradient(115deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%)"
       backgroundSize="200% 100%"
       backgroundRepeat="no-repeat"
-      animation="shimmer"
+      // Slower, gentler sweep than the shared `shimmer` token (1.5s); the
+      // keyframe (named `shimmer`) is reused, only the timing is overridden.
+      animation="shimmer 3s ease-in-out infinite"
       {...props}
     />
   );
