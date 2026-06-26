@@ -232,10 +232,10 @@ export default function DashboardDetailPage() {
   const addWidget = useDashboardStore((s) => s.addWidget);
   const updateWidget = useDashboardStore((s) => s.updateWidget);
   const reorderWidgets = useDashboardStore((s) => s.reorderWidgets);
-  const openAnalyses = useComposerStore((s) => s.openAnalyses);
   const requestFocus = useComposerStore((s) => s.requestFocus);
   const openSetupPane = useComposerStore((s) => s.openSetupPane);
   const closeSetupPane = useComposerStore((s) => s.closeSetupPane);
+  const setChatMaximised = useComposerStore((s) => s.setChatMaximised);
 
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -362,7 +362,8 @@ export default function DashboardDetailPage() {
             removeWidget(dashboard.id, wgt.id);
           }}
           onAddAnalysis={() => {
-            openAnalyses();
+            openSetupPane("analyses");
+            setChatMaximised(true);
             removeWidget(dashboard.id, wgt.id);
           }}
           onAddNote={() =>

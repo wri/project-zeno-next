@@ -13,31 +13,30 @@ import DashboardInsightsPanel from "@/app/dashboards/components/DashboardInsight
 import DashboardAreasPanel from "@/app/dashboards/components/DashboardAreasPanel";
 import useComposerStore from "@/app/dashboards/lib/composerStore";
 
-// The dashboards chat dock, unified with the main app's floating panel:
+// The dashboards chat dock — a floating, draggable card anchored bottom-left
+// over the (full-width) dashboard content, unified with the main app's floating
+// panel.
 //
-//  • Default — the chat is a floating, draggable card anchored bottom-left over
-//    the (full-width) dashboard content, dragged from its header handle.
-//  • Area / analysis open — when the setup flow is active (or the chat's
-//    "Analyses" chip is used) the dock goes full-screen and shows the double
-//    pane: the context panel (Areas before an AOI, Analyses after) beside the
-//    chat. This is the full-screen state of the same floating panel.
+//  • Default — just the chat card.
+//  • Maximised — a wider floating card with the double pane: chat on the LEFT,
+//    the context panel (Areas before an AOI, Analyses after) on the RIGHT.
+//    Opening Areas/Analyses doesn't force this; it's the maximise toggle (or
+//    clicking an Areas/Analyses chip) that opens the double pane. It is a
+//    larger floating card, NOT a full-screen takeover.
 
 // Release within this many px of home → spring back to the bottom-left corner.
 const SNAP_THRESHOLD_PX = 120;
 
 export default function DashboardChatDock() {
   const setupPane = useComposerStore((s) => s.setupPane);
-  const analysesOpen = useComposerStore((s) => s.analysesOpen);
-  const closeAnalyses = useComposerStore((s) => s.closeAnalyses);
-  const closeSetupPane = useComposerStore((s) => s.closeSetupPane);
+  const maximised = useComposerStore((s) => s.chatMaximised);
+  const setChatMaximised = useComposerStore((s) => s.setChatMaximised);
 
-  // Both the setup flow and the "Analyses" chip open the full-screen double
-  // pane; closing dismisses whichever opened it.
-  const dockPane = setupPane ?? (analysesOpen ? "analyses" : null);
-  const closeDock = () => {
-    closeSetupPane();
-    closeAnalyses();
-  };
+  // When maximised, the right pane follows the active context, defaulting to
+  // Analyses when nothing specific is open.
+  const contextPane = maximised ? (setupPane ?? "analyses") : null;
+  // The context pane's close (X) collapses the double pane back to floating.
+  const collapse = () => setChatMaximised(false);
 
   const dragControls = useDragControls();
   const x = useMotionValue(0);
@@ -56,30 +55,8 @@ export default function DashboardChatDock() {
     }
   };
 
-  if (dockPane) {
-    return (
-      <Flex position="absolute" inset={0} zIndex={30} bg="bg">
-        <Box w={{ base: "full", md: "420px" }} flexShrink={0} h="100%">
-          {dockPane === "areas" ? (
-            <DashboardAreasPanel onClose={closeDock} />
-          ) : (
-            <DashboardInsightsPanel onClose={closeDock} />
-          )}
-        </Box>
-        <Box
-          flex="1 1 auto"
-          minW={0}
-          h="100%"
-          display={{ base: "none", md: "block" }}
-        >
-          <DashboardChatPanel />
-        </Box>
-      </Flex>
-    );
-  }
-
-  // Floating compact chat. The constraint layer covers the content area but is
-  // click-through (pointerEvents none) so only the panel itself is interactive.
+  // The constraint layer covers the content area but is click-through
+  // (pointerEvents none) so only the panel itself is interactive.
   return (
     <Box
       ref={constraintRef}
@@ -105,7 +82,36 @@ export default function DashboardChatDock() {
           userSelect: "none",
         }}
       >
-        <DashboardChatPanel floating dragControls={dragControls} />
+        <Flex
+          gap={2}
+          align="stretch"
+          h={{ base: "70dvh", md: "560px" }}
+          maxH="calc(100dvh - 96px)"
+        >
+          {/* Chat — always present, on the left when maximised. */}
+          <DashboardChatPanel floating dragControls={dragControls} />
+
+          {/* Context pane — only when maximised (double pane), on the right. */}
+          {contextPane && (
+            <Box
+              w={{ base: "full", md: "400px" }}
+              flexShrink={0}
+              display={{ base: "none", md: "block" }}
+              borderRadius="lg"
+              borderWidth="1px"
+              borderColor="border.emphasized"
+              boxShadow="xl"
+              overflow="hidden"
+              bg="bg"
+            >
+              {contextPane === "areas" ? (
+                <DashboardAreasPanel onClose={collapse} />
+              ) : (
+                <DashboardInsightsPanel onClose={collapse} />
+              )}
+            </Box>
+          )}
+        </Flex>
       </motion.div>
     </Box>
   );

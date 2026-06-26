@@ -21,11 +21,18 @@ interface ComposerState {
   openAnalyses: () => void;
   closeAnalyses: () => void;
 
-  // Setup dock: a second context pane (Areas or Analyses) shown to the left of
-  // the chat while a new dashboard is being set up.
+  // Which context pane (Areas/Analyses) the chat is currently pointed at. Drives
+  // the right-hand pane when the floating chat is maximised, and the intro copy.
   setupPane: SetupPane;
   openSetupPane: (pane: Exclude<SetupPane, null>) => void;
   closeSetupPane: () => void;
+
+  // Whether the floating chat is maximised into the double pane (chat + context
+  // side by side). Opening Areas/Analyses no longer forces this — it's an
+  // explicit toggle, and the double pane is a larger floating card, not a
+  // full-screen takeover.
+  chatMaximised: boolean;
+  setChatMaximised: (value: boolean) => void;
 
   // Bumped to ask the chat panel to focus its input (also reveals chat).
   focusNonce: number;
@@ -47,10 +54,11 @@ const useComposerStore = create<ComposerState>((set) => ({
   closeAnalyses: () => set({ analysesOpen: false }),
 
   setupPane: null,
-  // The setup pane is docked, so the slide-over Analyses must be closed to
-  // avoid two analyses panels showing at once.
   openSetupPane: (pane) => set({ setupPane: pane, analysesOpen: false }),
   closeSetupPane: () => set({ setupPane: null }),
+
+  chatMaximised: false,
+  setChatMaximised: (value) => set({ chatMaximised: value }),
 
   focusNonce: 0,
   // Focusing the chat only makes sense when it's visible, so also close the

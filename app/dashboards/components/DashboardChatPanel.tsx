@@ -17,6 +17,8 @@ import {
   PolygonIcon,
   ChartBarIcon,
   XIcon,
+  ArrowsOutIcon,
+  ArrowsInIcon,
 } from "@phosphor-icons/react";
 import type { DragControls } from "framer-motion";
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
@@ -74,10 +76,18 @@ export default function DashboardChatPanel({
   const mentions = useComposerStore((s) => s.mentions);
   const removeMention = useComposerStore((s) => s.removeMention);
   const clearMentions = useComposerStore((s) => s.clearMentions);
-  const openAnalyses = useComposerStore((s) => s.openAnalyses);
   const setupPane = useComposerStore((s) => s.setupPane);
   const openSetupPane = useComposerStore((s) => s.openSetupPane);
+  const chatMaximised = useComposerStore((s) => s.chatMaximised);
+  const setChatMaximised = useComposerStore((s) => s.setChatMaximised);
   const focusNonce = useComposerStore((s) => s.focusNonce);
+
+  // Areas/Analyses chips point the chat at a context and open the double pane
+  // (maximise). The double pane is a larger floating card, not full screen.
+  const openContext = (pane: "areas" | "analyses") => {
+    openSetupPane(pane);
+    setChatMaximised(true);
+  };
 
   const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [draft, setDraft] = useState("");
@@ -154,8 +164,8 @@ export default function DashboardChatPanel({
   const hasConversation = messages.length > 0;
 
   // During the new-dashboard setup flow the heading/intro point the user at the
-  // docked context pane (Areas before an AOI, Analyses after); otherwise they
-  // fall back to the gallery/detail copy.
+  // Areas / Analyses chips (which open the double pane); otherwise they fall
+  // back to the gallery/detail copy.
   const heading =
     setupPane === "areas"
       ? "Set up your dashboard"
@@ -166,7 +176,7 @@ export default function DashboardChatPanel({
           : "What would you like to explore?";
   const intro =
     setupPane === "areas"
-      ? "Select an area on the left to base this dashboard on, or describe the dashboard you want and I'll set it up."
+      ? "Open Areas to choose a region for this dashboard, or describe the dashboard you want and I'll set it up."
       : setupPane === "analyses"
         ? "Start with a Template dashboard, select individual insights from the Analyses panel; or describe what you want to explore and I'll build it!"
         : introText(context);
@@ -174,8 +184,7 @@ export default function DashboardChatPanel({
   return (
     <Flex
       flexDir="column"
-      h={floating ? { base: "70dvh", md: "560px" } : "100%"}
-      maxH={floating ? "calc(100dvh - 96px)" : undefined}
+      h="100%"
       w={floating ? { base: "full", md: "400px" } : "full"}
       flexShrink={0}
       {...chatPanelCardStyle}
@@ -217,6 +226,19 @@ export default function DashboardChatPanel({
             AI Assistant
           </Text>
         </Flex>
+        <IconButton
+          aria-label={chatMaximised ? "Restore chat" : "Maximise chat"}
+          size="2xs"
+          variant="ghost"
+          color="neutral.500"
+          onClick={() => setChatMaximised(!chatMaximised)}
+        >
+          {chatMaximised ? (
+            <ArrowsInIcon size={14} />
+          ) : (
+            <ArrowsOutIcon size={14} />
+          )}
+        </IconButton>
       </Flex>
 
       {/* Intro + suggestions / conversation */}
@@ -362,39 +384,26 @@ export default function DashboardChatPanel({
           <Flex justify="space-between" align="center">
             <Flex gap={2}>
               {[
-                // "Areas": re-opens the docked Areas pane during setup; on the
-                // gallery it's a legacy no-op; otherwise (a fixed-area
-                // dashboard) it's dropped.
-                ...(setupPane
+                // "Areas" — only meaningful on a dashboard (sets its AOI); on
+                // the gallery there's no dashboard to pin, so it's dropped.
+                ...(context === "detail"
                   ? [
                       {
                         label: "Areas",
                         icon: PolygonIcon,
-                        onClick: () => openSetupPane("areas"),
+                        onClick: () => openContext("areas"),
                       },
                     ]
-                  : context === "gallery"
-                    ? [
-                        {
-                          label: "Areas",
-                          icon: PolygonIcon,
-                          onClick: undefined,
-                        },
-                      ]
-                    : []),
+                  : []),
                 {
                   label: "Analyses",
                   icon: ChartBarIcon,
-                  // In setup mode the Analyses pane is docked (re-open it);
-                  // otherwise slide it over the chat.
-                  onClick: setupPane
-                    ? () => openSetupPane("analyses")
-                    : openAnalyses,
+                  onClick: () => openContext("analyses"),
                 },
               ].map((chip) => (
                 <Flex
                   key={chip.label}
-                  as={chip.onClick ? "button" : undefined}
+                  as="button"
                   onClick={chip.onClick}
                   align="center"
                   gap={1}
@@ -405,12 +414,8 @@ export default function DashboardChatPanel({
                   px={2}
                   py={1}
                   color="fg.muted"
-                  cursor={chip.onClick ? "pointer" : "default"}
-                  _hover={
-                    chip.onClick
-                      ? { bg: "bg.subtle", borderColor: "border.emphasized" }
-                      : undefined
-                  }
+                  cursor="pointer"
+                  _hover={{ bg: "bg.subtle", borderColor: "border.emphasized" }}
                 >
                   <Icon as={chip.icon} boxSize="14px" />
                   <Text fontSize="11px">{chip.label}</Text>
