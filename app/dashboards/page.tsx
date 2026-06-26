@@ -22,9 +22,6 @@ import {
 } from "@chakra-ui/react";
 import {
   PlusIcon,
-  BellIcon,
-  ChartLineIcon,
-  FireIcon,
   GlobeIcon,
   LockIcon,
   SquaresFourIcon,
@@ -34,11 +31,15 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import useDashboardStore from "@/app/store/dashboardStore";
-import { formatUpdated, WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
+import { formatUpdated } from "@/app/dashboards/lib/fixtures";
+import {
+  TEMPLATES,
+  type DashboardTemplate,
+} from "@/app/dashboards/lib/templates";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import AlertsBadge from "@/app/dashboards/components/AlertsBadge";
 import DashboardActionsMenu from "@/app/dashboards/components/DashboardActionsMenu";
-import type { Dashboard, DashboardWidget } from "@/app/types/dashboard";
+import type { Dashboard } from "@/app/types/dashboard";
 
 // Soft cap surfaced as the "X / 20" counter next to the heading.
 const DASHBOARD_LIMIT = 20;
@@ -56,127 +57,6 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "recent", label: "Last edited" },
   { key: "name", label: "Name (A–Z)" },
   { key: "alerts", label: "Most alerts" },
-];
-
-// ---------------------------------------------------------------------------
-// Templates — clicking one seeds a new dashboard and opens it immediately.
-// ---------------------------------------------------------------------------
-
-interface Template {
-  key: string;
-  label: string;
-  description: string;
-  accent: string;
-  icon: React.ElementType;
-  title: string;
-  widgets: Omit<DashboardWidget, "id">[];
-}
-
-const TEMPLATES: Template[] = [
-  {
-    key: "alerts",
-    label: "Track alerts",
-    description: "Near-real-time alerts for my areas of interest",
-    accent: "green.500",
-    icon: BellIcon,
-    title: "Near-real-time alerts",
-    widgets: [
-      {
-        kind: "text",
-        span: 2,
-        text: "Monitor disturbance alerts across your areas of interest. New alerts from the last three months are highlighted on the map below.",
-      },
-      {
-        kind: "map",
-        span: 2,
-        map: {
-          caption: "Disturbance alerts — last 3 months",
-          alertCount: 200,
-          insetTitle: "Global all ecosystem disturbance alerts",
-        },
-      },
-    ],
-  },
-  {
-    key: "emissions",
-    label: "Monitor emissions",
-    description: "Emissions and carbon flux over time",
-    accent: "blue.500",
-    icon: ChartLineIcon,
-    title: "Emissions over time",
-    widgets: [
-      {
-        kind: "text",
-        span: 2,
-        text: "Track carbon emissions from land use across the selected area over the past decade.",
-      },
-      {
-        kind: "insight",
-        span: 1,
-        verified: true,
-        insight: WIDGET_FIXTURES.emissionsLine,
-      },
-      {
-        kind: "insight",
-        span: 1,
-        verified: true,
-        insight: WIDGET_FIXTURES.driversPie,
-      },
-    ],
-  },
-  {
-    key: "event",
-    label: "Assess an event",
-    description: "Impact of a recent fire, storm, or clearing",
-    accent: "orange.500",
-    icon: FireIcon,
-    title: "Recent event impact",
-    widgets: [
-      {
-        kind: "text",
-        span: 2,
-        text: "Assess the impact of a recent disturbance event on tree cover and emissions.",
-      },
-      {
-        kind: "insight",
-        span: 1,
-        verified: true,
-        insight: WIDGET_FIXTURES.treeCoverLine,
-      },
-      {
-        kind: "map",
-        span: 1,
-        map: { caption: "Affected area", alertCount: 120 },
-      },
-    ],
-  },
-  {
-    key: "compare",
-    label: "Compare regions",
-    description: "Deforestation across countries and regions",
-    accent: "purple.500",
-    icon: GlobeIcon,
-    title: "Compare deforestation",
-    widgets: [
-      {
-        kind: "text",
-        span: 2,
-        text: "Compare tree cover loss across countries and rank the worst-affected regions.",
-      },
-      {
-        kind: "insight",
-        span: 1,
-        verified: true,
-        insight: WIDGET_FIXTURES.tclBar,
-      },
-      {
-        kind: "insight",
-        span: 1,
-        verified: false,
-        insight: WIDGET_FIXTURES.tclTable,
-      },
-    ],
-  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -591,7 +471,7 @@ export default function DashboardsGalleryPage() {
     router.push(`/dashboards/${id}`);
   };
 
-  const startFromTemplate = (template: Template) => {
+  const startFromTemplate = (template: DashboardTemplate) => {
     const id = createDashboard({ title: template.title });
     template.widgets.forEach((wgt) => addWidget(id, wgt));
     router.push(`/dashboards/${id}`);
