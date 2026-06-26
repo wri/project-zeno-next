@@ -1,32 +1,17 @@
 import { useEffect, useState } from "react";
+import { Box, type BoxProps, Button, Flex, IconButton } from "@chakra-ui/react";
 import {
-  Box,
-  type BoxProps,
-  Button,
-  ButtonGroup,
-  Flex,
-  IconButton,
-  Spinner,
-  Tag,
-} from "@chakra-ui/react";
-import { Marker } from "react-map-gl/maplibre";
-import {
-  CheckIcon,
-  MapTrifoldIcon,
   MinusIcon,
   PlusIcon,
   XIcon,
+  MapTrifoldIcon,
 } from "@phosphor-icons/react";
 
-import { ChatContextOptions } from "./ContextButton";
 import useMapStore from "../store/mapStore";
-import useContextStore from "../store/contextStore";
-import useSidebarStore from "../store/sidebarStore";
-import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
-import { FeatureRef } from "../store/layerManagerSlice";
 import { Tooltip } from "./ui/tooltip";
 import { BasemapSelector } from "./map/BasemapSelector";
 import { ScaleBar } from "./map/ScaleBar";
+import useSidebarStore from "../store/sidebarStore";
 import { getMapControlsLeftPx } from "../explorationLayout";
 import { MapAreaFeedbackMobile } from "./MapAreaFeedback";
 
@@ -67,28 +52,16 @@ function MapAreaControls({
 }: MapAreaControlsProps) {
   const {
     isDrawingMode,
-    pendingDrawnArea,
     selectionMode,
     clearSelectionMode,
     cancelDrawing,
-    confirmDrawing,
-    setCreateAreaFn,
-    addLayer,
-    addToRegistry,
-    flyToGeoJson,
     mapRef,
   } = useMapStore();
-  const { addContext } = useContextStore();
   const { isChatFullSize, dataCatalogOpen, areasPanelOpen } = useSidebarStore();
   const catalogColumnOpen = dataCatalogOpen || areasPanelOpen;
   const mapControlsLeft = `${getMapControlsLeftPx(isChatFullSize, catalogColumnOpen)}px`;
 
-  const { createAreaAsync, isCreating } = useCustomAreasCreate();
   const [showTools, setShowTools] = useState(false);
-
-  useEffect(() => {
-    setCreateAreaFn(createAreaAsync);
-  }, [createAreaAsync, setCreateAreaFn]);
 
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {
@@ -104,56 +77,6 @@ function MapAreaControls({
       document.removeEventListener("keyup", onKeyUp);
     };
   }, [clearSelectionMode, isDrawingMode, cancelDrawing]);
-
-  const handleConfirmDrawing = async () => {
-    try {
-      const result = await confirmDrawing();
-      if (!result) return;
-      const {
-        name,
-        id,
-        geometries: [geo],
-      } = result;
-      const feat: GeoJSON.Feature = {
-        type: "Feature",
-        geometry: geo,
-        properties: {
-          id: id,
-          name: name,
-        },
-      };
-      const featureRef: FeatureRef = { name: name, source: "custom" };
-
-      addToRegistry({
-        ref: featureRef,
-        data: feat,
-        srcId: id,
-        subtype: "custom-area",
-      });
-      addLayer({
-        id: featureRef.name,
-        name: featureRef.name,
-        type: "geojson",
-        visible: true,
-        featureRefs: [featureRef],
-      });
-
-      addContext({
-        contextType: "area",
-        content: name,
-        aoiData: {
-          src_id: id,
-          name,
-          source: "custom",
-          subtype: "custom-area",
-        },
-      });
-
-      flyToGeoJson(feat);
-    } catch (error) {
-      console.error("Upload failed:", error);
-    }
-  };
 
   return (
     <Wrapper
@@ -250,95 +173,7 @@ function MapAreaControls({
           />
         </Flex>
       </Flex>
-      {/* Draw-complete confirm controls, anchored to the just-drawn shape.
-          Selection-mode banner and validation errors now live in
-          MapAreaFeedback / MapAreaFeedbackMobile. */}
-      {pendingDrawnArea && (
-        <PendingDrawControls
-          name={pendingDrawnArea.name}
-          bbox={pendingDrawnArea.bbox}
-          isConfirming={isCreating}
-          onConfirm={handleConfirmDrawing}
-          onCancel={cancelDrawing}
-        />
-      )}
     </Wrapper>
-  );
-}
-
-interface PendingDrawControlsProps {
-  name: string | null;
-  bbox: [number, number, number, number];
-  isConfirming: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-/**
- * Confirm/cancel controls and the area-name label, anchored to the top-left
- * corner of a just-completed drawn shape. The label shows a loading state
- * ("Drawn shape" + spinner) until the name resolves, then the resolved name.
- */
-function PendingDrawControls({
-  name,
-  bbox,
-  isConfirming,
-  onConfirm,
-  onCancel,
-}: PendingDrawControlsProps) {
-  // A null name means the name is still being fetched.
-  const isResolvingName = name === null;
-  return (
-    <Marker longitude={bbox[0]} latitude={bbox[3]} anchor="bottom-left">
-      <Flex direction="column" align="flex-start" gap={1}>
-        {/* Same button styling as the original draw controls (subtle group,
-            bg surface with muted hover). */}
-        <ButtonGroup size="sm" variant="subtle" pointerEvents="initial">
-          <Tooltip content="Cancel drawing" positioning={{ placement: "top" }}>
-            <IconButton
-              bg="bg"
-              _hover={{ bg: "bg.muted" }}
-              aria-label="Cancel drawing"
-              onClick={onCancel}
-            >
-              <XIcon />
-            </IconButton>
-          </Tooltip>
-          {/* Confirm is shown but disabled until the area name has resolved. */}
-          <Tooltip content="Confirm area" positioning={{ placement: "top" }}>
-            <IconButton
-              bg="bg"
-              _hover={{ bg: "bg.muted" }}
-              aria-label="Confirm area"
-              onClick={onConfirm}
-              disabled={isResolvingName || isConfirming}
-            >
-              <CheckIcon />
-            </IconButton>
-          </Tooltip>
-        </ButtonGroup>
-        {/* Label matches a selected AOI's chip in GeoJsonLayers. */}
-        <Tag.Root
-          colorPalette="primary"
-          variant="solid"
-          size="md"
-          px={2}
-          py={1}
-          roundedBottom="none"
-          maxW="14rem"
-          pointerEvents="initial"
-        >
-          <Tag.StartElement>
-            {isResolvingName ? (
-              <Spinner size="xs" />
-            ) : (
-              ChatContextOptions.area.icon
-            )}
-          </Tag.StartElement>
-          <Tag.Label fontWeight="medium">{name ?? "Drawn shape"}</Tag.Label>
-        </Tag.Root>
-      </Flex>
-    </Marker>
   );
 }
 
