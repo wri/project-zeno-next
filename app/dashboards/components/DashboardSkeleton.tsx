@@ -8,15 +8,20 @@ import { Box, Flex, Grid } from "@chakra-ui/react";
 // real content card uses, so the skeleton settles into the real layout without
 // a jump). Placeholder blocks shimmer using the theme's `shimmer` animation.
 
-/** A single shimmering placeholder block. */
+/** A single shimmering placeholder block: a soft white highlight band sweeps
+ *  across a light-grey base (the theme `shimmer` keyframe pans background
+ *  positionX). bgColor + backgroundImage are kept separate so the base colour
+ *  shows through the gradient's transparent ends rather than being clobbered by
+ *  the `background` shorthand. */
 function Shimmer(props: React.ComponentProps<typeof Box>) {
   return (
     <Box
       rounded="4px"
-      animation="shimmer"
+      bgColor="#E6E9ED"
+      backgroundImage="linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%)"
       backgroundSize="200% 100%"
-      // Light neutral sweep so the shimmer reads against the white card.
-      background="linear-gradient(120deg, #EEF0F2 0%, #DCE0E4 50%, #EEF0F2 100%)"
+      backgroundRepeat="no-repeat"
+      animation="shimmer"
       {...props}
     />
   );
