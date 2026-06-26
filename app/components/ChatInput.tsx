@@ -50,7 +50,12 @@ export default function ChatInput({
   const { sendMessage, isLoading, cancelRequest, abortController, messages } =
     useChatStore();
   const { context, removeContext } = useContextStore();
-  const { dataCatalogOpen, toggleDataCatalog } = useSidebarStore();
+  const {
+    dataCatalogOpen,
+    toggleDataCatalog,
+    areasPanelOpen,
+    toggleAreasPanel,
+  } = useSidebarStore();
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -63,6 +68,14 @@ export default function ChatInput({
       return;
     }
     toggleDataCatalog();
+  };
+
+  const openAreaPicker = () => {
+    if (isMobile) {
+      openContextMenu("area");
+      return;
+    }
+    toggleAreasPanel();
   };
 
   const handleContextModalOpenChange = (e: { open: boolean }) => {
@@ -189,8 +202,11 @@ export default function ChatInput({
           />
           <ContextButton
             contextType="area"
-            onClick={() => openContextMenu("area")}
+            onClick={openAreaPicker}
             disabled={disabled}
+            borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
+            color={areasPanelOpen ? "primary.solid" : undefined}
+            aria-expanded={areasPanelOpen}
           />
         </Flex>
         {canCancelRequest ? (
@@ -306,9 +322,14 @@ export default function ChatInput({
               contextType="area"
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
-                openContextMenu("area");
+                openAreaPicker();
               }}
               disabled={disabled}
+              aria-expanded={
+                isMobile
+                  ? contextModalOpen && selectedContextType === "area"
+                  : areasPanelOpen
+              }
             />
           </Flex>
           {canCancelRequest ? (

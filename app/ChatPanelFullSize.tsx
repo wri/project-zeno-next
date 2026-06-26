@@ -18,7 +18,8 @@ interface ChatPanelFullSizeProps {
 
 function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
   const { promptsExhausted } = usePromptQuota();
-  const { dataCatalogOpen } = useSidebarStore();
+  const { dataCatalogOpen, areasPanelOpen } = useSidebarStore();
+  const catalogColumnOpen = dataCatalogOpen || areasPanelOpen;
 
   return (
     <Flex
@@ -28,7 +29,7 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
       h="100%"
       w={{ base: "full", md: `${FULLSIZE_CHAT_PANEL_WIDTH_PX}px` }}
       {...chatPanelCardStyle}
-      borderRightWidth={{ base: 0, md: dataCatalogOpen ? 0 : "1px" }}
+      borderRightWidth={{ base: 0, md: catalogColumnOpen ? 0 : "1px" }}
       pointerEvents="auto"
     >
       <ChatPanelHeader

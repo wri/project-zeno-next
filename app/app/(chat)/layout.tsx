@@ -13,7 +13,8 @@ import { useEffect, useState } from "react";
 import ChatPanel from "@/app/ChatPanel";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
-import DataCatalogPanel from "@/app/components/DataCatalogPanel";
+import CatalogPanel from "@/app/components/CatalogPanel";
+import AreasPanel from "@/app/components/AreasPanel";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import WhatsNewModal from "@/app/components/WhatsNewModal";
@@ -21,7 +22,12 @@ import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
+import MapAreaFeedback from "@/app/components/MapAreaFeedback";
 import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
+import {
+  CATALOG_COLUMN_Z_INDEX,
+  MAP_FEEDBACK_Z_INDEX,
+} from "@/app/explorationLayout";
 
 export default function DashboardLayout({
   children,
@@ -53,11 +59,24 @@ export default function DashboardLayout({
         top={0}
         bottom={0}
         left={0}
-        zIndex={1095}
+        zIndex={CATALOG_COLUMN_Z_INDEX}
         pointerEvents="none"
         display={{ base: "none", md: "block" }}
       >
-        <DataCatalogPanel />
+        <CatalogPanel />
+        <AreasPanel />
+      </Box>
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        left={0}
+        right={0}
+        zIndex={MAP_FEEDBACK_Z_INDEX}
+        pointerEvents="none"
+        display={{ base: "none", md: "block" }}
+      >
+        <MapAreaFeedback />
       </Box>
       <Box
         position="absolute"

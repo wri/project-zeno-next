@@ -31,9 +31,9 @@ import {
 } from "@/app/constants/datasets";
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import {
-  DATA_CATALOG_CARD_WIDTH_PX,
-  DATA_CATALOG_PANEL_WIDTH_PX,
-  getDataCatalogLeftPx,
+  CATALOG_CARD_WIDTH_PX,
+  CATALOG_PANEL_WIDTH_PX,
+  getCatalogLeftPx,
 } from "@/app/explorationLayout";
 import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
@@ -42,7 +42,7 @@ import type { DatasetInfo } from "@/app/types/chat";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 
-import { DataCatalogCard } from "./DataCatalogCard";
+import { CatalogCard } from "./CatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
 import { Tooltip } from "./ui/tooltip";
 
@@ -81,7 +81,7 @@ export default function DataCatalogPanel() {
   const [category, setCategory] = useState<DatasetCategoryId>("all");
   const { dataCatalogOpen, setDataCatalogOpen, isChatFullSize } =
     useSidebarStore();
-  const leftPx = getDataCatalogLeftPx(isChatFullSize);
+  const leftPx = getCatalogLeftPx(isChatFullSize);
 
   // Build the "in this conversation" set from the context store. `useShallow`
   // keeps re-renders stable across unrelated context changes (e.g. AOI edits).
@@ -122,9 +122,9 @@ export default function DataCatalogPanel() {
         >
           <Flex
             h="100%"
-            w={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
-            minW={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
-            maxW={`${DATA_CATALOG_PANEL_WIDTH_PX}px`}
+            w={`${CATALOG_PANEL_WIDTH_PX}px`}
+            minW={`${CATALOG_PANEL_WIDTH_PX}px`}
+            maxW={`${CATALOG_PANEL_WIDTH_PX}px`}
             flexShrink={0}
             flexDirection="column"
             display={{ base: "none", md: "flex" }}
@@ -228,7 +228,7 @@ export default function DataCatalogPanel() {
                   </Text>
                 ) : (
                   cards.map((card) => (
-                    <DataCatalogCardRow key={card.dataset_id} card={card} />
+                    <CatalogCardRow key={card.dataset_id} card={card} />
                   ))
                 )}
               </Stack>
@@ -245,7 +245,7 @@ export default function DataCatalogPanel() {
  * switch, with an expanded controls row (visibility + opacity slider) shown
  * only while the layer is on the map.
  */
-function DataCatalogCardRow({ card }: { card: DatasetCardConfig }) {
+function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
   const {
     open: infoOpen,
     onOpen: onInfoOpen,
@@ -293,13 +293,13 @@ function DataCatalogCardRow({ card }: { card: DatasetCardConfig }) {
       .join(" · ") || undefined;
 
   return (
-    <Box w={`${DATA_CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
+    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
       <DatasetInfoModal
         isOpen={infoOpen}
         onClose={onInfoClose}
         dataset={dataset}
       />
-      <DataCatalogCard
+      <CatalogCard
         thumbnail={
           <Image
             objectFit="cover"
