@@ -38,6 +38,11 @@ import useInsightStore from "./insightStore";
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
+  // True only while the agent is actively generating an insight — i.e. between
+  // the agent announcing a generate_insights tool call and that tool's result
+  // arriving. Distinct from isLoading (true for the whole request) so the
+  // insight workspace loading state surfaces only when an insight is on the way.
+  isGeneratingInsight: boolean;
   abortController: AbortController | null;
   currentThreadId: string | null;
   toolSteps: ToolStepData[];
@@ -57,6 +62,7 @@ interface ChatActions {
     queryType?: QueryType
   ) => Promise<{ isNew: boolean; id: string }>;
   setLoading: (loading: boolean) => void;
+  setGeneratingInsight: (generating: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
     threadId: string,
@@ -82,6 +88,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
     },
   ],
   isLoading: false,
+  isGeneratingInsight: false,
   abortController: null,
   currentThreadId: null,
   toolSteps: [],
@@ -141,7 +148,8 @@ async function processStreamMessage(
   setPendingTraceId: (traceId: string | null) => void,
   attachTraceToLastAssistant: (traceId: string) => boolean,
   getPendingNudge: () => SuggestedDataset[] | null,
-  setPendingNudge: (datasets: SuggestedDataset[] | null) => void
+  setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
+  setGeneratingInsight: (generating: boolean) => void
 ) {
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
@@ -155,7 +163,21 @@ async function processStreamMessage(
     }
     return;
   }
+  // A pure tool-call turn (AI message with no text). If the agent is about to
+  // run generate_insights, flag it so the insight workspace can show its
+  // loading state now — before the chart data arrives.
+  if (streamMessage.type === "other" && streamMessage.name === "tool_calls") {
+    if (streamMessage.tool_calls?.includes("generate_insights")) {
+      setGeneratingInsight(true);
+    }
+    return;
+  }
   if (streamMessage.type === "error") {
+    // A generate_insights error means no chart is coming — clear the loading
+    // state so the workspace skeleton doesn't linger while the agent recovers.
+    if (streamMessage.name === "generate_insights") {
+      setGeneratingInsight(false);
+    }
     // Handle timeout errors specifically
     if (streamMessage.name === "timeout") {
       addMessage({
@@ -181,6 +203,12 @@ async function processStreamMessage(
     // Consider renaming server-emitted type to "assistant" and updating this
     // branch accordingly, keeping temporary backward compatibility for "text".
   } else if (streamMessage.type === "text" && streamMessage.text) {
+    // The agent can narrate ("Let me analyse…") and call generate_insights in
+    // the same turn — flag the pending insight so its loading state appears
+    // while the chart is computed.
+    if (streamMessage.tool_calls?.includes("generate_insights")) {
+      setGeneratingInsight(true);
+    }
     const pending = getPendingTraceId();
     const traceToUse = streamMessage.trace_id || pending || undefined;
 
@@ -219,10 +247,13 @@ async function processStreamMessage(
 
     // Special handling for generate_insights tool
     if (streamMessage.name === "generate_insights" && streamMessage.insights) {
-      // Non-blocking: do not await tool side-effects
-      void Promise.resolve().then(() =>
-        generateInsightsTool(streamMessage, addMessage)
-      );
+      // Non-blocking: do not await tool side-effects. Clear the generating
+      // flag in the same microtask that adds the insights, so the workspace
+      // swaps skeleton → chart in a single render (no empty flash).
+      void Promise.resolve().then(() => {
+        generateInsightsTool(streamMessage, addMessage);
+        setGeneratingInsight(false);
+      });
       return;
     }
     // Special handling for pick_aoi tool (previously location-tool)
@@ -323,6 +354,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const {
       addMessage,
       setLoading,
+      setGeneratingInsight,
       currentThreadId,
       generateNewThread,
       addToolStep,
@@ -344,6 +376,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     clearToolSteps();
     set({ reasoningStartTime: Date.now() });
     setLoading(true);
+    // Reset any stale insight-generating flag from a prior turn; it is set
+    // true only once this turn's agent announces a generate_insights call.
+    setGeneratingInsight(false);
 
     // Build ui_context from current context
     const newContext = context.filter((ctx) => !ctx.isAiContext);
@@ -471,7 +506,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               () => pendingNudge,
               (datasets) => {
                 pendingNudge = datasets;
-              }
+              },
+              setGeneratingInsight
             );
           } catch (err) {
             if (isFinal) {
@@ -580,6 +616,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       attachToolStepsToLastUserMessage();
 
       setLoading(false);
+      // Safety net: clear the insight-generating flag in case generate_insights
+      // was announced but never produced a result (error, abort, timeout).
+      setGeneratingInsight(false);
 
       queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };
@@ -587,6 +626,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  setGeneratingInsight: (generating) =>
+    set({ isGeneratingInsight: generating }),
 
   cancelRequest: () => {
     const controller = get().abortController;
@@ -647,13 +689,20 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   fetchThread: async (threadId: string, abort?: AbortController) => {
-    const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
+    const {
+      setLoading,
+      setGeneratingInsight,
+      addMessage,
+      addToolStep,
+      clearToolSteps,
+    } = get();
     const { upsertContextByType } = useContextStore.getState();
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
     set({ reasoningStartTime: Date.now() });
     setLoading(true);
+    setGeneratingInsight(false);
     // Set up abort controller for client-side timeout
     const abortController = abort || new AbortController();
     const timeoutId = setTimeout(() => {
@@ -760,7 +809,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               () => pendingNudgeThread,
               (datasets) => {
                 pendingNudgeThread = datasets;
-              }
+              },
+              setGeneratingInsight
             );
           } catch (err) {
             if (isFinal) {
@@ -824,6 +874,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       setLoading(false);
+      setGeneratingInsight(false);
     }
   },
 }));

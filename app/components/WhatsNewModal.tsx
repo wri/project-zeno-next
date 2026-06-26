@@ -9,6 +9,7 @@ import {
   Portal,
   Text,
 } from "@chakra-ui/react";
+import Image from "next/image";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import {
   ArrowSquareOutIcon,
@@ -323,16 +324,14 @@ const WhatsNewModal = () => {
                         borderRadius="4px"
                         overflow="hidden"
                         bg="#f4f5f6"
+                        position="relative"
                       >
-                        <img
+                        <Image
                           src={image}
                           alt={feature.title}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
+                          fill
+                          sizes="480px"
+                          style={{ objectFit: "cover" }}
                         />
                       </Box>
                     )}

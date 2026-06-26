@@ -1,1 +1,3 @@
+set -e
 pnpm format:check
+pnpm typecheck

@@ -20,6 +20,9 @@ interface SidebarState {
   apiStatus: "Idle" | "OK" | "Error";
   isChatFullSize: boolean;
   setChatFullSize: (value: boolean) => void;
+  dataCatalogOpen: boolean;
+  setDataCatalogOpen: (open: boolean) => void;
+  toggleDataCatalog: () => void;
 }
 
 function updateThreadInCache(
@@ -43,6 +46,13 @@ const useSidebarStore = create<SidebarState>(() => ({
   isChatFullSize: false,
   setChatFullSize: (value) =>
     useSidebarStore.setState({ isChatFullSize: value }),
+  dataCatalogOpen: false,
+  setDataCatalogOpen: (open) =>
+    useSidebarStore.setState({ dataCatalogOpen: open }),
+  toggleDataCatalog: () =>
+    useSidebarStore.setState((state) => ({
+      dataCatalogOpen: !state.dataCatalogOpen,
+    })),
 
   toggleSidebar: () =>
     useSidebarStore.setState((state) => ({

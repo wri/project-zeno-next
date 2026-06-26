@@ -32,6 +32,10 @@ import useContextStore from "../store/contextStore";
 import { BasemapSelector } from "./map/BasemapSelector";
 import { ScaleBar } from "./map/ScaleBar";
 import useSidebarStore from "../store/sidebarStore";
+import {
+  getMapAreaToolsLeftPx,
+  getMapControlsLeftPx,
+} from "../explorationLayout";
 import { FeatureRef } from "../store/layerManagerSlice";
 
 function Wrapper({
@@ -87,7 +91,9 @@ function MapAreaControls({
     mapRef,
   } = useMapStore();
   const { addContext } = useContextStore();
-  const { isChatFullSize } = useSidebarStore();
+  const { isChatFullSize, dataCatalogOpen } = useSidebarStore();
+  const mapControlsLeft = `${getMapControlsLeftPx(isChatFullSize, dataCatalogOpen)}px`;
+  const mapAreaToolsLeft = `${getMapAreaToolsLeftPx(isChatFullSize, dataCatalogOpen)}px`;
 
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
   const [showTools, setShowTools] = useState(false);
@@ -174,7 +180,7 @@ function MapAreaControls({
         display={{ base: "none", md: "flex" }}
         position="absolute"
         bottom={8}
-        left={{ base: 2, md: isChatFullSize ? "436px" : "416px" }}
+        left={{ base: 2, md: mapControlsLeft }}
         flexDirection="column"
         gap={1}
         pointerEvents="auto"
@@ -226,7 +232,12 @@ function MapAreaControls({
       </Flex>
       {/* Area tools: in full-size mode, anchor just right of the chat panel
           (aligned with the zoom/basemap controls above); otherwise top-left. */}
-      <Flex ml={{ base: 0, md: isChatFullSize ? "436px" : 0 }}>
+      <Flex
+        ml={{
+          base: 0,
+          md: dataCatalogOpen || isChatFullSize ? mapAreaToolsLeft : 0,
+        }}
+      >
         <Button
           position="relative"
           variant="subtle"
