@@ -35,6 +35,7 @@ import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
 import AnalyseNudge from "./AnalyseNudge";
+import { ViewAnalysisNudge } from "@/src/features/analysis";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -218,6 +219,20 @@ function MessageBubble({
         <AnalyseNudge
           messageId={message.id}
           suggestion={message.analyseSuggestion}
+        />
+      </Box>
+    );
+  }
+
+  if (
+    message.type === "view-analysis-nudge" &&
+    message.viewAnalysisSuggestion
+  ) {
+    return (
+      <Box my={2}>
+        <ViewAnalysisNudge
+          messageId={message.id}
+          suggestion={message.viewAnalysisSuggestion}
         />
       </Box>
     );

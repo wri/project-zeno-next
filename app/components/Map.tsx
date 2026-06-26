@@ -25,7 +25,6 @@ import DynamicTileLayers, {
 import VectorDataLayers from "./map/layers/VectorDataLayers";
 import AoiVectorTileLayers from "./map/layers/AoiVectorTileLayers";
 import SelectAreaLayer from "./map/layers/select-area-layer";
-import { AnalysisCTA } from "@/src/features/analysis";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import PendingDrawArea from "./map/layers/PendingDrawArea";
@@ -241,7 +240,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         <GeoJsonLayers basemapTheme={basemapTheme} />
         <PendingDrawArea basemapTheme={basemapTheme} />
         <SelectAreaLayer />
-        <AnalysisCTA />
 
         {!disableMapAreaControls && (
           <MapAreaControls

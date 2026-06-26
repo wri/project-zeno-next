@@ -35,6 +35,7 @@ export interface ChatMessage {
     | "warning"
     | "dataset-nudge"
     | "analyse-nudge"
+    | "view-analysis-nudge"
     | "stopped";
   message: string;
   timestamp: string;
@@ -43,6 +44,7 @@ export interface ChatMessage {
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
+  viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
@@ -195,6 +197,29 @@ export interface AnalyseSuggestion {
   datasetName: string;
   // Set once the user clicks Analyse: accepted nudges persist in the thread
   // as a record of the run, while pending ones are replaced by new selections.
+  accepted?: boolean;
+}
+
+// Payload of a view-analysis-nudge message: a snapshot of the area, dataset and
+// date window the direct analysis should run against, taken at injection time so
+// the card stays stable even if the live selection/context changes afterwards.
+// The `area` shape mirrors the analysis feature's AreaSelection structurally
+// (inlined here to avoid an app→feature import).
+export interface ViewAnalysisSuggestion {
+  area: {
+    name: string;
+    source: string;
+    srcId?: string;
+    subtype?: string;
+  };
+  datasetId: number;
+  datasetName: string;
+  /** ISO date string "yyyy-MM-dd" */
+  startDate: string;
+  /** ISO date string "yyyy-MM-dd" */
+  endDate: string;
+  // Set once the user clicks View Analysis: accepted nudges persist in the
+  // thread as a record of the run, while pending ones are replaced by new ones.
   accepted?: boolean;
 }
 

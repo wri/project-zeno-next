@@ -7,7 +7,6 @@ const selection: AreaSelection = {
   source: "gadm",
   srcId: "BRA",
 };
-const lngLat = { lng: -51.9, lat: -14.2 };
 
 describe("selectionStore", () => {
   beforeEach(() => {
@@ -15,25 +14,17 @@ describe("selectionStore", () => {
   });
 
   it("starts empty", () => {
-    const state = useSelectionStore.getState();
-    expect(state.selection).toBeNull();
-    expect(state.lngLat).toBeNull();
+    expect(useSelectionStore.getState().selection).toBeNull();
   });
 
-  it("stores a selection with its anchor", () => {
-    useSelectionStore.getState().select(selection, lngLat);
-
-    const state = useSelectionStore.getState();
-    expect(state.selection).toEqual(selection);
-    expect(state.lngLat).toEqual(lngLat);
+  it("stores a selection", () => {
+    useSelectionStore.getState().select(selection);
+    expect(useSelectionStore.getState().selection).toEqual(selection);
   });
 
   it("clears the selection", () => {
-    useSelectionStore.getState().select(selection, lngLat);
+    useSelectionStore.getState().select(selection);
     useSelectionStore.getState().clear();
-
-    const state = useSelectionStore.getState();
-    expect(state.selection).toBeNull();
-    expect(state.lngLat).toBeNull();
+    expect(useSelectionStore.getState().selection).toBeNull();
   });
 });

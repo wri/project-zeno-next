@@ -26,7 +26,7 @@ import {
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
-// Prototype popup path (future final solution) — kept wired behind ?ff=analysis
+// Direct-analysis "View Analysis" nudge — kept wired behind ?ff=analysis
 // alongside the live analyse nudge. toAreaSelection (areaHelpers) returns the
 // same shape both consumers need, so it's reused for both.
 import { isFeatureEnabled } from "@/app/lib/feature-flags";
@@ -207,7 +207,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             // normalized selection:
             //  - live: AnalysisCtaTrigger reacts to setAnalysis and surfaces
             //    the analyse nudge once a dataset is also active.
-            //  - prototype popup (future final solution): the selection store,
+            //  - direct-analysis "View Analysis" nudge: the selection store,
             //    gated behind ?ff=analysis so it stays additive for now.
             if (layerId === "GADM" && metadata) {
               const areaSelection = toAreaSelection(
@@ -218,10 +218,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               setAnalysis(areaSelection);
 
               if (analysisEnabled) {
-                selectArea(areaSelection, {
-                  lng: e.lngLat.lng,
-                  lat: e.lngLat.lat,
-                });
+                selectArea(areaSelection);
               }
             } else {
               useMapStore.getState().clearAnalysis();
