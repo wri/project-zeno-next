@@ -26,6 +26,10 @@ interface ComposerState {
   chatMaximised: boolean;
   setChatMaximised: (value: boolean) => void;
 
+  // Floating chat collapsed to just its header bar (caret in the header).
+  chatCollapsed: boolean;
+  setChatCollapsed: (value: boolean) => void;
+
   // Bumped to ask the chat panel to focus its input.
   focusNonce: number;
   requestFocus: () => void;
@@ -47,6 +51,9 @@ const useComposerStore = create<ComposerState>((set) => ({
 
   chatMaximised: false,
   setChatMaximised: (value) => set({ chatMaximised: value }),
+
+  chatCollapsed: false,
+  setChatCollapsed: (value) => set({ chatCollapsed: value }),
 
   focusNonce: 0,
   requestFocus: () => set((s) => ({ focusNonce: s.focusNonce + 1 })),

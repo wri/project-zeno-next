@@ -33,6 +33,7 @@ export default function DashboardWorkspace({
 }) {
   const sidePane = useComposerStore((s) => s.sidePane);
   const chatMaximised = useComposerStore((s) => s.chatMaximised);
+  const chatCollapsed = useComposerStore((s) => s.chatCollapsed);
 
   const dragControls = useDragControls();
   const x = useMotionValue(0);
@@ -106,7 +107,10 @@ export default function DashboardWorkspace({
               userSelect: "none",
             }}
           >
-            <Box h={{ base: "70dvh", md: "560px" }} maxH="calc(100dvh - 96px)">
+            <Box
+              h={chatCollapsed ? "auto" : { base: "70dvh", md: "560px" }}
+              maxH="calc(100dvh - 96px)"
+            >
               <DashboardChatPanel floating dragControls={dragControls} />
             </Box>
           </motion.div>

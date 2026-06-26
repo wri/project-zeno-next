@@ -18,9 +18,13 @@ import {
   ChartBarIcon,
   StackIcon,
   XIcon,
-  ArrowsOutIcon,
-  ArrowsInIcon,
+  ChatCircleDotsIcon,
+  ClockCounterClockwiseIcon,
+  SidebarSimpleIcon,
+  CaretDownIcon,
+  CaretUpIcon,
 } from "@phosphor-icons/react";
+import { toaster } from "@/app/components/ui/toaster";
 import type { DragControls } from "framer-motion";
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import useDashboardStore from "@/app/store/dashboardStore";
@@ -81,6 +85,8 @@ export default function DashboardChatPanel({
   const openSidePane = useComposerStore((s) => s.openSidePane);
   const chatMaximised = useComposerStore((s) => s.chatMaximised);
   const setChatMaximised = useComposerStore((s) => s.setChatMaximised);
+  const chatCollapsed = useComposerStore((s) => s.chatCollapsed);
+  const setChatCollapsed = useComposerStore((s) => s.setChatCollapsed);
   const focusNonce = useComposerStore((s) => s.focusNonce);
 
   const [messages, setMessages] = useState<PanelMessage[]>([]);
@@ -155,7 +161,24 @@ export default function DashboardChatPanel({
     run(s.label, respondToSuggestion(s, context));
   };
 
+  // Header actions.
+  const newChat = () => {
+    if (timer.current) clearTimeout(timer.current);
+    setMessages([]);
+    setThinking(false);
+    setDraft("");
+    clearMentions();
+  };
+  const showHistory = () =>
+    toaster.create({
+      title: "Conversation history — prototype",
+      type: "info",
+      duration: 2000,
+    });
+
   const hasConversation = messages.length > 0;
+  // Collapse only applies to the floating card (the header's caret).
+  const collapsed = floating && chatCollapsed;
 
   // During the new-dashboard setup flow the heading/intro point the user at the
   // open side panel; otherwise they fall back to the gallery/detail copy.
@@ -187,13 +210,13 @@ export default function DashboardChatPanel({
       boxShadow={floating ? "xl" : undefined}
       overflow="hidden"
     >
-      {/* Header — drag handle + AI ASSISTANT, matching the design */}
+      {/* Header — drag handle + AI ASSISTANT, with the design's action icons. */}
       <Flex
         h="40px"
         px="3"
-        bg="neutral.200"
+        bg="#F4F5F6"
         borderBottomWidth="1px"
-        borderColor="border"
+        borderColor="#E7E6E6"
         align="center"
         justify="space-between"
         flexShrink={0}
@@ -207,236 +230,291 @@ export default function DashboardChatPanel({
           }
           style={dragControls ? { touchAction: "none" } : undefined}
         >
-          <Icon as={DotsSixVerticalIcon} boxSize="16px" color="neutral.500" />
+          <Icon as={DotsSixVerticalIcon} boxSize="16px" color="#656E7B" />
           <Text
             fontFamily="mono"
             fontSize="10px"
             lineHeight="16px"
             letterSpacing="0.3px"
             textTransform="uppercase"
-            color="neutral.500"
+            color="#656E7B"
           >
             AI Assistant
           </Text>
         </Flex>
-        <IconButton
-          aria-label={chatMaximised ? "Restore chat" : "Maximise chat"}
-          size="2xs"
-          variant="ghost"
-          color="neutral.500"
-          onClick={() => setChatMaximised(!chatMaximised)}
-        >
-          {chatMaximised ? (
-            <ArrowsInIcon size={14} />
-          ) : (
-            <ArrowsOutIcon size={14} />
+        <Flex align="center" gap={1}>
+          <IconButton
+            aria-label="New chat"
+            size="2xs"
+            variant="ghost"
+            color="#656E7B"
+            onClick={newChat}
+          >
+            <ChatCircleDotsIcon size={16} />
+          </IconButton>
+          <IconButton
+            aria-label="Conversation history"
+            size="2xs"
+            variant="ghost"
+            color="#656E7B"
+            onClick={showHistory}
+          >
+            <ClockCounterClockwiseIcon size={16} />
+          </IconButton>
+          <IconButton
+            aria-label={chatMaximised ? "Float chat" : "Dock chat full-size"}
+            size="2xs"
+            variant="ghost"
+            color="#656E7B"
+            onClick={() => {
+              setChatMaximised(!chatMaximised);
+              setChatCollapsed(false);
+            }}
+          >
+            <SidebarSimpleIcon size={16} />
+          </IconButton>
+          {floating && (
+            <IconButton
+              aria-label={collapsed ? "Expand chat" : "Collapse chat"}
+              size="2xs"
+              variant="ghost"
+              color="#656E7B"
+              onClick={() => setChatCollapsed(!chatCollapsed)}
+            >
+              {collapsed ? (
+                <CaretUpIcon size={12} />
+              ) : (
+                <CaretDownIcon size={12} />
+              )}
+            </IconButton>
           )}
-        </IconButton>
+        </Flex>
       </Flex>
 
-      {/* Intro + suggestions / conversation */}
-      <Box ref={scrollRef} flex="1 1 auto" overflowY="auto" px={4} py={4}>
-        <Text fontSize="md" fontWeight="medium" color="fg.link" mb={2}>
-          {heading}
-        </Text>
-        <Text fontSize="sm" color="fg" mb={4}>
-          {intro}
-        </Text>
-
-        {/* Empty state: full-width suggestion rows */}
-        {!hasConversation && (
-          <Box>
-            <Text fontSize="xs" color="fg.muted" mb={2}>
-              You might want to:
+      {!collapsed && (
+        <>
+          {/* Intro + suggestions / conversation */}
+          <Box ref={scrollRef} flex="1 1 auto" overflowY="auto" px={4} py={4}>
+            <Text
+              fontSize="16px"
+              fontWeight="medium"
+              lineHeight="1.5"
+              color="#0049AA"
+              mb={2}
+            >
+              {heading}
             </Text>
-            <Flex flexDir="column" gap={2}>
-              {getSuggestions(context).map((s) => (
-                <Box
-                  key={s.label}
-                  as="button"
-                  onClick={() => pickSuggestion(s)}
-                  textAlign="left"
-                  w="full"
-                  bg="bg"
-                  borderWidth="1px"
-                  borderColor="border.emphasized"
-                  rounded="lg"
-                  px={3}
-                  py={2}
-                  fontSize="xs"
-                  color="fg"
-                  cursor="pointer"
-                  opacity={thinking ? 0.6 : 1}
-                  transition="border-color 0.12s ease, background 0.12s ease"
-                  _hover={{ borderColor: "fg.link", bg: "bg.subtle" }}
-                >
-                  {s.label}
-                </Box>
-              ))}
-            </Flex>
-          </Box>
-        )}
+            <Text fontSize="12px" lineHeight="1.5" color="#131619" mb={4}>
+              {intro}
+            </Text>
 
-        {/* Conversation thread */}
-        {hasConversation && (
-          <Flex flexDir="column" gap={3}>
-            {messages.map((m) => (
-              <Flex
-                key={m.id}
-                justify={m.role === "user" ? "flex-end" : "flex-start"}
-              >
-                <Box
-                  maxW="85%"
-                  px={3}
-                  py={2}
-                  rounded="md"
-                  fontSize="sm"
-                  bg={m.role === "user" ? "primary.solid" : "neutral.100"}
-                  color={m.role === "user" ? "primary.contrast" : "fg"}
-                  borderWidth={m.role === "assistant" ? "1px" : 0}
-                  borderColor="border"
-                >
-                  {m.text}
-                </Box>
-              </Flex>
-            ))}
-            {thinking && (
-              <Flex align="center" gap={2} color="fg.muted" fontSize="sm">
-                <Spinner size="xs" />
-                Thinking…
+            {/* Empty state: full-width suggestion rows */}
+            {!hasConversation && (
+              <Box>
+                <Text fontSize="xs" color="fg.muted" mb={2}>
+                  You might want to:
+                </Text>
+                <Flex flexDir="column" gap={2}>
+                  {getSuggestions(context).map((s) => (
+                    <Box
+                      key={s.label}
+                      as="button"
+                      onClick={() => pickSuggestion(s)}
+                      textAlign="left"
+                      w="full"
+                      bg="bg"
+                      borderWidth="1px"
+                      borderColor="border.emphasized"
+                      rounded="lg"
+                      px={3}
+                      py={2}
+                      fontSize="xs"
+                      color="fg"
+                      cursor="pointer"
+                      opacity={thinking ? 0.6 : 1}
+                      transition="border-color 0.12s ease, background 0.12s ease"
+                      _hover={{ borderColor: "fg.link", bg: "bg.subtle" }}
+                    >
+                      {s.label}
+                    </Box>
+                  ))}
+                </Flex>
+              </Box>
+            )}
+
+            {/* Conversation thread */}
+            {hasConversation && (
+              <Flex flexDir="column" gap={3}>
+                {messages.map((m) => (
+                  <Flex
+                    key={m.id}
+                    justify={m.role === "user" ? "flex-end" : "flex-start"}
+                  >
+                    <Box
+                      maxW="85%"
+                      px={3}
+                      py={2}
+                      rounded="md"
+                      fontSize="sm"
+                      bg={m.role === "user" ? "primary.solid" : "neutral.100"}
+                      color={m.role === "user" ? "primary.contrast" : "fg"}
+                      borderWidth={m.role === "assistant" ? "1px" : 0}
+                      borderColor="border"
+                    >
+                      {m.text}
+                    </Box>
+                  </Flex>
+                ))}
+                {thinking && (
+                  <Flex align="center" gap={2} color="fg.muted" fontSize="sm">
+                    <Spinner size="xs" />
+                    Thinking…
+                  </Flex>
+                )}
               </Flex>
             )}
-          </Flex>
-        )}
-      </Box>
+          </Box>
 
-      {/* Prompt box */}
-      <Box px={4} pb={4}>
-        <Box
-          bg="bg.subtle"
-          borderWidth="1px"
-          borderColor="border"
-          rounded="md"
-          p={3}
-        >
-          {/* @mention chips (e.g. from an insight's hover chat button) */}
-          {mentions.length > 0 && (
-            <Flex gap={1} flexWrap="wrap" mb={2}>
-              {mentions.map((m) => (
-                <Flex
-                  key={m}
-                  align="center"
-                  gap={1}
-                  maxW="full"
-                  bg="blue.50"
-                  color="fg.link"
-                  borderWidth="1px"
-                  borderColor="fg.link"
-                  rounded="full"
-                  px={2}
-                  py={0.5}
-                  fontSize="xs"
-                >
-                  <Text lineClamp={1}>@{m}</Text>
-                  <Box
-                    as="button"
-                    onClick={() => removeMention(m)}
-                    aria-label={`Remove ${m}`}
-                    lineHeight={0}
-                    flexShrink={0}
-                  >
-                    <XIcon size={12} />
-                  </Box>
-                </Flex>
-              ))}
-            </Flex>
-          )}
-          <Textarea
-            ref={textareaRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendDraft();
-              }
-            }}
-            placeholder="Or describe what you want to explore…"
-            rows={1}
-            resize="none"
-            border="none"
-            outline="none"
-            bg="transparent"
-            _focusVisible={{ boxShadow: "none" }}
-            fontSize="sm"
-            minH="24px"
-            maxH="120px"
-            p={0}
-            mb={3}
-          />
-          <Flex justify="space-between" align="center">
-            <Flex gap={2}>
-              {[
-                // Each chip opens its docked side panel — independent of the
-                // chat's floating/full-sized state. "Areas" only applies on a
-                // dashboard (sets its AOI), so it's dropped on the gallery.
-                ...(context === "detail"
-                  ? [
-                      {
-                        label: "Areas",
-                        icon: PolygonIcon,
-                        onClick: () => openSidePane("areas"),
-                      },
-                    ]
-                  : []),
-                {
-                  label: "Analyses",
-                  icon: ChartBarIcon,
-                  onClick: () => openSidePane("analysis"),
-                },
-                {
-                  label: "Data",
-                  icon: StackIcon,
-                  onClick: () => openSidePane("catalogue"),
-                },
-              ].map((chip) => (
-                <Flex
-                  key={chip.label}
-                  as="button"
-                  onClick={chip.onClick}
-                  align="center"
-                  gap={1}
-                  borderWidth="1px"
-                  borderColor="border"
-                  rounded="sm"
-                  bg="bg"
-                  px={2}
-                  py={1}
-                  color="fg.muted"
-                  cursor="pointer"
-                  _hover={{ bg: "bg.subtle", borderColor: "border.emphasized" }}
-                >
-                  <Icon as={chip.icon} boxSize="14px" />
-                  <Text fontSize="11px">{chip.label}</Text>
-                </Flex>
-              ))}
-            </Flex>
-            <IconButton
-              aria-label="Send"
-              size="sm"
-              rounded="full"
-              bg="fg.link"
-              color="white"
-              _hover={{ bg: "fg.link", opacity: 0.9 }}
-              onClick={sendDraft}
-              disabled={thinking || (!draft.trim() && mentions.length === 0)}
-              _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+          {/* Prompt box */}
+          <Box px={4} pb={4}>
+            <Box
+              bg="#F4F5F6"
+              borderWidth="1px"
+              borderColor="#E0E2E5"
+              rounded="4px"
+              p={4}
             >
-              <ArrowBendRightUpIcon size={16} />
-            </IconButton>
-          </Flex>
-        </Box>
-      </Box>
+              {/* @mention chips (e.g. from an insight's hover chat button) */}
+              {mentions.length > 0 && (
+                <Flex gap={1} flexWrap="wrap" mb={2}>
+                  {mentions.map((m) => (
+                    <Flex
+                      key={m}
+                      align="center"
+                      gap={1}
+                      maxW="full"
+                      bg="blue.50"
+                      color="fg.link"
+                      borderWidth="1px"
+                      borderColor="fg.link"
+                      rounded="full"
+                      px={2}
+                      py={0.5}
+                      fontSize="xs"
+                    >
+                      <Text lineClamp={1}>@{m}</Text>
+                      <Box
+                        as="button"
+                        onClick={() => removeMention(m)}
+                        aria-label={`Remove ${m}`}
+                        lineHeight={0}
+                        flexShrink={0}
+                      >
+                        <XIcon size={12} />
+                      </Box>
+                    </Flex>
+                  ))}
+                </Flex>
+              )}
+              <Textarea
+                ref={textareaRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendDraft();
+                  }
+                }}
+                placeholder="Or describe what you want to explore…"
+                rows={1}
+                resize="none"
+                border="none"
+                outline="none"
+                bg="transparent"
+                _focusVisible={{ boxShadow: "none" }}
+                fontSize="sm"
+                minH="24px"
+                maxH="120px"
+                p={0}
+                mb={3}
+              />
+              <Flex justify="space-between" align="center">
+                <Flex gap={2}>
+                  {[
+                    // Each chip opens its docked side panel — independent of the
+                    // chat's floating/full-sized state. "Areas" only applies on a
+                    // dashboard (sets its AOI), so it's dropped on the gallery.
+                    ...(context === "detail"
+                      ? [
+                          {
+                            label: "Areas",
+                            icon: PolygonIcon,
+                            onClick: () => openSidePane("areas"),
+                          },
+                        ]
+                      : []),
+                    {
+                      label: "Analyses",
+                      icon: ChartBarIcon,
+                      onClick: () => openSidePane("analysis"),
+                    },
+                    // "Data" catalogue is dashboard-only; the gallery shows just
+                    // Analyses.
+                    ...(context === "detail"
+                      ? [
+                          {
+                            label: "Data",
+                            icon: StackIcon,
+                            onClick: () => openSidePane("catalogue"),
+                          },
+                        ]
+                      : []),
+                  ].map((chip) => (
+                    <Flex
+                      key={chip.label}
+                      as="button"
+                      onClick={chip.onClick}
+                      align="center"
+                      gap={1}
+                      borderWidth="1px"
+                      borderColor="#E0E2E5"
+                      rounded="4px"
+                      bg="bg"
+                      px={2}
+                      py={1.5}
+                      color="#3A4048"
+                      cursor="pointer"
+                      _hover={{
+                        bg: "bg.subtle",
+                        borderColor: "border.emphasized",
+                      }}
+                    >
+                      <Icon as={chip.icon} boxSize="16px" />
+                      <Text fontSize="11px">{chip.label}</Text>
+                    </Flex>
+                  ))}
+                </Flex>
+                <IconButton
+                  aria-label="Send"
+                  size="sm"
+                  rounded="full"
+                  bg="fg.link"
+                  color="white"
+                  _hover={{ bg: "fg.link", opacity: 0.9 }}
+                  onClick={sendDraft}
+                  disabled={
+                    thinking || (!draft.trim() && mentions.length === 0)
+                  }
+                  _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+                >
+                  <ArrowBendRightUpIcon size={16} />
+                </IconButton>
+              </Flex>
+            </Box>
+          </Box>
+        </>
+      )}
     </Flex>
   );
 }
