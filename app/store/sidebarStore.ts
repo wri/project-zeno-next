@@ -60,10 +60,10 @@ const useSidebarStore = create<SidebarState>(() => ({
     useSidebarStore.setState({ isChatFullSize: value }),
   dataCatalogOpen: false,
   setDataCatalogOpen: (open) =>
-    useSidebarStore.setState((state) =>
+    useSidebarStore.setState(
       open
         ? { dataCatalogOpen: true, areasPanelOpen: false }
-        : { ...state, dataCatalogOpen: false }
+        : { dataCatalogOpen: false }
     ),
   toggleDataCatalog: () =>
     useSidebarStore.setState((state) => {
@@ -74,10 +74,10 @@ const useSidebarStore = create<SidebarState>(() => ({
     }),
   areasPanelOpen: false,
   setAreasPanelOpen: (open) =>
-    useSidebarStore.setState((state) =>
+    useSidebarStore.setState(
       open
         ? { areasPanelOpen: true, dataCatalogOpen: false }
-        : { ...state, areasPanelOpen: false }
+        : { areasPanelOpen: false }
     ),
   toggleAreasPanel: () =>
     useSidebarStore.setState((state) => {

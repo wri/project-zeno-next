@@ -60,4 +60,8 @@ describe("explorationLayout", () => {
   it("places map feedback past chat and catalog in full-size mode", () => {
     expect(getMapFeedbackLeftPx(true, true)).toBe(836);
   });
+
+  it("places map feedback past the full-size chat when the catalog is closed", () => {
+    expect(getMapFeedbackLeftPx(true, false)).toBe(436);
+  });
 });

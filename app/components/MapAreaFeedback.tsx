@@ -16,8 +16,11 @@ import { Tooltip } from "./ui/tooltip";
  * exploration layout above the catalog/areas column so toasts are not clipped.
  */
 export default function MapAreaFeedback() {
-  const { selectionMode, validationError } = useMapStore();
-  const { isChatFullSize, dataCatalogOpen, areasPanelOpen } = useSidebarStore();
+  const selectionMode = useMapStore((s) => s.selectionMode);
+  const validationError = useMapStore((s) => s.validationError);
+  const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
+  const dataCatalogOpen = useSidebarStore((s) => s.dataCatalogOpen);
+  const areasPanelOpen = useSidebarStore((s) => s.areasPanelOpen);
   const catalogColumnOpen = dataCatalogOpen || areasPanelOpen;
 
   if (!selectionMode && !validationError) return null;
@@ -57,7 +60,8 @@ export default function MapAreaFeedback() {
 
 /** Mobile map overlay — same content, positioned inside `MapAreaControls`. */
 export function MapAreaFeedbackMobile() {
-  const { selectionMode, validationError } = useMapStore();
+  const selectionMode = useMapStore((s) => s.selectionMode);
+  const validationError = useMapStore((s) => s.validationError);
 
   if (!selectionMode && !validationError) return null;
 

@@ -52,13 +52,17 @@ function decimateRing(ring: number[][], maxPoints: number): number[][] {
  */
 function thumbnailGeometry(geom: Geometry, maxPoints = 200): Geometry {
   if (geom.type === "Polygon") {
+    const ring = geom.coordinates[0];
+    if (!ring?.length) return geom;
     return {
       type: "Polygon",
-      coordinates: [decimateRing(geom.coordinates[0], maxPoints)],
+      coordinates: [decimateRing(ring, maxPoints)],
     };
   }
   if (geom.type === "MultiPolygon") {
-    const largest = geom.coordinates.reduce((best, poly) =>
+    const polys = geom.coordinates.filter((poly) => poly[0]?.length > 0);
+    if (polys.length === 0) return geom;
+    const largest = polys.reduce((best, poly) =>
       poly[0].length > best[0].length ? poly : best
     );
     return {

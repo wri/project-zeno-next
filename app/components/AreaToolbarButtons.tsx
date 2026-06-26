@@ -94,7 +94,7 @@ export function AreaToolbarButtons() {
 
       flyToGeoJson(feat);
     } catch (error) {
-      console.error("Upload failed:", error);
+      console.error("Failed to confirm drawn area:", error);
     }
   }
 

@@ -85,5 +85,7 @@ export function getMapFeedbackLeftPx(
       EXPLORATION_PANEL_GAP_PX
     );
   }
-  return isChatFullSize ? 0 : COMPACT_CHAT_INSET_PX;
+  return isChatFullSize
+    ? getMapControlsLeftPx(true, false)
+    : COMPACT_CHAT_INSET_PX;
 }

@@ -25,6 +25,7 @@ import type { Feature, MultiPolygon } from "geojson";
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import {
   CATALOG_CARD_WIDTH_PX,
+  CATALOG_COLUMN_Z_INDEX,
   CATALOG_PANEL_WIDTH_PX,
   getCatalogLeftPx,
 } from "@/app/explorationLayout";
@@ -118,7 +119,7 @@ export default function AreasPanel() {
             top: 0,
             bottom: 0,
             left: leftPx,
-            zIndex: 1095,
+            zIndex: CATALOG_COLUMN_Z_INDEX,
             pointerEvents: "auto",
           }}
         >
@@ -265,7 +266,8 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
 function getAreaTypeLabel(item: ContextItem): string {
   const source =
     item.aoiData?.source ?? item.aoiSelection?.aois[0]?.source ?? "";
-  return AREA_TYPE_LABELS[source.toLowerCase()] ?? source ?? "Area";
+  const label = AREA_TYPE_LABELS[source.toLowerCase()] ?? source;
+  return label || "Area";
 }
 
 /** Display name for an area context item. */
@@ -407,12 +409,10 @@ function ConversationAreaCard({ item }: { item: ContextItem }) {
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
         titleActions={
-          isVisible ? (
-            <AreaCardActions
-              onLocate={handleLocate}
-              onRemove={() => removeContext(item.id)}
-            />
-          ) : undefined
+          <AreaCardActions
+            onLocate={handleLocate}
+            onRemove={() => removeContext(item.id)}
+          />
         }
       />
     </Box>
