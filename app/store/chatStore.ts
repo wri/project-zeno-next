@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
-import { format } from "date-fns";
 
 import JSON5 from "json5";
 import {
@@ -10,18 +9,22 @@ import {
   LangChainUpdate,
   StreamMessage,
   QueryType,
-  UiContext,
   ToolStepData,
   SuggestedDataset,
   AnalyseSuggestion,
 } from "@/app/types/chat";
-import useContextStore from "./contextStore";
+import useMapStore from "./mapStore";
+import {
+  deriveContext,
+  diffUiContext,
+  emptyContextKeys,
+  type ContextKeys,
+} from "@/app/utils/messageContext";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
-import { DATASET_BY_ID } from "../constants/datasets";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
@@ -46,6 +49,11 @@ interface ChatState {
   // The selected date range — the one query-scope concern with no map/layer
   // counterpart. Owned here (replaces the old contextStore `date` item).
   dateRange: { start: Date; end: Date } | null;
+  // Per-slot identity of the context last sent to the backend on this thread.
+  // The `/api/chat` `ui_context` is non-idempotent, so each slot is sent only
+  // when it changes. Reset per thread (cleared by reset(), seeded by
+  // fetchThread, folded forward by the agent's own pick_aoi/pick_dataset).
+  lastSentContext: ContextKeys;
 }
 
 interface ChatActions {
@@ -71,6 +79,9 @@ interface ChatActions {
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
   setDateRange: (range: { start: Date; end: Date }) => void;
   clearDateRange: () => void;
+  // Fold the agent's own picks into the last-sent context so they are never
+  // echoed back to the backend on the next user message.
+  foldSentContext: (partial: Partial<ContextKeys>) => void;
 }
 
 const initialState: ChatState = {
@@ -93,6 +104,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   pendingTraceId: null,
   reasoningStartTime: null,
   dateRange: null,
+  lastSentContext: emptyContextKeys(),
 };
 
 /**
@@ -236,12 +248,24 @@ async function processStreamMessage(
       streamMessage.name === "pick_aoi" &&
       (streamMessage.aoi_selection || streamMessage.aoi)
     ) {
+      // The agent picked this AOI itself — fold it into the last-sent context
+      // so it isn't echoed back as a "new" selection on the next user message.
+      const aoiName =
+        streamMessage.aoi_selection?.name ??
+        (streamMessage.aoi as { name?: string } | undefined)?.name;
+      if (aoiName) useChatStore.getState().foldSentContext({ aoi: aoiName });
       // Non-blocking: geometry fetch can be slow; don't stall stream
       void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
       return;
     }
     // Handling for pick_dataset tool
     else if (streamMessage.name === "pick_dataset") {
+      const datasetId = (
+        streamMessage.dataset as { dataset_id?: number } | undefined
+      )?.dataset_id;
+      if (typeof datasetId === "number") {
+        useChatStore.getState().foldSentContext({ dataset: datasetId });
+      }
       void Promise.resolve().then(() =>
         pickDatasetTool(streamMessage, (message) => {
           // Buffer dataset-nudge messages so they appear after the assistant narrative
@@ -274,6 +298,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setDateRange: (range) => set({ dateRange: range }),
   clearDateRange: () => set({ dateRange: null }),
+
+  foldSentContext: (partial) =>
+    set((state) => ({
+      lastSentContext: { ...state.lastSentContext, ...partial },
+    })),
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
@@ -337,16 +366,25 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       addToolStep,
       clearToolSteps,
     } = get();
-    const { context, markAsAiContext } = useContextStore.getState();
 
     // Generate thread ID if this is the first message
     const threadId = currentThreadId || generateNewThread();
 
-    // Add user message
+    // Derive the full active context from the map layers + selected date range.
+    // The chip snapshot records the complete context; ui_context only carries
+    // the slots that changed since the last send (the backend is non-idempotent).
+    const { layers, geoJsonRegistry } = useMapStore.getState();
+    const { uiContext, keys, snapshot } = deriveContext(
+      layers,
+      geoJsonRegistry,
+      get().dateRange
+    );
+
+    // Add user message with a read-only snapshot of the context it was sent with
     addMessage({
       type: "user",
       message,
-      context,
+      context: snapshot,
     });
 
     // Clear any previous tool steps and start loading
@@ -354,51 +392,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     set({ reasoningStartTime: Date.now() });
     setLoading(true);
 
-    // Build ui_context from current context
-    const newContext = context.filter((ctx) => !ctx.isAiContext);
-    const ui_context: UiContext = {};
-
-    // Find area context and convert to aoi_selected format
-    // Supports both single-AOI (aoiData) and multi-AOI (aoiSelection)
-    const areaContext = newContext.find(
-      (ctx) => ctx.contextType === "area" && (ctx.aoiData || ctx.aoiSelection)
-    );
-    if (areaContext) {
-      // Use aoiSelection's first AOI if available, otherwise fall back to aoiData
-      const firstAoi = areaContext.aoiSelection?.aois?.[0];
-      const aoiData = areaContext.aoiData;
-      const aoi = firstAoi ?? aoiData;
-
-      if (aoi) {
-        ui_context.aoi_selected = {
-          aoi: {
-            name: aoi.name,
-            gadm_id: aoiData?.gadm_id,
-            src_id: aoi.src_id,
-            subtype: aoi.subtype,
-            source: aoi.source,
-          },
-          aoi_name: areaContext.aoiSelection?.name ?? aoi.name,
-          subtype: aoi.subtype,
-        };
-      }
-    }
-
-    const dateContext = newContext.find((ctx) => ctx.contextType === "date");
-    if (dateContext && dateContext.dateRange) {
-      ui_context.daterange_selected = {
-        start_date: format(dateContext.dateRange.start, "yyyy-MM-dd"),
-        end_date: format(dateContext.dateRange.end, "yyyy-MM-dd"),
-      };
-    }
-
-    const datasetContext = newContext.find(
-      (ctx) => ctx.contextType === "layer"
-    );
-    if (datasetContext && typeof datasetContext.datasetId === "number") {
-      const ds = DATASET_BY_ID[datasetContext.datasetId];
-      if (ds) ui_context.dataset_selected = { dataset: ds };
-    }
+    const ui_context = diffUiContext(uiContext, keys, get().lastSentContext);
+    // Record what we're sending so the same context isn't re-announced next
+    // turn. Agent picks arriving during the stream fold their slots on top.
+    set({ lastSentContext: keys });
 
     const prompt: ChatPrompt = {
       query: message,
@@ -500,9 +497,6 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       // Log why the loop ended
       if (readerDone) {
         console.log("FRONTEND: Stream ended normally (readerDone = true)");
-        // All good. Mark current context items as AI context to prevent them
-        // being sent again in future messages
-        markAsAiContext(context.map((c) => c.id));
       } else if (abortController.signal.aborted) {
         console.log("FRONTEND: Stream ended due to abort signal");
       }
@@ -722,8 +716,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               }
 
               if (streamMessage.aoi_selection || streamMessage.aoi) {
-                // pickAoiTool handles context upsert with aoiSelection,
-                // so we just call it and let it set context properly
+                // pickAoiTool adds the area layer(s); the context snapshot below
+                // is derived from the resulting layer state.
                 await pickAoiTool(streamMessage, addMessage);
               }
 
@@ -734,13 +728,19 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                 });
               }
 
-              // Add user message
+              // Snapshot the context active at this turn from the rehydrated
+              // layers + date range — the same derivation used by live sends.
+              const { layers, geoJsonRegistry } = useMapStore.getState();
+              const { snapshot } = deriveContext(
+                layers,
+                geoJsonRegistry,
+                get().dateRange
+              );
+
               addMessage({
                 type: "user",
                 message: streamMessage.text!,
-                // The context will have been updated by the upsertContextByType
-                // calls above. Get the updated context from the store
-                context: useContextStore.getState().context,
+                context: snapshot,
                 timestamp: streamMessage.timestamp,
               });
 
@@ -820,6 +820,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     } finally {
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
+
+      // Seed the last-sent context from the fully rehydrated layers + date
+      // range, so the first new message on this thread only sends what changed.
+      const { layers, geoJsonRegistry } = useMapStore.getState();
+      const { keys } = deriveContext(layers, geoJsonRegistry, get().dateRange);
+      set({ lastSentContext: keys });
 
       // Flush any remaining tool steps for the last user message
       const finalToolSteps = get().toolSteps;
