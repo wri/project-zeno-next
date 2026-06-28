@@ -43,6 +43,9 @@ interface ChatState {
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
   reasoningStartTime: number | null; // Timestamp when reasoning started
+  // The selected date range — the one query-scope concern with no map/layer
+  // counterpart. Owned here (replaces the old contextStore `date` item).
+  dateRange: { start: Date; end: Date } | null;
 }
 
 interface ChatActions {
@@ -66,6 +69,8 @@ interface ChatActions {
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
+  setDateRange: (range: { start: Date; end: Date }) => void;
+  clearDateRange: () => void;
 }
 
 const initialState: ChatState = {
@@ -87,6 +92,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   toolSteps: [],
   pendingTraceId: null,
   reasoningStartTime: null,
+  dateRange: null,
 };
 
 /**
@@ -265,6 +271,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     set(initialState);
     useInsightStore.getState().clearInsights();
   },
+
+  setDateRange: (range) => set({ dateRange: range }),
+  clearDateRange: () => set({ dateRange: null }),
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
@@ -647,8 +656,13 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   fetchThread: async (threadId: string, abort?: AbortController) => {
-    const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
-    const { upsertContextByType } = useContextStore.getState();
+    const {
+      setLoading,
+      addMessage,
+      addToolStep,
+      clearToolSteps,
+      setDateRange,
+    } = get();
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
@@ -714,13 +728,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               }
 
               if (streamMessage.start_date && streamMessage.end_date) {
-                upsertContextByType({
-                  contextType: "date",
-                  content: `${streamMessage.start_date} — ${streamMessage.end_date}`,
-                  dateRange: {
-                    start: new Date(streamMessage.start_date),
-                    end: new Date(streamMessage.end_date),
-                  },
+                setDateRange({
+                  start: new Date(streamMessage.start_date),
+                  end: new Date(streamMessage.end_date),
                 });
               }
 

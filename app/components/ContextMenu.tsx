@@ -14,11 +14,10 @@ import {
   ButtonGroup,
 } from "@chakra-ui/react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { format } from "date-fns";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
-import useContextStore from "../store/contextStore";
+import useChatStore from "../store/chatStore";
 import { DatasetCard } from "./DatasetCard";
 
 // Constants for navigation and dummy content
@@ -34,6 +33,7 @@ import { DATASET_CARDS, DatasetCardConfig } from "../constants/datasets";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
+import { isAreaLayer } from "../store/layerManagerSlice";
 import type { Feature, MultiPolygon } from "geojson";
 import { getLayerContextFromDatasetCard } from "../utils/datasetCardLayerContext";
 import { buildDatasetLayers } from "../utils/datasetLayerContext";
@@ -248,8 +248,8 @@ function AreaCardList({
 
 function AreaMenu() {
   const { customAreas } = useCustomAreasListSuspense();
-  const { addToRegistry, addLayer, flyToGeoJsonWithRetry } = useMapStore();
-  const { context, addContext } = useContextStore();
+  const { addToRegistry, addLayer, flyToGeoJsonWithRetry, layers } =
+    useMapStore();
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -269,32 +269,20 @@ function AreaMenu() {
   const cards = useMemo(
     () =>
       sorted.map((a) => {
-        const isSelected = context.some(
-          (c) =>
-            c.contextType === "area" &&
-            ((c.aoiData?.src_id &&
-              c.aoiData.src_id === a.id &&
-              c.aoiData.source === "custom") ||
-              (typeof c.content === "string" && c.content === a.name))
+        // The visible area layer IS the scope. Custom-area layers are keyed by
+        // the area's DB id (see handleSelectArea), so match on layer id/name.
+        const isSelected = layers.some(
+          (l) => isAreaLayer(l) && (l.id === a.id || l.name === a.name)
         );
         return { id: a.id, name: a.name, selected: isSelected };
       }),
-    [sorted, context]
+    [sorted, layers]
   );
 
   const handleSelectArea = (area: { id: string; name: string }) => {
-    // Areas stack — each selection is its own context item rendered as a chip.
-    // The existing `cards` lookup prevents re-selecting the same area twice.
-    addContext({
-      contextType: "area",
-      content: area.name,
-      aoiData: {
-        src_id: area.id,
-        name: area.name,
-        source: "custom",
-        subtype: "custom-area",
-      },
-    });
+    // Areas stack — adding a custom area's layer puts it in scope. The layer
+    // is keyed by the area id, so re-selecting replaces in place (the `cards`
+    // lookup already disables the card once selected). No separate context item.
 
     // Build a single MultiPolygon Feature from the selected custom area's geometries
     const selected = (customAreas as unknown as CustomArea[] | undefined)?.find(
@@ -368,42 +356,19 @@ function DateMenu() {
     setView(newView);
   };
 
-  const contextStore = useContextStore();
+  const dateRange = useChatStore((s) => s.dateRange);
+  const setDateRange = useChatStore((s) => s.setDateRange);
 
-  const currentCtxDate = contextStore.context.find(
-    (item) => item.contextType === "date"
-  );
-  // Start with context date if available, otherwise empty array.
+  // Start with the current chatStore date range if set, otherwise empty.
   const [dateValue, setDateValue] = useState<Date[]>(
-    currentCtxDate?.dateRange
-      ? [currentCtxDate.dateRange.start, currentCtxDate.dateRange.end]
-      : []
+    dateRange ? [dateRange.start, dateRange.end] : []
   );
 
   useEffect(() => {
     if (dateValue.length === 2) {
-      // Remove previously set date.
-      const ctxId = contextStore.context.find(
-        (item) => item.contextType === "date"
-      )?.id;
-      if (ctxId) {
-        contextStore.removeContext(ctxId);
-      }
-      contextStore.addContext({
-        contextType: "date",
-        content: `${format(dateValue[0], "yyyy-MM-dd")} — ${format(
-          dateValue[1],
-          "yyyy-MM-dd"
-        )}`,
-        dateRange: {
-          start: dateValue[0],
-          end: dateValue[1],
-        },
-      });
+      setDateRange({ start: dateValue[0], end: dateValue[1] });
     }
-    // No need to track changes in ContextStore.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateValue]);
+  }, [dateValue, setDateRange]);
 
   return (
     <Stack

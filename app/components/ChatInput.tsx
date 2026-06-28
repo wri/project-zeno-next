@@ -11,12 +11,13 @@ import {
   Portal,
 } from "@chakra-ui/react";
 import { ArrowBendRightUpIcon, StopIcon } from "@phosphor-icons/react";
+import { format } from "date-fns";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
-import useContextStore from "../store/contextStore";
 import useMapStore from "../store/mapStore";
+import { isAreaLayer } from "../store/layerManagerSlice";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
@@ -47,17 +48,24 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading, cancelRequest, abortController, messages } =
-    useChatStore();
-  const { context, removeContext } = useContextStore();
+  const {
+    sendMessage,
+    isLoading,
+    cancelRequest,
+    abortController,
+    messages,
+    dateRange,
+    clearDateRange,
+  } = useChatStore();
   const { layers, removeLayer } = useMapStore();
 
-  // Dataset pills are derived from the visible dataset layers (the scope),
-  // excluding context sub-layers. Area/date pills still come from contextStore
+  // Pills are a presentational view of the current scope: visible dataset
+  // layers + visible area layers + the selected date range. Dataset/area
+  // sub-layers are excluded.
   const datasetPillLayers = layers.filter(
     (l) => typeof l.datasetId === "number" && !l.parentLayerId
   );
-  const nonLayerContext = context.filter((c) => c.contextType !== "layer");
+  const areaPillLayers = layers.filter((l) => l.visible && isAreaLayer(l));
 
   // Removing a dataset pill removes the layer and any context sub-layers.
   const removeDatasetLayer = (datasetId: number) => {
@@ -126,7 +134,8 @@ export default function ChatInput({
         : "Or describe what you want to explore…";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
-  const hasPills = datasetPillLayers.length > 0 || nonLayerContext.length > 0;
+  const hasPills =
+    datasetPillLayers.length > 0 || areaPillLayers.length > 0 || !!dateRange;
 
   // The core UI of the chat input is defined here so it can be reused
   // for both the desktop view and within the mobile modal.
@@ -159,19 +168,26 @@ export default function ChatInput({
               closeable
             />
           ))}
-          {nonLayerContext.map((c) => (
+          {areaPillLayers.map((l) => (
             <ContextTag
-              key={c.id}
-              contextType={c.contextType as ChatContextType}
-              content={
-                typeof c.content === "string"
-                  ? c.content || c.aoiData?.name || c.aoiData?.src_id
-                  : JSON.stringify(c.content)
-              }
-              onClose={() => removeContext(c.id)}
+              key={l.id}
+              contextType="area"
+              content={l.selectionName ?? l.name}
+              onClose={() => removeLayer(l.id)}
               closeable
             />
           ))}
+          {dateRange && (
+            <ContextTag
+              contextType="date"
+              content={`${format(dateRange.start, "yyyy-MM-dd")} — ${format(
+                dateRange.end,
+                "yyyy-MM-dd"
+              )}`}
+              onClose={clearDateRange}
+              closeable
+            />
+          )}
         </Flex>
       )}
       <Textarea

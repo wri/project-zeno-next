@@ -6,14 +6,12 @@ import {
   AOISelection,
 } from "@/app/types/chat";
 import useMapStore from "../mapStore";
-import useContextStore from "../contextStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 import { GeoJsonEntry } from "../layerManagerSlice";
 import { selectLayerOptions } from "@/app/types/map";
 
 const GLOBAL_LAYER_ID = "Global Layer";
-const GLOBAL_LAYER_NAME = "Global Layer";
 
 function isGlobalQuery(name: string): boolean {
   return name.toLowerCase() === "all countries";
@@ -66,7 +64,6 @@ export async function pickAoiTool(
   try {
     const { flyToGeoJsonWithRetry, flyToBounds, addToRegistry, addLayer } =
       useMapStore.getState();
-    const { context, addContext } = useContextStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
     const aoiSelection: AOISelection | undefined = streamMessage.aoi_selection;
@@ -97,12 +94,10 @@ export async function pickAoiTool(
       };
 
       // Use selectionName (the assistant-provided name, e.g. "All countries
-      // in the world") for the layer's display name so it matches the
-      // aoiSelection.name we put on the context below. The id stays as the
-      // stable GLOBAL_LAYER_ID constant so removeContext's layer cleanup
-      // still finds it. Without this, the legend's AOI filter (which keys
-      // off aoiSelection.name) doesn't recognise the global vector layer
-      // and ends up rendering it as a card *and* as a chip.
+      // in the world") for the layer's display name. The id stays as the
+      // stable GLOBAL_LAYER_ID constant so re-adding a global selection
+      // replaces the existing layer instead of stacking duplicates.
+      // The visible layer IS the scope — no separate context item.
       addLayer({
         id: GLOBAL_LAYER_ID,
         name: selectionName,
@@ -115,25 +110,6 @@ export async function pickAoiTool(
       });
 
       flyToGeoJsonWithRetry(worldBbox);
-
-      // Areas stack — skip if a global context with this selection name is
-      // already present. Match by the same field the context will carry
-      // (aoiSelection.name === selectionName) so the dedup works regardless
-      // of whether the assistant used the canonical "All countries in the
-      // world" wording or a different phrasing that still resolves to a
-      // global query.
-      const globalAlreadyInContext = context.some(
-        (c) =>
-          c.contextType === "area" && c.aoiSelection?.name === selectionName
-      );
-      if (!globalAlreadyInContext) {
-        addContext({
-          contextType: "area",
-          content: GLOBAL_LAYER_NAME,
-          isAiContext: true,
-          aoiSelection: aoiSelection ?? { name: selectionName, aois },
-        });
-      }
 
       addMessage({
         type: "area-card",
@@ -148,12 +124,6 @@ export async function pickAoiTool(
     if (aois.length === 0) {
       throw new Error("No AOI data found in stream message");
     }
-
-    // Build an AOISelection to store on the context (even for single-AOI fallback)
-    const selectionForContext: AOISelection = aoiSelection ?? {
-      name: selectionName,
-      aois,
-    };
 
     // Fetch geometry for all AOIs in parallel
     const results = await Promise.allSettled(
@@ -186,6 +156,9 @@ export async function pickAoiTool(
       source: aoi.source,
     }));
 
+    // The visible layer IS the scope — no separate context item. The layer id
+    // is the selection name, so re-picking the same selection replaces it
+    // rather than stacking a duplicate; differently-named selections stack.
     if (successfulRefs.length > 0) {
       addLayer({
         id: selectionName,
@@ -223,20 +196,6 @@ export async function pickAoiTool(
       ]);
     } else if (allGeoData.length > 0) {
       flyToGeoJsonWithRetry(allGeoData[0]);
-    }
-
-    // Areas stack — add this AOI selection alongside any existing ones.
-    // Skip if a selection with this same name is already in context.
-    const selectionAlreadyInContext = context.some(
-      (c) => c.contextType === "area" && c.aoiSelection?.name === selectionName
-    );
-    if (!selectionAlreadyInContext) {
-      addContext({
-        contextType: "area",
-        content: selectionName,
-        isAiContext: true,
-        aoiSelection: selectionForContext,
-      });
     }
 
     // Only show the area card if at least one AOI rendered successfully,

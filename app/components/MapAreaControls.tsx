@@ -28,7 +28,6 @@ import { Tooltip } from "./ui/tooltip";
 import { MAX_AREA_KM2, MIN_AREA_KM2 } from "../constants/custom-areas";
 import { formatAreaWithUnits } from "../utils/formatArea";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
-import useContextStore from "../store/contextStore";
 import { BasemapSelector } from "./map/BasemapSelector";
 import { ScaleBar } from "./map/ScaleBar";
 import useSidebarStore from "../store/sidebarStore";
@@ -86,7 +85,6 @@ function MapAreaControls({
     flyToGeoJson,
     mapRef,
   } = useMapStore();
-  const { addContext } = useContextStore();
   const { isChatFullSize } = useSidebarStore();
 
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
@@ -136,23 +134,13 @@ function MapAreaControls({
         srcId: id,
         subtype: "custom-area",
       });
+      // The visible layer IS the scope — no separate context item.
       addLayer({
         id: featureRef.name,
         name: featureRef.name,
         type: "geojson",
         visible: true,
         featureRefs: [featureRef],
-      });
-
-      addContext({
-        contextType: "area",
-        content: name,
-        aoiData: {
-          src_id: id,
-          name,
-          source: "custom",
-          subtype: "custom-area",
-        },
       });
 
       flyToGeoJson(feat);

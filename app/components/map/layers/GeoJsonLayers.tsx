@@ -8,7 +8,6 @@ import {
   Polygon,
   GeoJsonProperties,
 } from "geojson";
-import useContextStore, { ContextItem } from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 import {
   Layer as ManagedLayer,
@@ -108,19 +107,14 @@ function resolveFeatureRefs(refs: FeatureRef[], registry: GeoJsonEntry[]) {
 interface GeoJsonLayerGroupProps {
   layer: ManagedLayer;
   entries: GeoJsonEntry[];
-  areas: ContextItem[];
   basemapTheme: BasemapTheme;
 }
 
 interface GeoJsonLayersProps {
-  areas: ContextItem[];
   basemapTheme: BasemapTheme;
 }
 
-export default function GeoJsonLayers({
-  areas,
-  basemapTheme,
-}: GeoJsonLayersProps) {
+export default function GeoJsonLayers({ basemapTheme }: GeoJsonLayersProps) {
   const layers = useMapStore((s) => s.layers);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
   const geoJsonLayers = layers.filter((l) => l.type === "geojson");
@@ -138,7 +132,6 @@ export default function GeoJsonLayers({
             key={layer.id}
             layer={layer}
             entries={entries}
-            areas={areas}
             basemapTheme={basemapTheme}
           />
         );
@@ -152,69 +145,25 @@ export default function GeoJsonLayers({
 function GeoJsonLayerGroup({
   layer,
   entries,
-  areas,
   basemapTheme,
 }: GeoJsonLayerGroupProps) {
-  const { addContext, removeContext } = useContextStore();
+  const removeLayer = useMapStore((s) => s.removeLayer);
   const { isHovered, setHoverState } = useHoverState();
-  // Context matching — use layer.selectionName for groups, or first entry name for singles
+  // The visible layer IS the scope — every rendered area layer is in-scope, so
+  // it always uses the highlighted (in-context) styling. Removing the layer is
+  // the only mutation; there is no select/deselect.
   const displayName = layer.selectionName ?? layer.name;
-  const areaInContext = areas.find((a) =>
-    layer.selectionName
-      ? a.aoiSelection?.name === layer.selectionName
-      : a.content === layer.name || a.aoiData?.src_id === layer.name
-  );
-  const isInContext = !!areaInContext;
-  const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
+  const lineOpacity = !layer.visible ? 0 : 1;
 
   const isMultiArea = !!layer.selectionName;
 
   // On dark basemaps (dark, satellite) boundaries use white lines + blue casing
   // to maximise contrast. On light basemaps the colours are inverted.
   const casingColor = basemapTheme === "dark" ? "#172B7A" : "#FFFFFF";
-  const mainLineColor = isInContext
-    ? basemapTheme === "dark"
-      ? "#FFFFFF"
-      : isMultiArea
-        ? "#8EA4E8"
-        : "#172B7A"
-    : "#666E7B";
+  const mainLineColor =
+    basemapTheme === "dark" ? "#FFFFFF" : isMultiArea ? "#8EA4E8" : "#172B7A";
 
-  const handleRemoveFromContext = () => {
-    if (areaInContext) removeContext(areaInContext.id);
-  };
-  const handleSelectFromLabel = () => {
-    if (!isInContext) {
-      // Areas stack — addContext keeps existing area chips and adds a new one.
-      // The `isInContext` guard above already prevents re-adding the same layer.
-      if (layer.aoiSelection) {
-        addContext({
-          contextType: "area",
-          content: displayName,
-          aoiSelection: layer.aoiSelection,
-        });
-      } else {
-        // For single-area layers, look up the registry entry to get the
-        // correct src_id, source, and subtype for the context entry.
-        const ref = layer.featureRefs?.[0];
-        const entry = ref
-          ? entries.find(
-              (e) => e.ref.name === ref.name && e.ref.source === ref.source
-            )
-          : undefined;
-        addContext({
-          contextType: "area",
-          content: displayName,
-          aoiData: {
-            src_id: entry?.srcId ?? layer.id,
-            name: displayName,
-            source: entry?.ref.source ?? "custom",
-            subtype: entry?.subtype ?? "custom-area",
-          },
-        });
-      }
-    }
-  };
+  const handleRemove = () => removeLayer(layer.id);
   // Prefer backend-provided bbox (handles antimeridian); fall back to turf.
   const bboxCoords: [number, number, number, number] | null = (() => {
     const aois = layer.aoiSelection?.aois;
@@ -315,6 +264,8 @@ function GeoJsonLayerGroup({
           data={bboxPolygon}
           generateId={true}
         >
+          {/* In-scope area layers always show the solid bbox (no dashed
+              "hover to select" affordance — visible already means in-scope). */}
           <MapLayer
             id={`bbox-line-${groupId}-dashed`}
             type="line"
@@ -322,7 +273,7 @@ function GeoJsonLayerGroup({
               "line-color": mainLineColor,
               "line-width": 1.5,
               "line-dasharray": [2, 1],
-              "line-opacity": isHovered || isInContext ? 0 : 0.75 * lineOpacity,
+              "line-opacity": 0,
             }}
           />
           <MapLayer
@@ -331,7 +282,7 @@ function GeoJsonLayerGroup({
             paint={{
               "line-color": mainLineColor,
               "line-width": 1.5,
-              "line-opacity": isHovered || isInContext ? 0.75 * lineOpacity : 0,
+              "line-opacity": 0.75 * lineOpacity,
             }}
           />
         </Source>
@@ -344,37 +295,29 @@ function GeoJsonLayerGroup({
           anchor="bottom-left"
         >
           <Tag.Root
-            colorPalette={isInContext ? "primary" : "gray"}
+            colorPalette="primary"
             px={2}
             py={1}
             size="md"
-            variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
+            variant="solid"
             roundedBottom="none"
-            cursor="pointer"
             onMouseEnter={() => setHoverState(true)}
             onMouseLeave={() => setHoverState(false)}
-            onClick={handleSelectFromLabel}
           >
-            {isInContext && (
-              <Tag.StartElement>
-                {ChatContextOptions.area.icon}
-              </Tag.StartElement>
-            )}
+            <Tag.StartElement>{ChatContextOptions.area.icon}</Tag.StartElement>
             <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
-            {isInContext && (
-              <Tag.EndElement>
-                <Tag.CloseTrigger
-                  opacity={isHovered ? 1 : 0.25}
-                  cursor="pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFromContext();
-                    setHoverState(false);
-                  }}
-                  aria-label="Remove from context"
-                />
-              </Tag.EndElement>
-            )}
+            <Tag.EndElement>
+              <Tag.CloseTrigger
+                opacity={isHovered ? 1 : 0.25}
+                cursor="pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemove();
+                  setHoverState(false);
+                }}
+                aria-label="Remove area"
+              />
+            </Tag.EndElement>
           </Tag.Root>
         </Marker>
       )}

@@ -57,6 +57,15 @@ export const isAoiVectorLayer = (
 ): l is Layer & { tileUrl: string; sourceLayer: string } =>
   l.type === "vector" && !!l.tileUrl && !!l.sourceLayer && !l.vectorStyle;
 
+// A layer that represents an area selection (AOI) — the query scope.
+// Two shapes qualify:
+//  - geojson layers (single/multi area selections carry `featureRefs`)
+//  - AOI vector-tile layers (the "all countries" global layer; styled
+//    dataset vectors are excluded by `isAoiVectorLayer`'s !vectorStyle guard)
+// Dataset layers (raster main + styled vector sub-layers) never match.
+export const isAreaLayer = (l: Layer): boolean =>
+  l.type === "geojson" || isAoiVectorLayer(l);
+
 export interface LayerManagerSlice {
   layers: Layer[];
   geoJsonRegistry: GeoJsonEntry[];
