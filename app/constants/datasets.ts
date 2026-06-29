@@ -131,6 +131,38 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     },
   },
   {
+    dataset_id: 11,
+    dataset_name: "Integrated alerts",
+    shortName: "Integrated alerts",
+    data_layer: "Integrated alerts",
+    context_layer: null as string | null,
+    img: "/dataset_card_dist_alerts.webp",
+    cadence: "daily",
+    resolution: "10 m",
+    geographic_coverage: "global",
+    provider: "GFW",
+    description:
+      "Integrated Alerts aggregates near-real-time deforestation and vegetation disturbance alerts from DIST-ALERT, GLAD-L, GLAD-S2, and RADD into a single 10-meter global layer. Alerts are classified by confidence level: low, high, and highest.",
+    methodology:
+      "The integrated layer combines DIST-ALERT, GLAD-L, GLAD-S2, and RADD alerts on a common 10-meter grid, avoiding double counting of overlapping alerts by classifying them at a higher confidence level. Alerts from multiple systems within 180 days are treated as a single event.",
+    citation:
+      '"Global Integrated Disturbance Alerts". UMD/GLAD and WUR, accessed through Global Forest Watch.',
+    tile_url:
+      "https://tiles.globalforestwatch.org/gfw_integrated_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
+    legend: {
+      title: "Integrated Deforestation Alerts",
+      color: "#C92A6D",
+      items: [
+        { label: "Low confidence", color: "#EDA4C2" },
+        { label: "High confidence", color: "#DC6699" },
+        { label: "Highest confidence", color: "#C92A6D" },
+      ],
+      type: "symbol",
+      info: "Integrated alerts show potential near-real-time vegetation and forest disturbance from four alert systems: DIST-ALERT, GLAD-L, GLAD-S2, and RADD. Highest confidence alerts were detected by multiple systems.",
+      note: "Near-real-time integrated disturbance alerts by confidence level. Alerts indicate potential disturbance, not definitive deforestation or permanent conversion.",
+    },
+  },
+  {
     dataset_id: 1,
     dataset_name: "Global land cover",
     shortName: "Land cover",

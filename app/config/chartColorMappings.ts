@@ -59,6 +59,11 @@ const CHART_COLOR_MAPPING: Record<string, ColorMapEntry[]> = {
     { value: "Permanent agriculture", color: "#E39D29" },
     { value: "Unknown", color: "#D3D3D3" },
   ],
+  alert_confidence: [
+    { value: "low", color: "#EDA4C2" },
+    { value: "high", color: "#DC6699" },
+    { value: "highest", color: "#C92A6D" },
+  ],
 };
 
 export default CHART_COLOR_MAPPING;
@@ -71,6 +76,7 @@ export default CHART_COLOR_MAPPING;
 export const DATASET_SERIES_COLORS: Record<string, string> = {
   "Tree cover loss": "#DC6C9A",
   "Global all ecosystem disturbance alerts (DIST-ALERT)": "#f69",
+  "Integrated alerts": "#C92A6D",
   "Tree cover": "#97BD3D",
   "Tree cover gain": "#3F08F5",
   "Global natural/semi-natural grassland extent": "#ff9916",
