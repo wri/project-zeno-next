@@ -99,7 +99,10 @@ export default function SystemBanner({
                 </Icon>
               </Link>
             </Text>
-            <Text {...lineTextStyle} mt="2px">
+            {/* Divider separating the rebrand announcement from the Horizon
+                preview disclaimer (Figma "System message" Line 94). */}
+            <Box w="full" h="1px" bg="lime.400" mt={2} />
+            <Text {...lineTextStyle} mt={2}>
               {SYSTEM_BANNER_PREVIEW_NOTE}
             </Text>
           </Box>

@@ -14,11 +14,11 @@ export const SYSTEM_BANNER_HEADING =
   "Global Forest Watch is becoming Global Nature Watch.";
 
 export const SYSTEM_BANNER_BODY =
-  "This change reflects expanded monitoring capabilities to reach ecosystems beyond forests while integrating new technologies. The AI-driven platform you are exploring today is an important part of that vision and, as part of this evolution, is becoming Global Nature Watch Horizon.";
+  "This change reflects expanded monitoring capabilities to reach ecosystems beyond forests while integrating new technologies. The AI-driven platform preview you are exploring today is an important part of that vision and, as part of this evolution, is becoming Global Nature Watch Horizon.";
 
-// Rendered on its own line, below the announcement body.
+// Rendered on its own line, below a divider, beneath the announcement body.
 export const SYSTEM_BANNER_PREVIEW_NOTE =
-  "Horizon is in preview, so its AI-generated summaries can be incomplete or incorrect, and important findings should be verified against the source data.";
+  "Horizon's AI-generated summaries can be incomplete or incorrect, and important findings should be verified against the source data.";
 
 export const SYSTEM_BANNER_LINK_LABEL = "Learn More";
 
