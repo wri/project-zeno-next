@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Flex,
   Box,
@@ -47,10 +47,11 @@ export function Legend(props: LegendProps) {
 
   // Track which layers are expanded (multiple can be open).
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [prevLayerIds, setPrevLayerIds] = useState<Set<string>>(new Set());
+  const prevLayerIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const currentIds = new Set(layers.map((l) => l.id));
+    const prevLayerIds = prevLayerIdsRef.current;
 
     // Detect newly added layers
     const newIds = [...currentIds].filter((id) => !prevLayerIds.has(id));
@@ -91,7 +92,7 @@ export function Legend(props: LegendProps) {
       });
     }
 
-    setPrevLayerIds(currentIds);
+    prevLayerIdsRef.current = currentIds;
   }, [layers]);
 
   const hasAois = !!aois && aois.length > 0;

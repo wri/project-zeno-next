@@ -8,10 +8,8 @@ import ChatPanelHeader from "./ChatPanelHeader";
 import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
 import PromptQuotaNotice from "./PromptQuotaNotice";
 import { chatPanelCardStyle } from "./chatPanelShared";
+import { FULLSIZE_CHAT_PANEL_WIDTH_PX } from "./explorationLayout";
 import { usePromptQuota } from "./hooks/usePromptQuota";
-
-// Intentionally wider than the compact panel (see COMPACT_PANEL_WIDTH).
-const FULLSIZE_PANEL_WIDTH = 428;
 
 interface ChatPanelFullSizeProps {
   onToggleSize: () => void;
@@ -24,9 +22,12 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
     <Flex
       flexDir="column"
       flex="1 1 auto"
+      flexShrink={0}
       minH={0}
       h="100%"
-      w={{ base: "full", md: `${FULLSIZE_PANEL_WIDTH}px` }}
+      w={{ base: "full", md: `${FULLSIZE_CHAT_PANEL_WIDTH_PX}px` }}
+      minW={{ base: undefined, md: `${FULLSIZE_CHAT_PANEL_WIDTH_PX}px` }}
+      maxW={{ base: "full", md: `${FULLSIZE_CHAT_PANEL_WIDTH_PX}px` }}
       {...chatPanelCardStyle}
       pointerEvents="auto"
     >

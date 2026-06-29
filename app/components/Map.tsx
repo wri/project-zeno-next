@@ -27,6 +27,7 @@ import AoiVectorTileLayers from "./map/layers/AoiVectorTileLayers";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
+import PendingDrawArea from "./map/layers/PendingDrawArea";
 import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
@@ -237,6 +238,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         <VectorDataLayers />
         <AoiVectorTileLayers basemapTheme={basemapTheme} />
         <GeoJsonLayers basemapTheme={basemapTheme} />
+        <PendingDrawArea basemapTheme={basemapTheme} />
         <SelectAreaLayer />
 
         {!disableMapAreaControls && (

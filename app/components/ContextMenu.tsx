@@ -43,10 +43,16 @@ const LAYER_CARDS = DATASET_CARDS;
 function ContextNav({
   selected,
   onSelect,
+  hiddenTypes = [],
 }: {
   selected: string;
   onSelect: (type: ChatContextType) => void;
+  hiddenTypes?: ChatContextType[];
 }) {
+  const navItems = CONTEXT_NAV.filter((nav) => !hiddenTypes.includes(nav.type));
+
+  if (navItems.length === 0) return null;
+
   return (
     <Stack
       direction={{ base: "row", md: "column" }}
@@ -59,7 +65,7 @@ function ContextNav({
       borderRightWidth={{ base: "none", md: "1px solid" }}
       borderRightColor="border.emphasized"
     >
-      {CONTEXT_NAV.map((nav) => (
+      {navItems.map((nav) => (
         <Button
           key={nav.type}
           size="xs"
@@ -166,6 +172,7 @@ function ContextMenu({
               <ContextNav
                 selected={selectedContextType}
                 onSelect={setSelectedContextType}
+                hiddenTypes={contextType === "area" ? ["layer"] : []}
               />
               {/* Modal Body */}
               {selectedContextType === "layer" && <LayerMenu />}

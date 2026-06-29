@@ -15,13 +15,10 @@ import { API_CONFIG } from "@/app/config/api";
 import useMapStore from "@/app/store/mapStore";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 
-import { useFeatureFlag } from "@/app/hooks/useFeatureFlag";
-
 import {
   getAoiName,
   getSrcId,
   getSubtype,
-  singularizeDatasetName,
   toAreaSelection,
 } from "@/app/utils/areaHelpers";
 
@@ -42,7 +39,7 @@ interface Metadata {
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
     useMapStore();
-  const isAnalysisEnabled = useFeatureFlag("analysis");
+
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -50,13 +47,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
   );
-  const {
-    id,
-    url,
-    sourceLayer,
-    name: datasetName,
-    nameKeys,
-  } = selectAreaLayerConfig!;
+  const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
@@ -198,22 +189,18 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 .forEach((l) => removeLayer(l.id));
             }
 
-            // Analysis feature — hidden behind ?ff=analysis; GADM only.
-            // Purely additive: with the flag off, behavior is unchanged.
             // AnalysisCtaTrigger reacts to this selection and surfaces the
             // analyse nudge once a dataset is also active.
-            if (isAnalysisEnabled) {
-              if (layerId === "GADM" && metadata) {
-                setAnalysis(
-                  toAreaSelection(
-                    layerId,
-                    (featureProps ?? {}) as Record<string, unknown>,
-                    metadata
-                  )
-                );
-              } else {
-                useMapStore.getState().clearAnalysis();
-              }
+            if (layerId === "GADM" && metadata) {
+              setAnalysis(
+                toAreaSelection(
+                  layerId,
+                  (featureProps ?? {}) as Record<string, unknown>,
+                  metadata
+                )
+              );
+            } else {
+              useMapStore.getState().clearAnalysis();
             }
           }
         }
@@ -249,7 +236,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     addLayer,
     layerId,
     url,
-    isAnalysisEnabled,
     setAnalysis,
   ]);
 
@@ -275,12 +261,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           paint={selectAreaLinePaint}
         />
       </Source>
-      {hoverInfo && (
-        <AreaTooltip
-          hoverInfo={hoverInfo}
-          areaName={singularizeDatasetName(datasetName)}
-        />
-      )}
+      {hoverInfo && <AreaTooltip hoverInfo={hoverInfo} />}
     </>
   );
 }
