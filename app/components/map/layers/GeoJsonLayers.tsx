@@ -1,10 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import {
-  Source,
-  Layer as MapLayer,
-  Marker,
-  useMap,
-} from "react-map-gl/maplibre";
+import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import AoiActionsMenu from "@/app/dashboards/components/AoiActionsMenu";
@@ -166,7 +161,6 @@ function GeoJsonLayerGroup({
 }: GeoJsonLayerGroupProps) {
   const { addContext, removeContext } = useContextStore();
   const { isHovered, setHoverState } = useHoverState();
-  const { current: map } = useMap();
   const { run: runViewAnalysis } = useAnalysis();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
   const displayName = layer.selectionName ?? layer.name;
@@ -271,21 +265,6 @@ function GeoJsonLayerGroup({
           endDate: "2025-12-31",
         })
     : undefined;
-
-  // Anchor the "…" dropdown to the bbox's top-left corner (inset by a small
-  // gap) rather than to the trigger, so the menu opens just inside the box.
-  const GAP = 8;
-  const menuAnchorRect = () => {
-    if (!map || !bboxCoords) return null;
-    const p = map.project([bboxCoords[0], bboxCoords[3]]);
-    const rect = map.getContainer().getBoundingClientRect();
-    return {
-      x: rect.left + p.x + GAP,
-      y: rect.top + p.y + GAP,
-      width: 0,
-      height: 0,
-    };
-  };
 
   return (
     <>
@@ -460,7 +439,6 @@ function GeoJsonLayerGroup({
                 onViewAnalysis={viewAnalysis}
                 onGenerateAnalysis={generateAnalysis}
                 onRemove={isInContext ? handleRemoveFromContext : undefined}
-                getAnchorRect={menuAnchorRect}
               />
             </Box>
           </Flex>

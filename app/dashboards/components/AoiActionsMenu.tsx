@@ -36,7 +36,6 @@ export default function AoiActionsMenu({
   onViewAnalysis,
   onGenerateAnalysis,
   onRemove,
-  getAnchorRect,
 }: {
   name: string;
   /** Selected (in-context) AOI — drives the solid vs subtle trigger styling. */
@@ -48,14 +47,6 @@ export default function AoiActionsMenu({
   onGenerateAnalysis?: () => void;
   /** Removes this AOI from the map / context. Disabled when omitted. */
   onRemove?: () => void;
-  /** Anchors the dropdown to a point (e.g. the bbox corner) instead of the
-   *  trigger. Returns a viewport-space rect, or null to fall back to default. */
-  getAnchorRect?: () => {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null;
 }) {
   const router = useRouter();
 
@@ -72,12 +63,9 @@ export default function AoiActionsMenu({
   };
 
   return (
-    <Menu.Root
-      positioning={{
-        placement: "bottom-start",
-        ...(getAnchorRect ? { getAnchorRect } : {}),
-      }}
-    >
+    // Anchor the dropdown to the trigger: its top-right corner sits at the
+    // bottom-right edge of the "…" button.
+    <Menu.Root positioning={{ placement: "bottom-end" }}>
       <Tooltip content="Map actions" variant="dark" showArrow openDelay={200}>
         <Menu.Trigger asChild>
           <IconButton
