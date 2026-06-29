@@ -102,7 +102,7 @@ export default function DashboardHeader() {
           py="2px"
           rounded="4px"
         >
-          BETA
+          PREVIEW
         </Badge>
       </Flex>
 

@@ -28,6 +28,7 @@ import {
   ListIcon,
   MagnifyingGlassIcon,
   ArrowsDownUpIcon,
+  PolygonIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import useDashboardStore from "@/app/store/dashboardStore";
@@ -200,6 +201,30 @@ function useRename(dashboard: Dashboard) {
 // Card view
 // ---------------------------------------------------------------------------
 
+/** Map-like thumbnail strip across the top of a dashboard card (placeholder —
+ *  no per-dashboard basemap snapshot in the prototype). */
+function CardThumb() {
+  return (
+    <Box
+      h="120px"
+      position="relative"
+      flexShrink={0}
+      bgGradient="to-br"
+      gradientFrom="green.100"
+      gradientTo="blue.100"
+    >
+      <Box
+        position="absolute"
+        inset={0}
+        bgImage="url('/contour-texture.png')"
+        bgSize="cover"
+        bgPos="center"
+        opacity={0.35}
+      />
+    </Box>
+  );
+}
+
 function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
   const router = useRouter();
   const rename = useRename(dashboard);
@@ -209,12 +234,12 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
       position="relative"
       display="flex"
       flexDirection="column"
-      minH="220px"
-      p={5}
+      minH="260px"
       bg="bg"
       borderWidth="1px"
       borderColor="border"
       rounded="md"
+      overflow="hidden"
       transition="box-shadow 0.15s ease, border-color 0.15s ease"
       cursor={rename.renaming ? "default" : "pointer"}
       onClick={
@@ -229,45 +254,59 @@ function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
         position="absolute"
         top={2}
         right={2}
+        zIndex={1}
         onClick={(e) => e.stopPropagation()}
       >
         <DashboardActionsMenu dashboard={dashboard} onRename={rename.start} />
       </Box>
 
-      {rename.renaming ? (
-        <Input
-          value={rename.draft}
-          autoFocus
-          fontWeight="medium"
-          pr={8}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => rename.setDraft(e.target.value)}
-          onBlur={rename.commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") rename.commit();
-            if (e.key === "Escape") rename.cancel();
-          }}
-        />
-      ) : (
-        <Heading size="md" fontWeight="medium" lineClamp={4} pr={6}>
-          {dashboard.title}
-        </Heading>
-      )}
+      <CardThumb />
 
-      <Box mt="auto" pt={4}>
-        {dashboard.badge && (
-          <Box mb={2}>
-            <AlertsBadge label={dashboard.badge} seed={dashboard.id} />
-          </Box>
-        )}
-        <Box mb={2} onClick={(e) => e.stopPropagation()}>
-          <DashboardTags dashboard={dashboard} />
-        </Box>
-        <Flex align="center" gap={2} color="fg.muted">
-          <VisibilityIcon isPublic={dashboard.isPublic} />
-          <Text fontSize="xs">{formatUpdated(dashboard.updatedAt)}</Text>
+      <Flex direction="column" flex="1" p={4}>
+        {/* Area label */}
+        <Flex align="center" gap={1} color="primary.fg" mb={1}>
+          <PolygonIcon size={14} />
+          <Text fontSize="xs" fontWeight="medium" lineClamp={1}>
+            {areaOf(dashboard)}
+          </Text>
         </Flex>
-      </Box>
+
+        {/* Title */}
+        {rename.renaming ? (
+          <Input
+            value={rename.draft}
+            autoFocus
+            fontWeight="medium"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => rename.setDraft(e.target.value)}
+            onBlur={rename.commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") rename.commit();
+              if (e.key === "Escape") rename.cancel();
+            }}
+          />
+        ) : (
+          <Heading size="sm" fontWeight="medium" lineClamp={3}>
+            {dashboard.title}
+          </Heading>
+        )}
+
+        {/* Footer: updated + new-data badge */}
+        <Box mt="auto" pt={4}>
+          <Flex
+            align="center"
+            gap={2}
+            color="fg.muted"
+            mb={dashboard.badge ? 2 : 0}
+          >
+            <VisibilityIcon isPublic={dashboard.isPublic} />
+            <Text fontSize="xs">{formatUpdated(dashboard.updatedAt)}</Text>
+          </Flex>
+          {dashboard.badge && (
+            <AlertsBadge label={dashboard.badge} seed={dashboard.id} />
+          )}
+        </Box>
+      </Flex>
     </Box>
   );
 }
@@ -530,24 +569,37 @@ export default function DashboardsGalleryPage() {
             {dashboards.length} / {DASHBOARD_LIMIT}
           </Badge>
         </Heading>
-        <ButtonGroup size="sm" variant="outline" attached>
-          <Button
-            aria-label="Card view"
-            onClick={() => setView("card")}
-            variant={view === "card" ? "solid" : "outline"}
-            colorPalette={view === "card" ? "primary" : undefined}
-          >
-            <SquaresFourIcon size={16} />
-          </Button>
-          <Button
-            aria-label="List view"
-            onClick={() => setView("list")}
-            variant={view === "list" ? "solid" : "outline"}
-            colorPalette={view === "list" ? "primary" : undefined}
-          >
-            <ListIcon size={16} />
-          </Button>
-        </ButtonGroup>
+        <Flex gap={2} align="center">
+          <ButtonGroup size="sm" variant="outline" attached>
+            <Button
+              aria-label="Card view"
+              onClick={() => setView("card")}
+              variant={view === "card" ? "solid" : "outline"}
+              colorPalette={view === "card" ? "primary" : undefined}
+            >
+              <SquaresFourIcon size={16} />
+            </Button>
+            <Button
+              aria-label="List view"
+              onClick={() => setView("list")}
+              variant={view === "list" ? "solid" : "outline"}
+              colorPalette={view === "list" ? "primary" : undefined}
+            >
+              <ListIcon size={16} />
+            </Button>
+          </ButtonGroup>
+          {/* Search jumps to the list view, where the search field lives. */}
+          <Tooltip content="Search dashboards" showArrow>
+            <IconButton
+              aria-label="Search dashboards"
+              size="sm"
+              variant="outline"
+              onClick={() => setView("list")}
+            >
+              <MagnifyingGlassIcon size={16} />
+            </IconButton>
+          </Tooltip>
+        </Flex>
       </Flex>
 
       {/* Search + sort (list view only) */}
