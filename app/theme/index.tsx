@@ -29,6 +29,13 @@ export const config = defineConfig({
         "0%": { backgroundPositionX: "100%" },
         "100%": { backgroundPositionX: "-100%" },
       },
+      // A single highlight band swept across an overflow-hidden block via
+      // translateX — one pass per cycle (no double-band artefact). Used by the
+      // dashboard skeleton.
+      shimmerSweep: {
+        "0%": { transform: "translateX(-150%)" },
+        "100%": { transform: "translateX(150%)" },
+      },
       fadeSlideIn: {
         from: { opacity: 0, transform: "translateY(4px)" },
         to: { opacity: 1, transform: "translateY(0)" },

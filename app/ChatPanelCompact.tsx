@@ -1,7 +1,7 @@
 "use client";
 
 import { Flex, Box } from "@chakra-ui/react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, type DragControls } from "framer-motion";
 
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
@@ -31,9 +31,13 @@ const cardStyle = {
 
 interface ChatPanelCompactProps {
   onToggleSize: () => void;
+  dragControls?: DragControls;
 }
 
-function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
+function ChatPanelCompact({
+  onToggleSize,
+  dragControls,
+}: ChatPanelCompactProps) {
   const { promptsExhausted } = usePromptQuota();
   const { messages } = useChatStore();
   const hasConversation = messages.some(
@@ -90,14 +94,22 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
     };
   }, [recomputeMaxH, isCollapsed]);
 
+  // [PROTOTYPE] dragControls being present signals the panel is in floating
+  // (position:fixed, draggable) mode. In this mode the outer Flex wrapper no
+  // longer needs h="100%" / justifyContent="flex-end" for bottom-anchoring —
+  // that's handled by the fixed CSS in ChatPanel. The disclaimer is also hidden
+  // here because floating mode shows it as a tooltip on an info icon in the
+  // header instead (see ChatPanelHeader).
+  const isFloating = !!dragControls;
+
   return (
     <Flex
       flexDir="column"
-      justifyContent="flex-end"
-      h="100%"
-      pt={2}
-      pb={1}
-      pl={{ base: 0, md: 3 }}
+      justifyContent={isFloating ? undefined : "flex-end"}
+      h={isFloating ? undefined : "100%"}
+      pt={isFloating ? 1 : 2}
+      pb={isFloating ? 1 : 1}
+      pl={isFloating ? 0 : { base: 0, md: 3 }} // fixed left:12 in parent provides margin in floating mode
       pointerEvents="none"
     >
       <Flex
@@ -114,6 +126,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
             onToggleSize={onToggleSize}
             isCollapsed={isCollapsed}
             onToggleCollapse={() => setIsCollapsed((v) => !v)}
+            dragControls={dragControls}
           />
           {/* Animated collapse/expand of message content */}
           <AnimatePresence initial={false}>
@@ -156,8 +169,9 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
           />
         </Flex>
       </Flex>
-      {/* Frosted-glass disclaimer — sits just below the input card */}
-      <ChatPanelDisclaimer variant="frosted" />
+      {/* Frosted-glass disclaimer — sits just below the input card. Hidden in
+          floating mode; the header's info button serves instead. */}
+      {!isFloating && <ChatPanelDisclaimer variant="frosted" />}
     </Flex>
   );
 }

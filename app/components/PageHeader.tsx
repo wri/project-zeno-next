@@ -264,21 +264,53 @@ function PageHeader() {
           </Tooltip>
         </Flex>
       </Flex>
-      {isPrototype && (
-        <Text
-          fontSize="xs"
-          fontWeight="bold"
-          letterSpacing="wider"
-          textTransform="uppercase"
-          color="#1f2937"
-          position="absolute"
-          left="50%"
-          transform="translateX(-50%)"
-          pointerEvents="none"
+      {/* Section tabs (Phase 2 header). PageHeader only renders on the map
+          app, so "Map" is always the active tab; Dashboards links across. */}
+      <Flex
+        position="absolute"
+        left="50%"
+        transform="translateX(-50%)"
+        bg="#F0F4FF"
+        borderWidth="1px"
+        borderColor="#F0F4FF"
+        rounded="8px"
+        p="4px"
+        gap="4px"
+        hideBelow="md"
+      >
+        <ChakraLink
+          as={Link}
+          href="/app"
+          px="8px"
+          py="4px"
+          rounded="4px"
+          fontSize="14px"
+          lineHeight="20px"
+          fontWeight="600"
+          bg="#0049AA"
+          color="#FFFFFF"
+          _hover={{ bg: "#0049AA" }}
+          _focusVisible={focusRing}
         >
-          NOT FOR PRODUCTION USE
-        </Text>
-      )}
+          Map
+        </ChakraLink>
+        <ChakraLink
+          as={Link}
+          href="/dashboards"
+          px="8px"
+          py="4px"
+          rounded="4px"
+          fontSize="14px"
+          lineHeight="20px"
+          fontWeight="600"
+          bg="transparent"
+          color="#4A64CB"
+          _hover={{ bg: "whiteAlpha.600" }}
+          _focusVisible={focusRing}
+        >
+          Dashboards
+        </ChakraLink>
+      </Flex>
       <Flex gap="6" alignItems="center" hideBelow="md">
         <Button
           variant="ghost"
