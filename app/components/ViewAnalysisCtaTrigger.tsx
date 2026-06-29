@@ -7,8 +7,9 @@ import useChatStore from "@/app/store/chatStore";
 /**
  * Render-null watcher that surfaces a "View analysis" nudge in the chat whenever
  * an AOI (area) context is selected. Mirrors DashboardCtaTrigger; the nudge is
- * idempotent per area and positioned right after the dashboard nudge. Mounted
- * after DashboardCtaTrigger so the dashboard nudge exists to anchor against.
+ * idempotent per area and positioned right before the dashboard nudge (so the
+ * dashboard "Monitor" CTA reads last). Mounted after DashboardCtaTrigger so the
+ * dashboard nudge exists to anchor against.
  */
 export function ViewAnalysisCtaTrigger() {
   const context = useContextStore((s) => s.context);

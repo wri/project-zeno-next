@@ -342,7 +342,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   // "View analysis" nudge — runs the default analysis for the selected area
   // (same behaviour as the AOI "…" menu). Idempotent per area, and positioned
-  // right after the dashboard nudge so it reads as the second CTA in the chat.
+  // right before the dashboard ("Monitor") nudge so the order reads
+  // Analyse → View analysis → Monitor, leaving Monitor as the last CTA.
   upsertViewAnalysisNudge: (area) => {
     const pending = get().messages.find(
       (m) => m.type === "view-analysis-nudge"
@@ -359,13 +360,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       const rest = state.messages.filter(
         (m) => m.type !== "view-analysis-nudge"
       );
-      const afterDashboard = rest.findIndex(
-        (m) => m.type === "dashboard-nudge"
-      );
-      if (afterDashboard === -1) return { messages: [...rest, newMessage] };
-      // Insert immediately after the dashboard nudge (→ second CTA).
+      const dashboardIdx = rest.findIndex((m) => m.type === "dashboard-nudge");
+      if (dashboardIdx === -1) return { messages: [...rest, newMessage] };
+      // Insert immediately before the dashboard nudge so the dashboard
+      // ("Monitor") CTA stays last (third, when an analyse nudge precedes it).
       const next = [...rest];
-      next.splice(afterDashboard + 1, 0, newMessage);
+      next.splice(dashboardIdx, 0, newMessage);
       return { messages: next };
     });
   },
