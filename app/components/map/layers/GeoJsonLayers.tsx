@@ -1,6 +1,10 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
-import { Tag } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
+import { XIcon } from "@phosphor-icons/react";
+import AoiActionsMenu from "@/app/dashboards/components/AoiActionsMenu";
+import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
+import { useAnalysis } from "@/src/features/analysis";
 import { ChatContextOptions } from "../../ContextButton";
 import {
   Feature,
@@ -157,6 +161,7 @@ function GeoJsonLayerGroup({
 }: GeoJsonLayerGroupProps) {
   const { addContext, removeContext } = useContextStore();
   const { isHovered, setHoverState } = useHoverState();
+  const { run: runViewAnalysis } = useAnalysis();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
   const displayName = layer.selectionName ?? layer.name;
   const areaInContext = areas.find((a) =>
@@ -229,6 +234,38 @@ function GeoJsonLayerGroup({
   })();
   const bboxPolygon = bboxCoords ? createBboxPolygon(bboxCoords) : null;
   const groupId = layer.id.replace(/\s+/g, "-").toLowerCase();
+
+  // "Generate analysis" injects a generative-analysis prompt into the chat — the
+  // same path as the chat AnalyseNudge (runAnalysis → sendMessage). The AOI name
+  // travels in the prompt; the AOI + dataset also ride along via ui_context.
+  // Defaults to Tree cover loss (the active dataset shown in the menu).
+  const generateAnalysis = () => {
+    runAnalysis({
+      areaName: displayName,
+      datasetId: 4,
+      datasetName: "Tree cover loss",
+    });
+  };
+
+  // "View Analysis" runs the default (deterministic) analysis for this AOI —
+  // the same path as the chat ViewAnalysisNudge. Only available when the AOI has
+  // a backend-known source (gadm/kba/…); custom areas leave it disabled.
+  const aoi = layer.aoiSelection?.aois?.[0];
+  const viewAnalysis = aoi?.source
+    ? () =>
+        runViewAnalysis({
+          area: {
+            name: displayName,
+            source: aoi.source,
+            srcId: aoi.src_id,
+            subtype: aoi.subtype,
+          },
+          dataset: { id: 4 }, // Tree cover loss — the default analysis
+          startDate: "2001-01-01",
+          endDate: "2025-12-31",
+        })
+    : undefined;
+
   return (
     <>
       {/* Polygon outlines per feature */}
@@ -336,46 +373,75 @@ function GeoJsonLayerGroup({
           />
         </Source>
       )}
-      {/* Single label */}
+      {/* AOI label: a chip (name + ×) and a separate "…" actions button,
+          sitting on top of the bbox's top-left corner. */}
       {bboxCoords && layer.visible && (
         <Marker
           longitude={bboxCoords[0]}
           latitude={bboxCoords[3]}
           anchor="bottom-left"
         >
-          <Tag.Root
-            colorPalette={isInContext ? "primary" : "gray"}
-            px={2}
-            py={1}
-            size="md"
-            variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
-            roundedBottom="none"
-            cursor="pointer"
+          <Flex
+            align="center"
+            gap={2}
             onMouseEnter={() => setHoverState(true)}
             onMouseLeave={() => setHoverState(false)}
-            onClick={handleSelectFromLabel}
           >
-            {isInContext && (
-              <Tag.StartElement>
-                {ChatContextOptions.area.icon}
-              </Tag.StartElement>
-            )}
-            <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
-            {isInContext && (
-              <Tag.EndElement>
-                <Tag.CloseTrigger
-                  opacity={isHovered ? 1 : 0.25}
+            {/* Label chip — solid blue when selected, with the × beside the name */}
+            <Flex
+              align="center"
+              gap={1.5}
+              h="24px"
+              px={2}
+              rounded="md"
+              boxShadow="sm"
+              cursor="pointer"
+              bg={isInContext ? "#21509A" : "rgba(255,255,255,0.92)"}
+              color={isInContext ? "#FFFFFF" : "#3A4048"}
+              borderWidth={isInContext ? "0" : "1px"}
+              borderColor="rgba(19,22,25,0.12)"
+              _hover={{ bg: isInContext ? "#1B4382" : "#FFFFFF" }}
+              onClick={handleSelectFromLabel}
+            >
+              {isInContext && (
+                <Box as="span" display="inline-flex" fontSize="12px">
+                  {ChatContextOptions.area.icon}
+                </Box>
+              )}
+              <Text fontSize="12px" fontWeight="medium" lineHeight="1">
+                {displayName}
+              </Text>
+              {isInContext && (
+                <Box
+                  as="span"
+                  role="button"
+                  aria-label="Remove from context"
+                  display="inline-flex"
                   cursor="pointer"
+                  opacity={0.85}
+                  _hover={{ opacity: 1 }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRemoveFromContext();
                     setHoverState(false);
                   }}
-                  aria-label="Remove from context"
-                />
-              </Tag.EndElement>
-            )}
-          </Tag.Root>
+                >
+                  <XIcon size={13} weight="bold" />
+                </Box>
+              )}
+            </Flex>
+
+            {/* Separate "…" actions button (Create dashboard, View analysis, …) */}
+            <Box onClick={(e) => e.stopPropagation()}>
+              <AoiActionsMenu
+                name={displayName}
+                isActive={isInContext}
+                onViewAnalysis={viewAnalysis}
+                onGenerateAnalysis={generateAnalysis}
+                onRemove={isInContext ? handleRemoveFromContext : undefined}
+              />
+            </Box>
+          </Flex>
         </Marker>
       )}
     </>

@@ -52,6 +52,13 @@ interface ChatActions {
   ) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   acceptAnalyseNudge: (messageId: string) => void;
+  upsertDashboardNudge: (areaName: string) => void;
+  upsertViewAnalysisNudge: (area: {
+    name: string;
+    source: string;
+    srcId?: string;
+    subtype?: string;
+  }) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -311,6 +318,56 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           : m
       ),
     }));
+  },
+
+  // Surfaces a single "create a dashboard for this area" nudge. Idempotent for
+  // the same area; replaced when the area changes.
+  upsertDashboardNudge: (areaName) => {
+    const pending = get().messages.find((m) => m.type === "dashboard-nudge");
+    if (pending?.dashboardSuggestion?.areaName === areaName) return;
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "dashboard-nudge",
+      message: "",
+      dashboardSuggestion: { areaName },
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter((m) => m.type !== "dashboard-nudge"),
+        newMessage,
+      ],
+    }));
+  },
+
+  // "View analysis" nudge — runs the default analysis for the selected area
+  // (same behaviour as the AOI "…" menu). Idempotent per area, and positioned
+  // right before the dashboard ("Monitor") nudge so the order reads
+  // Analyse → View analysis → Monitor, leaving Monitor as the last CTA.
+  upsertViewAnalysisNudge: (area) => {
+    const pending = get().messages.find(
+      (m) => m.type === "view-analysis-nudge"
+    );
+    if (pending?.viewAnalysisSuggestion?.name === area.name) return;
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "view-analysis-nudge",
+      message: "",
+      viewAnalysisSuggestion: area,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => {
+      const rest = state.messages.filter(
+        (m) => m.type !== "view-analysis-nudge"
+      );
+      const dashboardIdx = rest.findIndex((m) => m.type === "dashboard-nudge");
+      if (dashboardIdx === -1) return { messages: [...rest, newMessage] };
+      // Insert immediately before the dashboard nudge so the dashboard
+      // ("Monitor") CTA stays last (third, when an analyse nudge precedes it).
+      const next = [...rest];
+      next.splice(dashboardIdx, 0, newMessage);
+      return { messages: next };
+    });
   },
 
   generateNewThread: () => {

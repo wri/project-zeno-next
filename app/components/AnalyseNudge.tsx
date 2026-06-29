@@ -24,7 +24,7 @@ export default function AnalyseNudge({
 
   // Matches the agent prompt wording (buildAnalysisPrompt) so the message the
   // user sends on accept reads identically to the button they clicked.
-  const label = `Analyse ${suggestion.datasetName} in ${suggestion.areaName}`;
+  const label = `Generate ${suggestion.datasetName} insight for ${suggestion.areaName}`;
 
   return (
     <Button
