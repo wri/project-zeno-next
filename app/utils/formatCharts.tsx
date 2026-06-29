@@ -382,25 +382,12 @@ export default function formatChartData(
     }
 
     // Series are the unique values from the group column (e.g., years).
-    const colorPalette = CHART_COLOR_MAPPING[groupKey];
     const uniqueGroups = [
       ...new Set(chartRows.map((item) => String(item[groupKey]))),
     ].sort();
-    const colorByGroup = new Map(
-      colorPalette?.map((item) => [item.value, item.color]) ?? []
-    );
-    const orderedGroups = colorPalette
-      ? [
-          ...colorPalette
-            .map((item) => item.value)
-            .filter((group) => uniqueGroups.includes(group)),
-          ...uniqueGroups.filter((group) => !colorByGroup.has(group)),
-        ]
-      : uniqueGroups;
-    const series: ChartSeries[] = orderedGroups.map((group, index) => ({
+    const series: ChartSeries[] = uniqueGroups.map((group, index) => ({
       name: group,
-      color:
-        colorByGroup.get(group) ?? defaultColors[index % defaultColors.length],
+      color: defaultColors[index % defaultColors.length],
     }));
 
     // Pivot the data from "long" to "wide" format.
