@@ -49,9 +49,9 @@ const areaName = (l: Layer): string =>
 // AI- and global-picked layers carry a full `aoiSelection`, so the AOI is read
 // directly from it. Manually-selected areas (admin-boundary clicks, custom
 // draw/upload) carry only `featureRefs`; their AOI metadata is reconstructed
-// from the geojson registry. The reconstruction reproduces the old
-// contextStore `aoiData` exactly: `source` is lower-cased and `gadm_id`
-// mirrors `src_id` for GADM clicks, matching the legacy `idField` behaviour.
+// from the geojson registry. The reconstruction reproduces the previous
+// `aoiData` payload exactly: `source` is lower-cased and `gadm_id` mirrors
+// `src_id` for GADM clicks, matching the legacy `idField` behaviour.
 function buildAoiSelected(
   layers: Layer[],
   registry: GeoJsonEntry[]

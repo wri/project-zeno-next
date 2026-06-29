@@ -46,8 +46,8 @@ interface ChatState {
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
   reasoningStartTime: number | null; // Timestamp when reasoning started
-  // The selected date range — the one query-scope concern with no map/layer
-  // counterpart. Owned here (replaces the old contextStore `date` item).
+  // The selected date range — the one query concern with no map/layer
+  // counterpart, so it is owned here directly.
   dateRange: { start: Date; end: Date } | null;
   // Per-slot identity of the context last sent to the backend on this thread.
   // The `/api/chat` `ui_context` is non-idempotent, so each slot is sent only

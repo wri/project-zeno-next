@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, Suspense } from "react";
 import { Loader } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useChatStore from "@/app/store/chatStore";
-import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
@@ -18,7 +17,6 @@ function NewThread() {
     sendMessage,
     currentThreadId,
   } = useChatStore();
-  const { reset: resetContextStore } = useContextStore();
   const { reset: resetMapStore, addLayer, layers } = useMapStore();
   const searchParams = useSearchParams();
   const [hasMounted, setHasMounted] = useState(false);
@@ -28,9 +26,8 @@ function NewThread() {
   useEffect(() => {
     resetChatStore();
     resetMapStore();
-    resetContextStore();
     defaultLayerSeededRef.current = false;
-  }, [resetChatStore, resetContextStore, resetMapStore]);
+  }, [resetChatStore, resetMapStore]);
 
   useEffect(() => {
     setHasMounted(true);

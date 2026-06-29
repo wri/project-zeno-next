@@ -61,10 +61,9 @@ All state lives in Zustand stores under `app/store/`:
 
 | Store          | Owns                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------------ |
-| `chatStore`    | Messages, loading, thread ID, tool steps, pending trace ID                                             |
+| `chatStore`    | Messages, loading, thread ID, tool steps, pending trace ID, `dateRange`, `lastSentContext`             |
 | `insightStore` | `InsightWidget[]` for the map workspace; cleared on `chatStore.reset()`                                |
-| `mapStore`     | MapLibre ref, layers (via `layerManagerSlice`), TerraDraw, flyTo                                       |
-| `contextStore` | Selected AOI, dataset, date range (sent as `ui_context` to the backend)                                |
+| `mapStore`     | MapLibre ref, layers (via `layerManagerSlice`), TerraDraw, flyTo — the AOI + dataset query context     |
 | `authStore`    | Auth status, token, prompt usage quota (read from `X-Prompts-Used`/`X-Prompts-Quota` response headers) |
 | `sidebarStore` | Sidebar open/closed, thread list                                                                       |
 | `promptStore`  | Welcome prompt suggestions (read from `public/welcome-prompts.json`)                                   |
@@ -103,7 +102,7 @@ Each NDJSON line is a `LangChainResponse` with shape `{ node, timestamp, update 
 | -------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `generate_insights`              | `generateInsightsTool` | Pushes `InsightWidget[]` into `insightStore`; adds static assistant message to chat                               |
 | `pick_aoi`                       | `pickAoiTool`          | Fetches geometry via `/api/geometry/:source/:srcId`, registers in `mapStore.geoJsonRegistry`, flies map to bounds |
-| `pick_dataset`                   | `pickDatasetTool`      | Creates a `dataset-card` widget; upserts layer context into `contextStore`                                        |
+| `pick_dataset`                   | `pickDatasetTool`      | Creates a `dataset-card` widget; adds the dataset's layer(s) to `mapStore` (replacing any prior dataset layer)    |
 | `pull_data`                      | `pullDataTool`         | No-op — reasoning component in the UI handles display                                                             |
 
 Adding a new tool requires: (1) a handler in `app/store/chat-tools/`, (2) a `dispatch` branch in `processStreamMessage` in `chatStore.ts`, and (3) an entry in `app/lib/tool-display.ts` (active label + error message).
@@ -120,7 +119,7 @@ Adding a new tool requires: (1) a handler in `app/store/chat-tools/`, (2) a `dis
 
 ### AOI (Area of Interest) Handling
 
-The backend can return either a single `aoi` object or a multi-AOI `aoi_selection: { name, aois[] }`. `pickAoiTool` always normalises to an `AOISelection` before storing in `contextStore`.
+The backend can return either a single `aoi` object or a multi-AOI `aoi_selection: { name, aois[] }`. `pickAoiTool` always normalises to an `AOISelection` before registering geometry in `mapStore.geoJsonRegistry` and adding the area layer(s) to `mapStore.layers`.
 
 - If the AOI already has a `geometry` field, that GeoJSON is used directly (no extra fetch).
 - Otherwise, geometry is fetched from `/api/geometry/:source/:srcId`.
@@ -133,15 +132,17 @@ The backend can return either a single `aoi` object or a multi-AOI `aoi_selectio
 
 ### Context Sent to Backend
 
-When sending a message, `chatStore.sendMessage()` builds a `ui_context` object from `contextStore` and includes it in the POST body only if non-empty:
+When sending a message, `chatStore.sendMessage()` derives the active context from the visible `mapStore.layers` + `chatStore.dateRange` (via `deriveContext` in `app/utils/messageContext.ts`) and includes a `ui_context` object in the POST body only if non-empty:
 
 ```ts
-ui_context.aoi_selected; // AOI name, gadm_id, src_id, subtype, source
-ui_context.dataset_selected; // Full DatasetInfo object
+ui_context.aoi_selected; // first AOI of the first visible area layer: name, gadm_id, src_id, subtype, source
+ui_context.dataset_selected; // Full DatasetInfo for the active dataset layer
 ui_context.daterange_selected; // { start_date, end_date } as "yyyy-MM-dd"
 ```
 
-Context items that the AI previously set (flagged `isAiContext: true`) are excluded from subsequent messages to avoid sending stale context.
+`/api/chat` is **non-idempotent** — each `ui_context` slot appends a synthetic "User selected …" message and overwrites checkpointed agent state — so the client sends **only the slots that changed** since the last send. `chatStore.lastSentContext` tracks the per-slot identity (aoi / dataset / daterange) last sent on the thread; `diffUiContext` drops unchanged slots. The agent's own `pick_aoi`/`pick_dataset` picks are folded into `lastSentContext` (so they are never echoed back), and `fetchThread` seeds it from the rehydrated layers so the first message on a loaded thread doesn't re-announce existing context.
+
+Each user message also carries a read-only `context: MessageContext` snapshot (the **full** active context at send time, not the delta) rendered as static chips under the message by `MessageBubble`.
 
 ### Timeout Behaviour
 

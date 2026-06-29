@@ -7,8 +7,8 @@ import type { Layer } from "@/app/store/layerManagerSlice";
 import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
 
 // Minimal description of a dataset's map presence. Produced by the dataset-card
-// / pick_dataset helpers and consumed by buildDatasetLayers — the layer-manager
-// replacement for the old contextStore.addContext side effect.
+// / pick_dataset helpers and consumed by buildDatasetLayers, which adds the
+// dataset's layer(s) to the map.
 export interface DatasetLayerSpec {
   datasetId: number;
   layerName?: string;
