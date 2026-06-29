@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Box, Flex, Text, IconButton, Switch } from "@chakra-ui/react";
+import { Box, Flex, Text, IconButton, Switch, Spinner } from "@chakra-ui/react";
 import {
   ChartLineIcon,
   ChartBarIcon,
@@ -19,10 +19,6 @@ import useInsightStore from "@/app/store/insightStore";
 import useComposerStore from "@/app/dashboards/lib/composerStore";
 import { useUserInsights } from "@/app/hooks/useUserInsights";
 import {
-  WIDGET_FIXTURES,
-  AI_EXAMPLE_INSIGHTS,
-} from "@/app/dashboards/lib/fixtures";
-import {
   TEMPLATES,
   type DashboardTemplate,
 } from "@/app/dashboards/lib/templates";
@@ -38,31 +34,18 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "ai", label: "AI generated" },
 ];
 
-/** Verified analyses grouped into high-level topics for the panel filter. */
-const LIBRARY: { topic: string; insight: InsightWidget }[] = [
-  { topic: "Forests", insight: WIDGET_FIXTURES.treeCoverLine },
-  { topic: "Forests", insight: WIDGET_FIXTURES.tclBar },
-  { topic: "Forests", insight: WIDGET_FIXTURES.tclTable },
-  { topic: "Forests", insight: WIDGET_FIXTURES.treeGainArea },
-  { topic: "Forests", insight: WIDGET_FIXTURES.driversPie },
-  { topic: "Carbon", insight: WIDGET_FIXTURES.emissionsLine },
-  { topic: "Carbon", insight: WIDGET_FIXTURES.ghgFluxBar },
-  { topic: "Land", insight: WIDGET_FIXTURES.landCoverPie },
-  { topic: "Land", insight: WIDGET_FIXTURES.grasslandArea },
-  { topic: "Alerts", insight: WIDGET_FIXTURES.fireAlertsLine },
-  { topic: "Biodiversity", insight: WIDGET_FIXTURES.biodiversityBar },
-];
-
-const VERIFIED_TOPICS = Array.from(new Set(LIBRARY.map((r) => r.topic)));
-
-type SourceKey = "all" | "verified" | "ai";
-const SOURCE_FILTERS: { key: SourceKey; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "verified", label: "Verified" },
-  { key: "ai", label: "AI generated" },
-];
-
-type LibEntry = { insight: InsightWidget; verified: boolean; topic?: string };
+/** Human label per chart type — drives the Insights tab's type filter.
+ *  Insertion order doubles as the filter's display order. */
+const TYPE_LABEL: Record<string, string> = {
+  line: "Line",
+  area: "Area",
+  bar: "Bar",
+  "stacked-bar": "Stacked bar",
+  "grouped-bar": "Grouped bar",
+  pie: "Pie",
+  table: "Table",
+  scatter: "Scatter",
+};
 
 /** Thumbnail icon per chart type. */
 const TYPE_ICON: Record<string, React.ElementType> = {
@@ -357,8 +340,7 @@ export default function DashboardInsightsPanel({
   const addWidget = useDashboardStore((s) => s.addWidget);
   const sidePane = useComposerStore((s) => s.sidePane);
   const [filter, setFilter] = useState<FilterKey>("conversation");
-  const [source, setSource] = useState<SourceKey>("all");
-  const [topic, setTopic] = useState("All");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [shownIds, setShownIds] = useState<Set<string>>(new Set());
   // Curated templates are the natural first step while setting up a new
   // dashboard, so default the detail view to them in that flow. As a slide-over
@@ -385,44 +367,30 @@ export default function DashboardInsightsPanel({
     return true;
   });
 
-  // Detail library. Verified = the curated fixtures (topic-filterable).
-  // AI-generated = the user's persisted insights (GET /api/insights) + any
-  // generated live this session (insightStore), minus anything that duplicates
-  // a verified title. When neither source has data (logged out / offline) we
-  // fall back to the example fixtures so a standalone visit still has content.
-  const fetched = useUserInsights().insights;
+  // Insights tab = the user's real generative insights: persisted insights
+  // (GET /api/insights) plus any generated live this session (insightStore).
+  // Session-first, then persisted; de-duplicated by id (falling back to title).
+  // No fixture fallback — an empty list surfaces an empty state instead, so the
+  // panel honestly reflects the user's conversations.
+  const { insights: fetched, isLoading: insightsLoading } = useUserInsights();
   const generated = useInsightStore((s) => s.insights);
-  const realInsights = [...fetched, ...generated];
-  const pool = realInsights.length > 0 ? realInsights : AI_EXAMPLE_INSIGHTS;
-  const libraryTitles = new Set(LIBRARY.map((r) => r.insight.title));
-  const seenAi = new Set<string>();
-  const aiInsights = pool.filter((i) => {
+  const seenKeys = new Set<string>();
+  const myInsights = [...generated, ...fetched].filter((i) => {
     if (!i || i.type === "dataset-card") return false;
-    if (libraryTitles.has(i.title) || seenAi.has(i.title)) return false;
-    seenAi.add(i.title);
+    const key = i.id ?? i.title;
+    if (seenKeys.has(key)) return false;
+    seenKeys.add(key);
     return true;
   });
 
-  const verifiedEntries: LibEntry[] = LIBRARY.map((r) => ({
-    insight: r.insight,
-    verified: true,
-    topic: r.topic,
-  }));
-  const aiEntries: LibEntry[] = aiInsights.map((insight) => ({
-    insight,
-    verified: false,
-  }));
-
-  let entries: LibEntry[];
-  if (source === "verified") {
-    entries = verifiedEntries.filter(
-      (e) => topic === "All" || e.topic === topic
-    );
-  } else if (source === "ai") {
-    entries = aiEntries;
-  } else {
-    entries = [...verifiedEntries, ...aiEntries];
-  }
+  // Chart-type filter — only the types actually present, in TYPE_LABEL order.
+  const availableTypes = Object.keys(TYPE_LABEL).filter((t) =>
+    myInsights.some((i) => i.type === t)
+  );
+  const visibleInsights =
+    typeFilter === "all"
+      ? myInsights
+      : myInsights.filter((i) => i.type === typeFilter);
 
   const toggleShown = (id: string) =>
     setShownIds((prev) => {
@@ -536,54 +504,75 @@ export default function DashboardInsightsPanel({
               </Flex>
             ) : (
               <>
-                <Flex
-                  gap={2}
-                  mb={source === "verified" ? 2 : 3}
-                  flexWrap="wrap"
-                >
-                  {SOURCE_FILTERS.map((s) => (
+                {/* Chart-type filter — shown only when there's a mix to filter. */}
+                {availableTypes.length > 1 && (
+                  <Flex gap={2} mb={3} flexWrap="wrap">
                     <FilterPill
-                      key={s.key}
-                      active={source === s.key}
-                      onClick={() => setSource(s.key)}
+                      active={typeFilter === "all"}
+                      onClick={() => setTypeFilter("all")}
                     >
-                      {s.label}
+                      All
                     </FilterPill>
-                  ))}
-                </Flex>
-                {source === "verified" && (
-                  <Flex gap={2} mb={3} pl={3} flexWrap="wrap">
-                    {["All", ...VERIFIED_TOPICS].map((t) => (
+                    {availableTypes.map((t) => (
                       <FilterPill
                         key={t}
-                        active={topic === t}
-                        onClick={() => setTopic(t)}
+                        active={typeFilter === t}
+                        onClick={() => setTypeFilter(t)}
                       >
-                        {t}
+                        {TYPE_LABEL[t]}
                       </FilterPill>
                     ))}
                   </Flex>
                 )}
-                {entries.length === 0 ? (
+
+                {insightsLoading && myInsights.length === 0 ? (
+                  <Flex
+                    align="center"
+                    gap={2}
+                    color="fg.muted"
+                    fontSize="sm"
+                    py={6}
+                  >
+                    <Spinner size="xs" />
+                    Loading your insights…
+                  </Flex>
+                ) : myInsights.length === 0 ? (
+                  <Flex
+                    flexDir="column"
+                    align="center"
+                    gap={1}
+                    py={8}
+                    px={4}
+                    textAlign="center"
+                  >
+                    <Box color="fg.muted" mb={1}>
+                      <SparkleIcon size={24} />
+                    </Box>
+                    <Text fontSize="sm" fontWeight="medium" color="fg">
+                      No insights yet
+                    </Text>
+                    <Text fontSize="xs" color="fg.muted">
+                      Insights you generate in conversations will appear here,
+                      ready to add to a dashboard.
+                    </Text>
+                  </Flex>
+                ) : visibleInsights.length === 0 ? (
                   <Text
                     fontSize="sm"
                     color="fg.muted"
                     py={6}
                     textAlign="center"
                   >
-                    No analyses to show.
+                    No {TYPE_LABEL[typeFilter]?.toLowerCase()} insights.
                   </Text>
                 ) : (
                   <Flex flexDir="column" gap={2}>
-                    {entries.map((e, i) => (
+                    {visibleInsights.map((insight, i) => (
                       <LibraryCard
-                        key={
-                          e.insight.id ??
-                          `${e.verified}-${e.insight.title}-${i}`
-                        }
-                        insight={e.insight}
-                        verified={e.verified}
-                        onAdd={() => addToDashboard(e.insight, e.verified)}
+                        key={insight.id ?? `${insight.title}-${i}`}
+                        insight={insight}
+                        verified={false}
+                        onAdd={() => addToDashboard(insight, false)}
                       />
                     ))}
                   </Flex>
