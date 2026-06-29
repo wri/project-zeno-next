@@ -9,6 +9,7 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import AoiActionsMenu from "@/app/dashboards/components/AoiActionsMenu";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
+import { useAnalysis } from "@/src/features/analysis";
 import { ChatContextOptions } from "../../ContextButton";
 import {
   Feature,
@@ -166,6 +167,7 @@ function GeoJsonLayerGroup({
   const { addContext, removeContext } = useContextStore();
   const { isHovered, setHoverState } = useHoverState();
   const { current: map } = useMap();
+  const { run: runViewAnalysis } = useAnalysis();
   // Context matching — use layer.selectionName for groups, or first entry name for singles
   const displayName = layer.selectionName ?? layer.name;
   const areaInContext = areas.find((a) =>
@@ -250,6 +252,25 @@ function GeoJsonLayerGroup({
       datasetName: "Tree cover loss",
     });
   };
+
+  // "View Analysis" runs the default (deterministic) analysis for this AOI —
+  // the same path as the chat ViewAnalysisNudge. Only available when the AOI has
+  // a backend-known source (gadm/kba/…); custom areas leave it disabled.
+  const aoi = layer.aoiSelection?.aois?.[0];
+  const viewAnalysis = aoi?.source
+    ? () =>
+        runViewAnalysis({
+          area: {
+            name: displayName,
+            source: aoi.source,
+            srcId: aoi.src_id,
+            subtype: aoi.subtype,
+          },
+          dataset: { id: 4 }, // Tree cover loss — the default analysis
+          startDate: "2001-01-01",
+          endDate: "2025-12-31",
+        })
+    : undefined;
 
   // Anchor the "…" dropdown to the bbox's top-left corner (inset by a small
   // gap) rather than to the trigger, so the menu opens just inside the box.
@@ -436,7 +457,9 @@ function GeoJsonLayerGroup({
               <AoiActionsMenu
                 name={displayName}
                 isActive={isInContext}
+                onViewAnalysis={viewAnalysis}
                 onGenerateAnalysis={generateAnalysis}
+                onRemove={isInContext ? handleRemoveFromContext : undefined}
                 getAnchorRect={menuAnchorRect}
               />
             </Box>

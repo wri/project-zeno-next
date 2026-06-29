@@ -1,17 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Box, IconButton, Menu, Portal, Text } from "@chakra-ui/react";
+import { IconButton, Menu, Portal } from "@chakra-ui/react";
 import {
   DotsThreeVerticalIcon,
   BookmarkSimpleIcon,
   SquaresFourIcon,
   ChartLineIcon,
   SparkleIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import { toaster } from "@/app/components/ui/toaster";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { createDashboardForAoi } from "@/app/dashboards/lib/createDashboardForAoi";
+
+// Category header style (ANALYSIS / MONITORING) — small uppercase grey mono,
+// matching the design's section labels.
+const GROUP_LABEL = {
+  fontFamily: "mono",
+  fontSize: "10px",
+  letterSpacing: "0.5px",
+  textTransform: "uppercase" as const,
+  fontWeight: "normal" as const,
+  color: "#656E7B",
+};
 
 /**
  * "…" actions menu shown as a separate button beside an AOI label on the map.
@@ -21,14 +33,21 @@ import { createDashboardForAoi } from "@/app/dashboards/lib/createDashboardForAo
 export default function AoiActionsMenu({
   name,
   isActive,
+  onViewAnalysis,
   onGenerateAnalysis,
+  onRemove,
   getAnchorRect,
 }: {
   name: string;
   /** Selected (in-context) AOI — drives the solid vs subtle trigger styling. */
   isActive?: boolean;
+  /** Runs the default (deterministic) analysis for this AOI. Disabled when
+   *  omitted (e.g. a custom area with no backend-known source). */
+  onViewAnalysis?: () => void;
   /** Injects a generative-analysis prompt into the chat for this AOI. */
   onGenerateAnalysis?: () => void;
+  /** Removes this AOI from the map / context. Disabled when omitted. */
+  onRemove?: () => void;
   /** Anchors the dropdown to a point (e.g. the bbox corner) instead of the
    *  trigger. Returns a viewport-space rect, or null to fall back to default. */
   getAnchorRect?: () => {
@@ -82,36 +101,56 @@ export default function AoiActionsMenu({
       <Portal>
         <Menu.Positioner>
           <Menu.Content minW="220px">
-            <Menu.Item value="bookmark" onClick={() => stub("Bookmark area")}>
-              <BookmarkSimpleIcon size={16} />
-              Bookmark area
-            </Menu.Item>
-            <Menu.Item value="create-dashboard" onClick={createDashboard}>
-              <SquaresFourIcon size={16} />
-              Create dashboard
-            </Menu.Item>
+            {/* ANALYSIS */}
+            <Menu.ItemGroup>
+              <Menu.ItemGroupLabel {...GROUP_LABEL}>
+                Analysis
+              </Menu.ItemGroupLabel>
+              <Menu.Item
+                value="view-analysis"
+                disabled={!onViewAnalysis}
+                onClick={() => onViewAnalysis?.()}
+              >
+                <ChartLineIcon size={16} />
+                View Analysis
+              </Menu.Item>
+              <Menu.Item
+                value="run-ai-analysis"
+                fontWeight="medium"
+                disabled={!onGenerateAnalysis}
+                onClick={() => onGenerateAnalysis?.()}
+              >
+                <SparkleIcon size={16} color="#0049AA" />
+                Run AI Analysis
+              </Menu.Item>
+            </Menu.ItemGroup>
+
             <Menu.Separator />
+
+            {/* MONITORING */}
+            <Menu.ItemGroup>
+              <Menu.ItemGroupLabel {...GROUP_LABEL}>
+                Monitoring
+              </Menu.ItemGroupLabel>
+              <Menu.Item value="bookmark" onClick={() => stub("Bookmark area")}>
+                <BookmarkSimpleIcon size={16} />
+                Bookmark
+              </Menu.Item>
+              <Menu.Item value="create-dashboard" onClick={createDashboard}>
+                <SquaresFourIcon size={16} />
+                Create a dashboard
+              </Menu.Item>
+            </Menu.ItemGroup>
+
+            <Menu.Separator />
+
             <Menu.Item
-              value="generate-analysis"
-              disabled={!onGenerateAnalysis}
-              onClick={() => onGenerateAnalysis?.()}
+              value="remove"
+              disabled={!onRemove}
+              onClick={() => onRemove?.()}
             >
-              <SparkleIcon size={16} color="#0049AA" />
-              Generate analysis
-              <Box ml="auto" bg="#F7FBD9" rounded="sm" px="5px" py="2px">
-                <Text fontFamily="mono" fontSize="9px" color="#23271A">
-                  Zeno
-                </Text>
-              </Box>
-            </Menu.Item>
-            <Menu.Item value="dataset" onClick={() => stub("Active dataset")}>
-              <ChartLineIcon size={16} />
-              Tree cover loss
-              <Box ml="auto" bg="#F4F5F6" rounded="sm" px="5px" py="2px">
-                <Text fontFamily="mono" fontSize="9px" color="#3A4048">
-                  Active dataset
-                </Text>
-              </Box>
+              <XIcon size={16} />
+              Remove from map
             </Menu.Item>
           </Menu.Content>
         </Menu.Positioner>
