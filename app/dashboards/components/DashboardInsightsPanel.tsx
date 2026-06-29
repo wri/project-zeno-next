@@ -18,6 +18,7 @@ import useDashboardStore from "@/app/store/dashboardStore";
 import useInsightStore from "@/app/store/insightStore";
 import useComposerStore from "@/app/dashboards/lib/composerStore";
 import { useUserInsights } from "@/app/hooks/useUserInsights";
+import { WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
 import {
   TEMPLATES,
   type DashboardTemplate,
@@ -34,18 +35,33 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "ai", label: "AI generated" },
 ];
 
-/** Human label per chart type — drives the Insights tab's type filter.
- *  Insertion order doubles as the filter's display order. */
-const TYPE_LABEL: Record<string, string> = {
-  line: "Line",
-  area: "Area",
-  bar: "Bar",
-  "stacked-bar": "Stacked bar",
-  "grouped-bar": "Grouped bar",
-  pie: "Pie",
-  table: "Table",
-  scatter: "Scatter",
-};
+/** Curated "default" analyses, grouped into high-level topics. Always available
+ *  in the Insights tab (the "Verified" source), alongside the user's own
+ *  generative insights. */
+const LIBRARY: { topic: string; insight: InsightWidget }[] = [
+  { topic: "Forests", insight: WIDGET_FIXTURES.treeCoverLine },
+  { topic: "Forests", insight: WIDGET_FIXTURES.tclBar },
+  { topic: "Forests", insight: WIDGET_FIXTURES.tclTable },
+  { topic: "Forests", insight: WIDGET_FIXTURES.treeGainArea },
+  { topic: "Forests", insight: WIDGET_FIXTURES.driversPie },
+  { topic: "Carbon", insight: WIDGET_FIXTURES.emissionsLine },
+  { topic: "Carbon", insight: WIDGET_FIXTURES.ghgFluxBar },
+  { topic: "Land", insight: WIDGET_FIXTURES.landCoverPie },
+  { topic: "Land", insight: WIDGET_FIXTURES.grasslandArea },
+  { topic: "Alerts", insight: WIDGET_FIXTURES.fireAlertsLine },
+  { topic: "Biodiversity", insight: WIDGET_FIXTURES.biodiversityBar },
+];
+
+const VERIFIED_TOPICS = Array.from(new Set(LIBRARY.map((r) => r.topic)));
+
+type SourceKey = "all" | "verified" | "ai";
+const SOURCE_FILTERS: { key: SourceKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "verified", label: "Verified" },
+  { key: "ai", label: "AI generated" },
+];
+
+type LibEntry = { insight: InsightWidget; verified: boolean; topic?: string };
 
 /** Thumbnail icon per chart type. */
 const TYPE_ICON: Record<string, React.ElementType> = {
@@ -340,7 +356,8 @@ export default function DashboardInsightsPanel({
   const addWidget = useDashboardStore((s) => s.addWidget);
   const sidePane = useComposerStore((s) => s.sidePane);
   const [filter, setFilter] = useState<FilterKey>("conversation");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [source, setSource] = useState<SourceKey>("all");
+  const [topic, setTopic] = useState("All");
   const [shownIds, setShownIds] = useState<Set<string>>(new Set());
   // Curated templates are the natural first step while setting up a new
   // dashboard, so default the detail view to them in that flow. As a slide-over
@@ -367,30 +384,46 @@ export default function DashboardInsightsPanel({
     return true;
   });
 
-  // Insights tab = the user's real generative insights: persisted insights
-  // (GET /api/insights) plus any generated live this session (insightStore).
-  // Session-first, then persisted; de-duplicated by id (falling back to title).
-  // No fixture fallback — an empty list surfaces an empty state instead, so the
-  // panel honestly reflects the user's conversations.
+  // Insights tab sources:
+  //  • Verified — the curated default LIBRARY, grouped/filterable by topic.
+  //  • AI generated — the user's real generative insights: persisted
+  //    (GET /api/insights) + any generated live this session (insightStore),
+  //    session-first, de-duplicated by id (falling back to title). No fixture
+  //    fallback — an empty AI source surfaces an empty state.
+  // "All" shows both, so the user always has the defaults to hand.
   const { insights: fetched, isLoading: insightsLoading } = useUserInsights();
   const generated = useInsightStore((s) => s.insights);
+  const libraryTitles = new Set(LIBRARY.map((r) => r.insight.title));
   const seenKeys = new Set<string>();
-  const myInsights = [...generated, ...fetched].filter((i) => {
+  const aiInsights = [...generated, ...fetched].filter((i) => {
     if (!i || i.type === "dataset-card") return false;
     const key = i.id ?? i.title;
-    if (seenKeys.has(key)) return false;
+    // Skip anything that duplicates a curated default by title.
+    if (libraryTitles.has(i.title) || seenKeys.has(key)) return false;
     seenKeys.add(key);
     return true;
   });
 
-  // Chart-type filter — only the types actually present, in TYPE_LABEL order.
-  const availableTypes = Object.keys(TYPE_LABEL).filter((t) =>
-    myInsights.some((i) => i.type === t)
-  );
-  const visibleInsights =
-    typeFilter === "all"
-      ? myInsights
-      : myInsights.filter((i) => i.type === typeFilter);
+  const verifiedEntries: LibEntry[] = LIBRARY.map((r) => ({
+    insight: r.insight,
+    verified: true,
+    topic: r.topic,
+  }));
+  const aiEntries: LibEntry[] = aiInsights.map((insight) => ({
+    insight,
+    verified: false,
+  }));
+
+  let entries: LibEntry[];
+  if (source === "verified") {
+    entries = verifiedEntries.filter(
+      (e) => topic === "All" || e.topic === topic
+    );
+  } else if (source === "ai") {
+    entries = aiEntries;
+  } else {
+    entries = [...verifiedEntries, ...aiEntries];
+  }
 
   const toggleShown = (id: string) =>
     setShownIds((prev) => {
@@ -504,28 +537,39 @@ export default function DashboardInsightsPanel({
               </Flex>
             ) : (
               <>
-                {/* Chart-type filter — shown only when there's a mix to filter. */}
-                {availableTypes.length > 1 && (
-                  <Flex gap={2} mb={3} flexWrap="wrap">
+                {/* Source: curated defaults (Verified) + your generative
+                    insights (AI generated). "All" shows both. */}
+                <Flex
+                  gap={2}
+                  mb={source === "verified" ? 2 : 3}
+                  flexWrap="wrap"
+                >
+                  {SOURCE_FILTERS.map((s) => (
                     <FilterPill
-                      active={typeFilter === "all"}
-                      onClick={() => setTypeFilter("all")}
+                      key={s.key}
+                      active={source === s.key}
+                      onClick={() => setSource(s.key)}
                     >
-                      All
+                      {s.label}
                     </FilterPill>
-                    {availableTypes.map((t) => (
+                  ))}
+                </Flex>
+                {/* Topic filter for the curated defaults. */}
+                {source === "verified" && (
+                  <Flex gap={2} mb={3} pl={3} flexWrap="wrap">
+                    {["All", ...VERIFIED_TOPICS].map((t) => (
                       <FilterPill
                         key={t}
-                        active={typeFilter === t}
-                        onClick={() => setTypeFilter(t)}
+                        active={topic === t}
+                        onClick={() => setTopic(t)}
                       >
-                        {TYPE_LABEL[t]}
+                        {t}
                       </FilterPill>
                     ))}
                   </Flex>
                 )}
 
-                {insightsLoading && myInsights.length === 0 ? (
+                {insightsLoading && entries.length === 0 ? (
                   <Flex
                     align="center"
                     gap={2}
@@ -536,7 +580,7 @@ export default function DashboardInsightsPanel({
                     <Spinner size="xs" />
                     Loading your insights…
                   </Flex>
-                ) : myInsights.length === 0 ? (
+                ) : entries.length === 0 ? (
                   <Flex
                     flexDir="column"
                     align="center"
@@ -556,23 +600,17 @@ export default function DashboardInsightsPanel({
                       ready to add to a dashboard.
                     </Text>
                   </Flex>
-                ) : visibleInsights.length === 0 ? (
-                  <Text
-                    fontSize="sm"
-                    color="fg.muted"
-                    py={6}
-                    textAlign="center"
-                  >
-                    No {TYPE_LABEL[typeFilter]?.toLowerCase()} insights.
-                  </Text>
                 ) : (
                   <Flex flexDir="column" gap={2}>
-                    {visibleInsights.map((insight, i) => (
+                    {entries.map((e, i) => (
                       <LibraryCard
-                        key={insight.id ?? `${insight.title}-${i}`}
-                        insight={insight}
-                        verified={false}
-                        onAdd={() => addToDashboard(insight, false)}
+                        key={
+                          e.insight.id ??
+                          `${e.verified}-${e.insight.title}-${i}`
+                        }
+                        insight={e.insight}
+                        verified={e.verified}
+                        onAdd={() => addToDashboard(e.insight, e.verified)}
                       />
                     ))}
                   </Flex>
