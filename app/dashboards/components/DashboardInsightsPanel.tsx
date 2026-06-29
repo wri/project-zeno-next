@@ -283,6 +283,7 @@ function TemplateCard({
   onAdd: () => void;
 }) {
   const { theme } = template;
+  const Icon = template.icon;
   const count = template.widgets.length;
   return (
     <Box
@@ -300,14 +301,18 @@ function TemplateCard({
       _hover={{ boxShadow: "sm", transform: "translateY(-1px)" }}
     >
       <Flex align="stretch">
-        <Box
+        <Flex
           w="72px"
           flexShrink={0}
           alignSelf="stretch"
-          bgImage={`url('${template.image}')`}
-          bgSize="cover"
-          bgPos="center"
-        />
+          align="center"
+          justify="center"
+          borderRightWidth="1px"
+          borderColor={theme.border}
+          color={theme.eyebrow}
+        >
+          <Icon size={24} />
+        </Flex>
         <Flex flex="1 1 auto" minW={0} direction="column" px={4} py={3} gap={1}>
           <Text
             fontFamily="mono"

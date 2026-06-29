@@ -722,12 +722,15 @@ export default function DashboardsGalleryPage() {
             transition="box-shadow 0.15s ease, transform 0.15s ease"
             _hover={{ boxShadow: "md", transform: "translateY(-2px)" }}
           >
-            <Box
+            <Flex
               h="128px"
-              bgImage={`url('${t.image}')`}
-              bgSize="cover"
-              bgPos="center"
-            />
+              align="center"
+              justify="center"
+              borderBottomWidth="1px"
+              borderColor={t.theme.border}
+            >
+              <Icon as={t.icon} boxSize={10} color={t.theme.eyebrow} />
+            </Flex>
             <Box p={4}>
               <Text
                 fontSize="xs"

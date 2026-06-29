@@ -1,3 +1,10 @@
+import type { ElementType } from "react";
+import {
+  BellIcon,
+  ChartLineIcon,
+  FireIcon,
+  GlobeIcon,
+} from "@phosphor-icons/react";
 import { WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
 import type { DashboardWidget } from "@/app/types/dashboard";
 
@@ -24,8 +31,8 @@ export interface DashboardTemplate {
   label: string;
   /** Longer descriptor — retained for tooltips/future use, not shown on cards. */
   description: string;
-  /** Photographic thumbnail (path under /public). */
-  image: string;
+  /** Placeholder thumbnail icon (no per-template artwork yet). */
+  icon: ElementType;
   theme: TemplateTheme;
   title: string;
   widgets: Omit<DashboardWidget, "id">[];
@@ -36,7 +43,7 @@ export const TEMPLATES: DashboardTemplate[] = [
     key: "alerts",
     label: "Track near-real-time alerts for my areas of interest",
     description: "Near-real-time alerts for my areas of interest",
-    image: "/dataset_card_dist_alerts.webp",
+    icon: BellIcon,
     theme: {
       bg: "#FFFFFF",
       fg: "#0049AA",
@@ -65,7 +72,7 @@ export const TEMPLATES: DashboardTemplate[] = [
     key: "emissions",
     label: "Monitor emissions over time",
     description: "Emissions and carbon flux over time",
-    image: "/dataset_card_net_flux.webp",
+    icon: ChartLineIcon,
     theme: {
       bg: "#0049AA",
       fg: "#FFFFFF",
@@ -97,7 +104,7 @@ export const TEMPLATES: DashboardTemplate[] = [
     key: "event",
     label: "Assess impact of a recent event",
     description: "Impact of a recent fire, storm, or clearing",
-    image: "/dataset_card_tree_cover_loss.webp",
+    icon: FireIcon,
     theme: {
       bg: "#D7E94F",
       fg: "#1A2E05",
@@ -128,7 +135,7 @@ export const TEMPLATES: DashboardTemplate[] = [
     key: "compare",
     label: "Compare deforestation across regions",
     description: "Deforestation across countries and regions",
-    image: "/dataset_card_tree_cover_loss_drivers.webp",
+    icon: GlobeIcon,
     theme: {
       bg: "#102A6B",
       fg: "#FFFFFF",
