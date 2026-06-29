@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 
 import useContextStore from "@/app/store/contextStore";
-import { useFeatureFlag } from "@/app/hooks/useFeatureFlag";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
 import useSelectionStore from "../model/selection-store";
 import { showViewAnalysisNudge } from "./show-view-analysis-nudge";

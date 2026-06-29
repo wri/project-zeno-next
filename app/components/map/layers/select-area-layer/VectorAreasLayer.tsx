@@ -29,7 +29,7 @@ import "@/app/theme/popup.css";
 // Direct-analysis "View Analysis" nudge — kept wired behind ?ff=analysis
 // alongside the live analyse nudge. toAreaSelection (areaHelpers) returns the
 // same shape both consumers need, so it's reused for both.
-import { isFeatureEnabled } from "@/app/lib/feature-flags";
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 import { useSelectionStore } from "@/src/features/analysis";
 
 interface SourceLayerProps {
