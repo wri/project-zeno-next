@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { IconButton, Menu, Portal } from "@chakra-ui/react";
 import {
@@ -49,6 +50,7 @@ export default function AoiActionsMenu({
   onRemove?: () => void;
 }) {
   const router = useRouter();
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const stub = (label: string) =>
     toaster.create({
@@ -63,12 +65,28 @@ export default function AoiActionsMenu({
   };
 
   return (
-    // Anchor the dropdown to the trigger: its top-right corner sits at the
-    // bottom-right edge of the "…" button.
-    <Menu.Root positioning={{ placement: "bottom-end" }}>
+    // Anchor the dropdown to the trigger button's own rect (a viewport-space
+    // virtual anchor). Default element anchoring misfires inside a react-map-gl
+    // Marker — the marker's CSS transform throws the popper to the map origin —
+    // so we feed floating-ui the button's getBoundingClientRect directly.
+    // placement "bottom-end" + a small gutter puts the dropdown's top-right
+    // corner just below the button's bottom-right edge.
+    <Menu.Root
+      positioning={{
+        placement: "bottom-end",
+        gutter: 4,
+        getAnchorRect: () => {
+          const r = triggerRef.current?.getBoundingClientRect();
+          return r
+            ? { x: r.x, y: r.y, width: r.width, height: r.height }
+            : null;
+        },
+      }}
+    >
       <Tooltip content="Map actions" variant="dark" showArrow openDelay={200}>
         <Menu.Trigger asChild>
           <IconButton
+            ref={triggerRef}
             aria-label="Map actions"
             variant="solid"
             h="24px"
@@ -109,7 +127,7 @@ export default function AoiActionsMenu({
                 onClick={() => onGenerateAnalysis?.()}
               >
                 <SparkleIcon size={16} color="#0049AA" />
-                Run AI Analysis
+                Generate Insight
               </Menu.Item>
             </Menu.ItemGroup>
 
