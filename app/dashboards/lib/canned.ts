@@ -196,8 +196,8 @@ const GALLERY_SUGGESTIONS: Suggestion[] = [
     label: "Track near-real-time alerts for my areas of interest",
     recipe: "alerts",
   },
-  { label: "Compare deforestation across countries", recipe: "countries" },
-  { label: "Show carbon emissions over time", recipe: "emissions" },
+  { label: "Monitor emissions over time", recipe: "emissions" },
+  { label: "Assess the impact of a recent event", recipe: "treeCover" },
 ];
 
 export function getSuggestions(context: "gallery" | "detail"): Suggestion[] {
