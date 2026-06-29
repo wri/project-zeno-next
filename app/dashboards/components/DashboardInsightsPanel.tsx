@@ -282,7 +282,7 @@ function TemplateCard({
   template: DashboardTemplate;
   onAdd: () => void;
 }) {
-  const Icon = template.icon;
+  const { theme } = template;
   const count = template.widgets.length;
   return (
     <Box
@@ -291,40 +291,43 @@ function TemplateCard({
       textAlign="left"
       w="full"
       borderWidth="1px"
-      borderColor="#DDE2F5"
-      bg="#FFFFFF"
+      borderColor={theme.border}
+      bg={theme.bg}
       rounded="4px"
       overflow="hidden"
       cursor="pointer"
-      transition="border-color 0.15s ease, background 0.15s ease"
-      _hover={{ bg: "#F0F4FF", borderColor: "#0049AA" }}
+      transition="box-shadow 0.15s ease, transform 0.15s ease"
+      _hover={{ boxShadow: "sm", transform: "translateY(-1px)" }}
     >
       <Flex align="stretch">
-        <Flex
-          w="64px"
+        <Box
+          w="72px"
           flexShrink={0}
-          align="center"
-          justify="center"
           alignSelf="stretch"
-          bg={template.accent}
-          color="white"
-        >
-          <Icon size={24} />
-        </Flex>
+          bgImage={`url('${template.image}')`}
+          bgSize="cover"
+          bgPos="center"
+        />
         <Flex flex="1 1 auto" minW={0} direction="column" px={4} py={3} gap={1}>
+          <Text
+            fontFamily="mono"
+            fontSize="10px"
+            letterSpacing="0.5px"
+            textTransform="uppercase"
+            color={theme.eyebrow}
+          >
+            Template
+          </Text>
           <Text
             fontWeight="medium"
             fontSize="12px"
             lineHeight="1.5"
-            color="#3A4048"
-            lineClamp={1}
+            color={theme.fg}
+            lineClamp={2}
           >
             {template.label}
           </Text>
-          <Text fontFamily="mono" fontSize="10px" color="#656E7B" lineClamp={2}>
-            {template.description}
-          </Text>
-          <Text fontFamily="mono" fontSize="10px" color="#94A0B8">
+          <Text fontFamily="mono" fontSize="10px" color={theme.eyebrow}>
             {count} {count === 1 ? "block" : "blocks"}
           </Text>
         </Flex>

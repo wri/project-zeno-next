@@ -1,10 +1,3 @@
-import type { ElementType } from "react";
-import {
-  BellIcon,
-  ChartLineIcon,
-  FireIcon,
-  GlobeIcon,
-} from "@phosphor-icons/react";
 import { WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
 import type { DashboardWidget } from "@/app/types/dashboard";
 
@@ -13,12 +6,27 @@ import type { DashboardWidget } from "@/app/types/dashboard";
 // ("Templates" tab — appends to the dashboard being created). One source of
 // truth so the two never drift.
 
+/** Brand colourway for a template card (matches the Figma template cards). */
+export interface TemplateTheme {
+  /** Card background fill. */
+  bg: string;
+  /** Title / foreground colour. */
+  fg: string;
+  /** "Template" eyebrow colour. */
+  eyebrow: string;
+  /** Card border colour. */
+  border: string;
+}
+
 export interface DashboardTemplate {
   key: string;
+  /** Card title (shown on the gallery + Analyses-pane cards). */
   label: string;
+  /** Longer descriptor — retained for tooltips/future use, not shown on cards. */
   description: string;
-  accent: string;
-  icon: ElementType;
+  /** Photographic thumbnail (path under /public). */
+  image: string;
+  theme: TemplateTheme;
   title: string;
   widgets: Omit<DashboardWidget, "id">[];
 }
@@ -26,10 +34,15 @@ export interface DashboardTemplate {
 export const TEMPLATES: DashboardTemplate[] = [
   {
     key: "alerts",
-    label: "Track alerts",
+    label: "Track near-real-time alerts for my areas of interest",
     description: "Near-real-time alerts for my areas of interest",
-    accent: "green.500",
-    icon: BellIcon,
+    image: "/dataset_card_dist_alerts.webp",
+    theme: {
+      bg: "#FFFFFF",
+      fg: "#0049AA",
+      eyebrow: "#4A64CB",
+      border: "#DDE2F5",
+    },
     title: "Near-real-time alerts",
     widgets: [
       {
@@ -50,10 +63,15 @@ export const TEMPLATES: DashboardTemplate[] = [
   },
   {
     key: "emissions",
-    label: "Monitor emissions",
+    label: "Monitor emissions over time",
     description: "Emissions and carbon flux over time",
-    accent: "blue.500",
-    icon: ChartLineIcon,
+    image: "/dataset_card_net_flux.webp",
+    theme: {
+      bg: "#0049AA",
+      fg: "#FFFFFF",
+      eyebrow: "rgba(255,255,255,0.72)",
+      border: "#0049AA",
+    },
     title: "Emissions over time",
     widgets: [
       {
@@ -77,10 +95,15 @@ export const TEMPLATES: DashboardTemplate[] = [
   },
   {
     key: "event",
-    label: "Assess an event",
+    label: "Assess impact of a recent event",
     description: "Impact of a recent fire, storm, or clearing",
-    accent: "orange.500",
-    icon: FireIcon,
+    image: "/dataset_card_tree_cover_loss.webp",
+    theme: {
+      bg: "#D7E94F",
+      fg: "#1A2E05",
+      eyebrow: "#5A6B1E",
+      border: "#D7E94F",
+    },
     title: "Recent event impact",
     widgets: [
       {
@@ -103,10 +126,15 @@ export const TEMPLATES: DashboardTemplate[] = [
   },
   {
     key: "compare",
-    label: "Compare regions",
+    label: "Compare deforestation across regions",
     description: "Deforestation across countries and regions",
-    accent: "purple.500",
-    icon: GlobeIcon,
+    image: "/dataset_card_tree_cover_loss_drivers.webp",
+    theme: {
+      bg: "#102A6B",
+      fg: "#FFFFFF",
+      eyebrow: "rgba(255,255,255,0.72)",
+      border: "#102A6B",
+    },
     title: "Compare deforestation",
     widgets: [
       {

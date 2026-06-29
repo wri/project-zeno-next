@@ -662,28 +662,31 @@ export default function DashboardsGalleryPage() {
             as="button"
             onClick={() => startFromTemplate(t)}
             textAlign="left"
-            bg="bg"
+            bg={t.theme.bg}
             borderWidth="1px"
-            borderColor="border"
+            borderColor={t.theme.border}
             rounded="md"
             overflow="hidden"
-            transition="box-shadow 0.15s ease, border-color 0.15s ease"
-            _hover={{ boxShadow: "md", borderColor: "border.emphasized" }}
+            transition="box-shadow 0.15s ease, transform 0.15s ease"
+            _hover={{ boxShadow: "md", transform: "translateY(-2px)" }}
           >
-            <Flex h="96px" bg={t.accent} align="center" justify="center">
-              <Icon as={t.icon} boxSize={8} color="white" />
-            </Flex>
+            <Box
+              h="128px"
+              bgImage={`url('${t.image}')`}
+              bgSize="cover"
+              bgPos="center"
+            />
             <Box p={4}>
               <Text
                 fontSize="xs"
                 textTransform="uppercase"
-                color="fg.muted"
+                color={t.theme.eyebrow}
                 mb={1}
               >
                 Template
               </Text>
-              <Text fontWeight="medium" lineClamp={3}>
-                {t.description}
+              <Text fontWeight="medium" lineClamp={3} color={t.theme.fg}>
+                {t.label}
               </Text>
             </Box>
           </Box>
