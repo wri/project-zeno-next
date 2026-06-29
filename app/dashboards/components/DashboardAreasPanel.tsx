@@ -10,28 +10,32 @@ import {
   InputGroup,
   IconButton,
   Spinner,
+  Switch,
 } from "@chakra-ui/react";
 import {
   PolygonIcon,
   MagnifyingGlassIcon,
   XIcon,
   MapPinAreaIcon,
+  UploadSimpleIcon,
 } from "@phosphor-icons/react";
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
+import { toaster } from "@/app/components/ui/toaster";
 import useDashboardStore from "@/app/store/dashboardStore";
 import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 import { GADM_AREAS } from "@/app/dashboards/lib/gadmAreas";
 
-// Areas panel for the new-dashboard setup flow. A source toggle switches
-// between the user's real saved areas ("My areas" — GET /api/custom_areas, the
-// same source the map's "areas" context menu uses) and GADM admin areas
-// (countries / regions). GADM is a static prototype list for now (see
-// lib/gadmAreas.ts) standing in for a real name search.
+// Areas panel for the new-dashboard setup flow (Figma "Choose an area"). Two
+// tabs: "In this conversation" — the areas available to pick for this dashboard
+// (a static GADM list, see lib/gadmAreas.ts, standing in for a real name
+// search) — and "Monitored areas", the user's saved custom areas
+// (GET /api/custom_areas, the same source the map's "areas" menu uses).
 //
-// Selecting an area sets the dashboard's subtitle (and title, if still the
-// default "Untitled dashboard"), which the detail page reads to flip from the
-// skeleton + Areas pane to the empty-dashboard state + Analyses pane.
+// Each card carries a "Select" toggle; selecting an area sets the dashboard's
+// subtitle (and title, if still the default "Untitled dashboard"), which the
+// detail page reads to flip from the skeleton + Areas pane to the
+// empty-dashboard state + Analyses pane.
 
 // Kept in sync with page.tsx's startBlank() default title.
 const DEFAULT_TITLE = "Untitled dashboard";
@@ -82,31 +86,35 @@ function AreaCard({
   name,
   subtitle,
   selected,
-  onSelect,
+  onToggle,
 }: {
   name: string;
   subtitle: string;
   selected: boolean;
-  onSelect: () => void;
+  onToggle: () => void;
 }) {
   return (
     <Box
-      as="button"
-      onClick={onSelect}
-      textAlign="left"
-      w="full"
       borderWidth="1px"
       borderColor={selected ? "#0049AA" : "#DDE2F5"}
       bg={selected ? "#DDE2F5" : "#FFFFFF"}
       rounded="4px"
       overflow="hidden"
-      cursor="pointer"
       transition="border-color 0.15s ease, background 0.15s ease"
       _hover={selected ? undefined : { bg: "#F0F4FF", borderColor: "#0049AA" }}
     >
       <Flex align="stretch">
         <Thumb />
         <Flex flex="1 1 auto" minW={0} direction="column" px={4} py={3} gap={1}>
+          <Text
+            fontFamily="mono"
+            fontSize="10px"
+            letterSpacing="0.5px"
+            textTransform="uppercase"
+            color="#4A64CB"
+          >
+            Area
+          </Text>
           <Text
             fontWeight="medium"
             fontSize="12px"
@@ -119,15 +127,30 @@ function AreaCard({
           <Text fontFamily="mono" fontSize="10px" color="#656E7B" lineClamp={1}>
             {subtitle}
           </Text>
+          <Box h="1px" bg="#BBC5EB" my={1} />
+          <Switch.Root
+            checked={selected}
+            onCheckedChange={onToggle}
+            size="sm"
+            colorPalette="primary"
+          >
+            <Switch.HiddenInput />
+            <Switch.Control>
+              <Switch.Thumb />
+            </Switch.Control>
+            <Switch.Label fontSize="12px" color="#4A64CB">
+              Select
+            </Switch.Label>
+          </Switch.Root>
         </Flex>
       </Flex>
     </Box>
   );
 }
 
-type Source = "mine" | "gadm";
+type Tab = "conversation" | "monitored";
 
-/** Rounded source toggle, matching the Analyses panel's filter pills. */
+/** Rounded tab pill, matching the Analyses panel's filter pills. */
 function SourcePill({
   active,
   onClick,
@@ -175,9 +198,9 @@ export default function DashboardAreasPanel({
 
   const { customAreas, isLoading, error } = useCustomAreasList();
   const [query, setQuery] = useState("");
-  // Default to GADM so the pane is populated even without a backend session
-  // (custom areas need one); "My areas" is one tap away.
-  const [source, setSource] = useState<Source>("gadm");
+  // Default to "In this conversation" so the pane is populated even without a
+  // backend session (monitored/custom areas need one); it's one tap away.
+  const [tab, setTab] = useState<Tab>("conversation");
 
   const areas = useMemo(() => {
     const list = (customAreas as CustomArea[] | undefined) ?? [];
@@ -197,13 +220,27 @@ export default function DashboardAreasPanel({
       : GADM_AREAS;
   }, [query]);
 
-  const selectArea = (name: string) => {
+  // Toggle the dashboard's AOI. Selecting sets the subtitle (and title, if
+  // still the default); turning the active area off clears it again.
+  const toggleArea = (name: string) => {
     if (!dashboardId) return;
+    if (dashboard?.subtitle === name) {
+      updateDashboard(dashboardId, { subtitle: undefined });
+      return;
+    }
     updateDashboard(dashboardId, {
       subtitle: name,
       ...(dashboard?.title === DEFAULT_TITLE ? { title: name } : {}),
     });
   };
+
+  const uploadShapefile = () =>
+    toaster.create({
+      title: "Upload a shapefile — prototype",
+      description: "File upload isn't wired up in the prototype.",
+      type: "info",
+      duration: 2500,
+    });
 
   return (
     <Flex
@@ -237,36 +274,42 @@ export default function DashboardAreasPanel({
             Areas
           </Text>
         </Flex>
-        <IconButton
-          aria-label="Close areas"
-          size="xs"
-          variant="ghost"
-          color="neutral.500"
-          onClick={onClose}
-        >
-          <XIcon size={16} />
-        </IconButton>
+        <Flex align="center" gap={1}>
+          <IconButton
+            aria-label="Upload a shapefile"
+            size="xs"
+            variant="ghost"
+            color="neutral.500"
+            onClick={uploadShapefile}
+          >
+            <UploadSimpleIcon size={16} />
+          </IconButton>
+          <IconButton
+            aria-label="Close areas"
+            size="xs"
+            variant="ghost"
+            color="neutral.500"
+            onClick={onClose}
+          >
+            <XIcon size={16} />
+          </IconButton>
+        </Flex>
       </Flex>
 
       {/* Body */}
       <Box flex="1 1 auto" overflowY="auto" px={4} py={3}>
-        <Text fontSize="sm" color="fg" mb={3}>
-          Select an area to base this dashboard on, or describe what you want in
-          the chat.
-        </Text>
-
         <Flex gap={2} mb={3} flexWrap="wrap">
           <SourcePill
-            active={source === "mine"}
-            onClick={() => setSource("mine")}
+            active={tab === "conversation"}
+            onClick={() => setTab("conversation")}
           >
-            My areas
+            In this conversation
           </SourcePill>
           <SourcePill
-            active={source === "gadm"}
-            onClick={() => setSource("gadm")}
+            active={tab === "monitored"}
+            onClick={() => setTab("monitored")}
           >
-            GADM
+            Monitored areas
           </SourcePill>
         </Flex>
 
@@ -280,7 +323,7 @@ export default function DashboardAreasPanel({
           />
         </InputGroup>
 
-        {source === "gadm" ? (
+        {tab === "conversation" ? (
           gadmAreas.length === 0 ? (
             <Text fontSize="sm" color="fg.muted" py={6} textAlign="center">
               No areas match your search.
@@ -293,7 +336,7 @@ export default function DashboardAreasPanel({
                   name={a.name}
                   subtitle={a.level}
                   selected={dashboard?.subtitle === a.name}
-                  onSelect={() => selectArea(a.name)}
+                  onToggle={() => toggleArea(a.name)}
                 />
               ))}
             </Flex>
@@ -305,14 +348,14 @@ export default function DashboardAreasPanel({
           </Flex>
         ) : error ? (
           <Text fontSize="sm" color="fg.muted" py={6} textAlign="center">
-            Couldn&apos;t load your areas. Try GADM above, or describe the
-            dashboard in the chat.
+            Couldn&apos;t load your monitored areas. Try &ldquo;In this
+            conversation&rdquo; above, or describe the dashboard in the chat.
           </Text>
         ) : areas.length === 0 ? (
           <Text fontSize="sm" color="fg.muted" py={6} textAlign="center">
             {query
               ? "No areas match your search."
-              : "No saved areas yet. Try GADM above, create one on the map, or describe your dashboard in the chat."}
+              : "No monitored areas yet. Try “In this conversation” above, create one on the map, or describe your dashboard in the chat."}
           </Text>
         ) : (
           <Flex flexDir="column" gap={2}>
@@ -322,7 +365,7 @@ export default function DashboardAreasPanel({
                 name={a.name}
                 subtitle={formatCreated(a.created_at)}
                 selected={dashboard?.subtitle === a.name}
-                onSelect={() => selectArea(a.name)}
+                onToggle={() => toggleArea(a.name)}
               />
             ))}
           </Flex>
