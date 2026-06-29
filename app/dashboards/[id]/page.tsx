@@ -34,7 +34,9 @@ import {
   ArrowsInIcon,
 } from "@phosphor-icons/react";
 import DashboardInsightCard from "@/app/dashboards/components/DashboardInsightCard";
-import DashboardSkeleton from "@/app/dashboards/components/DashboardSkeleton";
+import DashboardSkeleton, {
+  SkeletonTiles,
+} from "@/app/dashboards/components/DashboardSkeleton";
 import MapWidgetPlaceholder from "@/app/dashboards/components/MapWidgetPlaceholder";
 import TextWidgetCard from "@/app/dashboards/components/TextWidgetCard";
 import { Tooltip } from "@/app/components/ui/tooltip";
@@ -235,6 +237,7 @@ export default function DashboardDetailPage() {
   const requestFocus = useComposerStore((s) => s.requestFocus);
   const openSidePane = useComposerStore((s) => s.openSidePane);
   const closeSidePane = useComposerStore((s) => s.closeSidePane);
+  const sidePane = useComposerStore((s) => s.sidePane);
 
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -271,6 +274,11 @@ export default function DashboardDetailPage() {
   // Skeleton (Rectangle 147752) shows while booting, and stays until an area is
   // chosen; with an AOI it gives way to the real empty-dashboard state.
   const showSkeleton = isEmpty && (booting || !hasAoi);
+
+  // Template step: area chosen but nothing added yet and the Analyses pane is
+  // open. Show skeleton tiles under the real (titled) header — the Figma
+  // "Start from a template" canvas — rather than the bare empty-state box.
+  const templateStep = isEmpty && hasAoi && !booting && sidePane === "analysis";
 
   // Drag-to-reorder state.
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
@@ -541,8 +549,12 @@ export default function DashboardDetailPage() {
 
             {/* White body */}
             <Box px={{ base: 5, md: 8 }} py={{ base: 5, md: 8 }}>
-              {/* Widget grid */}
-              {dashboard.widgets.length === 0 ? (
+              {/* Widget grid — during the template step (area chosen, no
+                  analyses added yet) show skeleton tiles under the real header,
+                  matching the Figma "Start from a template" canvas. */}
+              {templateStep ? (
+                <SkeletonTiles />
+              ) : dashboard.widgets.length === 0 ? (
                 <Center
                   flexDir="column"
                   gap={2}
@@ -602,27 +614,30 @@ export default function DashboardDetailPage() {
                 </Grid>
               )}
 
-              {/* Add block — lime divider with a centered + (per design) */}
-              <Flex align="center" mt={6}>
-                <Box flex="1" h="1px" bg="#E3F37F" />
-                <Tooltip content="Add a block" showArrow>
-                  <IconButton
-                    aria-label="Add a block"
-                    size="xs"
-                    mx={3}
-                    rounded="4px"
-                    bg="#F0F9B9"
-                    color="#8E9954"
-                    _hover={{ bg: "#E3F37F" }}
-                    onClick={() =>
-                      addWidget(dashboard.id, { kind: "empty", span: 1 })
-                    }
-                  >
-                    <PlusIcon size={16} />
-                  </IconButton>
-                </Tooltip>
-                <Box flex="1" h="1px" bg="#E3F37F" />
-              </Flex>
+              {/* Add block — lime divider with a centered + (per design).
+                  Hidden during the template-step skeleton. */}
+              {!templateStep && (
+                <Flex align="center" mt={6}>
+                  <Box flex="1" h="1px" bg="#E3F37F" />
+                  <Tooltip content="Add a block" showArrow>
+                    <IconButton
+                      aria-label="Add a block"
+                      size="xs"
+                      mx={3}
+                      rounded="4px"
+                      bg="#F0F9B9"
+                      color="#8E9954"
+                      _hover={{ bg: "#E3F37F" }}
+                      onClick={() =>
+                        addWidget(dashboard.id, { kind: "empty", span: 1 })
+                      }
+                    >
+                      <PlusIcon size={16} />
+                    </IconButton>
+                  </Tooltip>
+                  <Box flex="1" h="1px" bg="#E3F37F" />
+                </Flex>
+              )}
             </Box>
           </Box>
         )}

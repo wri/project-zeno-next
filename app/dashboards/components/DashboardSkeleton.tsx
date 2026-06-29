@@ -31,6 +31,27 @@ function Shimmer(props: React.ComponentProps<typeof Box>) {
   );
 }
 
+// Body-only placeholder: skeleton "tabs" row + a 2×2 grid of widget tiles. Used
+// on its own under a real (titled) dashboard header during the template step,
+// once an area is chosen but no analyses have been added yet (Figma flow 3).
+export function SkeletonTiles() {
+  return (
+    <>
+      <Flex gap={3} mb={6}>
+        <Shimmer h="12px" w="120px" />
+        <Shimmer h="12px" w="120px" />
+        <Shimmer h="12px" w="120px" />
+      </Flex>
+      <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={4}>
+        <Shimmer h="260px" />
+        <Shimmer h="260px" />
+        <Shimmer h="220px" />
+        <Shimmer h="220px" />
+      </Grid>
+    </>
+  );
+}
+
 export default function DashboardSkeleton() {
   return (
     <Box
