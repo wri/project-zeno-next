@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Box, Flex, Text, IconButton, Switch, Spinner } from "@chakra-ui/react";
+import { Box, Flex, Text, IconButton, Spinner } from "@chakra-ui/react";
 import {
   ChartLineIcon,
   ChartBarIcon,
@@ -167,7 +167,7 @@ function CardDescription({ children }: { children: React.ReactNode }) {
   );
 }
 
-// --- Gallery card (with Show-on-map) -----------------------------------------
+// --- Gallery card -------------------------------------------------------------
 
 interface GalleryItem {
   id: string;
@@ -175,24 +175,16 @@ interface GalleryItem {
   source: "verified" | "ai";
 }
 
-function GalleryCard({
-  item,
-  shown,
-  onToggle,
-}: {
-  item: GalleryItem;
-  shown: boolean;
-  onToggle: () => void;
-}) {
+function GalleryCard({ item }: { item: GalleryItem }) {
   return (
     <Box
       borderWidth="1px"
-      borderColor={shown ? "#0049AA" : "#DDE2F5"}
-      bg={shown ? "#DDE2F5" : "#FFFFFF"}
+      borderColor="#DDE2F5"
+      bg="#FFFFFF"
       rounded="4px"
       overflow="hidden"
       transition="border-color 0.15s ease, background 0.15s ease"
-      _hover={shown ? undefined : { bg: "#F0F4FF", borderColor: "#0049AA" }}
+      _hover={{ bg: "#F0F4FF", borderColor: "#0049AA" }}
     >
       <Flex align="stretch">
         <Thumb type={item.insight.type} />
@@ -202,21 +194,6 @@ function GalleryCard({
           {item.insight.description && (
             <CardDescription>{item.insight.description}</CardDescription>
           )}
-          <Box h="1px" bg="#BBC5EB" />
-          <Switch.Root
-            checked={shown}
-            onCheckedChange={onToggle}
-            size="sm"
-            colorPalette="primary"
-          >
-            <Switch.HiddenInput />
-            <Switch.Control>
-              <Switch.Thumb />
-            </Switch.Control>
-            <Switch.Label fontSize="12px" color="#4A64CB">
-              Show on map
-            </Switch.Label>
-          </Switch.Root>
         </Flex>
       </Flex>
     </Box>
@@ -358,7 +335,6 @@ export default function DashboardInsightsPanel({
   const [filter, setFilter] = useState<FilterKey>("conversation");
   const [source, setSource] = useState<SourceKey>("all");
   const [topic, setTopic] = useState("All");
-  const [shownIds, setShownIds] = useState<Set<string>>(new Set());
   // Curated templates are the natural first step while setting up a new
   // dashboard, so default the detail view to them in that flow. As a slide-over
   // for an already-populated dashboard, default to the full insight library.
@@ -424,14 +400,6 @@ export default function DashboardInsightsPanel({
   } else {
     entries = [...verifiedEntries, ...aiEntries];
   }
-
-  const toggleShown = (id: string) =>
-    setShownIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
 
   const addToDashboard = (insight: InsightWidget, verified: boolean) => {
     if (!dashboardId) return;
@@ -639,12 +607,7 @@ export default function DashboardInsightsPanel({
             ) : (
               <Flex flexDir="column" gap={3}>
                 {filteredGallery.map((it) => (
-                  <GalleryCard
-                    key={it.id}
-                    item={it}
-                    shown={shownIds.has(it.id)}
-                    onToggle={() => toggleShown(it.id)}
-                  />
+                  <GalleryCard key={it.id} item={it} />
                 ))}
               </Flex>
             )}

@@ -23,6 +23,8 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
 import { DashboardCtaTrigger } from "@/app/dashboards/components/DashboardCtaTrigger";
 import { ViewAnalysisCtaTrigger } from "@/app/components/ViewAnalysisCtaTrigger";
+import AnalysesPane from "@/app/components/AnalysesPane";
+import useAnalysesPaneStore from "@/app/store/analysesPaneStore";
 
 export default function DashboardLayout({
   children,
@@ -32,6 +34,7 @@ export default function DashboardLayout({
   const isReady = useAuthGuard();
   const [sheetHeight, setSheetHeight] = useState(400);
   const { toggleSidebar, sideBarVisible } = useSidebarStore();
+  const analysesPaneOpen = useAnalysesPaneStore((s) => s.open);
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
 
@@ -49,6 +52,13 @@ export default function DashboardLayout({
       display={{ base: "none", md: "block" }}
     >
       <Map />
+      {/* Chat + Analyses pane share one left-docked row, mirroring the
+          dashboards workspace:
+           • chat full-size  → in-flow column; the pane docks to its right
+             (double pane, chat on the left).
+           • chat compact    → the floating chat is position:fixed and takes no
+             row space, so the pane docks flush to the left edge. ChatPanel
+             offsets the floating card right of the pane so they don't overlap. */}
       <Box
         position="absolute"
         top={0}
@@ -56,7 +66,7 @@ export default function DashboardLayout({
         left={0}
         zIndex={1100}
         display="flex"
-        flexDir="column"
+        flexDir="row"
         pointerEvents="none"
       >
         <Box
@@ -68,6 +78,17 @@ export default function DashboardLayout({
         >
           <ChatPanel />
         </Box>
+        {analysesPaneOpen && (
+          <Box
+            pointerEvents="auto"
+            h="100%"
+            w="400px"
+            flexShrink={0}
+            display={{ base: "none", md: "block" }}
+          >
+            <AnalysesPane />
+          </Box>
+        )}
       </Box>
       <Drawer.Root
         placement="start"

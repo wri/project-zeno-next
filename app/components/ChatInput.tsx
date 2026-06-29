@@ -10,8 +10,13 @@ import {
   Text,
   Portal,
 } from "@chakra-ui/react";
-import { ArrowBendRightUpIcon, StopIcon } from "@phosphor-icons/react";
+import {
+  ArrowBendRightUpIcon,
+  ChartLineIcon,
+  StopIcon,
+} from "@phosphor-icons/react";
 import useChatStore from "@/app/store/chatStore";
+import useAnalysesPaneStore from "@/app/store/analysesPaneStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
@@ -49,6 +54,8 @@ export default function ChatInput({
   const { sendMessage, isLoading, cancelRequest, abortController, messages } =
     useChatStore();
   const { context, removeContext } = useContextStore();
+  const analysesPaneOpen = useAnalysesPaneStore((s) => s.open);
+  const toggleAnalysesPane = useAnalysesPaneStore((s) => s.togglePane);
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -179,6 +186,29 @@ export default function ChatInput({
             onClick={() => openContextMenu("area")}
             disabled={disabled}
           />
+          {/* Desktop only — the Analyses pane docks beside the chat, which
+              has no equivalent on the mobile bottom-sheet layout. */}
+          {!isMobile && (
+            <Button
+              size="xs"
+              variant="outline"
+              borderRadius="sm"
+              borderWidth="1px"
+              px="2"
+              h="8"
+              gap="1"
+              fontSize="xs"
+              fontWeight="normal"
+              aria-label="Analyses"
+              borderColor={analysesPaneOpen ? "#0049AA" : "#E0E2E5"}
+              bg={analysesPaneOpen ? "#EAF0FF" : undefined}
+              color={analysesPaneOpen ? "#0049AA" : undefined}
+              onClick={toggleAnalysesPane}
+            >
+              <ChartLineIcon />
+              Analyses
+            </Button>
+          )}
         </Flex>
         {canCancelRequest ? (
           <Button

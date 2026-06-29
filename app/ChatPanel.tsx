@@ -11,6 +11,7 @@ import {
 import ChatPanelCompact from "./ChatPanelCompact";
 import ChatPanelFullSize from "./ChatPanelFullSize";
 import useSidebarStore from "./store/sidebarStore";
+import useAnalysesPaneStore from "./store/analysesPaneStore";
 
 // [PROTOTYPE] Floating compact panel
 // ─────────────────────────────────────────────────────────────────────────────
@@ -37,9 +38,16 @@ import useSidebarStore from "./store/sidebarStore";
 // spring it back to the default bottom-left corner.
 const SNAP_THRESHOLD_PX = 120;
 
+// When the Analyses pane is docked at the left edge (compact chat), the floating
+// card anchors right of it (400px pane + 24px gutter) so the two don't overlap —
+// mirroring the dashboards workspace.
+const COMPACT_HOME_LEFT_PX = 12;
+const COMPACT_LEFT_WITH_PANE_PX = 424;
+
 function ChatPanel() {
   const [isFullSize, setIsFullSize] = useState(false);
   const { setChatFullSize, setChatPanelAtHome } = useSidebarStore();
+  const analysesPaneOpen = useAnalysesPaneStore((s) => s.open);
 
   // dragControls is passed down to ChatPanelHeader so only the drag-handle
   // icon triggers a drag, not accidental clicks on buttons or text.
@@ -142,7 +150,9 @@ function ChatPanel() {
               y,
               position: "fixed",
               bottom: 8,
-              left: 12,
+              left: analysesPaneOpen
+                ? COMPACT_LEFT_WITH_PANE_PX
+                : COMPACT_HOME_LEFT_PX,
               zIndex: 9999, // above chart overlays (9000) and all other UI layers
               pointerEvents: "auto",
               // Prevent the browser from selecting text in the panel (and across
