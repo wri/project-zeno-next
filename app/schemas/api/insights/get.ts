@@ -26,7 +26,9 @@ export const CodeActPartResponseSchema = z.object({
 export const InsightResponseSchema = z.object({
   id: z.string(),
   user_id: z.string().nullable().optional(),
-  thread_id: z.string(),
+  // Backend column is nullable (InsightOrm.thread_id) and the response model
+  // types it Optional[str] — insights generated outside a thread have none.
+  thread_id: z.string().nullable().optional(),
   insight_text: z.string(),
   follow_up_suggestions: z.array(z.string()),
   statistics_ids: z.array(z.string()),
