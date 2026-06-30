@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
-import { Box, Flex, Text, IconButton, Spinner } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Box, Flex, Text, IconButton, Spinner, Input } from "@chakra-ui/react";
 import {
   ChartLineIcon,
   ChartBarIcon,
@@ -12,28 +12,28 @@ import {
   CheckCircleIcon,
   SparkleIcon,
   SquaresFourIcon,
+  MagnifyingGlassIcon,
 } from "@phosphor-icons/react";
 import { chatPanelCardStyle } from "@/app/chatPanelShared";
 import useDashboardStore from "@/app/store/dashboardStore";
 import useInsightStore from "@/app/store/insightStore";
-import useComposerStore from "@/app/dashboards/lib/composerStore";
 import { useUserInsights } from "@/app/hooks/useUserInsights";
 import { WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
 import {
   TEMPLATES,
   type DashboardTemplate,
 } from "@/app/dashboards/lib/templates";
+import { createDashboardFromInsight } from "@/app/dashboards/lib/createDashboardFromInsight";
+import {
+  type ChartFamily,
+  CHART_FAMILY_LABEL,
+  filterInsightEntries,
+  matchesQuery,
+  presentFamilies,
+} from "@/app/utils/insightFilters";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
-
-type FilterKey = "conversation" | "verified" | "ai";
-
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "conversation", label: "In this conversation" },
-  { key: "verified", label: "Verified" },
-  { key: "ai", label: "AI generated" },
-];
 
 /** Curated "default" analyses, grouped into high-level topics. Always available
  *  in the Insights tab (the "Verified" source), alongside the user's own
@@ -167,49 +167,19 @@ function CardDescription({ children }: { children: React.ReactNode }) {
   );
 }
 
-// --- Gallery card -------------------------------------------------------------
-
-interface GalleryItem {
-  id: string;
-  insight: InsightWidget;
-  source: "verified" | "ai";
-}
-
-function GalleryCard({ item }: { item: GalleryItem }) {
-  return (
-    <Box
-      borderWidth="1px"
-      borderColor="#DDE2F5"
-      bg="#FFFFFF"
-      rounded="4px"
-      overflow="hidden"
-      transition="border-color 0.15s ease, background 0.15s ease"
-      _hover={{ bg: "#F0F4FF", borderColor: "#0049AA" }}
-    >
-      <Flex align="stretch">
-        <Thumb type={item.insight.type} />
-        <Flex flex="1 1 auto" minW={0} direction="column" px={4} py={3} gap={2}>
-          <TypeLabel verified={item.source === "verified"} />
-          <CardTitle>{item.insight.title}</CardTitle>
-          {item.insight.description && (
-            <CardDescription>{item.insight.description}</CardDescription>
-          )}
-        </Flex>
-      </Flex>
-    </Box>
-  );
-}
-
-// --- Library card (with Add-to-dashboard) ------------------------------------
+// --- Library card -------------------------------------------------------------
 
 function LibraryCard({
   insight,
   verified,
   onAdd,
+  actionLabel,
 }: {
   insight: InsightWidget;
   verified: boolean;
   onAdd: () => void;
+  /** Tooltip / aria-label for the window-pane action (add vs create). */
+  actionLabel: string;
 }) {
   return (
     <Box
@@ -226,9 +196,9 @@ function LibraryCard({
         <Flex flex="1 1 auto" minW={0} direction="column" px={4} py={3} gap={2}>
           <Flex justify="space-between" align="center" gap={2}>
             <TypeLabel verified={verified} />
-            <Tooltip content="Add to this dashboard" showArrow>
+            <Tooltip content={actionLabel} showArrow>
               <IconButton
-                aria-label="Add to dashboard"
+                aria-label={actionLabel}
                 size="2xs"
                 variant="ghost"
                 color="#4A64CB"
@@ -329,36 +299,28 @@ export default function DashboardInsightsPanel({
   const dashboardId = match ? decodeURIComponent(match[1]) : null;
   const isDetail = !!dashboardId;
 
-  const dashboards = useDashboardStore((s) => s.dashboards);
+  const router = useRouter();
   const addWidget = useDashboardStore((s) => s.addWidget);
-  const sidePane = useComposerStore((s) => s.sidePane);
-  const [filter, setFilter] = useState<FilterKey>("conversation");
+  // The dashboard being viewed (detail page), used to pre-scope the search to
+  // its location. find() (not getDashboard) so the selector re-runs as the
+  // store hydrates.
+  const dashboard = useDashboardStore((s) =>
+    dashboardId ? s.dashboards.find((d) => d.id === dashboardId) : undefined
+  );
+  const dashboardLocation = dashboard?.subtitle ?? dashboard?.title;
+
   const [source, setSource] = useState<SourceKey>("all");
   const [topic, setTopic] = useState("All");
-  // Curated templates are the natural first step while setting up a new
-  // dashboard, so default the detail view to them in that flow. As a slide-over
-  // for an already-populated dashboard, default to the full insight library.
-  const [tab, setTab] = useState<"templates" | "insights">(
-    sidePane === "analysis" ? "templates" : "insights"
-  );
-
-  // Gallery items: all analyses across dashboards.
-  const galleryItems: GalleryItem[] = dashboards.flatMap((d) =>
-    d.widgets
-      .filter((wgt) => wgt.kind === "insight" && wgt.insight)
-      .map((wgt, i) => ({
-        id: wgt.id,
-        insight: wgt.insight as InsightWidget,
-        source: ((wgt.verified ?? i % 2 === 0) ? "verified" : "ai") as
-          | "verified"
-          | "ai",
-      }))
-  );
-  const filteredGallery = galleryItems.filter((it) => {
-    if (filter === "verified") return it.source === "verified";
-    if (filter === "ai") return it.source === "ai";
-    return true;
-  });
+  const [query, setQuery] = useState("");
+  const [family, setFamily] = useState<ChartFamily | "all">("all");
+  // Insights is the primary view; Templates is the secondary tab.
+  const [tab, setTab] = useState<"templates" | "insights">("insights");
+  // Pre-scope the search to the dashboard's location, shown as a removable chip.
+  // Derived (not stored) so it follows hydration; clearing hides it until the
+  // viewed dashboard changes.
+  const [areaCleared, setAreaCleared] = useState(false);
+  useEffect(() => setAreaCleared(false), [dashboardId]);
+  const areaChip = areaCleared ? undefined : dashboardLocation;
 
   // Insights tab sources:
   //  • Verified — the curated default LIBRARY, grouped/filterable by topic.
@@ -401,20 +363,42 @@ export default function DashboardInsightsPanel({
     entries = [...verifiedEntries, ...aiEntries];
   }
 
-  const addToDashboard = (insight: InsightWidget, verified: boolean) => {
-    if (!dashboardId) return;
-    addWidget(dashboardId, {
-      kind: "insight",
-      span: 1,
-      verified,
-      insight,
-    });
-    toaster.create({
-      title: "Added to dashboard",
-      description: insight.title,
-      type: "success",
-      duration: 2000,
-    });
+  // Area chip (dashboard location) pre-scopes the pool; then search + chart-type
+  // narrow further. Chart-type chips reflect only the families present in the
+  // scoped pool, so we never show one that would match nothing.
+  const pool = areaChip
+    ? entries.filter((e) => matchesQuery(e.insight, areaChip))
+    : entries;
+  const families = presentFamilies(pool.map((e) => e.insight));
+  const activeFamily =
+    family !== "all" && !families.includes(family) ? "all" : family;
+  const visible = filterInsightEntries(pool, query, activeFamily);
+
+  // The window-pane action differs by context: on a dashboard it adds the
+  // analysis to that dashboard; on the gallery (no current dashboard) it spins
+  // up a new one seeded with the analysis and navigates to it.
+  const cardActionLabel = dashboardId
+    ? "Add to this dashboard"
+    : "Create a dashboard from this analysis";
+  const onCardAction = (insight: InsightWidget, verified: boolean) => {
+    if (dashboardId) {
+      addWidget(dashboardId, { kind: "insight", span: 1, verified, insight });
+      toaster.create({
+        title: "Added to dashboard",
+        description: insight.title,
+        type: "success",
+        duration: 2000,
+      });
+    } else {
+      const id = createDashboardFromInsight(insight, verified);
+      toaster.create({
+        title: "Dashboard created",
+        description: insight.title,
+        type: "success",
+        duration: 2000,
+      });
+      router.push(`/dashboards/${id}`);
+    }
   };
 
   // Append a curated template's blocks to the dashboard. Once it has widgets the
@@ -475,139 +459,195 @@ export default function DashboardInsightsPanel({
 
       {/* Body */}
       <Box flex="1 1 auto" overflowY="auto" px={4} py={3}>
-        {isDetail ? (
-          // Templates (curated starting points) vs the full insight library
-          <>
-            <Flex gap={2} mb={3} flexWrap="wrap">
-              <FilterPill
-                active={tab === "templates"}
-                onClick={() => setTab("templates")}
-              >
-                Templates
-              </FilterPill>
-              <FilterPill
-                active={tab === "insights"}
-                onClick={() => setTab("insights")}
-              >
-                Insights
-              </FilterPill>
-            </Flex>
+        {/* Templates only make sense on a dashboard (they append blocks to it);
+            the gallery goes straight to the insight library. */}
+        {isDetail && (
+          <Flex gap={2} mb={3} flexWrap="wrap">
+            <FilterPill
+              active={tab === "insights"}
+              onClick={() => setTab("insights")}
+            >
+              Insights
+            </FilterPill>
+            <FilterPill
+              active={tab === "templates"}
+              onClick={() => setTab("templates")}
+            >
+              Templates
+            </FilterPill>
+          </Flex>
+        )}
 
-            {tab === "templates" ? (
-              <Flex flexDir="column" gap={2}>
-                {TEMPLATES.map((t) => (
-                  <TemplateCard
-                    key={t.key}
-                    template={t}
-                    onAdd={() => applyTemplate(t)}
-                  />
-                ))}
-              </Flex>
-            ) : (
-              <>
-                {/* Source: curated defaults (Verified) + your generative
-                    insights (AI generated). "All" shows both. */}
-                <Flex
-                  gap={2}
-                  mb={source === "verified" ? 2 : 3}
-                  flexWrap="wrap"
-                >
-                  {SOURCE_FILTERS.map((s) => (
-                    <FilterPill
-                      key={s.key}
-                      active={source === s.key}
-                      onClick={() => setSource(s.key)}
-                    >
-                      {s.label}
-                    </FilterPill>
-                  ))}
-                </Flex>
-                {/* Topic filter for the curated defaults. */}
-                {source === "verified" && (
-                  <Flex gap={2} mb={3} pl={3} flexWrap="wrap">
-                    {["All", ...VERIFIED_TOPICS].map((t) => (
-                      <FilterPill
-                        key={t}
-                        active={topic === t}
-                        onClick={() => setTopic(t)}
-                      >
-                        {t}
-                      </FilterPill>
-                    ))}
-                  </Flex>
-                )}
-
-                {insightsLoading && entries.length === 0 ? (
-                  <Flex
-                    align="center"
-                    gap={2}
-                    color="fg.muted"
-                    fontSize="sm"
-                    py={6}
-                  >
-                    <Spinner size="xs" />
-                    Loading your insights…
-                  </Flex>
-                ) : entries.length === 0 ? (
-                  <Flex
-                    flexDir="column"
-                    align="center"
-                    gap={1}
-                    py={8}
-                    px={4}
-                    textAlign="center"
-                  >
-                    <Box color="fg.muted" mb={1}>
-                      <SparkleIcon size={24} />
-                    </Box>
-                    <Text fontSize="sm" fontWeight="medium" color="fg">
-                      No insights yet
-                    </Text>
-                    <Text fontSize="xs" color="fg.muted">
-                      Insights you generate in conversations will appear here,
-                      ready to add to a dashboard.
-                    </Text>
-                  </Flex>
-                ) : (
-                  <Flex flexDir="column" gap={2}>
-                    {entries.map((e, i) => (
-                      <LibraryCard
-                        key={
-                          e.insight.id ??
-                          `${e.verified}-${e.insight.title}-${i}`
-                        }
-                        insight={e.insight}
-                        verified={e.verified}
-                        onAdd={() => addToDashboard(e.insight, e.verified)}
-                      />
-                    ))}
-                  </Flex>
-                )}
-              </>
-            )}
-          </>
+        {isDetail && tab === "templates" ? (
+          <Flex flexDir="column" gap={2}>
+            {TEMPLATES.map((t) => (
+              <TemplateCard
+                key={t.key}
+                template={t}
+                onAdd={() => applyTemplate(t)}
+              />
+            ))}
+          </Flex>
         ) : (
-          // Gallery: source filter + cards with show-on-map
           <>
-            <Flex gap={2} mb={3} flexWrap="wrap">
-              {FILTERS.map((f) => (
+            {/* Source: curated defaults (Verified) + your generative insights
+                (AI generated). "All" shows both. */}
+            <Flex gap={2} mb={source === "verified" ? 2 : 3} flexWrap="wrap">
+              {SOURCE_FILTERS.map((s) => (
                 <FilterPill
-                  key={f.key}
-                  active={filter === f.key}
-                  onClick={() => setFilter(f.key)}
+                  key={s.key}
+                  active={source === s.key}
+                  onClick={() => setSource(s.key)}
                 >
-                  {f.label}
+                  {s.label}
                 </FilterPill>
               ))}
             </Flex>
-            {filteredGallery.length === 0 ? (
+            {/* Topic filter for the curated defaults. */}
+            {source === "verified" && (
+              <Flex gap={2} mb={3} pl={3} flexWrap="wrap">
+                {["All", ...VERIFIED_TOPICS].map((t) => (
+                  <FilterPill
+                    key={t}
+                    active={topic === t}
+                    onClick={() => setTopic(t)}
+                  >
+                    {t}
+                  </FilterPill>
+                ))}
+              </Flex>
+            )}
+            {/* Search — pre-scoped to the dashboard's location as a removable
+                chip on detail pages. */}
+            <Flex
+              align="center"
+              gap={1.5}
+              mb={3}
+              h="32px"
+              px={2}
+              borderWidth="1px"
+              borderColor="border"
+              rounded="md"
+              bg="bg"
+              _focusWithin={{
+                borderColor: "primary.500",
+                boxShadow: "0 0 0 1px var(--chakra-colors-primary-500)",
+              }}
+            >
+              <Box color="fg.muted" flexShrink={0} display="flex">
+                <MagnifyingGlassIcon size={16} />
+              </Box>
+              {areaChip && (
+                <Flex
+                  align="center"
+                  gap={1}
+                  flexShrink={0}
+                  maxW="150px"
+                  bg="#EAF0FF"
+                  color="#0049AA"
+                  rounded="full"
+                  pl={2}
+                  pr={0.5}
+                  py="2px"
+                  fontSize="11px"
+                  fontWeight="500"
+                >
+                  <Text lineClamp={1}>{areaChip}</Text>
+                  <IconButton
+                    aria-label={`Clear ${areaChip} filter`}
+                    size="2xs"
+                    variant="ghost"
+                    h="16px"
+                    minW="16px"
+                    w="16px"
+                    color="#0049AA"
+                    onClick={() => setAreaCleared(true)}
+                  >
+                    <XIcon size={10} />
+                  </IconButton>
+                </Flex>
+              )}
+              <Input
+                flex="1"
+                minW={0}
+                border="none"
+                p={0}
+                h="full"
+                fontSize="sm"
+                _focusVisible={{ boxShadow: "none" }}
+                placeholder={areaChip ? "Search within…" : "Search analyses…"}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </Flex>
+            {/* Chart-type filter — only families present in the source. */}
+            {families.length > 0 && (
+              <Flex gap={2} mb={3} flexWrap="wrap">
+                <FilterPill
+                  active={activeFamily === "all"}
+                  onClick={() => setFamily("all")}
+                >
+                  All types
+                </FilterPill>
+                {families.map((f) => (
+                  <FilterPill
+                    key={f}
+                    active={activeFamily === f}
+                    onClick={() => setFamily(f)}
+                  >
+                    {CHART_FAMILY_LABEL[f]}
+                  </FilterPill>
+                ))}
+              </Flex>
+            )}
+
+            {insightsLoading && entries.length === 0 ? (
+              <Flex
+                align="center"
+                gap={2}
+                color="fg.muted"
+                fontSize="sm"
+                py={6}
+              >
+                <Spinner size="xs" />
+                Loading your insights…
+              </Flex>
+            ) : entries.length === 0 ? (
+              <Flex
+                flexDir="column"
+                align="center"
+                gap={1}
+                py={8}
+                px={4}
+                textAlign="center"
+              >
+                <Box color="fg.muted" mb={1}>
+                  <SparkleIcon size={24} />
+                </Box>
+                <Text fontSize="sm" fontWeight="medium" color="fg">
+                  No insights yet
+                </Text>
+                <Text fontSize="xs" color="fg.muted">
+                  Insights you generate in conversations will appear here, ready
+                  to add to a dashboard.
+                </Text>
+              </Flex>
+            ) : visible.length === 0 ? (
               <Text fontSize="sm" color="fg.muted" py={6} textAlign="center">
-                No analyses to show.
+                No analyses match your search.
               </Text>
             ) : (
-              <Flex flexDir="column" gap={3}>
-                {filteredGallery.map((it) => (
-                  <GalleryCard key={it.id} item={it} />
+              <Flex flexDir="column" gap={2}>
+                {visible.map((e, i) => (
+                  <LibraryCard
+                    key={
+                      e.insight.id ?? `${e.verified}-${e.insight.title}-${i}`
+                    }
+                    insight={e.insight}
+                    verified={e.verified}
+                    actionLabel={cardActionLabel}
+                    onAdd={() => onCardAction(e.insight, e.verified)}
+                  />
                 ))}
               </Flex>
             )}

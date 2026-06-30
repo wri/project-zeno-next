@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Flex, Text, IconButton, Switch } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Text,
+  IconButton,
+  Switch,
+  Spinner,
+  Input,
+  InputGroup,
+} from "@chakra-ui/react";
 import {
   ChartLineIcon,
   ChartBarIcon,
@@ -12,12 +21,20 @@ import {
   CheckCircleIcon,
   SparkleIcon,
   SquaresFourIcon,
+  MagnifyingGlassIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
+import useChatStore from "@/app/store/chatStore";
 import useAnalysesPaneStore from "@/app/store/analysesPaneStore";
 import { useUserInsights } from "@/app/hooks/useUserInsights";
 import { WIDGET_FIXTURES } from "@/app/dashboards/lib/fixtures";
 import { createDashboardFromInsight } from "@/app/dashboards/lib/createDashboardFromInsight";
+import {
+  type ChartFamily,
+  CHART_FAMILY_LABEL,
+  filterInsightEntries,
+  presentFamilies,
+} from "@/app/utils/insightFilters";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
@@ -47,6 +64,22 @@ const VERIFIED_STUBS: InsightWidget[] = [
 ];
 
 type Entry = { insight: InsightWidget; verified: boolean };
+
+// De-duplicate insights by backend id (falling back to title), keeping the
+// first occurrence and dropping dataset-card widgets. Used to merge live
+// session insights with the same analyses fetched back from the API.
+function dedupe(insights: InsightWidget[]): InsightWidget[] {
+  const seen = new Set<string>();
+  const out: InsightWidget[] = [];
+  for (const i of insights) {
+    if (i.type === "dataset-card") continue;
+    const key = i.id ?? i.title;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(i);
+  }
+  return out;
+}
 
 /** Thumbnail icon per chart type. */
 const TYPE_ICON: Record<string, React.ElementType> = {
@@ -284,24 +317,38 @@ function EmptyState({ message }: { message: string }) {
 export default function AnalysesPane() {
   const router = useRouter();
   const closePane = useAnalysesPaneStore((s) => s.closePane);
-  const conversation = useInsightStore((s) => s.insights);
-  const { insights: persisted } = useUserInsights();
+  const currentThreadId = useChatStore((s) => s.currentThreadId);
+
+  // Live insights from the current session (what the chart workspace shows),
+  // this thread's persisted insights (GET /api/insights?thread_id=…), and every
+  // insight the user has generated across all threads.
+  const live = useInsightStore((s) => s.insights);
+  const { insights: threadInsights, isLoading: threadLoading } =
+    useUserInsights(currentThreadId ?? undefined);
+  const { insights: allInsights, isLoading: aiLoading } = useUserInsights();
 
   const [filter, setFilter] = useState<FilterKey>("conversation");
+  const [query, setQuery] = useState("");
+  const [family, setFamily] = useState<ChartFamily | "all">("all");
   // Show-on-map is a visual selection in this prototype (analyses render in the
   // InsightWorkspace, not as map layers yet). Tracked per analysis key.
   const [shownKeys, setShownKeys] = useState<Set<string>>(new Set());
 
-  const conversationEntries: Entry[] = conversation
-    .filter((i) => i.type !== "dataset-card")
-    .map((insight) => ({ insight, verified: false }));
+  // "In this conversation": live session insights first, then this thread's
+  // persisted insights — deduped so a freshly-generated chart that hasn't yet
+  // round-tripped through the API still appears (live wins).
+  const conversationEntries: Entry[] = dedupe([
+    ...live,
+    ...(currentThreadId ? threadInsights : []),
+  ]).map((insight) => ({ insight, verified: false }));
   const verifiedEntries: Entry[] = VERIFIED_STUBS.map((insight) => ({
     insight,
     verified: true,
   }));
-  const aiEntries: Entry[] = persisted
-    .filter((i) => i.type !== "dataset-card")
-    .map((insight) => ({ insight, verified: false }));
+  const aiEntries: Entry[] = dedupe(allInsights).map((insight) => ({
+    insight,
+    verified: false,
+  }));
 
   const entries =
     filter === "verified"
@@ -309,6 +356,19 @@ export default function AnalysesPane() {
       : filter === "ai"
         ? aiEntries
         : conversationEntries;
+  // Verified stubs are synchronous; the API-backed groups can be loading.
+  const loading =
+    filter === "ai" ? aiLoading : filter === "conversation" && threadLoading;
+
+  // Chart-type chips reflect only the families present in the active source, so
+  // we never show a "Pie" chip that would match nothing. Search + family then
+  // narrow the visible list.
+  const families = presentFamilies(entries.map((e) => e.insight));
+  // If the active source no longer contains the chosen family (e.g. after
+  // switching sources), fall back to "all" rather than showing nothing.
+  const activeFamily =
+    family !== "all" && !families.includes(family) ? "all" : family;
+  const visible = filterInsightEntries(entries, query, activeFamily);
 
   const keyOf = (e: Entry, i: number) =>
     e.insight.id ?? `${e.verified}-${e.insight.title}-${i}`;
@@ -383,7 +443,7 @@ export default function AnalysesPane() {
       </Flex>
 
       {/* Source filters */}
-      <Flex flexShrink={0} gap={2} px={4} py={3} flexWrap="wrap">
+      <Flex flexShrink={0} gap={2} px={4} pt={3} pb={2} flexWrap="wrap">
         {FILTERS.map((f) => (
           <FilterPill
             key={f.key}
@@ -395,13 +455,53 @@ export default function AnalysesPane() {
         ))}
       </Flex>
 
+      {/* Search by title / summary */}
+      <Box flexShrink={0} px={4} pb={2}>
+        <InputGroup startElement={<MagnifyingGlassIcon size={16} />}>
+          <Input
+            size="sm"
+            placeholder="Search analyses…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </InputGroup>
+      </Box>
+
+      {/* Chart-type filter — only families present in the active source */}
+      {families.length > 0 && (
+        <Flex flexShrink={0} gap={2} px={4} pb={3} flexWrap="wrap">
+          <FilterPill
+            active={activeFamily === "all"}
+            onClick={() => setFamily("all")}
+          >
+            All types
+          </FilterPill>
+          {families.map((f) => (
+            <FilterPill
+              key={f}
+              active={activeFamily === f}
+              onClick={() => setFamily(f)}
+            >
+              {CHART_FAMILY_LABEL[f]}
+            </FilterPill>
+          ))}
+        </Flex>
+      )}
+
       {/* List */}
       <Box flex="1 1 auto" minH={0} overflowY="auto" px={4} pb={3}>
-        {entries.length === 0 ? (
+        {entries.length === 0 && loading ? (
+          <Flex align="center" gap={2} color="fg.muted" fontSize="sm" py={6}>
+            <Spinner size="xs" />
+            Loading analyses…
+          </Flex>
+        ) : entries.length === 0 ? (
           <EmptyState message={emptyMessage} />
+        ) : visible.length === 0 ? (
+          <EmptyState message="No analyses match your search." />
         ) : (
           <Flex direction="column" gap={3}>
-            {entries.map((e, i) => {
+            {visible.map((e, i) => {
               const key = keyOf(e, i);
               return (
                 <AnalysisCard
