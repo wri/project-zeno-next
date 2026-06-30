@@ -156,6 +156,12 @@ const WhatsNewModal = () => {
             <Flex
               as="button"
               onClick={() => setAnnouncementOpen((v) => !v)}
+              aria-expanded={announcementOpen}
+              aria-label={
+                announcementOpen
+                  ? `Collapse announcement: ${ANNOUNCEMENT.title}`
+                  : `Expand announcement: ${ANNOUNCEMENT.title}`
+              }
               align="center"
               justify="space-between"
               px={6}

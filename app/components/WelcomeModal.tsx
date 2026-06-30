@@ -1,4 +1,4 @@
-// TODO: Remove this component when the app
+// TODO: Unused. Remove this component when the app is out of review
 import {
   Button,
   CloseButton,
