@@ -53,9 +53,15 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const basemapTheme =
     basemapOptions.find((o) => o.tileUrl === basemapTiles)?.theme ?? "light";
   const hasInsights = useInsightStore((s) => s.insights.length > 0);
-  // Also mount while the agent is processing so the workspace can show its
-  // generating skeleton on a first analysis (before any insight exists).
+  // Also mount while an insight is being generated so the workspace can show
+  // its skeleton on a first analysis (before any insight exists). isLoading
+  // covers the generative request window; isGeneratingInsight covers both
+  // flows (incl. the non-generative direct flow, which sets it in useAnalysis).
   const isLoading = useChatStore((s) => s.isLoading);
+  const isGeneratingInsight = useChatStore((s) => s.isGeneratingInsight);
+  const areas = useContextStore(
+    useShallow((s) => s.context.filter((c) => c.contextType === "area"))
+  );
   const consentStatus = useCookieStore((s) => s.consentStatus);
   const openPreferences = useCookieStore((s) => s.openPreferences);
   const onMapLoad = () => {
@@ -198,7 +204,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           gap={2}
           pointerEvents="none"
         >
-          {(hasInsights || isLoading) && <InsightWorkspace />}
+          {(hasInsights || isLoading || isGeneratingInsight) && (
+            <InsightWorkspace />
+          )}
           {/* Spacer: pushes legend to the bottom */}
           <Box flex="1 1 0" minH="0" />
           <Box

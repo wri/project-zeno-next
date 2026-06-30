@@ -8,6 +8,7 @@ import { SystemClock } from "../lib/system-clock";
 import { analysisResultToWidgets } from "../lib/analysis-result-to-widgets";
 import type { InsightSink } from "../model/insight-sink";
 import useInsightStore from "@/app/store/insightStore";
+import useChatStore from "@/app/store/chatStore";
 
 // ── Composition root ──────────────────────────────────────────────────────────
 // Wire the real application service and the real insight sink with their driven
@@ -83,15 +84,22 @@ export function useAnalysis(
       setStatus("running");
       setResult(null);
       setError(null);
+      // Drive the shared insight-workspace skeleton (the direct flow doesn't go
+      // through chatStore, which owns this flag for the generative flow).
+      useChatStore.getState().setGeneratingInsight(true);
 
       service.run(selection, controller.signal).then(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
           const widgets = analysisResultToWidgets(analysisResult);
+          // Add the chart and drop the skeleton flag together so the workspace
+          // swaps skeleton → chart in one render (no empty flash).
           sink.add(widgets);
+          useChatStore.getState().setGeneratingInsight(false);
         },
         (cause: unknown) => {
+          useChatStore.getState().setGeneratingInsight(false);
           // An AbortError means the user cancelled or the component unmounted —
           // not a failure. Silently return to idle so the UI stays clean.
           if (cause instanceof Error && cause.name === "AbortError") {
