@@ -394,7 +394,7 @@ export default function ChartWidget({
   // preserveStartEnd silently drops a mid-axis tick when (N-1) doesn't
   // divide evenly; build explicit ticks so the last data point is labeled.
   let xTicks: (string | number)[] | undefined;
-  if (isNumericXAxis && type !== "scatter" && formattedData.length > 10) {
+  if (type !== "scatter" && formattedData.length > MAX_X_TICKS) {
     const step = Math.ceil((formattedData.length - 1) / MAX_X_TICKS);
     xTicks = [];
     for (let i = 0; i < formattedData.length; i += step) {
