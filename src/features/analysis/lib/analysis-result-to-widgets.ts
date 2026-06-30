@@ -13,9 +13,23 @@ import type { InsightWidget } from "@/app/types/chat";
 export function analysisResultToWidgets(
   result: AnalysisResult
 ): InsightWidget[] {
+  const allowedTypes = new Set<InsightWidget["type"]>([
+    "line",
+    "bar",
+    "table",
+    "dataset-card",
+    "pie",
+    "stacked-bar",
+    "grouped-bar",
+    "area",
+    "scatter",
+  ]);
+
   return result.charts.map((chart) => ({
     id: chart.id,
-    type: (chart.type as InsightWidget["type"]) ?? "bar",
+    type: allowedTypes.has(chart.type as any)
+      ? (chart.type as InsightWidget["type"])
+      : "bar",
     title: chart.title,
     description: "",
     data: chart.data,
