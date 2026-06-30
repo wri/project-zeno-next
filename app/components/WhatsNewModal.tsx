@@ -1,18 +1,9 @@
 "use client";
 
-import {
-  Box,
-  Button,
-  Flex,
-  HStack,
-  Link,
-  Portal,
-  Text,
-} from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, Portal, Text } from "@chakra-ui/react";
 import Image from "next/image";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import {
-  ArrowSquareOutIcon,
   CaretDownIcon,
   CaretUpIcon,
   ShootingStarIcon,
@@ -29,16 +20,9 @@ const LEGACY_STORAGE_KEYS = [
   "whats-new-v3-dismissed",
 ];
 
-// Blog post behind the rebrand announcement (same destination as the SystemBanner,
-// tagged with a whats-new source for attribution).
-const BLOG_POST_URL =
-  "https://www.globalforestwatch.org/blog/data-and-tools/gfw-now-global-nature-watch/?utm_medium=notification&utm_source=whatsnew&utm_campaign=gnwannoucement";
-
 const ANNOUNCEMENT = {
   title: "Becoming Global Nature Watch Horizon",
   body: "The AI-driven platform preview you are exploring today is becoming Global Nature Watch Horizon. This change is part of a broader evolution underway as Global Forest Watch becomes Global Nature Watch, expanding beyond forests while integrating new technologies. Global Nature Watch Horizon will play an important role in this next chapter. Read this blog to learn more.",
-  linkLabel: "Read the blog post",
-  linkUrl: BLOG_POST_URL,
 };
 
 const FEATURE_IMAGES: Record<number, string> = {
@@ -236,20 +220,6 @@ const WhatsNewModal = () => {
                 >
                   {ANNOUNCEMENT.body}
                 </Text>
-                <Link
-                  href={ANNOUNCEMENT.linkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  display="inline-flex"
-                  alignItems="center"
-                  gap={1}
-                  color="#0049aa"
-                  fontSize="14px"
-                  fontFamily="'IBM Plex Sans', sans-serif"
-                >
-                  {ANNOUNCEMENT.linkLabel}
-                  <ArrowSquareOutIcon size={16} />
-                </Link>
               </Box>
             )}
           </Box>
