@@ -27,7 +27,7 @@ export function analysisResultToWidgets(
 
   return result.charts.map((chart) => ({
     id: chart.id,
-    type: allowedTypes.has(chart.type as any)
+    type: allowedTypes.has(chart.type as InsightWidget["type"])
       ? (chart.type as InsightWidget["type"])
       : "bar",
     title: chart.title,
