@@ -1,24 +1,35 @@
 "use client";
-import { Flex, HoverCard, Image, Portal, Text, chakra } from "@chakra-ui/react";
+import { Flex, HoverCard, Portal, Text, chakra } from "@chakra-ui/react";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+import {
+  blogSourceBranding,
+  inferBlogSource,
+} from "@/app/lib/blog-source-branding";
 import { BlogArticleCard } from "./BlogArticleCard";
-
-const WRI_FAVICON = "/wri-favicon.ico";
+import { BlogSourceIcon } from "./BlogSourceIcon";
 
 interface BlogCitationProps {
   /** Citation number from the markdown marker, e.g. "1". */
   number: string;
-  /** WRI Insights article URL the marker points to. */
+  /** Insights article URL the marker points to. */
   url: string;
   /** Card metadata from agent state `cited_articles`. */
   article?: BlogArticle;
 }
 
-function FallbackCard({ url }: { url: string }) {
+function FallbackCard({
+  url,
+  source,
+}: {
+  url: string;
+  source: ReturnType<typeof inferBlogSource>;
+}) {
+  const branding = blogSourceBranding(source);
+
   return (
     <Flex direction="column" gap="6px" p="14px 16px 16px">
       <Flex align="center" gap="6px">
-        <Image src={WRI_FAVICON} alt="" boxSize="12px" />
+        <BlogSourceIcon source={source} size={12} />
         <Text
           fontFamily="mono"
           fontSize="10px"
@@ -26,7 +37,7 @@ function FallbackCard({ url }: { url: string }) {
           textTransform="uppercase"
           color="fg.muted"
         >
-          WRI Insights
+          {branding.label}
         </Text>
       </Flex>
       <Text fontSize="xs" color="fg.muted" wordBreak="break-all">
@@ -42,6 +53,9 @@ function FallbackCard({ url }: { url: string }) {
  * or the card opens the article in a new tab.
  */
 export function BlogCitation({ number, url, article }: BlogCitationProps) {
+  const source = inferBlogSource(url, article?.source);
+  const branding = blogSourceBranding(source);
+
   return (
     <HoverCard.Root
       openDelay={200}
@@ -56,7 +70,7 @@ export function BlogCitation({ number, url, article }: BlogCitationProps) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Citation ${number}: ${article?.title ?? "WRI Insights article"}`}
+          aria-label={`Citation ${number}: ${article?.title ?? branding.label}`}
           display="inline-flex"
           alignItems="center"
           gap="2px"
@@ -81,7 +95,7 @@ export function BlogCitation({ number, url, article }: BlogCitationProps) {
             color: "primary.700",
           }}
         >
-          <Image src={WRI_FAVICON} alt="" boxSize="10px" flexShrink={0} />
+          <BlogSourceIcon source={source} size={10} />
           {number}
         </chakra.a>
       </HoverCard.Trigger>
@@ -111,7 +125,7 @@ export function BlogCitation({ number, url, article }: BlogCitationProps) {
               {article ? (
                 <BlogArticleCard article={article} href={url} variant="hover" />
               ) : (
-                <FallbackCard url={url} />
+                <FallbackCard url={url} source={source} />
               )}
             </chakra.a>
           </HoverCard.Content>

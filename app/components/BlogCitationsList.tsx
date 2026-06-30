@@ -8,7 +8,7 @@ interface BlogCitationsListProps {
 }
 
 /**
- * Compact source cards for WRI Insights articles cited in an assistant reply.
+ * Compact source cards for Insights articles cited in an assistant reply.
  */
 export function BlogCitationsList({ articles }: BlogCitationsListProps) {
   if (articles.length === 0) return null;
@@ -27,7 +27,7 @@ export function BlogCitationsList({ articles }: BlogCitationsListProps) {
       <Flex direction="column" gap="2" w="100%">
         {articles.map((article) => (
           <BlogArticleCard
-            key={article.slug}
+            key={article.id ?? article.url}
             article={article}
             variant="compact"
           />

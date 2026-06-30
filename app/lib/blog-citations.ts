@@ -1,32 +1,43 @@
 /**
- * Helpers for WRI Insights blog citations in assistant replies.
+ * Helpers for Insights blog citations in assistant replies.
  *
- * The agent cites WRI Insights articles with compact numbered markdown
- * links, e.g. `[1](https://www.wri.org/insights/some-article)`. The
- * frontend swaps each marker for a citation chip that shows the article
- * card on hover (metadata from `cited_articles` agent state updates).
+ * The agent cites articles with compact numbered markdown links, e.g.
+ * `[1](https://www.wri.org/insights/some-article)` or
+ * `[2](https://landcarbonlab.org/insights/other-article)`. The frontend
+ * swaps each marker for a citation chip that shows the article card on hover
+ * (metadata from `cited_articles` agent state updates).
  */
 
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
 import { normalizeCitedArticles } from "@/app/schemas/api/blogs/get";
 
-const WRI_INSIGHTS_URL_RE =
-  /^https?:\/\/(?:www\.)?wri\.org\/insights\/[^/?#\s]+(?:[?#]\S*)?$/;
+const INSIGHTS_HOSTS = "(?:www\\.)?(?:wri\\.org|landcarbonlab\\.org)";
 
-const INSIGHTS_SLUG_RE =
-  /^https?:\/\/(?:www\.)?wri\.org\/insights\/([^/?#\s]+)/;
+const INSIGHTS_URL_RE = new RegExp(
+  `^https?:\\/\\/${INSIGHTS_HOSTS}\\/insights\\/[^/?#\\s]+\\/?(?:[?#]\\S*)?$`
+);
+
+const INSIGHTS_SLUG_RE = new RegExp(
+  `^https?:\\/\\/${INSIGHTS_HOSTS}\\/insights\\/([^/?#\\s]+)\\/?`
+);
 
 const CITATION_LABEL_RE = /^\d{1,3}$/;
 
-const CITATION_LINK_RE =
-  /\[(\d{1,3})\]\((https?:\/\/(?:www\.)?wri\.org\/insights\/[^)\s]+)\)/g;
+const CITATION_LINK_RE = new RegExp(
+  `\\[(\\d{1,3})\\]\\((https?:\\/\\/${INSIGHTS_HOSTS}\\/insights\\/[^)\\s]+)\\)`,
+  "g"
+);
 
-/** True when a markdown link is a numbered WRI Insights citation marker. */
-export function isBlogCitation(href: string, label: string): boolean {
-  return CITATION_LABEL_RE.test(label.trim()) && WRI_INSIGHTS_URL_RE.test(href);
+function normalizeCitationUrl(url: string): string {
+  return url.split("#", 1)[0].split("?", 1)[0].replace(/\/$/, "");
 }
 
-/** Unique WRI Insights URLs cited (as `[N](url)`) in a markdown string. */
+/** True when a markdown link is a numbered Insights citation marker. */
+export function isBlogCitation(href: string, label: string): boolean {
+  return CITATION_LABEL_RE.test(label.trim()) && INSIGHTS_URL_RE.test(href);
+}
+
+/** Unique Insights URLs cited (as `[N](url)`) in a markdown string. */
 export function extractCitationUrls(markdown: string): string[] {
   const urls = new Set<string>();
   for (const match of markdown.matchAll(CITATION_LINK_RE)) {
@@ -35,10 +46,10 @@ export function extractCitationUrls(markdown: string): string[] {
   return [...urls];
 }
 
-/** Extract the article slug from a WRI Insights URL, if present. */
+/** Extract the article slug from an Insights URL, if present. */
 export function extractInsightsSlug(href: string): string | null {
   const match = href.match(INSIGHTS_SLUG_RE);
-  return match ? match[1] : null;
+  return match ? match[1].replace(/\/$/, "") : null;
 }
 
 /** Merge cited articles into a slug-keyed map. */
@@ -77,8 +88,9 @@ export function resolveCitedArticle(
   href: string,
   articlesBySlug: Record<string, BlogArticle>
 ): BlogArticle | undefined {
+  const normalizedHref = normalizeCitationUrl(href);
   for (const article of Object.values(articlesBySlug)) {
-    if (article.url === href) return article;
+    if (normalizeCitationUrl(article.url) === normalizedHref) return article;
   }
   const slug = extractInsightsSlug(href);
   if (slug) return articlesBySlug[slug];

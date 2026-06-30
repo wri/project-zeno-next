@@ -11,13 +11,28 @@ import type { BlogArticle } from "@/app/schemas/api/blogs/get";
 
 const URL_A = "https://www.wri.org/insights/amazon-fires-explained";
 const URL_B = "https://www.wri.org/insights/forest-monitoring-tools";
+const URL_LCL = "https://landcarbonlab.org/insights/carbon-monitoring";
 
 const ARTICLE_A: BlogArticle = {
+  id: undefined,
+  source: "wri",
   slug: "amazon-fires-explained",
   title: "Amazon Fires Explained",
   abstract: "An overview of Amazon fires.",
   url: URL_A,
   lastmod: "2026-01-01T00:00:00Z",
+  image: "",
+  image_alt: "",
+};
+
+const ARTICLE_LCL: BlogArticle = {
+  id: "lcl/carbon-monitoring",
+  source: "lcl",
+  slug: "carbon-monitoring",
+  title: "Carbon Monitoring",
+  abstract: "An LCL insights article.",
+  url: URL_LCL,
+  lastmod: "2026-02-01T00:00:00Z",
   image: "",
   image_alt: "",
 };
@@ -31,6 +46,13 @@ describe("isBlogCitation", () => {
     );
   });
 
+  it("accepts numbered links to landcarbonlab.org/insights articles", () => {
+    expect(isBlogCitation(URL_LCL, "1")).toBe(true);
+    expect(
+      isBlogCitation("https://www.landcarbonlab.org/insights/some-article", "2")
+    ).toBe(true);
+  });
+
   it("accepts URLs with query strings or fragments", () => {
     expect(isBlogCitation(`${URL_A}?utm_source=x`, "1")).toBe(true);
     expect(isBlogCitation(`${URL_A}#p12`, "1")).toBe(true);
@@ -42,7 +64,7 @@ describe("isBlogCitation", () => {
     expect(isBlogCitation(URL_A, "1a")).toBe(false);
   });
 
-  it("rejects URLs outside wri.org/insights", () => {
+  it("rejects URLs outside supported insights hosts", () => {
     expect(isBlogCitation("https://www.wri.org/data/some-page", "1")).toBe(
       false
     );
@@ -84,6 +106,7 @@ describe("extractInsightsSlug", () => {
     expect(extractInsightsSlug(`${URL_A}?utm_source=x`)).toBe(
       "amazon-fires-explained"
     );
+    expect(extractInsightsSlug(URL_LCL)).toBe("carbon-monitoring");
   });
 
   it("returns null for non-insights URLs", () => {
@@ -163,5 +186,14 @@ describe("getCitedArticlesInOrder", () => {
       articlesBySlug["forest-monitoring-tools"],
       ARTICLE_A,
     ]);
+  });
+
+  it("includes LCL articles when cited", () => {
+    const articles = {
+      ...articlesBySlug,
+      [ARTICLE_LCL.slug]: ARTICLE_LCL,
+    };
+    const markdown = `See [1](${URL_LCL}) for details.`;
+    expect(getCitedArticlesInOrder(markdown, articles)).toEqual([ARTICLE_LCL]);
   });
 });

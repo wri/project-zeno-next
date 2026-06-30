@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 const BlogArticleFieldsSchema = z.object({
+  id: z.string().optional(),
+  source: z.enum(["wri", "lcl"]).optional(),
   slug: z.string(),
   title: z.string(),
   abstract: z.string().optional().default(""),
@@ -12,6 +14,8 @@ const BlogArticleFieldsSchema = z.object({
 });
 
 export const BlogArticleSchema = BlogArticleFieldsSchema.transform((data) => ({
+  id: data.id,
+  source: data.source,
   slug: data.slug,
   title: data.title,
   abstract: data.abstract || data.summary || "",
