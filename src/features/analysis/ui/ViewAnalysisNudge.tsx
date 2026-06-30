@@ -1,6 +1,6 @@
 "use client";
 import { Button, Text } from "@chakra-ui/react";
-import { CheckIcon, ChartBarIcon } from "@phosphor-icons/react";
+import { CheckIcon, ChartLineIcon } from "@phosphor-icons/react";
 
 import useChatStore from "@/app/store/chatStore";
 import type { ViewAnalysisSuggestion } from "@/app/types/chat";
@@ -69,7 +69,7 @@ export default function ViewAnalysisNudge({
         {accepted ? (
           <CheckIcon weight="bold" color="var(--chakra-colors-primary-solid)" />
         ) : (
-          <ChartBarIcon
+          <ChartLineIcon
             weight="regular"
             color="var(--chakra-colors-primary-solid)"
           />
