@@ -9,6 +9,10 @@ import {
   PREVIEW_HELP_CENTER_URL,
   PREVIEW_LINKS,
 } from "@/app/constants/preview-content";
+import {
+  SYSTEM_BANNER_DISMISSED_EVENT,
+  SYSTEM_BANNER_STORAGE_KEY,
+} from "@/app/constants/system-banner";
 
 const STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 
@@ -16,10 +20,27 @@ export default function DisclaimerPanel() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (!dismissed) {
-      setVisible(true);
-    }
+    const ownDismissed = localStorage.getItem(STORAGE_KEY) === "true";
+    // The rebrand SystemBanner takes precedence: keep this preview disclaimer
+    // hidden until the banner has been dismissed so the two never stack. When
+    // the banner is dismissed it emits an event and we re-evaluate, surfacing
+    // the disclaimer if it wasn't already dismissed itself.
+    const bannerDismissed =
+      localStorage.getItem(SYSTEM_BANNER_STORAGE_KEY) === "true";
+    setVisible(!ownDismissed && bannerDismissed);
+
+    const handleBannerDismissed = () => {
+      setVisible(localStorage.getItem(STORAGE_KEY) !== "true");
+    };
+    window.addEventListener(
+      SYSTEM_BANNER_DISMISSED_EVENT,
+      handleBannerDismissed
+    );
+    return () =>
+      window.removeEventListener(
+        SYSTEM_BANNER_DISMISSED_EVENT,
+        handleBannerDismissed
+      );
   }, []);
 
   // Notify the compact chat panel once we're actually rendered so it can

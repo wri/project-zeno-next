@@ -7,128 +7,74 @@ import {
   CaretDownIcon,
   CaretUpIcon,
   ShootingStarIcon,
+  TreeIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
+// Older keys cleaned up on mount. The active key lives in PageHeader; bump both
+// in lockstep to re-surface "What's new" for everyone (see WHATS_NEW_STORAGE_KEY).
 const LEGACY_STORAGE_KEYS = [
   "whats-new-v1-dismissed",
   "whats-new-v2-dismissed",
   "whats-new-v3-dismissed",
 ];
 
+const ANNOUNCEMENT = {
+  title: "Becoming Global Nature Watch Horizon",
+  body: "The AI-driven platform preview you are exploring today is becoming Global Nature Watch Horizon. This change is part of a broader evolution underway as Global Forest Watch becomes Global Nature Watch, expanding beyond forests while integrating new technologies. Global Nature Watch Horizon will play an important role in this next chapter. Read this blog to learn more.",
+};
+
 const FEATURE_IMAGES: Record<number, string> = {
-  1: "/whats_new/smarter_agent.png",
-  2: "/whats_new/map_workspace.png",
-  3: "/whats_new/tcl_2025.png",
-  4: "/whats_new/multi_area.png",
-  5: "/whats_new/reasoning.png",
-  6: "/whats_new/provenance.png",
-  7: "/whats_new/charts.png",
+  1: "/whats_new/multi_area.png",
+  2: "/whats_new/reasoning.png",
+  3: "/whats_new/provenance.png",
+  4: "/whats_new/charts.png",
+  5: "/whats_new/smarter_agent.png",
 };
 
 interface Feature {
   step: number;
   title: string;
   description: string;
-  isNew?: boolean;
 }
-
-const PILL_SIZES = {
-  sm: {
-    borderRadius: "3px",
-    px: "5px",
-    py: "2px",
-    fontSize: "9px",
-    letterSpacing: "0.06em",
-    lineHeight: "14px",
-  },
-  md: {
-    borderRadius: "4px",
-    px: "8px",
-    py: "3px",
-    fontSize: "10px",
-    letterSpacing: "0.04em",
-    lineHeight: "16px",
-  },
-} as const;
-
-const Pill = ({
-  label,
-  color,
-  size = "md",
-}: {
-  label: string;
-  color: string;
-  size?: keyof typeof PILL_SIZES;
-}) => {
-  const s = PILL_SIZES[size];
-  return (
-    <Box bg="#dde2f5" borderRadius={s.borderRadius} px={s.px} py={s.py}>
-      <Text
-        fontFamily="'IBM Plex Mono', monospace"
-        fontSize={s.fontSize}
-        fontWeight="medium"
-        letterSpacing={s.letterSpacing}
-        color={color}
-        lineHeight={s.lineHeight}
-      >
-        {label}
-      </Text>
-    </Box>
-  );
-};
 
 const FEATURES: Feature[] = [
   {
     step: 1,
-    title: "A more collaborative assistant",
+    title: "Compare multiple areas",
     description:
-      'The assistant now works more closely with you in conversation, giving you finer control over how it acts. Ask it to zoom to a place ("zoom to Pará"), pick a dataset by topic ("tree cover loss in rainforests"), or run a full analysis ("analyze tree cover loss in Pará over the last 5 years") — and it does exactly that, nothing more.',
-    isNew: true,
+      'Select multiple areas at once and ask questions like "Which Brazilian state has the most cropland?" The assistant and the charts handle the rest.',
   },
   {
     step: 2,
-    title: "The map as a workspace",
-    description:
-      "Chat is a clean thread of what the assistant did and why; the map is where you explore. Insights now live on the map alongside a redesigned legend — both show the parameters selected, so it's always clear what's driving each result.",
-    isNew: true,
-  },
-  {
-    step: 3,
-    title: "Tree cover loss data updated to 2025",
-    description:
-      "Tree cover loss now runs through 2025, joining the full record from 2001. Narrow any query to primary forest or intact forest landscapes, as well as set a specific canopy threshold to match how you define forest.",
-    isNew: true,
-  },
-  {
-    step: 4,
-    title: "Compare multiple areas",
-    description:
-      'Select multiple areas at once and ask global-level questions like "Which country has the most natural grasslands?" The assistant and the charts handle the rest.',
-  },
-  {
-    step: 5,
     title: "See the AI's reasoning",
     description:
       "Expand the reasoning panel to see the agent's chain of thought and tool calls as they happen, step by step. More transparency, more trust.",
   },
   {
-    step: 6,
+    step: 3,
     title: "Fully reproducible analysis results",
     description:
       "Every insight comes with a full provenance trail. See exactly what data was used and how it was processed, so your results are fully reproducible.",
   },
   {
-    step: 7,
+    step: 4,
     title: "Improved charts",
     description:
       "Switch between chart and table views, export data to share with your team, and enjoy improved accessibility across all visualisations.",
+  },
+  {
+    step: 5,
+    title: "Faster and smarter",
+    description:
+      "Behind the scenes the assistant now runs on a faster, more capable model — quicker responses and sharper analysis across the board.",
   },
 ];
 
 const WhatsNewModal = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [announcementOpen, setAnnouncementOpen] = useState(true);
   const [expandedStep, setExpandedStep] = useState(1);
 
   useEffect(() => {
@@ -168,11 +114,12 @@ const WhatsNewModal = () => {
           align="center"
           justify="space-between"
           flexShrink={0}
+          borderBottom="1px solid #e0e2e5"
         >
           <HStack gap={2}>
-            <ShootingStarIcon size={16} color="#172b7a" />
+            <ShootingStarIcon size={20} color="#172b7a" />
             <Text
-              fontSize="14px"
+              fontSize="18px"
               color="#172b7a"
               fontFamily="'IBM Plex Sans', sans-serif"
               fontWeight="normal"
@@ -184,28 +131,106 @@ const WhatsNewModal = () => {
               </Box>
             </Text>
           </HStack>
-          <HStack gap={3}>
-            <Pill label="MAY 2026" color="#4a64cb" />
-            <Box
-              as="button"
-              onClick={dismiss}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              color="#131619"
-              cursor="pointer"
-              _hover={{ opacity: 0.7 }}
-              border="none"
-              bg="transparent"
-              p={0}
-            >
-              <XIcon size={20} />
-            </Box>
-          </HStack>
+          <Box
+            as="button"
+            onClick={dismiss}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            color="#131619"
+            cursor="pointer"
+            _hover={{ opacity: 0.7 }}
+            border="none"
+            bg="transparent"
+            p={0}
+            aria-label="Close what's new"
+          >
+            <XIcon size={20} />
+          </Box>
         </Flex>
 
-        {/* Accordion items */}
+        {/* Scrollable content */}
         <Box flex={1} overflowY="auto">
+          {/* Announcement — the rebrand, highlighted above the feature list */}
+          <Box bg="#f7fbd9" borderBottom="1px solid #e0e2e5">
+            <Flex
+              as="button"
+              onClick={() => setAnnouncementOpen((v) => !v)}
+              aria-expanded={announcementOpen}
+              aria-label={
+                announcementOpen
+                  ? `Collapse announcement: ${ANNOUNCEMENT.title}`
+                  : `Expand announcement: ${ANNOUNCEMENT.title}`
+              }
+              align="center"
+              justify="space-between"
+              px={6}
+              py={4}
+              w="full"
+              textAlign="left"
+              bg="transparent"
+              border="none"
+              cursor="pointer"
+            >
+              <Flex
+                direction="column"
+                gap={2}
+                align="flex-start"
+                flex={1}
+                minW={0}
+              >
+                <Box
+                  bg="#f0f9b9"
+                  border="0.5px solid #8e9954"
+                  borderRadius="4px"
+                  px="6px"
+                  py="2px"
+                >
+                  <Text
+                    fontFamily="'IBM Plex Mono', monospace"
+                    fontSize="9px"
+                    letterSpacing="0.06em"
+                    color="#23271a"
+                    lineHeight="normal"
+                  >
+                    ANNOUNCEMENT
+                  </Text>
+                </Box>
+                <HStack gap={2}>
+                  <TreeIcon size={16} weight="fill" color="#8e9954" />
+                  <Text
+                    fontSize="14px"
+                    fontWeight="semibold"
+                    color="#131619"
+                    fontFamily="'IBM Plex Sans', sans-serif"
+                    lineHeight="20px"
+                  >
+                    {ANNOUNCEMENT.title}
+                  </Text>
+                </HStack>
+              </Flex>
+              {announcementOpen ? (
+                <CaretUpIcon size={16} color="#131619" />
+              ) : (
+                <CaretDownIcon size={16} color="#131619" />
+              )}
+            </Flex>
+            {announcementOpen && (
+              <Box px={6} pb={4}>
+                <Text
+                  fontSize="14px"
+                  color="#3a4048"
+                  fontFamily="'IBM Plex Sans', sans-serif"
+                  lineHeight={1.5}
+                  mb={3}
+                >
+                  {ANNOUNCEMENT.body}
+                </Text>
+              </Box>
+            )}
+          </Box>
+
+          {/* Feature accordion */}
           {FEATURES.map((feature) => {
             const isExpanded = expandedStep === feature.step;
             const image = FEATURE_IMAGES[feature.step];
@@ -256,9 +281,6 @@ const WhatsNewModal = () => {
                     >
                       {feature.title}
                     </Text>
-                    {feature.isNew && (
-                      <Pill label="NEW" color="#0049aa" size="sm" />
-                    )}
                   </HStack>
                   {isExpanded ? (
                     <CaretUpIcon size={16} color="#131619" />
@@ -322,7 +344,7 @@ const WhatsNewModal = () => {
               onClick={dismiss}
               _hover={{ bg: "#003a88" }}
             >
-              {"Start exploring!"}
+              {"Got it! Let's explore!"}
             </Button>
           </Tooltip>
         </Box>
