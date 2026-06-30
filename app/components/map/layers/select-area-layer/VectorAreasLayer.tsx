@@ -219,9 +219,12 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
               if (analysisEnabled) {
                 selectArea(areaSelection);
+              } else {
+                useSelectionStore.getState().clear();
               }
             } else {
               useMapStore.getState().clearAnalysis();
+              useSelectionStore.getState().clear();
             }
           }
         }
