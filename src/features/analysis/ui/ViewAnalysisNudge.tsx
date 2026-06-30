@@ -74,7 +74,9 @@ export default function ViewAnalysisNudge({
             color="var(--chakra-colors-primary-solid)"
           />
         )}
-        {running ? "Analyzing…" : label}
+        {running
+          ? `Loading chart data for "${suggestion.area.name}"...`
+          : label}
       </Button>
       {status === "error" && error && (
         <Text color="red.500" fontSize="xs" mt={1}>
