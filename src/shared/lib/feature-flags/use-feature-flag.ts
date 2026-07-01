@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { isFeatureEnabled } from "@/app/lib/feature-flags";
+import { isFeatureEnabled } from "./feature-flags";
 
 export function useFeatureFlag(flag: string): boolean {
   const [enabled] = useState(() =>

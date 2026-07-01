@@ -12,6 +12,7 @@ import {
   ToolStepData,
   SuggestedDataset,
   AnalyseSuggestion,
+  ViewAnalysisSuggestion,
 } from "@/app/types/chat";
 import useMapStore from "./mapStore";
 import {
@@ -68,6 +69,8 @@ interface ChatActions {
   ) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   acceptAnalyseNudge: (messageId: string) => void;
+  upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
+  acceptViewAnalysisNudge: (messageId: string) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -376,6 +379,45 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           ? {
               ...m,
               analyseSuggestion: { ...m.analyseSuggestion, accepted: true },
+            }
+          : m
+      ),
+    }));
+  },
+
+  // Mirrors upsertAnalyseNudge for the direct-analysis "view" nudge: only one
+  // pending view-analysis-nudge is kept at a time; accepted ones persist as a
+  // record of the analyses the user ran.
+  upsertViewAnalysisNudge: (suggestion) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "view-analysis-nudge",
+      message: "",
+      viewAnalysisSuggestion: suggestion,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter(
+          (m) =>
+            m.type !== "view-analysis-nudge" ||
+            m.viewAnalysisSuggestion?.accepted
+        ),
+        newMessage,
+      ],
+    }));
+  },
+
+  acceptViewAnalysisNudge: (messageId) => {
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === messageId && m.viewAnalysisSuggestion
+          ? {
+              ...m,
+              viewAnalysisSuggestion: {
+                ...m.viewAnalysisSuggestion,
+                accepted: true,
+              },
             }
           : m
       ),

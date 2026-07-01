@@ -35,6 +35,7 @@ import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
 import AnalyseNudge from "./AnalyseNudge";
+import { ViewAnalysisNudge } from "@/src/features/analysis";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -213,11 +214,27 @@ function MessageBubble({
   }
 
   if (message.type === "analyse-nudge" && message.analyseSuggestion) {
+    // An accepted nudge is a past choice — leave a larger gap below it so a new
+    // nudge block (for another area) reads as separate from it.
     return (
-      <Box my={2}>
+      <Box mt={2} mb={message.analyseSuggestion.accepted ? 6 : 2}>
         <AnalyseNudge
           messageId={message.id}
           suggestion={message.analyseSuggestion}
+        />
+      </Box>
+    );
+  }
+
+  if (
+    message.type === "view-analysis-nudge" &&
+    message.viewAnalysisSuggestion
+  ) {
+    return (
+      <Box mt={2} mb={message.viewAnalysisSuggestion.accepted ? 6 : 2}>
+        <ViewAnalysisNudge
+          messageId={message.id}
+          suggestion={message.viewAnalysisSuggestion}
         />
       </Box>
     );

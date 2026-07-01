@@ -22,7 +22,8 @@ function getLoginUrl(redirectTo: string): string {
  */
 export function useAuthGuard(): boolean {
   const { authLoaded, isAuthenticated, hasProfile } = useAuthStore();
-  const pathname = usePathname();
+  // usePathname() is typed `string | null`; treat null as "" (matches no route).
+  const pathname = usePathname() ?? "";
 
   useEffect(() => {
     if (!authLoaded) return;

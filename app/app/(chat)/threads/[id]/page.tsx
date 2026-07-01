@@ -6,7 +6,7 @@ import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 
 export default function SingleThread() {
-  const { id } = useParams();
+  const id = useParams<{ id: string }>()?.id;
   const {
     reset: resetChatStore,
     fetchThread,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
 import {
@@ -25,6 +26,11 @@ import {
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
+// Direct-analysis "View Analysis" nudge — kept wired behind ?ff=analysis
+// alongside the live analyse nudge. toAreaSelection (areaHelpers) returns the
+// same shape both consumers need, so it's reused for both.
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
+import { useSelectionStore } from "@/src/features/analysis";
 
 interface SourceLayerProps {
   layerId: LayerId;
@@ -39,10 +45,18 @@ interface Metadata {
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
     useMapStore();
-
+  const selectArea = useSelectionStore((state) => state.select);
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
+
+  // Evaluate the flag once at render time so event handlers don't read
+  // window.location directly and the value is stable within a render cycle.
+  const searchParams = useSearchParams();
+  const analysisEnabled = isFeatureEnabled(
+    new URLSearchParams(searchParams?.toString()),
+    "analysis"
+  );
 
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
@@ -189,18 +203,28 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 .forEach((l) => removeLayer(l.id));
             }
 
-            // AnalysisCtaTrigger reacts to this selection and surfaces the
-            // analyse nudge once a dataset is also active.
+            // GADM-only analysis selection. Both paths consume the same
+            // normalized selection:
+            //  - live: AnalysisCtaTrigger reacts to setAnalysis and surfaces
+            //    the analyse nudge once a dataset is also active.
+            //  - direct-analysis "View Analysis" nudge: the selection store,
+            //    gated behind ?ff=analysis so it stays additive for now.
             if (layerId === "GADM" && metadata) {
-              setAnalysis(
-                toAreaSelection(
-                  layerId,
-                  (featureProps ?? {}) as Record<string, unknown>,
-                  metadata
-                )
+              const areaSelection = toAreaSelection(
+                layerId,
+                (featureProps ?? {}) as Record<string, unknown>,
+                metadata
               );
+              setAnalysis(areaSelection);
+
+              if (analysisEnabled) {
+                selectArea(areaSelection);
+              } else {
+                useSelectionStore.getState().clear();
+              }
             } else {
               useMapStore.getState().clearAnalysis();
+              useSelectionStore.getState().clear();
             }
           }
         }
@@ -237,6 +261,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     layerId,
     url,
     setAnalysis,
+    selectArea,
+    analysisEnabled,
   ]);
 
   return (
