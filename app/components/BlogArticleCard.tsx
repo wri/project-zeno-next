@@ -63,6 +63,46 @@ function ArticleImage({
   );
 }
 
+/**
+ * Brand-tinted badge naming the article's source (WRI gold / LCL green).
+ * Matches the Figma "source-pill" component.
+ */
+export function SourcePill({
+  source,
+}: {
+  source: ReturnType<typeof inferBlogSource>;
+}) {
+  const branding = blogSourceBranding(source);
+
+  return (
+    <Flex
+      align="center"
+      justify="center"
+      gap="4px"
+      px="4px"
+      py="2px"
+      borderRadius="4px"
+      border="1px solid"
+      bg={branding.pillBg}
+      borderColor={branding.pillBorder}
+      flexShrink={0}
+    >
+      <BlogSourceIcon source={source} size={16} />
+      <Text
+        fontFamily="mono"
+        fontSize="10px"
+        lineHeight="1"
+        letterSpacing="0.9px"
+        textTransform="uppercase"
+        whiteSpace="nowrap"
+        color={branding.pillText}
+      >
+        {branding.label}
+      </Text>
+    </Flex>
+  );
+}
+
 function SourceLabel({
   date,
   source,
@@ -70,22 +110,19 @@ function SourceLabel({
   date: string;
   source: ReturnType<typeof inferBlogSource>;
 }) {
-  const branding = blogSourceBranding(source);
-
   return (
-    <Flex align="center" gap="6px">
-      <BlogSourceIcon source={source} size={12} />
-      <Text
-        fontFamily="mono"
-        fontSize="10px"
-        letterSpacing="0.5px"
-        textTransform="uppercase"
-        color="fg.muted"
-      >
-        {branding.label}
-      </Text>
+    <Flex align="center" justify="space-between" gap="8px" w="100%">
+      <SourcePill source={source} />
       {date && (
-        <Text ml="auto" fontFamily="mono" fontSize="10px" color="fg.subtle">
+        <Text
+          fontFamily="mono"
+          fontSize="10px"
+          letterSpacing="0.5px"
+          lineHeight="16px"
+          whiteSpace="nowrap"
+          flexShrink={0}
+          color="fg.subtle"
+        >
           {date}
         </Text>
       )}
@@ -158,32 +195,37 @@ export function BlogArticleCard({
 
   return (
     <Box>
-      <ArticleImage article={article} height="168px" source={source} />
-      <Flex direction="column" gap="8px" p="14px 16px 16px">
-        <SourceLabel date={date} source={source} />
-        <Text
-          fontSize="md"
-          fontWeight="600"
-          lineHeight="1.35"
-          lineClamp={3}
-          color="fg"
-        >
-          {article.title}
-        </Text>
-        {summary && (
-          <Text fontSize="sm" color="fg.muted" lineHeight="1.55" lineClamp={4}>
-            {summary}
-          </Text>
-        )}
-        <Flex
-          align="center"
-          gap="4px"
-          mt="2px"
-          color="primary.solid"
-          fontSize="xs"
-          fontWeight="500"
-        >
-          Read on {branding.readOn} <ArrowSquareOutIcon size={12} />
+      <ArticleImage article={article} height="80px" source={source} />
+      <Flex direction="column" gap="12px" p="16px">
+        <Flex direction="column" gap="16px">
+          <SourceLabel date={date} source={source} />
+          <Flex direction="column" gap="4px">
+            <Text
+              fontSize="sm"
+              fontWeight="600"
+              lineHeight="20px"
+              lineClamp={3}
+              color="fg"
+            >
+              {article.title}
+            </Text>
+            {summary && (
+              <Text
+                fontSize="sm"
+                color="fg.muted"
+                lineHeight="20px"
+                lineClamp={3}
+              >
+                {summary}
+              </Text>
+            )}
+          </Flex>
+        </Flex>
+        <Flex direction="column" gap="4px">
+          <Box h="1px" w="100%" bg="border.emphasized" />
+          <Flex align="center" gap="4px" color="fg.link" fontSize="xs">
+            Read on {branding.readOn} <ArrowSquareOutIcon size={16} />
+          </Flex>
         </Flex>
       </Flex>
     </Box>

@@ -14,6 +14,10 @@ export function blogSourceBranding(source: BlogSource) {
       readOn: "landcarbonlab.org",
       favicon: "/LCL-logo.svg",
       useLclLogo: true,
+      // Brand-tinted source pill (green), mirroring the WRI gold treatment.
+      pillBg: "#EDF7F1",
+      pillBorder: "#B9E0CB",
+      pillText: "#116A3E",
     };
   }
   return {
@@ -22,5 +26,9 @@ export function blogSourceBranding(source: BlogSource) {
     readOn: "wri.org",
     favicon: "/wri-favicon.ico",
     useLclLogo: false,
+    // Source pill colors from the Figma "source-pill" component (WRI gold).
+    pillBg: "#FFFBF2",
+    pillBorder: "#FADFA7",
+    pillText: "#855B00",
   };
 }

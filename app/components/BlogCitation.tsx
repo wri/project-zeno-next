@@ -5,7 +5,7 @@ import {
   blogSourceBranding,
   inferBlogSource,
 } from "@/app/lib/blog-source-branding";
-import { BlogArticleCard } from "./BlogArticleCard";
+import { BlogArticleCard, SourcePill } from "./BlogArticleCard";
 import { BlogSourceIcon } from "./BlogSourceIcon";
 
 interface BlogCitationProps {
@@ -24,22 +24,9 @@ function FallbackCard({
   url: string;
   source: ReturnType<typeof inferBlogSource>;
 }) {
-  const branding = blogSourceBranding(source);
-
   return (
-    <Flex direction="column" gap="6px" p="14px 16px 16px">
-      <Flex align="center" gap="6px">
-        <BlogSourceIcon source={source} size={12} />
-        <Text
-          fontFamily="mono"
-          fontSize="10px"
-          letterSpacing="0.5px"
-          textTransform="uppercase"
-          color="fg.muted"
-        >
-          {branding.label}
-        </Text>
-      </Flex>
+    <Flex direction="column" gap="12px" p="16px">
+      <SourcePill source={source} />
       <Text fontSize="xs" color="fg.muted" wordBreak="break-all">
         {url}
       </Text>
@@ -108,7 +95,9 @@ export function BlogCitation({ number, url, article }: BlogCitationProps) {
             overflow="hidden"
             borderRadius="lg"
             bg="bg.panel"
-            boxShadow="0px 12px 32px rgba(0, 0, 0, 0.18)"
+            border="1px solid"
+            borderColor="border.emphasized"
+            boxShadow="0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 2px 4px -2px rgba(0, 0, 0, 0.1)"
           >
             <HoverCard.Arrow>
               <HoverCard.ArrowTip />
