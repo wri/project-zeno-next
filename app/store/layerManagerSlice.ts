@@ -72,6 +72,12 @@ export interface LayerManagerSlice {
 
   addLayer: (layer: Layer) => void;
   removeLayer: (id: string) => void;
+  /**
+   * Remove a dataset's layers (main + context sub-layers). Pass a `datasetId`
+   * to remove just that dataset, or omit it to clear all dataset layers
+   * (single-select "replace" behaviour). Non-dataset layers are untouched.
+   */
+  removeDatasetLayers: (datasetId?: number) => void;
   setLayerVisibility: (id: string, visible: boolean) => void;
   setLayerOpacity: (id: string, opacity: number) => void;
   reorderLayers: (ids: string[]) => void;
@@ -99,6 +105,14 @@ export const createLayerManagerSlice: StateCreator<
     removeLayer: (id) => {
       set((state) => ({
         layers: state.layers.filter((l) => l.id !== id),
+      }));
+    },
+    removeDatasetLayers: (datasetId) => {
+      set((state) => ({
+        layers: state.layers.filter((l) => {
+          if (typeof l.datasetId !== "number") return true;
+          return datasetId === undefined ? false : l.datasetId !== datasetId;
+        }),
       }));
     },
     setLayerVisibility: (id, visible) => {

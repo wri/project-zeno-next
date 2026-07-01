@@ -40,8 +40,7 @@ import {
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import type { DatasetInfo } from "@/app/types/chat";
-import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
-import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
+import { datasetCardLayers } from "@/app/utils/datasetCardLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 
 import { CatalogCard } from "./CatalogCard";
@@ -231,16 +230,15 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
     onClose: onInfoClose,
   } = useDisclosure();
 
-  // The visible dataset layers ARE the scope — the layer manager is the source
+  // The visible dataset layer IS the scope — the layer manager is the source
   // of truth for "is this dataset active?".
-  const datasetLayers = useMapStore(
-    useShallow((s) => s.layers.filter((l) => l.datasetId === card.dataset_id))
-  );
-  const layer = datasetLayers.find(
-    (l) => l.id === `dataset-${card.dataset_id}`
+  const layer = useMapStore(
+    useShallow((s) =>
+      s.layers.find((l) => l.id === `dataset-${card.dataset_id}`)
+    )
   );
   const addLayer = useMapStore((s) => s.addLayer);
-  const removeLayer = useMapStore((s) => s.removeLayer);
+  const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
   const setLayerOpacity = useMapStore((s) => s.setLayerOpacity);
 
@@ -250,11 +248,10 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
 
   function handleToggle(checked: boolean) {
     if (!checked) {
-      // Remove the dataset layer and any context sub-layers.
-      datasetLayers.forEach((l) => removeLayer(l.id));
+      removeDatasetLayers(card.dataset_id);
       return;
     }
-    buildDatasetLayers(getLayerContextFromDatasetCard(card)).forEach(addLayer);
+    datasetCardLayers(card).forEach(addLayer);
   }
 
   const dataset = card as unknown as DatasetInfo;

@@ -1,5 +1,9 @@
 import type { DatasetCardConfig } from "@/app/constants/datasets";
-import type { DatasetLayerSpec } from "./datasetLayerContext";
+import type { Layer } from "@/app/store/layerManagerSlice";
+import {
+  buildDatasetLayers,
+  type DatasetLayerSpec,
+} from "./datasetLayerContext";
 
 export function getLayerContextFromDatasetCard(
   card: DatasetCardConfig
@@ -24,4 +28,9 @@ export function getLayerContextFromDatasetCard(
         }
       : {}),
   };
+}
+
+/** Build the managed map layers (main + optional sub-layer) for a dataset card. */
+export function datasetCardLayers(card: DatasetCardConfig): Layer[] {
+  return buildDatasetLayers(getLayerContextFromDatasetCard(card));
 }

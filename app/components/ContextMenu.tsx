@@ -35,8 +35,7 @@ import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import type { Feature, MultiPolygon } from "geojson";
-import { getLayerContextFromDatasetCard } from "../utils/datasetCardLayerContext";
-import { buildDatasetLayers } from "../utils/datasetLayerContext";
+import { datasetCardLayers } from "../utils/datasetCardLayerContext";
 
 const LAYER_CARDS = DATASET_CARDS;
 
@@ -87,20 +86,16 @@ function LayerCardList({
 }: {
   cards: (DatasetCardConfig & { img?: string })[];
 }) {
-  const { layers, addLayer, removeLayer } = useMapStore();
+  const { layers, addLayer, removeDatasetLayers } = useMapStore();
 
   function handleToggle(card: DatasetCardConfig & { img?: string }) {
     const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
     // Single-dataset selection: clear any existing dataset layers, then add the
     // clicked one — unless it was already selected, in which case this is a
     // toggle-off. The visible layer IS the scope (no separate context item).
-    layers
-      .filter((l) => typeof l.datasetId === "number")
-      .forEach((l) => removeLayer(l.id));
+    removeDatasetLayers();
     if (!isSelected) {
-      buildDatasetLayers(getLayerContextFromDatasetCard(card)).forEach(
-        addLayer
-      );
+      datasetCardLayers(card).forEach(addLayer);
     }
   }
 

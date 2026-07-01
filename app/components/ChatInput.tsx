@@ -58,7 +58,7 @@ export default function ChatInput({
     dateRange,
     clearDateRange,
   } = useChatStore();
-  const { layers, removeLayer } = useMapStore();
+  const { layers, removeLayer, removeDatasetLayers } = useMapStore();
   const {
     dataCatalogOpen,
     toggleDataCatalog,
@@ -73,13 +73,6 @@ export default function ChatInput({
     (l) => typeof l.datasetId === "number" && !l.parentLayerId
   );
   const areaPillLayers = layers.filter((l) => l.visible && isAreaLayer(l));
-
-  // Removing a dataset pill removes the layer and any context sub-layers.
-  const removeDatasetLayer = (datasetId: number) => {
-    layers
-      .filter((l) => l.datasetId === datasetId)
-      .forEach((l) => removeLayer(l.id));
-  };
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -187,7 +180,7 @@ export default function ChatInput({
               key={l.id}
               contextType="layer"
               content={l.name}
-              onClose={() => removeDatasetLayer(l.datasetId!)}
+              onClose={() => removeDatasetLayers(l.datasetId!)}
               closeable
             />
           ))}
