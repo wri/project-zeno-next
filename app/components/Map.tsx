@@ -59,9 +59,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   // flows (incl. the non-generative direct flow, which sets it in useAnalysis).
   const isLoading = useChatStore((s) => s.isLoading);
   const isGeneratingInsight = useChatStore((s) => s.isGeneratingInsight);
-  const areas = useContextStore(
-    useShallow((s) => s.context.filter((c) => c.contextType === "area"))
-  );
   const consentStatus = useCookieStore((s) => s.consentStatus);
   const openPreferences = useCookieStore((s) => s.openPreferences);
   const onMapLoad = () => {

@@ -1,7 +1,8 @@
 "use client";
 import { useEffect } from "react";
 
-import useContextStore from "@/app/store/contextStore";
+import useChatStore from "@/app/store/chatStore";
+import useMapStore from "@/app/store/mapStore";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
 import useSelectionStore from "../model/selection-store";
@@ -19,12 +20,15 @@ import { showViewAnalysisNudge } from "./show-view-analysis-nudge";
 export function ViewAnalysisTrigger() {
   const enabled = useFeatureFlag("analysis");
   const selection = useSelectionStore((state) => state.selection);
-  const context = useContextStore((state) => state.context);
+  const datasetLayer = useMapStore((state) =>
+    state.layers.find((l) => typeof l.datasetId === "number")
+  );
+  const dateRange = useChatStore((state) => state.dateRange);
 
   useEffect(() => {
     if (!enabled || !selection) return;
     showViewAnalysisNudge(selection);
-  }, [enabled, selection, context]);
+  }, [enabled, selection, datasetLayer, dateRange]);
 
   return null;
 }

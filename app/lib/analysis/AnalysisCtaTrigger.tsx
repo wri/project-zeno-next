@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import useMapStore from "@/app/store/mapStore";
-import { useFeatureFlag } from "@/app/hooks/useFeatureFlag";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import { showAnalysisCta } from "./showAnalysisCta";
 
 /**

@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 
 import useChatStore from "@/app/store/chatStore";
-import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
 
 import type { AreaSelection } from "../model/area-selection";
@@ -26,26 +26,24 @@ const DEFAULT_END_DATE = "2025-12-31";
 export function showViewAnalysisNudge(selection: AreaSelection): boolean {
   if (!selection.name) return false;
 
-  const context = useContextStore.getState().context;
+  const datasetLayer = useMapStore
+    .getState()
+    .layers.find((l) => typeof l.datasetId === "number");
+  if (!datasetLayer) return false;
 
-  const datasetContext = context.find(
-    (ctx) => ctx.contextType === "layer" && typeof ctx.datasetId === "number"
-  );
-  if (!datasetContext) return false;
-
-  const datasetId = datasetContext.datasetId!;
+  const datasetId = datasetLayer.datasetId!;
   // Prefer the canonical catalogue name — it matches what sendMessage puts in
   // ui_context.dataset_selected — and fall back to the layer's display name.
   const datasetName =
-    DATASET_BY_ID[datasetId]?.dataset_name ?? datasetContext.layerName;
+    DATASET_BY_ID[datasetId]?.dataset_name ?? datasetLayer.name;
   if (!datasetName) return false;
 
-  const dateContext = context.find((ctx) => ctx.contextType === "date");
-  const startDate = dateContext?.dateRange
-    ? format(dateContext.dateRange.start, "yyyy-MM-dd")
+  const dateRange = useChatStore.getState().dateRange;
+  const startDate = dateRange
+    ? format(dateRange.start, "yyyy-MM-dd")
     : DEFAULT_START_DATE;
-  const endDate = dateContext?.dateRange
-    ? format(dateContext.dateRange.end, "yyyy-MM-dd")
+  const endDate = dateRange
+    ? format(dateRange.end, "yyyy-MM-dd")
     : DEFAULT_END_DATE;
 
   // Idempotent for the live pending nudge: the reactive trigger re-runs on
