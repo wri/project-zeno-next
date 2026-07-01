@@ -27,8 +27,9 @@ import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { apiFetch } from "@/app/lib/api-client";
+import { toaster } from "@/app/components/ui/toaster";
 
-type ProfileConfig = {
+export type ProfileConfig = {
   sectors: Record<string, string>;
   sector_roles: Record<string, Record<string, string>>;
   countries: Record<string, string>;
@@ -56,11 +57,19 @@ type ProfileFormState = {
 
 type ValueChangeDetails = { value: string[] };
 
-export default function OnboardingForm() {
+export default function OnboardingForm({
+  // Debug-only: when provided, the form renders from this mock config instead
+  // of fetching from the API, and submit is disabled. See /onboarding-debug.
+  previewConfig,
+}: {
+  previewConfig?: ProfileConfig;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [config, setConfig] = useState<ProfileConfig | null>(null);
+  const [config, setConfig] = useState<ProfileConfig | null>(
+    previewConfig ?? null
+  );
   const fieldRequired = isOnboardingFieldRequired;
   const schema = useMemo(() => getOnboardingFormSchema(), []);
   const [form, setForm] = useState<ProfileFormState>({
@@ -82,6 +91,11 @@ export default function OnboardingForm() {
 
   // Prefill email if available from auth
   useEffect(() => {
+    // Offline preview: seed a sample email instead of calling the API.
+    if (previewConfig) {
+      setForm((prev) => ({ ...prev, email: "you@example.org" }));
+      return;
+    }
     const fetchMe = async () => {
       try {
         const res = await apiFetch("/api/auth/me");
@@ -97,12 +111,13 @@ export default function OnboardingForm() {
       }
     };
     fetchMe();
-  }, []);
+  }, [previewConfig]);
 
   // Opt-in fields are optional and not prefilled
 
   // Fetch dropdown configuration
   useEffect(() => {
+    if (previewConfig) return; // config is already seeded from the prop
     const fetchConfig = async () => {
       try {
         const res = await apiFetch("/api/profile/config");
@@ -115,7 +130,7 @@ export default function OnboardingForm() {
       }
     };
     fetchConfig();
-  }, []);
+  }, [previewConfig]);
 
   const sectors = useMemo(() => {
     const items = config
@@ -179,6 +194,16 @@ export default function OnboardingForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (previewConfig) {
+      toaster.create({
+        title: "Offline preview",
+        description: "Submitting is disabled in the offline preview.",
+        type: "info",
+        duration: 3000,
+        closable: true,
+      });
+      return;
+    }
     if (!isValid || isSubmitting) return;
     setIsSubmitting(true);
     try {
