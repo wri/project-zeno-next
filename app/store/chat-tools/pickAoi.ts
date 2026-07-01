@@ -15,8 +15,24 @@ import { selectLayerOptions } from "@/app/types/map";
 const GLOBAL_LAYER_ID = "Global Layer";
 const GLOBAL_LAYER_NAME = "Global Layer";
 
-function isGlobalQuery(name: string): boolean {
-  return name.toLowerCase() === "all countries";
+/**
+ * A global query selects every country on the planet, which the backend renders
+ * as a single GADM vector-tile layer instead of ~250 per-country GeoJSON fetches.
+ * The backend's canonical selection name is "All countries in the world" (see the
+ * DebugToastsPanel fixture); the bare "all countries" is accepted for resilience.
+ *
+ * Matching is exact (not substring) on purpose: a sub-global selection such as
+ * "All countries in the EU" must NOT be treated as the whole world — doing so
+ * would swap its real geometry for the global GADM layer. Previously this checked
+ * `=== "all countries"`, which never matched the canonical name and caused the FE
+ * to fetch and render all ~250 country polygons — an out-of-memory renderer crash.
+ */
+export function isGlobalQuery(name: string): boolean {
+  const normalized = name.toLowerCase().trim();
+  return (
+    normalized === "all countries" ||
+    normalized === "all countries in the world"
+  );
 }
 
 /**

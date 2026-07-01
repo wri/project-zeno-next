@@ -8,20 +8,27 @@ import {
   IconButton,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
+import CatalogPanel from "@/app/components/CatalogPanel";
+import AreasPanel from "@/app/components/AreasPanel";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
+import SystemBanner from "@/app/components/SystemBanner";
 import WhatsNewModal from "@/app/components/WhatsNewModal";
-import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
-import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
+import MapAreaFeedback from "@/app/components/MapAreaFeedback";
+import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
+import {
+  CATALOG_COLUMN_Z_INDEX,
+  MAP_FEEDBACK_Z_INDEX,
+} from "@/app/explorationLayout";
 
 export default function DashboardLayout({
   children,
@@ -39,14 +46,6 @@ export default function DashboardLayout({
     setMobileHeight("min(100dvh, 100vh)");
   }, []);
 
-  function DebugToastsMount() {
-    const params = useSearchParams();
-    const debugEnabled =
-      process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
-      params.get("debug") === "1";
-    return <DebugToastsPanel enabled={debugEnabled} />;
-  }
-
   const DesktopLayout = (
     <Box
       position="relative"
@@ -56,6 +55,30 @@ export default function DashboardLayout({
       display={{ base: "none", md: "block" }}
     >
       <Map />
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        left={0}
+        zIndex={CATALOG_COLUMN_Z_INDEX}
+        pointerEvents="none"
+        display={{ base: "none", md: "block" }}
+      >
+        <CatalogPanel />
+        <AreasPanel />
+      </Box>
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        left={0}
+        right={0}
+        zIndex={MAP_FEEDBACK_Z_INDEX}
+        pointerEvents="none"
+        display={{ base: "none", md: "block" }}
+      >
+        <MapAreaFeedback />
+      </Box>
       <Box
         position="absolute"
         top={0}
@@ -163,13 +186,21 @@ export default function DashboardLayout({
     >
       <UploadAreaDialog />
       <WhatsNewModal />
+      <AnalysisCtaTrigger />
 
-      {!isMobile && <PageHeader />}
+      {!isMobile && (
+        <Box>
+          <PageHeader />
+          {/* Rebrand announcement sits full-width directly below the header and
+              supersedes the preview DisclaimerPanel while it is showing.
+              Desktop-only by design: it lives in the desktop header cell and
+              replaces the desktop-only DisclaimerPanel, leaving the mobile
+              bottom-sheet layout untouched. */}
+          <SystemBanner dismissible />
+        </Box>
+      )}
       {isMobile ? MobileLayout : DesktopLayout}
 
-      <Suspense fallback={null}>
-        <DebugToastsMount />
-      </Suspense>
       {children}
     </Grid>
   );

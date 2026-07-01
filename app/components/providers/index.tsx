@@ -7,7 +7,6 @@ import { jwtDecode } from "jwt-decode";
 
 import theme from "@/app/theme";
 import { Toaster } from "@/app/components/ui/toaster";
-import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import useAuthStore from "@/app/store/authStore";
 import { UserTypeEnum, type UserType } from "@/app/schemas/api/admin/users/get";
 import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
@@ -107,7 +106,6 @@ function Providers({ children }: { children: React.ReactNode }) {
       <ChakraProvider value={theme}>
         {children}
         <Toaster />
-        <DebugToastsPanel />
         <AuthBootstrapper />
       </ChakraProvider>
     </QueryClientProvider>

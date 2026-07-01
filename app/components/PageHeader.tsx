@@ -13,7 +13,6 @@ import {
   Link as ChakraLink,
   Text,
 } from "@chakra-ui/react";
-import LclLogo from "./LclLogo";
 import {
   CaretDownIcon,
   ClockCounterClockwiseIcon,
@@ -39,7 +38,7 @@ import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
-const WHATS_NEW_STORAGE_KEY = "whats-new-v3-dismissed";
+const WHATS_NEW_STORAGE_KEY = "whats-new-v4-dismissed";
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
@@ -117,22 +116,23 @@ function PageHeader() {
           <ChakraLink
             as={Link}
             href="/"
-            display="flex"
             transition="opacity 0.24s ease"
             _hover={{ opacity: 0.8 }}
             _focusVisible={focusRing}
           >
-            <LclLogo
-              width={16}
-              avatarOnly
-              fill={isPrototype ? "#1f2937" : "#131E47"}
-            />
             <Heading
               as="h1"
               size="sm"
               color={isPrototype ? "#1f2937" : "#131E47"}
             >
-              Global Nature Watch
+              Global Nature Watch{" "}
+              <Text
+                as="span"
+                fontWeight="normal"
+                color={isPrototype ? "#1f2937" : "neutral.600"}
+              >
+                Horizon
+              </Text>
             </Heading>
           </ChakraLink>
           {isPrototype ? (

@@ -5,7 +5,6 @@ import {
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
-import LclLogo from "../../../components/LclLogo";
 
 export default function FooterSection() {
   return (
@@ -28,13 +27,15 @@ export default function FooterSection() {
           flexDir={{ base: "column", md: "row" }}
         >
           <Flex alignItems="center" gap={4}>
-            <LclLogo width={32} avatarOnly />
             <Text
               fontSize={{ base: "3xl", md: "5xl" }}
               fontWeight="semibold"
               lineHeight="1"
             >
-              Global Nature Watch
+              Global Nature Watch{" "}
+              <Text as="span" fontWeight="normal">
+                Horizon
+              </Text>
             </Text>
           </Flex>
         </Flex>
@@ -113,7 +114,7 @@ export default function FooterSection() {
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
-              href="https://www.linkedin.com/showcase/land-carbon-lab/"
+              href="https://www.linkedin.com/showcase/landcarbonlab/"
               target="_blank"
               rel="noopener noreferrer"
             >

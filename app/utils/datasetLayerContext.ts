@@ -51,11 +51,26 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
         ? { canopy_cover: defaultCanopyCover }
         : undefined;
 
+  const isVector =
+    ctxMeta?.type === "vector" ||
+    (!!ctxMeta?.source_layer && ctxMeta.source_layer.length > 0);
+
   return {
     contextLayer: ctxMeta?.tile_url
       ? {
           name: ctxMeta.name,
-          tileUrl: patchPrimaryForestTileUrl(ctxMeta.tile_url),
+          // TODO: the pf:// protocol wrapper is a client-side hack to composite
+          // alpha on Primary Forest PNGs whose source tiles have a black
+          // background. This should either be generalised into a declarative
+          // per-layer flag (e.g. `requiresAlphaComposite: true` on
+          // ContextLayerMetadata) or eliminated by serving pre-composited tiles
+          // from the backend. Until then, only raster URLs go through this patch.
+          tileUrl: isVector
+            ? ctxMeta.tile_url
+            : patchPrimaryForestTileUrl(ctxMeta.tile_url),
+          sourceLayer: isVector
+            ? (ctxMeta.source_layer ?? undefined)
+            : undefined,
         }
       : undefined,
     parameters,

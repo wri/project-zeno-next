@@ -1,18 +1,6 @@
 import { useEffect, useState } from "react";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
-import "../../../../theme/popup.css";
-
-import { LayerId, selectLayerOptions } from "../../../../types/map";
-import useContextStore from "../../../../store/contextStore";
-import useMapStore from "../../../../store/mapStore";
-import { API_CONFIG } from "../../../../config/api";
-import {
-  getAoiName,
-  getSrcId,
-  getSubtype,
-  singularizeDatasetName,
-} from "../../../../utils/areaHelpers";
 import {
   Feature,
   FeatureCollection,
@@ -20,8 +8,23 @@ import {
   MultiPolygon,
   Polygon,
 } from "geojson";
-import AreaTooltip, { HoverInfo } from "../../../ui/AreaTooltip";
+
+import { LayerId, selectLayerOptions } from "@/app/types/map";
+import { API_CONFIG } from "@/app/config/api";
+
+import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
+
+import {
+  getAoiName,
+  getSrcId,
+  getSubtype,
+  toAreaSelection,
+} from "@/app/utils/areaHelpers";
+
+import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
+import "@/app/theme/popup.css";
 
 interface SourceLayerProps {
   layerId: LayerId;
@@ -35,7 +38,9 @@ interface Metadata {
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { context, addContext, removeContext } = useContextStore();
-  const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
+  const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
+    useMapStore();
+
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -43,13 +48,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
   );
-  const {
-    id,
-    url,
-    sourceLayer,
-    name: datasetName,
-    nameKeys,
-  } = selectAreaLayerConfig!;
+  const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
@@ -203,6 +202,20 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 },
               });
             }
+
+            // AnalysisCtaTrigger reacts to this selection and surfaces the
+            // analyse nudge once a dataset is also active.
+            if (layerId === "GADM" && metadata) {
+              setAnalysis(
+                toAreaSelection(
+                  layerId,
+                  (featureProps ?? {}) as Record<string, unknown>,
+                  metadata
+                )
+              );
+            } else {
+              useMapStore.getState().clearAnalysis();
+            }
           }
         }
       };
@@ -240,6 +253,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     addLayer,
     layerId,
     url,
+    setAnalysis,
   ]);
 
   return (
@@ -264,12 +278,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           paint={selectAreaLinePaint}
         />
       </Source>
-      {hoverInfo && (
-        <AreaTooltip
-          hoverInfo={hoverInfo}
-          areaName={singularizeDatasetName(datasetName)}
-        />
-      )}
+      {hoverInfo && <AreaTooltip hoverInfo={hoverInfo} />}
     </>
   );
 }

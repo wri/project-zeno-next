@@ -1,3 +1,8 @@
+import {
+  CATALOG_COLUMN_Z_INDEX,
+  CATALOG_PANEL_WIDTH_PX,
+} from "@/app/explorationLayout";
+
 /**
  * Shared chrome for the chat panel cards.
  *
@@ -13,6 +18,44 @@ export const chatPanelCardStyle = {
   borderColor: "border.emphasized",
   overflow: "hidden",
 } as const;
+
+/**
+ * Shared layout chrome for the catalog column (`CatalogPanel` + `AreasPanel`).
+ * Width is fixed so toggling datasets ↔ areas cannot resize the column.
+ */
+export function getCatalogColumnPanelFlexProps(isChatFullSize: boolean) {
+  return {
+    h: "100%",
+    w: `${CATALOG_PANEL_WIDTH_PX}px`,
+    minW: `${CATALOG_PANEL_WIDTH_PX}px`,
+    maxW: `${CATALOG_PANEL_WIDTH_PX}px`,
+    flexShrink: 0,
+    flexDirection: "column" as const,
+    display: { base: "none", md: "flex" } as const,
+    ...chatPanelCardStyle,
+    // Full-size column docks against the chat panel's right border — no second
+    // left border here, or the seam width shifts when toggling panels.
+    borderLeftWidth: 0,
+    borderRadius: {
+      base: 0,
+      md: isChatFullSize ? "0 sm sm 0" : "sm",
+    },
+  };
+}
+
+/** Absolute positioning shell shared by both catalog-column panels. */
+export function getCatalogColumnMotionStyle(leftPx: number) {
+  return {
+    position: "absolute" as const,
+    top: 0,
+    bottom: 0,
+    left: leftPx,
+    width: CATALOG_PANEL_WIDTH_PX,
+    boxSizing: "border-box" as const,
+    zIndex: CATALOG_COLUMN_Z_INDEX,
+    pointerEvents: "auto" as const,
+  };
+}
 
 /**
  * Compliance copy shown beneath the chat input in both panels. Kept in one
