@@ -15,7 +15,7 @@ import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import { AnalysisCard } from "./AnalysisCard";
 import { AreaCard } from "./AreaCard";
-import Markdown from "react-markdown";
+import Markdown, { type Components } from "react-markdown";
 import {
   ArrowBendDownRightIcon,
   CheckIcon,
@@ -28,7 +28,7 @@ import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
 import { ChatContextType } from "./ContextButton";
 import { ContextItem } from "../store/contextStore";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, ReactNode } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
@@ -37,6 +37,24 @@ import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
 import AnalyseNudge from "./AnalyseNudge";
+import BlogCitation from "./BlogCitation";
+import BlogCitationsList from "./BlogCitationsList";
+import {
+  getCitedArticlesInOrder,
+  isBlogCitation,
+  resolveCitedArticle,
+} from "@/app/lib/blog-citations";
+import { isExperimentalProfileEnabled } from "@/app/config/feature-flags";
+
+function nodeToText(children: ReactNode): string {
+  if (typeof children === "string" || typeof children === "number") {
+    return String(children);
+  }
+  if (Array.isArray(children)) {
+    return children.map(nodeToText).join("");
+  }
+  return "";
+}
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -56,7 +74,7 @@ function MessageBubble({
   const [isRating, setIsRating] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
-  const { currentThreadId } = useChatStore();
+  const { currentThreadId, citedArticlesBySlug } = useChatStore();
 
   useEffect(() => {
     // This has to be done by a useEffect, otherwise there will be a hydration
@@ -153,6 +171,38 @@ function MessageBubble({
   const isWarning = message.type === "warning";
   const isStopped = message.type === "stopped";
   const isAssistant = message.type === "assistant";
+  const blogCitationsEnabled = isExperimentalProfileEnabled();
+  const citedArticles = useMemo(
+    () =>
+      blogCitationsEnabled && isAssistant
+        ? getCitedArticlesInOrder(message.message, citedArticlesBySlug)
+        : [],
+    [blogCitationsEnabled, isAssistant, message.message, citedArticlesBySlug]
+  );
+
+  const markdownComponents = useMemo<Components>(
+    () => ({
+      a: ({ node, href, children, ...rest }) => {
+        void node; // not forwarded to the DOM element
+        const label = nodeToText(children);
+        if (blogCitationsEnabled && href && isBlogCitation(href, label)) {
+          return (
+            <BlogCitation
+              number={label}
+              url={href}
+              article={resolveCitedArticle(href, citedArticlesBySlug)}
+            />
+          );
+        }
+        return (
+          <a href={href} {...rest}>
+            {children}
+          </a>
+        );
+      },
+    }),
+    [blogCitationsEnabled, citedArticlesBySlug]
+  );
   const analysisWidgets = isAssistant
     ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
     : [];
@@ -330,18 +380,21 @@ function MessageBubble({
                 borderColor: "bg.muted",
                 pb: 2,
               },
-              "& a": {
+              "& a:not([data-citation])": {
                 textDecoration: "underline",
                 color: "primary.solid",
                 transition: "all 0.24s ease",
               },
-              "& a:hover": {
+              "& a:not([data-citation]):hover": {
                 opacity: 0.64,
               },
             }}
           >
             <CopySelectionTooltip enabled={!isUser}>
-              <Markdown remarkPlugins={[remarkBreaks]}>
+              <Markdown
+                remarkPlugins={[remarkBreaks]}
+                components={markdownComponents}
+              >
                 {message.message}
               </Markdown>
             </CopySelectionTooltip>
@@ -357,6 +410,9 @@ function MessageBubble({
               />
             ))}
           </Flex>
+        )}
+        {citedArticles.length > 0 && (
+          <BlogCitationsList articles={citedArticles} />
         )}
         {showFooter && (
           <Flex
