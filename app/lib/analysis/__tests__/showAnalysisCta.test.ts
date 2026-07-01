@@ -9,8 +9,8 @@ vi.mock("@/app/components/ui/toaster", () => ({
 
 import { showAnalysisCta } from "../showAnalysisCta";
 import useChatStore from "@/app/store/chatStore";
-import useContextStore from "@/app/store/contextStore";
-import type { ContextItem } from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
+import type { Layer } from "@/app/store/layerManagerSlice";
 import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
 
 const selection: AnalysisSelection = {
@@ -23,18 +23,17 @@ const selection: AnalysisSelection = {
 // Tree cover loss in the dataset catalogue (DATASET_BY_ID)
 const TCL_ID = 4;
 
-const layerContext = (overrides: Partial<ContextItem> = {}): ContextItem => ({
-  id: "layer-1",
-  contextType: "layer",
-  content: "Tree cover loss",
+const datasetLayer = (overrides: Partial<Layer> = {}): Layer => ({
+  id: `dataset-${TCL_ID}`,
+  name: "Tree cover loss",
+  type: "raster",
+  visible: true,
   datasetId: TCL_ID,
   ...overrides,
 });
 
-// Seed context state directly: addContext has map-layer side effects that are
-// irrelevant to CTA gating.
-const seedContext = (items: ContextItem[]) =>
-  useContextStore.setState({ context: items });
+// Seed the visible layers directly — the dataset layer IS the active dataset.
+const seedLayers = (layers: Layer[]) => useMapStore.setState({ layers });
 
 const analyseNudges = () =>
   useChatStore.getState().messages.filter((m) => m.type === "analyse-nudge");
@@ -42,11 +41,11 @@ const analyseNudges = () =>
 describe("showAnalysisCta", () => {
   beforeEach(() => {
     useChatStore.getState().reset();
-    useContextStore.getState().reset();
+    useMapStore.setState({ layers: [] });
   });
 
   it("injects an analyse-nudge when a dataset is active", () => {
-    seedContext([layerContext()]);
+    seedLayers([datasetLayer()]);
 
     expect(showAnalysisCta(selection)).toBe(true);
 
@@ -60,7 +59,7 @@ describe("showAnalysisCta", () => {
   });
 
   it("appends the nudge as the last message", () => {
-    seedContext([layerContext()]);
+    seedLayers([datasetLayer()]);
     useChatStore
       .getState()
       .addMessage({ type: "assistant", message: "Some narrative" });
@@ -71,7 +70,7 @@ describe("showAnalysisCta", () => {
   });
 
   it("keeps a single live nudge: a new selection replaces the previous one", () => {
-    seedContext([layerContext()]);
+    seedLayers([datasetLayer()]);
 
     showAnalysisCta(selection);
     showAnalysisCta({ name: "Acre, Brazil", source: "gadm" });
@@ -82,7 +81,7 @@ describe("showAnalysisCta", () => {
   });
 
   it("is idempotent for an identical pending nudge (reactive trigger re-runs)", () => {
-    seedContext([layerContext()]);
+    seedLayers([datasetLayer()]);
 
     showAnalysisCta(selection);
     const firstId = analyseNudges()[0].id;
@@ -95,7 +94,7 @@ describe("showAnalysisCta", () => {
   });
 
   it("keeps accepted nudges in history when a new selection arrives", () => {
-    seedContext([layerContext()]);
+    seedLayers([datasetLayer()]);
 
     showAnalysisCta(selection);
     useChatStore.getState().acceptAnalyseNudge(analyseNudges()[0].id);
@@ -112,7 +111,7 @@ describe("showAnalysisCta", () => {
   });
 
   it("re-offers the same area after the previous nudge was accepted", () => {
-    seedContext([layerContext()]);
+    seedLayers([datasetLayer()]);
 
     showAnalysisCta(selection);
     useChatStore.getState().acceptAnalyseNudge(analyseNudges()[0].id);
@@ -129,13 +128,14 @@ describe("showAnalysisCta", () => {
     expect(analyseNudges()).toHaveLength(0);
   });
 
-  it("ignores non-layer context when looking for an active dataset", () => {
-    seedContext([
+  it("ignores non-dataset layers when looking for an active dataset", () => {
+    // An area layer (geojson, no datasetId) must not gate analysis open.
+    seedLayers([
       {
-        id: "area-1",
-        contextType: "area",
-        content: "Pará, Brazil",
-        aoiData: { name: "Pará, Brazil" },
+        id: "Pará, Brazil",
+        name: "Pará, Brazil",
+        type: "geojson",
+        visible: true,
       },
     ]);
 
@@ -143,15 +143,13 @@ describe("showAnalysisCta", () => {
   });
 
   it("does nothing for a selection without a name", () => {
-    seedContext([layerContext()]);
+    seedLayers([datasetLayer()]);
     expect(showAnalysisCta({ name: "", source: "gadm" })).toBe(false);
     expect(analyseNudges()).toHaveLength(0);
   });
 
   it("falls back to the layer display name for datasets outside the catalogue", () => {
-    seedContext([
-      layerContext({ datasetId: 99999, layerName: "Custom layer" }),
-    ]);
+    seedLayers([datasetLayer({ datasetId: 99999, name: "Custom layer" })]);
 
     expect(showAnalysisCta(selection)).toBe(true);
     expect(analyseNudges()[0].analyseSuggestion?.datasetName).toBe(

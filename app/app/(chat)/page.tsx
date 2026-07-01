@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, Suspense } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { Loader } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useChatStore from "@/app/store/chatStore";
-import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
+import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
 
 const DEFAULT_LANDING_DATASET_ID = 4;
 
@@ -17,12 +17,7 @@ function NewThread() {
     sendMessage,
     currentThreadId,
   } = useChatStore();
-  const {
-    reset: resetContextStore,
-    upsertContextByType,
-    context,
-  } = useContextStore();
-  const { reset: resetMapStore } = useMapStore();
+  const { reset: resetMapStore, addLayer, layers } = useMapStore();
   const searchParams = useSearchParams();
   const [hasMounted, setHasMounted] = useState(false);
   const defaultLayerSeededRef = useRef(false);
@@ -31,9 +26,8 @@ function NewThread() {
   useEffect(() => {
     resetChatStore();
     resetMapStore();
-    resetContextStore();
     defaultLayerSeededRef.current = false;
-  }, [resetChatStore, resetContextStore, resetMapStore]);
+  }, [resetChatStore, resetMapStore]);
 
   useEffect(() => {
     setHasMounted(true);
@@ -42,8 +36,8 @@ function NewThread() {
   useEffect(() => {
     if (defaultLayerSeededRef.current) return;
 
-    const hasLayerContext = context.some((c) => c.contextType === "layer");
-    if (hasLayerContext) {
+    const hasDatasetLayer = layers.some((l) => typeof l.datasetId === "number");
+    if (hasDatasetLayer) {
       defaultLayerSeededRef.current = true;
       return;
     }
@@ -53,23 +47,24 @@ function NewThread() {
     );
     if (!defaultCard) return;
 
-    upsertContextByType({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(defaultCard),
-      isAiContext: false,
-    });
+    buildDatasetLayers(getLayerContextFromDatasetCard(defaultCard)).forEach(
+      addLayer
+    );
     defaultLayerSeededRef.current = true;
-  }, [context, upsertContextByType]);
+  }, [layers, addLayer]);
 
-  const submitPrompt = async (prompt: string) => {
-    const result = await sendMessage(prompt);
-    if (result.isNew) {
-      router.replace(`/app/threads/${result.id}`);
-    }
-  };
+  const submitPrompt = useCallback(
+    async (prompt: string) => {
+      const result = await sendMessage(prompt);
+      if (result.isNew) {
+        router.replace(`/app/threads/${result.id}`);
+      }
+    },
+    [sendMessage, router]
+  );
 
   useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasMounted || !searchParams) return;
     const prompt = searchParams.get("prompt");
     if (prompt && !currentThreadId) {
       submitPrompt(prompt);

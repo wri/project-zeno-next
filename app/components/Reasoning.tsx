@@ -19,7 +19,8 @@ import { ToolStepData } from "@/app/types/chat";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { formatToolName } from "@/app/lib/tool-display";
-import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
+import { isAreaLayer } from "@/app/store/layerManagerSlice";
 
 // Strip leading whitespace from each line so indented template literals
 // in the API response don't get treated as Markdown code blocks (4+ spaces)
@@ -47,12 +48,14 @@ function Reasoning({
   const currentTool =
     toolSteps.length > 0 ? toolSteps[toolSteps.length - 1] : null;
 
-  // When an area is in context, the run is producing an insight for it, so
+  // When an area layer is in scope, the run is producing an insight for it, so
   // surface that intent ("Generating insight for {area}") rather than the
   // raw tool name. Falls back to the tool-name / generic label otherwise.
-  const areaName = useContextStore((state) => {
-    const area = state.context.find((c) => c.contextType === "area");
-    return area?.aoiSelection?.name ?? area?.aoiData?.name ?? null;
+  const areaName = useMapStore((state) => {
+    const area = state.layers.find(isAreaLayer);
+    return (
+      area?.aoiSelection?.name ?? area?.selectionName ?? area?.name ?? null
+    );
   });
 
   // While loading, show shimmer with dynamic status

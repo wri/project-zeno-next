@@ -8,10 +8,6 @@ vi.mock("@/app/store/mapStore", () => ({
   default: { getState: () => ({}) },
 }));
 
-vi.mock("@/app/store/contextStore", () => ({
-  default: { getState: () => ({ context: [], addContext: vi.fn() }) },
-}));
-
 vi.mock("@/app/utils/geometryClient", () => ({
   fetchGeometry: vi.fn(),
 }));

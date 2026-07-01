@@ -11,11 +11,14 @@ import {
   Portal,
 } from "@chakra-ui/react";
 import { ArrowBendRightUpIcon, StopIcon } from "@phosphor-icons/react";
+import { format } from "date-fns";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
-import useContextStore from "../store/contextStore";
+import useMapStore from "../store/mapStore";
+import { isAreaLayer } from "../store/layerManagerSlice";
+import useSidebarStore from "../store/sidebarStore";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
@@ -46,13 +49,50 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading, cancelRequest, abortController, messages } =
-    useChatStore();
-  const { context, removeContext } = useContextStore();
+  const {
+    sendMessage,
+    isLoading,
+    cancelRequest,
+    abortController,
+    messages,
+    dateRange,
+    clearDateRange,
+  } = useChatStore();
+  const { layers, removeLayer, removeDatasetLayers } = useMapStore();
+  const {
+    dataCatalogOpen,
+    toggleDataCatalog,
+    areasPanelOpen,
+    toggleAreasPanel,
+  } = useSidebarStore();
+
+  // Pills are a presentational view of the current scope: visible dataset
+  // layers + visible area layers + the selected date range. Dataset/area
+  // sub-layers are excluded.
+  const datasetPillLayers = layers.filter(
+    (l) => typeof l.datasetId === "number" && !l.parentLayerId
+  );
+  const areaPillLayers = layers.filter((l) => l.visible && isAreaLayer(l));
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
     setContextModalOpen(true);
+  };
+
+  const openLayerPicker = () => {
+    if (isMobile) {
+      openContextMenu("layer");
+      return;
+    }
+    toggleDataCatalog();
+  };
+
+  const openAreaPicker = () => {
+    if (isMobile) {
+      openContextMenu("area");
+      return;
+    }
+    toggleAreasPanel();
   };
 
   const handleContextModalOpenChange = (e: { open: boolean }) => {
@@ -110,7 +150,8 @@ export default function ChatInput({
         : "Or describe what you want to explore…";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
-  const hasContext = context.length > 0;
+  const hasPills =
+    datasetPillLayers.length > 0 || areaPillLayers.length > 0 || !!dateRange;
 
   // The core UI of the chat input is defined here so it can be reused
   // for both the desktop view and within the mobile modal.
@@ -132,21 +173,37 @@ export default function ChatInput({
           : undefined
       }
     >
-      {hasContext && (
+      {hasPills && (
         <Flex gap={1} wrap="wrap" mb={1}>
-          {context.map((c) => (
+          {datasetPillLayers.map((l) => (
             <ContextTag
-              key={c.id}
-              contextType={c.contextType as ChatContextType}
-              content={
-                typeof c.content === "string"
-                  ? c.content || c.aoiData?.name || c.aoiData?.src_id
-                  : JSON.stringify(c.content)
-              }
-              onClose={() => removeContext(c.id)}
+              key={l.id}
+              contextType="layer"
+              content={l.name}
+              onClose={() => removeDatasetLayers(l.datasetId!)}
               closeable
             />
           ))}
+          {areaPillLayers.map((l) => (
+            <ContextTag
+              key={l.id}
+              contextType="area"
+              content={l.selectionName ?? l.name}
+              onClose={() => removeLayer(l.id)}
+              closeable
+            />
+          ))}
+          {dateRange && (
+            <ContextTag
+              contextType="date"
+              content={`${format(dateRange.start, "yyyy-MM-dd")} — ${format(
+                dateRange.end,
+                "yyyy-MM-dd"
+              )}`}
+              onClose={clearDateRange}
+              closeable
+            />
+          )}
         </Flex>
       )}
       <Textarea
@@ -171,13 +228,19 @@ export default function ChatInput({
         <Flex gap="2">
           <ContextButton
             contextType="layer"
-            onClick={() => openContextMenu("layer")}
+            onClick={openLayerPicker}
             disabled={disabled}
+            borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
+            color={dataCatalogOpen ? "primary.solid" : undefined}
+            aria-expanded={dataCatalogOpen}
           />
           <ContextButton
             contextType="area"
-            onClick={() => openContextMenu("area")}
+            onClick={openAreaPicker}
             disabled={disabled}
+            borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
+            color={areasPanelOpen ? "primary.solid" : undefined}
+            aria-expanded={areasPanelOpen}
           />
         </Flex>
         {canCancelRequest ? (
@@ -280,17 +343,27 @@ export default function ChatInput({
               contextType="layer"
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
-                openContextMenu("layer");
+                openLayerPicker();
               }}
               disabled={disabled}
+              aria-expanded={
+                isMobile
+                  ? contextModalOpen && selectedContextType === "layer"
+                  : dataCatalogOpen
+              }
             />
             <ContextButton
               contextType="area"
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
-                openContextMenu("area");
+                openAreaPicker();
               }}
               disabled={disabled}
+              aria-expanded={
+                isMobile
+                  ? contextModalOpen && selectedContextType === "area"
+                  : areasPanelOpen
+              }
             />
           </Flex>
           {canCancelRequest ? (

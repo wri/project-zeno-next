@@ -26,8 +26,6 @@ import {
 } from "@phosphor-icons/react";
 import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
-import { ChatContextType } from "./ContextButton";
-import { ContextItem } from "../store/contextStore";
 import { useEffect, useState, useCallback } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
@@ -37,6 +35,7 @@ import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
 import DatasetNudge from "./DatasetNudge";
 import AnalyseNudge from "./AnalyseNudge";
+import { ViewAnalysisNudge } from "@/src/features/analysis";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -156,7 +155,12 @@ function MessageBubble({
   const analysisWidgets = isAssistant
     ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
     : [];
-  const hasContext = isUser && message.context && message.context.length > 0;
+  const context = isUser ? message.context : undefined;
+  const hasContext =
+    !!context &&
+    ((context.areas?.length ?? 0) > 0 ||
+      (context.datasets?.length ?? 0) > 0 ||
+      !!context.daterange);
   const showFooter =
     !isUser &&
     !isAreaCard &&
@@ -210,11 +214,27 @@ function MessageBubble({
   }
 
   if (message.type === "analyse-nudge" && message.analyseSuggestion) {
+    // An accepted nudge is a past choice — leave a larger gap below it so a new
+    // nudge block (for another area) reads as separate from it.
     return (
-      <Box my={2}>
+      <Box mt={2} mb={message.analyseSuggestion.accepted ? 6 : 2}>
         <AnalyseNudge
           messageId={message.id}
           suggestion={message.analyseSuggestion}
+        />
+      </Box>
+    );
+  }
+
+  if (
+    message.type === "view-analysis-nudge" &&
+    message.viewAnalysisSuggestion
+  ) {
+    return (
+      <Box mt={2} mb={message.viewAnalysisSuggestion.accepted ? 6 : 2}>
+        <ViewAnalysisNudge
+          messageId={message.id}
+          suggestion={message.viewAnalysisSuggestion}
         />
       </Box>
     );
@@ -275,22 +295,31 @@ function MessageBubble({
               : "transparent"
         }
       >
-        {hasContext && (
+        {hasContext && context && (
           <Flex gap="2" wrap="wrap" mb="1">
             <Flex gap="1" fontSize="xs" color="fg.muted">
               <ArrowBendDownRightIcon /> Context:
             </Flex>
-            {message.context?.map((c: ContextItem) => (
+            {context.datasets?.map((name) => (
               <ContextTag
-                key={c.id}
-                contextType={c.contextType as ChatContextType}
-                content={
-                  typeof c.content === "string"
-                    ? c.content
-                    : JSON.stringify(c.content)
-                }
+                key={`ds-${name}`}
+                contextType="layer"
+                content={name}
               />
             ))}
+            {context.areas?.map((name) => (
+              <ContextTag
+                key={`area-${name}`}
+                contextType="area"
+                content={name}
+              />
+            ))}
+            {context.daterange && (
+              <ContextTag
+                contextType="date"
+                content={`${context.daterange.start_date} — ${context.daterange.end_date}`}
+              />
+            )}
           </Flex>
         )}
         {isError ? (

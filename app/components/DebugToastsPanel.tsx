@@ -9,6 +9,7 @@ import {
   CaretDownIcon,
   CaretUpIcon,
   ChartBarIcon,
+  UserPlusIcon,
 } from "@phosphor-icons/react";
 import {
   showApiError,
@@ -25,9 +26,9 @@ import { getToolErrorMessage } from "@/app/lib/tool-display";
 
 const GLOBAL_LAYER_ID = "Global Layer";
 
-// Dev-only mocks — exercise the full pickDataset → contextStore → map pipeline
-// without the backend. Both use an existing DATASET_CARDS entry so the legend
-// renders correctly.
+// Dev-only mocks — exercise the full pick_dataset → map layer pipeline without
+// the backend. Both use an existing DATASET_CARDS entry so the legend renders
+// correctly.
 const MOCK_VECTOR_DATASET: DatasetInfo = {
   dataset_id: 10,
   dataset_name: "Tree cover loss due to fires",
@@ -100,7 +101,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const active =
     enabled ??
     (process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
-      params.get("debug") === "1");
+      params?.get("debug") === "1");
   const [dismissed, setDismissed] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
   const layers = useMapStore((s) => s.layers);
@@ -292,7 +293,29 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         </Box>
       </Stack>
 
-      <Box borderTop="1px solid" borderColor="#E0E2E5" mt="2" pt="2">
+      <Stack
+        direction="column"
+        gap="1"
+        align="flex-start"
+        borderTop="1px solid"
+        borderColor="#E0E2E5"
+        mt="2"
+        pt="2"
+      >
+        {/* Offline mirror: real form with mock config, no API/auth. */}
+        <Link
+          as={NextLink}
+          href="/onboarding-debug"
+          fontSize="2xs"
+          color="gray.500"
+          _hover={{ color: "gray.800" }}
+          display="inline-flex"
+          alignItems="center"
+          gap="1"
+        >
+          <UserPlusIcon size={10} />
+          Go to Onboarding debugger →
+        </Link>
         <Link
           as={NextLink}
           href="/chart-debug"
@@ -306,7 +329,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           <ChartBarIcon size={10} />
           Go to Chart debugger →
         </Link>
-      </Box>
+      </Stack>
     </Box>
   );
 

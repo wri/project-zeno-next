@@ -15,10 +15,8 @@ import {
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
-import useContextStore from "@/app/store/contextStore";
 import useCookieStore from "@/app/store/cookieStore";
 import { URLS } from "@/app/constants/urls";
-import { useShallow } from "zustand/react/shallow";
 import MapAreaControls from "./MapAreaControls";
 import { basemapOptions } from "./map/BasemapSelector";
 import DynamicTileLayers, {
@@ -29,6 +27,7 @@ import AoiVectorTileLayers from "./map/layers/AoiVectorTileLayers";
 import SelectAreaLayer from "./map/layers/select-area-layer";
 import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
+import PendingDrawArea from "./map/layers/PendingDrawArea";
 import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
@@ -54,12 +53,12 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const basemapTheme =
     basemapOptions.find((o) => o.tileUrl === basemapTiles)?.theme ?? "light";
   const hasInsights = useInsightStore((s) => s.insights.length > 0);
-  // Also mount while the agent is processing so the workspace can show its
-  // generating skeleton on a first analysis (before any insight exists).
+  // Also mount while an insight is being generated so the workspace can show
+  // its skeleton on a first analysis (before any insight exists). isLoading
+  // covers the generative request window; isGeneratingInsight covers both
+  // flows (incl. the non-generative direct flow, which sets it in useAnalysis).
   const isLoading = useChatStore((s) => s.isLoading);
-  const areas = useContextStore(
-    useShallow((s) => s.context.filter((c) => c.contextType === "area"))
-  );
+  const isGeneratingInsight = useChatStore((s) => s.isGeneratingInsight);
   const consentStatus = useCookieStore((s) => s.consentStatus);
   const openPreferences = useCookieStore((s) => s.openPreferences);
   const onMapLoad = () => {
@@ -202,7 +201,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           gap={2}
           pointerEvents="none"
         >
-          {(hasInsights || isLoading) && <InsightWorkspace />}
+          {(hasInsights || isLoading || isGeneratingInsight) && (
+            <InsightWorkspace />
+          )}
           {/* Spacer: pushes legend to the bottom */}
           <Box flex="1 1 0" minH="0" />
           <Box
@@ -240,8 +241,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         </Source>
         <DynamicTileLayers />
         <VectorDataLayers />
-        <AoiVectorTileLayers areas={areas} basemapTheme={basemapTheme} />
-        <GeoJsonLayers areas={areas} basemapTheme={basemapTheme} />
+        <AoiVectorTileLayers basemapTheme={basemapTheme} />
+        <GeoJsonLayers basemapTheme={basemapTheme} />
+        <PendingDrawArea basemapTheme={basemapTheme} />
         <SelectAreaLayer />
 
         {!disableMapAreaControls && (

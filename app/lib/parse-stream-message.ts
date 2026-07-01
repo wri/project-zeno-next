@@ -103,6 +103,19 @@ export function parseStreamMessage(
       textContent = (content as { text: string }).text;
     }
 
+    // Names of the tools this AI message is announcing. The agent emits the
+    // tool call before the tool result streams back, so this is the earliest
+    // signal that a given tool (e.g. generate_insights) is about to run.
+    const toolCalls = Array.isArray(kwargs.tool_calls)
+      ? kwargs.tool_calls
+          .map((tc) =>
+            tc && typeof tc === "object" && "name" in tc
+              ? (tc as { name?: unknown }).name
+              : undefined
+          )
+          .filter((n): n is string => typeof n === "string")
+      : [];
+
     // Only return a message if we have valid text content
     // TODO: This function emits StreamMessage.type = "text" for assistant messages.
     // Consider renaming to "assistant" for clarity and updating client handling
@@ -111,6 +124,21 @@ export function parseStreamMessage(
       return {
         type: "text",
         text: textContent.trim(),
+        timestamp: timestamp.toISOString(),
+        trace_id: traceId,
+        ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+      };
+    }
+
+    // No text, but the agent announced tool calls (a pure tool-call turn).
+    // Surface them so the UI can reflect pending work — without this, the
+    // message would be dropped and the insight skeleton would never know an
+    // analysis is on the way.
+    if (toolCalls.length) {
+      return {
+        type: "other",
+        name: "tool_calls",
+        tool_calls: toolCalls,
         timestamp: timestamp.toISOString(),
         trace_id: traceId,
       };

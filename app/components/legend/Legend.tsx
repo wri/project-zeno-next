@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Flex,
   Box,
@@ -30,7 +30,7 @@ interface LegendProps {
   layers: LegendLayer[];
   onLayerAction?: LayerActionHandler;
   aois?: LegendAoi[];
-  onRemoveAoi?: (contextId: string) => void;
+  onRemoveAoi?: (layerId: string) => void;
 }
 
 /**
@@ -47,10 +47,11 @@ export function Legend(props: LegendProps) {
 
   // Track which layers are expanded (multiple can be open).
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [prevLayerIds, setPrevLayerIds] = useState<Set<string>>(new Set());
+  const prevLayerIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const currentIds = new Set(layers.map((l) => l.id));
+    const prevLayerIds = prevLayerIdsRef.current;
 
     // Detect newly added layers
     const newIds = [...currentIds].filter((id) => !prevLayerIds.has(id));
@@ -91,7 +92,7 @@ export function Legend(props: LegendProps) {
       });
     }
 
-    setPrevLayerIds(currentIds);
+    prevLayerIdsRef.current = currentIds;
   }, [layers]);
 
   const hasAois = !!aois && aois.length > 0;
@@ -209,13 +210,13 @@ export function Legend(props: LegendProps) {
               >
                 {aois.map((aoi) => (
                   <ParamChip
-                    key={`${aoi.contextId}-${aoi.name}`}
+                    key={`${aoi.layerId}-${aoi.name}`}
                     label="AREA"
                     value={aoi.name}
                     colorScheme="blue"
                     bg="white"
                     onRemove={
-                      onRemoveAoi ? () => onRemoveAoi(aoi.contextId) : undefined
+                      onRemoveAoi ? () => onRemoveAoi(aoi.layerId) : undefined
                     }
                     removeLabel={`Remove ${aoi.name}`}
                   />
