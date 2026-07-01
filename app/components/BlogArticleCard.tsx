@@ -69,8 +69,10 @@ function ArticleImage({
  */
 export function SourcePill({
   source,
+  iconSize = 16,
 }: {
   source: ReturnType<typeof inferBlogSource>;
+  iconSize?: number;
 }) {
   const branding = blogSourceBranding(source);
 
@@ -87,7 +89,7 @@ export function SourcePill({
       borderColor={branding.pillBorder}
       flexShrink={0}
     >
-      <BlogSourceIcon source={source} size={16} />
+      <BlogSourceIcon source={source} size={iconSize} />
       <Text
         fontFamily="mono"
         fontSize="10px"
