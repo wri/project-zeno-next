@@ -21,7 +21,13 @@ export function BlogSourceIcon({
   const branding = blogSourceBranding(source);
 
   if (branding.useLclLogo) {
-    return <LclLogo width={size} avatarOnly={!wordmark} />;
+    // The WRI favicon fills a size×size box, so match the LCL mark's HEIGHT to
+    // `size` (it's portrait — sizing by width would leave it ~30% too tall).
+    return wordmark ? (
+      <LclLogo width={size} />
+    ) : (
+      <LclLogo height={size} avatarOnly />
+    );
   }
 
   return (
