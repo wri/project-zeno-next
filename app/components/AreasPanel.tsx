@@ -245,9 +245,15 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Type label string ("Administrative areas" etc.) derived from an area context item. */
-function getAreaTypeLabel(layer: Layer): string {
-  const source = layer.aoiSelection?.aois[0]?.source ?? "custom";
+/**
+ * Type label string ("Administrative areas" etc.) derived from the resolved
+ * AOISelection. Use the resolved selection (which recovers `source` from the
+ * geojson registry ref) rather than `layer.aoiSelection` directly: hand-clicked
+ * GADM boundaries carry no `aoiSelection`, so reading it would default every
+ * one of them to "custom".
+ */
+function getAreaTypeLabel(aoiSelection: AOISelection | null): string {
+  const source = aoiSelection?.aois[0]?.source ?? "custom";
   const label = AREA_TYPE_LABELS[source.toLowerCase()] ?? source;
   return label || "Area";
 }
@@ -369,7 +375,7 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
         typeLabel="AREA"
         typeLabelColor={AREA_LABEL_COLOR}
         title={title}
-        description={getAreaTypeLabel(layer)}
+        description={getAreaTypeLabel(aoiSelection)}
         selected={isVisible}
         selectedBg={AREA_SELECTED_BG}
         showOnMap={isVisible}
