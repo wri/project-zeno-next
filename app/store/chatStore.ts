@@ -36,7 +36,8 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
-import { AGENT_FEATURE_FLAG } from "@/app/config/feature-flags";
+import { effectiveAgentProfile } from "@/app/config/feature-flags";
+import useAgentProfileStore from "./agentProfileStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -437,11 +438,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       if (ds) ui_context.dataset_selected = { dataset: ds };
     }
 
+    // Send the agent profile as `ff` only when a profile is selected and the
+    // user type is allowed to use feature flags (else the backend 403s).
+    const ff = effectiveAgentProfile(
+      useAgentProfileStore.getState().agentProfile,
+      useAuthStore.getState().userType
+    );
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
       thread_id: threadId,
-      ...(AGENT_FEATURE_FLAG && { ff: AGENT_FEATURE_FLAG }),
+      ...(ff && { ff }),
     };
 
     // Set up abort controller for client-side timeout and user cancellation

@@ -32,6 +32,8 @@ import { useEffect, useState, useCallback, useMemo, ReactNode } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
+import useAuthStore from "../store/authStore";
+import useAgentProfileStore from "../store/agentProfileStore";
 import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
@@ -75,6 +77,8 @@ function MessageBubble({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const { currentThreadId, citedArticlesBySlug } = useChatStore();
+  const userType = useAuthStore((s) => s.userType);
+  const agentProfile = useAgentProfileStore((s) => s.agentProfile);
 
   useEffect(() => {
     // This has to be done by a useEffect, otherwise there will be a hydration
@@ -171,7 +175,10 @@ function MessageBubble({
   const isWarning = message.type === "warning";
   const isStopped = message.type === "stopped";
   const isAssistant = message.type === "assistant";
-  const blogCitationsEnabled = isExperimentalProfileEnabled();
+  const blogCitationsEnabled = isExperimentalProfileEnabled(
+    agentProfile,
+    userType
+  );
   const citedArticles = useMemo(
     () =>
       blogCitationsEnabled && isAssistant

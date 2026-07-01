@@ -23,6 +23,7 @@ import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
+import useAgentProfileStore from "@/app/store/agentProfileStore";
 import MapAreaFeedback from "@/app/components/MapAreaFeedback";
 import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
 import {
@@ -44,6 +45,13 @@ export default function DashboardLayout({
   useEffect(() => {
     // Set layout heights after mount to avoid flash of both layouts at once
     setMobileHeight("min(100dvh, 100vh)");
+  }, []);
+
+  useEffect(() => {
+    // Capture ?agent_profile once on mount. The chat replaces the URL with
+    // /app/threads/:id after the first message, so the param must be persisted
+    // rather than re-read from the live URL on each request.
+    useAgentProfileStore.getState().initFromUrl();
   }, []);
 
   const DesktopLayout = (
