@@ -3,7 +3,6 @@ import { FeatureCollection, Polygon } from "geojson";
 import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
 import { useCallback, useEffect, useState } from "react";
 import useMapStore from "@/app/store/mapStore";
-import useContextStore from "@/app/store/contextStore";
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 
@@ -12,7 +11,6 @@ const CUSTOM_AREAS_SOURCE_ID = "custom-areas-source";
 function CustomAreasLayer() {
   const { customAreas, isLoading, error } = useCustomAreasList();
   const { mapRef, addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
-  const { addContext } = useContextStore();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
 
   const handleClick = useCallback(
@@ -30,6 +28,7 @@ function CustomAreasLayer() {
             srcId: id,
             subtype: "custom-area",
           });
+          // The visible layer IS the scope — no separate context item.
           addLayer({
             id,
             name,
@@ -37,21 +36,10 @@ function CustomAreasLayer() {
             visible: true,
             featureRefs: [{ name, source: "custom" }],
           });
-
-          addContext({
-            contextType: "area",
-            content: name,
-            aoiData: {
-              src_id: id,
-              name,
-              source: "custom",
-              subtype: "custom-area",
-            },
-          });
         }
       }
     },
-    [addContext, addToRegistry, addLayer]
+    [addToRegistry, addLayer]
   );
 
   useEffect(() => {

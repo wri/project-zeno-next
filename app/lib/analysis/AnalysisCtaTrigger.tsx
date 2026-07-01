@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import useMapStore from "@/app/store/mapStore";
-import useContextStore from "@/app/store/contextStore";
+import { useFeatureFlag } from "@/app/hooks/useFeatureFlag";
 import { showAnalysisCta } from "./showAnalysisCta";
 
 /**
@@ -12,13 +12,18 @@ import { showAnalysisCta } from "./showAnalysisCta";
  * harmless.
  */
 export function AnalysisCtaTrigger() {
+  const enabled = useFeatureFlag("analysis");
   const analysisSelection = useMapStore((state) => state.analysisSelection);
-  const context = useContextStore((state) => state.context);
+  // Re-run when the visible layers change so the CTA surfaces as soon as a
+  // dataset layer is added alongside an analysis selection (and clears when it
+  // is removed). The visible dataset layer is the source of truth for "is a
+  // dataset active?".
+  const layers = useMapStore((state) => state.layers);
 
   useEffect(() => {
-    if (!analysisSelection) return;
+    if (!enabled || !analysisSelection) return;
     showAnalysisCta(analysisSelection);
-  }, [analysisSelection, context]);
+  }, [enabled, analysisSelection, layers]);
 
   return null;
 }

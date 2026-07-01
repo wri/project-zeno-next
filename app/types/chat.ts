@@ -1,5 +1,14 @@
-import { ContextItem } from "../store/contextStore";
 import { FeatureCollection } from "geojson";
+
+// A read-only snapshot of the context at the moment a user message was sent:
+// the area(s), dataset(s) and date range that were active. Rendered as static
+// chips under the user message (no add/remove interaction). This is the *full*
+// active context at send time — not the deduplicated `ui_context` delta.
+export interface MessageContext {
+  areas?: string[];
+  datasets?: string[];
+  daterange?: { start_date: string; end_date: string };
+}
 
 // Type for storing tool execution data
 export interface ToolStepData {
@@ -33,7 +42,7 @@ export interface ChatMessage {
   aoiSelection?: AOISelection; // For area-card messages
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
-  context?: ContextItem[];
+  context?: MessageContext; // Read-only context snapshot for user messages
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete

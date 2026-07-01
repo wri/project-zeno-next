@@ -12,9 +12,9 @@ import {
   DATASET_CARDS,
   type DatasetCardConfig,
 } from "@/app/constants/datasets";
-import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
+import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
 
 describe("filterDatasetsByCategory", () => {
   it('returns every card when the category is "all"', () => {
@@ -60,54 +60,40 @@ describe("filterDatasetsByCategory", () => {
   });
 });
 
-describe("data catalog show-on-map wiring (contextStore ↔ mapStore)", () => {
+describe("data catalog show-on-map wiring (mapStore layers)", () => {
+  // The catalog card drives the map directly: the visible dataset layer IS the
+  // scope, so toggling a card adds/removes layers via the layer manager.
+  const addDataset = (card: DatasetCardConfig) =>
+    buildDatasetLayers(getLayerContextFromDatasetCard(card)).forEach((l) =>
+      useMapStore.getState().addLayer(l)
+    );
+
   beforeEach(() => {
-    useContextStore.getState().reset();
     useMapStore.getState().reset();
   });
 
   it("adds a dataset layer to the map when a card is toggled on", () => {
-    const card = DATASET_CARDS.find((c) => c.dataset_id === 4)!;
-    useContextStore.getState().addContext({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(card),
-      isAiContext: false,
-    });
+    addDataset(DATASET_CARDS.find((c) => c.dataset_id === 4)!);
 
     const layers = useMapStore.getState().layers;
     expect(layers.find((l) => l.id === "dataset-4")).toBeDefined();
   });
 
   it("supports multiple active layers simultaneously", () => {
-    const cardA = DATASET_CARDS.find((c) => c.dataset_id === 4)!;
-    const cardB = DATASET_CARDS.find((c) => c.dataset_id === 1)!;
-    useContextStore.getState().addContext({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(cardA),
-      isAiContext: false,
-    });
-    useContextStore.getState().addContext({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(cardB),
-      isAiContext: false,
-    });
+    addDataset(DATASET_CARDS.find((c) => c.dataset_id === 4)!);
+    addDataset(DATASET_CARDS.find((c) => c.dataset_id === 1)!);
 
     const layerIds = useMapStore.getState().layers.map((l) => l.id);
     expect(layerIds).toContain("dataset-4");
     expect(layerIds).toContain("dataset-1");
   });
 
-  it("removes the layer when the matching context entry is removed", () => {
-    const card = DATASET_CARDS.find((c) => c.dataset_id === 4)!;
-    useContextStore.getState().addContext({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(card),
-      isAiContext: false,
-    });
-    const ctx = useContextStore
+  it("removes the layer when the card is toggled off", () => {
+    addDataset(DATASET_CARDS.find((c) => c.dataset_id === 4)!);
+    useMapStore
       .getState()
-      .context.find((c) => c.datasetId === 4)!;
-    useContextStore.getState().removeContext(ctx.id);
+      .layers.filter((l) => l.datasetId === 4)
+      .forEach((l) => useMapStore.getState().removeLayer(l.id));
 
     expect(
       useMapStore.getState().layers.find((l) => l.id === "dataset-4")
@@ -115,12 +101,7 @@ describe("data catalog show-on-map wiring (contextStore ↔ mapStore)", () => {
   });
 
   it("setLayerVisibility toggles the layer's `visible` flag without removing it", () => {
-    const card = DATASET_CARDS.find((c) => c.dataset_id === 4)!;
-    useContextStore.getState().addContext({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(card),
-      isAiContext: false,
-    });
+    addDataset(DATASET_CARDS.find((c) => c.dataset_id === 4)!);
 
     useMapStore.getState().setLayerVisibility("dataset-4", false);
     let layer = useMapStore.getState().layers.find((l) => l.id === "dataset-4");
@@ -132,12 +113,7 @@ describe("data catalog show-on-map wiring (contextStore ↔ mapStore)", () => {
   });
 
   it("setLayerOpacity updates the layer's opacity value", () => {
-    const card = DATASET_CARDS.find((c) => c.dataset_id === 4)!;
-    useContextStore.getState().addContext({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(card),
-      isAiContext: false,
-    });
+    addDataset(DATASET_CARDS.find((c) => c.dataset_id === 4)!);
 
     useMapStore.getState().setLayerOpacity("dataset-4", 0.3);
     const layer = useMapStore

@@ -26,8 +26,6 @@ import {
 } from "@phosphor-icons/react";
 import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
-import { ChatContextType } from "./ContextButton";
-import { ContextItem } from "../store/contextStore";
 import { useEffect, useState, useCallback } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
@@ -156,7 +154,12 @@ function MessageBubble({
   const analysisWidgets = isAssistant
     ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
     : [];
-  const hasContext = isUser && message.context && message.context.length > 0;
+  const context = isUser ? message.context : undefined;
+  const hasContext =
+    !!context &&
+    ((context.areas?.length ?? 0) > 0 ||
+      (context.datasets?.length ?? 0) > 0 ||
+      !!context.daterange);
   const showFooter =
     !isUser &&
     !isAreaCard &&
@@ -275,22 +278,31 @@ function MessageBubble({
               : "transparent"
         }
       >
-        {hasContext && (
+        {hasContext && context && (
           <Flex gap="2" wrap="wrap" mb="1">
             <Flex gap="1" fontSize="xs" color="fg.muted">
               <ArrowBendDownRightIcon /> Context:
             </Flex>
-            {message.context?.map((c: ContextItem) => (
+            {context.datasets?.map((name) => (
               <ContextTag
-                key={c.id}
-                contextType={c.contextType as ChatContextType}
-                content={
-                  typeof c.content === "string"
-                    ? c.content
-                    : JSON.stringify(c.content)
-                }
+                key={`ds-${name}`}
+                contextType="layer"
+                content={name}
               />
             ))}
+            {context.areas?.map((name) => (
+              <ContextTag
+                key={`area-${name}`}
+                contextType="area"
+                content={name}
+              />
+            ))}
+            {context.daterange && (
+              <ContextTag
+                contextType="date"
+                content={`${context.daterange.start_date} — ${context.daterange.end_date}`}
+              />
+            )}
           </Flex>
         )}
         {isError ? (

@@ -26,9 +26,9 @@ import { getToolErrorMessage } from "@/app/lib/tool-display";
 
 const GLOBAL_LAYER_ID = "Global Layer";
 
-// Dev-only mocks — exercise the full pickDataset → contextStore → map pipeline
-// without the backend. Both use an existing DATASET_CARDS entry so the legend
-// renders correctly.
+// Dev-only mocks — exercise the full pick_dataset → map layer pipeline without
+// the backend. Both use an existing DATASET_CARDS entry so the legend renders
+// correctly.
 const MOCK_VECTOR_DATASET: DatasetInfo = {
   dataset_id: 10,
   dataset_name: "Tree cover loss due to fires",

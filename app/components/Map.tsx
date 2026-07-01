@@ -15,10 +15,8 @@ import {
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
-import useContextStore from "@/app/store/contextStore";
 import useCookieStore from "@/app/store/cookieStore";
 import { URLS } from "@/app/constants/urls";
-import { useShallow } from "zustand/react/shallow";
 import MapAreaControls from "./MapAreaControls";
 import { basemapOptions } from "./map/BasemapSelector";
 import DynamicTileLayers, {
@@ -58,9 +56,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   // Also mount while the agent is processing so the workspace can show its
   // generating skeleton on a first analysis (before any insight exists).
   const isLoading = useChatStore((s) => s.isLoading);
-  const areas = useContextStore(
-    useShallow((s) => s.context.filter((c) => c.contextType === "area"))
-  );
   const consentStatus = useCookieStore((s) => s.consentStatus);
   const openPreferences = useCookieStore((s) => s.openPreferences);
   const onMapLoad = () => {
@@ -241,8 +236,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         </Source>
         <DynamicTileLayers />
         <VectorDataLayers />
-        <AoiVectorTileLayers areas={areas} basemapTheme={basemapTheme} />
-        <GeoJsonLayers areas={areas} basemapTheme={basemapTheme} />
+        <AoiVectorTileLayers basemapTheme={basemapTheme} />
+        <GeoJsonLayers basemapTheme={basemapTheme} />
         <PendingDrawArea basemapTheme={basemapTheme} />
         <SelectAreaLayer />
 

@@ -2,23 +2,18 @@ import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 import useMapStore from "@/app/store/mapStore";
 import { isAoiVectorLayer } from "@/app/store/layerManagerSlice";
-import type { ContextItem } from "@/app/store/contextStore";
 import type { BasemapTheme } from "../BasemapSelector";
 
 interface AoiVectorTileLayersProps {
-  areas: ContextItem[];
   basemapTheme: BasemapTheme;
 }
 
 /**
- * Renders managed vector tile (MVT/PBF) layers from the layer store.
- * Applies context-aware styling: blue when the layer is the active area
- * context, gray otherwise — consistent with GeoJsonLayers.
+ * Renders managed vector tile (MVT/PBF) AOI layers from the layer store.
+ * Every visible AOI vector layer IS the query scope, so it always uses the
+ * in-scope (highlighted) styling — consistent with GeoJsonLayers.
  */
-function AoiVectorTileLayers({
-  areas,
-  basemapTheme,
-}: AoiVectorTileLayersProps) {
+function AoiVectorTileLayers({ basemapTheme }: AoiVectorTileLayersProps) {
   const allLayers = useMapStore((s) => s.layers);
   const vectorLayers = useMemo(
     () => allLayers.filter(isAoiVectorLayer),
@@ -32,17 +27,9 @@ function AoiVectorTileLayers({
         const fillLayerId = `vector-tile-fill-${layer.id}`;
         const lineLayerId = `vector-tile-line-${layer.id}`;
 
-        const isInContext = areas.some(
-          (a) => a.aoiSelection?.name === layer.name || a.content === layer.name
-        );
-
-        const lineColor = isInContext
-          ? basemapTheme === "dark"
-            ? "#FFFFFF"
-            : "#8EA4E8"
-          : "#666E7B";
+        const lineColor = basemapTheme === "dark" ? "#FFFFFF" : "#8EA4E8";
         const casingColor = basemapTheme === "dark" ? "#0049aa" : "#FFFFFF";
-        const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
+        const lineOpacity = !layer.visible ? 0 : 1;
         const opacity = layer.opacity ?? 1;
 
         return (
@@ -59,7 +46,7 @@ function AoiVectorTileLayers({
               source-layer={layer.sourceLayer}
               paint={{
                 "fill-color": lineColor,
-                "fill-opacity": isInContext ? 0.06 * opacity : 0,
+                "fill-opacity": 0.06 * opacity,
               }}
             />
             {/* Casing layer (wider, contrasting colour) rendered below the main line */}

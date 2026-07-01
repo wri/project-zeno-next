@@ -12,8 +12,8 @@ import {
 import { LayerId, selectLayerOptions } from "@/app/types/map";
 import { API_CONFIG } from "@/app/config/api";
 
-import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
+import { isAreaLayer } from "@/app/store/layerManagerSlice";
 
 import {
   getAoiName,
@@ -37,7 +37,6 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { context, addContext, removeContext } = useContextStore();
   const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
     useMapStore();
 
@@ -119,9 +118,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
           if (feature) {
             const featureProps = feature.properties;
-            const layerConfig = selectLayerOptions.find(
-              (opt) => opt.id === layerId
-            );
             const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
             const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
 
@@ -172,35 +168,25 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               }
             }
 
-            const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
-
-            // Only one vector-click AOI at a time. Skip entirely if this src_id is
-            // already the active selection (avoids remove+re-add on double-click).
-            // Custom (drawn/uploaded) areas — identified by aoiData.source === "custom"
-            // — are left untouched.
-            const alreadyInContext = context.some(
-              (c) =>
-                c.contextType === "area" && c.aoiData?.src_id === dynamicSrcId
-            );
-            if (!alreadyInContext) {
-              context
+            // Only one vector-click AOI at a time: clicking a new boundary
+            // replaces any previous non-custom area selection (admin clicks +
+            // assistant picks), leaving custom (drawn/uploaded) areas — whose
+            // feature refs use source "custom" — untouched. The visible layer
+            // IS the scope, so we mutate layers directly instead of a context
+            // item. addLayer (above) is keyed by aoiName, so a double-click
+            // just replaces in place; we only need to drop the others.
+            const { layers: currentLayers, removeLayer } =
+              useMapStore.getState();
+            const justAdded = currentLayers.some((l) => l.id === aoiName);
+            if (justAdded) {
+              currentLayers
                 .filter(
-                  (c) =>
-                    c.contextType === "area" && c.aoiData?.source !== "custom"
+                  (l) =>
+                    l.id !== aoiName &&
+                    isAreaLayer(l) &&
+                    !(l.featureRefs ?? []).some((r) => r.source === "custom")
                 )
-                .forEach((c) => removeContext(c.id));
-
-              addContext({
-                contextType: "area",
-                content: aoiName,
-                aoiData: {
-                  name: aoiName,
-                  ...(idField ? { [idField]: dynamicSrcId } : {}),
-                  src_id: dynamicSrcId,
-                  subtype: dynamicSubtype,
-                  source: layerConfig?.id.toLowerCase(),
-                },
-              });
+                .forEach((l) => removeLayer(l.id));
             }
 
             // AnalysisCtaTrigger reacts to this selection and surfaces the
@@ -246,9 +232,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     nameKeys,
     setSelectAreaLayer,
     metadata,
-    addContext,
-    removeContext,
-    context,
     addToRegistry,
     addLayer,
     layerId,

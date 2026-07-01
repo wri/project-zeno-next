@@ -37,11 +37,10 @@ import {
   CATALOG_CARD_WIDTH_PX,
   getCatalogLeftPx,
 } from "@/app/explorationLayout";
-import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import type { DatasetInfo } from "@/app/types/chat";
-import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
+import { datasetCardLayers } from "@/app/utils/datasetCardLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 
 import { CatalogCard } from "./CatalogCard";
@@ -71,8 +70,8 @@ const catalogListScrollStyle = {
  * chat panel.
  *
  * Wiring:
- *  - Show-on-map switch ↔ `contextStore.addContext` / `removeContext` (the
- *    contextStore already drives `mapStore.addLayer` for dataset layers).
+ *  - Show-on-map switch ↔ `mapStore.addLayer` / `removeLayer` — the visible
+ *    dataset layer IS the scope, so the layer manager is the source of truth.
  *  - Visibility / opacity controls ↔ `mapStore.setLayerVisibility` and
  *    `setLayerOpacity` on `dataset-${dataset_id}`.
  *
@@ -85,15 +84,14 @@ export default function DataCatalogPanel() {
     useSidebarStore();
   const leftPx = getCatalogLeftPx(isChatFullSize);
 
-  // Build the "in this conversation" set from the context store. `useShallow`
-  // keeps re-renders stable across unrelated context changes (e.g. AOI edits).
-  const activeDatasetIds = useContextStore(
+  // Build the "in this conversation" set from the visible dataset layers — the
+  // layer manager is the source of truth. `useShallow` keeps re-renders stable
+  // across unrelated layer changes (e.g. AOI edits).
+  const activeDatasetIds = useMapStore(
     useShallow((s) =>
-      s.context
-        .filter(
-          (c) => c.contextType === "layer" && typeof c.datasetId === "number"
-        )
-        .map((c) => c.datasetId as number)
+      s.layers
+        .filter((l) => typeof l.datasetId === "number" && !l.parentLayerId)
+        .map((l) => l.datasetId as number)
     )
   );
 
@@ -232,38 +230,28 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
     onClose: onInfoClose,
   } = useDisclosure();
 
-  const ctx = useContextStore(
-    useShallow((s) =>
-      s.context.find(
-        (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
-      )
-    )
-  );
-  const addContext = useContextStore((s) => s.addContext);
-  const removeContext = useContextStore((s) => s.removeContext);
-
+  // The visible dataset layer IS the scope — the layer manager is the source
+  // of truth for "is this dataset active?".
   const layer = useMapStore(
     useShallow((s) =>
       s.layers.find((l) => l.id === `dataset-${card.dataset_id}`)
     )
   );
+  const addLayer = useMapStore((s) => s.addLayer);
+  const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
   const setLayerOpacity = useMapStore((s) => s.setLayerOpacity);
 
-  const isActive = !!ctx;
+  const isActive = !!layer;
   const isVisible = layer?.visible ?? true;
   const opacity = Math.round((layer?.opacity ?? 1) * 100);
 
   function handleToggle(checked: boolean) {
     if (!checked) {
-      if (ctx) removeContext(ctx.id);
+      removeDatasetLayers(card.dataset_id);
       return;
     }
-    addContext({
-      contextType: "layer",
-      ...getLayerContextFromDatasetCard(card),
-      isAiContext: false,
-    });
+    datasetCardLayers(card).forEach(addLayer);
   }
 
   const dataset = card as unknown as DatasetInfo;
