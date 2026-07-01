@@ -60,26 +60,30 @@ export function BlogCitation({ number, url, article }: BlogCitationProps) {
           aria-label={`Citation ${number}: ${article?.title ?? branding.label}`}
           display="inline-flex"
           alignItems="center"
+          justifyContent="center"
           gap="2px"
           verticalAlign="super"
           fontFamily="mono"
-          fontSize="9px"
+          fontSize="8px"
           fontWeight="600"
+          letterSpacing="0.9px"
           lineHeight="1"
-          px="5px"
-          py="2.5px"
+          px="4px"
+          py="2px"
           mx="1px"
-          borderRadius="full"
-          bg="primary.25"
-          color="primary.500"
+          borderRadius="4px"
+          // Colours taken from the Figma "source-pill" citation chip. The chip
+          // is source-agnostic (blue) — only the BlogSourceIcon glyph varies.
+          bg="#F0F4FF"
+          color="#2A5FB5"
           border="1px solid"
-          borderColor="primary.100"
+          borderColor="#B2C3F0"
           cursor="pointer"
           transition="all 0.16s ease"
           _hover={{
-            bg: "primary.50",
-            borderColor: "primary.300",
-            color: "primary.700",
+            bg: "#E4EAFB",
+            borderColor: "#9FB4E8",
+            color: "#1E4C99",
           }}
         >
           <BlogSourceIcon source={source} size={10} />
