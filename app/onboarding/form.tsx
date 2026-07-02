@@ -301,7 +301,7 @@ export default function OnboardingForm({
 
       const verified = await waitForProfileCompletion();
       if (verified) {
-        const queryString = searchParams.toString();
+        const queryString = searchParams?.toString() ?? "";
         const destination = queryString ? `/app?${queryString}` : "/app";
         router.push(destination);
       } else {

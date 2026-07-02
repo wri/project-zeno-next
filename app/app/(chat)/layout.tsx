@@ -30,6 +30,7 @@ import {
   CATALOG_COLUMN_Z_INDEX,
   MAP_FEEDBACK_Z_INDEX,
 } from "@/app/explorationLayout";
+import { ViewAnalysisTrigger } from "@/src/features/analysis";
 
 export default function DashboardLayout({
   children,
@@ -195,6 +196,7 @@ export default function DashboardLayout({
       <UploadAreaDialog />
       <WhatsNewModal />
       <AnalysisCtaTrigger />
+      <ViewAnalysisTrigger />
 
       {!isMobile && (
         <Box>

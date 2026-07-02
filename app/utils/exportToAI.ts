@@ -1,5 +1,5 @@
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
-import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
 
 export type AIProvider = "claude" | "chatgpt" | "gemini";
@@ -54,10 +54,13 @@ function buildMarkdownTable(data: unknown): string {
 }
 
 function resolveDatasetMeta(): DatasetInfo | null {
-  const ctx = useContextStore.getState().context;
-  const layerItem = ctx.find((c) => c.contextType === "layer");
-  if (layerItem?.datasetId != null) {
-    return DATASET_BY_ID[layerItem.datasetId] ?? null;
+  // The visible dataset layer is the active dataset. Skip context sub-layers
+  // (parentLayerId set) so we resolve the main dataset's metadata.
+  const datasetLayer = useMapStore
+    .getState()
+    .layers.find((l) => typeof l.datasetId === "number" && !l.parentLayerId);
+  if (datasetLayer?.datasetId != null) {
+    return DATASET_BY_ID[datasetLayer.datasetId] ?? null;
   }
   return null;
 }

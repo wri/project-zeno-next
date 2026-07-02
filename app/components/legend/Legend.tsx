@@ -30,7 +30,7 @@ interface LegendProps {
   layers: LegendLayer[];
   onLayerAction?: LayerActionHandler;
   aois?: LegendAoi[];
-  onRemoveAoi?: (contextId: string) => void;
+  onRemoveAoi?: (layerId: string) => void;
 }
 
 /**
@@ -210,13 +210,13 @@ export function Legend(props: LegendProps) {
               >
                 {aois.map((aoi) => (
                   <ParamChip
-                    key={`${aoi.contextId}-${aoi.name}`}
+                    key={`${aoi.layerId}-${aoi.name}`}
                     label="AREA"
                     value={aoi.name}
                     colorScheme="blue"
                     bg="white"
                     onRemove={
-                      onRemoveAoi ? () => onRemoveAoi(aoi.contextId) : undefined
+                      onRemoveAoi ? () => onRemoveAoi(aoi.layerId) : undefined
                     }
                     removeLabel={`Remove ${aoi.name}`}
                   />

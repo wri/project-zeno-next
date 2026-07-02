@@ -5,8 +5,10 @@ import {
   AnalysisParams,
   DatasetInfo,
 } from "@/app/types/chat";
-import useContextStore from "../contextStore";
+import useMapStore from "../mapStore";
+import { isAreaLayer } from "../layerManagerSlice";
 import useInsightStore from "../insightStore";
+import useChatStore from "../chatStore";
 
 interface ChartData {
   id: string;
@@ -32,46 +34,52 @@ export function generateInsightsTool(
   try {
     if (streamMessage.charts_data && Array.isArray(streamMessage.charts_data)) {
       // streamMessage carries the agent's authoritative selection for this
-      // analysis. Prefer it over contextStore, which is updated asynchronously
-      // by pickAoiTool/etc. and may not yet reflect this turn's choices.
-      const context = useContextStore.getState().context;
+      // analysis. Prefer it over the map layers, which are updated
+      // asynchronously by pickAoiTool/etc. and may not yet reflect this turn.
+      const mapLayers = useMapStore.getState().layers;
+      // The active dataset is the visible main dataset layer (skip context
+      // sub-layers). Stream data still wins; this is the fallback source.
+      const datasetLayer = mapLayers.find(
+        (l) => typeof l.datasetId === "number" && !l.parentLayerId
+      );
+      // The active area is the first visible area layer (the query scope).
+      const areaLayer = mapLayers.find((l) => l.visible && isAreaLayer(l));
+      const selectionFromLayer =
+        areaLayer?.aoiSelection?.name ?? areaLayer?.selectionName;
       const dataset = streamMessage.dataset as DatasetInfo | undefined;
       const analysisParams: AnalysisParams = {};
 
       const aoiFromStream = streamMessage.aoi_selection?.aois;
       const selectionFromStream = streamMessage.aoi_selection?.name;
-      const areaItem = context.find((c) => c.contextType === "area");
-      const selectionFromContext = areaItem?.aoiSelection?.name;
       // Prefer the selection name (one chip) over the per-AOI list so the
       // chip matches the legend, which always shows one chip per selection.
-      // Falls back to the AOI list / content string when no name is given.
+      // Falls back to the AOI list / layer name when no name is given.
       if (selectionFromStream) {
         analysisParams.areas = [selectionFromStream];
-      } else if (selectionFromContext) {
-        analysisParams.areas = [selectionFromContext];
+      } else if (selectionFromLayer) {
+        analysisParams.areas = [selectionFromLayer];
       } else if (aoiFromStream?.length) {
         analysisParams.areas = aoiFromStream.map((a) => a.name);
-      } else if (areaItem?.aoiSelection?.aois?.length) {
-        analysisParams.areas = areaItem.aoiSelection.aois.map((a) => a.name);
-      } else if (typeof areaItem?.content === "string" && areaItem.content) {
-        analysisParams.areas = [areaItem.content];
+      } else if (areaLayer?.aoiSelection?.aois?.length) {
+        analysisParams.areas = areaLayer.aoiSelection.aois.map((a) => a.name);
+      } else if (areaLayer?.name) {
+        analysisParams.areas = [areaLayer.name];
       }
 
-      const layerItem = context.find((c) => c.contextType === "layer");
       if (dataset?.dataset_name) {
         analysisParams.dataset = dataset.dataset_name;
-      } else if (layerItem?.layerName) {
-        analysisParams.dataset = layerItem.layerName;
+      } else if (datasetLayer?.name) {
+        analysisParams.dataset = datasetLayer.name;
       }
 
       if (typeof dataset?.threshold === "number") {
         analysisParams.canopyThreshold = dataset.threshold;
-      } else if (typeof layerItem?.parameters?.canopy_cover === "number") {
-        analysisParams.canopyThreshold = layerItem.parameters.canopy_cover;
+      } else if (typeof datasetLayer?.parameters?.canopy_cover === "number") {
+        analysisParams.canopyThreshold = datasetLayer.parameters.canopy_cover;
       }
 
-      const startStr = streamMessage.start_date ?? layerItem?.startDate;
-      const endStr = streamMessage.end_date ?? layerItem?.endDate;
+      const startStr = streamMessage.start_date ?? datasetLayer?.startDate;
+      const endStr = streamMessage.end_date ?? datasetLayer?.endDate;
       if (startStr && endStr) {
         const startYear = new Date(startStr).getUTCFullYear();
         const endYear = new Date(endStr).getUTCFullYear();
@@ -80,10 +88,10 @@ export function generateInsightsTool(
           analysisParams.endYear = endYear;
         }
       } else {
-        const dateItem = context.find((c) => c.contextType === "date");
-        if (dateItem?.dateRange) {
-          analysisParams.startYear = dateItem.dateRange.start.getFullYear();
-          analysisParams.endYear = dateItem.dateRange.end.getFullYear();
+        const dateRange = useChatStore.getState().dateRange;
+        if (dateRange) {
+          analysisParams.startYear = dateRange.start.getFullYear();
+          analysisParams.endYear = dateRange.end.getFullYear();
         }
       }
 

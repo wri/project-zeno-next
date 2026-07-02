@@ -21,7 +21,10 @@ vi.mock("@/app/components/ui/toaster", () => ({
 
 import useChatStore from "../chatStore";
 import { apiFetch } from "@/app/lib/api-client";
-import type { AnalyseSuggestion } from "@/app/types/chat";
+import type {
+  AnalyseSuggestion,
+  ViewAnalysisSuggestion,
+} from "@/app/types/chat";
 
 // Error that mimics a fetch/stream abort: `name === "AbortError"` is what
 // chatStore.sendMessage keys off of to take its abort branch.
@@ -132,6 +135,90 @@ const suggestion = (areaName: string): AnalyseSuggestion => ({
 
 const analyseNudges = () =>
   useChatStore.getState().messages.filter((m) => m.type === "analyse-nudge");
+
+const viewSuggestion = (areaName: string): ViewAnalysisSuggestion => ({
+  area: { name: areaName, source: "gadm", srcId: "BRA.14_1", subtype: "adm1" },
+  datasetId: 4,
+  datasetName: "Tree cover loss",
+  startDate: "2001-01-01",
+  endDate: "2025-12-31",
+});
+
+const viewAnalysisNudges = () =>
+  useChatStore
+    .getState()
+    .messages.filter((m) => m.type === "view-analysis-nudge");
+
+describe("chatStore.upsertViewAnalysisNudge", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  it("appends a view-analysis-nudge message carrying the suggestion", () => {
+    useChatStore
+      .getState()
+      .upsertViewAnalysisNudge(viewSuggestion("Pará, Brazil"));
+
+    const nudges = viewAnalysisNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].viewAnalysisSuggestion?.area.name).toBe("Pará, Brazil");
+    expect(useChatStore.getState().messages.at(-1)?.type).toBe(
+      "view-analysis-nudge"
+    );
+  });
+
+  it("replaces the pending nudge but preserves accepted ones", () => {
+    useChatStore
+      .getState()
+      .upsertViewAnalysisNudge(viewSuggestion("Pará, Brazil"));
+    const accepted = viewAnalysisNudges()[0];
+    useChatStore.getState().acceptViewAnalysisNudge(accepted.id);
+
+    useChatStore
+      .getState()
+      .upsertViewAnalysisNudge(viewSuggestion("Acre, Brazil"));
+    useChatStore
+      .getState()
+      .upsertViewAnalysisNudge(viewSuggestion("Amazonas, Brazil"));
+
+    const nudges = viewAnalysisNudges();
+    expect(nudges).toHaveLength(2);
+    expect(nudges[0].viewAnalysisSuggestion).toMatchObject({
+      datasetId: 4,
+      accepted: true,
+    });
+    expect(nudges[0].viewAnalysisSuggestion?.area.name).toBe("Pará, Brazil");
+    expect(nudges[1].viewAnalysisSuggestion?.area.name).toBe(
+      "Amazonas, Brazil"
+    );
+    expect(nudges[1].viewAnalysisSuggestion?.accepted).toBeUndefined();
+  });
+
+  it("is cleared by reset() along with the rest of the thread", () => {
+    useChatStore
+      .getState()
+      .upsertViewAnalysisNudge(viewSuggestion("Pará, Brazil"));
+    useChatStore.getState().reset();
+    expect(viewAnalysisNudges()).toHaveLength(0);
+  });
+});
+
+describe("chatStore.acceptViewAnalysisNudge", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  it("marks the targeted nudge as accepted", () => {
+    useChatStore
+      .getState()
+      .upsertViewAnalysisNudge(viewSuggestion("Pará, Brazil"));
+    const nudge = viewAnalysisNudges()[0];
+
+    useChatStore.getState().acceptViewAnalysisNudge(nudge.id);
+
+    expect(viewAnalysisNudges()[0].viewAnalysisSuggestion?.accepted).toBe(true);
+  });
+});
 
 describe("chatStore.upsertAnalyseNudge", () => {
   beforeEach(() => {

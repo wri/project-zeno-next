@@ -14,7 +14,6 @@ describe("getLayerContextFromDatasetCard", () => {
     } as DatasetCardConfig;
 
     expect(getLayerContextFromDatasetCard(card)).toEqual({
-      content: "Tree cover loss",
       datasetId: 4,
       tileUrl: "https://example.com/tiles?x=1&start_year=2001&end_year=2025",
       layerName: "Tree cover loss",
@@ -33,7 +32,6 @@ describe("getLayerContextFromDatasetCard", () => {
     } as DatasetCardConfig;
 
     expect(getLayerContextFromDatasetCard(card)).toEqual({
-      content: "Tree cover",
       datasetId: 7,
       tileUrl: "https://example.com/tiles?x=1",
       layerName: "Tree cover",

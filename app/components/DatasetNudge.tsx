@@ -4,9 +4,12 @@ import { Flex, Text } from "@chakra-ui/react";
 import { CheckIcon } from "@phosphor-icons/react";
 import { SuggestedDataset } from "@/app/types/chat";
 import useChatStore from "@/app/store/chatStore";
-import useContextStore from "@/app/store/contextStore";
+import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
-import { getDatasetLayerContextProps } from "@/app/utils/datasetLayerContext";
+import {
+  getDatasetLayerContextProps,
+  buildDatasetLayers,
+} from "@/app/utils/datasetLayerContext";
 
 export default function DatasetNudge({
   datasets,
@@ -32,15 +35,18 @@ export default function DatasetNudge({
       };
 
       const layerContextProps = getDatasetLayerContextProps(merged);
-      useContextStore.getState().upsertContextByType({
-        contextType: "layer",
-        content: merged.dataset_name,
+      // The visible layer IS the scope. Replace any existing dataset layers
+      // (single-dataset selection) and add this dataset's layers to the map.
+      const { addLayer, removeLayer, layers } = useMapStore.getState();
+      layers
+        .filter((l) => typeof l.datasetId === "number")
+        .forEach((l) => removeLayer(l.id));
+      buildDatasetLayers({
         datasetId: merged.dataset_id,
-        tileUrl: merged.tile_url,
         layerName: merged.dataset_name,
+        tileUrl: merged.tile_url,
         ...layerContextProps,
-        isAiContext: true,
-      });
+      }).forEach(addLayer);
     }
 
     useChatStore.getState().sendMessage(selected.dataset_name, "human_input");

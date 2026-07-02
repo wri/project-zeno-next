@@ -33,7 +33,11 @@ import {
 import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
-import useContextStore, { type ContextItem } from "@/app/store/contextStore";
+import {
+  isAreaLayer,
+  type Layer,
+  type GeoJsonEntry,
+} from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 
@@ -81,12 +85,11 @@ const AREA_FILTERS: { id: AreaFilter; label: string }[] = [
  * mutually exclusive with it via `sidebarStore`.
  *
  * Wiring:
- *  - "In this conversation" — read from `contextStore.context` (filtered to
- *    `contextType === "area"`). Show-on-map toggle controls the corresponding
- *    map layer's `visible` flag via `mapStore.setLayerVisibility`.
+ *  - "In this conversation" — read from `mapStore.layers` (filtered via
+ *    `isAreaLayer`); the visible area layer IS the scope. Show-on-map toggle
+ *    controls the layer's `visible` flag via `mapStore.setLayerVisibility`.
  *  - "Monitored areas" — `useCustomAreasListSuspense().customAreas`. Toggling
- *    show-on-map adds the area to the conversation context (and registers the
- *    geometry on the map) or removes it again.
+ *    show-on-map registers the geometry and adds an area layer (or removes it).
  *  - Header actions delegate to existing `mapStore` actions:
  *    select-on-map (`setSelectAreaLayer` / `setSelectionMode`), upload
  *    (`toggleUploadAreaDialog`), draw (`startDrawing`).
@@ -242,65 +245,58 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Type label string ("Administrative areas" etc.) derived from an area context item. */
-function getAreaTypeLabel(item: ContextItem): string {
-  const source =
-    item.aoiData?.source ?? item.aoiSelection?.aois[0]?.source ?? "";
+/**
+ * Type label string ("Administrative areas" etc.) derived from the resolved
+ * AOISelection. Use the resolved selection (which recovers `source` from the
+ * geojson registry ref) rather than `layer.aoiSelection` directly: hand-clicked
+ * GADM boundaries carry no `aoiSelection`, so reading it would default every
+ * one of them to "custom".
+ */
+function getAreaTypeLabel(aoiSelection: AOISelection | null): string {
+  const source = aoiSelection?.aois[0]?.source ?? "custom";
   const label = AREA_TYPE_LABELS[source.toLowerCase()] ?? source;
   return label || "Area";
 }
 
-/** Display name for an area context item. */
-function getAreaTitle(item: ContextItem): string {
-  if (item.aoiSelection?.name) return item.aoiSelection.name;
-  if (item.aoiData?.name) return item.aoiData.name;
-  if (typeof item.content === "string") return item.content;
-  return "Area";
-}
-
-function contextItemToAoiSelection(item: ContextItem): AOISelection | null {
-  if (item.aoiSelection) return item.aoiSelection;
-  if (!item.aoiData) return null;
-  return {
-    name: item.aoiData.name,
-    aois: [
-      {
-        name: item.aoiData.name,
-        src_id: item.aoiData.src_id ?? item.aoiData.name,
-        source: item.aoiData.source ?? "",
-        subtype: item.aoiData.subtype ?? "",
-      },
-    ],
-  };
+/** Display name for an area layer. */
+function getAreaTitle(layer: Layer): string {
+  return layer.aoiSelection?.name ?? layer.name;
 }
 
 /**
- * Pick the map layer for an area context item by trying the same id candidates
- * `contextStore.removeContext` uses — different add-area call sites pick
- * different conventions for `layer.id`.
+ * Resolve an area layer to an AOISelection for the thumbnail. Uses the layer's
+ * own aoiSelection when present (admin / assistant areas); otherwise rebuilds
+ * one from its geojson registry entries (custom drawn / uploaded areas).
  */
-function getLayerIdForArea(
-  item: ContextItem,
-  layerIds: Set<string>
-): string | undefined {
-  const candidates = [
-    item.aoiData?.src_id,
-    item.aoiData?.name,
-    item.aoiSelection?.name,
-    typeof item.content === "string" ? item.content : undefined,
-  ];
-  for (const id of candidates) {
-    if (id && layerIds.has(id)) return id;
-  }
-  return undefined;
+function layerToAoiSelection(
+  layer: Layer,
+  registry: GeoJsonEntry[]
+): AOISelection | null {
+  if (layer.aoiSelection) return layer.aoiSelection;
+  const refs = layer.featureRefs ?? [];
+  if (refs.length === 0) return null;
+  return {
+    name: layer.name,
+    aois: refs.map((ref) => {
+      const entry = registry.find(
+        (e) => e.ref.name === ref.name && e.ref.source === ref.source
+      );
+      return {
+        name: ref.name,
+        src_id: entry?.srcId ?? ref.name,
+        source: ref.source,
+        subtype: entry?.subtype ?? "",
+      };
+    }),
+  };
 }
 
 function ConversationAreasList() {
-  const areaItems = useContextStore(
-    useShallow((s) => s.context.filter((c) => c.contextType === "area"))
+  const areaLayers = useMapStore(
+    useShallow((s) => s.layers.filter(isAreaLayer))
   );
 
-  if (areaItems.length === 0) {
+  if (areaLayers.length === 0) {
     return (
       <Text fontSize="sm" color="fg.muted" mt={4}>
         No areas selected yet. Use the tools above to pick, upload, or draw an
@@ -311,41 +307,39 @@ function ConversationAreasList() {
 
   return (
     <>
-      {areaItems.map((item) => (
-        <ConversationAreaCard key={item.id} item={item} />
+      {areaLayers.map((layer) => (
+        <ConversationAreaCard key={layer.id} layer={layer} />
       ))}
     </>
   );
 }
 
-function ConversationAreaCard({ item }: { item: ContextItem }) {
-  const layerIds = useMapStore(
-    useShallow((s) => new Set(s.layers.map((l) => l.id)))
-  );
-  const layer = useMapStore(
-    useShallow((s) => {
-      const id = getLayerIdForArea(item, new Set(s.layers.map((l) => l.id)));
-      return id ? s.layers.find((l) => l.id === id) : undefined;
-    })
-  );
+function ConversationAreaCard({ layer }: { layer: Layer }) {
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
+  const removeLayer = useMapStore((s) => s.removeLayer);
+  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
   const flyToGeoJson = useMapStore((s) => s.flyToGeoJson);
   const flyToBounds = useMapStore((s) => s.flyToBounds);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
-  const removeContext = useContextStore((s) => s.removeContext);
 
-  const layerId = getLayerIdForArea(item, layerIds);
-  const isVisible = layer?.visible ?? false;
-  const aoiSelection = useMemo(() => contextItemToAoiSelection(item), [item]);
-  const title = getAreaTitle(item);
+  const isVisible = layer.visible;
+  const aoiSelection = useMemo(
+    () => layerToAoiSelection(layer, geoJsonRegistry),
+    [layer, geoJsonRegistry]
+  );
+  const title = getAreaTitle(layer);
 
   function handleToggle(checked: boolean) {
-    if (!layerId) return;
-    setLayerVisibility(layerId, checked);
+    setLayerVisibility(layer.id, checked);
+  }
+
+  function handleRemove() {
+    (layer.featureRefs ?? []).forEach((ref) => removeFromRegistry(ref));
+    removeLayer(layer.id);
   }
 
   function handleLocate() {
-    const bbox = item.aoiSelection?.aois[0]?.bbox;
+    const bbox = layer.aoiSelection?.aois[0]?.bbox;
     if (bbox) {
       let east = bbox[2];
       if (east > 180) east -= 360;
@@ -355,20 +349,18 @@ function ConversationAreaCard({ item }: { item: ContextItem }) {
       ]);
       return;
     }
-    // Fallback: look up the geometry by registry ref
-    const candidates = [
-      item.aoiData?.name,
-      item.aoiSelection?.aois[0]?.name,
-    ].filter((n): n is string => !!n);
-    for (const name of candidates) {
-      const entry = geoJsonRegistry.find((e) => e.ref.name === name);
+    // Fallback: fly to the first resolvable registry geometry.
+    for (const ref of layer.featureRefs ?? []) {
+      const entry = geoJsonRegistry.find(
+        (e) => e.ref.name === ref.name && e.ref.source === ref.source
+      );
       if (entry) {
         flyToGeoJson(entry.data);
         return;
       }
     }
-    if (item.aoiSelection?.aois[0]?.geometry) {
-      flyToGeoJson(item.aoiSelection.aois[0].geometry);
+    if (layer.aoiSelection?.aois[0]?.geometry) {
+      flyToGeoJson(layer.aoiSelection.aois[0].geometry);
     }
   }
 
@@ -383,16 +375,13 @@ function ConversationAreaCard({ item }: { item: ContextItem }) {
         typeLabel="AREA"
         typeLabelColor={AREA_LABEL_COLOR}
         title={title}
-        description={getAreaTypeLabel(item)}
+        description={getAreaTypeLabel(aoiSelection)}
         selected={isVisible}
         selectedBg={AREA_SELECTED_BG}
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
         titleActions={
-          <AreaCardActions
-            onLocate={handleLocate}
-            onRemove={() => removeContext(item.id)}
-          />
+          <AreaCardActions onLocate={handleLocate} onRemove={handleRemove} />
         }
       />
     </Box>
@@ -401,9 +390,6 @@ function ConversationAreaCard({ item }: { item: ContextItem }) {
 
 function MonitoredAreasList() {
   const { customAreas } = useCustomAreasListSuspense();
-  const areaContext = useContextStore(
-    useShallow((s) => s.context.filter((c) => c.contextType === "area"))
-  );
 
   const sorted = useMemo(() => {
     return [...customAreas].sort(
@@ -422,38 +408,23 @@ function MonitoredAreasList() {
   return (
     <>
       {sorted.map((area) => (
-        <MonitoredAreaCard
-          key={area.id}
-          area={area}
-          contextItem={areaContext.find(
-            (c) =>
-              c.aoiData?.src_id === area.id && c.aoiData.source === "custom"
-          )}
-        />
+        <MonitoredAreaCard key={area.id} area={area} />
       ))}
     </>
   );
 }
 
-function MonitoredAreaCard({
-  area,
-  contextItem,
-}: {
-  area: CustomArea;
-  contextItem: ContextItem | undefined;
-}) {
-  const addContext = useContextStore((s) => s.addContext);
-  const removeContext = useContextStore((s) => s.removeContext);
+function MonitoredAreaCard({ area }: { area: CustomArea }) {
   const addToRegistry = useMapStore((s) => s.addToRegistry);
   const addLayer = useMapStore((s) => s.addLayer);
   const removeLayer = useMapStore((s) => s.removeLayer);
+  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
   const flyToGeoJsonWithRetry = useMapStore((s) => s.flyToGeoJsonWithRetry);
   const layer = useMapStore(
     useShallow((s) => s.layers.find((l) => l.id === area.id))
   );
 
-  const isInContext = !!contextItem;
   const isVisible = layer?.visible ?? false;
 
   function buildFeature(): Feature {
@@ -487,9 +458,9 @@ function MonitoredAreaCard({
 
   function handleToggle(checked: boolean) {
     if (checked) {
-      if (!isInContext) {
-        // Mirror the AreaMenu / UploadAreaDialog flow: register geometry,
-        // add a layer with id = area.id, and add an area context item.
+      if (!layer) {
+        // Register geometry and add a visible area layer — the layer IS the
+        // scope, so there is no separate context item.
         const feature = buildFeature();
         addToRegistry({
           ref: { name: area.name, source: "custom" },
@@ -504,30 +475,19 @@ function MonitoredAreaCard({
           visible: true,
           featureRefs: [{ name: area.name, source: "custom" }],
         });
-        addContext({
-          contextType: "area",
-          content: area.name,
-          aoiData: {
-            src_id: area.id,
-            name: area.name,
-            source: "custom",
-            subtype: "custom-area",
-          },
-        });
         flyToGeoJsonWithRetry(feature);
         return;
       }
-      // Already in conversation but hidden — just re-show it.
-      if (layer && !layer.visible) {
+      // Already added but hidden — just re-show it.
+      if (!layer.visible) {
         setLayerVisibility(area.id, true);
       }
       return;
     }
-    // Toggle OFF on a monitored card removes it from the conversation entirely.
+    // Toggle OFF on a monitored card removes it from the map entirely.
     // (Visibility-only hiding is available from the "In this conversation" tab.)
-    if (contextItem) {
-      removeContext(contextItem.id);
-    } else if (layer) {
+    if (layer) {
+      removeFromRegistry({ name: area.name, source: "custom" });
       removeLayer(area.id);
     }
   }
@@ -560,7 +520,12 @@ function MonitoredAreaCard({
             <AreaCardActions
               onLocate={handleLocate}
               onRemove={
-                contextItem ? () => removeContext(contextItem.id) : undefined
+                layer
+                  ? () => {
+                      removeFromRegistry({ name: area.name, source: "custom" });
+                      removeLayer(area.id);
+                    }
+                  : undefined
               }
             />
           ) : undefined

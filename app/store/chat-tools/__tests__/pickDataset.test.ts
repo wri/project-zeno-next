@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-vi.mock("@/app/store/contextStore", () => ({
+vi.mock("@/app/store/mapStore", () => ({
   default: {
-    getState: () => ({ upsertContextByType: vi.fn() }),
+    getState: () => ({ addLayer: vi.fn(), removeLayer: vi.fn(), layers: [] }),
   },
 }));
 
@@ -13,6 +13,7 @@ vi.mock("@/app/utils/datasetLayerContext", () => ({
     startDate: undefined,
     endDate: undefined,
   }),
+  buildDatasetLayers: () => [],
 }));
 
 import { pickDatasetTool } from "../pickDataset";

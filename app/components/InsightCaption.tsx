@@ -30,10 +30,11 @@ const aiDisclaimerTooltip = (
 );
 
 /**
- * Small "AI-ASSISTED · Learn more" caption shown at the top of an insight
- * chart card. "Learn more" opens the AI-generated-content disclaimer tooltip.
+ * Caption shown at the top of an insight card in the workspace.
+ * curated → "CURATED" (direct-API flow, no AI disclaimer)
+ * default → "AI-ASSISTED · Learn more" with disclaimer tooltip
  */
-export default function AiAssistedLabel() {
+export default function InsightCaption({ curated }: { curated?: boolean }) {
   return (
     <Flex align="center" gap="4px" h="16px">
       <SparkleIcon size={12} weight="thin" color="#737C94" />
@@ -46,27 +47,33 @@ export default function AiAssistedLabel() {
         color="#737C94"
         whiteSpace="nowrap"
       >
-        AI-ASSISTED
-        {" · "}
-        <Tooltip
-          variant="dark"
-          content={aiDisclaimerTooltip}
-          showArrow
-          positioning={{ placement: "bottom" }}
-          openDelay={100}
-          closeDelay={100}
-        >
-          <Box
-            as="span"
-            color="#4A64CB"
-            textDecoration="underline"
-            cursor="help"
-            tabIndex={0}
-            aria-label="Learn more about AI-assisted analysis"
-          >
-            Learn more
-          </Box>
-        </Tooltip>
+        {curated ? (
+          "CURATED"
+        ) : (
+          <>
+            AI-ASSISTED
+            {" · "}
+            <Tooltip
+              variant="dark"
+              content={aiDisclaimerTooltip}
+              showArrow
+              positioning={{ placement: "bottom" }}
+              openDelay={100}
+              closeDelay={100}
+            >
+              <Box
+                as="span"
+                color="#4A64CB"
+                textDecoration="underline"
+                cursor="help"
+                tabIndex={0}
+                aria-label="Learn more about AI-assisted analysis"
+              >
+                Learn more
+              </Box>
+            </Tooltip>
+          </>
+        )}
       </Text>
     </Flex>
   );

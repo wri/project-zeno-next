@@ -11,7 +11,6 @@ import {
 } from "@phosphor-icons/react";
 
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
-import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
 import type { FeatureRef } from "@/app/store/layerManagerSlice";
 import { LayerId, selectLayerOptions } from "@/app/types/map";
@@ -39,7 +38,6 @@ export function AreaToolbarButtons() {
     addToRegistry,
     flyToGeoJson,
   } = useMapStore();
-  const { addContext } = useContextStore();
   const { isCreating } = useCustomAreasCreate();
 
   const buttonProps = {
@@ -73,23 +71,13 @@ export function AreaToolbarButtons() {
         srcId: id,
         subtype: "custom-area",
       });
+      // The visible layer IS the scope — no separate context item.
       addLayer({
         id: featureRef.name,
         name: featureRef.name,
         type: "geojson",
         visible: true,
         featureRefs: [featureRef],
-      });
-
-      addContext({
-        contextType: "area",
-        content: name,
-        aoiData: {
-          src_id: id,
-          name,
-          source: "custom",
-          subtype: "custom-area",
-        },
       });
 
       flyToGeoJson(feat);
