@@ -10,18 +10,27 @@ import {
   Text,
   Portal,
 } from "@chakra-ui/react";
-import { ArrowBendRightUpIcon } from "@phosphor-icons/react";
+import { ArrowBendRightUpIcon, StopIcon } from "@phosphor-icons/react";
+import { format } from "date-fns";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
-import useContextStore from "../store/contextStore";
+import useMapStore from "../store/mapStore";
+import { isAreaLayer } from "../store/layerManagerSlice";
+import useSidebarStore from "../store/sidebarStore";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
   isChatDisabled,
+  bordered,
+  onAfterSend,
 }: {
   isChatDisabled?: boolean;
+  /** Render the input box as a standalone rounded card (conversation panel) */
+  bordered?: boolean;
+  /** Called immediately before sending, e.g. to expand a collapsed panel */
+  onAfterSend?: () => void;
 }) {
   const [inputValue, setInputValue] = useState("");
   const [contextModalOpen, setContextModalOpen] = useState(false);
@@ -40,12 +49,50 @@ export default function ChatInput({
 
   const [focusEl, setFocusEl] = useState<HTMLTextAreaElement | null>(null);
 
-  const { sendMessage, isLoading } = useChatStore();
-  const { context, removeContext } = useContextStore();
+  const {
+    sendMessage,
+    isLoading,
+    cancelRequest,
+    abortController,
+    messages,
+    dateRange,
+    clearDateRange,
+  } = useChatStore();
+  const { layers, removeLayer, removeDatasetLayers } = useMapStore();
+  const {
+    dataCatalogOpen,
+    toggleDataCatalog,
+    areasPanelOpen,
+    toggleAreasPanel,
+  } = useSidebarStore();
+
+  // Pills are a presentational view of the current scope: visible dataset
+  // layers + visible area layers + the selected date range. Dataset/area
+  // sub-layers are excluded.
+  const datasetPillLayers = layers.filter(
+    (l) => typeof l.datasetId === "number" && !l.parentLayerId
+  );
+  const areaPillLayers = layers.filter((l) => l.visible && isAreaLayer(l));
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
     setContextModalOpen(true);
+  };
+
+  const openLayerPicker = () => {
+    if (isMobile) {
+      openContextMenu("layer");
+      return;
+    }
+    toggleDataCatalog();
+  };
+
+  const openAreaPicker = () => {
+    if (isMobile) {
+      openContextMenu("area");
+      return;
+    }
+    toggleAreasPanel();
   };
 
   const handleContextModalOpenChange = (e: { open: boolean }) => {
@@ -58,6 +105,7 @@ export default function ChatInput({
 
     const message = inputValue.trim();
     setInputValue("");
+    onAfterSend?.();
 
     // Close the modal on mobile after sending a message
     if (isMobile) {
@@ -83,10 +131,27 @@ export default function ChatInput({
   };
 
   const disabled = isLoading || isChatDisabled;
-  const message = isLoading ? "Sending..." : "Ask a question...";
+  // The abortController is the authoritative signal that a cancellable chat
+  // request is in flight: sendMessage sets it before fetching and nulls it in
+  // its finally, and nothing else touches it. We deliberately do NOT gate on
+  // isLoading, which is an overloaded flag also set during thread loading (not
+  // cancellable) and whose meaning could drift in the future.
+  const canCancelRequest = abortController !== null;
+  const hasNudge = messages.at(-1)?.type === "dataset-nudge";
+  const hasConversation = messages.some(
+    (m) => m.type === "user" || m.type === "assistant"
+  );
+  const message = isLoading
+    ? "Sending..."
+    : hasNudge
+      ? "Or ask a different question..."
+      : hasConversation
+        ? "Ask a follow-up question…"
+        : "Or describe what you want to explore…";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
-  const hasContext = context.length > 0;
+  const hasPills =
+    datasetPillLayers.length > 0 || areaPillLayers.length > 0 || !!dateRange;
 
   // The core UI of the chat input is defined here so it can be reused
   // for both the desktop view and within the mobile modal.
@@ -96,34 +161,49 @@ export default function ChatInput({
       position="relative"
       m={0}
       p={4}
-      bg="gray.100"
-      borderColor="gray.300"
-      borderRadius="lg"
-      borderWidth="1px"
+      bg={bordered ? "#F4F5F6" : "gray.100"}
+      borderWidth={bordered ? "1px" : 0}
+      borderColor={bordered ? "#E0E2E5" : undefined}
+      borderRadius={bordered ? "sm" : undefined}
       className="group"
       transition="all 0.32s ease-in-out"
-      _active={{
-        borderColor: "primary.focusRing",
-      }}
-      _focusWithin={{
-        borderColor: "primary.focusRing",
-      }}
+      _focusWithin={
+        bordered
+          ? { borderColor: "primary.focusRing", outline: "none" }
+          : undefined
+      }
     >
-      {hasContext && (
+      {hasPills && (
         <Flex gap={1} wrap="wrap" mb={1}>
-          {context.map((c) => (
+          {datasetPillLayers.map((l) => (
             <ContextTag
-              key={c.id}
-              contextType={c.contextType as ChatContextType}
-              content={
-                typeof c.content === "string"
-                  ? c.content || c.aoiData?.name || c.aoiData?.src_id
-                  : JSON.stringify(c.content)
-              }
-              onClose={() => removeContext(c.id)}
+              key={l.id}
+              contextType="layer"
+              content={l.name}
+              onClose={() => removeDatasetLayers(l.datasetId!)}
               closeable
             />
           ))}
+          {areaPillLayers.map((l) => (
+            <ContextTag
+              key={l.id}
+              contextType="area"
+              content={l.selectionName ?? l.name}
+              onClose={() => removeLayer(l.id)}
+              closeable
+            />
+          ))}
+          {dateRange && (
+            <ContextTag
+              contextType="date"
+              content={`${format(dateRange.start, "yyyy-MM-dd")} — ${format(
+                dateRange.end,
+                "yyyy-MM-dd"
+              )}`}
+              onClose={clearDateRange}
+              closeable
+            />
+          )}
         </Flex>
       )}
       <Textarea
@@ -148,38 +228,55 @@ export default function ChatInput({
         <Flex gap="2">
           <ContextButton
             contextType="layer"
-            onClick={() => openContextMenu("layer")}
+            onClick={openLayerPicker}
             disabled={disabled}
+            borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
+            color={dataCatalogOpen ? "primary.solid" : undefined}
+            aria-expanded={dataCatalogOpen}
           />
           <ContextButton
             contextType="area"
-            onClick={() => openContextMenu("area")}
+            onClick={openAreaPicker}
             disabled={disabled}
-          />
-          <ContextButton
-            contextType="date"
-            onClick={() => openContextMenu("date")}
-            disabled={disabled}
+            borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
+            color={areasPanelOpen ? "primary.solid" : undefined}
+            aria-expanded={areasPanelOpen}
           />
         </Flex>
-        <Button
-          p="0"
-          ml="auto"
-          borderRadius="full"
-          variant="solid"
-          colorPalette="primary"
-          _disabled={{
-            opacity: 0.36,
-          }}
-          type="button"
-          size="xs"
-          aria-label="Send prompt"
-          onClick={submitPrompt}
-          disabled={isButtonDisabled}
-          loading={isLoading}
-        >
-          <ArrowBendRightUpIcon weight="bold" />
-        </Button>
+        {canCancelRequest ? (
+          <Button
+            p="0"
+            ml="auto"
+            borderRadius="full"
+            variant="solid"
+            colorPalette="primary"
+            type="button"
+            size="xs"
+            aria-label="Cancel request"
+            onClick={cancelRequest}
+            title="Cancel request"
+          >
+            <StopIcon weight="fill" />
+          </Button>
+        ) : (
+          <Button
+            p="0"
+            ml="auto"
+            borderRadius="full"
+            variant="solid"
+            colorPalette="primary"
+            _disabled={{
+              opacity: 0.36,
+            }}
+            type="button"
+            size="xs"
+            aria-label="Send prompt"
+            onClick={submitPrompt}
+            disabled={isButtonDisabled}
+          >
+            <ArrowBendRightUpIcon weight="bold" />
+          </Button>
+        )}
       </Flex>
     </Flex>
   );
@@ -246,49 +343,71 @@ export default function ChatInput({
               contextType="layer"
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
-                openContextMenu("layer");
+                openLayerPicker();
               }}
               disabled={disabled}
+              aria-expanded={
+                isMobile
+                  ? contextModalOpen && selectedContextType === "layer"
+                  : dataCatalogOpen
+              }
             />
             <ContextButton
               contextType="area"
               onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
-                openContextMenu("area");
+                openAreaPicker();
               }}
               disabled={disabled}
-            />
-            <ContextButton
-              contextType="date"
-              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                e.stopPropagation();
-                openContextMenu("date");
-              }}
-              disabled={disabled}
+              aria-expanded={
+                isMobile
+                  ? contextModalOpen && selectedContextType === "area"
+                  : areasPanelOpen
+              }
             />
           </Flex>
-          <Button
-            p={0}
-            flexShrink={0}
-            colorPalette="primary"
-            title="Send message"
-            aria-label="Send prompt"
-            aria-hidden
-            ml="auto"
-            borderRadius="full"
-            variant="solid"
-            _disabled={{ opacity: 0.36, cursor: "not-allowed" }}
-            type="button"
-            size="xs"
-            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-              e.stopPropagation();
-              submitPrompt();
-            }}
-            disabled={isButtonDisabled}
-            loading={isLoading}
-          >
-            <ArrowBendRightUpIcon weight="bold" />
-          </Button>
+          {canCancelRequest ? (
+            <Button
+              p={0}
+              flexShrink={0}
+              colorPalette="primary"
+              title="Cancel request"
+              aria-label="Cancel request"
+              ml="auto"
+              borderRadius="full"
+              variant="solid"
+              type="button"
+              size="xs"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                cancelRequest();
+              }}
+            >
+              <StopIcon weight="fill" />
+            </Button>
+          ) : (
+            <Button
+              p={0}
+              flexShrink={0}
+              colorPalette="primary"
+              title="Send message"
+              aria-label="Send prompt"
+              aria-hidden
+              ml="auto"
+              borderRadius="full"
+              variant="solid"
+              _disabled={{ opacity: 0.36, cursor: "not-allowed" }}
+              type="button"
+              size="xs"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                submitPrompt();
+              }}
+              disabled={isButtonDisabled}
+            >
+              <ArrowBendRightUpIcon weight="bold" />
+            </Button>
+          )}
         </Flex>
       </Flex>
       {contextMenu}

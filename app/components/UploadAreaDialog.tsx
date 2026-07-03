@@ -16,7 +16,6 @@ import {
 } from "../constants/custom-areas";
 import { UploadSimpleIcon } from "@phosphor-icons/react";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
-import useContextStore from "../store/contextStore";
 
 function UploadAreaDialog() {
   const {
@@ -30,7 +29,6 @@ function UploadAreaDialog() {
     addLayer,
     flyToGeoJson,
   } = useMapStore();
-  const { addContext } = useContextStore();
 
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
 
@@ -64,23 +62,13 @@ function UploadAreaDialog() {
         srcId: id,
         subtype: "custom-area",
       });
+      // The visible layer IS the scope — no separate context item.
       addLayer({
         id,
         name,
         type: "geojson",
         visible: true,
         featureRefs: [{ name, source: "custom" }],
-      });
-
-      addContext({
-        contextType: "area",
-        content: name,
-        aoiData: {
-          src_id: id,
-          name,
-          source: "custom",
-          subtype: "custom-area",
-        },
       });
 
       flyToGeoJson(feat);

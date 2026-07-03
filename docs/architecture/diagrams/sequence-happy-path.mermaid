@@ -1,0 +1,57 @@
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant Map as VectorAreasLayer
+    participant Sel as selectionStore
+    participant CTA as AnalysisCTA (Popup)
+    participant Hook as useAnalysis
+    participant Svc as AnalysisService (core)
+    participant GW as RestAnalysisGateway
+    participant Clk as Clock
+    participant API as Analysis Service (backend)
+    participant XW as analysisResultToWidgets
+    participant IS as insightStore
+    participant WS as InsightWorkspace
+
+    U->>Map: click GADM boundary
+    Map->>Map: toAreaSelection(features, config, meta)
+    Map->>Sel: select(selection, lngLat)
+    Sel-->>CTA: selection (subscribe)
+    CTA-->>U: Popup "Analyze" at lngLat
+    U->>CTA: click Analyze
+    CTA->>Hook: run(selection)
+    Hook->>Svc: run(selection)
+    Svc->>Svc: requestKey = RequestKey.of(params)
+
+    Svc->>GW: submit(request)  [Idempotency-Key]
+    GW->>API: POST /analyses
+    API-->>GW: 202 Accepted + pollUri + Retry-After
+    GW-->>Svc: AnalysisHandle{pollUri, retryAfterMs}
+    Note over Svc,CTA: state = Polling — popup persists, shows progress
+
+    loop until terminal (honors Retry-After)
+        Svc->>Clk: wait(retryAfterMs)
+        Svc->>GW: poll(handle)
+        GW->>API: GET pollUri  (no-store)
+        API-->>GW: 200 pending + Retry-After
+        GW-->>Svc: AnalysisStatus{pending}
+    end
+
+    Svc->>GW: poll(handle)
+    GW->>API: GET pollUri
+    API-->>GW: 200 succeeded + resultUri
+    GW-->>Svc: AnalysisStatus{succeeded, resultUri}
+
+    Svc->>GW: fetchResult(resultUri)
+    GW->>API: GET resultUri
+    Note over GW,API: cacheable — may be served by CDN edge / browser cache (304)
+    API-->>GW: 200 AnalysisResult (Cache-Control + ETag)
+    GW-->>Svc: AnalysisResult
+    Svc-->>Hook: AnalysisResult  (state = Succeeded)
+
+    Hook->>XW: analysisResultToWidgets(result)
+    XW-->>Hook: InsightWidget[]
+    Hook->>IS: addInsights(widgets)
+    IS-->>WS: insights (subscribe)
+    WS-->>U: renders analysis card(s)
+    Hook-->>CTA: terminal → dismiss popup

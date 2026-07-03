@@ -1,18 +1,7 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
-import "../../../../theme/popup.css";
-
-import { LayerId, selectLayerOptions } from "../../../../types/map";
-import useContextStore from "../../../../store/contextStore";
-import useMapStore from "../../../../store/mapStore";
-import { API_CONFIG } from "../../../../config/api";
-import {
-  getAoiName,
-  getSrcId,
-  getSubtype,
-  singularizeDatasetName,
-} from "../../../../utils/areaHelpers";
 import {
   Feature,
   FeatureCollection,
@@ -20,8 +9,28 @@ import {
   MultiPolygon,
   Polygon,
 } from "geojson";
-import AreaTooltip, { HoverInfo } from "../../../ui/AreaTooltip";
+
+import { LayerId, selectLayerOptions } from "@/app/types/map";
+import { API_CONFIG } from "@/app/config/api";
+
+import useMapStore from "@/app/store/mapStore";
+import { isAreaLayer } from "@/app/store/layerManagerSlice";
+
+import {
+  getAoiName,
+  getSrcId,
+  getSubtype,
+  toAreaSelection,
+} from "@/app/utils/areaHelpers";
+
+import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
+import "@/app/theme/popup.css";
+// Direct-analysis "View Analysis" nudge — kept wired behind ?ff=analysis
+// alongside the live analyse nudge. toAreaSelection (areaHelpers) returns the
+// same shape both consumers need, so it's reused for both.
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
+import { useSelectionStore } from "@/src/features/analysis";
 
 interface SourceLayerProps {
   layerId: LayerId;
@@ -34,22 +43,25 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { context, addContext } = useContextStore();
-  const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
+  const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
+    useMapStore();
+  const selectArea = useSelectionStore((state) => state.select);
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
 
+  // Evaluate the flag once at render time so event handlers don't read
+  // window.location directly and the value is stable within a render cycle.
+  const searchParams = useSearchParams();
+  const analysisEnabled = isFeatureEnabled(
+    new URLSearchParams(searchParams?.toString()),
+    "analysis"
+  );
+
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
   );
-  const {
-    id,
-    url,
-    sourceLayer,
-    name: datasetName,
-    nameKeys,
-  } = selectAreaLayerConfig!;
+  const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
@@ -120,9 +132,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
           if (feature) {
             const featureProps = feature.properties;
-            const layerConfig = selectLayerOptions.find(
-              (opt) => opt.id === layerId
-            );
             const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
             const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
 
@@ -173,26 +182,49 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               }
             }
 
-            const idField = metadata?.layer_id_mapping?.[layerId.toLowerCase()];
+            // Only one vector-click AOI at a time: clicking a new boundary
+            // replaces any previous non-custom area selection (admin clicks +
+            // assistant picks), leaving custom (drawn/uploaded) areas — whose
+            // feature refs use source "custom" — untouched. The visible layer
+            // IS the scope, so we mutate layers directly instead of a context
+            // item. addLayer (above) is keyed by aoiName, so a double-click
+            // just replaces in place; we only need to drop the others.
+            const { layers: currentLayers, removeLayer } =
+              useMapStore.getState();
+            const justAdded = currentLayers.some((l) => l.id === aoiName);
+            if (justAdded) {
+              currentLayers
+                .filter(
+                  (l) =>
+                    l.id !== aoiName &&
+                    isAreaLayer(l) &&
+                    !(l.featureRefs ?? []).some((r) => r.source === "custom")
+                )
+                .forEach((l) => removeLayer(l.id));
+            }
 
-            // Areas stack. Skip if this src_id is already in context to avoid
-            // duplicate chips when the user clicks the same region twice.
-            const alreadyInContext = context.some(
-              (c) =>
-                c.contextType === "area" && c.aoiData?.src_id === dynamicSrcId
-            );
-            if (!alreadyInContext) {
-              addContext({
-                contextType: "area",
-                content: aoiName,
-                aoiData: {
-                  name: aoiName,
-                  ...(idField ? { [idField]: dynamicSrcId } : {}),
-                  src_id: dynamicSrcId,
-                  subtype: dynamicSubtype,
-                  source: layerConfig?.id.toLowerCase(),
-                },
-              });
+            // GADM-only analysis selection. Both paths consume the same
+            // normalized selection:
+            //  - live: AnalysisCtaTrigger reacts to setAnalysis and surfaces
+            //    the analyse nudge once a dataset is also active.
+            //  - direct-analysis "View Analysis" nudge: the selection store,
+            //    gated behind ?ff=analysis so it stays additive for now.
+            if (layerId === "GADM" && metadata) {
+              const areaSelection = toAreaSelection(
+                layerId,
+                (featureProps ?? {}) as Record<string, unknown>,
+                metadata
+              );
+              setAnalysis(areaSelection);
+
+              if (analysisEnabled) {
+                selectArea(areaSelection);
+              } else {
+                useSelectionStore.getState().clear();
+              }
+            } else {
+              useMapStore.getState().clearAnalysis();
+              useSelectionStore.getState().clear();
             }
           }
         }
@@ -224,12 +256,13 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     nameKeys,
     setSelectAreaLayer,
     metadata,
-    addContext,
-    context,
     addToRegistry,
     addLayer,
     layerId,
     url,
+    setAnalysis,
+    selectArea,
+    analysisEnabled,
   ]);
 
   return (
@@ -254,12 +287,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           paint={selectAreaLinePaint}
         />
       </Source>
-      {hoverInfo && (
-        <AreaTooltip
-          hoverInfo={hoverInfo}
-          areaName={singularizeDatasetName(datasetName)}
-        />
-      )}
+      {hoverInfo && <AreaTooltip hoverInfo={hoverInfo} />}
     </>
   );
 }

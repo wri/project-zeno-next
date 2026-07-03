@@ -1,3 +1,4 @@
+// TODO: Unused. Remove this component when the app is out of review
 import {
   Button,
   CloseButton,
@@ -75,7 +76,7 @@ const WelcomeModal = () => {
           >
             <Dialog.Header justifyContent="center" alignItems="center">
               <Dialog.Title fontWeight="normal" fontSize="2xl" m={0}>
-                Welcome to <strong>Global Nature Watch</strong>
+                Welcome to <strong>Global Nature Watch Horizon</strong>
               </Dialog.Title>
             </Dialog.Header>
             <Dialog.Body

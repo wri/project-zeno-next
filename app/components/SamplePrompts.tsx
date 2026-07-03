@@ -36,16 +36,16 @@ export default function SamplePrompts() {
     return randomItems;
   }
   return (
-    <Box display="flex" gap={2} flexWrap="nowrap" mt={6} mb={4}>
+    <Box display="flex" flexDir="column" gap={2} mt={4} mb={2}>
       {samplePrompts.map((prompt, i) => (
         <Box
           key={i}
           p={2}
-          flex={1}
-          rounded="lg"
+          rounded="md"
           border="1px solid"
           borderColor="border.emphasized"
           fontSize="xs"
+          bg="bg"
           transition="all 0.24s ease"
           _hover={{
             cursor: "pointer",

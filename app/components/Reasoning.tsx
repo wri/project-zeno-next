@@ -19,6 +19,8 @@ import { ToolStepData } from "@/app/types/chat";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { formatToolName } from "@/app/lib/tool-display";
+import useMapStore from "@/app/store/mapStore";
+import { isAreaLayer } from "@/app/store/layerManagerSlice";
 
 // Strip leading whitespace from each line so indented template literals
 // in the API response don't get treated as Markdown code blocks (4+ spaces)
@@ -41,11 +43,20 @@ function Reasoning({
   reasoningDuration,
 }: ReasoningProps) {
   const [isOpen, setIsOpen] = useState(false);
-  console.log(toolSteps);
 
   // Get current tool name for dynamic status
   const currentTool =
     toolSteps.length > 0 ? toolSteps[toolSteps.length - 1] : null;
+
+  // When an area layer is in scope, the run is producing an insight for it, so
+  // surface that intent ("Generating insight for {area}") rather than the
+  // raw tool name. Falls back to the tool-name / generic label otherwise.
+  const areaName = useMapStore((state) => {
+    const area = state.layers.find(isAreaLayer);
+    return (
+      area?.aoiSelection?.name ?? area?.selectionName ?? area?.name ?? null
+    );
+  });
 
   // While loading, show shimmer with dynamic status
   if (isLoading) {
@@ -79,9 +90,11 @@ function Reasoning({
           backgroundSize="200% 100%"
           backgroundClip="text"
         >
-          {currentTool
-            ? formatToolName(currentTool.name)
-            : "Processing request..."}
+          {areaName
+            ? `Generating insight for ${areaName}`
+            : currentTool
+              ? formatToolName(currentTool.name)
+              : "Processing request..."}
         </Text>
       </Flex>
     );

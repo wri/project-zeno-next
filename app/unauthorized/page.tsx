@@ -10,7 +10,6 @@ import {
   Link as ChakraLink,
 } from "@chakra-ui/react";
 import { useEffect } from "react";
-import LclLogo from "../components/LclLogo";
 import useAuthStore from "../store/authStore";
 import { useErrorHandler } from "../hooks/useErrorHandler";
 
@@ -87,14 +86,16 @@ export default function UnauthorizedPage() {
         flex={1}
       >
         <Flex alignItems="center" gap="2" justifyContent="center" mb={10}>
-          <LclLogo width={18} avatarOnly />
           <Heading
             size={{ base: "2xl", md: "4xl" }}
             {...commonStyles}
             m={0}
             letterSpacing={-2.5}
           >
-            Global Nature Watch
+            Global Nature Watch{" "}
+            <Text as="span" fontWeight="normal">
+              Horizon
+            </Text>
           </Heading>
         </Flex>
         <Heading size={{ base: "3xl", md: "5xl" }} {...commonStyles} mb={0}>
@@ -111,7 +112,7 @@ export default function UnauthorizedPage() {
               {...commonStyles}
               marginBottom={4}
             >
-              Thank you for your interest in Global Nature Watch!
+              Thank you for your interest in Global Nature Watch Horizon!
             </Text>
             <Text fontSize={{ base: "xl", md: "2xl" }} {...commonStyles}>
               Right now access is limited while we are in closed preview.
@@ -127,8 +128,9 @@ export default function UnauthorizedPage() {
             fontSize={{ base: "xl", md: "2xl" }}
             {...commonStyles}
           >
-            We were unable to verify your access to Global Nature Watch. Please
-            try signing in again or contact support if the issue persists.
+            We were unable to verify your access to Global Nature Watch Horizon.
+            Please try signing in again or contact support if the issue
+            persists.
           </Text>
         ) : (
           <Text
@@ -137,9 +139,9 @@ export default function UnauthorizedPage() {
             fontSize={{ base: "xl", md: "2xl" }}
             {...commonStyles}
           >
-            Thank you for creating a Global Nature Watch account. Early access
-            is limited while we scale responsibly. You&apos;re on the waitlist,
-            and we will email you as soon as the tool is ready.
+            Thank you for creating a Global Nature Watch Horizon account. Early
+            access is limited while we scale responsibly. You&apos;re on the
+            waitlist, and we will email you as soon as the tool is ready.
           </Text>
         )}
         <Flex justifyContent="center" gap={4}>
@@ -187,8 +189,7 @@ export default function UnauthorizedPage() {
         flexWrap={"nowrap"}
       >
         <Flex flexWrap={"nowrap"} gap={"8px"}>
-          <LclLogo width={16} avatarOnly />
-          <Text letterSpacing={-1}>Global Nature Watch</Text>
+          <Text letterSpacing={-1}>Global Nature Watch Horizon</Text>
         </Flex>
         <Flex gap={"24px"} fontSize="sm" display={{ base: "none", md: "flex" }}>
           <ChakraLink
@@ -229,7 +230,7 @@ export default function UnauthorizedPage() {
           </ChakraLink>
         </Flex>
         <Text fontSize="sm" display={{ base: "none", md: "flex" }}>
-          © Global Nature Watch {new Date().getFullYear()}
+          © Global Nature Watch Horizon {new Date().getFullYear()}
         </Text>
       </Container>
     </Box>

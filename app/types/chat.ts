@@ -1,5 +1,14 @@
-import { ContextItem } from "../store/contextStore";
 import { FeatureCollection } from "geojson";
+
+// A read-only snapshot of the context at the moment a user message was sent:
+// the area(s), dataset(s) and date range that were active. Rendered as static
+// chips under the user message (no add/remove interaction). This is the *full*
+// active context at send time — not the deduplicated `ui_context` delta.
+export interface MessageContext {
+  areas?: string[];
+  datasets?: string[];
+  daterange?: { start_date: string; end_date: string };
+}
 
 // Type for storing tool execution data
 export interface ToolStepData {
@@ -16,11 +25,26 @@ export interface ToolStepData {
 
 export interface ChatMessage {
   id: string;
-  type: "user" | "assistant" | "system" | "widget" | "error" | "warning";
+  type:
+    | "user"
+    | "assistant"
+    | "system"
+    | "widget"
+    | "area-card"
+    | "error"
+    | "warning"
+    | "dataset-nudge"
+    | "analyse-nudge"
+    | "view-analysis-nudge"
+    | "stopped";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
-  context?: ContextItem[];
+  aoiSelection?: AOISelection; // For area-card messages
+  suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
+  analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
+  context?: MessageContext; // Read-only context snapshot for user messages
+  viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
@@ -120,6 +144,7 @@ export interface StreamMessage {
   name?: string;
   content?: string;
   dataset?: object;
+  suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
   insights?: object[];
@@ -127,6 +152,10 @@ export interface StreamMessage {
   codeact_parts?: CodeActPart[];
   source_urls?: string[];
   insight_count?: number;
+  // Names of the tools an AI message is about to call. The agent announces a
+  // tool call before its result streams back, so this is the earliest signal
+  // that e.g. an insight is being generated.
+  tool_calls?: string[];
   timestamp: string;
   start_date?: string;
   end_date?: string;
@@ -150,11 +179,59 @@ export interface AOISelection {
 export interface DatasetContextLayer {
   name: string;
   tile_url: string | null;
+  source_layer?: string | null; // present => render as MVT vector
+  type?: "raster" | "vector"; // optional explicit override from backend
 }
 
 export interface DatasetParameter {
   name: string;
   values: unknown[];
+}
+
+// Payload of an analyse-nudge message: a snapshot of the area + dataset the
+// CTA was created for, taken at injection time so the card stays stable even
+// if the live context changes afterwards.
+export interface AnalyseSuggestion {
+  areaName: string;
+  datasetId: number;
+  datasetName: string;
+  // Set once the user clicks Analyse: accepted nudges persist in the thread
+  // as a record of the run, while pending ones are replaced by new selections.
+  accepted?: boolean;
+}
+
+// Payload of a view-analysis-nudge message: a snapshot of the area, dataset and
+// date window the direct analysis should run against, taken at injection time so
+// the card stays stable even if the live selection/context changes afterwards.
+// The `area` shape mirrors the analysis feature's AreaSelection structurally
+// (inlined here to avoid an app→feature import).
+export interface ViewAnalysisSuggestion {
+  area: {
+    name: string;
+    source: string;
+    srcId?: string;
+    subtype?: string;
+  };
+  datasetId: number;
+  datasetName: string;
+  /** ISO date string "yyyy-MM-dd" */
+  startDate: string;
+  /** ISO date string "yyyy-MM-dd" */
+  endDate: string;
+  // Set once the user clicks View Analysis: accepted nudges persist in the
+  // thread as a record of the run, while pending ones are replaced by new ones.
+  accepted?: boolean;
+}
+
+export interface SuggestedDataset {
+  dataset_id: number;
+  dataset_name: string;
+  context_layer?: string | null;
+  parameters?: DatasetParameter[] | null;
+  start_date?: string;
+  end_date?: string;
+  reason?: string;
+  recommended?: boolean;
 }
 
 export interface DatasetInfo {
@@ -196,6 +273,7 @@ export interface LangChainResponse {
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
+  suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
   start_date?: string;

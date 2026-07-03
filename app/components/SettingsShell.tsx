@@ -19,7 +19,6 @@ import {
   UsersThreeIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import LclLogo from "@/app/components/LclLogo";
 import useAuthStore from "@/app/store/authStore";
 import { useLogout } from "@/app/hooks/useLogout";
 
@@ -54,8 +53,12 @@ export default function SettingsShell({
           transition="opacity 0.24s ease"
           _hover={{ opacity: 0.8, textDecor: "none" }}
         >
-          <LclLogo width={16} avatarOnly />
-          <Heading m={0}>Global Nature Watch</Heading>
+          <Heading m={0}>
+            Global Nature Watch{" "}
+            <Text as="span" fontWeight="normal">
+              Horizon
+            </Text>
+          </Heading>
         </ChakraLink>
         <ButtonGroup
           size="sm"

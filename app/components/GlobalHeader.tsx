@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Box,
   Button,
   ButtonGroup,
   CloseButton,
@@ -14,7 +13,6 @@ import {
 } from "@chakra-ui/react";
 import { useState } from "react";
 import Link from "next/link";
-import LclLogo from "./LclLogo";
 
 const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
@@ -116,19 +114,17 @@ export default function GlobalHeader() {
         alignItems={{ base: "flex-start", md: "center" }}
         gap={{ base: 2, md: 4 }}
       >
-        <Flex alignItems="center" gap={2}>
-          <Box as="span" flexShrink={0}>
-            <LclLogo width={16} avatarOnly />
-          </Box>
-          <Heading
-            m="0"
-            size={{ base: "xl", lg: "2xl" }}
-            lineHeight="shorter"
-            color="fg.inverted"
-          >
-            Global Nature Watch
-          </Heading>
-        </Flex>
+        <Heading
+          m="0"
+          size={{ base: "xl", lg: "2xl" }}
+          lineHeight="shorter"
+          color="fg.inverted"
+        >
+          Global Nature Watch{" "}
+          <Text as="span" fontWeight="normal">
+            Horizon
+          </Text>
+        </Heading>
         <Text
           pl={{ base: 0, md: 4 }}
           fontSize="xs"
@@ -163,7 +159,10 @@ export default function GlobalHeader() {
             >
               <Drawer.Header>
                 <Drawer.Title color="fg.inverted" fontSize="2xl">
-                  Global Nature Watch
+                  Global Nature Watch{" "}
+                  <Text as="span" fontWeight="normal">
+                    Horizon
+                  </Text>
                 </Drawer.Title>
               </Drawer.Header>
               <Drawer.Body>{renderNavItems(true, setNavOpen)}</Drawer.Body>

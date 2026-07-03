@@ -268,12 +268,17 @@ const DRIVER_PIE = [
   { driver: "Unknown", area_ha: 180000 },
 ];
 
+// Deterministic pseudo-random so SSR and client render the same fixture
+// values (Math.random() here caused hydration mismatches).
+const pseudoRandom = (i: number, salt: number) =>
+  ((i * 9301 + salt * 49297) % 233280) / 233280;
+
 // Large table for pagination testing
 const LARGE_TABLE_DATA = Array.from({ length: 50 }, (_, i) => ({
   rank: i + 1,
   province: `Province ${String.fromCharCode(65 + (i % 26))}${i >= 26 ? "2" : ""}`,
-  area_ha: Math.round(50000 - i * 800 + Math.random() * 200),
-  change_pct: +(-2 - Math.random() * 8).toFixed(1),
+  area_ha: Math.round(50000 - i * 800 + pseudoRandom(i, 1) * 200),
+  change_pct: +(-2 - pseudoRandom(i, 2) * 8).toFixed(1),
 }));
 
 // Multi-series line for dash-pattern testing
@@ -306,14 +311,28 @@ const WIDE_TABLE_DATA = Array.from({ length: 12 }, (_, i) => ({
     "Paraguay",
     "Mexico",
   ][i],
-  tree_loss_2018_ha: Math.round(4000000 - i * 350000 + Math.random() * 50000),
-  tree_loss_2019_ha: Math.round(3800000 - i * 320000 + Math.random() * 50000),
-  tree_loss_2020_ha: Math.round(3600000 - i * 300000 + Math.random() * 50000),
-  tree_loss_2021_ha: Math.round(3400000 - i * 280000 + Math.random() * 50000),
-  tree_loss_2022_ha: Math.round(3200000 - i * 260000 + Math.random() * 50000),
-  tree_loss_2023_ha: Math.round(3000000 - i * 240000 + Math.random() * 50000),
-  primary_loss_ha: Math.round(1500000 - i * 120000 + Math.random() * 30000),
-  pct_global: +(25 - i * 2.2 + Math.random()).toFixed(1),
+  tree_loss_2018_ha: Math.round(
+    4000000 - i * 350000 + pseudoRandom(i, 3) * 50000
+  ),
+  tree_loss_2019_ha: Math.round(
+    3800000 - i * 320000 + pseudoRandom(i, 4) * 50000
+  ),
+  tree_loss_2020_ha: Math.round(
+    3600000 - i * 300000 + pseudoRandom(i, 5) * 50000
+  ),
+  tree_loss_2021_ha: Math.round(
+    3400000 - i * 280000 + pseudoRandom(i, 6) * 50000
+  ),
+  tree_loss_2022_ha: Math.round(
+    3200000 - i * 260000 + pseudoRandom(i, 7) * 50000
+  ),
+  tree_loss_2023_ha: Math.round(
+    3000000 - i * 240000 + pseudoRandom(i, 8) * 50000
+  ),
+  primary_loss_ha: Math.round(
+    1500000 - i * 120000 + pseudoRandom(i, 9) * 30000
+  ),
+  pct_global: +(25 - i * 2.2 + pseudoRandom(i, 10)).toFixed(1),
 }));
 
 // Long category names for label testing
@@ -1028,8 +1047,7 @@ export default function ChartDebugPanel() {
 
         <Separator my={8} />
         <Text fontSize="xs" color="fg.subtle" textAlign="center">
-          {FIXTURES.length} fixtures · showing {filtered.length} · rendered at{" "}
-          {new Date().toLocaleTimeString()}
+          {FIXTURES.length} fixtures · showing {filtered.length}
         </Text>
       </Container>
     </Box>

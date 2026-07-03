@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Flex,
   Box,
@@ -12,13 +12,13 @@ import {
   StackIcon,
   CaretDownIcon,
   CaretUpIcon,
-  XIcon,
 } from "@phosphor-icons/react";
 import { Reorder, useDragControls } from "motion/react";
 
 import { LayerActionHandler, LegendLayer } from "./types";
 import type { LegendAoi } from "./useLegendHook";
 import { LayerEntry } from "./LayerEntry";
+import { ParamChip } from "@/app/components/ui/ParamChip";
 
 const ChReorderGroup = chakra(Reorder.Group);
 const ChReorderItem = chakra(Reorder.Item);
@@ -30,7 +30,7 @@ interface LegendProps {
   layers: LegendLayer[];
   onLayerAction?: LayerActionHandler;
   aois?: LegendAoi[];
-  onRemoveAoi?: (contextId: string) => void;
+  onRemoveAoi?: (layerId: string) => void;
 }
 
 /**
@@ -47,10 +47,11 @@ export function Legend(props: LegendProps) {
 
   // Track which layers are expanded (multiple can be open).
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [prevLayerIds, setPrevLayerIds] = useState<Set<string>>(new Set());
+  const prevLayerIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const currentIds = new Set(layers.map((l) => l.id));
+    const prevLayerIds = prevLayerIdsRef.current;
 
     // Detect newly added layers
     const newIds = [...currentIds].filter((id) => !prevLayerIds.has(id));
@@ -91,7 +92,7 @@ export function Legend(props: LegendProps) {
       });
     }
 
-    setPrevLayerIds(currentIds);
+    prevLayerIdsRef.current = currentIds;
   }, [layers]);
 
   const hasAois = !!aois && aois.length > 0;
@@ -208,50 +209,17 @@ export function Legend(props: LegendProps) {
                 pl="24px"
               >
                 {aois.map((aoi) => (
-                  <Flex
-                    key={`${aoi.contextId}-${aoi.name}`}
-                    alignItems="center"
-                    gap="4px"
-                    h="20px"
-                    px="6px"
-                    py="2px"
-                    borderRadius="6px"
-                    border="1px solid"
-                    borderColor="#E0E2E5"
-                    bg="#FFFFFF"
-                    fontFamily="mono"
-                    fontSize="10px"
-                    flexShrink={0}
-                  >
-                    <Text
-                      as="span"
-                      fontWeight="normal"
-                      lineHeight="16px"
-                      letterSpacing="0.5px"
-                      color="#4A64CB"
-                    >
-                      AREA
-                    </Text>
-                    <Text
-                      as="span"
-                      fontWeight="500"
-                      lineHeight="16px"
-                      letterSpacing="0"
-                    >
-                      {aoi.name}
-                    </Text>
-                    <IconButton
-                      variant="ghost"
-                      size="xs"
-                      p={0}
-                      minW="12px"
-                      h="12px"
-                      aria-label={`Remove ${aoi.name}`}
-                      onClick={() => onRemoveAoi?.(aoi.contextId)}
-                    >
-                      <XIcon size={10} />
-                    </IconButton>
-                  </Flex>
+                  <ParamChip
+                    key={`${aoi.layerId}-${aoi.name}`}
+                    label="AREA"
+                    value={aoi.name}
+                    colorScheme="blue"
+                    bg="white"
+                    onRemove={
+                      onRemoveAoi ? () => onRemoveAoi(aoi.layerId) : undefined
+                    }
+                    removeLabel={`Remove ${aoi.name}`}
+                  />
                 ))}
               </Flex>
             </>

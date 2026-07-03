@@ -14,37 +14,44 @@ import {
   ButtonGroup,
 } from "@chakra-ui/react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { format } from "date-fns";
 
 import { ChatContextType, ChatContextOptions } from "./ContextButton";
 import { DatePicker, DatePickerProps } from "./DatePicker";
-import useContextStore from "../store/contextStore";
+import useChatStore from "../store/chatStore";
 import { DatasetCard } from "./DatasetCard";
 
 // Constants for navigation and dummy content
-const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[]).map(
-  (type) => ({
+const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[])
+  .filter((type) => type !== "date")
+  .map((type) => ({
     type,
     label: ChatContextOptions[type].label,
     icon: ChatContextOptions[type].icon,
-  })
-);
+  }));
 
 import { DATASET_CARDS, DatasetCardConfig } from "../constants/datasets";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
+import { isAreaLayer } from "../store/layerManagerSlice";
 import type { Feature, MultiPolygon } from "geojson";
+import { datasetCardLayers } from "../utils/datasetCardLayerContext";
 
 const LAYER_CARDS = DATASET_CARDS;
 
 function ContextNav({
   selected,
   onSelect,
+  hiddenTypes = [],
 }: {
   selected: string;
   onSelect: (type: ChatContextType) => void;
+  hiddenTypes?: ChatContextType[];
 }) {
+  const navItems = CONTEXT_NAV.filter((nav) => !hiddenTypes.includes(nav.type));
+
+  if (navItems.length === 0) return null;
+
   return (
     <Stack
       direction={{ base: "row", md: "column" }}
@@ -57,7 +64,7 @@ function ContextNav({
       borderRightWidth={{ base: "none", md: "1px solid" }}
       borderRightColor="border.emphasized"
     >
-      {CONTEXT_NAV.map((nav) => (
+      {navItems.map((nav) => (
         <Button
           key={nav.type}
           size="xs"
@@ -79,54 +86,38 @@ function LayerCardList({
 }: {
   cards: (DatasetCardConfig & { img?: string })[];
 }) {
-  const { context, upsertContextByType, removeContext } = useContextStore();
+  const { layers, addLayer, removeDatasetLayers } = useMapStore();
 
   function handleToggle(card: DatasetCardConfig & { img?: string }) {
-    const existing = context.find(
-      (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
-    );
-    if (existing) {
-      removeContext(existing.id);
-    } else {
-      const year = card.defaultYear;
-      const tileUrl =
-        year && card.tile_url
-          ? `${card.tile_url}&start_year=${year}&end_year=${year}`
-          : card.tile_url;
-      upsertContextByType({
-        contextType: "layer",
-        content: card.dataset_name,
-        datasetId: card.dataset_id,
-        tileUrl,
-        layerName: card.dataset_name,
-        ...(year
-          ? {
-              startDate: `${year}-01-01`,
-              endDate: `${year}-12-31`,
-            }
-          : {}),
-        isAiContext: false,
-      });
+    const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
+    // Single-dataset selection: clear any existing dataset layers, then add the
+    // clicked one — unless it was already selected, in which case this is a
+    // toggle-off. The visible layer IS the scope (no separate context item).
+    removeDatasetLayers();
+    if (!isSelected) {
+      datasetCardLayers(card).forEach(addLayer);
     }
   }
 
   return (
     <Stack minH={0} overflowY="auto">
       {cards.map((card) => {
-        const isSelected = context.some(
-          (c) => c.contextType === "layer" && c.datasetId === card.dataset_id
-        );
+        const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
         return (
-          <DatasetCard
-            key={card.dataset_name}
-            dataset={card as unknown as DatasetInfo}
-            img={card.img ?? "/globe.svg"}
-            selected={isSelected}
-            onClick={() => handleToggle(card)}
-            {...(card.viewOnly
-              ? { label: "VIEW ONLY", labelColor: "#656E7B" }
-              : {})}
-          />
+          // flexShrink={0} pins the card height in the scrollable list so the
+          // 80px thumbnail stays square instead of being squished on overflow.
+          // No type label in the context menu — everything here is a layer,
+          // except view-only layers which keep their "VIEW ONLY" badge.
+          <Box key={card.dataset_name} flexShrink={0}>
+            <DatasetCard
+              dataset={card as unknown as DatasetInfo}
+              img={card.img ?? "/globe.svg"}
+              selected={isSelected}
+              onClick={() => handleToggle(card)}
+              label={card.viewOnly ? "VIEW ONLY" : ""}
+              {...(card.viewOnly ? { labelColor: "#656E7B" } : {})}
+            />
+          </Box>
         );
       })}
     </Stack>
@@ -146,7 +137,7 @@ function ContextMenu({
 
   return (
     <Dialog.Root
-      placement="bottom"
+      placement={{ base: "bottom", md: "center" }}
       motionPreset="slide-in-bottom"
       size={{ base: "xs", md: "lg" }}
       open={open}
@@ -157,8 +148,11 @@ function ContextMenu({
         <Dialog.Backdrop backdropFilter="blur(2px)" />
         <Dialog.Positioner zIndex={1500}>
           <Dialog.Content
+            // Square modal on desktop; maxH caps it on short viewports so the
+            // body scrolls (scrollBehavior="inside") rather than overflowing.
+            boxSize={{ md: "38rem" }}
+            minH={{ base: "30rem" }}
             maxH="75vh"
-            minH="30rem"
             overflow="hidden"
             mx={{ base: 2, md: "auto" }}
           >
@@ -173,6 +167,7 @@ function ContextMenu({
               <ContextNav
                 selected={selectedContextType}
                 onSelect={setSelectedContextType}
+                hiddenTypes={contextType === "area" ? ["layer"] : []}
               />
               {/* Modal Body */}
               {selectedContextType === "layer" && <LayerMenu />}
@@ -255,8 +250,8 @@ function AreaCardList({
 
 function AreaMenu() {
   const { customAreas } = useCustomAreasListSuspense();
-  const { addToRegistry, addLayer, flyToGeoJsonWithRetry } = useMapStore();
-  const { context, addContext } = useContextStore();
+  const { addToRegistry, addLayer, flyToGeoJsonWithRetry, layers } =
+    useMapStore();
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -276,32 +271,20 @@ function AreaMenu() {
   const cards = useMemo(
     () =>
       sorted.map((a) => {
-        const isSelected = context.some(
-          (c) =>
-            c.contextType === "area" &&
-            ((c.aoiData?.src_id &&
-              c.aoiData.src_id === a.id &&
-              c.aoiData.source === "custom") ||
-              (typeof c.content === "string" && c.content === a.name))
+        // The visible area layer IS the scope. Custom-area layers are keyed by
+        // the area's DB id (see handleSelectArea), so match on layer id/name.
+        const isSelected = layers.some(
+          (l) => isAreaLayer(l) && (l.id === a.id || l.name === a.name)
         );
         return { id: a.id, name: a.name, selected: isSelected };
       }),
-    [sorted, context]
+    [sorted, layers]
   );
 
   const handleSelectArea = (area: { id: string; name: string }) => {
-    // Areas stack — each selection is its own context item rendered as a chip.
-    // The existing `cards` lookup prevents re-selecting the same area twice.
-    addContext({
-      contextType: "area",
-      content: area.name,
-      aoiData: {
-        src_id: area.id,
-        name: area.name,
-        source: "custom",
-        subtype: "custom-area",
-      },
-    });
+    // Areas stack — adding a custom area's layer puts it in scope. The layer
+    // is keyed by the area id, so re-selecting replaces in place (the `cards`
+    // lookup already disables the card once selected). No separate context item.
 
     // Build a single MultiPolygon Feature from the selected custom area's geometries
     const selected = (customAreas as unknown as CustomArea[] | undefined)?.find(
@@ -375,42 +358,19 @@ function DateMenu() {
     setView(newView);
   };
 
-  const contextStore = useContextStore();
+  const dateRange = useChatStore((s) => s.dateRange);
+  const setDateRange = useChatStore((s) => s.setDateRange);
 
-  const currentCtxDate = contextStore.context.find(
-    (item) => item.contextType === "date"
-  );
-  // Start with context date if available, otherwise empty array.
+  // Start with the current chatStore date range if set, otherwise empty.
   const [dateValue, setDateValue] = useState<Date[]>(
-    currentCtxDate?.dateRange
-      ? [currentCtxDate.dateRange.start, currentCtxDate.dateRange.end]
-      : []
+    dateRange ? [dateRange.start, dateRange.end] : []
   );
 
   useEffect(() => {
     if (dateValue.length === 2) {
-      // Remove previously set date.
-      const ctxId = contextStore.context.find(
-        (item) => item.contextType === "date"
-      )?.id;
-      if (ctxId) {
-        contextStore.removeContext(ctxId);
-      }
-      contextStore.addContext({
-        contextType: "date",
-        content: `${format(dateValue[0], "yyyy-MM-dd")} — ${format(
-          dateValue[1],
-          "yyyy-MM-dd"
-        )}`,
-        dateRange: {
-          start: dateValue[0],
-          end: dateValue[1],
-        },
-      });
+      setDateRange({ start: dateValue[0], end: dateValue[1] });
     }
-    // No need to track changes in ContextStore.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateValue]);
+  }, [dateValue, setDateRange]);
 
   return (
     <Stack

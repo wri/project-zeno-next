@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-// contextStore imports a React component (ContextButton) — mock to avoid JSX
-// in the node test environment
-vi.mock("@/app/store/contextStore", () => ({
-  default: { getState: () => ({ context: [] }) },
+// generateInsights reads the active dataset/area from mapStore and the date
+// range from chatStore. Both stores' import chains reach the Chakra toaster
+// (.tsx) — mock them to avoid JSX in the node test environment.
+vi.mock("@/app/store/mapStore", () => ({
+  default: { getState: () => ({ layers: [] }) },
+}));
+
+vi.mock("@/app/store/chatStore", () => ({
+  default: { getState: () => ({ dateRange: null }) },
 }));
 
 import { generateInsightsTool } from "../generateInsights";

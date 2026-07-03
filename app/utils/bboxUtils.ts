@@ -1,3 +1,30 @@
+import { Feature, GeoJsonProperties, Polygon } from "geojson";
+
+/**
+ * Build a rectangle polygon Feature from a bbox [minLng, minLat, maxLng, maxLat].
+ */
+export function createBboxPolygon(
+  bboxCoords: [number, number, number, number]
+): Feature<Polygon, GeoJsonProperties> {
+  const [minLng, minLat, maxLng, maxLat] = bboxCoords;
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [minLng, minLat],
+          [maxLng, minLat],
+          [maxLng, maxLat],
+          [minLng, maxLat],
+          [minLng, minLat],
+        ],
+      ],
+    },
+  };
+}
+
 /**
  * Union multiple AOI bboxes into one, handling antimeridian crossings.
  *

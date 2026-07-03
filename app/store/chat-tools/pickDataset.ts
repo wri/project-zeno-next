@@ -3,18 +3,35 @@ import {
   StreamMessage,
   DatasetInfo,
   InsightWidget,
+  SuggestedDataset,
 } from "@/app/types/chat";
-import useContextStore from "../contextStore";
-import { getDatasetLayerContextProps } from "@/app/utils/datasetLayerContext";
+import useMapStore from "../mapStore";
+import {
+  getDatasetLayerContextProps,
+  buildDatasetLayers,
+} from "@/app/utils/datasetLayerContext";
 
 export function pickDatasetTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
-  const { upsertContextByType } = useContextStore.getState();
   try {
     // Check if we have dataset information with a tile_url
     const dataset = streamMessage.dataset as DatasetInfo | undefined;
+
+    const suggestedDatasets = streamMessage.suggested_datasets as
+      | SuggestedDataset[]
+      | undefined;
+
+    if (suggestedDatasets && suggestedDatasets.length > 0 && !dataset) {
+      addMessage({
+        type: "dataset-nudge",
+        message: "",
+        suggestedDatasets,
+        timestamp: streamMessage.timestamp,
+      });
+      return;
+    }
 
     if (dataset && dataset.tile_url) {
       // Create a dataset card widget for interactive tile layer adding
@@ -29,15 +46,18 @@ export function pickDatasetTool(
 
       const layerContextProps = getDatasetLayerContextProps(dataset);
 
-      upsertContextByType({
-        contextType: "layer",
-        content: dataset.dataset_name,
+      // The visible layer IS the scope. Replace any existing dataset layers
+      // and add this dataset's main + context sub-layers.
+      const { addLayer, removeLayer, layers } = useMapStore.getState();
+      layers
+        .filter((l) => typeof l.datasetId === "number")
+        .forEach((l) => removeLayer(l.id));
+      buildDatasetLayers({
         datasetId: dataset.dataset_id,
-        tileUrl: dataset.tile_url,
         layerName: dataset.dataset_name,
-        ...layerContextProps, // we add the context layer(s) if any.
-        isAiContext: true,
-      });
+        tileUrl: dataset.tile_url,
+        ...layerContextProps, // contextLayer / parameters / start+end dates
+      }).forEach(addLayer);
 
       addMessage({
         type: "widget",

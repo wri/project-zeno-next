@@ -14,18 +14,18 @@ import { Tooltip } from "./ui/tooltip";
 import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import { AnalysisCard } from "./AnalysisCard";
+import { AreaCard } from "./AreaCard";
 import Markdown from "react-markdown";
 import {
   ArrowBendDownRightIcon,
   CheckIcon,
   CopyIcon,
+  InfoIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "@phosphor-icons/react";
 import LclLogo from "./LclLogo";
 import ContextTag from "./ContextTag";
-import { ChatContextType } from "./ContextButton";
-import { ContextItem } from "../store/contextStore";
 import { useEffect, useState, useCallback } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
@@ -33,6 +33,9 @@ import useChatStore from "../store/chatStore";
 import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
+import DatasetNudge from "./DatasetNudge";
+import AnalyseNudge from "./AnalyseNudge";
+import { ViewAnalysisNudge } from "@/src/features/analysis";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -143,20 +146,100 @@ function MessageBubble({
 
   const isUser = message.type === "user";
   const isWidget = message.type === "widget";
+  const isAreaCard = message.type === "area-card";
+  const isSystem = message.type === "system";
   const isError = message.type === "error";
   const isWarning = message.type === "warning";
+  const isStopped = message.type === "stopped";
   const isAssistant = message.type === "assistant";
   const analysisWidgets = isAssistant
     ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
     : [];
-  const hasContext = isUser && message.context && message.context.length > 0;
+  const context = isUser ? message.context : undefined;
+  const hasContext =
+    !!context &&
+    ((context.areas?.length ?? 0) > 0 ||
+      (context.datasets?.length ?? 0) > 0 ||
+      !!context.daterange);
   const showFooter =
     !isUser &&
+    !isAreaCard &&
     !isError &&
     !isWarning &&
+    !isStopped &&
     !isFirst &&
     !message.suppressFooter &&
     (!isConsecutive || analysisWidgets.length > 0 || isLast);
+
+  if (isSystem) {
+    return (
+      <Box
+        mb={4}
+        css={{
+          "& p": { fontSize: "12px", lineHeight: "1.5" },
+          "& p:first-of-type > strong": {
+            display: "block",
+            fontSize: "16px",
+            fontWeight: "500",
+            color: "fg.link",
+            lineHeight: "1.5",
+            marginBottom: "8px",
+          },
+          "& > p:not(:last-of-type)": { marginBottom: "8px" },
+          "& a": {
+            textDecoration: "underline",
+            color: "fg.link",
+          },
+        }}
+      >
+        <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+      </Box>
+    );
+  }
+
+  if (isAreaCard && message.aoiSelection) {
+    return (
+      <Box my={2} width="100%">
+        <AreaCard aoiSelection={message.aoiSelection} />
+      </Box>
+    );
+  }
+
+  if (message.type === "dataset-nudge" && message.suggestedDatasets) {
+    return (
+      <Box my={2}>
+        <DatasetNudge datasets={message.suggestedDatasets} />
+      </Box>
+    );
+  }
+
+  if (message.type === "analyse-nudge" && message.analyseSuggestion) {
+    // An accepted nudge is a past choice — leave a larger gap below it so a new
+    // nudge block (for another area) reads as separate from it.
+    return (
+      <Box mt={2} mb={message.analyseSuggestion.accepted ? 6 : 2}>
+        <AnalyseNudge
+          messageId={message.id}
+          suggestion={message.analyseSuggestion}
+        />
+      </Box>
+    );
+  }
+
+  if (
+    message.type === "view-analysis-nudge" &&
+    message.viewAnalysisSuggestion
+  ) {
+    return (
+      <Box mt={2} mb={message.viewAnalysisSuggestion.accepted ? 6 : 2}>
+        <ViewAnalysisNudge
+          messageId={message.id}
+          suggestion={message.viewAnalysisSuggestion}
+        />
+      </Box>
+    );
+  }
+
   // For widget messages, render them in a full-width container
   if (isWidget && message.widgets) {
     return message.widgets.map((widget, idx) => (
@@ -187,41 +270,56 @@ function MessageBubble({
         bg={
           isError
             ? "red.50"
-            : isWarning
-              ? "white"
-              : isUser
-                ? "gray.100"
-                : "transparent"
+            : isStopped
+              ? "gray.50"
+              : isWarning
+                ? "white"
+                : isUser
+                  ? "gray.100"
+                  : "transparent"
         }
-        color={isError ? "red.800" : isWarning ? "fg.subtle" : "fg"}
+        color={isError ? "red.800" : isStopped || isWarning ? "fg.muted" : "fg"}
         fontSize={isWarning ? "xs" : undefined}
         fontStyle={isWarning ? "italic" : undefined}
-        px={isUser || isError || isWarning ? 4 : 0}
-        py={isUser || isError || isWarning ? 3 : 0}
+        px={isUser || isError || isWarning || isStopped ? 4 : 0}
+        py={isUser || isError || isWarning || isStopped ? 3 : 0}
         borderRadius="lg"
         borderBottomRightRadius={isUser ? "sm" : "lg"}
         borderBottomLeftRadius={isUser ? "lg" : "sm"}
-        border={isError || isWarning ? "1px solid" : "none"}
+        border={isError || isWarning || isStopped ? "1px solid" : "none"}
         borderColor={
-          isError ? "red.200" : isWarning ? "gray.200" : "transparent"
+          isError
+            ? "red.200"
+            : isWarning || isStopped
+              ? "gray.200"
+              : "transparent"
         }
       >
-        {hasContext && (
+        {hasContext && context && (
           <Flex gap="2" wrap="wrap" mb="1">
             <Flex gap="1" fontSize="xs" color="fg.muted">
               <ArrowBendDownRightIcon /> Context:
             </Flex>
-            {message.context?.map((c: ContextItem) => (
+            {context.datasets?.map((name) => (
               <ContextTag
-                key={c.id}
-                contextType={c.contextType as ChatContextType}
-                content={
-                  typeof c.content === "string"
-                    ? c.content
-                    : JSON.stringify(c.content)
-                }
+                key={`ds-${name}`}
+                contextType="layer"
+                content={name}
               />
             ))}
+            {context.areas?.map((name) => (
+              <ContextTag
+                key={`area-${name}`}
+                contextType="area"
+                content={name}
+              />
+            ))}
+            {context.daterange && (
+              <ContextTag
+                contextType="date"
+                content={`${context.daterange.start_date} — ${context.daterange.end_date}`}
+              />
+            )}
           </Flex>
         )}
         {isError ? (
@@ -245,6 +343,11 @@ function MessageBubble({
         ) : isWarning ? (
           <Flex alignItems="center" gap="2">
             <WarningIcon />
+            <Box>{message.message}</Box>
+          </Flex>
+        ) : isStopped ? (
+          <Flex alignItems="center" gap="2">
+            <InfoIcon weight="regular" />
             <Box>{message.message}</Box>
           </Flex>
         ) : (
@@ -279,6 +382,7 @@ function MessageBubble({
               <AnalysisCard
                 key={`${message.id}-analysis-${idx}`}
                 widget={widget}
+                timestamp={message.timestamp}
               />
             ))}
           </Flex>

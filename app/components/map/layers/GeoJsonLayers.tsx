@@ -2,44 +2,16 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
 import { Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "../../ContextButton";
-import {
-  Feature,
-  FeatureCollection,
-  Polygon,
-  GeoJsonProperties,
-} from "geojson";
-import useContextStore, { ContextItem } from "@/app/store/contextStore";
+import { Feature, FeatureCollection } from "geojson";
 import useMapStore from "@/app/store/mapStore";
 import {
   Layer as ManagedLayer,
   GeoJsonEntry,
   FeatureRef,
 } from "@/app/store/layerManagerSlice";
+import { BasemapTheme } from "../BasemapSelector";
 import bbox from "@turf/bbox";
-import { unionAoiBboxes } from "@/app/utils/bboxUtils";
-
-// Create a rectangle polygon from bbox coordinates
-function createBboxPolygon(
-  bboxCoords: [number, number, number, number]
-): Feature<Polygon, GeoJsonProperties> {
-  const [minLng, minLat, maxLng, maxLat] = bboxCoords;
-  return {
-    type: "Feature",
-    properties: {},
-    geometry: {
-      type: "Polygon",
-      coordinates: [
-        [
-          [minLng, minLat],
-          [maxLng, minLat],
-          [maxLng, maxLat],
-          [minLng, maxLat],
-          [minLng, minLat],
-        ],
-      ],
-    },
-  };
-}
+import { createBboxPolygon, unionAoiBboxes } from "@/app/utils/bboxUtils";
 
 // Compute the combined bbox of a list of features
 function computeCombinedBbox(
@@ -107,14 +79,14 @@ function resolveFeatureRefs(refs: FeatureRef[], registry: GeoJsonEntry[]) {
 interface GeoJsonLayerGroupProps {
   layer: ManagedLayer;
   entries: GeoJsonEntry[];
-  areas: ContextItem[];
+  basemapTheme: BasemapTheme;
 }
 
 interface GeoJsonLayersProps {
-  areas: ContextItem[];
+  basemapTheme: BasemapTheme;
 }
 
-export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
+export default function GeoJsonLayers({ basemapTheme }: GeoJsonLayersProps) {
   const layers = useMapStore((s) => s.layers);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
   const geoJsonLayers = layers.filter((l) => l.type === "geojson");
@@ -132,7 +104,7 @@ export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
             key={layer.id}
             layer={layer}
             entries={entries}
-            areas={areas}
+            basemapTheme={basemapTheme}
           />
         );
       })}
@@ -142,60 +114,28 @@ export default function GeoJsonLayers({ areas }: GeoJsonLayersProps) {
 
 // If the group is a single area, render a single label and polygon
 // If the group is a multi-area selection, render a bbox polygon and a label for the selection name
-function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
-  const { addContext, removeContext } = useContextStore();
+function GeoJsonLayerGroup({
+  layer,
+  entries,
+  basemapTheme,
+}: GeoJsonLayerGroupProps) {
+  const removeLayer = useMapStore((s) => s.removeLayer);
   const { isHovered, setHoverState } = useHoverState();
-  // Context matching — use layer.selectionName for groups, or first entry name for singles
+  // The visible layer IS the scope — every rendered area layer is in-scope, so
+  // it always uses the highlighted (in-context) styling. Removing the layer is
+  // the only mutation; there is no select/deselect.
   const displayName = layer.selectionName ?? layer.name;
-  const areaInContext = areas.find((a) =>
-    layer.selectionName
-      ? a.aoiSelection?.name === layer.selectionName
-      : a.content === layer.name || a.aoiData?.src_id === layer.name
-  );
-  const isInContext = !!areaInContext;
-  const lineOpacity = !layer.visible ? 0 : isInContext ? 1 : 0.5;
+  const lineOpacity = !layer.visible ? 0 : 1;
 
   const isMultiArea = !!layer.selectionName;
-  const fillColor = isInContext
-    ? isMultiArea
-      ? "#8EA4E8"
-      : "#0A3785"
-    : "#666E7B";
-  const handleRemoveFromContext = () => {
-    if (areaInContext) removeContext(areaInContext.id);
-  };
-  const handleSelectFromLabel = () => {
-    if (!isInContext) {
-      // Areas stack — addContext keeps existing area chips and adds a new one.
-      // The `isInContext` guard above already prevents re-adding the same layer.
-      if (layer.aoiSelection) {
-        addContext({
-          contextType: "area",
-          content: displayName,
-          aoiSelection: layer.aoiSelection,
-        });
-      } else {
-        // For single-area layers, look up the registry entry to get the
-        // correct src_id, source, and subtype for the context entry.
-        const ref = layer.featureRefs?.[0];
-        const entry = ref
-          ? entries.find(
-              (e) => e.ref.name === ref.name && e.ref.source === ref.source
-            )
-          : undefined;
-        addContext({
-          contextType: "area",
-          content: displayName,
-          aoiData: {
-            src_id: entry?.srcId ?? layer.id,
-            name: displayName,
-            source: entry?.ref.source ?? "custom",
-            subtype: entry?.subtype ?? "custom-area",
-          },
-        });
-      }
-    }
-  };
+
+  // On dark basemaps (dark, satellite) boundaries use white lines + blue casing
+  // to maximise contrast. On light basemaps the colours are inverted.
+  const casingColor = basemapTheme === "dark" ? "#172B7A" : "#FFFFFF";
+  const mainLineColor =
+    basemapTheme === "dark" ? "#FFFFFF" : isMultiArea ? "#8EA4E8" : "#172B7A";
+
+  const handleRemove = () => removeLayer(layer.id);
   // Prefer backend-provided bbox (handles antimeridian); fall back to turf.
   const bboxCoords: [number, number, number, number] | null = (() => {
     const aois = layer.aoiSelection?.aois;
@@ -216,6 +156,7 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
       {entries.map((entry) => {
         const sourceId = `geojson-source-${groupId}-${entry.ref.source}-${entry.ref.name}`;
         const fillLayerId = `geojson-fill-${groupId}-${entry.ref.source}-${entry.ref.name}`;
+        const casingLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-casing`;
         const lineLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-solid`;
         return (
           <Source
@@ -228,7 +169,32 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
             <MapLayer
               id={fillLayerId}
               type="fill"
-              paint={{ "fill-color": fillColor, "fill-opacity": 0 }}
+              paint={{ "fill-color": mainLineColor, "fill-opacity": 0 }}
+              filter={[
+                "any",
+                ["==", ["geometry-type"], "Polygon"],
+                ["==", ["geometry-type"], "MultiPolygon"],
+              ]}
+            />
+            {/* Casing layer (wider, contrasting colour) rendered below the main line */}
+            <MapLayer
+              id={casingLayerId}
+              type="line"
+              paint={{
+                "line-color": casingColor,
+                "line-width": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  3,
+                  3.5,
+                  6,
+                  7,
+                  10,
+                  11,
+                ],
+                "line-opacity": lineOpacity,
+              }}
               filter={[
                 "any",
                 ["==", ["geometry-type"], "Polygon"],
@@ -239,22 +205,18 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
               id={lineLayerId}
               type="line"
               paint={{
-                "line-color": fillColor,
-                "line-width": isMultiArea
-                  ? 1.5
-                  : [
-                      "interpolate",
-                      ["linear"],
-                      ["zoom"],
-                      3,
-                      0.5,
-                      6,
-                      1,
-                      10,
-                      2,
-                      14,
-                      3,
-                    ],
+                "line-color": mainLineColor,
+                "line-width": [
+                  "interpolate",
+                  ["linear"],
+                  ["zoom"],
+                  3,
+                  1,
+                  6,
+                  1.5,
+                  10,
+                  2,
+                ],
                 "line-opacity": lineOpacity,
               }}
               filter={[
@@ -274,23 +236,25 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
           data={bboxPolygon}
           generateId={true}
         >
+          {/* In-scope area layers always show the solid bbox (no dashed
+              "hover to select" affordance — visible already means in-scope). */}
           <MapLayer
             id={`bbox-line-${groupId}-dashed`}
             type="line"
             paint={{
-              "line-color": fillColor,
+              "line-color": mainLineColor,
               "line-width": 1.5,
               "line-dasharray": [2, 1],
-              "line-opacity": isHovered || isInContext ? 0 : 0.75 * lineOpacity,
+              "line-opacity": 0,
             }}
           />
           <MapLayer
             id={`bbox-line-${groupId}-solid`}
             type="line"
             paint={{
-              "line-color": fillColor,
+              "line-color": mainLineColor,
               "line-width": 1.5,
-              "line-opacity": isHovered || isInContext ? 0.75 * lineOpacity : 0,
+              "line-opacity": 0.75 * lineOpacity,
             }}
           />
         </Source>
@@ -303,37 +267,29 @@ function GeoJsonLayerGroup({ layer, entries, areas }: GeoJsonLayerGroupProps) {
           anchor="bottom-left"
         >
           <Tag.Root
-            colorPalette={isInContext ? "primary" : "gray"}
+            colorPalette="primary"
             px={2}
             py={1}
             size="md"
-            variant={isInContext ? "solid" : isHovered ? "surface" : "subtle"}
+            variant="solid"
             roundedBottom="none"
-            cursor="pointer"
             onMouseEnter={() => setHoverState(true)}
             onMouseLeave={() => setHoverState(false)}
-            onClick={handleSelectFromLabel}
           >
-            {isInContext && (
-              <Tag.StartElement>
-                {ChatContextOptions.area.icon}
-              </Tag.StartElement>
-            )}
+            <Tag.StartElement>{ChatContextOptions.area.icon}</Tag.StartElement>
             <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
-            {isInContext && (
-              <Tag.EndElement>
-                <Tag.CloseTrigger
-                  opacity={isHovered ? 1 : 0.25}
-                  cursor="pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveFromContext();
-                    setHoverState(false);
-                  }}
-                  aria-label="Remove from context"
-                />
-              </Tag.EndElement>
-            )}
+            <Tag.EndElement>
+              <Tag.CloseTrigger
+                opacity={isHovered ? 1 : 0.25}
+                cursor="pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemove();
+                  setHoverState(false);
+                }}
+                aria-label="Remove area"
+              />
+            </Tag.EndElement>
           </Tag.Root>
         </Marker>
       )}

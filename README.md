@@ -1,4 +1,4 @@
-# Global Nature Watch
+# Global Nature Watch Horizon
 
 ## Installation and Usage
 

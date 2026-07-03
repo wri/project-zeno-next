@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 
 /**
  * A single read-only parameter chip shown beneath a layer title.
- * e.g. { label: "YEAR", value: "2025" } or { label: "CANOPY", value: ">= 30%" }
+ * e.g. { label: "YEAR", value: "2025" } or { label: "CANOPY", value: "> 30%" }
  */
 export interface LegendParam {
   label: string;

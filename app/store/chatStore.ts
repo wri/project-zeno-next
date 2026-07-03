@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
-import { format } from "date-fns";
 
 import JSON5 from "json5";
 import {
@@ -10,20 +9,28 @@ import {
   LangChainUpdate,
   StreamMessage,
   QueryType,
-  UiContext,
   ToolStepData,
+  SuggestedDataset,
+  AnalyseSuggestion,
+  ViewAnalysisSuggestion,
 } from "@/app/types/chat";
-import useContextStore from "./contextStore";
+import useMapStore from "./mapStore";
+import {
+  deriveContext,
+  diffUiContext,
+  emptyContextKeys,
+  type ContextKeys,
+} from "@/app/utils/messageContext";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
+import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
-import { DATASET_BY_ID } from "../constants/datasets";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
-import useSidebarStore from "./sidebarStore";
+import { queryClient } from "@/app/lib/query-client";
 import {
   showApiError,
   showError,
@@ -35,10 +42,24 @@ import useInsightStore from "./insightStore";
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
+  // True only while the agent is actively generating an insight — i.e. between
+  // the agent announcing a generate_insights tool call and that tool's result
+  // arriving. Distinct from isLoading (true for the whole request) so the
+  // insight workspace loading state surfaces only when an insight is on the way.
+  isGeneratingInsight: boolean;
+  abortController: AbortController | null;
   currentThreadId: string | null;
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
   reasoningStartTime: number | null; // Timestamp when reasoning started
+  // The selected date range — the one query concern with no map/layer
+  // counterpart, so it is owned here directly.
+  dateRange: { start: Date; end: Date } | null;
+  // Per-slot identity of the context last sent to the backend on this thread.
+  // The `/api/chat` `ui_context` is non-idempotent, so each slot is sent only
+  // when it changes. Reset per thread (cleared by reset(), seeded by
+  // fetchThread, folded forward by the agent's own pick_aoi/pick_dataset).
+  lastSentContext: ContextKeys;
 }
 
 interface ChatActions {
@@ -46,19 +67,30 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
+  upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
+  acceptAnalyseNudge: (messageId: string) => void;
+  upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
+  acceptViewAnalysisNudge: (messageId: string) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
   ) => Promise<{ isNew: boolean; id: string }>;
   setLoading: (loading: boolean) => void;
+  setGeneratingInsight: (generating: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
     threadId: string,
     abortController?: AbortController
   ) => Promise<void>;
+  cancelRequest: () => void;
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
+  setDateRange: (range: { start: Date; end: Date }) => void;
+  clearDateRange: () => void;
+  // Fold the agent's own picks into the last-sent context so they are never
+  // echoed back to the backend on the next user message.
+  foldSentContext: (partial: Partial<ContextKeys>) => void;
 }
 
 const initialState: ChatState = {
@@ -66,19 +98,23 @@ const initialState: ChatState = {
     {
       id: "1",
       type: "system",
-      message: `**Welcome to Global Nature Watch!**
-      &nbsp;
-      Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
-      &nbsp;
-      You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
+      message: `**Welcome to Global Nature Watch Horizon!**
+
+Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
+
+You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
       timestamp: new Date().toISOString(),
     },
   ],
   isLoading: false,
+  isGeneratingInsight: false,
+  abortController: null,
   currentThreadId: null,
   toolSteps: [],
   pendingTraceId: null,
   reasoningStartTime: null,
+  dateRange: null,
+  lastSentContext: emptyContextKeys(),
 };
 
 /**
@@ -131,7 +167,10 @@ async function processStreamMessage(
   addToolStep: (toolData: StreamMessage) => void,
   getPendingTraceId: () => string | null,
   setPendingTraceId: (traceId: string | null) => void,
-  attachTraceToLastAssistant: (traceId: string) => boolean
+  attachTraceToLastAssistant: (traceId: string) => boolean,
+  getPendingNudge: () => SuggestedDataset[] | null,
+  setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
+  setGeneratingInsight: (generating: boolean) => void
 ) {
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
@@ -145,7 +184,21 @@ async function processStreamMessage(
     }
     return;
   }
+  // A pure tool-call turn (AI message with no text). If the agent is about to
+  // run generate_insights, flag it so the insight workspace can show its
+  // loading state now — before the chart data arrives.
+  if (streamMessage.type === "other" && streamMessage.name === "tool_calls") {
+    if (streamMessage.tool_calls?.includes("generate_insights")) {
+      setGeneratingInsight(true);
+    }
+    return;
+  }
   if (streamMessage.type === "error") {
+    // A generate_insights error means no chart is coming — clear the loading
+    // state so the workspace skeleton doesn't linger while the agent recovers.
+    if (streamMessage.name === "generate_insights") {
+      setGeneratingInsight(false);
+    }
     // Handle timeout errors specifically
     if (streamMessage.name === "timeout") {
       addMessage({
@@ -171,60 +224,37 @@ async function processStreamMessage(
     // Consider renaming server-emitted type to "assistant" and updating this
     // branch accordingly, keeping temporary backward compatibility for "text".
   } else if (streamMessage.type === "text" && streamMessage.text) {
+    // The agent can narrate ("Let me analyse…") and call generate_insights in
+    // the same turn — flag the pending insight so its loading state appears
+    // while the chart is computed.
+    if (streamMessage.tool_calls?.includes("generate_insights")) {
+      setGeneratingInsight(true);
+    }
     const pending = getPendingTraceId();
     const traceToUse = streamMessage.trace_id || pending || undefined;
 
-    const chartRefRe = /\[Chart\s+[a-f0-9-]+\]/gi;
-    if (chartRefRe.test(streamMessage.text)) {
-      // Split the text on [Chart <uuid>] markers and inject insight cards positionally
-      const re = /\[Chart\s+[a-f0-9-]+\]/gi;
-      const pendingWidgets = useInsightStore.getState().consumePendingBatch();
-      let lastIndex = 0;
-      let match: RegExpExecArray | null;
-      let widgetIdx = 0;
-      const segments: Array<{ text?: string; widgetIdx?: number }> = [];
-      while ((match = re.exec(streamMessage.text)) !== null) {
-        const textBefore = streamMessage.text.slice(lastIndex, match.index);
-        if (textBefore.trim()) {
-          segments.push({ text: textBefore });
-        }
-        segments.push({ widgetIdx: widgetIdx++ });
-        lastIndex = re.lastIndex;
-      }
-      const textAfter = streamMessage.text.slice(lastIndex);
-      if (textAfter.trim()) {
-        segments.push({ text: textAfter });
-      }
-      segments.forEach((seg, i) => {
-        const isLast = i === segments.length - 1;
-        if (seg.text !== undefined) {
-          addMessage({
-            type: "assistant",
-            message: seg.text,
-            timestamp: streamMessage.timestamp,
-            ...(!isLast ? { suppressFooter: true } : {}),
-            ...(isLast && traceToUse ? { traceId: traceToUse } : {}),
-          });
-        } else if (seg.widgetIdx !== undefined) {
-          const widget = pendingWidgets[seg.widgetIdx];
-          if (widget) {
-            addMessage({
-              type: "assistant",
-              message: "",
-              timestamp: streamMessage.timestamp,
-              widgets: [widget],
-              ...(isLast && traceToUse ? { traceId: traceToUse } : {}),
-            });
-          }
-        }
-      });
-    } else {
+    // Consume the most recent generate_insights batch and render it with the
+    // assistant text. When the reply contains [Chart N] markers, cards are
+    // placed positionally; otherwise (e.g. current staging, which emits chart
+    // data but no markers) they are appended after the text. See
+    // buildInsightChatMessages for the full contract.
+    const pendingWidgets = useInsightStore.getState().consumePendingBatch();
+    buildInsightChatMessages(
+      streamMessage.text,
+      pendingWidgets,
+      streamMessage.timestamp,
+      traceToUse
+    ).forEach(addMessage);
+    // Flush any buffered nudge immediately after the assistant message
+    const pendingNudge = getPendingNudge();
+    if (pendingNudge) {
       addMessage({
-        type: "assistant",
-        message: streamMessage.text,
+        type: "dataset-nudge",
+        message: "",
+        suggestedDatasets: pendingNudge,
         timestamp: streamMessage.timestamp,
-        traceId: traceToUse,
       });
+      setPendingNudge(null);
     }
     // Clear pending trace id once used
     if (pending && pending === traceToUse) {
@@ -238,10 +268,13 @@ async function processStreamMessage(
 
     // Special handling for generate_insights tool
     if (streamMessage.name === "generate_insights" && streamMessage.insights) {
-      // Non-blocking: do not await tool side-effects
-      void Promise.resolve().then(() =>
-        generateInsightsTool(streamMessage, addMessage)
-      );
+      // Non-blocking: do not await tool side-effects. Clear the generating
+      // flag in the same microtask that adds the insights, so the workspace
+      // swaps skeleton → chart in a single render (no empty flash).
+      void Promise.resolve().then(() => {
+        generateInsightsTool(streamMessage, addMessage);
+        setGeneratingInsight(false);
+      });
       return;
     }
     // Special handling for pick_aoi tool (previously location-tool)
@@ -249,14 +282,33 @@ async function processStreamMessage(
       streamMessage.name === "pick_aoi" &&
       (streamMessage.aoi_selection || streamMessage.aoi)
     ) {
+      // The agent picked this AOI itself — fold it into the last-sent context
+      // so it isn't echoed back as a "new" selection on the next user message.
+      const aoiName =
+        streamMessage.aoi_selection?.name ??
+        (streamMessage.aoi as { name?: string } | undefined)?.name;
+      if (aoiName) useChatStore.getState().foldSentContext({ aoi: aoiName });
       // Non-blocking: geometry fetch can be slow; don't stall stream
       void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
       return;
     }
     // Handling for pick_dataset tool
     else if (streamMessage.name === "pick_dataset") {
+      const datasetId = (
+        streamMessage.dataset as { dataset_id?: number } | undefined
+      )?.dataset_id;
+      if (typeof datasetId === "number") {
+        useChatStore.getState().foldSentContext({ dataset: datasetId });
+      }
       void Promise.resolve().then(() =>
-        pickDatasetTool(streamMessage, addMessage)
+        pickDatasetTool(streamMessage, (message) => {
+          // Buffer dataset-nudge messages so they appear after the assistant narrative
+          if (message.type === "dataset-nudge" && message.suggestedDatasets) {
+            setPendingNudge(message.suggestedDatasets);
+          } else {
+            addMessage(message);
+          }
+        })
       );
       return;
     }
@@ -278,6 +330,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     useInsightStore.getState().clearInsights();
   },
 
+  setDateRange: (range) => set({ dateRange: range }),
+  clearDateRange: () => set({ dateRange: null }),
+
+  foldSentContext: (partial) =>
+    set((state) => ({
+      lastSentContext: { ...state.lastSentContext, ...partial },
+    })),
+
   addMessage: (message) => {
     const newMessage: ChatMessage = {
       ...message,
@@ -287,6 +347,80 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     set((state) => ({
       messages: [...state.messages, newMessage],
+    }));
+  },
+
+  // The analyse nudge is client-side only (never replayed from thread
+  // history): at most one is pending at a time, so a new selection replaces
+  // any pending nudge instead of stacking. Accepted nudges persist in the
+  // thread as a record of the analyses the user ran.
+  upsertAnalyseNudge: (suggestion) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "analyse-nudge",
+      message: "",
+      analyseSuggestion: suggestion,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter(
+          (m) => m.type !== "analyse-nudge" || m.analyseSuggestion?.accepted
+        ),
+        newMessage,
+      ],
+    }));
+  },
+
+  acceptAnalyseNudge: (messageId) => {
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === messageId && m.analyseSuggestion
+          ? {
+              ...m,
+              analyseSuggestion: { ...m.analyseSuggestion, accepted: true },
+            }
+          : m
+      ),
+    }));
+  },
+
+  // Mirrors upsertAnalyseNudge for the direct-analysis "view" nudge: only one
+  // pending view-analysis-nudge is kept at a time; accepted ones persist as a
+  // record of the analyses the user ran.
+  upsertViewAnalysisNudge: (suggestion) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "view-analysis-nudge",
+      message: "",
+      viewAnalysisSuggestion: suggestion,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter(
+          (m) =>
+            m.type !== "view-analysis-nudge" ||
+            m.viewAnalysisSuggestion?.accepted
+        ),
+        newMessage,
+      ],
+    }));
+  },
+
+  acceptViewAnalysisNudge: (messageId) => {
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m.id === messageId && m.viewAnalysisSuggestion
+          ? {
+              ...m,
+              viewAnalysisSuggestion: {
+                ...m.viewAnalysisSuggestion,
+                accepted: true,
+              },
+            }
+          : m
+      ),
     }));
   },
 
@@ -300,73 +434,45 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     const {
       addMessage,
       setLoading,
+      setGeneratingInsight,
       currentThreadId,
       generateNewThread,
       addToolStep,
       clearToolSteps,
     } = get();
-    const { context, markAsAiContext } = useContextStore.getState();
 
     // Generate thread ID if this is the first message
     const threadId = currentThreadId || generateNewThread();
 
-    // Add user message
+    // Derive the full active context from the map layers + selected date range.
+    // The chip snapshot records the complete context; ui_context only carries
+    // the slots that changed since the last send (the backend is non-idempotent).
+    const { layers, geoJsonRegistry } = useMapStore.getState();
+    const { uiContext, keys, snapshot } = deriveContext(
+      layers,
+      geoJsonRegistry,
+      get().dateRange
+    );
+
+    // Add user message with a read-only snapshot of the context it was sent with
     addMessage({
       type: "user",
       message,
-      context,
+      context: snapshot,
     });
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
     set({ reasoningStartTime: Date.now() });
     setLoading(true);
+    // Reset any stale insight-generating flag from a prior turn; it is set
+    // true only once this turn's agent announces a generate_insights call.
+    setGeneratingInsight(false);
 
-    // Build ui_context from current context
-    const newContext = context.filter((ctx) => !ctx.isAiContext);
-    const ui_context: UiContext = {};
-
-    // Find area context and convert to aoi_selected format
-    // Supports both single-AOI (aoiData) and multi-AOI (aoiSelection)
-    const areaContext = newContext.find(
-      (ctx) => ctx.contextType === "area" && (ctx.aoiData || ctx.aoiSelection)
-    );
-    if (areaContext) {
-      // Use aoiSelection's first AOI if available, otherwise fall back to aoiData
-      const firstAoi = areaContext.aoiSelection?.aois?.[0];
-      const aoiData = areaContext.aoiData;
-      const aoi = firstAoi ?? aoiData;
-
-      if (aoi) {
-        ui_context.aoi_selected = {
-          aoi: {
-            name: aoi.name,
-            gadm_id: aoiData?.gadm_id,
-            src_id: aoi.src_id,
-            subtype: aoi.subtype,
-            source: aoi.source,
-          },
-          aoi_name: areaContext.aoiSelection?.name ?? aoi.name,
-          subtype: aoi.subtype,
-        };
-      }
-    }
-
-    const dateContext = newContext.find((ctx) => ctx.contextType === "date");
-    if (dateContext && dateContext.dateRange) {
-      ui_context.daterange_selected = {
-        start_date: format(dateContext.dateRange.start, "yyyy-MM-dd"),
-        end_date: format(dateContext.dateRange.end, "yyyy-MM-dd"),
-      };
-    }
-
-    const datasetContext = newContext.find(
-      (ctx) => ctx.contextType === "layer"
-    );
-    if (datasetContext && typeof datasetContext.datasetId === "number") {
-      const ds = DATASET_BY_ID[datasetContext.datasetId];
-      if (ds) ui_context.dataset_selected = { dataset: ds };
-    }
+    const ui_context = diffUiContext(uiContext, keys, get().lastSentContext);
+    // Record what we're sending so the same context isn't re-announced next
+    // turn. Agent picks arriving during the stream fold their slots on top.
+    set({ lastSentContext: keys });
 
     const prompt: ChatPrompt = {
       query: message,
@@ -374,8 +480,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       thread_id: threadId,
     };
 
-    // Set up abort controller for client-side timeout
+    // Set up abort controller for client-side timeout and user cancellation
     const abortController = new AbortController();
+    set({ abortController });
     const timeoutId = setTimeout(() => {
       console.log(
         "CLIENT TIMEOUT: Request exceeded 5 minutes 10 seconds - aborting request"
@@ -410,6 +517,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       useAuthStore.getState().setUsageFromHeaders(response.headers);
 
       const reader = response.body.getReader();
+      let pendingNudge: SuggestedDataset[] | null = null;
 
       await readDataStream({
         abortController,
@@ -442,7 +550,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                   return state;
                 });
                 return attached;
-              }
+              },
+              () => pendingNudge,
+              (datasets) => {
+                pendingNudge = datasets;
+              },
+              setGeneratingInsight
             );
           } catch (err) {
             if (isFinal) {
@@ -462,27 +575,36 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       // Log why the loop ended
       if (readerDone) {
         console.log("FRONTEND: Stream ended normally (readerDone = true)");
-        // All good. Mark current context items as AI context to prevent them
-        // being sent again in future messages
-        markAsAiContext(context.map((c) => c.id));
       } else if (abortController.signal.aborted) {
         console.log("FRONTEND: Stream ended due to abort signal");
       }
     } catch (error) {
       console.error("Error sending message:", error);
 
-      // Check if error was due to abort/timeout
+      // Check if error was due to abort (user cancel or timeout)
+      // cancelRequest() nulls abortController before aborting, so null here means user cancel
       if (error instanceof Error && error.name === "AbortError") {
-        console.log("FRONTEND: Request aborted due to timeout");
-        addMessage({
-          type: "error",
-          message:
+        const wasUserCancel = get().abortController === null;
+        if (wasUserCancel) {
+          console.log("FRONTEND: Request cancelled by user");
+          // A user-initiated stop is not a failure — render a neutral status
+          // (no red alert), not the red error treatment.
+          addMessage({
+            type: "stopped",
+            message: "Response stopped",
+          });
+        } else {
+          console.log("FRONTEND: Request aborted due to timeout");
+          addMessage({
+            type: "error",
+            message:
+              "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
+          });
+          showApiError(
             "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
-        });
-        showApiError(
-          "The request timed out on the client side. This might be due to a complex query or server load. Please try again or rephrase your question.",
-          { title: "Client Timeout" }
-        );
+            { title: "Client Timeout" }
+          );
+        }
       } else if (
         error instanceof TypeError &&
         error.message.includes("network")
@@ -532,19 +654,32 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
     } finally {
       clearTimeout(timeoutId);
+      set({ abortController: null });
 
       // Attach tool steps to the user message before clearing loading state
       const { attachToolStepsToLastUserMessage } = get();
       attachToolStepsToLastUserMessage();
 
       setLoading(false);
+      // Safety net: clear the insight-generating flag in case generate_insights
+      // was announced but never produced a result (error, abort, timeout).
+      setGeneratingInsight(false);
 
-      useSidebarStore.getState().fetchThreads(); // Refresh threads in sidebar
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };
     }
   },
 
   setLoading: (loading) => set({ isLoading: loading }),
+
+  setGeneratingInsight: (generating) =>
+    set({ isGeneratingInsight: generating }),
+
+  cancelRequest: () => {
+    const controller = get().abortController;
+    set({ abortController: null });
+    controller?.abort();
+  },
 
   addToolStep: (toolData: StreamMessage) => {
     set((state) => ({
@@ -599,13 +734,20 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   },
 
   fetchThread: async (threadId: string, abort?: AbortController) => {
-    const { setLoading, addMessage, addToolStep, clearToolSteps } = get();
-    const { upsertContextByType } = useContextStore.getState();
+    const {
+      setLoading,
+      setGeneratingInsight,
+      addMessage,
+      addToolStep,
+      clearToolSteps,
+      setDateRange,
+    } = get();
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
     set({ reasoningStartTime: Date.now() });
     setLoading(true);
+    setGeneratingInsight(false);
     // Set up abort controller for client-side timeout
     const abortController = abort || new AbortController();
     const timeoutId = setTimeout(() => {
@@ -631,6 +773,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       const reader = response.body.getReader();
+      let pendingNudgeThread: SuggestedDataset[] | null = null;
 
       await readDataStream({
         abortController,
@@ -659,29 +802,31 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               }
 
               if (streamMessage.aoi_selection || streamMessage.aoi) {
-                // pickAoiTool handles context upsert with aoiSelection,
-                // so we just call it and let it set context properly
+                // pickAoiTool adds the area layer(s); the context snapshot below
+                // is derived from the resulting layer state.
                 await pickAoiTool(streamMessage, addMessage);
               }
 
               if (streamMessage.start_date && streamMessage.end_date) {
-                upsertContextByType({
-                  contextType: "date",
-                  content: `${streamMessage.start_date} — ${streamMessage.end_date}`,
-                  dateRange: {
-                    start: new Date(streamMessage.start_date),
-                    end: new Date(streamMessage.end_date),
-                  },
+                setDateRange({
+                  start: new Date(streamMessage.start_date),
+                  end: new Date(streamMessage.end_date),
                 });
               }
 
-              // Add user message
+              // Snapshot the context active at this turn from the rehydrated
+              // layers + date range — the same derivation used by live sends.
+              const { layers, geoJsonRegistry } = useMapStore.getState();
+              const { snapshot } = deriveContext(
+                layers,
+                geoJsonRegistry,
+                get().dateRange
+              );
+
               addMessage({
                 type: "user",
                 message: streamMessage.text!,
-                // The context will have been updated by the upsertContextByType
-                // calls above. Get the updated context from the store
-                context: useContextStore.getState().context,
+                context: snapshot,
                 timestamp: streamMessage.timestamp,
               });
 
@@ -707,7 +852,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                   return state;
                 });
                 return attached;
-              }
+              },
+              () => pendingNudgeThread,
+              (datasets) => {
+                pendingNudgeThread = datasets;
+              },
+              setGeneratingInsight
             );
           } catch (err) {
             if (isFinal) {
@@ -758,6 +908,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
 
+      // Seed the last-sent context from the fully rehydrated layers + date
+      // range, so the first new message on this thread only sends what changed.
+      const { layers, geoJsonRegistry } = useMapStore.getState();
+      const { keys } = deriveContext(layers, geoJsonRegistry, get().dateRange);
+      set({ lastSentContext: keys });
+
       // Flush any remaining tool steps for the last user message
       const finalToolSteps = get().toolSteps;
       if (finalToolSteps.length > 0) {
@@ -771,6 +927,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       setLoading(false);
+      setGeneratingInsight(false);
     }
   },
 }));

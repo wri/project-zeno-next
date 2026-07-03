@@ -8,19 +8,28 @@ import {
   IconButton,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
+import CatalogPanel from "@/app/components/CatalogPanel";
+import AreasPanel from "@/app/components/AreasPanel";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
-import DebugToastsPanel from "@/app/components/DebugToastsPanel";
+import SystemBanner from "@/app/components/SystemBanner";
+import WhatsNewModal from "@/app/components/WhatsNewModal";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
-import { useSearchParams } from "next/navigation";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
+import MapAreaFeedback from "@/app/components/MapAreaFeedback";
+import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
+import {
+  CATALOG_COLUMN_Z_INDEX,
+  MAP_FEEDBACK_Z_INDEX,
+} from "@/app/explorationLayout";
+import { ViewAnalysisTrigger } from "@/src/features/analysis";
 
 export default function DashboardLayout({
   children,
@@ -29,38 +38,85 @@ export default function DashboardLayout({
 }) {
   const isReady = useAuthGuard();
   const [sheetHeight, setSheetHeight] = useState(400);
-  const { toggleSidebar } = useSidebarStore();
+  const { toggleSidebar, sideBarVisible } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
-  const [desktopHeight, setDesktopHeight] = useState("0");
 
   useEffect(() => {
     // Set layout heights after mount to avoid flash of both layouts at once
     setMobileHeight("min(100dvh, 100vh)");
-    setDesktopHeight("auto");
   }, []);
 
-  function DebugToastsMount() {
-    const params = useSearchParams();
-    const debugEnabled =
-      process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
-      params.get("debug") === "1";
-    return <DebugToastsPanel enabled={debugEnabled} />;
-  }
-
   const DesktopLayout = (
-    <Grid
-      templateColumns="auto min-content 1fr"
-      templateAreas="'sidebar chat map'"
-      templateRows="1fr"
-      h={{ base: 0, md: desktopHeight }}
-      maxH="calc(100vh - 3rem)"
-      display={{ base: "none", md: "grid" }}
+    <Box
+      position="relative"
+      w="100vw"
+      h="100%"
+      overflow="hidden"
+      display={{ base: "none", md: "block" }}
     >
-      <Sidebar />
-      <ChatPanel />
       <Map />
-    </Grid>
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        left={0}
+        zIndex={CATALOG_COLUMN_Z_INDEX}
+        pointerEvents="none"
+        display={{ base: "none", md: "block" }}
+      >
+        <CatalogPanel />
+        <AreasPanel />
+      </Box>
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        left={0}
+        right={0}
+        zIndex={MAP_FEEDBACK_Z_INDEX}
+        pointerEvents="none"
+        display={{ base: "none", md: "block" }}
+      >
+        <MapAreaFeedback />
+      </Box>
+      <Box
+        position="absolute"
+        top={0}
+        bottom={0}
+        left={0}
+        zIndex={1100}
+        display="flex"
+        flexDir="column"
+        pointerEvents="none"
+      >
+        <Box
+          pointerEvents="none"
+          minH={0}
+          display="flex"
+          flexDir="column"
+          h="100%"
+        >
+          <ChatPanel />
+        </Box>
+      </Box>
+      <Drawer.Root
+        placement="start"
+        open={sideBarVisible}
+        onOpenChange={(e) => {
+          if (!e.open && sideBarVisible) toggleSidebar();
+        }}
+      >
+        <Portal>
+          <Drawer.Backdrop backdropFilter="blur(2px)" />
+          <Drawer.Positioner>
+            <Drawer.Content maxW="428px" w="428px">
+              <Sidebar />
+            </Drawer.Content>
+          </Drawer.Positioner>
+        </Portal>
+      </Drawer.Root>
+    </Box>
   );
 
   const MobileLayout = (
@@ -130,13 +186,23 @@ export default function DashboardLayout({
       bg="bg"
     >
       <UploadAreaDialog />
+      <WhatsNewModal />
+      <AnalysisCtaTrigger />
+      <ViewAnalysisTrigger />
 
-      {!isMobile && <PageHeader />}
+      {!isMobile && (
+        <Box>
+          <PageHeader />
+          {/* Rebrand announcement sits full-width directly below the header and
+              supersedes the preview DisclaimerPanel while it is showing.
+              Desktop-only by design: it lives in the desktop header cell and
+              replaces the desktop-only DisclaimerPanel, leaving the mobile
+              bottom-sheet layout untouched. */}
+          <SystemBanner dismissible />
+        </Box>
+      )}
       {isMobile ? MobileLayout : DesktopLayout}
 
-      <Suspense fallback={null}>
-        <DebugToastsMount />
-      </Suspense>
       {children}
     </Grid>
   );

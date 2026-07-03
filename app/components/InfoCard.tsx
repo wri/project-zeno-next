@@ -11,6 +11,8 @@ export interface InfoCardProps {
   typeLabel?: string;
   /** Hex color for the type label. */
   typeLabelColor?: string;
+  /** Optional icon rendered immediately before the type label. */
+  typeLabelIcon?: React.ReactNode;
   /** Bold sans-serif title text. */
   title: string;
   /** Mono caption shown under the title. */
@@ -20,6 +22,8 @@ export interface InfoCardProps {
   selected?: boolean;
   /** Optional action node (e.g. info icon) anchored to the right of the title row. */
   titleActions?: React.ReactNode;
+  /** Optional action node placed inline after the description text. */
+  descriptionActions?: React.ReactNode;
 }
 
 export function InfoCard({
@@ -27,11 +31,13 @@ export function InfoCard({
   thumbnailBg = "#FFFFFF",
   typeLabel,
   typeLabelColor = "#656E7B",
+  typeLabelIcon,
   title,
   description,
   onClick,
   selected = false,
   titleActions,
+  descriptionActions,
 }: InfoCardProps) {
   return (
     <Flex
@@ -71,20 +77,23 @@ export function InfoCard({
         minW={0}
       >
         {typeLabel && (
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            fontWeight="normal"
-            lineHeight="16px"
-            letterSpacing="0.5px"
-            color={typeLabelColor}
-            textTransform="uppercase"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-          >
-            {typeLabel}
-          </Text>
+          <Flex align="center" gap="4px" minW={0}>
+            {typeLabelIcon}
+            <Text
+              fontFamily="mono"
+              fontSize="10px"
+              fontWeight="normal"
+              lineHeight="16px"
+              letterSpacing="0.5px"
+              color={typeLabelColor}
+              textTransform="uppercase"
+              whiteSpace="nowrap"
+              overflow="hidden"
+              textOverflow="ellipsis"
+            >
+              {typeLabel}
+            </Text>
+          </Flex>
         )}
         <Flex align="center" gap="8px" minW={0}>
           <Text
@@ -93,8 +102,6 @@ export function InfoCard({
             fontWeight="medium"
             lineHeight="150%"
             color="#3A4048"
-            flex="1"
-            minW={0}
             whiteSpace="nowrap"
             overflow="hidden"
             textOverflow="ellipsis"
@@ -103,19 +110,26 @@ export function InfoCard({
           </Text>
           {titleActions}
         </Flex>
-        {description && (
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            fontWeight="normal"
-            lineHeight="16px"
-            color="#656E7B"
-            whiteSpace="nowrap"
-            overflow="hidden"
-            textOverflow="ellipsis"
-          >
-            {description}
-          </Text>
+        {(description || descriptionActions) && (
+          <Flex align="center" gap="8px" minW={0}>
+            {description && (
+              <Text
+                flex="1"
+                minW={0}
+                fontFamily="mono"
+                fontSize="10px"
+                fontWeight="normal"
+                lineHeight="16px"
+                color="#656E7B"
+                whiteSpace="nowrap"
+                overflow="hidden"
+                textOverflow="ellipsis"
+              >
+                {description}
+              </Text>
+            )}
+            {descriptionActions}
+          </Flex>
         )}
       </Box>
     </Flex>

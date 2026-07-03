@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { Loader } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useChatStore from "@/app/store/chatStore";
-import useContextStore from "@/app/store/contextStore";
 import useMapStore from "@/app/store/mapStore";
+import { DATASET_CARDS } from "@/app/constants/datasets";
+import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
+import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
+
+const DEFAULT_LANDING_DATASET_ID = 4;
 
 function NewThread() {
   const {
@@ -13,31 +17,54 @@ function NewThread() {
     sendMessage,
     currentThreadId,
   } = useChatStore();
-  const { reset: resetContextStore } = useContextStore();
-  const { reset: resetMapStore } = useMapStore();
+  const { reset: resetMapStore, addLayer, layers } = useMapStore();
   const searchParams = useSearchParams();
   const [hasMounted, setHasMounted] = useState(false);
+  const defaultLayerSeededRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
     resetChatStore();
     resetMapStore();
-    resetContextStore();
-  }, [resetChatStore, resetContextStore, resetMapStore]);
+    defaultLayerSeededRef.current = false;
+  }, [resetChatStore, resetMapStore]);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
-  const submitPrompt = async (prompt: string) => {
-    const result = await sendMessage(prompt);
-    if (result.isNew) {
-      router.replace(`/app/threads/${result.id}`);
+  useEffect(() => {
+    if (defaultLayerSeededRef.current) return;
+
+    const hasDatasetLayer = layers.some((l) => typeof l.datasetId === "number");
+    if (hasDatasetLayer) {
+      defaultLayerSeededRef.current = true;
+      return;
     }
-  };
+
+    const defaultCard = DATASET_CARDS.find(
+      (card) => card.dataset_id === DEFAULT_LANDING_DATASET_ID
+    );
+    if (!defaultCard) return;
+
+    buildDatasetLayers(getLayerContextFromDatasetCard(defaultCard)).forEach(
+      addLayer
+    );
+    defaultLayerSeededRef.current = true;
+  }, [layers, addLayer]);
+
+  const submitPrompt = useCallback(
+    async (prompt: string) => {
+      const result = await sendMessage(prompt);
+      if (result.isNew) {
+        router.replace(`/app/threads/${result.id}`);
+      }
+    },
+    [sendMessage, router]
+  );
 
   useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasMounted || !searchParams) return;
     const prompt = searchParams.get("prompt");
     if (prompt && !currentThreadId) {
       submitPrompt(prompt);
