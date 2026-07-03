@@ -189,14 +189,17 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <DisclaimerPanel />
         </Box>
-        {/* Right overlay column: insight panel (top, scrollable) + legend (bottom) */}
+        {/* Right overlay column: insight panel (top, scrollable) + legend (bottom).
+            Base: spans the viewport (a fixed 420px would overhang narrow phones)
+            and starts below the floating hamburger + header pill. */}
         <Flex
           position="absolute"
-          top={4}
+          top={{ base: "4rem", md: 4 }}
           right={3}
+          left={{ base: 3, md: "auto" }}
           bottom={{ base: "4.5rem", md: 7 }}
           zIndex={400}
-          w="420px"
+          w={{ base: "auto", md: "420px" }}
           flexDirection="column"
           gap={2}
           pointerEvents="none"
@@ -210,12 +213,15 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             flexShrink={0}
             display={{ base: showLegend ? "block" : "none", md: "block" }}
           >
-            {/* Debug panel floats just left of this column, bottom-aligned */}
+            {/* Debug panel floats just left of this column, bottom-aligned.
+                Desktop-only: on mobile the column spans the viewport, so
+                "left of the column" is off-screen. */}
             <Box
               position="absolute"
               bottom={0}
               right="calc(100% + 0.5rem)"
               pointerEvents="all"
+              hideBelow="md"
             >
               <Suspense fallback={null}>
                 <DebugToastsPanel />
