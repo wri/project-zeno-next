@@ -22,8 +22,9 @@ export function parseStreamMessage(
   const content = kwargs.content;
   // Extract trace identifier from response metadata (canonical field)
   const responseMetadata =
-    (kwargs.response_metadata as { trace_id?: string } | undefined) ||
-    undefined;
+    (kwargs.response_metadata as
+      | { trace_id?: string; msg_type?: string; dashboard_id?: string }
+      | undefined) || undefined;
   const traceId = responseMetadata?.trace_id;
 
   if (messageType === "human") {
@@ -69,6 +70,8 @@ export function parseStreamMessage(
       aoi_selection: langChainMessage.aoi_selection || undefined,
       timestamp: timestamp.toISOString(),
       trace_id: traceId,
+      msg_type: responseMetadata?.msg_type,
+      dashboard_id: responseMetadata?.dashboard_id,
     };
   } else if (messageType === "agent") {
     // For AI messages, handle different content formats

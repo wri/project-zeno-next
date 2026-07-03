@@ -139,7 +139,7 @@ export interface UiContext {
 // the agent consults on demand via the backend `inspect_view_context` tool;
 // it is never turned into a message or merged into the agent's selections.
 export interface ViewContext {
-  page?: string; // e.g. "explorer"
+  page?: string; // e.g. "explorer" or "dashboard"
   viewport?: {
     bbox: [number, number, number, number]; // [west, south, east, north]
     zoom: number;
@@ -147,6 +147,8 @@ export interface ViewContext {
   visible_layers?: { id: string; name: string }[];
   visible_aois?: { source: string; src_id?: string; name: string }[];
   visible_insights?: string[]; // insight ids currently on screen
+  dashboard_id?: string; // dashboard currently on screen (page === "dashboard")
+  dashboard_name?: string;
 }
 
 export interface ChatAPIRequest {
@@ -184,6 +186,10 @@ export interface StreamMessage {
   // DB id of the insight this update concerns (set by generate_insights,
   // search_insights and update_insight_display alike).
   insight_id?: string;
+  // Backend signal type from response_metadata, e.g. "dashboard_updated"
+  // (the agent created a dashboard or added a widget — refetch it).
+  msg_type?: string;
+  dashboard_id?: string;
 }
 
 export interface AOI {

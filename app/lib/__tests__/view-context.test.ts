@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 // The mapStore import chain reaches the Chakra toaster (.tsx) via the error
 // handler; stub it so this node-env test doesn't try to parse JSX.
@@ -6,7 +6,11 @@ vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
 }));
 
-import { buildViewContext, pageFromPath } from "@/app/lib/view-context";
+import {
+  buildViewContext,
+  pageFromPath,
+  setActiveDashboard,
+} from "@/app/lib/view-context";
 import useMapStore from "@/app/store/mapStore";
 import useInsightStore from "@/app/store/insightStore";
 import type { Layer, GeoJsonEntry } from "@/app/store/layerManagerSlice";
@@ -66,13 +70,18 @@ function insightWidget(insightId?: string): InsightWidget {
 }
 
 describe("pageFromPath", () => {
-  it("returns 'dashboard' for the dashboard route", () => {
-    expect(pageFromPath("/app/dashboard")).toBe("dashboard");
+  it("returns 'dashboard' for the dashboards routes", () => {
+    expect(pageFromPath("/dashboards")).toBe("dashboard");
+    expect(pageFromPath("/dashboards/5c9f7dd8")).toBe("dashboard");
   });
 
   it("returns 'explorer' for the default app route", () => {
     expect(pageFromPath("/app")).toBe("explorer");
     expect(pageFromPath("/app/threads/abc")).toBe("explorer");
+  });
+
+  it("returns 'explorer' for the /dashboard user-settings page", () => {
+    expect(pageFromPath("/dashboard")).toBe("explorer");
   });
 });
 
@@ -227,5 +236,60 @@ describe("buildViewContext", () => {
 
     expect(view?.visible_layers).toBeUndefined();
     expect(view?.visible_aois).toBeUndefined();
+  });
+});
+
+describe("buildViewContext — dashboard page", () => {
+  beforeEach(() => {
+    useMapStore.setState({ mapRef: null, layers: [], geoJsonRegistry: [] });
+    useInsightStore.getState().clearInsights();
+    // Node env has no window; stub it so pageFromPath sees a dashboard route.
+    vi.stubGlobal("window", {
+      location: { pathname: "/dashboards/dash-1" },
+    });
+  });
+
+  afterEach(() => {
+    setActiveDashboard(null);
+    vi.unstubAllGlobals();
+  });
+
+  it("includes the active dashboard id and name", () => {
+    setActiveDashboard({ id: "dash-1", name: "Paraná" });
+
+    const view = buildViewContext();
+
+    expect(view).toMatchObject({
+      page: "dashboard",
+      dashboard_id: "dash-1",
+      dashboard_name: "Paraná",
+    });
+  });
+
+  it("reports the dashboard even with no map on the page", () => {
+    setActiveDashboard({ id: "dash-1", name: "Paraná" });
+
+    const view = buildViewContext();
+
+    expect(view).toBeDefined();
+    expect(view?.viewport).toBeUndefined();
+  });
+
+  it("returns undefined again once the dashboard is cleared", () => {
+    setActiveDashboard({ id: "dash-1", name: "Paraná" });
+    setActiveDashboard(null);
+
+    expect(buildViewContext()).toBeUndefined();
+  });
+
+  it("does not attach the dashboard outside the dashboard page", () => {
+    vi.stubGlobal("window", { location: { pathname: "/app" } });
+    setActiveDashboard({ id: "dash-1", name: "Paraná" });
+    useMapStore.setState({ mapRef: fakeMapRef([0, 0, 1, 1], 3) });
+
+    const view = buildViewContext();
+
+    expect(view?.page).toBe("explorer");
+    expect(view?.dashboard_id).toBeUndefined();
   });
 });

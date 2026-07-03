@@ -145,3 +145,46 @@ describe("parseStreamMessage — tool insight_id passthrough", () => {
     expect(msg?.insight_id).toBeUndefined();
   });
 });
+
+describe("parseStreamMessage — dashboard_updated passthrough", () => {
+  function toolUpdate(responseMetadata: Record<string, unknown>) {
+    return {
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: "some result",
+            response_metadata: responseMetadata,
+            type: "tool",
+            id: "msg-1",
+            usage_metadata: {},
+            tool_calls: [],
+            invalid_tool_calls: [],
+            name: "add_to_dashboard",
+          },
+        },
+      ],
+    } as unknown as LangChainUpdate;
+  }
+
+  it("surfaces msg_type and dashboard_id from response_metadata", () => {
+    const msg = parseStreamMessage(
+      toolUpdate({ msg_type: "dashboard_updated", dashboard_id: "dash-1" }),
+      "tools",
+      TS
+    );
+    expect(msg).toMatchObject({
+      type: "tool",
+      msg_type: "dashboard_updated",
+      dashboard_id: "dash-1",
+    });
+  });
+
+  it("omits them when response_metadata carries no signal", () => {
+    const msg = parseStreamMessage(toolUpdate({}), "tools", TS);
+    expect(msg?.msg_type).toBeUndefined();
+    expect(msg?.dashboard_id).toBeUndefined();
+  });
+});

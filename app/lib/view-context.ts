@@ -13,7 +13,19 @@ function round(value: number): number {
  * Derived from the route and pure (takes a pathname) so it can be unit-tested.
  */
 export function pageFromPath(pathname: string): "dashboard" | "explorer" {
-  return pathname.includes("/dashboard") ? "dashboard" : "explorer";
+  // Note: /dashboard (singular) is the user-settings page, not a dashboard.
+  return pathname.startsWith("/dashboards") ? "dashboard" : "explorer";
+}
+
+// The dashboard currently on screen, set by the dashboard detail page on
+// mount and cleared on unmount. Module-level rather than a store because
+// nothing renders from it — it is only read imperatively at send time.
+let activeDashboard: { id: string; name: string } | null = null;
+
+export function setActiveDashboard(
+  dashboard: { id: string; name: string } | null
+) {
+  activeDashboard = dashboard;
 }
 
 /**
@@ -39,6 +51,11 @@ export function buildViewContext(): ViewContext | undefined {
         ? pageFromPath(window.location.pathname)
         : "explorer",
   };
+
+  if (view.page === "dashboard" && activeDashboard) {
+    view.dashboard_id = activeDashboard.id;
+    view.dashboard_name = activeDashboard.name;
+  }
 
   const map = mapRef?.getMap();
   if (map) {
@@ -112,11 +129,13 @@ export function buildViewContext(): ViewContext | undefined {
   }
 
   // Only the always-present `page` key? Nothing useful to report yet.
+  // (Dashboard pages have no map, so the dashboard id alone counts.)
   if (
     !view.viewport &&
     !view.visible_layers &&
     !view.visible_aois &&
-    !view.visible_insights
+    !view.visible_insights &&
+    !view.dashboard_id
   ) {
     return undefined;
   }

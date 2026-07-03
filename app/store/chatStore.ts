@@ -286,6 +286,19 @@ async function processStreamMessage(
       addToolStep(streamMessage);
     }
 
+    // The agent created a dashboard or added a widget — mark it stale so the
+    // dashboard pages refetch (live refetch when mounted, otherwise on next
+    // visit). Harmless on thread-history replay.
+    if (
+      streamMessage.msg_type === "dashboard_updated" &&
+      streamMessage.dashboard_id
+    ) {
+      queryClient.invalidateQueries({
+        queryKey: ["dashboard", streamMessage.dashboard_id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["dashboards"] });
+    }
+
     // Special handling for tools whose result is an insight to render:
     // generate_insights (new), search_insights (recalled) and
     // update_insight_display (restyled) all land here.
