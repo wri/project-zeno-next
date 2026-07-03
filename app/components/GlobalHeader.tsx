@@ -107,7 +107,7 @@ export default function GlobalHeader() {
       backdropBlur="10px"
     >
       <Flex
-        divideColor={"neutral.600"}
+        divideColor={"whiteAlpha.300"}
         divideStyle={"solid"}
         divideX={{ base: "0px", md: "1px" }}
         flexDir={{ base: "column", md: "row" }}
