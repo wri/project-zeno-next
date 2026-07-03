@@ -210,7 +210,8 @@ export default function ChatInput({
         ref={setFocusEl}
         aria-label="Ask a question..."
         placeholder={message}
-        fontSize="sm"
+        // 16px on mobile — iOS Safari auto-zooms focused inputs below 16px.
+        fontSize={{ base: "md", md: "sm" }}
         minH="20px"
         autoresize
         maxH="10lh"
