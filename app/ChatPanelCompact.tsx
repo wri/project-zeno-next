@@ -111,10 +111,19 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
         flexDir="column"
         gap="0.5"
         w={{ base: "full", md: `${COMPACT_CHAT_PANEL_WIDTH_PX}px` }}
+        minH={0}
         pointerEvents="auto"
       >
-        {/* Top card: header + content */}
-        <Flex ref={topCardRef} flexDir="column" flex="0 0 auto" {...cardStyle}>
+        {/* Top card: header + content. Base (bottom sheet): shrinkable so the
+            message list scrolls within the sheet instead of clipping past its
+            top edge. Desktop keeps the fixed 50vh-capped height. */}
+        <Flex
+          ref={topCardRef}
+          flexDir="column"
+          flex={{ base: "0 1 auto", md: "0 0 auto" }}
+          minH={0}
+          {...cardStyle}
+        >
           <ChatPanelHeader
             isFullSize={false}
             hasConversation={hasConversation}
@@ -131,7 +140,12 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.22, ease: "easeInOut" }}
-                style={{ overflow: "hidden" }}
+                style={{
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                }}
               >
                 <Box
                   ref={messagesRef}
@@ -139,7 +153,8 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
                   px={4}
                   pt={4}
                   pb={4}
-                  maxH={messagesMaxH}
+                  minH={0}
+                  maxH={{ base: "none", md: messagesMaxH }}
                 >
                   <ChatMessages />
                 </Box>
@@ -148,10 +163,11 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
           </AnimatePresence>
         </Flex>
 
-        {/* Bottom card: input — always visible */}
+        {/* Bottom card: input — always visible, never squeezed by the list */}
         <Flex
           ref={inputCardRef}
           flexDir="column"
+          flexShrink={0}
           {...cardStyle}
           boxShadow="none"
           overflow="hidden"

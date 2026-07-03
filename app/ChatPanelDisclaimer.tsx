@@ -38,6 +38,11 @@ const variantStyle = {
     borderRadius: "sm",
     backdropFilter: "blur(24px)",
     bg: "whiteAlpha.200",
+    // Sits in the compact panel's flex column — never squeeze the copy away
+    // when space is tight (mobile bottom sheet at its smallest snap), and let
+    // it wrap instead of clipping on narrow phones.
+    flexShrink: 0,
+    whiteSpace: { base: "normal", md: "nowrap" } as const,
   },
 } as const;
 
