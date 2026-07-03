@@ -18,6 +18,12 @@ const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 const BASEMAP_STYLE = "devseed/cmazl5ws500bz01scaa27dqi4";
 const AOI_LINE_COLOR = "#172B7A";
 
+interface TileJson {
+  minzoom?: number;
+  maxzoom?: number;
+  bounds?: [number, number, number, number];
+}
+
 interface DashboardMapWidgetProps {
   spec: MapWidgetSpec;
   /** The dashboard's area — the map fits its viewport to it (single-area MVP). */
@@ -40,6 +46,36 @@ export default function DashboardMapWidget({
     staleTime: Infinity,
     retry: false,
   });
+
+  // Imagery mosaics only have tiles inside their own area/zoom range, and the
+  // tile service 500s (without CORS headers) on anything outside it. Fetch the
+  // mosaic's tilejson and constrain the source so those tiles are never
+  // requested. Best-effort: on fetch failure the source renders unconstrained.
+  const tilejsonQuery = useQuery({
+    queryKey: ["tilejson", spec.tilejsonUrl],
+    queryFn: async (): Promise<TileJson> => {
+      const res = await fetch(spec.tilejsonUrl!);
+      if (!res.ok) throw new Error(`Failed to fetch tilejson: ${res.status}`);
+      return res.json();
+    },
+    enabled: !!spec.tilejsonUrl,
+    staleTime: Infinity,
+    retry: false,
+  });
+  const tilejson = tilejsonQuery.data;
+  const tileConstraints = {
+    ...(typeof tilejson?.minzoom === "number"
+      ? { minzoom: tilejson.minzoom }
+      : {}),
+    ...(typeof tilejson?.maxzoom === "number"
+      ? { maxzoom: tilejson.maxzoom }
+      : {}),
+    ...(Array.isArray(tilejson?.bounds) && tilejson.bounds.length === 4
+      ? { bounds: tilejson.bounds }
+      : {}),
+  };
+  const isFetching =
+    (!!aoi && isLoading) || (!!spec.tilejsonUrl && tilejsonQuery.isLoading);
 
   const geometry = geometryResponse?.geometry;
   const bounds = geometry
@@ -66,7 +102,7 @@ export default function DashboardMapWidget({
         )}
       </Flex>
       <Box h="320px" position="relative" bg="neutral.200">
-        {aoi && isLoading ? (
+        {isFetching ? (
           <Flex h="100%" align="center" justify="center">
             <Spinner />
           </Flex>
@@ -101,6 +137,7 @@ export default function DashboardMapWidget({
                 type="raster"
                 tiles={[tileUrl]}
                 tileSize={256}
+                {...tileConstraints}
               >
                 <Layer
                   id={`widget-tiles-layer-${i}`}

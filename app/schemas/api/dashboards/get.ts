@@ -44,6 +44,7 @@ export const MapWidgetDatasetSchema = z.object({
 
 export const MapWidgetImagerySchema = z.object({
   tile_url: z.string().nullish(),
+  tilejson_url: z.string().nullish(),
   target_date: z.string().nullish(),
   aoi_names: z.array(z.string()).nullish(),
 });

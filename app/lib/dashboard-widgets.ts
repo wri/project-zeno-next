@@ -57,6 +57,12 @@ export interface MapWidgetSpec {
   /** Raster tile URL templates, bottom-to-top render order. */
   tileUrls: string[];
   kind: "dataset" | "imagery";
+  /**
+   * Imagery mosaics only cover their own area/zoom range, and the tile
+   * service 500s (without CORS headers) on out-of-range tiles. The tilejson
+   * provides minzoom/maxzoom/bounds to keep requests in range.
+   */
+  tilejsonUrl?: string;
 }
 
 /**
@@ -107,6 +113,7 @@ export function dashboardWidgetToMapSpec(
       caption: parts.length ? parts.join(" · ") : undefined,
       tileUrls: [imagery.tile_url],
       kind: "imagery",
+      ...(imagery.tilejson_url ? { tilejsonUrl: imagery.tilejson_url } : {}),
     };
   }
 

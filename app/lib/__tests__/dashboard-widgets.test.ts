@@ -214,6 +214,7 @@ describe("dashboardWidgetToMapSpec", () => {
         mapWidget({
           imagery: {
             tile_url: "https://tiles.example.com/mosaic/{z}/{x}/{y}.png",
+            tilejson_url: "https://tiles.example.com/mosaic/tilejson.json",
             target_date: "2024-06-01",
             aoi_names: ["Paraná"],
           },
@@ -224,7 +225,19 @@ describe("dashboardWidgetToMapSpec", () => {
       caption: "Paraná · 2024-06-01",
       tileUrls: ["https://tiles.example.com/mosaic/{z}/{x}/{y}.png"],
       kind: "imagery",
+      tilejsonUrl: "https://tiles.example.com/mosaic/tilejson.json",
     });
+  });
+
+  it("omits tilejsonUrl when the imagery config has none", () => {
+    const spec = dashboardWidgetToMapSpec(
+      mapWidget({
+        imagery: {
+          tile_url: "https://tiles.example.com/mosaic/{z}/{x}/{y}.png",
+        },
+      })
+    );
+    expect(spec).not.toHaveProperty("tilejsonUrl");
   });
 
   it("returns null when there is no renderable tile URL", () => {
