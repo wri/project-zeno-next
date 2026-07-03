@@ -1,6 +1,11 @@
 "use client";
 import "maplibre-gl/dist/maplibre-gl.css";
-import MapGl, { Layer, Source, MapRef } from "react-map-gl/maplibre";
+import MapGl, {
+  AttributionControl,
+  Layer,
+  Source,
+  MapRef,
+} from "react-map-gl/maplibre";
 import { useState, useRef, useEffect, Suspense } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
@@ -12,6 +17,7 @@ import {
   Link as ChLink,
   Spinner,
   Text,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
@@ -61,6 +67,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const isGeneratingInsight = useChatStore((s) => s.isGeneratingInsight);
   const consentStatus = useCookieStore((s) => s.consentStatus);
   const openPreferences = useCookieStore((s) => s.openPreferences);
+  // Desktop shows attribution in the custom footer row (hideBelow="md").
+  // Mobile has no footer, so mount MapLibre's compact control there instead.
+  const isMobile = useBreakpointValue({ base: true, md: false });
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -116,6 +125,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           transition: "opacity 0.16s ease",
           _hover: { opacity: 1 },
         },
+        // Mobile-only compact attribution: lift it clear of the Legend toggle
+        // that occupies the bottom-right corner on small screens.
+        "& .maplibregl-ctrl-bottom-right": {
+          mb: { base: "3.5rem", md: 0 },
+        },
       }}
     >
       {!mapRef.current && (
@@ -136,6 +150,13 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         onMove={onMapMove}
         attributionControl={false}
       >
+        {isMobile && (
+          <AttributionControl
+            compact
+            position="bottom-right"
+            customAttribution="Background tiles: © OpenStreetMap contributors"
+          />
+        )}
         <Source
           id="background"
           type="raster"
