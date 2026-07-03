@@ -39,7 +39,7 @@ export default function ViewAnalysisNudge({
     });
   };
 
-  const label = `View ${suggestion.datasetName} Analysis in ${suggestion.area.name}`;
+  const label = `View ${suggestion.datasetName} Analysis for ${suggestion.area.name}`;
 
   return (
     <>
