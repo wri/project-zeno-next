@@ -144,6 +144,20 @@ describe("deriveContext", () => {
     expect(uiContext.dataset_selected).toBeUndefined();
     expect(snapshot.areas).toBeUndefined();
   });
+
+  it("omits layers the user dismissed from chat context", () => {
+    const { uiContext, snapshot } = deriveContext(
+      [aiAreaLayer, datasetMainLayer],
+      [],
+      null,
+      new Set([aiAreaLayer.id, datasetMainLayer.id])
+    );
+
+    expect(uiContext.aoi_selected).toBeUndefined();
+    expect(uiContext.dataset_selected).toBeUndefined();
+    expect(snapshot.areas).toBeUndefined();
+    expect(snapshot.datasets).toBeUndefined();
+  });
 });
 
 describe("diffUiContext", () => {
