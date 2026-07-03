@@ -1,5 +1,7 @@
 import type { InsightWidget } from "@/app/types/chat";
 import type { DashboardWidget } from "@/app/schemas/api/dashboards/get";
+import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
+import { patchPrimaryForestTileUrl } from "@/app/utils/datasetLayerContext";
 
 // Chart types ChartWidget can render (InsightWidget["type"] minus
 // "dataset-card", which never comes from the dashboards API).
@@ -47,4 +49,66 @@ export function dashboardWidgetToInsightWidget(
     ...(seriesFields?.length ? { seriesFields } : {}),
     insightId: insight.id,
   };
+}
+
+export interface MapWidgetSpec {
+  title: string;
+  caption?: string;
+  /** Raster tile URL templates, bottom-to-top render order. */
+  tileUrls: string[];
+  kind: "dataset" | "imagery";
+}
+
+/**
+ * Maps a dashboard map widget's config (docs/dashboards-map-widgets-handoff.md)
+ * to what `DashboardMapWidget` renders. The config is a self-contained
+ * snapshot — tile URLs are fully resolved, so no catalog lookup is needed.
+ * Returns `null` when there is no renderable tile URL.
+ */
+export function dashboardWidgetToMapSpec(
+  widget: DashboardWidget
+): MapWidgetSpec | null {
+  const config = widget.config;
+  const dataset = config?.dataset;
+  const imagery = config?.imagery;
+
+  if (dataset?.tile_url) {
+    const ctx = dataset.context_layer
+      ? dataset.context_layers?.find((c) => c.name === dataset.context_layer)
+      : undefined;
+    const tileUrls: string[] = [];
+    // Vector context layers need MVT styling the widget map doesn't do (MVP);
+    // only raster context layers render, beneath the main dataset layer.
+    const ctxIsVector =
+      !!ctx &&
+      (!!ctx.source_layer ||
+        ctx.type === "vector" ||
+        !!CONTEXT_LAYER_METADATA[ctx.name]?.vectorStyle);
+    if (ctx?.tile_url && !ctxIsVector) {
+      tileUrls.push(patchPrimaryForestTileUrl(ctx.tile_url));
+    }
+    tileUrls.push(dataset.tile_url);
+
+    const dates = [dataset.start_date, dataset.end_date].filter(Boolean);
+    return {
+      title: config?.title ?? dataset.dataset_name ?? "Map",
+      caption: dates.length ? dates.join(" – ") : undefined,
+      tileUrls,
+      kind: "dataset",
+    };
+  }
+
+  if (imagery?.tile_url) {
+    const parts = [imagery.aoi_names?.join(", "), imagery.target_date].filter(
+      Boolean
+    );
+    return {
+      title: config?.title ?? "Satellite imagery",
+      caption: parts.length ? parts.join(" · ") : undefined,
+      tileUrls: [imagery.tile_url],
+      kind: "imagery",
+    };
+  }
+
+  return null;
 }

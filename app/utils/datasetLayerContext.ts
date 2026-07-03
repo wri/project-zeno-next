@@ -68,7 +68,7 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
 
 // Route primary forest tiles through the `pf://` protocol so the
 // black-background PNGs render with alpha — see primaryForestTileProtocol.
-function patchPrimaryForestTileUrl(url: string): string {
+export function patchPrimaryForestTileUrl(url: string): string {
   if (!url.includes("umd_regional_primary_forest")) return url;
   return wrapPrimaryForestTileUrl(url);
 }

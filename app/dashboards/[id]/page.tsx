@@ -203,6 +203,7 @@ export default function DashboardDetailPage() {
               <DashboardWidgetCard
                 key={widget.id}
                 widget={widget}
+                aois={dashboard.aois}
                 onRemove={() => removeWidget.mutate(widget.id)}
               />
             ))}

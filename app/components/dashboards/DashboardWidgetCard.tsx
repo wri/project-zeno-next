@@ -6,8 +6,15 @@ import { MapTrifoldIcon, XIcon } from "@phosphor-icons/react";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import ConfirmDialog from "./ConfirmDialog";
-import { dashboardWidgetToInsightWidget } from "@/app/lib/dashboard-widgets";
-import type { DashboardWidget } from "@/app/schemas/api/dashboards/get";
+import DashboardMapWidget from "./DashboardMapWidget";
+import {
+  dashboardWidgetToInsightWidget,
+  dashboardWidgetToMapSpec,
+} from "@/app/lib/dashboard-widgets";
+import type {
+  DashboardAoi,
+  DashboardWidget,
+} from "@/app/schemas/api/dashboards/get";
 
 function PlaceholderCard({
   title,
@@ -41,24 +48,33 @@ function PlaceholderCard({
 
 interface DashboardWidgetCardProps {
   widget: DashboardWidget;
+  /** The dashboard's area — map widgets fit their viewport to it. */
+  aois?: DashboardAoi[] | null;
   onRemove: () => void;
 }
 
 export default function DashboardWidgetCard({
   widget,
+  aois,
   onRemove,
 }: DashboardWidgetCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const insightWidget = dashboardWidgetToInsightWidget(widget);
+  const mapSpec =
+    widget.widget_type === "map" ? dashboardWidgetToMapSpec(widget) : null;
 
   return (
     <Box position="relative">
       {widget.widget_type === "map" ? (
-        <PlaceholderCard
-          title={widget.config?.title ?? "Map"}
-          message="Map widgets are coming soon."
-          icon={<MapTrifoldIcon size={16} />}
-        />
+        mapSpec ? (
+          <DashboardMapWidget spec={mapSpec} aoi={aois?.[0]} />
+        ) : (
+          <PlaceholderCard
+            title={widget.config?.title ?? "Map"}
+            message="This map widget has no renderable layer."
+            icon={<MapTrifoldIcon size={16} />}
+          />
+        )
       ) : insightWidget ? (
         <WidgetMessage widget={insightWidget} />
       ) : (
