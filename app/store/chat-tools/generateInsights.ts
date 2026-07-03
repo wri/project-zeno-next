@@ -113,6 +113,9 @@ export function generateInsightsTool(
           yAxis: chart.yAxis,
           ...(seriesFields ? { seriesFields } : {}),
           ...(datasetName ? { datasetName } : {}),
+          ...(streamMessage.insight_id
+            ? { insightId: streamMessage.insight_id }
+            : {}),
           generation: {
             codeact_parts: streamMessage.codeact_parts,
             source_urls: streamMessage.source_urls,

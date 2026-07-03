@@ -13,10 +13,27 @@ const useInsightStore = create<InsightState>((set, get) => ({
   insights: [],
   pendingBatch: [],
   addInsights: (widgets) =>
-    set((state) => ({
-      insights: [...state.insights, ...widgets],
-      pendingBatch: widgets,
-    })),
+    set((state) => {
+      // Widgets carrying an insightId (search_insights re-surfacing one, or
+      // update_insight_display restyling one) replace any earlier widgets for
+      // that same insight instead of duplicating the card. Widgets without an
+      // insightId (older data, or generate_insights before it's persisted)
+      // always append.
+      const incomingIds = new Set(
+        widgets
+          .map((w) => w.insightId)
+          .filter((id): id is string => Boolean(id))
+      );
+      const kept = incomingIds.size
+        ? state.insights.filter(
+            (w) => !w.insightId || !incomingIds.has(w.insightId)
+          )
+        : state.insights;
+      return {
+        insights: [...kept, ...widgets],
+        pendingBatch: widgets,
+      };
+    }),
   consumePendingBatch: () => {
     const batch = get().pendingBatch;
     set({ pendingBatch: [] });

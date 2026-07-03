@@ -100,6 +100,28 @@ describe("generateInsightsTool", () => {
     ]);
   });
 
+  it("tags widgets with insight_id when present (search_insights/update_insight_display)", () => {
+    generateInsightsTool(
+      baseMessage({
+        name: "search_insights",
+        charts_data: [chartData()],
+        insight_id: "insight-456",
+      }),
+      addMessage
+    );
+    const { insights } = useInsightStore.getState();
+    expect(insights[0].insightId).toBe("insight-456");
+  });
+
+  it("omits insightId when the stream message has no insight_id", () => {
+    generateInsightsTool(
+      baseMessage({ charts_data: [chartData()] }),
+      addMessage
+    );
+    const { insights } = useInsightStore.getState();
+    expect(insights[0].insightId).toBeUndefined();
+  });
+
   it("adds an error message and does not throw when chart items are malformed", () => {
     generateInsightsTool(
       baseMessage({ charts_data: [null as unknown as object] }),

@@ -73,6 +73,11 @@ export interface InsightWidget {
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
   analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
+  // Parent insight DB id (shared by every chart in the same insight). Lets
+  // the store replace an insight's widgets in place — e.g. when
+  // search_insights re-surfaces it or update_insight_display restyles it —
+  // instead of adding a duplicate card.
+  insightId?: string;
 }
 
 // Parameters the agent used to produce an insight (read-only transparency)
@@ -129,11 +134,27 @@ export interface UiContext {
   };
 }
 
+// Ambient frontend view state — what the user is currently looking at.
+// Unlike `ui_context` (deliberate user actions), this is reference material
+// the agent consults on demand via the backend `inspect_view_context` tool;
+// it is never turned into a message or merged into the agent's selections.
+export interface ViewContext {
+  page?: string; // e.g. "explorer"
+  viewport?: {
+    bbox: [number, number, number, number]; // [west, south, east, north]
+    zoom: number;
+  };
+  visible_layers?: { id: string; name: string }[];
+  visible_aois?: { source: string; src_id?: string; name: string }[];
+  visible_insights?: string[]; // insight ids currently on screen
+}
+
 export interface ChatAPIRequest {
   query: string;
   query_type: string;
   thread_id: string;
   ui_context?: UiContext;
+  view_context?: ViewContext;
 }
 
 // Simplified message that our API sends to the client
@@ -160,6 +181,9 @@ export interface StreamMessage {
   start_date?: string;
   end_date?: string;
   trace_id?: string;
+  // DB id of the insight this update concerns (set by generate_insights,
+  // search_insights and update_insight_display alike).
+  insight_id?: string;
 }
 
 export interface AOI {
@@ -280,6 +304,7 @@ export interface LangChainUpdate {
   end_date?: string;
   insights: object[];
   charts_data: object[];
+  insight_id?: string;
   // Optional provenance fields emitted by tools
   codeact_parts?: CodeActPart[];
   source_urls?: string[];

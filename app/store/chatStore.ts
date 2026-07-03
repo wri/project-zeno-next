@@ -24,6 +24,7 @@ import {
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
+import { buildViewContext } from "@/app/lib/view-context";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
@@ -92,6 +93,17 @@ interface ChatActions {
   // echoed back to the backend on the next user message.
   foldSentContext: (partial: Partial<ContextKeys>) => void;
 }
+
+// Tools whose result is an insight (charts + summary) that belongs in the
+// insight workspace: a brand-new analysis (generate_insights), a past one
+// brought back on screen (search_insights), or an existing one restyled in
+// place (update_insight_display). All three share the same state shape
+// (charts_data/insight/insight_id), so they're rendered identically.
+const INSIGHT_RENDER_TOOLS = [
+  "generate_insights",
+  "search_insights",
+  "update_insight_display",
+];
 
 const initialState: ChatState = {
   messages: [
@@ -185,18 +197,22 @@ async function processStreamMessage(
     return;
   }
   // A pure tool-call turn (AI message with no text). If the agent is about to
-  // run generate_insights, flag it so the insight workspace can show its
-  // loading state now — before the chart data arrives.
+  // run an insight-rendering tool, flag it so the insight workspace can show
+  // its loading state now — before the chart data arrives.
   if (streamMessage.type === "other" && streamMessage.name === "tool_calls") {
-    if (streamMessage.tool_calls?.includes("generate_insights")) {
+    if (
+      streamMessage.tool_calls?.some((name) =>
+        INSIGHT_RENDER_TOOLS.includes(name)
+      )
+    ) {
       setGeneratingInsight(true);
     }
     return;
   }
   if (streamMessage.type === "error") {
-    // A generate_insights error means no chart is coming — clear the loading
+    // An insight-tool error means no chart is coming — clear the loading
     // state so the workspace skeleton doesn't linger while the agent recovers.
-    if (streamMessage.name === "generate_insights") {
+    if (INSIGHT_RENDER_TOOLS.includes(streamMessage.name || "")) {
       setGeneratingInsight(false);
     }
     // Handle timeout errors specifically
@@ -224,10 +240,14 @@ async function processStreamMessage(
     // Consider renaming server-emitted type to "assistant" and updating this
     // branch accordingly, keeping temporary backward compatibility for "text".
   } else if (streamMessage.type === "text" && streamMessage.text) {
-    // The agent can narrate ("Let me analyse…") and call generate_insights in
-    // the same turn — flag the pending insight so its loading state appears
-    // while the chart is computed.
-    if (streamMessage.tool_calls?.includes("generate_insights")) {
+    // The agent can narrate ("Let me analyse…") and call an insight-rendering
+    // tool in the same turn — flag the pending insight so its loading state
+    // appears while the chart is computed.
+    if (
+      streamMessage.tool_calls?.some((name) =>
+        INSIGHT_RENDER_TOOLS.includes(name)
+      )
+    ) {
       setGeneratingInsight(true);
     }
     const pending = getPendingTraceId();
@@ -266,8 +286,13 @@ async function processStreamMessage(
       addToolStep(streamMessage);
     }
 
-    // Special handling for generate_insights tool
-    if (streamMessage.name === "generate_insights" && streamMessage.insights) {
+    // Special handling for tools whose result is an insight to render:
+    // generate_insights (new), search_insights (recalled) and
+    // update_insight_display (restyled) all land here.
+    if (
+      INSIGHT_RENDER_TOOLS.includes(streamMessage.name || "") &&
+      streamMessage.insights
+    ) {
       // Non-blocking: do not await tool side-effects. Clear the generating
       // flag in the same microtask that adds the insights, so the workspace
       // swaps skeleton → chart in a single render (no empty flash).
@@ -480,6 +505,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       thread_id: threadId,
     };
 
+    // Ambient view-state snapshot (what the user is currently looking at),
+    // sent separately from ui_context. The agent reads it on demand via the
+    // backend inspect_view_context tool. Omitted when there's nothing to report.
+    const view_context = buildViewContext();
+
     // Set up abort controller for client-side timeout and user cancellation
     const abortController = new AbortController();
     set({ abortController });
@@ -498,7 +528,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         },
         body: JSON.stringify({
           ...prompt,
+          // Request the experimental agent profile so the backend exposes the
+          // inspect_view_context tool that reads the view_context snapshot below.
+          ff: "experimental",
           ...(Object.keys(ui_context).length > 0 && { ui_context }),
+          ...(view_context && { view_context }),
         }),
         signal: abortController.signal,
       });

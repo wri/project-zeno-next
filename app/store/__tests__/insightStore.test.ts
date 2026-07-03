@@ -37,4 +37,36 @@ describe("insightStore", () => {
     useInsightStore.getState().clearInsights();
     expect(useInsightStore.getState().insights).toEqual([]);
   });
+
+  it("replaces widgets sharing an insightId instead of duplicating them", () => {
+    useInsightStore
+      .getState()
+      .addInsights([{ ...widget("Tree cover"), insightId: "abc" }]);
+    useInsightStore
+      .getState()
+      .addInsights([{ ...widget("Tree cover (restyled)"), insightId: "abc" }]);
+    const { insights } = useInsightStore.getState();
+    expect(insights).toHaveLength(1);
+    expect(insights[0].title).toBe("Tree cover (restyled)");
+  });
+
+  it("moves an updated insight to the end (newest) while keeping others", () => {
+    useInsightStore
+      .getState()
+      .addInsights([{ ...widget("A"), insightId: "a" }]);
+    useInsightStore
+      .getState()
+      .addInsights([{ ...widget("B"), insightId: "b" }]);
+    useInsightStore
+      .getState()
+      .addInsights([{ ...widget("A (updated)"), insightId: "a" }]);
+    const { insights } = useInsightStore.getState();
+    expect(insights.map((w) => w.title)).toEqual(["B", "A (updated)"]);
+  });
+
+  it("does not dedupe widgets without an insightId", () => {
+    useInsightStore.getState().addInsights([widget("A")]);
+    useInsightStore.getState().addInsights([widget("A")]);
+    expect(useInsightStore.getState().insights).toHaveLength(2);
+  });
 });

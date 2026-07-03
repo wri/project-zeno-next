@@ -99,3 +99,49 @@ describe("parseStreamMessage — agent tool_calls", () => {
     expect(msg?.tool_calls).toEqual(["pick_dataset", "generate_insights"]);
   });
 });
+
+describe("parseStreamMessage — tool insight_id passthrough", () => {
+  function toolUpdate(
+    name: string,
+    extra: Record<string, unknown> = {}
+  ): LangChainUpdate {
+    return {
+      ...extra,
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: "some result",
+            response_metadata: {},
+            type: "tool",
+            id: "msg-1",
+            usage_metadata: {},
+            tool_calls: [],
+            invalid_tool_calls: [],
+            name,
+          },
+        },
+      ],
+    } as unknown as LangChainUpdate;
+  }
+
+  it("surfaces insight_id from search_insights/update_insight_display state updates", () => {
+    const msg = parseStreamMessage(
+      toolUpdate("search_insights", { insight_id: "insight-123" }),
+      "tools",
+      TS
+    );
+    expect(msg).toMatchObject({
+      type: "tool",
+      name: "search_insights",
+      insight_id: "insight-123",
+    });
+  });
+
+  it("omits insight_id when the tool update doesn't carry one", () => {
+    const msg = parseStreamMessage(toolUpdate("pull_data"), "tools", TS);
+    expect(msg?.insight_id).toBeUndefined();
+  });
+});

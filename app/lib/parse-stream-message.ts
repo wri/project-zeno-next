@@ -64,6 +64,7 @@ export function parseStreamMessage(
       codeact_parts: langChainMessage.codeact_parts || [],
       source_urls: langChainMessage.source_urls || [],
       insight_count: langChainMessage.insight_count || 0,
+      insight_id: langChainMessage.insight_id || undefined,
       aoi: langChainMessage.aoi || undefined,
       aoi_selection: langChainMessage.aoi_selection || undefined,
       timestamp: timestamp.toISOString(),

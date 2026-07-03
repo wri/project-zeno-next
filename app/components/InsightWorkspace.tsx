@@ -10,6 +10,8 @@ import {
   SkeletonText,
   Progress,
 } from "@chakra-ui/react";
+import Markdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import {
   CaretDownIcon,
   CaretUpIcon,
@@ -112,8 +114,12 @@ export default function InsightWorkspace() {
   const [paramsExpanded, setParamsExpanded] = useState(false);
 
   useEffect(() => {
+    // Depend on the array reference (not just .length): an in-place update
+    // (search_insights recall, update_insight_display restyle) replaces
+    // widgets 1-for-1, leaving length unchanged, but should still jump the
+    // view to the newest/updated insight.
     setCurrentIndex(0);
-  }, [insights.length]);
+  }, [insights]);
 
   const total = insights.length;
   // First analysis still generating: no chart to show yet, so present a
@@ -286,6 +292,30 @@ export default function InsightWorkspace() {
                 />
               )}
             </Flex>
+
+            {/* Narrative summary — the agent's write-up for this insight.
+                Shown here (not just in the full-screen dialog) so edits made
+                via update_insight_display are visible without extra clicks.
+                Sized to match the chart legend text (fontSize "2xs") so it
+                reads as supporting detail, not body copy. */}
+            {widget.description && (
+              <Box
+                px={4}
+                py={2}
+                borderBottom="1px solid"
+                borderColor="#DDE2F5"
+                fontSize="2xs"
+                color="fg.muted"
+                css={{
+                  "& p": { margin: 0 },
+                  "& p + p": { marginTop: "4px" },
+                }}
+              >
+                <Markdown remarkPlugins={[remarkBreaks]}>
+                  {widget.description}
+                </Markdown>
+              </Box>
+            )}
 
             {/* Params chips section */}
             {hasChips && paramsExpanded && (
