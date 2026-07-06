@@ -23,6 +23,7 @@ import { formatDistanceToNow } from "date-fns";
 
 import { Tooltip } from "@/app/components/ui/tooltip";
 import DashboardActionsMenu from "@/app/components/dashboards/DashboardActionsMenu";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import {
   useDashboardsList,
   useRenameDashboard,
@@ -199,7 +200,10 @@ const CARD_GRID_COLUMNS = {
 };
 
 export default function DashboardsGalleryPage() {
+  const isReady = useAuthGuard();
   const { dashboards, isLoading } = useDashboardsList();
+
+  if (!isReady) return null;
 
   return (
     <Container maxW="6xl" py={10} h="100%" overflowY="auto">

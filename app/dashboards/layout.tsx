@@ -3,18 +3,17 @@
 import { Box, Drawer, Flex, Portal } from "@chakra-ui/react";
 import PageHeader from "@/app/components/PageHeader";
 import { Sidebar } from "@/app/sidebar";
-import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import useSidebarStore from "@/app/store/sidebarStore";
 
+// No auth guard here: public dashboards are viewable logged-out, so the
+// detail page renders unguarded (the API returns 401 for private ones). The
+// gallery and create pages guard themselves.
 export default function DashboardsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const isReady = useAuthGuard();
   const { toggleSidebar, sideBarVisible } = useSidebarStore();
-
-  if (!isReady) return null;
 
   return (
     <Flex direction="column" h="min(100dvh, 100vh)" bg="bg">

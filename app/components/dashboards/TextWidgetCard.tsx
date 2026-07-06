@@ -30,6 +30,7 @@ export default function TextWidgetCard({
   onChange,
   onDelete,
   startEditing = false,
+  readOnly = false,
   arrange,
 }: {
   text: string;
@@ -37,9 +38,11 @@ export default function TextWidgetCard({
   onDelete: () => void;
   /** Open in edit mode — for a just-created, still-empty note. */
   startEditing?: boolean;
+  /** Viewer mode (public dashboards): no toolbar, no editing. */
+  readOnly?: boolean;
   arrange?: { onMouseDown?: () => void; onMouseUp?: () => void };
 }) {
-  const [editing, setEditing] = useState(startEditing);
+  const [editing, setEditing] = useState(startEditing && !readOnly);
 
   const editor = useEditor({
     extensions: [
@@ -106,96 +109,100 @@ export default function TextWidgetCard({
       h="100%"
     >
       {/* Toolbar — format tools inline (while editing) + block controls */}
-      <Flex px={2} py={1.5} align="center" gap={2} color="fg.muted">
-        {editing && editor && (
-          <Flex gap={0.5} align="center">
-            {fmt(
-              editor.isActive("bold"),
-              () => editor.chain().focus().toggleBold().run(),
-              <TextBIcon size={14} />,
-              "Bold"
-            )}
-            {fmt(
-              editor.isActive("italic"),
-              () => editor.chain().focus().toggleItalic().run(),
-              <TextItalicIcon size={14} />,
-              "Italic"
-            )}
-            {fmt(
-              editor.isActive("heading", { level: 2 }),
-              () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-              <TextHTwoIcon size={14} />,
-              "Heading"
-            )}
-            {fmt(
-              editor.isActive("bulletList"),
-              () => editor.chain().focus().toggleBulletList().run(),
-              <ListBulletsIcon size={14} />,
-              "Bullet list"
-            )}
-            {fmt(
-              editor.isActive("orderedList"),
-              () => editor.chain().focus().toggleOrderedList().run(),
-              <ListNumbersIcon size={14} />,
-              "Numbered list"
-            )}
-            {fmt(
-              editor.isActive("link"),
-              setLink,
-              <LinkIcon size={14} />,
-              "Link"
-            )}
-          </Flex>
-        )}
+      {!readOnly && (
+        <Flex px={2} py={1.5} align="center" gap={2} color="fg.muted">
+          {editing && editor && (
+            <Flex gap={0.5} align="center">
+              {fmt(
+                editor.isActive("bold"),
+                () => editor.chain().focus().toggleBold().run(),
+                <TextBIcon size={14} />,
+                "Bold"
+              )}
+              {fmt(
+                editor.isActive("italic"),
+                () => editor.chain().focus().toggleItalic().run(),
+                <TextItalicIcon size={14} />,
+                "Italic"
+              )}
+              {fmt(
+                editor.isActive("heading", { level: 2 }),
+                () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+                <TextHTwoIcon size={14} />,
+                "Heading"
+              )}
+              {fmt(
+                editor.isActive("bulletList"),
+                () => editor.chain().focus().toggleBulletList().run(),
+                <ListBulletsIcon size={14} />,
+                "Bullet list"
+              )}
+              {fmt(
+                editor.isActive("orderedList"),
+                () => editor.chain().focus().toggleOrderedList().run(),
+                <ListNumbersIcon size={14} />,
+                "Numbered list"
+              )}
+              {fmt(
+                editor.isActive("link"),
+                setLink,
+                <LinkIcon size={14} />,
+                "Link"
+              )}
+            </Flex>
+          )}
 
-        <Flex gap={0.5} align="center" ml="auto">
-          {arrange && (
-            <Tooltip content="Drag to reorder" showArrow>
+          <Flex gap={0.5} align="center" ml="auto">
+            {arrange && (
+              <Tooltip content="Drag to reorder" showArrow>
+                <IconButton
+                  aria-label="Drag to reorder"
+                  size="2xs"
+                  variant="ghost"
+                  cursor="grab"
+                  onMouseDown={arrange.onMouseDown}
+                  onMouseUp={arrange.onMouseUp}
+                >
+                  <ArrowsOutCardinalIcon size={14} />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip content={editing ? "Save" : "Edit"} showArrow>
               <IconButton
-                aria-label="Drag to reorder"
+                aria-label={editing ? "Save note" : "Edit note"}
                 size="2xs"
                 variant="ghost"
-                cursor="grab"
-                onMouseDown={arrange.onMouseDown}
-                onMouseUp={arrange.onMouseUp}
+                onClick={editing ? save : () => setEditing(true)}
               >
-                <ArrowsOutCardinalIcon size={14} />
+                {editing ? (
+                  <CheckIcon size={14} />
+                ) : (
+                  <PencilSimpleIcon size={14} />
+                )}
               </IconButton>
             </Tooltip>
-          )}
-          <Tooltip content={editing ? "Save" : "Edit"} showArrow>
-            <IconButton
-              aria-label={editing ? "Save note" : "Edit note"}
-              size="2xs"
-              variant="ghost"
-              onClick={editing ? save : () => setEditing(true)}
-            >
-              {editing ? (
-                <CheckIcon size={14} />
-              ) : (
-                <PencilSimpleIcon size={14} />
-              )}
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Remove note" showArrow>
-            <IconButton
-              aria-label="Remove note"
-              size="2xs"
-              variant="ghost"
-              onClick={onDelete}
-            >
-              <TrashIcon size={14} />
-            </IconButton>
-          </Tooltip>
+            <Tooltip content="Remove note" showArrow>
+              <IconButton
+                aria-label="Remove note"
+                size="2xs"
+                variant="ghost"
+                onClick={onDelete}
+              >
+                <TrashIcon size={14} />
+              </IconButton>
+            </Tooltip>
+          </Flex>
         </Flex>
-      </Flex>
+      )}
 
       {/* Body — TipTap surface (editable while editing, formatted otherwise) */}
-      <Box px={4} pb={4} pt={1}>
+      <Box px={4} pb={4} pt={readOnly ? 4 : 1}>
         {isEmpty ? (
-          <Text fontSize="sm" color="fg.muted" fontStyle="italic">
-            Add a note…
-          </Text>
+          !readOnly && (
+            <Text fontSize="sm" color="fg.muted" fontStyle="italic">
+              Add a note…
+            </Text>
+          )
         ) : (
           <Box
             rounded="md"

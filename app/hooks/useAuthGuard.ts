@@ -6,7 +6,7 @@ import { getToken } from "@/app/lib/api-client";
 import useAuthStore from "@/app/store/authStore";
 import { API_CONFIG } from "@/app/config/api";
 
-function getLoginUrl(redirectTo: string): string {
+export function getLoginUrl(redirectTo: string): string {
   const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
   const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/login`);
   url.searchParams.set("origin", "gnw");

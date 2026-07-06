@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { Box, Flex, Heading, IconButton, Text } from "@chakra-ui/react";
-import { MapTrifoldIcon, XIcon } from "@phosphor-icons/react";
+import {
+  ArrowsOutCardinalIcon,
+  MapTrifoldIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import ConfirmDialog from "./ConfirmDialog";
@@ -47,6 +51,11 @@ function PlaceholderCard({
   );
 }
 
+export interface ArrangeProps {
+  onMouseDown?: () => void;
+  onMouseUp?: () => void;
+}
+
 interface DashboardWidgetCardProps {
   widget: DashboardWidget;
   /** The dashboard's area — map widgets fit their viewport to it. */
@@ -54,6 +63,10 @@ interface DashboardWidgetCardProps {
   onRemove: () => void;
   /** Persists a text widget's markdown (required to edit text widgets). */
   onUpdateText?: (text: string) => void;
+  /** Arms the surrounding grid item's drag-to-reorder. */
+  arrange?: ArrangeProps;
+  /** Viewer mode (public dashboards): no remove/edit/reorder affordances. */
+  readOnly?: boolean;
 }
 
 export default function DashboardWidgetCard({
@@ -61,22 +74,27 @@ export default function DashboardWidgetCard({
   aois,
   onRemove,
   onUpdateText,
+  arrange,
+  readOnly = false,
 }: DashboardWidgetCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const insightWidgets = dashboardWidgetToInsightWidgets(widget);
   const mapSpec =
     widget.widget_type === "map" ? dashboardWidgetToMapSpec(widget) : null;
-  // Text widgets carry their own toolbar (edit/save/remove) — no overlay X.
+  // Text widgets carry their own toolbar (edit/save/remove + drag) — no
+  // overlay controls.
   const isText = widget.widget_type === "text";
 
   return (
-    <Box position="relative">
+    <Box position="relative" role="group" h="100%">
       {isText ? (
         <TextWidgetCard
           text={widget.config?.text ?? ""}
-          startEditing={!widget.config?.text}
+          startEditing={!widget.config?.text && !readOnly}
+          readOnly={readOnly}
           onChange={(text) => onUpdateText?.(text)}
           onDelete={() => setConfirmOpen(true)}
+          arrange={readOnly ? undefined : arrange}
         />
       ) : widget.widget_type === "map" ? (
         mapSpec ? (
@@ -114,20 +132,43 @@ export default function DashboardWidgetCard({
           message="This widget type isn't supported in this version."
         />
       )}
-      {!isText && (
-        <Tooltip content="Remove from dashboard" showArrow>
-          <IconButton
-            size="xs"
-            variant="ghost"
-            position="absolute"
-            top={1.5}
-            right={1.5}
-            onClick={() => setConfirmOpen(true)}
-            aria-label="Remove widget from dashboard"
-          >
-            <XIcon size={14} />
-          </IconButton>
-        </Tooltip>
+      {!isText && !readOnly && (
+        <>
+          {arrange && (
+            <Tooltip content="Drag to reorder" showArrow>
+              <IconButton
+                size="xs"
+                variant="ghost"
+                position="absolute"
+                top={1.5}
+                left={1.5}
+                cursor="grab"
+                bg="bg"
+                opacity={0}
+                _groupHover={{ opacity: 1 }}
+                _focusVisible={{ opacity: 1 }}
+                onMouseDown={arrange.onMouseDown}
+                onMouseUp={arrange.onMouseUp}
+                aria-label="Drag to reorder"
+              >
+                <ArrowsOutCardinalIcon size={14} />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip content="Remove from dashboard" showArrow>
+            <IconButton
+              size="xs"
+              variant="ghost"
+              position="absolute"
+              top={1.5}
+              right={1.5}
+              onClick={() => setConfirmOpen(true)}
+              aria-label="Remove widget from dashboard"
+            >
+              <XIcon size={14} />
+            </IconButton>
+          </Tooltip>
+        </>
       )}
       <ConfirmDialog
         title="Remove widget?"

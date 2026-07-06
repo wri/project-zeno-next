@@ -5,10 +5,12 @@ import { Breadcrumb, Container, Heading, Text } from "@chakra-ui/react";
 import NextLink from "next/link";
 
 import AoiSearchTable from "@/app/components/dashboards/AoiSearchTable";
+import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import { useCreateDashboard } from "@/app/hooks/useDashboards";
 import type { AoiSearchResult } from "@/app/schemas/api/aois/get";
 
 export default function NewDashboardPage() {
+  const isReady = useAuthGuard();
   const router = useRouter();
   const createDashboard = useCreateDashboard();
 
@@ -30,6 +32,8 @@ export default function NewDashboardPage() {
       }
     );
   };
+
+  if (!isReady) return null;
 
   return (
     <Container maxW="4xl" py={10} h="100%" overflowY="auto">
