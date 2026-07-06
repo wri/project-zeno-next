@@ -42,6 +42,9 @@ export const MapWidgetContextLayerSchema = z.object({
 });
 
 export const MapWidgetDatasetSchema = z.object({
+  // Catalog id of the snapshotted dataset — lets the UI tell whether a
+  // dataset is already on the dashboard (datasets-panel toggle).
+  dataset_id: z.number().nullish(),
   dataset_name: z.string().nullish(),
   tile_url: z.string().nullish(),
   context_layer: z.string().nullish(),

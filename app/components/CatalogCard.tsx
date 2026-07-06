@@ -22,6 +22,8 @@ export interface CatalogCardProps {
   selectedBg?: string;
   showOnMap: boolean;
   onShowOnMapChange: (checked: boolean) => void;
+  /** Toggle caption + aria verb context. Defaults to the map-page wording. */
+  toggleLabel?: string;
   /** Optional info button click handler. When omitted, the info button is hidden. */
   onInfoClick?: () => void;
   /** Optional info button tooltip / aria text. Defaults to "Show dataset info". */
@@ -48,6 +50,7 @@ export function CatalogCard({
   selectedBg,
   showOnMap,
   onShowOnMapChange,
+  toggleLabel = "Show on map",
   onInfoClick,
   infoTooltip = "Show dataset info",
   titleActions,
@@ -163,9 +166,7 @@ export function CatalogCard({
             }
             colorPalette="primary"
             flexShrink={0}
-            aria-label={
-              showOnMap ? `Hide ${title} from map` : `Show ${title} on map`
-            }
+            aria-label={`${toggleLabel}: ${title}`}
           >
             <Switch.HiddenInput />
             <Switch.Control>
@@ -173,7 +174,7 @@ export function CatalogCard({
             </Switch.Control>
           </Switch.Root>
           <Text fontFamily="body" fontSize="12px" color="#656E7B">
-            Show on map
+            {toggleLabel}
           </Text>
         </Flex>
       </Flex>

@@ -10,6 +10,7 @@ import {
 } from "framer-motion";
 
 import DashboardChatCard from "./DashboardChatCard";
+import DashboardDatasetsPanel from "./DashboardDatasetsPanel";
 import DashboardInsightsPanel from "./DashboardInsightsPanel";
 import useComposerStore from "@/app/store/composerStore";
 import type { Dashboard } from "@/app/schemas/api/dashboards/get";
@@ -76,6 +77,11 @@ export default function DashboardWorkspace({
         {sidePane === "insights" && (
           <Box {...col}>
             <DashboardInsightsPanel dashboard={dashboard} />
+          </Box>
+        )}
+        {sidePane === "datasets" && (
+          <Box {...col}>
+            <DashboardDatasetsPanel dashboard={dashboard} />
           </Box>
         )}
         {/* Dashboard content. */}

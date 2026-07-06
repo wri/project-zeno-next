@@ -1,5 +1,9 @@
-import type { CodeActPart, InsightWidget } from "@/app/types/chat";
-import type { DashboardWidget } from "@/app/schemas/api/dashboards/get";
+import type { CodeActPart, DatasetInfo, InsightWidget } from "@/app/types/chat";
+import type {
+  Dashboard,
+  DashboardWidget,
+  DashboardWidgetConfig,
+} from "@/app/schemas/api/dashboards/get";
 import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
 import { patchPrimaryForestTileUrl } from "@/app/utils/datasetLayerContext";
 
@@ -92,6 +96,43 @@ export function computeReorder(
     widget.position === index ? [] : [{ id: widget.id, position: index }]
   );
   return { order, patches };
+}
+
+/**
+ * Builds the self-contained map-widget config for manually adding a catalog
+ * dataset to a dashboard (POST widgets, widget_type "map") — the counterpart
+ * of the agent's add_map_widget snapshot. Returns `null` for datasets without
+ * a resolved tile_url (view-only catalog entries), which the API would reject.
+ */
+export function datasetToMapWidgetConfig(
+  dataset: DatasetInfo
+): DashboardWidgetConfig | null {
+  if (!dataset.tile_url) return null;
+  return {
+    default_view: "map",
+    dataset: {
+      dataset_id: dataset.dataset_id,
+      dataset_name: dataset.dataset_name,
+      tile_url: dataset.tile_url,
+      ...(dataset.start_date ? { start_date: dataset.start_date } : {}),
+      ...(dataset.end_date ? { end_date: dataset.end_date } : {}),
+    },
+  };
+}
+
+/**
+ * The widget id of the map widget snapshotting `datasetId` on this dashboard
+ * (agent- and panel-created widgets both carry `config.dataset.dataset_id`),
+ * or undefined when the dataset isn't on the dashboard.
+ */
+export function findDatasetWidgetId(
+  dashboard: Pick<Dashboard, "widgets">,
+  datasetId: number
+): string | undefined {
+  return dashboard.widgets.find(
+    (w) =>
+      w.widget_type === "map" && w.config?.dataset?.dataset_id === datasetId
+  )?.id;
 }
 
 export interface MapWidgetSpec {

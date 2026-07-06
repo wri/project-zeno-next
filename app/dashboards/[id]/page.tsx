@@ -23,6 +23,7 @@ import {
   PlusIcon,
   ShareNetworkIcon,
   SparkleIcon,
+  StackSimpleIcon,
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
@@ -55,17 +56,20 @@ import useComposerStore from "@/app/store/composerStore";
 function EmptyBlock({
   onAskAi,
   onAddAnalysis,
+  onAddDataset,
   onAddNote,
   onDismiss,
 }: {
   onAskAi: () => void;
   onAddAnalysis: () => void;
+  onAddDataset: () => void;
   onAddNote: () => void;
   onDismiss: () => void;
 }) {
   const OPTIONS = [
     { label: "Ask AI", icon: SparkleIcon, onClick: onAskAi },
     { label: "Add an analysis", icon: ChartBarIcon, onClick: onAddAnalysis },
+    { label: "Add a dataset", icon: StackSimpleIcon, onClick: onAddDataset },
     { label: "Add note", icon: PencilSimpleIcon, onClick: onAddNote },
   ];
   return (
@@ -499,6 +503,10 @@ export default function DashboardDetailPage() {
                   }}
                   onAddAnalysis={() => {
                     openSidePane("insights");
+                    setShowEmptyBlock(false);
+                  }}
+                  onAddDataset={() => {
+                    openSidePane("datasets");
                     setShowEmptyBlock(false);
                   }}
                   onAddNote={() => {

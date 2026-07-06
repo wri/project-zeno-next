@@ -10,6 +10,7 @@ import {
   ClockCounterClockwiseIcon,
   DotsSixVerticalIcon,
   SidebarSimpleIcon,
+  StackSimpleIcon,
 } from "@phosphor-icons/react";
 import type { DragControls } from "framer-motion";
 
@@ -233,26 +234,55 @@ export default function DashboardChatCard({
               isChatDisabled={promptsExhausted}
               redirectOnNewThread={false}
               contextButtons={
-                // Styled like ContextButton, but opens the insights panel.
-                <Button
-                  size="xs"
-                  variant="outline"
-                  borderRadius="sm"
-                  borderWidth="1px"
-                  px="2"
-                  h="8"
-                  gap="1"
-                  fontSize="xs"
-                  fontWeight="normal"
-                  onClick={() => openSidePane("insights")}
-                  borderColor={sidePane ? "primary.solid" : "#E0E2E5"}
-                  color={sidePane ? "primary.solid" : undefined}
-                  aria-expanded={!!sidePane}
-                  aria-label="Analyses"
-                >
-                  <ChartBarIcon size={14} />
-                  Analyses
-                </Button>
+                // Styled like ContextButton, but open the dashboard panels.
+                <>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    borderRadius="sm"
+                    borderWidth="1px"
+                    px="2"
+                    h="8"
+                    gap="1"
+                    fontSize="xs"
+                    fontWeight="normal"
+                    onClick={() => openSidePane("datasets")}
+                    borderColor={
+                      sidePane === "datasets" ? "primary.solid" : "#E0E2E5"
+                    }
+                    color={
+                      sidePane === "datasets" ? "primary.solid" : undefined
+                    }
+                    aria-expanded={sidePane === "datasets"}
+                    aria-label="Datasets"
+                  >
+                    <StackSimpleIcon size={14} />
+                    Datasets
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    borderRadius="sm"
+                    borderWidth="1px"
+                    px="2"
+                    h="8"
+                    gap="1"
+                    fontSize="xs"
+                    fontWeight="normal"
+                    onClick={() => openSidePane("insights")}
+                    borderColor={
+                      sidePane === "insights" ? "primary.solid" : "#E0E2E5"
+                    }
+                    color={
+                      sidePane === "insights" ? "primary.solid" : undefined
+                    }
+                    aria-expanded={sidePane === "insights"}
+                    aria-label="Analyses"
+                  >
+                    <ChartBarIcon size={14} />
+                    Analyses
+                  </Button>
+                </>
               }
             />
             <Text fontSize="10px" color="fg.muted" px={3} pb={2}>

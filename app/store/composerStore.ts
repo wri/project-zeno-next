@@ -1,12 +1,12 @@
 import { create } from "zustand";
 
 // UI state bridge for the dashboards workspace:
-// - the docked side panel (the Analyses/insights picker)
+// - the docked side panel (the Analyses/insights picker or the data catalog)
 // - whether the AI chat is full-sized (docked) or floating — independent of
 //   the side panel
 // - the floating chat collapsed to just its header bar
 // - requesting focus of the chat input ("Ask AI")
-export type SidePane = "insights" | null;
+export type SidePane = "insights" | "datasets" | null;
 
 interface ComposerState {
   // Docked side panel — independent of the chat.

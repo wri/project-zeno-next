@@ -3,7 +3,10 @@ import {
   computeReorder,
   dashboardWidgetToInsightWidgets,
   dashboardWidgetToMapSpec,
+  datasetToMapWidgetConfig,
+  findDatasetWidgetId,
 } from "@/app/lib/dashboard-widgets";
+import type { DatasetInfo } from "@/app/types/chat";
 import type {
   DashboardChart,
   DashboardWidget,
@@ -331,5 +334,58 @@ describe("computeReorder", () => {
     const { order, patches } = computeReorder(widgets, 0, 5);
     expect(orderIds(order)).toEqual(["a", "b"]);
     expect(patches).toEqual([]);
+  });
+});
+
+describe("datasetToMapWidgetConfig", () => {
+  const dataset: DatasetInfo = {
+    dataset_id: 4,
+    dataset_name: "Tree cover loss",
+    tile_url: "https://tiles.example.com/tcl/{z}/{x}/{y}.png",
+  };
+
+  it("snapshots a catalog dataset as a map widget config", () => {
+    expect(datasetToMapWidgetConfig(dataset)).toEqual({
+      default_view: "map",
+      dataset: {
+        dataset_id: 4,
+        dataset_name: "Tree cover loss",
+        tile_url: "https://tiles.example.com/tcl/{z}/{x}/{y}.png",
+      },
+    });
+  });
+
+  it("includes dates only when the dataset defines them", () => {
+    const dated = datasetToMapWidgetConfig({
+      ...dataset,
+      start_date: "2024-01-01",
+      end_date: "2024-12-31",
+    });
+    expect(dated?.dataset).toMatchObject({
+      start_date: "2024-01-01",
+      end_date: "2024-12-31",
+    });
+  });
+
+  it("returns null for view-only datasets without a tile_url", () => {
+    expect(datasetToMapWidgetConfig({ ...dataset, tile_url: "" })).toBeNull();
+  });
+});
+
+describe("findDatasetWidgetId", () => {
+  const dashboard = {
+    widgets: [
+      widget({ id: "w-insight" }),
+      mapWidget({ dataset: { dataset_id: 4, tile_url: "https://t/{z}" } }),
+    ],
+  };
+
+  it("finds the map widget snapshotting a dataset id", () => {
+    expect(findDatasetWidgetId(dashboard, 4)).toBe("w-map");
+  });
+
+  it("returns undefined when the dataset isn't on the dashboard", () => {
+    expect(findDatasetWidgetId(dashboard, 999)).toBeUndefined();
+    expect(findDatasetWidgetId({ widgets: [] }, 4)).toBeUndefined();
   });
 });
