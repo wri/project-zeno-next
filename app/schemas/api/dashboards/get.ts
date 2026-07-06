@@ -15,10 +15,18 @@ export const DashboardChartSchema = z.object({
   chart_data: z.unknown(),
 });
 
+// Provenance parts (base64-encoded) powering the "view how this was
+// generated" drawer; same shape as CodeActPart in app/types/chat.ts.
+export const DashboardCodeActPartSchema = z.object({
+  type: z.string(),
+  content: z.string(),
+});
+
 export const DashboardInsightSchema = z.object({
   id: z.string(),
   insight_text: z.string().nullish(),
   charts: z.array(DashboardChartSchema),
+  codeact_parts: z.array(DashboardCodeActPartSchema).nullish(),
   created_at: z.string(),
 });
 
@@ -55,13 +63,20 @@ export const DashboardWidgetConfigSchema = z
     title: z.string(),
     dataset: MapWidgetDatasetSchema.nullable(),
     imagery: MapWidgetImagerySchema.nullable(),
+    // Markdown body of a text widget.
+    text: z.string().nullable(),
   })
   .partial();
+
+// Widget kinds this UI knows how to render. `widget_type` is deliberately an
+// open string: a dashboard containing a widget kind added by a newer backend
+// must still parse — unknown kinds render an "unsupported" placeholder.
+export const KNOWN_WIDGET_TYPES = ["insight", "map", "text"] as const;
 
 export const DashboardWidgetSchema = z.object({
   id: z.string(),
   position: z.number(),
-  widget_type: z.enum(["insight", "map"]),
+  widget_type: z.string(),
   insight_id: z.string().nullish(),
   config: DashboardWidgetConfigSchema.nullish(),
   // null when the referenced insight is not visible to this viewer — the UI
@@ -78,6 +93,9 @@ export const DashboardAoiSchema = z.object({
 
 export const DashboardSchema = z.object({
   id: z.string(),
+  // Owner id — compared against the logged-in user to gate edit affordances
+  // on publicly viewable dashboards.
+  user_id: z.string().nullish(),
   name: z.string(),
   description: z.string().nullish(),
   is_public: z.boolean(),
