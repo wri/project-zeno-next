@@ -25,12 +25,25 @@ export default function ChatInput({
   isChatDisabled,
   bordered,
   onAfterSend,
+  redirectOnNewThread = true,
+  contextButtons,
 }: {
   isChatDisabled?: boolean;
   /** Render the input box as a standalone rounded card (conversation panel) */
   bordered?: boolean;
   /** Called immediately before sending, e.g. to expand a collapsed panel */
   onAfterSend?: () => void;
+  /**
+   * Navigate to /app/threads/:id when the first message creates a thread.
+   * Pass false where the conversation is embedded in another page (e.g. a
+   * dashboard) and must not navigate away.
+   */
+  redirectOnNewThread?: boolean;
+  /**
+   * Replaces the default Layer/Area context buttons (which toggle map-page
+   * panels) — for hosts like the dashboard assistant with their own panels.
+   */
+  contextButtons?: React.ReactNode;
 }) {
   const [inputValue, setInputValue] = useState("");
   const [contextModalOpen, setContextModalOpen] = useState(false);
@@ -113,7 +126,7 @@ export default function ChatInput({
     }
 
     const result = await sendMessage(message);
-    if (result.isNew) {
+    if (result.isNew && redirectOnNewThread) {
       router.replace(`/app/threads/${result.id}`);
     }
   };
@@ -226,22 +239,28 @@ export default function ChatInput({
       />
       <Flex justifyContent="space-between" alignItems="center" w="full">
         <Flex gap="2">
-          <ContextButton
-            contextType="layer"
-            onClick={openLayerPicker}
-            disabled={disabled}
-            borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
-            color={dataCatalogOpen ? "primary.solid" : undefined}
-            aria-expanded={dataCatalogOpen}
-          />
-          <ContextButton
-            contextType="area"
-            onClick={openAreaPicker}
-            disabled={disabled}
-            borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
-            color={areasPanelOpen ? "primary.solid" : undefined}
-            aria-expanded={areasPanelOpen}
-          />
+          {contextButtons !== undefined ? (
+            contextButtons
+          ) : (
+            <>
+              <ContextButton
+                contextType="layer"
+                onClick={openLayerPicker}
+                disabled={disabled}
+                borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
+                color={dataCatalogOpen ? "primary.solid" : undefined}
+                aria-expanded={dataCatalogOpen}
+              />
+              <ContextButton
+                contextType="area"
+                onClick={openAreaPicker}
+                disabled={disabled}
+                borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
+                color={areasPanelOpen ? "primary.solid" : undefined}
+                aria-expanded={areasPanelOpen}
+              />
+            </>
+          )}
         </Flex>
         {canCancelRequest ? (
           <Button

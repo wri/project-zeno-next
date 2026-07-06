@@ -28,7 +28,6 @@ import {
 } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 
-import ChatPanel from "@/app/ChatPanel";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import ConfirmDialog from "@/app/components/dashboards/ConfirmDialog";
 import DashboardShareDialog from "@/app/components/dashboards/DashboardShareDialog";
@@ -36,6 +35,7 @@ import DashboardSkeleton from "@/app/components/dashboards/DashboardSkeleton";
 import DashboardWidgetCard, {
   type ArrangeProps,
 } from "@/app/components/dashboards/DashboardWidgetCard";
+import DashboardWorkspace from "@/app/components/dashboards/DashboardWorkspace";
 import { getLoginUrl } from "@/app/hooks/useAuthGuard";
 import {
   useAddWidget,
@@ -50,10 +50,6 @@ import { computeReorder } from "@/app/lib/dashboard-widgets";
 import { setActiveDashboard } from "@/app/lib/view-context";
 import useAuthStore from "@/app/store/authStore";
 import useComposerStore from "@/app/store/composerStore";
-import {
-  COMPACT_CHAT_INSET_PX,
-  COMPACT_CHAT_PANEL_WIDTH_PX,
-} from "@/app/explorationLayout";
 
 /** Placeholder block inserted by the "+" — choose what to put here. */
 function EmptyBlock({
@@ -158,6 +154,10 @@ export default function DashboardDetailPage() {
   const userId = useAuthStore((s) => s.userId);
   const requestFocus = useComposerStore((s) => s.requestFocus);
   const openSidePane = useComposerStore((s) => s.openSidePane);
+  const resetComposer = useComposerStore((s) => s.reset);
+
+  // Close the side panel / restore the floating chat when leaving the page.
+  useEffect(() => () => resetComposer(), [resetComposer]);
 
   const [draftName, setDraftName] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -193,19 +193,12 @@ export default function DashboardDetailPage() {
 
   const status = (error as (Error & { status?: number }) | null)?.status;
 
-  const pageChrome = (content: React.ReactNode) => (
-    <Flex h="100%" minH={0}>
-      {isOwner && (
-        <Box
-          w={`${COMPACT_CHAT_PANEL_WIDTH_PX + 2 * COMPACT_CHAT_INSET_PX}px`}
-          flexShrink={0}
-          h="100%"
-          hideBelow="md"
-        >
-          <ChatPanel />
-        </Box>
-      )}
-      <Box flex="1" minW={0} h="100%" overflowY="auto" bg="#F4F5F6" py={6}>
+  // The owner gets the workspace chrome: floating/dockable AI assistant +
+  // the Analyses side panel. Viewers (and loading/error states) get just the
+  // scrollable content.
+  const pageChrome = (content: React.ReactNode) => {
+    const scrollArea = (
+      <Box w="100%" h="100%" overflowY="auto" bg="#F4F5F6" py={6}>
         <Container maxW="6xl">
           {/* Breadcrumb */}
           <Flex align="center" gap={1} fontSize="sm" color="fg.muted" mb={3}>
@@ -224,8 +217,18 @@ export default function DashboardDetailPage() {
           {content}
         </Container>
       </Box>
-    </Flex>
-  );
+    );
+
+    return isOwner && dashboard ? (
+      <DashboardWorkspace dashboard={dashboard}>
+        {scrollArea}
+      </DashboardWorkspace>
+    ) : (
+      <Box h="100%" minH={0}>
+        {scrollArea}
+      </Box>
+    );
+  };
 
   if (isLoading) {
     return pageChrome(<DashboardSkeleton />);
