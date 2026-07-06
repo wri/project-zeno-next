@@ -1,31 +1,17 @@
 "use client";
 import { Fragment, useEffect, useRef } from "react";
-import { Box, BoxProps } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
-import { usePinnedPrompt } from "@/app/hooks/usePinnedPrompt";
 import MessageBubble from "./MessageBubble";
-import PinnedPrompt from "./PinnedPrompt";
 import Reasoning from "./Reasoning";
 import SamplePrompts from "./SamplePrompts";
 
-interface ChatMessagesProps {
-  /**
-   * Top padding of the message list. Lives here (inside the scroll container)
-   * rather than as `pt` on the scroller itself because scroll-container
-   * padding is added to `position: sticky` offsets, which would push the
-   * PinnedPrompt overlay down by the padding amount.
-   */
-  pt?: BoxProps["pt"];
-}
-
-function ChatMessages({ pt }: ChatMessagesProps) {
+function ChatMessages() {
   const containerRef = useRef<HTMLDivElement>(null);
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, toolSteps: currentToolSteps } = useChatStore();
   const shouldAutoScroll = useRef(true);
-  const { pinnedMessage, registerPromptNode, jumpToPinnedPrompt } =
-    usePinnedPrompt(containerRef, messages);
 
   // Scroll to the bottom of real content, ignoring the blank spacer.
   const scrollToBottom = () => {
@@ -103,10 +89,7 @@ function ChatMessages({ pt }: ChatMessagesProps) {
   );
 
   return (
-    <Box ref={containerRef} fontSize="sm" pt={pt}>
-      {pinnedMessage && (
-        <PinnedPrompt message={pinnedMessage} onJump={jumpToPinnedPrompt} />
-      )}
+    <Box ref={containerRef} fontSize="sm">
       {messages.map((message, index) => {
         // Check if this message is consecutive to the previous one of the same type
         const previousMessage = index > 0 ? messages[index - 1] : null;
@@ -119,11 +102,6 @@ function ChatMessages({ pt }: ChatMessagesProps) {
           <Fragment key={message.id}>
             {isLastUserMessage && <Box ref={lastUserMessageRef} />}
             <MessageBubble
-              ref={
-                message.type === "user"
-                  ? registerPromptNode(message.id)
-                  : undefined
-              }
               message={message}
               isConsecutive={isConsecutive}
               isFirst={isFirst}
