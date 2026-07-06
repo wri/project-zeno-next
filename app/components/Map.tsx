@@ -1,6 +1,11 @@
 "use client";
 import "maplibre-gl/dist/maplibre-gl.css";
-import MapGl, { Layer, Source, MapRef } from "react-map-gl/maplibre";
+import MapGl, {
+  AttributionControl,
+  Layer,
+  Source,
+  MapRef,
+} from "react-map-gl/maplibre";
 import { useState, useRef, useEffect, Suspense } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
@@ -12,6 +17,7 @@ import {
   Link as ChLink,
   Spinner,
   Text,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { ListDashesIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import useMapStore from "@/app/store/mapStore";
@@ -61,6 +67,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const isGeneratingInsight = useChatStore((s) => s.isGeneratingInsight);
   const consentStatus = useCookieStore((s) => s.consentStatus);
   const openPreferences = useCookieStore((s) => s.openPreferences);
+  // Desktop shows attribution in the custom footer row (hideBelow="md").
+  // Mobile has no footer, so mount MapLibre's compact control there instead.
+  const isMobile = useBreakpointValue({ base: true, md: false });
   const onMapLoad = () => {
     if (mapRef.current) {
       const map = mapRef.current.getMap();
@@ -116,6 +125,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           transition: "opacity 0.16s ease",
           _hover: { opacity: 1 },
         },
+        // Mobile-only compact attribution: lift it clear of the Legend toggle
+        // that occupies the bottom-right corner on small screens.
+        "& .maplibregl-ctrl-bottom-right": {
+          mb: { base: "3.5rem", md: 0 },
+        },
       }}
     >
       {!mapRef.current && (
@@ -136,6 +150,13 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         onMove={onMapMove}
         attributionControl={false}
       >
+        {isMobile && (
+          <AttributionControl
+            compact
+            position="bottom-right"
+            customAttribution="Background tiles: © OpenStreetMap contributors"
+          />
+        )}
         <Source
           id="background"
           type="raster"
@@ -189,14 +210,17 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <DisclaimerPanel />
         </Box>
-        {/* Right overlay column: insight panel (top, scrollable) + legend (bottom) */}
+        {/* Right overlay column: insight panel (top, scrollable) + legend (bottom).
+            Base: spans the viewport (a fixed 420px would overhang narrow phones)
+            and starts below the floating hamburger + header pill. */}
         <Flex
           position="absolute"
-          top={4}
+          top={{ base: "4rem", md: 4 }}
           right={3}
+          left={{ base: 3, md: "auto" }}
           bottom={{ base: "4.5rem", md: 7 }}
           zIndex={400}
-          w="420px"
+          w={{ base: "auto", md: "420px" }}
           flexDirection="column"
           gap={2}
           pointerEvents="none"
@@ -210,12 +234,15 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             flexShrink={0}
             display={{ base: showLegend ? "block" : "none", md: "block" }}
           >
-            {/* Debug panel floats just left of this column, bottom-aligned */}
+            {/* Debug panel floats just left of this column, bottom-aligned.
+                Desktop-only: on mobile the column spans the viewport, so
+                "left of the column" is off-screen. */}
             <Box
               position="absolute"
               bottom={0}
               right="calc(100% + 0.5rem)"
               pointerEvents="all"
+              hideBelow="md"
             >
               <Suspense fallback={null}>
                 <DebugToastsPanel />

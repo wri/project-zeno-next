@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, useAnimation, PanInfo } from "framer-motion";
 import { Box, Flex, chakra } from "@chakra-ui/react";
 
@@ -19,13 +19,31 @@ export default function DraggableBottomSheet({
   const controls = useAnimation();
   const [activeSnapPoint, setActiveSnapPoint] = useState<number>(1);
 
-  // Memoize snap points to prevent recalculation on every render.
-  const snapPoints = useMemo(() => {
+  // Snap points derived from the viewport. The clamps keep the points
+  // monotonic on short viewports (e.g. landscape phones), where a fixed
+  // 400px middle snap would exceed the 85% top snap; on typical portrait
+  // heights they resolve to the original [200, 400, 85%].
+  const computeSnapPoints = () => {
     // Ensure this code runs only on the client where `window` is available.
     if (typeof window === "undefined") {
       return [200, 400, 700]; // Default SSR values
     }
-    return [200, 400, window.innerHeight * 0.85];
+    const viewportHeight = window.innerHeight;
+    return [
+      Math.min(200, viewportHeight * 0.3),
+      Math.min(400, viewportHeight * 0.6),
+      viewportHeight * 0.85,
+    ];
+  };
+  const [snapPoints, setSnapPoints] = useState<number[]>(computeSnapPoints);
+
+  // Recompute on resize/orientation change so the sheet can never end up
+  // taller than the screen; the snapPoints effect below re-applies the
+  // height for the active snap index.
+  useEffect(() => {
+    const onResize = () => setSnapPoints(computeSnapPoints());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   // Set initial height and notify parent on mount

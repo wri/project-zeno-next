@@ -162,6 +162,7 @@ export default function DashboardLayout({
           position="absolute"
           top={3}
           left={"3.75rem"}
+          maxW="calc(100% - 4.5rem)"
           rounded="sm"
           overflow="hidden"
           zIndex={100}
