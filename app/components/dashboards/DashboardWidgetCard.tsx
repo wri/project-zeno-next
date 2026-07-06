@@ -7,6 +7,7 @@ import WidgetMessage from "@/app/components/WidgetMessage";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import ConfirmDialog from "./ConfirmDialog";
 import DashboardMapWidget from "./DashboardMapWidget";
+import TextWidgetCard from "./TextWidgetCard";
 import {
   dashboardWidgetToInsightWidgets,
   dashboardWidgetToMapSpec,
@@ -51,21 +52,33 @@ interface DashboardWidgetCardProps {
   /** The dashboard's area — map widgets fit their viewport to it. */
   aois?: DashboardAoi[] | null;
   onRemove: () => void;
+  /** Persists a text widget's markdown (required to edit text widgets). */
+  onUpdateText?: (text: string) => void;
 }
 
 export default function DashboardWidgetCard({
   widget,
   aois,
   onRemove,
+  onUpdateText,
 }: DashboardWidgetCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const insightWidgets = dashboardWidgetToInsightWidgets(widget);
   const mapSpec =
     widget.widget_type === "map" ? dashboardWidgetToMapSpec(widget) : null;
+  // Text widgets carry their own toolbar (edit/save/remove) — no overlay X.
+  const isText = widget.widget_type === "text";
 
   return (
     <Box position="relative">
-      {widget.widget_type === "map" ? (
+      {isText ? (
+        <TextWidgetCard
+          text={widget.config?.text ?? ""}
+          startEditing={!widget.config?.text}
+          onChange={(text) => onUpdateText?.(text)}
+          onDelete={() => setConfirmOpen(true)}
+        />
+      ) : widget.widget_type === "map" ? (
         mapSpec ? (
           <DashboardMapWidget spec={mapSpec} aoi={aois?.[0]} />
         ) : (
@@ -101,22 +114,28 @@ export default function DashboardWidgetCard({
           message="This widget type isn't supported in this version."
         />
       )}
-      <Tooltip content="Remove from dashboard" showArrow>
-        <IconButton
-          size="xs"
-          variant="ghost"
-          position="absolute"
-          top={1.5}
-          right={1.5}
-          onClick={() => setConfirmOpen(true)}
-          aria-label="Remove widget from dashboard"
-        >
-          <XIcon size={14} />
-        </IconButton>
-      </Tooltip>
+      {!isText && (
+        <Tooltip content="Remove from dashboard" showArrow>
+          <IconButton
+            size="xs"
+            variant="ghost"
+            position="absolute"
+            top={1.5}
+            right={1.5}
+            onClick={() => setConfirmOpen(true)}
+            aria-label="Remove widget from dashboard"
+          >
+            <XIcon size={14} />
+          </IconButton>
+        </Tooltip>
+      )}
       <ConfirmDialog
         title="Remove widget?"
-        body="The widget will be removed from this dashboard. The underlying insight is not deleted."
+        body={
+          isText
+            ? "The note will be removed from this dashboard."
+            : "The widget will be removed from this dashboard. The underlying insight is not deleted."
+        }
         confirmLabel="Remove"
         onConfirm={onRemove}
         isOpen={confirmOpen}

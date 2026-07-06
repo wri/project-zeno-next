@@ -31,6 +31,7 @@ import {
   useDeleteDashboard,
   useRemoveWidget,
   useRenameDashboard,
+  useUpdateWidget,
 } from "@/app/hooks/useDashboards";
 import { setActiveDashboard } from "@/app/lib/view-context";
 import {
@@ -46,6 +47,7 @@ export default function DashboardDetailPage() {
   const renameDashboard = useRenameDashboard(id);
   const deleteDashboard = useDeleteDashboard();
   const removeWidget = useRemoveWidget(id);
+  const updateWidget = useUpdateWidget(id);
   const [draftName, setDraftName] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
@@ -205,6 +207,13 @@ export default function DashboardDetailPage() {
                 widget={widget}
                 aois={dashboard.aois}
                 onRemove={() => removeWidget.mutate(widget.id)}
+                onUpdateText={(text) =>
+                  // The API replaces config wholesale — merge client-side.
+                  updateWidget.mutate({
+                    widgetId: widget.id,
+                    config: { ...widget.config, text },
+                  })
+                }
               />
             ))}
           </SimpleGrid>
