@@ -51,6 +51,40 @@ export function dashboardWidgetToInsightWidget(
   };
 }
 
+export interface WidgetPositionPatch {
+  id: string;
+  position: number;
+}
+
+/**
+ * Moves a widget within the given render order and computes the widget
+ * `position` PATCHes needed to persist it. The backend PATCH sets only the
+ * targeted widget's position (no sibling renumbering), so every widget whose
+ * stored position differs from its new index gets a patch — this also
+ * normalises non-contiguous server positions (e.g. after deletions).
+ */
+export function computeReorder(
+  widgets: DashboardWidget[],
+  fromIndex: number,
+  toIndex: number
+): { order: DashboardWidget[]; patches: WidgetPositionPatch[] } {
+  const order = [...widgets];
+  if (
+    fromIndex !== toIndex &&
+    fromIndex >= 0 &&
+    fromIndex < order.length &&
+    toIndex >= 0 &&
+    toIndex < order.length
+  ) {
+    const [moved] = order.splice(fromIndex, 1);
+    order.splice(toIndex, 0, moved);
+  }
+  const patches = order.flatMap((widget, index) =>
+    widget.position === index ? [] : [{ id: widget.id, position: index }]
+  );
+  return { order, patches };
+}
+
 export interface MapWidgetSpec {
   title: string;
   caption?: string;

@@ -109,6 +109,7 @@ export const DashboardSchema = z.object({
 export const ListDashboardsResponseSchema = z.array(DashboardSchema);
 
 export type DashboardChart = z.infer<typeof DashboardChartSchema>;
+export type DashboardWidgetConfig = z.infer<typeof DashboardWidgetConfigSchema>;
 export type DashboardInsight = z.infer<typeof DashboardInsightSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>;
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;

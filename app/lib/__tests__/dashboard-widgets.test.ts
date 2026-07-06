@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  computeReorder,
   dashboardWidgetToInsightWidget,
   dashboardWidgetToMapSpec,
 } from "@/app/lib/dashboard-widgets";
@@ -247,5 +248,67 @@ describe("dashboardWidgetToMapSpec", () => {
         mapWidget({ dataset: { ...dataset, tile_url: null } })
       )
     ).toBeNull();
+  });
+});
+
+describe("computeReorder", () => {
+  const orderIds = (widgets: DashboardWidget[]) => widgets.map((w) => w.id);
+  const make = (id: string, position: number): DashboardWidget => ({
+    ...widget({ id, position }),
+  });
+
+  it("moves a widget forward and patches only changed positions", () => {
+    const widgets = [make("a", 0), make("b", 1), make("c", 2)];
+    const { order, patches } = computeReorder(widgets, 0, 2);
+    expect(orderIds(order)).toEqual(["b", "c", "a"]);
+    expect(patches).toEqual([
+      { id: "b", position: 0 },
+      { id: "c", position: 1 },
+      { id: "a", position: 2 },
+    ]);
+  });
+
+  it("moves a widget backward", () => {
+    const widgets = [make("a", 0), make("b", 1), make("c", 2)];
+    const { order, patches } = computeReorder(widgets, 2, 0);
+    expect(orderIds(order)).toEqual(["c", "a", "b"]);
+    expect(patches).toEqual([
+      { id: "c", position: 0 },
+      { id: "a", position: 1 },
+      { id: "b", position: 2 },
+    ]);
+  });
+
+  it("patches nothing on a no-op move over contiguous positions", () => {
+    const widgets = [make("a", 0), make("b", 1)];
+    const { order, patches } = computeReorder(widgets, 1, 1);
+    expect(orderIds(order)).toEqual(["a", "b"]);
+    expect(patches).toEqual([]);
+  });
+
+  it("leaves untouched adjacent widgets out of the patch set", () => {
+    const widgets = [make("a", 0), make("b", 1), make("c", 2), make("d", 3)];
+    const { patches } = computeReorder(widgets, 1, 2);
+    expect(patches).toEqual([
+      { id: "c", position: 1 },
+      { id: "b", position: 2 },
+    ]);
+  });
+
+  it("normalises non-contiguous server positions", () => {
+    // Positions with gaps (e.g. after deletions) get rewritten to indexes.
+    const widgets = [make("a", 0), make("b", 2), make("c", 5)];
+    const { patches } = computeReorder(widgets, 2, 2);
+    expect(patches).toEqual([
+      { id: "b", position: 1 },
+      { id: "c", position: 2 },
+    ]);
+  });
+
+  it("ignores out-of-range indexes", () => {
+    const widgets = [make("a", 0), make("b", 1)];
+    const { order, patches } = computeReorder(widgets, 0, 5);
+    expect(orderIds(order)).toEqual(["a", "b"]);
+    expect(patches).toEqual([]);
   });
 });
