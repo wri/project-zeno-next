@@ -8,7 +8,7 @@ import { Tooltip } from "@/app/components/ui/tooltip";
 import ConfirmDialog from "./ConfirmDialog";
 import DashboardMapWidget from "./DashboardMapWidget";
 import {
-  dashboardWidgetToInsightWidget,
+  dashboardWidgetToInsightWidgets,
   dashboardWidgetToMapSpec,
 } from "@/app/lib/dashboard-widgets";
 import type {
@@ -59,7 +59,7 @@ export default function DashboardWidgetCard({
   onRemove,
 }: DashboardWidgetCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const insightWidget = dashboardWidgetToInsightWidget(widget);
+  const insightWidgets = dashboardWidgetToInsightWidgets(widget);
   const mapSpec =
     widget.widget_type === "map" ? dashboardWidgetToMapSpec(widget) : null;
 
@@ -75,14 +75,30 @@ export default function DashboardWidgetCard({
             icon={<MapTrifoldIcon size={16} />}
           />
         )
-      ) : insightWidget ? (
-        <WidgetMessage widget={insightWidget} />
+      ) : widget.widget_type === "insight" ? (
+        insightWidgets.length ? (
+          // An insight can hold several charts — stack one card per chart
+          // inside the widget's grid cell (reordering stays per-widget).
+          <Flex direction="column" gap={3}>
+            {insightWidgets.map((insightWidget) => (
+              <WidgetMessage key={insightWidget.id} widget={insightWidget} />
+            ))}
+          </Flex>
+        ) : (
+          // Per the API contract, a null insight means it isn't visible to
+          // this viewer (e.g. made private again) — a placeholder, not an
+          // error.
+          <PlaceholderCard
+            title="Insight not available"
+            message="This insight is not available anymore."
+          />
+        )
       ) : (
-        // Per the API contract, a null insight means it isn't visible to this
-        // viewer (e.g. made private again) — a placeholder, not an error.
+        // A widget kind this build doesn't know (newer backend) — keep the
+        // dashboard rendering and mark just this cell.
         <PlaceholderCard
-          title="Insight not available"
-          message="This insight is not available anymore."
+          title={widget.config?.title ?? "Unsupported widget"}
+          message="This widget type isn't supported in this version."
         />
       )}
       <Tooltip content="Remove from dashboard" showArrow>
