@@ -58,7 +58,14 @@ function ArticleImage({
       }
       flexShrink={0}
     >
-      <BlogSourceIcon source={source} size={28} wordmark={source === "lcl"} />
+      <BlogSourceIcon
+        source={source}
+        // The LCL wordmark is sized by width and is ~2.26:1, so at width 80 it
+        // renders ~35px tall. Size the square WRI/other glyph to match that
+        // rendered height so both sources read at the same visual weight.
+        size={source === "lcl" ? 80 : 36}
+        wordmark={source === "lcl"}
+      />
     </Flex>
   );
 }
