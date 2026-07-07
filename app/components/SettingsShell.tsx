@@ -11,6 +11,7 @@ import {
   Link as ChakraLink,
 } from "@chakra-ui/react";
 import {
+  ChartBarIcon,
   GearIcon,
   LifebuoyIcon,
   MapTrifoldIcon,
@@ -22,7 +23,7 @@ import Link from "next/link";
 import useAuthStore from "@/app/store/authStore";
 import { useLogout } from "@/app/hooks/useLogout";
 
-type SettingsPath = "/dashboard" | "/manage-users";
+type SettingsPath = "/dashboard" | "/manage-users" | "/trace-analytics";
 
 interface SettingsShellProps {
   activePath: SettingsPath;
@@ -88,6 +89,17 @@ export default function SettingsShell({
               <Link href="/manage-users">
                 <UsersThreeIcon />
                 Manage Users
+              </Link>
+            </Button>
+          )}
+          {userType === "superuser" && (
+            <Button
+              asChild
+              bg={activePath === "/trace-analytics" ? "bg.muted" : undefined}
+            >
+              <Link href="/trace-analytics">
+                <ChartBarIcon />
+                Trace Analytics
               </Link>
             </Button>
           )}
