@@ -11,6 +11,7 @@ import {
   QueryType,
   ToolStepData,
   SuggestedDataset,
+  BlogArticle,
   AnalyseSuggestion,
   ViewAnalysisSuggestion,
 } from "@/app/types/chat";
@@ -24,6 +25,7 @@ import {
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
+import { mergeCitedArticlesIntoMap } from "@/app/lib/blog-citations";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
@@ -38,6 +40,8 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
+import { effectiveAgentProfile } from "@/app/config/feature-flags";
+import useAgentProfileStore from "./agentProfileStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -52,6 +56,7 @@ interface ChatState {
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
   reasoningStartTime: number | null; // Timestamp when reasoning started
+  citedArticlesBySlug: Record<string, BlogArticle>;
   // The selected date range — the one query concern with no map/layer
   // counterpart, so it is owned here directly.
   dateRange: { start: Date; end: Date } | null;
@@ -89,6 +94,7 @@ interface ChatActions {
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
+  mergeCitedArticles: (articles: BlogArticle[]) => void;
   setDateRange: (range: { start: Date; end: Date }) => void;
   clearDateRange: () => void;
   excludeLayerFromContext: (layerId: string) => void;
@@ -118,6 +124,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   toolSteps: [],
   pendingTraceId: null,
   reasoningStartTime: null,
+  citedArticlesBySlug: {},
   dateRange: null,
   lastSentContext: emptyContextKeys(),
   excludedContextLayerIds: [],
@@ -176,6 +183,7 @@ async function processStreamMessage(
   attachTraceToLastAssistant: (traceId: string) => boolean,
   getPendingNudge: () => SuggestedDataset[] | null,
   setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
+  mergeCitedArticles: (articles: BlogArticle[]) => void,
   setGeneratingInsight: (generating: boolean) => void
 ) {
   // Capture standalone trace metadata sent as a separate stream message
@@ -267,6 +275,10 @@ async function processStreamMessage(
       setPendingTraceId(null);
     }
   } else if (streamMessage.type === "tool") {
+    if (streamMessage.cited_articles?.length) {
+      mergeCitedArticles(streamMessage.cited_articles);
+    }
+
     // Add tool step to reasoning display
     if (streamMessage.name) {
       addToolStep(streamMessage);
@@ -501,10 +513,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // turn. Agent picks arriving during the stream fold their slots on top.
     set({ lastSentContext: keys });
 
+    // Send the agent profile as `ff` only when a profile is selected and the
+    // user type is allowed to use feature flags (else the backend 403s).
+    const ff = effectiveAgentProfile(
+      useAgentProfileStore.getState().agentProfile,
+      useAuthStore.getState().userType
+    );
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
       thread_id: threadId,
+      ...(ff && { ff }),
     };
 
     // Set up abort controller for client-side timeout and user cancellation
@@ -582,6 +601,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               (datasets) => {
                 pendingNudge = datasets;
               },
+              get().mergeCitedArticles,
               setGeneratingInsight
             );
           } catch (err) {
@@ -760,6 +780,15 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     });
   },
 
+  mergeCitedArticles: (articles) => {
+    set((state) => ({
+      citedArticlesBySlug: mergeCitedArticlesIntoMap(
+        state.citedArticlesBySlug,
+        articles
+      ),
+    }));
+  },
+
   fetchThread: async (threadId: string, abort?: AbortController) => {
     const {
       setLoading,
@@ -767,12 +796,13 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       addMessage,
       addToolStep,
       clearToolSteps,
+      mergeCitedArticles,
       setDateRange,
     } = get();
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
-    set({ reasoningStartTime: Date.now() });
+    set({ reasoningStartTime: Date.now(), citedArticlesBySlug: {} });
     setLoading(true);
     setGeneratingInsight(false);
     // Set up abort controller for client-side timeout
@@ -885,6 +915,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               (datasets) => {
                 pendingNudgeThread = datasets;
               },
+              mergeCitedArticles,
               setGeneratingInsight
             );
           } catch (err) {
