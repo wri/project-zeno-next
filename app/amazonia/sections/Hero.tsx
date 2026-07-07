@@ -13,7 +13,7 @@ export default function Hero() {
       backgroundColor="#0B1A14"
       backgroundImage="linear-gradient(180deg, rgba(12,36,26,.32) 0%, rgba(16,44,32,.55) 45%, rgba(6,22,16,.9) 100%), url('/amazonia-hero.avif')"
       backgroundSize="cover"
-      backgroundPosition="center 38%"
+      backgroundPosition="center"
       backgroundRepeat="no-repeat"
     >
       <Box position="relative" zIndex={3}>
@@ -61,23 +61,6 @@ export default function Hero() {
           </Text>
         </Box>
       </Container>
-
-      <Text
-        position="absolute"
-        zIndex={3}
-        left={{ base: 4, md: 8 }}
-        bottom="22px"
-        m={0}
-        maxW="60%"
-        fontSize="11.5px"
-        lineHeight="1.4"
-        color="whiteAlpha.600"
-      >
-        Aerial view of Anavilhanas National Park. Photo credit:{" "}
-        <Text as="span" color="whiteAlpha.700">
-          Marcos Amend/WCS
-        </Text>
-      </Text>
 
       <Text
         position="absolute"

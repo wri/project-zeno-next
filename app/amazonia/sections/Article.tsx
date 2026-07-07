@@ -1,4 +1,4 @@
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Link as ChakraLink, Text } from "@chakra-ui/react";
 import SectionEyebrow from "./SectionEyebrow";
 import ExampleCards from "./ExampleCards";
 import { PAGE_MAX_W, ARTICLE_MAX_W } from "./widths";
@@ -16,10 +16,21 @@ export default function Article() {
     <Box as="section" maxW={PAGE_MAX_W} mx="auto" px={{ base: 6, md: 8 }}>
       <Box as="article" maxW={ARTICLE_MAX_W} mx="auto" pt="64px">
         <Text {...bodyTextProps}>
-          In Ecuador&rsquo;s Yasuní Biosphere Reserve, scientists have
-          documented a steep decline in insect-eating birds, even in forests
-          that appear protected and intact. Are similar declines happening
-          elsewhere? Are other species affected? And what is driving the change?
+          In Ecuador&rsquo;s Yasuní Biosphere Reserve,{" "}
+          <ChakraLink
+            href="https://news.mongabay.com/2024/05/bird-populations-are-mysteriously-declining-at-an-amazon-park-in-ecuador-beyond/"
+            target="_blank"
+            rel="noopener noreferrer"
+            color="primary.500"
+            textDecoration="underline"
+            textDecorationStyle="dotted"
+            _hover={{ color: "primary.700" }}
+          >
+            scientists have documented
+          </ChakraLink>{" "}
+          a steep decline in insect-eating birds, even in forests that appear
+          protected and intact. Are similar declines happening elsewhere? Are
+          other species affected? And what is driving the change?
         </Text>
         <Text {...bodyTextProps}>
           The Amazon is one of the most biodiverse regions on Earth, home to

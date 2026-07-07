@@ -58,10 +58,11 @@ export default function Partners() {
             <Text as="span" color="white" fontWeight="500">
               Bezos Earth Fund
             </Text>
-            . It brings together a diverse network spanning Amazonian research
-            institutions, conservation organizations, universities, national
-            environmental institutes and global data and technology platforms —
-            building the locally led infrastructure, scientific capacity,
+            . It brings together a diverse network of partners spanning
+            Amazonian research institutions, conservation organizations, leading
+            universities and tech companies, national environmental institutes
+            and global data and technology platforms. Together, these partners
+            are building the locally led infrastructure, scientific capacity,
             decision support and technological innovation needed to generate
             actionable biodiversity intelligence across the Amazon.
           </Text>
