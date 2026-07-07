@@ -33,13 +33,32 @@ export interface DerivedContext {
   snapshot: MessageContext;
 }
 
-const visibleAreaLayers = (layers: Layer[]): Layer[] =>
-  layers.filter((l) => l.visible && isAreaLayer(l));
+const isContextExcluded = (
+  layer: Layer,
+  excludedLayerIds: ReadonlySet<string>
+): boolean => excludedLayerIds.has(layer.id);
+
+const visibleAreaLayers = (
+  layers: Layer[],
+  excludedLayerIds: ReadonlySet<string>
+): Layer[] =>
+  layers.filter(
+    (l) =>
+      l.visible && isAreaLayer(l) && !isContextExcluded(l, excludedLayerIds)
+  );
 
 // The active dataset is the main dataset layer (carries datasetId, not a
 // context sub-layer). Matches resolveDatasetMeta in exportToAI.ts.
-const datasetLayer = (layers: Layer[]): Layer | undefined =>
-  layers.find((l) => typeof l.datasetId === "number" && !l.parentLayerId);
+const datasetLayer = (
+  layers: Layer[],
+  excludedLayerIds: ReadonlySet<string>
+): Layer | undefined =>
+  layers.find(
+    (l) =>
+      typeof l.datasetId === "number" &&
+      !l.parentLayerId &&
+      !isContextExcluded(l, excludedLayerIds)
+  );
 
 const areaName = (l: Layer): string =>
   l.aoiSelection?.name ?? l.selectionName ?? l.name;
@@ -54,9 +73,13 @@ const areaName = (l: Layer): string =>
 // `src_id` for GADM clicks, matching the legacy `idField` behaviour.
 function buildAoiSelected(
   layers: Layer[],
-  registry: GeoJsonEntry[]
+  registry: GeoJsonEntry[],
+  excludedLayerIds: ReadonlySet<string>
 ): UiContext["aoi_selected"] | undefined {
-  const layer = layers.find((l) => l.visible && isAreaLayer(l));
+  const layer = layers.find(
+    (l) =>
+      l.visible && isAreaLayer(l) && !isContextExcluded(l, excludedLayerIds)
+  );
   if (!layer) return undefined;
 
   const fromSelection = layer.aoiSelection?.aois?.[0];
@@ -101,18 +124,19 @@ function buildAoiSelected(
 export function deriveContext(
   layers: Layer[],
   registry: GeoJsonEntry[],
-  dateRange: { start: Date; end: Date } | null
+  dateRange: { start: Date; end: Date } | null,
+  excludedLayerIds: ReadonlySet<string> = new Set()
 ): DerivedContext {
   const uiContext: UiContext = {};
   const keys = emptyContextKeys();
 
-  const aoiSelected = buildAoiSelected(layers, registry);
+  const aoiSelected = buildAoiSelected(layers, registry, excludedLayerIds);
   if (aoiSelected) {
     uiContext.aoi_selected = aoiSelected;
     keys.aoi = aoiSelected.aoi_name;
   }
 
-  const ds = datasetLayer(layers);
+  const ds = datasetLayer(layers, excludedLayerIds);
   if (typeof ds?.datasetId === "number") {
     const info = DATASET_BY_ID[ds.datasetId];
     if (info) {
@@ -129,10 +153,15 @@ export function deriveContext(
   }
 
   const snapshot: MessageContext = {};
-  const areas = visibleAreaLayers(layers).map(areaName);
+  const areas = visibleAreaLayers(layers, excludedLayerIds).map(areaName);
   if (areas.length > 0) snapshot.areas = areas;
   const datasets = layers
-    .filter((l) => typeof l.datasetId === "number" && !l.parentLayerId)
+    .filter(
+      (l) =>
+        typeof l.datasetId === "number" &&
+        !l.parentLayerId &&
+        !isContextExcluded(l, excludedLayerIds)
+    )
     .map((l) => l.name);
   if (datasets.length > 0) snapshot.datasets = datasets;
   if (uiContext.daterange_selected) {

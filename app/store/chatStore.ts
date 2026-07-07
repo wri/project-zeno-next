@@ -60,6 +60,9 @@ interface ChatState {
   // when it changes. Reset per thread (cleared by reset(), seeded by
   // fetchThread, folded forward by the agent's own pick_aoi/pick_dataset).
   lastSentContext: ContextKeys;
+  // Layer ids the user dismissed from the chat-input context chips. Map layers
+  // stay visible; only the next message's ui_context / chip snapshot omits them.
+  excludedContextLayerIds: string[];
 }
 
 interface ChatActions {
@@ -88,6 +91,8 @@ interface ChatActions {
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
   setDateRange: (range: { start: Date; end: Date }) => void;
   clearDateRange: () => void;
+  excludeLayerFromContext: (layerId: string) => void;
+  includeLayerInContext: (layerId: string) => void;
   // Fold the agent's own picks into the last-sent context so they are never
   // echoed back to the backend on the next user message.
   foldSentContext: (partial: Partial<ContextKeys>) => void;
@@ -115,6 +120,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   reasoningStartTime: null,
   dateRange: null,
   lastSentContext: emptyContextKeys(),
+  excludedContextLayerIds: [],
 };
 
 /**
@@ -333,6 +339,25 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
   setDateRange: (range) => set({ dateRange: range }),
   clearDateRange: () => set({ dateRange: null }),
 
+  excludeLayerFromContext: (layerId) =>
+    set((state) =>
+      state.excludedContextLayerIds.includes(layerId)
+        ? state
+        : {
+            excludedContextLayerIds: [
+              ...state.excludedContextLayerIds,
+              layerId,
+            ],
+          }
+    ),
+
+  includeLayerInContext: (layerId) =>
+    set((state) => ({
+      excludedContextLayerIds: state.excludedContextLayerIds.filter(
+        (id) => id !== layerId
+      ),
+    })),
+
   foldSentContext: (partial) =>
     set((state) => ({
       lastSentContext: { ...state.lastSentContext, ...partial },
@@ -448,10 +473,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // The chip snapshot records the complete context; ui_context only carries
     // the slots that changed since the last send (the backend is non-idempotent).
     const { layers, geoJsonRegistry } = useMapStore.getState();
+    const excludedLayerIds = new Set(get().excludedContextLayerIds);
     const { uiContext, keys, snapshot } = deriveContext(
       layers,
       geoJsonRegistry,
-      get().dateRange
+      get().dateRange,
+      excludedLayerIds
     );
 
     // Add user message with a read-only snapshot of the context it was sent with
@@ -820,7 +847,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               const { snapshot } = deriveContext(
                 layers,
                 geoJsonRegistry,
-                get().dateRange
+                get().dateRange,
+                new Set(get().excludedContextLayerIds)
               );
 
               addMessage({
@@ -911,7 +939,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       // Seed the last-sent context from the fully rehydrated layers + date
       // range, so the first new message on this thread only sends what changed.
       const { layers, geoJsonRegistry } = useMapStore.getState();
-      const { keys } = deriveContext(layers, geoJsonRegistry, get().dateRange);
+      const { keys } = deriveContext(
+        layers,
+        geoJsonRegistry,
+        get().dateRange,
+        new Set(get().excludedContextLayerIds)
+      );
       set({ lastSentContext: keys });
 
       // Flush any remaining tool steps for the last user message
