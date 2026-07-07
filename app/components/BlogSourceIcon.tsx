@@ -1,5 +1,5 @@
 "use client";
-import { Image } from "@chakra-ui/react";
+import { Box, Image } from "@chakra-ui/react";
 import LclLogo from "@/app/components/LclLogo";
 import {
   blogSourceBranding,
@@ -19,6 +19,20 @@ export function BlogSourceIcon({
   wordmark = false,
 }: BlogSourceIconProps) {
   const branding = blogSourceBranding(source);
+
+  if (source === "other") {
+    // No wordmark exists for unknown sources — show the neutral placeholder
+    // square from the Figma "OTHER SOURCE" pill.
+    const square = Math.round(size * 0.83);
+    return (
+      <Box
+        boxSize={`${square}px`}
+        borderRadius="2px"
+        bg="neutral.400"
+        flexShrink={0}
+      />
+    );
+  }
 
   if (branding.useLclLogo) {
     // The WRI favicon fills a size×size box, so match the LCL mark's HEIGHT to

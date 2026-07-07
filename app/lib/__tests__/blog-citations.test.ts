@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   extractCitationUrls,
   extractInsightsSlug,
+  getCitedArticleRefsInOrder,
   getCitedArticlesInOrder,
   isBlogCitation,
   mergeCitedArticlesIntoMap,
@@ -195,5 +196,43 @@ describe("getCitedArticlesInOrder", () => {
     };
     const markdown = `See [1](${URL_LCL}) for details.`;
     expect(getCitedArticlesInOrder(markdown, articles)).toEqual([ARTICLE_LCL]);
+  });
+});
+
+describe("getCitedArticleRefsInOrder", () => {
+  const articlesBySlug = {
+    [ARTICLE_A.slug]: ARTICLE_A,
+    "forest-monitoring-tools": {
+      ...ARTICLE_A,
+      slug: "forest-monitoring-tools",
+      title: "Forest Monitoring Tools",
+      url: URL_B,
+    },
+  };
+
+  it("preserves the marker number even when numbered out of order", () => {
+    const markdown = `First [2](${URL_B}) then [1](${URL_A}).`;
+    const refs = getCitedArticleRefsInOrder(markdown, articlesBySlug);
+    expect(refs).toEqual([
+      {
+        number: "2",
+        url: URL_B,
+        article: articlesBySlug["forest-monitoring-tools"],
+      },
+      { number: "1", url: URL_A, article: ARTICLE_A },
+    ]);
+  });
+
+  it("dedupes by article, keeping the first marker number", () => {
+    const markdown = `See [3](${URL_A}) and again [3](${URL_A}).`;
+    const refs = getCitedArticleRefsInOrder(markdown, articlesBySlug);
+    expect(refs).toHaveLength(1);
+    expect(refs[0].number).toBe("3");
+  });
+
+  it("omits citations without resolved metadata", () => {
+    const markdown = `Known [1](${URL_A}), unknown [2](${URL_LCL}).`;
+    const refs = getCitedArticleRefsInOrder(markdown, articlesBySlug);
+    expect(refs.map((r) => r.article.slug)).toEqual([ARTICLE_A.slug]);
   });
 });

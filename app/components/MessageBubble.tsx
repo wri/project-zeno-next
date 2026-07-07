@@ -41,7 +41,7 @@ import { ViewAnalysisNudge } from "@/src/features/analysis";
 import BlogCitation from "./BlogCitation";
 import BlogCitationsList from "./BlogCitationsList";
 import {
-  getCitedArticlesInOrder,
+  getCitedArticleRefsInOrder,
   isBlogCitation,
   resolveCitedArticle,
 } from "@/app/lib/blog-citations";
@@ -178,10 +178,10 @@ function MessageBubble({
     agentProfile,
     userType
   );
-  const citedArticles = useMemo(
+  const citedArticleRefs = useMemo(
     () =>
       blogCitationsEnabled && isAssistant
-        ? getCitedArticlesInOrder(message.message, citedArticlesBySlug)
+        ? getCitedArticleRefsInOrder(message.message, citedArticlesBySlug)
         : [],
     [blogCitationsEnabled, isAssistant, message.message, citedArticlesBySlug]
   );
@@ -447,8 +447,8 @@ function MessageBubble({
             ))}
           </Flex>
         )}
-        {citedArticles.length > 0 && (
-          <BlogCitationsList articles={citedArticles} />
+        {citedArticleRefs.length > 0 && (
+          <BlogCitationsList refs={citedArticleRefs} />
         )}
         {showFooter && (
           <Flex

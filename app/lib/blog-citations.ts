@@ -38,6 +38,7 @@ export function isBlogCitation(href: string, label: string): boolean {
 }
 
 /** Unique Insights URLs cited (as `[N](url)`) in a markdown string. */
+// TODO: Update this to handle other sources as well - may not always follow this pattern
 export function extractCitationUrls(markdown: string): string[] {
   const urls = new Set<string>();
   for (const match of markdown.matchAll(CITATION_LINK_RE)) {
@@ -66,21 +67,46 @@ export function mergeCitedArticlesIntoMap(
   return next;
 }
 
+/** A cited article paired with its citation marker number and URL. */
+export interface CitedArticleRef {
+  /** Marker number from the `[N](url)` link — matches the inline chip. */
+  number: string;
+  url: string;
+  article: BlogArticle;
+}
+
+/**
+ * Cited articles (with resolved metadata) in first-appearance order, each
+ * tagged with its citation marker number. The number is preserved from the
+ * `[N](url)` marker rather than re-derived from position, so the sources list
+ * stays in sync with the inline citation chips even when the agent numbers
+ * citations out of order (e.g. `[2]` appearing before `[1]`).
+ */
+export function getCitedArticleRefsInOrder(
+  markdown: string,
+  articlesBySlug: Record<string, BlogArticle>
+): CitedArticleRef[] {
+  const result: CitedArticleRef[] = [];
+  const seen = new Set<string>();
+  for (const match of markdown.matchAll(CITATION_LINK_RE)) {
+    const [, number, url] = match;
+    const article = resolveCitedArticle(url, articlesBySlug);
+    if (article && !seen.has(article.slug)) {
+      seen.add(article.slug);
+      result.push({ number, url, article });
+    }
+  }
+  return result;
+}
+
 /** Cited articles for a message, in first-appearance order. */
 export function getCitedArticlesInOrder(
   markdown: string,
   articlesBySlug: Record<string, BlogArticle>
 ): BlogArticle[] {
-  const result: BlogArticle[] = [];
-  const seen = new Set<string>();
-  for (const url of extractCitationUrls(markdown)) {
-    const article = resolveCitedArticle(url, articlesBySlug);
-    if (article && !seen.has(article.slug)) {
-      seen.add(article.slug);
-      result.push(article);
-    }
-  }
-  return result;
+  return getCitedArticleRefsInOrder(markdown, articlesBySlug).map(
+    (ref) => ref.article
+  );
 }
 
 /** Resolve card metadata for a citation URL from the thread-level map. */

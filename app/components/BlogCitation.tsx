@@ -72,19 +72,16 @@ export function BlogCitation({ number, url, article }: BlogCitationProps) {
           py="2px"
           mx="1px"
           borderRadius="4px"
-          // Colours taken from the Figma "source-pill" citation chip. The chip
-          // is source-agnostic (blue) — only the BlogSourceIcon glyph varies.
-          bg="#F0F4FF"
-          color="#2A5FB5"
+          // Source-tinted citation chip (WRI gold / LCL blue / neutral other),
+          // matching the latest Figma "source-chip" — colours track the source
+          // pill so inline markers read as the same brand as the sources list.
+          bg={branding.pillBg}
+          color={branding.pillText}
           border="1px solid"
-          borderColor="#B2C3F0"
+          borderColor={branding.pillBorder}
           cursor="pointer"
-          transition="all 0.16s ease"
-          _hover={{
-            bg: "#E4EAFB",
-            borderColor: "#9FB4E8",
-            color: "#1E4C99",
-          }}
+          transition="filter 0.16s ease"
+          _hover={{ filter: "brightness(0.96)" }}
         >
           <BlogSourceIcon source={source} size={10} />
           {number}

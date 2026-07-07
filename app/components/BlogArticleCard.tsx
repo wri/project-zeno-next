@@ -52,8 +52,8 @@ function ArticleImage({
       align="center"
       justify="center"
       bg={
-        source === "lcl"
-          ? "linear-gradient(135deg, #EEF7F1 0%, #F4F7FB 100%)"
+        source === "other"
+          ? "linear-gradient(135deg, #F4F5F7 0%, #FAFBFC 100%)"
           : "linear-gradient(135deg, #E8F0FC 0%, #F4F7FB 100%)"
       }
       flexShrink={0}
@@ -226,7 +226,8 @@ export function BlogArticleCard({
         <Flex direction="column" gap="4px">
           <Box h="1px" w="100%" bg="border.emphasized" />
           <Flex align="center" gap="4px" color="fg.link" fontSize="xs">
-            Read on {branding.readOn} <ArrowSquareOutIcon size={16} />
+            {branding.readOn ? `Read on ${branding.readOn}` : "Read article"}{" "}
+            <ArrowSquareOutIcon size={16} />
           </Flex>
         </Flex>
       </Flex>
