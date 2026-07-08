@@ -13,7 +13,6 @@ import {
 import {
   ArrowBendRightUpIcon,
   MicrophoneIcon,
-  MicrophoneSlashIcon,
   StopIcon,
 } from "@phosphor-icons/react";
 import { format } from "date-fns";
@@ -21,11 +20,14 @@ import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
+import VoiceListeningPanel from "./voice/VoiceListeningPanel";
+import VoiceErrorPanel from "./voice/VoiceErrorPanel";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
 import useAuthStore from "../store/authStore";
 import useSpeechInput from "../hooks/useSpeechInput";
+import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
 import { useRouter } from "next/navigation";
 
@@ -79,14 +81,16 @@ export default function ChatInput({
   const excludedSet = new Set(excludedLayerIds);
 
   // Voice dictation. `speech` is null when the browser lacks the Web Speech
-  // API, in which case the mic button is not rendered. Dictation appends to
-  // whatever is already typed, so we snapshot that text when a session starts.
-  // The Web Speech API can't detect the spoken language, so we default it from
-  // the user's onboarding preference, then the browser language, then en-US.
+  // API, in which case the mic control is not rendered. The committed
+  // transcript is appended to whatever is already typed, so we snapshot that
+  // text when a session starts. The Web Speech API can't detect the spoken
+  // language, so we default it from the user's onboarding preference, then the
+  // browser language, then en-US — with an in-listening override menu.
   const preferredLanguageCode = useAuthStore((s) => s.preferredLanguageCode);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const dictationBaseRef = useRef("");
   const speech = useSpeechInput({
-    lang: resolveSpeechLang(
+    initialLang: resolveSpeechLang(
       preferredLanguageCode,
       typeof navigator !== "undefined" ? navigator.language : null
     ),
@@ -95,7 +99,7 @@ export default function ChatInput({
         ? `${inputValue.trim()} `
         : "";
     },
-    onResult: (transcript) =>
+    onCommit: (transcript) =>
       setInputValue(dictationBaseRef.current + transcript),
   });
 
@@ -140,7 +144,6 @@ export default function ChatInput({
   const submitPrompt = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    speech?.stop();
     const message = inputValue.trim();
     setInputValue("");
     onAfterSend?.();
@@ -244,101 +247,118 @@ export default function ChatInput({
           )}
         </Flex>
       )}
-      <Textarea
-        ref={setFocusEl}
-        aria-label="Ask a question..."
-        placeholder={message}
-        // 16px on mobile — iOS Safari auto-zooms focused inputs below 16px.
-        fontSize={{ base: "md", md: "sm" }}
-        minH="20px"
-        autoresize
-        maxH="10lh"
-        border="none"
-        p={0}
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
-        _disabled={{ opacity: 1 }}
-        _focus={{ outline: "none", boxShadow: "none" }}
-        _placeholder={{ color: disabled ? "gray.400" : "gray.600" }}
-      />
-      <Flex justifyContent="space-between" alignItems="center" w="full">
-        <Flex gap="2">
-          <ContextButton
-            contextType="layer"
-            onClick={openLayerPicker}
+      {speech && speech.phase === "listening" ? (
+        <VoiceListeningPanel
+          seconds={speech.seconds}
+          committed={speech.committed}
+          interim={speech.interim}
+          lang={speech.lang}
+          onLangChange={speech.setLang}
+          onStop={speech.stop}
+          reducedMotion={prefersReducedMotion}
+        />
+      ) : speech && speech.phase === "error" && speech.errorType ? (
+        <VoiceErrorPanel
+          errorType={speech.errorType}
+          onRetry={speech.retry}
+          onDismiss={speech.dismissError}
+          reducedMotion={prefersReducedMotion}
+        />
+      ) : (
+        <>
+          <Textarea
+            ref={setFocusEl}
+            aria-label="Ask a question..."
+            placeholder={message}
+            // 16px on mobile — iOS Safari auto-zooms focused inputs below 16px.
+            fontSize={{ base: "md", md: "sm" }}
+            minH="20px"
+            autoresize
+            maxH="10lh"
+            border="none"
+            p={0}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={disabled}
-            borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
-            color={dataCatalogOpen ? "primary.solid" : undefined}
-            aria-expanded={dataCatalogOpen}
+            _disabled={{ opacity: 1 }}
+            _focus={{ outline: "none", boxShadow: "none" }}
+            _placeholder={{ color: disabled ? "gray.400" : "gray.600" }}
           />
-          <ContextButton
-            contextType="area"
-            onClick={openAreaPicker}
-            disabled={disabled}
-            borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
-            color={areasPanelOpen ? "primary.solid" : undefined}
-            aria-expanded={areasPanelOpen}
-          />
-        </Flex>
-        <Flex gap="2" ml="auto" alignItems="center">
-          {speech && (
-            <Button
-              p="0"
-              borderRadius="full"
-              variant={speech.listening ? "solid" : "ghost"}
-              colorPalette={speech.listening ? "red" : "gray"}
-              type="button"
-              size="xs"
-              aria-label={
-                speech.listening ? "Stop dictation" : "Dictate message"
-              }
-              title={speech.listening ? "Stop dictation" : "Dictate message"}
-              onClick={speech.toggle}
-              disabled={disabled}
-            >
-              {speech.listening ? (
-                <MicrophoneSlashIcon weight="fill" />
-              ) : (
-                <MicrophoneIcon weight="bold" />
+          <Flex justifyContent="space-between" alignItems="center" w="full">
+            <Flex gap="2">
+              <ContextButton
+                contextType="layer"
+                onClick={openLayerPicker}
+                disabled={disabled}
+                borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
+                color={dataCatalogOpen ? "primary.solid" : undefined}
+                aria-expanded={dataCatalogOpen}
+              />
+              <ContextButton
+                contextType="area"
+                onClick={openAreaPicker}
+                disabled={disabled}
+                borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
+                color={areasPanelOpen ? "primary.solid" : undefined}
+                aria-expanded={areasPanelOpen}
+              />
+            </Flex>
+            <Flex gap="2" ml="auto" alignItems="center">
+              {speech && (
+                <Button
+                  p="0"
+                  borderRadius="full"
+                  variant="outline"
+                  bg="white"
+                  borderColor="#E0E2E5"
+                  color="gray.700"
+                  type="button"
+                  size="xs"
+                  aria-label="Start voice input"
+                  title="Start voice input"
+                  onClick={speech.start}
+                  disabled={disabled}
+                >
+                  <MicrophoneIcon />
+                </Button>
               )}
-            </Button>
-          )}
-          {canCancelRequest ? (
-            <Button
-              p="0"
-              borderRadius="full"
-              variant="solid"
-              colorPalette="primary"
-              type="button"
-              size="xs"
-              aria-label="Cancel request"
-              onClick={cancelRequest}
-              title="Cancel request"
-            >
-              <StopIcon weight="fill" />
-            </Button>
-          ) : (
-            <Button
-              p="0"
-              borderRadius="full"
-              variant="solid"
-              colorPalette="primary"
-              _disabled={{
-                opacity: 0.36,
-              }}
-              type="button"
-              size="xs"
-              aria-label="Send prompt"
-              onClick={submitPrompt}
-              disabled={isButtonDisabled}
-            >
-              <ArrowBendRightUpIcon weight="bold" />
-            </Button>
-          )}
-        </Flex>
-      </Flex>
+              {canCancelRequest ? (
+                <Button
+                  p="0"
+                  borderRadius="full"
+                  variant="solid"
+                  colorPalette="primary"
+                  type="button"
+                  size="xs"
+                  aria-label="Cancel request"
+                  onClick={cancelRequest}
+                  title="Cancel request"
+                >
+                  <StopIcon weight="fill" />
+                </Button>
+              ) : (
+                <Button
+                  p="0"
+                  borderRadius="full"
+                  variant="solid"
+                  colorPalette="primary"
+                  _disabled={{
+                    opacity: 0.36,
+                  }}
+                  type="button"
+                  size="xs"
+                  aria-label="Send prompt"
+                  onClick={submitPrompt}
+                  disabled={isButtonDisabled}
+                >
+                  <ArrowBendRightUpIcon weight="bold" />
+                </Button>
+              )}
+            </Flex>
+          </Flex>
+        </>
+      )}
     </Flex>
   );
 
