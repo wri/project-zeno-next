@@ -24,7 +24,7 @@ export const VOICE_LANGUAGES: VoiceLanguage[] = [
   { code: "en-US", label: "English (US)" },
   { code: "en-GB", label: "English (UK)" },
   { code: "pt-BR", label: "Portuguese (BR)" },
-  { code: "es-ES", label: "Spanish (Spain)" },
+  { code: "es-ES", label: "Spanish (ES)" },
   { code: "es-419", label: "Spanish (Latin America)" },
   { code: "fr-FR", label: "French" },
   { code: "it-IT", label: "Italian" },
