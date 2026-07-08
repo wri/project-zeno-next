@@ -12,6 +12,30 @@ const REGION_QUALIFIED: Record<string, string> = {
 
 const DEFAULT_LANG = "en-US";
 
+export interface VoiceLanguage {
+  /** BCP-47 tag passed to SpeechRecognition. */
+  code: string;
+  label: string;
+}
+
+// The languages offered in the dictation override menu. Codes match the
+// region-qualified tags above and the onboarding language options.
+export const VOICE_LANGUAGES: VoiceLanguage[] = [
+  { code: "en-US", label: "English (US)" },
+  { code: "pt-BR", label: "Portuguese (BR)" },
+  { code: "es-ES", label: "Spanish" },
+  { code: "fr-FR", label: "French" },
+  { code: "id-ID", label: "Indonesian" },
+];
+
+/**
+ * Human-readable label for a BCP-47 tag, for the dictation language menu.
+ * Falls back to the raw tag when it isn't one of the offered options.
+ */
+export function labelForLang(code: string): string {
+  return VOICE_LANGUAGES.find((l) => l.code === code)?.label ?? code;
+}
+
 /**
  * Resolve a BCP-47 language tag for the Web Speech API. The Web Speech API
  * cannot detect the spoken language itself, so we default from what the app
