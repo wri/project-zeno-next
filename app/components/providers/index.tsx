@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { jwtDecode } from "jwt-decode";
@@ -8,6 +9,7 @@ import { jwtDecode } from "jwt-decode";
 import theme from "@/app/theme";
 import { Toaster } from "@/app/components/ui/toaster";
 import useAuthStore from "@/app/store/authStore";
+import useChatStore from "@/app/store/chatStore";
 import { UserTypeEnum, type UserType } from "@/app/schemas/api/admin/users/get";
 import { getToken, clearToken, apiFetch } from "@/app/lib/api-client";
 import { queryClient } from "@/app/lib/query-client";
@@ -100,6 +102,29 @@ function AuthBootstrapper() {
   return null;
 }
 
+// Navigates to a dashboard the agent just created via the create_dashboard
+// tool. Global (rather than living in ChatInput) because sendMessage can be
+// triggered from several hosts (main chat, dashboard floating/docked chat,
+// sample prompts, welcome modal, dataset nudge, analysis re-run) — all of
+// them should switch the user to the new dashboard, not just one.
+function DashboardRedirector() {
+  const router = useRouter();
+  const pendingDashboardRedirect = useChatStore(
+    (s) => s.pendingDashboardRedirect
+  );
+  const setPendingDashboardRedirect = useChatStore(
+    (s) => s.setPendingDashboardRedirect
+  );
+
+  useEffect(() => {
+    if (!pendingDashboardRedirect) return;
+    router.push(`/dashboards/${pendingDashboardRedirect}`);
+    setPendingDashboardRedirect(null);
+  }, [pendingDashboardRedirect, router, setPendingDashboardRedirect]);
+
+  return null;
+}
+
 function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
@@ -107,6 +132,7 @@ function Providers({ children }: { children: React.ReactNode }) {
         {children}
         <Toaster />
         <AuthBootstrapper />
+        <DashboardRedirector />
       </ChakraProvider>
     </QueryClientProvider>
   );

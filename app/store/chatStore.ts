@@ -61,6 +61,10 @@ interface ChatState {
   // when it changes. Reset per thread (cleared by reset(), seeded by
   // fetchThread, folded forward by the agent's own pick_aoi/pick_dataset).
   lastSentContext: ContextKeys;
+  // Set when the agent's create_dashboard tool succeeds on a *live* send
+  // (never on thread-history replay). A headless component navigates to
+  // /dashboards/:id when this is set, then clears it.
+  pendingDashboardRedirect: string | null;
 }
 
 interface ChatActions {
@@ -92,6 +96,7 @@ interface ChatActions {
   // Fold the agent's own picks into the last-sent context so they are never
   // echoed back to the backend on the next user message.
   foldSentContext: (partial: Partial<ContextKeys>) => void;
+  setPendingDashboardRedirect: (dashboardId: string | null) => void;
 }
 
 // Tools whose result is an insight (charts + summary) that belongs in the
@@ -127,6 +132,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   reasoningStartTime: null,
   dateRange: null,
   lastSentContext: emptyContextKeys(),
+  pendingDashboardRedirect: null,
 };
 
 /**
@@ -182,7 +188,10 @@ async function processStreamMessage(
   attachTraceToLastAssistant: (traceId: string) => boolean,
   getPendingNudge: () => SuggestedDataset[] | null,
   setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
-  setGeneratingInsight: (generating: boolean) => void
+  setGeneratingInsight: (generating: boolean) => void,
+  // Only wired on live sends (not thread-history replay) — see
+  // pendingDashboardRedirect on ChatState.
+  setDashboardRedirect: (dashboardId: string) => void
 ) {
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
@@ -297,6 +306,13 @@ async function processStreamMessage(
         queryKey: ["dashboard", streamMessage.dashboard_id],
       });
       queryClient.invalidateQueries({ queryKey: ["dashboards"] });
+
+      // create_dashboard specifically (not add_to_dashboard/add_map_widget,
+      // which update a dashboard the user is presumably already looking at)
+      // means the agent just made a brand-new dashboard — switch to it.
+      if (streamMessage.name === "create_dashboard") {
+        setDashboardRedirect(streamMessage.dashboard_id);
+      }
     }
 
     // Special handling for tools whose result is an insight to render:
@@ -375,6 +391,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     set((state) => ({
       lastSentContext: { ...state.lastSentContext, ...partial },
     })),
+
+  setPendingDashboardRedirect: (dashboardId) =>
+    set({ pendingDashboardRedirect: dashboardId }),
 
   addMessage: (message) => {
     const newMessage: ChatMessage = {
@@ -602,7 +621,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               (datasets) => {
                 pendingNudge = datasets;
               },
-              setGeneratingInsight
+              setGeneratingInsight,
+              (dashboardId) => set({ pendingDashboardRedirect: dashboardId })
             );
           } catch (err) {
             if (isFinal) {
@@ -904,7 +924,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               (datasets) => {
                 pendingNudgeThread = datasets;
               },
-              setGeneratingInsight
+              setGeneratingInsight,
+              // Thread-history replay must never trigger navigation.
+              () => {}
             );
           } catch (err) {
             if (isFinal) {
