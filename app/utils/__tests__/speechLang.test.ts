@@ -48,8 +48,9 @@ describe("VOICE_LANGUAGES / labelForLang", () => {
 
   it("returns the label for a known code", () => {
     expect(labelForLang("es-419")).toBe("Spanish (Latin America)");
-    expect(labelForLang("zh-CN")).toBe("Chinese (Mandarin)");
+    expect(labelForLang("zh-CN")).toBe("Chinese (Simplified)");
     expect(labelForLang("en-GB")).toBe("English (UK)");
+    expect(labelForLang("it-IT")).toBe("Italian");
   });
 
   it("falls back to the raw tag for an unknown code", () => {
