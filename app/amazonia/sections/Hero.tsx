@@ -41,7 +41,7 @@ export default function Hero() {
             <Text {...highlight}>.ia</Text>
             <br />
             <Text {...highlight}>I</Text>
-            nteligência <Text {...highlight}>A</Text>
+            nteligencia <Text {...highlight}>A</Text>
             mbiental
           </Heading>
           <Text
