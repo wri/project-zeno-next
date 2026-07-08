@@ -18,6 +18,7 @@ const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 const renderNavItems = (
   isMobile: boolean,
+  showSectionLinks: boolean,
   setNavOpen?: (open: boolean) => void | undefined
 ): React.ReactElement | null => {
   return (
@@ -40,18 +41,22 @@ const renderNavItems = (
         }
       }
     >
-      <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
-        <Link href="#use-cases">Use cases</Link>
-      </Button>
-      <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
-        <Link href="#technology">Technology</Link>
-      </Button>
-      <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
-        <Link href="#research">Research</Link>
-      </Button>
-      <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
-        <Link href="#about">About</Link>
-      </Button>
+      {showSectionLinks && (
+        <>
+          <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
+            <Link href="#use-cases">Use cases</Link>
+          </Button>
+          <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
+            <Link href="#technology">Technology</Link>
+          </Button>
+          <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
+            <Link href="#research">Research</Link>
+          </Button>
+          <Button asChild onClick={() => setNavOpen && setNavOpen(false)}>
+            <Link href="#about">About</Link>
+          </Button>
+        </>
+      )}
       {LANDING_PAGE_VERSION === "closed" && (
         <Button
           asChild
@@ -91,7 +96,13 @@ const renderNavItems = (
   );
 };
 
-export default function GlobalHeader() {
+type GlobalHeaderProps = {
+  showSectionLinks?: boolean;
+};
+
+export default function GlobalHeader({
+  showSectionLinks = true,
+}: GlobalHeaderProps) {
   const [openNav, setNavOpen] = useState(false);
   return (
     <Container
@@ -107,7 +118,7 @@ export default function GlobalHeader() {
       backdropBlur="10px"
     >
       <Flex
-        divideColor={"neutral.600"}
+        divideColor={"whiteAlpha.300"}
         divideStyle={"solid"}
         divideX={{ base: "0px", md: "1px" }}
         flexDir={{ base: "column", md: "row" }}
@@ -165,7 +176,9 @@ export default function GlobalHeader() {
                   </Text>
                 </Drawer.Title>
               </Drawer.Header>
-              <Drawer.Body>{renderNavItems(true, setNavOpen)}</Drawer.Body>
+              <Drawer.Body>
+                {renderNavItems(true, showSectionLinks, setNavOpen)}
+              </Drawer.Body>
               <Drawer.CloseTrigger asChild>
                 <CloseButton
                   size="sm"
@@ -179,7 +192,7 @@ export default function GlobalHeader() {
         </Portal>
       </Drawer.Root>
       <Flex ml="auto" hideBelow="md">
-        {renderNavItems(false)}
+        {renderNavItems(false, showSectionLinks)}
       </Flex>
     </Container>
   );
