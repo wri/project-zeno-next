@@ -1,0 +1,37 @@
+import { describe, it, expect } from "vitest";
+import { resolveSpeechLang } from "../speechLang";
+
+describe("resolveSpeechLang", () => {
+  it("region-qualifies a bare profile language code", () => {
+    expect(resolveSpeechLang("pt", "en-US")).toBe("pt-BR");
+    expect(resolveSpeechLang("es", null)).toBe("es-ES");
+    expect(resolveSpeechLang("en", null)).toBe("en-US");
+    expect(resolveSpeechLang("id", null)).toBe("id-ID");
+  });
+
+  it("prefers the profile code over the browser language", () => {
+    expect(resolveSpeechLang("pt", "en-GB")).toBe("pt-BR");
+  });
+
+  it("falls back to the browser language when no profile code", () => {
+    expect(resolveSpeechLang(null, "fr-CA")).toBe("fr-CA");
+    expect(resolveSpeechLang("", "pt-PT")).toBe("pt-PT");
+  });
+
+  it("region-qualifies a bare browser language when used as fallback", () => {
+    expect(resolveSpeechLang(null, "es")).toBe("es-ES");
+  });
+
+  it("trusts an already-qualified tag rather than overriding the region", () => {
+    expect(resolveSpeechLang("en-GB", null)).toBe("en-GB");
+  });
+
+  it("passes through an unknown bare code unchanged", () => {
+    expect(resolveSpeechLang("de", null)).toBe("de");
+  });
+
+  it("defaults to en-US when nothing is provided", () => {
+    expect(resolveSpeechLang(null, null)).toBe("en-US");
+    expect(resolveSpeechLang(undefined, undefined)).toBe("en-US");
+  });
+});
