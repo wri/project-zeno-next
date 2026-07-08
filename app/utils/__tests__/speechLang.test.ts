@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { resolveSpeechLang } from "../speechLang";
+import {
+  resolveSpeechLang,
+  labelForLang,
+  VOICE_LANGUAGES,
+} from "../speechLang";
 
 describe("resolveSpeechLang", () => {
   it("region-qualifies a bare profile language code", () => {
@@ -33,5 +37,22 @@ describe("resolveSpeechLang", () => {
   it("defaults to en-US when nothing is provided", () => {
     expect(resolveSpeechLang(null, null)).toBe("en-US");
     expect(resolveSpeechLang(undefined, undefined)).toBe("en-US");
+  });
+});
+
+describe("VOICE_LANGUAGES / labelForLang", () => {
+  it("has unique BCP-47 codes", () => {
+    const codes = VOICE_LANGUAGES.map((l) => l.code);
+    expect(new Set(codes).size).toBe(codes.length);
+  });
+
+  it("returns the label for a known code", () => {
+    expect(labelForLang("es-419")).toBe("Spanish (Latin America)");
+    expect(labelForLang("zh-CN")).toBe("Chinese (Mandarin)");
+    expect(labelForLang("en-GB")).toBe("English (UK)");
+  });
+
+  it("falls back to the raw tag for an unknown code", () => {
+    expect(labelForLang("xx-YY")).toBe("xx-YY");
   });
 });

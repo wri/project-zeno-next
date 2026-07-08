@@ -18,14 +18,19 @@ interface VoiceLanguage {
   label: string;
 }
 
-// The languages offered in the dictation override menu. Codes match the
-// region-qualified tags above and the onboarding language options.
+// The languages offered in the dictation override menu (a superset of the
+// onboarding options). Codes are BCP-47 tags passed to SpeechRecognition.
 export const VOICE_LANGUAGES: VoiceLanguage[] = [
   { code: "en-US", label: "English (US)" },
+  { code: "en-GB", label: "English (UK)" },
   { code: "pt-BR", label: "Portuguese (BR)" },
-  { code: "es-ES", label: "Spanish" },
+  { code: "es-ES", label: "Spanish (Spain)" },
+  { code: "es-419", label: "Spanish (Latin America)" },
   { code: "fr-FR", label: "French" },
+  { code: "it-IT", label: "Italian" },
   { code: "id-ID", label: "Indonesian" },
+  { code: "zh-CN", label: "Chinese (Mandarin)" },
+  { code: "sw-KE", label: "Swahili" },
 ];
 
 /**
