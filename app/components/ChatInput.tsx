@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Button,
   Flex,
@@ -10,7 +10,12 @@ import {
   Text,
   Portal,
 } from "@chakra-ui/react";
-import { ArrowBendRightUpIcon, StopIcon } from "@phosphor-icons/react";
+import {
+  ArrowBendRightUpIcon,
+  MicrophoneIcon,
+  MicrophoneSlashIcon,
+  StopIcon,
+} from "@phosphor-icons/react";
 import { format } from "date-fns";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
@@ -19,6 +24,7 @@ import ContextMenu from "./ContextMenu";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
+import useSpeechInput from "../hooks/useSpeechInput";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
@@ -70,6 +76,20 @@ export default function ChatInput({
   const excludedLayerIds = useChatStore((s) => s.excludedContextLayerIds);
   const excludedSet = new Set(excludedLayerIds);
 
+  // Voice dictation. `speech` is null when the browser lacks the Web Speech
+  // API, in which case the mic button is not rendered. Dictation appends to
+  // whatever is already typed, so we snapshot that text when a session starts.
+  const dictationBaseRef = useRef("");
+  const speech = useSpeechInput({
+    onStart: () => {
+      dictationBaseRef.current = inputValue.trim()
+        ? `${inputValue.trim()} `
+        : "";
+    },
+    onResult: (transcript) =>
+      setInputValue(dictationBaseRef.current + transcript),
+  });
+
   // Pills reflect layers/dates active in chat context. Dismissing a pill
   // removes it from context only; the map layer stays visible.
   const datasetPillLayers = layers.filter(
@@ -111,6 +131,7 @@ export default function ChatInput({
   const submitPrompt = async () => {
     if (!inputValue.trim() || isLoading) return;
 
+    speech?.stop();
     const message = inputValue.trim();
     setInputValue("");
     onAfterSend?.();
@@ -252,40 +273,62 @@ export default function ChatInput({
             aria-expanded={areasPanelOpen}
           />
         </Flex>
-        {canCancelRequest ? (
-          <Button
-            p="0"
-            ml="auto"
-            borderRadius="full"
-            variant="solid"
-            colorPalette="primary"
-            type="button"
-            size="xs"
-            aria-label="Cancel request"
-            onClick={cancelRequest}
-            title="Cancel request"
-          >
-            <StopIcon weight="fill" />
-          </Button>
-        ) : (
-          <Button
-            p="0"
-            ml="auto"
-            borderRadius="full"
-            variant="solid"
-            colorPalette="primary"
-            _disabled={{
-              opacity: 0.36,
-            }}
-            type="button"
-            size="xs"
-            aria-label="Send prompt"
-            onClick={submitPrompt}
-            disabled={isButtonDisabled}
-          >
-            <ArrowBendRightUpIcon weight="bold" />
-          </Button>
-        )}
+        <Flex gap="2" ml="auto" alignItems="center">
+          {speech && (
+            <Button
+              p="0"
+              borderRadius="full"
+              variant={speech.listening ? "solid" : "ghost"}
+              colorPalette={speech.listening ? "red" : "gray"}
+              type="button"
+              size="xs"
+              aria-label={
+                speech.listening ? "Stop dictation" : "Dictate message"
+              }
+              title={speech.listening ? "Stop dictation" : "Dictate message"}
+              onClick={speech.toggle}
+              disabled={disabled}
+            >
+              {speech.listening ? (
+                <MicrophoneSlashIcon weight="fill" />
+              ) : (
+                <MicrophoneIcon weight="bold" />
+              )}
+            </Button>
+          )}
+          {canCancelRequest ? (
+            <Button
+              p="0"
+              borderRadius="full"
+              variant="solid"
+              colorPalette="primary"
+              type="button"
+              size="xs"
+              aria-label="Cancel request"
+              onClick={cancelRequest}
+              title="Cancel request"
+            >
+              <StopIcon weight="fill" />
+            </Button>
+          ) : (
+            <Button
+              p="0"
+              borderRadius="full"
+              variant="solid"
+              colorPalette="primary"
+              _disabled={{
+                opacity: 0.36,
+              }}
+              type="button"
+              size="xs"
+              aria-label="Send prompt"
+              onClick={submitPrompt}
+              disabled={isButtonDisabled}
+            >
+              <ArrowBendRightUpIcon weight="bold" />
+            </Button>
+          )}
+        </Flex>
       </Flex>
     </Flex>
   );
