@@ -24,7 +24,9 @@ import ContextMenu from "./ContextMenu";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
+import useAuthStore from "../store/authStore";
 import useSpeechInput from "../hooks/useSpeechInput";
+import { resolveSpeechLang } from "../utils/speechLang";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
@@ -79,8 +81,15 @@ export default function ChatInput({
   // Voice dictation. `speech` is null when the browser lacks the Web Speech
   // API, in which case the mic button is not rendered. Dictation appends to
   // whatever is already typed, so we snapshot that text when a session starts.
+  // The Web Speech API can't detect the spoken language, so we default it from
+  // the user's onboarding preference, then the browser language, then en-US.
+  const preferredLanguageCode = useAuthStore((s) => s.preferredLanguageCode);
   const dictationBaseRef = useRef("");
   const speech = useSpeechInput({
+    lang: resolveSpeechLang(
+      preferredLanguageCode,
+      typeof navigator !== "undefined" ? navigator.language : null
+    ),
     onStart: () => {
       dictationBaseRef.current = inputValue.trim()
         ? `${inputValue.trim()} `
