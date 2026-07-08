@@ -11,6 +11,7 @@ import {
   QueryType,
   ToolStepData,
   SuggestedDataset,
+  BlogArticle,
   AnalyseSuggestion,
   ViewAnalysisSuggestion,
 } from "@/app/types/chat";
@@ -25,6 +26,7 @@ import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
 import { buildViewContext } from "@/app/lib/view-context";
+import { mergeCitedArticlesIntoMap } from "@/app/lib/blog-citations";
 import { apiFetch } from "@/app/lib/api-client";
 import { getToolErrorMessage } from "@/app/lib/tool-display";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
@@ -39,6 +41,8 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
+import { effectiveAgentProfile } from "@/app/config/feature-flags";
+import useAgentProfileStore from "./agentProfileStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -53,6 +57,7 @@ interface ChatState {
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
   reasoningStartTime: number | null; // Timestamp when reasoning started
+  citedArticlesBySlug: Record<string, BlogArticle>;
   // The selected date range — the one query concern with no map/layer
   // counterpart, so it is owned here directly.
   dateRange: { start: Date; end: Date } | null;
@@ -65,6 +70,9 @@ interface ChatState {
   // (never on thread-history replay). A headless component navigates to
   // /dashboards/:id when this is set, then clears it.
   pendingDashboardRedirect: string | null;
+  // Layer ids the user dismissed from the chat-input context chips. Map layers
+  // stay visible; only the next message's ui_context / chip snapshot omits them.
+  excludedContextLayerIds: string[];
 }
 
 interface ChatActions {
@@ -91,8 +99,11 @@ interface ChatActions {
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
+  mergeCitedArticles: (articles: BlogArticle[]) => void;
   setDateRange: (range: { start: Date; end: Date }) => void;
   clearDateRange: () => void;
+  excludeLayerFromContext: (layerId: string) => void;
+  includeLayerInContext: (layerId: string) => void;
   // Fold the agent's own picks into the last-sent context so they are never
   // echoed back to the backend on the next user message.
   foldSentContext: (partial: Partial<ContextKeys>) => void;
@@ -130,9 +141,11 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   toolSteps: [],
   pendingTraceId: null,
   reasoningStartTime: null,
+  citedArticlesBySlug: {},
   dateRange: null,
   lastSentContext: emptyContextKeys(),
   pendingDashboardRedirect: null,
+  excludedContextLayerIds: [],
 };
 
 /**
@@ -188,6 +201,7 @@ async function processStreamMessage(
   attachTraceToLastAssistant: (traceId: string) => boolean,
   getPendingNudge: () => SuggestedDataset[] | null,
   setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
+  mergeCitedArticles: (articles: BlogArticle[]) => void,
   setGeneratingInsight: (generating: boolean) => void,
   // Only wired on live sends (not thread-history replay) — see
   // pendingDashboardRedirect on ChatState.
@@ -290,6 +304,10 @@ async function processStreamMessage(
       setPendingTraceId(null);
     }
   } else if (streamMessage.type === "tool") {
+    if (streamMessage.cited_articles?.length) {
+      mergeCitedArticles(streamMessage.cited_articles);
+    }
+
     // Add tool step to reasoning display
     if (streamMessage.name) {
       addToolStep(streamMessage);
@@ -386,6 +404,25 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setDateRange: (range) => set({ dateRange: range }),
   clearDateRange: () => set({ dateRange: null }),
+
+  excludeLayerFromContext: (layerId) =>
+    set((state) =>
+      state.excludedContextLayerIds.includes(layerId)
+        ? state
+        : {
+            excludedContextLayerIds: [
+              ...state.excludedContextLayerIds,
+              layerId,
+            ],
+          }
+    ),
+
+  includeLayerInContext: (layerId) =>
+    set((state) => ({
+      excludedContextLayerIds: state.excludedContextLayerIds.filter(
+        (id) => id !== layerId
+      ),
+    })),
 
   foldSentContext: (partial) =>
     set((state) => ({
@@ -505,10 +542,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // The chip snapshot records the complete context; ui_context only carries
     // the slots that changed since the last send (the backend is non-idempotent).
     const { layers, geoJsonRegistry } = useMapStore.getState();
+    const excludedLayerIds = new Set(get().excludedContextLayerIds);
     const { uiContext, keys, snapshot } = deriveContext(
       layers,
       geoJsonRegistry,
-      get().dateRange
+      get().dateRange,
+      excludedLayerIds
     );
 
     // Add user message with a read-only snapshot of the context it was sent with
@@ -531,10 +570,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // turn. Agent picks arriving during the stream fold their slots on top.
     set({ lastSentContext: keys });
 
+    // Send the agent profile as `ff` only when a profile is selected and the
+    // user type is allowed to use feature flags (else the backend 403s).
+    const ff = effectiveAgentProfile(
+      useAgentProfileStore.getState().agentProfile,
+      useAuthStore.getState().userType
+    );
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
       thread_id: threadId,
+      ...(ff && { ff }),
     };
 
     // Ambient view-state snapshot (what the user is currently looking at),
@@ -621,6 +667,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               (datasets) => {
                 pendingNudge = datasets;
               },
+              get().mergeCitedArticles,
               setGeneratingInsight,
               (dashboardId) => set({ pendingDashboardRedirect: dashboardId })
             );
@@ -800,6 +847,15 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     });
   },
 
+  mergeCitedArticles: (articles) => {
+    set((state) => ({
+      citedArticlesBySlug: mergeCitedArticlesIntoMap(
+        state.citedArticlesBySlug,
+        articles
+      ),
+    }));
+  },
+
   fetchThread: async (threadId: string, abort?: AbortController) => {
     const {
       setLoading,
@@ -807,12 +863,13 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       addMessage,
       addToolStep,
       clearToolSteps,
+      mergeCitedArticles,
       setDateRange,
     } = get();
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
-    set({ reasoningStartTime: Date.now() });
+    set({ reasoningStartTime: Date.now(), citedArticlesBySlug: {} });
     setLoading(true);
     setGeneratingInsight(false);
     // Set up abort controller for client-side timeout
@@ -887,7 +944,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               const { snapshot } = deriveContext(
                 layers,
                 geoJsonRegistry,
-                get().dateRange
+                get().dateRange,
+                new Set(get().excludedContextLayerIds)
               );
 
               addMessage({
@@ -924,6 +982,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               (datasets) => {
                 pendingNudgeThread = datasets;
               },
+              mergeCitedArticles,
               setGeneratingInsight,
               // Thread-history replay must never trigger navigation.
               () => {}
@@ -980,7 +1039,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       // Seed the last-sent context from the fully rehydrated layers + date
       // range, so the first new message on this thread only sends what changed.
       const { layers, geoJsonRegistry } = useMapStore.getState();
-      const { keys } = deriveContext(layers, geoJsonRegistry, get().dateRange);
+      const { keys } = deriveContext(
+        layers,
+        geoJsonRegistry,
+        get().dateRange,
+        new Set(get().excludedContextLayerIds)
+      );
       set({ lastSentContext: keys });
 
       // Flush any remaining tool steps for the last user message

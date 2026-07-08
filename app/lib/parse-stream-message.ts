@@ -64,6 +64,7 @@ export function parseStreamMessage(
       charts_data: langChainMessage.charts_data || [],
       codeact_parts: langChainMessage.codeact_parts || [],
       source_urls: langChainMessage.source_urls || [],
+      cited_articles: langChainMessage.cited_articles || undefined,
       insight_count: langChainMessage.insight_count || 0,
       insight_id: langChainMessage.insight_id || undefined,
       aoi: langChainMessage.aoi || undefined,

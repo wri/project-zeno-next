@@ -267,14 +267,7 @@ export default function InsightWorkspace() {
             }}
           >
             {/* Title row */}
-            <Flex
-              px={4}
-              py={1}
-              justify="space-between"
-              align="flex-start"
-              borderBottom="1px solid"
-              borderColor="#DDE2F5"
-            >
+            <Flex px={4} py={1} justify="space-between" align="flex-start">
               <Heading
                 size="sm"
                 fontWeight="semibold"
@@ -319,13 +312,13 @@ export default function InsightWorkspace() {
 
             {/* Params chips section */}
             {hasChips && paramsExpanded && (
-              <Box px={4} py={2} borderBottom="1px solid" borderColor="#DDE2F5">
+              <Box px={4} py={2}>
                 <AnalysisParamsChips chips={chips} />
               </Box>
             )}
 
             {/* Inner chart card */}
-            <Box px={2} py={2}>
+            <Box px={2} pt={0} pb={2}>
               <WidgetMessage widget={widget} inWorkspace />
             </Box>
           </Box>

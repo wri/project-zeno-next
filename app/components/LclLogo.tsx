@@ -1,16 +1,23 @@
 function LclLogo({
-  width = 14,
+  width,
+  height,
   fill = "currentColor",
   avatarOnly,
 }: {
   width?: number;
+  height?: number;
   fill?: string;
   avatarOnly?: boolean;
 }) {
+  // Size by height when given (the mark is portrait, so matching height — not
+  // width — keeps it level with other source glyphs); else fall back to width.
+  // The viewBox preserves the aspect ratio for whichever dimension is set.
+  const sizeProps = height != null ? { height } : { width: width ?? 14 };
+
   if (avatarOnly) {
     return (
       <svg
-        width={width}
+        {...sizeProps}
         viewBox="0 0 77 100"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -26,7 +33,7 @@ function LclLogo({
   }
   return (
     <svg
-      width={width}
+      {...sizeProps}
       viewBox="0 0 332 147"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

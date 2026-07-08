@@ -2,14 +2,20 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { cruise } from "dependency-cruiser";
 import { describe, expect, it } from "vitest";
-import { forbidden, options } from "./dependency-cruiser.config";
+import { forbiddenFor, options } from "./dependency-cruiser.config";
 
-const FEATURE_DIR = "src/features/analysis";
+// Discover every FSD slice under src/features/ so a new slice is governed by
+// the fitness function automatically — registration can't be forgotten.
+const FEATURES_ROOT = "src/features";
+const FEATURE_DIRS = readdirSync(FEATURES_ROOT)
+  .filter((entry) => statSync(join(FEATURES_ROOT, entry)).isDirectory())
+  .map((entry) => join(FEATURES_ROOT, entry));
 
-describe("architecture fitness — features/analysis (ADR 0010)", () => {
+describe.each(FEATURE_DIRS)("architecture fitness — %s (ADR 0010)", (dir) => {
   it("honors the FSD segment dependency direction", async () => {
+    const forbidden = forbiddenFor(dir);
     const result = await cruise(
-      [FEATURE_DIR],
+      [dir],
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { ruleSet: { forbidden }, outputType: "json", ...options } as any
     );
@@ -36,7 +42,7 @@ describe("architecture fitness — features/analysis (ADR 0010)", () => {
   it("the pure core (model + lib) makes no global network calls", () => {
     const offenders: string[] = [];
     for (const segment of ["model", "lib"]) {
-      for (const file of walk(join(FEATURE_DIR, segment))) {
+      for (const file of walk(join(dir, segment))) {
         if (!/\.tsx?$/.test(file)) continue;
         const src = readFileSync(file, "utf8");
         if (/\bfetch\s*\(/.test(src) || /\bXMLHttpRequest\b/.test(src)) {

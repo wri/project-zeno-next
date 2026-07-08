@@ -70,8 +70,9 @@ export default function ChatInput({
     messages,
     dateRange,
     clearDateRange,
+    excludeLayerFromContext,
   } = useChatStore();
-  const { layers, removeLayer, removeDatasetLayers } = useMapStore();
+  const { layers } = useMapStore();
   const {
     dataCatalogOpen,
     toggleDataCatalog,
@@ -79,13 +80,20 @@ export default function ChatInput({
     toggleAreasPanel,
   } = useSidebarStore();
 
-  // Pills are a presentational view of the current scope: visible dataset
-  // layers + visible area layers + the selected date range. Dataset/area
-  // sub-layers are excluded.
+  const excludedLayerIds = useChatStore((s) => s.excludedContextLayerIds);
+  const excludedSet = new Set(excludedLayerIds);
+
+  // Pills reflect layers/dates active in chat context. Dismissing a pill
+  // removes it from context only; the map layer stays visible.
   const datasetPillLayers = layers.filter(
-    (l) => typeof l.datasetId === "number" && !l.parentLayerId
+    (l) =>
+      typeof l.datasetId === "number" &&
+      !l.parentLayerId &&
+      !excludedSet.has(l.id)
   );
-  const areaPillLayers = layers.filter((l) => l.visible && isAreaLayer(l));
+  const areaPillLayers = layers.filter(
+    (l) => l.visible && isAreaLayer(l) && !excludedSet.has(l.id)
+  );
 
   const openContextMenu = (type: ChatContextType) => {
     setSelectedContextType(type);
@@ -193,7 +201,7 @@ export default function ChatInput({
               key={l.id}
               contextType="layer"
               content={l.name}
-              onClose={() => removeDatasetLayers(l.datasetId!)}
+              onClose={() => excludeLayerFromContext(l.id)}
               closeable
             />
           ))}
@@ -202,7 +210,7 @@ export default function ChatInput({
               key={l.id}
               contextType="area"
               content={l.selectionName ?? l.name}
-              onClose={() => removeLayer(l.id)}
+              onClose={() => excludeLayerFromContext(l.id)}
               closeable
             />
           ))}
@@ -223,7 +231,8 @@ export default function ChatInput({
         ref={setFocusEl}
         aria-label="Ask a question..."
         placeholder={message}
-        fontSize="sm"
+        // 16px on mobile — iOS Safari auto-zooms focused inputs below 16px.
+        fontSize={{ base: "md", md: "sm" }}
         minH="20px"
         autoresize
         maxH="10lh"

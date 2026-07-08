@@ -1,4 +1,7 @@
 import { FeatureCollection } from "geojson";
+import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+
+export type { BlogArticle };
 
 // A read-only snapshot of the context at the moment a user message was sent:
 // the area(s), dataset(s) and date range that were active. Rendered as static
@@ -19,6 +22,7 @@ export interface ToolStepData {
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
   source_urls?: string[];
+  cited_articles?: BlogArticle[];
   aoi?: object;
   timestamp: string;
 }
@@ -114,6 +118,7 @@ export interface ChatPrompt {
   query: string;
   query_type: string;
   thread_id: string;
+  ff?: string;
 }
 export interface UiContext {
   aoi_selected?: {
@@ -157,6 +162,7 @@ export interface ChatAPIRequest {
   thread_id: string;
   ui_context?: UiContext;
   view_context?: ViewContext;
+  ff?: string;
 }
 
 // Simplified message that our API sends to the client
@@ -174,6 +180,7 @@ export interface StreamMessage {
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
   source_urls?: string[];
+  cited_articles?: BlogArticle[];
   insight_count?: number;
   // Names of the tools an AI message is about to call. The agent announces a
   // tool call before its result streams back, so this is the earliest signal
@@ -314,6 +321,7 @@ export interface LangChainUpdate {
   // Optional provenance fields emitted by tools
   codeact_parts?: CodeActPart[];
   source_urls?: string[];
+  cited_articles?: BlogArticle[];
   insight_count: number;
   messages: [
     {
