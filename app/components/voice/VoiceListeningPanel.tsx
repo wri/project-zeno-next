@@ -36,7 +36,7 @@ export default function VoiceListeningPanel({
   return (
     <Flex
       flexDir="column"
-      animation={reducedMotion ? undefined : "vpFadeUp 0.22s ease both"}
+      animation={reducedMotion ? undefined : "fadeSlideIn 0.22s ease both"}
     >
       {/* Visual: red dot + "Listening" + timer */}
       <Flex align="center" gap="2" minH="34px" mb="2.5">
