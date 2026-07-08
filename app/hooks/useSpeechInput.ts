@@ -220,19 +220,15 @@ export default function useSpeechInput(
     [phase, openRecognition]
   );
 
-  const retry = useCallback(() => {
-    if (errorType === "no-speech") {
-      start();
-    } else {
-      setErrorType(null);
-      setPhase("idle");
-    }
-  }, [errorType, start]);
-
   const dismissError = useCallback(() => {
     setErrorType(null);
     setPhase("idle");
   }, []);
+
+  const retry = useCallback(() => {
+    if (errorType === "no-speech") start();
+    else dismissError();
+  }, [errorType, start, dismissError]);
 
   // Tear down any in-flight recognition and timer on unmount.
   useEffect(() => {

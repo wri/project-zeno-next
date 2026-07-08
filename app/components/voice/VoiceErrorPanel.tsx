@@ -14,7 +14,7 @@ interface ErrorSpec {
   body: string;
   Icon: typeof MicrophoneSlashIcon;
   RetryIcon: typeof ArrowClockwiseIcon;
-  retryLabel: string;
+  /** Semantic background/foreground tokens for the icon badge. */
   tintBg: string;
   tintFg: string;
 }
@@ -25,36 +25,32 @@ const ERROR_SPECS: Record<VoiceErrorType, ErrorSpec> = {
     body: "Zeno can't hear you. Allow microphone access in your browser's site settings to use voice input.",
     Icon: MicrophoneSlashIcon,
     RetryIcon: ArrowClockwiseIcon,
-    retryLabel: "Try again",
-    tintBg: "#FDECEA",
-    tintFg: "red.500",
+    tintBg: "bg.error",
+    tintFg: "fg.error",
   },
   "no-speech": {
     title: "No speech detected",
     body: "I didn't catch anything. Check that your microphone is working and try again.",
     Icon: WaveformIcon,
     RetryIcon: MicrophoneIcon,
-    retryLabel: "Try again",
-    tintBg: "#FFF4E5",
-    tintFg: "#C2410C",
+    tintBg: "bg.warning",
+    tintFg: "fg.warning",
   },
   "no-mic": {
     title: "No microphone found",
     body: "Connect a microphone to use voice input, or type your question instead.",
     Icon: PlugsIcon,
     RetryIcon: ArrowClockwiseIcon,
-    retryLabel: "Try again",
-    tintBg: "#FDECEA",
-    tintFg: "red.500",
+    tintBg: "bg.error",
+    tintFg: "fg.error",
   },
   other: {
     title: "Voice input unavailable",
     body: "Something went wrong with voice input. Try again, or type your question instead.",
     Icon: MicrophoneSlashIcon,
     RetryIcon: ArrowClockwiseIcon,
-    retryLabel: "Try again",
-    tintBg: "#FDECEA",
-    tintFg: "red.500",
+    tintBg: "bg.error",
+    tintFg: "fg.error",
   },
 };
 
@@ -79,7 +75,7 @@ export default function VoiceErrorPanel({
   return (
     <Flex
       gap="3"
-      animation={reducedMotion ? undefined : "vpFadeUp 0.22s ease both"}
+      animation={reducedMotion ? undefined : "fadeSlideIn 0.22s ease both"}
     >
       <Box
         as="span"
@@ -111,7 +107,7 @@ export default function VoiceErrorPanel({
             gap="1.5"
           >
             <RetryIcon size={14} />
-            {spec.retryLabel}
+            Try again
           </Button>
           <Button
             type="button"

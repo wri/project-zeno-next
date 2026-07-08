@@ -12,7 +12,7 @@ const REGION_QUALIFIED: Record<string, string> = {
 
 const DEFAULT_LANG = "en-US";
 
-export interface VoiceLanguage {
+interface VoiceLanguage {
   /** BCP-47 tag passed to SpeechRecognition. */
   code: string;
   label: string;
