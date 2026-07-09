@@ -182,7 +182,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     citation:
       '"Global Integrated Disturbance Alerts". UMD/GLAD and WUR, accessed through Global Forest Watch.',
     tile_url:
-      "https://tiles.globalforestwatch.org/gfw_integrated_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
+      "https://tiles.globalforestwatch.org/gfw_integrated_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
     legend: {
       title: "Integrated Deforestation Alerts",
       color: "#C92A6D",
