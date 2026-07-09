@@ -39,16 +39,17 @@ export function useDashboard(id: string) {
 
 export function useAoiSearch(query: string, source: string | null) {
   const trimmed = query.trim();
-  const searchableQuery = trimmed.length >= 3 ? trimmed : "";
+  const enabled = trimmed.length >= 2;
 
   return useQuery({
-    queryKey: dashboardKeys.aois(searchableQuery, source),
+    queryKey: dashboardKeys.aois(trimmed, source),
     queryFn: () =>
       searchAois({
-        name: searchableQuery || undefined,
+        name: trimmed,
         source,
-        limit: searchableQuery ? 25 : 8,
+        limit: 25,
       }),
+    enabled,
     placeholderData: keepPreviousData,
     staleTime: 10_000,
   });

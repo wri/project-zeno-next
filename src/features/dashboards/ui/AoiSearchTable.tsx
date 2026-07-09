@@ -171,9 +171,10 @@ export default function AoiSearchTable({
   } = useAoiSearch(query, source);
   const showSkeletons = isLoading || (isFetching && results.length === 0);
   const trimmed = query.trim();
+  const canSearch = trimmed.length >= 2;
   const hint =
-    trimmed.length > 0 && trimmed.length < 3
-      ? "Type at least 3 characters to search by name."
+    trimmed.length > 0 && !canSearch
+      ? "Type at least 2 characters to search by name."
       : null;
 
   return (
@@ -245,6 +246,14 @@ export default function AoiSearchTable({
                 <Table.Cell colSpan={4}>
                   <Text color="fg.error" py={4}>
                     Could not load areas. Try another search.
+                  </Text>
+                </Table.Cell>
+              </Table.Row>
+            ) : !canSearch ? (
+              <Table.Row bg="transparent">
+                <Table.Cell colSpan={4}>
+                  <Text color="fg.muted" py={4}>
+                    Search for an area to start a dashboard.
                   </Text>
                 </Table.Cell>
               </Table.Row>
