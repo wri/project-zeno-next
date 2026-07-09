@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import useInsightStore from "../insightStore";
 import { InsightWidget } from "@/app/types/chat";
 
-const widget = (title: string): InsightWidget => ({
+const widget = (title: string, id?: string): InsightWidget => ({
+  ...(id ? { id } : {}),
   type: "bar",
   title,
   description: "",
@@ -36,5 +37,22 @@ describe("insightStore", () => {
     useInsightStore.getState().addInsights([widget("A")]);
     useInsightStore.getState().clearInsights();
     expect(useInsightStore.getState().insights).toEqual([]);
+  });
+
+  it("addInsight appends one and dedupes by id", () => {
+    useInsightStore.getState().addInsight(widget("A", "a"));
+    useInsightStore.getState().addInsight(widget("A again", "a"));
+    const { insights } = useInsightStore.getState();
+    expect(insights).toHaveLength(1);
+    expect(insights[0].title).toBe("A");
+  });
+
+  it("removeInsight hides by id", () => {
+    useInsightStore.getState().addInsight(widget("A", "a"));
+    useInsightStore.getState().addInsight(widget("B", "b"));
+    useInsightStore.getState().removeInsight("a");
+    const { insights } = useInsightStore.getState();
+    expect(insights).toHaveLength(1);
+    expect(insights[0].id).toBe("b");
   });
 });

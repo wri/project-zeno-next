@@ -40,8 +40,11 @@ interface ChatPanelCompactProps {
 function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
   const { promptsExhausted } = usePromptQuota();
   const { messages } = useChatStore();
-  const { dataCatalogOpen, areasPanelOpen } = useSidebarStore();
-  const chatLeftPx = getCompactChatLeftPx(dataCatalogOpen || areasPanelOpen);
+  const { dataCatalogOpen, areasPanelOpen, insightsPanelOpen } =
+    useSidebarStore();
+  const chatLeftPx = getCompactChatLeftPx(
+    dataCatalogOpen || areasPanelOpen || insightsPanelOpen
+  );
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
   );

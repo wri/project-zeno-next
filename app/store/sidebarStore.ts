@@ -30,11 +30,18 @@ interface SidebarState {
   toggleDataCatalog: () => void;
   /**
    * Whether the Areas panel is open. Mutually exclusive with `dataCatalogOpen`
-   * (same column slot).
+   * and `insightsPanelOpen` (same column slot).
    */
   areasPanelOpen: boolean;
   setAreasPanelOpen: (open: boolean) => void;
   toggleAreasPanel: () => void;
+  /**
+   * Whether the Insights panel is open. Mutually exclusive with the Data Catalog
+   * and Areas panels (same column slot).
+   */
+  insightsPanelOpen: boolean;
+  setInsightsPanelOpen: (open: boolean) => void;
+  toggleInsightsPanel: () => void;
 }
 
 function updateThreadInCache(
@@ -62,29 +69,67 @@ const useSidebarStore = create<SidebarState>(() => ({
   setDataCatalogOpen: (open) =>
     useSidebarStore.setState(
       open
-        ? { dataCatalogOpen: true, areasPanelOpen: false }
+        ? {
+            dataCatalogOpen: true,
+            areasPanelOpen: false,
+            insightsPanelOpen: false,
+          }
         : { dataCatalogOpen: false }
     ),
   toggleDataCatalog: () =>
     useSidebarStore.setState((state) => {
       const next = !state.dataCatalogOpen;
       return next
-        ? { dataCatalogOpen: true, areasPanelOpen: false }
+        ? {
+            dataCatalogOpen: true,
+            areasPanelOpen: false,
+            insightsPanelOpen: false,
+          }
         : { dataCatalogOpen: false };
     }),
   areasPanelOpen: false,
   setAreasPanelOpen: (open) =>
     useSidebarStore.setState(
       open
-        ? { areasPanelOpen: true, dataCatalogOpen: false }
+        ? {
+            areasPanelOpen: true,
+            dataCatalogOpen: false,
+            insightsPanelOpen: false,
+          }
         : { areasPanelOpen: false }
     ),
   toggleAreasPanel: () =>
     useSidebarStore.setState((state) => {
       const next = !state.areasPanelOpen;
       return next
-        ? { areasPanelOpen: true, dataCatalogOpen: false }
+        ? {
+            areasPanelOpen: true,
+            dataCatalogOpen: false,
+            insightsPanelOpen: false,
+          }
         : { areasPanelOpen: false };
+    }),
+  insightsPanelOpen: false,
+  setInsightsPanelOpen: (open) =>
+    useSidebarStore.setState(
+      open
+        ? {
+            insightsPanelOpen: true,
+            dataCatalogOpen: false,
+            areasPanelOpen: false,
+          }
+        : { insightsPanelOpen: false }
+    ),
+  toggleInsightsPanel: () =>
+    useSidebarStore.setState((state) => {
+      const next = !state.insightsPanelOpen;
+      return next
+        ? {
+            insightsPanelOpen: true,
+            dataCatalogOpen: false,
+            areasPanelOpen: false,
+          }
+        : { insightsPanelOpen: false };
     }),
 
   toggleSidebar: () =>
