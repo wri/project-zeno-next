@@ -52,6 +52,7 @@ function PageHeader() {
   const { logout } = useLogout();
   const { threads } = useThreadsInfinite();
   const pathname = usePathname() ?? "";
+  const onMap = pathname.startsWith("/app");
   const onDashboards = pathname.startsWith("/dashboards");
   const dashboardFeatureEnabled = useFeatureFlag("dashboard");
 
@@ -285,7 +286,7 @@ function PageHeader() {
               href: "/app?ff=dashboard",
               label: "Map",
               icon: <MapTrifoldIcon size={14} />,
-              active: !onDashboards,
+              active: onMap,
             },
             {
               href: "/dashboards?ff=dashboard",

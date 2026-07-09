@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
@@ -8,7 +9,7 @@ import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 export default function DashboardFeatureGate({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const router = useRouter();
   const enabled = useFeatureFlag("dashboard");

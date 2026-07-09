@@ -25,7 +25,7 @@ export default function DashboardsPage() {
   const handleCreateDashboard = (aoi: AoiSearchResult) => {
     createDashboard.mutate(aoi, {
       onSuccess: (dashboard) => {
-        router.push(`/dashboards/${dashboard.id}`);
+        router.push(`/dashboards/${dashboard.id}?ff=dashboard`);
       },
       onError: (error) => {
         toaster.create({

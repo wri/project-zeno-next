@@ -28,7 +28,7 @@ export default function DashboardDetailPage() {
         <Flex direction="column" gap={4}>
           <Flex align="center" gap={2} color="fg.muted" fontSize="sm">
             <ChakraLink asChild color="fg.muted">
-              <Link href="/dashboards">Dashboards</Link>
+              <Link href="/dashboards?ff=dashboard">Dashboards</Link>
             </ChakraLink>
             <Text>/</Text>
             <Text color="fg">{dashboard?.name ?? "Dashboard"}</Text>

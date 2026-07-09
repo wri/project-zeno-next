@@ -40,5 +40,5 @@ export async function createDashboard(
 export function createDashboardPayloadFromAoi(
   aoi: AoiSearchResult
 ): DashboardCreateRequest {
-  return DashboardCreateRequestSchema.parse(aoiToDashboardCreateRequest(aoi));
+  return aoiToDashboardCreateRequest(aoi);
 }

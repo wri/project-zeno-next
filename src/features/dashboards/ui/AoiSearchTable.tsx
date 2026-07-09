@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ComponentProps } from "react";
 import {
   Box,
   Button,
@@ -43,7 +44,7 @@ function toAoiSelection(result: AoiSearchResult): AOISelection {
   };
 }
 
-function HeadCell(props: React.ComponentProps<typeof Table.ColumnHeader>) {
+function HeadCell(props: ComponentProps<typeof Table.ColumnHeader>) {
   return (
     <Table.ColumnHeader
       fontSize="10px"
@@ -95,9 +96,7 @@ function ResultRow({
     <Table.Row
       role="group"
       bg="transparent"
-      cursor={disabled ? "default" : "pointer"}
       opacity={disabled ? 0.6 : 1}
-      onClick={disabled ? undefined : () => onCreate(result)}
       _hover={disabled ? undefined : { bg: "blue.50" }}
     >
       <Table.Cell>
@@ -141,10 +140,7 @@ function ResultRow({
           opacity={{ base: 1, md: 0 }}
           _groupHover={{ opacity: 1 }}
           _focusVisible={{ opacity: 1 }}
-          onClick={(event) => {
-            event.stopPropagation();
-            onCreate(result);
-          }}
+          onClick={() => onCreate(result)}
         >
           New dashboard
           <ArrowRightIcon size={14} />
