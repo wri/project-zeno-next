@@ -37,9 +37,10 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
         onToggleSize={onToggleSize}
       />
 
-      {/* Scrollable message area */}
-      <Box flex="1" overflowY="auto" px={3} pt={3} pb={0} minH={0}>
-        <ChatMessages />
+      {/* Scrollable message area. Top padding is passed to ChatMessages
+          instead of set on this scroller — see ChatMessagesProps.pt. */}
+      <Box flex="1" overflowY="auto" px={3} pb={0} minH={0}>
+        <ChatMessages pt={3} />
       </Box>
 
       {/* Input area — rounded bordered box. pb matches ChatPanelCompact so the
