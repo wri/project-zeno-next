@@ -13,12 +13,9 @@ import {
 
 import { toaster } from "@/app/components/ui/toaster";
 import type { AoiSearchResult } from "../api/schemas";
-import {
-  useCreateDashboardFromAoi,
-  useDashboards,
-} from "../model/dashboardQueries";
 import AoiSearchTable from "./AoiSearchTable";
 import DashboardCard from "./DashboardCard";
+import { useCreateDashboardFromAoi, useDashboards } from "./dashboardQueries";
 
 export default function DashboardsPage() {
   const router = useRouter();

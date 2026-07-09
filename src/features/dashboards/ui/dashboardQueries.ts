@@ -4,13 +4,14 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+
+import { searchAois } from "../api/aois";
 import {
   createDashboard,
   createDashboardPayloadFromAoi,
   getDashboard,
   listDashboards,
 } from "../api/dashboards";
-import { searchAois } from "../api/aois";
 import type { AoiSearchResult } from "../api/schemas";
 
 export const dashboardKeys = {

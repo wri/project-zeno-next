@@ -20,8 +20,8 @@ import {
 import { AreaCatalogThumbnail } from "@/app/components/AreaCatalogThumbnail";
 import type { AOISelection } from "@/app/types/chat";
 import type { AoiSearchResult } from "../api/schemas";
-import { useAoiSearch } from "../model/dashboardQueries";
 import { AOI_SOURCE_OPTIONS, sourceLabel, subtypeLabel } from "../lib/aoi";
+import { useAoiSearch } from "./dashboardQueries";
 
 function toAoiSelection(result: AoiSearchResult): AOISelection {
   const bbox =

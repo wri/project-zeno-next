@@ -13,9 +13,9 @@ import {
 } from "@chakra-ui/react";
 import { MapPinIcon, SquaresFourIcon } from "@phosphor-icons/react";
 
-import { useDashboard } from "../model/dashboardQueries";
 import { sourceLabel, subtypeLabel } from "../lib/aoi";
 import { updatedLabel } from "../lib/dates";
+import { useDashboard } from "./dashboardQueries";
 
 export default function DashboardDetailPage() {
   const params = useParams<{ id: string }>();
