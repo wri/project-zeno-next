@@ -33,18 +33,29 @@ export interface OutcomeMixDatum {
 
 interface OutcomeMixBarsProps {
   readonly data: readonly OutcomeMixDatum[];
+  /** Outcome labels left → right (best → worst); also the color-map keys. */
+  readonly order?: readonly string[];
+  readonly colors?: Readonly<Record<string, string>>;
   readonly barHeight?: number;
+  /**
+   * When set, segments render clickable and report (row label, outcome label)
+   * — i.e. one cohort × outcome cell of the mix.
+   */
+  readonly onSegmentClick?: (label: string, outcome: string) => void;
 }
 
-export function OutcomeMixBars({ data, barHeight = 28 }: OutcomeMixBarsProps) {
+export function OutcomeMixBars({
+  data,
+  order = OUTCOME_SEVERITY_ORDER,
+  colors = OUTCOME_COLORS,
+  barHeight = 28,
+  onSegmentClick,
+}: OutcomeMixBarsProps) {
   const height = Math.max(160, Math.min(600, data.length * barHeight + 60));
   const rows = data.map((d) => {
     const total = Math.max(1, d.total);
     const shares = Object.fromEntries(
-      OUTCOME_SEVERITY_ORDER.map((label) => [
-        label,
-        (d.counts[label] ?? 0) / total,
-      ])
+      order.map((label) => [label, (d.counts[label] ?? 0) / total])
     );
     return { label: d.label, total: d.total, ...shares };
   });
@@ -109,16 +120,33 @@ export function OutcomeMixBars({ data, barHeight = 28 }: OutcomeMixBarsProps) {
           itemSorter={keepPayloadOrder}
           content={<ChartLegend />}
         />
-        {OUTCOME_SEVERITY_ORDER.map((label) => (
+        {order.map((label) => (
           <Bar
             key={label}
             dataKey={label}
             name={label}
             stackId="mix"
-            fill={OUTCOME_COLORS[label]}
+            fill={colors[label]}
             stroke={CHART_CHROME.surface}
             strokeWidth={1}
             isAnimationActive={false}
+            cursor={onSegmentClick ? "pointer" : undefined}
+            onClick={
+              onSegmentClick
+                ? (entry: unknown) => {
+                    // Recharts hands the bar's datum either directly or under
+                    // `payload` depending on version — read both defensively.
+                    const raw = entry as {
+                      payload?: { label?: unknown };
+                      label?: unknown;
+                    };
+                    const rowLabel = raw?.payload?.label ?? raw?.label;
+                    if (typeof rowLabel === "string" && rowLabel) {
+                      onSegmentClick(rowLabel, label);
+                    }
+                  }
+                : undefined
+            }
           />
         ))}
       </BarChart>

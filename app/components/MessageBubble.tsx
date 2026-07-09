@@ -62,6 +62,8 @@ interface MessageBubbleProps {
   isConsecutive?: boolean; // Whether this message is consecutive to the previous one of the same type
   isFirst?: boolean;
   isLast?: boolean;
+  /** Attached to the bubble's root so ChatMessages can track its position. */
+  bubbleRef?: React.Ref<HTMLDivElement>;
 }
 
 function MessageBubble({
@@ -69,6 +71,7 @@ function MessageBubble({
   isConsecutive = false,
   isFirst = false,
   isLast = false,
+  bubbleRef,
 }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const clipboard = useClipboard({ value: message.message });
@@ -313,10 +316,14 @@ function MessageBubble({
 
   return (
     <Box
+      ref={bubbleRef}
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
       mb={isConsecutive || message.suppressFooter ? 1 : 4}
-      _first={{ base: { mt: 3 }, md: { mt: 6 } }}
+      // Driven by the isFirst prop rather than a :first-child selector so the
+      // PinnedPrompt overlay (rendered as the list's first child) can't
+      // disturb the spacing.
+      mt={isFirst ? { base: 3, md: 6 } : undefined}
     >
       <Box
         display="flex"
