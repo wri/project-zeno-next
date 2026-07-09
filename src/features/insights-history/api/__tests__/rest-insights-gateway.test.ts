@@ -11,12 +11,13 @@ function mockFetch(body: unknown, status = 200) {
 
 const rawInsight = {
   id: "ins-1",
-  title: "Tree cover loss",
-  source: "GFW",
+  insight_text: "Tree cover loss in Brazil.",
   created_at: "2024-05-01T00:00:00.000Z",
+  is_public: false, // unknown-to-us field — must be tolerated, not rejected
   charts: [
     {
       id: "ch-1",
+      title: "Annual tree cover loss",
       chart_type: "bar",
       x_axis: "year",
       y_axis: "value",
@@ -34,14 +35,16 @@ describe("RestInsightsGateway.list", () => {
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({
       id: "ins-1",
-      title: "Tree cover loss",
-      source: "GFW",
       createdAt: "2024-05-01T00:00:00.000Z",
+      insightText: "Tree cover loss in Brazil.",
       verification: "ai-generated",
     });
+    // The real payload has no insight-level title/source.
+    expect(records[0].source).toBeUndefined();
     expect(records[0].charts[0]).toMatchObject({
       id: "ch-1",
       type: "bar",
+      title: "Annual tree cover loss",
       xAxis: "year",
       yAxis: "value",
     });

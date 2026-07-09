@@ -9,9 +9,8 @@ import { useUserInsights } from "../use-user-insights";
 
 const record: InsightRecord = {
   id: "ins-1",
-  title: "Tree cover loss",
-  source: "GFW",
   createdAt: "2024-05-01T00:00:00.000Z",
+  insightText: "Tree cover loss.",
   verification: "ai-generated",
   charts: [],
 };

@@ -20,13 +20,13 @@ const RawChartSchema = z.object({
   chart_data: z.array(z.record(z.string(), z.unknown())).default([]),
 });
 
+// Mirrors the backend `InsightResponse`. Only `id` is required; the rest default
+// so a sparse row still parses. Unknown keys (user_id, thread_id, is_public,
+// follow_up_suggestions, statistics_ids, codeact_parts) are ignored by Zod.
 const RawInsightSchema = z.object({
   id: z.string(),
-  title: z.string().optional(),
-  dataset: z.string().optional(),
-  source: z.string().optional(),
-  insight_text: z.string().optional(),
-  created_at: z.string().optional(),
+  insight_text: z.string().default(""),
+  created_at: z.string().default(""),
   charts: z.array(RawChartSchema).default([]),
 });
 
@@ -49,11 +49,9 @@ function toInsightRecord(raw: RawInsight): InsightRecord {
 
   return {
     id: raw.id,
-    title: raw.title ?? charts[0]?.title ?? "Insight",
-    source: raw.source ?? raw.dataset ?? "",
-    createdAt: raw.created_at ?? "",
-    verification: "ai-generated",
+    createdAt: raw.created_at,
     insightText: raw.insight_text,
+    verification: "ai-generated",
     charts,
   };
 }

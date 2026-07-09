@@ -92,7 +92,7 @@ interface InsightCardItem {
 function recordToItems(record: InsightRecord): InsightCardItem[] {
   return chartsToWidgets(record.charts).map((widget) => ({
     widget,
-    source: record.source,
+    source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,
   }));

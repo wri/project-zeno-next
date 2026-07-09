@@ -4,22 +4,26 @@ import type { Chart } from "./chart";
 export type InsightVerification = "verified" | "ai-generated";
 
 /**
- * One stored insight from `GET /api/insights` (newest-first). An insight owns
- * many charts. Card-level metadata (title, source, timestamp, verification)
- * lives here; the charts drive the detail view via `chartsToWidgets`.
+ * One stored insight from `GET /api/insights` (newest-first), mirroring the
+ * backend `InsightResponse`. An insight owns many charts plus a narrative
+ * `insightText`, but has no title or source of its own — the card derives its
+ * title from the first chart, and no source/methodology is available.
  *
- * Shape is provisional until confirmed against a live payload; the adapter
- * validates each row and drops non-conforming ones.
+ * `verification` is a frontend classification, not a backend field: the API has
+ * no "verified" concept, so live insights are always "ai-generated"; the
+ * "verified" value only comes from curated fixtures.
  */
 export interface InsightRecord {
   id: string;
-  title: string;
-  /** Source line shown on the card (e.g. the dataset / methodology name). */
-  source: string;
-  /** ISO-8601 timestamp of when the insight was generated. */
+  /** ISO-8601 timestamp (backend `created_at`). */
   createdAt: string;
+  /** Narrative text describing the insight (backend `insight_text`). */
+  insightText: string;
   verification: InsightVerification;
-  /** Optional narrative text describing the insight. */
-  insightText?: string;
+  /**
+   * Optional source / methodology label for the card. The backend provides none
+   * for AI-generated insights; only curated Verified fixtures set it.
+   */
+  source?: string;
   charts: Chart[];
 }

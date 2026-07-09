@@ -7,7 +7,6 @@ import type { InsightRecord } from "@/src/entities/insight";
 export const verifiedInsights: InsightRecord[] = [
   {
     id: "verified-tcl-brazil",
-    title: "Tree cover loss — Brazil",
     source: "Global Forest Watch · Hansen/UMD",
     createdAt: "2024-01-15T00:00:00.000Z",
     verification: "verified",
@@ -35,7 +34,6 @@ export const verifiedInsights: InsightRecord[] = [
   },
   {
     id: "verified-kba-coverage",
-    title: "Protected-area coverage of Key Biodiversity Areas",
     source: "WDPA · KBA Partnership",
     createdAt: "2024-02-02T00:00:00.000Z",
     verification: "verified",
