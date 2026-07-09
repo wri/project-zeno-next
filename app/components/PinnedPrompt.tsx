@@ -24,8 +24,8 @@ function PinnedPrompt({ message, onJump }: PinnedPromptProps) {
       <Box
         key={message.id}
         as="button"
+        type="button"
         onClick={onJump}
-        title="Scroll back to this message"
         display="block"
         w="100%"
         textAlign="left"
