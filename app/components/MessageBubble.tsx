@@ -43,7 +43,7 @@ interface MessageBubbleProps {
   isFirst?: boolean;
   isLast?: boolean;
   /** Attached to the bubble's root so ChatMessages can track its position. */
-  ref?: React.Ref<HTMLDivElement>;
+  bubbleRef?: React.Ref<HTMLDivElement>;
 }
 
 function MessageBubble({
@@ -51,7 +51,7 @@ function MessageBubble({
   isConsecutive = false,
   isFirst = false,
   isLast = false,
-  ref,
+  bubbleRef,
 }: MessageBubbleProps) {
   const [formattedTimestamp, setFormattedTimestamp] = useState("");
   const clipboard = useClipboard({ value: message.message });
@@ -259,7 +259,7 @@ function MessageBubble({
 
   return (
     <Box
-      ref={ref}
+      ref={bubbleRef}
       display="flex"
       justifyContent={isUser ? "flex-end" : "flex-start"}
       mb={isConsecutive || message.suppressFooter ? 1 : 4}

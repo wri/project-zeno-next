@@ -48,6 +48,10 @@ export function usePinnedPrompt(
       if (!node) continue;
       const rect = node.getBoundingClientRect();
       prompts.push({ id: message.id, top: rect.top, bottom: rect.bottom });
+      // resolvePinnedPromptId stops at the first prompt still crossing or below
+      // the container top, so measuring any further prompts is wasted layout
+      // work — bail as soon as we've collected that boundary prompt.
+      if (rect.bottom > containerTop) break;
     }
     setPinnedId(resolvePinnedPromptId(prompts, containerTop));
   }, [containerRef]);

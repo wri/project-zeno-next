@@ -119,7 +119,7 @@ function ChatMessages({ pt }: ChatMessagesProps) {
           <Fragment key={message.id}>
             {isLastUserMessage && <Box ref={lastUserMessageRef} />}
             <MessageBubble
-              ref={
+              bubbleRef={
                 message.type === "user"
                   ? registerPromptNode(message.id)
                   : undefined
