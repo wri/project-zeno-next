@@ -1,9 +1,19 @@
 "use client";
 
-import { Box, Button, Flex, HStack, Portal, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  HStack,
+  Icon,
+  Link,
+  Portal,
+  Text,
+} from "@chakra-ui/react";
 import Image from "next/image";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import {
+  ArrowSquareOutIcon,
   CaretDownIcon,
   CaretUpIcon,
   ShootingStarIcon,
@@ -22,7 +32,10 @@ const LEGACY_STORAGE_KEYS = [
 
 const ANNOUNCEMENT = {
   title: "Becoming Global Nature Watch Horizon",
-  body: "The AI-driven platform preview you are exploring today is becoming Global Nature Watch Horizon. This change is part of a broader evolution underway as Global Forest Watch becomes Global Nature Watch, expanding beyond forests while integrating new technologies. Global Nature Watch Horizon will play an important role in this next chapter. Read this blog to learn more.",
+  body: "The AI-driven platform preview you are exploring today is becoming Global Nature Watch Horizon. This change is part of a broader evolution underway as Global Forest Watch becomes Global Nature Watch, expanding beyond forests while integrating new technologies. Global Nature Watch Horizon will play an important role in this next chapter.",
+  linkText: "Read this blog to learn more.",
+  linkUrl:
+    "https://www.globalforestwatch.org/blog/data-and-tools/gfw-now-global-nature-watch/?utm_medium=notification&utm_source=homepage&utm_campaign=gnwannoucement",
 };
 
 const FEATURE_IMAGES: Record<number, string> = {
@@ -216,16 +229,33 @@ const WhatsNewModal = () => {
               )}
             </Flex>
             {announcementOpen && (
-              <Box px={6} pb={4}>
+              <Box px={6} pb={2}>
                 <Text
                   fontSize="14px"
                   color="#3a4048"
                   fontFamily="'IBM Plex Sans', sans-serif"
                   lineHeight={1.5}
-                  mb={3}
+                  mb={2}
                 >
                   {ANNOUNCEMENT.body}
                 </Text>
+                <Link
+                  href={ANNOUNCEMENT.linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="fg.link"
+                  fontSize="14px"
+                  textDecoration="underline"
+                  display="inline-flex"
+                  alignItems="center"
+                  gap={1}
+                  whiteSpace="nowrap"
+                >
+                  {ANNOUNCEMENT.linkText}
+                  <Icon asChild boxSize="14px">
+                    <ArrowSquareOutIcon />
+                  </Icon>
+                </Link>
               </Box>
             )}
           </Box>
