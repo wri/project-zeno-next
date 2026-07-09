@@ -38,6 +38,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -52,6 +53,7 @@ function PageHeader() {
   const { threads } = useThreadsInfinite();
   const pathname = usePathname() ?? "";
   const onDashboards = pathname.startsWith("/dashboards");
+  const dashboardFeatureEnabled = useFeatureFlag("dashboard");
 
   const currentThread = currentThreadId
     ? threads.find((t) => t.id === currentThreadId)
@@ -269,46 +271,48 @@ function PageHeader() {
           </Tooltip>
         </Flex>
       </Flex>
-      <Flex
-        gap="0"
-        alignItems="center"
-        hideBelow="md"
-        position="absolute"
-        left="50%"
-        transform="translateX(-50%)"
-      >
-        {[
-          {
-            href: "/app",
-            label: "Map",
-            icon: <MapTrifoldIcon size={14} />,
-            active: !onDashboards,
-          },
-          {
-            href: "/dashboards",
-            label: "Dashboards",
-            icon: <SquaresFourIcon size={14} />,
-            active: onDashboards,
-          },
-        ].map(({ href, label, icon, active }) => (
-          <Button
-            key={href}
-            asChild
-            size="xs"
-            variant={active ? "solid" : "ghost"}
-            colorPalette={active ? "primary" : undefined}
-            color={active ? undefined : inverseColor}
-            _hover={active ? undefined : { bg: inverseHoverBg }}
-            _focusVisible={focusRing}
-            fontWeight="medium"
-          >
-            <Link href={href} aria-current={active ? "page" : undefined}>
-              {icon}
-              {label}
-            </Link>
-          </Button>
-        ))}
-      </Flex>
+      {dashboardFeatureEnabled && (
+        <Flex
+          gap="0"
+          alignItems="center"
+          hideBelow="md"
+          position="absolute"
+          left="50%"
+          transform="translateX(-50%)"
+        >
+          {[
+            {
+              href: "/app?ff=dashboard",
+              label: "Map",
+              icon: <MapTrifoldIcon size={14} />,
+              active: !onDashboards,
+            },
+            {
+              href: "/dashboards?ff=dashboard",
+              label: "Dashboards",
+              icon: <SquaresFourIcon size={14} />,
+              active: onDashboards,
+            },
+          ].map(({ href, label, icon, active }) => (
+            <Button
+              key={href}
+              asChild
+              size="xs"
+              variant={active ? "solid" : "ghost"}
+              colorPalette={active ? "primary" : undefined}
+              color={active ? undefined : inverseColor}
+              _hover={active ? undefined : { bg: inverseHoverBg }}
+              _focusVisible={focusRing}
+              fontWeight="medium"
+            >
+              <Link href={href} aria-current={active ? "page" : undefined}>
+                {icon}
+                {label}
+              </Link>
+            </Button>
+          ))}
+        </Flex>
+      )}
       <Flex gap="6" alignItems="center" hideBelow="md">
         <Button
           variant="ghost"
