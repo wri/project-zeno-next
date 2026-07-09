@@ -56,6 +56,48 @@ export function outcomeOrderIndex(label: string): number {
 }
 
 /**
+ * Refined-outcome display colors, keyed by the REFINED_LABELS values in
+ * lib/analytics/outcomeRefine. Keep the label strings in sync with that map.
+ * Same status scale as OUTCOME_COLORS: green = answered (mint/cyan steps split
+ * degraded and context answers), gray = defer/UI-event, amber = soft error, red
+ * = empty answer, dark maroon = no response.
+ */
+export const REFINED_OUTCOME_COLORS: Readonly<Record<string, string>> = {
+  "Attempted answer": "#00A651",
+  "Answered (internal errors)": "#00B086",
+  "Answered from context": "#0092C4",
+  "Defer (clarify / other)": "#B2B7BD",
+  "Soft error": "#D97D05",
+  "Empty answer": "#E23A22",
+  "No response": "#8C2332",
+  "UI event (no prompt)": "#CDD2D8",
+};
+
+/** Refined labels, best → worst (mix bars, legends). */
+export const REFINED_SEVERITY_ORDER = [
+  "Attempted answer",
+  "Answered (internal errors)",
+  "Answered from context",
+  "Defer (clarify / other)",
+  "Soft error",
+  "Empty answer",
+  "No response",
+  "UI event (no prompt)",
+] as const;
+
+/** Refined stacking order for the daily area (bottom → top; best on top). */
+export const REFINED_STACK_ORDER = [
+  "UI event (no prompt)",
+  "No response",
+  "Empty answer",
+  "Soft error",
+  "Defer (clarify / other)",
+  "Answered from context",
+  "Answered (internal errors)",
+  "Attempted answer",
+] as const;
+
+/**
  * Refined-outcome / flow-diagram colors, keyed by node key (see
  * lib/analytics/outcomeRefine). Validated with the outcome set: CVD worst
  * adjacent pair ΔE 13.0; low-contrast steps (amber, grays, mint) are

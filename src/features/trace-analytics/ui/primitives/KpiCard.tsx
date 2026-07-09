@@ -80,7 +80,7 @@ export function KpiCard({ label, value, delta, hint, spark }: KpiCardProps) {
         ) : null}
       </Flex>
       {hint ? (
-        <Text fontSize="xs" color="fg.subtle" mt={1} lineClamp={1}>
+        <Text fontSize="xs" color="fg.subtle" mt={1} lineClamp={1} title={hint}>
           {hint}
         </Text>
       ) : null}

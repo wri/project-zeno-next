@@ -27,6 +27,8 @@ interface HorizontalBarChartProps {
   readonly data: readonly HorizontalBarDatum[];
   readonly color?: string;
   readonly barHeight?: number;
+  /** When set, bars render clickable and report the clicked datum. */
+  readonly onBarClick?: (datum: HorizontalBarDatum) => void;
 }
 
 /** Horizontal count bars with direct value labels at the bar ends. */
@@ -34,6 +36,7 @@ export function HorizontalBarChart({
   data,
   color = "#3361C0",
   barHeight = 24,
+  onBarClick,
 }: HorizontalBarChartProps) {
   const height = Math.max(200, Math.min(800, data.length * barHeight + 40));
   const categories = [
@@ -116,6 +119,8 @@ export function HorizontalBarChart({
                     ? categoryColor(categories.indexOf(entry.category))
                     : color
                 }
+                cursor={onBarClick ? "pointer" : undefined}
+                onClick={onBarClick ? () => onBarClick(entry) : undefined}
               />
             ))}
             <LabelList

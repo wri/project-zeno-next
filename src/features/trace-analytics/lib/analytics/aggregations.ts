@@ -262,7 +262,11 @@ export function computePromptLengths(rows: readonly TraceRow[]): PromptLengths {
 // Internal vs user-visible errors
 // ---------------------------------------------------------------------------
 
-const USER_VISIBLE_OUTCOMES = new Set(["ERROR", "EMPTY", "SOFT_ERROR"]);
+/**
+ * Outcomes the user experiences as a failure. Exported so drill-downs can
+ * select the exact rows the overlap donuts counted.
+ */
+export const USER_VISIBLE_OUTCOMES = new Set(["ERROR", "EMPTY", "SOFT_ERROR"]);
 
 export interface ErrorOverlap {
   readonly total: number;
@@ -311,6 +315,7 @@ export interface ToolUsageStats {
   readonly maxToolCalls: number;
   readonly toolErrorRate: number;
   readonly scatter: readonly {
+    readonly traceId: string;
     readonly toolCallCount: number;
     readonly latencySeconds: number;
     readonly outcome: string;
@@ -327,6 +332,7 @@ export function computeToolUsage(rows: readonly TraceRow[]): ToolUsageStats {
         Number.isFinite(r.latencySeconds)
     )
     .map((r) => ({
+      traceId: r.traceId,
       toolCallCount: r.toolCallCount,
       latencySeconds: r.latencySeconds as number,
       outcome: String(r.outcome ?? "Unknown"),
