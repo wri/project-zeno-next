@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { Flex, SimpleGrid, Text } from "@chakra-ui/react";
 import type { TraceRow } from "../../model/types";
 import type { DailyMetrics } from "../../lib/analytics/daily";
+import { computeDailyOutcomeMix } from "../../lib/analytics/daily";
 import type {
   SummaryStats,
   PromptUtilisation,
@@ -23,7 +24,12 @@ import { ChartCard } from "../charts/ChartCard";
 import { DailyLinesChart } from "../charts/DailyLinesChart";
 import { DailyOutcomeAreaChart } from "../charts/DailyOutcomeAreaChart";
 import { SummarySection } from "./SummarySection";
-import { CATEGORY_COLORS, CHART_CHROME } from "../charts/palette";
+import { useOpenTracesInExplorer } from "../useOpenTracesInExplorer";
+import {
+  CATEGORY_COLORS,
+  CHART_CHROME,
+  OUTCOME_LABELS,
+} from "../charts/palette";
 
 interface OverviewTabProps {
   readonly rows: readonly TraceRow[];
@@ -64,11 +70,21 @@ export function OverviewTab({
   const showMa = daily.length >= 10;
   const spark = (key: keyof DailyMetrics) =>
     daily.length >= 2 ? daily.map((d) => Number(d[key])) : undefined;
+  // Daily outcome composition (API labels) for the stacked-area chart.
+  const dailyOutcomeMix = useMemo(
+    () =>
+      computeDailyOutcomeMix(rows, (r) =>
+        r.outcome ? (OUTCOME_LABELS[r.outcome] ?? r.outcome) : null
+      ),
+    [rows]
+  );
+  const openTraces = useOpenTracesInExplorer();
 
   const kpis = [
     {
       label: "Prompts (traces)",
       value: formatCount(stats.totalTraces),
+      hint: "One trace = one user turn",
       delta: prevStats
         ? relativeDelta(stats.totalTraces, prevStats.totalTraces, {
             upIsGood: true,
@@ -79,6 +95,7 @@ export function OverviewTab({
     {
       label: "Active users",
       value: formatCount(stats.uniqueUsers),
+      hint: "Sent ≥1 prompt in the window",
       delta: prevStats
         ? relativeDelta(stats.uniqueUsers, prevStats.uniqueUsers, {
             upIsGood: true,
@@ -89,6 +106,7 @@ export function OverviewTab({
     {
       label: "Conversations",
       value: formatCount(stats.uniqueThreads),
+      hint: "Distinct threads touched",
       delta: prevStats
         ? relativeDelta(stats.uniqueThreads, prevStats.uniqueThreads, {
             upIsGood: true,
@@ -99,6 +117,7 @@ export function OverviewTab({
     {
       label: "Success rate",
       value: formatPercent(stats.successRate),
+      hint: "Turns answered with ≥1 tool call",
       delta: prevStats
         ? percentagePointDelta(stats.successRate, prevStats.successRate, {
             upIsGood: true,
@@ -111,6 +130,7 @@ export function OverviewTab({
           {
             label: "New users",
             value: formatCount(segments.newUsers.size),
+            hint: "First-ever activity in the window",
             delta: prevSegments
               ? relativeDelta(
                   segments.newUsers.size,
@@ -124,6 +144,7 @@ export function OverviewTab({
           {
             label: "Engaged users",
             value: formatCount(segments.engagedUsers.size),
+            hint: "≥2 sessions with ≥2 prompts each",
             delta: prevSegments
               ? relativeDelta(
                   segments.engagedUsers.size,
@@ -139,6 +160,7 @@ export function OverviewTab({
     {
       label: "Prompts / user / day",
       value: utilisation.meanPrompts.toFixed(2),
+      hint: "Mean per active user-day",
       delta: prevUtilisation
         ? relativeDelta(utilisation.meanPrompts, prevUtilisation.meanPrompts, {
             upIsGood: true,
@@ -148,6 +170,7 @@ export function OverviewTab({
     {
       label: "p95 latency",
       value: `${stats.p95Latency.toFixed(1)}s`,
+      hint: "95% of turns respond faster",
       delta: prevStats
         ? relativeDelta(stats.p95Latency, prevStats.p95Latency, {
             upIsGood: false,
@@ -158,6 +181,7 @@ export function OverviewTab({
     {
       label: "LLM cost",
       value: `$${stats.totalCost.toFixed(2)}`,
+      hint: "Total Langfuse-reported spend",
       delta: prevStats
         ? relativeDelta(stats.totalCost, prevStats.totalCost, {
             upIsGood: false,
@@ -231,7 +255,7 @@ export function OverviewTab({
         {daily.length ? (
           <ChartCard
             title="Daily outcomes"
-            help="Share of each day's traces by outcome."
+            help="Share of each day's traces by outcome. Click a day to open its traces."
             info={
               <>
                 Every trace gets exactly one outcome, so each day stacks to
@@ -239,12 +263,20 @@ export function OverviewTab({
                 bottom are failures — amber = apologetic answer, red =
                 user-visible error, dark red = no answer at all. Gray (Defer) is
                 a clarification request, not a failure. A widening warm band on
-                a specific day usually points at an incident — drill into it
-                from the Quality tab.
+                a specific day usually points at an incident — click the day to
+                open its traces, or drill in from the Quality tab.
               </>
             }
           >
-            <DailyOutcomeAreaChart data={daily} />
+            <DailyOutcomeAreaChart
+              data={dailyOutcomeMix}
+              onDayClick={(date) =>
+                openTraces(
+                  `All traces on ${date}`,
+                  rows.filter((r) => r.date === date)
+                )
+              }
+            />
           </ChartCard>
         ) : null}
       </SimpleGrid>

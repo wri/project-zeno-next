@@ -3,6 +3,44 @@
 import type { TraceRow } from "../../model/types";
 import { finiteNumbers, mean, quantile } from "./stats";
 
+/** Per-day outcome composition, generic over the outcome label set. */
+export interface DailyOutcomeMix {
+  readonly date: string;
+  /** Rows with a resolvable label for the day. */
+  readonly total: number;
+  /** Outcome display label → trace count. */
+  readonly counts: Readonly<Record<string, number>>;
+}
+
+/**
+ * Group rows by calendar date and count outcomes per day using `labelOf`, which
+ * resolves each row to a display label (or null to skip it). This is outcome-
+ * source-agnostic: pass an accessor over `row.outcome` for the API view, or one
+ * that reads a refined label for the refined view. Rows with no date or a null
+ * label are skipped; days are returned in date order.
+ */
+export function computeDailyOutcomeMix(
+  rows: readonly TraceRow[],
+  labelOf: (row: TraceRow) => string | null
+): DailyOutcomeMix[] {
+  const byDate = new Map<string, Map<string, number>>();
+  for (const row of rows) {
+    if (!row.date) continue;
+    const label = labelOf(row);
+    if (!label) continue;
+    const counts = byDate.get(row.date) ?? new Map<string, number>();
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+    byDate.set(row.date, counts);
+  }
+  return [...byDate.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, counts]) => ({
+      date,
+      total: [...counts.values()].reduce((a, b) => a + b, 0),
+      counts: Object.fromEntries(counts),
+    }));
+}
+
 export interface DailyMetrics {
   readonly date: string;
   readonly traces: number;

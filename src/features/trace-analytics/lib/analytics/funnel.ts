@@ -30,6 +30,21 @@ export interface JourneyFunnel {
    * predate the flag, and the insight stage should render as unavailable.
    */
   readonly insightKnown: boolean;
+  /**
+   * Session keys that cleared the previous stage but stalled before this one
+   * (the drop-off the funnel visualises). Keys match `sessionKey()`: a real
+   * sessionId, or `trace:<id>` for rows without one.
+   */
+  readonly droppedBefore: Readonly<{
+    aoi: readonly string[];
+    dataset: readonly string[];
+    insight: readonly string[];
+  }>;
+}
+
+/** Funnel grouping key: the sessionId, or a per-trace pseudo-session. */
+export function sessionKey(row: TraceRow): string {
+  return String(row.sessionId ?? "").trim() || `trace:${row.traceId}`;
 }
 
 interface SessionFlags {
@@ -45,7 +60,7 @@ export function computeJourneyFunnel(rows: readonly TraceRow[]): JourneyFunnel {
 
   for (const row of rows) {
     // Rows without a session id are their own single-turn pseudo-session.
-    const key = String(row.sessionId ?? "").trim() || `trace:${row.traceId}`;
+    const key = sessionKey(row);
     const flags = bySession.get(key) ?? {
       aoi: false,
       dataset: false,
@@ -59,16 +74,30 @@ export function computeJourneyFunnel(rows: readonly TraceRow[]): JourneyFunnel {
   }
 
   // One counting pass — a session only advances a stage if it cleared every
-  // earlier one, so counts are monotonically decreasing (a true funnel).
+  // earlier one, so counts are monotonically decreasing (a true funnel). The
+  // sessions that stall before a stage are kept so the UI can open them.
   let aoi = 0;
   let dataset = 0;
   let insight = 0;
-  for (const flags of bySession.values()) {
-    if (!flags.aoi) continue;
+  const droppedBeforeAoi: string[] = [];
+  const droppedBeforeDataset: string[] = [];
+  const droppedBeforeInsight: string[] = [];
+  for (const [key, flags] of bySession.entries()) {
+    if (!flags.aoi) {
+      droppedBeforeAoi.push(key);
+      continue;
+    }
     aoi += 1;
-    if (!flags.dataset) continue;
+    if (!flags.dataset) {
+      droppedBeforeDataset.push(key);
+      continue;
+    }
     dataset += 1;
-    if (flags.insight) insight += 1;
+    if (flags.insight) {
+      insight += 1;
+    } else {
+      droppedBeforeInsight.push(key);
+    }
   }
   const total = bySession.size;
 
@@ -92,5 +121,14 @@ export function computeJourneyFunnel(rows: readonly TraceRow[]): JourneyFunnel {
     };
   });
 
-  return { totalSessions: total, stages, insightKnown };
+  return {
+    totalSessions: total,
+    stages,
+    insightKnown,
+    droppedBefore: {
+      aoi: droppedBeforeAoi,
+      dataset: droppedBeforeDataset,
+      insight: droppedBeforeInsight,
+    },
+  };
 }

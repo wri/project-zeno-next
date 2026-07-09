@@ -26,6 +26,7 @@ import { OutcomesSection } from "./analytics/OutcomesSection";
 import { ToolUsageSection } from "./analytics/ToolUsageSection";
 import { CostLatencySection } from "./analytics/CostLatencySection";
 import { PromptSection } from "./analytics/PromptSection";
+import { TaxonomySection } from "./analytics/TaxonomySection";
 import { StarterMixSection } from "./analytics/StarterMixSection";
 import { GnwUsageSection } from "./analytics/GnwUsageSection";
 import { JourneyFunnelSection } from "./analytics/JourneyFunnelSection";
@@ -389,6 +390,9 @@ export function AnalyticsView() {
           <Tabs.Content value="content">
             <Flex direction="column" gap={6}>
               <PromptSection rows={rows} />
+              {/* Taxonomy tags from the pre-merge rows so the language axis can
+                  compare the raw API value against independent detection. */}
+              <TaxonomySection rows={filteredRows} />
               <StarterMixSection rows={rows} />
               <GnwUsageSection rows={rows} />
             </Flex>
