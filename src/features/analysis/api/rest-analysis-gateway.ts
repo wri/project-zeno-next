@@ -7,7 +7,7 @@ import type {
 } from "../model/analysis-gateway";
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
-import type { ChartDTO } from "../model/chart-dto";
+import type { Chart } from "@/src/entities/insight";
 import { AnalysisError } from "../model/analysis-error";
 
 // ── Raw API shapes (anti-corruption layer — never leave this file) ─────────────
@@ -198,7 +198,7 @@ export class RestAnalysisGateway implements AnalysisGateway {
     return {
       id: body.id,
       charts: body.charts.map(
-        (c, i): ChartDTO => ({
+        (c, i): Chart => ({
           id: `${body.id}-chart-${i}`,
           position: i,
           title: c.title,
