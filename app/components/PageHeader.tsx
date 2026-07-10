@@ -118,7 +118,10 @@ function PageHeader() {
       color={isPrototype ? "#1f2937" : "#131E47"}
       borderTop={isPrototype ? undefined : "4px solid #E3F37F"}
       zIndex={1300}
-      position="relative"
+      // Pinned to the viewport top on scrolling pages (e.g. dashboards);
+      // inert on the map layout, whose grid cells don't scroll.
+      position="sticky"
+      top={0}
     >
       <Flex gap="5" alignItems="center" minW={0}>
         <Flex gap="2" alignItems="center">
