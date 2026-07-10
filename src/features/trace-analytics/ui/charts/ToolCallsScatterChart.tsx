@@ -21,6 +21,7 @@ import { ChartTooltip } from "./ChartTooltip";
 import { ChartLegend, keepPayloadOrder } from "./ChartLegend";
 
 interface ScatterPoint {
+  readonly traceId?: string;
   readonly toolCallCount: number;
   readonly latencySeconds: number;
   readonly outcome: string;
@@ -29,12 +30,15 @@ interface ScatterPoint {
 interface ToolCallsScatterChartProps {
   readonly data: readonly ScatterPoint[];
   readonly height?: number;
+  /** When set, dots render clickable and report their traceId. */
+  readonly onPointClick?: (traceId: string) => void;
 }
 
 /** Tool calls per trace vs latency, colored by outcome. */
 export function ToolCallsScatterChart({
   data,
   height = 280,
+  onPointClick,
 }: ToolCallsScatterChartProps) {
   const byOutcome = new Map<string, ScatterPoint[]>();
   for (const point of data) {
@@ -115,6 +119,22 @@ export function ToolCallsScatterChart({
             stroke={CHART_CHROME.surface}
             strokeWidth={1}
             isAnimationActive={false}
+            cursor={onPointClick ? "pointer" : undefined}
+            onClick={
+              onPointClick
+                ? (entry: unknown) => {
+                    // The clicked dot's datum arrives directly or as payload.
+                    const raw = entry as {
+                      payload?: { traceId?: unknown };
+                      traceId?: unknown;
+                    };
+                    const traceId = raw?.payload?.traceId ?? raw?.traceId;
+                    if (typeof traceId === "string" && traceId) {
+                      onPointClick(traceId);
+                    }
+                  }
+                : undefined
+            }
           />
         ))}
       </ScatterChart>

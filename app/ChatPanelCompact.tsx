@@ -147,16 +147,17 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
                   minHeight: 0,
                 }}
               >
+                {/* Top padding is passed to ChatMessages instead of set on
+                    this scroller — see ChatMessagesProps.pt. */}
                 <Box
                   ref={messagesRef}
                   overflowY="auto"
                   px={4}
-                  pt={4}
                   pb={4}
                   minH={0}
                   maxH={{ base: "none", md: messagesMaxH }}
                 >
-                  <ChatMessages />
+                  <ChatMessages pt={4} />
                 </Box>
               </motion.div>
             )}

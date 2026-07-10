@@ -14,6 +14,8 @@ interface DonutChartProps {
   readonly height?: number;
   /** Caption under the center total, e.g. "traces" or "users". */
   readonly centerLabel?: string;
+  /** When set, slices and legend rows render clickable and report the label. */
+  readonly onSliceClick?: (label: string) => void;
 }
 
 /**
@@ -25,6 +27,7 @@ export function DonutChart({
   colors,
   height = 240,
   centerLabel = "total",
+  onSliceClick,
 }: DonutChartProps) {
   const visible = data.filter((d) => d.count > 0);
   const total = visible.reduce((acc, d) => acc + d.count, 0);
@@ -52,7 +55,14 @@ export function DonutChart({
               isAnimationActive={false}
             >
               {visible.map((entry, i) => (
-                <Cell key={entry.label} fill={colorFor(entry.label, i)} />
+                <Cell
+                  key={entry.label}
+                  fill={colorFor(entry.label, i)}
+                  cursor={onSliceClick ? "pointer" : undefined}
+                  onClick={
+                    onSliceClick ? () => onSliceClick(entry.label) : undefined
+                  }
+                />
               ))}
             </Pie>
             <Tooltip
@@ -90,7 +100,15 @@ export function DonutChart({
 
       <Flex direction="column" gap={1.5} minW="150px" maxW="55%" flex="1">
         {visible.map((entry, i) => (
-          <Flex key={entry.label} align="center" gap={2}>
+          <Flex
+            key={entry.label}
+            align="center"
+            gap={2}
+            cursor={onSliceClick ? "pointer" : undefined}
+            onClick={onSliceClick ? () => onSliceClick(entry.label) : undefined}
+            _hover={onSliceClick ? { bg: "bg.subtle" } : undefined}
+            borderRadius="sm"
+          >
             <Box
               w="8px"
               h="8px"
