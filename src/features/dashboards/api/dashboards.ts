@@ -44,6 +44,19 @@ export function createDashboardPayloadFromAoi(
   return aoiToDashboardCreateRequest(aoi);
 }
 
+// The PATCH response comes back without insight expansion, so callers must
+// not write it into the detail cache — invalidate and refetch instead.
+export async function renameDashboard(
+  dashboardId: string,
+  name: string
+): Promise<void> {
+  await readJson<unknown>(`/api/dashboards/${dashboardId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
 export interface WidgetUpdate {
   position?: number;
   // Replaced whole by the backend (not merged) — always send the full config.

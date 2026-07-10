@@ -12,6 +12,7 @@ import {
   deleteWidget,
   getDashboard,
   listDashboards,
+  renameDashboard,
   updateWidget,
   type WidgetUpdate,
 } from "../api/dashboards";
@@ -69,6 +70,33 @@ export function useCreateDashboardFromAoi() {
     onSuccess: (dashboard) => {
       queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
       queryClient.setQueryData(dashboardKeys.detail(dashboard.id), dashboard);
+    },
+  });
+}
+
+export function useRenameDashboard(dashboardId: string) {
+  const queryClient = useQueryClient();
+  const key = dashboardKeys.detail(dashboardId);
+
+  return useMutation({
+    mutationFn: (name: string) => renameDashboard(dashboardId, name),
+    // Optimistic: the PATCH response lacks insight expansion, so the new name
+    // is applied to the cached dashboard and the server copy refetched on
+    // settle rather than written from the response.
+    onMutate: async (name: string) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<Dashboard>(key);
+      if (previous) {
+        queryClient.setQueryData<Dashboard>(key, { ...previous, name });
+      }
+      return { previous };
+    },
+    onError: (_err, _name, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+    },
+    onSettled: () => {
+      // Prefix-matches the detail key and the list (dashboard switcher).
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 }

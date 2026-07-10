@@ -12,16 +12,16 @@ import {
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
-import { MapPinIcon, SquaresFourIcon } from "@phosphor-icons/react";
+import { SquaresFourIcon } from "@phosphor-icons/react";
 
 import ChatPanel from "@/app/ChatPanel";
 import { getDashboardContentLeftPx } from "@/app/explorationLayout";
 import useAgentProfileStore from "@/app/store/agentProfileStore";
+import useAuthStore from "@/app/store/authStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import useViewContextStore from "@/app/store/viewContextStore";
-import { sourceLabel, subtypeLabel } from "../lib/aoi";
-import { updatedLabel } from "../lib/dates";
 import { useDashboard } from "./dashboardQueries";
+import DashboardHeader from "./DashboardHeader";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 
 export default function DashboardDetailPage() {
@@ -29,6 +29,8 @@ export default function DashboardDetailPage() {
   const dashboardId = params?.id ?? "";
   const { data: dashboard, isLoading, isError } = useDashboard(dashboardId);
   const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
+  const userId = useAuthStore((s) => s.userId);
+  const isOwner = !!userId && userId === dashboard?.user_id;
 
   useEffect(() => {
     // The dashboard agent tools are gated behind ?agent_profile=…; capture it
@@ -80,14 +82,14 @@ export default function DashboardDetailPage() {
       >
         <ChatPanel />
       </Box>
-      <Container maxW="6xl">
-        <Flex direction="column" gap={4}>
-          <Flex align="center" gap={2} color="fg.muted" fontSize="sm">
-            <ChakraLink asChild color="fg.muted">
+      <Container maxW="1232px">
+        <Flex direction="column" gap="12px">
+          <Flex align="center" gap="8px" fontSize="14px" lineHeight="16px">
+            <ChakraLink asChild color="#565E7B">
               <Link href="/dashboards?ff=dashboard">Dashboards</Link>
             </ChakraLink>
-            <Text>/</Text>
-            <Text color="fg">{dashboard?.name ?? "Dashboard"}</Text>
+            <Text color="#C2C7D0">/</Text>
+            <Text color="#565E7B">{dashboard?.name ?? "Dashboard"}</Text>
           </Flex>
 
           {isLoading ? (
@@ -105,45 +107,15 @@ export default function DashboardDetailPage() {
               borderWidth="1px"
               borderTopWidth="2px"
               borderTopColor="primary.solid"
-              borderColor="border"
-              borderRadius="sm"
-              p={{ base: 6, md: 10 }}
+              borderColor="rgba(19,22,25,0.1)"
+              borderRadius="8px"
+              px={{ base: 6, md: "46px" }}
+              pt={{ base: 6, md: "38px" }}
+              pb={{ base: 6, md: "46px" }}
             >
-              <Flex justify="space-between" align="flex-start" gap={6} mb={10}>
-                <Box>
-                  <Heading as="h1" size="2xl" fontWeight="normal">
-                    {dashboard.name}
-                  </Heading>
-                  <Text color="fg.muted" fontSize="xs" mt={2}>
-                    {updatedLabel(dashboard.updated_at)}
-                  </Text>
-                </Box>
-              </Flex>
-
-              {dashboard.aois[0] && (
-                <Flex
-                  align="center"
-                  gap={3}
-                  bg="bg.subtle"
-                  borderWidth="1px"
-                  borderColor="border"
-                  borderRadius="sm"
-                  p={4}
-                  mb={8}
-                  maxW="xl"
-                >
-                  <MapPinIcon size={20} color="#0049AA" />
-                  <Box>
-                    <Text fontWeight="medium">{dashboard.aois[0].name}</Text>
-                    <Text color="fg.muted" fontSize="sm">
-                      {sourceLabel(dashboard.aois[0].source)}
-                      {dashboard.aois[0].subtype
-                        ? ` · ${subtypeLabel(dashboard.aois[0].subtype)}`
-                        : ""}
-                    </Text>
-                  </Box>
-                </Flex>
-              )}
+              <Box mb={{ base: 8, md: 16 }}>
+                <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
+              </Box>
 
               {dashboard.widgets.length > 0 ? (
                 <DashboardWidgetsGrid dashboard={dashboard} />
