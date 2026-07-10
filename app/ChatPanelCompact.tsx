@@ -16,6 +16,8 @@ import {
 import { usePromptQuota } from "./hooks/usePromptQuota";
 import useChatStore from "./store/chatStore";
 import useSidebarStore from "./store/sidebarStore";
+import { isAppRoute } from "./utils/threadNavigation";
+import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // Intentionally narrower than the full-size panel (see FULLSIZE_CHAT_PANEL_WIDTH_PX).
@@ -41,7 +43,12 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
   const { promptsExhausted } = usePromptQuota();
   const { messages } = useChatStore();
   const { dataCatalogOpen, areasPanelOpen } = useSidebarStore();
-  const chatLeftPx = getCompactChatLeftPx(dataCatalogOpen || areasPanelOpen);
+  const pathname = usePathname();
+  // The catalog/areas panels only render in the map layout; off it (dashboard
+  // pages) their persisted open state must not push the panel sideways.
+  const chatLeftPx = getCompactChatLeftPx(
+    isAppRoute(pathname) && (dataCatalogOpen || areasPanelOpen)
+  );
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
   );

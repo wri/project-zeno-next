@@ -20,7 +20,10 @@ import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
 import { useRouter, usePathname } from "next/navigation";
-import { firstMessageRedirectPath } from "../utils/threadNavigation";
+import {
+  firstMessageRedirectPath,
+  isAppRoute,
+} from "../utils/threadNavigation";
 
 export default function ChatInput({
   isChatDisabled,
@@ -238,22 +241,28 @@ export default function ChatInput({
       />
       <Flex justifyContent="space-between" alignItems="center" w="full">
         <Flex gap="2">
-          <ContextButton
-            contextType="layer"
-            onClick={openLayerPicker}
-            disabled={disabled}
-            borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
-            color={dataCatalogOpen ? "primary.solid" : undefined}
-            aria-expanded={dataCatalogOpen}
-          />
-          <ContextButton
-            contextType="area"
-            onClick={openAreaPicker}
-            disabled={disabled}
-            borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
-            color={areasPanelOpen ? "primary.solid" : undefined}
-            aria-expanded={areasPanelOpen}
-          />
+          {/* The pickers these open (catalog / areas panels) only exist in
+              the map layout — hide them on other surfaces (dashboards). */}
+          {isAppRoute(pathname) && (
+            <>
+              <ContextButton
+                contextType="layer"
+                onClick={openLayerPicker}
+                disabled={disabled}
+                borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
+                color={dataCatalogOpen ? "primary.solid" : undefined}
+                aria-expanded={dataCatalogOpen}
+              />
+              <ContextButton
+                contextType="area"
+                onClick={openAreaPicker}
+                disabled={disabled}
+                borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
+                color={areasPanelOpen ? "primary.solid" : undefined}
+                aria-expanded={areasPanelOpen}
+              />
+            </>
+          )}
         </Flex>
         {canCancelRequest ? (
           <Button

@@ -1,4 +1,14 @@
 /**
+ * Whether the pathname is inside the /app route group — the map surface.
+ * The chat renders on other surfaces too (dashboard pages), where
+ * map-coupled behaviours (thread URL rewriting, the catalog/areas panel
+ * toggles and the layout offset they drive) must not apply.
+ */
+export function isAppRoute(pathname: string | null): boolean {
+  return pathname === "/app" || !!pathname?.startsWith("/app/");
+}
+
+/**
  * Where to send the browser after the first message of a new thread.
  *
  * Only the map surface rewrites its URL to the canonical thread route.
@@ -11,11 +21,7 @@ export function firstMessageRedirectPath(
   pathname: string | null,
   threadId: string
 ): string | null {
-  if (!pathname) return null;
-  if (pathname === "/app" || pathname.startsWith("/app/")) {
-    return `/app/threads/${threadId}`;
-  }
-  return null;
+  return isAppRoute(pathname) ? `/app/threads/${threadId}` : null;
 }
 
 /**

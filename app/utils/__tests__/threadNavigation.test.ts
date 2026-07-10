@@ -1,6 +1,23 @@
 import { describe, it, expect } from "vitest";
 
-import { firstMessageRedirectPath, mapTabHref } from "../threadNavigation";
+import {
+  firstMessageRedirectPath,
+  isAppRoute,
+  mapTabHref,
+} from "../threadNavigation";
+
+describe("isAppRoute", () => {
+  it("matches the app root and its subroutes", () => {
+    expect(isAppRoute("/app")).toBe(true);
+    expect(isAppRoute("/app/threads/t-1")).toBe(true);
+  });
+
+  it("rejects other surfaces and /app-prefixed lookalikes", () => {
+    expect(isAppRoute("/dashboards/abc")).toBe(false);
+    expect(isAppRoute("/application")).toBe(false);
+    expect(isAppRoute(null)).toBe(false);
+  });
+});
 
 describe("firstMessageRedirectPath", () => {
   it("rewrites to the thread URL from the app root", () => {
