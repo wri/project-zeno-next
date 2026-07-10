@@ -24,6 +24,16 @@ import { useDashboard } from "./dashboardQueries";
 import DashboardHeader from "./DashboardHeader";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 
+// Graph-paper hero per the Figma page shell (node 1317-3730): minor 1px
+// #FCFCFC lines every 7px with a stronger #F9F9FA line every 70px, on white.
+// Major lines listed first so they paint over coincident minor lines.
+const HERO_GRID_IMAGE = [
+  "repeating-linear-gradient(to right, #F9F9FA 0 1px, transparent 1px 70px)",
+  "repeating-linear-gradient(to bottom, #F9F9FA 0 1px, transparent 1px 70px)",
+  "repeating-linear-gradient(to right, #FCFCFC 0 1px, transparent 1px 7px)",
+  "repeating-linear-gradient(to bottom, #FCFCFC 0 1px, transparent 1px 7px)",
+].join(",");
+
 export default function DashboardDetailPage() {
   const params = useParams<{ id: string }>();
   const dashboardId = params?.id ?? "";
@@ -59,7 +69,9 @@ export default function DashboardDetailPage() {
     <Box
       bg="#F4F5F6"
       minH="calc(100vh - 40px)"
-      py={{ base: 8, md: 10 }}
+      // 24px nav-to-breadcrumb per the Figma page shell; roomier bottom.
+      pt={6}
+      pb={{ base: 8, md: 10 }}
       pl={{
         base: 0,
         md: `${getDashboardContentLeftPx(isChatFullSize)}px`,
@@ -101,19 +113,25 @@ export default function DashboardDetailPage() {
               Could not load this dashboard.
             </Text>
           ) : (
+            // The Figma page shell: white card with a 2px blue accent and a
+            // 200px graph-paper hero band across the top.
             <Box
-              bg="white"
+              bgColor="white"
               minH="70vh"
+              backgroundImage={HERO_GRID_IMAGE}
+              backgroundRepeat="no-repeat"
+              backgroundSize="100% 200px"
               borderWidth="1px"
               borderTopWidth="2px"
-              borderTopColor="primary.solid"
+              borderTopColor="#0049AA"
               borderColor="rgba(19,22,25,0.1)"
               borderRadius="8px"
               px={{ base: 6, md: "46px" }}
               pt={{ base: 6, md: "38px" }}
               pb={{ base: 6, md: "46px" }}
             >
-              <Box mb={{ base: 8, md: 16 }}>
+              {/* 75px puts the widgets at the mock's 174px card offset. */}
+              <Box mb={{ base: 8, md: "75px" }}>
                 <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
               </Box>
 
