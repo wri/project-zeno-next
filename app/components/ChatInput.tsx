@@ -19,7 +19,8 @@ import ContextMenu from "./ContextMenu";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { firstMessageRedirectPath } from "../utils/threadNavigation";
 
 export default function ChatInput({
   isChatDisabled,
@@ -38,6 +39,7 @@ export default function ChatInput({
     useState<ChatContextType | null>(null);
 
   const router = useRouter();
+  const pathname = usePathname();
 
   // Hooks for responsive modal behavior
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -122,7 +124,8 @@ export default function ChatInput({
 
     const result = await sendMessage(message);
     if (result.isNew) {
-      router.replace(`/app/threads/${result.id}`);
+      const redirect = firstMessageRedirectPath(pathname, result.id);
+      if (redirect) router.replace(redirect);
     }
   };
 
