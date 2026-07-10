@@ -197,7 +197,13 @@ async function processStreamMessage(
   // dashboard tools work without a dispatch entry here; checked before the
   // type branching because the signal can ride on a tool result, an
   // error-classified message, or the agent narration in the same update.
-  if (streamMessage.msg_type === "dashboard_updated") {
+  // insight_updated (update_insight_display: chart renamed, retyped or
+  // remapped) also invalidates dashboards: the dashboard detail cache embeds
+  // the expanded insight, so its widgets render stale titles otherwise.
+  if (
+    streamMessage.msg_type === "dashboard_updated" ||
+    streamMessage.msg_type === "insight_updated"
+  ) {
     queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
   }
 

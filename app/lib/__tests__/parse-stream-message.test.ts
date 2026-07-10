@@ -106,6 +106,22 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     });
   });
 
+  it("carries insight_updated through on tool messages", () => {
+    // update_insight_display (rename a chart, change its type) signals with
+    // insight_updated — the dashboard page relies on it to refetch widgets
+    // whose embedded insight changed.
+    const msg = parseStreamMessage(
+      toolUpdate("update_insight_display", {
+        msg_type: "insight_updated",
+        insight_id: "ins-1",
+      }),
+      "tools",
+      TS
+    );
+    expect(msg?.type).toBe("tool");
+    expect(msg?.msg_type).toBe("insight_updated");
+  });
+
   it("keeps the signal when the tool message is classified as an error", () => {
     const update = toolUpdate("add_to_dashboard", {
       msg_type: "dashboard_updated",
