@@ -35,6 +35,10 @@ import {
   type OutcomeMixDimension,
   type TaggedTrace,
 } from "../../lib/analytics/taxonomy";
+import {
+  computeIntentTopicMatrix,
+  tracesForIntentTopic,
+} from "../../lib/analytics/intentTopicMatrix";
 import { useOpenTracesInExplorer } from "../useOpenTracesInExplorer";
 import { looksLikeRefusal } from "../../lib/analytics/refusalNeedles";
 import { fetchTraceDetail } from "../../api/zeno";
@@ -52,6 +56,7 @@ import {
 import { ChartCard } from "../charts/ChartCard";
 import { DonutChart } from "../charts/DonutChart";
 import { DailyOutcomeAreaChart } from "../charts/DailyOutcomeAreaChart";
+import { IntentTopicHeatmap } from "../charts/IntentTopicHeatmap";
 import { OutcomeMixBars } from "../charts/OutcomeMixBars";
 import { OutcomeSankey } from "../charts/OutcomeSankey";
 import { Expander } from "../primitives/Expander";
@@ -200,7 +205,28 @@ export function OutcomesSection({
   const mixOrder = refined ? REFINED_SEVERITY_ORDER : OUTCOME_SEVERITY_ORDER;
   const mixColors = refined ? REFINED_OUTCOME_COLORS : OUTCOME_COLORS;
 
+  // Intent × topic grid, scored on the mode's outcome definition. ANSWER_KEYS
+  // holds both the API and the refined "attempted answer" codes (they never
+  // collide), so the same success set serves both modes.
+  const intentTopicMatrix = useMemo(() => {
+    const outcomeOf = refined
+      ? (t: TaggedTrace) => refinedByTrace.get(t.row.traceId)
+      : undefined;
+    return computeIntentTopicMatrix(tagged, {
+      outcomeOf,
+      successKeys: ANSWER_KEYS,
+    });
+  }, [tagged, refined, refinedByTrace]);
+
   const openTraces = useOpenTracesInExplorer();
+
+  /** One intent × topic cell of the heatmap → its traces. */
+  function handleHeatmapCellClick(intent: string, topic: string) {
+    openTraces(
+      `Intent = ${prettyLabel(intent)} × Topic = ${topic}`,
+      tracesForIntentTopic(tagged, intent, topic).map((t) => t.row)
+    );
+  }
 
   /** Display label of a turn's outcome under the current API/Refined mode. */
   function outcomeLabelOf(t: TaggedTrace): string | null {
@@ -500,6 +526,39 @@ export function OutcomesSection({
             )}
           </ChartCard>
         </SimpleGrid>
+
+        <ChartCard
+          title="Intent × topic"
+          help="Three views of one grid: where prompts land, how well each cohort is answered, and where failed turns concentrate. Click a cell to open its traces."
+          info="Volume paints each intent × topic cell by prompt count (or its
+            share of all pairs). Quality recolours the identical grid by the
+            share of attempted answers, as distance from the window average —
+            amber below, blue above; cells with too few resolved outcomes are
+            greyed rather than shown as noise. Impact multiplies the two:
+            failed turns per cell, either in absolute terms (where users feel
+            the most pain) or as the shortfall vs the average (what would
+            improve fastest if fixed). Rows and columns keep one order across
+            views, so a dark Volume cell that turns amber in Quality is a
+            high-volume, underperforming cohort. Topics are multi-tag, so a
+            turn counts under each of its topics; intent covers substantive
+            turns only. Toggle API/Refined to switch the outcome definition.
+            Click any cell to open exactly those traces in the Trace Explorer."
+        >
+          {intentTopicMatrix.intents.length ? (
+            <IntentTopicHeatmap
+              matrix={intentTopicMatrix}
+              successLabel={
+                refined ? "attempted answers" : "successful answers"
+              }
+              actions={modeToggle}
+              onCellClick={handleHeatmapCellClick}
+            />
+          ) : (
+            <Text fontSize="sm" color="fg.muted">
+              No substantive turns in this window.
+            </Text>
+          )}
+        </ChartCard>
 
         <SimpleGrid columns={{ base: 1, lg: 2 }} gap={4}>
           <ChartCard
