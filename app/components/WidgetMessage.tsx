@@ -175,7 +175,9 @@ export default function WidgetMessage({
     <Box
       rounded="md"
       border="1px solid"
-      borderColor={inWorkspace ? "border.emphasized" : "blue.fg"}
+      // Workspace/dashboard cards sit inside the light-blue Analysis shell,
+      // whose design pairs the white card with the blue-10 border (#DDE2F5).
+      borderColor={inWorkspace ? "#DDE2F5" : "blue.fg"}
       overflow="hidden"
       bg="neutral.100"
     >

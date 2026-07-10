@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  chartSize,
   computeReorder,
   dashboardWidgetToInsightWidgets,
   widgetSize,
+  withChartSize,
   withSize,
 } from "../widgets";
 import type { DashboardWidget } from "../../api/schemas";
@@ -52,6 +54,25 @@ describe("widgetSize / withSize", () => {
       default_view: "chart",
       title: "T",
       size: "double",
+    });
+  });
+});
+
+describe("chartSize / withChartSize", () => {
+  it("reads the per-chart size and falls back to the widget size", () => {
+    expect(chartSize({}, "c-1")).toBe("single");
+    expect(chartSize({ size: "double" }, "c-1")).toBe("double");
+    expect(chartSize({ sizes: { "c-1": "double" } }, "c-1")).toBe("double");
+    expect(chartSize({ sizes: { "c-1": "double" } }, "c-2")).toBe("single");
+    expect(chartSize({ sizes: { "c-1": "garbage" } }, "c-1")).toBe("single");
+  });
+
+  it("withChartSize preserves other config keys and sibling chart sizes", () => {
+    expect(
+      withChartSize({ title: "T", sizes: { "c-1": "double" } }, "c-2", "double")
+    ).toEqual({
+      title: "T",
+      sizes: { "c-1": "double", "c-2": "double" },
     });
   });
 });
@@ -132,6 +153,27 @@ describe("dashboardWidgetToInsightWidgets", () => {
       })
     );
     expect(cards[0].generation?.codeact_parts).toHaveLength(1);
+  });
+
+  it("attaches the dashboard area as analysis params on every card", () => {
+    const cards = dashboardWidgetToInsightWidgets(
+      widget({
+        insight: {
+          id: "ins-1",
+          insight_text: null,
+          codeact_parts: null,
+          charts: [chart({ id: "c-1" }), chart({ id: "c-2", position: 1 })],
+        },
+      }),
+      { areaName: "Paraná, Brazil" }
+    );
+    expect(cards[0].analysisParams).toEqual({ areas: ["Paraná, Brazil"] });
+    expect(cards[1].analysisParams).toEqual({ areas: ["Paraná, Brazil"] });
+  });
+
+  it("omits analysis params when no area name is given", () => {
+    const [card] = dashboardWidgetToInsightWidgets(widget());
+    expect(card.analysisParams).toBeUndefined();
   });
 });
 

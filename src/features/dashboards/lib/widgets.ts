@@ -35,6 +35,36 @@ export function withSize(
 }
 
 /**
+ * Per-chart column span. A widget's charts render as individual grid cards,
+ * so each chart carries its own span under `config.sizes[chartId]`; the
+ * widget-level `size` is the pre-split fallback for older configs.
+ */
+export function chartSize(
+  config: Record<string, unknown>,
+  chartId: string
+): WidgetSize {
+  const sizes = config.sizes;
+  if (sizes && typeof sizes === "object") {
+    const own = (sizes as Record<string, unknown>)[chartId];
+    if (own === "double" || own === "single") return own;
+  }
+  return widgetSize(config);
+}
+
+/** The full config to PATCH for a per-chart size change (config is replaced whole). */
+export function withChartSize(
+  config: Record<string, unknown>,
+  chartId: string,
+  size: WidgetSize
+): Record<string, unknown> {
+  const sizes =
+    config.sizes && typeof config.sizes === "object"
+      ? (config.sizes as Record<string, unknown>)
+      : {};
+  return { ...config, sizes: { ...sizes, [chartId]: size } };
+}
+
+/**
  * Maps a dashboard insight widget (snake_case REST shape) to the
  * `InsightWidget`s consumed by `WidgetMessage` — the persisted counterpart
  * of `generateInsightsTool`, which produces one card per chart. Returns `[]`
@@ -44,10 +74,13 @@ export function withSize(
  *
  * The widget's `config.title` override and the insight narrative apply to
  * the first chart (the card's visual header); provenance parts feed the
- * "view how this was generated" drawer.
+ * "view how this was generated" drawer. The API insight carries no analysis
+ * parameters, but a dashboard is scoped to exactly one area — pass its name
+ * as `areaName` so every card gets an AREA param chip.
  */
 export function dashboardWidgetToInsightWidgets(
-  widget: DashboardWidget
+  widget: DashboardWidget,
+  { areaName }: { areaName?: string } = {}
 ): InsightWidget[] {
   const insight = widget.insight;
   if (!insight?.charts?.length) return [];
@@ -57,6 +90,7 @@ export function dashboardWidgetToInsightWidgets(
     : undefined;
   const titleOverride =
     typeof widget.config.title === "string" ? widget.config.title : undefined;
+  const analysisParams = areaName ? { areas: [areaName] } : undefined;
 
   return [...insight.charts]
     .sort((a, b) => a.position - b.position)
@@ -74,6 +108,7 @@ export function dashboardWidgetToInsightWidgets(
         yAxis: chart.y_axis,
         ...(seriesFields?.length ? { seriesFields } : {}),
         ...(generation ? { generation } : {}),
+        ...(analysisParams ? { analysisParams } : {}),
       };
     });
 }
