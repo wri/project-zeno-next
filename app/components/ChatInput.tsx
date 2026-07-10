@@ -29,6 +29,7 @@ import useAuthStore from "../store/authStore";
 import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
@@ -80,12 +81,14 @@ export default function ChatInput({
   const excludedLayerIds = useChatStore((s) => s.excludedContextLayerIds);
   const excludedSet = new Set(excludedLayerIds);
 
-  // Voice dictation. `speech` is null when the browser lacks the Web Speech
-  // API, in which case the mic control is not rendered. The committed
+  // Voice dictation, gated behind the `ff=voice` hidden-feature flag while it's
+  // still being rolled out. `speech` is null when the browser lacks the Web
+  // Speech API, in which case the mic control is not rendered. The committed
   // transcript is appended to whatever is already typed, so we snapshot that
   // text when a session starts. The Web Speech API can't detect the spoken
   // language, so we default it from the user's onboarding preference, then the
   // browser language, then en-US — with an in-listening override menu.
+  const voiceInputEnabled = useFeatureFlag("voice");
   const preferredLanguageCode = useAuthStore((s) => s.preferredLanguageCode);
   const prefersReducedMotion = usePrefersReducedMotion();
   const dictationBaseRef = useRef("");
@@ -247,7 +250,7 @@ export default function ChatInput({
           )}
         </Flex>
       )}
-      {speech && speech.phase === "listening" ? (
+      {voiceInputEnabled && speech && speech.phase === "listening" ? (
         <VoiceListeningPanel
           seconds={speech.seconds}
           committed={speech.committed}
@@ -257,7 +260,10 @@ export default function ChatInput({
           onStop={speech.stop}
           reducedMotion={prefersReducedMotion}
         />
-      ) : speech && speech.phase === "error" && speech.errorType ? (
+      ) : voiceInputEnabled &&
+        speech &&
+        speech.phase === "error" &&
+        speech.errorType ? (
         <VoiceErrorPanel
           errorType={speech.errorType}
           onRetry={speech.retry}
@@ -305,7 +311,7 @@ export default function ChatInput({
               />
             </Flex>
             <Flex gap="2" ml="auto" alignItems="center">
-              {speech && (
+              {voiceInputEnabled && speech && (
                 <Button
                   p="0"
                   borderRadius="full"
