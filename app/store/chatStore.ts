@@ -41,7 +41,11 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
-import { effectiveAgentProfile } from "@/app/config/feature-flags";
+import {
+  canUseFeatureFlags,
+  effectiveAgentProfile,
+  EXPERIMENTAL_PROFILE,
+} from "@/app/config/feature-flags";
 import useAgentProfileStore from "./agentProfileStore";
 import useViewContextStore from "./viewContextStore";
 
@@ -188,6 +192,15 @@ async function processStreamMessage(
   mergeCitedArticles: (articles: BlogArticle[]) => void,
   setGeneratingInsight: (generating: boolean) => void
 ) {
+  // The agent wrote to a dashboard (created it or added a widget) — refetch
+  // it. Keyed on the metadata signal rather than the tool name so new backend
+  // dashboard tools work without a dispatch entry here; checked before the
+  // type branching because the signal can ride on a tool result, an
+  // error-classified message, or the agent narration in the same update.
+  if (streamMessage.msg_type === "dashboard_updated") {
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+  }
+
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
     if (streamMessage.trace_id) {
@@ -279,13 +292,6 @@ async function processStreamMessage(
   } else if (streamMessage.type === "tool") {
     if (streamMessage.cited_articles?.length) {
       mergeCitedArticles(streamMessage.cited_articles);
-    }
-
-    // The agent wrote to a dashboard (created it or added a widget) — refetch
-    // it. Keyed on the metadata signal rather than the tool name so new
-    // backend dashboard tools work without a dispatch entry here.
-    if (streamMessage.msg_type === "dashboard_updated") {
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     }
 
     // Add tool step to reasoning display
@@ -524,11 +530,21 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     // Send the agent profile as `ff` only when a profile is selected and the
     // user type is allowed to use feature flags (else the backend 403s).
-    const ff = effectiveAgentProfile(
-      useAgentProfileStore.getState().agentProfile,
-      useAuthStore.getState().userType
-    );
+    const userType = useAuthStore.getState().userType;
     const viewContext = useViewContextStore.getState().viewContext;
+    // The dashboard agent tools (create_dashboard / add_to_dashboard) live in
+    // the backend's experimental profile (dashboards-frontend-handoff.md), so
+    // on a dashboard surface default to it — otherwise "add this to my
+    // dashboard" silently no-ops unless the user happened to have visited
+    // with ?agent_profile=experimental. Same user-type gate as above.
+    const ff =
+      effectiveAgentProfile(
+        useAgentProfileStore.getState().agentProfile,
+        userType
+      ) ??
+      (viewContext?.page === "dashboard" && canUseFeatureFlags(userType)
+        ? EXPERIMENTAL_PROFILE
+        : null);
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,

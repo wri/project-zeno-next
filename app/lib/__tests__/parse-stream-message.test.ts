@@ -83,6 +83,42 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     expect(msg?.msg_type).toBeUndefined();
     expect(msg?.dashboard_id).toBeUndefined();
   });
+
+  it("finds the signal on an earlier message when the update ends with narration", () => {
+    // The signal-bearing tool result and the agent's follow-up can arrive in
+    // one update; only the last message decides the StreamMessage type, but
+    // the write signal must not be lost.
+    const signalBearing = toolUpdate("add_to_dashboard", {
+      msg_type: "dashboard_updated",
+      dashboard_id: "dash-1",
+    }).messages[0];
+    const narration = agentUpdate("Added it to your dashboard.").messages[0];
+    const update = {
+      messages: [signalBearing, narration],
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "agent", TS);
+    expect(msg).toMatchObject({
+      type: "text",
+      text: "Added it to your dashboard.",
+      msg_type: "dashboard_updated",
+      dashboard_id: "dash-1",
+    });
+  });
+
+  it("keeps the signal when the tool message is classified as an error", () => {
+    const update = toolUpdate("add_to_dashboard", {
+      msg_type: "dashboard_updated",
+      dashboard_id: "dash-1",
+    });
+    // Content mentioning "Error:" routes the message down the error branch.
+    update.messages[0].kwargs.content = "Recovered from Error: retried ok";
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.type).toBe("error");
+    expect(msg?.msg_type).toBe("dashboard_updated");
+    expect(msg?.dashboard_id).toBe("dash-1");
+  });
 });
 
 describe("parseStreamMessage — agent tool_calls", () => {
