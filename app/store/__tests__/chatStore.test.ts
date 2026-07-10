@@ -20,6 +20,7 @@ vi.mock("@/app/components/ui/toaster", () => ({
 }));
 
 import useChatStore from "../chatStore";
+import useViewContextStore from "../viewContextStore";
 import { apiFetch } from "@/app/lib/api-client";
 import type {
   AnalyseSuggestion,
@@ -124,6 +125,53 @@ describe("chatStore cancellation", () => {
       expect(messages.some((m) => m.type === "stopped")).toBe(false);
       expect(useChatStore.getState().isLoading).toBe(false);
     });
+  });
+});
+
+describe("chatStore view_context", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    useViewContextStore.setState({ viewContext: null });
+    vi.mocked(apiFetch).mockReset();
+    // A failed response ends sendMessage on its error path immediately; the
+    // request body we assert on has already been built by then.
+    vi.mocked(apiFetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      headers: new Headers(),
+    } as unknown as Response);
+  });
+
+  afterEach(() => {
+    useViewContextStore.setState({ viewContext: null });
+    vi.clearAllMocks();
+  });
+
+  const sentBody = (): Record<string, unknown> => {
+    const init = vi.mocked(apiFetch).mock.calls[0]?.[1];
+    return JSON.parse((init?.body as string) ?? "{}");
+  };
+
+  it("includes view_context in the POST body when a surface is registered", async () => {
+    useViewContextStore.getState().setViewContext({
+      page: "dashboard",
+      dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+      dashboard_name: "Paraná",
+    });
+
+    await useChatStore.getState().sendMessage("refine this dashboard");
+
+    expect(sentBody().view_context).toEqual({
+      page: "dashboard",
+      dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+      dashboard_name: "Paraná",
+    });
+  });
+
+  it("omits view_context when no surface has registered", async () => {
+    await useChatStore.getState().sendMessage("hello");
+
+    expect(sentBody()).not.toHaveProperty("view_context");
   });
 });
 

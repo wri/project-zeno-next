@@ -24,6 +24,7 @@ import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
 import useAgentProfileStore from "@/app/store/agentProfileStore";
+import useViewContextStore from "@/app/store/viewContextStore";
 import MapAreaFeedback from "@/app/components/MapAreaFeedback";
 import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
 import {
@@ -53,6 +54,8 @@ export default function DashboardLayout({
     // /app/threads/:id after the first message, so the param must be persisted
     // rather than re-read from the live URL on each request.
     useAgentProfileStore.getState().initFromUrl();
+    // Report this surface to the agent on every chat request from here on.
+    useViewContextStore.getState().setViewContext({ page: "map" });
   }, []);
 
   const DesktopLayout = (

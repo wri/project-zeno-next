@@ -42,6 +42,7 @@ import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
 import { effectiveAgentProfile } from "@/app/config/feature-flags";
 import useAgentProfileStore from "./agentProfileStore";
+import useViewContextStore from "./viewContextStore";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -519,6 +520,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       useAgentProfileStore.getState().agentProfile,
       useAuthStore.getState().userType
     );
+    const viewContext = useViewContextStore.getState().viewContext;
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
@@ -545,6 +547,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         body: JSON.stringify({
           ...prompt,
           ...(Object.keys(ui_context).length > 0 && { ui_context }),
+          // Ambient surface snapshot (map vs dashboard) — lets the backend
+          // scope "here"/"this dashboard" per turn. See viewContextStore.
+          ...(viewContext && { view_context: viewContext }),
         }),
         signal: abortController.signal,
       });
