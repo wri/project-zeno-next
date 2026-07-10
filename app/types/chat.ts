@@ -167,6 +167,11 @@ export interface StreamMessage {
   start_date?: string;
   end_date?: string;
   trace_id?: string;
+  // Backend write signal carried in a tool message's response_metadata
+  // (e.g. "dashboard_updated" after create_dashboard / add_to_dashboard) —
+  // tells the client to refetch the named resource.
+  msg_type?: string;
+  dashboard_id?: string;
 }
 
 export interface AOI {

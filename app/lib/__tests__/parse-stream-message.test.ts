@@ -33,6 +33,58 @@ function agentUpdate(
   } as unknown as LangChainUpdate;
 }
 
+/**
+ * Build a minimal tool-result LangChainUpdate with the given
+ * response_metadata (how the backend signals writes like dashboard_updated).
+ */
+function toolUpdate(
+  name: string,
+  responseMetadata: Record<string, unknown> = {}
+): LangChainUpdate {
+  return {
+    messages: [
+      {
+        lc: 1,
+        type: "constructor",
+        id: ["x"],
+        kwargs: {
+          content: "ok",
+          response_metadata: responseMetadata,
+          type: "tool",
+          name,
+          id: "msg-1",
+        },
+      },
+    ],
+  } as unknown as LangChainUpdate;
+}
+
+describe("parseStreamMessage — tool response_metadata write signals", () => {
+  it("carries msg_type and dashboard_id through on tool messages", () => {
+    const msg = parseStreamMessage(
+      toolUpdate("add_to_dashboard", {
+        msg_type: "dashboard_updated",
+        dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+      }),
+      "tools",
+      TS
+    );
+    expect(msg).toMatchObject({
+      type: "tool",
+      name: "add_to_dashboard",
+      msg_type: "dashboard_updated",
+      dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+    });
+  });
+
+  it("leaves the signal fields undefined for ordinary tool messages", () => {
+    const msg = parseStreamMessage(toolUpdate("pull_data"), "tools", TS);
+    expect(msg?.type).toBe("tool");
+    expect(msg?.msg_type).toBeUndefined();
+    expect(msg?.dashboard_id).toBeUndefined();
+  });
+});
+
 describe("parseStreamMessage — agent tool_calls", () => {
   it("attaches tool_calls names to a text message", () => {
     const msg = parseStreamMessage(

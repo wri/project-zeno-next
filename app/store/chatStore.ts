@@ -33,6 +33,7 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import { queryClient } from "@/app/lib/query-client";
+import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
 import {
   showApiError,
   showError,
@@ -278,6 +279,13 @@ async function processStreamMessage(
   } else if (streamMessage.type === "tool") {
     if (streamMessage.cited_articles?.length) {
       mergeCitedArticles(streamMessage.cited_articles);
+    }
+
+    // The agent wrote to a dashboard (created it or added a widget) — refetch
+    // it. Keyed on the metadata signal rather than the tool name so new
+    // backend dashboard tools work without a dispatch entry here.
+    if (streamMessage.msg_type === "dashboard_updated") {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     }
 
     // Add tool step to reasoning display
