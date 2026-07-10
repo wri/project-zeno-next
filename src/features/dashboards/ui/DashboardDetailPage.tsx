@@ -15,7 +15,9 @@ import {
 import { MapPinIcon, SquaresFourIcon } from "@phosphor-icons/react";
 
 import ChatPanel from "@/app/ChatPanel";
+import { getDashboardContentLeftPx } from "@/app/explorationLayout";
 import useAgentProfileStore from "@/app/store/agentProfileStore";
+import useSidebarStore from "@/app/store/sidebarStore";
 import useViewContextStore from "@/app/store/viewContextStore";
 import { sourceLabel, subtypeLabel } from "../lib/aoi";
 import { updatedLabel } from "../lib/dates";
@@ -26,6 +28,7 @@ export default function DashboardDetailPage() {
   const params = useParams<{ id: string }>();
   const dashboardId = params?.id ?? "";
   const { data: dashboard, isLoading, isError } = useDashboard(dashboardId);
+  const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
 
   useEffect(() => {
     // The dashboard agent tools are gated behind ?agent_profile=…; capture it
@@ -48,7 +51,19 @@ export default function DashboardDetailPage() {
   }, [dashboardId, dashboard?.name]);
 
   return (
-    <Box bg="#F4F5F6" minH="calc(100vh - 40px)" py={{ base: 8, md: 10 }}>
+    // The full-size chat is a fixed, full-height overlay on the left, so the
+    // content pane pads past it and the centered container re-centers in the
+    // remaining space. Duration matches the chat's own resize animation.
+    <Box
+      bg="#F4F5F6"
+      minH="calc(100vh - 40px)"
+      py={{ base: 8, md: 10 }}
+      pl={{
+        base: 0,
+        md: `${getDashboardContentLeftPx(isChatFullSize)}px`,
+      }}
+      transition="padding-left 0.2s ease-in-out"
+    >
       {/* Chat overlay — the same conversation as the map app (chatStore is a
           singleton). Fixed below the 40px header so it stays put while the
           dashboard content scrolls. Desktop-only for now; the mobile bottom
