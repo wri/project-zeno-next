@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect } from "react";
 import {
   Box,
   Container,
@@ -13,6 +14,9 @@ import {
 } from "@chakra-ui/react";
 import { MapPinIcon, SquaresFourIcon } from "@phosphor-icons/react";
 
+import ChatPanel from "@/app/ChatPanel";
+import useAgentProfileStore from "@/app/store/agentProfileStore";
+import useViewContextStore from "@/app/store/viewContextStore";
 import { sourceLabel, subtypeLabel } from "../lib/aoi";
 import { updatedLabel } from "../lib/dates";
 import { useDashboard } from "./dashboardQueries";
@@ -22,8 +26,44 @@ export default function DashboardDetailPage() {
   const dashboardId = params?.id ?? "";
   const { data: dashboard, isLoading, isError } = useDashboard(dashboardId);
 
+  useEffect(() => {
+    // The dashboard agent tools are gated behind ?agent_profile=…; capture it
+    // here too, since a direct dashboard landing never mounts the app chat
+    // layout (the only other capture point).
+    useAgentProfileStore.getState().initFromUrl();
+  }, []);
+
+  useEffect(() => {
+    // Report this surface to the agent on every chat request ("this
+    // dashboard" scoping, add_to_dashboard default target). The name rides
+    // along once the query resolves so the agent can name the dashboard
+    // without a DB read.
+    if (!dashboardId) return;
+    useViewContextStore.getState().setViewContext({
+      page: "dashboard",
+      dashboard_id: dashboardId,
+      ...(dashboard?.name && { dashboard_name: dashboard.name }),
+    });
+  }, [dashboardId, dashboard?.name]);
+
   return (
     <Box bg="#F4F5F6" minH="calc(100vh - 40px)" py={{ base: 8, md: 10 }}>
+      {/* Chat overlay — the same conversation as the map app (chatStore is a
+          singleton). Fixed below the 40px header so it stays put while the
+          dashboard content scrolls. Desktop-only for now; the mobile bottom
+          sheet is a later slice. */}
+      <Box
+        position="fixed"
+        top="40px"
+        bottom={0}
+        left={0}
+        zIndex={1100}
+        display={{ base: "none", md: "flex" }}
+        flexDir="column"
+        pointerEvents="none"
+      >
+        <ChatPanel />
+      </Box>
       <Container maxW="6xl">
         <Flex direction="column" gap={4}>
           <Flex align="center" gap={2} color="fg.muted" fontSize="sm">
