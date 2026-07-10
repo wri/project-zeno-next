@@ -20,6 +20,7 @@ import useViewContextStore from "@/app/store/viewContextStore";
 import { sourceLabel, subtypeLabel } from "../lib/aoi";
 import { updatedLabel } from "../lib/dates";
 import { useDashboard } from "./dashboardQueries";
+import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 
 export default function DashboardDetailPage() {
   const params = useParams<{ id: string }>();
@@ -129,29 +130,33 @@ export default function DashboardDetailPage() {
                 </Flex>
               )}
 
-              <Flex
-                minH="320px"
-                align="center"
-                justify="center"
-                borderWidth="1px"
-                borderStyle="dashed"
-                borderColor="border"
-                borderRadius="sm"
-                bg="white"
-                px={6}
-                textAlign="center"
-              >
-                <Box maxW="md">
-                  <SquaresFourIcon size={32} color="#656E7B" />
-                  <Heading as="h2" size="md" mt={4} mb={2}>
-                    This dashboard is empty
-                  </Heading>
-                  <Text color="fg.muted">
-                    The dashboard has been created for this area. Widgets,
-                    analyses, and maps can be added in a later slice.
-                  </Text>
-                </Box>
-              </Flex>
+              {dashboard.widgets.length > 0 ? (
+                <DashboardWidgetsGrid dashboard={dashboard} />
+              ) : (
+                <Flex
+                  minH="320px"
+                  align="center"
+                  justify="center"
+                  borderWidth="1px"
+                  borderStyle="dashed"
+                  borderColor="border"
+                  borderRadius="sm"
+                  bg="white"
+                  px={6}
+                  textAlign="center"
+                >
+                  <Box maxW="md">
+                    <SquaresFourIcon size={32} color="#656E7B" />
+                    <Heading as="h2" size="md" mt={4} mb={2}>
+                      This dashboard is empty
+                    </Heading>
+                    <Text color="fg.muted">
+                      Ask the AI assistant to analyse this area — insights it
+                      adds to the dashboard will appear here.
+                    </Text>
+                  </Box>
+                </Flex>
+              )}
             </Box>
           )}
         </Flex>
