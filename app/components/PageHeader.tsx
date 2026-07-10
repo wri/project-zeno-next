@@ -39,6 +39,7 @@ import { usePathname } from "next/navigation";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
+import { mapTabHref } from "@/app/utils/threadNavigation";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -283,7 +284,9 @@ function PageHeader() {
         >
           {[
             {
-              href: "/app?ff=dashboard",
+              // Thread-aware: with a live conversation, land on its thread
+              // URL (which preserves state) instead of the resetting /app.
+              href: mapTabHref(currentThreadId),
               label: "Map",
               icon: <MapTrifoldIcon size={14} />,
               active: onMap,
