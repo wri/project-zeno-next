@@ -249,6 +249,30 @@ export function TracesView() {
         />
       ) : null}
 
+      {store.selectionLabel ? (
+        <Flex
+          align="center"
+          gap={3}
+          wrap="wrap"
+          bg="bg.info"
+          borderWidth="1px"
+          borderColor="border.info"
+          borderRadius="sm"
+          px={3}
+          py={2}
+        >
+          <Text fontSize="sm">
+            Showing <b>{formatCount(store.entries.length)}</b> trace
+            {store.entries.length === 1 ? "" : "s"} from Analytics:{" "}
+            <b>{store.selectionLabel}</b>. Running a fetch above replaces this
+            selection.
+          </Text>
+          <Button size="xs" variant="outline" onClick={store.clearSelection}>
+            Clear selection
+          </Button>
+        </Flex>
+      ) : null}
+
       {store.status !== "loaded" ? (
         <InlineAlert
           status="info"

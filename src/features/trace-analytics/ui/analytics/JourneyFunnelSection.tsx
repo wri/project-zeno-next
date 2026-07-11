@@ -7,11 +7,16 @@
  */
 
 import { useMemo } from "react";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Flex, Link as ChakraLink, Text } from "@chakra-ui/react";
 import { ChartCard } from "../charts/ChartCard";
-import { computeJourneyFunnel } from "../../lib/analytics/funnel";
+import {
+  computeJourneyFunnel,
+  sessionKey,
+  type FunnelStageKey,
+} from "../../lib/analytics/funnel";
 import { formatCount, formatPercent } from "../../lib/format";
 import type { TraceRow } from "../../model/types";
+import { useOpenTracesInExplorer } from "../useOpenTracesInExplorer";
 
 interface JourneyFunnelSectionProps {
   readonly rows: readonly TraceRow[];
@@ -19,6 +24,18 @@ interface JourneyFunnelSectionProps {
 
 export function JourneyFunnelSection({ rows }: JourneyFunnelSectionProps) {
   const funnel = useMemo(() => computeJourneyFunnel(rows), [rows]);
+  const openTraces = useOpenTracesInExplorer();
+
+  /** All traces of the sessions that stalled before `stage`. */
+  function openDropped(stage: Exclude<FunnelStageKey, "sessions">) {
+    const dropped = new Set(funnel.droppedBefore[stage]);
+    const stageLabel =
+      funnel.stages.find((s) => s.key === stage)?.label ?? stage;
+    openTraces(
+      `Conversations dropped before "${stageLabel}"`,
+      rows.filter((r) => dropped.has(sessionKey(r)))
+    );
+  }
 
   return (
     <ChartCard
@@ -31,7 +48,9 @@ export function JourneyFunnelSection({ rows }: JourneyFunnelSectionProps) {
           satisfy a stage). Big drops mark where users stall — a low
           area-selection rate points at AOI understanding, a low
           dataset-conversion at data discovery, a low insight-conversion at
-          analysis completion.
+          analysis completion. Use the &ldquo;view dropped&rdquo; links to open
+          the traces of the conversations that stalled before a stage in the
+          Trace Explorer.
           {!funnel.insightKnown ? (
             <>
               {" "}
@@ -45,24 +64,45 @@ export function JourneyFunnelSection({ rows }: JourneyFunnelSectionProps) {
       <Flex direction="column" gap={3} py={2}>
         {funnel.stages.map((stage, i) => {
           const unavailable = stage.key === "insight" && !funnel.insightKnown;
+          const droppedCount =
+            stage.key === "sessions" || unavailable
+              ? 0
+              : funnel.droppedBefore[stage.key].length;
           return (
             <Box key={stage.key}>
-              <Flex justify="space-between" fontSize="xs" mb={1}>
+              <Flex justify="space-between" fontSize="xs" mb={1} gap={2}>
                 <Text color="fg.muted" fontWeight="medium">
                   {stage.label}
                 </Text>
-                <Text
-                  color="fg.subtle"
+                <Flex
+                  gap={1}
+                  align="baseline"
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
-                  {unavailable
-                    ? "not reported"
-                    : `${formatCount(stage.count)} · ${formatPercent(stage.shareOfTotal)} of conversations${
-                        i > 0
-                          ? ` · ${formatPercent(stage.conversionFromPrev)} from previous`
-                          : ""
-                      }`}
-                </Text>
+                  <Text color="fg.subtle">
+                    {unavailable
+                      ? "not reported"
+                      : `${formatCount(stage.count)} · ${formatPercent(stage.shareOfTotal)} of conversations${
+                          i > 0
+                            ? ` · ${formatPercent(stage.conversionFromPrev)} from previous`
+                            : ""
+                        }`}
+                  </Text>
+                  {droppedCount > 0 ? (
+                    <ChakraLink
+                      color="fg.link"
+                      fontSize="xs"
+                      onClick={() =>
+                        openDropped(
+                          stage.key as Exclude<FunnelStageKey, "sessions">
+                        )
+                      }
+                      title="Open the traces of the conversations that stalled before this stage"
+                    >
+                      · view {formatCount(droppedCount)} dropped
+                    </ChakraLink>
+                  ) : null}
+                </Flex>
               </Flex>
               <Box bg="bg.subtle" borderRadius="sm" h="18px" overflow="hidden">
                 <Box

@@ -13,24 +13,50 @@ import {
 } from "@chakra-ui/react";
 import type { TraceRow } from "../../model/types";
 import type { DailyMetrics } from "../../lib/analytics/daily";
-import { computeErrorOverlap } from "../../lib/analytics/aggregations";
+import { computeDailyOutcomeMix } from "../../lib/analytics/daily";
+import {
+  computeErrorOverlap,
+  USER_VISIBLE_OUTCOMES,
+} from "../../lib/analytics/aggregations";
 import {
   computeFailureFollowUps,
   computeOutcomeFlow,
   refineOutcomes,
+  REFINED_LABELS,
   type FlowMode,
   type OutcomeOverrides,
   type RefinedOutcome,
 } from "../../lib/analytics/outcomeRefine";
-import { computeOutcomeMixByLanguage } from "../../lib/analytics/language";
+import {
+  outcomeMixByDimension,
+  prettyLabel,
+  tagTraces,
+  tracesForDimensionValue,
+  type OutcomeMixDimension,
+  type TaggedTrace,
+} from "../../lib/analytics/taxonomy";
+import {
+  computeIntentTopicMatrix,
+  tracesForIntentTopic,
+} from "../../lib/analytics/intentTopicMatrix";
+import { useOpenTracesInExplorer } from "../useOpenTracesInExplorer";
 import { looksLikeRefusal } from "../../lib/analytics/refusalNeedles";
 import { fetchTraceDetail } from "../../api/zeno";
 import { AUDIT_MAX_TRACES } from "../../model/config";
 import { formatCount, formatPercent, languageName } from "../../lib/format";
-import { OUTCOME_LABELS } from "../charts/palette";
+import {
+  OUTCOME_COLORS,
+  OUTCOME_LABELS,
+  OUTCOME_SEVERITY_ORDER,
+  OUTCOME_STACK_ORDER,
+  REFINED_OUTCOME_COLORS,
+  REFINED_SEVERITY_ORDER,
+  REFINED_STACK_ORDER,
+} from "../charts/palette";
 import { ChartCard } from "../charts/ChartCard";
 import { DonutChart } from "../charts/DonutChart";
 import { DailyOutcomeAreaChart } from "../charts/DailyOutcomeAreaChart";
+import { IntentTopicHeatmap } from "../charts/IntentTopicHeatmap";
 import { OutcomeMixBars } from "../charts/OutcomeMixBars";
 import { OutcomeSankey } from "../charts/OutcomeSankey";
 import { Expander } from "../primitives/Expander";
@@ -70,6 +96,14 @@ const OVERLAP_COLORS = {
 const ANSWER_KEYS = new Set(["ANSWER", "ANSWER_CLEAN", "ANSWER_DEGRADED"]);
 const AUDIT_CONCURRENCY = 4;
 
+/** Display labels for the "Outcome mix by …" dimension selector. */
+const MIX_DIM_LABEL: Readonly<Record<OutcomeMixDimension, string>> = {
+  topic: "Topic",
+  intent: "Intent",
+  language: "Language",
+  turn: "Turn",
+};
+
 interface AuditState {
   readonly status: "idle" | "running" | "done";
   readonly done: number;
@@ -98,6 +132,7 @@ export function OutcomesSection({
   daily,
 }: OutcomesSectionProps) {
   const [mode, setMode] = useState<FlowMode>("refined");
+  const [mixDim, setMixDim] = useState<OutcomeMixDimension>("topic");
   const [overrides, setOverrides] = useState<OutcomeOverrides>(new Map());
   const [audit, setAudit] = useState<AuditState>(AUDIT_IDLE);
   const cancelled = useRef(false);
@@ -120,19 +155,151 @@ export function OutcomesSection({
   );
   const overlap = useMemo(() => computeErrorOverlap(rows), [rows]);
   const followUps = useMemo(() => computeFailureFollowUps(rows), [rows]);
-  const languageMix = useMemo(
+  // Tag once for the dimension-agnostic outcome mix (topic / intent / language
+  // / turn). The `mode` toggle (shared with the Sankey) swaps the outcome
+  // definition used by the mix and the daily chart between the raw API labels
+  // and the locally refined ones; the audit overrides flow through both.
+  const tagged = useMemo(() => tagTraces(rows), [rows]);
+  const refinedByTrace = useMemo(
     () =>
-      computeOutcomeMixByLanguage(rows).map((mix) => ({
-        label: languageName(mix.label),
-        total: mix.total,
-        counts: Object.fromEntries(
-          Object.entries(mix.counts).map(([outcome, count]) => [
-            OUTCOME_LABELS[outcome] ?? outcome,
-            count,
-          ])
-        ),
-      })),
-    [rows]
+      new Map(
+        refineOutcomes(rows, overrides).map((r) => [r.row.traceId, r.refined])
+      ),
+    [rows, overrides]
+  );
+  const refined = mode === "refined";
+
+  const outcomeMix = useMemo(() => {
+    const labelMap: Readonly<Record<string, string>> = refined
+      ? REFINED_LABELS
+      : OUTCOME_LABELS;
+    const outcomeOf = refined
+      ? (t: { row: TraceRow }) => refinedByTrace.get(t.row.traceId)
+      : undefined;
+    // Charts show prettified labels; keep the raw dimension value so a
+    // clicked segment can be mapped back to its traces.
+    const rawByPretty = new Map<string, string>();
+    const data = outcomeMixByDimension(tagged, mixDim, { outcomeOf }).map(
+      (mix) => {
+        const pretty =
+          mixDim === "language"
+            ? languageName(mix.label)
+            : mixDim === "topic"
+              ? mix.label
+              : prettyLabel(mix.label);
+        rawByPretty.set(pretty, mix.label);
+        return {
+          label: pretty,
+          total: mix.total,
+          counts: Object.fromEntries(
+            Object.entries(mix.counts).map(([code, count]) => [
+              labelMap[code] ?? code,
+              count,
+            ])
+          ),
+        };
+      }
+    );
+    return { data, rawByPretty };
+  }, [tagged, mixDim, refined, refinedByTrace]);
+  const mixOrder = refined ? REFINED_SEVERITY_ORDER : OUTCOME_SEVERITY_ORDER;
+  const mixColors = refined ? REFINED_OUTCOME_COLORS : OUTCOME_COLORS;
+
+  // Intent × topic grid, scored on the mode's outcome definition. ANSWER_KEYS
+  // holds both the API and the refined "attempted answer" codes (they never
+  // collide), so the same success set serves both modes.
+  const intentTopicMatrix = useMemo(() => {
+    const outcomeOf = refined
+      ? (t: TaggedTrace) => refinedByTrace.get(t.row.traceId)
+      : undefined;
+    return computeIntentTopicMatrix(tagged, {
+      outcomeOf,
+      successKeys: ANSWER_KEYS,
+    });
+  }, [tagged, refined, refinedByTrace]);
+
+  const openTraces = useOpenTracesInExplorer();
+
+  /** One intent × topic cell of the heatmap → its traces. */
+  function handleHeatmapCellClick(intent: string, topic: string) {
+    openTraces(
+      `Intent = ${prettyLabel(intent)} × Topic = ${topic}`,
+      tracesForIntentTopic(tagged, intent, topic).map((t) => t.row)
+    );
+  }
+
+  /** Display label of a turn's outcome under the current API/Refined mode. */
+  function outcomeLabelOf(t: TaggedTrace): string | null {
+    if (refined) {
+      const code = refinedByTrace.get(t.row.traceId);
+      return code ? REFINED_LABELS[code] : null;
+    }
+    return t.row.outcome
+      ? (OUTCOME_LABELS[t.row.outcome] ?? t.row.outcome)
+      : null;
+  }
+
+  /** One cohort × outcome cell of the mix chart → its traces. */
+  function handleMixSegmentClick(rowLabel: string, outcome: string) {
+    const raw = outcomeMix.rawByPretty.get(rowLabel);
+    if (!raw) return;
+    const picked = tracesForDimensionValue(tagged, mixDim, raw).filter(
+      (t) => outcomeLabelOf(t) === outcome
+    );
+    openTraces(
+      `${MIX_DIM_LABEL[mixDim]} = ${rowLabel} · outcome ${outcome} (${
+        refined ? "refined" : "API"
+      })`,
+      picked.map((t) => t.row)
+    );
+  }
+
+  function handleDayClick(date: string) {
+    openTraces(
+      `All traces on ${date}`,
+      rows.filter((r) => r.date === date)
+    );
+  }
+
+  /** Slice predicates matching computeErrorOverlap's four categories. */
+  const overlapPredicates: Readonly<Record<string, (r: TraceRow) => boolean>> =
+    {
+      "No errors": (r) =>
+        !r.hasInternalError && !USER_VISIBLE_OUTCOMES.has(String(r.outcome)),
+      "Internal only": (r) =>
+        r.hasInternalError && !USER_VISIBLE_OUTCOMES.has(String(r.outcome)),
+      "User-visible only": (r) =>
+        !r.hasInternalError && USER_VISIBLE_OUTCOMES.has(String(r.outcome)),
+      Both: (r) =>
+        r.hasInternalError && USER_VISIBLE_OUTCOMES.has(String(r.outcome)),
+    };
+
+  const dailyMix = useMemo(() => {
+    const labelOf = refined
+      ? (row: TraceRow) => {
+          const code = refinedByTrace.get(row.traceId);
+          return code ? REFINED_LABELS[code] : null;
+        }
+      : (row: TraceRow) =>
+          row.outcome ? (OUTCOME_LABELS[row.outcome] ?? row.outcome) : null;
+    return computeDailyOutcomeMix(rows, labelOf);
+  }, [rows, refined, refinedByTrace]);
+  const dailyOrder = refined ? REFINED_STACK_ORDER : OUTCOME_STACK_ORDER;
+  const dailyColors = refined ? REFINED_OUTCOME_COLORS : OUTCOME_COLORS;
+
+  const modeToggle = (
+    <Flex gap={1}>
+      {(["api", "refined"] as const).map((m) => (
+        <Button
+          key={m}
+          size="xs"
+          variant={mode === m ? "solid" : "outline"}
+          onClick={() => setMode(m)}
+        >
+          {m === "api" ? "API" : "Refined"}
+        </Button>
+      ))}
+    </Flex>
   );
   // Audit candidates come from the un-overridden refinement so the count
   // stays stable after reclassification.
@@ -238,17 +405,8 @@ export function OutcomesSection({
             points. Toggle API to see the raw server labels; Refined re-groups
             them with the local corrections."
         >
-          <Flex justify="flex-end" gap={1} mb={1}>
-            {(["api", "refined"] as const).map((m) => (
-              <Button
-                key={m}
-                size="xs"
-                variant={mode === m ? "solid" : "outline"}
-                onClick={() => setMode(m)}
-              >
-                {m === "api" ? "API" : "Refined"}
-              </Button>
-            ))}
+          <Flex justify="flex-end" mb={1}>
+            {modeToggle}
           </Flex>
           <OutcomeSankey flow={flow} />
           {auditCandidates.length ? (
@@ -297,36 +455,119 @@ export function OutcomesSection({
           {daily.length ? (
             <ChartCard
               title="Daily outcomes"
-              help="Share of each day's traces by outcome (API labels)."
+              help={`Share of each day's traces by outcome (${
+                refined ? "refined" : "API"
+              } labels).`}
               info="Each day stacks to 100%, so a shrinking green band is a rising
                 failure rate even if absolute volume grew. Isolated bad days point at
-                incidents; a persistent warm band points at a systemic issue."
+                incidents; a persistent warm band points at a systemic issue. Toggle
+                API/Refined to switch between the raw server outcome and the locally
+                re-derived one. Click a day to open all of its traces in the Trace
+                Explorer."
             >
-              <DailyOutcomeAreaChart data={daily} />
+              <Flex justify="flex-end" mb={1}>
+                {modeToggle}
+              </Flex>
+              <DailyOutcomeAreaChart
+                data={dailyMix}
+                order={dailyOrder}
+                colors={dailyColors}
+                onDayClick={handleDayClick}
+              />
             </ChartCard>
           ) : null}
-          {languageMix.length >= 2 ? (
-            <ChartCard
-              title="Outcome mix by language"
-              help="How turns end, split by detected prompt language."
-              info="Soft errors are detected with English-only phrases, so
-                non-English failure rates are understated by construction — treat a
-                clean-looking non-English row with suspicion and use the refusal
-                audit above. Small totals swing wildly; check the trace count in the
-                tooltip."
+          <ChartCard
+            title={`Outcome mix by ${MIX_DIM_LABEL[mixDim].toLowerCase()}`}
+            help="How turns end, split by the selected taxonomy dimension. Click a segment to open its traces."
+            info="Bars are 100% stacked best→worst, so a shrinking green segment
+              means a higher failure rate for that cohort. Topics are multi-tag,
+              so a turn counts under each of its topics; intent covers
+              substantive turns only; turn splits by the turn's role. For
+              language, soft-error detection is English-only, so non-English
+              failure is understated — use the refusal audit above. Small cohorts
+              swing wildly; check the trace count in the tooltip. Toggle
+              API/Refined to switch the outcome definition; both the dimensions
+              and the refined outcomes are derived locally and never modify the
+              trace. Click any segment to open exactly those traces (cohort ×
+              outcome) in the Trace Explorer."
+          >
+            <Flex
+              justify="space-between"
+              align="center"
+              gap={2}
+              mb={1}
+              wrap="wrap"
             >
-              <OutcomeMixBars data={languageMix} />
-            </ChartCard>
-          ) : null}
+              <Flex gap={1} wrap="wrap">
+                {(["topic", "intent", "language", "turn"] as const).map((d) => (
+                  <Button
+                    key={d}
+                    size="xs"
+                    variant={mixDim === d ? "solid" : "outline"}
+                    onClick={() => setMixDim(d)}
+                  >
+                    {MIX_DIM_LABEL[d]}
+                  </Button>
+                ))}
+              </Flex>
+              {modeToggle}
+            </Flex>
+            {outcomeMix.data.length ? (
+              <OutcomeMixBars
+                data={outcomeMix.data}
+                order={mixOrder}
+                colors={mixColors}
+                onSegmentClick={handleMixSegmentClick}
+              />
+            ) : (
+              <Text fontSize="sm" color="fg.muted">
+                No {MIX_DIM_LABEL[mixDim].toLowerCase()} data in this window.
+              </Text>
+            )}
+          </ChartCard>
         </SimpleGrid>
+
+        <ChartCard
+          title="Intent × topic"
+          help="Three views of one grid: where prompts land, how well each cohort is answered, and where failed turns concentrate. Click a cell to open its traces."
+          info="Volume paints each intent × topic cell by prompt count (or its
+            share of all pairs). Quality recolours the identical grid by the
+            share of attempted answers, as distance from the window average —
+            amber below, blue above; cells with too few resolved outcomes are
+            greyed rather than shown as noise. Impact multiplies the two:
+            failed turns per cell, either in absolute terms (where users feel
+            the most pain) or as the shortfall vs the average (what would
+            improve fastest if fixed). Rows and columns keep one order across
+            views, so a dark Volume cell that turns amber in Quality is a
+            high-volume, underperforming cohort. Topics are multi-tag, so a
+            turn counts under each of its topics; intent covers substantive
+            turns only. Toggle API/Refined to switch the outcome definition.
+            Click any cell to open exactly those traces in the Trace Explorer."
+        >
+          {intentTopicMatrix.intents.length ? (
+            <IntentTopicHeatmap
+              matrix={intentTopicMatrix}
+              successLabel={
+                refined ? "attempted answers" : "successful answers"
+              }
+              actions={modeToggle}
+              onCellClick={handleHeatmapCellClick}
+            />
+          ) : (
+            <Text fontSize="sm" color="fg.muted">
+              No substantive turns in this window.
+            </Text>
+          )}
+        </ChartCard>
 
         <SimpleGrid columns={{ base: 1, lg: 2 }} gap={4}>
           <ChartCard
             title="Internal errors"
-            help="Traces where any tool or API call failed internally."
+            help="Traces where any tool or API call failed internally. Click a slice to open those traces."
             info="Internal errors are failures inside the agent's tool calls — the
               user may never see them if the agent recovers. This is the raw rate
-              before recovery."
+              before recovery. Click a slice to inspect its traces in the Trace
+              Explorer."
           >
             <DonutChart
               data={[
@@ -341,16 +582,25 @@ export function OutcomesSection({
                 "Internal error": OVERLAP_COLORS.userVisibleOnly,
               }}
               centerLabel="traces"
+              onSliceClick={(label) =>
+                openTraces(
+                  label,
+                  rows.filter(
+                    (r) => (label === "Internal error") === r.hasInternalError
+                  )
+                )
+              }
             />
           </ChartCard>
           <ChartCard
             title="Internal vs user-visible overlap"
-            help="How internal failures relate to what users actually saw."
+            help="How internal failures relate to what users actually saw. Click a slice to open those traces."
             info="Internal only (amber) = the agent hit a tool error but recovered —
               invisible to the user, still worth fixing. User-visible only (red) =
               the user saw a failure with no internal error logged, usually a
               generation problem. Both (dark red) = a tool error surfaced all the
-              way to the user."
+              way to the user. Click a slice to inspect its traces in the Trace
+              Explorer."
           >
             <DonutChart
               data={[
@@ -366,6 +616,12 @@ export function OutcomesSection({
                 Both: OVERLAP_COLORS.both,
               }}
               centerLabel="traces"
+              onSliceClick={(label) => {
+                const predicate = overlapPredicates[label];
+                if (predicate) {
+                  openTraces(`Error overlap: ${label}`, rows.filter(predicate));
+                }
+              }}
             />
           </ChartCard>
         </SimpleGrid>

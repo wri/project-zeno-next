@@ -70,4 +70,39 @@ describe("computeJourneyFunnel", () => {
     expect(funnel.totalSessions).toBe(0);
     expect(funnel.stages.every((s) => s.count === 0)).toBe(true);
   });
+
+  it("reports which sessions dropped before each stage", () => {
+    const rows = [
+      // s1: full journey.
+      makeRow({ sessionId: "s1", aoiName: "Brazil", hasInsight: true }),
+      // s2: AOI but no dataset → dropped before "dataset".
+      makeRow({
+        traceId: "t3",
+        sessionId: "s2",
+        aoiName: "Kenya",
+        datasetsAnalysed: "",
+        hasInsight: false,
+      }),
+      // s3: nothing at all → dropped before "aoi".
+      makeRow({
+        traceId: "t4",
+        sessionId: "s3",
+        aoiName: "",
+        datasetsAnalysed: "",
+        hasInsight: false,
+      }),
+      // s4: AOI + dataset but no insight → dropped before "insight".
+      makeRow({
+        traceId: "t5",
+        sessionId: "s4",
+        aoiName: "Peru",
+        hasInsight: false,
+      }),
+    ];
+
+    const funnel = computeJourneyFunnel(rows);
+    expect(funnel.droppedBefore.aoi).toEqual(["s3"]);
+    expect(funnel.droppedBefore.dataset).toEqual(["s2"]);
+    expect(funnel.droppedBefore.insight).toEqual(["s4"]);
+  });
 });

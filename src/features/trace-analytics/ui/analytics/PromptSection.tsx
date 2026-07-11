@@ -14,6 +14,7 @@ import { HistogramChart } from "../charts/HistogramChart";
 import { HorizontalBarChart } from "../charts/HorizontalBarChart";
 import { InfoCallout } from "../primitives/InfoCallout";
 import { StatCards } from "../primitives/StatCards";
+import { useOpenTracesInExplorer } from "../useOpenTracesInExplorer";
 
 interface PromptSectionProps {
   readonly rows: readonly TraceRow[];
@@ -34,15 +35,19 @@ function lengthStats(values: readonly number[]) {
 }
 
 export function PromptSection({ rows }: PromptSectionProps) {
+  const openTraces = useOpenTracesInExplorer();
   const lengths = useMemo(() => computePromptLengths(rows), [rows]);
   const charBins = useMemo(() => binValues(lengths.chars, 60), [lengths]);
   const wordBins = useMemo(() => binValues(lengths.words, 60), [lengths]);
+  // Keep the ISO code alongside the display name so a clicked bar can be
+  // mapped back to its rows.
   const languageCounts = useMemo(
     () =>
       countCategories(
         rows.map((r) => r.language),
         { topN: 12 }
       ).map((entry) => ({
+        code: entry.label,
         label: languageName(entry.label),
         count: entry.count,
       })),
@@ -56,9 +61,14 @@ export function PromptSection({ rows }: PromptSectionProps) {
       </Heading>
       <Flex direction="column" gap={3}>
         <InfoCallout title="Prompt analysis explained">
-          Prompt-level metrics help understand what users are asking and how.
-          Length distributions reveal typical query complexity and outliers that
-          may inflate cost or latency.
+          Length is measured on the raw prompt text: characters include spaces
+          and punctuation, words are whitespace-separated tokens. Empty prompts
+          (UI events, dropped requests) are excluded from both. Very long
+          prompts often mean pasted content or templated text and can inflate
+          cost and latency; a pile-up of one-word prompts usually marks
+          confirmations and selections rather than real questions. For the
+          deeper what-are-users-asking view (intent, topic, complexity), see the
+          Prompt Taxonomy section below.
         </InfoCallout>
         <SimpleGrid columns={{ base: 1, lg: 2 }} gap={4}>
           <ChartCard
@@ -103,18 +113,30 @@ export function PromptSection({ rows }: PromptSectionProps) {
         {languageCounts.length ? (
           <ChartCard
             title="Prompt language"
-            help="Detected language of user prompts (server-side langid, local fallback)."
+            help="Detected language of user prompts (server-side langid, local fallback). Click a bar to open those traces."
             info="Language detection is heuristic and skips very short prompts, so
               counts undershoot the trace total. A meaningful non-English share
               matters twice over: the UI is English-only, and the soft-error
               detection heuristics only match English phrases — non-English
-              failures are systematically undercounted in the outcome data."
+              failures are systematically undercounted in the outcome data.
+              Click any bar to inspect its traces in the Trace Explorer."
           >
             <HorizontalBarChart
               data={languageCounts.map((l) => ({
                 label: l.label,
                 count: l.count,
               }))}
+              onBarClick={(datum) => {
+                const code = languageCounts.find(
+                  (l) => l.label === datum.label
+                )?.code;
+                if (code) {
+                  openTraces(
+                    `Language = ${datum.label}`,
+                    rows.filter((r) => r.language === code)
+                  );
+                }
+              }}
             />
           </ChartCard>
         ) : null}

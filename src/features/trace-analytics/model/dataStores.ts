@@ -143,6 +143,12 @@ export const useSessionsStore = create<SessionsState>()((set) => ({
 
 interface ExplorerState extends FetchMeta {
   readonly entries: readonly TraceListEntry[];
+  /**
+   * When set, `entries` were handed over from an analytics aggregate (e.g.
+   * "Topic = Fire") rather than fetched with the explorer's own filters. The
+   * label describes that selection so the view can explain what is loaded.
+   */
+  readonly selectionLabel: string | null;
   readonly selectedId: string | null;
   readonly detailCache: Readonly<Record<string, TraceDetail>>;
   readonly detailStatus: FetchStatus;
@@ -152,6 +158,13 @@ interface ExplorerState extends FetchMeta {
   readonly succeed: (entries: readonly TraceListEntry[]) => void;
   readonly fail: (error: string) => void;
   readonly select: (traceId: string | null) => void;
+  /** Load a pre-computed trace list from an analytics drill-down. */
+  readonly loadSelection: (
+    entries: readonly TraceListEntry[],
+    label: string
+  ) => void;
+  /** Drop a drill-down selection and return the explorer to its idle state. */
+  readonly clearSelection: () => void;
   readonly startDetail: () => void;
   readonly cacheDetail: (detail: TraceDetail) => void;
   readonly failDetail: (error: string) => void;
@@ -160,11 +173,13 @@ interface ExplorerState extends FetchMeta {
 export const useExplorerStore = create<ExplorerState>()((set) => ({
   ...idleMeta,
   entries: [],
+  selectionLabel: null,
   selectedId: null,
   detailCache: {},
   detailStatus: "idle",
   detailError: null,
-  start: () => set({ status: "loading", error: null, progress: 0 }),
+  start: () =>
+    set({ status: "loading", error: null, progress: 0, selectionLabel: null }),
   setProgress: (progress) => set({ progress }),
   succeed: (entries) =>
     set({
@@ -173,9 +188,28 @@ export const useExplorerStore = create<ExplorerState>()((set) => ({
       error: null,
       fetchedAt: Date.now(),
       selectedId: entries.length ? entries[0].id : null,
+      // A manual fetch replaces any drill-down selection.
+      selectionLabel: null,
     }),
   fail: (error) => set({ status: "error", error }),
   select: (traceId) => set({ selectedId: traceId }),
+  loadSelection: (entries, label) =>
+    set({
+      status: "loaded",
+      entries,
+      error: null,
+      fetchedAt: Date.now(),
+      selectedId: entries.length ? entries[0].id : null,
+      selectionLabel: label,
+    }),
+  clearSelection: () =>
+    set({
+      status: "idle",
+      entries: [],
+      selectedId: null,
+      selectionLabel: null,
+      error: null,
+    }),
   startDetail: () => set({ detailStatus: "loading", detailError: null }),
   cacheDetail: (detail) =>
     set((state) => ({
