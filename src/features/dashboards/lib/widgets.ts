@@ -113,6 +113,17 @@ export function dashboardWidgetToInsightWidgets(
     });
 }
 
+/**
+ * A text widget's markdown body (`config.text` per the widgets API), or null
+ * when absent/blank — the caller shows a placeholder. The API validates the
+ * key on create, so null means a malformed or hand-written config.
+ */
+export function widgetText(config: Record<string, unknown>): string | null {
+  return typeof config.text === "string" && config.text.trim()
+    ? config.text
+    : null;
+}
+
 export interface WidgetPositionPatch {
   id: string;
   position: number;

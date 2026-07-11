@@ -11,6 +11,7 @@ import {
   computeReorder,
   dashboardWidgetToInsightWidgets,
   widgetSize,
+  widgetText,
   withChartSize,
   withSize,
 } from "../lib/widgets";
@@ -37,6 +38,7 @@ interface GridCell {
   widget: DashboardWidget;
   card: InsightWidget | null;
   map: MapWidgetLayer | null;
+  text: string | null;
   placeholder: string | null;
   chartCount: number;
 }
@@ -53,7 +55,22 @@ function cellsForWidget(
         widget,
         card: null,
         map,
+        text: null,
         placeholder: map ? null : "This map widget can't be displayed.",
+        chartCount: 0,
+      },
+    ];
+  }
+  if (widget.widget_type === "text") {
+    const text = widgetText(widget.config);
+    return [
+      {
+        key: widget.id,
+        widget,
+        card: null,
+        map: null,
+        text,
+        placeholder: text ? null : "This note is empty.",
         chartCount: 0,
       },
     ];
@@ -65,6 +82,7 @@ function cellsForWidget(
         widget,
         card: null,
         map: null,
+        text: null,
         placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
         chartCount: 0,
       },
@@ -78,6 +96,7 @@ function cellsForWidget(
         widget,
         card: null,
         map: null,
+        text: null,
         placeholder: "This analysis is not available.",
         chartCount: 0,
       },
@@ -88,6 +107,7 @@ function cellsForWidget(
     widget,
     card,
     map: null,
+    text: null,
     placeholder: null,
     chartCount: cards.length,
   }));
@@ -166,7 +186,11 @@ export default function DashboardWidgetsGrid({
         const title =
           card?.title ??
           cell.map?.title ??
-          (typeof widget.config.title === "string" ? widget.config.title : "");
+          (typeof widget.config.title === "string"
+            ? widget.config.title
+            : cell.text !== null || widget.widget_type === "text"
+              ? "Note"
+              : "");
         return (
           <GridItem
             key={cell.key}
@@ -193,6 +217,7 @@ export default function DashboardWidgetsGrid({
               title={title}
               card={card}
               map={cell.map}
+              text={cell.text}
               aoi={areaAoi}
               viewportBbox={
                 cell.map ? mapWidgetViewportBbox(widget.config) : null

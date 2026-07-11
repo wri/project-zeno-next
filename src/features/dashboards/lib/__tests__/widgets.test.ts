@@ -5,6 +5,7 @@ import {
   computeReorder,
   dashboardWidgetToInsightWidgets,
   widgetSize,
+  widgetText,
   withChartSize,
   withSize,
 } from "../widgets";
@@ -174,6 +175,20 @@ describe("dashboardWidgetToInsightWidgets", () => {
   it("omits analysis params when no area name is given", () => {
     const [card] = dashboardWidgetToInsightWidgets(widget());
     expect(card.analysisParams).toBeUndefined();
+  });
+});
+
+describe("widgetText", () => {
+  it("returns the markdown body from config.text", () => {
+    expect(widgetText({ text: "**Key Insights**\n\n- one" })).toBe(
+      "**Key Insights**\n\n- one"
+    );
+  });
+
+  it("returns null for missing, non-string or blank text", () => {
+    expect(widgetText({})).toBeNull();
+    expect(widgetText({ text: 42 })).toBeNull();
+    expect(widgetText({ text: "   " })).toBeNull();
   });
 });
 
