@@ -80,6 +80,20 @@ export async function updateWidget(
   );
 }
 
+// Adds a persisted insight to a dashboard (the chat-side "Add to dashboard"
+// toggle). The backend is idempotent for duplicate insight adds and returns
+// the dashboard without insight expansion — callers invalidate and refetch.
+export async function addInsightWidget(
+  dashboardId: string,
+  insightId: string
+): Promise<void> {
+  await readJson<unknown>(`/api/dashboards/${dashboardId}/widgets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ widget_type: "insight", insight_id: insightId }),
+  });
+}
+
 export async function deleteWidget(
   dashboardId: string,
   widgetId: string

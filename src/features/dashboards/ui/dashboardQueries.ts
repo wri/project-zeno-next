@@ -7,6 +7,7 @@ import {
 
 import { searchAois } from "../api/aois";
 import {
+  addInsightWidget,
   createDashboard,
   createDashboardPayloadFromAoi,
   deleteWidget,
@@ -152,6 +153,22 @@ export function useUpdateWidget(dashboardId: string) {
           : w
       )
   );
+}
+
+// Chat-side "Add to dashboard" toggle-on. Not optimistic: the server assigns
+// the widget id/position and the POST response lacks insight expansion, so
+// the detail is refetched to render the new card.
+export function useAddInsightWidget(dashboardId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (insightId: string) => addInsightWidget(dashboardId, insightId),
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: dashboardKeys.detail(dashboardId),
+      });
+    },
+  });
 }
 
 export function useDeleteWidget(dashboardId: string) {
