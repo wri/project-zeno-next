@@ -30,6 +30,30 @@ describe("firstMessageRedirectPath", () => {
     );
   });
 
+  it("keeps the hidden-feature flags across the rewrite", () => {
+    expect(firstMessageRedirectPath("/app", "t-1", "?ff=dashboard")).toBe(
+      "/app/threads/t-1?ff=dashboard"
+    );
+  });
+
+  it("keeps multi-flag ff values intact", () => {
+    const path = firstMessageRedirectPath(
+      "/app",
+      "t-1",
+      "?ff=dashboard,analysis"
+    );
+    expect(path).toBe("/app/threads/t-1?ff=dashboard%2Canalysis");
+    // Round-trips through URLSearchParams to the original flag list.
+    const query = new URLSearchParams(path!.split("?")[1]);
+    expect(query.get("ff")).toBe("dashboard,analysis");
+  });
+
+  it("does not carry unrelated params across the rewrite", () => {
+    expect(firstMessageRedirectPath("/app", "t-1", "?prompt=hello")).toBe(
+      "/app/threads/t-1"
+    );
+  });
+
   it("stays put on a dashboard page", () => {
     expect(firstMessageRedirectPath("/dashboards/abc", "t-1")).toBeNull();
   });

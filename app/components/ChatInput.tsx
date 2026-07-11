@@ -127,7 +127,11 @@ export default function ChatInput({
 
     const result = await sendMessage(message);
     if (result.isNew) {
-      const redirect = firstMessageRedirectPath(pathname, result.id);
+      const redirect = firstMessageRedirectPath(
+        pathname,
+        result.id,
+        window.location.search
+      );
       if (redirect) router.replace(redirect);
     }
   };

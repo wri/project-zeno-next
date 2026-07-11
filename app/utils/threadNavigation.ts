@@ -16,12 +16,22 @@ export function isAppRoute(pathname: string | null): boolean {
  * chat store and the user stays where they are — returning to the map via
  * the header's thread-aware Map tab lands on the thread URL with state
  * intact. Returns null when no navigation should happen.
+ *
+ * Pass the current `location.search` so the hidden-feature flags (?ff=…)
+ * survive the rewrite — dropping them closes the dashboards feature gate on
+ * the next navigation or refresh. Other params are deliberately not carried
+ * over (e.g. a landing ?prompt= must not ride along).
  */
 export function firstMessageRedirectPath(
   pathname: string | null,
-  threadId: string
+  threadId: string,
+  search?: string | null
 ): string | null {
-  return isAppRoute(pathname) ? `/app/threads/${threadId}` : null;
+  if (!isAppRoute(pathname)) return null;
+  const ff = search ? new URLSearchParams(search).get("ff") : null;
+  return ff
+    ? `/app/threads/${threadId}?${new URLSearchParams({ ff })}`
+    : `/app/threads/${threadId}`;
 }
 
 /**
