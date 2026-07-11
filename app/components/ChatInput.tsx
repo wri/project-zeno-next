@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Button,
   Flex,
@@ -10,15 +10,26 @@ import {
   Text,
   Portal,
 } from "@chakra-ui/react";
-import { ArrowBendRightUpIcon, StopIcon } from "@phosphor-icons/react";
+import {
+  ArrowBendRightUpIcon,
+  MicrophoneIcon,
+  StopIcon,
+} from "@phosphor-icons/react";
 import { format } from "date-fns";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
+import VoiceListeningPanel from "./voice/VoiceListeningPanel";
+import VoiceErrorPanel from "./voice/VoiceErrorPanel";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import useSidebarStore from "../store/sidebarStore";
+import useAuthStore from "../store/authStore";
+import useSpeechInput from "../hooks/useSpeechInput";
+import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
+import { resolveSpeechLang } from "../utils/speechLang";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import { useRouter } from "next/navigation";
 
 export default function ChatInput({
@@ -69,6 +80,31 @@ export default function ChatInput({
 
   const excludedLayerIds = useChatStore((s) => s.excludedContextLayerIds);
   const excludedSet = new Set(excludedLayerIds);
+
+  // Voice dictation, gated behind the `ff=voice` hidden-feature flag while it's
+  // still being rolled out. `speech` is null when the browser lacks the Web
+  // Speech API, in which case the mic control is not rendered. The committed
+  // transcript is appended to whatever is already typed, so we snapshot that
+  // text when a session starts. The Web Speech API can't detect the spoken
+  // language, so we default it from the user's onboarding preference, then the
+  // browser language, then en-US — with an in-listening override menu.
+  const voiceInputEnabled = useFeatureFlag("voice");
+  const preferredLanguageCode = useAuthStore((s) => s.preferredLanguageCode);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const dictationBaseRef = useRef("");
+  const speech = useSpeechInput({
+    initialLang: resolveSpeechLang(
+      preferredLanguageCode,
+      typeof navigator !== "undefined" ? navigator.language : null
+    ),
+    onStart: () => {
+      dictationBaseRef.current = inputValue.trim()
+        ? `${inputValue.trim()} `
+        : "";
+    },
+    onCommit: (transcript) =>
+      setInputValue(dictationBaseRef.current + transcript),
+  });
 
   // Pills reflect layers/dates active in chat context. Dismissing a pill
   // removes it from context only; the map layer stays visible.
@@ -214,79 +250,121 @@ export default function ChatInput({
           )}
         </Flex>
       )}
-      <Textarea
-        ref={setFocusEl}
-        aria-label="Ask a question..."
-        placeholder={message}
-        // 16px on mobile — iOS Safari auto-zooms focused inputs below 16px.
-        fontSize={{ base: "md", md: "sm" }}
-        minH="20px"
-        autoresize
-        maxH="10lh"
-        border="none"
-        p={0}
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
-        _disabled={{ opacity: 1 }}
-        _focus={{ outline: "none", boxShadow: "none" }}
-        _placeholder={{ color: disabled ? "gray.400" : "gray.600" }}
-      />
-      <Flex justifyContent="space-between" alignItems="center" w="full">
-        <Flex gap="2">
-          <ContextButton
-            contextType="layer"
-            onClick={openLayerPicker}
+      {voiceInputEnabled && speech && speech.phase === "listening" ? (
+        <VoiceListeningPanel
+          seconds={speech.seconds}
+          committed={speech.committed}
+          interim={speech.interim}
+          lang={speech.lang}
+          onLangChange={speech.setLang}
+          onStop={speech.stop}
+          reducedMotion={prefersReducedMotion}
+        />
+      ) : voiceInputEnabled &&
+        speech &&
+        speech.phase === "error" &&
+        speech.errorType ? (
+        <VoiceErrorPanel
+          errorType={speech.errorType}
+          onRetry={speech.retry}
+          onDismiss={speech.dismissError}
+          reducedMotion={prefersReducedMotion}
+        />
+      ) : (
+        <>
+          <Textarea
+            ref={setFocusEl}
+            aria-label="Ask a question..."
+            placeholder={message}
+            // 16px on mobile — iOS Safari auto-zooms focused inputs below 16px.
+            fontSize={{ base: "md", md: "sm" }}
+            minH="20px"
+            autoresize
+            maxH="10lh"
+            border="none"
+            p={0}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
             disabled={disabled}
-            borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
-            color={dataCatalogOpen ? "primary.solid" : undefined}
-            aria-expanded={dataCatalogOpen}
+            _disabled={{ opacity: 1 }}
+            _focus={{ outline: "none", boxShadow: "none" }}
+            _placeholder={{ color: disabled ? "gray.400" : "gray.600" }}
           />
-          <ContextButton
-            contextType="area"
-            onClick={openAreaPicker}
-            disabled={disabled}
-            borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
-            color={areasPanelOpen ? "primary.solid" : undefined}
-            aria-expanded={areasPanelOpen}
-          />
-        </Flex>
-        {canCancelRequest ? (
-          <Button
-            p="0"
-            ml="auto"
-            borderRadius="full"
-            variant="solid"
-            colorPalette="primary"
-            type="button"
-            size="xs"
-            aria-label="Cancel request"
-            onClick={cancelRequest}
-            title="Cancel request"
-          >
-            <StopIcon weight="fill" />
-          </Button>
-        ) : (
-          <Button
-            p="0"
-            ml="auto"
-            borderRadius="full"
-            variant="solid"
-            colorPalette="primary"
-            _disabled={{
-              opacity: 0.36,
-            }}
-            type="button"
-            size="xs"
-            aria-label="Send prompt"
-            onClick={submitPrompt}
-            disabled={isButtonDisabled}
-          >
-            <ArrowBendRightUpIcon weight="bold" />
-          </Button>
-        )}
-      </Flex>
+          <Flex justifyContent="space-between" alignItems="center" w="full">
+            <Flex gap="2">
+              <ContextButton
+                contextType="layer"
+                onClick={openLayerPicker}
+                disabled={disabled}
+                borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
+                color={dataCatalogOpen ? "primary.solid" : undefined}
+                aria-expanded={dataCatalogOpen}
+              />
+              <ContextButton
+                contextType="area"
+                onClick={openAreaPicker}
+                disabled={disabled}
+                borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
+                color={areasPanelOpen ? "primary.solid" : undefined}
+                aria-expanded={areasPanelOpen}
+              />
+            </Flex>
+            <Flex gap="2" ml="auto" alignItems="center">
+              {voiceInputEnabled && speech && (
+                <Button
+                  p="0"
+                  borderRadius="full"
+                  variant="outline"
+                  bg="white"
+                  borderColor="#E0E2E5"
+                  color="gray.700"
+                  type="button"
+                  size="xs"
+                  aria-label="Start voice input"
+                  title="Start voice input"
+                  onClick={speech.start}
+                  disabled={disabled}
+                >
+                  <MicrophoneIcon />
+                </Button>
+              )}
+              {canCancelRequest ? (
+                <Button
+                  p="0"
+                  borderRadius="full"
+                  variant="solid"
+                  colorPalette="primary"
+                  type="button"
+                  size="xs"
+                  aria-label="Cancel request"
+                  onClick={cancelRequest}
+                  title="Cancel request"
+                >
+                  <StopIcon weight="fill" />
+                </Button>
+              ) : (
+                <Button
+                  p="0"
+                  borderRadius="full"
+                  variant="solid"
+                  colorPalette="primary"
+                  _disabled={{
+                    opacity: 0.36,
+                  }}
+                  type="button"
+                  size="xs"
+                  aria-label="Send prompt"
+                  onClick={submitPrompt}
+                  disabled={isButtonDisabled}
+                >
+                  <ArrowBendRightUpIcon weight="bold" />
+                </Button>
+              )}
+            </Flex>
+          </Flex>
+        </>
+      )}
     </Flex>
   );
 
