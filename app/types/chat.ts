@@ -77,6 +77,10 @@ export interface InsightWidget {
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
   analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
+  // Persisted insight UUID (streamed with generate_insights). All charts of
+  // one analysis share it; it is the handle for REST widget adds
+  // (POST /api/dashboards/:id/widgets).
+  insightId?: string;
 }
 
 // Parameters the agent used to produce an insight (read-only transparency)
@@ -159,6 +163,9 @@ export interface StreamMessage {
   source_urls?: string[];
   cited_articles?: BlogArticle[];
   insight_count?: number;
+  // Persisted insight UUID riding on generate_insights (and recall/restyle)
+  // state updates — the handle for adding the analysis to a dashboard.
+  insight_id?: string;
   // Names of the tools an AI message is about to call. The agent announces a
   // tool call before its result streams back, so this is the earliest signal
   // that e.g. an insight is being generated.
@@ -292,6 +299,7 @@ export interface LangChainUpdate {
   end_date?: string;
   insights: object[];
   charts_data: object[];
+  insight_id?: string;
   // Optional provenance fields emitted by tools
   codeact_parts?: CodeActPart[];
   source_urls?: string[];

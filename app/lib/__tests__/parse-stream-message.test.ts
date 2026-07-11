@@ -106,6 +106,17 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     });
   });
 
+  it("extracts a state-level insight_id on tool messages", () => {
+    // generate_insights streams the persisted insight uuid alongside
+    // charts_data — the handle for the chat-side "Add to dashboard" toggle.
+    const update = toolUpdate("generate_insights");
+    (update as unknown as { insight_id: string }).insight_id = "ins-1";
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.type).toBe("tool");
+    expect(msg?.insight_id).toBe("ins-1");
+  });
+
   it("carries insight_updated through on tool messages", () => {
     // update_insight_display (rename a chart, change its type) signals with
     // insight_updated — the dashboard page relies on it to refetch widgets

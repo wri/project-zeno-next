@@ -118,6 +118,11 @@ export function generateInsightsTool(
             source_urls: streamMessage.source_urls,
           },
           ...(hasParams ? { analysisParams } : {}),
+          // Shared by all charts of the analysis — the handle for the
+          // "Add to dashboard" toggle (REST widget add, no chat round trip).
+          ...(streamMessage.insight_id
+            ? { insightId: streamMessage.insight_id }
+            : {}),
         };
       });
 

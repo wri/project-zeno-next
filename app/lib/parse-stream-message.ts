@@ -82,6 +82,7 @@ export function parseStreamMessage(
       suggested_datasets: langChainMessage.suggested_datasets || undefined,
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
+      insight_id: langChainMessage.insight_id || undefined,
       codeact_parts: langChainMessage.codeact_parts || [],
       source_urls: langChainMessage.source_urls || [],
       cited_articles: langChainMessage.cited_articles || undefined,
