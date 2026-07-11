@@ -26,11 +26,14 @@ import AnalysisParametersToggle, {
 import { buildChips } from "@/app/components/widgets/analysis-params-utils";
 import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
+import type { MapWidgetLayer } from "../lib/mapWidgets";
+import DashboardMapWidget from "./DashboardMapWidget";
 
 /**
  * One dashboard card — the Figma "Analysis" container: a light-blue shell
  * with a header row (drag handle · insight title · owner actions), a
- * "Show params" row, and the white chart card (`WidgetMessage`) inside.
+ * "Show params" row, and the white chart card (`WidgetMessage`) — or the
+ * map body (`DashboardMapWidget`) for map widgets — inside.
  * A widget whose insight has several charts renders one of these per chart,
  * so `card` is a single insight card, not a list. Header actions still act
  * on the underlying widget (per the API: position/config/DELETE are
@@ -39,6 +42,9 @@ import type { InsightWidget } from "@/app/types/chat";
 export default function DashboardWidgetCard({
   title,
   card,
+  map,
+  aoi,
+  viewportBbox,
   placeholder,
   chartCount,
   isOwner,
@@ -49,8 +55,14 @@ export default function DashboardWidgetCard({
   onRemove,
 }: {
   title: string;
-  /** The insight card to render, or null for a placeholder cell. */
+  /** The insight card to render, or null for a map/placeholder cell. */
   card: InsightWidget | null;
+  /** The map layer to render for `widget_type: "map"` cells. */
+  map?: MapWidgetLayer | null;
+  /** The dashboard's area — outline + viewport fit for map cells. */
+  aoi?: { source: string; src_id: string };
+  /** Reserved `config.viewport` bbox override for map cells. */
+  viewportBbox?: [number, number, number, number] | null;
   /** Placeholder copy when `card` is null (unsupported type / hidden insight). */
   placeholder: string | null;
   /** How many cards the underlying widget renders in total (its chart count). */
@@ -189,6 +201,15 @@ export default function DashboardWidgetCard({
           <ChartBarIcon size={24} />
           <Text fontSize="sm">{placeholder}</Text>
         </Flex>
+      ) : map ? (
+        <Box px="8px" pb="8px" flex="1" minW={0}>
+          <DashboardMapWidget
+            layer={map}
+            aoi={aoi}
+            bboxOverride={viewportBbox ?? null}
+            tall={isDouble}
+          />
+        </Box>
       ) : (
         card && (
           <Box px="8px" pb="8px" flex="1" minW={0}>

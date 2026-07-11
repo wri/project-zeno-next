@@ -15,6 +15,11 @@ import {
   withSize,
 } from "../lib/widgets";
 import {
+  mapWidgetLayer,
+  mapWidgetViewportBbox,
+  type MapWidgetLayer,
+} from "../lib/mapWidgets";
+import {
   useDeleteWidget,
   useReorderWidgets,
   useUpdateWidget,
@@ -23,13 +28,15 @@ import DashboardWidgetCard from "./DashboardWidgetCard";
 
 /**
  * One grid cell. A widget whose insight has several charts renders one cell
- * per chart (each its own card, per design); placeholder cells (unsupported
- * widget type, hidden insight) carry `card: null` and placeholder copy.
+ * per chart (each its own card, per design); map widgets render one cell
+ * with `map` set; placeholder cells (unsupported widget type, hidden
+ * insight, malformed map config) carry `card: null` and placeholder copy.
  */
 interface GridCell {
   key: string;
   widget: DashboardWidget;
   card: InsightWidget | null;
+  map: MapWidgetLayer | null;
   placeholder: string | null;
   chartCount: number;
 }
@@ -38,12 +45,26 @@ function cellsForWidget(
   widget: DashboardWidget,
   areaName: string | undefined
 ): GridCell[] {
+  if (widget.widget_type === "map") {
+    const map = mapWidgetLayer(widget.config);
+    return [
+      {
+        key: widget.id,
+        widget,
+        card: null,
+        map,
+        placeholder: map ? null : "This map widget can't be displayed.",
+        chartCount: 0,
+      },
+    ];
+  }
   if (widget.widget_type !== "insight") {
     return [
       {
         key: widget.id,
         widget,
         card: null,
+        map: null,
         placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
         chartCount: 0,
       },
@@ -56,6 +77,7 @@ function cellsForWidget(
         key: widget.id,
         widget,
         card: null,
+        map: null,
         placeholder: "This analysis is not available.",
         chartCount: 0,
       },
@@ -65,6 +87,7 @@ function cellsForWidget(
     key: `${widget.id}:${card.id}`,
     widget,
     card,
+    map: null,
     placeholder: null,
     chartCount: cards.length,
   }));
@@ -101,7 +124,8 @@ export default function DashboardWidgetsGrid({
     () => [...dashboard.widgets].sort((a, b) => a.position - b.position),
     [dashboard.widgets]
   );
-  const areaName = dashboard.aois[0]?.name;
+  const areaAoi = dashboard.aois[0];
+  const areaName = areaAoi?.name;
   const cells = useMemo(
     () => widgets.flatMap((widget) => cellsForWidget(widget, areaName)),
     [widgets, areaName]
@@ -141,6 +165,7 @@ export default function DashboardWidgetsGrid({
           : widgetSize(widget.config);
         const title =
           card?.title ??
+          cell.map?.title ??
           (typeof widget.config.title === "string" ? widget.config.title : "");
         return (
           <GridItem
@@ -167,6 +192,11 @@ export default function DashboardWidgetsGrid({
             <DashboardWidgetCard
               title={title}
               card={card}
+              map={cell.map}
+              aoi={areaAoi}
+              viewportBbox={
+                cell.map ? mapWidgetViewportBbox(widget.config) : null
+              }
               placeholder={cell.placeholder}
               chartCount={cell.chartCount}
               isOwner={isOwner}
