@@ -64,7 +64,7 @@ describe("ViewAnalysisNudge", () => {
 
     expect(
       screen.getByRole("button", {
-        name: /View Analysis for Tree cover loss in Pará, Brazil/i,
+        name: /View Tree cover loss Analysis for Pará, Brazil/i,
       })
     ).toBeTruthy();
   });
@@ -107,7 +107,9 @@ describe("ViewAnalysisNudge", () => {
     analysisState.status = "running";
     renderNudge(<ViewAnalysisNudge messageId="m1" suggestion={suggestion} />);
 
-    expect(screen.getByText("Analyzing…")).toBeTruthy();
+    expect(
+      screen.getByText(/Loading chart data for "Pará, Brazil"/)
+    ).toBeTruthy();
   });
 
   it("shows the error message on failure", () => {
