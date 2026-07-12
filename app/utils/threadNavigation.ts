@@ -35,6 +35,29 @@ export function firstMessageRedirectPath(
 }
 
 /**
+ * What the header's "New conversation" (+) control should do.
+ *
+ * A dashboard detail page hosts its own chat panel, so starting a new
+ * conversation there must not navigate away — the conversation is global
+ * session state that dashboard URLs don't encode (see ADR-003), so the
+ * caller resets the stores in place instead. Everywhere else the button
+ * navigates to the map's new-thread route, carrying `?ff=dashboard` when the
+ * feature gate is open so the navigation doesn't close it.
+ */
+export function newConversationTarget(
+  pathname: string | null,
+  dashboardFeatureEnabled: boolean
+): { kind: "reset-in-place" } | { kind: "navigate"; href: string } {
+  if (/^\/dashboards\/./.test(pathname ?? "")) {
+    return { kind: "reset-in-place" };
+  }
+  return {
+    kind: "navigate",
+    href: dashboardFeatureEnabled ? "/app?ff=dashboard" : "/app",
+  };
+}
+
+/**
  * The header Map tab's destination. `/app` mounts the new-thread page, which
  * resets the chat and map stores — correct when nothing is under way, but it
  * would wipe a live conversation when returning from a dashboard. With an

@@ -4,6 +4,7 @@ import {
   firstMessageRedirectPath,
   isAppRoute,
   mapTabHref,
+  newConversationTarget,
 } from "../threadNavigation";
 
 describe("isAppRoute", () => {
@@ -64,6 +65,39 @@ describe("firstMessageRedirectPath", () => {
 
   it("stays put when the pathname is unknown", () => {
     expect(firstMessageRedirectPath(null, "t-1")).toBeNull();
+  });
+});
+
+describe("newConversationTarget", () => {
+  it("resets in place on a dashboard detail page", () => {
+    expect(newConversationTarget("/dashboards/abc", true)).toEqual({
+      kind: "reset-in-place",
+    });
+  });
+
+  it("navigates from the dashboards list (no chat panel there)", () => {
+    expect(newConversationTarget("/dashboards", true)).toEqual({
+      kind: "navigate",
+      href: "/app?ff=dashboard",
+    });
+  });
+
+  it("keeps the dashboards feature gate open when navigating", () => {
+    expect(newConversationTarget("/app/threads/t-1", true)).toEqual({
+      kind: "navigate",
+      href: "/app?ff=dashboard",
+    });
+  });
+
+  it("navigates plainly when the feature gate is closed", () => {
+    expect(newConversationTarget("/app", false)).toEqual({
+      kind: "navigate",
+      href: "/app",
+    });
+    expect(newConversationTarget(null, false)).toEqual({
+      kind: "navigate",
+      href: "/app",
+    });
   });
 });
 
