@@ -147,7 +147,12 @@ export default function DashboardWidgetsGrid({
             key={cell.key}
             colSpan={{ base: 1, lg: size === "double" ? 2 : 1 }}
             draggable={isOwner && grabbedKey === cell.key}
-            onDragStart={() => setDragIndex(i)}
+            onDragStart={(e) => {
+              // Required for Firefox to initiate drag-and-drop.
+              e.dataTransfer.setData("text/plain", cell.key);
+              e.dataTransfer.effectAllowed = "move";
+              setDragIndex(i);
+            }}
             onDragEnd={endDrag}
             onDragOver={(e) => {
               if (dragIndex === null) return;
