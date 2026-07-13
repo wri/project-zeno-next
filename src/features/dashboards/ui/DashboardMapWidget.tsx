@@ -10,6 +10,7 @@ import MapGl, {
   AttributionControl,
   Layer,
   Marker,
+  NavigationControl,
   Source,
   type MapRef,
 } from "react-map-gl/maplibre";
@@ -96,7 +97,11 @@ export default function DashboardMapWidget({
         [bounds[0], bounds[1]],
         [bounds[2], bounds[3]],
       ],
-      { padding: 24, duration: 0 }
+      {
+        // Extra top headroom: the area label chip hangs above the bbox corner.
+        padding: { top: 56, right: 32, bottom: 32, left: 32 },
+        duration: 0,
+      }
     );
   };
 
@@ -104,8 +109,27 @@ export default function DashboardMapWidget({
   // completes last (the effect covers late bounds, onLoad covers late maps).
   useEffect(fitToBounds, [bounds]);
 
+  // Re-centre the area whenever the card resizes (size toggle, grid reflow,
+  // window resize). The observer only sees the container; the latest fit
+  // callback rides in a ref so we never re-observe.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fitRef = useRef(fitToBounds);
+  fitRef.current = fitToBounds;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => {
+      // Next frame, so MapLibre's own resize handling runs first.
+      requestAnimationFrame(() => fitRef.current());
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Box
+      ref={containerRef}
       h={{ base: "280px", md: tall ? "520px" : "360px" }}
       rounded="md"
       overflow="hidden"
@@ -123,7 +147,9 @@ export default function DashboardMapWidget({
         dragRotate={false}
         attributionControl={false}
       >
-        {/* Bottom-left so the legend can occupy the design's bottom-right slot. */}
+        {/* Bottom-left so the legend can occupy the design's bottom-right
+            slot; the attribution stacks beneath the zoom buttons. */}
+        <NavigationControl position="bottom-left" showCompass={false} />
         <AttributionControl compact position="bottom-left" />
         <Source
           id="widget-basemap"
