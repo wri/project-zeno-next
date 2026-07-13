@@ -100,9 +100,7 @@ export default function DashboardChatNudges({
                   cursor: "pointer",
                   bg: "bg.subtle",
                   borderColor: "primary.solid",
-                }}
-                onClick={() => sendMessage(chip)}
-              >
+                onClick={() => void sendMessage(chip)}
                 {chip}
               </Box>
             ))}
