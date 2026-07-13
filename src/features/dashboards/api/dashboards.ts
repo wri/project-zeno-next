@@ -57,6 +57,18 @@ export async function renameDashboard(
   });
 }
 
+export async function deleteDashboard(dashboardId: string): Promise<void> {
+  // 204 No Content — bypass readJson, which would choke on the empty body.
+  const res = await apiFetch(`/api/dashboards/${dashboardId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const error = new Error(`Failed to delete dashboard: ${res.statusText}`);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
+  }
+}
+
 export interface WidgetUpdate {
   position?: number;
   // Replaced whole by the backend (not merged) — always send the full config.
