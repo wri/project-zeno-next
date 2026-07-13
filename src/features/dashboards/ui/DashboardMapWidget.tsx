@@ -1,7 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Box } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import turfBbox from "@turf/bbox";
@@ -16,6 +16,9 @@ import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import type { MapWidgetLayer } from "../lib/mapWidgets";
+import DashboardMapLegend, {
+  type MapWidgetOpacity,
+} from "./DashboardMapLegend";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 // The explorer's default light basemap style.
@@ -44,6 +47,13 @@ export default function DashboardMapWidget({
   tall?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
+
+  // Legend-controlled raster opacity (0–100). 80 matches the explorer's
+  // default dataset opacity and the legend's default display value.
+  const [opacity, setOpacity] = useState<MapWidgetOpacity>({
+    main: 80,
+    context: 80,
+  });
 
   useEffect(() => {
     // Idempotent; needed here because the dashboard page never mounts the
@@ -103,7 +113,8 @@ export default function DashboardMapWidget({
         dragRotate={false}
         attributionControl={false}
       >
-        <AttributionControl compact position="bottom-right" />
+        {/* Bottom-left so the legend can occupy the design's bottom-right slot. */}
+        <AttributionControl compact position="bottom-left" />
         <Source
           id="widget-basemap"
           type="raster"
@@ -128,7 +139,7 @@ export default function DashboardMapWidget({
             <Layer
               id="widget-context"
               type="raster"
-              paint={{ "raster-opacity": 0.8 }}
+              paint={{ "raster-opacity": opacity.context / 100 }}
             />
           </Source>
         )}
@@ -141,7 +152,7 @@ export default function DashboardMapWidget({
           <Layer
             id="widget-tiles"
             type="raster"
-            paint={{ "raster-opacity": 0.8 }}
+            paint={{ "raster-opacity": opacity.main / 100 }}
           />
         </Source>
         {geometry?.geometry && (
@@ -153,6 +164,24 @@ export default function DashboardMapWidget({
             />
           </Source>
         )}
+        {/* Non-map children render as DOM overlays inside the map container
+            (same pattern as the explorer's Map.tsx). */}
+        <Box
+          position="absolute"
+          bottom="8px"
+          right="8px"
+          zIndex={1}
+          w="400px"
+          maxW="calc(100% - 16px)"
+        >
+          <DashboardMapLegend
+            layer={layer}
+            opacity={opacity}
+            onOpacityChange={(target, value) =>
+              setOpacity((prev) => ({ ...prev, [target]: value }))
+            }
+          />
+        </Box>
       </MapGl>
     </Box>
   );
