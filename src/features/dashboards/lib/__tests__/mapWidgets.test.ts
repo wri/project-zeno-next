@@ -21,6 +21,7 @@ describe("mapWidgetLayer — dataset configs", () => {
       kind: "dataset",
       title: "Tree cover loss",
       tileUrl: "https://tiles.example.org/tcl/{z}/{x}/{y}.png?tcd=30",
+      datasetId: 4,
     });
   });
 
@@ -43,6 +44,7 @@ describe("mapWidgetLayer — dataset configs", () => {
       })
     );
     expect(layer?.contextTileUrl).toBe("https://tiles.example.org/driver");
+    expect(layer?.contextLayerName).toBe("driver");
   });
 
   it("omits the context layer when the active name has no entry", () => {
@@ -50,6 +52,39 @@ describe("mapWidgetLayer — dataset configs", () => {
       datasetConfig({ context_layer: "driver", context_layers: [] })
     );
     expect(layer?.contextTileUrl).toBeUndefined();
+    expect(layer?.contextLayerName).toBeUndefined();
+  });
+
+  it("reduces config parameters to a first-value record for the legend", () => {
+    const layer = mapWidgetLayer(
+      datasetConfig({
+        parameters: [
+          { name: "canopy_cover", values: [30] },
+          { name: "empty", values: [] },
+          { name: 42, values: [1] },
+          "junk",
+        ],
+      })
+    );
+    expect(layer?.parameters).toEqual({ canopy_cover: 30 });
+  });
+
+  it("omits parameters when the config has none worth showing", () => {
+    expect(mapWidgetLayer(datasetConfig())?.parameters).toBeUndefined();
+    expect(
+      mapWidgetLayer(datasetConfig({ parameters: [] }))?.parameters
+    ).toBeUndefined();
+    expect(
+      mapWidgetLayer(datasetConfig({ parameters: null }))?.parameters
+    ).toBeUndefined();
+  });
+
+  it("carries the config's date range for the legend chip", () => {
+    const layer = mapWidgetLayer(
+      datasetConfig({ start_date: "2024-01-01", end_date: "2024-12-31" })
+    );
+    expect(layer?.startDate).toBe("2024-01-01");
+    expect(layer?.endDate).toBe("2024-12-31");
   });
 
   it("routes primary-forest tiles through the pf:// protocol", () => {
