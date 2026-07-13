@@ -12,6 +12,7 @@ import {
 import { BasemapTheme } from "../BasemapSelector";
 import bbox from "@turf/bbox";
 import { createBboxPolygon, unionAoiBboxes } from "@/app/utils/bboxUtils";
+import { aoiBoundaryColors, aoiCasingPaint, aoiLinePaint } from "./aoiStyle";
 
 // Compute the combined bbox of a list of features
 function computeCombinedBbox(
@@ -129,11 +130,10 @@ function GeoJsonLayerGroup({
 
   const isMultiArea = !!layer.selectionName;
 
-  // On dark basemaps (dark, satellite) boundaries use white lines + blue casing
-  // to maximise contrast. On light basemaps the colours are inverted.
-  const casingColor = basemapTheme === "dark" ? "#172B7A" : "#FFFFFF";
-  const mainLineColor =
-    basemapTheme === "dark" ? "#FFFFFF" : isMultiArea ? "#8EA4E8" : "#172B7A";
+  const { casingColor, mainLineColor } = aoiBoundaryColors(
+    basemapTheme,
+    isMultiArea
+  );
 
   const handleRemove = () => removeLayer(layer.id);
   // Prefer backend-provided bbox (handles antimeridian); fall back to turf.
@@ -180,21 +180,7 @@ function GeoJsonLayerGroup({
             <MapLayer
               id={casingLayerId}
               type="line"
-              paint={{
-                "line-color": casingColor,
-                "line-width": [
-                  "interpolate",
-                  ["linear"],
-                  ["zoom"],
-                  3,
-                  3.5,
-                  6,
-                  7,
-                  10,
-                  11,
-                ],
-                "line-opacity": lineOpacity,
-              }}
+              paint={aoiCasingPaint(casingColor, lineOpacity)}
               filter={[
                 "any",
                 ["==", ["geometry-type"], "Polygon"],
@@ -204,21 +190,7 @@ function GeoJsonLayerGroup({
             <MapLayer
               id={lineLayerId}
               type="line"
-              paint={{
-                "line-color": mainLineColor,
-                "line-width": [
-                  "interpolate",
-                  ["linear"],
-                  ["zoom"],
-                  3,
-                  1,
-                  6,
-                  1.5,
-                  10,
-                  2,
-                ],
-                "line-opacity": lineOpacity,
-              }}
+              paint={aoiLinePaint(mainLineColor, lineOpacity)}
               filter={[
                 "any",
                 ["==", ["geometry-type"], "Polygon"],
