@@ -114,20 +114,22 @@ export default function DashboardWidgetsGrid({
   };
 
   // Cards of the same widget share a position — dropping on a sibling is a no-op.
-  const isDropTarget = (index: number) =>
-    dragIndex !== null &&
-    cells[dragIndex]?.widget.id !== cells[index]?.widget.id;
+  const isDropTarget = (index: number) => {
+    const dragged = dragIndex !== null ? cells[dragIndex] : undefined;
+    const target = cells[index];
+    return !!dragged && !!target && dragged.widget.id !== target.widget.id;
+  };
 
   const dropOn = (targetIndex: number) => {
-    if (dragIndex !== null && isDropTarget(targetIndex)) {
-      const fromIndex = widgets.findIndex(
-        (w) => w.id === cells[dragIndex].widget.id
-      );
-      const toIndex = widgets.findIndex(
-        (w) => w.id === cells[targetIndex].widget.id
-      );
-      const { patches } = computeReorder(widgets, fromIndex, toIndex);
-      if (patches.length > 0) reorderWidgets.mutate(patches);
+    const draggedCell = dragIndex !== null ? cells[dragIndex] : undefined;
+    const targetCell = cells[targetIndex];
+    if (draggedCell && targetCell && draggedCell.widget.id !== targetCell.widget.id) {
+      const fromIndex = widgets.findIndex((w) => w.id === draggedCell.widget.id);
+      const toIndex = widgets.findIndex((w) => w.id === targetCell.widget.id);
+      if (fromIndex >= 0 && toIndex >= 0) {
+        const { patches } = computeReorder(widgets, fromIndex, toIndex);
+        if (patches.length > 0) reorderWidgets.mutate(patches);
+      }
     }
     endDrag();
   };
