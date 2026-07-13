@@ -12,6 +12,11 @@ import MapGl, {
   type MapRef,
 } from "react-map-gl/maplibre";
 
+import {
+  aoiBoundaryColors,
+  aoiCasingPaint,
+  aoiLinePaint,
+} from "@/app/components/map/layers/aoiStyle";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
@@ -23,8 +28,8 @@ import DashboardMapLegend, {
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 // The explorer's default light basemap style.
 const BASEMAP_STYLE = "devseed/cmazl5ws500bz01scaa27dqi4";
-// Boundary colour on light basemaps (matches the explorer's area layers).
-const OUTLINE_COLOR = "#172B7A";
+// The widget basemap is always light, and dashboards are single-area.
+const AOI_COLORS = aoiBoundaryColors("light");
 
 /**
  * The map body of a `widget_type: "map"` dashboard card. Self-contained per
@@ -157,10 +162,17 @@ export default function DashboardMapWidget({
         </Source>
         {geometry?.geometry && (
           <Source id="widget-aoi" type="geojson" data={geometry.geometry}>
+            {/* The explorer's boundary treatment: contrasting casing under
+                the main line (shared paints, zoom-interpolated widths). */}
+            <Layer
+              id="widget-aoi-casing"
+              type="line"
+              paint={aoiCasingPaint(AOI_COLORS.casingColor)}
+            />
             <Layer
               id="widget-aoi-line"
               type="line"
-              paint={{ "line-color": OUTLINE_COLOR, "line-width": 1.5 }}
+              paint={aoiLinePaint(AOI_COLORS.mainLineColor)}
             />
           </Source>
         )}
