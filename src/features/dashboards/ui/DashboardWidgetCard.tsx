@@ -59,8 +59,8 @@ export default function DashboardWidgetCard({
   card: InsightWidget | null;
   /** The map layer to render for `widget_type: "map"` cells. */
   map?: MapWidgetLayer | null;
-  /** The dashboard's area — outline + viewport fit for map cells. */
-  aoi?: { source: string; src_id: string };
+  /** The dashboard's area — outline, label + viewport fit for map cells. */
+  aoi?: { source: string; src_id: string; name: string };
   /** Reserved `config.viewport` bbox override for map cells. */
   viewportBbox?: [number, number, number, number] | null;
   /** Placeholder copy when `card` is null (unsupported type / hidden insight). */

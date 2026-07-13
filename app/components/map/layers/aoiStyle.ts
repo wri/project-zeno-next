@@ -37,3 +37,12 @@ export function aoiLinePaint(color: string, opacity = 1): LinePaint {
     "line-opacity": opacity,
   };
 }
+
+/** The solid rectangle drawn around an AOI's bounding box. */
+export function aoiBboxLinePaint(color: string, opacity = 1): LinePaint {
+  return {
+    "line-color": color,
+    "line-width": 1.5,
+    "line-opacity": 0.75 * opacity,
+  };
+}

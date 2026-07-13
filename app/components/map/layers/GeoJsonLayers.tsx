@@ -12,7 +12,12 @@ import {
 import { BasemapTheme } from "../BasemapSelector";
 import bbox from "@turf/bbox";
 import { createBboxPolygon, unionAoiBboxes } from "@/app/utils/bboxUtils";
-import { aoiBoundaryColors, aoiCasingPaint, aoiLinePaint } from "./aoiStyle";
+import {
+  aoiBboxLinePaint,
+  aoiBoundaryColors,
+  aoiCasingPaint,
+  aoiLinePaint,
+} from "./aoiStyle";
 
 // Compute the combined bbox of a list of features
 function computeCombinedBbox(
@@ -223,11 +228,7 @@ function GeoJsonLayerGroup({
           <MapLayer
             id={`bbox-line-${groupId}-solid`}
             type="line"
-            paint={{
-              "line-color": mainLineColor,
-              "line-width": 1.5,
-              "line-opacity": 0.75 * lineOpacity,
-            }}
+            paint={aoiBboxLinePaint(mainLineColor, lineOpacity)}
           />
         </Source>
       )}

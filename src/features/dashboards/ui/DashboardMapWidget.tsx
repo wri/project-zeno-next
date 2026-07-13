@@ -2,22 +2,26 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box } from "@chakra-ui/react";
+import { Box, Tag } from "@chakra-ui/react";
+import { PolygonIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import turfBbox from "@turf/bbox";
 import MapGl, {
   AttributionControl,
   Layer,
+  Marker,
   Source,
   type MapRef,
 } from "react-map-gl/maplibre";
 
 import {
+  aoiBboxLinePaint,
   aoiBoundaryColors,
   aoiCasingPaint,
   aoiLinePaint,
 } from "@/app/components/map/layers/aoiStyle";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
+import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import type { MapWidgetLayer } from "../lib/mapWidgets";
@@ -45,8 +49,8 @@ export default function DashboardMapWidget({
   tall,
 }: {
   layer: MapWidgetLayer;
-  /** The dashboard's (single) area — outline + default viewport fit. */
-  aoi: { source: string; src_id: string } | undefined;
+  /** The dashboard's (single) area — outline, label + default viewport fit. */
+  aoi: { source: string; src_id: string; name: string } | undefined;
   bboxOverride: [number, number, number, number] | null;
   /** Full-width cards get a taller map. */
   tall?: boolean;
@@ -75,14 +79,15 @@ export default function DashboardMapWidget({
     staleTime: Infinity,
   });
 
-  const bounds = useMemo<[number, number, number, number] | null>(() => {
-    if (bboxOverride) return bboxOverride;
+  const aoiBbox = useMemo<[number, number, number, number] | null>(() => {
     if (!geometry?.geometry) return null;
     // Naive bbox — antimeridian-crossing areas get a wide box. Acceptable
     // here: dashboard AOIs don't carry a backend bbox to prefer.
     const [west, south, east, north] = turfBbox(geometry.geometry);
     return [west, south, east, north];
-  }, [bboxOverride, geometry]);
+  }, [geometry]);
+
+  const bounds = bboxOverride ?? aoiBbox;
 
   const fitToBounds = () => {
     if (!bounds || !mapRef.current) return;
@@ -175,6 +180,42 @@ export default function DashboardMapWidget({
               paint={aoiLinePaint(AOI_COLORS.mainLineColor)}
             />
           </Source>
+        )}
+        {aoiBbox && (
+          <Source
+            id="widget-aoi-bbox"
+            type="geojson"
+            data={createBboxPolygon(aoiBbox)}
+          >
+            <Layer
+              id="widget-aoi-bbox-line"
+              type="line"
+              paint={aoiBboxLinePaint(AOI_COLORS.mainLineColor)}
+            />
+          </Source>
+        )}
+        {/* Area label pinned to the bbox corner, as on the explorer map —
+            minus the close trigger: a dashboard's area is fixed. */}
+        {aoiBbox && aoi?.name && (
+          <Marker
+            longitude={aoiBbox[0]}
+            latitude={aoiBbox[3]}
+            anchor="bottom-left"
+          >
+            <Tag.Root
+              colorPalette="primary"
+              px={2}
+              py={1}
+              size="md"
+              variant="solid"
+              roundedBottom="none"
+            >
+              <Tag.StartElement>
+                <PolygonIcon />
+              </Tag.StartElement>
+              <Tag.Label fontWeight="medium">{aoi.name}</Tag.Label>
+            </Tag.Root>
+          </Marker>
         )}
         {/* Non-map children render as DOM overlays inside the map container
             (same pattern as the explorer's Map.tsx). */}
