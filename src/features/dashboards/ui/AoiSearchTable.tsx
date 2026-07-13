@@ -26,7 +26,7 @@ import { useAoiSearch } from "./dashboardQueries";
 
 function toAoiSelection(result: AoiSearchResult): AOISelection {
   const bbox =
-    result.bbox.length === 4
+    result.bbox?.length === 4
       ? (result.bbox as [number, number, number, number])
       : undefined;
 
