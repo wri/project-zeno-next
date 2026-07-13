@@ -964,30 +964,35 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         }
       }
     } finally {
-      set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
 
-      // Seed the last-sent context from the fully rehydrated layers + date
-      // range, so the first new message on this thread only sends what changed.
-      const { layers, geoJsonRegistry } = useMapStore.getState();
-      const { keys } = deriveContext(
-        layers,
-        geoJsonRegistry,
-        get().dateRange,
-        new Set(get().excludedContextLayerIds)
-      );
-      set({ lastSentContext: keys });
+      // Strict Mode / navigation cleanup aborts the in-flight fetch. Do not mark
+      // the thread as loaded or seed context from a partial replay.
+      if (!abortController.signal.aborted) {
+        set({ currentThreadId: threadId });
 
-      // Flush any remaining tool steps for the last user message
-      const finalToolSteps = get().toolSteps;
-      if (finalToolSteps.length > 0) {
-        const first = new Date(finalToolSteps[0].timestamp).getTime();
-        const last = new Date(
-          finalToolSteps[finalToolSteps.length - 1].timestamp
-        ).getTime();
-        const historicalDuration =
-          isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
-        get().attachToolStepsToLastUserMessage(historicalDuration);
+        // Seed the last-sent context from the fully rehydrated layers + date
+        // range, so the first new message on this thread only sends what changed.
+        const { layers, geoJsonRegistry } = useMapStore.getState();
+        const { keys } = deriveContext(
+          layers,
+          geoJsonRegistry,
+          get().dateRange,
+          new Set(get().excludedContextLayerIds)
+        );
+        set({ lastSentContext: keys });
+
+        // Flush any remaining tool steps for the last user message
+        const finalToolSteps = get().toolSteps;
+        if (finalToolSteps.length > 0) {
+          const first = new Date(finalToolSteps[0].timestamp).getTime();
+          const last = new Date(
+            finalToolSteps[finalToolSteps.length - 1].timestamp
+          ).getTime();
+          const historicalDuration =
+            isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+          get().attachToolStepsToLastUserMessage(historicalDuration);
+        }
       }
 
       setLoading(false);

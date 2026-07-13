@@ -29,7 +29,7 @@ export default function SingleThread() {
   }, [comingFromNewThread, resetChatStore, resetMapStore]);
 
   useEffect(() => {
-    if (!currentThreadId && id) {
+    if (id && currentThreadId !== id) {
       const abortController = new AbortController();
       fetchThread(id as string, abortController);
 
