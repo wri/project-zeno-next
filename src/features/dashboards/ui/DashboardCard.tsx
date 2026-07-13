@@ -7,6 +7,7 @@ import { LockIcon, PolygonIcon } from "@phosphor-icons/react";
 import type { Dashboard } from "../api/schemas";
 import { updatedLabel } from "../lib/dates";
 import DashboardActionsMenu from "./DashboardActionsMenu";
+import { HERO_GRID_IMAGE } from "./heroGrid";
 
 export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
   const primaryAoi = dashboard.aois[0];
@@ -17,9 +18,14 @@ export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
         asChild
         display="flex"
         flexDir="column"
+        // Chakra's Link defaults to align-items: center, which would centre
+        // the column content; the design is left-justified.
+        alignItems="stretch"
+        textAlign="left"
         flex="1"
         minH="308px"
         bg="white"
+        backgroundImage={HERO_GRID_IMAGE}
         borderWidth="1px"
         borderColor="border"
         borderTopWidth="2px"
