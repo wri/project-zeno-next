@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Button,
   Dialog,
@@ -121,11 +121,14 @@ function DashboardRenameDialog({
   onRename: (newName: string) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState("");
-
-  useEffect(() => {
-    setDraft(name);
-  }, [name, isOpen]);
+  const [draft, setDraft] = useState(name);
+  // Re-seed the draft from the current name each time the dialog opens
+  // (render-time derived state, not an effect, to avoid a cascading render).
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  if (prevOpen !== isOpen) {
+    setPrevOpen(isOpen);
+    if (isOpen) setDraft(name);
+  }
 
   return (
     <Dialog.Root
