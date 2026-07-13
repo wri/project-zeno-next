@@ -224,7 +224,7 @@ export default function DashboardMapWidget({
           bottom="8px"
           right="8px"
           zIndex={1}
-          w="400px"
+          w="300px"
           maxW="calc(100% - 16px)"
         >
           <DashboardMapLegend

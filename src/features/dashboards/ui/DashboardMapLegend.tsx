@@ -88,6 +88,7 @@ export default function DashboardMapLegend({
   return (
     <Legend
       layers={[entry]}
+      compact
       onLayerAction={({ action, payload }) => {
         if (action === "opacity") {
           onOpacityChange(
