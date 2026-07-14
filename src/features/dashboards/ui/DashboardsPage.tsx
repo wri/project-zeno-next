@@ -67,7 +67,7 @@ export default function DashboardsPage() {
               </Box>
             ) : (
               // Fixed 261px cards per the Figma; as many as fit per row.
-              <Grid templateColumns="repeat(auto-fill, 261px)" gap={4}>
+              <Grid templateColumns={{ base: "1fr", sm: "repeat(auto-fill, 261px)" }} gap={4}>
                 {dashboards.map((dashboard) => (
                   <DashboardCard key={dashboard.id} dashboard={dashboard} />
                 ))}
