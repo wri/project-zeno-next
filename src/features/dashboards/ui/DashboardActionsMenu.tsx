@@ -93,18 +93,22 @@ export default function DashboardActionsMenu({
           </Menu.Content>
         </Menu.Positioner>
       </Menu.Root>
-      <DashboardRenameDialog
-        name={dashboard.name}
-        isOpen={renameOpen}
-        onOpenChange={setRenameOpen}
-        onRename={onRename}
-      />
-      <DashboardDeleteDialog
-        dashboardName={dashboard.name}
-        isOpen={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        onConfirm={onDelete}
-      />
+      {renameOpen && (
+        <DashboardRenameDialog
+          name={dashboard.name}
+          isOpen={renameOpen}
+          onOpenChange={setRenameOpen}
+          onRename={onRename}
+        />
+      )}
+      {deleteOpen && (
+        <DashboardDeleteDialog
+          dashboardName={dashboard.name}
+          isOpen={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          onConfirm={onDelete}
+        />
+      )}
     </>
   );
 }
