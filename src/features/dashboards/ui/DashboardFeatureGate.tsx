@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
-import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 export default function DashboardFeatureGate({
   children,
@@ -12,10 +12,20 @@ export default function DashboardFeatureGate({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const enabled = useFeatureFlag("dashboard");
+  // null = not checked yet. The check must run post-commit: during a
+  // client-side navigation the first render still sees the *previous* URL
+  // (Next updates window.location on commit), so a render-time read closes
+  // the gate even when the destination URL carries ?ff=dashboard.
+  const [enabled, setEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!enabled) router.replace("/app");
+    setEnabled(
+      isFeatureEnabled(new URLSearchParams(window.location.search), "dashboard")
+    );
+  }, []);
+
+  useEffect(() => {
+    if (enabled === false) router.replace("/app");
   }, [enabled, router]);
 
   if (!enabled) return null;

@@ -74,6 +74,26 @@ describe("generateInsightsTool", () => {
     expect(pendingBatch[0].title).toBe("Tree Cover");
   });
 
+  it("attaches the streamed insight_id to every chart's widget", () => {
+    generateInsightsTool(
+      baseMessage({
+        charts_data: [chartData("Tree Cover"), chartData("Fires")],
+        insight_id: "ins-1",
+      }),
+      addMessage
+    );
+    const { insights } = useInsightStore.getState();
+    expect(insights.map((w) => w.insightId)).toEqual(["ins-1", "ins-1"]);
+  });
+
+  it("leaves insightId unset when the stream carries no insight_id", () => {
+    generateInsightsTool(
+      baseMessage({ charts_data: [chartData()] }),
+      addMessage
+    );
+    expect(useInsightStore.getState().insights[0].insightId).toBeUndefined();
+  });
+
   it("does nothing when charts_data is absent", () => {
     generateInsightsTool(baseMessage(), addMessage);
     expect(useInsightStore.getState().insights).toHaveLength(0);

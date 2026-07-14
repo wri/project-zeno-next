@@ -30,7 +30,11 @@ import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  firstMessageRedirectPath,
+  isAppRoute,
+} from "../utils/threadNavigation";
 
 export default function ChatInput({
   isChatDisabled,
@@ -49,6 +53,7 @@ export default function ChatInput({
     useState<ChatContextType | null>(null);
 
   const router = useRouter();
+  const pathname = usePathname();
 
   // Hooks for responsive modal behavior
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -158,7 +163,12 @@ export default function ChatInput({
 
     const result = await sendMessage(message);
     if (result.isNew) {
-      router.replace(`/app/threads/${result.id}`);
+      const redirect = firstMessageRedirectPath(
+        pathname,
+        result.id,
+        window.location.search
+      );
+      if (redirect) router.replace(redirect);
     }
   };
 
@@ -293,22 +303,28 @@ export default function ChatInput({
           />
           <Flex justifyContent="space-between" alignItems="center" w="full">
             <Flex gap="2">
-              <ContextButton
-                contextType="layer"
-                onClick={openLayerPicker}
-                disabled={disabled}
-                borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
-                color={dataCatalogOpen ? "primary.solid" : undefined}
-                aria-expanded={dataCatalogOpen}
-              />
-              <ContextButton
-                contextType="area"
-                onClick={openAreaPicker}
-                disabled={disabled}
-                borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
-                color={areasPanelOpen ? "primary.solid" : undefined}
-                aria-expanded={areasPanelOpen}
-              />
+              {/* The pickers these open (catalog / areas panels) only exist in
+                  the map layout — hide them on other surfaces (dashboards). */}
+              {isAppRoute(pathname) && (
+                <>
+                  <ContextButton
+                    contextType="layer"
+                    onClick={openLayerPicker}
+                    disabled={disabled}
+                    borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
+                    color={dataCatalogOpen ? "primary.solid" : undefined}
+                    aria-expanded={dataCatalogOpen}
+                  />
+                  <ContextButton
+                    contextType="area"
+                    onClick={openAreaPicker}
+                    disabled={disabled}
+                    borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
+                    color={areasPanelOpen ? "primary.solid" : undefined}
+                    aria-expanded={areasPanelOpen}
+                  />
+                </>
+              )}
             </Flex>
             <Flex gap="2" ml="auto" alignItems="center">
               {voiceInputEnabled && speech && (

@@ -22,9 +22,29 @@ export function parseStreamMessage(
   const content = kwargs.content;
   // Extract trace identifier from response metadata (canonical field)
   const responseMetadata =
-    (kwargs.response_metadata as { trace_id?: string } | undefined) ||
-    undefined;
+    (kwargs.response_metadata as
+      | { trace_id?: string; msg_type?: string; dashboard_id?: string }
+      | undefined) || undefined;
   const traceId = responseMetadata?.trace_id;
+
+  // A write signal (e.g. dashboard_updated) rides on a tool message's
+  // response_metadata, but that message is not necessarily the last one in
+  // the update (the agent's narration can follow it in the same update), and
+  // the carrying message may be classified as an error. Scan every message so
+  // the signal rides on whatever StreamMessage this update produces.
+  let writeSignal: { msg_type: string; dashboard_id?: string } | undefined;
+  for (const message of langChainMessage.messages ?? []) {
+    const meta = message?.kwargs?.response_metadata as
+      | { msg_type?: string; dashboard_id?: string }
+      | undefined;
+    if (meta?.msg_type) {
+      writeSignal = {
+        msg_type: meta.msg_type,
+        dashboard_id: meta.dashboard_id,
+      };
+      break;
+    }
+  }
 
   if (messageType === "human") {
     return {
@@ -49,6 +69,7 @@ export function parseStreamMessage(
         content: typeof content === "string" ? content : String(content),
         timestamp: timestamp.toISOString(),
         trace_id: traceId,
+        ...(writeSignal ?? {}),
       };
     }
 
@@ -61,6 +82,7 @@ export function parseStreamMessage(
       suggested_datasets: langChainMessage.suggested_datasets || undefined,
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
+      insight_id: langChainMessage.insight_id || undefined,
       codeact_parts: langChainMessage.codeact_parts || [],
       source_urls: langChainMessage.source_urls || [],
       cited_articles: langChainMessage.cited_articles || undefined,
@@ -69,6 +91,10 @@ export function parseStreamMessage(
       aoi_selection: langChainMessage.aoi_selection || undefined,
       timestamp: timestamp.toISOString(),
       trace_id: traceId,
+      // Write signals (e.g. dashboard_updated) ride along so the client can
+      // refetch what the agent just changed.
+      msg_type: writeSignal?.msg_type,
+      dashboard_id: writeSignal?.dashboard_id,
     };
   } else if (messageType === "agent") {
     // For AI messages, handle different content formats
@@ -128,6 +154,7 @@ export function parseStreamMessage(
         timestamp: timestamp.toISOString(),
         trace_id: traceId,
         ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+        ...(writeSignal ?? {}),
       };
     }
 
