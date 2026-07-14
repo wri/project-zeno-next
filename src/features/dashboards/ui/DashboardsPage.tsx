@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
   Box,
   Container,
@@ -11,32 +10,12 @@ import {
   Text,
 } from "@chakra-ui/react";
 
-import { toaster } from "@/app/components/ui/toaster";
-import type { AoiSearchResult } from "../api/schemas";
-import AoiSearchTable from "./AoiSearchTable";
 import DashboardCard from "./DashboardCard";
-import { useCreateDashboardFromAoi, useDashboards } from "./dashboardQueries";
+import { NewDashboardScreen } from "./NewDashboardScreen";
+import { useDashboards } from "./dashboardQueries";
 
 export default function DashboardsPage() {
-  const router = useRouter();
   const { data: dashboards = [], isLoading, isError } = useDashboards();
-  const createDashboard = useCreateDashboardFromAoi();
-
-  const handleCreateDashboard = (aoi: AoiSearchResult) => {
-    createDashboard.mutate(aoi, {
-      onSuccess: (dashboard) => {
-        router.push(`/dashboards/${dashboard.id}?ff=dashboard`);
-      },
-      onError: (error) => {
-        toaster.create({
-          title: "Could not create dashboard",
-          description: (error as Error)?.message || "Please try another area.",
-          type: "error",
-          duration: 5000,
-        });
-      },
-    });
-  };
 
   return (
     <Box bg="#F4F5F6" minH="calc(100vh - 40px)" py={{ base: 8, md: 14 }}>
@@ -85,10 +64,7 @@ export default function DashboardsPage() {
             <Heading as="h2" size="md" fontWeight="normal" mb={5}>
               Create new dashboard
             </Heading>
-            <AoiSearchTable
-              isCreating={createDashboard.isPending}
-              onCreateDashboard={handleCreateDashboard}
-            />
+            <NewDashboardScreen />
           </Box>
         </Flex>
       </Container>
