@@ -2,6 +2,12 @@
 
 import { Text } from "@chakra-ui/react";
 
+import {
+  imageryLayerTitle,
+  imageryLegendCloudNote,
+  imageryLegendInfo,
+  imageryLegendParams,
+} from "@/app/components/legend/imageryLegend";
 import { Legend } from "@/app/components/legend/Legend";
 import type {
   LegendContextLayer,
@@ -26,10 +32,12 @@ export interface MapWidgetOpacity {
 
 /**
  * The explorer's Legend reused inside a dashboard map widget, built from the
- * widget's config snapshot instead of mapStore layers. Dataset widgets only —
- * imagery has no DATASET_CARDS entry — and no AOI chips (the dashboard's area
- * is fixed, not removable). The layer itself isn't removable either (the
- * card's ✕ removes the whole widget), so only opacity is actionable.
+ * widget's config snapshot instead of mapStore layers. Dataset entries come
+ * from the DATASET_CARDS catalog; imagery entries from the mosaic metadata
+ * snapshotted into the config (shared imageryLegend builders). No AOI chips
+ * (the dashboard's area is fixed, not removable), and the layer itself isn't
+ * removable either (the card's ✕ removes the whole widget), so only opacity
+ * is actionable.
  */
 export default function DashboardMapLegend({
   layer,
@@ -40,6 +48,32 @@ export default function DashboardMapLegend({
   opacity: MapWidgetOpacity;
   onOpacityChange: (target: keyof MapWidgetOpacity, value: number) => void;
 }) {
+  const entry =
+    layer.kind === "imagery"
+      ? imageryEntry(layer, opacity.main)
+      : datasetEntry(layer, opacity);
+  if (!entry) return null;
+
+  return (
+    <Legend
+      layers={[entry]}
+      compact
+      onLayerAction={({ action, payload }) => {
+        if (action === "opacity") {
+          onOpacityChange(
+            payload.id === "context" ? "context" : "main",
+            payload.opacity
+          );
+        }
+      }}
+    />
+  );
+}
+
+function datasetEntry(
+  layer: MapWidgetLayer,
+  opacity: MapWidgetOpacity
+): LegendLayer | null {
   const card =
     layer.datasetId != null
       ? DATASET_CARDS.find((d) => d.dataset_id === layer.datasetId)
@@ -71,7 +105,7 @@ export default function DashboardMapLegend({
     };
   }
 
-  const entry: LegendLayer = {
+  return {
     id: "main",
     title: legend.title,
     opacity: opacity.main,
@@ -84,19 +118,21 @@ export default function DashboardMapLegend({
     ) : undefined,
     hideRemoveControl: true,
   };
+}
 
-  return (
-    <Legend
-      layers={[entry]}
-      compact
-      onLayerAction={({ action, payload }) => {
-        if (action === "opacity") {
-          onOpacityChange(
-            payload.id === "context" ? "context" : "main",
-            payload.opacity
-          );
-        }
-      }}
-    />
-  );
+function imageryEntry(layer: MapWidgetLayer, opacity: number): LegendLayer {
+  const meta = layer.imagery ?? {};
+  const params = imageryLegendParams(meta);
+  const note = imageryLegendCloudNote(meta);
+
+  return {
+    id: "main",
+    title: imageryLayerTitle(meta.target_date),
+    opacity,
+    info: imageryLegendInfo(meta),
+    params: params.length > 0 ? params : undefined,
+    symbology: null,
+    children: note ? <Text fontSize="xs">{note}</Text> : undefined,
+    hideRemoveControl: true,
+  };
 }

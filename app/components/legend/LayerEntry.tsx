@@ -174,6 +174,9 @@ export function LayerEntry(
                     label={p.label}
                     value={p.value}
                     colorScheme="purple"
+                    {...(p.maxValueWidth
+                      ? { maxValueWidth: p.maxValueWidth }
+                      : {})}
                   />
                 ))}
               </Flex>

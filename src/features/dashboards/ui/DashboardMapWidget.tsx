@@ -184,6 +184,10 @@ export default function DashboardMapWidget({
           type="raster"
           tiles={[layer.tileUrl]}
           tileSize={256}
+          // Imagery mosaics only exist for a bounded zoom range; spread
+          // conditionally so unset keys stay out of the source spec.
+          {...(layer.minzoom !== undefined ? { minzoom: layer.minzoom } : {})}
+          {...(layer.maxzoom !== undefined ? { maxzoom: layer.maxzoom } : {})}
         >
           <Layer
             id="widget-tiles"

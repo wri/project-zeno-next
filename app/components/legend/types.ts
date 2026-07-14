@@ -7,6 +7,11 @@ import { ReactNode } from "react";
 export interface LegendParam {
   label: string;
   value: string;
+  /**
+   * Overrides ParamChip's default 15ch value truncation width. Set on chips
+   * whose value must stay fully visible (e.g. imagery acquired-date ranges).
+   */
+  maxValueWidth?: string;
 }
 
 /**
