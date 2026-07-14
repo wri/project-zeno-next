@@ -4,6 +4,8 @@ import {
   firstMessageRedirectPath,
   isAppRoute,
   mapTabHref,
+  newConversationTarget,
+  threadClickTarget,
 } from "../threadNavigation";
 
 describe("isAppRoute", () => {
@@ -64,6 +66,81 @@ describe("firstMessageRedirectPath", () => {
 
   it("stays put when the pathname is unknown", () => {
     expect(firstMessageRedirectPath(null, "t-1")).toBeNull();
+  });
+});
+
+describe("newConversationTarget", () => {
+  it("resets in place on a dashboard detail page", () => {
+    expect(newConversationTarget("/dashboards/abc", true)).toEqual({
+      kind: "reset-in-place",
+    });
+  });
+
+  it("navigates from the dashboards list (no chat panel there)", () => {
+    expect(newConversationTarget("/dashboards", true)).toEqual({
+      kind: "navigate",
+      href: "/app?ff=dashboard",
+    });
+  });
+
+  it("keeps the dashboards feature gate open when navigating", () => {
+    expect(newConversationTarget("/app/threads/t-1", true)).toEqual({
+      kind: "navigate",
+      href: "/app?ff=dashboard",
+    });
+  });
+
+  it("navigates plainly when the feature gate is closed", () => {
+    expect(newConversationTarget("/app", false)).toEqual({
+      kind: "navigate",
+      href: "/app",
+    });
+    expect(newConversationTarget(null, false)).toEqual({
+      kind: "navigate",
+      href: "/app",
+    });
+  });
+});
+
+describe("threadClickTarget", () => {
+  it("loads in place on a dashboard detail page", () => {
+    expect(
+      threadClickTarget("/dashboards/abc", "t-1", "?ff=dashboard")
+    ).toEqual({
+      kind: "load-in-place",
+    });
+  });
+
+  it("navigates from the dashboards list, keeping the feature gate open", () => {
+    expect(threadClickTarget("/dashboards", "t-1", "?ff=dashboard")).toEqual({
+      kind: "navigate",
+      href: "/app/threads/t-1?ff=dashboard",
+    });
+  });
+
+  it("navigates on the map surface, carrying the current ff flags", () => {
+    expect(threadClickTarget("/app", "t-1", "?ff=dashboard,analysis")).toEqual({
+      kind: "navigate",
+      href: "/app/threads/t-1?ff=dashboard%2Canalysis",
+    });
+  });
+
+  it("navigates plainly without flags or a known pathname", () => {
+    expect(threadClickTarget("/app", "t-1")).toEqual({
+      kind: "navigate",
+      href: "/app/threads/t-1",
+    });
+    expect(threadClickTarget(null, "t-1", null)).toEqual({
+      kind: "navigate",
+      href: "/app/threads/t-1",
+    });
+  });
+
+  it("does not carry unrelated params into the thread link", () => {
+    expect(threadClickTarget("/app", "t-1", "?prompt=hello")).toEqual({
+      kind: "navigate",
+      href: "/app/threads/t-1",
+    });
   });
 });
 
