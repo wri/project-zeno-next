@@ -85,8 +85,17 @@ export function dashboardWidgetToInsightWidgets(
   const insight = widget.insight;
   if (!insight?.charts?.length) return [];
 
-  const generation = insight.codeact_parts?.length
-    ? { codeact_parts: insight.codeact_parts as CodeActPart[] }
+  const codeactParts = Array.isArray(insight.codeact_parts)
+    ? insight.codeact_parts.filter(
+        (p): p is CodeActPart =>
+          typeof p === "object" &&
+          p !== null &&
+          typeof (p as CodeActPart).type === "string" &&
+          typeof (p as CodeActPart).content === "string"
+      )
+    : [];
+  const generation = codeactParts.length
+    ? { codeact_parts: codeactParts }
     : undefined;
   const titleOverride =
     typeof widget.config.title === "string" ? widget.config.title : undefined;
