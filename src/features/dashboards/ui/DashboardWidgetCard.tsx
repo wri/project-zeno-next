@@ -8,6 +8,7 @@ import {
   Flex,
   Icon,
   IconButton,
+  Input,
   Portal,
   Text,
 } from "@chakra-ui/react";
@@ -16,6 +17,7 @@ import {
   ChartBarIcon,
   ChatTeardropDotsIcon,
   DotsSixVerticalIcon,
+  PencilSimpleIcon,
   XIcon,
 } from "@phosphor-icons/react";
 
@@ -52,6 +54,7 @@ export default function DashboardWidgetCard({
   onArmDrag,
   onDisarmDrag,
   onToggleSize,
+  onRename,
   onRemove,
 }: {
   title: string;
@@ -73,11 +76,24 @@ export default function DashboardWidgetCard({
   onArmDrag: () => void;
   onDisarmDrag: () => void;
   onToggleSize: () => void;
+  /** Persist a manual title (blank reverts to default); omitted disables rename. */
+  onRename?: (name: string) => void;
   onRemove: () => void;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
+  // null = not editing; a string is the in-progress title draft.
+  const [draft, setDraft] = useState<string | null>(null);
+  const editing = draft !== null;
   const chips = card?.analysisParams ? buildChips(card.analysisParams) : [];
+
+  const commitRename = () => {
+    const next = draft ?? "";
+    setDraft(null);
+    // Blank clears the override (revert to default); skip a no-op rename.
+    if (next.trim() === title.trim()) return;
+    onRename?.(next);
+  };
 
   const addToConversation = () => {
     // False door — measure interest before building the real flow.
@@ -114,20 +130,54 @@ export default function DashboardWidgetCard({
             onPointerUp={onDisarmDrag}
           />
         )}
-        <Text
-          flex="1"
-          minW={0}
-          fontSize="14px"
-          fontWeight="medium"
-          lineHeight="16px"
-          color="#172B7A"
-          wordBreak="break-word"
-          pl={isOwner ? 0 : "8px"}
-        >
-          {title}
-        </Text>
+        {editing ? (
+          <Input
+            flex="1"
+            minW={0}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename();
+              if (e.key === "Escape") setDraft(null);
+            }}
+            autoFocus
+            aria-label="Widget title"
+            variant="flushed"
+            size="sm"
+            fontSize="14px"
+            fontWeight="medium"
+            color="#172B7A"
+            pl={isOwner ? 0 : "8px"}
+          />
+        ) : (
+          <Text
+            flex="1"
+            minW={0}
+            fontSize="14px"
+            fontWeight="medium"
+            lineHeight="16px"
+            color="#172B7A"
+            wordBreak="break-word"
+            pl={isOwner ? 0 : "8px"}
+          >
+            {title}
+          </Text>
+        )}
         {isOwner && (
           <Flex align="center" gap="4px" flexShrink={0}>
+            {onRename && !editing && (
+              <IconButton
+                aria-label="Rename widget"
+                title="Rename widget"
+                size="2xs"
+                variant="ghost"
+                color="fg.muted"
+                onClick={() => setDraft(title)}
+              >
+                <PencilSimpleIcon size={16} />
+              </IconButton>
+            )}
             <IconButton
               aria-label="Add to AI conversation"
               title="Add to AI conversation"
