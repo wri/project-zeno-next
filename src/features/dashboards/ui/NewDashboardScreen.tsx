@@ -255,7 +255,7 @@ export function NewDashboardScreen() {
           loading={isUploading}
         >
           <UploadSimpleIcon size={16} weight="bold" color="#0049AA" />
-          Upload GeoJSON
+          Upload shapefile
         </Button>
       </Flex>
       <Flex gap={2} mb={6} flexWrap="wrap">
