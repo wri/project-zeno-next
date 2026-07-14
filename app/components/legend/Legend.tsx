@@ -31,6 +31,8 @@ interface LegendProps {
   onLayerAction?: LayerActionHandler;
   aois?: LegendAoi[];
   onRemoveAoi?: (layerId: string) => void;
+  /** Tighter type and spacing for small hosts (dashboard map widgets). */
+  compact?: boolean;
 }
 
 /**
@@ -40,7 +42,7 @@ interface LegendProps {
  * @param props.layers - Array of LegendLayer objects to display.
  */
 export function Legend(props: LegendProps) {
-  const { layers, onLayerAction, aois, onRemoveAoi } = props;
+  const { layers, onLayerAction, aois, onRemoveAoi, compact } = props;
 
   // Controls whether the whole legend body is collapsed to just the header.
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -114,7 +116,7 @@ export function Legend(props: LegendProps) {
       {/* Always-visible header — 28px section header per Figma */}
       <Flex
         h="28px"
-        px="16px"
+        px={compact ? "12px" : "16px"}
         py="6px"
         gap="8px"
         alignItems="center"
@@ -173,12 +175,13 @@ export function Legend(props: LegendProps) {
               m={0}
               w="100%"
               overflowY="auto"
-              maxH="200px"
+              maxH={compact ? "160px" : "200px"}
             >
               {layers.map((item) => (
                 <Item
                   key={item.id}
                   item={item}
+                  compact={compact}
                   expanded={expandedIds.has(item.id)}
                   onToggleExpand={() =>
                     setExpandedIds((prev) => {
@@ -239,8 +242,9 @@ function Item(props: {
   expanded: boolean;
   onToggleExpand: () => void;
   onLayerAction: LayerActionHandler;
+  compact?: boolean;
 }) {
-  const { item, expanded, onToggleExpand, onLayerAction } = props;
+  const { item, expanded, onToggleExpand, onLayerAction, compact } = props;
   const dragControls = useDragControls();
 
   return (
@@ -249,7 +253,7 @@ function Item(props: {
       id={item}
       dragListener={false}
       dragControls={dragControls}
-      p={2}
+      p={compact ? 1.5 : 2}
       pl={1}
       display="flex"
       gap={1}
@@ -272,6 +276,7 @@ function Item(props: {
       </IconButton>
       <LayerEntry
         {...item}
+        compact={compact}
         expanded={expanded}
         onToggleExpand={onToggleExpand}
         onLayerAction={onLayerAction}
