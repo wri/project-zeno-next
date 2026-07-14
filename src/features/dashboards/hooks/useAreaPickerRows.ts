@@ -22,6 +22,15 @@ const REFERENCE_SOURCES: ReferenceAoiSource[] = [
   "landmark",
 ];
 
+function isReferenceSourceEnabled(
+  activeCategory: AreaPickerSectionId | "all",
+  source: ReferenceAoiSource
+): boolean {
+  if (activeCategory === "custom") return false;
+  if (activeCategory === "all") return true;
+  return activeCategory === source;
+}
+
 export interface AreaPickerRowsResult {
   rows: AreaPickerRow[];
   isLoading: boolean;
@@ -32,9 +41,9 @@ export interface AreaPickerRowsResult {
 
 /**
  * Composes the existing per-source data hooks into the merged, filtered row
- * list the new-dashboard picker table renders. All underlying hooks are
- * always called (hooks can't be conditional); only the ones relevant to
- * `activeCategory` drive the returned rows/pagination state.
+ * list the new-dashboard picker table renders. Underlying hooks are always
+ * called (hooks can't be conditional), but AOI browse queries are disabled
+ * when their source isn't relevant to `activeCategory`.
  */
 export function useAreaPickerRows(
   activeCategory: AreaPickerSectionId | "all",
@@ -43,10 +52,18 @@ export function useAreaPickerRows(
   const { customAreas, isLoading: customLoading } = useCustomAreasList();
   const { data: dashboards } = useDashboardsList();
 
-  const gadm = useAoiBrowse("gadm");
-  const kba = useAoiBrowse("kba");
-  const wdpa = useAoiBrowse("wdpa");
-  const landmark = useAoiBrowse("landmark");
+  const gadm = useAoiBrowse("gadm", {
+    enabled: isReferenceSourceEnabled(activeCategory, "gadm"),
+  });
+  const kba = useAoiBrowse("kba", {
+    enabled: isReferenceSourceEnabled(activeCategory, "kba"),
+  });
+  const wdpa = useAoiBrowse("wdpa", {
+    enabled: isReferenceSourceEnabled(activeCategory, "wdpa"),
+  });
+  const landmark = useAoiBrowse("landmark", {
+    enabled: isReferenceSourceEnabled(activeCategory, "landmark"),
+  });
   const referenceQueries = { gadm, kba, wdpa, landmark };
 
   const analysesMap = useMemo(

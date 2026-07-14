@@ -112,6 +112,27 @@ describe("NewDashboardScreen", () => {
     );
   });
 
+  it("creates a dashboard when a row is activated with Enter", async () => {
+    createDashboardAsync.mockResolvedValue({ id: "dash-1", name: "Paraná" });
+    renderScreen();
+
+    const row = screen.getByLabelText("Create dashboard for Paraná");
+    fireEvent.keyDown(row, { key: "Enter" });
+
+    await waitFor(() =>
+      expect(createDashboardAsync).toHaveBeenCalledWith({
+        aois: [
+          {
+            source: "gadm",
+            src_id: "BRA.16_1",
+            subtype: "adm1",
+            name: "Paraná",
+          },
+        ],
+      })
+    );
+  });
+
   it("filters rows via the search box", () => {
     renderScreen();
     fireEvent.change(screen.getByPlaceholderText("Search areas by name..."), {

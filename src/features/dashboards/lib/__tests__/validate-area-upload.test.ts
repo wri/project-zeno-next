@@ -32,6 +32,32 @@ describe("validateAreaUploadFile", () => {
     expect(result.polygons).toHaveLength(1);
   });
 
+  it("accepts a MultiPolygon by flattening it into polygons", async () => {
+    const result = await validateAreaUploadFile(
+      geoJsonFile({
+        type: "Feature",
+        geometry: {
+          type: "MultiPolygon",
+          coordinates: [
+            VALID_POLYGON.geometry.coordinates,
+            [
+              [
+                [-53.8, -25.0],
+                [-53.8, -24.9],
+                [-53.7, -24.9],
+                [-53.7, -25.0],
+                [-53.8, -25.0],
+              ],
+            ],
+          ],
+        },
+        properties: {},
+      })
+    );
+    expect(result.ok).toBe(true);
+    expect(result.polygons).toHaveLength(2);
+  });
+
   it("rejects invalid JSON", async () => {
     const file = new File(["not json"], "bad.geojson", {
       type: "application/geo+json",

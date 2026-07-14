@@ -1,4 +1,4 @@
-import type { Polygon } from "geojson";
+import type { MultiPolygon, Polygon } from "geojson";
 import {
   ACCEPTED_FILE_TYPES,
   MAX_AREA_KM2,
@@ -57,6 +57,26 @@ function extractPolygonFeatures(
   }
 
   return features;
+}
+
+/** Flattens Polygon and MultiPolygon geometries into individual polygons. */
+function geometriesToPolygons(
+  geometries: Array<Polygon | MultiPolygon | null | undefined>
+): Polygon[] {
+  const polygons: Polygon[] = [];
+
+  for (const geometry of geometries) {
+    if (!geometry) continue;
+    if (geometry.type === "Polygon") {
+      polygons.push(geometry);
+      continue;
+    }
+    for (const coordinates of geometry.coordinates) {
+      polygons.push({ type: "Polygon", coordinates });
+    }
+  }
+
+  return polygons;
 }
 
 /** Validates a GeoJSON boundary upload for custom-area creation (map-free). */
@@ -142,9 +162,9 @@ export async function validateAreaUploadFile(
     };
   }
 
-  const polygons = features
-    .map((feature) => feature.geometry)
-    .filter((geometry): geometry is Polygon => geometry.type === "Polygon");
+  const polygons = geometriesToPolygons(
+    features.map((feature) => feature.geometry as Polygon | MultiPolygon | null)
+  );
 
   if (polygons.length === 0) {
     return {

@@ -328,14 +328,34 @@ export function NewDashboardScreen() {
               return (
                 <Table.Row
                   key={key}
+                  tabIndex={creatingRowKey || isRenamingThisRow ? -1 : 0}
+                  aria-label={
+                    isRenamingThisRow
+                      ? undefined
+                      : `Create dashboard for ${row.name}`
+                  }
                   cursor={creatingRowKey ? "default" : "pointer"}
                   opacity={creatingRowKey && !isCreatingThisRow ? 0.5 : 1}
                   _hover={{
                     bg: "primary.25",
                     "& [data-row-action]": { opacity: 1 },
                   }}
+                  _focusVisible={{
+                    bg: "primary.25",
+                    "& [data-row-action]": { opacity: 1 },
+                    outline: "2px solid",
+                    outlineColor: "primary.500",
+                    outlineOffset: "-2px",
+                  }}
                   onClick={() => {
                     if (!isRenamingThisRow) void handleRowClick(row);
+                  }}
+                  onKeyDown={(e) => {
+                    if (isRenamingThisRow || creatingRowKey) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      void handleRowClick(row);
+                    }
                   }}
                 >
                   <Table.Cell pr={0}>
