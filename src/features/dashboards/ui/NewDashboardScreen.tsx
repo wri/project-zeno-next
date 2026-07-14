@@ -118,6 +118,7 @@ export function NewDashboardScreen() {
         type: "error",
         duration: 5000,
       });
+    } finally {
       setCreatingRowKey(null);
     }
   };
@@ -254,7 +255,7 @@ export function NewDashboardScreen() {
           loading={isUploading}
         >
           <UploadSimpleIcon size={16} weight="bold" color="#0049AA" />
-          Upload shapefile
+          Upload GeoJSON
         </Button>
       </Flex>
       <Flex gap={2} mb={6} flexWrap="wrap">

@@ -13,7 +13,7 @@ export function useAoiBrowse(
     queryFn: ({ pageParam = 0 }) =>
       browseAois({ source, limit: PAGE_SIZE, offset: pageParam }),
     initialPageParam: 0,
-    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
     enabled: options?.enabled ?? true,
   });
 }

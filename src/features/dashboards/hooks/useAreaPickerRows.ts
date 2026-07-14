@@ -11,16 +11,10 @@ import {
 } from "../model/area-picker-rows";
 import {
   REFERENCE_AOI_SOURCE_LABELS,
+  REFERENCE_AOI_SOURCES,
   type AreaPickerSectionId,
   type ReferenceAoiSource,
 } from "../model/dashboard-area";
-
-const REFERENCE_SOURCES: ReferenceAoiSource[] = [
-  "gadm",
-  "kba",
-  "wdpa",
-  "landmark",
-];
 
 function isReferenceSourceEnabled(
   activeCategory: AreaPickerSectionId | "all",
@@ -83,7 +77,7 @@ export function useAreaPickerRows(
       wdpa: [],
       landmark: [],
     };
-    for (const source of REFERENCE_SOURCES) {
+    for (const source of REFERENCE_AOI_SOURCES) {
       const results =
         referenceQueries[source].data?.pages.flatMap((p) => p.results) ?? [];
       rowsBySource[source] = results.map((result) =>
@@ -120,10 +114,7 @@ export function useAreaPickerRows(
   }
 
   const merged = [
-    ...referenceRows.gadm,
-    ...referenceRows.kba,
-    ...referenceRows.wdpa,
-    ...referenceRows.landmark,
+    ...REFERENCE_AOI_SOURCES.flatMap((source) => referenceRows[source]),
     ...customRows,
   ];
 
@@ -131,13 +122,15 @@ export function useAreaPickerRows(
     rows: filterRowsBySearch(merged, search),
     isLoading:
       customLoading ||
-      REFERENCE_SOURCES.some((s) => referenceQueries[s].isLoading),
-    hasNextPage: REFERENCE_SOURCES.some((s) => referenceQueries[s].hasNextPage),
-    isFetchingNextPage: REFERENCE_SOURCES.some(
+      REFERENCE_AOI_SOURCES.some((s) => referenceQueries[s].isLoading),
+    hasNextPage: REFERENCE_AOI_SOURCES.some(
+      (s) => referenceQueries[s].hasNextPage
+    ),
+    isFetchingNextPage: REFERENCE_AOI_SOURCES.some(
       (s) => referenceQueries[s].isFetchingNextPage
     ),
     fetchNextPage: () => {
-      for (const source of REFERENCE_SOURCES) {
+      for (const source of REFERENCE_AOI_SOURCES) {
         const query = referenceQueries[source];
         if (query.hasNextPage) query.fetchNextPage();
       }
