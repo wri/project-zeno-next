@@ -10,6 +10,7 @@ import {
   addInsightWidget,
   createDashboard,
   createDashboardPayloadFromAoi,
+  deleteDashboard,
   deleteWidget,
   getDashboard,
   listDashboards,
@@ -97,6 +98,38 @@ export function useRenameDashboard(dashboardId: string) {
     },
     onSettled: () => {
       // Prefix-matches the detail key and the list (dashboard switcher).
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    },
+  });
+}
+
+export function useDeleteDashboard() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dashboardId: string) => deleteDashboard(dashboardId),
+    // Optimistic: the card disappears from the list immediately; the
+    // snapshot is restored if the DELETE fails.
+    onMutate: async (dashboardId: string) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKeys.all });
+      const previous = queryClient.getQueryData<Dashboard[]>(dashboardKeys.all);
+      if (previous) {
+        queryClient.setQueryData<Dashboard[]>(
+          dashboardKeys.all,
+          previous.filter((d) => d.id !== dashboardId)
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(dashboardKeys.all, context.previous);
+      }
+    },
+    onSettled: (_data, _err, dashboardId) => {
+      queryClient.removeQueries({
+        queryKey: dashboardKeys.detail(dashboardId),
+      });
       queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
