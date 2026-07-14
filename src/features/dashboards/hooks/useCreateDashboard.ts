@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createDashboard } from "../api/dashboards";
 import type { DashboardCreateRequest } from "../api/schemas";
+import { dashboardKeys } from "./dashboardKeys";
 
 export function useCreateDashboard() {
   const queryClient = useQueryClient();
@@ -8,7 +9,7 @@ export function useCreateDashboard() {
   const mutation = useMutation({
     mutationFn: (body: DashboardCreateRequest) => createDashboard(body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dashboards"] });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 

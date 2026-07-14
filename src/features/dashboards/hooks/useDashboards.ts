@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { listDashboards } from "../api/dashboards";
+import { dashboardKeys } from "./dashboardKeys";
 
-export function useDashboardsList() {
+export function useDashboards() {
   return useQuery({
-    queryKey: ["dashboards"],
+    queryKey: dashboardKeys.all,
     queryFn: listDashboards,
     staleTime: 10_000,
   });

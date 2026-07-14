@@ -13,28 +13,16 @@ import {
   deleteDashboard,
   deleteWidget,
   getDashboard,
-  listDashboards,
   renameDashboard,
   updateWidget,
   type WidgetUpdate,
 } from "../api/dashboards";
 import type { AoiSearchResult, Dashboard } from "../api/schemas";
 import type { WidgetPositionPatch } from "../lib/widgets";
+import { dashboardKeys } from "../hooks/dashboardKeys";
 
-export const dashboardKeys = {
-  all: ["dashboards"] as const,
-  detail: (id: string) => ["dashboards", id] as const,
-  aois: (query: string, source: string | null) =>
-    ["dashboard-aois", query, source] as const,
-};
-
-export function useDashboards() {
-  return useQuery({
-    queryKey: dashboardKeys.all,
-    queryFn: listDashboards,
-    staleTime: 10_000,
-  });
-}
+export { dashboardKeys } from "../hooks/dashboardKeys";
+export { useDashboards } from "../hooks/useDashboards";
 
 export function useDashboard(id: string) {
   return useQuery({

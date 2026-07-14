@@ -86,8 +86,8 @@ vi.mock("../useAoiBrowse", () => ({
     aoiBrowsePages[source],
 }));
 
-vi.mock("../useDashboardsList", () => ({
-  useDashboardsList: () => ({ data: [] }),
+vi.mock("../useDashboards", () => ({
+  useDashboards: () => ({ data: [] }),
 }));
 
 import { useAreaPickerRows } from "../useAreaPickerRows";

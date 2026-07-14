@@ -39,7 +39,6 @@ export function useCustomAreasUpdate() {
       updateCustomAreaName(areaId, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customAreas"] });
-      queryClient.invalidateQueries({ queryKey: ["aoiBrowse", "custom"] });
     },
   });
 
@@ -57,7 +56,6 @@ export function useCustomAreasDelete() {
     mutationFn: (areaId: string) => deleteCustomArea(areaId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customAreas"] });
-      queryClient.invalidateQueries({ queryKey: ["aoiBrowse", "custom"] });
     },
   });
 

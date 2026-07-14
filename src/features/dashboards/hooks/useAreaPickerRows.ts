@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
-import { useDashboardsList } from "./useDashboardsList";
+import { useDashboards } from "./useDashboards";
 import { useAoiBrowse } from "./useAoiBrowse";
 import {
   aoiSearchResultToRow,
@@ -44,7 +44,7 @@ export function useAreaPickerRows(
   search: string
 ): AreaPickerRowsResult {
   const { customAreas, isLoading: customLoading } = useCustomAreasList();
-  const { data: dashboards } = useDashboardsList();
+  const { data: dashboards } = useDashboards();
 
   const gadm = useAoiBrowse("gadm", {
     enabled: isReferenceSourceEnabled(activeCategory, "gadm"),
@@ -109,7 +109,9 @@ export function useAreaPickerRows(
       isLoading: query.isLoading,
       hasNextPage: query.hasNextPage,
       isFetchingNextPage: query.isFetchingNextPage,
-      fetchNextPage: () => query.fetchNextPage(),
+      fetchNextPage: () => {
+        void query.fetchNextPage();
+      },
     };
   }
 
@@ -132,7 +134,7 @@ export function useAreaPickerRows(
     fetchNextPage: () => {
       for (const source of REFERENCE_AOI_SOURCES) {
         const query = referenceQueries[source];
-        if (query.hasNextPage) query.fetchNextPage();
+        if (query.hasNextPage) void query.fetchNextPage();
       }
     },
   };
