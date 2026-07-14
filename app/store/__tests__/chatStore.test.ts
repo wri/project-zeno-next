@@ -21,6 +21,8 @@ vi.mock("@/app/components/ui/toaster", () => ({
 
 import useChatStore from "../chatStore";
 import useViewContextStore from "../viewContextStore";
+import useAuthStore from "../authStore";
+import useAgentProfileStore from "../agentProfileStore";
 import { apiFetch } from "@/app/lib/api-client";
 import type {
   AnalyseSuggestion,
@@ -172,6 +174,77 @@ describe("chatStore view_context", () => {
     await useChatStore.getState().sendMessage("hello");
 
     expect(sentBody()).not.toHaveProperty("view_context");
+  });
+});
+
+describe("chatStore ff (agent profile default)", () => {
+  const sentBody = (): Record<string, unknown> => {
+    const init = vi.mocked(apiFetch).mock.calls[0]?.[1];
+    return JSON.parse((init?.body as string) ?? "{}");
+  };
+
+  const stubUrl = (search: string) =>
+    vi.stubGlobal("window", { location: { search } });
+
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    useViewContextStore.setState({ viewContext: null });
+    useAuthStore.setState({ userType: null });
+    useAgentProfileStore.setState({ agentProfile: null });
+    vi.mocked(apiFetch).mockReset();
+    vi.mocked(apiFetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      headers: new Headers(),
+    } as unknown as Response);
+  });
+
+  afterEach(() => {
+    useViewContextStore.setState({ viewContext: null });
+    useAuthStore.setState({ userType: null });
+    useAgentProfileStore.setState({ agentProfile: null });
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  it("defaults ff to experimental when the ?ff=dashboard gate is open for a privileged user", async () => {
+    useAuthStore.setState({ userType: "admin" });
+    stubUrl("?ff=dashboard");
+
+    await useChatStore.getState().sendMessage("hi");
+
+    expect(sentBody().ff).toBe("experimental");
+  });
+
+  it("omits ff for a non-privileged user even with ?ff=dashboard", async () => {
+    useAuthStore.setState({ userType: "regular" });
+    stubUrl("?ff=dashboard");
+
+    await useChatStore.getState().sendMessage("hi");
+
+    expect(sentBody()).not.toHaveProperty("ff");
+  });
+
+  it("omits ff on the map surface when the dashboard gate is closed", async () => {
+    useAuthStore.setState({ userType: "admin" });
+    stubUrl("?ff=analysis");
+
+    await useChatStore.getState().sendMessage("hi");
+
+    expect(sentBody()).not.toHaveProperty("ff");
+  });
+
+  it("still defaults to experimental on a dashboard surface without ?ff in the URL", async () => {
+    useAuthStore.setState({ userType: "admin" });
+    useViewContextStore.getState().setViewContext({
+      page: "dashboard",
+      dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+    });
+    stubUrl("");
+
+    await useChatStore.getState().sendMessage("hi");
+
+    expect(sentBody().ff).toBe("experimental");
   });
 });
 
