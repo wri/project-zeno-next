@@ -10,6 +10,7 @@ import {
   sourceLabel,
   subtypeLabel,
 } from "../lib/aoi";
+import { updatedLabel } from "../lib/dates";
 
 describe("dashboard schemas", () => {
   it("parses AOI search results returned by the staging API", () => {
@@ -29,6 +30,19 @@ describe("dashboard schemas", () => {
       name: "Paraná",
       subtype: "state-province",
     });
+  });
+
+  it("does not invent a world bbox when the API omits bbox", () => {
+    const results = AoiSearchResponseSchema.parse([
+      {
+        source: "gadm",
+        src_id: "BRA.18_1",
+        name: "Paraná",
+        subtype: "state-province",
+      },
+    ]);
+
+    expect(results[0].bbox).toBeUndefined();
   });
 
   it("parses empty dashboards with AOIs and no widgets", () => {
@@ -87,5 +101,12 @@ describe("dashboard AOI helpers", () => {
     expect(sourceLabel("gadm")).toBe("Administrative areas");
     expect(sourceLabel("wdpa")).toBe("Protected areas");
     expect(subtypeLabel("state-province")).toBe("State province");
+  });
+});
+
+describe("dashboard date helpers", () => {
+  it("uses a neutral updated label for invalid or future timestamps", () => {
+    expect(updatedLabel("not-a-date")).toBe("Updated recently");
+    expect(updatedLabel("2999-01-01T00:00:00Z")).toBe("Updated recently");
   });
 });

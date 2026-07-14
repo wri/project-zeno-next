@@ -68,8 +68,18 @@ function AuthBootstrapper() {
         const id = data?.id as string | undefined;
         const hasProfile = Boolean(data?.hasProfile);
         const userType = coerceUserType(data?.userType);
+        const preferredLanguageCode =
+          typeof data?.preferredLanguageCode === "string"
+            ? data.preferredLanguageCode
+            : null;
         if (email) {
-          setAuthStatus({ email, id: id ?? "", hasProfile, userType });
+          setAuthStatus({
+            email,
+            id: id ?? "",
+            hasProfile,
+            userType,
+            preferredLanguageCode,
+          });
         } else {
           setAuthLoaded();
         }
