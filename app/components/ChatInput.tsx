@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import {
   ArrowBendRightUpIcon,
+  ChartLineIcon,
   MicrophoneIcon,
   StopIcon,
 } from "@phosphor-icons/react";
@@ -81,6 +82,8 @@ export default function ChatInput({
     toggleDataCatalog,
     areasPanelOpen,
     toggleAreasPanel,
+    insightsPanelOpen,
+    toggleInsightsPanel,
   } = useSidebarStore();
 
   const excludedLayerIds = useChatStore((s) => s.excludedContextLayerIds);
@@ -143,6 +146,10 @@ export default function ChatInput({
     }
     toggleAreasPanel();
   };
+
+  // Insights is a desktop-only exploration panel (no mobile context-modal
+  // equivalent), so its toggle button is hidden on mobile.
+  const openInsightsPanel = () => toggleInsightsPanel();
 
   const handleContextModalOpenChange = (e: { open: boolean }) => {
     setContextModalOpen(e.open);
@@ -323,6 +330,30 @@ export default function ChatInput({
                     color={areasPanelOpen ? "primary.solid" : undefined}
                     aria-expanded={areasPanelOpen}
                   />
+                  {!isMobile && (
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      borderRadius="sm"
+                      borderWidth="1px"
+                      px="2"
+                      h="8"
+                      gap="1"
+                      fontSize="xs"
+                      fontWeight="normal"
+                      onClick={openInsightsPanel}
+                      disabled={disabled}
+                      borderColor={
+                        insightsPanelOpen ? "primary.solid" : "#E0E2E5"
+                      }
+                      color={insightsPanelOpen ? "primary.solid" : undefined}
+                      aria-expanded={insightsPanelOpen}
+                      aria-label="Insights"
+                    >
+                      <ChartLineIcon />
+                      Insights
+                    </Button>
+                  )}
                 </>
               )}
             </Flex>

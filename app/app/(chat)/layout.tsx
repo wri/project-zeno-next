@@ -16,6 +16,7 @@ import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import CatalogPanel from "@/app/components/CatalogPanel";
 import AreasPanel from "@/app/components/AreasPanel";
+import { InsightsPanel } from "@/src/features/insights-history";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import SystemBanner from "@/app/components/SystemBanner";
@@ -79,6 +80,7 @@ export default function DashboardLayout({
       >
         <CatalogPanel />
         <AreasPanel />
+        <InsightsPanel />
       </Box>
       <Box
         position="absolute"

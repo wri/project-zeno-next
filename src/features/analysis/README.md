@@ -8,7 +8,7 @@ Boundary-analysis feature, organized as a Feature-Sliced Design (FSD) slice. See
 | Segment  | Role                                                                                                                                                                  | May depend on            |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | `model/` | Pure core: value objects, ports (`AnalysisGateway`, `Clock`, `AnalysisService`), the `LROAnalysisService` state machine, the selection store, the `InsightSink` port. | `model/` only            |
-| `lib/`   | Pure helpers / generic impls: `SystemClock`, `toAreaSelection`, `analysisResultToWidgets`.                                                                            | `model/`                 |
+| `lib/`   | Pure helpers / generic impls: `SystemClock`, `toAreaSelection`. (Chart→widget mapping now lives in the `insight` entity — `chartsToWidgets`.)                         | `model/`                 |
 | `api/`   | Backend adapters: `RestAnalysisGateway` (HTTP allowed).                                                                                                               | `model/`, `lib/`         |
 | `ui/`    | React edge + composition root: `useAnalysis`, `AnalysisCTA`, `AnalysisCTAContent`.                                                                                    | `model/`, `api/`, `lib/` |
 
