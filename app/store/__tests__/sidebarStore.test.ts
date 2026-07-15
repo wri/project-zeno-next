@@ -19,6 +19,7 @@ describe("sidebarStore — catalog column panels", () => {
     useSidebarStore.setState({
       dataCatalogOpen: false,
       areasPanelOpen: false,
+      insightsPanelOpen: false,
     });
   });
 
@@ -74,5 +75,25 @@ describe("sidebarStore — catalog column panels", () => {
     const state = useSidebarStore.getState();
     expect(state.dataCatalogOpen).toBe(false);
     expect(state.areasPanelOpen).toBe(false);
+  });
+
+  it("opening the insights panel closes data catalog and areas", () => {
+    useSidebarStore.getState().setDataCatalogOpen(true);
+    useSidebarStore.getState().setAreasPanelOpen(true);
+    useSidebarStore.getState().setInsightsPanelOpen(true);
+
+    const state = useSidebarStore.getState();
+    expect(state.insightsPanelOpen).toBe(true);
+    expect(state.dataCatalogOpen).toBe(false);
+    expect(state.areasPanelOpen).toBe(false);
+  });
+
+  it("opening a sibling panel closes the insights panel", () => {
+    useSidebarStore.getState().setInsightsPanelOpen(true);
+    useSidebarStore.getState().toggleAreasPanel();
+
+    const state = useSidebarStore.getState();
+    expect(state.areasPanelOpen).toBe(true);
+    expect(state.insightsPanelOpen).toBe(false);
   });
 });

@@ -31,6 +31,11 @@ export interface CatalogCardProps {
    * as the type label). Used by the Areas panel to show locate/menu actions.
    */
   titleActions?: ReactNode;
+  /**
+   * Optional badge rendered next to the type label (e.g. a verification badge on
+   * insight cards). Sits left of `titleActions`.
+   */
+  badge?: ReactNode;
 }
 
 /**
@@ -51,6 +56,7 @@ export function CatalogCard({
   onInfoClick,
   infoTooltip = "Show dataset info",
   titleActions,
+  badge,
 }: CatalogCardProps) {
   return (
     <Flex
@@ -80,7 +86,6 @@ export function CatalogCard({
           {typeLabel && (
             <Flex align="center" gap="8px" minW={0} h="16px">
               <Text
-                flex="1"
                 minW={0}
                 fontFamily="mono"
                 fontSize="10px"
@@ -89,9 +94,12 @@ export function CatalogCard({
                 letterSpacing="0.5px"
                 color={typeLabelColor}
                 textTransform="uppercase"
+                whiteSpace="nowrap"
               >
                 {typeLabel}
               </Text>
+              {badge}
+              <Box flex="1" minW={0} />
               {titleActions}
             </Flex>
           )}

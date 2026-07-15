@@ -8,6 +8,7 @@ import useMapStore from "@/app/store/mapStore";
 import { DATASET_CARDS } from "@/app/constants/datasets";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
 import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
+import { firstMessageRedirectPath } from "@/app/utils/threadNavigation";
 
 const DEFAULT_LANDING_DATASET_ID = 4;
 
@@ -57,7 +58,12 @@ function NewThread() {
     async (prompt: string) => {
       const result = await sendMessage(prompt);
       if (result.isNew) {
-        router.replace(`/app/threads/${result.id}`);
+        const redirect = firstMessageRedirectPath(
+          window.location.pathname,
+          result.id,
+          window.location.search
+        );
+        if (redirect) router.replace(redirect);
       }
     },
     [sendMessage, router]

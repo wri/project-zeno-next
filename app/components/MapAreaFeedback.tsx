@@ -21,7 +21,9 @@ export default function MapAreaFeedback() {
   const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
   const dataCatalogOpen = useSidebarStore((s) => s.dataCatalogOpen);
   const areasPanelOpen = useSidebarStore((s) => s.areasPanelOpen);
-  const catalogColumnOpen = dataCatalogOpen || areasPanelOpen;
+  const insightsPanelOpen = useSidebarStore((s) => s.insightsPanelOpen);
+  const catalogColumnOpen =
+    dataCatalogOpen || areasPanelOpen || insightsPanelOpen;
 
   if (!selectionMode && !validationError) return null;
 

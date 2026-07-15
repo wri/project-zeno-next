@@ -2,13 +2,15 @@ import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { usePromptStore } from "../store/promptStore";
 import useChatStore from "../store/chatStore";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { firstMessageRedirectPath } from "../utils/threadNavigation";
 
 export default function SamplePrompts() {
   const { prompts } = usePromptStore();
   const { sendMessage } = useChatStore();
   const [samplePrompts, setSamplePrompts] = useState<string[]>([]);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (prompts.length > 0 && samplePrompts.length === 0) {
@@ -19,7 +21,12 @@ export default function SamplePrompts() {
   const submitPrompt = async (prompt: string) => {
     const result = await sendMessage(prompt);
     if (result.isNew) {
-      router.replace(`/app/threads/${result.id}`);
+      const redirect = firstMessageRedirectPath(
+        pathname,
+        result.id,
+        window.location.search
+      );
+      if (redirect) router.replace(redirect);
     }
   };
   function getRandomFromArray<T>(arr: T[], count: number): T[] {

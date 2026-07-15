@@ -18,9 +18,11 @@ import {
   ClockCounterClockwiseIcon,
   GearSixIcon,
   LifebuoyIcon,
+  MapTrifoldIcon,
   PlusIcon,
   ShootingStarIcon,
   SignOutIcon,
+  SquaresFourIcon,
   UserIcon,
   InfoIcon,
 } from "@phosphor-icons/react";
@@ -33,8 +35,15 @@ import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
+import {
+  mapTabHref,
+  newConversationTarget,
+} from "@/app/utils/threadNavigation";
+import useMapStore from "../store/mapStore";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -47,6 +56,19 @@ function PageHeader() {
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
   const { threads } = useThreadsInfinite();
+  const pathname = usePathname() ?? "";
+  const onMap = pathname.startsWith("/app");
+  const onDashboards = pathname.startsWith("/dashboards");
+  const dashboardFeatureEnabled = useFeatureFlag("dashboard");
+
+  const newConvo = newConversationTarget(pathname, dashboardFeatureEnabled);
+  // Mirrors the /app NewThread mount reset. In place because the dashboard
+  // page hosts its own chat panel and its URL doesn't carry the conversation
+  // (ADR-003) — navigating would leave the page the user is working on.
+  const startNewConversationInPlace = () => {
+    useChatStore.getState().reset();
+    useMapStore.getState().reset();
+  };
 
   const currentThread = currentThreadId
     ? threads.find((t) => t.id === currentThreadId)
@@ -109,7 +131,10 @@ function PageHeader() {
       color={isPrototype ? "#1f2937" : "#131E47"}
       borderTop={isPrototype ? undefined : "4px solid #E3F37F"}
       zIndex={1300}
-      position="relative"
+      // Pinned to the viewport top on scrolling pages (e.g. dashboards);
+      // inert on the map layout, whose grid cells don't scroll.
+      position="sticky"
+      top={0}
     >
       <Flex gap="5" alignItems="center" minW={0}>
         <Flex gap="2" alignItems="center">
@@ -249,35 +274,78 @@ function PageHeader() {
             </Text>
           )}
           <Tooltip content="New conversation" showArrow>
-            <IconButton
-              asChild
-              size="xs"
-              variant="ghost"
-              color={inverseColor}
-              _hover={{ bg: inverseHoverBg }}
-              _focusVisible={focusRing}
-            >
-              <Link href="/app" aria-label="New conversation">
+            {newConvo.kind === "reset-in-place" ? (
+              <IconButton
+                size="xs"
+                variant="ghost"
+                color={inverseColor}
+                _hover={{ bg: inverseHoverBg }}
+                _focusVisible={focusRing}
+                aria-label="New conversation"
+                onClick={startNewConversationInPlace}
+              >
                 <PlusIcon size={16} />
-              </Link>
-            </IconButton>
+              </IconButton>
+            ) : (
+              <IconButton
+                asChild
+                size="xs"
+                variant="ghost"
+                color={inverseColor}
+                _hover={{ bg: inverseHoverBg }}
+                _focusVisible={focusRing}
+              >
+                <Link href={newConvo.href} aria-label="New conversation">
+                  <PlusIcon size={16} />
+                </Link>
+              </IconButton>
+            )}
           </Tooltip>
         </Flex>
       </Flex>
-      {isPrototype && (
-        <Text
-          fontSize="xs"
-          fontWeight="bold"
-          letterSpacing="wider"
-          textTransform="uppercase"
-          color="#1f2937"
+      {dashboardFeatureEnabled && (
+        <Flex
+          gap="0"
+          alignItems="center"
+          hideBelow="md"
           position="absolute"
           left="50%"
           transform="translateX(-50%)"
-          pointerEvents="none"
         >
-          NOT FOR PRODUCTION USE
-        </Text>
+          {[
+            {
+              // Thread-aware: with a live conversation, land on its thread
+              // URL (which preserves state) instead of the resetting /app.
+              href: mapTabHref(currentThreadId),
+              label: "Map",
+              icon: <MapTrifoldIcon size={14} />,
+              active: onMap,
+            },
+            {
+              href: "/dashboards?ff=dashboard",
+              label: "Dashboards",
+              icon: <SquaresFourIcon size={14} />,
+              active: onDashboards,
+            },
+          ].map(({ href, label, icon, active }) => (
+            <Button
+              key={href}
+              asChild
+              size="xs"
+              variant={active ? "solid" : "ghost"}
+              colorPalette={active ? "primary" : undefined}
+              color={active ? undefined : inverseColor}
+              _hover={active ? undefined : { bg: inverseHoverBg }}
+              _focusVisible={focusRing}
+              fontWeight="medium"
+            >
+              <Link href={href} aria-current={active ? "page" : undefined}>
+                {icon}
+                {label}
+              </Link>
+            </Button>
+          ))}
+        </Flex>
       )}
       <Flex gap="6" alignItems="center" hideBelow="md">
         <Button

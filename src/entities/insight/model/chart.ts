@@ -1,5 +1,5 @@
-/** Raw chart data received from the analysis API. Mirrors InsightChartResponse. */
-export interface ChartDTO {
+/** A single chart produced by an analysis. Mirrors the API's InsightChartResponse. */
+export interface Chart {
   id: string;
   position: number;
   title: string;

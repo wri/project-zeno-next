@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { Layer, MapMouseEvent, Source, useMap } from "react-map-gl/maplibre";
 import { union } from "@turf/union";
 import {
@@ -26,10 +25,9 @@ import {
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
-// Direct-analysis "View Analysis" nudge — kept wired behind ?ff=analysis
-// alongside the live analyse nudge. toAreaSelection (areaHelpers) returns the
-// same shape both consumers need, so it's reused for both.
-import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
+// Direct-analysis "View Analysis" nudge alongside the live analyse nudge.
+// toAreaSelection (areaHelpers) returns the same shape both consumers need,
+// so it's reused for both.
 import { useSelectionStore } from "@/src/features/analysis";
 
 interface SourceLayerProps {
@@ -49,14 +47,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
-
-  // Evaluate the flag once at render time so event handlers don't read
-  // window.location directly and the value is stable within a render cycle.
-  const searchParams = useSearchParams();
-  const analysisEnabled = isFeatureEnabled(
-    new URLSearchParams(searchParams?.toString()),
-    "analysis"
-  );
 
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
@@ -207,8 +197,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             // normalized selection:
             //  - live: AnalysisCtaTrigger reacts to setAnalysis and surfaces
             //    the analyse nudge once a dataset is also active.
-            //  - direct-analysis "View Analysis" nudge: the selection store,
-            //    gated behind ?ff=analysis so it stays additive for now.
+            //  - direct-analysis "View Analysis" nudge: the selection store.
             if (layerId === "GADM" && metadata) {
               const areaSelection = toAreaSelection(
                 layerId,
@@ -216,12 +205,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 metadata
               );
               setAnalysis(areaSelection);
-
-              if (analysisEnabled) {
-                selectArea(areaSelection);
-              } else {
-                useSelectionStore.getState().clear();
-              }
+              selectArea(areaSelection);
             } else {
               useMapStore.getState().clearAnalysis();
               useSelectionStore.getState().clear();
@@ -262,7 +246,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     url,
     setAnalysis,
     selectArea,
-    analysisEnabled,
   ]);
 
   return (

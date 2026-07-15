@@ -38,6 +38,7 @@ import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
 import { WidgetIcons } from "../utils/widgetIcons";
+import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
@@ -175,7 +176,9 @@ export default function WidgetMessage({
     <Box
       rounded="md"
       border="1px solid"
-      borderColor={inWorkspace ? "border.emphasized" : "blue.fg"}
+      // Workspace/dashboard cards sit inside the light-blue Analysis shell,
+      // whose design pairs the white card with the blue-10 border (#DDE2F5).
+      borderColor={inWorkspace ? "#DDE2F5" : "blue.fg"}
       overflow="hidden"
       bg="neutral.100"
     >
@@ -419,6 +422,11 @@ export default function WidgetMessage({
                 </Menu.Content>
               </Menu.Positioner>
             </Menu.Root>
+            {/* Chat cards only: workspace/dashboard cards manage widgets via
+                their own shell (drag/resize/remove), so no toggle there. */}
+            {!inWorkspace && widget.insightId && (
+              <AddToDashboardToggle insightId={widget.insightId} />
+            )}
           </Flex>
         )}
         {showDisclaimer && !inWorkspace && <VisualizationDisclaimer />}
