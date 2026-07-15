@@ -90,6 +90,45 @@ describe("NewDashboardScreen", () => {
     expect(screen.getByText("Paraná")).toBeTruthy();
   });
 
+  it("renders skeleton rows instead of rows or empty state while loading", () => {
+    const previousRows = rowsState.rows;
+    rowsState.rows = [];
+    rowsState.isLoading = true;
+    try {
+      renderScreen();
+      expect(screen.getAllByTestId("area-skeleton-row")).toHaveLength(4);
+      expect(screen.queryByText(/No areas/)).toBeNull();
+    } finally {
+      rowsState.rows = previousRows;
+      rowsState.isLoading = false;
+    }
+  });
+
+  it("renders skeleton rows while searching from an empty result set", () => {
+    const previousRows = rowsState.rows;
+    rowsState.rows = [];
+    rowsState.isSearching = true;
+    try {
+      renderScreen();
+      expect(screen.getAllByTestId("area-skeleton-row")).toHaveLength(4);
+      expect(screen.queryByText(/No areas/)).toBeNull();
+    } finally {
+      rowsState.rows = previousRows;
+      rowsState.isSearching = false;
+    }
+  });
+
+  it("retains previous rows without a loading indicator while searching", () => {
+    rowsState.isSearching = true;
+    try {
+      renderScreen();
+      expect(screen.getByText("My farm")).toBeTruthy();
+      expect(screen.queryByTestId("area-skeleton-row")).toBeNull();
+    } finally {
+      rowsState.isSearching = false;
+    }
+  });
+
   it("creates a dashboard and routes in when a row is clicked", async () => {
     createDashboardAsync.mockResolvedValue({ id: "dash-1", name: "Paraná" });
     renderScreen();
