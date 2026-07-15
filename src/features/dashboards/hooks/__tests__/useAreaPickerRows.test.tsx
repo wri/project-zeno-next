@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { renderHook, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const customAreasState = vi.hoisted(() => ({
   customAreas: [
@@ -77,13 +77,26 @@ const aoiBrowsePages = vi.hoisted(() => ({
   },
 }));
 
+const aoiBrowseCalls = vi.hoisted(
+  () =>
+    [] as Array<{
+      source: string;
+      options?: { enabled?: boolean; search?: string };
+    }>
+);
+
 vi.mock("@/app/hooks/useCustomAreasList", () => ({
   useCustomAreasList: () => customAreasState,
 }));
 
 vi.mock("../useAoiBrowse", () => ({
-  useAoiBrowse: (source: "gadm" | "kba" | "wdpa" | "landmark") =>
-    aoiBrowsePages[source],
+  useAoiBrowse: (
+    source: "gadm" | "kba" | "wdpa" | "landmark",
+    options?: { enabled?: boolean; search?: string }
+  ) => {
+    aoiBrowseCalls.push({ source, options });
+    return aoiBrowsePages[source];
+  },
 }));
 
 vi.mock("../useDashboards", () => ({
@@ -93,6 +106,14 @@ vi.mock("../useDashboards", () => ({
 import { useAreaPickerRows } from "../useAreaPickerRows";
 
 describe("useAreaPickerRows", () => {
+  beforeEach(() => {
+    aoiBrowseCalls.length = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("merges reference sources and custom areas for 'all', custom last", async () => {
     const { result } = renderHook(() => useAreaPickerRows("all", ""));
 
@@ -129,9 +150,51 @@ describe("useAreaPickerRows", () => {
     expect(result.current.rows.map((r) => r.src_id)).toEqual(["area-1"]);
   });
 
-  it("applies the search filter over loaded rows", async () => {
+  it("passes the search text through to every reference browse query", () => {
+    renderHook(() => useAreaPickerRows("all", "brazil"));
+    for (const source of ["gadm", "kba", "wdpa", "landmark"]) {
+      expect(
+        aoiBrowseCalls.some(
+          (c) => c.source === source && c.options?.search === "brazil"
+        )
+      ).toBe(true);
+    }
+  });
+
+  it("does not client-filter reference rows (the server ranks name matches)", async () => {
     const { result } = renderHook(() => useAreaPickerRows("all", "brazil"));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.rows.map((r) => r.src_id)).toEqual(["BRA"]);
+    // Mocked browse data stands in for server-filtered results: both
+    // reference rows stay; the non-matching custom area is filtered out.
+    expect(result.current.rows.map((r) => r.src_id)).toEqual(["BRA", "KBA-1"]);
+  });
+
+  it("client-filters custom areas by search", async () => {
+    const { result } = renderHook(() => useAreaPickerRows("custom", "farm"));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.rows.map((r) => r.src_id)).toEqual(["area-1"]);
+
+    const { result: noMatch } = renderHook(() =>
+      useAreaPickerRows("custom", "zzz")
+    );
+    expect(noMatch.current.rows).toEqual([]);
+  });
+
+  it("debounces search changes before re-querying the server", () => {
+    vi.useFakeTimers();
+    const { rerender } = renderHook(
+      ({ search }) => useAreaPickerRows("all", search),
+      { initialProps: { search: "" } }
+    );
+
+    rerender({ search: "braz" });
+    const lastGadmCall = () =>
+      aoiBrowseCalls.filter((c) => c.source === "gadm").at(-1);
+    expect(lastGadmCall()?.options?.search).toBe("");
+
+    act(() => {
+      vi.advanceTimersByTime(250);
+    });
+    expect(lastGadmCall()?.options?.search).toBe("braz");
   });
 });

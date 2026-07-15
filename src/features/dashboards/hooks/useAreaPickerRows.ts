@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
 import { useDashboards } from "./useDashboards";
 import { useAoiBrowse } from "./useAoiBrowse";
@@ -15,6 +15,20 @@ import {
   type AreaPickerSectionId,
   type ReferenceAoiSource,
 } from "../model/dashboard-area";
+
+const SEARCH_DEBOUNCE_MS = 250;
+
+/** Delays propagating `value` changes so server queries fire per pause, not per keystroke. */
+function useDebouncedValue(value: string, delayMs: number): string {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timer);
+  }, [value, delayMs]);
+
+  return debounced;
+}
 
 function isReferenceSourceEnabled(
   activeCategory: AreaPickerSectionId | "all",
@@ -38,6 +52,11 @@ export interface AreaPickerRowsResult {
  * list the new-dashboard picker table renders. Underlying hooks are always
  * called (hooks can't be conditional), but AOI browse queries are disabled
  * when their source isn't relevant to `activeCategory`.
+ *
+ * Reference sources (gadm/kba/wdpa/landmark) are searched server-side via
+ * `/api/aois?name=` — the catalog is far too large to filter client-side.
+ * Custom areas are already fully loaded, so they're filtered locally with
+ * the undebounced text for instant feedback.
  */
 export function useAreaPickerRows(
   activeCategory: AreaPickerSectionId | "all",
@@ -45,18 +64,23 @@ export function useAreaPickerRows(
 ): AreaPickerRowsResult {
   const { customAreas, isLoading: customLoading } = useCustomAreasList();
   const { data: dashboards } = useDashboards();
+  const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
 
   const gadm = useAoiBrowse("gadm", {
     enabled: isReferenceSourceEnabled(activeCategory, "gadm"),
+    search: debouncedSearch,
   });
   const kba = useAoiBrowse("kba", {
     enabled: isReferenceSourceEnabled(activeCategory, "kba"),
+    search: debouncedSearch,
   });
   const wdpa = useAoiBrowse("wdpa", {
     enabled: isReferenceSourceEnabled(activeCategory, "wdpa"),
+    search: debouncedSearch,
   });
   const landmark = useAoiBrowse("landmark", {
     enabled: isReferenceSourceEnabled(activeCategory, "landmark"),
+    search: debouncedSearch,
   });
   const referenceQueries = { gadm, kba, wdpa, landmark };
 
@@ -105,7 +129,7 @@ export function useAreaPickerRows(
   if (activeCategory !== "all") {
     const query = referenceQueries[activeCategory];
     return {
-      rows: filterRowsBySearch(referenceRows[activeCategory], search),
+      rows: referenceRows[activeCategory],
       isLoading: query.isLoading,
       hasNextPage: query.hasNextPage,
       isFetchingNextPage: query.isFetchingNextPage,
@@ -117,11 +141,11 @@ export function useAreaPickerRows(
 
   const merged = [
     ...REFERENCE_AOI_SOURCES.flatMap((source) => referenceRows[source]),
-    ...customRows,
+    ...filterRowsBySearch(customRows, search),
   ];
 
   return {
-    rows: filterRowsBySearch(merged, search),
+    rows: merged,
     isLoading:
       customLoading ||
       REFERENCE_AOI_SOURCES.some((s) => referenceQueries[s].isLoading),
