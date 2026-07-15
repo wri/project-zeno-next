@@ -247,7 +247,7 @@ function InsightsPanelHeader({ onClose }: { onClose: () => void }) {
           color="#656E7B"
           m={0}
         >
-          Insights
+          Analyses
         </Text>
       </Flex>
       <IconButton
