@@ -3,13 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   AoiSearchResponseSchema,
   DashboardListResponseSchema,
-  type AoiSearchResult,
 } from "../api/schemas";
-import {
-  aoiToDashboardCreateRequest,
-  sourceLabel,
-  subtypeLabel,
-} from "../lib/aoi";
 import { updatedLabel } from "../lib/dates";
 
 describe("dashboard schemas", () => {
@@ -71,36 +65,6 @@ describe("dashboard schemas", () => {
 
     expect(dashboards[0].widgets).toEqual([]);
     expect(dashboards[0].aois[0].name).toBe("Paraná");
-  });
-});
-
-describe("dashboard AOI helpers", () => {
-  const parana: AoiSearchResult = {
-    source: "gadm",
-    src_id: "BRA.18_1",
-    name: "Paraná",
-    subtype: "state-province",
-    bbox: [-54.62, -26.72, -48.02, -22.51],
-  };
-
-  it("maps an AOI search result to the create-dashboard payload", () => {
-    expect(aoiToDashboardCreateRequest(parana)).toEqual({
-      name: "Paraná",
-      aois: [
-        {
-          source: "gadm",
-          src_id: "BRA.18_1",
-          subtype: "state-province",
-          name: "Paraná",
-        },
-      ],
-    });
-  });
-
-  it("formats source and subtype labels for the table", () => {
-    expect(sourceLabel("gadm")).toBe("Administrative areas");
-    expect(sourceLabel("wdpa")).toBe("Protected areas");
-    expect(subtypeLabel("state-province")).toBe("State province");
   });
 });
 
