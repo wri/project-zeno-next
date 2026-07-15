@@ -85,13 +85,27 @@ export default function DashboardWidgetCard({
   // null = not editing; a string is the in-progress title draft.
   const [draft, setDraft] = useState<string | null>(null);
   const editing = draft !== null;
+  // The value just committed by a rename. The optimistic update lands a tick
+  // after we leave edit mode, so without this the label would paint one frame
+  // of the stale `title` prop — a visible flash. Held until the prop catches
+  // up, then dropped during render (below).
+  const [pending, setPending] = useState<string | null>(null);
+
+  // Render-phase reconciliation: once the prop reflects the saved name (or a
+  // fresh server value arrives, e.g. an error rollback), drop the override so
+  // the prop is authoritative again. Runs before paint — no flash, no effect.
+  if (pending !== null && title.trim() === pending) setPending(null);
+  const displayTitle = pending ?? title;
   const chips = card?.analysisParams ? buildChips(card.analysisParams) : [];
 
   const commitRename = () => {
-    const next = draft ?? "";
+    const next = (draft ?? "").trim();
     setDraft(null);
     // Blank clears the override (revert to default); skip a no-op rename.
-    if (next.trim() === title.trim()) return;
+    if (next === title.trim()) return;
+    // Blank reverts to a default this component can't compute, so only hold a
+    // concrete new name to bridge the optimistic-update gap.
+    if (next) setPending(next);
     onRename?.(next);
   };
 
@@ -161,7 +175,7 @@ export default function DashboardWidgetCard({
             wordBreak="break-word"
             pl={isOwner ? 0 : "8px"}
           >
-            {title}
+            {displayTitle}
           </Text>
         )}
         {isOwner && (
@@ -173,7 +187,7 @@ export default function DashboardWidgetCard({
                 size="2xs"
                 variant="ghost"
                 color="fg.muted"
-                onClick={() => setDraft(title)}
+                onClick={() => setDraft(displayTitle)}
               >
                 <PencilSimpleIcon size={16} />
               </IconButton>
