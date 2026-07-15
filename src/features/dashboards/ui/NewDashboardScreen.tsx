@@ -528,13 +528,29 @@ export function NewDashboardScreen() {
         </Table.Root>
 
         {!showSkeletons && !isSearching && rows.length === 0 && (
-          <Box py={8} textAlign="center">
-            <Text color="fg.muted">
-              {search
-                ? "No areas match your search."
-                : "No areas found in this category."}
-            </Text>
-          </Box>
+          <Flex minH="280px" align="center" justify="center" py={8}>
+            <Box
+              textAlign="center"
+              fontFamily="body"
+              fontSize="18px"
+              lineHeight="1.5"
+              color="#565E7B"
+            >
+              {search.trim() ? (
+                <>
+                  <Text>
+                    <Text as="span" fontWeight="500">
+                      {`“${search.trim()}”`}
+                    </Text>
+                    {" didn’t return any results."}
+                  </Text>
+                  <Text>Please check spelling and try again.</Text>
+                </>
+              ) : (
+                <Text>No areas found in this category.</Text>
+              )}
+            </Box>
+          </Flex>
         )}
 
         {hasNextPage && (

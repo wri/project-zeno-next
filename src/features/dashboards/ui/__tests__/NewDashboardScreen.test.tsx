@@ -118,6 +118,35 @@ describe("NewDashboardScreen", () => {
     }
   });
 
+  it("shows the not-found message with the quoted search term", () => {
+    const previousRows = rowsState.rows;
+    rowsState.rows = [];
+    try {
+      renderScreen();
+      fireEvent.change(screen.getByPlaceholderText("Search areas by name..."), {
+        target: { value: "jkahskjhaas" },
+      });
+      expect(screen.getByText("“jkahskjhaas”")).toBeTruthy();
+      expect(screen.getByText(/didn’t return any results/)).toBeTruthy();
+      expect(
+        screen.getByText("Please check spelling and try again.")
+      ).toBeTruthy();
+    } finally {
+      rowsState.rows = previousRows;
+    }
+  });
+
+  it("shows the generic empty state when a category has no areas and no search", () => {
+    const previousRows = rowsState.rows;
+    rowsState.rows = [];
+    try {
+      renderScreen();
+      expect(screen.getByText("No areas found in this category.")).toBeTruthy();
+    } finally {
+      rowsState.rows = previousRows;
+    }
+  });
+
   it("retains previous rows without a loading indicator while searching", () => {
     rowsState.isSearching = true;
     try {
