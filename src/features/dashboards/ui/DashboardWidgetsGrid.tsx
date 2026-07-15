@@ -12,7 +12,9 @@ import {
   dashboardWidgetToInsightWidgets,
   widgetSize,
   withChartSize,
+  withChartTitle,
   withSize,
+  withWidgetTitle,
 } from "../lib/widgets";
 import {
   mapWidgetLayer,
@@ -232,6 +234,22 @@ export default function DashboardWidgetsGrid({
                         ),
                   },
                 })
+              }
+              onRename={
+                // Renamable only for renderable cells (map/imagery/chart);
+                // per-chart titles key on card.id, single-card widgets on
+                // config.title.
+                cell.placeholder
+                  ? undefined
+                  : (name) =>
+                      updateWidget.mutate({
+                        widgetId: widget.id,
+                        patch: {
+                          config: card?.id
+                            ? withChartTitle(widget.config, card.id, name)
+                            : withWidgetTitle(widget.config, name),
+                        },
+                      })
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />

@@ -2,13 +2,11 @@ import {
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
   DashboardResponseSchema,
-  type AoiSearchResult,
   type Dashboard,
   type DashboardCreateRequest,
 } from "./schemas";
 import { readJson } from "./http";
 import { apiFetch } from "@/app/lib/api-client";
-import { aoiToDashboardCreateRequest } from "../lib/aoi";
 
 export async function listDashboards(): Promise<Dashboard[]> {
   const data = await readJson<unknown>("/api/dashboards", {
@@ -36,12 +34,6 @@ export async function createDashboard(
     body: JSON.stringify(body),
   });
   return DashboardResponseSchema.parse(data);
-}
-
-export function createDashboardPayloadFromAoi(
-  aoi: AoiSearchResult
-): DashboardCreateRequest {
-  return aoiToDashboardCreateRequest(aoi);
 }
 
 // The PATCH response comes back without insight expansion, so callers must

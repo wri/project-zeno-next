@@ -1,15 +1,7 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { searchAois } from "../api/aois";
 import {
   addInsightWidget,
-  createDashboard,
-  createDashboardPayloadFromAoi,
   deleteDashboard,
   deleteWidget,
   getDashboard,
@@ -17,7 +9,7 @@ import {
   updateWidget,
   type WidgetUpdate,
 } from "../api/dashboards";
-import type { AoiSearchResult, Dashboard } from "../api/schemas";
+import type { Dashboard } from "../api/schemas";
 import type { WidgetPositionPatch } from "../lib/widgets";
 import { dashboardKeys } from "../hooks/dashboardKeys";
 
@@ -30,37 +22,6 @@ export function useDashboard(id: string) {
     queryFn: () => getDashboard(id),
     enabled: id.length > 0,
     staleTime: 10_000,
-  });
-}
-
-export function useAoiSearch(query: string, source: string | null) {
-  const trimmed = query.trim();
-  const enabled = trimmed.length >= 2;
-
-  return useQuery({
-    queryKey: dashboardKeys.aois(trimmed, source),
-    queryFn: () =>
-      searchAois({
-        name: trimmed,
-        source,
-        limit: 25,
-      }),
-    enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 10_000,
-  });
-}
-
-export function useCreateDashboardFromAoi() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (aoi: AoiSearchResult) =>
-      createDashboard(createDashboardPayloadFromAoi(aoi)),
-    onSuccess: (dashboard) => {
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
-      queryClient.setQueryData(dashboardKeys.detail(dashboard.id), dashboard);
-    },
   });
 }
 

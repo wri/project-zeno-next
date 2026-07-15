@@ -10,6 +10,7 @@ import {
   Input,
   Menu,
   Portal,
+  Skeleton,
   Spinner,
   Table,
   Text,
@@ -77,6 +78,29 @@ function rowToDashboardAoi(row: AreaPickerRow) {
   };
 }
 
+// Loading placeholder matching the Figma skeleton state (node 1141:5348):
+// invisible icon slot holds row height; grey bars stand in for the text.
+function SkeletonRow() {
+  return (
+    <Table.Row bg="transparent" data-testid="area-skeleton-row">
+      <Table.Cell pr={0}>
+        <Box w="40px" h="40px" />
+      </Table.Cell>
+      <Table.Cell>
+        <Skeleton h="13px" mb="4px" maxW="118px" />
+        <Skeleton h="13px" maxW="80px" />
+      </Table.Cell>
+      <Table.Cell>
+        <Skeleton h="13px" maxW="118px" />
+      </Table.Cell>
+      <Table.Cell>
+        <Skeleton h="13px" w="62px" mx="auto" />
+      </Table.Cell>
+      <Table.Cell />
+    </Table.Row>
+  );
+}
+
 export function NewDashboardScreen() {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState<
@@ -88,8 +112,18 @@ export function NewDashboardScreen() {
   const [renameValue, setRenameValue] = useState("");
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  const { rows, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useAreaPickerRows(activeCategory, search);
+  const {
+    rows,
+    isLoading,
+    isSearching,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAreaPickerRows(activeCategory, search);
+  // Retained (placeholder) rows stay visible while a search refreshes; the
+  // skeleton only appears when there is nothing to show — first load, or a
+  // search transition out of an empty result set.
+  const showSkeletons = isLoading || (isSearching && rows.length === 0);
   const { createDashboardAsync } = useCreateDashboard();
   const { createAreaAsync, isCreating: isUploading } = useCustomAreasCreate();
   const { renameAreaAsync, isRenaming } = useCustomAreasUpdate();
@@ -320,189 +354,203 @@ export function NewDashboardScreen() {
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {rows.map((row) => {
-              const key = rowKey(row);
-              const isCustom = row.source === "custom";
-              const isCreatingThisRow = creatingRowKey === key;
-              const isRenamingThisRow = isCustom && renamingId === row.src_id;
+            {showSkeletons &&
+              [0, 1, 2, 3].map((item) => <SkeletonRow key={item} />)}
+            {!showSkeletons &&
+              rows.map((row) => {
+                const key = rowKey(row);
+                const isCustom = row.source === "custom";
+                const isCreatingThisRow = creatingRowKey === key;
+                const isRenamingThisRow = isCustom && renamingId === row.src_id;
 
-              return (
-                <Table.Row
-                  key={key}
-                  tabIndex={creatingRowKey || isRenamingThisRow ? -1 : 0}
-                  aria-label={
-                    isRenamingThisRow
-                      ? undefined
-                      : `Create dashboard for ${row.name}`
-                  }
-                  cursor={creatingRowKey ? "default" : "pointer"}
-                  opacity={creatingRowKey && !isCreatingThisRow ? 0.5 : 1}
-                  _hover={{
-                    bg: "primary.25",
-                    "& [data-row-action]": { opacity: 1 },
-                  }}
-                  _focusVisible={{
-                    bg: "primary.25",
-                    "& [data-row-action]": { opacity: 1 },
-                    outline: "2px solid",
-                    outlineColor: "primary.500",
-                    outlineOffset: "-2px",
-                  }}
-                  onClick={() => {
-                    if (!isRenamingThisRow) void handleRowClick(row);
-                  }}
-                  onKeyDown={(e) => {
-                    if (isRenamingThisRow || creatingRowKey) return;
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      void handleRowClick(row);
+                return (
+                  <Table.Row
+                    key={key}
+                    tabIndex={creatingRowKey || isRenamingThisRow ? -1 : 0}
+                    aria-label={
+                      isRenamingThisRow
+                        ? undefined
+                        : `Create dashboard for ${row.name}`
                     }
-                  }}
-                >
-                  <Table.Cell pr={0}>
-                    <Flex
-                      w="40px"
-                      h="40px"
-                      borderRadius="4px"
-                      bg="rgba(45, 107, 228, 0.08)"
-                      align="center"
-                      justify="center"
-                      flexShrink={0}
-                    >
-                      <PolygonIcon size={20} color={AREA_ICON_COLOR} />
-                    </Flex>
-                  </Table.Cell>
-                  <Table.Cell overflow="hidden">
-                    {isRenamingThisRow ? (
-                      <Input
-                        size="sm"
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") void handleRename(row.src_id);
-                          if (e.key === "Escape") setRenamingId(null);
-                        }}
-                        autoFocus
-                      />
-                    ) : (
-                      <Box minW={0}>
-                        <Text
-                          fontWeight="medium"
-                          whiteSpace="nowrap"
-                          overflow="hidden"
-                          textOverflow="ellipsis"
-                        >
-                          {row.name}
-                        </Text>
-                        {!isCustom && row.subtype && (
+                    cursor={creatingRowKey ? "default" : "pointer"}
+                    opacity={creatingRowKey && !isCreatingThisRow ? 0.5 : 1}
+                    _hover={{
+                      bg: "primary.25",
+                      "& [data-row-action]": { opacity: 1 },
+                    }}
+                    _focusVisible={{
+                      bg: "primary.25",
+                      "& [data-row-action]": { opacity: 1 },
+                      outline: "2px solid",
+                      outlineColor: "primary.500",
+                      outlineOffset: "-2px",
+                    }}
+                    onClick={() => {
+                      if (!isRenamingThisRow) void handleRowClick(row);
+                    }}
+                    onKeyDown={(e) => {
+                      if (isRenamingThisRow || creatingRowKey) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        void handleRowClick(row);
+                      }
+                    }}
+                  >
+                    <Table.Cell pr={0}>
+                      <Flex
+                        w="40px"
+                        h="40px"
+                        borderRadius="4px"
+                        bg="rgba(45, 107, 228, 0.08)"
+                        align="center"
+                        justify="center"
+                        flexShrink={0}
+                      >
+                        <PolygonIcon size={20} color={AREA_ICON_COLOR} />
+                      </Flex>
+                    </Table.Cell>
+                    <Table.Cell overflow="hidden">
+                      {isRenamingThisRow ? (
+                        <Input
+                          size="sm"
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter")
+                              void handleRename(row.src_id);
+                            if (e.key === "Escape") setRenamingId(null);
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <Box minW={0}>
                           <Text
-                            {...cellSubtextStyle}
+                            fontWeight="medium"
                             whiteSpace="nowrap"
                             overflow="hidden"
                             textOverflow="ellipsis"
                           >
-                            {row.subtype}
+                            {row.name}
                           </Text>
-                        )}
-                      </Box>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Text {...cellTextStyle}>{row.typeLabel}</Text>
-                  </Table.Cell>
-                  <Table.Cell textAlign="center">
-                    <Text {...cellTextStyle}>{row.previousAnalyses}</Text>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Flex align="center" gap={2} justify="flex-end">
-                      {isCreatingThisRow ? (
-                        <Spinner size="sm" />
-                      ) : (
-                        <Flex
-                          data-row-action
-                          align="center"
-                          gap="4px"
-                          opacity={{ base: 1, md: 0 }}
-                        >
-                          <Text
-                            fontFamily="body"
-                            fontSize="14px"
-                            fontWeight="500"
-                            lineHeight="150%"
-                            letterSpacing="0%"
-                            textAlign="center"
-                            color="#0049AA"
-                            whiteSpace="nowrap"
-                          >
-                            New dashboard
-                          </Text>
-                          <CaretRightIcon size={14} color="#0049AA" />
-                        </Flex>
-                      )}
-                      {isCustom && (
-                        <Menu.Root>
-                          <Menu.Trigger asChild>
-                            <IconButton
-                              aria-label="Area actions"
-                              variant="ghost"
-                              size="xs"
-                              disabled={isDeleting}
-                              onClick={(e) => e.stopPropagation()}
+                          {!isCustom && row.subtype && (
+                            <Text
+                              {...cellSubtextStyle}
+                              whiteSpace="nowrap"
+                              overflow="hidden"
+                              textOverflow="ellipsis"
                             >
-                              <DotsThreeVerticalIcon />
-                            </IconButton>
-                          </Menu.Trigger>
-                          <Portal>
-                            <Menu.Positioner>
-                              <Menu.Content>
-                                <Menu.Item
-                                  value="rename"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRenamingId(row.src_id);
-                                    setRenameValue(row.name);
-                                  }}
-                                >
-                                  Rename
-                                </Menu.Item>
-                                <Menu.Item
-                                  value="delete"
-                                  color="fg.error"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    void handleDelete(row.src_id, row.name);
-                                  }}
-                                >
-                                  Delete
-                                </Menu.Item>
-                              </Menu.Content>
-                            </Menu.Positioner>
-                          </Portal>
-                        </Menu.Root>
+                              {row.subtype}
+                            </Text>
+                          )}
+                        </Box>
                       )}
-                    </Flex>
-                  </Table.Cell>
-                </Table.Row>
-              );
-            })}
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Text {...cellTextStyle}>{row.typeLabel}</Text>
+                    </Table.Cell>
+                    <Table.Cell textAlign="center">
+                      <Text {...cellTextStyle}>{row.previousAnalyses}</Text>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Flex align="center" gap={2} justify="flex-end">
+                        {isCreatingThisRow ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          <Flex
+                            data-row-action
+                            align="center"
+                            gap="4px"
+                            opacity={{ base: 1, md: 0 }}
+                          >
+                            <Text
+                              fontFamily="body"
+                              fontSize="14px"
+                              fontWeight="500"
+                              lineHeight="150%"
+                              letterSpacing="0%"
+                              textAlign="center"
+                              color="#0049AA"
+                              whiteSpace="nowrap"
+                            >
+                              New dashboard
+                            </Text>
+                            <CaretRightIcon size={14} color="#0049AA" />
+                          </Flex>
+                        )}
+                        {isCustom && (
+                          <Menu.Root>
+                            <Menu.Trigger asChild>
+                              <IconButton
+                                aria-label="Area actions"
+                                variant="ghost"
+                                size="xs"
+                                disabled={isDeleting}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <DotsThreeVerticalIcon />
+                              </IconButton>
+                            </Menu.Trigger>
+                            <Portal>
+                              <Menu.Positioner>
+                                <Menu.Content>
+                                  <Menu.Item
+                                    value="rename"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setRenamingId(row.src_id);
+                                      setRenameValue(row.name);
+                                    }}
+                                  >
+                                    Rename
+                                  </Menu.Item>
+                                  <Menu.Item
+                                    value="delete"
+                                    color="fg.error"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void handleDelete(row.src_id, row.name);
+                                    }}
+                                  >
+                                    Delete
+                                  </Menu.Item>
+                                </Menu.Content>
+                              </Menu.Positioner>
+                            </Portal>
+                          </Menu.Root>
+                        )}
+                      </Flex>
+                    </Table.Cell>
+                  </Table.Row>
+                );
+              })}
           </Table.Body>
         </Table.Root>
 
-        {isLoading && (
-          <Flex justify="center" py={8}>
-            <Spinner />
+        {!showSkeletons && !isSearching && rows.length === 0 && (
+          <Flex minH="280px" align="center" justify="center" py={8}>
+            <Box
+              textAlign="center"
+              fontFamily="body"
+              fontSize="18px"
+              lineHeight="1.5"
+              color="#565E7B"
+            >
+              {search.trim() ? (
+                <>
+                  <Text>
+                    <Text as="span" fontWeight="500">
+                      {`“${search.trim()}”`}
+                    </Text>
+                    {" didn’t return any results."}
+                  </Text>
+                  <Text>Please check spelling and try again.</Text>
+                </>
+              ) : (
+                <Text>No areas found in this category.</Text>
+              )}
+            </Box>
           </Flex>
-        )}
-
-        {!isLoading && rows.length === 0 && (
-          <Box py={8} textAlign="center">
-            <Text color="fg.muted">
-              {search
-                ? "No areas match your search."
-                : "No areas found in this category."}
-            </Text>
-          </Box>
         )}
 
         {hasNextPage && (
