@@ -2,11 +2,14 @@ import { describe, it, expect } from "vitest";
 
 import {
   chartSize,
+  chartTitleOverride,
   computeReorder,
   dashboardWidgetToInsightWidgets,
   widgetSize,
   withChartSize,
+  withChartTitle,
   withSize,
+  withWidgetTitle,
 } from "../widgets";
 import type { DashboardWidget } from "../../api/schemas";
 
@@ -77,6 +80,47 @@ describe("chartSize / withChartSize", () => {
   });
 });
 
+describe("chartTitleOverride / withChartTitle", () => {
+  it("reads a per-chart override and ignores blanks/missing", () => {
+    expect(chartTitleOverride({}, "c-1")).toBeUndefined();
+    expect(chartTitleOverride({ titles: { "c-1": "Renamed" } }, "c-1")).toBe(
+      "Renamed"
+    );
+    expect(
+      chartTitleOverride({ titles: { "c-1": "Renamed" } }, "c-2")
+    ).toBeUndefined();
+    expect(
+      chartTitleOverride({ titles: { "c-1": "   " } }, "c-1")
+    ).toBeUndefined();
+  });
+
+  it("sets the override, preserving other config keys and sibling titles", () => {
+    expect(
+      withChartTitle({ size: "double", titles: { "c-1": "A" } }, "c-2", "B")
+    ).toEqual({ size: "double", titles: { "c-1": "A", "c-2": "B" } });
+  });
+
+  it("clears the override on a blank name and drops the empty titles key", () => {
+    expect(
+      withChartTitle({ size: "double", titles: { "c-1": "A" } }, "c-1", "  ")
+    ).toEqual({ size: "double" });
+  });
+});
+
+describe("withWidgetTitle", () => {
+  it("sets config.title and preserves other keys", () => {
+    expect(
+      withWidgetTitle({ dataset: { tile_url: "x" } }, "Forest loss")
+    ).toEqual({ dataset: { tile_url: "x" }, title: "Forest loss" });
+  });
+
+  it("clears config.title on a blank name", () => {
+    expect(withWidgetTitle({ title: "Old", size: "double" }, "")).toEqual({
+      size: "double",
+    });
+  });
+});
+
 describe("dashboardWidgetToInsightWidgets", () => {
   it("returns [] for a hidden insight or no charts", () => {
     expect(dashboardWidgetToInsightWidgets(widget({ insight: null }))).toEqual(
@@ -125,6 +169,30 @@ describe("dashboardWidgetToInsightWidgets", () => {
     expect(cards[0].description).toBe("Narrative.");
     expect(cards[1].title).toBe("Second");
     expect(cards[1].description).toBe("");
+  });
+
+  it("prefers a per-chart title override over config.title and the chart title", () => {
+    const cards = dashboardWidgetToInsightWidgets(
+      widget({
+        config: {
+          title: "First-chart override",
+          titles: { "c-2": "Renamed B" },
+        },
+        insight: {
+          id: "ins-1",
+          insight_text: "Narrative.",
+          codeact_parts: null,
+          charts: [
+            chart({ id: "c-1", position: 0, title: "First" }),
+            chart({ id: "c-2", position: 1, title: "Second" }),
+          ],
+        },
+      })
+    );
+    // c-1: no per-chart override, so the legacy first-chart config.title wins.
+    expect(cards[0].title).toBe("First-chart override");
+    // c-2: its per-chart override wins over the chart's own title.
+    expect(cards[1].title).toBe("Renamed B");
   });
 
   it("falls back to table for unknown chart types", () => {
