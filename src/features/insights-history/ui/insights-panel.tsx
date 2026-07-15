@@ -39,18 +39,16 @@ import {
   type InsightRecord,
   type InsightVerification,
 } from "@/src/entities/insight";
-import {
-  useUserInsights,
-  verifiedInsights,
-} from "@/src/features/insights-history";
+import { useUserInsights } from "./use-user-insights";
+import { verifiedInsights } from "../lib/verified-fixtures";
 import useChatStore from "@/app/store/chatStore";
 import useInsightStore from "@/app/store/insightStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import type { InsightWidget } from "@/app/types/chat";
 
-import { CatalogCard } from "./CatalogCard";
-import WidgetMessage from "./WidgetMessage";
-import { Tooltip } from "./ui/tooltip";
+import { CatalogCard } from "@/app/components/CatalogCard";
+import WidgetMessage from "@/app/components/WidgetMessage";
+import { Tooltip } from "@/app/components/ui/tooltip";
 
 /** Matches the other exploration panels' enter & exit (slide from the left). */
 const insightsPanelSlideTransition = {
@@ -145,7 +143,7 @@ function cardDescription(item: InsightCardItem): string {
  * feature slice + the live `insightStore`; "Show on map" drives the on-map
  * `InsightWorkspace` overlay.
  */
-export default function InsightsPanel() {
+export function InsightsPanel() {
   const [filter, setFilter] = useState<InsightFilter>("conversation");
   const { insightsPanelOpen, setInsightsPanelOpen, isChatFullSize } =
     useSidebarStore();
