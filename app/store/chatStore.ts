@@ -33,6 +33,7 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import { queryClient } from "@/app/lib/query-client";
+import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
 import {
   showApiError,
   showError,
@@ -40,8 +41,14 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
-import { effectiveAgentProfile } from "@/app/config/feature-flags";
+import {
+  canUseFeatureFlags,
+  effectiveAgentProfile,
+  EXPERIMENTAL_PROFILE,
+} from "@/app/config/feature-flags";
 import useAgentProfileStore from "./agentProfileStore";
+import useViewContextStore from "./viewContextStore";
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -186,6 +193,21 @@ async function processStreamMessage(
   mergeCitedArticles: (articles: BlogArticle[]) => void,
   setGeneratingInsight: (generating: boolean) => void
 ) {
+  // The agent wrote to a dashboard (created it or added a widget) — refetch
+  // it. Keyed on the metadata signal rather than the tool name so new backend
+  // dashboard tools work without a dispatch entry here; checked before the
+  // type branching because the signal can ride on a tool result, an
+  // error-classified message, or the agent narration in the same update.
+  // insight_updated (update_insight_display: chart renamed, retyped or
+  // remapped) also invalidates dashboards: the dashboard detail cache embeds
+  // the expanded insight, so its widgets render stale titles otherwise.
+  if (
+    streamMessage.msg_type === "dashboard_updated" ||
+    streamMessage.msg_type === "insight_updated"
+  ) {
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+  }
+
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
     if (streamMessage.trace_id) {
@@ -515,10 +537,29 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
     // Send the agent profile as `ff` only when a profile is selected and the
     // user type is allowed to use feature flags (else the backend 403s).
-    const ff = effectiveAgentProfile(
-      useAgentProfileStore.getState().agentProfile,
-      useAuthStore.getState().userType
-    );
+    const userType = useAuthStore.getState().userType;
+    const viewContext = useViewContextStore.getState().viewContext;
+    // The dashboard agent tools live in the backend's experimental profile, so
+    // default to it whenever the dashboards feature is active — either on a
+    // dashboard surface or with the ?ff=dashboard gate open — letting a single
+    // ?ff=dashboard stand in for ?agent_profile=experimental. Read live: nav
+    // helpers carry ?ff=dashboard across the thread-URL rewrite, so this tracks
+    // the visible feature rather than persisting a separate flag.
+    const dashboardsFeatureActive =
+      viewContext?.page === "dashboard" ||
+      (typeof window !== "undefined" &&
+        isFeatureEnabled(
+          new URLSearchParams(window.location.search),
+          "dashboard"
+        ));
+    const ff =
+      effectiveAgentProfile(
+        useAgentProfileStore.getState().agentProfile,
+        userType
+      ) ??
+      (dashboardsFeatureActive && canUseFeatureFlags(userType)
+        ? EXPERIMENTAL_PROFILE
+        : null);
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
@@ -545,6 +586,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         body: JSON.stringify({
           ...prompt,
           ...(Object.keys(ui_context).length > 0 && { ui_context }),
+          // Ambient surface snapshot (map vs dashboard) — lets the backend
+          // scope "here"/"this dashboard" per turn. See viewContextStore.
+          ...(viewContext && { view_context: viewContext }),
         }),
         signal: abortController.signal,
       });

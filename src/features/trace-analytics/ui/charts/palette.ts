@@ -165,21 +165,60 @@ export const SEQUENTIAL_BLUE = {
   to: "#0041B1",
 } as const;
 
+/**
+ * Warm sequential ramp (amber family) for failure/impact heat encodings —
+ * deliberately a different hue from SEQUENTIAL_BLUE so "many prompts" and
+ * "many failures" never look alike on the same page.
+ */
+export const SEQUENTIAL_AMBER = {
+  from: "#FBF1E5",
+  to: "#8F4A00",
+} as const;
+
+/**
+ * Diverging scale for rates compared against a baseline: amber = below,
+ * neutral = at, blue = above. Amber↔blue is the CVD-safe warm/cool pair
+ * (red/green is not), and it keeps red reserved for hard-error status.
+ */
+export const DIVERGING_QUALITY = {
+  below: "#D97D05",
+  mid: "#E9EBEE",
+  above: "#0041B1",
+} as const;
+
 function hexToRgb(hex: string): readonly [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-const RAMP_FROM = hexToRgb(SEQUENTIAL_BLUE.from);
-const RAMP_TO = hexToRgb(SEQUENTIAL_BLUE.to);
+/** Linear interpolation between two hex colors at t ∈ [0, 1]. */
+function mixHex(from: string, to: string, t: number): string {
+  const clamped = Math.min(1, Math.max(0, t));
+  const a = hexToRgb(from);
+  const b = hexToRgb(to);
+  const mix = a.map((v, i) => Math.round(v + (b[i] - v) * clamped));
+  return `rgb(${mix[0]}, ${mix[1]}, ${mix[2]})`;
+}
 
 /** Interpolated GNW blue ramp at t ∈ [0, 1]: light (0) → brand blue (1). */
 export function sequentialBlue(t: number): string {
-  const clamped = Math.min(1, Math.max(0, t));
-  const mix = RAMP_FROM.map((from, i) =>
-    Math.round(from + (RAMP_TO[i] - from) * clamped)
-  );
-  return `rgb(${mix[0]}, ${mix[1]}, ${mix[2]})`;
+  return mixHex(SEQUENTIAL_BLUE.from, SEQUENTIAL_BLUE.to, t);
+}
+
+/** Interpolated amber ramp at t ∈ [0, 1]: light (0) → dark amber (1). */
+export function sequentialAmber(t: number): string {
+  return mixHex(SEQUENTIAL_AMBER.from, SEQUENTIAL_AMBER.to, t);
+}
+
+/**
+ * Diverging quality color at t ∈ [-1, 1]: -1 = fully below the baseline
+ * (amber), 0 = at the baseline (neutral), 1 = fully above (blue).
+ */
+export function divergingQuality(t: number): string {
+  const clamped = Math.min(1, Math.max(-1, t));
+  return clamped < 0
+    ? mixHex(DIVERGING_QUALITY.mid, DIVERGING_QUALITY.below, -clamped)
+    : mixHex(DIVERGING_QUALITY.mid, DIVERGING_QUALITY.above, clamped);
 }
 
 export function categoryColor(index: number): string {
