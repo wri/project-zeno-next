@@ -42,9 +42,22 @@ function isReferenceSourceEnabled(
 export interface AreaPickerRowsResult {
   rows: AreaPickerRow[];
   isLoading: boolean;
+  /**
+   * True while a new search term is fetching and `rows` still shows the
+   * previous (placeholder) result set — distinct from `isLoading`, which
+   * only covers a source's very first load.
+   */
+  isSearching: boolean;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
+}
+
+function isRefreshingPlaceholder(query: {
+  isFetching: boolean;
+  isPlaceholderData: boolean;
+}): boolean {
+  return query.isFetching && query.isPlaceholderData;
 }
 
 /**
@@ -120,6 +133,7 @@ export function useAreaPickerRows(
     return {
       rows: filterRowsBySearch(customRows, search),
       isLoading: customLoading,
+      isSearching: false,
       hasNextPage: false,
       isFetchingNextPage: false,
       fetchNextPage: () => {},
@@ -131,6 +145,7 @@ export function useAreaPickerRows(
     return {
       rows: referenceRows[activeCategory],
       isLoading: query.isLoading,
+      isSearching: isRefreshingPlaceholder(query),
       hasNextPage: query.hasNextPage,
       isFetchingNextPage: query.isFetchingNextPage,
       fetchNextPage: () => {
@@ -149,6 +164,9 @@ export function useAreaPickerRows(
     isLoading:
       customLoading ||
       REFERENCE_AOI_SOURCES.some((s) => referenceQueries[s].isLoading),
+    isSearching: REFERENCE_AOI_SOURCES.some((s) =>
+      isRefreshingPlaceholder(referenceQueries[s])
+    ),
     hasNextPage: REFERENCE_AOI_SOURCES.some(
       (s) => referenceQueries[s].hasNextPage
     ),

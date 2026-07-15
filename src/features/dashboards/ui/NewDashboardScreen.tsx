@@ -88,8 +88,14 @@ export function NewDashboardScreen() {
   const [renameValue, setRenameValue] = useState("");
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  const { rows, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useAreaPickerRows(activeCategory, search);
+  const {
+    rows,
+    isLoading,
+    isSearching,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAreaPickerRows(activeCategory, search);
   const { createDashboardAsync } = useCreateDashboard();
   const { createAreaAsync, isCreating: isUploading } = useCustomAreasCreate();
   const { renameAreaAsync, isRenaming } = useCustomAreasUpdate();
@@ -489,13 +495,13 @@ export function NewDashboardScreen() {
           </Table.Body>
         </Table.Root>
 
-        {isLoading && (
+        {(isLoading || isSearching) && (
           <Flex justify="center" py={8}>
             <Spinner />
           </Flex>
         )}
 
-        {!isLoading && rows.length === 0 && (
+        {!isLoading && !isSearching && rows.length === 0 && (
           <Box py={8} textAlign="center">
             <Text color="fg.muted">
               {search

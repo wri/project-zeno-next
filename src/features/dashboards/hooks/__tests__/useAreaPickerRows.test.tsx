@@ -35,6 +35,8 @@ const aoiBrowsePages = vi.hoisted(() => ({
       ],
     },
     isLoading: false,
+    isFetching: false,
+    isPlaceholderData: false,
     hasNextPage: false,
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
@@ -57,6 +59,8 @@ const aoiBrowsePages = vi.hoisted(() => ({
       ],
     },
     isLoading: false,
+    isFetching: false,
+    isPlaceholderData: false,
     hasNextPage: true,
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
@@ -64,6 +68,8 @@ const aoiBrowsePages = vi.hoisted(() => ({
   wdpa: {
     data: { pages: [{ results: [], nextOffset: null }] },
     isLoading: false,
+    isFetching: false,
+    isPlaceholderData: false,
     hasNextPage: false,
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
@@ -71,6 +77,8 @@ const aoiBrowsePages = vi.hoisted(() => ({
   landmark: {
     data: { pages: [{ results: [], nextOffset: null }] },
     isLoading: false,
+    isFetching: false,
+    isPlaceholderData: false,
     hasNextPage: false,
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
@@ -178,6 +186,30 @@ describe("useAreaPickerRows", () => {
       useAreaPickerRows("custom", "zzz")
     );
     expect(noMatch.current.rows).toEqual([]);
+  });
+
+  it("reports isSearching while a query refreshes over placeholder rows", () => {
+    aoiBrowsePages.gadm.isFetching = true;
+    aoiBrowsePages.gadm.isPlaceholderData = true;
+    try {
+      const { result } = renderHook(() => useAreaPickerRows("all", "brazil"));
+      expect(result.current.isSearching).toBe(true);
+      // First loads and background refetches must not read as searching.
+      expect(result.current.isLoading).toBe(false);
+    } finally {
+      aoiBrowsePages.gadm.isFetching = false;
+      aoiBrowsePages.gadm.isPlaceholderData = false;
+    }
+  });
+
+  it("does not report isSearching for background refetches of fresh data", () => {
+    aoiBrowsePages.gadm.isFetching = true;
+    try {
+      const { result } = renderHook(() => useAreaPickerRows("all", ""));
+      expect(result.current.isSearching).toBe(false);
+    } finally {
+      aoiBrowsePages.gadm.isFetching = false;
+    }
   });
 
   it("debounces search changes before re-querying the server", () => {

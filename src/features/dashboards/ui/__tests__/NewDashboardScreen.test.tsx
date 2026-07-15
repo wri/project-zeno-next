@@ -39,6 +39,7 @@ const rowsState = vi.hoisted(() => ({
     },
   ],
   isLoading: false,
+  isSearching: false,
   hasNextPage: false,
   isFetchingNextPage: false,
   fetchNextPage: vi.fn(),
