@@ -10,6 +10,7 @@ import {
   withChartSize,
   withChartTitle,
   withSize,
+  withText,
   withWidgetTitle,
 } from "../widgets";
 import type { DashboardWidget } from "../../api/schemas";
@@ -257,6 +258,21 @@ describe("widgetText", () => {
     expect(widgetText({})).toBeNull();
     expect(widgetText({ text: 42 })).toBeNull();
     expect(widgetText({ text: "   " })).toBeNull();
+  });
+});
+
+describe("withText", () => {
+  it("stores the markdown body under config.text, preserving other keys", () => {
+    expect(withText({ size: "double" }, "## Note\n\n- one")).toEqual({
+      size: "double",
+      text: "## Note\n\n- one",
+    });
+  });
+
+  it("drops config.text when the body is blank so the placeholder shows", () => {
+    expect(withText({ text: "old", size: "single" }, "   ")).toEqual({
+      size: "single",
+    });
   });
 });
 
