@@ -18,11 +18,9 @@ import {
   ClockCounterClockwiseIcon,
   GearSixIcon,
   LifebuoyIcon,
-  MapTrifoldIcon,
   PlusIcon,
   ShootingStarIcon,
   SignOutIcon,
-  SquaresFourIcon,
   UserIcon,
   InfoIcon,
 } from "@phosphor-icons/react";
@@ -305,7 +303,14 @@ function PageHeader() {
       </Flex>
       {dashboardFeatureEnabled && (
         <Flex
-          gap="0"
+          // Segmented control (Figma node 897-4655): a Primary/100 track that
+          // holds a single solid Primary/500 pill marking the active view. The
+          // design's same-coloured 1px border is omitted — invisible against
+          // the track, it would only push the height past the intended 36px.
+          gap="1"
+          p="1"
+          bg="#F0F4FF"
+          borderRadius="8px"
           alignItems="center"
           hideBelow="md"
           position="absolute"
@@ -318,29 +323,36 @@ function PageHeader() {
               // URL (which preserves state) instead of the resetting /app.
               href: mapTabHref(currentThreadId),
               label: "Map",
-              icon: <MapTrifoldIcon size={14} />,
               active: onMap,
             },
             {
               href: "/dashboards?ff=dashboard",
               label: "Dashboards",
-              icon: <SquaresFourIcon size={14} />,
               active: onDashboards,
             },
-          ].map(({ href, label, icon, active }) => (
+          ].map(({ href, label, active }) => (
             <Button
               key={href}
               asChild
               size="xs"
-              variant={active ? "solid" : "ghost"}
-              colorPalette={active ? "primary" : undefined}
-              color={active ? undefined : inverseColor}
-              _hover={active ? undefined : { bg: inverseHoverBg }}
+              variant="ghost"
+              h="28px"
+              minW={0}
+              px="2.5"
+              py="1"
+              borderRadius="4px"
+              fontSize="sm"
+              lineHeight="20px"
+              fontWeight="semibold"
+              bg={active ? "#0049AA" : "transparent"}
+              color={active ? "white" : "#4A64CB"}
+              boxShadow={
+                active ? "0px 1px 2px 0px rgba(0, 0, 0, 0.05)" : undefined
+              }
+              _hover={active ? { bg: "#0049AA" } : { bg: "primary.50" }}
               _focusVisible={focusRing}
-              fontWeight="medium"
             >
               <Link href={href} aria-current={active ? "page" : undefined}>
-                {icon}
                 {label}
               </Link>
             </Button>
