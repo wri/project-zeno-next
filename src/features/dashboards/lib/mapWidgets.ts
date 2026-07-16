@@ -13,10 +13,38 @@ export interface MapWidgetLayer {
   tileUrl: string;
   /** The active context sub-layer's tiles, rendered beneath the main layer. */
   contextTileUrl?: string;
+  /** The active context sub-layer's name — set only with `contextTileUrl`. */
+  contextLayerName?: string;
+  // Dataset-kind fields that drive the widget's legend (DashboardMapLegend).
+  datasetId?: number;
+  /** Display parameters as a record, e.g. `{ canopy_cover: 30 }`. */
+  parameters?: Record<string, unknown>;
+  startDate?: string;
+  endDate?: string;
 }
 
 const str = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value : undefined;
+
+// Config parameters are `[{ name, values }]` (per the handoff); the legend
+// wants a `{ name: firstValue }` record — same reduction the explorer's
+// getDatasetLayerContextProps applies to DatasetInfo.parameters.
+function parametersRecord(
+  parameters: unknown
+): Record<string, unknown> | undefined {
+  if (!Array.isArray(parameters)) return undefined;
+  const entries = parameters
+    .filter(
+      (p): p is { name: string; values: unknown[] } =>
+        !!p &&
+        typeof p === "object" &&
+        typeof (p as { name?: unknown }).name === "string" &&
+        Array.isArray((p as { values?: unknown }).values) &&
+        (p as { values: unknown[] }).values.length > 0
+    )
+    .map((p) => [p.name, p.values[0]] as const);
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
 
 // Primary forest tiles ship black-background PNGs; the pf:// protocol
 // rewrites black to alpha (same patch the explorer applies).
@@ -46,6 +74,7 @@ export function mapWidgetLayer(
     // Resolve the active context layer by name. Raster-only: vector (MVT)
     // context layers need a source_layer the persisted config doesn't carry.
     let contextTileUrl: string | undefined;
+    let contextLayerName: string | undefined;
     const activeName = str(d.context_layer);
     if (activeName && Array.isArray(d.context_layers)) {
       const entry = d.context_layers.find(
@@ -55,14 +84,25 @@ export function mapWidgetLayer(
           (l as { name?: unknown }).name === activeName
       );
       const entryUrl = str(entry?.tile_url);
-      if (entryUrl) contextTileUrl = patchPrimaryForest(entryUrl);
+      if (entryUrl) {
+        contextTileUrl = patchPrimaryForest(entryUrl);
+        contextLayerName = activeName;
+      }
     }
+
+    const parameters = parametersRecord(d.parameters);
+    const startDate = str(d.start_date);
+    const endDate = str(d.end_date);
 
     return {
       kind: "dataset",
       title: titleOverride ?? str(d.dataset_name) ?? "Map layer",
       tileUrl: patchPrimaryForest(tileUrl),
-      ...(contextTileUrl ? { contextTileUrl } : {}),
+      ...(contextTileUrl ? { contextTileUrl, contextLayerName } : {}),
+      ...(typeof d.dataset_id === "number" ? { datasetId: d.dataset_id } : {}),
+      ...(parameters ? { parameters } : {}),
+      ...(startDate ? { startDate } : {}),
+      ...(endDate ? { endDate } : {}),
     };
   }
 

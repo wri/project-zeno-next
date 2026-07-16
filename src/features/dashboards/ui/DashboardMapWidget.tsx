@@ -1,27 +1,40 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useMemo, useRef } from "react";
-import { Box } from "@chakra-ui/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Box, Tag } from "@chakra-ui/react";
+import { PolygonIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import turfBbox from "@turf/bbox";
 import MapGl, {
   AttributionControl,
   Layer,
+  Marker,
+  NavigationControl,
   Source,
   type MapRef,
 } from "react-map-gl/maplibre";
 
+import {
+  aoiBboxLinePaint,
+  aoiBoundaryColors,
+  aoiCasingPaint,
+  aoiLinePaint,
+} from "@/app/components/map/layers/aoiStyle";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
+import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import type { MapWidgetLayer } from "../lib/mapWidgets";
+import DashboardMapLegend, {
+  type MapWidgetOpacity,
+} from "./DashboardMapLegend";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 // The explorer's default light basemap style.
 const BASEMAP_STYLE = "devseed/cmazl5ws500bz01scaa27dqi4";
-// Boundary colour on light basemaps (matches the explorer's area layers).
-const OUTLINE_COLOR = "#172B7A";
+// The widget basemap is always light, and dashboards are single-area.
+const AOI_COLORS = aoiBoundaryColors("light");
 
 /**
  * The map body of a `widget_type: "map"` dashboard card. Self-contained per
@@ -37,13 +50,20 @@ export default function DashboardMapWidget({
   tall,
 }: {
   layer: MapWidgetLayer;
-  /** The dashboard's (single) area — outline + default viewport fit. */
-  aoi: { source: string; src_id: string } | undefined;
+  /** The dashboard's (single) area — outline, label + default viewport fit. */
+  aoi: { source: string; src_id: string; name: string } | undefined;
   bboxOverride: [number, number, number, number] | null;
   /** Full-width cards get a taller map. */
   tall?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
+
+  // Legend-controlled raster opacity (0–100). 80 matches the explorer's
+  // default dataset opacity and the legend's default display value.
+  const [opacity, setOpacity] = useState<MapWidgetOpacity>({
+    main: 80,
+    context: 80,
+  });
 
   useEffect(() => {
     // Idempotent; needed here because the dashboard page never mounts the
@@ -60,14 +80,15 @@ export default function DashboardMapWidget({
     staleTime: Infinity,
   });
 
-  const bounds = useMemo<[number, number, number, number] | null>(() => {
-    if (bboxOverride) return bboxOverride;
+  const aoiBbox = useMemo<[number, number, number, number] | null>(() => {
     if (!geometry?.geometry) return null;
     // Naive bbox — antimeridian-crossing areas get a wide box. Acceptable
     // here: dashboard AOIs don't carry a backend bbox to prefer.
     const [west, south, east, north] = turfBbox(geometry.geometry);
     return [west, south, east, north];
-  }, [bboxOverride, geometry]);
+  }, [geometry]);
+
+  const bounds = bboxOverride ?? aoiBbox;
 
   const fitToBounds = () => {
     if (!bounds || !mapRef.current) return;
@@ -76,7 +97,11 @@ export default function DashboardMapWidget({
         [bounds[0], bounds[1]],
         [bounds[2], bounds[3]],
       ],
-      { padding: 24, duration: 0 }
+      {
+        // Extra top headroom: the area label chip hangs above the bbox corner.
+        padding: { top: 56, right: 32, bottom: 32, left: 32 },
+        duration: 0,
+      }
     );
   };
 
@@ -84,8 +109,27 @@ export default function DashboardMapWidget({
   // completes last (the effect covers late bounds, onLoad covers late maps).
   useEffect(fitToBounds, [bounds]);
 
+  // Re-centre the area whenever the card resizes (size toggle, grid reflow,
+  // window resize). The observer only sees the container; the latest fit
+  // callback rides in a ref so we never re-observe.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const fitRef = useRef(fitToBounds);
+  fitRef.current = fitToBounds;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => {
+      // Next frame, so MapLibre's own resize handling runs first.
+      requestAnimationFrame(() => fitRef.current());
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Box
+      ref={containerRef}
       h={{ base: "280px", md: tall ? "520px" : "360px" }}
       rounded="md"
       overflow="hidden"
@@ -103,7 +147,10 @@ export default function DashboardMapWidget({
         dragRotate={false}
         attributionControl={false}
       >
-        <AttributionControl compact position="bottom-right" />
+        {/* Bottom-left so the legend can occupy the design's bottom-right
+            slot; the attribution stacks beneath the zoom buttons. */}
+        <NavigationControl position="bottom-left" showCompass={false} />
+        <AttributionControl compact position="bottom-left" />
         <Source
           id="widget-basemap"
           type="raster"
@@ -128,7 +175,7 @@ export default function DashboardMapWidget({
             <Layer
               id="widget-context"
               type="raster"
-              paint={{ "raster-opacity": 0.8 }}
+              paint={{ "raster-opacity": opacity.context / 100 }}
             />
           </Source>
         )}
@@ -141,18 +188,79 @@ export default function DashboardMapWidget({
           <Layer
             id="widget-tiles"
             type="raster"
-            paint={{ "raster-opacity": 0.8 }}
+            paint={{ "raster-opacity": opacity.main / 100 }}
           />
         </Source>
         {geometry?.geometry && (
           <Source id="widget-aoi" type="geojson" data={geometry.geometry}>
+            {/* The explorer's boundary treatment: contrasting casing under
+                the main line (shared paints, zoom-interpolated widths). */}
+            <Layer
+              id="widget-aoi-casing"
+              type="line"
+              paint={aoiCasingPaint(AOI_COLORS.casingColor)}
+            />
             <Layer
               id="widget-aoi-line"
               type="line"
-              paint={{ "line-color": OUTLINE_COLOR, "line-width": 1.5 }}
+              paint={aoiLinePaint(AOI_COLORS.mainLineColor)}
             />
           </Source>
         )}
+        {aoiBbox && (
+          <Source
+            id="widget-aoi-bbox"
+            type="geojson"
+            data={createBboxPolygon(aoiBbox)}
+          >
+            <Layer
+              id="widget-aoi-bbox-line"
+              type="line"
+              paint={aoiBboxLinePaint(AOI_COLORS.mainLineColor)}
+            />
+          </Source>
+        )}
+        {/* Area label pinned to the bbox corner, as on the explorer map —
+            minus the close trigger: a dashboard's area is fixed. */}
+        {aoiBbox && aoi?.name && (
+          <Marker
+            longitude={aoiBbox[0]}
+            latitude={aoiBbox[3]}
+            anchor="bottom-left"
+          >
+            <Tag.Root
+              colorPalette="primary"
+              px={2}
+              py={1}
+              size="md"
+              variant="solid"
+              roundedBottom="none"
+            >
+              <Tag.StartElement>
+                <PolygonIcon />
+              </Tag.StartElement>
+              <Tag.Label fontWeight="medium">{aoi.name}</Tag.Label>
+            </Tag.Root>
+          </Marker>
+        )}
+        {/* Non-map children render as DOM overlays inside the map container
+            (same pattern as the explorer's Map.tsx). */}
+        <Box
+          position="absolute"
+          bottom="8px"
+          right="8px"
+          zIndex={1}
+          w="300px"
+          maxW="calc(100% - 16px)"
+        >
+          <DashboardMapLegend
+            layer={layer}
+            opacity={opacity}
+            onOpacityChange={(target, value) =>
+              setOpacity((prev) => ({ ...prev, [target]: value }))
+            }
+          />
+        </Box>
       </MapGl>
     </Box>
   );

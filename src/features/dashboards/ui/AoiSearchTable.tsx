@@ -13,7 +13,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
-  ArrowRightIcon,
+  CaretRightIcon,
   MagnifyingGlassIcon,
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
@@ -26,7 +26,7 @@ import { useAoiSearch } from "./dashboardQueries";
 
 function toAoiSelection(result: AoiSearchResult): AOISelection {
   const bbox =
-    result.bbox.length === 4
+    result.bbox?.length === 4
       ? (result.bbox as [number, number, number, number])
       : undefined;
 
@@ -94,7 +94,9 @@ function ResultRow({
 }) {
   return (
     <Table.Row
-      role="group"
+      // `.group` (not role="group") is what Chakra's _groupHover targets, so
+      // the row must carry the class for the reveal-on-hover action to fire.
+      className="group"
       bg="transparent"
       opacity={disabled ? 0.6 : 1}
       _hover={disabled ? undefined : { bg: "blue.50" }}
@@ -138,12 +140,16 @@ function ResultRow({
           colorPalette="primary"
           disabled={disabled}
           opacity={{ base: 1, md: 0 }}
+          // No hover fill: the Figma shows plain text + chevron on the row's
+          // hover bg, not a nested ghost-button box. Keyboard focus still
+          // reveals it and keeps the default focus ring for a11y.
+          _hover={{ bg: "transparent" }}
           _groupHover={{ opacity: 1 }}
           _focusVisible={{ opacity: 1 }}
           onClick={() => onCreate(result)}
         >
           New dashboard
-          <ArrowRightIcon size={14} />
+          <CaretRightIcon size={16} />
         </Button>
       </Table.Cell>
     </Table.Row>

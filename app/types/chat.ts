@@ -76,6 +76,11 @@ export interface InsightWidget {
   seriesFields?: string[];
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
+  // Whether this insight is curated/verified rather than AI-generated. Set from
+  // InsightRecord.verification when a widget is built from stored insights; when
+  // undefined, the workspace falls back to treating a missing `generation` (the
+  // direct/curated flow) as curated.
+  curated?: boolean;
   analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
   // Persisted insight UUID (streamed with generate_insights). All charts of
   // one analysis share it; it is the handle for REST widget adds

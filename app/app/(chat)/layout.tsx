@@ -11,10 +11,12 @@ import {
 import { useEffect, useState } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
+import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawer";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import CatalogPanel from "@/app/components/CatalogPanel";
 import AreasPanel from "@/app/components/AreasPanel";
+import { InsightsPanel } from "@/src/features/insights-history";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import SystemBanner from "@/app/components/SystemBanner";
@@ -40,7 +42,7 @@ export default function DashboardLayout({
 }) {
   const isReady = useAuthGuard();
   const [sheetHeight, setSheetHeight] = useState(400);
-  const { toggleSidebar, sideBarVisible } = useSidebarStore();
+  const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
 
@@ -78,6 +80,7 @@ export default function DashboardLayout({
       >
         <CatalogPanel />
         <AreasPanel />
+        <InsightsPanel />
       </Box>
       <Box
         position="absolute"
@@ -111,22 +114,7 @@ export default function DashboardLayout({
           <ChatPanel />
         </Box>
       </Box>
-      <Drawer.Root
-        placement="start"
-        open={sideBarVisible}
-        onOpenChange={(e) => {
-          if (!e.open && sideBarVisible) toggleSidebar();
-        }}
-      >
-        <Portal>
-          <Drawer.Backdrop backdropFilter="blur(2px)" />
-          <Drawer.Positioner>
-            <Drawer.Content maxW="428px" w="428px">
-              <Sidebar />
-            </Drawer.Content>
-          </Drawer.Positioner>
-        </Portal>
-      </Drawer.Root>
+      <ConversationHistoryDrawer />
     </Box>
   );
 

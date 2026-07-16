@@ -13,7 +13,9 @@ import {
   widgetSize,
   widgetText,
   withChartSize,
+  withChartTitle,
   withSize,
+  withWidgetTitle,
 } from "../lib/widgets";
 import {
   mapWidgetLayer,
@@ -158,20 +160,28 @@ export default function DashboardWidgetsGrid({
   };
 
   // Cards of the same widget share a position — dropping on a sibling is a no-op.
-  const isDropTarget = (index: number) =>
-    dragIndex !== null &&
-    cells[dragIndex]?.widget.id !== cells[index]?.widget.id;
+  const isDropTarget = (index: number) => {
+    const dragged = dragIndex !== null ? cells[dragIndex] : undefined;
+    const target = cells[index];
+    return !!dragged && !!target && dragged.widget.id !== target.widget.id;
+  };
 
   const dropOn = (targetIndex: number) => {
-    if (dragIndex !== null && isDropTarget(targetIndex)) {
+    const draggedCell = dragIndex !== null ? cells[dragIndex] : undefined;
+    const targetCell = cells[targetIndex];
+    if (
+      draggedCell &&
+      targetCell &&
+      draggedCell.widget.id !== targetCell.widget.id
+    ) {
       const fromIndex = widgets.findIndex(
-        (w) => w.id === cells[dragIndex].widget.id
+        (w) => w.id === draggedCell.widget.id
       );
-      const toIndex = widgets.findIndex(
-        (w) => w.id === cells[targetIndex].widget.id
-      );
-      const { patches } = computeReorder(widgets, fromIndex, toIndex);
-      if (patches.length > 0) reorderWidgets.mutate(patches);
+      const toIndex = widgets.findIndex((w) => w.id === targetCell.widget.id);
+      if (fromIndex >= 0 && toIndex >= 0) {
+        const { patches } = computeReorder(widgets, fromIndex, toIndex);
+        if (patches.length > 0) reorderWidgets.mutate(patches);
+      }
     }
     endDrag();
   };
@@ -196,7 +206,12 @@ export default function DashboardWidgetsGrid({
             key={cell.key}
             colSpan={{ base: 1, lg: size === "double" ? 2 : 1 }}
             draggable={isOwner && grabbedKey === cell.key}
-            onDragStart={() => setDragIndex(i)}
+            onDragStart={(e) => {
+              // Required for Firefox to initiate drag-and-drop.
+              e.dataTransfer.setData("text/plain", cell.key);
+              e.dataTransfer.effectAllowed = "move";
+              setDragIndex(i);
+            }}
             onDragEnd={endDrag}
             onDragOver={(e) => {
               if (dragIndex === null) return;
@@ -244,6 +259,22 @@ export default function DashboardWidgetsGrid({
                         ),
                   },
                 })
+              }
+              onRename={
+                // Renamable only for renderable cells (map/imagery/chart);
+                // per-chart titles key on card.id, single-card widgets on
+                // config.title.
+                cell.placeholder
+                  ? undefined
+                  : (name) =>
+                      updateWidget.mutate({
+                        widgetId: widget.id,
+                        patch: {
+                          config: card?.id
+                            ? withChartTitle(widget.config, card.id, name)
+                            : withWidgetTitle(widget.config, name),
+                        },
+                      })
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />

@@ -33,6 +33,11 @@ export const config = defineConfig({
         from: { opacity: 0, transform: "translateY(4px)" },
         to: { opacity: 1, transform: "translateY(0)" },
       },
+      // Blink for the voice "listening" indicator dot.
+      vpDotBlink: {
+        "0%, 100%": { opacity: 1 },
+        "50%": { opacity: 0.28 },
+      },
       dynamicSlideLeft: {
         from: {
           transform: "translateX(var(--start-x))",

@@ -2,7 +2,9 @@
 import { Fragment, useEffect, useRef } from "react";
 import { Box, BoxProps } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";
+import useViewContextStore from "@/app/store/viewContextStore";
 import { usePinnedPrompt } from "@/app/hooks/usePinnedPrompt";
+import DashboardChatNudges from "@/src/features/dashboards/ui/DashboardChatNudges";
 import MessageBubble from "./MessageBubble";
 import PinnedPrompt from "./PinnedPrompt";
 import Reasoning from "./Reasoning";
@@ -23,6 +25,11 @@ function ChatMessages({ pt }: ChatMessagesProps) {
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const { messages, isLoading, toolSteps: currentToolSteps } = useChatStore();
+  // The greeting and first-message prompts are surface-specific: on a
+  // dashboard the seeded map welcome is swapped for the dashboard nudges.
+  const onDashboard = useViewContextStore(
+    (s) => s.viewContext?.page === "dashboard"
+  );
   const shouldAutoScroll = useRef(true);
   const { pinnedMessage, registerPromptNode, jumpToPinnedPrompt } =
     usePinnedPrompt(containerRef, messages);
@@ -115,20 +122,25 @@ function ChatMessages({ pt }: ChatMessagesProps) {
         const isLast = index === messages.length - 1;
         const isLastUserMessage =
           index === lastUserMessageIndex && message.type === "user";
+        const isSeededGreeting = isFirst && message.type === "system";
         return (
           <Fragment key={message.id}>
             {isLastUserMessage && <Box ref={lastUserMessageRef} />}
-            <MessageBubble
-              bubbleRef={
-                message.type === "user"
-                  ? registerPromptNode(message.id)
-                  : undefined
-              }
-              message={message}
-              isConsecutive={isConsecutive}
-              isFirst={isFirst}
-              isLast={isLast}
-            />
+            {isSeededGreeting && onDashboard ? (
+              <DashboardChatNudges showChips={messages.length < 2} />
+            ) : (
+              <MessageBubble
+                bubbleRef={
+                  message.type === "user"
+                    ? registerPromptNode(message.id)
+                    : undefined
+                }
+                message={message}
+                isConsecutive={isConsecutive}
+                isFirst={isFirst}
+                isLast={isLast}
+              />
+            )}
             {message.type === "user" && (
               <>
                 {/* Show reasoning for current loading query (last user message) */}
@@ -146,8 +158,9 @@ function ChatMessages({ pt }: ChatMessagesProps) {
               </>
             )}
 
-            {/* Prompt options for first message, removed when sent */}
-            {messages.length < 2 && <SamplePrompts />}
+            {/* Prompt options for first message, removed when sent. On the
+                dashboard surface DashboardChatNudges renders its own chips. */}
+            {messages.length < 2 && !onDashboard && <SamplePrompts />}
           </Fragment>
         );
       })}

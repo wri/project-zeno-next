@@ -5,7 +5,7 @@ export const AoiSearchResultSchema = z.object({
   src_id: z.string(),
   name: z.string(),
   subtype: z.string(),
-  bbox: z.array(z.number()).optional().default([-180, -90, 180, 90]),
+  bbox: z.array(z.number()).optional(),
 });
 
 export const AoiSearchResponseSchema = z.array(AoiSearchResultSchema);

@@ -65,6 +65,64 @@ export function withChartSize(
 }
 
 /**
+ * A chart's manual title override. Charts render as individual cards, so each
+ * carries its own rename under `config.titles[chartId]` (mirrors
+ * `config.sizes`). Returns undefined when unset/blank so the caller falls back
+ * to the chart's own title.
+ */
+export function chartTitleOverride(
+  config: Record<string, unknown>,
+  chartId: string
+): string | undefined {
+  const titles = config.titles;
+  if (titles && typeof titles === "object") {
+    const own = (titles as Record<string, unknown>)[chartId];
+    if (typeof own === "string" && own.trim()) return own;
+  }
+  return undefined;
+}
+
+/**
+ * The full config to PATCH for a per-chart rename (config is replaced whole).
+ * A blank name clears the override so the card reverts to its default title;
+ * the `titles` key is dropped once empty to keep configs tidy.
+ */
+export function withChartTitle(
+  config: Record<string, unknown>,
+  chartId: string,
+  name: string
+): Record<string, unknown> {
+  const titles =
+    config.titles && typeof config.titles === "object"
+      ? { ...(config.titles as Record<string, unknown>) }
+      : {};
+  const trimmed = name.trim();
+  if (trimmed) titles[chartId] = trimmed;
+  else delete titles[chartId];
+
+  const out = { ...config };
+  if (Object.keys(titles).length > 0) out.titles = titles;
+  else delete out.titles;
+  return out;
+}
+
+/**
+ * The full config to PATCH for a single-card widget rename (map / imagery),
+ * whose title lives under `config.title` — the override `mapWidgetLayer`
+ * already reads. A blank name clears it (reverts to the default label).
+ */
+export function withWidgetTitle(
+  config: Record<string, unknown>,
+  name: string
+): Record<string, unknown> {
+  const trimmed = name.trim();
+  const out = { ...config };
+  if (trimmed) out.title = trimmed;
+  else delete out.title;
+  return out;
+}
+
+/**
  * Maps a dashboard insight widget (snake_case REST shape) to the
  * `InsightWidget`s consumed by `WidgetMessage` — the persisted counterpart
  * of `generateInsightsTool`, which produces one card per chart. Returns `[]`
@@ -85,8 +143,17 @@ export function dashboardWidgetToInsightWidgets(
   const insight = widget.insight;
   if (!insight?.charts?.length) return [];
 
-  const generation = insight.codeact_parts?.length
-    ? { codeact_parts: insight.codeact_parts as CodeActPart[] }
+  const codeactParts = Array.isArray(insight.codeact_parts)
+    ? insight.codeact_parts.filter(
+        (p): p is CodeActPart =>
+          typeof p === "object" &&
+          p !== null &&
+          typeof (p as CodeActPart).type === "string" &&
+          typeof (p as CodeActPart).content === "string"
+      )
+    : [];
+  const generation = codeactParts.length
+    ? { codeact_parts: codeactParts }
     : undefined;
   const titleOverride =
     typeof widget.config.title === "string" ? widget.config.title : undefined;
@@ -101,7 +168,11 @@ export function dashboardWidgetToInsightWidgets(
         type: CHART_TYPES.has(chart.chart_type)
           ? (chart.chart_type as InsightWidget["type"])
           : "table",
-        title: (index === 0 && titleOverride) || chart.title,
+        // Per-chart rename wins; else the legacy first-chart `config.title`
+        // override; else the chart's own title.
+        title:
+          chartTitleOverride(widget.config, chart.id) ??
+          ((index === 0 && titleOverride) || chart.title),
         description: index === 0 ? (insight.insight_text ?? "") : "",
         data: chart.chart_data,
         xAxis: chart.x_axis,

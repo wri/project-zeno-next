@@ -42,12 +42,14 @@ interface ChatPanelCompactProps {
 function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
   const { promptsExhausted } = usePromptQuota();
   const { messages } = useChatStore();
-  const { dataCatalogOpen, areasPanelOpen } = useSidebarStore();
+  const { dataCatalogOpen, areasPanelOpen, insightsPanelOpen } =
+    useSidebarStore();
   const pathname = usePathname();
-  // The catalog/areas panels only render in the map layout; off it (dashboard
-  // pages) their persisted open state must not push the panel sideways.
+  // The catalog/areas/insights panels only render in the map layout; off it
+  // (dashboard pages) their persisted open state must not push the panel sideways.
   const chatLeftPx = getCompactChatLeftPx(
-    isAppRoute(pathname) && (dataCatalogOpen || areasPanelOpen)
+    isAppRoute(pathname) &&
+      (dataCatalogOpen || areasPanelOpen || insightsPanelOpen)
   );
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"

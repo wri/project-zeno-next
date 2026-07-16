@@ -9,6 +9,20 @@ export function isAppRoute(pathname: string | null): boolean {
 }
 
 /**
+ * The canonical map URL for a thread, carrying the hidden-feature flags
+ * (?ff=…) from the given `location.search` — dropping them closes the
+ * dashboards feature gate on the next navigation or refresh. Other params
+ * are deliberately not carried over (e.g. a landing ?prompt= must not ride
+ * along).
+ */
+export function threadHref(threadId: string, search?: string | null): string {
+  const ff = search ? new URLSearchParams(search).get("ff") : null;
+  return ff
+    ? `/app/threads/${threadId}?${new URLSearchParams({ ff })}`
+    : `/app/threads/${threadId}`;
+}
+
+/**
  * Where to send the browser after the first message of a new thread.
  *
  * Only the map surface rewrites its URL to the canonical thread route.
@@ -16,11 +30,6 @@ export function isAppRoute(pathname: string | null): boolean {
  * chat store and the user stays where they are — returning to the map via
  * the header's thread-aware Map tab lands on the thread URL with state
  * intact. Returns null when no navigation should happen.
- *
- * Pass the current `location.search` so the hidden-feature flags (?ff=…)
- * survive the rewrite — dropping them closes the dashboards feature gate on
- * the next navigation or refresh. Other params are deliberately not carried
- * over (e.g. a landing ?prompt= must not ride along).
  */
 export function firstMessageRedirectPath(
   pathname: string | null,
@@ -28,10 +37,51 @@ export function firstMessageRedirectPath(
   search?: string | null
 ): string | null {
   if (!isAppRoute(pathname)) return null;
-  const ff = search ? new URLSearchParams(search).get("ff") : null;
-  return ff
-    ? `/app/threads/${threadId}?${new URLSearchParams({ ff })}`
-    : `/app/threads/${threadId}`;
+  return threadHref(threadId, search);
+}
+
+/**
+ * What clicking a conversation in the history sidebar should do.
+ *
+ * A dashboard detail page hosts its own chat panel, and its URL doesn't
+ * encode the conversation (ADR-003) — so resuming a past conversation there
+ * loads the thread into the global chat store in place, keeping the user on
+ * the dashboard. Everywhere else (map, dashboards list — which has no chat
+ * panel) the click navigates to the thread's canonical map URL, carrying
+ * `?ff=…` so hidden feature gates stay open.
+ */
+export function threadClickTarget(
+  pathname: string | null,
+  threadId: string,
+  search?: string | null
+): { kind: "load-in-place" } | { kind: "navigate"; href: string } {
+  if (/^\/dashboards\/./.test(pathname ?? "")) {
+    return { kind: "load-in-place" };
+  }
+  return { kind: "navigate", href: threadHref(threadId, search) };
+}
+
+/**
+ * What the header's "New conversation" (+) control should do.
+ *
+ * A dashboard detail page hosts its own chat panel, so starting a new
+ * conversation there must not navigate away — the conversation is global
+ * session state that dashboard URLs don't encode (see ADR-003), so the
+ * caller resets the stores in place instead. Everywhere else the button
+ * navigates to the map's new-thread route, carrying `?ff=dashboard` when the
+ * feature gate is open so the navigation doesn't close it.
+ */
+export function newConversationTarget(
+  pathname: string | null,
+  dashboardFeatureEnabled: boolean
+): { kind: "reset-in-place" } | { kind: "navigate"; href: string } {
+  if (/^\/dashboards\/./.test(pathname ?? "")) {
+    return { kind: "reset-in-place" };
+  }
+  return {
+    kind: "navigate",
+    href: dashboardFeatureEnabled ? "/app?ff=dashboard" : "/app",
+  };
 }
 
 /**

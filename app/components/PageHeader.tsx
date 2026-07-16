@@ -39,7 +39,11 @@ import { usePathname } from "next/navigation";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
-import { mapTabHref } from "@/app/utils/threadNavigation";
+import {
+  mapTabHref,
+  newConversationTarget,
+} from "@/app/utils/threadNavigation";
+import useMapStore from "../store/mapStore";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -56,6 +60,15 @@ function PageHeader() {
   const onMap = pathname.startsWith("/app");
   const onDashboards = pathname.startsWith("/dashboards");
   const dashboardFeatureEnabled = useFeatureFlag("dashboard");
+
+  const newConvo = newConversationTarget(pathname, dashboardFeatureEnabled);
+  // Mirrors the /app NewThread mount reset. In place because the dashboard
+  // page hosts its own chat panel and its URL doesn't carry the conversation
+  // (ADR-003) — navigating would leave the page the user is working on.
+  const startNewConversationInPlace = () => {
+    useChatStore.getState().reset();
+    useMapStore.getState().reset();
+  };
 
   const currentThread = currentThreadId
     ? threads.find((t) => t.id === currentThreadId)
@@ -261,18 +274,32 @@ function PageHeader() {
             </Text>
           )}
           <Tooltip content="New conversation" showArrow>
-            <IconButton
-              asChild
-              size="xs"
-              variant="ghost"
-              color={inverseColor}
-              _hover={{ bg: inverseHoverBg }}
-              _focusVisible={focusRing}
-            >
-              <Link href="/app" aria-label="New conversation">
+            {newConvo.kind === "reset-in-place" ? (
+              <IconButton
+                size="xs"
+                variant="ghost"
+                color={inverseColor}
+                _hover={{ bg: inverseHoverBg }}
+                _focusVisible={focusRing}
+                aria-label="New conversation"
+                onClick={startNewConversationInPlace}
+              >
                 <PlusIcon size={16} />
-              </Link>
-            </IconButton>
+              </IconButton>
+            ) : (
+              <IconButton
+                asChild
+                size="xs"
+                variant="ghost"
+                color={inverseColor}
+                _hover={{ bg: inverseHoverBg }}
+                _focusVisible={focusRing}
+              >
+                <Link href={newConvo.href} aria-label="New conversation">
+                  <PlusIcon size={16} />
+                </Link>
+              </IconButton>
+            )}
           </Tooltip>
         </Flex>
       </Flex>

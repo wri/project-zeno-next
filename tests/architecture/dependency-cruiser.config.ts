@@ -24,6 +24,9 @@ const FORBIDDEN_PKGS_CORE =
   "node_modules/(react|react-dom|next|maplibre-gl|react-map-gl|terra-draw|" +
   "@chakra-ui|@ark-ui|@tanstack|framer-motion|motion)(/|$)";
 
+// Higher FSD layers an entity (a low layer) must never import "up" into.
+const HIGHER_LAYERS = ["^src/features", "^src/widgets", "^src/pages"];
+
 /** FSD dependency-direction rules for one slice, e.g. "src/features/analysis". */
 export function forbiddenFor(featureDir: string) {
   const feature = `^${featureDir}`;
@@ -75,6 +78,26 @@ export function forbiddenFor(featureDir: string) {
         dependencyTypes: ["core"],
         path: "^(http|https|http2|net|tls|dns)$",
       },
+    },
+  ];
+}
+
+/**
+ * FSD rules for an entity slice: the same segment-direction rules as any slice,
+ * plus a ban on importing "up" into higher layers (features/widgets/pages).
+ * An entity sits below features, so it may be used by them but never use them.
+ */
+export function forbiddenForEntity(entityDir: string) {
+  const entity = `^${entityDir}`;
+  return [
+    ...forbiddenFor(entityDir),
+    {
+      name: "entity-imports-no-higher-layer",
+      comment:
+        "FSD: an entity is a low layer — it must not import features/widgets/pages.",
+      severity: "error",
+      from: { path: `${entity}/(model|lib|api|ui)` },
+      to: { path: HIGHER_LAYERS },
     },
   ];
 }
