@@ -6,9 +6,8 @@ import {
   Button,
   Flex,
   IconButton,
-  Menu,
-  Portal,
   Stack,
+  Switch,
   Text,
   Wrap,
 } from "@chakra-ui/react";
@@ -18,7 +17,6 @@ import {
   ArrowArcRightIcon,
   CaretLeftIcon,
   ChartLineIcon,
-  DotsThreeVerticalIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { format } from "date-fns";
@@ -37,11 +35,18 @@ import {
   type InsightRecord,
   type InsightVerification,
 } from "@/src/entities/insight";
+// Deep imports (not the feature barrel) so the map's InsightsPanel doesn't pull
+// the dashboards pages into its bundle, and so mounting the pane on a dashboard
+// can't create a feature import cycle — matching how the app already reaches
+// dashboards/ui (e.g. WidgetMessage → AddToDashboardToggle).
+import { useAddInsightToDashboard } from "@/src/features/dashboards/ui/useAddInsightToDashboard";
+import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrentDashboardArea";
 import { useUserInsights } from "./use-user-insights";
 import { verifiedInsights } from "../lib/verified-fixtures";
 import useChatStore from "@/app/store/chatStore";
 import useInsightStore from "@/app/store/insightStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import useViewContextStore from "@/app/store/viewContextStore";
 import type { InsightWidget } from "@/app/types/chat";
 
 import { CatalogCard } from "@/app/components/CatalogCard";
@@ -85,15 +90,26 @@ interface InsightCardItem {
   source: string;
   createdAt: string;
   verification: InsightVerification;
+  /**
+   * The parent insight's backend id — what "Add to dashboard" posts. Present
+   * only for real, persisted AI insights; undefined for verified fixtures and
+   * unsaved in-session analyses, which can't be added to a dashboard by id.
+   */
+  addableInsightId?: string;
 }
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
   const curated = record.verification === "verified";
+  // Only real backend (ai-generated) insights have an id the dashboards API
+  // knows; verified fixtures are client-side stubs.
+  const addableInsightId =
+    record.verification === "ai-generated" ? record.id : undefined;
   return chartsToWidgets(record.charts).map((widget) => ({
     widget: { ...widget, curated },
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,
+    addableInsightId,
   }));
 }
 
@@ -146,11 +162,18 @@ function cardDescription(item: InsightCardItem): string {
  */
 export function InsightsPanel() {
   const [filter, setFilter] = useState<InsightFilter>("conversation");
+  // On a dashboard the AI list scopes to the dashboard's area by default; the
+  // "This area" toggle broadens it to every AI analysis the user owns.
+  const [areaScoped, setAreaScoped] = useState(true);
   const { insightsPanelOpen, setInsightsPanelOpen, isChatFullSize } =
     useSidebarStore();
+  const isDashboard = useViewContextStore(
+    (s) => s.viewContext?.page === "dashboard"
+  );
 
   const leftPx = getCatalogLeftPx(isChatFullSize);
   const compactSlide = !isChatFullSize;
+  const showAreaToggle = isDashboard && filter === "ai";
 
   return (
     <AnimatePresence>
@@ -202,6 +225,32 @@ export function InsightsPanel() {
                   );
                 })}
               </Wrap>
+              {showAreaToggle && (
+                <Switch.Root
+                  size="sm"
+                  checked={areaScoped}
+                  onCheckedChange={(e: { checked: boolean }) =>
+                    setAreaScoped(e.checked)
+                  }
+                  colorPalette="primary"
+                  flexShrink={0}
+                  display="flex"
+                  alignItems="center"
+                  gap="8px"
+                >
+                  <Switch.HiddenInput />
+                  <Switch.Control>
+                    <Switch.Thumb bg="white" />
+                  </Switch.Control>
+                  <Switch.Label
+                    fontFamily="body"
+                    fontSize="12px"
+                    color="#656E7B"
+                  >
+                    This area only
+                  </Switch.Label>
+                </Switch.Root>
+              )}
               <Stack
                 gap={4}
                 flex={1}
@@ -210,7 +259,7 @@ export function InsightsPanel() {
                 pb={2}
                 css={insightsListScrollStyle}
               >
-                <InsightsList filter={filter} />
+                <InsightsList filter={filter} areaScoped={areaScoped} />
               </Stack>
             </Flex>
           </Flex>
@@ -268,13 +317,26 @@ function InsightsPanelHeader({ onClose }: { onClose: () => void }) {
   );
 }
 
-function InsightsList({ filter }: { filter: InsightFilter }) {
+function InsightsList({
+  filter,
+  areaScoped,
+}: {
+  filter: InsightFilter;
+  areaScoped: boolean;
+}) {
   const currentThreadId = useChatStore((s) => s.currentThreadId);
   const liveWidgets = useInsightStore(useShallow((s) => s.insights));
-  // Both queries are cached separately by thread id; when there is no thread the
+  const dashboardArea = useCurrentDashboardArea();
+  // On a dashboard, scope the AI list to its area (both aoi params travel
+  // together). Off a dashboard, or when the "This area" toggle is off, the query
+  // is unscoped. Each scope caches under its own key, so toggling is instant.
+  const aiScope = areaScoped && dashboardArea ? dashboardArea : undefined;
+  // Both queries are cached separately by scope key; when there is no thread the
   // scoped query collapses onto the unscoped one (same key) and is ignored below.
-  const { insights: threadInsights } = useUserInsights(currentThreadId);
-  const { insights: allInsights } = useUserInsights();
+  const { insights: threadInsights } = useUserInsights({
+    threadId: currentThreadId,
+  });
+  const { insights: allInsights } = useUserInsights(aiScope);
 
   const items = useMemo<InsightCardItem[]>(() => {
     if (filter === "verified") return verifiedInsights.flatMap(recordToItems);
@@ -343,12 +405,45 @@ function InsightCard({
   );
   const addInsight = useInsightStore((s) => s.addInsight);
   const removeInsight = useInsightStore((s) => s.removeInsight);
+  const dashboard = useAddInsightToDashboard(item.addableInsightId);
+  const title = item.widget.title;
 
-  function handleToggle(checked: boolean) {
+  // On a dashboard the card's footer toggle adds/removes the analysis to the
+  // grid (show-on-map has no target there); elsewhere it drives the on-map
+  // InsightWorkspace overlay.
+  if (dashboard.active) {
+    return (
+      <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
+        <CatalogCard
+          thumbnail={<InsightThumbnail type={item.widget.type} />}
+          typeLabel="ANALYSIS"
+          typeLabelColor={INSIGHT_LABEL_COLOR}
+          title={title}
+          description={cardDescription(item)}
+          selected={dashboard.added}
+          selectedBg={INSIGHT_SELECTED_BG}
+          showOnMap={dashboard.added}
+          onShowOnMapChange={() => dashboard.toggle()}
+          toggleLabel={dashboard.added ? "On dashboard" : "Add to dashboard"}
+          toggleAriaLabel={
+            dashboard.added
+              ? `Remove ${title} from dashboard`
+              : `Add ${title} to dashboard`
+          }
+          toggleDisabled={!dashboard.addable || dashboard.pending}
+          onInfoClick={onOpen}
+          infoTooltip="View analysis"
+          badge={<VerificationBadge verification={item.verification} />}
+        />
+      </Box>
+    );
+  }
+
+  const handleToggle = (checked: boolean) => {
     if (!widgetId) return;
     if (checked) addInsight(item.widget);
     else removeInsight(widgetId);
-  }
+  };
 
   return (
     <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
@@ -356,7 +451,7 @@ function InsightCard({
         thumbnail={<InsightThumbnail type={item.widget.type} />}
         typeLabel="ANALYSIS"
         typeLabelColor={INSIGHT_LABEL_COLOR}
-        title={item.widget.title}
+        title={title}
         description={cardDescription(item)}
         selected={shown}
         selectedBg={INSIGHT_SELECTED_BG}
@@ -365,7 +460,6 @@ function InsightCard({
         onInfoClick={onOpen}
         infoTooltip="View analysis"
         badge={<VerificationBadge verification={item.verification} />}
-        titleActions={<AddToDashboardMenu />}
       />
     </Box>
   );
@@ -393,38 +487,6 @@ function VerificationBadge({
       curated={verification === "verified"}
       showLearnMore={false}
     />
-  );
-}
-
-function AddToDashboardMenu() {
-  return (
-    <Menu.Root positioning={{ placement: "bottom-end" }}>
-      <Menu.Trigger asChild>
-        <IconButton
-          aria-label="More analysis actions"
-          variant="ghost"
-          size="2xs"
-          p={0}
-          minW="16px"
-          h="16px"
-          w="16px"
-          color={INSIGHT_LABEL_COLOR}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <DotsThreeVerticalIcon size={16} color={INSIGHT_LABEL_COLOR} />
-        </IconButton>
-      </Menu.Trigger>
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content>
-            {/* Disabled until dashboards land (PZB-890). */}
-            <Menu.Item value="add-to-dashboard" disabled>
-              Add to dashboard (coming soon)
-            </Menu.Item>
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
   );
 }
 
