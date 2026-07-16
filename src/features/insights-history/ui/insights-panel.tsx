@@ -48,6 +48,7 @@ import { CatalogCard } from "@/app/components/CatalogCard";
 import InsightCaption from "@/app/components/InsightCaption";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import { Tooltip } from "@/app/components/ui/tooltip";
+import { WidgetIconComponent } from "@/app/utils/widgetIcons";
 
 /** Matches the other exploration panels' enter & exit (slide from the left). */
 const insightsPanelSlideTransition = {
@@ -352,7 +353,7 @@ function InsightCard({
   return (
     <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
       <CatalogCard
-        thumbnail={<InsightThumbnail />}
+        thumbnail={<InsightThumbnail type={item.widget.type} />}
         typeLabel="ANALYSIS"
         typeLabelColor={INSIGHT_LABEL_COLOR}
         title={item.widget.title}
@@ -370,10 +371,11 @@ function InsightCard({
   );
 }
 
-function InsightThumbnail() {
+function InsightThumbnail({ type }: { type: InsightWidget["type"] }) {
+  const Icon = WidgetIconComponent[type];
   return (
     <Flex w="100%" h="100%" align="center" justify="center" bg="primary.25">
-      <ChartLineIcon size={28} color={INSIGHT_LABEL_COLOR} weight="thin" />
+      <Icon size={28} color={INSIGHT_LABEL_COLOR} weight="thin" />
     </Flex>
   );
 }
