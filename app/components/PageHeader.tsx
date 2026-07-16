@@ -18,16 +18,16 @@ import {
   ClockCounterClockwiseIcon,
   GearSixIcon,
   LifebuoyIcon,
-  MapTrifoldIcon,
   PlusIcon,
   ShootingStarIcon,
   SignOutIcon,
-  SquaresFourIcon,
   UserIcon,
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { motion, type Transition } from "framer-motion";
+import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
 import PreviewInfoPanel from "./PreviewInfoPanel";
 
 import useAuthStore from "../store/authStore";
@@ -48,6 +48,12 @@ import useMapStore from "../store/mapStore";
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 const WHATS_NEW_STORAGE_KEY = "whats-new-v4-dismissed";
+
+// Exploration (uncommitted): measure the toggle before paint so the sliding
+// pill never flashes from a wrong spot. useLayoutEffect on the server warns,
+// so fall back to useEffect there.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
@@ -119,6 +125,49 @@ function PageHeader() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [panelOpen]);
+
+  // --- Exploration (uncommitted): sliding active-indicator for the toggle ---
+  // PageHeader remounts on the /app <-> /dashboards route change, so there's no
+  // shared element to hand off. Both tabs are always rendered though, so on the
+  // new route the pill can spring in from the *now-inactive* tab — which is
+  // exactly where it sat on the previous route — giving a continuous slide with
+  // zero cross-mount state. Labels crossfade in step so the arriving label
+  // never flashes white-on-light mid-slide.
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const activeToggleIndex = onDashboards ? 1 : 0;
+  const fromToggleIndex = activeToggleIndex === 0 ? 1 : 0;
+  const toggleTrackRef = useRef<HTMLDivElement | null>(null);
+  const [toggleTabRects, setToggleTabRects] = useState<
+    Array<{ x: number; y: number; width: number; height: number }>
+  >([]);
+
+  useIsomorphicLayoutEffect(() => {
+    const track = toggleTrackRef.current;
+    if (!dashboardFeatureEnabled || !track) return;
+    const measure = () => {
+      const tabs = Array.from(
+        track.querySelectorAll<HTMLElement>("[data-toggle-tab]")
+      );
+      setToggleTabRects(
+        tabs.map((el) => ({
+          x: el.offsetLeft,
+          y: el.offsetTop,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+        }))
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [dashboardFeatureEnabled, activeToggleIndex]);
+
+  const pillTransition: Transition = prefersReducedMotion
+    ? { duration: 0 }
+    : { type: "spring", stiffness: 520, damping: 42, mass: 0.9 };
+  const pillFrom =
+    toggleTabRects[prefersReducedMotion ? activeToggleIndex : fromToggleIndex];
+  const pillTo = toggleTabRects[activeToggleIndex];
 
   return (
     <Flex
@@ -305,43 +354,109 @@ function PageHeader() {
       </Flex>
       {dashboardFeatureEnabled && (
         <Flex
-          gap="0"
+          // Segmented control (Figma node 897-4655): a Primary/100 track that
+          // holds a single solid Primary/500 pill marking the active view. The
+          // design's same-coloured 1px border is omitted (invisible against the
+          // track). Vertical padding is trimmed to 2px (from the design's 4px)
+          // so the 28px pill clears the header's 4px lime top border with room
+          // to breathe (32px total) instead of filling the 40px bar flush.
+          ref={toggleTrackRef}
+          gap="1"
+          px="1"
+          py="0.5"
+          bg="#F0F4FF"
+          borderRadius="8px"
           alignItems="center"
           hideBelow="md"
           position="absolute"
           left="50%"
           transform="translateX(-50%)"
         >
+          {pillFrom && pillTo && (
+            <motion.div
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                borderRadius: 4,
+                background: "#0049AA",
+                boxShadow: "0px 1px 2px 0px rgba(0, 0, 0, 0.05)",
+                zIndex: 0,
+                pointerEvents: "none",
+              }}
+              initial={{
+                x: pillFrom.x,
+                y: pillFrom.y,
+                width: pillFrom.width,
+                height: pillFrom.height,
+              }}
+              animate={{
+                x: pillTo.x,
+                y: pillTo.y,
+                width: pillTo.width,
+                height: pillTo.height,
+              }}
+              transition={pillTransition}
+            />
+          )}
           {[
             {
               // Thread-aware: with a live conversation, land on its thread
               // URL (which preserves state) instead of the resetting /app.
               href: mapTabHref(currentThreadId),
               label: "Map",
-              icon: <MapTrifoldIcon size={14} />,
               active: onMap,
             },
             {
               href: "/dashboards?ff=dashboard",
               label: "Dashboards",
-              icon: <SquaresFourIcon size={14} />,
               active: onDashboards,
             },
-          ].map(({ href, label, icon, active }) => (
+          ].map(({ href, label, active }) => (
             <Button
               key={href}
               asChild
               size="xs"
-              variant={active ? "solid" : "ghost"}
-              colorPalette={active ? "primary" : undefined}
-              color={active ? undefined : inverseColor}
-              _hover={active ? undefined : { bg: inverseHoverBg }}
+              variant="ghost"
+              position="relative"
+              zIndex={1}
+              h="28px"
+              minW={0}
+              px="2.5"
+              py="1"
+              borderRadius="4px"
+              fontSize="sm"
+              lineHeight="20px"
+              fontWeight="semibold"
+              bg="transparent"
+              _hover={{ bg: active ? "transparent" : "primary.50" }}
               _focusVisible={focusRing}
-              fontWeight="medium"
             >
-              <Link href={href} aria-current={active ? "page" : undefined}>
-                {icon}
-                {label}
+              <Link
+                href={href}
+                data-toggle-tab
+                aria-current={active ? "page" : undefined}
+              >
+                <motion.span
+                  initial={{
+                    color: prefersReducedMotion
+                      ? active
+                        ? "#ffffff"
+                        : "#4A64CB"
+                      : active
+                        ? "#4A64CB"
+                        : "#ffffff",
+                  }}
+                  animate={{ color: active ? "#ffffff" : "#4A64CB" }}
+                  transition={{
+                    duration: prefersReducedMotion ? 0 : 0.24,
+                    ease: "easeOut",
+                  }}
+                  style={{ display: "inline-block" }}
+                >
+                  {label}
+                </motion.span>
               </Link>
             </Button>
           ))}
