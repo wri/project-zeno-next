@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -83,13 +83,20 @@ export function NewDashboardScreen() {
     AreaPickerSectionId | "all"
   >("all");
   const [search, setSearch] = useState("");
+  // Debounced so each keystroke doesn't fire a server-side AOI search.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [creatingRowKey, setCreatingRowKey] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { rows, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useAreaPickerRows(activeCategory, search);
+    useAreaPickerRows(activeCategory, debouncedSearch);
   const { createDashboardAsync } = useCreateDashboard();
   const { createAreaAsync, isCreating: isUploading } = useCustomAreasCreate();
   const { renameAreaAsync, isRenaming } = useCustomAreasUpdate();

@@ -12,6 +12,8 @@ interface SearchAoisParams {
 
 export interface BrowseAoisParams {
   source: ReferenceAoiSource | "custom";
+  /** Fuzzy name to search for within the source. Omit to browse alphabetically. */
+  name?: string;
   limit?: number;
   offset?: number;
 }
@@ -58,9 +60,13 @@ export async function searchAois({
   return AoiSearchResponseSchema.parse(data);
 }
 
-/** Browse AOIs alphabetically within a source (MVP: no name search). */
+/**
+ * Search/browse AOIs within a source. With `name`, the backend runs a fuzzy,
+ * similarity-ranked search; without it, results are browsed alphabetically.
+ */
 export async function browseAois({
   source,
+  name,
   limit = 50,
   offset = 0,
 }: BrowseAoisParams): Promise<BrowseAoisPage> {
@@ -69,6 +75,8 @@ export async function browseAois({
     limit: String(limit),
     offset: String(offset),
   });
+  const trimmed = name?.trim();
+  if (trimmed) params.set("name", trimmed);
 
   const res = await apiFetch(`/api/aois?${params.toString()}`, {
     method: "GET",
