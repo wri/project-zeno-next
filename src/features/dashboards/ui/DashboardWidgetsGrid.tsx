@@ -11,9 +11,11 @@ import {
   computeReorder,
   dashboardWidgetToInsightWidgets,
   widgetSize,
+  widgetText,
   withChartSize,
   withChartTitle,
   withSize,
+  withText,
   withWidgetTitle,
 } from "../lib/widgets";
 import {
@@ -27,6 +29,7 @@ import {
   useUpdateWidget,
 } from "./dashboardQueries";
 import DashboardWidgetCard from "./DashboardWidgetCard";
+import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 
 /**
  * One grid cell. A widget whose insight has several charts renders one cell
@@ -39,6 +42,7 @@ interface GridCell {
   widget: DashboardWidget;
   card: InsightWidget | null;
   map: MapWidgetLayer | null;
+  text: string | null;
   placeholder: string | null;
   chartCount: number;
 }
@@ -55,7 +59,22 @@ function cellsForWidget(
         widget,
         card: null,
         map,
+        text: null,
         placeholder: map ? null : "This map widget can't be displayed.",
+        chartCount: 0,
+      },
+    ];
+  }
+  if (widget.widget_type === "text") {
+    const text = widgetText(widget.config);
+    return [
+      {
+        key: widget.id,
+        widget,
+        card: null,
+        map: null,
+        text,
+        placeholder: text ? null : "This note is empty.",
         chartCount: 0,
       },
     ];
@@ -67,6 +86,7 @@ function cellsForWidget(
         widget,
         card: null,
         map: null,
+        text: null,
         placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
         chartCount: 0,
       },
@@ -80,6 +100,7 @@ function cellsForWidget(
         widget,
         card: null,
         map: null,
+        text: null,
         placeholder: "This analysis is not available.",
         chartCount: 0,
       },
@@ -90,6 +111,7 @@ function cellsForWidget(
     widget,
     card,
     map: null,
+    text: null,
     placeholder: null,
     chartCount: cards.length,
   }));
@@ -204,55 +226,84 @@ export default function DashboardWidgetsGrid({
             outlineColor="primary.solid"
             borderRadius="sm"
           >
-            <DashboardWidgetCard
-              title={title}
-              card={card}
-              map={cell.map}
-              aoi={areaAoi}
-              viewportBbox={
-                cell.map ? mapWidgetViewportBbox(widget.config) : null
-              }
-              placeholder={cell.placeholder}
-              chartCount={cell.chartCount}
-              isOwner={isOwner}
-              isDouble={size === "double"}
-              onArmDrag={() => setGrabbedKey(cell.key)}
-              onDisarmDrag={() => setGrabbedKey(null)}
-              onToggleSize={() =>
-                updateWidget.mutate({
-                  widgetId: widget.id,
-                  patch: {
-                    config: card?.id
-                      ? withChartSize(
-                          widget.config,
-                          card.id,
-                          size === "double" ? "single" : "double"
-                        )
-                      : withSize(
-                          widget.config,
-                          size === "double" ? "single" : "double"
-                        ),
-                  },
-                })
-              }
-              onRename={
-                // Renamable only for renderable cells (map/imagery/chart);
-                // per-chart titles key on card.id, single-card widgets on
-                // config.title.
-                cell.placeholder
-                  ? undefined
-                  : (name) =>
-                      updateWidget.mutate({
-                        widgetId: widget.id,
-                        patch: {
-                          config: card?.id
-                            ? withChartTitle(widget.config, card.id, name)
-                            : withWidgetTitle(widget.config, name),
-                        },
-                      })
-              }
-              onRemove={() => deleteWidget.mutate(widget.id)}
-            />
+            {widget.widget_type === "text" ? (
+              <DashboardTextWidgetCard
+                text={cell.text}
+                placeholder={cell.placeholder}
+                isOwner={isOwner}
+                isDouble={size === "double"}
+                onArmDrag={() => setGrabbedKey(cell.key)}
+                onDisarmDrag={() => setGrabbedKey(null)}
+                onToggleSize={() =>
+                  updateWidget.mutate({
+                    widgetId: widget.id,
+                    patch: {
+                      config: withSize(
+                        widget.config,
+                        size === "double" ? "single" : "double"
+                      ),
+                    },
+                  })
+                }
+                onSaveText={(next) =>
+                  updateWidget.mutate({
+                    widgetId: widget.id,
+                    patch: { config: withText(widget.config, next) },
+                  })
+                }
+                onRemove={() => deleteWidget.mutate(widget.id)}
+              />
+            ) : (
+              <DashboardWidgetCard
+                title={title}
+                card={card}
+                map={cell.map}
+                aoi={areaAoi}
+                viewportBbox={
+                  cell.map ? mapWidgetViewportBbox(widget.config) : null
+                }
+                placeholder={cell.placeholder}
+                chartCount={cell.chartCount}
+                isOwner={isOwner}
+                isDouble={size === "double"}
+                onArmDrag={() => setGrabbedKey(cell.key)}
+                onDisarmDrag={() => setGrabbedKey(null)}
+                onToggleSize={() =>
+                  updateWidget.mutate({
+                    widgetId: widget.id,
+                    patch: {
+                      config: card?.id
+                        ? withChartSize(
+                            widget.config,
+                            card.id,
+                            size === "double" ? "single" : "double"
+                          )
+                        : withSize(
+                            widget.config,
+                            size === "double" ? "single" : "double"
+                          ),
+                    },
+                  })
+                }
+                onRename={
+                  // Renamable only for renderable cells (map/imagery/chart);
+                  // per-chart titles key on card.id, single-card widgets on
+                  // config.title.
+                  cell.placeholder
+                    ? undefined
+                    : (name) =>
+                        updateWidget.mutate({
+                          widgetId: widget.id,
+                          patch: {
+                            config: card?.id
+                              ? withChartTitle(widget.config, card.id, name)
+                              : withWidgetTitle(widget.config, name),
+                          },
+                        })
+                }
+                onRemove={() => deleteWidget.mutate(widget.id)}
+              />
+            )}
           </GridItem>
         );
       })}

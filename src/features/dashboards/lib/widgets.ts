@@ -123,6 +123,22 @@ export function withWidgetTitle(
 }
 
 /**
+ * The full config to PATCH for a text-widget edit (config is replaced whole).
+ * Stores the markdown body under `config.text` — the key `widgetText` reads.
+ * A blank body drops the key so the card falls back to the empty-note
+ * placeholder rather than persisting an empty string.
+ */
+export function withText(
+  config: Record<string, unknown>,
+  text: string
+): Record<string, unknown> {
+  const out = { ...config };
+  if (text.trim()) out.text = text;
+  else delete out.text;
+  return out;
+}
+
+/**
  * Maps a dashboard insight widget (snake_case REST shape) to the
  * `InsightWidget`s consumed by `WidgetMessage` — the persisted counterpart
  * of `generateInsightsTool`, which produces one card per chart. Returns `[]`
@@ -182,6 +198,17 @@ export function dashboardWidgetToInsightWidgets(
         ...(analysisParams ? { analysisParams } : {}),
       };
     });
+}
+
+/**
+ * A text widget's markdown body (`config.text` per the widgets API), or null
+ * when absent/blank — the caller shows a placeholder. The API validates the
+ * key on create, so null means a malformed or hand-written config.
+ */
+export function widgetText(config: Record<string, unknown>): string | null {
+  return typeof config.text === "string" && config.text.trim()
+    ? config.text
+    : null;
 }
 
 export interface WidgetPositionPatch {

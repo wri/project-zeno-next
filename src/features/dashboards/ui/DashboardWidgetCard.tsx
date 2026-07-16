@@ -58,7 +58,7 @@ export default function DashboardWidgetCard({
   onRemove,
 }: {
   title: string;
-  /** The insight card to render, or null for a map/placeholder cell. */
+  /** The insight card to render, or null for a map/text/placeholder cell. */
   card: InsightWidget | null;
   /** The map layer to render for `widget_type: "map"` cells. */
   map?: MapWidgetLayer | null;

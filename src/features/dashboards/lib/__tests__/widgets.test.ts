@@ -6,9 +6,11 @@ import {
   computeReorder,
   dashboardWidgetToInsightWidgets,
   widgetSize,
+  widgetText,
   withChartSize,
   withChartTitle,
   withSize,
+  withText,
   withWidgetTitle,
 } from "../widgets";
 import type { DashboardWidget } from "../../api/schemas";
@@ -242,6 +244,35 @@ describe("dashboardWidgetToInsightWidgets", () => {
   it("omits analysis params when no area name is given", () => {
     const [card] = dashboardWidgetToInsightWidgets(widget());
     expect(card.analysisParams).toBeUndefined();
+  });
+});
+
+describe("widgetText", () => {
+  it("returns the markdown body from config.text", () => {
+    expect(widgetText({ text: "**Key Insights**\n\n- one" })).toBe(
+      "**Key Insights**\n\n- one"
+    );
+  });
+
+  it("returns null for missing, non-string or blank text", () => {
+    expect(widgetText({})).toBeNull();
+    expect(widgetText({ text: 42 })).toBeNull();
+    expect(widgetText({ text: "   " })).toBeNull();
+  });
+});
+
+describe("withText", () => {
+  it("stores the markdown body under config.text, preserving other keys", () => {
+    expect(withText({ size: "double" }, "## Note\n\n- one")).toEqual({
+      size: "double",
+      text: "## Note\n\n- one",
+    });
+  });
+
+  it("drops config.text when the body is blank so the placeholder shows", () => {
+    expect(withText({ text: "old", size: "single" }, "   ")).toEqual({
+      size: "single",
+    });
   });
 });
 
