@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, Suspense } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import { Loader } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useChatStore from "@/app/store/chatStore";
@@ -18,30 +18,31 @@ function NewThread() {
     sendMessage,
     currentThreadId,
   } = useChatStore();
-  const { reset: resetMapStore, addLayer, layers } = useMapStore();
+  const { reset: resetMapStore } = useMapStore();
   const searchParams = useSearchParams();
   const [hasMounted, setHasMounted] = useState(false);
-  const defaultLayerSeededRef = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
+    // /app is the fresh-landing / new-thread surface: clear any conversation
+    // and map state left in the (singleton) stores, then seed Tree Cover Loss
+    // as the default active layer so an idle map always looks like a first
+    // visit. A live conversation never reaches this page — the header's Map tab
+    // links straight to the thread URL — so this only runs when no conversation
+    // has started.
+    //
+    // Seed here, right after resetMapStore() has emptied the layers, reading
+    // the store via getState() rather than a render-time `layers` snapshot: an
+    // earlier /app visit leaves the seeded TCL layer in the singleton store,
+    // and deciding against that stale pre-reset snapshot used to mark the map
+    // "already seeded" and suppress re-seeding when returning from the
+    // dashboards view.
     resetChatStore();
     resetMapStore();
-    defaultLayerSeededRef.current = false;
-  }, [resetChatStore, resetMapStore]);
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (defaultLayerSeededRef.current) return;
-
+    const { layers, addLayer } = useMapStore.getState();
     const hasDatasetLayer = layers.some((l) => typeof l.datasetId === "number");
-    if (hasDatasetLayer) {
-      defaultLayerSeededRef.current = true;
-      return;
-    }
+    if (hasDatasetLayer) return;
 
     const defaultCard = DATASET_CARDS.find(
       (card) => card.dataset_id === DEFAULT_LANDING_DATASET_ID
@@ -51,8 +52,11 @@ function NewThread() {
     buildDatasetLayers(getLayerContextFromDatasetCard(defaultCard)).forEach(
       addLayer
     );
-    defaultLayerSeededRef.current = true;
-  }, [layers, addLayer]);
+  }, [resetChatStore, resetMapStore]);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const submitPrompt = useCallback(
     async (prompt: string) => {
