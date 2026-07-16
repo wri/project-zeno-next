@@ -19,7 +19,6 @@ import {
   CaretLeftIcon,
   ChartLineIcon,
   DotsThreeVerticalIcon,
-  SparkleIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { format } from "date-fns";
@@ -88,8 +87,9 @@ interface InsightCardItem {
 }
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
+  const curated = record.verification === "verified";
   return chartsToWidgets(record.charts).map((widget) => ({
-    widget,
+    widget: { ...widget, curated },
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,
@@ -383,34 +383,14 @@ function VerificationBadge({
 }: {
   verification: InsightVerification;
 }) {
-  // Curated (non-generative) analyses reuse the workspace caption's styling so
-  // the "CURATED" label reads identically here and on the insight card.
-  if (verification === "verified") {
-    return <InsightCaption curated />;
-  }
+  // Panel-card badges reuse the workspace insight caption's styling (icon +
+  // label) minus its "Learn more" link, so curated and AI-assisted analyses
+  // read identically on the card and in the workspace.
   return (
-    <Flex
-      align="center"
-      gap="4px"
-      px="6px"
-      h="16px"
-      borderRadius="full"
-      flexShrink={0}
-      bg="rgba(0, 73, 170, 0.10)"
-      color={INSIGHT_LABEL_COLOR}
-    >
-      <SparkleIcon size={11} weight="fill" />
-      <Text
-        fontSize="9px"
-        fontFamily="mono"
-        lineHeight="1"
-        textTransform="uppercase"
-        letterSpacing="0.03em"
-        whiteSpace="nowrap"
-      >
-        AI generated
-      </Text>
-    </Flex>
+    <InsightCaption
+      curated={verification === "verified"}
+      showLearnMore={false}
+    />
   );
 }
 
