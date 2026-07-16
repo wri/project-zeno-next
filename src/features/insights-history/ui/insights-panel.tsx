@@ -19,7 +19,6 @@ import {
   CaretLeftIcon,
   ChartLineIcon,
   DotsThreeVerticalIcon,
-  SealCheckIcon,
   SparkleIcon,
   XIcon,
 } from "@phosphor-icons/react";
@@ -47,6 +46,7 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import type { InsightWidget } from "@/app/types/chat";
 
 import { CatalogCard } from "@/app/components/CatalogCard";
+import InsightCaption from "@/app/components/InsightCaption";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import { Tooltip } from "@/app/components/ui/tooltip";
 
@@ -71,7 +71,7 @@ type InsightFilter = "conversation" | "verified" | "ai";
 
 const INSIGHT_FILTERS: { id: InsightFilter; label: string }[] = [
   { id: "conversation", label: "In this conversation" },
-  { id: "verified", label: "Verified" },
+  { id: "verified", label: "Curated" },
   { id: "ai", label: "AI generated" },
 ];
 
@@ -318,7 +318,7 @@ function InsightsList({ filter }: { filter: InsightFilter }) {
 function EmptyState({ filter }: { filter: InsightFilter }) {
   const message =
     filter === "verified"
-      ? "No verified analyses yet."
+      ? "No curated analyses yet."
       : filter === "ai"
         ? "No analyses generated yet. Ask the assistant to analyse an area."
         : "No analyses in this conversation yet. Ask the assistant to analyse an area, or generate one from a dataset and area.";
@@ -383,7 +383,11 @@ function VerificationBadge({
 }: {
   verification: InsightVerification;
 }) {
-  const verified = verification === "verified";
+  // Curated (non-generative) analyses reuse the workspace caption's styling so
+  // the "CURATED" label reads identically here and on the insight card.
+  if (verification === "verified") {
+    return <InsightCaption curated />;
+  }
   return (
     <Flex
       align="center"
@@ -392,14 +396,10 @@ function VerificationBadge({
       h="16px"
       borderRadius="full"
       flexShrink={0}
-      bg={verified ? "rgba(26, 169, 21, 0.12)" : "rgba(0, 73, 170, 0.10)"}
-      color={verified ? "#128A0E" : INSIGHT_LABEL_COLOR}
+      bg="rgba(0, 73, 170, 0.10)"
+      color={INSIGHT_LABEL_COLOR}
     >
-      {verified ? (
-        <SealCheckIcon size={11} weight="fill" />
-      ) : (
-        <SparkleIcon size={11} weight="fill" />
-      )}
+      <SparkleIcon size={11} weight="fill" />
       <Text
         fontSize="9px"
         fontFamily="mono"
@@ -408,7 +408,7 @@ function VerificationBadge({
         letterSpacing="0.03em"
         whiteSpace="nowrap"
       >
-        {verified ? "Verified" : "AI generated"}
+        AI generated
       </Text>
     </Flex>
   );
