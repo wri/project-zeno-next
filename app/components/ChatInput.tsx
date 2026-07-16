@@ -348,10 +348,10 @@ export default function ChatInput({
                       }
                       color={insightsPanelOpen ? "primary.solid" : undefined}
                       aria-expanded={insightsPanelOpen}
-                      aria-label="Insights"
+                      aria-label="Analyses"
                     >
                       <ChartLineIcon />
-                      Insights
+                      Analyses
                     </Button>
                   )}
                 </>

@@ -198,7 +198,9 @@ export default function WidgetMessage({
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">
         {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
-        {inWorkspace && <InsightCaption curated={!widget.generation} />}
+        {inWorkspace && (
+          <InsightCaption curated={widget.curated ?? !widget.generation} />
+        )}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}

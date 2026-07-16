@@ -19,8 +19,6 @@ import {
   CaretLeftIcon,
   ChartLineIcon,
   DotsThreeVerticalIcon,
-  SealCheckIcon,
-  SparkleIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { format } from "date-fns";
@@ -47,8 +45,10 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import type { InsightWidget } from "@/app/types/chat";
 
 import { CatalogCard } from "@/app/components/CatalogCard";
+import InsightCaption from "@/app/components/InsightCaption";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import { Tooltip } from "@/app/components/ui/tooltip";
+import { WidgetIconComponent } from "@/app/utils/widgetIcons";
 
 /** Matches the other exploration panels' enter & exit (slide from the left). */
 const insightsPanelSlideTransition = {
@@ -71,7 +71,7 @@ type InsightFilter = "conversation" | "verified" | "ai";
 
 const INSIGHT_FILTERS: { id: InsightFilter; label: string }[] = [
   { id: "conversation", label: "In this conversation" },
-  { id: "verified", label: "Verified" },
+  { id: "verified", label: "Curated" },
   { id: "ai", label: "AI generated" },
 ];
 
@@ -88,8 +88,9 @@ interface InsightCardItem {
 }
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
+  const curated = record.verification === "verified";
   return chartsToWidgets(record.charts).map((widget) => ({
-    widget,
+    widget: { ...widget, curated },
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,
@@ -247,7 +248,7 @@ function InsightsPanelHeader({ onClose }: { onClose: () => void }) {
           color="#656E7B"
           m={0}
         >
-          Insights
+          Analyses
         </Text>
       </Flex>
       <IconButton
@@ -318,7 +319,7 @@ function InsightsList({ filter }: { filter: InsightFilter }) {
 function EmptyState({ filter }: { filter: InsightFilter }) {
   const message =
     filter === "verified"
-      ? "No verified analyses yet."
+      ? "No curated analyses yet."
       : filter === "ai"
         ? "No analyses generated yet. Ask the assistant to analyse an area."
         : "No analyses in this conversation yet. Ask the assistant to analyse an area, or generate one from a dataset and area.";
@@ -352,7 +353,7 @@ function InsightCard({
   return (
     <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
       <CatalogCard
-        thumbnail={<InsightThumbnail />}
+        thumbnail={<InsightThumbnail type={item.widget.type} />}
         typeLabel="ANALYSIS"
         typeLabelColor={INSIGHT_LABEL_COLOR}
         title={item.widget.title}
@@ -370,10 +371,11 @@ function InsightCard({
   );
 }
 
-function InsightThumbnail() {
+function InsightThumbnail({ type }: { type: InsightWidget["type"] }) {
+  const Icon = WidgetIconComponent[type];
   return (
     <Flex w="100%" h="100%" align="center" justify="center" bg="primary.25">
-      <ChartLineIcon size={28} color={INSIGHT_LABEL_COLOR} weight="thin" />
+      <Icon size={28} color={INSIGHT_LABEL_COLOR} weight="thin" />
     </Flex>
   );
 }
@@ -383,34 +385,14 @@ function VerificationBadge({
 }: {
   verification: InsightVerification;
 }) {
-  const verified = verification === "verified";
+  // Panel-card badges reuse the workspace insight caption's styling (icon +
+  // label) minus its "Learn more" link, so curated and AI-assisted analyses
+  // read identically on the card and in the workspace.
   return (
-    <Flex
-      align="center"
-      gap="4px"
-      px="6px"
-      h="16px"
-      borderRadius="full"
-      flexShrink={0}
-      bg={verified ? "rgba(26, 169, 21, 0.12)" : "rgba(0, 73, 170, 0.10)"}
-      color={verified ? "#128A0E" : INSIGHT_LABEL_COLOR}
-    >
-      {verified ? (
-        <SealCheckIcon size={11} weight="fill" />
-      ) : (
-        <SparkleIcon size={11} weight="fill" />
-      )}
-      <Text
-        fontSize="9px"
-        fontFamily="mono"
-        lineHeight="1"
-        textTransform="uppercase"
-        letterSpacing="0.03em"
-        whiteSpace="nowrap"
-      >
-        {verified ? "Verified" : "AI generated"}
-      </Text>
-    </Flex>
+    <InsightCaption
+      curated={verification === "verified"}
+      showLearnMore={false}
+    />
   );
 }
 
