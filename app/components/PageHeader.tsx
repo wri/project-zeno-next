@@ -356,11 +356,14 @@ function PageHeader() {
         <Flex
           // Segmented control (Figma node 897-4655): a Primary/100 track that
           // holds a single solid Primary/500 pill marking the active view. The
-          // design's same-coloured 1px border is omitted — invisible against
-          // the track, it would only push the height past the intended 36px.
+          // design's same-coloured 1px border is omitted (invisible against the
+          // track). Vertical padding is trimmed to 2px (from the design's 4px)
+          // so the 28px pill clears the header's 4px lime top border with room
+          // to breathe (32px total) instead of filling the 40px bar flush.
           ref={toggleTrackRef}
           gap="1"
-          p="1"
+          px="1"
+          py="0.5"
           bg="#F0F4FF"
           borderRadius="8px"
           alignItems="center"
