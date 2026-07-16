@@ -25,7 +25,9 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { motion, type Transition } from "framer-motion";
+import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
 import PreviewInfoPanel from "./PreviewInfoPanel";
 
 import useAuthStore from "../store/authStore";
@@ -46,6 +48,12 @@ import useMapStore from "../store/mapStore";
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 const WHATS_NEW_STORAGE_KEY = "whats-new-v4-dismissed";
+
+// Exploration (uncommitted): measure the toggle before paint so the sliding
+// pill never flashes from a wrong spot. useLayoutEffect on the server warns,
+// so fall back to useEffect there.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
@@ -117,6 +125,49 @@ function PageHeader() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [panelOpen]);
+
+  // --- Exploration (uncommitted): sliding active-indicator for the toggle ---
+  // PageHeader remounts on the /app <-> /dashboards route change, so there's no
+  // shared element to hand off. Both tabs are always rendered though, so on the
+  // new route the pill can spring in from the *now-inactive* tab — which is
+  // exactly where it sat on the previous route — giving a continuous slide with
+  // zero cross-mount state. Labels crossfade in step so the arriving label
+  // never flashes white-on-light mid-slide.
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const activeToggleIndex = onDashboards ? 1 : 0;
+  const fromToggleIndex = activeToggleIndex === 0 ? 1 : 0;
+  const toggleTrackRef = useRef<HTMLDivElement | null>(null);
+  const [toggleTabRects, setToggleTabRects] = useState<
+    Array<{ x: number; y: number; width: number; height: number }>
+  >([]);
+
+  useIsomorphicLayoutEffect(() => {
+    const track = toggleTrackRef.current;
+    if (!dashboardFeatureEnabled || !track) return;
+    const measure = () => {
+      const tabs = Array.from(
+        track.querySelectorAll<HTMLElement>("[data-toggle-tab]")
+      );
+      setToggleTabRects(
+        tabs.map((el) => ({
+          x: el.offsetLeft,
+          y: el.offsetTop,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+        }))
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [dashboardFeatureEnabled, activeToggleIndex]);
+
+  const pillTransition: Transition = prefersReducedMotion
+    ? { duration: 0 }
+    : { type: "spring", stiffness: 520, damping: 42, mass: 0.9 };
+  const pillFrom =
+    toggleTabRects[prefersReducedMotion ? activeToggleIndex : fromToggleIndex];
+  const pillTo = toggleTabRects[activeToggleIndex];
 
   return (
     <Flex
@@ -307,6 +358,7 @@ function PageHeader() {
           // holds a single solid Primary/500 pill marking the active view. The
           // design's same-coloured 1px border is omitted — invisible against
           // the track, it would only push the height past the intended 36px.
+          ref={toggleTrackRef}
           gap="1"
           p="1"
           bg="#F0F4FF"
@@ -317,6 +369,34 @@ function PageHeader() {
           left="50%"
           transform="translateX(-50%)"
         >
+          {pillFrom && pillTo && (
+            <motion.div
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                borderRadius: 4,
+                background: "#0049AA",
+                boxShadow: "0px 1px 2px 0px rgba(0, 0, 0, 0.05)",
+                zIndex: 0,
+                pointerEvents: "none",
+              }}
+              initial={{
+                x: pillFrom.x,
+                y: pillFrom.y,
+                width: pillFrom.width,
+                height: pillFrom.height,
+              }}
+              animate={{
+                x: pillTo.x,
+                y: pillTo.y,
+                width: pillTo.width,
+                height: pillTo.height,
+              }}
+              transition={pillTransition}
+            />
+          )}
           {[
             {
               // Thread-aware: with a live conversation, land on its thread
@@ -336,6 +416,8 @@ function PageHeader() {
               asChild
               size="xs"
               variant="ghost"
+              position="relative"
+              zIndex={1}
               h="28px"
               minW={0}
               px="2.5"
@@ -344,16 +426,34 @@ function PageHeader() {
               fontSize="sm"
               lineHeight="20px"
               fontWeight="semibold"
-              bg={active ? "#0049AA" : "transparent"}
-              color={active ? "white" : "#4A64CB"}
-              boxShadow={
-                active ? "0px 1px 2px 0px rgba(0, 0, 0, 0.05)" : undefined
-              }
-              _hover={active ? { bg: "#0049AA" } : { bg: "primary.50" }}
+              bg="transparent"
+              _hover={{ bg: active ? "transparent" : "primary.50" }}
               _focusVisible={focusRing}
             >
-              <Link href={href} aria-current={active ? "page" : undefined}>
-                {label}
+              <Link
+                href={href}
+                data-toggle-tab
+                aria-current={active ? "page" : undefined}
+              >
+                <motion.span
+                  initial={{
+                    color: prefersReducedMotion
+                      ? active
+                        ? "#ffffff"
+                        : "#4A64CB"
+                      : active
+                        ? "#4A64CB"
+                        : "#ffffff",
+                  }}
+                  animate={{ color: active ? "#ffffff" : "#4A64CB" }}
+                  transition={{
+                    duration: prefersReducedMotion ? 0 : 0.24,
+                    ease: "easeOut",
+                  }}
+                  style={{ display: "inline-block" }}
+                >
+                  {label}
+                </motion.span>
               </Link>
             </Button>
           ))}
