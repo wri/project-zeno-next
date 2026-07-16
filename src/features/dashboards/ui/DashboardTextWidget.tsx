@@ -5,19 +5,16 @@ import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
 /**
- * The body of a `widget_type: "text"` dashboard card — the markdown note
- * from `config.text`, rendered in the white inner card per the Figma
- * "text widget default" frame (14px/1.5 body, 16px medium headings,
- * spaced bullets). remark-breaks matches the chat's markdown handling,
- * since notes will typically be agent-authored.
+ * The rendered body of a `widget_type: "text"` dashboard card — the markdown
+ * note from `config.text`, per the Figma "text widget" frame (14px/1.5 body,
+ * 16px medium headings, spaced bullets). The white surface and borders come
+ * from the enclosing card; this is just the padded prose. remark-breaks
+ * matches the chat's markdown handling, since notes are typically
+ * agent-authored.
  */
 export default function DashboardTextWidget({ text }: { text: string }) {
   return (
     <Box
-      bg="white"
-      rounded="md"
-      borderWidth="1px"
-      borderColor="#DDE2F5"
       p="20px"
       fontSize="14px"
       lineHeight="1.5"

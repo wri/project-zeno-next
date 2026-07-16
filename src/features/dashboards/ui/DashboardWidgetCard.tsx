@@ -30,7 +30,6 @@ import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
 import type { MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapWidget from "./DashboardMapWidget";
-import DashboardTextWidget from "./DashboardTextWidget";
 
 /**
  * One dashboard card — the Figma "Analysis" container: a light-blue shell
@@ -46,7 +45,6 @@ export default function DashboardWidgetCard({
   title,
   card,
   map,
-  text,
   aoi,
   viewportBbox,
   placeholder,
@@ -64,8 +62,6 @@ export default function DashboardWidgetCard({
   card: InsightWidget | null;
   /** The map layer to render for `widget_type: "map"` cells. */
   map?: MapWidgetLayer | null;
-  /** The markdown note to render for `widget_type: "text"` cells. */
-  text?: string | null;
   /** The dashboard's area — outline, label + viewport fit for map cells. */
   aoi?: { source: string; src_id: string; name: string };
   /** Reserved `config.viewport` bbox override for map cells. */
@@ -277,10 +273,6 @@ export default function DashboardWidgetCard({
             bboxOverride={viewportBbox ?? null}
             tall={isDouble}
           />
-        </Box>
-      ) : text ? (
-        <Box px="8px" pb="8px" flex="1" minW={0}>
-          <DashboardTextWidget text={text} />
         </Box>
       ) : (
         card && (
