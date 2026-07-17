@@ -123,7 +123,8 @@ export default function DashboardWidgetCard({
   return (
     <Flex
       flexDir="column"
-      h="100%"
+      // Content height on purpose: the packed grid stacks cards tightly, so
+      // a card must never stretch to a taller neighbour's height.
       bg="#F7F9FF"
       borderWidth="1px"
       borderColor="#DDE2F5"
