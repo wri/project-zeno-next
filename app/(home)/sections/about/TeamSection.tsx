@@ -24,13 +24,14 @@ export default function TeamSection() {
       >
         <Container textAlign="center" maxW="2xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            The team behind Global Nature Watch
+            The team behind Global Nature Watch Horizon
           </Heading>
           <Text fontSize="lg" mb="4">
-            Global Nature Watch is developed by Land & Carbon Lab, a research
-            initiative convened by the Bezos Earth Fund and World Resources
-            Institute, in collaboration with other partners shaping the future
-            of monitoring research, data and analysis.
+            Horizon is developed by Land & Carbon Lab, a research initiative
+            convened by the Bezos Earth Fund and World Resources Institute, in
+            collaboration with Global Nature Watch (formerly Global Forest
+            Watch) and other partners shaping the future of monitoring research,
+            data and analysis.
           </Text>
         </Container>
         <Box maxW="3xl" w="100%" mx="auto">
@@ -154,7 +155,7 @@ export default function TeamSection() {
               rel="noopener noreferrer"
               textDecor="underline"
             >
-              Global Forest Watch
+              Global Nature Watch
             </ChakraLink>
           </Text>
         </Box>
