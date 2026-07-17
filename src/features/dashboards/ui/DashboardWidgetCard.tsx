@@ -277,7 +277,7 @@ export default function DashboardWidgetCard({
       ) : (
         card && (
           <Box px="8px" pb="8px" flex="1" minW={0}>
-            <WidgetMessage widget={card} inWorkspace />
+            <WidgetMessage widget={card} inWorkspace fullWidth={isDouble} />
           </Box>
         )
       )}
