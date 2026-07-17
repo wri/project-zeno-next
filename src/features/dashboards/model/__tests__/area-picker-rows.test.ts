@@ -91,6 +91,7 @@ describe("row mappers", () => {
       name: "Paraná",
       typeLabel: "Administrative areas",
       previousAnalyses: 3,
+      bbox: [0, 0, 1, 1],
     });
   });
 

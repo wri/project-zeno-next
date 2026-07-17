@@ -1,26 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Box,
-  Button,
-  Flex,
-  IconButton,
-  Input,
-  Menu,
-  Portal,
-  Spinner,
-  Table,
-  Text,
-} from "@chakra-ui/react";
-import {
-  CaretRightIcon,
-  DotsThreeVerticalIcon,
-  MagnifyingGlassIcon,
-  PolygonIcon,
-  UploadSimpleIcon,
-} from "@phosphor-icons/react";
+import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
+import { MagnifyingGlassIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import {
@@ -39,34 +22,18 @@ import {
   type AreaPickerSectionId,
 } from "../model/dashboard-area";
 import type { AreaPickerRow } from "../model/area-picker-rows";
-
-const AREA_ICON_COLOR = "#2D6BE4";
-
-const columnHeaderStyle = {
-  fontFamily: "body",
-  fontSize: "12px",
-  fontWeight: "400",
-  lineHeight: "16px",
-  letterSpacing: "normal",
-  color: "#656E7B",
-  whiteSpace: "nowrap",
-} as const;
-
-const cellTextStyle = {
-  fontFamily: "body",
-  fontSize: "14px",
-  fontWeight: "400",
-  lineHeight: "16px",
-  letterSpacing: "normal",
-  color: "#656E7B",
-} as const;
-
-const cellSubtextStyle = { ...cellTextStyle, fontSize: "12px" } as const;
+import { areaRowKey, buildAreaPickerTree } from "../model/area-tree";
+import { AreaPickerTable } from "./AreaPickerTable";
 
 const CATEGORY_PILLS: { id: AreaPickerSectionId | "all"; label: string }[] = [
   { id: "all", label: "All categories" },
   ...AREA_PICKER_SECTIONS,
 ];
+
+const SEARCH_DEBOUNCE_MS = 300;
+// Below this the term is too low-signal for the fuzzy AOI search — keep
+// showing the unfiltered browse list instead of firing requests.
+const MIN_SEARCH_CHARS = 3;
 
 function rowToDashboardAoi(row: AreaPickerRow) {
   return {
@@ -91,22 +58,46 @@ export function NewDashboardScreen() {
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    const timer = setTimeout(
+      () => setDebouncedSearch(search),
+      SEARCH_DEBOUNCE_MS
+    );
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { rows, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useAreaPickerRows(activeCategory, debouncedSearch);
+  // Search kicks in as the user types (no Enter needed) once the term reaches
+  // MIN_SEARCH_CHARS; shorter terms fall back to the unfiltered browse list.
+  const effectiveSearch =
+    debouncedSearch.trim().length >= MIN_SEARCH_CHARS ? debouncedSearch : "";
+
+  const {
+    rows,
+    isLoading,
+    isSearching,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAreaPickerRows(activeCategory, effectiveSearch);
   const { createDashboardAsync } = useCreateDashboard();
   const { createAreaAsync, isCreating: isUploading } = useCustomAreasCreate();
   const { renameAreaAsync, isRenaming } = useCustomAreasUpdate();
   const { deleteAreaAsync, isDeleting } = useCustomAreasDelete();
 
-  const rowKey = (row: AreaPickerRow) => `${row.source}:${row.src_id}`;
+  // Admin areas nest under matched ancestors (Panama › Panamá › Panama City);
+  // other sources stay flat.
+  const tree = useMemo(() => buildAreaPickerTree(rows), [rows]);
+  const hasNestedAreas = tree.some((node) => node.children.length > 0);
+  const trimmedSearch = effectiveSearch.trim();
+  const typedSearch = search.trim();
+  const showMinSearchHint =
+    typedSearch.length > 0 && typedSearch.length < MIN_SEARCH_CHARS;
+  // One flag for both load flavours: the initial fetch and an in-flight
+  // search whose stale keepPreviousData rows shouldn't be shown as results.
+  const showSkeletons = isLoading || isSearching;
 
-  const handleRowClick = async (row: AreaPickerRow) => {
+  const handleRowSelect = async (row: AreaPickerRow) => {
     if (creatingRowKey) return;
-    setCreatingRowKey(rowKey(row));
+    setCreatingRowKey(areaRowKey(row));
     try {
       const dashboard = await createDashboardAsync({
         aois: [rowToDashboardAoi(row)],
@@ -184,10 +175,10 @@ export function NewDashboardScreen() {
     }
   };
 
-  const handleDelete = async (areaId: string, name: string) => {
-    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  const handleDelete = async (row: AreaPickerRow) => {
+    if (!window.confirm(`Delete "${row.name}"? This cannot be undone.`)) return;
     try {
-      await deleteAreaAsync(areaId);
+      await deleteAreaAsync(row.src_id);
       toaster.create({
         title: "Area deleted",
         type: "success",
@@ -265,6 +256,11 @@ export function NewDashboardScreen() {
           Upload shapefile
         </Button>
       </Flex>
+      {showMinSearchHint && (
+        <Text fontSize="xs" color="fg.muted" mt={-2} mb={4}>
+          Type at least {MIN_SEARCH_CHARS} characters to search.
+        </Text>
+      )}
       <Flex gap={2} mb={6} flexWrap="wrap">
         {CATEGORY_PILLS.map((pill) => {
           const isActive = activeCategory === pill.id;
@@ -300,219 +296,36 @@ export function NewDashboardScreen() {
         borderRadius="4px"
         overflow="hidden"
       >
-        <Table.Root size="md" css={{ tableLayout: "fixed" }}>
-          <Table.Header>
-            <Table.Row>
-              <Table.ColumnHeader {...columnHeaderStyle} w="56px" pr={0} />
-              <Table.ColumnHeader {...columnHeaderStyle}>
-                Area name
-              </Table.ColumnHeader>
-              <Table.ColumnHeader {...columnHeaderStyle} w="180px">
-                Type
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                {...columnHeaderStyle}
-                w="160px"
-                textAlign="center"
-              >
-                Previous analyses
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                {...columnHeaderStyle}
-                w="200px"
-                textAlign="right"
-              >
-                Actions
-              </Table.ColumnHeader>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {rows.map((row) => {
-              const key = rowKey(row);
-              const isCustom = row.source === "custom";
-              const isCreatingThisRow = creatingRowKey === key;
-              const isRenamingThisRow = isCustom && renamingId === row.src_id;
+        <AreaPickerTable
+          nodes={tree}
+          isLoading={showSkeletons}
+          searchTerm={effectiveSearch}
+          creatingRowKey={creatingRowKey}
+          renamingId={renamingId}
+          renameValue={renameValue}
+          isDeleting={isDeleting}
+          onSelect={(row) => void handleRowSelect(row)}
+          onRenameStart={(row) => {
+            setRenamingId(row.src_id);
+            setRenameValue(row.name);
+          }}
+          onRenameChange={setRenameValue}
+          onRenameSubmit={(areaId) => void handleRename(areaId)}
+          onRenameCancel={() => setRenamingId(null)}
+          onDelete={(row) => void handleDelete(row)}
+        />
 
-              return (
-                <Table.Row
-                  key={key}
-                  tabIndex={creatingRowKey || isRenamingThisRow ? -1 : 0}
-                  aria-label={
-                    isRenamingThisRow
-                      ? undefined
-                      : `Create dashboard for ${row.name}`
-                  }
-                  cursor={creatingRowKey ? "default" : "pointer"}
-                  opacity={creatingRowKey && !isCreatingThisRow ? 0.5 : 1}
-                  _hover={{
-                    bg: "primary.25",
-                    "& [data-row-action]": { opacity: 1 },
-                  }}
-                  _focusVisible={{
-                    bg: "primary.25",
-                    "& [data-row-action]": { opacity: 1 },
-                    outline: "2px solid",
-                    outlineColor: "primary.500",
-                    outlineOffset: "-2px",
-                  }}
-                  onClick={() => {
-                    if (!isRenamingThisRow) void handleRowClick(row);
-                  }}
-                  onKeyDown={(e) => {
-                    if (isRenamingThisRow || creatingRowKey) return;
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      void handleRowClick(row);
-                    }
-                  }}
-                >
-                  <Table.Cell pr={0}>
-                    <Flex
-                      w="40px"
-                      h="40px"
-                      borderRadius="4px"
-                      bg="rgba(45, 107, 228, 0.08)"
-                      align="center"
-                      justify="center"
-                      flexShrink={0}
-                    >
-                      <PolygonIcon size={20} color={AREA_ICON_COLOR} />
-                    </Flex>
-                  </Table.Cell>
-                  <Table.Cell overflow="hidden">
-                    {isRenamingThisRow ? (
-                      <Input
-                        size="sm"
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") void handleRename(row.src_id);
-                          if (e.key === "Escape") setRenamingId(null);
-                        }}
-                        autoFocus
-                      />
-                    ) : (
-                      <Box minW={0}>
-                        <Text
-                          fontWeight="medium"
-                          whiteSpace="nowrap"
-                          overflow="hidden"
-                          textOverflow="ellipsis"
-                        >
-                          {row.name}
-                        </Text>
-                        {!isCustom && row.subtype && (
-                          <Text
-                            {...cellSubtextStyle}
-                            whiteSpace="nowrap"
-                            overflow="hidden"
-                            textOverflow="ellipsis"
-                          >
-                            {row.subtype}
-                          </Text>
-                        )}
-                      </Box>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Text {...cellTextStyle}>{row.typeLabel}</Text>
-                  </Table.Cell>
-                  <Table.Cell textAlign="center">
-                    <Text {...cellTextStyle}>{row.previousAnalyses}</Text>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Flex align="center" gap={2} justify="flex-end">
-                      {isCreatingThisRow ? (
-                        <Spinner size="sm" />
-                      ) : (
-                        <Flex
-                          data-row-action
-                          align="center"
-                          gap="4px"
-                          opacity={{ base: 1, md: 0 }}
-                        >
-                          <Text
-                            fontFamily="body"
-                            fontSize="14px"
-                            fontWeight="500"
-                            lineHeight="150%"
-                            letterSpacing="0%"
-                            textAlign="center"
-                            color="#0049AA"
-                            whiteSpace="nowrap"
-                          >
-                            New dashboard
-                          </Text>
-                          <CaretRightIcon size={14} color="#0049AA" />
-                        </Flex>
-                      )}
-                      {isCustom && (
-                        <Menu.Root>
-                          <Menu.Trigger asChild>
-                            <IconButton
-                              aria-label="Area actions"
-                              variant="ghost"
-                              size="xs"
-                              disabled={isDeleting}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <DotsThreeVerticalIcon />
-                            </IconButton>
-                          </Menu.Trigger>
-                          <Portal>
-                            <Menu.Positioner>
-                              <Menu.Content>
-                                <Menu.Item
-                                  value="rename"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRenamingId(row.src_id);
-                                    setRenameValue(row.name);
-                                  }}
-                                >
-                                  Rename
-                                </Menu.Item>
-                                <Menu.Item
-                                  value="delete"
-                                  color="fg.error"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    void handleDelete(row.src_id, row.name);
-                                  }}
-                                >
-                                  Delete
-                                </Menu.Item>
-                              </Menu.Content>
-                            </Menu.Positioner>
-                          </Portal>
-                        </Menu.Root>
-                      )}
-                    </Flex>
-                  </Table.Cell>
-                </Table.Row>
-              );
-            })}
-          </Table.Body>
-        </Table.Root>
-
-        {isLoading && (
-          <Flex justify="center" py={8}>
-            <Spinner />
-          </Flex>
-        )}
-
-        {!isLoading && rows.length === 0 && (
+        {!showSkeletons && rows.length === 0 && (
           <Box py={8} textAlign="center">
             <Text color="fg.muted">
-              {search
+              {trimmedSearch
                 ? "No areas match your search."
                 : "No areas found in this category."}
             </Text>
           </Box>
         )}
 
-        {hasNextPage && (
+        {!showSkeletons && hasNextPage && (
           <Flex justify="center" py={4}>
             <Button
               size="sm"
@@ -525,6 +338,21 @@ export function NewDashboardScreen() {
           </Flex>
         )}
       </Box>
+
+      {trimmedSearch && !showSkeletons && rows.length > 0 && (
+        <Text
+          mt="10px"
+          fontFamily="mono"
+          fontSize="11px"
+          letterSpacing="0.4px"
+          color="#9AA3B2"
+          textTransform="uppercase"
+        >
+          {tree.length}
+          {hasNextPage ? "+" : ""} areas match &ldquo;{trimmedSearch}&rdquo;
+          {hasNestedAreas ? " · expand or select any level" : ""}
+        </Text>
+      )}
 
       {isRenaming && (
         <Text fontSize="xs" color="fg.muted" mt={2}>

@@ -10,6 +10,9 @@ export interface AreaPickerRow {
   name: string;
   typeLabel: string;
   previousAnalyses: number;
+  /** `[west, south, east, north]` when the search result provided one — powers
+   * the static-map thumbnail without a geometry fetch. */
+  bbox?: number[];
 }
 
 function analysesKey(source: string, srcId: string): string {
@@ -43,6 +46,7 @@ export function aoiSearchResultToRow(
     typeLabel,
     previousAnalyses:
       analysesMap.get(analysesKey(result.source, result.src_id)) ?? 0,
+    ...(result.bbox ? { bbox: result.bbox } : {}),
   };
 }
 
