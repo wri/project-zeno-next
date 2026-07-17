@@ -18,7 +18,7 @@ export default function FutureOfMonitoringSection() {
       >
         <Container textAlign="center" maxW="2xl">
           <Heading size={{ base: "3xl", md: "4xl" }}>
-            About Global Nature Watch
+            About Global Nature Watch Horizon
           </Heading>
           <Text fontSize="lg" mb="4">
             We&apos;re making environmental geospatial data faster, more
@@ -28,17 +28,17 @@ export default function FutureOfMonitoringSection() {
         </Container>
         <Container display="flex" maxW="5xl">
           <Text fontSize="lg" mb="4">
-            <Text as="b">We know that monitoring works.</Text> Global Forest
-            Watch has helped transform how the world monitors forests, putting
-            timely, open data into the hands of users worldwide. Global Nature
-            Watch builds on that foundation — bringing together research from
-            Land & Carbon Lab and Global Forest Watch in an experimental, open,
-            AI-powered system that expands monitoring beyond forests to include
-            other ecosystems and land dynamics. Anyone working to protect,
-            restore or sustainably manage land can explore change happening
-            across Earth by asking questions in plain language and receiving
-            responses supported by satellite imagery, maps, statistics and
-            context.
+            <Text as="b">We know that monitoring works.</Text> Global Nature
+            Watch (formerly Global Forest Watch) has helped transform how the
+            world monitors forests, putting timely, open data into the hands of
+            users worldwide. Horizon builds on that foundation — bringing
+            together research from Land & Carbon Lab and Global Nature Watch in
+            an experimental, open, AI-powered system that expands monitoring
+            beyond forests to include other ecosystems and land dynamics. Anyone
+            working to protect, restore or sustainably manage land can explore
+            change happening across Earth by asking questions in plain language
+            and receiving responses supported by satellite imagery, maps,
+            statistics and context.
           </Text>
         </Container>
         <Container display="flex" gap="14" flexDir={"column"} maxW="5xl">
@@ -120,10 +120,10 @@ export default function FutureOfMonitoringSection() {
               </Heading>
               <Text fontSize="lg" mb="4">
                 With so much geospatial data available, it can be hard to know
-                where to start. Global Nature Watch places the power of a
-                personal geospatial assistant in your pocket. AI trained on
-                peer-reviewed datasets helps both experts and newcomers
-                navigate, analyze and apply insights.
+                where to start. Horizon places the power of a personal
+                geospatial assistant in your pocket. AI trained on peer-reviewed
+                datasets helps both experts and newcomers navigate, analyze and
+                apply insights.
               </Text>
             </Box>
             <Box position="relative" h="72" w="full">
@@ -182,8 +182,8 @@ export default function FutureOfMonitoringSection() {
               </Heading>
               <Text fontSize="lg" mb="4">
                 We believe the future of monitoring is open, scalable and
-                integrative. That&apos;s why Global Nature Watch will be able to
-                connect with your own systems, extending the power of your data.
+                integrative. That&apos;s why Horizon will be able to connect
+                with your own systems, extending the power of your data.
               </Text>
             </Box>
             <Box
