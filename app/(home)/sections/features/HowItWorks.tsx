@@ -16,7 +16,14 @@ const HOW_STEPS = [
     description:
       "Our data comes via APIs from Global Nature Watch (formerly Global Forest Watch) and Land & Carbon Lab, initiatives powered by contributions from researchers and partners around the globe. This means verifiable data from authoritative sources.",
     images: [
-      { src: "/GFW-logo.svg", alt: "GFW logo", maxW: "100%" },
+      {
+        src: "/GNW_logo_4c.png",
+        alt: "GNW logo",
+        width: "64px",
+        height: "65px",
+        objectFit: "contain",
+        maxW: "100%",
+      },
       { src: "LCL-logo.svg", alt: "LCL logo", maxW: "100%" },
     ],
   },

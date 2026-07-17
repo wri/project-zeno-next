@@ -82,7 +82,7 @@ export default function TeamSection() {
             />
           </ChakraLink>
           <ChakraLink
-            href="https://www.globalforestwatch.org/"
+            href="https://www.globalnaturewatch.org/"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -93,10 +93,11 @@ export default function TeamSection() {
               justifyContent="center"
             >
               <NextImage
-                src="/GFW-logo.svg"
-                alt="GFW Logo"
+                src="/GNW_logo_4c.png"
+                alt="GNW Logo"
                 width={80}
                 height={40}
+                style={{ objectFit: "contain" }}
               />
             </Flex>
           </ChakraLink>
