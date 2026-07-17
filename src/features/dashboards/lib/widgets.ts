@@ -23,6 +23,13 @@ export function widgetSize(config: Record<string, unknown>): WidgetSize {
 }
 
 /**
+ * Map widgets default to full width: a map spans both columns.
+ */
+export function mapWidgetSize(config: Record<string, unknown>): WidgetSize {
+  return config.size === "single" ? "single" : "double";
+}
+
+/**
  * The full config to PATCH for a size change. The backend replaces config
  * whole (no merge), so presentation keys like default_view/title must ride
  * along.
