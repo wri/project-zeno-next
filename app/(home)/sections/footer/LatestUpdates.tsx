@@ -200,11 +200,11 @@ export default function LatestUpdatesSection() {
               size="md"
             >
               <Link
-                href="https://www.globalforestwatch.org/"
+                href="https://www.globalnaturewatch.org/"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Visit Global Forest Watch
+                Visit Global Nature Watch
               </Link>
             </Button>
           </Box>
