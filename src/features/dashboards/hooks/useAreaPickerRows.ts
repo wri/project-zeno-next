@@ -46,17 +46,24 @@ export function useAreaPickerRows(
   const { customAreas, isLoading: customLoading } = useCustomAreasList();
   const { data: dashboards } = useDashboards();
 
+  // Reference sources are searched server-side (fuzzy, similarity-ranked) by
+  // threading `search` through to the /api/aois endpoint. Custom areas are all
+  // loaded locally and filtered client-side below.
   const gadm = useAoiBrowse("gadm", {
     enabled: isReferenceSourceEnabled(activeCategory, "gadm"),
+    name: search,
   });
   const kba = useAoiBrowse("kba", {
     enabled: isReferenceSourceEnabled(activeCategory, "kba"),
+    name: search,
   });
   const wdpa = useAoiBrowse("wdpa", {
     enabled: isReferenceSourceEnabled(activeCategory, "wdpa"),
+    name: search,
   });
   const landmark = useAoiBrowse("landmark", {
     enabled: isReferenceSourceEnabled(activeCategory, "landmark"),
+    name: search,
   });
   const referenceQueries = { gadm, kba, wdpa, landmark };
 
@@ -105,7 +112,9 @@ export function useAreaPickerRows(
   if (activeCategory !== "all") {
     const query = referenceQueries[activeCategory];
     return {
-      rows: filterRowsBySearch(referenceRows[activeCategory], search),
+      // Reference rows are already filtered server-side; don't re-filter here
+      // or fuzzy matches that aren't literal substrings would be dropped.
+      rows: referenceRows[activeCategory],
       isLoading: query.isLoading,
       hasNextPage: query.hasNextPage,
       isFetchingNextPage: query.isFetchingNextPage,
@@ -117,11 +126,11 @@ export function useAreaPickerRows(
 
   const merged = [
     ...REFERENCE_AOI_SOURCES.flatMap((source) => referenceRows[source]),
-    ...customRows,
+    ...filterRowsBySearch(customRows, search),
   ];
 
   return {
-    rows: filterRowsBySearch(merged, search),
+    rows: merged,
     isLoading:
       customLoading ||
       REFERENCE_AOI_SOURCES.some((s) => referenceQueries[s].isLoading),
