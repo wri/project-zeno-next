@@ -213,10 +213,7 @@ function AreaNameCell(props: RowProps) {
   const { row } = node;
   const isCustom = row.source === "custom";
   const isRenamingThisRow = isCustom && props.renamingId === row.src_id;
-  const crumb =
-    node.ancestorNames.length > 0
-      ? [...node.ancestorNames, row.name].join(" › ")
-      : null;
+  const crumb = node.ancestorNames.length > 0 ? [row.name].join(" › ") : null;
 
   return (
     <Table.Cell overflow="hidden" py="8px" pl={`${NAME_CELL_PL_PX}px`}>

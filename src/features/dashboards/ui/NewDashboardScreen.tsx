@@ -348,8 +348,9 @@ export function NewDashboardScreen() {
           color="#9AA3B2"
           textTransform="uppercase"
         >
-          {tree.length}
-          {hasNextPage ? "+" : ""} areas match &ldquo;{trimmedSearch}&rdquo;
+          Showing
+          {hasNextPage ? "+" : ""} {rows.length === 1 ? "area" : "areas"}{" "}
+          matching &ldquo;{trimmedSearch}&rdquo;
           {hasNestedAreas ? " · expand or select any level" : ""}
         </Text>
       )}
