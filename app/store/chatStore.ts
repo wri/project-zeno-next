@@ -227,14 +227,34 @@ async function processStreamMessage(
     queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
   }
 
-  // A dashboard write also surfaces a navigation card in the thread — the
-  // stream carries only the dashboard's id and name, so this is the user's
-  // one affordance to open what the agent just created or changed.
+  // A dashboard write also surfaces a synthetic assistant line plus a
+  // navigation card in the thread — the stream carries only the dashboard's
+  // id and name, so the card is the user's one affordance to open what the
+  // agent just created or changed.
   if (
     streamMessage.msg_type === "dashboard_updated" &&
     streamMessage.dashboard_id &&
     !dashboardCardExistsThisTurn(streamMessage.dashboard_id)
   ) {
+    // The signal itself doesn't distinguish a create from a widget add, but
+    // the tool result it rides on does. When it rides on agent narration or
+    // an error-classified message instead, there is no tool name — default
+    // to the "updated" wording.
+    const isCreate =
+      streamMessage.type === "tool" &&
+      streamMessage.name === "create_dashboard";
+    const name = streamMessage.dashboard_name;
+    addMessage({
+      type: "assistant",
+      message: isCreate
+        ? name
+          ? `I've created the "${name}" dashboard. Open the card below to view it — I can keep adding insights to it as we explore.`
+          : "I've created a dashboard for you. Open the card below to view it — I can keep adding insights to it as we explore."
+        : name
+          ? `I've updated the "${name}" dashboard. Open the card below to see the changes.`
+          : "I've updated your dashboard. Open the card below to see the changes.",
+      timestamp: streamMessage.timestamp,
+    });
     addMessage({
       type: "dashboard-card",
       message: "",

@@ -524,6 +524,43 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
     });
   });
 
+  it("announces a create with an assistant message ahead of the card", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
+    );
+
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    const messages = useChatStore.getState().messages;
+    const noteIndex = messages.findIndex(
+      (m) =>
+        m.type === "assistant" &&
+        m.message.includes('created the "Paraná" dashboard')
+    );
+    const cardIndex = messages.findIndex((m) => m.type === "dashboard-card");
+    expect(noteIndex).toBeGreaterThan(-1);
+    expect(cardIndex).toBe(noteIndex + 1);
+  });
+
+  it("uses the updated wording when the write is not a create", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("add it to my dashboard");
+
+    const note = useChatStore
+      .getState()
+      .messages.find(
+        (m) =>
+          m.type === "assistant" &&
+          m.message.includes('updated the "Paraná" dashboard')
+      );
+    expect(note).toBeDefined();
+  });
+
   it("emits one card per dashboard per turn across create + widget adds", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
       ndjsonResponse([
@@ -536,6 +573,15 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
     await useChatStore.getState().sendMessage("dashboard with widgets");
 
     expect(dashboardCards()).toHaveLength(1);
+    // The synthetic announcement is deduped with its card — and since the
+    // create streamed first, it keeps the "created" wording.
+    const notes = useChatStore
+      .getState()
+      .messages.filter(
+        (m) => m.type === "assistant" && m.message.includes("dashboard")
+      );
+    expect(notes).toHaveLength(1);
+    expect(notes[0].message).toContain("created");
   });
 
   it("surfaces the card again when a later turn touches the same dashboard", async () => {
