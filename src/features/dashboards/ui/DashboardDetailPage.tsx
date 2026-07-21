@@ -1,17 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
-import {
-  Box,
-  Container,
-  Flex,
-  Heading,
-  Spinner,
-  Text,
-  Link as ChakraLink,
-} from "@chakra-ui/react";
+import { Box, Container, Flex, Heading, Spinner, Text } from "@chakra-ui/react";
 import { SquaresFourIcon } from "@phosphor-icons/react";
 
 import ChatPanel from "@/app/ChatPanel";
@@ -20,8 +11,11 @@ import useAgentProfileStore from "@/app/store/agentProfileStore";
 import useAuthStore from "@/app/store/authStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import useViewContextStore from "@/app/store/viewContextStore";
+import usePinnedHeader from "../hooks/usePinnedHeader";
 import { useDashboard } from "./dashboardQueries";
+import DashboardBreadcrumb from "./DashboardBreadcrumb";
 import DashboardHeader from "./DashboardHeader";
+import DashboardPinnedHeader from "./DashboardPinnedHeader";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 import { HERO_GRID_IMAGE } from "./heroGrid";
 
@@ -32,6 +26,8 @@ export default function DashboardDetailPage() {
   const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
   const userId = useAuthStore((s) => s.userId);
   const isOwner = !!userId && userId === dashboard?.user_id;
+  const contentLeftPx = getDashboardContentLeftPx(isChatFullSize);
+  const { sentinelRef, pinned } = usePinnedHeader();
 
   useEffect(() => {
     // The dashboard agent tools are gated behind ?agent_profile=…; capture it
@@ -65,7 +61,7 @@ export default function DashboardDetailPage() {
       pb={{ base: 8, md: 10 }}
       pl={{
         base: 0,
-        md: `${getDashboardContentLeftPx(isChatFullSize)}px`,
+        md: `${contentLeftPx}px`,
       }}
       transition="padding-left 0.2s ease-in-out"
     >
@@ -85,15 +81,24 @@ export default function DashboardDetailPage() {
       >
         <ChatPanel />
       </Box>
+      {/* Adaptive header: a fixed condensed bar takes over once the in-page
+          header (the sentinel below) scrolls behind the global nav. */}
+      {dashboard && (
+        <DashboardPinnedHeader
+          dashboard={dashboard}
+          isOwner={isOwner}
+          pinned={pinned}
+          contentLeftPx={contentLeftPx}
+        />
+      )}
       <Container maxW="1232px">
         <Flex direction="column" gap="12px">
-          <Flex align="center" gap="8px" fontSize="14px" lineHeight="16px">
-            <ChakraLink asChild color="#565E7B">
-              <Link href="/dashboards?ff=dashboard">Dashboards</Link>
-            </ChakraLink>
-            <Text color="#C2C7D0">/</Text>
-            <Text color="#565E7B">{dashboard?.name ?? "Dashboard"}</Text>
-          </Flex>
+          {/* While the condensed header is pinned it carries live copies of
+              these controls, so the scrolled-away originals leave the tab
+              order and accessibility tree — one live copy at a time. */}
+          <Box aria-hidden={pinned} inert={pinned}>
+            <DashboardBreadcrumb name={dashboard?.name} />
+          </Box>
 
           {isLoading ? (
             <Flex align="center" gap={2} color="fg.muted" py={12}>
@@ -122,7 +127,12 @@ export default function DashboardDetailPage() {
               pb={{ base: 6, md: "46px" }}
             >
               {/* 75px puts the widgets at the mock's 174px card offset. */}
-              <Box mb={{ base: 8, md: "75px" }}>
+              <Box
+                ref={sentinelRef}
+                mb={{ base: 8, md: "75px" }}
+                aria-hidden={pinned}
+                inert={pinned}
+              >
                 <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
               </Box>
 
