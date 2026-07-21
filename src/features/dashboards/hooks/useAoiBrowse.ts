@@ -2,7 +2,7 @@ import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
 import { browseAois } from "../api/aois";
 import type { ReferenceAoiSource } from "../model/dashboard-area";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 100;
 
 export function useAoiBrowse(
   source: ReferenceAoiSource | "custom",

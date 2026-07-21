@@ -28,9 +28,24 @@ function isReferenceSourceEnabled(
 export interface AreaPickerRowsResult {
   rows: AreaPickerRow[];
   isLoading: boolean;
+  /**
+   * A server-side search is in flight and `rows` are stale placeholder data
+   * kept from the previous term (`keepPreviousData`). `isLoading` stays false
+   * in that window, so consumers need this flag to show search feedback.
+   */
+  isSearching: boolean;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
+}
+
+interface ReferenceQueryState {
+  isFetching: boolean;
+  isPlaceholderData: boolean;
+}
+
+function isSearchInFlight(query: ReferenceQueryState): boolean {
+  return query.isFetching && query.isPlaceholderData;
 }
 
 /**
@@ -103,6 +118,9 @@ export function useAreaPickerRows(
     return {
       rows: filterRowsBySearch(customRows, search),
       isLoading: customLoading,
+      // Custom areas are filtered client-side, so there is never a search
+      // round-trip to wait on.
+      isSearching: false,
       hasNextPage: false,
       isFetchingNextPage: false,
       fetchNextPage: () => {},
@@ -116,6 +134,7 @@ export function useAreaPickerRows(
       // or fuzzy matches that aren't literal substrings would be dropped.
       rows: referenceRows[activeCategory],
       isLoading: query.isLoading,
+      isSearching: isSearchInFlight(query),
       hasNextPage: query.hasNextPage,
       isFetchingNextPage: query.isFetchingNextPage,
       fetchNextPage: () => {
@@ -134,6 +153,9 @@ export function useAreaPickerRows(
     isLoading:
       customLoading ||
       REFERENCE_AOI_SOURCES.some((s) => referenceQueries[s].isLoading),
+    isSearching: REFERENCE_AOI_SOURCES.some((s) =>
+      isSearchInFlight(referenceQueries[s])
+    ),
     hasNextPage: REFERENCE_AOI_SOURCES.some(
       (s) => referenceQueries[s].hasNextPage
     ),
