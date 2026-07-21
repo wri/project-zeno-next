@@ -16,6 +16,9 @@ export interface MessageContext {
 // Type for storing tool execution data
 export interface ToolStepData {
   name: string;
+  /** Set when the tool result was error-classified (recoverable failure or
+   * agent guidance) so the reasoning timeline can mark the step. */
+  status?: "error";
   content?: string;
   dataset?: object;
   insights?: object[];
