@@ -64,7 +64,7 @@ export default function SupportWorkTabsSection() {
             See how monitoring intelligence can support your work
           </Heading>
           <Text fontSize="md" mb="4">
-            Global Nature Watch makes advanced monitoring data easy to use,
+            Horizon makes advanced monitoring data easy to use,
             <br />
             so you can make smarter, faster decisions for people and the planet.
           </Text>
