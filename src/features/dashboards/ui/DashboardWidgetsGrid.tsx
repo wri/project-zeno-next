@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Grid, GridItem } from "@chakra-ui/react";
+import { Box, Grid, GridItem } from "@chakra-ui/react";
 
 import useAuthStore from "@/app/store/authStore";
 import type { InsightWidget } from "@/app/types/chat";
@@ -37,6 +37,16 @@ import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
  * with `map` set; placeholder cells (unsupported widget type, hidden
  * insight, malformed map config) carry `card: null` and placeholder copy.
  */
+/**
+ * Column count follows the grid's own width, not the viewport: the full-size
+ * chat is a fixed overlay that narrows the content area without changing the
+ * viewport, so a viewport breakpoint would keep two columns the cards can't
+ * fit into (each has a real minimum — chart toolbar + axis margins — of
+ * roughly 330px) and the grid would overflow the page horizontally. 700px
+ * fits two minimum-width cards plus the gap.
+ */
+const TWO_COLUMN_QUERY = "@container widgets-grid (min-width: 700px)";
+
 interface GridCell {
   key: string;
   widget: DashboardWidget;
@@ -189,124 +199,140 @@ export default function DashboardWidgetsGrid({
   };
 
   return (
-    <Grid templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }} gap={4}>
-      {cells.map((cell, i) => {
-        const { widget, card } = cell;
-        const size = card?.id
-          ? chartSize(widget.config, card.id)
-          : widgetSize(widget.config);
-        const title =
-          card?.title ??
-          cell.map?.title ??
-          (typeof widget.config.title === "string" ? widget.config.title : "");
-        return (
-          <GridItem
-            key={cell.key}
-            colSpan={{ base: 1, lg: size === "double" ? 2 : 1 }}
-            draggable={isOwner && grabbedKey === cell.key}
-            onDragStart={(e) => {
-              // Required for Firefox to initiate drag-and-drop.
-              e.dataTransfer.setData("text/plain", cell.key);
-              e.dataTransfer.effectAllowed = "move";
-              setDragIndex(i);
-            }}
-            onDragEnd={endDrag}
-            onDragOver={(e) => {
-              if (dragIndex === null) return;
-              e.preventDefault();
-              setOverIndex(i);
-            }}
-            onDrop={() => dropOn(i)}
-            opacity={dragIndex === i ? 0.4 : 1}
-            outline={
-              overIndex === i && dragIndex !== null && isDropTarget(i)
-                ? "2px dashed"
-                : undefined
-            }
-            outlineColor="primary.solid"
-            borderRadius="sm"
-          >
-            {widget.widget_type === "text" ? (
-              <DashboardTextWidgetCard
-                text={cell.text}
-                placeholder={cell.placeholder}
-                isOwner={isOwner}
-                isDouble={size === "double"}
-                onArmDrag={() => setGrabbedKey(cell.key)}
-                onDisarmDrag={() => setGrabbedKey(null)}
-                onToggleSize={() =>
-                  updateWidget.mutate({
-                    widgetId: widget.id,
-                    patch: {
-                      config: withSize(
-                        widget.config,
-                        size === "double" ? "single" : "double"
-                      ),
-                    },
-                  })
-                }
-                onSaveText={(next) =>
-                  updateWidget.mutate({
-                    widgetId: widget.id,
-                    patch: { config: withText(widget.config, next) },
-                  })
-                }
-                onRemove={() => deleteWidget.mutate(widget.id)}
-              />
-            ) : (
-              <DashboardWidgetCard
-                title={title}
-                card={card}
-                map={cell.map}
-                aoi={areaAoi}
-                viewportBbox={
-                  cell.map ? mapWidgetViewportBbox(widget.config) : null
-                }
-                placeholder={cell.placeholder}
-                chartCount={cell.chartCount}
-                isOwner={isOwner}
-                isDouble={size === "double"}
-                onArmDrag={() => setGrabbedKey(cell.key)}
-                onDisarmDrag={() => setGrabbedKey(null)}
-                onToggleSize={() =>
-                  updateWidget.mutate({
-                    widgetId: widget.id,
-                    patch: {
-                      config: card?.id
-                        ? withChartSize(
-                            widget.config,
-                            card.id,
-                            size === "double" ? "single" : "double"
-                          )
-                        : withSize(
-                            widget.config,
-                            size === "double" ? "single" : "double"
-                          ),
-                    },
-                  })
-                }
-                onRename={
-                  // Renamable only for renderable cells (map/imagery/chart);
-                  // per-chart titles key on card.id, single-card widgets on
-                  // config.title.
-                  cell.placeholder
-                    ? undefined
-                    : (name) =>
-                        updateWidget.mutate({
-                          widgetId: widget.id,
-                          patch: {
-                            config: card?.id
-                              ? withChartTitle(widget.config, card.id, name)
-                              : withWidgetTitle(widget.config, name),
-                          },
-                        })
-                }
-                onRemove={() => deleteWidget.mutate(widget.id)}
-              />
-            )}
-          </GridItem>
-        );
-      })}
-    </Grid>
+    <Box css={{ containerType: "inline-size", containerName: "widgets-grid" }}>
+      <Grid
+        templateColumns="1fr"
+        css={{ [TWO_COLUMN_QUERY]: { gridTemplateColumns: "repeat(2, 1fr)" } }}
+        gap={4}
+      >
+        {cells.map((cell, i) => {
+          const { widget, card } = cell;
+          const size = card?.id
+            ? chartSize(widget.config, card.id)
+            : widgetSize(widget.config);
+          const title =
+            card?.title ??
+            cell.map?.title ??
+            (typeof widget.config.title === "string"
+              ? widget.config.title
+              : "");
+          return (
+            <GridItem
+              key={cell.key}
+              // Tracks may shrink below the cards' intrinsic minimum near the
+              // two-column threshold; cards clip internally instead of forcing
+              // the grid wider than the page.
+              minW={0}
+              css={
+                size === "double"
+                  ? { [TWO_COLUMN_QUERY]: { gridColumn: "span 2" } }
+                  : undefined
+              }
+              draggable={isOwner && grabbedKey === cell.key}
+              onDragStart={(e) => {
+                // Required for Firefox to initiate drag-and-drop.
+                e.dataTransfer.setData("text/plain", cell.key);
+                e.dataTransfer.effectAllowed = "move";
+                setDragIndex(i);
+              }}
+              onDragEnd={endDrag}
+              onDragOver={(e) => {
+                if (dragIndex === null) return;
+                e.preventDefault();
+                setOverIndex(i);
+              }}
+              onDrop={() => dropOn(i)}
+              opacity={dragIndex === i ? 0.4 : 1}
+              outline={
+                overIndex === i && dragIndex !== null && isDropTarget(i)
+                  ? "2px dashed"
+                  : undefined
+              }
+              outlineColor="primary.solid"
+              borderRadius="sm"
+            >
+              {widget.widget_type === "text" ? (
+                <DashboardTextWidgetCard
+                  text={cell.text}
+                  placeholder={cell.placeholder}
+                  isOwner={isOwner}
+                  isDouble={size === "double"}
+                  onArmDrag={() => setGrabbedKey(cell.key)}
+                  onDisarmDrag={() => setGrabbedKey(null)}
+                  onToggleSize={() =>
+                    updateWidget.mutate({
+                      widgetId: widget.id,
+                      patch: {
+                        config: withSize(
+                          widget.config,
+                          size === "double" ? "single" : "double"
+                        ),
+                      },
+                    })
+                  }
+                  onSaveText={(next) =>
+                    updateWidget.mutate({
+                      widgetId: widget.id,
+                      patch: { config: withText(widget.config, next) },
+                    })
+                  }
+                  onRemove={() => deleteWidget.mutate(widget.id)}
+                />
+              ) : (
+                <DashboardWidgetCard
+                  title={title}
+                  card={card}
+                  map={cell.map}
+                  aoi={areaAoi}
+                  viewportBbox={
+                    cell.map ? mapWidgetViewportBbox(widget.config) : null
+                  }
+                  placeholder={cell.placeholder}
+                  chartCount={cell.chartCount}
+                  isOwner={isOwner}
+                  isDouble={size === "double"}
+                  onArmDrag={() => setGrabbedKey(cell.key)}
+                  onDisarmDrag={() => setGrabbedKey(null)}
+                  onToggleSize={() =>
+                    updateWidget.mutate({
+                      widgetId: widget.id,
+                      patch: {
+                        config: card?.id
+                          ? withChartSize(
+                              widget.config,
+                              card.id,
+                              size === "double" ? "single" : "double"
+                            )
+                          : withSize(
+                              widget.config,
+                              size === "double" ? "single" : "double"
+                            ),
+                      },
+                    })
+                  }
+                  onRename={
+                    // Renamable only for renderable cells (map/imagery/chart);
+                    // per-chart titles key on card.id, single-card widgets on
+                    // config.title.
+                    cell.placeholder
+                      ? undefined
+                      : (name) =>
+                          updateWidget.mutate({
+                            widgetId: widget.id,
+                            patch: {
+                              config: card?.id
+                                ? withChartTitle(widget.config, card.id, name)
+                                : withWidgetTitle(widget.config, name),
+                            },
+                          })
+                  }
+                  onRemove={() => deleteWidget.mutate(widget.id)}
+                />
+              )}
+            </GridItem>
+          );
+        })}
+      </Grid>
+    </Box>
   );
 }
