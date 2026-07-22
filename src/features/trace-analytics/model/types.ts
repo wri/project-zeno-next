@@ -46,6 +46,20 @@ export interface TraceRow {
   readonly isGlobal: boolean | null;
   /** ISO 639-1 code of the detected prompt language (langid, server-side). */
   readonly language: string | null;
+  /**
+   * 1-based position of this turn within its conversation (stored server-side,
+   * so it stays correct even when the date window cuts a thread mid-way).
+   * Session-less traces are singletons (turn 1). Null on rows ingested before
+   * the backfill.
+   */
+  readonly turnIndex: number | null;
+  /** True only on the turn whose insight first appeared (vs cumulative hasInsight). */
+  readonly insightCreatedThisTurn: boolean | null;
+  /**
+   * Comma-joined datasets NEW to this turn (vs `datasetsAnalysed`, which is
+   * thread-cumulative as of this turn). Empty string when none or unknown.
+   */
+  readonly datasetsAnalysedThisTurn: string;
 }
 
 /** One conversation thread (deduped server-side by the Zeno API). */

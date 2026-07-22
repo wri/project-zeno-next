@@ -5,6 +5,7 @@
 import { ReactNode } from "react";
 import {
   Box,
+  Button,
   Checkbox,
   Flex,
   Input,
@@ -15,12 +16,20 @@ import { ENVIRONMENT_OPTIONS, type EnvironmentOption } from "../model/config";
 import {
   DATE_PRESETS,
   useFiltersStore,
+  type AnalysisGrain,
   type DatePreset,
 } from "../model/filtersStore";
 
 interface FiltersBarProps {
   readonly showExcludeInternal?: boolean;
+  /** Show the turns/conversations unit toggle (Analytics view only). */
+  readonly showGrain?: boolean;
 }
+
+const GRAIN_LABELS: Readonly<Record<AnalysisGrain, string>> = {
+  turn: "Turns",
+  conversation: "Conversations",
+};
 
 /** GNW metadata-label style: small uppercase mono. */
 function FieldLabel({ children }: { readonly children: ReactNode }) {
@@ -38,17 +47,22 @@ function FieldLabel({ children }: { readonly children: ReactNode }) {
   );
 }
 
-export function FiltersBar({ showExcludeInternal = true }: FiltersBarProps) {
+export function FiltersBar({
+  showExcludeInternal = true,
+  showGrain = false,
+}: FiltersBarProps) {
   const {
     preset,
     startDate,
     endDate,
     environment,
     excludeInternal,
+    grain,
     setPreset,
     setCustomRange,
     setEnvironment,
     setExcludeInternal,
+    setGrain,
   } = useFiltersStore();
 
   return (
@@ -112,6 +126,24 @@ export function FiltersBar({ showExcludeInternal = true }: FiltersBarProps) {
           <NativeSelect.Indicator />
         </NativeSelect.Root>
       </Box>
+
+      {showGrain ? (
+        <Box>
+          <FieldLabel>Analyse by</FieldLabel>
+          <Flex gap={1}>
+            {(["turn", "conversation"] as const).map((g) => (
+              <Button
+                key={g}
+                size="sm"
+                variant={grain === g ? "solid" : "outline"}
+                onClick={() => setGrain(g)}
+              >
+                {GRAIN_LABELS[g]}
+              </Button>
+            ))}
+          </Flex>
+        </Box>
+      ) : null}
 
       {showExcludeInternal ? (
         <Checkbox.Root

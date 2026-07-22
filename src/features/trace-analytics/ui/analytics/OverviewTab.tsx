@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { Flex, SimpleGrid, Text } from "@chakra-ui/react";
 import type { TraceRow } from "../../model/types";
+import type { AnalysisGrain } from "../../model/filtersStore";
 import type { DailyMetrics } from "../../lib/analytics/daily";
 import { computeDailyOutcomeMix } from "../../lib/analytics/daily";
 import type {
@@ -43,6 +44,7 @@ interface OverviewTabProps {
   readonly reportContext: ReportContext;
   readonly baseThreadUrl: string;
   readonly prevRangeLabel: string;
+  readonly grain: AnalysisGrain;
 }
 
 export function OverviewTab({
@@ -57,7 +59,9 @@ export function OverviewTab({
   reportContext,
   baseThreadUrl,
   prevRangeLabel,
+  grain,
 }: OverviewTabProps) {
+  const conversationGrain = grain === "conversation";
   const volumeData = useMemo(
     () =>
       withMovingAverage(
@@ -82,9 +86,11 @@ export function OverviewTab({
 
   const kpis = [
     {
-      label: "Prompts (traces)",
+      label: conversationGrain ? "Conversations" : "Prompts (traces)",
       value: formatCount(stats.totalTraces),
-      hint: "One trace = one user turn",
+      hint: conversationGrain
+        ? "One row = one conversation thread"
+        : "One trace = one user turn",
       delta: prevStats
         ? relativeDelta(stats.totalTraces, prevStats.totalTraces, {
             upIsGood: true,
@@ -103,21 +109,28 @@ export function OverviewTab({
         : null,
       spark: spark("uniqueUsers"),
     },
-    {
-      label: "Conversations",
-      value: formatCount(stats.uniqueThreads),
-      hint: "Distinct threads touched",
-      delta: prevStats
-        ? relativeDelta(stats.uniqueThreads, prevStats.uniqueThreads, {
-            upIsGood: true,
-          })
-        : null,
-      spark: spark("uniqueThreads"),
-    },
+    // At conversation grain this KPI would duplicate the first one.
+    ...(conversationGrain
+      ? []
+      : [
+          {
+            label: "Conversations",
+            value: formatCount(stats.uniqueThreads),
+            hint: "Distinct threads touched",
+            delta: prevStats
+              ? relativeDelta(stats.uniqueThreads, prevStats.uniqueThreads, {
+                  upIsGood: true,
+                })
+              : null,
+            spark: spark("uniqueThreads"),
+          },
+        ]),
     {
       label: "Success rate",
       value: formatPercent(stats.successRate),
-      hint: "Turns answered with ≥1 tool call",
+      hint: conversationGrain
+        ? "Conversations ending on an answered turn"
+        : "Turns answered with ≥1 tool call",
       delta: prevStats
         ? percentagePointDelta(stats.successRate, prevStats.successRate, {
             upIsGood: true,
@@ -170,7 +183,9 @@ export function OverviewTab({
     {
       label: "p95 latency",
       value: `${stats.p95Latency.toFixed(1)}s`,
-      hint: "95% of turns respond faster",
+      hint: conversationGrain
+        ? "Total agent time; 95% of conversations sum to less"
+        : "95% of turns respond faster",
       delta: prevStats
         ? relativeDelta(stats.p95Latency, prevStats.p95Latency, {
             upIsGood: false,
@@ -208,17 +223,21 @@ export function OverviewTab({
         {daily.length ? (
           <ChartCard
             title="Daily volume"
-            help="Traces, unique users and unique threads per day."
+            help={
+              conversationGrain
+                ? "Conversations (dated by their first turn) and unique users per day."
+                : "Traces, unique users and unique threads per day."
+            }
             info={
               <>
-                Each line counts distinct items per calendar day: prompts sent
-                (traces), users who sent at least one, and conversation threads
-                touched.
+                {conversationGrain
+                  ? "Each line counts distinct items per calendar day: conversations started and users who sent at least one prompt."
+                  : "Each line counts distinct items per calendar day: prompts sent (traces), users who sent at least one, and conversation threads touched."}
                 {showMa
-                  ? " The dashed gray line is a 7-day moving average of traces — follow it, not the daily spikes, for the underlying trend."
+                  ? " The dashed gray line is a 7-day moving average — follow it, not the daily spikes, for the underlying trend."
                   : ""}{" "}
                 Weekday/weekend rhythm is normal; look for the lines moving
-                together (organic growth) vs. traces spiking alone (a few heavy
+                together (organic growth) vs. volume spiking alone (a few heavy
                 users or a bot).
               </>
             }
@@ -226,22 +245,34 @@ export function OverviewTab({
             <DailyLinesChart
               data={volumeData}
               series={[
-                { key: "traces", label: "Traces", color: CATEGORY_COLORS[0] },
+                {
+                  key: "traces",
+                  label: conversationGrain ? "Conversations" : "Traces",
+                  color: CATEGORY_COLORS[0],
+                },
                 {
                   key: "uniqueUsers",
                   label: "Unique users",
                   color: CATEGORY_COLORS[2],
                 },
-                {
-                  key: "uniqueThreads",
-                  label: "Unique threads",
-                  color: CATEGORY_COLORS[1],
-                },
+                // Threads ≈ conversations at conversation grain — drop the
+                // near-duplicate line.
+                ...(conversationGrain
+                  ? []
+                  : [
+                      {
+                        key: "uniqueThreads",
+                        label: "Unique threads",
+                        color: CATEGORY_COLORS[1],
+                      },
+                    ]),
                 ...(showMa
                   ? [
                       {
                         key: "tracesMa",
-                        label: "Traces (7d avg)",
+                        label: conversationGrain
+                          ? "Conversations (7d avg)"
+                          : "Traces (7d avg)",
                         color: CHART_CHROME.contextSeries,
                         dashed: true,
                       },
@@ -255,7 +286,9 @@ export function OverviewTab({
         {daily.length ? (
           <ChartCard
             title="Daily outcomes"
-            help="Share of each day's traces by outcome. Click a day to open its traces."
+            help={`Share of each day's ${
+              conversationGrain ? "conversations (by final turn)" : "traces"
+            } by outcome. Click a day to open its traces.`}
             info={
               <>
                 Every trace gets exactly one outcome, so each day stacks to
@@ -272,7 +305,9 @@ export function OverviewTab({
               data={dailyOutcomeMix}
               onDayClick={(date) =>
                 openTraces(
-                  `All traces on ${date}`,
+                  conversationGrain
+                    ? `Conversations started on ${date} (opening turns)`
+                    : `All traces on ${date}`,
                   rows.filter((r) => r.date === date)
                 )
               }

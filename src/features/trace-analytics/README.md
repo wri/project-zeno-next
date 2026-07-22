@@ -29,7 +29,18 @@ Consumers import the slice **only** through its public API barrel
   answers, answered-from-context, UI-event quarantine, timeout suspects). It
   must never mutate `row.outcome`.
 - `datasetsAnalysed` is **thread-cumulative**, not per-turn — that is exactly
-  what makes the answered-from-context rescue valid.
+  what makes the answered-from-context rescue valid. The honest per-turn
+  counterparts are `datasetsAnalysedThisTurn` / `insightCreatedThisTurn`.
+- Turn order within a conversation comes from the server-stored `turnIndex`
+  (`lib/analytics/turnOrder.ts`), with a timestamp fallback for pre-backfill
+  rows. Never reconstruct order from timestamps directly — a date window can
+  cut a thread mid-way and timestamps can skew.
+- The Analytics view analyses **turns by default**; the "Analyse by" toggle
+  switches to conversation grain via `lib/analytics/conversationGrain.ts`
+  (one synthetic row per session: final-turn outcome, summed cost/tokens/tool
+  calls/latency, opening prompt, latest cumulative fields). The Users and
+  Signals tabs and the report always analyse turns — their metrics are
+  defined on turn sequences within conversations.
 - `turnTokens === 0` means "unknown", not zero — filter `> 0` before stats.
 - Quantiles (`lib/analytics/stats.ts`) use pandas-compatible linear
   interpolation so numbers match historical reports. Don't swap methods.

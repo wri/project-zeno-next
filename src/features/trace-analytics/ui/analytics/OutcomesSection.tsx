@@ -124,12 +124,19 @@ interface OutcomesSectionProps {
   readonly rows: readonly TraceRow[];
   readonly prevRows: readonly TraceRow[] | null;
   readonly daily: readonly DailyMetrics[];
+  /**
+   * Always the per-turn rows, whatever grain `rows` is at: failure follow-ups
+   * ("what did the user do next") are defined on turn sequences within a
+   * conversation and would degenerate on conversation-aggregated rows.
+   */
+  readonly turnRows: readonly TraceRow[];
 }
 
 export function OutcomesSection({
   rows,
   prevRows,
   daily,
+  turnRows,
 }: OutcomesSectionProps) {
   const [mode, setMode] = useState<FlowMode>("refined");
   const [mixDim, setMixDim] = useState<OutcomeMixDimension>("topic");
@@ -154,7 +161,10 @@ export function OutcomesSection({
     [rows, prevRows, mode, overrides]
   );
   const overlap = useMemo(() => computeErrorOverlap(rows), [rows]);
-  const followUps = useMemo(() => computeFailureFollowUps(rows), [rows]);
+  const followUps = useMemo(
+    () => computeFailureFollowUps(turnRows),
+    [turnRows]
+  );
   // Tag once for the dimension-agnostic outcome mix (topic / intent / language
   // / turn). The `mode` toggle (shared with the Sankey) swaps the outcome
   // definition used by the mix and the daily chart between the raw API labels

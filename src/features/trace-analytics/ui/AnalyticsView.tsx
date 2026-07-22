@@ -1,9 +1,16 @@
 "use client";
 
 /**
- * Analytics — server-side per-turn aggregates from the Zeno API, organised
- * into product-focused tabs. Data auto-fetches when filters change; the
- * previous window of equal length is fetched alongside for KPI deltas.
+ * Analytics — per-turn rows from the Zeno API, organised into product-focused
+ * tabs. Data auto-fetches when filters change; the previous window of equal
+ * length is fetched alongside for KPI deltas.
+ *
+ * The "Analyse by" toggle picks the unit of analysis: turns (default, one row
+ * per user prompt) or conversations (turns aggregated per session client-side
+ * — no refetch). The Users and Signals tabs and the report always analyse
+ * individual turns: their metrics (prompts per user-day, session depth,
+ * funnel, same-prompt retries) are defined on turns within conversations, so
+ * the toggle would only degrade them.
  */
 
 import { useEffect, useMemo, useRef } from "react";
@@ -39,6 +46,7 @@ import { buildUserFirstSeenMap, fetchAllUsers } from "../api/users";
 import { keepUserId } from "../lib/filters";
 import { baseThreadUrl, DEFAULT_MAX_TRACES } from "../model/config";
 import { computeDailyMetrics } from "../lib/analytics/daily";
+import { aggregateConversations } from "../lib/analytics/conversationGrain";
 import {
   computePromptUtilisation,
   computeSummaryStats,
@@ -67,7 +75,7 @@ function useFilteredRows(
 }
 
 export function AnalyticsView() {
-  const { startDate, endDate, environment, excludeInternal } =
+  const { startDate, endDate, environment, excludeInternal, grain } =
     useFiltersStore();
   const analytics = useAnalyticsStore();
   const users = useUsersStore();
@@ -142,51 +150,75 @@ export function AnalyticsView() {
     environment
   );
   // Fill `language` locally (franc) wherever the API left it null.
-  const rows = useMemo(
+  const turnRows = useMemo(
     () => withDetectedLanguage(filteredRows),
     [filteredRows]
   );
-  const prevRows = useFilteredRows(
+  // Unit of analysis: per-turn rows as fetched, or one aggregated row per
+  // conversation. Purely client-side, so toggling never refetches.
+  const conversationGrain = grain === "conversation";
+  const rows = useMemo(
+    () => (conversationGrain ? aggregateConversations(turnRows) : turnRows),
+    [conversationGrain, turnRows]
+  );
+  const prevTurnRows = useFilteredRows(
     analytics.prevRows,
     excludeInternal,
     environment
   );
+  const prevRows = useMemo(
+    () =>
+      conversationGrain ? aggregateConversations(prevTurnRows) : prevTurnRows,
+    [conversationGrain, prevTurnRows]
+  );
+  // Taxonomy keeps the pre-language-merge rows (see the Content tab comment),
+  // aggregated to match the selected grain.
+  const taxonomyRows = useMemo(
+    () =>
+      conversationGrain ? aggregateConversations(filteredRows) : filteredRows,
+    [conversationGrain, filteredRows]
+  );
   // An empty comparison window (e.g. "All time") makes every delta ±100%
   // noise — treat it the same as an unavailable window.
-  const hasPrev = analytics.prevRows !== null && prevRows.length > 0;
-  const excludedCount = rawCount - rows.length;
+  const hasPrev = analytics.prevRows !== null && prevTurnRows.length > 0;
+  const excludedCount = rawCount - turnRows.length;
 
   const range = analytics.fetchedRange ?? { startDate, endDate };
   const prevRange = previousRange(range);
 
   const daily = useMemo(() => computeDailyMetrics(rows), [rows]);
   const stats = useMemo(() => computeSummaryStats(rows), [rows]);
-  const utilisation = useMemo(() => computePromptUtilisation(rows), [rows]);
   const prevStats = useMemo(
     () => (hasPrev ? computeSummaryStats(prevRows) : null),
     [hasPrev, prevRows]
   );
+  // User-behaviour metrics (prompts per user-day, engagement segments) and the
+  // report are defined on turns, so they ignore the grain toggle.
+  const utilisation = useMemo(
+    () => computePromptUtilisation(turnRows),
+    [turnRows]
+  );
   const prevUtilisation = useMemo(
-    () => (hasPrev ? computePromptUtilisation(prevRows) : null),
-    [hasPrev, prevRows]
+    () => (hasPrev ? computePromptUtilisation(prevTurnRows) : null),
+    [hasPrev, prevTurnRows]
   );
   const segments = useMemo(
     () =>
       users.firstSeenByUser
         ? classifyUserSegments(
-            rows,
+            turnRows,
             users.firstSeenByUser,
             range.startDate,
             range.endDate
           )
         : null,
-    [rows, users.firstSeenByUser, range.startDate, range.endDate]
+    [turnRows, users.firstSeenByUser, range.startDate, range.endDate]
   );
   const prevSegments = useMemo(
     () =>
       hasPrev && users.firstSeenByUser
         ? classifyUserSegments(
-            prevRows,
+            prevTurnRows,
             users.firstSeenByUser,
             prevRange.startDate,
             prevRange.endDate
@@ -194,23 +226,27 @@ export function AnalyticsView() {
         : null,
     [
       hasPrev,
-      prevRows,
+      prevTurnRows,
       users.firstSeenByUser,
       prevRange.startDate,
       prevRange.endDate,
     ]
   );
 
+  const reportStats = useMemo(
+    () => (conversationGrain ? computeSummaryStats(turnRows) : stats),
+    [conversationGrain, turnRows, stats]
+  );
   const reportContext = useMemo(
     () => ({
       startDate: range.startDate,
       endDate: range.endDate,
-      stats,
+      stats: reportStats,
       utilisation,
       segments,
       totalKnownUsers: users.firstSeenByUser?.size ?? 0,
     }),
-    [range, stats, utilisation, segments, users.firstSeenByUser]
+    [range, reportStats, utilisation, segments, users.firstSeenByUser]
   );
 
   const threadUrl = baseThreadUrl(environment);
@@ -219,7 +255,11 @@ export function AnalyticsView() {
   return (
     <Flex direction="column" gap={5}>
       <PageHeader
-        eyebrow="Zeno API · per-turn aggregates"
+        eyebrow={
+          conversationGrain
+            ? "Zeno API · conversation aggregates"
+            : "Zeno API · per-turn aggregates"
+        }
         title="Trace Analytics"
         description="User behaviour and app analytics for the GNW agent. Data refreshes
           automatically when you change the filters, and headline numbers compare
@@ -233,7 +273,7 @@ export function AnalyticsView() {
         borderRadius="sm"
         p={4}
       >
-        <FiltersBar />
+        <FiltersBar showGrain />
         <Flex
           gap={3}
           mt={3}
@@ -256,7 +296,10 @@ export function AnalyticsView() {
             <>
               <Text>
                 Data as of {new Date(analytics.fetchedAt).toLocaleTimeString()}{" "}
-                · {formatCount(rows.length)} traces
+                ·{" "}
+                {conversationGrain
+                  ? `${formatCount(rows.length)} conversations (from ${formatCount(turnRows.length)} turns)`
+                  : `${formatCount(rows.length)} traces`}
                 {excludedCount > 0
                   ? ` (${formatCount(excludedCount)} internal/machine excluded)`
                   : ""}
@@ -279,6 +322,15 @@ export function AnalyticsView() {
         <InlineAlert
           status="warning"
           message="Start date must be on or before end date."
+        />
+      ) : null}
+      {conversationGrain ? (
+        <InlineAlert
+          status="info"
+          title="Analysing whole conversations"
+          message={
+            "Each row is one conversation: outcome = how the final turn ended, cost/tokens/tool calls = totals across its turns, latency = total agent time, prompt = the opening ask, dated by the first turn. The Users and Signals tabs and the report always analyse individual turns."
+          }
         />
       ) : null}
       {analytics.status === "error" && analytics.error ? (
@@ -352,12 +404,15 @@ export function AnalyticsView() {
               reportContext={reportContext}
               baseThreadUrl={threadUrl}
               prevRangeLabel={`${formatReportDate(prevRange.startDate)} → ${formatReportDate(prevRange.endDate)}`}
+              grain={grain}
             />
           </Tabs.Content>
 
+          {/* Users and Signals always analyse turns: their metrics are defined
+              on turns within conversations (see the module docstring). */}
           <Tabs.Content value="users">
             <UsersTab
-              rows={rows}
+              rows={turnRows}
               segments={segments}
               startDate={range.startDate}
               emailByUserId={users.emailByUserId}
@@ -367,8 +422,8 @@ export function AnalyticsView() {
 
           <Tabs.Content value="signals">
             <Flex direction="column" gap={6}>
-              <JourneyFunnelSection rows={rows} />
-              <UnmetDemandSection rows={rows} />
+              <JourneyFunnelSection rows={turnRows} />
+              <UnmetDemandSection rows={turnRows} />
             </Flex>
           </Tabs.Content>
 
@@ -378,6 +433,7 @@ export function AnalyticsView() {
                 rows={rows}
                 prevRows={hasPrev ? prevRows : null}
                 daily={daily}
+                turnRows={turnRows}
               />
               <ToolUsageSection rows={rows} />
             </Flex>
@@ -392,7 +448,7 @@ export function AnalyticsView() {
               <PromptSection rows={rows} />
               {/* Taxonomy tags from the pre-merge rows so the language axis can
                   compare the raw API value against independent detection. */}
-              <TaxonomySection rows={filteredRows} />
+              <TaxonomySection rows={taxonomyRows} />
               <StarterMixSection rows={rows} />
               <GnwUsageSection rows={rows} />
             </Flex>
