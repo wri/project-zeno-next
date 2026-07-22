@@ -31,6 +31,9 @@ describe("mapTraceRow", () => {
       primary_dataset_name: "Tree cover loss",
       has_insight: true,
       is_global: false,
+      turn_index: 3,
+      insight_created_this_turn: true,
+      datasets_analysed_this_turn: ["Fires", "", null],
     });
 
     expect(row.traceId).toBe("trace-1");
@@ -39,6 +42,9 @@ describe("mapTraceRow", () => {
     expect(row.datasetsAnalysed).toBe("Tree cover loss");
     expect(row.toolCallCount).toBe(3);
     expect(row.hasInternalError).toBe(true);
+    expect(row.turnIndex).toBe(3);
+    expect(row.insightCreatedThisTurn).toBe(true);
+    expect(row.datasetsAnalysedThisTurn).toBe("Fires");
   });
 
   it("tolerates missing optional fields", () => {
@@ -48,6 +54,10 @@ describe("mapTraceRow", () => {
     expect(row.prompt).toBe("");
     expect(row.toolCallCount).toBe(0);
     expect(row.hasInternalError).toBe(false);
+    // Pre-backfill rows carry no turn info.
+    expect(row.turnIndex).toBeNull();
+    expect(row.insightCreatedThisTurn).toBeNull();
+    expect(row.datasetsAnalysedThisTurn).toBe("");
   });
 });
 

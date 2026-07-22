@@ -15,6 +15,7 @@
 import type { TraceRow } from "../../model/types";
 import { normalizePrompt } from "../format";
 import { TIMEOUT_SUSPECT_SECONDS } from "../../model/config";
+import { compareTurnOrder, isEarlierTurn } from "./turnOrder";
 
 export type RefinedOutcome =
   | "ANSWER_CLEAN"
@@ -51,17 +52,21 @@ export interface RefinedRow {
 
 const FAILURE_OUTCOMES = new Set(["SOFT_ERROR", "ERROR", "EMPTY"]);
 
-/** Earliest tool-using timestamp per session (for answered-from-context). */
+/**
+ * Earliest tool-using turn per session (for answered-from-context), ordered
+ * by the server-stored turnIndex with a timestamp fallback for pre-backfill
+ * rows.
+ */
 function earliestToolTurnBySession(
   rows: readonly TraceRow[]
-): Map<string, string> {
-  const earliest = new Map<string, string>();
+): Map<string, TraceRow> {
+  const earliest = new Map<string, TraceRow>();
   for (const row of rows) {
     const sessionId = String(row.sessionId ?? "").trim();
-    if (!sessionId || !row.timestamp || row.toolCallCount <= 0) continue;
+    if (!sessionId || row.toolCallCount <= 0) continue;
     const current = earliest.get(sessionId);
-    if (!current || row.timestamp < current) {
-      earliest.set(sessionId, row.timestamp);
+    if (!current || isEarlierTurn(row, current)) {
+      earliest.set(sessionId, row);
     }
   }
   return earliest;
@@ -94,7 +99,7 @@ export function refineOutcomes(
 
 function classify(
   row: TraceRow,
-  toolStartBySession: Map<string, string>
+  toolStartBySession: Map<string, TraceRow>
 ): RefinedOutcome {
   if (!row.prompt.trim()) return "NO_PROMPT";
 
@@ -109,7 +114,7 @@ function classify(
       const toolStart = sessionId
         ? toolStartBySession.get(sessionId)
         : undefined;
-      if (toolStart && row.timestamp && row.timestamp > toolStart) {
+      if (toolStart && isEarlierTurn(toolStart, row)) {
         return "CONTEXT_ANSWER";
       }
       return "DEFER_OTHER";
@@ -142,7 +147,7 @@ export function computeFailureFollowUps(
   const bySession = new Map<string, TraceRow[]>();
   for (const row of rows) {
     const sessionId = String(row.sessionId ?? "").trim();
-    if (!sessionId || !row.timestamp) continue;
+    if (!sessionId || (row.turnIndex == null && !row.timestamp)) continue;
     const bucket = bySession.get(sessionId) ?? [];
     bucket.push(row);
     bySession.set(sessionId, bucket);
@@ -152,9 +157,7 @@ export function computeFailureFollowUps(
   let retriedSamePrompt = 0;
   let endedSession = 0;
   for (const bucket of bySession.values()) {
-    const ordered = [...bucket].sort((a, b) =>
-      String(a.timestamp).localeCompare(String(b.timestamp))
-    );
+    const ordered = [...bucket].sort(compareTurnOrder);
     ordered.forEach((row, i) => {
       if (!FAILURE_OUTCOMES.has(String(row.outcome))) return;
       failures += 1;
