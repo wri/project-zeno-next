@@ -58,10 +58,13 @@ export function parseStreamMessage(
       trace_id: traceId,
     };
   } else if (messageType === "tools") {
-    // Check if this is an error from a tool
+    // Check if this is an error from a tool. `status` is the canonical
+    // signal; the "Error:" prefix is a legacy one from older backend tool
+    // errors that carried no status. Prefix only — a successful result that
+    // merely mentions "Error:" mid-content must not be classified as one.
     if (
       kwargs.status === "error" ||
-      (typeof content === "string" && content.includes("Error:"))
+      (typeof content === "string" && content.startsWith("Error:"))
     ) {
       return {
         type: "error",

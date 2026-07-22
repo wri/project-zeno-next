@@ -31,6 +31,19 @@ export function formatToolName(toolName: string): string {
   return TOOL_DISPLAY[toolName]?.active ?? `Processing ${toolName}`;
 }
 
+/**
+ * Whether the tool is a user-visible pipeline step with display strings.
+ *
+ * Error results from tools outside this map are not surfaced as chat
+ * warnings: the backend uses `status: "error"` tool messages as guidance to
+ * the agent (e.g. create_dashboard's "selection spans 2 areas — ask the user
+ * which one"), and the agent always follows up with text that explains the
+ * situation in its own words.
+ */
+export function isKnownTool(toolName?: string): boolean {
+  return toolName !== undefined && toolName in TOOL_DISPLAY;
+}
+
 // Recoverable tool error: the agent continues with a follow-up assistant
 // message, so the wording names the failed step and prompts retry rather
 // than implying the chat is broken.

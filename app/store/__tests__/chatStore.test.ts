@@ -248,6 +248,139 @@ describe("chatStore ff (agent profile default)", () => {
   });
 });
 
+// A Response-like object that streams the given NDJSON lines in one chunk,
+// then reports the stream as done — the happy-path counterpart of
+// makeAbortableResponse.
+function makeNdjsonResponse(lines: string[]): Response {
+  const encoder = new TextEncoder();
+  let sent = false;
+  const reader = {
+    read: () => {
+      if (sent) {
+        return Promise.resolve({ value: undefined, done: true });
+      }
+      sent = true;
+      return Promise.resolve({
+        value: encoder.encode(lines.join("\n") + "\n"),
+        done: false,
+      });
+    },
+    releaseLock: () => {},
+    cancel: () => Promise.resolve(),
+  };
+  return {
+    ok: true,
+    headers: new Headers(),
+    body: { getReader: () => reader },
+  } as unknown as Response;
+}
+
+// One NDJSON line as the backend packs it: an error-status ToolMessage from
+// the tools node. `name === null` mimics the backend's generic tool-error
+// funnel, which builds ToolMessages without a name.
+function errorToolLine(name: string | null, content: string): string {
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-21T00:00:00.000Z",
+    update: JSON.stringify({
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["langchain", "schema", "messages", "ToolMessage"],
+          kwargs: {
+            content,
+            type: "tool",
+            ...(name ? { name } : {}),
+            id: "msg-1",
+            tool_call_id: "tc-1",
+            status: "error",
+          },
+        },
+      ],
+    }),
+  });
+}
+
+describe("chatStore recoverable tool errors", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    useChatStore.getState().clearToolSteps();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const warnings = () =>
+    useChatStore.getState().messages.filter((m) => m.type === "warning");
+
+  it("renders a warning for an error from a known pipeline tool", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      makeNdjsonResponse([
+        errorToolLine("generate_insights", "Failed to generate chart data."),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("hello");
+
+    expect(warnings()).toHaveLength(1);
+    expect(warnings()[0].message).toBe(
+      "Unable to generate a chart. Please try again."
+    );
+  });
+
+  it("suppresses the warning for agent-guidance errors from tools outside the display map", async () => {
+    // create_dashboard returns status=error as instructions to the agent
+    // ("ask the user which area") — not a user-facing failure.
+    vi.mocked(apiFetch).mockResolvedValue(
+      makeNdjsonResponse([
+        errorToolLine(
+          "create_dashboard",
+          "The current selection spans 2 areas. Ask the user which one."
+        ),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("hello");
+
+    expect(warnings()).toHaveLength(0);
+  });
+
+  it("keeps the failed step in the reasoning timeline, marked as an error", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      makeNdjsonResponse([
+        errorToolLine(
+          "create_dashboard",
+          "The current selection spans 2 areas. Ask the user which one."
+        ),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("hello");
+
+    const step = useChatStore
+      .getState()
+      .toolSteps.find((s) => s.name === "create_dashboard");
+    expect(step).toBeDefined();
+    expect(step?.status).toBe("error");
+  });
+
+  it("stays silent for a nameless error from the backend's generic tool-error funnel", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      makeNdjsonResponse([
+        errorToolLine(null, "Tool 'x' failed unexpectedly (KeyError)."),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("hello");
+
+    expect(warnings()).toHaveLength(0);
+    expect(useChatStore.getState().toolSteps).toHaveLength(0);
+  });
+});
+
 const suggestion = (areaName: string): AnalyseSuggestion => ({
   areaName,
   datasetId: 4,

@@ -142,7 +142,14 @@ function Reasoning({
                     <Timeline.Indicator boxSize="8px" top={1} left={1} />
                   </Timeline.Connector>
                   <Timeline.Content>
-                    <Timeline.Title>{formatToolName(tool.name)}</Timeline.Title>
+                    <Timeline.Title>
+                      {formatToolName(tool.name)}
+                      {tool.status === "error" && (
+                        <Text as="span" fontSize="xs" color="fg.muted">
+                          (did not complete)
+                        </Text>
+                      )}
+                    </Timeline.Title>
                     <Box fontSize="xs" maxW="100%">
                       <Markdown
                         remarkPlugins={[remarkBreaks]}
