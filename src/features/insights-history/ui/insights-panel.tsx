@@ -91,6 +91,12 @@ interface InsightCardItem {
   createdAt: string;
   verification: InsightVerification;
   /**
+   * The parent insight's id — the grouping key that folds an analysis's many
+   * charts into one card on the dashboard. Undefined for unsaved in-session
+   * analyses (each live widget stands alone).
+   */
+  recordId?: string;
+  /**
    * The parent insight's backend id — what "Add to dashboard" posts. Present
    * only for real, persisted AI insights; undefined for verified fixtures and
    * unsaved in-session analyses, which can't be added to a dashboard by id.
@@ -109,6 +115,7 @@ function recordToItems(record: InsightRecord): InsightCardItem[] {
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,
+    recordId: record.id,
     addableInsightId,
   }));
 }
@@ -136,6 +143,26 @@ function mergeById(...lists: InsightCardItem[][]): InsightCardItem[] {
       seen.add(id);
       out.push(item);
     }
+  }
+  return out;
+}
+
+/**
+ * Folds an analysis's many charts into a single card, keeping the first chart
+ * as the representative. Used on the dashboard, where the unit of action is the
+ * whole insight (one "Add to dashboard" adds all its charts) — showing one card
+ * per chart would make the charts of one analysis toggle together. Items with
+ * no `recordId` (unsaved in-session widgets) fall back to their chart id, so
+ * they are never merged with each other.
+ */
+function collapseByRecord(items: InsightCardItem[]): InsightCardItem[] {
+  const seen = new Set<string>();
+  const out: InsightCardItem[] = [];
+  for (const item of items) {
+    const key = item.recordId ?? itemId(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
   }
   return out;
 }
@@ -334,6 +361,9 @@ function InsightsList({
 }) {
   const currentThreadId = useChatStore((s) => s.currentThreadId);
   const liveWidgets = useInsightStore(useShallow((s) => s.insights));
+  const isDashboard = useViewContextStore(
+    (s) => s.viewContext?.page === "dashboard"
+  );
   const dashboardArea = useCurrentDashboardArea();
   // On a dashboard, scope the AI list to its area (both aoi params travel
   // together). Off a dashboard, or when the "This area" toggle is off, the query
@@ -347,13 +377,27 @@ function InsightsList({
   const { insights: allInsights } = useUserInsights(aiScope);
 
   const items = useMemo<InsightCardItem[]>(() => {
-    if (filter === "verified") return verifiedInsights.flatMap(recordToItems);
-    if (filter === "ai") return allInsights.flatMap(recordToItems);
-    const historical = currentThreadId
-      ? threadInsights.flatMap(recordToItems)
-      : [];
-    return mergeById(historical, liveWidgets.map(liveWidgetToItem));
-  }, [filter, allInsights, threadInsights, liveWidgets, currentThreadId]);
+    const base =
+      filter === "verified"
+        ? verifiedInsights.flatMap(recordToItems)
+        : filter === "ai"
+          ? allInsights.flatMap(recordToItems)
+          : mergeById(
+              currentThreadId ? threadInsights.flatMap(recordToItems) : [],
+              liveWidgets.map(liveWidgetToItem)
+            );
+    // On a dashboard the unit of action is the whole analysis, so fold each
+    // insight's charts into one card; on the map each chart is its own
+    // (independently show-on-map-able) card.
+    return isDashboard ? collapseByRecord(base) : base;
+  }, [
+    filter,
+    allInsights,
+    threadInsights,
+    liveWidgets,
+    currentThreadId,
+    isDashboard,
+  ]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedIndex = selectedId
