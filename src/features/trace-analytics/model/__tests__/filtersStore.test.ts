@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { presetRange } from "../filtersStore";
+import { presetRange, useFiltersStore } from "../filtersStore";
 import { EARLIEST_DATA_DATE } from "../config";
 import { todayIso } from "../../lib/format";
+
+describe("analysis grain", () => {
+  it("defaults to per-turn analysis and toggles to conversations", () => {
+    expect(useFiltersStore.getState().grain).toBe("turn");
+    useFiltersStore.getState().setGrain("conversation");
+    expect(useFiltersStore.getState().grain).toBe("conversation");
+    useFiltersStore.getState().setGrain("turn");
+  });
+});
 
 describe("presetRange", () => {
   it("computes day-based presets relative to today", () => {
