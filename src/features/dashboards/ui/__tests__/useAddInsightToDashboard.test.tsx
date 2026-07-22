@@ -90,7 +90,7 @@ describe("useAddInsightToDashboard", () => {
     act(() => result.current.toggle());
 
     await waitFor(() =>
-      expect(addInsightWidget).toHaveBeenCalledWith("d1", "ins-new")
+      expect(addInsightWidget).toHaveBeenCalledWith("d1", "ins-new", undefined)
     );
     expect(deleteWidget).not.toHaveBeenCalled();
   });

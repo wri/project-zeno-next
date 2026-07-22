@@ -39,7 +39,7 @@ import {
 // the dashboards pages into its bundle, and so mounting the pane on a dashboard
 // can't create a feature import cycle — matching how the app already reaches
 // dashboards/ui (e.g. WidgetMessage → AddToDashboardToggle).
-import { useAddInsightToDashboard } from "@/src/features/dashboards/ui/useAddInsightToDashboard";
+import { useAddChartToDashboard } from "@/src/features/dashboards/ui/useAddChartToDashboard";
 import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrentDashboardArea";
 import { useUserInsights } from "./use-user-insights";
 import { verifiedInsights } from "../lib/verified-fixtures";
@@ -91,15 +91,10 @@ interface InsightCardItem {
   createdAt: string;
   verification: InsightVerification;
   /**
-   * The parent insight's id — the grouping key that folds an analysis's many
-   * charts into one card on the dashboard. Undefined for unsaved in-session
-   * analyses (each live widget stands alone).
-   */
-  recordId?: string;
-  /**
-   * The parent insight's backend id — what "Add to dashboard" posts. Present
-   * only for real, persisted AI insights; undefined for verified fixtures and
-   * unsaved in-session analyses, which can't be added to a dashboard by id.
+   * The parent insight's backend id — the analysis a chart belongs to, used to
+   * find (or create) that analysis's dashboard widget when adding this chart.
+   * Present only for real, persisted AI insights; undefined for verified
+   * fixtures and unsaved in-session analyses, which can't be added by id.
    */
   addableInsightId?: string;
 }
@@ -115,7 +110,6 @@ function recordToItems(record: InsightRecord): InsightCardItem[] {
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,
-    recordId: record.id,
     addableInsightId,
   }));
 }
@@ -143,26 +137,6 @@ function mergeById(...lists: InsightCardItem[][]): InsightCardItem[] {
       seen.add(id);
       out.push(item);
     }
-  }
-  return out;
-}
-
-/**
- * Folds an analysis's many charts into a single card, keeping the first chart
- * as the representative. Used on the dashboard, where the unit of action is the
- * whole insight (one "Add to dashboard" adds all its charts) — showing one card
- * per chart would make the charts of one analysis toggle together. Items with
- * no `recordId` (unsaved in-session widgets) fall back to their chart id, so
- * they are never merged with each other.
- */
-function collapseByRecord(items: InsightCardItem[]): InsightCardItem[] {
-  const seen = new Set<string>();
-  const out: InsightCardItem[] = [];
-  for (const item of items) {
-    const key = item.recordId ?? itemId(item);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(item);
   }
   return out;
 }
@@ -361,9 +335,6 @@ function InsightsList({
 }) {
   const currentThreadId = useChatStore((s) => s.currentThreadId);
   const liveWidgets = useInsightStore(useShallow((s) => s.insights));
-  const isDashboard = useViewContextStore(
-    (s) => s.viewContext?.page === "dashboard"
-  );
   const dashboardArea = useCurrentDashboardArea();
   // On a dashboard, scope the AI list to its area (both aoi params travel
   // together). Off a dashboard, or when the "This area" toggle is off, the query
@@ -376,28 +347,17 @@ function InsightsList({
   });
   const { insights: allInsights } = useUserInsights(aiScope);
 
+  // One card per chart on every surface: the map shows each chart on the map,
+  // and the dashboard adds each chart to the grid independently (its widget's
+  // config.chartIds tracks which are shown).
   const items = useMemo<InsightCardItem[]>(() => {
-    const base =
-      filter === "verified"
-        ? verifiedInsights.flatMap(recordToItems)
-        : filter === "ai"
-          ? allInsights.flatMap(recordToItems)
-          : mergeById(
-              currentThreadId ? threadInsights.flatMap(recordToItems) : [],
-              liveWidgets.map(liveWidgetToItem)
-            );
-    // On a dashboard the unit of action is the whole analysis, so fold each
-    // insight's charts into one card; on the map each chart is its own
-    // (independently show-on-map-able) card.
-    return isDashboard ? collapseByRecord(base) : base;
-  }, [
-    filter,
-    allInsights,
-    threadInsights,
-    liveWidgets,
-    currentThreadId,
-    isDashboard,
-  ]);
+    if (filter === "verified") return verifiedInsights.flatMap(recordToItems);
+    if (filter === "ai") return allInsights.flatMap(recordToItems);
+    return mergeById(
+      currentThreadId ? threadInsights.flatMap(recordToItems) : [],
+      liveWidgets.map(liveWidgetToItem)
+    );
+  }, [filter, allInsights, threadInsights, liveWidgets, currentThreadId]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedIndex = selectedId
@@ -457,13 +417,13 @@ function InsightCard({
   );
   const addInsight = useInsightStore((s) => s.addInsight);
   const removeInsight = useInsightStore((s) => s.removeInsight);
-  const dashboard = useAddInsightToDashboard(item.addableInsightId);
+  const chart = useAddChartToDashboard(item.addableInsightId, item.widget.id);
   const title = item.widget.title;
 
-  // On a dashboard the card's footer toggle adds/removes the analysis to the
-  // grid (show-on-map has no target there); elsewhere it drives the on-map
+  // On a dashboard the card's footer toggle adds/removes this chart to the grid
+  // (show-on-map has no target there); elsewhere it drives the on-map
   // InsightWorkspace overlay.
-  if (dashboard.active) {
+  if (chart.active) {
     return (
       <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
         <CatalogCard
@@ -472,17 +432,17 @@ function InsightCard({
           typeLabelColor={INSIGHT_LABEL_COLOR}
           title={title}
           description={cardDescription(item)}
-          selected={dashboard.added}
+          selected={chart.shown}
           selectedBg={INSIGHT_SELECTED_BG}
-          showOnMap={dashboard.added}
-          onShowOnMapChange={() => dashboard.toggle()}
-          toggleLabel={dashboard.added ? "On dashboard" : "Add to dashboard"}
+          showOnMap={chart.shown}
+          onShowOnMapChange={() => chart.toggle()}
+          toggleLabel={chart.shown ? "On dashboard" : "Add to dashboard"}
           toggleAriaLabel={
-            dashboard.added
+            chart.shown
               ? `Remove ${title} from dashboard`
               : `Add ${title} to dashboard`
           }
-          toggleDisabled={!dashboard.addable || dashboard.pending}
+          toggleDisabled={!chart.addable || chart.pending}
           onInfoClick={onOpen}
           infoTooltip="View analysis"
           badge={<VerificationBadge verification={item.verification} />}

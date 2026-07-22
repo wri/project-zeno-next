@@ -183,7 +183,13 @@ export function useAddInsightWidget(dashboardId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (insightId: string) => addInsightWidget(dashboardId, insightId),
+    mutationFn: ({
+      insightId,
+      config,
+    }: {
+      insightId: string;
+      config?: Record<string, unknown>;
+    }) => addInsightWidget(dashboardId, insightId, config),
     // Return the invalidation promise so the mutation stays `pending` until the
     // detail refetch lands. This add is not optimistic — `added` only flips once
     // the refetch reflects the new widget — so without this the button/switch

@@ -68,15 +68,18 @@ export function useAddInsightToDashboard(
           }),
       });
     } else {
-      addWidget.mutate(insightId, {
-        onError: () =>
-          toaster.create({
-            title: "Couldn't add to dashboard",
-            description: "The analysis wasn't added. Please try again.",
-            type: "error",
-            duration: 4000,
-          }),
-      });
+      addWidget.mutate(
+        { insightId },
+        {
+          onError: () =>
+            toaster.create({
+              title: "Couldn't add to dashboard",
+              description: "The analysis wasn't added. Please try again.",
+              type: "error",
+              duration: 4000,
+            }),
+        }
+      );
     }
   };
 
