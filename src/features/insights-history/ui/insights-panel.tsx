@@ -170,6 +170,13 @@ export function InsightsPanel() {
   const isDashboard = useViewContextStore(
     (s) => s.viewContext?.page === "dashboard"
   );
+  // The AI list can only actually scope once the dashboard's AOI is known
+  // (detail query resolved). Until then the switch is disabled and reads
+  // unchecked so its "This area only" label never overstates a scope the list
+  // isn't applying — `InsightsList` falls back to the unscoped query the same
+  // way (aiScope = areaScoped && dashboardArea).
+  const dashboardArea = useCurrentDashboardArea();
+  const areaScopeReady = !!dashboardArea;
 
   const leftPx = getCatalogLeftPx(isChatFullSize);
   const compactSlide = !isChatFullSize;
@@ -228,7 +235,8 @@ export function InsightsPanel() {
               {showAreaToggle && (
                 <Switch.Root
                   size="sm"
-                  checked={areaScoped}
+                  checked={areaScoped && areaScopeReady}
+                  disabled={!areaScopeReady}
                   onCheckedChange={(e: { checked: boolean }) =>
                     setAreaScoped(e.checked)
                   }

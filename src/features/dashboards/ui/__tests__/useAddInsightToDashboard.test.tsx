@@ -95,6 +95,22 @@ describe("useAddInsightToDashboard", () => {
     expect(deleteWidget).not.toHaveBeenCalled();
   });
 
+  it("ignores a second add while the first is still settling (no duplicate widget)", async () => {
+    const { result } = renderHook(() => useAddInsightToDashboard("ins-new"), {
+      wrapper: makeWrapper(dashboard),
+    });
+
+    act(() => result.current.toggle());
+    await waitFor(() => expect(addInsightWidget).toHaveBeenCalledTimes(1));
+
+    // The POST has resolved, but the detail refetch (mocked to hang) has not,
+    // so the mutation must stay pending and a fast second click is a no-op —
+    // otherwise it would re-POST and create a duplicate widget.
+    expect(result.current.pending).toBe(true);
+    act(() => result.current.toggle());
+    expect(addInsightWidget).toHaveBeenCalledTimes(1);
+  });
+
   it("removes the insight's widget when it is already on the dashboard", async () => {
     const { result } = renderHook(
       () => useAddInsightToDashboard("already-added"),
