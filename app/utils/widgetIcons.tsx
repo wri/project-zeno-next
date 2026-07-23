@@ -25,6 +25,7 @@ export const WidgetIconComponent: Record<InsightWidget["type"], Icon> = {
   scatter: ChartScatterIcon,
   table: ListNumbersIcon,
   "dataset-card": StackIcon,
+  "imagery-card": StackIcon,
 };
 
 /** Element-instance map for inline rendering without size/color overrides. */

@@ -213,7 +213,9 @@ function MessageBubble({
     [blogCitationsEnabled, citedArticlesBySlug]
   );
   const analysisWidgets = isAssistant
-    ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
+    ? (message.widgets ?? []).filter(
+        (w) => w.type !== "dataset-card" && w.type !== "imagery-card"
+      )
     : [];
   const context = isUser ? message.context : undefined;
   const hasContext =

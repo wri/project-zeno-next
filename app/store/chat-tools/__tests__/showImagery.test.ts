@@ -34,7 +34,9 @@ vi.mock("@/app/hooks/useErrorHandler", () => ({
 }));
 
 import { showImageryTool } from "../showImagery";
-import type { ImageryInfo, StreamMessage } from "@/app/types/chat";
+import type { ChatMessage, ImageryInfo, StreamMessage } from "@/app/types/chat";
+
+type AddMessageFn = (message: Omit<ChatMessage, "id">) => void;
 
 const timestamp = new Date().toISOString();
 
@@ -80,8 +82,11 @@ function mockFetch(response: Partial<Response> | Error) {
 }
 
 describe("showImageryTool", () => {
+  let addMessage: ReturnType<typeof vi.fn<AddMessageFn>>;
+
   beforeEach(() => {
     mapState.layers = [];
+    addMessage = vi.fn<AddMessageFn>();
     vi.clearAllMocks();
     vi.unstubAllGlobals();
   });
@@ -89,7 +94,7 @@ describe("showImageryTool", () => {
   it("adds a raster layer keyed on the mosaic id with TileJSON tuning", async () => {
     mockFetch({});
 
-    await showImageryTool(baseMsg());
+    await showImageryTool(baseMsg(), addMessage);
 
     expect(mapState.addLayer).toHaveBeenCalledOnce();
     const layer = mapState.addLayer.mock.calls[0][0];
@@ -109,7 +114,7 @@ describe("showImageryTool", () => {
   it("requests the TileJSON without auth headers for non-API hosts", async () => {
     const fetchMock = mockFetch({});
 
-    await showImageryTool(baseMsg());
+    await showImageryTool(baseMsg(), addMessage);
 
     expect(fetchMock).toHaveBeenCalledWith(imagery.tilejson_url, {
       headers: {},
@@ -129,7 +134,7 @@ describe("showImageryTool", () => {
       },
     ] as Layer[];
 
-    await showImageryTool(baseMsg());
+    await showImageryTool(baseMsg(), addMessage);
 
     const ids = mapState.layers.map((l) => l.id);
     expect(ids).toEqual(["dataset-4", "imagery-abc123", "imagery-old"]);
@@ -142,8 +147,8 @@ describe("showImageryTool", () => {
   it("re-running the same mosaic upserts instead of stacking", async () => {
     mockFetch({});
 
-    await showImageryTool(baseMsg());
-    await showImageryTool(baseMsg());
+    await showImageryTool(baseMsg(), addMessage);
+    await showImageryTool(baseMsg(), addMessage);
 
     expect(
       mapState.layers.filter((l) => l.id === "imagery-abc123")
@@ -151,19 +156,40 @@ describe("showImageryTool", () => {
     expect(mapState.layers[0].visible).toBe(true);
   });
 
+  it("adds a Satellite Imagery data card to the chat", async () => {
+    mockFetch({});
+
+    await showImageryTool(baseMsg(), addMessage);
+
+    expect(addMessage).toHaveBeenCalledOnce();
+    const msg = addMessage.mock.calls[0][0];
+    expect(msg.type).toBe("widget");
+    const widget = msg.widgets![0];
+    expect(widget).toMatchObject({
+      type: "imagery-card",
+      title: "Satellite Imagery",
+      description: "Jun 12–16 · cloud <50% · Sentinel-2",
+    });
+    // The card thumbnail is computed from the TileJSON bounds/zoom range.
+    expect((widget.data as { thumbnail_url?: string }).thumbnail_url).toMatch(
+      /^https:\/\/tiles\.example\.com\/\d+\/\d+\/\d+\.png/
+    );
+  });
+
   it("does nothing when the message carries no imagery", async () => {
     const fetchMock = mockFetch({});
 
-    await showImageryTool(baseMsg({ imagery: undefined }));
+    await showImageryTool(baseMsg({ imagery: undefined }), addMessage);
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(mapState.addLayer).not.toHaveBeenCalled();
+    expect(addMessage).not.toHaveBeenCalled();
   });
 
   it("surfaces an auth error and adds no layer on 401", async () => {
     mockFetch({ ok: false, status: 401 });
 
-    await showImageryTool(baseMsg());
+    await showImageryTool(baseMsg(), addMessage);
 
     expect(showApiError).toHaveBeenCalledOnce();
     expect(mapState.addLayer).not.toHaveBeenCalled();
@@ -172,14 +198,26 @@ describe("showImageryTool", () => {
   it("adds no layer and does not throw on a non-ok response", async () => {
     mockFetch({ ok: false, status: 404 });
 
-    await expect(showImageryTool(baseMsg())).resolves.toBeUndefined();
+    await expect(
+      showImageryTool(baseMsg(), addMessage)
+    ).resolves.toBeUndefined();
     expect(mapState.addLayer).not.toHaveBeenCalled();
   });
 
   it("adds no layer and does not throw when the fetch rejects", async () => {
     mockFetch(new Error("network down"));
 
-    await expect(showImageryTool(baseMsg())).resolves.toBeUndefined();
+    await expect(
+      showImageryTool(baseMsg(), addMessage)
+    ).resolves.toBeUndefined();
     expect(mapState.addLayer).not.toHaveBeenCalled();
+  });
+
+  it("adds no chat card when the mosaic is unavailable", async () => {
+    mockFetch({ ok: false, status: 404 });
+
+    await showImageryTool(baseMsg(), addMessage);
+
+    expect(addMessage).not.toHaveBeenCalled();
   });
 });

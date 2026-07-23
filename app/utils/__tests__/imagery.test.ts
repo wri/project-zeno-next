@@ -4,6 +4,7 @@ import {
   buildImageryGroup,
   captureMetaLabel,
   formatCaptureDate,
+  imageryCardDescription,
   imageryCloudNote,
   imageryLayerId,
   imageryLayerTitle,
@@ -101,6 +102,49 @@ describe("imageryCloudNote", () => {
     expect(imageryCloudNote({ max_cloud_cover: 20 })).toBeUndefined();
     expect(imageryCloudNote({ max_cloud_cover: 10 })).toBeUndefined();
     expect(imageryCloudNote({})).toBeUndefined();
+  });
+});
+
+describe("imageryCardDescription", () => {
+  it("uses the tight in-month range with cloud limit and source", () => {
+    expect(
+      imageryCardDescription({
+        date_start: "2026-06-12",
+        date_end: "2026-06-16",
+        max_cloud_cover: 50,
+      })
+    ).toBe("Jun 12–16 · cloud <50% · Sentinel-2");
+  });
+
+  it("spells out cross-month and cross-year ranges", () => {
+    expect(
+      imageryCardDescription({
+        date_start: "2026-05-28",
+        date_end: "2026-06-03",
+      })
+    ).toBe("May 28 – Jun 3 · Sentinel-2");
+    expect(
+      imageryCardDescription({
+        date_start: "2025-12-28",
+        date_end: "2026-01-04",
+      })
+    ).toBe("Dec 28, 2025 – Jan 4, 2026 · Sentinel-2");
+  });
+
+  it("falls back to the target date, then to the source alone", () => {
+    expect(
+      imageryCardDescription({ target_date: "2026-06-15", max_cloud_cover: 20 })
+    ).toBe("Jun 15, 2026 · cloud <20% · Sentinel-2");
+    expect(imageryCardDescription({})).toBe("Sentinel-2");
+  });
+
+  it("collapses a single-day range to one date", () => {
+    expect(
+      imageryCardDescription({
+        date_start: "2026-06-12",
+        date_end: "2026-06-12",
+      })
+    ).toBe("Jun 12 · Sentinel-2");
   });
 });
 

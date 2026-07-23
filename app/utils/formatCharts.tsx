@@ -1,3 +1,4 @@
+import type { InsightWidget } from "@/app/types/chat";
 import getChartColors from "./ChartColors";
 import CHART_COLOR_MAPPING, {
   DATASET_SERIES_COLORS,
@@ -105,16 +106,9 @@ function filterChartDataColumns(
  */
 export default function formatChartData(
   data: InputData[] | unknown,
-  type:
-    | "line"
-    | "bar"
-    | "table"
-    | "dataset-card"
-    | "pie"
-    | "stacked-bar"
-    | "grouped-bar"
-    | "area"
-    | "scatter",
+  // The full widget-type union so it can't drift from InsightWidget; card
+  // types never reach chart rendering (WidgetMessage short-circuits them).
+  type: InsightWidget["type"],
   xAxis?: string,
   yAxis?: string,
   datasetName?: string,
