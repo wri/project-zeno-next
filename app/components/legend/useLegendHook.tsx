@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Text } from "@chakra-ui/react";
 
 import {
+  ImageryLegendGroup,
+  isImageryGroup,
   LayerActionHandler,
   LegendContextLayer,
-  LegendLayer,
+  LegendEntry,
   LegendParam,
 } from "@/app/components/legend/types";
 import { LegendSequential } from "@/app/components/legend/LegendSequential";
@@ -12,6 +14,7 @@ import { LegendSymbolList } from "@/app/components/legend/LegendSymbolList";
 import { LegendCategorical } from "@/app/components/legend/LegendCategorical";
 import { LegendDivergent } from "@/app/components/legend/LegendDivergent";
 import useMapStore from "@/app/store/mapStore";
+import useChatStore from "@/app/store/chatStore";
 import {
   CONTEXT_LAYER_METADATA,
   DATASET_CARDS,
@@ -19,7 +22,18 @@ import {
 import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
-import { isAreaLayer } from "@/app/store/layerManagerSlice";
+import { isAreaLayer, type Layer } from "@/app/store/layerManagerSlice";
+import {
+  captureMetaLabel,
+  formatCaptureDate,
+  IMAGERY_LAYER_NAME,
+  IMAGERY_LEGEND_GROUP_ID,
+  IMAGERY_SUBTITLE,
+  imageryCloudNote,
+  imageryLegendInfo,
+  imageryLegendParams,
+  imageryThumbnailUrl,
+} from "@/app/utils/imagery";
 
 // Maps internal parameter keys to the badge label shown in the legend.
 const PARAMETER_LABELS: Record<string, string> = {
@@ -98,18 +112,69 @@ export interface LegendAoi {
   name: string;
 }
 
+/**
+ * Builds the single "Satellite Imagery" legend group from the imagery map
+ * layers (one per show_imagery capture, newest first in the layer array).
+ * Summary fields come from the newest (live) capture. Returns null when
+ * there is nothing to show.
+ */
+function buildImageryGroup(
+  imageryLayers: Layer[],
+  updating: boolean
+): ImageryLegendGroup | null {
+  if (imageryLayers.length === 0 && !updating) return null;
+
+  const live = imageryLayers[0];
+  const captures = imageryLayers.map((layer, index) => {
+    const imagery = layer.imagery!;
+    return {
+      layerId: layer.id,
+      areaLabel: imagery.aoi_names?.join(", ") || layer.name,
+      dateLabel: formatCaptureDate(imagery.target_date),
+      metaLabel: captureMetaLabel(imagery),
+      visible: layer.visible,
+      live: index === 0,
+      thumbnailUrl: layer.tileUrl
+        ? imageryThumbnailUrl(
+            layer.tileUrl,
+            layer.bounds,
+            layer.minzoom,
+            layer.maxzoom
+          )
+        : undefined,
+    };
+  });
+
+  return {
+    kind: "imagery",
+    id: IMAGERY_LEGEND_GROUP_ID,
+    title: IMAGERY_LAYER_NAME,
+    subtitle: IMAGERY_SUBTITLE,
+    opacity: (live?.opacity ?? 1) * 100,
+    params: live?.imagery ? imageryLegendParams(live.imagery) : [],
+    info: live?.imagery ? imageryLegendInfo(live.imagery) : undefined,
+    note: live?.imagery ? imageryCloudNote(live.imagery) : undefined,
+    captures,
+    areaCount: new Set(captures.map((c) => c.areaLabel)).size,
+    updating,
+    thumbnailUrl: captures[0]?.thumbnailUrl,
+  };
+}
+
 export function useLegendHook() {
-  const [layers, setLayers] = useState<LegendLayer[]>([]);
+  const [layers, setLayers] = useState<LegendEntry[]>([]);
 
   const {
     layers: managedLayers,
     setLayerOpacity,
+    setLayerVisibility,
     removeLayer,
     reorderLayers,
   } = useMapStore();
+  const isImageryUpdating = useChatStore((s) => s.isImageryUpdating);
 
   useEffect(() => {
-    const buildEntries = (): LegendLayer[] => {
+    const buildEntries = (): LegendEntry[] => {
       // First pass: build a map of parentLayerId → contextLayer data so we can
       // attach sub-layers to their parent entries in the second pass.
       const contextLayerByParentId = new Map<string, LegendContextLayer>();
@@ -132,10 +197,25 @@ export function useLegendHook() {
       // Second pass: build root-level legend entries.
       // AOI layers are surfaced as chips separately — skip them.
       // Sub-layers are embedded in their parent via contextLayer — skip them too.
-      const entries: LegendLayer[] = [];
+      // Imagery layers collapse into one group entry, placed where the first
+      // (newest) capture sits in the layer order.
+      const imageryGroup = buildImageryGroup(
+        managedLayers.filter((l) => !!l.imagery),
+        isImageryUpdating
+      );
+      let imageryGroupPushed = false;
+
+      const entries: LegendEntry[] = [];
       for (const layer of managedLayers) {
         if (layer.parentLayerId) continue;
         if (isAreaLayer(layer)) continue;
+        if (layer.imagery) {
+          if (imageryGroup && !imageryGroupPushed) {
+            entries.push(imageryGroup);
+            imageryGroupPushed = true;
+          }
+          continue;
+        }
 
         const relatedDataset = DATASET_CARDS.find(
           (d) => `dataset-${d.dataset_id}` === layer.id
@@ -159,11 +239,17 @@ export function useLegendHook() {
         });
       }
 
+      // First-run updating state: show_imagery announced but no capture has
+      // landed yet, so no imagery layer marked the group's position above.
+      if (imageryGroup && !imageryGroupPushed) {
+        entries.push(imageryGroup);
+      }
+
       return entries;
     };
 
     setLayers(buildEntries());
-  }, [managedLayers]);
+  }, [managedLayers, isImageryUpdating]);
 
   // One chip per visible area layer, using the selection name as the label.
   // The visible layer IS the scope — removing the chip removes the layer.
@@ -180,12 +266,38 @@ export function useLegendHook() {
   const handleLayerAction = useCallback<LayerActionHandler>(
     ({ action, payload }) => {
       if (action === "reorder") {
-        reorderLayers(payload.layers.map((l) => l.id));
+        // Expand legend entries to map-layer ids: the imagery group stands
+        // for all its capture layers, and each dataset root drags its context
+        // sub-layers along. Layers with no legend entry (AOI layers) keep
+        // their position at the end — reorderLayers drops any id not listed.
+        const orderedIds = payload.layers.flatMap((entry) => {
+          if (isImageryGroup(entry)) {
+            return entry.captures.map((c) => c.layerId);
+          }
+          const childIds = managedLayers
+            .filter((l) => l.parentLayerId === entry.id)
+            .map((l) => l.id);
+          return [entry.id, ...childIds];
+        });
+        const rest = managedLayers
+          .map((l) => l.id)
+          .filter((id) => !orderedIds.includes(id));
+        reorderLayers([...orderedIds, ...rest]);
         return;
       }
 
+      // The imagery group's header controls act on every capture layer.
+      const isImageryGroupId = payload.id === IMAGERY_LEGEND_GROUP_ID;
+      const imageryLayers = isImageryGroupId
+        ? managedLayers.filter((l) => !!l.imagery)
+        : [];
+
       switch (action) {
         case "remove":
+          if (isImageryGroupId) {
+            imageryLayers.forEach((l) => removeLayer(l.id));
+            break;
+          }
           // The visible layer IS the scope — removing it is the only mutation.
           // Also drop any context sub-layers parented to this dataset layer.
           managedLayers
@@ -194,11 +306,26 @@ export function useLegendHook() {
           removeLayer(payload.id);
           break;
         case "opacity":
+          if (isImageryGroupId) {
+            imageryLayers.forEach((l) =>
+              setLayerOpacity(l.id, payload.opacity / 100)
+            );
+            break;
+          }
           setLayerOpacity(payload.id, payload.opacity / 100);
+          break;
+        case "visibility":
+          setLayerVisibility(payload.id, payload.visible);
           break;
       }
     },
-    [managedLayers, removeLayer, setLayerOpacity, reorderLayers]
+    [
+      managedLayers,
+      removeLayer,
+      setLayerOpacity,
+      setLayerVisibility,
+      reorderLayers,
+    ]
   );
 
   return { layers, handleLayerAction, aois, handleRemoveAoi };

@@ -15,9 +15,10 @@ import {
 } from "@phosphor-icons/react";
 import { Reorder, useDragControls } from "motion/react";
 
-import { LayerActionHandler, LegendLayer } from "./types";
+import { isImageryGroup, LayerActionHandler, LegendEntry } from "./types";
 import type { LegendAoi } from "./useLegendHook";
 import { LayerEntry } from "./LayerEntry";
+import { ImageryLegendEntry } from "./ImageryLegendEntry";
 import { ParamChip } from "@/app/components/ui/ParamChip";
 
 const ChReorderGroup = chakra(Reorder.Group);
@@ -27,7 +28,7 @@ const ChReorderItem = chakra(Reorder.Item);
  * Props for the Legend component.
  */
 interface LegendProps {
-  layers: LegendLayer[];
+  layers: LegendEntry[];
   onLayerAction?: LayerActionHandler;
   aois?: LegendAoi[];
   onRemoveAoi?: (layerId: string) => void;
@@ -166,7 +167,7 @@ export function Legend(props: LegendProps) {
             <ChReorderGroup
               axis="y"
               values={layers}
-              onReorder={(layers: LegendLayer[]) =>
+              onReorder={(layers: LegendEntry[]) =>
                 onLayerAction?.({ action: "reorder", payload: { layers } })
               }
               listStyleType="none"
@@ -238,7 +239,7 @@ export function Legend(props: LegendProps) {
  * legend.
  */
 function Item(props: {
-  item: LegendLayer;
+  item: LegendEntry;
   expanded: boolean;
   onToggleExpand: () => void;
   onLayerAction: LayerActionHandler;
@@ -274,13 +275,23 @@ function Item(props: {
       >
         <DotsSixVerticalIcon />
       </IconButton>
-      <LayerEntry
-        {...item}
-        compact={compact}
-        expanded={expanded}
-        onToggleExpand={onToggleExpand}
-        onLayerAction={onLayerAction}
-      />
+      {isImageryGroup(item) ? (
+        <ImageryLegendEntry
+          {...item}
+          compact={compact}
+          expanded={expanded}
+          onToggleExpand={onToggleExpand}
+          onLayerAction={onLayerAction}
+        />
+      ) : (
+        <LayerEntry
+          {...item}
+          compact={compact}
+          expanded={expanded}
+          onToggleExpand={onToggleExpand}
+          onLayerAction={onLayerAction}
+        />
+      )}
     </ChReorderItem>
   );
 }
