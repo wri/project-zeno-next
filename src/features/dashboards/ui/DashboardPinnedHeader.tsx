@@ -6,6 +6,7 @@ import type { Dashboard } from "../api/schemas";
 import { PINNED_HEADER_TOP_OFFSET_PX } from "../hooks/usePinnedHeader";
 import DashboardBreadcrumb from "./DashboardBreadcrumb";
 import DashboardHeader from "./DashboardHeader";
+import { HERO_GRID_IMAGE } from "./heroGrid";
 
 /**
  * Condensed header per the Figma "Dashboard default_Adaptative header banner"
@@ -56,6 +57,11 @@ export default function DashboardPinnedHeader({
             h="104px"
             align="center"
             bgColor="white"
+            // Same graph-paper hero band as the dashboard card, so the
+            // pinned bar reads as the card's top edge (Figma pinned frame).
+            backgroundImage={HERO_GRID_IMAGE}
+            backgroundRepeat="no-repeat"
+            backgroundSize="100% 200px"
             borderTopWidth="2px"
             borderTopColor="#0049AA"
             borderTopRadius="8px"

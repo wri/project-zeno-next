@@ -105,6 +105,9 @@ export default function DashboardHeader({
               lineHeight="36px"
               fontWeight="normal"
               color="#131619"
+              // The theme's globalCss gives every h2 a 16px margin-bottom,
+              // which would stretch the title row in the condensed variant.
+              mb="0"
               {...(condensed
                 ? { truncate: true, minW: 0 }
                 : { wordBreak: "break-word" as const })}
@@ -126,7 +129,8 @@ export default function DashboardHeader({
           )}
         </Flex>
         <Text
-          mt="7px"
+          // 8px title-to-timestamp gap per the Figma header frames.
+          mt="8px"
           fontFamily="mono"
           fontSize="10px"
           lineHeight="16px"
