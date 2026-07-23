@@ -56,6 +56,7 @@ export function ImageryLegendEntry(
     areaCount,
     updating,
     thumbnailUrl,
+    hideRemoveControl,
     onLayerAction,
     expanded = false,
     onToggleExpand,
@@ -180,12 +181,16 @@ export function ImageryLegendEntry(
               <CircleHalfIcon />
             </IconButton>
           </OpacityControl>
-          <IconButton
-            aria-label="Remove satellite imagery"
-            onClick={() => onLayerAction({ action: "remove", payload: { id } })}
-          >
-            <XIcon />
-          </IconButton>
+          {!hideRemoveControl && (
+            <IconButton
+              aria-label="Remove satellite imagery"
+              onClick={() =>
+                onLayerAction({ action: "remove", payload: { id } })
+              }
+            >
+              <XIcon />
+            </IconButton>
+          )}
         </ButtonGroup>
       </Flex>
 

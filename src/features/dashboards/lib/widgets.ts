@@ -23,6 +23,16 @@ export function widgetSize(config: Record<string, unknown>): WidgetSize {
 }
 
 /**
+ * Column span for imagery map widgets: full-width by default — satellite
+ * mosaics need the room to be readable — while an explicit user-set `size`
+ * (the card's size toggle) still wins in both directions.
+ */
+export function imageryWidgetSize(config: Record<string, unknown>): WidgetSize {
+  if (config.size === "double" || config.size === "single") return config.size;
+  return "double";
+}
+
+/**
  * The full config to PATCH for a size change. The backend replaces config
  * whole (no merge), so presentation keys like default_view/title must ride
  * along.

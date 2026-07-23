@@ -5,6 +5,7 @@ import {
   chartTitleOverride,
   computeReorder,
   dashboardWidgetToInsightWidgets,
+  imageryWidgetSize,
   widgetSize,
   widgetText,
   withChartSize,
@@ -60,6 +61,13 @@ describe("widgetSize / withSize", () => {
       title: "T",
       size: "double",
     });
+  });
+
+  it("imagery map widgets default to double, explicit size wins", () => {
+    expect(imageryWidgetSize({})).toBe("double");
+    expect(imageryWidgetSize({ size: "single" })).toBe("single");
+    expect(imageryWidgetSize({ size: "double" })).toBe("double");
+    expect(imageryWidgetSize({ size: "garbage" })).toBe("double");
   });
 });
 
