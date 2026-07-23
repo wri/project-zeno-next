@@ -1,7 +1,11 @@
 import { format, parseISO } from "date-fns";
 
 import type { ImageryInfo } from "@/app/types/chat";
-import type { LegendParam } from "@/app/components/legend/types";
+import type {
+  ImageryLegendGroup,
+  LegendParam,
+} from "@/app/components/legend/types";
+import type { Layer } from "@/app/store/layerManagerSlice";
 
 /**
  * Metadata driving an imagery legend entry — the ImageryState payload the
@@ -157,6 +161,56 @@ export function captureMetaLabel(meta: ImageryLegendMeta): string {
     parts.push(`${meta.item_count} scene${meta.item_count === 1 ? "" : "s"}`);
   }
   return parts.join(" · ");
+}
+
+/**
+ * Builds the single "Satellite Imagery" legend group from the imagery map
+ * layers (one per show_imagery capture, newest first in the layer array).
+ * Summary fields come from the newest (live) capture. Returns null when
+ * there is nothing to show. Shared by the explorer legend hook and the
+ * dashboard map-widget legend.
+ */
+export function buildImageryGroup(
+  imageryLayers: Layer[],
+  updating: boolean
+): ImageryLegendGroup | null {
+  if (imageryLayers.length === 0 && !updating) return null;
+
+  const live = imageryLayers[0];
+  const captures = imageryLayers.map((layer, index) => {
+    const imagery = layer.imagery!;
+    return {
+      layerId: layer.id,
+      areaLabel: imagery.aoi_names?.join(", ") || layer.name,
+      dateLabel: formatCaptureDate(imagery.target_date),
+      metaLabel: captureMetaLabel(imagery),
+      visible: layer.visible,
+      live: index === 0,
+      thumbnailUrl: layer.tileUrl
+        ? imageryThumbnailUrl(
+            layer.tileUrl,
+            layer.bounds,
+            layer.minzoom,
+            layer.maxzoom
+          )
+        : undefined,
+    };
+  });
+
+  return {
+    kind: "imagery",
+    id: IMAGERY_LEGEND_GROUP_ID,
+    title: IMAGERY_LAYER_NAME,
+    subtitle: IMAGERY_SUBTITLE,
+    opacity: (live?.opacity ?? 1) * 100,
+    params: live?.imagery ? imageryLegendParams(live.imagery) : [],
+    info: live?.imagery ? imageryLegendInfo(live.imagery) : undefined,
+    note: live?.imagery ? imageryCloudNote(live.imagery) : undefined,
+    captures,
+    areaCount: new Set(captures.map((c) => c.areaLabel)).size,
+    updating,
+    thumbnailUrl: captures[0]?.thumbnailUrl,
+  };
 }
 
 /**

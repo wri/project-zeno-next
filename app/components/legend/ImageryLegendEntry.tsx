@@ -181,6 +181,7 @@ export function ImageryLegendEntry(
             </IconButton>
           </OpacityControl>
           <IconButton
+            aria-label="Remove satellite imagery"
             onClick={() => onLayerAction({ action: "remove", payload: { id } })}
           >
             <XIcon />

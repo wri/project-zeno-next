@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  buildImageryGroup,
   captureMetaLabel,
   formatCaptureDate,
   imageryCloudNote,
@@ -11,6 +12,7 @@ import {
   imageryThumbnailUrl,
   isImageryLayerId,
 } from "@/app/utils/imagery";
+import type { Layer } from "@/app/store/layerManagerSlice";
 
 const fullMeta = {
   item_count: 9,
@@ -129,6 +131,87 @@ describe("titles and ids", () => {
     expect(imageryLayerId("abc123")).toBe("imagery-abc123");
     expect(isImageryLayerId("imagery-abc123")).toBe(true);
     expect(isImageryLayerId("dataset-4")).toBe(false);
+  });
+});
+
+describe("buildImageryGroup", () => {
+  const imageryLayer = (
+    id: string,
+    overrides: Partial<Layer> = {},
+    metaOverrides: Record<string, unknown> = {}
+  ): Layer =>
+    ({
+      id,
+      name: "Satellite Imagery",
+      type: "raster",
+      visible: true,
+      opacity: 0.8,
+      tileUrl: "https://tiles.example.com/{z}/{x}/{y}.png",
+      bounds: [-1, -1, 1, 1],
+      minzoom: 8,
+      maxzoom: 14,
+      imagery: { ...fullMeta, mosaic_id: id, ...metaOverrides },
+      ...overrides,
+    }) as Layer;
+
+  it("returns null when there are no captures and nothing updating", () => {
+    expect(buildImageryGroup([], false)).toBeNull();
+  });
+
+  it("builds the group from the newest (first) capture", () => {
+    const group = buildImageryGroup(
+      [
+        imageryLayer("imagery-new"),
+        imageryLayer(
+          "imagery-old",
+          { visible: false },
+          { target_date: "2026-05-15", aoi_names: ["Pacaya-Samiria"] }
+        ),
+      ],
+      false
+    );
+
+    expect(group).toMatchObject({
+      kind: "imagery",
+      id: "imagery-group",
+      title: "Satellite Imagery",
+      opacity: 80,
+      updating: false,
+      areaCount: 2,
+    });
+    expect(group?.params.map((p) => p.label)).toEqual([
+      "DATES",
+      "WINDOW",
+      "CLOUD",
+      "AREA",
+    ]);
+    expect(group?.captures).toHaveLength(2);
+    expect(group?.captures[0]).toMatchObject({
+      layerId: "imagery-new",
+      live: true,
+      visible: true,
+      dateLabel: "15 Jun 2026",
+      metaLabel: "cloud <50% · 9 scenes",
+    });
+    expect(group?.captures[1]).toMatchObject({
+      layerId: "imagery-old",
+      live: false,
+      visible: false,
+      areaLabel: "Pacaya-Samiria",
+    });
+    expect(group?.captures[0].thumbnailUrl).toContain("/8/128/128");
+  });
+
+  it("returns an updating stub when no capture has landed yet", () => {
+    const group = buildImageryGroup([], true);
+    expect(group).toMatchObject({
+      kind: "imagery",
+      updating: true,
+      captures: [],
+      params: [],
+      areaCount: 0,
+    });
+    expect(group?.info).toBeUndefined();
   });
 });
 

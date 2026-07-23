@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Text } from "@chakra-ui/react";
 
 import {
-  ImageryLegendGroup,
   isImageryGroup,
   LayerActionHandler,
   LegendContextLayer,
@@ -22,17 +21,10 @@ import {
 import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
-import { isAreaLayer, type Layer } from "@/app/store/layerManagerSlice";
+import { isAreaLayer } from "@/app/store/layerManagerSlice";
 import {
-  captureMetaLabel,
-  formatCaptureDate,
-  IMAGERY_LAYER_NAME,
+  buildImageryGroup,
   IMAGERY_LEGEND_GROUP_ID,
-  IMAGERY_SUBTITLE,
-  imageryCloudNote,
-  imageryLegendInfo,
-  imageryLegendParams,
-  imageryThumbnailUrl,
 } from "@/app/utils/imagery";
 
 // Maps internal parameter keys to the badge label shown in the legend.
@@ -110,55 +102,6 @@ export interface LegendAoi {
   /** Id of the map layer this AOI belongs to — used to remove it. */
   layerId: string;
   name: string;
-}
-
-/**
- * Builds the single "Satellite Imagery" legend group from the imagery map
- * layers (one per show_imagery capture, newest first in the layer array).
- * Summary fields come from the newest (live) capture. Returns null when
- * there is nothing to show.
- */
-function buildImageryGroup(
-  imageryLayers: Layer[],
-  updating: boolean
-): ImageryLegendGroup | null {
-  if (imageryLayers.length === 0 && !updating) return null;
-
-  const live = imageryLayers[0];
-  const captures = imageryLayers.map((layer, index) => {
-    const imagery = layer.imagery!;
-    return {
-      layerId: layer.id,
-      areaLabel: imagery.aoi_names?.join(", ") || layer.name,
-      dateLabel: formatCaptureDate(imagery.target_date),
-      metaLabel: captureMetaLabel(imagery),
-      visible: layer.visible,
-      live: index === 0,
-      thumbnailUrl: layer.tileUrl
-        ? imageryThumbnailUrl(
-            layer.tileUrl,
-            layer.bounds,
-            layer.minzoom,
-            layer.maxzoom
-          )
-        : undefined,
-    };
-  });
-
-  return {
-    kind: "imagery",
-    id: IMAGERY_LEGEND_GROUP_ID,
-    title: IMAGERY_LAYER_NAME,
-    subtitle: IMAGERY_SUBTITLE,
-    opacity: (live?.opacity ?? 1) * 100,
-    params: live?.imagery ? imageryLegendParams(live.imagery) : [],
-    info: live?.imagery ? imageryLegendInfo(live.imagery) : undefined,
-    note: live?.imagery ? imageryCloudNote(live.imagery) : undefined,
-    captures,
-    areaCount: new Set(captures.map((c) => c.areaLabel)).size,
-    updating,
-    thumbnailUrl: captures[0]?.thumbnailUrl,
-  };
 }
 
 export function useLegendHook() {
