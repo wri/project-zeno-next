@@ -17,7 +17,7 @@ import DashboardBreadcrumb from "./DashboardBreadcrumb";
 import DashboardHeader from "./DashboardHeader";
 import DashboardPinnedHeader from "./DashboardPinnedHeader";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
-import { HERO_GRID_IMAGE } from "./heroGrid";
+import { HERO_BAND_PROPS } from "./heroGrid";
 
 export default function DashboardDetailPage() {
   const params = useParams<{ id: string }>();
@@ -114,9 +114,7 @@ export default function DashboardDetailPage() {
             <Box
               bgColor="white"
               minH="70vh"
-              backgroundImage={HERO_GRID_IMAGE}
-              backgroundRepeat="no-repeat"
-              backgroundSize="100% 200px"
+              {...HERO_BAND_PROPS}
               borderWidth="1px"
               borderTopWidth="2px"
               borderTopColor="#0049AA"
