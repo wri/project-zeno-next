@@ -32,6 +32,7 @@ import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
+import { showImageryTool } from "./chat-tools/showImagery";
 import { queryClient } from "@/app/lib/query-client";
 import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
 import {
@@ -58,6 +59,10 @@ interface ChatState {
   // arriving. Distinct from isLoading (true for the whole request) so the
   // insight workspace loading state surfaces only when an insight is on the way.
   isGeneratingInsight: boolean;
+  // True only while the agent is actively building a mosaic — i.e. between
+  // the agent announcing a show_imagery tool call and that tool's result
+  // arriving. Drives the legend's "Updating mosaic…" state.
+  isImageryUpdating: boolean;
   abortController: AbortController | null;
   currentThreadId: string | null;
   toolSteps: ToolStepData[];
@@ -92,6 +97,7 @@ interface ChatActions {
   ) => Promise<{ isNew: boolean; id: string }>;
   setLoading: (loading: boolean) => void;
   setGeneratingInsight: (generating: boolean) => void;
+  setImageryUpdating: (updating: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
     threadId: string,
@@ -126,6 +132,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   ],
   isLoading: false,
   isGeneratingInsight: false,
+  isImageryUpdating: false,
   abortController: null,
   currentThreadId: null,
   toolSteps: [],
@@ -227,6 +234,9 @@ async function processStreamMessage(
     if (streamMessage.tool_calls?.includes("generate_insights")) {
       setGeneratingInsight(true);
     }
+    if (streamMessage.tool_calls?.includes("show_imagery")) {
+      useChatStore.getState().setImageryUpdating(true);
+    }
     return;
   }
   if (streamMessage.type === "error") {
@@ -234,6 +244,10 @@ async function processStreamMessage(
     // state so the workspace skeleton doesn't linger while the agent recovers.
     if (streamMessage.name === "generate_insights") {
       setGeneratingInsight(false);
+    }
+    // Likewise no mosaic is coming — clear the legend's updating state.
+    if (streamMessage.name === "show_imagery") {
+      useChatStore.getState().setImageryUpdating(false);
     }
     // Handle timeout errors specifically
     if (streamMessage.name === "timeout") {
@@ -275,6 +289,9 @@ async function processStreamMessage(
     // while the chart is computed.
     if (streamMessage.tool_calls?.includes("generate_insights")) {
       setGeneratingInsight(true);
+    }
+    if (streamMessage.tool_calls?.includes("show_imagery")) {
+      useChatStore.getState().setImageryUpdating(true);
     }
     const pending = getPendingTraceId();
     const traceToUse = streamMessage.trace_id || pending || undefined;
@@ -367,6 +384,21 @@ async function processStreamMessage(
       void Promise.resolve().then(() =>
         pullDataTool(streamMessage, addMessage)
       );
+      return;
+    }
+    // Handling for show_imagery tool: render the Sentinel-2 mosaic on the map.
+    // Deliberately not gated on `streamMessage.imagery`: a result carrying no
+    // payload (no scenes matched, soft backend failure) still has to clear the
+    // updating flag, or the legend sits on "Updating mosaic…" until the turn's
+    // safety net fires. showImageryTool no-ops when the payload is missing.
+    else if (streamMessage.name === "show_imagery") {
+      // Clear the flag in the same microtask that adds the capture, so the
+      // legend swaps "Updating mosaic…" → capture in a single render.
+      void Promise.resolve().then(async () => {
+        // Non-blocking: TileJSON fetch shouldn't stall the stream
+        await showImageryTool(streamMessage);
+        useChatStore.getState().setImageryUpdating(false);
+      });
       return;
     }
   }
@@ -539,6 +571,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // Reset any stale insight-generating flag from a prior turn; it is set
     // true only once this turn's agent announces a generate_insights call.
     setGeneratingInsight(false);
+    get().setImageryUpdating(false);
 
     const ui_context = diffUiContext(uiContext, keys, get().lastSentContext);
     // Record what we're sending so the same context isn't re-announced next
@@ -762,9 +795,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       attachToolStepsToLastUserMessage();
 
       setLoading(false);
-      // Safety net: clear the insight-generating flag in case generate_insights
-      // was announced but never produced a result (error, abort, timeout).
+      // Safety net: clear the tool-in-flight flags in case generate_insights /
+      // show_imagery was announced but never produced a result (error, abort,
+      // timeout).
       setGeneratingInsight(false);
+      get().setImageryUpdating(false);
 
       queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };
@@ -775,6 +810,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setGeneratingInsight: (generating) =>
     set({ isGeneratingInsight: generating }),
+
+  setImageryUpdating: (updating) => set({ isImageryUpdating: updating }),
 
   cancelRequest: () => {
     const controller = get().abortController;
@@ -1052,6 +1089,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
       setLoading(false);
       setGeneratingInsight(false);
+      get().setImageryUpdating(false);
     }
   },
 }));

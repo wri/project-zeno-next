@@ -1,6 +1,6 @@
 import { StateCreator } from "zustand";
 import { FeatureCollection, Feature } from "geojson";
-import type { AOISelection } from "@/app/types/chat";
+import type { AOISelection, ImageryInfo } from "@/app/types/chat";
 import type { VectorStyleSpec } from "@/app/constants/datasets";
 import type { MapState } from "./mapStore";
 
@@ -38,6 +38,15 @@ export interface Layer {
   parentLayerId?: string;
   // Data-driven fill/line paint spec for type:"vector" context layers
   vectorStyle?: VectorStyleSpec;
+  // Raster source tuning, derived from a mosaic's TileJSON. Without the zoom
+  // range MapLibre would request tiles outside the mosaic's range and get
+  // 404s instead of overscaling.
+  minzoom?: number;
+  maxzoom?: number;
+  bounds?: [number, number, number, number];
+  attribution?: string;
+  // Set when added from show_imagery (Sentinel-2 mosaic legend metadata)
+  imagery?: ImageryInfo;
 }
 
 // The two MVT renderers partition vector layers by whether they carry a

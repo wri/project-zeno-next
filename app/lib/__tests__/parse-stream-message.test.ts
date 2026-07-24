@@ -84,6 +84,27 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     expect(msg?.dashboard_id).toBeUndefined();
   });
 
+  it("carries the imagery state through on tool messages", () => {
+    const imagery = {
+      tile_url: "https://tiles.example.com/{z}/{x}/{y}.png",
+      tilejson_url: "https://tiles.example.com/tilejson.json",
+      mosaic_id: "abc123",
+      target_date: "2026-06-15",
+      aoi_names: ["Paracas"],
+    };
+    const update = {
+      ...toolUpdate("show_imagery"),
+      imagery,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg).toMatchObject({
+      type: "tool",
+      name: "show_imagery",
+      imagery,
+    });
+  });
+
   it("finds the signal on an earlier message when the update ends with narration", () => {
     // The signal-bearing tool result and the agent's follow-up can arrive in
     // one update; only the last message decides the StreamMessage type, but
