@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/app/lib/api-client";
 import {
@@ -34,10 +35,17 @@ export function useDatasetsCatalog() {
     retry: 1,
   });
 
-  const palettesByDatasetId: Record<number, DatasetPalette> = {};
-  for (const palette of data?.datasets ?? []) {
-    palettesByDatasetId[palette.dataset_id] = palette;
-  }
+  // Keep a stable object reference across renders when `data` hasn't
+  // changed — this is consumed as a useEffect dependency in useLegendHook,
+  // and a freshly-built object every render there causes an infinite
+  // render loop (the effect never sees a stable dependency).
+  const palettesByDatasetId = useMemo(() => {
+    const map: Record<number, DatasetPalette> = {};
+    for (const palette of data?.datasets ?? []) {
+      map[palette.dataset_id] = palette;
+    }
+    return map;
+  }, [data]);
 
   return { palettesByDatasetId, isLoading, error };
 }
