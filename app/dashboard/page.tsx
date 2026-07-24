@@ -623,8 +623,7 @@ export default function UserSettingsPage() {
                 <Checkbox.HiddenInput />
                 <Checkbox.Control />
                 <Checkbox.Label>
-                  Send me news, resources, and opportunities from Land & Carbon
-                  Lab.
+                  Send me news and events from Global Nature Watch.
                 </Checkbox.Label>
               </Checkbox.Root>
               <Checkbox.Root

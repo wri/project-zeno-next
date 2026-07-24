@@ -41,16 +41,25 @@ export function presetRange(preset: Exclude<DatePreset, "Custom">): {
   return { startDate: shiftIsoDate(endDate, -PRESET_DAYS[preset]), endDate };
 }
 
+/**
+ * Unit of analysis for the Analytics view: individual turns (one trace = one
+ * user prompt, the default) or whole conversations (turns aggregated per
+ * session client-side, see lib/analytics/conversationGrain.ts).
+ */
+export type AnalysisGrain = "turn" | "conversation";
+
 interface FiltersState {
   readonly preset: DatePreset;
   readonly startDate: string;
   readonly endDate: string;
   readonly environment: EnvironmentOption;
   readonly excludeInternal: boolean;
+  readonly grain: AnalysisGrain;
   readonly setPreset: (preset: DatePreset) => void;
   readonly setCustomRange: (startDate: string, endDate: string) => void;
   readonly setEnvironment: (environment: EnvironmentOption) => void;
   readonly setExcludeInternal: (exclude: boolean) => void;
+  readonly setGrain: (grain: AnalysisGrain) => void;
 }
 
 const initialRange = presetRange("Last week");
@@ -61,6 +70,7 @@ export const useFiltersStore = create<FiltersState>()((set) => ({
   endDate: initialRange.endDate,
   environment: "production",
   excludeInternal: true,
+  grain: "turn",
   setPreset: (preset) => {
     if (preset === "Custom") {
       set({ preset });
@@ -72,4 +82,5 @@ export const useFiltersStore = create<FiltersState>()((set) => ({
     set({ preset: "Custom", startDate, endDate }),
   setEnvironment: (environment) => set({ environment }),
   setExcludeInternal: (excludeInternal) => set({ excludeInternal }),
+  setGrain: (grain) => set({ grain }),
 }));

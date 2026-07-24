@@ -52,16 +52,34 @@ describe("RestInsightsGateway.list", () => {
 
   it("appends ?thread_id when a thread is given", async () => {
     const fetch = mockFetch([]);
-    await new RestInsightsGateway(fetch).list("t 1");
+    await new RestInsightsGateway(fetch).list({ threadId: "t 1" });
     expect(fetch).toHaveBeenCalledWith(
-      "/api/insights?thread_id=t%201",
+      "/api/insights?thread_id=t+1",
       expect.anything()
     );
   });
 
-  it("omits the query when threadId is null (unfiltered)", async () => {
+  it("appends aoi_source + aoi_id together when scoped to an area", async () => {
     const fetch = mockFetch([]);
-    await new RestInsightsGateway(fetch).list(null);
+    await new RestInsightsGateway(fetch).list({
+      aoiSource: "gadm",
+      aoiId: "BRA.1_1",
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/insights?aoi_source=gadm&aoi_id=BRA.1_1",
+      expect.anything()
+    );
+  });
+
+  it("omits an AOI param unless both source and id are present", async () => {
+    const fetch = mockFetch([]);
+    await new RestInsightsGateway(fetch).list({ aoiSource: "gadm" });
+    expect(fetch).toHaveBeenCalledWith("/api/insights", expect.anything());
+  });
+
+  it("omits the query when unfiltered", async () => {
+    const fetch = mockFetch([]);
+    await new RestInsightsGateway(fetch).list({ threadId: null });
     expect(fetch).toHaveBeenCalledWith("/api/insights", expect.anything());
   });
 

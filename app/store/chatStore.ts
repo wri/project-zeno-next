@@ -27,7 +27,7 @@ import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
 import { mergeCitedArticlesIntoMap } from "@/app/lib/blog-citations";
 import { apiFetch } from "@/app/lib/api-client";
-import { getToolErrorMessage } from "@/app/lib/tool-display";
+import { getToolErrorMessage, isKnownTool } from "@/app/lib/tool-display";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
@@ -248,13 +248,23 @@ async function processStreamMessage(
         { title: "Request Timed Out" }
       );
     } else {
-      // No toast: the agent recovers with a follow-up assistant message,
-      // so a toast would falsely suggest the chat itself is broken.
-      addMessage({
-        type: "warning",
-        message: getToolErrorMessage(streamMessage.name),
-        timestamp: streamMessage.timestamp,
-      });
+      // Keep the failed step visible in the reasoning timeline either way.
+      if (streamMessage.name) {
+        addToolStep(streamMessage);
+      }
+      if (isKnownTool(streamMessage.name)) {
+        // No toast: the agent recovers with a follow-up assistant message,
+        // so a toast would falsely suggest the chat itself is broken.
+        addMessage({
+          type: "warning",
+          message: getToolErrorMessage(streamMessage.name),
+          timestamp: streamMessage.timestamp,
+        });
+      }
+      // Tools outside the display map get no chat warning: their error
+      // results are agent guidance (e.g. create_dashboard's "ask the user
+      // which area" redirect) or unexpected failures, and in both cases the
+      // agent's follow-up text explains the situation to the user.
     }
     // TODO: StreamMessage.type "text" currently represents assistant messages.
     // Consider renaming server-emitted type to "assistant" and updating this
@@ -778,6 +788,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         ...state.toolSteps,
         {
           name: toolData.name || "unknown",
+          ...(toolData.type === "error" ? { status: "error" as const } : {}),
           content: toolData.content,
           dataset: toolData.dataset,
           insights: toolData.insights,
