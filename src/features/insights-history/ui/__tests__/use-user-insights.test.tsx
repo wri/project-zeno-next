@@ -35,12 +35,22 @@ describe("useUserInsights", () => {
     expect(result.current.insights[0].id).toBe("ins-1");
   });
 
-  it("passes the threadId to the gateway", async () => {
+  it("passes the thread and area scope to the gateway", async () => {
     const gateway: InsightsGateway = { list: vi.fn().mockResolvedValue([]) };
-    renderHook(() => useUserInsights("thread-9", gateway), { wrapper });
+    renderHook(
+      () =>
+        useUserInsights(
+          { threadId: "thread-9", aoiSource: "gadm", aoiId: "BRA.1_1" },
+          gateway
+        ),
+      { wrapper }
+    );
 
     await waitFor(() =>
-      expect(gateway.list).toHaveBeenCalledWith("thread-9", expect.anything())
+      expect(gateway.list).toHaveBeenCalledWith(
+        { threadId: "thread-9", aoiSource: "gadm", aoiId: "BRA.1_1" },
+        expect.anything()
+      )
     );
   });
 });

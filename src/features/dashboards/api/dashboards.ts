@@ -97,12 +97,19 @@ export async function updateWidget(
 // the dashboard without insight expansion — callers invalidate and refetch.
 export async function addInsightWidget(
   dashboardId: string,
-  insightId: string
+  insightId: string,
+  config?: Record<string, unknown>
 ): Promise<void> {
   await readJson<unknown>(`/api/dashboards/${dashboardId}/widgets`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ widget_type: "insight", insight_id: insightId }),
+    body: JSON.stringify({
+      widget_type: "insight",
+      insight_id: insightId,
+      // A chart subset (config.chartIds) rides along when the pane adds a single
+      // chart; omitted for a whole-insight add so the widget shows all charts.
+      ...(config ? { config } : {}),
+    }),
   });
 }
 
