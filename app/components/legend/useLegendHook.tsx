@@ -26,6 +26,49 @@ import {
   buildImageryGroup,
   IMAGERY_LEGEND_GROUP_ID,
 } from "@/app/utils/imagery";
+import { useDatasetsCatalog } from "@/app/hooks/useDatasetsCatalog";
+import type { DatasetPalette } from "@/app/schemas/api/datasets/get";
+
+/**
+ * Overrides a dataset's hardcoded legend colors with the backend-owned
+ * palette (see docs/insight-chart-colors-plan.md in project-zeno), so the
+ * map legend is guaranteed to match the colors used in generated charts.
+ * Falls back to the static legend when no backend palette is available yet
+ * (e.g. still loading) — this is a progressive enhancement, not a hard
+ * dependency. Divergent (raster gradient) legends are left untouched: that
+ * continuous colormap isn't the same shape as the registry's simple
+ * positive/negative chart color pair. Datasets with `legend_categories:
+ * false` (e.g. SBTN Natural Lands, which intentionally collapses its
+ * non-natural classes into one legend row) keep their hand-curated static
+ * `items` untouched too — only their chart colors come from the registry.
+ */
+function applyPaletteOverride(
+  legend: DatasetLegendConfig,
+  palette?: DatasetPalette
+): DatasetLegendConfig {
+  if (!palette || legend.type === "divergent") return legend;
+
+  if (palette.categories.length > 0 && palette.legend_categories) {
+    return {
+      ...legend,
+      items: palette.categories.map((category) => ({
+        label: category.label_en,
+        color: category.color,
+      })),
+    };
+  }
+
+  if (palette.series_color) {
+    const seriesColor = palette.series_color;
+    return {
+      ...legend,
+      color: seriesColor,
+      items: legend.items?.map((item) => ({ ...item, color: seriesColor })),
+    };
+  }
+
+  return legend;
+}
 
 // Maps internal parameter keys to the badge label shown in the legend.
 const PARAMETER_LABELS: Record<string, string> = {
@@ -106,6 +149,7 @@ export interface LegendAoi {
 
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendEntry[]>([]);
+  const { palettesByDatasetId } = useDatasetsCatalog();
 
   const {
     layers: managedLayers,
@@ -165,7 +209,11 @@ export function useLegendHook() {
         );
         if (!relatedDataset?.legend) continue;
 
-        const { title, info, note } = relatedDataset.legend;
+        const legend = applyPaletteOverride(
+          relatedDataset.legend,
+          palettesByDatasetId[relatedDataset.dataset_id]
+        );
+        const { title, info, note } = legend;
 
         const yearParam = buildYearParam(layer.startDate, layer.endDate);
         const params = buildParams(layer.parameters ?? {}, yearParam);
@@ -177,7 +225,7 @@ export function useLegendHook() {
           info,
           params: params.length > 0 ? params : undefined,
           contextLayer: contextLayerByParentId.get(layer.id),
-          symbology: renderLegendSymbology(relatedDataset.legend),
+          symbology: renderLegendSymbology(legend),
           children: note ? <Text fontSize="xs">{note}</Text> : undefined,
         });
       }
@@ -192,7 +240,7 @@ export function useLegendHook() {
     };
 
     setLayers(buildEntries());
-  }, [managedLayers, isImageryUpdating]);
+  }, [managedLayers, isImageryUpdating, palettesByDatasetId]);
 
   // One chip per visible area layer, using the selection name as the label.
   // The visible layer IS the scope — removing the chip removes the layer.
