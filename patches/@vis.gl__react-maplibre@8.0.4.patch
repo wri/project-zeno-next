@@ -1,0 +1,33 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 745ac68fd843bb22437fb5742b26ccfd661309c5..83c3e2de25b0eb544485e4a7c7d4373d9d72304b 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -542,7 +542,7 @@ var Maplibre = class {
+     var _a, _b;
+     const map = this._map;
+     const currProps = this._styleComponents;
+-    if (map.style._loaded) {
++    if (map.style && map.style._loaded) {
+       if (light && !deepEqual(light, currProps.light)) {
+         currProps.light = light;
+         map.setLight(light);
+diff --git a/dist/maplibre/maplibre.js b/dist/maplibre/maplibre.js
+index e6d332452680c953f86630ed48a908897af3dfd4..d93c412e16d5207ef0b043e0ecdfb673361a229d 100644
+--- a/dist/maplibre/maplibre.js
++++ b/dist/maplibre/maplibre.js
+@@ -371,8 +371,13 @@ class Maplibre {
+     _updateStyleComponents({ light, projection, sky, terrain }) {
+         const map = this._map;
+         const currProps = this._styleComponents;
+-        // We can safely manipulate map style once it's loaded
+-        if (map.style._loaded) {
++        // We can safely manipulate map style once it's loaded.
++        // Guard `map.style`: after map.remove() (unmount teardown) it is
++        // deleted, and this runs from async styledata/sourcedata handlers and a
++        // dep-less setProps layout effect that can fire on the removed map.
++        // Matches the `map.style &&` guard react-map-gl already uses in
++        // createSource. See fix/dashboard-map-widget-reorder-crash.
++        if (map.style && map.style._loaded) {
+             if (light && !deepEqual(light, currProps.light)) {
+                 currProps.light = light;
+                 map.setLight(light);

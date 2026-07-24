@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@vis.gl/react-maplibre@8.0.4':
+    hash: 8a59aa555163c3827d3242fcc08548528f1d61476b99abb6780e41f8040fdba3
+    path: patches/@vis.gl__react-maplibre@8.0.4.patch
+
 importers:
 
   .:
@@ -5539,7 +5544,7 @@ snapshots:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
 
-  '@vis.gl/react-maplibre@8.0.4(maplibre-gl@5.6.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@vis.gl/react-maplibre@8.0.4(patch_hash=8a59aa555163c3827d3242fcc08548528f1d61476b99abb6780e41f8040fdba3)(maplibre-gl@5.6.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@maplibre/maplibre-gl-style-spec': 19.3.3
       react: 19.1.0
@@ -8770,7 +8775,7 @@ snapshots:
   react-map-gl@8.0.4(maplibre-gl@5.6.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@vis.gl/react-mapbox': 8.0.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@vis.gl/react-maplibre': 8.0.4(maplibre-gl@5.6.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@vis.gl/react-maplibre': 8.0.4(patch_hash=8a59aa555163c3827d3242fcc08548528f1d61476b99abb6780e41f8040fdba3)(maplibre-gl@5.6.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
     optionalDependencies:
