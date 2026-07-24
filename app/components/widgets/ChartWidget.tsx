@@ -327,10 +327,25 @@ export default function ChartWidget({
             xAxis,
             yAxis,
             widget.datasetName,
-            seriesFields
+            seriesFields,
+            {
+              colorMap: widget.colorMap,
+              seriesColor: widget.seriesColor,
+              divergentColors: widget.divergentColors,
+            }
           )
         : { data: [], series: [] },
-    [data, type, xAxis, yAxis, widget.datasetName, seriesFields]
+    [
+      data,
+      type,
+      xAxis,
+      yAxis,
+      widget.datasetName,
+      seriesFields,
+      widget.colorMap,
+      widget.seriesColor,
+      widget.divergentColors,
+    ]
   );
 
   // Humanize series labels that are raw column keys (snake_case or the

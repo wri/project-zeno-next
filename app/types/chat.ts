@@ -89,6 +89,13 @@ export interface InsightWidget {
   // one analysis share it; it is the handle for REST widget adds
   // (POST /api/dashboards/:id/widgets).
   insightId?: string;
+  // Backend color registry resolution (phase 2) — category slug -> hex,
+  // single-series color, and positive/negative colors. Falls back to the
+  // local chartColorMappings.ts config when absent (pre-migration insights,
+  // or a category with no registry entry).
+  colorMap?: Record<string, string>;
+  seriesColor?: string;
+  divergentColors?: { positive: string; negative: string };
 }
 
 // Parameters the agent used to produce an insight (read-only transparency)

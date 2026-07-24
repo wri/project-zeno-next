@@ -19,4 +19,10 @@ export interface Chart {
   seriesFields: string[];
   /** Maps to InsightChartResponse.chart_data */
   data: Record<string, unknown>[];
+  /** Maps to InsightChartResponse.color_map */
+  colorMap?: Record<string, string>;
+  /** Maps to InsightChartResponse.series_color */
+  seriesColor?: string | null;
+  /** Maps to InsightChartResponse.divergent_colors */
+  divergentColors?: { positive: string; negative: string } | null;
 }

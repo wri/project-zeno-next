@@ -34,6 +34,9 @@ interface RawChart {
   group_field?: string;
   series_fields?: string[];
   chart_data: Record<string, unknown>[];
+  color_map?: Record<string, string>;
+  series_color?: string | null;
+  divergent_colors?: { positive: string; negative: string } | null;
 }
 
 interface RawInsightResponse {
@@ -210,6 +213,9 @@ export class RestAnalysisGateway implements AnalysisGateway {
           groupField: c.group_field ?? "",
           seriesFields: c.series_fields ?? [],
           data: c.chart_data,
+          colorMap: c.color_map,
+          seriesColor: c.series_color,
+          divergentColors: c.divergent_colors,
         })
       ),
     };

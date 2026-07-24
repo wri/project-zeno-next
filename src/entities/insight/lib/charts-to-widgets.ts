@@ -10,6 +10,9 @@ import type { AnalysisParams, InsightWidget } from "@/app/types/chat";
  * widget in the batch.
  *
  * Unknown chart types fall back to "bar" so a bad type never blanks the widget.
+ *
+ * colorMap/seriesColor/divergentColors are carried through — they drive
+ * ChartWidget's backend-color precedence (see formatCharts.tsx).
  */
 const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
   "line",
@@ -39,5 +42,10 @@ export function chartsToWidgets(
     yAxis: chart.yAxis,
     seriesFields: chart.seriesFields,
     analysisParams,
+    ...(chart.colorMap ? { colorMap: chart.colorMap } : {}),
+    ...(chart.seriesColor ? { seriesColor: chart.seriesColor } : {}),
+    ...(chart.divergentColors
+      ? { divergentColors: chart.divergentColors }
+      : {}),
   }));
 }
