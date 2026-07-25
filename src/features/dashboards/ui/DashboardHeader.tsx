@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Box,
-  Button,
-  Flex,
-  Heading,
-  IconButton,
-  Input,
-  Text,
-} from "@chakra-ui/react";
+import { Box, Button, Flex, IconButton, Input } from "@chakra-ui/react";
 import {
   FilePdfIcon,
   FileTextIcon,
@@ -19,17 +11,32 @@ import {
 
 import { toaster } from "@/app/components/ui/toaster";
 import type { Dashboard } from "../api/schemas";
-import type { DashboardMode } from "../hooks/useDashboardMode";
-import { updatedLabel } from "../lib/dates";
+import { searchWithMode, type DashboardMode } from "../hooks/useDashboardMode";
 import { useRenameDashboard } from "./dashboardQueries";
+import { DashboardTitleHeading, DashboardUpdatedLabel } from "./DashboardTitle";
+
+/**
+ * The header's 24px outline action-button style — shared with the report
+ * page's action bar so the dashboard action buttons match everywhere.
+ */
+export const dashboardActionStyle = {
+  h: "24px",
+  px: "8px",
+  gap: "4px",
+  borderColor: "rgba(19,22,25,0.2)",
+  rounded: "sm",
+  fontSize: "12px",
+  fontWeight: "medium",
+  color: "rgba(19,22,25,0.7)",
+} as const;
 
 /**
  * Dashboard page header per the Figma "Dashboard default" frame: editable
  * 30px title with a pencil affordance (owner only, edit mode only), the mono
  * "Updated…" label, and actions top-right — an Edit/Report mode toggle
  * (owners only; everyone else is already in report mode) ahead of Export /
- * Share. Export and Share are false doors — measure interest before building
- * the real flows.
+ * Share. Export opens the print/export surface at /dashboards/[id]/report;
+ * Share remains a false door — measure interest before building the flow.
  */
 export default function DashboardHeader({
   dashboard,
@@ -70,16 +77,17 @@ export default function DashboardHeader({
       duration: 3000,
     });
 
-  const actionStyle = {
-    h: "24px",
-    px: "8px",
-    gap: "4px",
-    borderColor: "rgba(19,22,25,0.2)",
-    rounded: "sm",
-    fontSize: "12px",
-    fontWeight: "medium",
-    color: "rgba(19,22,25,0.7)",
-  } as const;
+  const openReport = () => {
+    // New tab so the interactive dashboard stays put. Carry ?ff= (the route
+    // is behind the same gate) but not ?mode= — the report route is always
+    // the report.
+    const search = searchWithMode(window.location.search, null);
+    window.open(
+      `/dashboards/${dashboard.id}/report${search}`,
+      "_blank",
+      "noopener"
+    );
+  };
 
   return (
     <Flex justify="space-between" align="flex-start" gap={6}>
@@ -103,16 +111,7 @@ export default function DashboardHeader({
               maxW="2xl"
             />
           ) : (
-            <Heading
-              as="h1"
-              fontSize="30px"
-              lineHeight="36px"
-              fontWeight="normal"
-              color="#131619"
-              wordBreak="break-word"
-            >
-              {dashboard.name}
-            </Heading>
+            <DashboardTitleHeading name={dashboard.name} />
           )}
           {isOwner && mode === "edit" && !editing && (
             <IconButton
@@ -127,15 +126,7 @@ export default function DashboardHeader({
             </IconButton>
           )}
         </Flex>
-        <Text
-          mt="7px"
-          fontFamily="mono"
-          fontSize="10px"
-          lineHeight="16px"
-          color="rgba(19,22,25,0.7)"
-        >
-          {updatedLabel(dashboard.updated_at)}
-        </Text>
+        <DashboardUpdatedLabel updatedAt={dashboard.updated_at} />
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>
@@ -182,17 +173,15 @@ export default function DashboardHeader({
         )}
         <Button
           variant="outline"
-          {...actionStyle}
-          onClick={falseDoor(
-            "Exporting dashboards to PDF isn't available yet."
-          )}
+          {...dashboardActionStyle}
+          onClick={openReport}
         >
           <FilePdfIcon size={16} />
           Export
         </Button>
         <Button
           variant="outline"
-          {...actionStyle}
+          {...dashboardActionStyle}
           onClick={falseDoor("Sharing dashboards isn't available yet.")}
         >
           <ShareIcon size={16} />

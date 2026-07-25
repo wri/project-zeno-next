@@ -33,6 +33,10 @@ import {
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 
+// Printing (the report route) must not slice a widget across pages;
+// harmless on screen. Module-level so the per-cell render reuses one object.
+const PRINT_BREAK_INSIDE = { "@media print": { breakInside: "avoid" } };
+
 /**
  * One grid cell. A widget whose insight has several charts renders one cell
  * per chart (each its own card, per design); map widgets render one cell
@@ -237,6 +241,7 @@ export default function DashboardWidgetsGrid({
             }
             outlineColor="primary.solid"
             borderRadius="sm"
+            css={PRINT_BREAK_INSIDE}
           >
             {widget.widget_type === "text" ? (
               <DashboardTextWidgetCard
