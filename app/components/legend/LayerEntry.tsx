@@ -182,6 +182,7 @@ export function LayerEntry(
               <ContextLayerRow
                 contextLayer={contextLayer}
                 onLayerAction={onLayerAction}
+                hideOpacityControl={hideOpacityControl}
               />
             )}
             {children}
@@ -199,8 +200,10 @@ export function LayerEntry(
 function ContextLayerRow(props: {
   contextLayer: LegendContextLayer;
   onLayerAction: LayerActionHandler;
+  /** Follows the parent entry's gating — a read-only legend hides both. */
+  hideOpacityControl?: boolean;
 }) {
-  const { contextLayer, onLayerAction } = props;
+  const { contextLayer, onLayerAction, hideOpacityControl } = props;
 
   return (
     <Flex flexDir="column" gap={1}>
@@ -253,19 +256,23 @@ function ContextLayerRow(props: {
               </Portal>
             </Popover.Root>
           )}
-          <OpacityControl
-            value={contextLayer.opacity}
-            onValueChange={(value) =>
-              onLayerAction({
-                action: "opacity",
-                payload: { id: contextLayer.id, opacity: value },
-              })
-            }
-          >
-            <IconButton>
-              <CircleHalfIcon />
-            </IconButton>
-          </OpacityControl>
+          {/* The context sub-layer follows the entry's own opacity gating —
+              a read-only legend hides both controls. */}
+          {!hideOpacityControl && (
+            <OpacityControl
+              value={contextLayer.opacity}
+              onValueChange={(value) =>
+                onLayerAction({
+                  action: "opacity",
+                  payload: { id: contextLayer.id, opacity: value },
+                })
+              }
+            >
+              <IconButton>
+                <CircleHalfIcon />
+              </IconButton>
+            </OpacityControl>
+          )}
         </ButtonGroup>
       </Flex>
     </Flex>

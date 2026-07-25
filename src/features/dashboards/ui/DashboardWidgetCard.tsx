@@ -40,6 +40,10 @@ import DashboardMapWidget from "./DashboardMapWidget";
  * so `card` is a single insight card, not a list. Header actions still act
  * on the underlying widget (per the API: position/config/DELETE are
  * widget-level), which `chartCount` lets the remove dialog explain.
+ *
+ * In report mode the shell dissolves (transparent, borderless), the title
+ * restyles as a document heading, and the params row goes — only the content
+ * (chart, table, map) remains, still hover-interactive.
  */
 export default function DashboardWidgetCard({
   title,
@@ -49,7 +53,8 @@ export default function DashboardWidgetCard({
   viewportBbox,
   placeholder,
   chartCount,
-  isOwner,
+  canEdit,
+  isReport,
   isDouble,
   onArmDrag,
   onDisarmDrag,
@@ -70,7 +75,10 @@ export default function DashboardWidgetCard({
   placeholder: string | null;
   /** How many cards the underlying widget renders in total (its chart count). */
   chartCount: number;
-  isOwner: boolean;
+  /** Owner in edit mode — gates every editing affordance. */
+  canEdit: boolean;
+  /** Report mode: shell dissolves, title becomes a document heading. */
+  isReport: boolean;
   isDouble: boolean;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
   onArmDrag: () => void;
@@ -80,6 +88,21 @@ export default function DashboardWidgetCard({
   onRename?: (name: string) => void;
   onRemove: () => void;
 }) {
+  // Report mode restyles the widget title as a document heading — stronger
+  // ink, no card-blue — since the shell around it is gone.
+  const titleStyle = isReport
+    ? {
+        fontSize: "15px",
+        fontWeight: "semibold",
+        lineHeight: "20px",
+        color: "#131619",
+      }
+    : {
+        fontSize: "14px",
+        fontWeight: "medium",
+        lineHeight: "16px",
+        color: "#172B7A",
+      };
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
   // null = not editing; a string is the in-progress title draft.
@@ -124,15 +147,15 @@ export default function DashboardWidgetCard({
     <Flex
       flexDir="column"
       h="100%"
-      bg="#F7F9FF"
+      bg={isReport ? "transparent" : "#F7F9FF"}
       borderWidth="1px"
-      borderColor="#DDE2F5"
+      borderColor={isReport ? "transparent" : "#DDE2F5"}
       borderRadius="sm"
       overflow="hidden"
     >
       {/* Header — drag handle · title · actions (per the Figma LegendItemHeader) */}
       <Flex align="center" gap="4px" pl="4px" pr="12px" pt="12px" pb="8px">
-        {isOwner && (
+        {canEdit && (
           <Icon
             as={DotsSixVerticalIcon}
             boxSize="16px"
@@ -162,23 +185,20 @@ export default function DashboardWidgetCard({
             fontSize="14px"
             fontWeight="medium"
             color="#172B7A"
-            pl={isOwner ? 0 : "8px"}
+            pl={canEdit ? 0 : "8px"}
           />
         ) : (
           <Text
             flex="1"
             minW={0}
-            fontSize="14px"
-            fontWeight="medium"
-            lineHeight="16px"
-            color="#172B7A"
+            {...titleStyle}
             wordBreak="break-word"
-            pl={isOwner ? 0 : "8px"}
+            pl={canEdit ? 0 : "8px"}
           >
             {displayTitle}
           </Text>
         )}
-        {isOwner && (
+        {canEdit && (
           <Flex align="center" gap="4px" flexShrink={0}>
             {onRename && !editing && (
               <IconButton
@@ -228,8 +248,9 @@ export default function DashboardWidgetCard({
         )}
       </Flex>
 
-      {/* Params row — "Show params" toggle over the analysis param chips */}
-      {chips.length > 0 && (
+      {/* Params row — "Show params" toggle over the analysis param chips.
+          An inspection affordance, not content — absent from the report. */}
+      {!isReport && chips.length > 0 && (
         <Box px="8px" pb="8px">
           <Flex
             borderTopWidth="1px"
@@ -272,12 +293,16 @@ export default function DashboardWidgetCard({
             aoi={aoi}
             bboxOverride={viewportBbox ?? null}
             tall={isDouble}
+            interactive={!isReport}
           />
         </Box>
       ) : (
         card && (
           <Box px="8px" pb="8px" flex="1" minW={0}>
-            <WidgetMessage widget={card} inWorkspace />
+            <WidgetMessage
+              widget={card}
+              variant={isReport ? "report" : "workspace"}
+            />
           </Box>
         )
       )}

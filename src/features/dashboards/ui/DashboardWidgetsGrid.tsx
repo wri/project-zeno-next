@@ -6,6 +6,7 @@ import { Grid, GridItem } from "@chakra-ui/react";
 import useAuthStore from "@/app/store/authStore";
 import type { InsightWidget } from "@/app/types/chat";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
+import type { DashboardMode } from "../hooks/useDashboardMode";
 import {
   chartSize,
   computeReorder,
@@ -126,14 +127,24 @@ function cellsForWidget(
  * span persist on the underlying widget via the PATCH endpoint
  * (optimistically, in dashboardQueries) — dragging any card of a multi-chart
  * widget moves the whole widget, and its cards stay adjacent.
+ *
+ * `mode` is presentation only: report mode renders the same cells (same keys,
+ * so maps and chart state never remount) with the editing chrome absent —
+ * `canEdit` folds it into the ownership gate everywhere chrome is rendered.
  */
 export default function DashboardWidgetsGrid({
   dashboard,
+  mode = "edit",
 }: {
   dashboard: Dashboard;
+  mode?: DashboardMode;
 }) {
   const userId = useAuthStore((s) => s.userId);
   const isOwner = !!userId && userId === dashboard.user_id;
+  // The two bits the cards act on: canEdit gates chrome, isReport picks the
+  // document styling. Derived here once so the pair stays consistent.
+  const canEdit = isOwner && mode === "edit";
+  const isReport = mode === "report";
 
   const updateWidget = useUpdateWidget(dashboard.id);
   const deleteWidget = useDeleteWidget(dashboard.id);
@@ -204,7 +215,7 @@ export default function DashboardWidgetsGrid({
           <GridItem
             key={cell.key}
             colSpan={{ base: 1, lg: size === "double" ? 2 : 1 }}
-            draggable={isOwner && grabbedKey === cell.key}
+            draggable={canEdit && grabbedKey === cell.key}
             onDragStart={(e) => {
               // Required for Firefox to initiate drag-and-drop.
               e.dataTransfer.setData("text/plain", cell.key);
@@ -231,7 +242,8 @@ export default function DashboardWidgetsGrid({
               <DashboardTextWidgetCard
                 text={cell.text}
                 placeholder={cell.placeholder}
-                isOwner={isOwner}
+                canEdit={canEdit}
+                isReport={isReport}
                 isDouble={size === "double"}
                 onArmDrag={() => setGrabbedKey(cell.key)}
                 onDisarmDrag={() => setGrabbedKey(null)}
@@ -265,7 +277,8 @@ export default function DashboardWidgetsGrid({
                 }
                 placeholder={cell.placeholder}
                 chartCount={cell.chartCount}
-                isOwner={isOwner}
+                canEdit={canEdit}
+                isReport={isReport}
                 isDouble={size === "double"}
                 onArmDrag={() => setGrabbedKey(cell.key)}
                 onDisarmDrag={() => setGrabbedKey(null)}
