@@ -80,4 +80,19 @@ describe("DashboardHeader mode toggle", () => {
     const report = renderHeader({ isOwner: true, mode: "report" });
     expect(report.queryByLabelText("Rename dashboard")).toBeNull();
   });
+
+  it("Export opens the report route in a new tab, preserving ff", () => {
+    const openSpy = vi.fn();
+    window.open = openSpy;
+    window.history.replaceState(null, "", "/dashboards/d1?ff=dashboard");
+
+    const { getByRole } = renderHeader({ isOwner: true, mode: "edit" });
+    fireEvent.click(getByRole("button", { name: /export/i }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "/dashboards/d1/report?ff=dashboard",
+      "_blank",
+      "noopener"
+    );
+  });
 });

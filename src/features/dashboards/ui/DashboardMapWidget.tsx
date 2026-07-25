@@ -156,6 +156,12 @@ export default function DashboardMapWidget({
         doubleClickZoom={interactive}
         keyboard={interactive}
         attributionControl={false}
+        // Printing snapshots the WebGL canvas; without a preserved drawing
+        // buffer the printed map is blank. Initialization-only, so this
+        // applies where it matters — the report/export route, whose maps
+        // mount non-interactive — and skips the GPU-memory cost elsewhere
+        // (a mid-session mode toggle doesn't re-create the map).
+        canvasContextAttributes={{ preserveDrawingBuffer: !interactive }}
       >
         {/* Bottom-left so the legend can occupy the design's bottom-right
             slot; the attribution stacks beneath the zoom buttons. */}
