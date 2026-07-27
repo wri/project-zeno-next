@@ -1,5 +1,6 @@
 "use client";
 import { Box, Flex, Text } from "@chakra-ui/react";
+import { ArrowRightIcon } from "@phosphor-icons/react";
 import * as React from "react";
 
 export interface InfoCardProps {
@@ -24,6 +25,10 @@ export interface InfoCardProps {
   titleActions?: React.ReactNode;
   /** Optional action node placed inline after the description text. */
   descriptionActions?: React.ReactNode;
+  /** Opts into the navigation-card treatment: a right arrow revealed on
+   * hover and a pressed state that tints the card (primary shades) while
+   * active. Pair with onClick. */
+  interactive?: boolean;
 }
 
 export function InfoCard({
@@ -38,11 +43,13 @@ export function InfoCard({
   selected = false,
   titleActions,
   descriptionActions,
+  interactive = false,
 }: InfoCardProps) {
   return (
     <Flex
       flexDirection="row"
       alignItems="center"
+      position="relative"
       w="100%"
       h="80px"
       bg="#FFFFFF"
@@ -52,8 +59,43 @@ export function InfoCard({
       overflow="hidden"
       cursor={onClick ? "pointer" : "default"}
       onClick={onClick}
-      _hover={onClick ? { borderColor: "primary.300" } : undefined}
-      transition="border-color 0.16s ease"
+      // The interactive card is the sole affordance for opening the dashboard,
+      // so it must be reachable and operable from the keyboard, not just the
+      // mouse. Expose it as a button and activate on Enter/Space.
+      role={interactive && onClick ? "button" : undefined}
+      tabIndex={interactive && onClick ? 0 : undefined}
+      onKeyDown={
+        interactive && onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      _hover={
+        onClick && !interactive ? { borderColor: "primary.300" } : undefined
+      }
+      _active={
+        interactive && onClick
+          ? { bg: "#F0F4FF", borderColor: "#0049AA" }
+          : undefined
+      }
+      _focusVisible={
+        interactive && onClick
+          ? { outline: "2px solid #0049AA", outlineOffset: "2px" }
+          : undefined
+      }
+      css={
+        interactive
+          ? {
+              "&:hover .info-card-arrow": { opacity: 1 },
+              "&:active .info-card-arrow": { color: "#0049AA" },
+            }
+          : undefined
+      }
+      transition="border-color 0.16s ease, background 0.16s ease"
     >
       <Flex
         w="80px"
@@ -72,7 +114,8 @@ export function InfoCard({
         display="flex"
         flexDirection="column"
         gap="2px"
-        px="16px"
+        pl="16px"
+        pr={interactive ? "44px" : "16px"}
         py={0}
         minW={0}
       >
@@ -132,6 +175,22 @@ export function InfoCard({
           </Flex>
         )}
       </Box>
+      {interactive && (
+        <Flex
+          className="info-card-arrow"
+          position="absolute"
+          right="16px"
+          top="50%"
+          transform="translateY(-50%)"
+          opacity={0}
+          transition="opacity 0.16s ease, color 0.16s ease"
+          color="#656E7B"
+          pointerEvents="none"
+          aria-hidden="true"
+        >
+          <ArrowRightIcon size={20} color="currentColor" />
+        </Flex>
+      )}
     </Flex>
   );
 }

@@ -200,7 +200,7 @@ export default function FutureOfMonitoringSection() {
                   transform: "translateX(-50%)",
                 }}
                 src="/integrations.svg"
-                alt="Global Nature Watch integrations"
+                alt="Global Nature Watch Horizon integrations"
                 fill
               />
             </Box>

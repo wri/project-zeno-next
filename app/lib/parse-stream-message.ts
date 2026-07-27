@@ -32,15 +32,18 @@ export function parseStreamMessage(
   // the update (the agent's narration can follow it in the same update), and
   // the carrying message may be classified as an error. Scan every message so
   // the signal rides on whatever StreamMessage this update produces.
-  let writeSignal: { msg_type: string; dashboard_id?: string } | undefined;
+  let writeSignal:
+    | { msg_type: string; dashboard_id?: string; dashboard_name?: string }
+    | undefined;
   for (const message of langChainMessage.messages ?? []) {
     const meta = message?.kwargs?.response_metadata as
-      | { msg_type?: string; dashboard_id?: string }
+      | { msg_type?: string; dashboard_id?: string; dashboard_name?: string }
       | undefined;
     if (meta?.msg_type) {
       writeSignal = {
         msg_type: meta.msg_type,
         dashboard_id: meta.dashboard_id,
+        dashboard_name: meta.dashboard_name,
       };
       break;
     }
@@ -99,6 +102,7 @@ export function parseStreamMessage(
       // refetch what the agent just changed.
       msg_type: writeSignal?.msg_type,
       dashboard_id: writeSignal?.dashboard_id,
+      dashboard_name: writeSignal?.dashboard_name,
     };
   } else if (messageType === "agent") {
     // For AI messages, handle different content formats

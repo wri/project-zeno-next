@@ -183,12 +183,22 @@ export function useAddInsightWidget(dashboardId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (insightId: string) => addInsightWidget(dashboardId, insightId),
-    onSettled: () => {
+    mutationFn: ({
+      insightId,
+      config,
+    }: {
+      insightId: string;
+      config?: Record<string, unknown>;
+    }) => addInsightWidget(dashboardId, insightId, config),
+    // Return the invalidation promise so the mutation stays `pending` until the
+    // detail refetch lands. This add is not optimistic — `added` only flips once
+    // the refetch reflects the new widget — so without this the button/switch
+    // re-enables the instant the POST resolves, and a fast second click would
+    // re-POST the same insight and create a duplicate widget.
+    onSettled: () =>
       queryClient.invalidateQueries({
         queryKey: dashboardKeys.detail(dashboardId),
-      });
-    },
+      }),
   });
 }
 
