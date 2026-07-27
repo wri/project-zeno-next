@@ -84,6 +84,27 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     expect(msg?.dashboard_id).toBeUndefined();
   });
 
+  it("carries the imagery state through on tool messages", () => {
+    const imagery = {
+      tile_url: "https://tiles.example.com/{z}/{x}/{y}.png",
+      tilejson_url: "https://tiles.example.com/tilejson.json",
+      mosaic_id: "abc123",
+      target_date: "2026-06-15",
+      aoi_names: ["Paracas"],
+    };
+    const update = {
+      ...toolUpdate("show_imagery"),
+      imagery,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg).toMatchObject({
+      type: "tool",
+      name: "show_imagery",
+      imagery,
+    });
+  });
+
   it("finds the signal on an earlier message when the update ends with narration", () => {
     // The signal-bearing tool result and the agent's follow-up can arrive in
     // one update; only the last message decides the StreamMessage type, but
@@ -138,13 +159,42 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
       msg_type: "dashboard_updated",
       dashboard_id: "dash-1",
     });
-    // Content mentioning "Error:" routes the message down the error branch.
-    update.messages[0].kwargs.content = "Recovered from Error: retried ok";
+    // An error status routes the message down the error branch.
+    (update.messages[0].kwargs as { status?: string }).status = "error";
 
     const msg = parseStreamMessage(update, "tools", TS);
     expect(msg?.type).toBe("error");
     expect(msg?.msg_type).toBe("dashboard_updated");
     expect(msg?.dashboard_id).toBe("dash-1");
+  });
+});
+
+describe("parseStreamMessage — tool error classification", () => {
+  it("classifies a status=error tool message as an error", () => {
+    const update = toolUpdate("create_dashboard");
+    (update.messages[0].kwargs as { status?: string }).status = "error";
+    update.messages[0].kwargs.content =
+      "The current selection spans 2 areas. Ask the user which one.";
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg).toMatchObject({ type: "error", name: "create_dashboard" });
+  });
+
+  it("classifies a legacy 'Error:'-prefixed tool message as an error", () => {
+    const update = toolUpdate("pull_data");
+    update.messages[0].kwargs.content = "Error: upstream service unavailable";
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.type).toBe("error");
+  });
+
+  it("keeps a successful tool message that mentions 'Error:' mid-content as a tool message", () => {
+    const update = toolUpdate("pull_data");
+    update.messages[0].kwargs.content =
+      "Pulled 16 data points. One row was skipped (Error: bad geometry).";
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.type).toBe("tool");
   });
 });
 

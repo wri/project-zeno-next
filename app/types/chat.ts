@@ -16,6 +16,9 @@ export interface MessageContext {
 // Type for storing tool execution data
 export interface ToolStepData {
   name: string;
+  /** Set when the tool result was error-classified (recoverable failure or
+   * agent guidance) so the reasoning timeline can mark the step. */
+  status?: "error";
   content?: string;
   dataset?: object;
   insights?: object[];
@@ -162,6 +165,7 @@ export interface StreamMessage {
   suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
+  imagery?: ImageryInfo;
   insights?: object[];
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
@@ -184,6 +188,32 @@ export interface StreamMessage {
   // tells the client to refetch the named resource.
   msg_type?: string;
   dashboard_id?: string;
+}
+
+// Sentinel-2 mosaic payload written to agent state by the show_imagery tool.
+// tile_url / tilejson_url are absolute URLs to the tiler the backend is
+// configured to use (currently the public GFW tiles service). mosaic_id is an
+// opaque recipe token, stable across reruns of the same request.
+export interface ImageryInfo {
+  tile_url: string;
+  tilejson_url: string;
+  mosaic_id: string;
+  // Scene count and acquired date range; optional because payloads written
+  // before wri/project-zeno#758 omitted them on mosaic cache hits.
+  item_count?: number;
+  date_start?: string;
+  date_end?: string;
+  // Observed cloud-cover stats across the mosaic's scenes (%), added by
+  // wri/project-zeno#758 — absent on older payloads.
+  mean_cloud_cover?: number;
+  min_cloud_cover?: number;
+  max_cloud_cover_observed?: number;
+  target_date: string;
+  aoi_names: string[];
+  // Search constraints used to build the mosaic. Absent on payloads created
+  // before these fields existed (replayed old threads).
+  window_days?: number;
+  max_cloud_cover?: number;
 }
 
 export interface AOI {
@@ -300,6 +330,7 @@ export interface LangChainUpdate {
   suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
+  imagery?: ImageryInfo;
   start_date?: string;
   end_date?: string;
   insights: object[];

@@ -146,12 +146,76 @@ export function withText(
 }
 
 /**
+ * The chart ids a widget shows. `config.chartIds` when present — the explicit
+ * subset a user assembled chart-by-chart from the Analyses pane, ordered by the
+ * insight's own chart order. Absent means "all charts", i.e. a widget added
+ * whole (chat toggle or agent), so older configs keep rendering every chart.
+ */
+export function shownChartIds(
+  config: Record<string, unknown>,
+  allChartIds: string[]
+): string[] {
+  const ids = config.chartIds;
+  if (!Array.isArray(ids)) return allChartIds;
+  const wanted = new Set(
+    ids.filter((id): id is string => typeof id === "string")
+  );
+  return allChartIds.filter((id) => wanted.has(id));
+}
+
+/** Whether a specific chart of the insight is currently shown by the widget. */
+export function isChartShown(
+  config: Record<string, unknown>,
+  chartId: string,
+  allChartIds: string[]
+): boolean {
+  return shownChartIds(config, allChartIds).includes(chartId);
+}
+
+/**
+ * The full config to PATCH to add a chart to the shown set (config is replaced
+ * whole). Idempotent. Once every chart is shown the `chartIds` key is dropped so
+ * the widget reverts to the tidy "all charts" form.
+ */
+export function withChartShown(
+  config: Record<string, unknown>,
+  chartId: string,
+  allChartIds: string[]
+): Record<string, unknown> {
+  const shown = new Set(shownChartIds(config, allChartIds));
+  shown.add(chartId);
+  const next = allChartIds.filter((id) => shown.has(id));
+  const out = { ...config };
+  if (next.length >= allChartIds.length) delete out.chartIds;
+  else out.chartIds = next;
+  return out;
+}
+
+/**
+ * The full config to PATCH to hide a chart (config is replaced whole). Returns
+ * `null` when it was the last shown chart — the caller should delete the widget
+ * rather than persist an empty one.
+ */
+export function withChartHidden(
+  config: Record<string, unknown>,
+  chartId: string,
+  allChartIds: string[]
+): Record<string, unknown> | null {
+  const next = shownChartIds(config, allChartIds).filter(
+    (id) => id !== chartId
+  );
+  if (next.length === 0) return null;
+  return { ...config, chartIds: next };
+}
+
+/**
  * Maps a dashboard insight widget (snake_case REST shape) to the
  * `InsightWidget`s consumed by `WidgetMessage` — the persisted counterpart
- * of `generateInsightsTool`, which produces one card per chart. Returns `[]`
- * when there is nothing to render (insight hidden from this viewer, or no
- * charts); the caller shows a "not available" placeholder per the API
- * contract.
+ * of `generateInsightsTool`, which produces one card per chart. Only the
+ * widget's shown charts (`config.chartIds`, or all when absent) are returned.
+ * Returns `[]` when there is nothing to render (insight hidden from this
+ * viewer, or no shown charts); the caller shows a "not available" placeholder
+ * per the API contract.
  *
  * The widget's `config.title` override and the insight narrative apply to
  * the first chart (the card's visual header); provenance parts feed the
@@ -182,8 +246,16 @@ export function dashboardWidgetToInsightWidgets(
     typeof widget.config.title === "string" ? widget.config.title : undefined;
   const analysisParams = areaName ? { areas: [areaName] } : undefined;
 
-  return [...insight.charts]
-    .sort((a, b) => a.position - b.position)
+  const sorted = [...insight.charts].sort((a, b) => a.position - b.position);
+  const shown = new Set(
+    shownChartIds(
+      widget.config,
+      sorted.map((c) => c.id)
+    )
+  );
+
+  return sorted
+    .filter((chart) => shown.has(chart.id))
     .map((chart, index) => {
       const seriesFields = chart.series_fields ?? undefined;
       return {

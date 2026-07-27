@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { apiFetch } from "@/app/lib/api-client";
 import type { Chart, InsightRecord } from "@/src/entities/insight";
-import type { InsightsGateway } from "../model/insights-gateway";
+import type { InsightQuery, InsightsGateway } from "../model/insights-gateway";
 
 // ── Raw API shapes (anti-corruption layer — never leave this file) ─────────────
 // Tolerant by design: chart fields default so a sparse row still parses; only a
@@ -69,11 +69,21 @@ export class RestInsightsGateway implements InsightsGateway {
   constructor(private readonly fetch: FetchFn = apiFetch) {}
 
   async list(
-    threadId?: string | null,
+    query?: InsightQuery,
     signal?: AbortSignal
   ): Promise<InsightRecord[]> {
-    const query = threadId ? `?thread_id=${encodeURIComponent(threadId)}` : "";
-    const response = await this.fetch(`/api/insights${query}`, { signal });
+    const params = new URLSearchParams();
+    if (query?.threadId) params.set("thread_id", query.threadId);
+    // aoi_source + aoi_id are only meaningful as a pair — the backend 400s on
+    // one without the other, so send them only when both are present.
+    if (query?.aoiSource && query?.aoiId) {
+      params.set("aoi_source", query.aoiSource);
+      params.set("aoi_id", query.aoiId);
+    }
+    const qs = params.toString();
+    const response = await this.fetch(`/api/insights${qs ? `?${qs}` : ""}`, {
+      signal,
+    });
 
     // Unauthenticated → empty list (the panel renders a signed-out empty state).
     if (response.status === 401) return [];

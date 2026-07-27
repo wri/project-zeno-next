@@ -16,7 +16,7 @@ import {
 import { usePromptQuota } from "./hooks/usePromptQuota";
 import useChatStore from "./store/chatStore";
 import useSidebarStore from "./store/sidebarStore";
-import { isAppRoute } from "./utils/threadNavigation";
+import { isAppRoute, isDashboardDetailRoute } from "./utils/threadNavigation";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 
@@ -45,11 +45,14 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
   const { dataCatalogOpen, areasPanelOpen, insightsPanelOpen } =
     useSidebarStore();
   const pathname = usePathname();
-  // The catalog/areas/insights panels only render in the map layout; off it
-  // (dashboard pages) their persisted open state must not push the panel sideways.
+  // On the map, any of the three column panels shifts the compact chat aside.
+  // On a dashboard's detail page only the Analyses (insights) pane renders, so
+  // the data catalog / areas open state (which can persist from the map) must
+  // not push the panel sideways there. On any other surface nothing shifts it.
   const chatLeftPx = getCompactChatLeftPx(
-    isAppRoute(pathname) &&
-      (dataCatalogOpen || areasPanelOpen || insightsPanelOpen)
+    isAppRoute(pathname)
+      ? dataCatalogOpen || areasPanelOpen || insightsPanelOpen
+      : isDashboardDetailRoute(pathname) && insightsPanelOpen
   );
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"

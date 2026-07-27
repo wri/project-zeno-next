@@ -14,6 +14,7 @@ import {
   mapWidgetSize,
   widgetSize,
   widgetText,
+  withChartHidden,
   withChartSize,
   withChartTitle,
   withSize,
@@ -324,7 +325,27 @@ export default function DashboardWidgetsGrid({
                       },
                     })
             }
-            onRemove={() => deleteWidget.mutate(widget.id)}
+            onRemove={() => {
+              // A chart card hides just its chart from the widget's shown
+              // set; the widget is deleted only when its last chart goes
+              // (or for placeholder cells that have no chart id).
+              const chartId = card?.id;
+              const charts = widget.insight?.charts;
+              if (!chartId || !charts) {
+                deleteWidget.mutate(widget.id);
+                return;
+              }
+              const allChartIds = [...charts]
+                .sort((a, b) => a.position - b.position)
+                .map((c) => c.id);
+              const next = withChartHidden(widget.config, chartId, allChartIds);
+              if (next === null) deleteWidget.mutate(widget.id);
+              else
+                updateWidget.mutate({
+                  widgetId: widget.id,
+                  patch: { config: next },
+                });
+            }}
           />
         )}
       </Box>

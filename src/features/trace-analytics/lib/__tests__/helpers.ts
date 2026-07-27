@@ -23,6 +23,9 @@ export function makeRow(overrides: Partial<TraceRow> = {}): TraceRow {
     hasInsight: null,
     isGlobal: null,
     language: null,
+    turnIndex: null,
+    insightCreatedThisTurn: null,
+    datasetsAnalysedThisTurn: "",
     ...overrides,
   };
 }

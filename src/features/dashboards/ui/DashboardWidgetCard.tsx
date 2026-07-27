@@ -294,12 +294,14 @@ export default function DashboardWidgetCard({
           <Dialog.Positioner>
             <Dialog.Content>
               <Dialog.Header>
-                <Dialog.Title>Remove widget?</Dialog.Title>
+                <Dialog.Title>
+                  {chartCount > 1 ? "Remove chart?" : "Remove widget?"}
+                </Dialog.Title>
               </Dialog.Header>
               <Dialog.Body>
                 <Text>
                   {chartCount > 1
-                    ? `This analysis has ${chartCount} charts shown as separate cards — removing it removes all of them. The underlying analysis is not deleted.`
+                    ? "Only this chart is removed from the dashboard — the analysis's other charts stay, and the underlying analysis is not deleted."
                     : "The widget will be removed from this dashboard. The underlying analysis is not deleted."}
                 </Text>
               </Dialog.Body>

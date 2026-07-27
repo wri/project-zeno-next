@@ -35,6 +35,8 @@ const aoiBrowsePages = vi.hoisted(() => ({
       ],
     },
     isLoading: false,
+    isFetching: false,
+    isPlaceholderData: false,
     hasNextPage: false,
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
@@ -57,6 +59,8 @@ const aoiBrowsePages = vi.hoisted(() => ({
       ],
     },
     isLoading: false,
+    isFetching: false,
+    isPlaceholderData: false,
     hasNextPage: true,
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
@@ -64,6 +68,8 @@ const aoiBrowsePages = vi.hoisted(() => ({
   wdpa: {
     data: { pages: [{ results: [], nextOffset: null }] },
     isLoading: false,
+    isFetching: false,
+    isPlaceholderData: false,
     hasNextPage: false,
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
@@ -71,11 +77,15 @@ const aoiBrowsePages = vi.hoisted(() => ({
   landmark: {
     data: { pages: [{ results: [], nextOffset: null }] },
     isLoading: false,
+    isFetching: false,
+    isPlaceholderData: false,
     hasNextPage: false,
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
   },
 }));
+
+const REFERENCE_SOURCES = ["gadm", "kba", "wdpa", "landmark"] as const;
 
 const browseCalls = vi.hoisted(() => [] as { source: string; name?: string }[]);
 
@@ -102,6 +112,10 @@ import { useAreaPickerRows } from "../useAreaPickerRows";
 describe("useAreaPickerRows", () => {
   beforeEach(() => {
     browseCalls.length = 0;
+    for (const source of REFERENCE_SOURCES) {
+      aoiBrowsePages[source].isFetching = false;
+      aoiBrowsePages[source].isPlaceholderData = false;
+    }
   });
 
   it("merges reference sources and custom areas for 'all', custom last", async () => {
@@ -164,5 +178,39 @@ describe("useAreaPickerRows", () => {
     const miss = renderHook(() => useAreaPickerRows("custom", "zzz"));
     await waitFor(() => expect(miss.result.current.isLoading).toBe(false));
     expect(miss.result.current.rows).toEqual([]);
+  });
+
+  describe("isSearching", () => {
+    it("is false when no query is in flight", () => {
+      const { result } = renderHook(() => useAreaPickerRows("all", ""));
+      expect(result.current.isSearching).toBe(false);
+    });
+
+    it("is true while any reference query refetches over placeholder data", () => {
+      aoiBrowsePages.gadm.isFetching = true;
+      aoiBrowsePages.gadm.isPlaceholderData = true;
+      const { result } = renderHook(() => useAreaPickerRows("all", "bra"));
+      expect(result.current.isSearching).toBe(true);
+    });
+
+    it("is false for background refetches of current (non-placeholder) data", () => {
+      aoiBrowsePages.gadm.isFetching = true;
+      const { result } = renderHook(() => useAreaPickerRows("all", ""));
+      expect(result.current.isSearching).toBe(false);
+    });
+
+    it("only reflects the active source when a category is scoped", () => {
+      aoiBrowsePages.gadm.isFetching = true;
+      aoiBrowsePages.gadm.isPlaceholderData = true;
+      const { result } = renderHook(() => useAreaPickerRows("kba", "bra"));
+      expect(result.current.isSearching).toBe(false);
+    });
+
+    it("is always false for the custom category (filtered client-side)", () => {
+      aoiBrowsePages.gadm.isFetching = true;
+      aoiBrowsePages.gadm.isPlaceholderData = true;
+      const { result } = renderHook(() => useAreaPickerRows("custom", "farm"));
+      expect(result.current.isSearching).toBe(false);
+    });
   });
 });

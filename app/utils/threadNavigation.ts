@@ -9,6 +9,16 @@ export function isAppRoute(pathname: string | null): boolean {
 }
 
 /**
+ * Whether the pathname is a single dashboard's detail page (`/dashboards/<id>`,
+ * not the `/dashboards` list). The Analyses pane is mounted here as well as on
+ * the map, so surfaces that gate on the pane (the chat input's opener, the
+ * compact chat's sideways shift) use this alongside {@link isAppRoute}.
+ */
+export function isDashboardDetailRoute(pathname: string | null): boolean {
+  return !!pathname?.startsWith("/dashboards/");
+}
+
+/**
  * The canonical map URL for a thread, carrying the hidden-feature flags
  * (?ff=…) from the given `location.search` — dropping them closes the
  * dashboards feature gate on the next navigation or refresh. Other params

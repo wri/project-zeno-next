@@ -48,6 +48,32 @@ describe("refineOutcomes", () => {
     expect(refined[1].refined).toBe("CONTEXT_ANSWER");
   });
 
+  it("orders the context rescue by server turnIndex, not timestamps", () => {
+    // The tool turn has a LATER timestamp but an earlier turnIndex — the
+    // stored index is the truth (timestamps can skew), so the DEFER after it
+    // still counts as answered-from-context.
+    const rows = [
+      makeRow({
+        traceId: "t1",
+        sessionId: "s1",
+        turnIndex: 1,
+        timestamp: "2026-06-01T10:10:00.000Z",
+        outcome: "ANSWER",
+        toolCallCount: 3,
+      }),
+      makeRow({
+        traceId: "t2",
+        sessionId: "s1",
+        turnIndex: 2,
+        timestamp: "2026-06-01T10:00:00.000Z",
+        outcome: "DEFER",
+        toolCallCount: 0,
+        datasetsAnalysed: "",
+      }),
+    ];
+    expect(refineOutcomes(rows)[1].refined).toBe("CONTEXT_ANSWER");
+  });
+
   it("keeps first-turn DEFER without context as DEFER_OTHER, flagging non-English", () => {
     const row = makeRow({
       outcome: "DEFER",
@@ -113,6 +139,32 @@ describe("computeFailureFollowUps", () => {
     expect(followUps.failures).toBe(2);
     expect(followUps.retriedSamePrompt).toBe(1); // normalized prompts match
     expect(followUps.endedSession).toBe(1);
+  });
+
+  it("walks the session in turnIndex order when timestamps disagree", () => {
+    const rows = [
+      makeRow({
+        traceId: "g2",
+        sessionId: "s1",
+        turnIndex: 2,
+        timestamp: "2026-06-01T09:00:00.000Z", // earlier timestamp, later turn
+        outcome: "ANSWER",
+        prompt: "show forest loss",
+      }),
+      makeRow({
+        traceId: "g1",
+        sessionId: "s1",
+        turnIndex: 1,
+        timestamp: "2026-06-01T10:00:00.000Z",
+        outcome: "ERROR",
+        prompt: "show forest loss",
+      }),
+    ];
+    const followUps = computeFailureFollowUps(rows);
+    expect(followUps.failures).toBe(1);
+    // The failure is turn 1; the retry is turn 2 — visible only via turnIndex.
+    expect(followUps.retriedSamePrompt).toBe(1);
+    expect(followUps.endedSession).toBe(0);
   });
 });
 

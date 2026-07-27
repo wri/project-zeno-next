@@ -50,6 +50,9 @@ const TraceListItemSchema = z.looseObject({
   has_insight: z.boolean().nullish(),
   is_global: z.boolean().nullish(),
   language: z.string().nullish(),
+  turn_index: z.coerce.number().nullish(),
+  insight_created_this_turn: z.boolean().nullish(),
+  datasets_analysed_this_turn: z.array(z.string().nullish()).nullish(),
 });
 
 type TraceListItem = z.infer<typeof TraceListItemSchema>;
@@ -119,9 +122,11 @@ export function mapTraceRow(item: TraceListItem): TraceRow {
   const timestamp = Number.isFinite(timestampMs)
     ? new Date(timestampMs).toISOString()
     : null;
-  const datasets = (item.datasets_analysed ?? [])
-    .map((d) => String(d ?? "").trim())
-    .filter(Boolean);
+  const joinDatasets = (values: readonly (string | null | undefined)[]) =>
+    values
+      .map((d) => String(d ?? "").trim())
+      .filter(Boolean)
+      .join(", ");
   const toolErrors = item.tool_error_count ?? 0;
 
   return {
@@ -137,7 +142,7 @@ export function mapTraceRow(item: TraceListItem): TraceRow {
     prompt: item.prompt ?? "",
     aoiName: item.aoi_name ?? "",
     aoiType: item.aoi_type ?? "",
-    datasetsAnalysed: datasets.join(", "),
+    datasetsAnalysed: joinDatasets(item.datasets_analysed ?? []),
     toolCallCount: Math.trunc(item.turn_tool_calls ?? 0),
     turnTokens: Math.trunc(item.turn_tokens ?? 0),
     hasInternalError: toolErrors > 0,
@@ -145,6 +150,11 @@ export function mapTraceRow(item: TraceListItem): TraceRow {
     hasInsight: item.has_insight ?? null,
     isGlobal: item.is_global ?? null,
     language: item.language ?? null,
+    turnIndex: item.turn_index != null ? Math.trunc(item.turn_index) : null,
+    insightCreatedThisTurn: item.insight_created_this_turn ?? null,
+    datasetsAnalysedThisTurn: joinDatasets(
+      item.datasets_analysed_this_turn ?? []
+    ),
   };
 }
 
@@ -169,6 +179,12 @@ export interface TracesFilter {
   readonly userId?: string;
   readonly sessionId?: string;
   readonly promptContains?: string;
+  /** Exact 1-based turn position within the conversation. */
+  readonly turnIndex?: number;
+  readonly minTurnIndex?: number;
+  readonly maxTurnIndex?: number;
+  /** Server-side alias for turnIndex === 1. */
+  readonly firstTurnOnly?: boolean;
 }
 
 export interface PaginationOptions {
@@ -221,6 +237,12 @@ function filterParams(
     user_id: filter.userId || undefined,
     session_id: filter.sessionId || undefined,
     prompt_contains: filter.promptContains || undefined,
+    turn_index: filter.turnIndex != null ? String(filter.turnIndex) : undefined,
+    min_turn_index:
+      filter.minTurnIndex != null ? String(filter.minTurnIndex) : undefined,
+    max_turn_index:
+      filter.maxTurnIndex != null ? String(filter.maxTurnIndex) : undefined,
+    first_turn_only: filter.firstTurnOnly ? "true" : undefined,
   };
 }
 
