@@ -59,12 +59,32 @@ export function InfoCard({
       overflow="hidden"
       cursor={onClick ? "pointer" : "default"}
       onClick={onClick}
+      // The interactive card is the sole affordance for opening the dashboard,
+      // so it must be reachable and operable from the keyboard, not just the
+      // mouse. Expose it as a button and activate on Enter/Space.
+      role={interactive && onClick ? "button" : undefined}
+      tabIndex={interactive && onClick ? 0 : undefined}
+      onKeyDown={
+        interactive && onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       _hover={
         onClick && !interactive ? { borderColor: "primary.300" } : undefined
       }
       _active={
         interactive && onClick
           ? { bg: "#F0F4FF", borderColor: "#0049AA" }
+          : undefined
+      }
+      _focusVisible={
+        interactive && onClick
+          ? { outline: "2px solid #0049AA", outlineOffset: "2px" }
           : undefined
       }
       css={
