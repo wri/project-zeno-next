@@ -386,8 +386,12 @@ async function processStreamMessage(
       );
       return;
     }
-    // Handling for show_imagery tool: render the Sentinel-2 mosaic on the map
-    else if (streamMessage.name === "show_imagery" && streamMessage.imagery) {
+    // Handling for show_imagery tool: render the Sentinel-2 mosaic on the map.
+    // Deliberately not gated on `streamMessage.imagery`: a result carrying no
+    // payload (no scenes matched, soft backend failure) still has to clear the
+    // updating flag, or the legend sits on "Updating mosaic…" until the turn's
+    // safety net fires. showImageryTool no-ops when the payload is missing.
+    else if (streamMessage.name === "show_imagery") {
       // Clear the flag in the same microtask that adds the capture, so the
       // legend swaps "Updating mosaic…" → capture in a single render.
       void Promise.resolve().then(async () => {

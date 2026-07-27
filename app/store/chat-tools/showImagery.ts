@@ -25,10 +25,25 @@ interface TileJson {
  * whatever tiler it is configured to use — currently the public GFW tiles
  * service, which needs no auth. If the tiler is ever the Zeno API itself,
  * its routes require bearer auth, so attach it for API-origin URLs.
+ *
+ * Origins are compared rather than prefix-matched: `startsWith(API_HOST)` also
+ * matches `https://api.staging.globalnaturewatch.org.example.com`, which would
+ * hand that host the user's bearer token.
+ *
+ * Reports back whether the request went to our own API so the caller can tell
+ * an expired session from a third-party tiler refusing the request.
  */
-function fetchTileJson(url: string): Promise<Response> {
-  const headers = url.startsWith(API_CONFIG.API_HOST) ? getAuthHeaders() : {};
-  return fetch(url, { headers });
+async function fetchTileJson(
+  url: string
+): Promise<{ res: Response; sameOrigin: boolean }> {
+  let sameOrigin = false;
+  try {
+    sameOrigin = new URL(url).origin === new URL(API_CONFIG.API_HOST).origin;
+  } catch {
+    // Malformed URL — send no credentials and let fetch reject below.
+  }
+  const res = await fetch(url, { headers: sameOrigin ? getAuthHeaders() : {} });
+  return { res, sameOrigin };
 }
 
 /**
@@ -63,8 +78,11 @@ export async function showImageryTool(
 
   let tileJson: TileJson;
   try {
-    const res = await fetchTileJson(imagery.tilejson_url);
-    if (res.status === 401 || res.status === 403) {
+    const { res, sameOrigin } = await fetchTileJson(imagery.tilejson_url);
+    // Only an auth failure against our own API means the session lapsed. The
+    // public tiler also answers 401/403 for rate limits and expired mosaics,
+    // where telling the user to sign in again sends them down a dead end.
+    if (sameOrigin && (res.status === 401 || res.status === 403)) {
       showApiError(
         "Your session has expired. Please sign in again to view satellite imagery.",
         { title: "Session Expired" }

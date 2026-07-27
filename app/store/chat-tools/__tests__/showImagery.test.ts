@@ -33,7 +33,14 @@ vi.mock("@/app/hooks/useErrorHandler", () => ({
   showApiError: (...args: unknown[]) => showApiError(...args),
 }));
 
+// getAuthHeaders reads localStorage, which the node test environment lacks —
+// stub a signed-in user so the origin gating is observable either way.
+vi.mock("@/app/lib/api-client", () => ({
+  getAuthHeaders: () => ({ Authorization: "Bearer test-token" }),
+}));
+
 import { showImageryTool } from "../showImagery";
+import { API_CONFIG } from "@/app/config/api";
 import type { ChatMessage, ImageryInfo, StreamMessage } from "@/app/types/chat";
 
 type AddMessageFn = (message: Omit<ChatMessage, "id">) => void;
@@ -121,6 +128,32 @@ describe("showImageryTool", () => {
     });
   });
 
+  it("attaches auth when the tiler is the Zeno API itself", async () => {
+    const fetchMock = mockFetch({});
+    const url = `${API_CONFIG.API_HOST}/api/tiles/tilejson.json`;
+
+    await showImageryTool(
+      baseMsg({ imagery: { ...imagery, tilejson_url: url } }),
+      addMessage
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(url, {
+      headers: { Authorization: "Bearer test-token" },
+    });
+  });
+
+  it("does not leak the token to a host that merely starts with the API host", async () => {
+    const fetchMock = mockFetch({});
+    const url = `${API_CONFIG.API_HOST}.evil.example.com/tilejson.json`;
+
+    await showImageryTool(
+      baseMsg({ imagery: { ...imagery, tilejson_url: url } }),
+      addMessage
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(url, { headers: {} });
+  });
+
   it("hides earlier captures and stacks the new one on top of them", async () => {
     mockFetch({});
     mapState.layers = [
@@ -186,12 +219,25 @@ describe("showImageryTool", () => {
     expect(addMessage).not.toHaveBeenCalled();
   });
 
-  it("surfaces an auth error and adds no layer on 401", async () => {
+  it("surfaces an auth error and adds no layer on 401 from the Zeno API", async () => {
     mockFetch({ ok: false, status: 401 });
+    const url = `${API_CONFIG.API_HOST}/api/tiles/tilejson.json`;
+
+    await showImageryTool(
+      baseMsg({ imagery: { ...imagery, tilejson_url: url } }),
+      addMessage
+    );
+
+    expect(showApiError).toHaveBeenCalledOnce();
+    expect(mapState.addLayer).not.toHaveBeenCalled();
+  });
+
+  it("does not claim the session expired when a public tiler returns 403", async () => {
+    mockFetch({ ok: false, status: 403 });
 
     await showImageryTool(baseMsg(), addMessage);
 
-    expect(showApiError).toHaveBeenCalledOnce();
+    expect(showApiError).not.toHaveBeenCalled();
     expect(mapState.addLayer).not.toHaveBeenCalled();
   });
 
