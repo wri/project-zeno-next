@@ -35,6 +35,7 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   firstMessageRedirectPath,
   isAppRoute,
+  isDashboardDetailRoute,
 } from "../utils/threadNavigation";
 
 export default function ChatInput({
@@ -330,32 +331,36 @@ export default function ChatInput({
                     color={areasPanelOpen ? "primary.solid" : undefined}
                     aria-expanded={areasPanelOpen}
                   />
-                  {!isMobile && (
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      borderRadius="sm"
-                      borderWidth="1px"
-                      px="2"
-                      h="8"
-                      gap="1"
-                      fontSize="xs"
-                      fontWeight="normal"
-                      onClick={openInsightsPanel}
-                      disabled={disabled}
-                      borderColor={
-                        insightsPanelOpen ? "primary.solid" : "#E0E2E5"
-                      }
-                      color={insightsPanelOpen ? "primary.solid" : undefined}
-                      aria-expanded={insightsPanelOpen}
-                      aria-label="Analyses"
-                    >
-                      <ChartLineIcon />
-                      Analyses
-                    </Button>
-                  )}
                 </>
               )}
+              {/* The Analyses pane is mounted on the map and on a dashboard's
+                  detail page, so its opener shows on both (unlike the map-only
+                  pickers above). */}
+              {(isAppRoute(pathname) || isDashboardDetailRoute(pathname)) &&
+                !isMobile && (
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    borderRadius="sm"
+                    borderWidth="1px"
+                    px="2"
+                    h="8"
+                    gap="1"
+                    fontSize="xs"
+                    fontWeight="normal"
+                    onClick={openInsightsPanel}
+                    disabled={disabled}
+                    borderColor={
+                      insightsPanelOpen ? "primary.solid" : "#E0E2E5"
+                    }
+                    color={insightsPanelOpen ? "primary.solid" : undefined}
+                    aria-expanded={insightsPanelOpen}
+                    aria-label="Analyses"
+                  >
+                    <ChartLineIcon />
+                    Analyses
+                  </Button>
+                )}
             </Flex>
             <Flex gap="2" ml="auto" alignItems="center">
               {voiceInputEnabled && speech && (

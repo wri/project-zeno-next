@@ -35,6 +35,13 @@ export type ImageryLegendMeta = Partial<
   >
 >;
 
+/**
+ * Payload of an imagery-card chat widget: the streamed ImageryInfo plus the
+ * single-tile preview computed from the mosaic's TileJSON at render time (the
+ * TileJSON bounds are not part of the streamed state).
+ */
+export type ImageryCardData = ImageryInfo & { thumbnail_url?: string };
+
 export const IMAGERY_LAYER_ID_PREFIX = "imagery-";
 export const IMAGERY_LEGEND_GROUP_ID = "imagery-group";
 export const IMAGERY_LAYER_NAME = "Satellite Imagery";
@@ -149,6 +156,44 @@ export function imageryCloudNote(meta: ImageryLegendMeta): string | undefined {
     return undefined;
   }
   return `Searched with a loosened cloud-cover limit (${meta.max_cloud_cover}%) — imagery may contain clouds.`;
+}
+
+// Tight acquired-date range for the chat card, e.g. "Jun 12–16" within one
+// month, "May 28 – Jun 3" across months, full dates across years.
+function formatCardDateRange(startIso: string, endIso: string): string {
+  try {
+    const start = parseISO(startIso);
+    const end = parseISO(endIso);
+    if (format(start, "yyyy-MM") === format(end, "yyyy-MM")) {
+      return format(start, "d") === format(end, "d")
+        ? format(start, "MMM d")
+        : `${format(start, "MMM d")}–${format(end, "d")}`;
+    }
+    if (format(start, "yyyy") === format(end, "yyyy")) {
+      return `${format(start, "MMM d")} – ${format(end, "MMM d")}`;
+    }
+    return `${format(start, "MMM d, yyyy")} – ${format(end, "MMM d, yyyy")}`;
+  } catch {
+    return `${startIso} – ${endIso}`;
+  }
+}
+
+/**
+ * The chat card's caption, e.g. "Jun 12–16 · cloud <50% · Sentinel-2".
+ * Falls back to the target date when the acquired range is unknown.
+ */
+export function imageryCardDescription(meta: ImageryLegendMeta): string {
+  const parts: string[] = [];
+  if (meta.date_start && meta.date_end) {
+    parts.push(formatCardDateRange(meta.date_start, meta.date_end));
+  } else if (meta.target_date) {
+    parts.push(formatImageryDate(meta.target_date));
+  }
+  if (meta.max_cloud_cover !== undefined) {
+    parts.push(`cloud <${meta.max_cloud_cover}%`);
+  }
+  parts.push("Sentinel-2");
+  return parts.join(" · ");
 }
 
 /** Capture-row meta line, e.g. "cloud <50% · 9 scenes". */

@@ -1,13 +1,17 @@
-import { StreamMessage } from "@/app/types/chat";
+import { ChatMessage, InsightWidget, StreamMessage } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { API_CONFIG } from "@/app/config/api";
 import { getAuthHeaders } from "@/app/lib/api-client";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import {
   IMAGERY_ATTRIBUTION,
+  IMAGERY_LAYER_NAME,
+  imageryCardDescription,
   imageryLayerId,
   imageryLayerTitle,
+  imageryThumbnailUrl,
   isImageryLayerId,
+  type ImageryCardData,
 } from "@/app/utils/imagery";
 
 interface TileJson {
@@ -56,8 +60,16 @@ async function fetchTileJson(
  * without the range MapLibre would request tiles outside it and get 404s
  * instead of overscaling. A failure to fetch it is a rare hard error
  * (expired mosaic, malformed URL) and the layer is simply not shown.
+ *
+ * A "Satellite Imagery" data card is added to the chat (dataset-card
+ * pattern) once the layer is on the map — and not when the mosaic turned
+ * out to be unavailable, so the card never advertises imagery the map
+ * doesn't show.
  */
-export async function showImageryTool(streamMessage: StreamMessage) {
+export async function showImageryTool(
+  streamMessage: StreamMessage,
+  addMessage: (message: Omit<ChatMessage, "id">) => void
+) {
   const imagery = streamMessage.imagery;
   if (!imagery) return;
 
@@ -129,4 +141,28 @@ export async function showImageryTool(streamMessage: StreamMessage) {
   // No camera movement here: the viewport was already positioned by
   // pick_aoi, and re-fitting to the mosaic bounds would yank the map
   // away from wherever the user is looking.
+
+  const cardData: ImageryCardData = {
+    ...imagery,
+    thumbnail_url: imageryThumbnailUrl(
+      imagery.tile_url,
+      tileJson.bounds,
+      tileJson.minzoom,
+      tileJson.maxzoom
+    ),
+  };
+  const imageryWidget: InsightWidget = {
+    type: "imagery-card",
+    title: IMAGERY_LAYER_NAME,
+    description: imageryCardDescription(imagery),
+    data: cardData,
+    xAxis: "",
+    yAxis: "",
+  };
+  addMessage({
+    type: "widget",
+    message: "",
+    widgets: [imageryWidget],
+    timestamp: streamMessage.timestamp,
+  });
 }

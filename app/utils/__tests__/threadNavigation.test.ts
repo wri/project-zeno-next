@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   firstMessageRedirectPath,
   isAppRoute,
+  isDashboardDetailRoute,
   mapTabHref,
   newConversationTarget,
   threadClickTarget,
@@ -18,6 +19,18 @@ describe("isAppRoute", () => {
     expect(isAppRoute("/dashboards/abc")).toBe(false);
     expect(isAppRoute("/application")).toBe(false);
     expect(isAppRoute(null)).toBe(false);
+  });
+});
+
+describe("isDashboardDetailRoute", () => {
+  it("matches a single dashboard's detail page", () => {
+    expect(isDashboardDetailRoute("/dashboards/abc")).toBe(true);
+  });
+
+  it("rejects the list page, the map, and null", () => {
+    expect(isDashboardDetailRoute("/dashboards")).toBe(false);
+    expect(isDashboardDetailRoute("/app/threads/t-1")).toBe(false);
+    expect(isDashboardDetailRoute(null)).toBe(false);
   });
 });
 

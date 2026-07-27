@@ -5,8 +5,12 @@ import {
   chartTitleOverride,
   computeReorder,
   dashboardWidgetToInsightWidgets,
+  isChartShown,
+  shownChartIds,
   widgetSize,
   widgetText,
+  withChartHidden,
+  withChartShown,
   withChartSize,
   withChartTitle,
   withSize,
@@ -312,5 +316,91 @@ describe("computeReorder", () => {
     const { order, patches } = computeReorder(widgets, 5, 0);
     expect(order.map((w) => w.id)).toEqual(["a", "b", "c"]);
     expect(patches).toEqual([]);
+  });
+});
+
+describe("shownChartIds / isChartShown", () => {
+  const all = ["c-1", "c-2", "c-3"];
+
+  it("treats a config with no chartIds as all charts shown", () => {
+    expect(shownChartIds({}, all)).toEqual(all);
+    expect(isChartShown({}, "c-2", all)).toBe(true);
+  });
+
+  it("returns the explicit subset in insight-chart order", () => {
+    expect(shownChartIds({ chartIds: ["c-3", "c-1"] }, all)).toEqual([
+      "c-1",
+      "c-3",
+    ]);
+    expect(isChartShown({ chartIds: ["c-1"] }, "c-2", all)).toBe(false);
+  });
+});
+
+describe("withChartShown", () => {
+  const all = ["c-1", "c-2", "c-3"];
+
+  it("adds a chart to an explicit subset, ordered", () => {
+    expect(withChartShown({ chartIds: ["c-1"] }, "c-3", all)).toEqual({
+      chartIds: ["c-1", "c-3"],
+    });
+  });
+
+  it("drops chartIds once every chart is shown", () => {
+    expect(withChartShown({ chartIds: ["c-1", "c-2"] }, "c-3", all)).toEqual(
+      {}
+    );
+  });
+
+  it("is a no-op on an implicit-all config", () => {
+    expect(withChartShown({}, "c-2", all)).toEqual({});
+  });
+});
+
+describe("withChartHidden", () => {
+  const all = ["c-1", "c-2", "c-3"];
+
+  it("materialises the subset when hiding from implicit-all", () => {
+    expect(withChartHidden({}, "c-2", all)).toEqual({
+      chartIds: ["c-1", "c-3"],
+    });
+  });
+
+  it("removes a chart from an explicit subset", () => {
+    expect(withChartHidden({ chartIds: ["c-1", "c-2"] }, "c-1", all)).toEqual({
+      chartIds: ["c-2"],
+    });
+  });
+
+  it("returns null when the last shown chart is hidden", () => {
+    expect(withChartHidden({ chartIds: ["c-2"] }, "c-2", all)).toBeNull();
+  });
+});
+
+describe("dashboardWidgetToInsightWidgets — chartIds filtering", () => {
+  function twoChartWidget(config: Record<string, unknown>): DashboardWidget {
+    return widget({
+      config,
+      insight: {
+        id: "ins-1",
+        insight_text: "",
+        codeact_parts: null,
+        charts: [
+          chart({ id: "c-1", position: 0 }),
+          chart({ id: "c-2", position: 1, title: "CO2" }),
+        ],
+      },
+    });
+  }
+
+  it("renders only the shown charts", () => {
+    const out = dashboardWidgetToInsightWidgets(
+      twoChartWidget({ chartIds: ["c-2"] })
+    );
+    expect(out.map((c) => c.id)).toEqual(["c-2"]);
+  });
+
+  it("renders all charts when config has no chartIds", () => {
+    const out = dashboardWidgetToInsightWidgets(twoChartWidget({}));
+    expect(out.map((c) => c.id)).toEqual(["c-1", "c-2"]);
   });
 });

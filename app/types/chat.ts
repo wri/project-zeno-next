@@ -66,6 +66,7 @@ export interface InsightWidget {
     | "bar"
     | "table"
     | "dataset-card"
+    | "imagery-card"
     | "pie"
     | "stacked-bar"
     | "grouped-bar"
