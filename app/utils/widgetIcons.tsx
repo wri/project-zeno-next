@@ -38,6 +38,7 @@ export const WidgetIcons = {
   pie: <ChartPieSliceIcon />,
   insight: <PresentationChartIcon />,
   "dataset-card": <StackIcon />,
+  "imagery-card": <StackIcon />,
   scatter: <ChartScatterIcon />,
   area: <ChartPolarIcon />,
 };
