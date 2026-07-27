@@ -104,7 +104,10 @@ export default function SettingsShell({
             </Button>
           )}
           <Button asChild>
-            <Link href="https://help.globalnaturewatch.org/" target="_blank">
+            <Link
+              href="https://help.horizon.globalnaturewatch.org/"
+              target="_blank"
+            >
               <LifebuoyIcon />
               Help
             </Link>

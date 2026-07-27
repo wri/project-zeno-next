@@ -493,7 +493,7 @@ function PageHeader() {
         </Button>
         <ChakraLink
           as={Link}
-          href="https://help.globalnaturewatch.org/"
+          href="https://help.horizon.globalnaturewatch.org/"
           target="_blank"
           display="flex"
           alignItems="center"
