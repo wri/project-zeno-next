@@ -1,5 +1,6 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+import type { ChartColorFields } from "@/app/types/chartColors";
 
 export type { BlogArticle };
 
@@ -58,8 +59,9 @@ export interface ChatMessage {
   suppressFooter?: boolean; // Non-terminal segment of a [Chart uuid] split — no footer, tight spacing
 }
 
-// Widget types for insights
-export interface InsightWidget {
+// Widget types for insights. Extends ChartColorFields with the backend color
+// registry's resolution for this chart (absent for pre-migration insights).
+export interface InsightWidget extends ChartColorFields {
   id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
   type:
     | "line"
@@ -89,13 +91,6 @@ export interface InsightWidget {
   // one analysis share it; it is the handle for REST widget adds
   // (POST /api/dashboards/:id/widgets).
   insightId?: string;
-  // Backend color registry resolution (phase 2) — category slug -> hex,
-  // single-series color, and positive/negative colors. Falls back to the
-  // local chartColorMappings.ts config when absent (pre-migration insights,
-  // or a category with no registry entry).
-  colorMap?: Record<string, string>;
-  seriesColor?: string;
-  divergentColors?: { positive: string; negative: string };
 }
 
 // Parameters the agent used to produce an insight (read-only transparency)

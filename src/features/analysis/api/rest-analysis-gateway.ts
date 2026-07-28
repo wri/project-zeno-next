@@ -8,6 +8,7 @@ import type {
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
 import type { Chart } from "@/src/entities/insight";
+import type { DivergentColors } from "@/app/types/chartColors";
 import { AnalysisError } from "../model/analysis-error";
 
 // ── Raw API shapes (anti-corruption layer — never leave this file) ─────────────
@@ -36,7 +37,7 @@ interface RawChart {
   chart_data: Record<string, unknown>[];
   color_map?: Record<string, string>;
   series_color?: string | null;
-  divergent_colors?: { positive: string; negative: string } | null;
+  divergent_colors?: DivergentColors | null;
 }
 
 interface RawInsightResponse {

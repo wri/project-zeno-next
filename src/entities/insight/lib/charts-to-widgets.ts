@@ -1,19 +1,7 @@
 import type { Chart } from "../model/chart";
 import type { AnalysisParams, InsightWidget } from "@/app/types/chat";
+import { pickChartColors } from "@/app/utils/pickChartColors";
 
-/**
- * Presentation ACL: maps insight charts to the shared `InsightWidget` view model.
- *
- * The single convergence point for every insight acquisition path — the direct
- * analysis LRO and the browse/history list both map through here, never at the
- * transport (ADR 0008). `analysisParams`, when supplied, is attached to every
- * widget in the batch.
- *
- * Unknown chart types fall back to "bar" so a bad type never blanks the widget.
- *
- * colorMap/seriesColor/divergentColors are carried through — they drive
- * ChartWidget's backend-color precedence (see formatCharts.tsx).
- */
 const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
   "line",
   "bar",
@@ -26,6 +14,19 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
   "scatter",
 ]);
 
+/**
+ * Presentation ACL: maps insight charts to the shared `InsightWidget` view model.
+ *
+ * The single convergence point for every insight acquisition path — the direct
+ * analysis LRO and the browse/history list both map through here, never at the
+ * transport (ADR 0008). `analysisParams`, when supplied, is attached to every
+ * widget in the batch.
+ *
+ * Unknown chart types fall back to "bar" so a bad type never blanks the widget.
+ *
+ * The registry color fields are carried through — they drive ChartWidget's
+ * backend-color precedence (see formatCharts.tsx).
+ */
 export function chartsToWidgets(
   charts: Chart[],
   analysisParams?: AnalysisParams
@@ -42,10 +43,6 @@ export function chartsToWidgets(
     yAxis: chart.yAxis,
     seriesFields: chart.seriesFields,
     analysisParams,
-    ...(chart.colorMap ? { colorMap: chart.colorMap } : {}),
-    ...(chart.seriesColor ? { seriesColor: chart.seriesColor } : {}),
-    ...(chart.divergentColors
-      ? { divergentColors: chart.divergentColors }
-      : {}),
+    ...pickChartColors(chart),
   }));
 }

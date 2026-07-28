@@ -1,3 +1,5 @@
+import type { DivergentColors } from "@/app/types/chartColors";
+
 /** A single chart produced by an analysis. Mirrors the API's InsightChartResponse. */
 export interface Chart {
   id: string;
@@ -24,5 +26,5 @@ export interface Chart {
   /** Maps to InsightChartResponse.series_color */
   seriesColor?: string | null;
   /** Maps to InsightChartResponse.divergent_colors */
-  divergentColors?: { positive: string; negative: string } | null;
+  divergentColors?: DivergentColors | null;
 }

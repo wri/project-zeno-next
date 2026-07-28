@@ -9,8 +9,10 @@ import useMapStore from "../mapStore";
 import { isAreaLayer } from "../layerManagerSlice";
 import useInsightStore from "../insightStore";
 import useChatStore from "../chatStore";
+import type { ChartColorFields } from "@/app/types/chartColors";
+import { pickChartColors } from "@/app/utils/pickChartColors";
 
-interface ChartData {
+interface ChartData extends ChartColorFields {
   id: string;
   title: string;
   type: "line" | "bar" | "table";
@@ -20,9 +22,6 @@ interface ChartData {
   yAxis: string;
   seriesFields?: string[];
   series_fields?: string[];
-  colorMap?: Record<string, string>;
-  seriesColor?: string;
-  divergentColors?: { positive: string; negative: string };
 }
 
 function getSeriesFields(chart: ChartData): string[] | undefined {
@@ -116,11 +115,7 @@ export function generateInsightsTool(
           yAxis: chart.yAxis,
           ...(seriesFields ? { seriesFields } : {}),
           ...(datasetName ? { datasetName } : {}),
-          ...(chart.colorMap ? { colorMap: chart.colorMap } : {}),
-          ...(chart.seriesColor ? { seriesColor: chart.seriesColor } : {}),
-          ...(chart.divergentColors
-            ? { divergentColors: chart.divergentColors }
-            : {}),
+          ...pickChartColors(chart),
           generation: {
             codeact_parts: streamMessage.codeact_parts,
             source_urls: streamMessage.source_urls,

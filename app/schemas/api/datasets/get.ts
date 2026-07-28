@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { DivergentColors } from "@/app/types/chartColors";
 
 export const DatasetPaletteCategorySchema = z.object({
   slug: z.string(),
@@ -6,10 +7,12 @@ export const DatasetPaletteCategorySchema = z.object({
   color: z.string(),
 });
 
+// `satisfies` keeps this schema pinned to the shared DivergentColors shape:
+// the two must not drift, since chart and legend colors are the same registry.
 export const DatasetDivergentColorsSchema = z.object({
   positive: z.string(),
   negative: z.string(),
-});
+}) satisfies z.ZodType<DivergentColors>;
 
 export const DatasetPaletteSchema = z.object({
   dataset_id: z.number(),
@@ -33,9 +36,6 @@ export const DatasetCatalogResponseSchema = z.object({
 
 export type DatasetPaletteCategory = z.infer<
   typeof DatasetPaletteCategorySchema
->;
-export type DatasetDivergentColors = z.infer<
-  typeof DatasetDivergentColorsSchema
 >;
 export type DatasetPalette = z.infer<typeof DatasetPaletteSchema>;
 export type DatasetCatalogResponse = z.infer<
