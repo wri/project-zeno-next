@@ -771,7 +771,7 @@ export default function OnboardingForm({
                 </Link>{" "}
                 and{" "}
                 <Link
-                  href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+                  href="https://help.horizon.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"
@@ -790,7 +790,7 @@ export default function OnboardingForm({
                 </Link>{" "}
                 and the{" "}
                 <Link
-                  href="https://help.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
+                  href="https://help.horizon.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"
