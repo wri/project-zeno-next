@@ -289,7 +289,7 @@ export default function InsightWorkspace() {
 
             {/* Inner chart card */}
             <Box px={2} pt={0} pb={2}>
-              <WidgetMessage widget={widget} inWorkspace />
+              <WidgetMessage widget={widget} variant="workspace" />
             </Box>
           </Box>
 

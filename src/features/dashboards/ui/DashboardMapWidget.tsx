@@ -48,6 +48,7 @@ export default function DashboardMapWidget({
   aoi,
   bboxOverride,
   tall,
+  interactive = true,
 }: {
   layer: MapWidgetLayer;
   /** The dashboard's (single) area — outline, label + default viewport fit. */
@@ -55,6 +56,12 @@ export default function DashboardMapWidget({
   bboxOverride: [number, number, number, number] | null;
   /** Full-width cards get a taller map. */
   tall?: boolean;
+  /**
+   * Report mode renders the map as a still: no zoom buttons, no pan, and a
+   * read-only legend (symbology stays — a report needs it; the opacity
+   * control goes — that's authoring). Attribution always stays (license).
+   */
+  interactive?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
 
@@ -142,14 +149,19 @@ export default function DashboardMapWidget({
         initialViewState={{ longitude: 0, latitude: 0, zoom: 1 }}
         onLoad={fitToBounds}
         // No scroll-zoom: the widget sits in a scrolling page and must not
-        // trap the wheel. Pan/double-click zoom remain available.
+        // trap the wheel. Pan/double-click zoom remain available (edit mode).
         scrollZoom={false}
         dragRotate={false}
+        dragPan={interactive}
+        doubleClickZoom={interactive}
+        keyboard={interactive}
         attributionControl={false}
       >
         {/* Bottom-left so the legend can occupy the design's bottom-right
             slot; the attribution stacks beneath the zoom buttons. */}
-        <NavigationControl position="bottom-left" showCompass={false} />
+        {interactive && (
+          <NavigationControl position="bottom-left" showCompass={false} />
+        )}
         <AttributionControl compact position="bottom-left" />
         <Source
           id="widget-basemap"
@@ -256,6 +268,7 @@ export default function DashboardMapWidget({
           <DashboardMapLegend
             layer={layer}
             opacity={opacity}
+            readOnly={!interactive}
             onOpacityChange={(target, value) =>
               setOpacity((prev) => ({ ...prev, [target]: value }))
             }

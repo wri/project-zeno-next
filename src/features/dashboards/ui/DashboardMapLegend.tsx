@@ -34,10 +34,13 @@ export interface MapWidgetOpacity {
 export default function DashboardMapLegend({
   layer,
   opacity,
+  readOnly,
   onOpacityChange,
 }: {
   layer: MapWidgetLayer;
   opacity: MapWidgetOpacity;
+  /** Report mode: keep the symbology, drop the opacity control. */
+  readOnly?: boolean;
   onOpacityChange: (target: keyof MapWidgetOpacity, value: number) => void;
 }) {
   const card =
@@ -82,6 +85,7 @@ export default function DashboardMapLegend({
     children: legend.note ? (
       <Text fontSize="xs">{legend.note}</Text>
     ) : undefined,
+    hideOpacityControl: readOnly,
     hideRemoveControl: true,
   };
 
