@@ -103,17 +103,65 @@ describe("mapWidgetLayer — dataset configs", () => {
 });
 
 describe("mapWidgetLayer — imagery configs", () => {
+  const imageryConfig = (overrides: Record<string, unknown> = {}) => ({
+    imagery: {
+      tile_url: "https://tiles.example.org/mosaic/{z}/{x}/{y}.png?url=abc",
+      target_date: "2024-06-01",
+      ...overrides,
+    },
+  });
+
   it("parses an imagery config with a date-stamped fallback title", () => {
-    const layer = mapWidgetLayer({
-      imagery: {
-        tile_url: "https://tiles.example.org/mosaic/{z}/{x}/{y}.png?url=abc",
-        target_date: "2024-06-01",
-      },
-    });
-    expect(layer).toEqual({
+    const layer = mapWidgetLayer(imageryConfig());
+    expect(layer).toMatchObject({
       kind: "imagery",
-      title: "Sentinel-2 imagery, 2024-06-01",
+      title: "Satellite Imagery (Jun 1, 2024)",
       tileUrl: "https://tiles.example.org/mosaic/{z}/{x}/{y}.png?url=abc",
+    });
+  });
+
+  it("applies the mosaic build zoom range to the source", () => {
+    const layer = mapWidgetLayer(imageryConfig());
+    expect(layer?.minzoom).toBe(8);
+    expect(layer?.maxzoom).toBe(14);
+  });
+
+  it("carries the legend metadata through", () => {
+    const layer = mapWidgetLayer(
+      imageryConfig({
+        item_count: 9,
+        date_start: "2024-05-28",
+        date_end: "2024-06-03",
+        mean_cloud_cover: 12.4,
+        window_days: 7,
+        max_cloud_cover: 20,
+        aoi_names: ["Paracas National Reserve"],
+      })
+    );
+    expect(layer?.imagery).toEqual({
+      item_count: 9,
+      date_start: "2024-05-28",
+      date_end: "2024-06-03",
+      mean_cloud_cover: 12.4,
+      target_date: "2024-06-01",
+      window_days: 7,
+      max_cloud_cover: 20,
+      aoi_names: ["Paracas National Reserve"],
+    });
+  });
+
+  it("drops malformed metadata fields individually", () => {
+    const layer = mapWidgetLayer(
+      imageryConfig({
+        item_count: "nine",
+        date_start: 42,
+        window_days: Infinity,
+        aoi_names: [7, "", "Paracas"],
+      })
+    );
+    expect(layer?.imagery).toEqual({
+      target_date: "2024-06-01",
+      aoi_names: ["Paracas"],
     });
   });
 
@@ -121,7 +169,7 @@ describe("mapWidgetLayer — imagery configs", () => {
     const layer = mapWidgetLayer({
       imagery: { tile_url: "https://tiles.example.org/mosaic" },
     });
-    expect(layer?.title).toBe("Sentinel-2 imagery");
+    expect(layer?.title).toBe("Satellite Imagery");
   });
 
   it("returns null when neither dataset nor imagery is present", () => {

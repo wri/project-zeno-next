@@ -15,6 +15,7 @@ import { ChatMessage } from "@/app/types/chat";
 import WidgetMessage from "./WidgetMessage";
 import { AnalysisCard } from "./AnalysisCard";
 import { AreaCard } from "./AreaCard";
+import { DashboardChatCard } from "./DashboardChatCard";
 import Markdown, { type Components } from "react-markdown";
 import {
   ArrowBendDownRightIcon,
@@ -263,6 +264,17 @@ function MessageBubble({
     return (
       <Box my={2} width="100%">
         <AreaCard aoiSelection={message.aoiSelection} />
+      </Box>
+    );
+  }
+
+  if (message.type === "dashboard-card" && message.dashboardId) {
+    return (
+      <Box my={2} width="100%">
+        <DashboardChatCard
+          dashboardId={message.dashboardId}
+          dashboardName={message.dashboardName}
+        />
       </Box>
     );
   }

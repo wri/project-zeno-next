@@ -564,3 +564,183 @@ describe("chatStore.acceptAnalyseNudge", () => {
     ).toBe(true);
   });
 });
+
+// --- dashboard_updated → dashboard-card emission -------------------------
+
+/**
+ * One NDJSON line as the backend streams it for a dashboard write: a tools
+ * node whose ToolMessage carries the dashboard_updated signal (and, since the
+ * backend started sending it, the dashboard's name) in response_metadata.
+ */
+function dashboardWriteLine(
+  dashboardId: string,
+  dashboardName?: string,
+  tool = "create_dashboard"
+): string {
+  const update = {
+    dashboard_id: dashboardId,
+    messages: [
+      {
+        lc: 1,
+        type: "constructor",
+        id: ["x"],
+        kwargs: {
+          content: "ok",
+          type: "tool",
+          name: tool,
+          id: `m-${dashboardId}-${tool}`,
+          status: "success",
+          response_metadata: {
+            msg_type: "dashboard_updated",
+            dashboard_id: dashboardId,
+            ...(dashboardName ? { dashboard_name: dashboardName } : {}),
+          },
+        },
+      },
+    ],
+  };
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-21T00:00:00.000Z",
+    update: JSON.stringify(update),
+  });
+}
+
+/** A Response-like object that streams the given NDJSON lines, then ends. */
+function ndjsonResponse(lines: string[]): Response {
+  const encoder = new TextEncoder();
+  let delivered = false;
+  const reader = {
+    read: () => {
+      if (delivered) {
+        return Promise.resolve({ done: true, value: undefined });
+      }
+      delivered = true;
+      return Promise.resolve({
+        done: false,
+        value: encoder.encode(lines.join("\n") + "\n"),
+      });
+    },
+    releaseLock: () => {},
+    cancel: () => Promise.resolve(),
+  };
+  return {
+    ok: true,
+    headers: new Headers(),
+    body: { getReader: () => reader },
+  } as unknown as Response;
+}
+
+function dashboardCards() {
+  return useChatStore
+    .getState()
+    .messages.filter((m) => m.type === "dashboard-card");
+}
+
+describe("dashboard_updated stream signal → dashboard-card message", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  it("surfaces a navigation card with the streamed id and name", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
+    );
+
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    expect(dashboardCards()).toHaveLength(1);
+    expect(dashboardCards()[0]).toMatchObject({
+      dashboardId: "dash-1",
+      dashboardName: "Paraná",
+    });
+  });
+
+  it("announces a create with an assistant message ahead of the card", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
+    );
+
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    const messages = useChatStore.getState().messages;
+    const noteIndex = messages.findIndex(
+      (m) =>
+        m.type === "assistant" &&
+        m.message.includes('created the "Paraná" dashboard')
+    );
+    const cardIndex = messages.findIndex((m) => m.type === "dashboard-card");
+    expect(noteIndex).toBeGreaterThan(-1);
+    expect(cardIndex).toBe(noteIndex + 1);
+  });
+
+  it("uses the updated wording when the write is not a create", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("add it to my dashboard");
+
+    const note = useChatStore
+      .getState()
+      .messages.find(
+        (m) =>
+          m.type === "assistant" &&
+          m.message.includes('updated the "Paraná" dashboard')
+      );
+    expect(note).toBeDefined();
+  });
+
+  it("emits one card per dashboard per turn across create + widget adds", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná"),
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+        dashboardWriteLine("dash-1", "Paraná", "add_map_widget"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("dashboard with widgets");
+
+    expect(dashboardCards()).toHaveLength(1);
+    // The synthetic announcement is deduped with its card — and since the
+    // create streamed first, it keeps the "created" wording.
+    const notes = useChatStore
+      .getState()
+      .messages.filter(
+        (m) => m.type === "assistant" && m.message.includes("dashboard")
+      );
+    expect(notes).toHaveLength(1);
+    expect(notes[0].message).toContain("created");
+  });
+
+  it("surfaces the card again when a later turn touches the same dashboard", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
+    );
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+      ])
+    );
+    await useChatStore.getState().sendMessage("add the insight to it");
+
+    expect(dashboardCards()).toHaveLength(2);
+  });
+
+  it("keeps the card (without a name) when the backend predates dashboard_name", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1")])
+    );
+
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    expect(dashboardCards()).toHaveLength(1);
+    expect(dashboardCards()[0].dashboardName).toBeUndefined();
+  });
+});

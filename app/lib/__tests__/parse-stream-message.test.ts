@@ -60,11 +60,12 @@ function toolUpdate(
 }
 
 describe("parseStreamMessage — tool response_metadata write signals", () => {
-  it("carries msg_type and dashboard_id through on tool messages", () => {
+  it("carries msg_type, dashboard_id and dashboard_name through on tool messages", () => {
     const msg = parseStreamMessage(
       toolUpdate("add_to_dashboard", {
         msg_type: "dashboard_updated",
         dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+        dashboard_name: "Paraná",
       }),
       "tools",
       TS
@@ -74,6 +75,7 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
       name: "add_to_dashboard",
       msg_type: "dashboard_updated",
       dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+      dashboard_name: "Paraná",
     });
   });
 
@@ -112,6 +114,7 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     const signalBearing = toolUpdate("add_to_dashboard", {
       msg_type: "dashboard_updated",
       dashboard_id: "dash-1",
+      dashboard_name: "Paraná",
     }).messages[0];
     const narration = agentUpdate("Added it to your dashboard.").messages[0];
     const update = {
@@ -124,6 +127,7 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
       text: "Added it to your dashboard.",
       msg_type: "dashboard_updated",
       dashboard_id: "dash-1",
+      dashboard_name: "Paraná",
     });
   });
 

@@ -1,4 +1,12 @@
 import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
+import { imageryLayerTitle, type ImageryLegendMeta } from "@/app/utils/imagery";
+
+// The backend builds Sentinel-2 mosaics for this zoom range only; tile
+// requests outside it 404, and without maxzoom MapLibre goes blank past the
+// range instead of overscaling. The persisted config carries no TileJSON,
+// so the known build range is applied statically.
+const IMAGERY_MIN_ZOOM = 8;
+const IMAGERY_MAX_ZOOM = 14;
 
 /**
  * A renderable map-widget layer parsed from a `widget_type: "map"` config
@@ -21,10 +29,19 @@ export interface MapWidgetLayer {
   parameters?: Record<string, unknown>;
   startDate?: string;
   endDate?: string;
+  // Imagery-kind fields.
+  /** Raster source zoom bounds — mosaics only exist for z8–14. */
+  minzoom?: number;
+  maxzoom?: number;
+  /** Mosaic metadata driving the widget's legend (DashboardMapLegend). */
+  imagery?: ImageryLegendMeta;
 }
 
 const str = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value : undefined;
+
+const num = (value: unknown): number | undefined =>
+  typeof value === "number" && Number.isFinite(value) ? value : undefined;
 
 // Config parameters are `[{ name, values }]` (per the handoff); the legend
 // wants a `{ name: firstValue }` record — same reduction the explorer's
@@ -52,6 +69,36 @@ function patchPrimaryForest(url: string): string {
   return url.includes("umd_regional_primary_forest")
     ? wrapPrimaryForestTileUrl(url)
     : url;
+}
+
+// The legend-relevant slice of a config's imagery snapshot (the ImageryState
+// fields add_map_widget persists). Validated per-field: a malformed field is
+// dropped, not the whole legend.
+function imageryMeta(im: Record<string, unknown>): ImageryLegendMeta {
+  const itemCount = num(im.item_count);
+  const dateStart = str(im.date_start);
+  const dateEnd = str(im.date_end);
+  const meanCloudCover = num(im.mean_cloud_cover);
+  const targetDate = str(im.target_date);
+  const windowDays = num(im.window_days);
+  const maxCloudCover = num(im.max_cloud_cover);
+  const aoiNames = Array.isArray(im.aoi_names)
+    ? im.aoi_names.filter(
+        (name): name is string => typeof name === "string" && !!name.trim()
+      )
+    : [];
+  return {
+    ...(itemCount !== undefined ? { item_count: itemCount } : {}),
+    ...(dateStart ? { date_start: dateStart } : {}),
+    ...(dateEnd ? { date_end: dateEnd } : {}),
+    ...(meanCloudCover !== undefined
+      ? { mean_cloud_cover: meanCloudCover }
+      : {}),
+    ...(targetDate ? { target_date: targetDate } : {}),
+    ...(windowDays !== undefined ? { window_days: windowDays } : {}),
+    ...(maxCloudCover !== undefined ? { max_cloud_cover: maxCloudCover } : {}),
+    ...(aoiNames.length > 0 ? { aoi_names: aoiNames } : {}),
+  };
 }
 
 /**
@@ -111,15 +158,14 @@ export function mapWidgetLayer(
     const im = imagery as Record<string, unknown>;
     const tileUrl = str(im.tile_url);
     if (!tileUrl) return null;
-    const targetDate = str(im.target_date);
+    const meta = imageryMeta(im);
     return {
       kind: "imagery",
-      title:
-        titleOverride ??
-        (targetDate
-          ? `Sentinel-2 imagery, ${targetDate}`
-          : "Sentinel-2 imagery"),
+      title: titleOverride ?? imageryLayerTitle(meta.target_date),
       tileUrl,
+      minzoom: IMAGERY_MIN_ZOOM,
+      maxzoom: IMAGERY_MAX_ZOOM,
+      imagery: meta,
     };
   }
 

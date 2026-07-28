@@ -76,6 +76,8 @@ export interface ImageryLegendGroup {
   /** show_imagery announced but its result not yet streamed. */
   updating: boolean;
   thumbnailUrl?: string;
+  /** Hosts where the layer isn't removable (dashboard map widgets). */
+  hideRemoveControl?: boolean;
 }
 
 /** A renderable legend entry: a dataset layer card or the imagery group. */

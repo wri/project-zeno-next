@@ -10,6 +10,7 @@ import {
   chartSize,
   computeReorder,
   dashboardWidgetToInsightWidgets,
+  imageryWidgetSize,
   widgetSize,
   widgetText,
   withChartHidden,
@@ -195,7 +196,9 @@ export default function DashboardWidgetsGrid({
         const { widget, card } = cell;
         const size = card?.id
           ? chartSize(widget.config, card.id)
-          : widgetSize(widget.config);
+          : cell.map?.kind === "imagery"
+            ? imageryWidgetSize(widget.config)
+            : widgetSize(widget.config);
         const title =
           card?.title ??
           cell.map?.title ??

@@ -38,6 +38,7 @@ export interface ChatMessage {
     | "system"
     | "widget"
     | "area-card"
+    | "dashboard-card"
     | "error"
     | "warning"
     | "dataset-nudge"
@@ -48,6 +49,8 @@ export interface ChatMessage {
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   aoiSelection?: AOISelection; // For area-card messages
+  dashboardId?: string; // For dashboard-card messages
+  dashboardName?: string; // For dashboard-card messages; absent on threads that predate the backend streaming it
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
@@ -189,6 +192,7 @@ export interface StreamMessage {
   // tells the client to refetch the named resource.
   msg_type?: string;
   dashboard_id?: string;
+  dashboard_name?: string;
 }
 
 // Sentinel-2 mosaic payload written to agent state by the show_imagery tool.
