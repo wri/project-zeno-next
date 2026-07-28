@@ -132,7 +132,7 @@ export default function NotFound() {
               Privacy Policy
             </Text>
           </a>
-          <a href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy">
+          <a href="https://help.horizon.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy">
             <Text as="span" textDecoration="underline" color="text.muted">
               AI Privacy Policy
             </Text>
@@ -142,7 +142,7 @@ export default function NotFound() {
               Terms of Use
             </Text>
           </a>
-          <a href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use">
+          <a href="https://help.horizon.globalnaturewatch.org/global-nature-watch-ai-terms-of-use">
             <Text as="span" textDecoration="underline" color="text.muted">
               AI Terms of Use
             </Text>

@@ -3,6 +3,7 @@ import CHART_COLOR_MAPPING, {
   DATASET_SERIES_COLORS,
   DATASET_DIVERGENT_COLORS,
 } from "@/app/config/chartColorMappings";
+import type { ChartColorFields } from "@/app/types/chartColors";
 
 interface InputData {
   [key: string]: unknown | unknown;
@@ -17,6 +18,12 @@ interface ChartSeries {
   color: string;
   stackId?: string;
 }
+
+// Sibling column the backend attaches next to a categorical column (e.g.
+// "driver__slug" next to "driver") carrying a stable, untranslated slug —
+// see src/agent/subagents/analyst/charts/color_resolver.py. `colorMap` below
+// is keyed by that slug, not by the (possibly translated) display value.
+const SLUG_COLUMN_SUFFIX = "__slug";
 
 function isNumericValue(value: unknown): boolean {
   if (value === null || value === undefined || value === "") return false;
@@ -101,6 +108,10 @@ function filterChartDataColumns(
  * @param xAxis The key to use for the x-axis.
  * @param yAxis The key to use for the y-axis (required for scatter charts).
  * @param seriesFields Explicit metric columns for multi-series charts.
+ * @param colorOverrides Backend-resolved colors (phase 2 of the color
+ *   registry). When present they take precedence over the local
+ *   `chartColorMappings.ts` config, which remains the fallback for
+ *   pre-migration insights and categories with no registry entry.
  * @returns An object containing the transformed `data` and `series` arrays.
  */
 export default function formatChartData(
@@ -118,7 +129,8 @@ export default function formatChartData(
   xAxis?: string,
   yAxis?: string,
   datasetName?: string,
-  seriesFields?: string[]
+  seriesFields?: string[],
+  colorOverrides?: ChartColorFields
 ): { data: ChartData[]; series: ChartSeries[] } {
   const empty = { data: [], series: [] };
 
@@ -146,6 +158,10 @@ export default function formatChartData(
 
   const xAxisKey = xAxis || keys[0]; //identify dataset
   const valueKeys = resolveValueKeys(keys, xAxisKey, yAxis, seriesFields);
+  // The pie branch resolves per-row colors off this sibling slug column (see
+  // SLUG_COLUMN_SUFFIX) — keep it even though it's not an axis/value column,
+  // or scoping below would silently discard it.
+  const xAxisSlugKey = `${xAxisKey}${SLUG_COLUMN_SUFFIX}`;
   // Scatter needs a third (name/label) column beyond x and y, so scoping to
   // [xAxis, yAxis] would discard it and leave the chart unable to render.
   const shouldScopeColumns =
@@ -153,7 +169,11 @@ export default function formatChartData(
     (Boolean(seriesFields?.length) ||
       (Boolean(yAxis) && type !== "grouped-bar"));
   const scopedData = shouldScopeColumns
-    ? filterChartDataColumns(data, [xAxisKey, ...valueKeys])
+    ? filterChartDataColumns(data, [
+        xAxisKey,
+        ...valueKeys,
+        ...(keys.includes(xAxisSlugKey) ? [xAxisSlugKey] : []),
+      ])
     : data;
   const scopedFirstRow = scopedData[0];
   if (
@@ -168,9 +188,6 @@ export default function formatChartData(
   const chartRows = scopedData as InputData[];
 
   const defaultColors = getChartColors();
-  const chartColors = chartRows.map(
-    (_, index) => defaultColors[index % defaultColors.length]
-  );
 
   // --- Logic for PIE charts ---
   if (type === "pie") {
@@ -179,49 +196,57 @@ export default function formatChartData(
       return { data: [], series: [] };
     }
 
+    const backendColorMap = colorOverrides?.colorMap;
     const colorPalette = CHART_COLOR_MAPPING[xAxisKey];
-    let pieChartColors: string[] = [];
+    const paletteByValue = colorPalette
+      ? new Map(colorPalette.map((item) => [item.value, item.color]))
+      : undefined;
 
-    if (colorPalette) {
-      const valueToColorMap = new Map(
-        colorPalette.map((item) => [item.value, item.color])
+    // Precedence per row: backend registry (keyed by the untranslated slug,
+    // falling back to the display value) → local palette → default rotation.
+    const pieChartColors = chartRows.map((item, index) => {
+      const slug = String(item[xAxisSlugKey] ?? item[xAxisKey]);
+      return (
+        backendColorMap?.[slug] ||
+        paletteByValue?.get(String(item[xAxisKey])) ||
+        defaultColors[index % defaultColors.length]
       );
-      pieChartColors = chartRows.map((item, index) => {
-        const key = String(item[xAxisKey]);
-        return (
-          valueToColorMap.get(key) ||
-          defaultColors[index % defaultColors.length]
-        );
-      });
-    } else {
-      pieChartColors = chartColors;
-    }
+    });
 
     // For Pie charts, we need to add a color to each data point.
     const transformedData = chartRows.map((item, index) => ({
       ...item,
-      color: pieChartColors[index % pieChartColors.length],
+      color: pieChartColors[index],
     })) as ChartData[];
 
     let series: ChartSeries[];
 
-    if (colorPalette) {
-      // Create a map for quick color lookup
-      const valueToColorMap = new Map(
-        colorPalette.map((item) => [item.value, item.color])
+    if (backendColorMap) {
+      // Backend-resolved colors win outright (they're already computed into
+      // pieChartColors above, per-row, via the __slug column) — build the
+      // legend from first-seen row order, de-duplicated by display label.
+      // colorMap has no inherent ordering, unlike the local
+      // CHART_COLOR_MAPPING array, and a row's translated label may not
+      // match the local palette's English `value` even when one exists.
+      const seen = new Set<string>();
+      series = [];
+      chartRows.forEach((item, index) => {
+        const label = String(item[xAxisKey]);
+        if (seen.has(label)) return;
+        seen.add(label);
+        series.push({ name: label, color: pieChartColors[index] });
+      });
+    } else if (colorPalette) {
+      // Order the legend by the local palette, keeping only the values that
+      // actually appear in the data.
+      const presentValues = new Set(
+        transformedData.map((item) => item[xAxisKey])
       );
-
-      // Create a map for the original data values for sorting
-      const dataValueMap = new Map(
-        transformedData.map((item) => [item[xAxisKey], item])
-      );
-
-      // Sort the series based on the order in colorPalette
       series = colorPalette
-        .filter((paletteItem) => dataValueMap.has(paletteItem.value)) // Ensure the item exists in the data
+        .filter((paletteItem) => presentValues.has(paletteItem.value))
         .map((paletteItem) => ({
           name: paletteItem.value,
-          color: valueToColorMap.get(paletteItem.value) || "#000000", // Fallback color
+          color: paletteItem.color,
         }));
     } else {
       // Fallback to default series generation if no color palette is defined
@@ -258,9 +283,9 @@ export default function formatChartData(
       name: item[nameKey],
     }));
 
-    const datasetColor = datasetName
-      ? DATASET_SERIES_COLORS[datasetName]
-      : undefined;
+    const datasetColor =
+      colorOverrides?.seriesColor ??
+      (datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined);
     const series: ChartSeries[] = [
       {
         name: nameKey, // The series name can be derived from the label key
@@ -289,12 +314,12 @@ export default function formatChartData(
     }
 
     // Single series
-    const divergent = datasetName
-      ? DATASET_DIVERGENT_COLORS[datasetName]
-      : undefined;
-    const datasetColor = datasetName
-      ? DATASET_SERIES_COLORS[datasetName]
-      : undefined;
+    const divergent =
+      colorOverrides?.divergentColors ??
+      (datasetName ? DATASET_DIVERGENT_COLORS[datasetName] : undefined);
+    const datasetColor =
+      colorOverrides?.seriesColor ??
+      (datasetName ? DATASET_SERIES_COLORS[datasetName] : undefined);
 
     // For bar charts with divergent colors, add per-bar _barColor based on value sign
     if (type === "bar" && divergent && chartValueKeys.length === 1) {

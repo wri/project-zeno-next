@@ -36,6 +36,16 @@ import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 
 /**
+ * Column count follows the grid's own width, not the viewport: the full-size
+ * chat is a fixed overlay that narrows the content area without changing the
+ * viewport, so a viewport breakpoint would keep two columns the cards can't
+ * fit into (each has a real minimum — chart toolbar + axis margins — of
+ * roughly 330px) and the grid would overflow the page horizontally. 700px
+ * fits two minimum-width cards plus the gap.
+ */
+const TWO_COLUMN_QUERY = "@container widgets-grid (min-width: 700px)";
+
+/**
  * One grid cell. A widget whose insight has several charts renders one cell
  * per chart (each its own card, per design); map widgets render one cell
  * with `map` set; placeholder cells (unsupported widget type, hidden
@@ -141,9 +151,9 @@ function cellSize(cell: GridCell): WidgetSize {
  * Layout is `packCells`' segments rather than CSS grid rows: each card is
  * only as tall as its content, and a run of half-width cards deals into two
  * tightly-stacked columns so short cards don't leave voids beside tall
- * neighbours. On mobile everything is one column — the segment wrappers
- * flatten away (`display: contents`) and each card's `order` restores the
- * flat arrangement order.
+ * neighbours. Below `TWO_COLUMN_QUERY` everything is one column — the segment
+ * wrappers flatten away (`display: contents`) and each card's `order` restores
+ * the flat arrangement order.
  */
 export default function DashboardWidgetsGrid({
   dashboard,
@@ -224,9 +234,12 @@ export default function DashboardWidgetsGrid({
     return (
       <Box
         key={cell.key}
-        // Mobile flattens the column wrappers, so the flat arrangement
-        // order is restored per card; on lg, DOM order rules each column.
-        order={{ base: i, lg: 0 }}
+        // One column flattens the column wrappers, so the flat arrangement
+        // order is restored per card; in two columns, DOM order rules each
+        // column. Cards clip internally rather than force the page wider than
+        // the container near the two-column threshold.
+        minW={0}
+        css={{ order: i, [TWO_COLUMN_QUERY]: { order: 0 } }}
         draggable={isOwner && grabbedKey === cell.key}
         onDragStart={(e) => {
           // Required for Firefox to initiate drag-and-drop.
@@ -353,32 +366,38 @@ export default function DashboardWidgetsGrid({
   };
 
   return (
-    <Flex direction="column" gap={4} align="stretch">
-      {segments.map((segment) =>
-        segment.kind === "full" ? (
-          renderCell(segment.cell.item, segment.cell.index)
-        ) : (
-          <Flex
-            key={`columns-${segment.left[0]?.item.key ?? "empty"}`}
-            gap={4}
-            align="flex-start"
-            display={{ base: "contents", lg: "flex" }}
-          >
-            {[segment.left, segment.right].map((column, side) => (
-              <Flex
-                key={side === 0 ? "left" : "right"}
-                direction="column"
-                gap={4}
-                flex="1"
-                minW={0}
-                display={{ base: "contents", lg: "flex" }}
-              >
-                {column.map((packed) => renderCell(packed.item, packed.index))}
-              </Flex>
-            ))}
-          </Flex>
-        )
-      )}
-    </Flex>
+    <Box css={{ containerType: "inline-size", containerName: "widgets-grid" }}>
+      <Flex direction="column" gap={4} align="stretch">
+        {segments.map((segment) =>
+          segment.kind === "full" ? (
+            renderCell(segment.cell.item, segment.cell.index)
+          ) : (
+            <Flex
+              key={`columns-${segment.left[0]?.item.key ?? "empty"}`}
+              gap={4}
+              align="flex-start"
+              display="contents"
+              css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
+            >
+              {[segment.left, segment.right].map((column, side) => (
+                <Flex
+                  key={side === 0 ? "left" : "right"}
+                  direction="column"
+                  gap={4}
+                  flex="1"
+                  minW={0}
+                  display="contents"
+                  css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
+                >
+                  {column.map((packed) =>
+                    renderCell(packed.item, packed.index)
+                  )}
+                </Flex>
+              ))}
+            </Flex>
+          )
+        )}
+      </Flex>
+    </Box>
   );
 }

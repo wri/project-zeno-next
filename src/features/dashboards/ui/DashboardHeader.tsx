@@ -30,9 +30,12 @@ import { useRenameDashboard } from "./dashboardQueries";
 export default function DashboardHeader({
   dashboard,
   isOwner,
+  condensed = false,
 }: {
   dashboard: Dashboard;
   isOwner: boolean;
+  /** Pinned-bar variant: the title truncates with an ellipsis instead of wrapping. */
+  condensed?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
@@ -76,7 +79,7 @@ export default function DashboardHeader({
   return (
     <Flex justify="space-between" align="flex-start" gap={6}>
       <Box minW={0} flex="1">
-        <Flex align="center" gap="12px">
+        <Flex align="center" gap="12px" minW={0}>
           {editing ? (
             <Input
               value={draft}
@@ -96,12 +99,18 @@ export default function DashboardHeader({
             />
           ) : (
             <Heading
-              as="h1"
+              // The pinned bar duplicates the page title — keep one h1 per page.
+              as={condensed ? "h2" : "h1"}
               fontSize="30px"
               lineHeight="36px"
               fontWeight="normal"
               color="#131619"
-              wordBreak="break-word"
+              // The theme's globalCss gives every h2 a 16px margin-bottom,
+              // which would stretch the title row in the condensed variant.
+              mb="0"
+              {...(condensed
+                ? { truncate: true, minW: 0 }
+                : { wordBreak: "break-word" as const })}
             >
               {dashboard.name}
             </Heading>
@@ -120,7 +129,8 @@ export default function DashboardHeader({
           )}
         </Flex>
         <Text
-          mt="7px"
+          // 8px title-to-timestamp gap per the Figma header frames.
+          mt="8px"
           fontFamily="mono"
           fontSize="10px"
           lineHeight="16px"

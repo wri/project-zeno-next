@@ -5,23 +5,24 @@ export const PREVIEW_BODY =
 
 export const PREVIEW_FEEDBACK_EMAIL = "landcarbonlab@wri.org";
 
-export const PREVIEW_HELP_CENTER_URL = "https://help.globalnaturewatch.org/";
+export const PREVIEW_HELP_CENTER_URL =
+  "https://help.horizon.globalnaturewatch.org/";
 
 export const PREVIEW_LINKS = [
   {
     label: "FAQs",
-    href: "https://help.globalnaturewatch.org/support/faqs",
+    href: "https://help.horizon.globalnaturewatch.org/support/faqs",
   },
   {
     label: "Capabilities",
-    href: "https://help.globalnaturewatch.org/get-started/capabilities-and-datasets",
+    href: "https://help.horizon.globalnaturewatch.org/get-started/capabilities-and-datasets",
   },
   {
     label: "Accuracy",
-    href: "https://help.globalnaturewatch.org/get-started/accuracy-and-performance",
+    href: "https://help.horizon.globalnaturewatch.org/get-started/accuracy-and-performance",
   },
   {
     label: "Known Issues",
-    href: "https://help.globalnaturewatch.org/resources/known-issues",
+    href: "https://help.horizon.globalnaturewatch.org/resources/known-issues",
   },
 ];

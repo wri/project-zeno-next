@@ -1,5 +1,6 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+import type { ChartColorFields } from "@/app/types/chartColors";
 
 export type { BlogArticle };
 
@@ -38,6 +39,7 @@ export interface ChatMessage {
     | "system"
     | "widget"
     | "area-card"
+    | "dashboard-card"
     | "error"
     | "warning"
     | "dataset-nudge"
@@ -48,6 +50,8 @@ export interface ChatMessage {
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   aoiSelection?: AOISelection; // For area-card messages
+  dashboardId?: string; // For dashboard-card messages
+  dashboardName?: string; // For dashboard-card messages; absent on threads that predate the backend streaming it
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
@@ -58,8 +62,9 @@ export interface ChatMessage {
   suppressFooter?: boolean; // Non-terminal segment of a [Chart uuid] split — no footer, tight spacing
 }
 
-// Widget types for insights
-export interface InsightWidget {
+// Widget types for insights. Extends ChartColorFields with the backend color
+// registry's resolution for this chart (absent for pre-migration insights).
+export interface InsightWidget extends ChartColorFields {
   id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
   type:
     | "line"
@@ -188,6 +193,7 @@ export interface StreamMessage {
   // tells the client to refetch the named resource.
   msg_type?: string;
   dashboard_id?: string;
+  dashboard_name?: string;
 }
 
 // Sentinel-2 mosaic payload written to agent state by the show_imagery tool.

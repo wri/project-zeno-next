@@ -8,6 +8,7 @@ import type {
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
 import type { Chart } from "@/src/entities/insight";
+import type { DivergentColors } from "@/app/types/chartColors";
 import { AnalysisError } from "../model/analysis-error";
 
 // ── Raw API shapes (anti-corruption layer — never leave this file) ─────────────
@@ -34,6 +35,9 @@ interface RawChart {
   group_field?: string;
   series_fields?: string[];
   chart_data: Record<string, unknown>[];
+  color_map?: Record<string, string>;
+  series_color?: string | null;
+  divergent_colors?: DivergentColors | null;
 }
 
 interface RawInsightResponse {
@@ -210,6 +214,9 @@ export class RestAnalysisGateway implements AnalysisGateway {
           groupField: c.group_field ?? "",
           seriesFields: c.series_fields ?? [],
           data: c.chart_data,
+          colorMap: c.color_map,
+          seriesColor: c.series_color,
+          divergentColors: c.divergent_colors,
         })
       ),
     };
