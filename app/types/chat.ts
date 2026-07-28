@@ -1,5 +1,6 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+import type { ChartColorFields } from "@/app/types/chartColors";
 
 export type { BlogArticle };
 
@@ -61,8 +62,9 @@ export interface ChatMessage {
   suppressFooter?: boolean; // Non-terminal segment of a [Chart uuid] split — no footer, tight spacing
 }
 
-// Widget types for insights
-export interface InsightWidget {
+// Widget types for insights. Extends ChartColorFields with the backend color
+// registry's resolution for this chart (absent for pre-migration insights).
+export interface InsightWidget extends ChartColorFields {
   id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
   type:
     | "line"
