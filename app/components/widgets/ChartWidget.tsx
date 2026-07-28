@@ -315,36 +315,41 @@ export default function ChartWidget({
   expanded = false,
   fitYAxis = false,
 }: ChartWidgetProps) {
-  const { data, xAxis, yAxis, type, seriesFields } = widget;
+  const {
+    data,
+    xAxis,
+    yAxis,
+    type,
+    seriesFields,
+    datasetName,
+    colorMap,
+    seriesColor,
+    divergentColors,
+  } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
+  // Depends on the individual fields rather than `widget`: callers rebuild the
+  // widget object on render (see chartsToWidgets), but these values come
+  // straight off the fetched chart and keep a stable identity.
   const { data: formattedData, series } = useMemo(
     () =>
       xAxis
-        ? formatChartData(
-            data,
-            type,
-            xAxis,
-            yAxis,
-            widget.datasetName,
-            seriesFields,
-            {
-              colorMap: widget.colorMap,
-              seriesColor: widget.seriesColor,
-              divergentColors: widget.divergentColors,
-            }
-          )
+        ? formatChartData(data, type, xAxis, yAxis, datasetName, seriesFields, {
+            colorMap,
+            seriesColor,
+            divergentColors,
+          })
         : { data: [], series: [] },
     [
       data,
       type,
       xAxis,
       yAxis,
-      widget.datasetName,
+      datasetName,
       seriesFields,
-      widget.colorMap,
-      widget.seriesColor,
-      widget.divergentColors,
+      colorMap,
+      seriesColor,
+      divergentColors,
     ]
   );
 
