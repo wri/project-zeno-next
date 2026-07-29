@@ -54,7 +54,7 @@ export default function Partners() {
             lineHeight="1.7"
             color="whiteAlpha.800"
           >
-            Amazon.ia is launching in 2026 with a seed grant from the{" "}
+            Amazon.ia is launching in 2026 with founding support from the{" "}
             <Text as="span" color="white" fontWeight="500">
               Bezos Earth Fund
             </Text>
