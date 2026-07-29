@@ -695,9 +695,11 @@ function useDatasetOptions(chartType: string) {
 interface FixtureCardProps {
   fixture: { label: string; notes: string; widget: InsightWidget };
   showSeparator: boolean;
+  /** Render as a full-width (two-column) dashboard card would. */
+  fullWidth: boolean;
 }
 
-function FixtureCard({ fixture, showSeparator }: FixtureCardProps) {
+function FixtureCard({ fixture, showSeparator, fullWidth }: FixtureCardProps) {
   const [datasetOverride, setDatasetOverride] = useState<string | null>(null);
   const options = useDatasetOptions(fixture.widget.type);
   const canPickDataset = DATASET_COLOR_TYPES.has(fixture.widget.type);
@@ -790,7 +792,7 @@ function FixtureCard({ fixture, showSeparator }: FixtureCardProps) {
         </Flex>
       )}
 
-      <WidgetMessage widget={widget} />
+      <WidgetMessage widget={widget} fullWidth={fullWidth} />
       {showSeparator && <Separator mt={8} />}
     </Box>
   );
@@ -803,6 +805,9 @@ function FixtureCard({ fixture, showSeparator }: FixtureCardProps) {
 export default function ChartDebugPanel() {
   const [filter, setFilter] = useState<string>("all");
   const [showPalettes, setShowPalettes] = useState(false);
+  // Mirrors the dashboard card widths: single column (~592px) vs a card
+  // spanning both columns of the 1232px detail page.
+  const [fullWidth, setFullWidth] = useState(false);
 
   const categories = [
     { key: "all", label: "All" },
@@ -833,7 +838,7 @@ export default function ChartDebugPanel() {
 
   return (
     <Box bg="bg.subtle" minH="100vh" py={8}>
-      <Container maxW="592px">
+      <Container maxW={fullWidth ? "1200px" : "592px"}>
         <Flex align="center" gap={3} mb={2}>
           <Heading size="lg" m={0}>
             Chart Debug Panel
@@ -860,6 +865,16 @@ export default function ChartDebugPanel() {
               {c.label}
             </Button>
           ))}
+          <Button
+            size="xs"
+            variant={fullWidth ? "solid" : "outline"}
+            colorPalette={fullWidth ? "primary" : undefined}
+            onClick={() => setFullWidth((v) => !v)}
+            aria-pressed={fullWidth}
+            title="Render fixtures at the width of a full-width (two-column) dashboard card"
+          >
+            Full-width card
+          </Button>
         </Flex>
 
         {/* Color palette viewer */}
@@ -1041,6 +1056,7 @@ export default function ChartDebugPanel() {
               key={idx}
               fixture={fixture}
               showSeparator={idx < filtered.length - 1}
+              fullWidth={fullWidth}
             />
           ))}
         </Flex>

@@ -123,7 +123,8 @@ export default function DashboardWidgetCard({
   return (
     <Flex
       flexDir="column"
-      h="100%"
+      // Content height on purpose: the packed grid stacks cards tightly, so
+      // a card must never stretch to a taller neighbour's height.
       bg="#F7F9FF"
       borderWidth="1px"
       borderColor="#DDE2F5"
@@ -277,7 +278,7 @@ export default function DashboardWidgetCard({
       ) : (
         card && (
           <Box px="8px" pb="8px" flex="1" minW={0}>
-            <WidgetMessage widget={card} inWorkspace />
+            <WidgetMessage widget={card} inWorkspace fullWidth={isDouble} />
           </Box>
         )
       )}
