@@ -1,0 +1,2 @@
+patchedDependencies:
+  "@vis.gl/react-maplibre@8.0.4": patches/@vis.gl__react-maplibre@8.0.4.patch

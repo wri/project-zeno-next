@@ -11,6 +11,7 @@ import {
   QueryType,
   ToolStepData,
   SuggestedDataset,
+  BlogArticle,
   AnalyseSuggestion,
   ViewAnalysisSuggestion,
 } from "@/app/types/chat";
@@ -24,13 +25,16 @@ import {
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
+import { mergeCitedArticlesIntoMap } from "@/app/lib/blog-citations";
 import { apiFetch } from "@/app/lib/api-client";
-import { getToolErrorMessage } from "@/app/lib/tool-display";
+import { getToolErrorMessage, isKnownTool } from "@/app/lib/tool-display";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
+import { showImageryTool } from "./chat-tools/showImagery";
 import { queryClient } from "@/app/lib/query-client";
+import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
 import {
   showApiError,
   showError,
@@ -38,6 +42,14 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
+import {
+  canUseFeatureFlags,
+  effectiveAgentProfile,
+  EXPERIMENTAL_PROFILE,
+} from "@/app/config/feature-flags";
+import useAgentProfileStore from "./agentProfileStore";
+import useViewContextStore from "./viewContextStore";
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -47,11 +59,16 @@ interface ChatState {
   // arriving. Distinct from isLoading (true for the whole request) so the
   // insight workspace loading state surfaces only when an insight is on the way.
   isGeneratingInsight: boolean;
+  // True only while the agent is actively building a mosaic — i.e. between
+  // the agent announcing a show_imagery tool call and that tool's result
+  // arriving. Drives the legend's "Updating mosaic…" state.
+  isImageryUpdating: boolean;
   abortController: AbortController | null;
   currentThreadId: string | null;
   toolSteps: ToolStepData[];
   pendingTraceId: string | null;
   reasoningStartTime: number | null; // Timestamp when reasoning started
+  citedArticlesBySlug: Record<string, BlogArticle>;
   // The selected date range — the one query concern with no map/layer
   // counterpart, so it is owned here directly.
   dateRange: { start: Date; end: Date } | null;
@@ -60,6 +77,9 @@ interface ChatState {
   // when it changes. Reset per thread (cleared by reset(), seeded by
   // fetchThread, folded forward by the agent's own pick_aoi/pick_dataset).
   lastSentContext: ContextKeys;
+  // Layer ids the user dismissed from the chat-input context chips. Map layers
+  // stay visible; only the next message's ui_context / chip snapshot omits them.
+  excludedContextLayerIds: string[];
 }
 
 interface ChatActions {
@@ -77,6 +97,7 @@ interface ChatActions {
   ) => Promise<{ isNew: boolean; id: string }>;
   setLoading: (loading: boolean) => void;
   setGeneratingInsight: (generating: boolean) => void;
+  setImageryUpdating: (updating: boolean) => void;
   generateNewThread: () => string;
   fetchThread: (
     threadId: string,
@@ -86,8 +107,11 @@ interface ChatActions {
   addToolStep: (toolData: StreamMessage) => void;
   clearToolSteps: () => void;
   attachToolStepsToLastUserMessage: (durationOverride?: number) => void;
+  mergeCitedArticles: (articles: BlogArticle[]) => void;
   setDateRange: (range: { start: Date; end: Date }) => void;
   clearDateRange: () => void;
+  excludeLayerFromContext: (layerId: string) => void;
+  includeLayerInContext: (layerId: string) => void;
   // Fold the agent's own picks into the last-sent context so they are never
   // echoed back to the backend on the next user message.
   foldSentContext: (partial: Partial<ContextKeys>) => void;
@@ -100,21 +124,24 @@ const initialState: ChatState = {
       type: "system",
       message: `**Welcome to Global Nature Watch Horizon!**
 
-Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
+Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Nature Watch](https://globalnaturewatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
 
-You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
+You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.horizon.globalnaturewatch.org/get-started).`,
       timestamp: new Date().toISOString(),
     },
   ],
   isLoading: false,
   isGeneratingInsight: false,
+  isImageryUpdating: false,
   abortController: null,
   currentThreadId: null,
   toolSteps: [],
   pendingTraceId: null,
   reasoningStartTime: null,
+  citedArticlesBySlug: {},
   dateRange: null,
   lastSentContext: emptyContextKeys(),
+  excludedContextLayerIds: [],
 };
 
 /**
@@ -160,6 +187,25 @@ function parseLangChainLine(rawLine: string): StreamMessage | null {
   return parseStreamMessage(updateObject, messageType, date);
 }
 
+// One dashboard card per dashboard per user turn: dashboard_updated fires on
+// creation and again for every widget add, but a single navigation card is
+// enough. Scanning back only to the last user message lets a later turn that
+// touches the same dashboard surface the card again.
+function dashboardCardExistsThisTurn(dashboardId: string): boolean {
+  const messages = useChatStore.getState().messages;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message.type === "user") return false;
+    if (
+      message.type === "dashboard-card" &&
+      message.dashboardId === dashboardId
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
@@ -170,8 +216,61 @@ async function processStreamMessage(
   attachTraceToLastAssistant: (traceId: string) => boolean,
   getPendingNudge: () => SuggestedDataset[] | null,
   setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
+  mergeCitedArticles: (articles: BlogArticle[]) => void,
   setGeneratingInsight: (generating: boolean) => void
 ) {
+  // The agent wrote to a dashboard (created it or added a widget) — refetch
+  // it. Keyed on the metadata signal rather than the tool name so new backend
+  // dashboard tools work without a dispatch entry here; checked before the
+  // type branching because the signal can ride on a tool result, an
+  // error-classified message, or the agent narration in the same update.
+  // insight_updated (update_insight_display: chart renamed, retyped or
+  // remapped) also invalidates dashboards: the dashboard detail cache embeds
+  // the expanded insight, so its widgets render stale titles otherwise.
+  if (
+    streamMessage.msg_type === "dashboard_updated" ||
+    streamMessage.msg_type === "insight_updated"
+  ) {
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+  }
+
+  // A dashboard write also surfaces a synthetic assistant line plus a
+  // navigation card in the thread — the stream carries only the dashboard's
+  // id and name, so the card is the user's one affordance to open what the
+  // agent just created or changed.
+  if (
+    streamMessage.msg_type === "dashboard_updated" &&
+    streamMessage.dashboard_id &&
+    !dashboardCardExistsThisTurn(streamMessage.dashboard_id)
+  ) {
+    // The signal itself doesn't distinguish a create from a widget add, but
+    // the tool result it rides on does. When it rides on agent narration or
+    // an error-classified message instead, there is no tool name — default
+    // to the "updated" wording.
+    const isCreate =
+      streamMessage.type === "tool" &&
+      streamMessage.name === "create_dashboard";
+    const name = streamMessage.dashboard_name;
+    addMessage({
+      type: "assistant",
+      message: isCreate
+        ? name
+          ? `I've created the "${name}" dashboard. Open the card below to view it — I can keep adding insights to it as we explore.`
+          : "I've created a dashboard for you. Open the card below to view it — I can keep adding insights to it as we explore."
+        : name
+          ? `I've updated the "${name}" dashboard. Open the card below to see the changes.`
+          : "I've updated your dashboard. Open the card below to see the changes.",
+      timestamp: streamMessage.timestamp,
+    });
+    addMessage({
+      type: "dashboard-card",
+      message: "",
+      dashboardId: streamMessage.dashboard_id,
+      dashboardName: streamMessage.dashboard_name,
+      timestamp: streamMessage.timestamp,
+    });
+  }
+
   // Capture standalone trace metadata sent as a separate stream message
   if (streamMessage.type === "other" && streamMessage.name === "trace") {
     if (streamMessage.trace_id) {
@@ -191,6 +290,9 @@ async function processStreamMessage(
     if (streamMessage.tool_calls?.includes("generate_insights")) {
       setGeneratingInsight(true);
     }
+    if (streamMessage.tool_calls?.includes("show_imagery")) {
+      useChatStore.getState().setImageryUpdating(true);
+    }
     return;
   }
   if (streamMessage.type === "error") {
@@ -198,6 +300,10 @@ async function processStreamMessage(
     // state so the workspace skeleton doesn't linger while the agent recovers.
     if (streamMessage.name === "generate_insights") {
       setGeneratingInsight(false);
+    }
+    // Likewise no mosaic is coming — clear the legend's updating state.
+    if (streamMessage.name === "show_imagery") {
+      useChatStore.getState().setImageryUpdating(false);
     }
     // Handle timeout errors specifically
     if (streamMessage.name === "timeout") {
@@ -212,13 +318,23 @@ async function processStreamMessage(
         { title: "Request Timed Out" }
       );
     } else {
-      // No toast: the agent recovers with a follow-up assistant message,
-      // so a toast would falsely suggest the chat itself is broken.
-      addMessage({
-        type: "warning",
-        message: getToolErrorMessage(streamMessage.name),
-        timestamp: streamMessage.timestamp,
-      });
+      // Keep the failed step visible in the reasoning timeline either way.
+      if (streamMessage.name) {
+        addToolStep(streamMessage);
+      }
+      if (isKnownTool(streamMessage.name)) {
+        // No toast: the agent recovers with a follow-up assistant message,
+        // so a toast would falsely suggest the chat itself is broken.
+        addMessage({
+          type: "warning",
+          message: getToolErrorMessage(streamMessage.name),
+          timestamp: streamMessage.timestamp,
+        });
+      }
+      // Tools outside the display map get no chat warning: their error
+      // results are agent guidance (e.g. create_dashboard's "ask the user
+      // which area" redirect) or unexpected failures, and in both cases the
+      // agent's follow-up text explains the situation to the user.
     }
     // TODO: StreamMessage.type "text" currently represents assistant messages.
     // Consider renaming server-emitted type to "assistant" and updating this
@@ -229,6 +345,9 @@ async function processStreamMessage(
     // while the chart is computed.
     if (streamMessage.tool_calls?.includes("generate_insights")) {
       setGeneratingInsight(true);
+    }
+    if (streamMessage.tool_calls?.includes("show_imagery")) {
+      useChatStore.getState().setImageryUpdating(true);
     }
     const pending = getPendingTraceId();
     const traceToUse = streamMessage.trace_id || pending || undefined;
@@ -261,6 +380,10 @@ async function processStreamMessage(
       setPendingTraceId(null);
     }
   } else if (streamMessage.type === "tool") {
+    if (streamMessage.cited_articles?.length) {
+      mergeCitedArticles(streamMessage.cited_articles);
+    }
+
     // Add tool step to reasoning display
     if (streamMessage.name) {
       addToolStep(streamMessage);
@@ -319,6 +442,21 @@ async function processStreamMessage(
       );
       return;
     }
+    // Handling for show_imagery tool: render the Sentinel-2 mosaic on the map.
+    // Deliberately not gated on `streamMessage.imagery`: a result carrying no
+    // payload (no scenes matched, soft backend failure) still has to clear the
+    // updating flag, or the legend sits on "Updating mosaic…" until the turn's
+    // safety net fires. showImageryTool no-ops when the payload is missing.
+    else if (streamMessage.name === "show_imagery") {
+      // Clear the flag in the same microtask that adds the capture, so the
+      // legend swaps "Updating mosaic…" → capture in a single render.
+      void Promise.resolve().then(async () => {
+        // Non-blocking: TileJSON fetch shouldn't stall the stream
+        await showImageryTool(streamMessage);
+        useChatStore.getState().setImageryUpdating(false);
+      });
+      return;
+    }
   }
 }
 
@@ -332,6 +470,25 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setDateRange: (range) => set({ dateRange: range }),
   clearDateRange: () => set({ dateRange: null }),
+
+  excludeLayerFromContext: (layerId) =>
+    set((state) =>
+      state.excludedContextLayerIds.includes(layerId)
+        ? state
+        : {
+            excludedContextLayerIds: [
+              ...state.excludedContextLayerIds,
+              layerId,
+            ],
+          }
+    ),
+
+  includeLayerInContext: (layerId) =>
+    set((state) => ({
+      excludedContextLayerIds: state.excludedContextLayerIds.filter(
+        (id) => id !== layerId
+      ),
+    })),
 
   foldSentContext: (partial) =>
     set((state) => ({
@@ -448,10 +605,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // The chip snapshot records the complete context; ui_context only carries
     // the slots that changed since the last send (the backend is non-idempotent).
     const { layers, geoJsonRegistry } = useMapStore.getState();
+    const excludedLayerIds = new Set(get().excludedContextLayerIds);
     const { uiContext, keys, snapshot } = deriveContext(
       layers,
       geoJsonRegistry,
-      get().dateRange
+      get().dateRange,
+      excludedLayerIds
     );
 
     // Add user message with a read-only snapshot of the context it was sent with
@@ -468,16 +627,43 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // Reset any stale insight-generating flag from a prior turn; it is set
     // true only once this turn's agent announces a generate_insights call.
     setGeneratingInsight(false);
+    get().setImageryUpdating(false);
 
     const ui_context = diffUiContext(uiContext, keys, get().lastSentContext);
     // Record what we're sending so the same context isn't re-announced next
     // turn. Agent picks arriving during the stream fold their slots on top.
     set({ lastSentContext: keys });
 
+    // Send the agent profile as `ff` only when a profile is selected and the
+    // user type is allowed to use feature flags (else the backend 403s).
+    const userType = useAuthStore.getState().userType;
+    const viewContext = useViewContextStore.getState().viewContext;
+    // The dashboard agent tools live in the backend's experimental profile, so
+    // default to it whenever the dashboards feature is active — either on a
+    // dashboard surface or with the ?ff=dashboard gate open — letting a single
+    // ?ff=dashboard stand in for ?agent_profile=experimental. Read live: nav
+    // helpers carry ?ff=dashboard across the thread-URL rewrite, so this tracks
+    // the visible feature rather than persisting a separate flag.
+    const dashboardsFeatureActive =
+      viewContext?.page === "dashboard" ||
+      (typeof window !== "undefined" &&
+        isFeatureEnabled(
+          new URLSearchParams(window.location.search),
+          "dashboard"
+        ));
+    const ff =
+      effectiveAgentProfile(
+        useAgentProfileStore.getState().agentProfile,
+        userType
+      ) ??
+      (dashboardsFeatureActive && canUseFeatureFlags(userType)
+        ? EXPERIMENTAL_PROFILE
+        : null);
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
       thread_id: threadId,
+      ...(ff && { ff }),
     };
 
     // Set up abort controller for client-side timeout and user cancellation
@@ -499,6 +685,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         body: JSON.stringify({
           ...prompt,
           ...(Object.keys(ui_context).length > 0 && { ui_context }),
+          // Ambient surface snapshot (map vs dashboard) — lets the backend
+          // scope "here"/"this dashboard" per turn. See viewContextStore.
+          ...(viewContext && { view_context: viewContext }),
         }),
         signal: abortController.signal,
       });
@@ -555,6 +744,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               (datasets) => {
                 pendingNudge = datasets;
               },
+              get().mergeCitedArticles,
               setGeneratingInsight
             );
           } catch (err) {
@@ -661,9 +851,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       attachToolStepsToLastUserMessage();
 
       setLoading(false);
-      // Safety net: clear the insight-generating flag in case generate_insights
-      // was announced but never produced a result (error, abort, timeout).
+      // Safety net: clear the tool-in-flight flags in case generate_insights /
+      // show_imagery was announced but never produced a result (error, abort,
+      // timeout).
       setGeneratingInsight(false);
+      get().setImageryUpdating(false);
 
       queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };
@@ -674,6 +866,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
 
   setGeneratingInsight: (generating) =>
     set({ isGeneratingInsight: generating }),
+
+  setImageryUpdating: (updating) => set({ isImageryUpdating: updating }),
 
   cancelRequest: () => {
     const controller = get().abortController;
@@ -687,6 +881,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         ...state.toolSteps,
         {
           name: toolData.name || "unknown",
+          ...(toolData.type === "error" ? { status: "error" as const } : {}),
           content: toolData.content,
           dataset: toolData.dataset,
           insights: toolData.insights,
@@ -733,6 +928,15 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     });
   },
 
+  mergeCitedArticles: (articles) => {
+    set((state) => ({
+      citedArticlesBySlug: mergeCitedArticlesIntoMap(
+        state.citedArticlesBySlug,
+        articles
+      ),
+    }));
+  },
+
   fetchThread: async (threadId: string, abort?: AbortController) => {
     const {
       setLoading,
@@ -740,12 +944,13 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       addMessage,
       addToolStep,
       clearToolSteps,
+      mergeCitedArticles,
       setDateRange,
     } = get();
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
-    set({ reasoningStartTime: Date.now() });
+    set({ reasoningStartTime: Date.now(), citedArticlesBySlug: {} });
     setLoading(true);
     setGeneratingInsight(false);
     // Set up abort controller for client-side timeout
@@ -820,7 +1025,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               const { snapshot } = deriveContext(
                 layers,
                 geoJsonRegistry,
-                get().dateRange
+                get().dateRange,
+                new Set(get().excludedContextLayerIds)
               );
 
               addMessage({
@@ -857,6 +1063,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
               (datasets) => {
                 pendingNudgeThread = datasets;
               },
+              mergeCitedArticles,
               setGeneratingInsight
             );
           } catch (err) {
@@ -905,29 +1112,40 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         }
       }
     } finally {
-      set({ currentThreadId: threadId });
       clearTimeout(timeoutId);
 
-      // Seed the last-sent context from the fully rehydrated layers + date
-      // range, so the first new message on this thread only sends what changed.
-      const { layers, geoJsonRegistry } = useMapStore.getState();
-      const { keys } = deriveContext(layers, geoJsonRegistry, get().dateRange);
-      set({ lastSentContext: keys });
+      // Strict Mode / navigation cleanup aborts the in-flight fetch. Do not mark
+      // the thread as loaded or seed context from a partial replay.
+      if (!abortController.signal.aborted) {
+        set({ currentThreadId: threadId });
 
-      // Flush any remaining tool steps for the last user message
-      const finalToolSteps = get().toolSteps;
-      if (finalToolSteps.length > 0) {
-        const first = new Date(finalToolSteps[0].timestamp).getTime();
-        const last = new Date(
-          finalToolSteps[finalToolSteps.length - 1].timestamp
-        ).getTime();
-        const historicalDuration =
-          isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
-        get().attachToolStepsToLastUserMessage(historicalDuration);
+        // Seed the last-sent context from the fully rehydrated layers + date
+        // range, so the first new message on this thread only sends what changed.
+        const { layers, geoJsonRegistry } = useMapStore.getState();
+        const { keys } = deriveContext(
+          layers,
+          geoJsonRegistry,
+          get().dateRange,
+          new Set(get().excludedContextLayerIds)
+        );
+        set({ lastSentContext: keys });
+
+        // Flush any remaining tool steps for the last user message
+        const finalToolSteps = get().toolSteps;
+        if (finalToolSteps.length > 0) {
+          const first = new Date(finalToolSteps[0].timestamp).getTime();
+          const last = new Date(
+            finalToolSteps[finalToolSteps.length - 1].timestamp
+          ).getTime();
+          const historicalDuration =
+            isNaN(first) || isNaN(last) ? 0 : (last - first) / 1000;
+          get().attachToolStepsToLastUserMessage(historicalDuration);
+        }
       }
 
       setLoading(false);
       setGeneratingInsight(false);
+      get().setImageryUpdating(false);
     }
   },
 }));

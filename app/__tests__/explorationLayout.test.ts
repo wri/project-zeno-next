@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   getCompactChatLeftPx,
   getCatalogLeftPx,
+  getDashboardContentLeftPx,
   getMapAreaToolsLeftPx,
   getMapControlsLeftPx,
   getMapFeedbackLeftPx,
@@ -63,5 +64,13 @@ describe("explorationLayout", () => {
 
   it("places map feedback past the full-size chat when the catalog is closed", () => {
     expect(getMapFeedbackLeftPx(true, false)).toBe(436);
+  });
+
+  it("shifts dashboard content past the full-size chat panel", () => {
+    expect(getDashboardContentLeftPx(true)).toBe(436);
+  });
+
+  it("keeps dashboard content unshifted when the chat is compact", () => {
+    expect(getDashboardContentLeftPx(false)).toBe(0);
   });
 });

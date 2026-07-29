@@ -22,9 +22,32 @@ export function parseStreamMessage(
   const content = kwargs.content;
   // Extract trace identifier from response metadata (canonical field)
   const responseMetadata =
-    (kwargs.response_metadata as { trace_id?: string } | undefined) ||
-    undefined;
+    (kwargs.response_metadata as
+      | { trace_id?: string; msg_type?: string; dashboard_id?: string }
+      | undefined) || undefined;
   const traceId = responseMetadata?.trace_id;
+
+  // A write signal (e.g. dashboard_updated) rides on a tool message's
+  // response_metadata, but that message is not necessarily the last one in
+  // the update (the agent's narration can follow it in the same update), and
+  // the carrying message may be classified as an error. Scan every message so
+  // the signal rides on whatever StreamMessage this update produces.
+  let writeSignal:
+    | { msg_type: string; dashboard_id?: string; dashboard_name?: string }
+    | undefined;
+  for (const message of langChainMessage.messages ?? []) {
+    const meta = message?.kwargs?.response_metadata as
+      | { msg_type?: string; dashboard_id?: string; dashboard_name?: string }
+      | undefined;
+    if (meta?.msg_type) {
+      writeSignal = {
+        msg_type: meta.msg_type,
+        dashboard_id: meta.dashboard_id,
+        dashboard_name: meta.dashboard_name,
+      };
+      break;
+    }
+  }
 
   if (messageType === "human") {
     return {
@@ -38,10 +61,13 @@ export function parseStreamMessage(
       trace_id: traceId,
     };
   } else if (messageType === "tools") {
-    // Check if this is an error from a tool
+    // Check if this is an error from a tool. `status` is the canonical
+    // signal; the "Error:" prefix is a legacy one from older backend tool
+    // errors that carried no status. Prefix only — a successful result that
+    // merely mentions "Error:" mid-content must not be classified as one.
     if (
       kwargs.status === "error" ||
-      (typeof content === "string" && content.includes("Error:"))
+      (typeof content === "string" && content.startsWith("Error:"))
     ) {
       return {
         type: "error",
@@ -49,6 +75,7 @@ export function parseStreamMessage(
         content: typeof content === "string" ? content : String(content),
         timestamp: timestamp.toISOString(),
         trace_id: traceId,
+        ...(writeSignal ?? {}),
       };
     }
 
@@ -61,13 +88,21 @@ export function parseStreamMessage(
       suggested_datasets: langChainMessage.suggested_datasets || undefined,
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
+      insight_id: langChainMessage.insight_id || undefined,
       codeact_parts: langChainMessage.codeact_parts || [],
       source_urls: langChainMessage.source_urls || [],
+      cited_articles: langChainMessage.cited_articles || undefined,
       insight_count: langChainMessage.insight_count || 0,
       aoi: langChainMessage.aoi || undefined,
       aoi_selection: langChainMessage.aoi_selection || undefined,
+      imagery: langChainMessage.imagery || undefined,
       timestamp: timestamp.toISOString(),
       trace_id: traceId,
+      // Write signals (e.g. dashboard_updated) ride along so the client can
+      // refetch what the agent just changed.
+      msg_type: writeSignal?.msg_type,
+      dashboard_id: writeSignal?.dashboard_id,
+      dashboard_name: writeSignal?.dashboard_name,
     };
   } else if (messageType === "agent") {
     // For AI messages, handle different content formats
@@ -127,6 +162,7 @@ export function parseStreamMessage(
         timestamp: timestamp.toISOString(),
         trace_id: traceId,
         ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+        ...(writeSignal ?? {}),
       };
     }
 

@@ -198,4 +198,101 @@ describe("formatChartData", () => {
     const logging = result.series.find((s) => s.name === "Logging");
     expect(logging?.color).toBe("#52A44E");
   });
+
+  describe("backend color overrides (phase 2)", () => {
+    it("prefers the backend colorMap over the local mapping for pie charts, keyed by slug", () => {
+      const data = [
+        { driver: "Tala", driver__slug: "logging", area_ha: 100 },
+        { driver: "Incendio", driver__slug: "wildfire", area_ha: 50 },
+      ];
+      const result = formatChartData(
+        data,
+        "pie",
+        "driver",
+        "area_ha",
+        undefined,
+        undefined,
+        {
+          colorMap: { logging: "#111111", wildfire: "#222222" },
+        }
+      );
+      const logging = result.series.find((s) => s.name === "Tala");
+      const wildfire = result.series.find((s) => s.name === "Incendio");
+      expect(logging?.color).toBe("#111111");
+      expect(wildfire?.color).toBe("#222222");
+    });
+
+    it("falls back to the row value as the slug when no __slug column is present", () => {
+      const data = [{ category: "agriculture", value: 10 }];
+      const result = formatChartData(
+        data,
+        "pie",
+        "category",
+        "value",
+        undefined,
+        undefined,
+        {
+          colorMap: { agriculture: "#333333" },
+        }
+      );
+      expect(result.data[0].color).toBe("#333333");
+    });
+
+    it("builds pie colors from the backend colorMap when there is no local palette for the field", () => {
+      const data = [
+        { class: "Natural", class__slug: "natural", value: 10 },
+        { class: "Non-natural", class__slug: "non_natural", value: 5 },
+      ];
+      const result = formatChartData(
+        data,
+        "pie",
+        "class",
+        "value",
+        undefined,
+        undefined,
+        {
+          colorMap: { natural: "#4CAF50", non_natural: "#9E9E9E" },
+        }
+      );
+      expect(result.series).toEqual([
+        { name: "Natural", color: "#4CAF50" },
+        { name: "Non-natural", color: "#9E9E9E" },
+      ]);
+    });
+
+    it("prefers backend seriesColor over the local DATASET_SERIES_COLORS map", () => {
+      const data = [
+        { country: "Brazil", area_ha: 100 },
+        { country: "Peru", area_ha: 50 },
+      ];
+      const result = formatChartData(
+        data,
+        "bar",
+        "country",
+        "area_ha",
+        "Tree cover loss",
+        undefined,
+        { seriesColor: "#ABCDEF" }
+      );
+      expect(result.series[0].color).toBe("#ABCDEF");
+    });
+
+    it("prefers backend divergentColors over the local DATASET_DIVERGENT_COLORS map", () => {
+      const data = [
+        { country: "Brazil", net_flux_tCO2e: -450 },
+        { country: "Indonesia", net_flux_tCO2e: 320 },
+      ];
+      const result = formatChartData(
+        data,
+        "bar",
+        "country",
+        "net_flux_tCO2e",
+        "Forest greenhouse gas net flux (2001-2024)",
+        undefined,
+        { divergentColors: { positive: "#00FF00", negative: "#FF0000" } }
+      );
+      expect(result.data[0]._barColor).toBe("#FF0000");
+      expect(result.data[1]._barColor).toBe("#00FF00");
+    });
+  });
 });

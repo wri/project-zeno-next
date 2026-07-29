@@ -1,4 +1,8 @@
 import { FeatureCollection } from "geojson";
+import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+import type { ChartColorFields } from "@/app/types/chartColors";
+
+export type { BlogArticle };
 
 // A read-only snapshot of the context at the moment a user message was sent:
 // the area(s), dataset(s) and date range that were active. Rendered as static
@@ -13,12 +17,16 @@ export interface MessageContext {
 // Type for storing tool execution data
 export interface ToolStepData {
   name: string;
+  /** Set when the tool result was error-classified (recoverable failure or
+   * agent guidance) so the reasoning timeline can mark the step. */
+  status?: "error";
   content?: string;
   dataset?: object;
   insights?: object[];
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
   source_urls?: string[];
+  cited_articles?: BlogArticle[];
   aoi?: object;
   timestamp: string;
 }
@@ -31,6 +39,7 @@ export interface ChatMessage {
     | "system"
     | "widget"
     | "area-card"
+    | "dashboard-card"
     | "error"
     | "warning"
     | "dataset-nudge"
@@ -41,6 +50,8 @@ export interface ChatMessage {
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   aoiSelection?: AOISelection; // For area-card messages
+  dashboardId?: string; // For dashboard-card messages
+  dashboardName?: string; // For dashboard-card messages; absent on threads that predate the backend streaming it
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
@@ -51,8 +62,9 @@ export interface ChatMessage {
   suppressFooter?: boolean; // Non-terminal segment of a [Chart uuid] split — no footer, tight spacing
 }
 
-// Widget types for insights
-export interface InsightWidget {
+// Widget types for insights. Extends ChartColorFields with the backend color
+// registry's resolution for this chart (absent for pre-migration insights).
+export interface InsightWidget extends ChartColorFields {
   id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
   type:
     | "line"
@@ -72,7 +84,16 @@ export interface InsightWidget {
   seriesFields?: string[];
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
+  // Whether this insight is curated/verified rather than AI-generated. Set from
+  // InsightRecord.verification when a widget is built from stored insights; when
+  // undefined, the workspace falls back to treating a missing `generation` (the
+  // direct/curated flow) as curated.
+  curated?: boolean;
   analysisParams?: AnalysisParams; // Parameters used by the agent to produce this insight
+  // Persisted insight UUID (streamed with generate_insights). All charts of
+  // one analysis share it; it is the handle for REST widget adds
+  // (POST /api/dashboards/:id/widgets).
+  insightId?: string;
 }
 
 // Parameters the agent used to produce an insight (read-only transparency)
@@ -109,6 +130,7 @@ export interface ChatPrompt {
   query: string;
   query_type: string;
   thread_id: string;
+  ff?: string;
 }
 export interface UiContext {
   aoi_selected?: {
@@ -134,6 +156,7 @@ export interface ChatAPIRequest {
   query_type: string;
   thread_id: string;
   ui_context?: UiContext;
+  ff?: string;
 }
 
 // Simplified message that our API sends to the client
@@ -147,11 +170,16 @@ export interface StreamMessage {
   suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
+  imagery?: ImageryInfo;
   insights?: object[];
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
   source_urls?: string[];
+  cited_articles?: BlogArticle[];
   insight_count?: number;
+  // Persisted insight UUID riding on generate_insights (and recall/restyle)
+  // state updates — the handle for adding the analysis to a dashboard.
+  insight_id?: string;
   // Names of the tools an AI message is about to call. The agent announces a
   // tool call before its result streams back, so this is the earliest signal
   // that e.g. an insight is being generated.
@@ -160,6 +188,38 @@ export interface StreamMessage {
   start_date?: string;
   end_date?: string;
   trace_id?: string;
+  // Backend write signal carried in a tool message's response_metadata
+  // (e.g. "dashboard_updated" after create_dashboard / add_to_dashboard) —
+  // tells the client to refetch the named resource.
+  msg_type?: string;
+  dashboard_id?: string;
+  dashboard_name?: string;
+}
+
+// Sentinel-2 mosaic payload written to agent state by the show_imagery tool.
+// tile_url / tilejson_url are absolute URLs to the tiler the backend is
+// configured to use (currently the public GFW tiles service). mosaic_id is an
+// opaque recipe token, stable across reruns of the same request.
+export interface ImageryInfo {
+  tile_url: string;
+  tilejson_url: string;
+  mosaic_id: string;
+  // Scene count and acquired date range; optional because payloads written
+  // before wri/project-zeno#758 omitted them on mosaic cache hits.
+  item_count?: number;
+  date_start?: string;
+  date_end?: string;
+  // Observed cloud-cover stats across the mosaic's scenes (%), added by
+  // wri/project-zeno#758 — absent on older payloads.
+  mean_cloud_cover?: number;
+  min_cloud_cover?: number;
+  max_cloud_cover_observed?: number;
+  target_date: string;
+  aoi_names: string[];
+  // Search constraints used to build the mosaic. Absent on payloads created
+  // before these fields existed (replayed old threads).
+  window_days?: number;
+  max_cloud_cover?: number;
 }
 
 export interface AOI {
@@ -276,13 +336,16 @@ export interface LangChainUpdate {
   suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
+  imagery?: ImageryInfo;
   start_date?: string;
   end_date?: string;
   insights: object[];
   charts_data: object[];
+  insight_id?: string;
   // Optional provenance fields emitted by tools
   codeact_parts?: CodeActPart[];
   source_urls?: string[];
+  cited_articles?: BlogArticle[];
   insight_count: number;
   messages: [
     {

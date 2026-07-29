@@ -1,21 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ChatPanelCompact from "./ChatPanelCompact";
 import ChatPanelFullSize from "./ChatPanelFullSize";
 import useSidebarStore from "./store/sidebarStore";
 
 function ChatPanel() {
-  const [isFullSize, setIsFullSize] = useState(false);
-  const { setChatFullSize } = useSidebarStore();
+  // The store is the single source of truth for panel size. Layout consumers
+  // (map controls, dashboard content offset) read isChatFullSize, and the
+  // panel remounts across surfaces (map ↔ dashboard) — local state here would
+  // reset to compact while the store kept reporting full-size.
+  const isFullSize = useSidebarStore((s) => s.isChatFullSize);
+  const setChatFullSize = useSidebarStore((s) => s.setChatFullSize);
 
-  const toggleSize = () => {
-    setIsFullSize((prev) => {
-      setChatFullSize(!prev);
-      return !prev;
-    });
-  };
+  const toggleSize = () => setChatFullSize(!isFullSize);
 
   return (
     <AnimatePresence mode="wait">

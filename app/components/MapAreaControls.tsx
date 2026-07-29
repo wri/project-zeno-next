@@ -57,8 +57,10 @@ function MapAreaControls({
     cancelDrawing,
     mapRef,
   } = useMapStore();
-  const { isChatFullSize, dataCatalogOpen, areasPanelOpen } = useSidebarStore();
-  const catalogColumnOpen = dataCatalogOpen || areasPanelOpen;
+  const { isChatFullSize, dataCatalogOpen, areasPanelOpen, insightsPanelOpen } =
+    useSidebarStore();
+  const catalogColumnOpen =
+    dataCatalogOpen || areasPanelOpen || insightsPanelOpen;
   const mapControlsLeft = `${getMapControlsLeftPx(isChatFullSize, catalogColumnOpen)}px`;
 
   const [showTools, setShowTools] = useState(false);

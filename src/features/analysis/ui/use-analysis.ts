@@ -5,7 +5,7 @@ import type { AnalysisResult } from "../model/analysis-result";
 import { LROAnalysisService } from "../model/lro-analysis-service";
 import { RestAnalysisGateway } from "../api/rest-analysis-gateway";
 import { SystemClock } from "../lib/system-clock";
-import { analysisResultToWidgets } from "../lib/analysis-result-to-widgets";
+import { chartsToWidgets } from "@/src/entities/insight";
 import type { InsightSink } from "../model/insight-sink";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
@@ -92,7 +92,12 @@ export function useAnalysis(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
-          const widgets = analysisResultToWidgets(analysisResult);
+          const widgets = chartsToWidgets(
+            analysisResult.charts,
+            analysisResult.params
+              ? { areas: [analysisResult.params.name] }
+              : undefined
+          );
           // Add the chart and drop the skeleton flag together so the workspace
           // swaps skeleton → chart in one render (no empty flash).
           sink.add(widgets);

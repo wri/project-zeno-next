@@ -1,0 +1,30 @@
+import type { DivergentColors } from "@/app/types/chartColors";
+
+/** A single chart produced by an analysis. Mirrors the API's InsightChartResponse. */
+export interface Chart {
+  id: string;
+  position: number;
+  title: string;
+  /** Maps to InsightChartResponse.chart_type */
+  type: string;
+  /** Maps to InsightChartResponse.x_axis */
+  xAxis: string;
+  /** Maps to InsightChartResponse.y_axis */
+  yAxis: string;
+  /** Maps to InsightChartResponse.color_field */
+  colorField: string;
+  /** Maps to InsightChartResponse.stack_field */
+  stackField: string;
+  /** Maps to InsightChartResponse.group_field */
+  groupField: string;
+  /** Maps to InsightChartResponse.series_fields */
+  seriesFields: string[];
+  /** Maps to InsightChartResponse.chart_data */
+  data: Record<string, unknown>[];
+  /** Maps to InsightChartResponse.color_map */
+  colorMap?: Record<string, string>;
+  /** Maps to InsightChartResponse.series_color */
+  seriesColor?: string | null;
+  /** Maps to InsightChartResponse.divergent_colors */
+  divergentColors?: DivergentColors | null;
+}

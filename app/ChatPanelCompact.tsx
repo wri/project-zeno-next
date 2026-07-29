@@ -16,6 +16,8 @@ import {
 import { usePromptQuota } from "./hooks/usePromptQuota";
 import useChatStore from "./store/chatStore";
 import useSidebarStore from "./store/sidebarStore";
+import { isAppRoute, isDashboardDetailRoute } from "./utils/threadNavigation";
+import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // Intentionally narrower than the full-size panel (see FULLSIZE_CHAT_PANEL_WIDTH_PX).
@@ -40,8 +42,18 @@ interface ChatPanelCompactProps {
 function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
   const { promptsExhausted } = usePromptQuota();
   const { messages } = useChatStore();
-  const { dataCatalogOpen, areasPanelOpen } = useSidebarStore();
-  const chatLeftPx = getCompactChatLeftPx(dataCatalogOpen || areasPanelOpen);
+  const { dataCatalogOpen, areasPanelOpen, insightsPanelOpen } =
+    useSidebarStore();
+  const pathname = usePathname();
+  // On the map, any of the three column panels shifts the compact chat aside.
+  // On a dashboard's detail page only the Analyses (insights) pane renders, so
+  // the data catalog / areas open state (which can persist from the map) must
+  // not push the panel sideways there. On any other surface nothing shifts it.
+  const chatLeftPx = getCompactChatLeftPx(
+    isAppRoute(pathname)
+      ? dataCatalogOpen || areasPanelOpen || insightsPanelOpen
+      : isDashboardDetailRoute(pathname) && insightsPanelOpen
+  );
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
   );
@@ -111,10 +123,19 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
         flexDir="column"
         gap="0.5"
         w={{ base: "full", md: `${COMPACT_CHAT_PANEL_WIDTH_PX}px` }}
+        minH={0}
         pointerEvents="auto"
       >
-        {/* Top card: header + content */}
-        <Flex ref={topCardRef} flexDir="column" flex="0 0 auto" {...cardStyle}>
+        {/* Top card: header + content. Base (bottom sheet): shrinkable so the
+            message list scrolls within the sheet instead of clipping past its
+            top edge. Desktop keeps the fixed 50vh-capped height. */}
+        <Flex
+          ref={topCardRef}
+          flexDir="column"
+          flex={{ base: "0 1 auto", md: "0 0 auto" }}
+          minH={0}
+          {...cardStyle}
+        >
           <ChatPanelHeader
             isFullSize={false}
             hasConversation={hasConversation}
@@ -131,27 +152,35 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.22, ease: "easeInOut" }}
-                style={{ overflow: "hidden" }}
+                style={{
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                }}
               >
+                {/* Top padding is passed to ChatMessages instead of set on
+                    this scroller — see ChatMessagesProps.pt. */}
                 <Box
                   ref={messagesRef}
                   overflowY="auto"
                   px={4}
-                  pt={4}
                   pb={4}
-                  maxH={messagesMaxH}
+                  minH={0}
+                  maxH={{ base: "none", md: messagesMaxH }}
                 >
-                  <ChatMessages />
+                  <ChatMessages pt={4} />
                 </Box>
               </motion.div>
             )}
           </AnimatePresence>
         </Flex>
 
-        {/* Bottom card: input — always visible */}
+        {/* Bottom card: input — always visible, never squeezed by the list */}
         <Flex
           ref={inputCardRef}
           flexDir="column"
+          flexShrink={0}
           {...cardStyle}
           boxShadow="none"
           overflow="hidden"

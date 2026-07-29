@@ -2,54 +2,86 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { cruise } from "dependency-cruiser";
 import { describe, expect, it } from "vitest";
-import { forbidden, options } from "./dependency-cruiser.config";
+import {
+  forbiddenFor,
+  forbiddenForEntity,
+  options,
+} from "./dependency-cruiser.config";
 
-const FEATURE_DIR = "src/features/analysis";
+/** Directory paths of the slices under an FSD layer root (e.g. src/features). */
+function discoverSlices(root: string): string[] {
+  let entries: string[];
+  try {
+    entries = readdirSync(root);
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((entry) => statSync(join(root, entry)).isDirectory())
+    .map((entry) => join(root, entry));
+}
 
-describe("architecture fitness — features/analysis (ADR 0010)", () => {
-  it("honors the FSD segment dependency direction", async () => {
-    const result = await cruise(
-      [FEATURE_DIR],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { ruleSet: { forbidden }, outputType: "json", ...options } as any
-    );
+// Discover every FSD slice so a new one is governed automatically — registration
+// can't be forgotten. Features and entities share the segment-direction rules;
+// entities additionally may not import "up" into features/widgets/pages.
+const SLICE_CASES = [
+  ...discoverSlices("src/features").map((dir) => ({
+    dir,
+    forbidden: forbiddenFor(dir),
+  })),
+  ...discoverSlices("src/entities").map((dir) => ({
+    dir,
+    forbidden: forbiddenForEntity(dir),
+  })),
+];
 
-    // `cruise()` serializes its result to a JSON string; parse it back.
-    const out = result.output;
-    const parsed = typeof out === "string" ? JSON.parse(out) : out;
-    const violations: Array<{
-      rule: { name: string };
-      from: string;
-      to: string;
-    }> = parsed.summary.violations;
+describe.each(SLICE_CASES)(
+  "architecture fitness — $dir (ADR 0010)",
+  ({ dir, forbidden }) => {
+    it("honors the FSD segment dependency direction", async () => {
+      const result = await cruise(
+        [dir],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { ruleSet: { forbidden }, outputType: "json", ...options } as any
+      );
 
-    const report = violations
-      .map((v) => `  [${v.rule.name}] ${v.from} → ${v.to}`)
-      .join("\n");
+      // `cruise()` serializes its result to a JSON string; parse it back.
+      const out = result.output;
+      const parsed = typeof out === "string" ? JSON.parse(out) : out;
+      const violations: Array<{
+        rule: { name: string };
+        from: string;
+        to: string;
+      }> = parsed.summary.violations;
 
-    expect(
-      violations,
-      `Dependency-direction violations:\n${report}`
-    ).toHaveLength(0);
-  });
+      const report = violations
+        .map((v) => `  [${v.rule.name}] ${v.from} → ${v.to}`)
+        .join("\n");
 
-  it("the pure core (model + lib) makes no global network calls", () => {
-    const offenders: string[] = [];
-    for (const segment of ["model", "lib"]) {
-      for (const file of walk(join(FEATURE_DIR, segment))) {
-        if (!/\.tsx?$/.test(file)) continue;
-        const src = readFileSync(file, "utf8");
-        if (/\bfetch\s*\(/.test(src) || /\bXMLHttpRequest\b/.test(src)) {
-          offenders.push(file);
+      expect(
+        violations,
+        `Dependency-direction violations:\n${report}`
+      ).toHaveLength(0);
+    });
+
+    it("the pure core (model + lib) makes no global network calls", () => {
+      const offenders: string[] = [];
+      for (const segment of ["model", "lib"]) {
+        for (const file of walk(join(dir, segment))) {
+          if (!/\.tsx?$/.test(file)) continue;
+          const src = readFileSync(file, "utf8");
+          if (/\bfetch\s*\(/.test(src) || /\bXMLHttpRequest\b/.test(src)) {
+            offenders.push(file);
+          }
         }
       }
-    }
-    expect(
-      offenders,
-      `Core must call the gateway port, not fetch/XHR (ADR 0003):\n${offenders.join("\n")}`
-    ).toHaveLength(0);
-  });
-});
+      expect(
+        offenders,
+        `Core must call the gateway port, not fetch/XHR (ADR 0003):\n${offenders.join("\n")}`
+      ).toHaveLength(0);
+    });
+  }
+);
 
 /** Recursively list files; returns [] for rings not yet created. */
 function walk(dir: string): string[] {

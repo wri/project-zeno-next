@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   Button,
   Flex,
@@ -28,13 +29,32 @@ import {
 import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
 import useChatStore from "./store/chatStore";
+import useMapStore from "./store/mapStore";
 import { useLogout } from "./hooks/useLogout";
 import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
 import { useThreadsInfinite } from "./hooks/useThreadsInfinite";
 import { useIntersectionObserver } from "./hooks/useIntersectionObserver";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
+import {
+  newConversationTarget,
+  threadClickTarget,
+} from "./utils/threadNavigation";
 
-function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
+/**
+ * The current `location.search`, captured once on mount (mirroring
+ * `useFeatureFlag`): the URL only exists client-side, and the first-message
+ * thread rewrite can drop query params mid-session — the mount-time value is
+ * the trustworthy one.
+ */
+function useMountSearch(): string | null {
+  const [search] = useState(() =>
+    typeof window === "undefined" ? null : window.location.search
+  );
+  return search;
+}
+
+function ThreadLink(props: LinkProps & { isActive?: boolean; href?: string }) {
   const { href, children, isActive, ...rest } = props;
   return (
     <ChLink
@@ -47,6 +67,7 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
       display="block"
       flex="1"
       outline="none"
+      cursor="pointer"
       {...(isActive
         ? {
             color: "primary.fg",
@@ -55,9 +76,18 @@ function ThreadLink(props: LinkProps & { isActive?: boolean; href: string }) {
       {...rest}
       asChild
     >
-      <Link href={href} style={{ display: "block", width: "100%" }}>
-        {children}
-      </Link>
+      {href ? (
+        <Link href={href} style={{ display: "block", width: "100%" }}>
+          {children}
+        </Link>
+      ) : (
+        <button
+          type="button"
+          style={{ display: "block", width: "100%", textAlign: "left" }}
+        >
+          {children}
+        </button>
+      )}
     </ChLink>
   );
 }
@@ -81,6 +111,22 @@ function ThreadSection({
   footer?: React.ReactNode;
 }) {
   const { toggleSidebar } = useSidebarStore();
+  const pathname = usePathname();
+  const search = useMountSearch();
+
+  // On a dashboard detail page the conversation isn't in the URL (ADR-003),
+  // so resuming one loads it into the global chat store in place — the same
+  // reset the map's thread page performs on navigation, minus the navigation.
+  const openThreadInPlace = (threadId: string) => {
+    const chat = useChatStore.getState();
+    if (chat.currentThreadId !== threadId) {
+      chat.reset();
+      useMapStore.getState().reset();
+      chat.fetchThread(threadId);
+    }
+    toggleSidebar();
+  };
+
   if (!threads.length && !footer) return null;
   return (
     <Accordion.Item value={value} border="none">
@@ -100,6 +146,7 @@ function ThreadSection({
         <Stack gap="1" mt="1">
           {threads.map((thread) => {
             const isActive = currentThreadId === thread.id;
+            const target = threadClickTarget(pathname, thread.id, search);
             return (
               <Flex
                 key={thread.id}
@@ -121,14 +168,24 @@ function ThreadSection({
                 }}
                 {...(isActive ? { bg: "bg", color: "blue.fg" } : {})}
               >
-                <ThreadLink
-                  href={`/app/threads/${thread.id}`}
-                  isActive={isActive}
-                  _hover={{ textDecor: "none" }}
-                  onClick={toggleSidebar}
-                >
-                  {thread.name}
-                </ThreadLink>
+                {target.kind === "navigate" ? (
+                  <ThreadLink
+                    href={target.href}
+                    isActive={isActive}
+                    _hover={{ textDecor: "none" }}
+                    onClick={toggleSidebar}
+                  >
+                    {thread.name}
+                  </ThreadLink>
+                ) : (
+                  <ThreadLink
+                    isActive={isActive}
+                    _hover={{ textDecor: "none" }}
+                    onClick={() => openThreadInPlace(thread.id)}
+                  >
+                    {thread.name}
+                  </ThreadLink>
+                )}
                 <div onClick={(e) => e.stopPropagation()}>
                   <ThreadActionsMenu thread={thread} />
                 </div>
@@ -166,6 +223,17 @@ export function Sidebar() {
   }, [fetchApiStatus]);
 
   const { logout, isLoggingOut } = useLogout();
+
+  const pathname = usePathname();
+  const dashboardFeatureEnabled = useFeatureFlag("dashboard");
+  const newConvo = newConversationTarget(pathname, dashboardFeatureEnabled);
+  // Mirrors PageHeader's in-place reset: a dashboard detail page hosts its
+  // own chat panel, so starting a new conversation must not navigate away.
+  const startNewConversationInPlace = () => {
+    useChatStore.getState().reset();
+    useMapStore.getState().reset();
+    toggleSidebar();
+  };
 
   const hasTodayThreads = threadGroups.today.length > 0;
   const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
@@ -230,19 +298,33 @@ export function Sidebar() {
         bg="bg.subtle"
         boxShadow="xs"
       >
-        <Button
-          asChild
-          variant="outline"
-          colorPalette="primary"
-          size="sm"
-          w={{ base: "full", md: "auto" }}
-          onClick={toggleSidebar}
-        >
-          <Link href="/app" aria-label="New conversation">
+        {newConvo.kind === "reset-in-place" ? (
+          <Button
+            variant="outline"
+            colorPalette="primary"
+            size="sm"
+            w={{ base: "full", md: "auto" }}
+            aria-label="New conversation"
+            onClick={startNewConversationInPlace}
+          >
             New Conversation
             <NotePencilIcon />
-          </Link>
-        </Button>
+          </Button>
+        ) : (
+          <Button
+            asChild
+            variant="outline"
+            colorPalette="primary"
+            size="sm"
+            w={{ base: "full", md: "auto" }}
+            onClick={toggleSidebar}
+          >
+            <Link href={newConvo.href} aria-label="New conversation">
+              New Conversation
+              <NotePencilIcon />
+            </Link>
+          </Button>
+        )}
         <Tooltip
           content="Close sidebar"
           positioning={{ placement: "right" }}

@@ -19,12 +19,33 @@ const TOOL_DISPLAY: Record<string, { active: string; error: string }> = {
     active: "Pulling data",
     error: "Unable to retrieve the data. Please try again.",
   },
+  search_blogs: {
+    active: "Searching WRI Insights",
+    error: "Unable to search WRI Insights articles. Please try again.",
+  },
+  show_imagery: {
+    active: "Loading satellite imagery",
+    error: "Unable to load satellite imagery. Please try again.",
+  },
 };
 
 const DEFAULT_TOOL_ERROR = "Unable to process this step. Please try again.";
 
 export function formatToolName(toolName: string): string {
   return TOOL_DISPLAY[toolName]?.active ?? `Processing ${toolName}`;
+}
+
+/**
+ * Whether the tool is a user-visible pipeline step with display strings.
+ *
+ * Error results from tools outside this map are not surfaced as chat
+ * warnings: the backend uses `status: "error"` tool messages as guidance to
+ * the agent (e.g. create_dashboard's "selection spans 2 areas — ask the user
+ * which one"), and the agent always follows up with text that explains the
+ * situation in its own words.
+ */
+export function isKnownTool(toolName?: string): boolean {
+  return toolName !== undefined && toolName in TOOL_DISPLAY;
 }
 
 // Recoverable tool error: the agent continues with a follow-up assistant

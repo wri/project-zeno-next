@@ -4,7 +4,7 @@ import { Box, Flex, Link, Text } from "@chakra-ui/react";
 import { ArrowSquareOutIcon, InfoIcon, XIcon } from "@phosphor-icons/react";
 import {
   PREVIEW_BODY,
-  PREVIEW_FEEDBACK_EMAIL,
+  PREVIEW_FEEDBACK_FORM,
   PREVIEW_HELP_CENTER_URL,
   PREVIEW_LINKS,
   PREVIEW_TITLE,
@@ -95,13 +95,13 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
           lineHeight="150%"
           mt={4}
         >
-          Feedback is welcome at{" "}
+          Feedback and queries for support can be submitted{" "}
           <Link
             color="#0049AA"
             textDecoration="underline"
-            href={`mailto:${PREVIEW_FEEDBACK_EMAIL}`}
+            href={PREVIEW_FEEDBACK_FORM}
           >
-            {PREVIEW_FEEDBACK_EMAIL}
+            here
           </Link>
           .
           <br />

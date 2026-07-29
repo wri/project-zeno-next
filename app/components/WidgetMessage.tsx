@@ -38,6 +38,7 @@ import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
 import { WidgetIcons } from "../utils/widgetIcons";
+import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
 import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
@@ -49,6 +50,8 @@ import { exportChartImage } from "@/app/utils/exportChartImage";
 interface WidgetMessageProps {
   widget: InsightWidget;
   inWorkspace?: boolean;
+  /** The host dashboard card spans both columns — chart content adapts. */
+  fullWidth?: boolean;
 }
 
 /** Y-axis with the classic break squiggle — icon for the fit-axis toggle. */
@@ -75,6 +78,7 @@ function AxisBreakIcon({ size = 14 }: { size?: number }) {
 export default function WidgetMessage({
   widget,
   inWorkspace,
+  fullWidth,
 }: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
   const [fitYAxis, setFitYAxis] = useState(false);
@@ -175,7 +179,9 @@ export default function WidgetMessage({
     <Box
       rounded="md"
       border="1px solid"
-      borderColor={inWorkspace ? "border.emphasized" : "blue.fg"}
+      // Workspace/dashboard cards sit inside the light-blue Analysis shell,
+      // whose design pairs the white card with the blue-10 border (#DDE2F5).
+      borderColor={inWorkspace ? "#DDE2F5" : "blue.fg"}
       overflow="hidden"
       bg="neutral.100"
     >
@@ -195,7 +201,9 @@ export default function WidgetMessage({
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">
         {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
-        {inWorkspace && <InsightCaption curated={!widget.generation} />}
+        {inWorkspace && (
+          <InsightCaption curated={widget.curated ?? !widget.generation} />
+        )}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}
@@ -273,7 +281,11 @@ export default function WidgetMessage({
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <Box ref={chartRef}>
-              <ChartWidget widget={widget} fitYAxis={fitYAxis} />
+              <ChartWidget
+                widget={widget}
+                fitYAxis={fitYAxis}
+                fullWidth={fullWidth}
+              />
             </Box>
           </WidgetErrorBoundary>
         )}
@@ -419,6 +431,11 @@ export default function WidgetMessage({
                 </Menu.Content>
               </Menu.Positioner>
             </Menu.Root>
+            {/* Chat cards only: workspace/dashboard cards manage widgets via
+                their own shell (drag/resize/remove), so no toggle there. */}
+            {!inWorkspace && widget.insightId && (
+              <AddToDashboardToggle insightId={widget.insightId} />
+            )}
           </Flex>
         )}
         {showDisclaimer && !inWorkspace && <VisualizationDisclaimer />}

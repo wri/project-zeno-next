@@ -25,7 +25,9 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { motion, type Transition } from "framer-motion";
+import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
 import PreviewInfoPanel from "./PreviewInfoPanel";
 
 import useAuthStore from "../store/authStore";
@@ -33,12 +35,25 @@ import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
+import {
+  mapTabHref,
+  newConversationTarget,
+} from "@/app/utils/threadNavigation";
+import useMapStore from "../store/mapStore";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 const WHATS_NEW_STORAGE_KEY = "whats-new-v4-dismissed";
+
+// Exploration (uncommitted): measure the toggle before paint so the sliding
+// pill never flashes from a wrong spot. useLayoutEffect on the server warns,
+// so fall back to useEffect there.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
@@ -47,6 +62,19 @@ function PageHeader() {
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
   const { threads } = useThreadsInfinite();
+  const pathname = usePathname() ?? "";
+  const onMap = pathname.startsWith("/app");
+  const onDashboards = pathname.startsWith("/dashboards");
+  const dashboardFeatureEnabled = useFeatureFlag("dashboard");
+
+  const newConvo = newConversationTarget(pathname, dashboardFeatureEnabled);
+  // Mirrors the /app NewThread mount reset. In place because the dashboard
+  // page hosts its own chat panel and its URL doesn't carry the conversation
+  // (ADR-003) — navigating would leave the page the user is working on.
+  const startNewConversationInPlace = () => {
+    useChatStore.getState().reset();
+    useMapStore.getState().reset();
+  };
 
   const currentThread = currentThreadId
     ? threads.find((t) => t.id === currentThreadId)
@@ -98,6 +126,49 @@ function PageHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [panelOpen]);
 
+  // --- Exploration (uncommitted): sliding active-indicator for the toggle ---
+  // PageHeader remounts on the /app <-> /dashboards route change, so there's no
+  // shared element to hand off. Both tabs are always rendered though, so on the
+  // new route the pill can spring in from the *now-inactive* tab — which is
+  // exactly where it sat on the previous route — giving a continuous slide with
+  // zero cross-mount state. Labels crossfade in step so the arriving label
+  // never flashes white-on-light mid-slide.
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const activeToggleIndex = onDashboards ? 1 : 0;
+  const fromToggleIndex = activeToggleIndex === 0 ? 1 : 0;
+  const toggleTrackRef = useRef<HTMLDivElement | null>(null);
+  const [toggleTabRects, setToggleTabRects] = useState<
+    Array<{ x: number; y: number; width: number; height: number }>
+  >([]);
+
+  useIsomorphicLayoutEffect(() => {
+    const track = toggleTrackRef.current;
+    if (!dashboardFeatureEnabled || !track) return;
+    const measure = () => {
+      const tabs = Array.from(
+        track.querySelectorAll<HTMLElement>("[data-toggle-tab]")
+      );
+      setToggleTabRects(
+        tabs.map((el) => ({
+          x: el.offsetLeft,
+          y: el.offsetTop,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+        }))
+      );
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [dashboardFeatureEnabled, activeToggleIndex]);
+
+  const pillTransition: Transition = prefersReducedMotion
+    ? { duration: 0 }
+    : { type: "spring", stiffness: 520, damping: 42, mass: 0.9 };
+  const pillFrom =
+    toggleTabRects[prefersReducedMotion ? activeToggleIndex : fromToggleIndex];
+  const pillTo = toggleTabRects[activeToggleIndex];
+
   return (
     <Flex
       alignItems="center"
@@ -109,7 +180,10 @@ function PageHeader() {
       color={isPrototype ? "#1f2937" : "#131E47"}
       borderTop={isPrototype ? undefined : "4px solid #E3F37F"}
       zIndex={1300}
-      position="relative"
+      // Pinned to the viewport top on scrolling pages (e.g. dashboards);
+      // inert on the map layout, whose grid cells don't scroll.
+      position="sticky"
+      top={0}
     >
       <Flex gap="5" alignItems="center" minW={0}>
         <Flex gap="2" alignItems="center">
@@ -249,35 +323,144 @@ function PageHeader() {
             </Text>
           )}
           <Tooltip content="New conversation" showArrow>
-            <IconButton
-              asChild
-              size="xs"
-              variant="ghost"
-              color={inverseColor}
-              _hover={{ bg: inverseHoverBg }}
-              _focusVisible={focusRing}
-            >
-              <Link href="/app" aria-label="New conversation">
+            {newConvo.kind === "reset-in-place" ? (
+              <IconButton
+                size="xs"
+                variant="ghost"
+                color={inverseColor}
+                _hover={{ bg: inverseHoverBg }}
+                _focusVisible={focusRing}
+                aria-label="New conversation"
+                onClick={startNewConversationInPlace}
+              >
                 <PlusIcon size={16} />
-              </Link>
-            </IconButton>
+              </IconButton>
+            ) : (
+              <IconButton
+                asChild
+                size="xs"
+                variant="ghost"
+                color={inverseColor}
+                _hover={{ bg: inverseHoverBg }}
+                _focusVisible={focusRing}
+              >
+                <Link href={newConvo.href} aria-label="New conversation">
+                  <PlusIcon size={16} />
+                </Link>
+              </IconButton>
+            )}
           </Tooltip>
         </Flex>
       </Flex>
-      {isPrototype && (
-        <Text
-          fontSize="xs"
-          fontWeight="bold"
-          letterSpacing="wider"
-          textTransform="uppercase"
-          color="#1f2937"
+      {dashboardFeatureEnabled && (
+        <Flex
+          // Segmented control (Figma node 897-4655): a Primary/100 track that
+          // holds a single solid Primary/500 pill marking the active view. The
+          // design's same-coloured 1px border is omitted (invisible against the
+          // track). Vertical padding is trimmed to 2px (from the design's 4px)
+          // so the 28px pill clears the header's 4px lime top border with room
+          // to breathe (32px total) instead of filling the 40px bar flush.
+          ref={toggleTrackRef}
+          gap="1"
+          px="1"
+          py="0.5"
+          bg="#F0F4FF"
+          borderRadius="8px"
+          alignItems="center"
+          hideBelow="md"
           position="absolute"
           left="50%"
           transform="translateX(-50%)"
-          pointerEvents="none"
         >
-          NOT FOR PRODUCTION USE
-        </Text>
+          {pillFrom && pillTo && (
+            <motion.div
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                borderRadius: 4,
+                background: "#0049AA",
+                boxShadow: "0px 1px 2px 0px rgba(0, 0, 0, 0.05)",
+                zIndex: 0,
+                pointerEvents: "none",
+              }}
+              initial={{
+                x: pillFrom.x,
+                y: pillFrom.y,
+                width: pillFrom.width,
+                height: pillFrom.height,
+              }}
+              animate={{
+                x: pillTo.x,
+                y: pillTo.y,
+                width: pillTo.width,
+                height: pillTo.height,
+              }}
+              transition={pillTransition}
+            />
+          )}
+          {[
+            {
+              // Thread-aware: with a live conversation, land on its thread
+              // URL (which preserves state) instead of the resetting /app.
+              href: mapTabHref(currentThreadId),
+              label: "Map",
+              active: onMap,
+            },
+            {
+              href: "/dashboards?ff=dashboard",
+              label: "Dashboards",
+              active: onDashboards,
+            },
+          ].map(({ href, label, active }) => (
+            <Button
+              key={href}
+              asChild
+              size="xs"
+              variant="ghost"
+              position="relative"
+              zIndex={1}
+              h="28px"
+              minW={0}
+              px="2.5"
+              py="1"
+              borderRadius="4px"
+              fontSize="sm"
+              lineHeight="20px"
+              fontWeight="semibold"
+              bg="transparent"
+              _hover={{ bg: active ? "transparent" : "primary.50" }}
+              _focusVisible={focusRing}
+            >
+              <Link
+                href={href}
+                data-toggle-tab
+                aria-current={active ? "page" : undefined}
+              >
+                <motion.span
+                  initial={{
+                    color: prefersReducedMotion
+                      ? active
+                        ? "#ffffff"
+                        : "#4A64CB"
+                      : active
+                        ? "#4A64CB"
+                        : "#ffffff",
+                  }}
+                  animate={{ color: active ? "#ffffff" : "#4A64CB" }}
+                  transition={{
+                    duration: prefersReducedMotion ? 0 : 0.24,
+                    ease: "easeOut",
+                  }}
+                  style={{ display: "inline-block" }}
+                >
+                  {label}
+                </motion.span>
+              </Link>
+            </Button>
+          ))}
+        </Flex>
       )}
       <Flex gap="6" alignItems="center" hideBelow="md">
         <Button
@@ -310,7 +493,7 @@ function PageHeader() {
         </Button>
         <ChakraLink
           as={Link}
-          href="https://help.globalnaturewatch.org/"
+          href="https://help.horizon.globalnaturewatch.org/"
           target="_blank"
           display="flex"
           alignItems="center"

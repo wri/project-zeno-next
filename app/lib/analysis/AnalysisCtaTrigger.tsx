@@ -1,7 +1,6 @@
 "use client";
 import { useEffect } from "react";
 import useMapStore from "@/app/store/mapStore";
-import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import { showAnalysisCta } from "./showAnalysisCta";
 
 /**
@@ -12,7 +11,6 @@ import { showAnalysisCta } from "./showAnalysisCta";
  * harmless.
  */
 export function AnalysisCtaTrigger() {
-  const enabled = useFeatureFlag("analysis");
   const analysisSelection = useMapStore((state) => state.analysisSelection);
   // Re-run when the visible layers change so the CTA surfaces as soon as a
   // dataset layer is added alongside an analysis selection (and clears when it
@@ -21,9 +19,9 @@ export function AnalysisCtaTrigger() {
   const layers = useMapStore((state) => state.layers);
 
   useEffect(() => {
-    if (!enabled || !analysisSelection) return;
+    if (!analysisSelection) return;
     showAnalysisCta(analysisSelection);
-  }, [enabled, analysisSelection, layers]);
+  }, [analysisSelection, layers]);
 
   return null;
 }

@@ -158,3 +158,10 @@ The client aborts the fetch after 310 seconds (5 min 10 sec) — slightly longer
 ### Commit Convention
 
 Conventional commits: `feat(scope):`, `fix(scope):`, `chore(scope):`, etc. Scope is the affected module or feature area (e.g. `feat(map):`, `fix(chart-widget):`).
+
+- Avoid microcommits. Batch small related changes into a single reviewable commit.
+- Group changes by scope: one commit per coherent unit of related function, not per file or per edit.
+- Commit when a unit of work is complete and self-consistent (tests pass, no half-finished refactors).
+- Keep each commit independently reviewable: a reader should understand the what and why from the diff alone.
+- Write messages as a concise imperative summary line, plus a body explaining intent when the change is non-obvious.
+- Never mix unrelated concerns (a feature, a refactor, and a formatting sweep go in separate commits).

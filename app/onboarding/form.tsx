@@ -728,8 +728,7 @@ export default function OnboardingForm({
                 <Checkbox.HiddenInput />
                 <Checkbox.Control />
                 <Checkbox.Label>
-                  Send me news, resources, and opportunities from Land & Carbon
-                  Lab.
+                  Send me news and events from Global Nature Watch.
                 </Checkbox.Label>
               </Checkbox.Root>
               <Checkbox.Root
@@ -772,7 +771,7 @@ export default function OnboardingForm({
                 </Link>{" "}
                 and{" "}
                 <Link
-                  href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+                  href="https://help.horizon.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"
@@ -791,7 +790,7 @@ export default function OnboardingForm({
                 </Link>{" "}
                 and the{" "}
                 <Link
-                  href="https://help.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
+                  href="https://help.horizon.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
                   target="_blank"
                   rel="noopener noreferrer"
                   textDecoration="underline"

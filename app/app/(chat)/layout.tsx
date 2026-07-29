@@ -11,10 +11,12 @@ import {
 import { useEffect, useState } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
+import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawer";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import CatalogPanel from "@/app/components/CatalogPanel";
 import AreasPanel from "@/app/components/AreasPanel";
+import { InsightsPanel } from "@/src/features/insights-history";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import SystemBanner from "@/app/components/SystemBanner";
@@ -23,6 +25,8 @@ import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
 import useSidebarStore from "@/app/store/sidebarStore";
+import useAgentProfileStore from "@/app/store/agentProfileStore";
+import useViewContextStore from "@/app/store/viewContextStore";
 import MapAreaFeedback from "@/app/components/MapAreaFeedback";
 import { AnalysisCtaTrigger } from "@/app/lib/analysis/AnalysisCtaTrigger";
 import {
@@ -38,13 +42,22 @@ export default function DashboardLayout({
 }) {
   const isReady = useAuthGuard();
   const [sheetHeight, setSheetHeight] = useState(400);
-  const { toggleSidebar, sideBarVisible } = useSidebarStore();
+  const { toggleSidebar } = useSidebarStore();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [mobileHeight, setMobileHeight] = useState("0");
 
   useEffect(() => {
     // Set layout heights after mount to avoid flash of both layouts at once
     setMobileHeight("min(100dvh, 100vh)");
+  }, []);
+
+  useEffect(() => {
+    // Capture ?agent_profile once on mount. The chat replaces the URL with
+    // /app/threads/:id after the first message, so the param must be persisted
+    // rather than re-read from the live URL on each request.
+    useAgentProfileStore.getState().initFromUrl();
+    // Report this surface to the agent on every chat request from here on.
+    useViewContextStore.getState().setViewContext({ page: "map" });
   }, []);
 
   const DesktopLayout = (
@@ -67,6 +80,7 @@ export default function DashboardLayout({
       >
         <CatalogPanel />
         <AreasPanel />
+        <InsightsPanel />
       </Box>
       <Box
         position="absolute"
@@ -100,22 +114,7 @@ export default function DashboardLayout({
           <ChatPanel />
         </Box>
       </Box>
-      <Drawer.Root
-        placement="start"
-        open={sideBarVisible}
-        onOpenChange={(e) => {
-          if (!e.open && sideBarVisible) toggleSidebar();
-        }}
-      >
-        <Portal>
-          <Drawer.Backdrop backdropFilter="blur(2px)" />
-          <Drawer.Positioner>
-            <Drawer.Content maxW="428px" w="428px">
-              <Sidebar />
-            </Drawer.Content>
-          </Drawer.Positioner>
-        </Portal>
-      </Drawer.Root>
+      <ConversationHistoryDrawer />
     </Box>
   );
 
@@ -162,6 +161,7 @@ export default function DashboardLayout({
           position="absolute"
           top={3}
           left={"3.75rem"}
+          maxW="calc(100% - 4.5rem)"
           rounded="sm"
           overflow="hidden"
           zIndex={100}

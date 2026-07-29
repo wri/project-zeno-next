@@ -1,6 +1,6 @@
 import { StateCreator } from "zustand";
 import { FeatureCollection, Feature } from "geojson";
-import type { AOISelection } from "@/app/types/chat";
+import type { AOISelection, ImageryInfo } from "@/app/types/chat";
 import type { VectorStyleSpec } from "@/app/constants/datasets";
 import type { MapState } from "./mapStore";
 
@@ -38,6 +38,15 @@ export interface Layer {
   parentLayerId?: string;
   // Data-driven fill/line paint spec for type:"vector" context layers
   vectorStyle?: VectorStyleSpec;
+  // Raster source tuning, derived from a mosaic's TileJSON. Without the zoom
+  // range MapLibre would request tiles outside the mosaic's range and get
+  // 404s instead of overscaling.
+  minzoom?: number;
+  maxzoom?: number;
+  bounds?: [number, number, number, number];
+  attribution?: string;
+  // Set when added from show_imagery (Sentinel-2 mosaic legend metadata)
+  imagery?: ImageryInfo;
 }
 
 // The two MVT renderers partition vector layers by whether they carry a
@@ -90,67 +99,82 @@ export const createLayerManagerSlice: StateCreator<
   [],
   [],
   LayerManagerSlice
-> =
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  (set, get) => ({
-    layers: [],
-    geoJsonRegistry: [],
+> = (set, get) => ({
+  layers: [],
+  geoJsonRegistry: [],
 
-    addLayer: (layer) => {
-      const newLayer = { ...layer, opacity: layer.opacity ?? 1 };
-      set((state) => ({
-        layers: [...state.layers.filter((l) => l.id !== layer.id), newLayer],
-      }));
-    },
-    removeLayer: (id) => {
-      set((state) => ({
-        layers: state.layers.filter((l) => l.id !== id),
-      }));
-    },
-    removeDatasetLayers: (datasetId) => {
-      set((state) => ({
-        layers: state.layers.filter((l) => {
-          if (typeof l.datasetId !== "number") return true;
-          return datasetId === undefined ? false : l.datasetId !== datasetId;
-        }),
-      }));
-    },
-    setLayerVisibility: (id, visible) => {
-      set((state) => ({
-        layers: state.layers.map((l) => (l.id === id ? { ...l, visible } : l)),
-      }));
-    },
-    setLayerOpacity: (id, opacity) => {
-      set((state) => ({
-        layers: state.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),
-      }));
-    },
-    reorderLayers: (ids) => {
-      set((state) => ({
-        layers: ids
-          .map((id) => state.layers.find((l) => l.id === id))
-          .filter((l): l is Layer => !!l),
-      }));
-    },
-    addToRegistry: (entry) => {
-      set((state) => ({
-        geoJsonRegistry: [
-          ...state.geoJsonRegistry.filter(
-            (e) =>
-              !(
-                e.ref.name === entry.ref.name &&
-                e.ref.source === entry.ref.source
-              )
-          ),
-          entry,
-        ],
-      }));
-    },
-    removeFromRegistry: (ref) => {
-      set((state) => ({
-        geoJsonRegistry: state.geoJsonRegistry.filter(
-          (e) => !(e.ref.name === ref.name && e.ref.source === ref.source)
+  addLayer: (layer) => {
+    const newLayer = { ...layer, opacity: layer.opacity ?? 1 };
+    set((state) => ({
+      layers: [...state.layers.filter((l) => l.id !== layer.id), newLayer],
+    }));
+    void import("@/app/store/chatStore").then(({ default: useChatStore }) => {
+      useChatStore.getState().includeLayerInContext(layer.id);
+    });
+  },
+  removeLayer: (id) => {
+    set((state) => ({
+      layers: state.layers.filter((l) => l.id !== id),
+    }));
+    void import("@/app/store/chatStore").then(({ default: useChatStore }) => {
+      useChatStore.getState().includeLayerInContext(id);
+    });
+  },
+  removeDatasetLayers: (datasetId) => {
+    const removedIds = get()
+      .layers.filter((l) => {
+        if (typeof l.datasetId !== "number") return false;
+        return datasetId === undefined ? true : l.datasetId === datasetId;
+      })
+      .map((l) => l.id);
+    set((state) => ({
+      layers: state.layers.filter((l) => {
+        if (typeof l.datasetId !== "number") return true;
+        return datasetId === undefined ? false : l.datasetId !== datasetId;
+      }),
+    }));
+    if (removedIds.length > 0) {
+      void import("@/app/store/chatStore").then(({ default: useChatStore }) => {
+        const { includeLayerInContext } = useChatStore.getState();
+        removedIds.forEach(includeLayerInContext);
+      });
+    }
+  },
+  setLayerVisibility: (id, visible) => {
+    set((state) => ({
+      layers: state.layers.map((l) => (l.id === id ? { ...l, visible } : l)),
+    }));
+  },
+  setLayerOpacity: (id, opacity) => {
+    set((state) => ({
+      layers: state.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),
+    }));
+  },
+  reorderLayers: (ids) => {
+    set((state) => ({
+      layers: ids
+        .map((id) => state.layers.find((l) => l.id === id))
+        .filter((l): l is Layer => !!l),
+    }));
+  },
+  addToRegistry: (entry) => {
+    set((state) => ({
+      geoJsonRegistry: [
+        ...state.geoJsonRegistry.filter(
+          (e) =>
+            !(
+              e.ref.name === entry.ref.name && e.ref.source === entry.ref.source
+            )
         ),
-      }));
-    },
-  });
+        entry,
+      ],
+    }));
+  },
+  removeFromRegistry: (ref) => {
+    set((state) => ({
+      geoJsonRegistry: state.geoJsonRegistry.filter(
+        (e) => !(e.ref.name === ref.name && e.ref.source === ref.source)
+      ),
+    }));
+  },
+});

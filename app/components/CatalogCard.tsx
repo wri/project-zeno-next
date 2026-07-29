@@ -22,6 +22,12 @@ export interface CatalogCardProps {
   selectedBg?: string;
   showOnMap: boolean;
   onShowOnMapChange: (checked: boolean) => void;
+  /** Visible label beside the footer toggle. Defaults to "Show on map". */
+  toggleLabel?: string;
+  /** Accessible name for the footer toggle. Defaults to a show/hide-on-map phrasing. */
+  toggleAriaLabel?: string;
+  /** Disables the footer toggle (e.g. an analysis that can't be added). */
+  toggleDisabled?: boolean;
   /** Optional info button click handler. When omitted, the info button is hidden. */
   onInfoClick?: () => void;
   /** Optional info button tooltip / aria text. Defaults to "Show dataset info". */
@@ -31,6 +37,11 @@ export interface CatalogCardProps {
    * as the type label). Used by the Areas panel to show locate/menu actions.
    */
   titleActions?: ReactNode;
+  /**
+   * Optional badge rendered next to the type label (e.g. a verification badge on
+   * insight cards). Sits left of `titleActions`.
+   */
+  badge?: ReactNode;
 }
 
 /**
@@ -48,9 +59,13 @@ export function CatalogCard({
   selectedBg,
   showOnMap,
   onShowOnMapChange,
+  toggleLabel = "Show on map",
+  toggleAriaLabel,
+  toggleDisabled = false,
   onInfoClick,
   infoTooltip = "Show dataset info",
   titleActions,
+  badge,
 }: CatalogCardProps) {
   return (
     <Flex
@@ -80,7 +95,6 @@ export function CatalogCard({
           {typeLabel && (
             <Flex align="center" gap="8px" minW={0} h="16px">
               <Text
-                flex="1"
                 minW={0}
                 fontFamily="mono"
                 fontSize="10px"
@@ -89,9 +103,12 @@ export function CatalogCard({
                 letterSpacing="0.5px"
                 color={typeLabelColor}
                 textTransform="uppercase"
+                whiteSpace="nowrap"
               >
                 {typeLabel}
               </Text>
+              {badge}
+              <Box flex="1" minW={0} />
               {titleActions}
             </Flex>
           )}
@@ -161,10 +178,12 @@ export function CatalogCard({
             onCheckedChange={(e: { checked: boolean }) =>
               onShowOnMapChange(e.checked)
             }
+            disabled={toggleDisabled}
             colorPalette="primary"
             flexShrink={0}
             aria-label={
-              showOnMap ? `Hide ${title} from map` : `Show ${title} on map`
+              toggleAriaLabel ??
+              (showOnMap ? `Hide ${title} from map` : `Show ${title} on map`)
             }
           >
             <Switch.HiddenInput />
@@ -173,7 +192,7 @@ export function CatalogCard({
             </Switch.Control>
           </Switch.Root>
           <Text fontFamily="body" fontSize="12px" color="#656E7B">
-            Show on map
+            {toggleLabel}
           </Text>
         </Flex>
       </Flex>

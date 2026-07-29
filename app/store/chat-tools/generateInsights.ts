@@ -9,8 +9,10 @@ import useMapStore from "../mapStore";
 import { isAreaLayer } from "../layerManagerSlice";
 import useInsightStore from "../insightStore";
 import useChatStore from "../chatStore";
+import type { ChartColorFields } from "@/app/types/chartColors";
+import { pickChartColors } from "@/app/utils/pickChartColors";
 
-interface ChartData {
+interface ChartData extends ChartColorFields {
   id: string;
   title: string;
   type: "line" | "bar" | "table";
@@ -113,11 +115,17 @@ export function generateInsightsTool(
           yAxis: chart.yAxis,
           ...(seriesFields ? { seriesFields } : {}),
           ...(datasetName ? { datasetName } : {}),
+          ...pickChartColors(chart),
           generation: {
             codeact_parts: streamMessage.codeact_parts,
             source_urls: streamMessage.source_urls,
           },
           ...(hasParams ? { analysisParams } : {}),
+          // Shared by all charts of the analysis — the handle for the
+          // "Add to dashboard" toggle (REST widget add, no chat round trip).
+          ...(streamMessage.insight_id
+            ? { insightId: streamMessage.insight_id }
+            : {}),
         };
       });
 
