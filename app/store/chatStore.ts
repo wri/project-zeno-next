@@ -22,6 +22,7 @@ import {
   emptyContextKeys,
   type ContextKeys,
 } from "@/app/utils/messageContext";
+import { enrichMapViewContext } from "@/app/utils/viewContext";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
@@ -581,7 +582,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // Send the agent profile as `ff` only when a profile is selected and the
     // user type is allowed to use feature flags (else the backend 403s).
     const userType = useAuthStore.getState().userType;
-    const viewContext = useViewContextStore.getState().viewContext;
+    const viewContext = enrichMapViewContext(
+      useViewContextStore.getState().viewContext,
+      useMapStore.getState().mapRef,
+      useInsightStore.getState().insights
+    );
     // The dashboard agent tools live in the backend's experimental profile, so
     // default to it whenever the dashboards feature is active — either on a
     // dashboard surface or with the ?ff=dashboard gate open — letting a single
