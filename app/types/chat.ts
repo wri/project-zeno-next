@@ -334,6 +334,11 @@ export interface LangChainResponse {
 export interface LangChainUpdate {
   dataset: object;
   suggested_datasets?: SuggestedDataset[];
+  // Generic nudge state key, replacing suggested_datasets above
+  // (wri/project-zeno#770). For "dataset_choice", `data` carries the same
+  // per-option shape suggested_datasets used to carry — kept narrow here
+  // since only that one nudge type is consumed on the frontend today.
+  nudge?: { type: string; options: string[]; data?: SuggestedDataset[] };
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;

@@ -85,7 +85,15 @@ export function parseStreamMessage(
       name: kwargs.name,
       content: typeof content === "string" ? content : String(content),
       dataset: langChainMessage.dataset || undefined,
-      suggested_datasets: langChainMessage.suggested_datasets || undefined,
+      // Prefer the generic nudge's dataset_choice data (wri/project-zeno#770);
+      // fall back to the legacy field for threads paused mid-disambiguation
+      // before that migration.
+      suggested_datasets:
+        (langChainMessage.nudge?.type === "dataset_choice"
+          ? langChainMessage.nudge.data
+          : undefined) ||
+        langChainMessage.suggested_datasets ||
+        undefined,
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
       insight_id: langChainMessage.insight_id || undefined,

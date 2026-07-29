@@ -173,6 +173,61 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
   });
 });
 
+describe("parseStreamMessage — dataset_choice nudge → suggested_datasets", () => {
+  it("extracts nudge.data as suggested_datasets when the nudge type is dataset_choice", () => {
+    const suggested = [
+      {
+        dataset_id: 4,
+        dataset_name: "TCL Fires",
+        reason: "Annual fire series.",
+      },
+      { dataset_id: 7, dataset_name: "DIST Alerts", reason: "Daily alerts." },
+    ];
+    const update = {
+      ...toolUpdate("pick_dataset"),
+      nudge: {
+        type: "dataset_choice",
+        options: ["TCL Fires", "DIST Alerts"],
+        data: suggested,
+      },
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.suggested_datasets).toEqual(suggested);
+  });
+
+  it("ignores nudge data for other nudge types (e.g. aoi_choice)", () => {
+    const update = {
+      ...toolUpdate("pick_aoi"),
+      nudge: {
+        type: "aoi_choice",
+        options: ["Georgia, USA", "Georgia (country)"],
+        data: [{ name: "Georgia, USA" }, { name: "Georgia (country)" }],
+      },
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.suggested_datasets).toBeUndefined();
+  });
+
+  it("falls back to the legacy suggested_datasets field when there is no nudge", () => {
+    const suggested = [
+      {
+        dataset_id: 4,
+        dataset_name: "TCL Fires",
+        reason: "Annual fire series.",
+      },
+    ];
+    const update = {
+      ...toolUpdate("pick_dataset"),
+      suggested_datasets: suggested,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.suggested_datasets).toEqual(suggested);
+  });
+});
+
 describe("parseStreamMessage — tool error classification", () => {
   it("classifies a status=error tool message as an error", () => {
     const update = toolUpdate("create_dashboard");
