@@ -26,6 +26,7 @@ import useAgentProfileStore from "../agentProfileStore";
 import { apiFetch } from "@/app/lib/api-client";
 import type {
   AnalyseSuggestion,
+  Nudge,
   ViewAnalysisSuggestion,
 } from "@/app/types/chat";
 
@@ -742,5 +743,205 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
 
     expect(dashboardCards()).toHaveLength(1);
     expect(dashboardCards()[0].dashboardName).toBeUndefined();
+  });
+});
+
+// --- nudge state → "nudge" chat message -----------------------------------
+
+/**
+ * One NDJSON line as the backend streams it for a tool turn whose agent
+ * state update carries a `nudge` (dataset_choice, aoi_choice, send_nudge…).
+ */
+function toolNudgeLine(tool: string, nudge: Nudge): string {
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-30T00:00:00.000Z",
+    update: JSON.stringify({
+      nudge,
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: "ok",
+            type: "tool",
+            name: tool,
+            id: `m-${tool}`,
+            response_metadata: {},
+          },
+        },
+      ],
+    }),
+  });
+}
+
+/** One NDJSON line for a plain assistant text turn. */
+function agentTextLine(text: string): string {
+  return JSON.stringify({
+    node: "agent",
+    timestamp: "2026-07-30T00:00:01.000Z",
+    update: JSON.stringify({
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: text,
+            type: "ai",
+            id: "m-ai",
+            response_metadata: {},
+            tool_calls: [],
+            invalid_tool_calls: [],
+          },
+        },
+      ],
+    }),
+  });
+}
+
+/** One NDJSON line for a replayed human turn (fetchThread only). */
+function humanLine(text: string): string {
+  return JSON.stringify({
+    node: "agent",
+    timestamp: "2026-07-30T00:00:00.000Z",
+    update: JSON.stringify({
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: text,
+            type: "human",
+            id: "m-human",
+            response_metadata: {},
+          },
+        },
+      ],
+    }),
+  });
+}
+
+const aoiNudge: Nudge = {
+  type: "aoi_choice",
+  options: [
+    "Puri, Puri, Uíge, Angola - (municipality) [AGO]",
+    "Puri, Odisha, India - (district-county) [IND]",
+  ],
+  data: [
+    {
+      source: "gadm",
+      src_id: "AGO.17.11.1_1",
+      name: "Puri, Puri, Uíge, Angola",
+      subtype: "municipality",
+      bbox: [15.4949, -7.8846, 15.8243, -7.43],
+    },
+    {
+      source: "gadm",
+      src_id: "IND.26.26_1",
+      name: "Puri, Odisha, India",
+      subtype: "district-county",
+      bbox: [85.0865, 19.4617, 86.3727, 20.1884],
+    },
+  ],
+};
+
+const nudgeMessages = () =>
+  useChatStore.getState().messages.filter((m) => m.type === "nudge");
+
+describe("nudge stream state → nudge chat message", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders the nudge after the assistant text that asks the question", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        toolNudgeLine("pick_aoi", aoiNudge),
+        agentTextLine("Which Puri did you mean?"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("search for areas named puri");
+
+    const messages = useChatStore.getState().messages;
+    const textIndex = messages.findIndex(
+      (m) => m.type === "assistant" && m.message === "Which Puri did you mean?"
+    );
+    const nudgeIndex = messages.findIndex((m) => m.type === "nudge");
+    expect(textIndex).toBeGreaterThan(-1);
+    expect(nudgeIndex).toBe(textIndex + 1);
+    expect(messages[nudgeIndex].nudge).toEqual(aoiNudge);
+  });
+
+  it("flushes a buffered nudge at stream end when no assistant text follows", async () => {
+    // The backend guarantees a trailing text turn after every nudge; this is
+    // the safety net for a dropped/errored final turn.
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([toolNudgeLine("send_nudge", aoiNudge)])
+    );
+
+    await useChatStore.getState().sendMessage("search for areas named puri");
+
+    expect(nudgeMessages()).toHaveLength(1);
+    expect(nudgeMessages()[0].nudge).toEqual(aoiNudge);
+  });
+
+  it("does not add an area card for a pick_aoi turn that only carries a nudge", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        toolNudgeLine("pick_aoi", aoiNudge),
+        agentTextLine("Which Puri did you mean?"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("search for areas named puri");
+
+    expect(nudgeMessages()).toHaveLength(1);
+    expect(
+      useChatStore.getState().messages.some((m) => m.type === "area-card")
+    ).toBe(false);
+  });
+
+  it("replays identically through fetchThread", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        humanLine("search for areas named puri"),
+        toolNudgeLine("pick_aoi", aoiNudge),
+        agentTextLine("Which Puri did you mean?"),
+      ])
+    );
+
+    await useChatStore.getState().fetchThread("thread-1");
+
+    const messages = useChatStore.getState().messages;
+    const textIndex = messages.findIndex(
+      (m) => m.type === "assistant" && m.message === "Which Puri did you mean?"
+    );
+    const nudgeIndex = messages.findIndex((m) => m.type === "nudge");
+    expect(textIndex).toBeGreaterThan(-1);
+    expect(nudgeIndex).toBe(textIndex + 1);
+    expect(messages[nudgeIndex].nudge).toEqual(aoiNudge);
+  });
+
+  it("flushes at replay end too when the stored thread lacks the trailing text", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        humanLine("search for areas named puri"),
+        toolNudgeLine("pick_aoi", aoiNudge),
+      ])
+    );
+
+    await useChatStore.getState().fetchThread("thread-1");
+
+    expect(nudgeMessages()).toHaveLength(1);
+    expect(nudgeMessages()[0].nudge).toEqual(aoiNudge);
   });
 });
