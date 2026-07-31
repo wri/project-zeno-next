@@ -246,6 +246,25 @@ describe("parseStreamMessage — nudge state", () => {
     expect(msg?.nudge).toEqual(nudge);
   });
 
+  it("does not synthesize a nudge when the update also carries a resolved dataset", () => {
+    // Old threads can carry both on one update; the resolved dataset always
+    // won (the dataset card renders, no nudge) and replay must keep that.
+    const update = {
+      ...toolUpdate("pick_dataset"),
+      dataset: {
+        dataset_id: 4,
+        dataset_name: "Tree cover loss",
+        tile_url: "https://example.com/tiles",
+      },
+      suggested_datasets: legacySuggested,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.type).toBe("tool");
+    expect(msg?.dataset).toBeDefined();
+    expect(msg?.nudge).toBeUndefined();
+  });
+
   it("does not synthesize a nudge from an empty suggested_datasets array", () => {
     const update = {
       ...toolUpdate("pick_dataset"),

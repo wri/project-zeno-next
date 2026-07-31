@@ -92,9 +92,13 @@ export function parseStreamMessage(
       // stream lines, and fetchThread replays them; without this mapping
       // historical dataset nudges vanish on replay. It also makes deploy
       // order safe (the frontend can ship first).
+      // A resolved dataset on the same update wins over the suggestions,
+      // mirroring the old pickDatasetTool gate — otherwise replaying such a
+      // thread would render both the dataset card and a clickable nudge.
       nudge:
         langChainMessage.nudge ??
-        (langChainMessage.suggested_datasets?.length
+        (langChainMessage.suggested_datasets?.length &&
+        !langChainMessage.dataset
           ? {
               type: "dataset_choice",
               options: langChainMessage.suggested_datasets.map(
