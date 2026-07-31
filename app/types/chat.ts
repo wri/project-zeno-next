@@ -42,7 +42,6 @@ export interface ChatMessage {
     | "dashboard-card"
     | "error"
     | "warning"
-    | "dataset-nudge"
     | "nudge"
     | "analyse-nudge"
     | "view-analysis-nudge"
@@ -53,7 +52,6 @@ export interface ChatMessage {
   aoiSelection?: AOISelection; // For area-card messages
   dashboardId?: string; // For dashboard-card messages
   dashboardName?: string; // For dashboard-card messages; absent on threads that predate the backend streaming it
-  suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
   nudge?: Nudge; // For nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
@@ -170,7 +168,6 @@ export interface StreamMessage {
   content?: string;
   dataset?: object;
   nudge?: Nudge;
-  suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
@@ -305,6 +302,8 @@ export interface Nudge {
   data?: Array<Record<string, unknown>>;
 }
 
+// Shape of a dataset_choice nudge `data` entry. Options arrive ranked;
+// treat index 0 as recommended.
 export interface SuggestedDataset {
   dataset_id: number;
   dataset_name: string;
@@ -313,7 +312,6 @@ export interface SuggestedDataset {
   start_date?: string;
   end_date?: string;
   reason?: string;
-  recommended?: boolean;
 }
 
 export interface DatasetInfo {
@@ -356,7 +354,11 @@ export interface LangChainResponse {
 export interface LangChainUpdate {
   dataset: object;
   nudge?: Nudge;
-  suggested_datasets?: SuggestedDataset[];
+  // Legacy state field replaced by `nudge` (wri/project-zeno#770). Kept
+  // because threads created before the migration permanently contain
+  // suggested_datasets in their stored stream lines, which fetchThread
+  // replays — see the parser fallback in parse-stream-message.ts.
+  suggested_datasets?: (SuggestedDataset & { recommended?: boolean })[];
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;

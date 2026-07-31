@@ -105,7 +105,6 @@ export function parseStreamMessage(
               data: langChainMessage.suggested_datasets.map((d) => ({ ...d })),
             }
           : undefined),
-      suggested_datasets: langChainMessage.suggested_datasets || undefined,
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
       insight_id: langChainMessage.insight_id || undefined,
