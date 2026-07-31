@@ -43,6 +43,7 @@ export interface ChatMessage {
     | "error"
     | "warning"
     | "dataset-nudge"
+    | "nudge"
     | "analyse-nudge"
     | "view-analysis-nudge"
     | "stopped";
@@ -53,6 +54,7 @@ export interface ChatMessage {
   dashboardId?: string; // For dashboard-card messages
   dashboardName?: string; // For dashboard-card messages; absent on threads that predate the backend streaming it
   suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
+  nudge?: Nudge; // For nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
   viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
@@ -167,6 +169,7 @@ export interface StreamMessage {
   name?: string;
   content?: string;
   dataset?: object;
+  nudge?: Nudge;
   suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
@@ -283,6 +286,25 @@ export interface ViewAnalysisSuggestion {
   accepted?: boolean;
 }
 
+// A question the agent asks the user, rendered as a row of clickable options
+// under the accompanying assistant message. Clicking an option submits that
+// exact string as the user's next chat message ("human_input") — there is no
+// separate resolve endpoint.
+export interface Nudge {
+  // Free-form label, not an enum. Known values: "dataset_choice",
+  // "aoi_choice", "dashboard_choice", "insight_choice" — plus arbitrary
+  // ad-hoc values from send_nudge ("confirm", "clarify", …). Unknown types
+  // render as plain option buttons.
+  type: string;
+  // Each string is BOTH the button label AND the exact text resubmitted as
+  // the user's next chat message on click.
+  options: string[];
+  // Optional structured payloads, same order/length as options. Only present
+  // for dataset_choice (SuggestedDataset entries) and aoi_choice (resolved
+  // AOI entries). Never assume alignment with options — validate per entry.
+  data?: Array<Record<string, unknown>>;
+}
+
 export interface SuggestedDataset {
   dataset_id: number;
   dataset_name: string;
@@ -333,6 +355,7 @@ export interface LangChainResponse {
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
+  nudge?: Nudge;
   suggested_datasets?: SuggestedDataset[];
   aoi?: object;
   aoi_selection?: AOISelection;
