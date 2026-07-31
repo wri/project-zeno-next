@@ -7,6 +7,7 @@ import useChatStore from "@/app/store/chatStore";
 import {
   addSuggestedDatasetToMap,
   datasetChoiceEntry,
+  recommendedOptionIndex,
 } from "@/app/utils/nudgeDataset";
 
 /**
@@ -17,11 +18,13 @@ import {
  *
  * Any nudge type renders as a vertical stack of option buttons. dataset_choice
  * options backed by a valid `data` entry additionally show the dataset's
- * reason and (for the top-ranked option, index 0) a recommended highlight —
- * and, on pick, optimistically add the dataset's layers to the map.
+ * reason and a recommended highlight (the top-ranked index-0 option, or the
+ * explicitly flagged entry on replayed legacy nudges) — and, on pick,
+ * optimistically add the dataset's layers to the map.
  */
 export default function ChatNudge({ nudge }: { nudge: Nudge }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const recommendedIndex = recommendedOptionIndex(nudge);
 
   const handlePick = (index: number) => {
     if (selectedIndex !== null) return;
@@ -43,7 +46,7 @@ export default function ChatNudge({ nudge }: { nudge: Nudge }) {
       <Flex direction="column" gap={3}>
         {nudge.options.map((option, index) => {
           const dataset = datasetChoiceEntry(nudge, index);
-          const isRecommended = !!dataset && index === 0;
+          const isRecommended = !!dataset && index === recommendedIndex;
           const isPicked = selectedIndex === index;
           const isDisabled = selectedIndex !== null && !isPicked;
           return (

@@ -38,6 +38,7 @@ import {
   addSuggestedDatasetToMap,
   datasetChoiceEntry,
   isSuggestedDataset,
+  recommendedOptionIndex,
 } from "../nudgeDataset";
 import {
   getDatasetLayerContextProps,
@@ -101,6 +102,49 @@ describe("datasetChoiceEntry", () => {
         0
       )
     ).toBeNull();
+  });
+});
+
+describe("recommendedOptionIndex", () => {
+  it("defaults to the top-ranked index 0", () => {
+    expect(
+      recommendedOptionIndex({
+        type: "dataset_choice",
+        options: ["A", "B"],
+        data: [validEntry, validEntry],
+      })
+    ).toBe(0);
+  });
+
+  it("defaults to 0 when there is no data at all", () => {
+    expect(
+      recommendedOptionIndex({ type: "aoi_choice", options: ["A", "B"] })
+    ).toBe(0);
+  });
+
+  it("honors a legacy recommended flag on a non-first entry", () => {
+    // Pre-migration threads flag the recommendation explicitly; the parser
+    // preserves the flag on synthesized dataset_choice data entries.
+    expect(
+      recommendedOptionIndex({
+        type: "dataset_choice",
+        options: ["A", "B"],
+        data: [validEntry, { ...validEntry, recommended: true }],
+      })
+    ).toBe(1);
+  });
+
+  it("ignores non-boolean-true recommended values", () => {
+    expect(
+      recommendedOptionIndex({
+        type: "dataset_choice",
+        options: ["A", "B"],
+        data: [
+          { ...validEntry, recommended: "yes" },
+          { ...validEntry, recommended: false },
+        ],
+      })
+    ).toBe(0);
   });
 });
 

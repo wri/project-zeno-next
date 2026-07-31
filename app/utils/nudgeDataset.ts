@@ -37,6 +37,18 @@ export function datasetChoiceEntry(
 }
 
 /**
+ * Index of the option to highlight as recommended. The backend ranks options
+ * (index 0 is the recommendation), but legacy dataset_choice nudges
+ * synthesized from pre-migration suggested_datasets can flag any entry as
+ * `recommended: true` — honor that on replay, then fall back to rank.
+ */
+export function recommendedOptionIndex(nudge: Nudge): number {
+  const flagged =
+    nudge.data?.findIndex((entry) => entry?.recommended === true) ?? -1;
+  return flagged >= 0 ? flagged : 0;
+}
+
+/**
  * Optimistically adds a picked suggested dataset to the map, ahead of the
  * agent's confirmation turn: looks up the local dataset metadata, merges the
  * nudge entry's overrides (context layer, dates, parameters), replaces any
