@@ -70,7 +70,6 @@ export default CHART_COLOR_MAPPING;
  */
 export const DATASET_SERIES_COLORS: Record<string, string> = {
   "Tree cover loss": "#DC6C9A",
-  "Integrated alerts": "#C92A6D",
   "Tree cover": "#97BD3D",
   "Tree cover gain": "#3F08F5",
   "Global natural/semi-natural grassland extent": "#ff9916",
