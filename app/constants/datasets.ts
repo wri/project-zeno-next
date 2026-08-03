@@ -140,31 +140,6 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
-    dataset_id: 0,
-    dataset_name: "Global all ecosystem disturbance alerts (DIST-ALERT)",
-    shortName: "DIST-ALERT",
-    data_layer: "Global all ecosystem disturbance alerts (DIST-ALERT)",
-    context_layer: null as string | null,
-    img: "/dataset_card_dist_alerts.webp",
-    cadence: "weekly",
-    resolution: "30 m",
-    geographic_coverage: "global",
-    provider: "UMD",
-    categories: ["disturbance", "near-real-time"],
-    description:
-      "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present.",
-    tile_url:
-      "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
-    legend: {
-      title: "Global all ecosystem disturbance alerts",
-      color: "#f69",
-      items: [{ label: "DIST alert", color: "#f69" }],
-      type: "symbol",
-      info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
-      note: "Near-real-time vegetation disturbance alerts across all ecosystems, updated weekly (2023-present).",
-    },
-  },
-  {
     dataset_id: 11,
     dataset_name: "Integrated alerts",
     shortName: "Integrated alerts",
@@ -175,6 +150,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "10 m",
     geographic_coverage: "global",
     provider: "GFW",
+    categories: ["disturbance", "near-real-time"],
     description:
       "Integrated Alerts aggregates near-real-time deforestation and vegetation disturbance alerts from DIST-ALERT, GLAD-L, GLAD-S2, and RADD into a single 10-meter global layer. Alerts are classified by confidence level: low, high, and highest.",
     methodology:
