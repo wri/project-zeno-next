@@ -40,13 +40,6 @@ describe("filterDatasetsByCategory", () => {
       []
     );
     expect(disturbance.some((c) => c.dataset_id === 10)).toBe(true);
-    // Integrated alerts owns near-real-time after DIST-ALERT removal.
-    const nearRealTime = filterDatasetsByCategory(
-      DATASET_CARDS,
-      "near-real-time",
-      []
-    );
-    expect(nearRealTime.some((c) => c.dataset_id === 11)).toBe(true);
     expect(DATASET_CARDS.some((c) => c.dataset_id === 0)).toBe(false);
   });
 

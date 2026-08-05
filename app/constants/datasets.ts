@@ -27,8 +27,7 @@ export type DatasetCategoryId =
   | "in-conversation"
   | "land-use"
   | "disturbance"
-  | "wildfires"
-  | "near-real-time";
+  | "wildfires";
 
 export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
   { id: "all", label: "All datasets" },
@@ -36,7 +35,6 @@ export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
   { id: "land-use", label: "Land use" },
   { id: "disturbance", label: "Disturbance" },
   { id: "wildfires", label: "Wildfires" },
-  { id: "near-real-time", label: "Near-real time" },
 ];
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
@@ -150,7 +148,6 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "10 m",
     geographic_coverage: "global",
     provider: "GFW",
-    categories: ["disturbance", "near-real-time"],
     description:
       "Integrated Alerts aggregates near-real-time deforestation and vegetation disturbance alerts from DIST-ALERT, GLAD-L, GLAD-S2, and RADD into a single 10-meter global layer. Alerts are classified by confidence level: low, high, and highest.",
     methodology:
