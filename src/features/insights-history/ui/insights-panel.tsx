@@ -32,6 +32,7 @@ import {
 } from "@/app/explorationLayout";
 import {
   chartsToWidgets,
+  resolveInsightTitle,
   type InsightRecord,
   type InsightVerification,
 } from "@/src/entities/insight";
@@ -109,7 +110,11 @@ function recordToItems(record: InsightRecord): InsightCardItem[] {
   const addableInsightId =
     record.verification === "ai-generated" ? record.id : undefined;
   return chartsToWidgets(record.charts).map((widget) => ({
-    widget: { ...widget, curated },
+    widget: {
+      ...widget,
+      title: resolveInsightTitle(record, widget.title),
+      curated,
+    },
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,

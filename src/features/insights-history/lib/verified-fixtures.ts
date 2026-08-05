@@ -1,4 +1,7 @@
-import type { InsightRecord } from "@/src/entities/insight";
+import {
+  generateInsightTitle,
+  type InsightRecord,
+} from "@/src/entities/insight";
 
 /**
  * Curated, hand-verified insights shown under the "Verified" filter. A stub
@@ -7,6 +10,11 @@ import type { InsightRecord } from "@/src/entities/insight";
 export const verifiedInsights: InsightRecord[] = [
   {
     id: "verified-tcl-brazil",
+    title: generateInsightTitle({
+      datasetName: "Tree cover loss",
+      locationName: "Brazil",
+      areaLabel: "Brazil",
+    }),
     source: "Global Forest Watch · Hansen/UMD",
     createdAt: "2024-01-15T00:00:00.000Z",
     verification: "verified",
@@ -33,6 +41,9 @@ export const verifiedInsights: InsightRecord[] = [
     ],
   },
   {
+    // No generated `title`: this insight breaks protection down by region
+    // (Amazonia, Congo Basin, SE Asia) rather than covering one location, so
+    // the "{dataset} in {location}" template doesn't fit it.
     id: "verified-kba-coverage",
     source: "WDPA · KBA Partnership",
     createdAt: "2024-02-02T00:00:00.000Z",

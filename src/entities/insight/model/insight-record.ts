@@ -21,6 +21,12 @@ export interface InsightRecord {
   insightText: string;
   verification: InsightVerification;
   /**
+   * Generated title in the form "{dataset} in {location}". Only curated
+   * (verified) insights carry one — the backend sends none for AI-generated
+   * insights, whose cards still derive a title from their first chart.
+   */
+  title?: string;
+  /**
    * Optional source / methodology label for the card. The backend provides none
    * for AI-generated insights; only curated Verified fixtures set it.
    */
