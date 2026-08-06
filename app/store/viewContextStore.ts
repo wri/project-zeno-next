@@ -15,7 +15,14 @@ import { create } from "zustand";
  * its own on mount.
  */
 export type ViewContext =
-  | { page: "map" }
+  | {
+      page: "map";
+      // Live map extent + on-map insights aren't tracked here reactively —
+      // they're computed fresh at send time (see enrichMapViewContext) the
+      // same way `ui_context` is, so this store only ever holds `page`.
+      viewport?: { bbox: [number, number, number, number]; zoom: number };
+      visible_insights?: string[];
+    }
   | { page: "dashboard"; dashboard_id: string; dashboard_name?: string };
 
 interface ViewContextState {
