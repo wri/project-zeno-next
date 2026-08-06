@@ -32,7 +32,6 @@ import {
 } from "@/app/explorationLayout";
 import {
   chartsToWidgets,
-  resolveInsightTitle,
   type InsightRecord,
   type InsightVerification,
 } from "@/src/entities/insight";
@@ -82,6 +81,7 @@ type InsightFilter = "conversation" | "verified" | "ai";
 const INSIGHT_FILTERS: { id: InsightFilter; label: string }[] = [
   { id: "conversation", label: "In this conversation" },
   { id: "ai", label: "AI generated" },
+  { id: "verified", label: "Curated" },
 ];
 
 /**
@@ -110,11 +110,7 @@ function recordToItems(record: InsightRecord): InsightCardItem[] {
   const addableInsightId =
     record.verification === "ai-generated" ? record.id : undefined;
   return chartsToWidgets(record.charts).map((widget) => ({
-    widget: {
-      ...widget,
-      title: resolveInsightTitle(record, widget.title),
-      curated,
-    },
+    widget: { ...widget, curated },
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,
