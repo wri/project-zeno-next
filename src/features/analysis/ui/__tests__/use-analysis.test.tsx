@@ -151,6 +151,74 @@ describe("useAnalysis", () => {
     );
   });
 
+  it("generates a '{dataset} in {location}' title when the dataset name is known", async () => {
+    const chart = {
+      id: "c1",
+      position: 0,
+      type: "bar",
+      title: "Whatever the chart calls itself",
+      xAxis: "year",
+      yAxis: "area_ha",
+      colorField: "",
+      stackField: "",
+      groupField: "",
+      seriesFields: ["area_ha"],
+      data: [{ year: "2020", area_ha: 100 }],
+    };
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({ id: "r1", charts: [chart] }),
+    };
+    const sink: InsightSink = { add: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service, sink));
+
+    act(() => {
+      result.current.run({
+        ...selection,
+        dataset: { id: 4, name: "Tree cover loss" },
+      });
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+    expect(sink.add).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ title: "Tree cover loss in Brazil" }),
+      ])
+    );
+  });
+
+  it("keeps the chart's own title when the dataset name is unknown", async () => {
+    const chart = {
+      id: "c1",
+      position: 0,
+      type: "bar",
+      title: "Original chart title",
+      xAxis: "year",
+      yAxis: "area_ha",
+      colorField: "",
+      stackField: "",
+      groupField: "",
+      seriesFields: ["area_ha"],
+      data: [{ year: "2020", area_ha: 100 }],
+    };
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({ id: "r1", charts: [chart] }),
+    };
+    const sink: InsightSink = { add: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service, sink));
+
+    act(() => {
+      // `selection.dataset` has no `name` (matches today's callers).
+      result.current.run(selection);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+    expect(sink.add).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ title: "Original chart title" }),
+      ])
+    );
+  });
+
   it("calls sink.add with an empty array when the analysis returns no charts", async () => {
     const service: AnalysisService = {
       run: vi.fn().mockResolvedValue({ id: "r1", charts: [] }),

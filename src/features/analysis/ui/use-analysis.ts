@@ -5,7 +5,7 @@ import type { AnalysisResult } from "../model/analysis-result";
 import { LROAnalysisService } from "../model/lro-analysis-service";
 import { RestAnalysisGateway } from "../api/rest-analysis-gateway";
 import { SystemClock } from "../lib/system-clock";
-import { chartsToWidgets } from "@/src/entities/insight";
+import { chartsToWidgets, generateInsightTitle } from "@/src/entities/insight";
 import type { InsightSink } from "../model/insight-sink";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
@@ -92,12 +92,25 @@ export function useAnalysis(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
-          const widgets = chartsToWidgets(
+          const rawWidgets = chartsToWidgets(
             analysisResult.charts,
             analysisResult.params
               ? { areas: [analysisResult.params.name] }
               : undefined
           );
+          // Give each widget the same "{dataset} in {location}" title as a
+          // curated insight, when the dataset's name is known (it always is
+          // for this flow's real callers — only test fixtures may omit it).
+          const widgets = selection.dataset.name
+            ? rawWidgets.map((widget) => ({
+                ...widget,
+                title: generateInsightTitle({
+                  datasetName: selection.dataset.name!,
+                  locationName: selection.area.name,
+                  areaLabel: selection.area.name,
+                }),
+              }))
+            : rawWidgets;
           // Add the chart and drop the skeleton flag together so the workspace
           // swaps skeleton → chart in one render (no empty flash).
           sink.add(widgets);
