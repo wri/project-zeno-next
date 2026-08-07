@@ -33,7 +33,7 @@ export default function ViewAnalysisNudge({
     useChatStore.getState().acceptViewAnalysisNudge(messageId);
     run({
       area: suggestion.area,
-      dataset: { id: suggestion.datasetId },
+      dataset: { id: suggestion.datasetId, name: suggestion.datasetName },
       startDate: suggestion.startDate,
       endDate: suggestion.endDate,
     });
