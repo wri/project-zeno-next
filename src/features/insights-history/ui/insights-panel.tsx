@@ -34,7 +34,6 @@ import {
   chartsToWidgets,
   resolveInsightTitle,
   type InsightRecord,
-  type InsightVerification,
 } from "@/src/entities/insight";
 // Deep imports (not the feature barrel) so the map's InsightsPanel doesn't pull
 // the dashboards pages into its bundle, and so mounting the pane on a dashboard
@@ -42,8 +41,13 @@ import {
 // dashboards/ui (e.g. WidgetMessage → AddToDashboardToggle).
 import { useAddChartToDashboard } from "@/src/features/dashboards/ui/useAddChartToDashboard";
 import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrentDashboardArea";
+import { CuratedAnalysesList } from "./curated-analyses-list";
+import {
+  InsightThumbnail,
+  INSIGHT_LABEL_COLOR,
+  INSIGHT_SELECTED_BG,
+} from "./insight-thumbnail";
 import { useUserInsights } from "./use-user-insights";
-import { verifiedInsights } from "../lib/verified-fixtures";
 import useChatStore from "@/app/store/chatStore";
 import useInsightStore from "@/app/store/insightStore";
 import useSidebarStore from "@/app/store/sidebarStore";
@@ -54,7 +58,6 @@ import { CatalogCard } from "@/app/components/CatalogCard";
 import InsightCaption from "@/app/components/InsightCaption";
 import WidgetMessage from "@/app/components/WidgetMessage";
 import { Tooltip } from "@/app/components/ui/tooltip";
-import { WidgetIconComponent } from "@/app/utils/widgetIcons";
 
 /** Matches the other exploration panels' enter & exit (slide from the left). */
 const insightsPanelSlideTransition = {
@@ -70,10 +73,9 @@ const insightsListScrollStyle = {
   "&::-webkit-scrollbar": { display: "none" },
 } as const;
 
-const INSIGHT_LABEL_COLOR = "#0049AA";
-const INSIGHT_SELECTED_BG = "rgba(0, 73, 170, 0.06)";
-
 type InsightFilter = "conversation" | "verified" | "ai";
+/** The filters whose cards come from insight records (everything but Curated). */
+type HistoryFilter = Exclude<InsightFilter, "verified">;
 
 const INSIGHT_FILTERS: { id: InsightFilter; label: string }[] = [
   { id: "conversation", label: "In this conversation" },
@@ -83,39 +85,34 @@ const INSIGHT_FILTERS: { id: InsightFilter; label: string }[] = [
 
 /**
  * One card in the panel = one chart, enriched with its insight's card-level
- * metadata (source, timestamp, verification). Mirrors how the on-map
- * `InsightWorkspace` treats each widget as one "analysis".
+ * metadata (source, timestamp). Mirrors how the on-map `InsightWorkspace`
+ * treats each widget as one "analysis".
  */
 interface InsightCardItem {
   widget: InsightWidget;
   source: string;
   createdAt: string;
-  verification: InsightVerification;
   /**
    * The parent insight's backend id — the analysis a chart belongs to, used to
    * find (or create) that analysis's dashboard widget when adding this chart.
-   * Present only for real, persisted AI insights; undefined for verified
-   * fixtures and unsaved in-session analyses, which can't be added by id.
+   * Undefined for unsaved in-session analyses, which can't be added by id.
    */
   addableInsightId?: string;
 }
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
-  const curated = record.verification === "verified";
-  // Only real backend (ai-generated) insights have an id the dashboards API
-  // knows; verified fixtures are client-side stubs.
-  const addableInsightId =
-    record.verification === "ai-generated" ? record.id : undefined;
   return chartsToWidgets(record.charts).map((widget) => ({
     widget: {
       ...widget,
       title: resolveInsightTitle(record, widget.title),
-      curated,
+      // Explicit false: WidgetMessage's caption falls back to !widget.generation
+      // when `curated` is undefined, which would mislabel plain AI insights.
+      // Curated cards come from CuratedAnalysesList, never from this path.
+      curated: false,
     },
     source: record.source ?? "",
     createdAt: record.createdAt,
-    verification: record.verification,
-    addableInsightId,
+    addableInsightId: record.id,
   }));
 }
 
@@ -124,7 +121,6 @@ function liveWidgetToItem(widget: InsightWidget): InsightCardItem {
     widget,
     source: widget.datasetName ?? "",
     createdAt: "",
-    verification: "ai-generated",
   };
 }
 
@@ -187,6 +183,13 @@ export function InsightsPanel() {
   const leftPx = getCatalogLeftPx(isChatFullSize);
   const compactSlide = !isChatFullSize;
   const showAreaToggle = isDashboard && filter === "ai";
+  // The Curated chip only appears on dashboards: its cards are predefined
+  // analyses that run against the dashboard's own AOI and land on the grid
+  // (curated-analyses-list.tsx) — there is no equivalent target on the map
+  // page yet.
+  const visibleFilters = INSIGHT_FILTERS.filter(
+    (f) => f.id !== "verified" || isDashboard
+  );
 
   return (
     <AnimatePresence>
@@ -213,7 +216,7 @@ export function InsightsPanel() {
               overflow="hidden"
             >
               <Wrap gap={1} flexShrink={0} overflow="hidden">
-                {INSIGHT_FILTERS.map((f) => {
+                {visibleFilters.map((f) => {
                   const isActive = filter === f.id;
                   return (
                     <Button
@@ -273,7 +276,14 @@ export function InsightsPanel() {
                 pb={2}
                 css={insightsListScrollStyle}
               >
-                <InsightsList filter={filter} areaScoped={areaScoped} />
+                {/* Curated cards are predefined analyses (dataset + the
+                    dashboard's AOI) that pull their data on demand — a
+                    different card model from the record-backed list. */}
+                {filter === "verified" ? (
+                  <CuratedAnalysesList />
+                ) : (
+                  <InsightsList filter={filter} areaScoped={areaScoped} />
+                )}
               </Stack>
             </Flex>
           </Flex>
@@ -335,7 +345,7 @@ function InsightsList({
   filter,
   areaScoped,
 }: {
-  filter: InsightFilter;
+  filter: HistoryFilter;
   areaScoped: boolean;
 }) {
   const currentThreadId = useChatStore((s) => s.currentThreadId);
@@ -356,7 +366,6 @@ function InsightsList({
   // and the dashboard adds each chart to the grid independently (its widget's
   // config.chartIds tracks which are shown).
   const items = useMemo<InsightCardItem[]>(() => {
-    if (filter === "verified") return verifiedInsights.flatMap(recordToItems);
     if (filter === "ai") return allInsights.flatMap(recordToItems);
     return mergeById(
       currentThreadId ? threadInsights.flatMap(recordToItems) : [],
@@ -395,13 +404,11 @@ function InsightsList({
   );
 }
 
-function EmptyState({ filter }: { filter: InsightFilter }) {
+function EmptyState({ filter }: { filter: HistoryFilter }) {
   const message =
-    filter === "verified"
-      ? "No curated analyses yet."
-      : filter === "ai"
-        ? "No analyses generated yet. Ask the assistant to analyse an area."
-        : "No analyses in this conversation yet. Ask the assistant to analyse an area, or generate one from a dataset and area.";
+    filter === "ai"
+      ? "No analyses generated yet. Ask the assistant to analyse an area."
+      : "No analyses in this conversation yet. Ask the assistant to analyse an area, or generate one from a dataset and area.";
   return (
     <Text fontSize="sm" color="fg.muted" mt={4}>
       {message}
@@ -450,7 +457,7 @@ function InsightCard({
           toggleDisabled={!chart.addable || chart.pending}
           onInfoClick={onOpen}
           infoTooltip="View analysis"
-          badge={<VerificationBadge verification={item.verification} />}
+          badge={<InsightCaption curated={false} showLearnMore={false} />}
         />
       </Box>
     );
@@ -476,34 +483,9 @@ function InsightCard({
         onShowOnMapChange={handleToggle}
         onInfoClick={onOpen}
         infoTooltip="View analysis"
-        badge={<VerificationBadge verification={item.verification} />}
+        badge={<InsightCaption curated={false} showLearnMore={false} />}
       />
     </Box>
-  );
-}
-
-function InsightThumbnail({ type }: { type: InsightWidget["type"] }) {
-  const Icon = WidgetIconComponent[type];
-  return (
-    <Flex w="100%" h="100%" align="center" justify="center" bg="primary.25">
-      <Icon size={28} color={INSIGHT_LABEL_COLOR} weight="thin" />
-    </Flex>
-  );
-}
-
-function VerificationBadge({
-  verification,
-}: {
-  verification: InsightVerification;
-}) {
-  // Panel-card badges reuse the workspace insight caption's styling (icon +
-  // label) minus its "Learn more" link, so curated and AI-assisted analyses
-  // read identically on the card and in the workspace.
-  return (
-    <InsightCaption
-      curated={verification === "verified"}
-      showLearnMore={false}
-    />
   );
 }
 

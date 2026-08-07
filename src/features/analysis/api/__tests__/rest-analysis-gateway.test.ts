@@ -213,6 +213,35 @@ describe("RestAnalysisGateway.fetchResult", () => {
     });
   });
 
+  it("keeps the backend's chart id, falling back to a synthesized one", async () => {
+    const fetch = mockFetch({
+      id: INSIGHT_ID,
+      charts: [
+        {
+          id: "chart-uuid-1",
+          title: "A",
+          chart_type: "bar",
+          x_axis: "x",
+          y_axis: "y",
+          chart_data: [],
+        },
+        {
+          title: "B",
+          chart_type: "line",
+          x_axis: "x",
+          y_axis: "y",
+          chart_data: [],
+        },
+      ],
+    });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const result = await gateway.fetchResult(RESOURCE_URL);
+
+    expect(result.charts[0].id).toBe("chart-uuid-1");
+    expect(result.charts[1].id).toBe(`${INSIGHT_ID}-chart-1`);
+  });
+
   it("assigns position from the chart's array index", async () => {
     const fetch = mockFetch({
       id: INSIGHT_ID,

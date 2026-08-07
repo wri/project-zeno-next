@@ -25,18 +25,56 @@ interface ChartSeries {
 // is keyed by that slug, not by the (possibly translated) display value.
 const SLUG_COLUMN_SUFFIX = "__slug";
 
-function isNumericValue(value: unknown): boolean {
-  if (value === null || value === undefined || value === "") return false;
-  if (typeof value === "number") return Number.isFinite(value);
+/** The numeric reading of a cell value (comma-formatted strings included);
+ *  NaN when the value isn't numeric. Single source of "how cells parse" for
+ *  both the numeric guard and the x-axis sort, so they can't disagree. */
+function toNumber(value: unknown): number {
+  if (typeof value === "number") return value;
   if (typeof value === "string") {
     const normalized = value.replace(/,/g, "");
-    return normalized !== "" && !Number.isNaN(Number(normalized));
+    return normalized === "" ? NaN : Number(normalized);
   }
-  return false;
+  return NaN;
+}
+
+function isNumericValue(value: unknown): boolean {
+  return Number.isFinite(toNumber(value));
 }
 
 function isNumericColumn(data: InputData[], key: string): boolean {
   return data.every((item) => isNumericValue(item[key]));
+}
+
+/** Chart types whose x-axis is a category axis rendered in row order. */
+const X_ORDERED_TYPES = new Set([
+  "bar",
+  "line",
+  "area",
+  "stacked-bar",
+  "grouped-bar",
+]);
+
+/**
+ * Rows sorted ascending by the x-axis column when the chart's x-axis is a
+ * category axis rendered in row order AND every x value is numeric (years,
+ * thresholds…). The analytics backend returns rows in arbitrary order —
+ * without this a year axis reads shuffled (e.g. starting at 2004 and ending
+ * at 2023 despite covering 2001–2025). Non-numeric x values (names, ranked
+ * categories) keep their original, intentional order; other chart types pass
+ * through untouched.
+ *
+ * Exported so `WidgetMessage` can apply the SAME ordering to a widget's table
+ * view and CSV export — every view of one widget's rows must agree.
+ */
+export function sortRowsForNumericXAxis<T extends Record<string, unknown>>(
+  rows: T[],
+  type: string,
+  xAxis?: string
+): T[] {
+  if (!X_ORDERED_TYPES.has(type) || rows.length < 2) return rows;
+  const xKey = xAxis || Object.keys(rows[0] ?? {})[0];
+  if (!xKey || !isNumericColumn(rows, xKey)) return rows;
+  return [...rows].sort((a, b) => toNumber(a[xKey]) - toNumber(b[xKey]));
 }
 
 /** True when the same column value appears under multiple x-axis categories (long-format group key). */
@@ -185,7 +223,11 @@ export default function formatChartData(
     return empty;
   }
   const scopedKeys = Object.keys(scopedFirstRow);
-  const chartRows = scopedData as InputData[];
+  const chartRows = sortRowsForNumericXAxis(
+    scopedData as InputData[],
+    type,
+    xAxisKey
+  );
 
   const defaultColors = getChartColors();
 

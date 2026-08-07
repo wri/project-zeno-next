@@ -37,6 +37,7 @@ import { Tooltip } from "@/app/components/ui/tooltip";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
+import { sortRowsForNumericXAxis } from "@/app/utils/formatCharts";
 import { WidgetIcons } from "../utils/widgetIcons";
 import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
@@ -117,8 +118,19 @@ export default function WidgetMessage({
     }
   };
 
+  // The chart view sorts numeric x-axes inside formatChartData; the table
+  // view and CSV export read the rows directly, so apply the same ordering
+  // here — every view of one widget's data must agree.
+  const displayData = Array.isArray(widget.data)
+    ? sortRowsForNumericXAxis(
+        widget.data as Record<string, unknown>[],
+        widget.type,
+        widget.xAxis
+      )
+    : widget.data;
+
   const handleDownloadCsv = () => {
-    const data = widget.data;
+    const data = displayData;
     if (!Array.isArray(data) || data.length === 0) return;
     const rows = data as Record<string, unknown>[];
     const headers = Object.keys(rows[0]);
@@ -289,12 +301,12 @@ export default function WidgetMessage({
             </Box>
           </WidgetErrorBoundary>
         )}
-        {isChartType && showAsTable && Array.isArray(widget.data) && (
+        {isChartType && showAsTable && Array.isArray(displayData) && (
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
             <ScrollableTableWrapper>
               <TableWidget
                 data={
-                  widget.data as Record<string, string | number | boolean>[]
+                  displayData as Record<string, string | number | boolean>[]
                 }
                 caption={widget.title}
               />
@@ -307,7 +319,7 @@ export default function WidgetMessage({
             <ScrollableTableWrapper>
               <TableWidget
                 data={
-                  widget.data as Record<string, string | number | boolean>[]
+                  displayData as Record<string, string | number | boolean>[]
                 }
                 caption={widget.title}
               />

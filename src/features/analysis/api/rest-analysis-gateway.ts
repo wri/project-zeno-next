@@ -26,6 +26,9 @@ interface RawJobResponse {
 }
 
 interface RawChart {
+  /** The persisted chart row's id. Present since the backend began returning
+   *  `InsightChartResponse`; optional to tolerate older payloads. */
+  id?: string;
   title: string;
   chart_type: string;
   x_axis: string;
@@ -203,7 +206,10 @@ export class RestAnalysisGateway implements AnalysisGateway {
       id: body.id,
       charts: body.charts.map(
         (c, i): Chart => ({
-          id: `${body.id}-chart-${i}`,
+          // Prefer the backend's persisted chart id: dashboard widget configs
+          // (config.chartIds / config.titles) key on the ids the insights API
+          // returns, so a synthesized id would never match them.
+          id: c.id ?? `${body.id}-chart-${i}`,
           position: i,
           title: c.title,
           type: c.chart_type,

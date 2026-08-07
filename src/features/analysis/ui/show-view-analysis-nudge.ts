@@ -4,12 +4,11 @@ import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
 
+import {
+  DEFAULT_END_DATE,
+  DEFAULT_START_DATE,
+} from "../lib/default-analysis-window";
 import type { AreaSelection } from "../model/area-selection";
-
-// Default analysis window used when the user has not pinned a date range in
-// context — wide enough to cover the catalogue's annual datasets.
-const DEFAULT_START_DATE = "2001-01-01";
-const DEFAULT_END_DATE = "2025-12-31";
 
 /**
  * Surfaces the "View Analysis" nudge for an area selection. Like the analyse
