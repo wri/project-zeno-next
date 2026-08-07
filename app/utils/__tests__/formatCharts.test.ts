@@ -174,6 +174,72 @@ describe("formatChartData", () => {
     expect(result.data[0]).toMatchObject({ region: "A", 2020: 10, 2021: 12 });
   });
 
+  describe("numeric x-axis ordering", () => {
+    it("sorts bar rows ascending when x values are numeric years", () => {
+      // The analytics API returns rows in arbitrary order; the category
+      // x-axis renders them as-is, so unsorted years read shuffled.
+      const data = [
+        { tree_cover_loss_year: 2004, area_ha: 100 },
+        { tree_cover_loss_year: 2021, area_ha: 200 },
+        { tree_cover_loss_year: 2001, area_ha: 300 },
+        { tree_cover_loss_year: 2023, area_ha: 400 },
+      ];
+      const result = formatChartData(
+        data,
+        "bar",
+        "tree_cover_loss_year",
+        "area_ha"
+      );
+      expect(result.data.map((d) => d.tree_cover_loss_year)).toEqual([
+        2001, 2004, 2021, 2023,
+      ]);
+    });
+
+    it("sorts numerically when the x values are numeric strings", () => {
+      const data = [
+        { year: "2010", loss: 1 },
+        { year: "2002", loss: 2 },
+        { year: "2021", loss: 3 },
+      ];
+      const result = formatChartData(data, "line", "year", "loss");
+      expect(result.data.map((d) => d.year)).toEqual(["2002", "2010", "2021"]);
+    });
+
+    it("keeps categorical x order untouched (ranked lists)", () => {
+      const data = [
+        { country: "Brazil", area_ha: 400 },
+        { country: "Indonesia", area_ha: 300 },
+        { country: "DR Congo", area_ha: 200 },
+      ];
+      const result = formatChartData(data, "bar", "country", "area_ha");
+      expect(result.data.map((d) => d.country)).toEqual([
+        "Brazil",
+        "Indonesia",
+        "DR Congo",
+      ]);
+    });
+
+    it("orders grouped-bar pivot output by numeric x", () => {
+      const data = [
+        { year: 2021, region: "A", area_km2: 10 },
+        { year: 2020, region: "A", area_km2: 12 },
+        { year: 2021, region: "B", area_km2: 8 },
+        { year: 2020, region: "B", area_km2: 9 },
+      ];
+      const result = formatChartData(data, "grouped-bar", "year", "area_km2");
+      expect(result.data.map((d) => d.year)).toEqual(["2020", "2021"]);
+    });
+
+    it("does not mutate the input array", () => {
+      const data = [
+        { year: 2021, loss: 1 },
+        { year: 2020, loss: 2 },
+      ];
+      formatChartData(data, "bar", "year", "loss");
+      expect(data.map((d) => d.year)).toEqual([2021, 2020]);
+    });
+  });
+
   it("keeps the name column for scatter charts (regression)", () => {
     const data = [
       { country: "Brazil", gdp_per_capita: 8900, deforestation_ha: 4812000 },
