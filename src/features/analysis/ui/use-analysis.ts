@@ -2,22 +2,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnalysisService } from "../model/analysis-service";
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
-import { LROAnalysisService } from "../model/lro-analysis-service";
-import { RestAnalysisGateway } from "../api/rest-analysis-gateway";
-import { SystemClock } from "../lib/system-clock";
-import { chartsToWidgets, generateInsightTitle } from "@/src/entities/insight";
+import { defaultAnalysisService } from "./default-analysis-service";
+import {
+  chartDatasetName,
+  chartsToWidgets,
+  generateInsightTitle,
+} from "@/src/entities/insight";
 import type { InsightSink } from "../model/insight-sink";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
 
 // ── Composition root ──────────────────────────────────────────────────────────
-// Wire the real application service and the real insight sink with their driven
-// adapters. Tests inject their own fakes via the hook parameters.
-
-const defaultService: AnalysisService = new LROAnalysisService(
-  new RestAnalysisGateway(),
-  new SystemClock()
-);
+// Wire the real insight sink with its driven adapter (the analysis service
+// wiring is shared — see default-analysis-service.ts). Tests inject their own
+// fakes via the hook parameters.
 
 const defaultSink: InsightSink = {
   // Guard against empty arrays so the store isn't notified with nothing to add.
@@ -29,22 +27,6 @@ const defaultSink: InsightSink = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * The dataset name to use in a chart's "{dataset} in {location}" title. Every
- * dataset uses its own name, with one exception: a tree cover loss analysis
- * also returns a GHG-emissions chart (see project-zeno `charts.py:
- * TCLChartGenerator`), identified by its y-axis, which is titled as
- * "GHG Emissions from Tree Cover Loss" instead.
- */
-function chartDatasetName(
-  widget: { yAxis?: string },
-  datasetName: string
-): string {
-  return widget.yAxis === "carbon_emissions_MgCO2e"
-    ? "GHG Emissions from Tree Cover Loss"
-    : datasetName;
-}
 
 export type AnalysisStatus = "idle" | "running" | "done" | "error";
 
@@ -67,7 +49,7 @@ export interface UseAnalysis {
  * and resets state to idle. The controller is also aborted on unmount.
  */
 export function useAnalysis(
-  service: AnalysisService = defaultService,
+  service: AnalysisService = defaultAnalysisService,
   sink: InsightSink = defaultSink
 ): UseAnalysis {
   const [status, setStatus] = useState<AnalysisStatus>("idle");
