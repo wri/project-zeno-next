@@ -30,7 +30,12 @@ import {
   CATALOG_CARD_WIDTH_PX,
   getCatalogLeftPx,
 } from "@/app/explorationLayout";
-import { chartsToWidgets, type InsightRecord } from "@/src/entities/insight";
+import {
+  chartsToWidgets,
+  resolveInsightTitle,
+  type InsightRecord,
+  type InsightVerification,
+} from "@/src/entities/insight";
 // Deep imports (not the feature barrel) so the map's InsightsPanel doesn't pull
 // the dashboards pages into its bundle, and so mounting the pane on a dashboard
 // can't create a feature import cycle — matching how the app already reaches
@@ -98,9 +103,11 @@ interface InsightCardItem {
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
   return chartsToWidgets(record.charts).map((widget) => ({
-    // Explicit false: WidgetMessage's caption falls back to !widget.generation
-    // when `curated` is undefined, which would mislabel plain AI insights.
-    widget: { ...widget, curated: false },
+    widget: {
+      ...widget,
+      title: resolveInsightTitle(record, widget.title),
+      curated,
+    },
     source: record.source ?? "",
     createdAt: record.createdAt,
     addableInsightId: record.id,
