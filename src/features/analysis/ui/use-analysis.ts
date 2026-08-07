@@ -30,6 +30,22 @@ const defaultSink: InsightSink = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * The dataset name to use in a chart's "{dataset} in {location}" title. Every
+ * dataset uses its own name, with one exception: a tree cover loss analysis
+ * also returns a GHG-emissions chart (see project-zeno `charts.py:
+ * TCLChartGenerator`), identified by its y-axis, which is titled as
+ * "GHG Emissions from Tree Cover Loss" instead.
+ */
+function chartDatasetName(
+  widget: { yAxis?: string },
+  datasetName: string
+): string {
+  return widget.yAxis === "carbon_emissions_MgCO2e"
+    ? "GHG Emissions from Tree Cover Loss"
+    : datasetName;
+}
+
 export type AnalysisStatus = "idle" | "running" | "done" | "error";
 
 export interface UseAnalysis {
@@ -98,14 +114,18 @@ export function useAnalysis(
               ? { areas: [analysisResult.params.name] }
               : undefined
           );
-          // Give each widget the same "{dataset} in {location}" title as a
-          // curated insight, when the dataset's name is known (it always is
+          // Give each widget a "{dataset} in {location}" title matching the
+          // curated insights, when the dataset's name is known (it always is
           // for this flow's real callers — only test fixtures may omit it).
-          const widgets = selection.dataset.name
+          // The name is resolved per chart, not per analysis: a TCL analysis
+          // returns a loss chart AND a GHG-emissions chart, which must not
+          // share one title.
+          const datasetName = selection.dataset.name;
+          const widgets = datasetName
             ? rawWidgets.map((widget) => ({
                 ...widget,
                 title: generateInsightTitle({
-                  datasetName: selection.dataset.name!,
+                  datasetName: chartDatasetName(widget, datasetName),
                   locationName: selection.area.name,
                   areaLabel: selection.area.name,
                 }),

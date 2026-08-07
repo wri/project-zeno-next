@@ -186,6 +186,57 @@ describe("useAnalysis", () => {
     );
   });
 
+  it("titles a TCL analysis's emissions chart by its own label, not the dataset's", async () => {
+    // Mirrors the backend TCLChartGenerator: one loss chart + one GHG
+    // emissions chart, distinguished by y-axis.
+    const base = {
+      position: 0,
+      type: "bar",
+      xAxis: "tree_cover_loss_year",
+      colorField: "",
+      stackField: "",
+      groupField: "",
+      data: [{ tree_cover_loss_year: "2020" }],
+    };
+    const charts = [
+      {
+        ...base,
+        id: "c1",
+        title: "Annual Tree Cover Loss",
+        yAxis: "area_ha",
+        seriesFields: ["area_ha"],
+      },
+      {
+        ...base,
+        id: "c2",
+        position: 1,
+        title: "Annual GHG Emissions from Tree Cover Loss",
+        yAxis: "carbon_emissions_MgCO2e",
+        seriesFields: ["carbon_emissions_MgCO2e"],
+      },
+    ];
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({ id: "r1", charts }),
+    };
+    const sink: InsightSink = { add: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service, sink));
+
+    act(() => {
+      result.current.run({
+        ...selection,
+        dataset: { id: 4, name: "Tree cover loss" },
+      });
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+    expect(sink.add).toHaveBeenCalledWith([
+      expect.objectContaining({ title: "Tree cover loss in Brazil" }),
+      expect.objectContaining({
+        title: "GHG Emissions from Tree Cover Loss in Brazil",
+      }),
+    ]);
+  });
+
   it("keeps the chart's own title when the dataset name is unknown", async () => {
     const chart = {
       id: "c1",
