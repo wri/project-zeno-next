@@ -34,7 +34,6 @@ import {
   chartsToWidgets,
   resolveInsightTitle,
   type InsightRecord,
-  type InsightVerification,
 } from "@/src/entities/insight";
 // Deep imports (not the feature barrel) so the map's InsightsPanel doesn't pull
 // the dashboards pages into its bundle, and so mounting the pane on a dashboard
@@ -106,7 +105,10 @@ function recordToItems(record: InsightRecord): InsightCardItem[] {
     widget: {
       ...widget,
       title: resolveInsightTitle(record, widget.title),
-      curated,
+      // Explicit false: WidgetMessage's caption falls back to !widget.generation
+      // when `curated` is undefined, which would mislabel plain AI insights.
+      // Curated cards come from CuratedAnalysesList, never from this path.
+      curated: false,
     },
     source: record.source ?? "",
     createdAt: record.createdAt,
