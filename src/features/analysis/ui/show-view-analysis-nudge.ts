@@ -6,10 +6,10 @@ import { DATASET_BY_ID } from "@/app/constants/datasets";
 
 import type { AreaSelection } from "../model/area-selection";
 
-// Default analysis window used when the user has not pinned a date range in
-// context — wide enough to cover the catalogue's annual datasets.
-const DEFAULT_START_DATE = "2001-01-01";
-const DEFAULT_END_DATE = "2025-12-31";
+import {
+  DEFAULT_ANALYSIS_START_DATE,
+  DEFAULT_ANALYSIS_END_DATE,
+} from "../lib/default-analysis-window";
 
 /**
  * Surfaces the "View Analysis" nudge for an area selection. Like the analyse
@@ -41,10 +41,10 @@ export function showViewAnalysisNudge(selection: AreaSelection): boolean {
   const dateRange = useChatStore.getState().dateRange;
   const startDate = dateRange
     ? format(dateRange.start, "yyyy-MM-dd")
-    : DEFAULT_START_DATE;
+    : DEFAULT_ANALYSIS_START_DATE;
   const endDate = dateRange
     ? format(dateRange.end, "yyyy-MM-dd")
-    : DEFAULT_END_DATE;
+    : DEFAULT_ANALYSIS_END_DATE;
 
   // Idempotent for the live pending nudge: the reactive trigger re-runs on
   // every context change, and an identical re-upsert would churn the card.

@@ -403,6 +403,120 @@ const viewAnalysisNudges = () =>
     .getState()
     .messages.filter((m) => m.type === "view-analysis-nudge");
 
+const createDashboardNudges = () =>
+  useChatStore
+    .getState()
+    .messages.filter((m) => m.type === "create-dashboard-nudge");
+
+const createDashboardSuggestion = (areaName: string, srcId: string) => ({
+  areaName,
+  source: "gadm",
+  srcId,
+  subtype: "state-province",
+  datasetId: 4,
+  datasetName: "Tree cover loss",
+  startDate: "2001-01-01",
+  endDate: "2025-12-31",
+});
+
+describe("chatStore.upsertCreateDashboardNudge", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  it("appends a create-dashboard-nudge message carrying the suggestion", () => {
+    const suggestion = createDashboardSuggestion("Pará, Brazil", "BRA.14_1");
+    useChatStore.getState().upsertCreateDashboardNudge(suggestion);
+
+    const nudges = createDashboardNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].createDashboardSuggestion).toEqual(suggestion);
+    expect(useChatStore.getState().messages.at(-1)?.type).toBe(
+      "create-dashboard-nudge"
+    );
+  });
+
+  it("replaces any previous create-dashboard nudge", () => {
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Pará, Brazil", "BRA.14_1")
+      );
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Acre, Brazil", "BRA.1_1")
+      );
+
+    const nudges = createDashboardNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].createDashboardSuggestion?.areaName).toBe("Acre, Brazil");
+  });
+
+  it("is cleared by reset() along with the rest of the thread", () => {
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Pará, Brazil", "BRA.14_1")
+      );
+    useChatStore.getState().reset();
+    expect(createDashboardNudges()).toHaveLength(0);
+  });
+});
+
+describe("chatStore.addDashboardCard", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  const cards = () =>
+    useChatStore.getState().messages.filter((m) => m.type === "dashboard-card");
+
+  // reset() seeds the welcome message, so the pair under test is at the tail.
+  const lastPair = () => useChatStore.getState().messages.slice(-2);
+
+  it("appends an assistant line naming the dashboard, then the card", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.type).toBe("assistant");
+    expect(assistant.message).toContain('"Pará, Brazil" dashboard');
+    expect(card.type).toBe("dashboard-card");
+    expect(card.dashboardId).toBe("dash-1");
+    expect(card.dashboardName).toBe("Pará, Brazil");
+  });
+
+  it("falls back to unnamed wording when the dashboard has no name yet", () => {
+    useChatStore.getState().addDashboardCard("dash-1");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.message).toBe(
+      "I've created a dashboard for you. Open the card below to view it — I can keep adding insights to it as we explore."
+    );
+    expect(card.dashboardName).toBeUndefined();
+  });
+
+  it("gives each message a distinct id", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.id).not.toBe(card.id);
+  });
+
+  it("surfaces a second card for a second manual create", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+    useChatStore.getState().addDashboardCard("dash-2", "Acre, Brazil");
+
+    expect(cards().map((c) => c.dashboardId)).toEqual(["dash-1", "dash-2"]);
+  });
+
+  it("is cleared by reset()", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+    useChatStore.getState().reset();
+    expect(cards()).toHaveLength(0);
+  });
+});
+
 describe("chatStore.upsertViewAnalysisNudge", () => {
   beforeEach(() => {
     useChatStore.getState().reset();
