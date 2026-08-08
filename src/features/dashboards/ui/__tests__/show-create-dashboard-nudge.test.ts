@@ -119,6 +119,25 @@ describe("showCreateDashboardNudge", () => {
     expect(nudges[0].createDashboardSuggestion?.datasetId).toBe(1);
   });
 
+  it("re-offers when the pinned date range changes under the same area", () => {
+    seedLayers([datasetLayer()]);
+    showCreateDashboardNudge(selection);
+    const id = createDashboardNudges()[0].id;
+
+    useChatStore.getState().setDateRange({
+      start: new Date(2020, 2, 1),
+      end: new Date(2021, 3, 2),
+    });
+    showCreateDashboardNudge(selection);
+
+    // A stale payload here would seed the analysis for the previous window.
+    const nudges = createDashboardNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].id).not.toBe(id);
+    expect(nudges[0].createDashboardSuggestion?.startDate).toBe("2020-03-01");
+    expect(nudges[0].createDashboardSuggestion?.endDate).toBe("2021-04-02");
+  });
+
   it("uses the pinned date range when the user set one", () => {
     seedLayers([datasetLayer()]);
     // Local-time constructors: date-fns `format` renders in local time, so a

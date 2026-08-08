@@ -248,7 +248,10 @@ describe("useAoiActions", () => {
       ],
       geoJsonRegistry: [
         {
-          ref: { name: "Paraná, Brazil", source: "gadm" },
+          // "GADM", the map layer id, is what VectorAreasLayer actually
+          // registers; the selection carries the lowercased "gadm". Using the
+          // production casing here is the point of this fixture.
+          ref: { name: "Paraná, Brazil", source: "GADM" },
           data: { type: "Feature", properties: {}, geometry: polygon },
         },
       ],

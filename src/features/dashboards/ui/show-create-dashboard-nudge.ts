@@ -67,16 +67,22 @@ export function showCreateDashboardNudge(
     : DEFAULT_ANALYSIS_END_DATE;
 
   // Idempotent for the live nudge: the reactive trigger re-runs on every
-  // context change, and an identical re-upsert would churn the card. Keyed on
-  // the AOI identity plus the dataset, since the dataset decides which insight
-  // a click seeds — two datasets over one area are two different offers.
+  // context change, and an identical re-upsert would churn the card.
+  //
+  // The key is every input a click would act on, not just the AOI: the dataset
+  // and the date window both decide which insight gets seeded into the new
+  // dashboard. Leaving the window out would let a re-run short-circuit on a
+  // stale payload, so changing the pinned range would silently seed the
+  // analysis for the previous period.
   const pending = useChatStore
     .getState()
     .messages.find((m) => m.type === "create-dashboard-nudge");
   if (
     pending?.createDashboardSuggestion?.source === selection.source &&
     pending.createDashboardSuggestion.srcId === srcId &&
-    pending.createDashboardSuggestion.datasetId === datasetId
+    pending.createDashboardSuggestion.datasetId === datasetId &&
+    pending.createDashboardSuggestion.startDate === startDate &&
+    pending.createDashboardSuggestion.endDate === endDate
   ) {
     return true;
   }

@@ -102,25 +102,38 @@ export function useAoiActions(): AoiActions | null {
   const areaName = selection.name;
   const source = selection.source;
 
-  const removeFromMap = () => {
-    const { clearAnalysis, removeLayer, removeFromRegistry } =
-      useMapStore.getState();
-    // The clicked area's layer and registry entry are both keyed by its name
-    // (see VectorAreasLayer, which registers them that way).
-    removeLayer(areaName);
-    removeFromRegistry({ name: areaName, source });
-    clearAnalysis();
-    useSelectionStore.getState().clear();
-  };
-
-  const saveArea = async () => {
-    const entry = useMapStore
+  /**
+   * The registry entry for this area, matched case-insensitively on source.
+   *
+   * The two sides disagree on casing: `VectorAreasLayer` registers the entry
+   * with `ref.source` set to the map layer id ("GADM"), while the selection it
+   * derives alongside it lowercases that into `source` ("gadm"). Callers must
+   * therefore look the entry up loosely and reuse its own `ref` for anything
+   * that matches strictly (`removeFromRegistry` does).
+   */
+  const registryEntry = () =>
+    useMapStore
       .getState()
       .geoJsonRegistry.find(
         (e) =>
           e.ref.name === areaName &&
           e.ref.source.toLowerCase() === source.toLowerCase()
       );
+
+  const removeFromMap = () => {
+    const { clearAnalysis, removeLayer, removeFromRegistry } =
+      useMapStore.getState();
+    const entry = registryEntry();
+    // The clicked area's layer is keyed by its name; the registry entry is
+    // dropped by its own ref, since removeFromRegistry compares source exactly.
+    removeLayer(areaName);
+    if (entry) removeFromRegistry(entry.ref);
+    clearAnalysis();
+    useSelectionStore.getState().clear();
+  };
+
+  const saveArea = async () => {
+    const entry = registryEntry();
     const geometries = entry ? toPolygons(entry.data) : [];
     if (geometries.length === 0) {
       toaster.create({

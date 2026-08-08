@@ -109,8 +109,16 @@ export function useCreateDashboardForArea(
       return;
     }
 
-    queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+    // Write the new dashboard into the list cache before re-enabling the
+    // button. `existing` is derived from that list, so invalidating alone would
+    // leave it null until the refetch lands, and a second click in that window
+    // would create a duplicate dashboard for the same AOI. Seeding it makes the
+    // control flip to "Open …" in the same render that frees it.
+    queryClient.setQueryData<Dashboard[]>(dashboardKeys.all, (previous) =>
+      previous ? [...previous, dashboard] : [dashboard]
+    );
     queryClient.setQueryData(dashboardKeys.detail(dashboard.id), dashboard);
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     useChatStore.getState().addDashboardCard(dashboard.id, dashboard.name);
     setIsCreating(false);
 

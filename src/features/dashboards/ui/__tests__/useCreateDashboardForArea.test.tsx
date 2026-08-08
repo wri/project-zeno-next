@@ -136,6 +136,27 @@ describe("useCreateDashboardForArea", () => {
     });
   });
 
+  it("reports the new dashboard as existing before the list refetch lands", async () => {
+    // The first load resolves empty; the refetch the create triggers never
+    // settles. So only the optimistic cache write can make `existing` truthy —
+    // without it the button re-enables still labelled "Create", and a second
+    // click makes a duplicate dashboard for the same AOI.
+    vi.mocked(listDashboards)
+      .mockResolvedValueOnce([])
+      .mockReturnValue(new Promise(() => {}));
+
+    const { result } = renderHook(() => useCreateDashboardForArea(input), {
+      wrapper: wrapper(),
+    });
+    await waitFor(() => expect(result.current.isResolving).toBe(false));
+    expect(result.current.existing).toBeNull();
+
+    await act(() => result.current.create());
+
+    expect(result.current.existing?.id).toBe("new-dash");
+    expect(result.current.isCreating).toBe(false);
+  });
+
   it("surfaces the card before the analysis resolves", async () => {
     let finishAnalysis: (r: { id: string; charts: [] }) => void = () => {};
     vi.mocked(analysisService.run).mockReturnValue(
