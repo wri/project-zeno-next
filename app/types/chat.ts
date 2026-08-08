@@ -45,6 +45,7 @@ export interface ChatMessage {
     | "dataset-nudge"
     | "analyse-nudge"
     | "view-analysis-nudge"
+    | "create-dashboard-nudge"
     | "stopped";
   message: string;
   timestamp: string;
@@ -56,6 +57,7 @@ export interface ChatMessage {
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
   viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
+  createDashboardSuggestion?: CreateDashboardSuggestion; // For create-dashboard-nudge messages
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
@@ -281,6 +283,30 @@ export interface ViewAnalysisSuggestion {
   // Set once the user clicks View Analysis: accepted nudges persist in the
   // thread as a record of the run, while pending ones are replaced by new ones.
   accepted?: boolean;
+}
+
+// Payload of a create-dashboard-nudge message: the AOI identity snapshotted at
+// injection time, plus the analysis inputs used to seed the new dashboard.
+//
+// No `accepted` flag, unlike its analyse/view-analysis siblings: once the
+// dashboard exists the card relabels itself to "Open …" off the dashboards
+// query, so acceptance is derivable rather than stored.
+export interface CreateDashboardSuggestion {
+  areaName: string;
+  // POST /api/dashboards requires all three, so the nudge is only surfaced
+  // when the clicked feature resolved an id and a subtype.
+  source: string;
+  srcId: string;
+  subtype: string;
+  // The active dataset and window, used to attach a first insight to the new
+  // dashboard. Optional because the AOI menu can create without a dataset —
+  // that dashboard opens as an empty grid (PZB-1119).
+  datasetId?: number;
+  datasetName?: string;
+  /** ISO date string "yyyy-MM-dd" */
+  startDate?: string;
+  /** ISO date string "yyyy-MM-dd" */
+  endDate?: string;
 }
 
 export interface SuggestedDataset {

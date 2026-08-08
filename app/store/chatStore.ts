@@ -14,6 +14,7 @@ import {
   BlogArticle,
   AnalyseSuggestion,
   ViewAnalysisSuggestion,
+  CreateDashboardSuggestion,
 } from "@/app/types/chat";
 import useMapStore from "./mapStore";
 import {
@@ -91,6 +92,8 @@ interface ChatActions {
   acceptAnalyseNudge: (messageId: string) => void;
   upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
   acceptViewAnalysisNudge: (messageId: string) => void;
+  upsertCreateDashboardNudge: (suggestion: CreateDashboardSuggestion) => void;
+  addDashboardCard: (dashboardId: string, dashboardName?: string) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -187,6 +190,22 @@ function parseLangChainLine(rawLine: string): StreamMessage | null {
   return parseStreamMessage(updateObject, messageType, date);
 }
 
+// The assistant line that precedes a dashboard-card message. Shared by the
+// agent-driven path (dashboard_updated on the stream) and the manual one
+// (addDashboardCard, from the create-dashboard nudge and the AOI menu) so a
+// dashboard the user made by hand reads the same as one the agent made.
+export function dashboardCreatedMessage(name?: string): string {
+  return name
+    ? `I've created the "${name}" dashboard. Open the card below to view it — I can keep adding insights to it as we explore.`
+    : "I've created a dashboard for you. Open the card below to view it — I can keep adding insights to it as we explore.";
+}
+
+export function dashboardUpdatedMessage(name?: string): string {
+  return name
+    ? `I've updated the "${name}" dashboard. Open the card below to see the changes.`
+    : "I've updated your dashboard. Open the card below to see the changes.";
+}
+
 // One dashboard card per dashboard per user turn: dashboard_updated fires on
 // creation and again for every widget add, but a single navigation card is
 // enough. Scanning back only to the last user message lets a later turn that
@@ -250,16 +269,11 @@ async function processStreamMessage(
     const isCreate =
       streamMessage.type === "tool" &&
       streamMessage.name === "create_dashboard";
-    const name = streamMessage.dashboard_name;
     addMessage({
       type: "assistant",
       message: isCreate
-        ? name
-          ? `I've created the "${name}" dashboard. Open the card below to view it — I can keep adding insights to it as we explore.`
-          : "I've created a dashboard for you. Open the card below to view it — I can keep adding insights to it as we explore."
-        : name
-          ? `I've updated the "${name}" dashboard. Open the card below to see the changes.`
-          : "I've updated your dashboard. Open the card below to see the changes.",
+        ? dashboardCreatedMessage(streamMessage.dashboard_name)
+        : dashboardUpdatedMessage(streamMessage.dashboard_name),
       timestamp: streamMessage.timestamp,
     });
     addMessage({
@@ -578,6 +592,56 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
             }
           : m
       ),
+    }));
+  },
+
+  // Manual counterpart to the stream's dashboard_updated branch: the user
+  // created a dashboard directly over REST (create-dashboard nudge or AOI
+  // menu), so nothing arrives on the stream to announce it. Appends the same
+  // assistant line + navigation card the agent path emits.
+  //
+  // Unlike that path there is no per-turn dedupe: each manual create is a
+  // distinct, user-initiated act and deserves its own card.
+  addDashboardCard: (dashboardId, dashboardName) => {
+    const timestamp = new Date().toISOString();
+    const newId = () =>
+      Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11);
+    set((state) => ({
+      messages: [
+        ...state.messages,
+        {
+          id: newId(),
+          type: "assistant",
+          message: dashboardCreatedMessage(dashboardName),
+          timestamp,
+        },
+        {
+          id: newId(),
+          type: "dashboard-card",
+          message: "",
+          dashboardId,
+          dashboardName,
+          timestamp,
+        },
+      ],
+    }));
+  },
+
+  // UI-only create-dashboard nudge: at most one at a time (no accepted state
+  // yet), so a new selection always replaces the previous card.
+  upsertCreateDashboardNudge: (suggestion) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "create-dashboard-nudge",
+      message: "",
+      createDashboardSuggestion: suggestion,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter((m) => m.type !== "create-dashboard-nudge"),
+        newMessage,
+      ],
     }));
   },
 
