@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 // The card's toaster import reaches a .tsx module boundary — stub it.
@@ -22,7 +22,11 @@ vi.mock("../DashboardMapWidget", () => ({ default: () => null }));
 
 import DashboardInsightModule from "../DashboardInsightModule";
 import type { DashboardWidget } from "../../api/schemas";
-import { withChartHidden } from "../../lib/widgets";
+import {
+  withChartHidden,
+  withChartShown,
+  withSummaryShown,
+} from "../../lib/widgets";
 
 function chart(overrides: Record<string, unknown> = {}) {
   return {
@@ -155,6 +159,35 @@ describe("DashboardInsightModule", () => {
     expect(onRemove).not.toHaveBeenCalled();
     fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
     expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it("customize menu toggles summary and charts via config patches", async () => {
+    const config = { chartIds: ["c-1"] };
+    const { onUpdateConfig } = renderModule({ widget: widget({ config }) });
+    fireEvent.click(screen.getByRole("button", { name: "Customize" }));
+    // All charts are listed, hidden ones included.
+    const hiddenRow = await screen.findByRole("checkbox", {
+      name: "Chart · Alerts by month",
+    });
+    fireEvent.click(hiddenRow);
+    await waitFor(() =>
+      expect(onUpdateConfig).toHaveBeenCalledWith(
+        withChartShown(config, "c-2", ["c-1", "c-2"])
+      )
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "AI generated summary" })
+    );
+    await waitFor(() =>
+      expect(onUpdateConfig).toHaveBeenCalledWith(
+        withSummaryShown(config, false)
+      )
+    );
+  });
+
+  it("hides the customize menu from non-owners", () => {
+    renderModule({ isOwner: false });
+    expect(screen.queryByRole("button", { name: "Customize" })).toBe(null);
   });
 
   it("hides a chart via its card's remove control by patching config", async () => {

@@ -26,10 +26,13 @@ import {
   chartSize,
   insightModule,
   withChartHidden,
+  withChartShown,
   withChartSize,
   withChartTitle,
+  withSummaryShown,
 } from "../lib/widgets";
 import { TWO_COLUMN_QUERY } from "./gridLayout";
+import DashboardModuleCustomizeMenu from "./DashboardModuleCustomizeMenu";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 
 /**
@@ -178,6 +181,21 @@ export default function DashboardInsightModule({
         </Text>
         {isOwner && (
           <Flex align="center" gap="4px" flexShrink={0}>
+            <DashboardModuleCustomizeMenu
+              summaryAvailable={vm.summaryText.length > 0}
+              summaryShown={vm.summaryShown}
+              charts={vm.allCharts}
+              onToggleSummary={(shown) =>
+                onUpdateConfig(withSummaryShown(widget.config, shown))
+              }
+              onToggleChart={(chartId, shown) =>
+                onUpdateConfig(
+                  shown
+                    ? withChartShown(widget.config, chartId, allChartIds)
+                    : withChartHidden(widget.config, chartId, allChartIds)
+                )
+              }
+            />
             <IconButton
               aria-label="Remove analysis from dashboard"
               title="Remove analysis from dashboard"
