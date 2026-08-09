@@ -4,19 +4,13 @@ import { useMemo, useState } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 
 import useAuthStore from "@/app/store/authStore";
-import type { InsightWidget } from "@/app/types/chat";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { packCells } from "../lib/packing";
 import {
-  chartSize,
   computeReorder,
-  dashboardWidgetToInsightWidgets,
   mapWidgetSize,
   widgetSize,
   widgetText,
-  withChartHidden,
-  withChartSize,
-  withChartTitle,
   withSize,
   withText,
   withWidgetTitle,
@@ -32,127 +26,71 @@ import {
   useReorderWidgets,
   useUpdateWidget,
 } from "./dashboardQueries";
+import { TWO_COLUMN_QUERY } from "./gridLayout";
+import DashboardInsightModule from "./DashboardInsightModule";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 
 /**
- * Column count follows the grid's own width, not the viewport: the full-size
- * chat is a fixed overlay that narrows the content area without changing the
- * viewport, so a viewport breakpoint would keep two columns the cards can't
- * fit into (each has a real minimum — chart toolbar + axis margins — of
- * roughly 330px) and the grid would overflow the page horizontally. 700px
- * fits two minimum-width cards plus the gap.
+ * The body of a standalone (non-insight) grid item: the map layer for map
+ * widgets, the markdown text for notes, or placeholder copy when the config
+ * can't be rendered. Insight widgets don't come through here — they render
+ * whole as `DashboardInsightModule`.
  */
-const TWO_COLUMN_QUERY = "@container widgets-grid (min-width: 700px)";
-
-/**
- * One grid cell. A widget whose insight has several charts renders one cell
- * per chart (each its own card, per design); map widgets render one cell
- * with `map` set; placeholder cells (unsupported widget type, hidden
- * insight, malformed map config) carry `card: null` and placeholder copy.
- */
-interface GridCell {
-  key: string;
-  widget: DashboardWidget;
-  card: InsightWidget | null;
+interface StandaloneBody {
   map: MapWidgetLayer | null;
   text: string | null;
   placeholder: string | null;
-  chartCount: number;
 }
 
-function cellsForWidget(
-  widget: DashboardWidget,
-  areaName: string | undefined
-): GridCell[] {
+function standaloneBody(widget: DashboardWidget): StandaloneBody {
   if (widget.widget_type === "map") {
     const map = mapWidgetLayer(widget.config);
-    return [
-      {
-        key: widget.id,
-        widget,
-        card: null,
-        map,
-        text: null,
-        placeholder: map ? null : "This map widget can't be displayed.",
-        chartCount: 0,
-      },
-    ];
+    return {
+      map,
+      text: null,
+      placeholder: map ? null : "This map widget can't be displayed.",
+    };
   }
   if (widget.widget_type === "text") {
     const text = widgetText(widget.config);
-    return [
-      {
-        key: widget.id,
-        widget,
-        card: null,
-        map: null,
-        text,
-        placeholder: text ? null : "This note is empty.",
-        chartCount: 0,
-      },
-    ];
+    return {
+      map: null,
+      text,
+      placeholder: text ? null : "This note is empty.",
+    };
   }
-  if (widget.widget_type !== "insight") {
-    return [
-      {
-        key: widget.id,
-        widget,
-        card: null,
-        map: null,
-        text: null,
-        placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
-        chartCount: 0,
-      },
-    ];
-  }
-  const cards = dashboardWidgetToInsightWidgets(widget, { areaName });
-  if (cards.length === 0) {
-    return [
-      {
-        key: widget.id,
-        widget,
-        card: null,
-        map: null,
-        text: null,
-        placeholder: "This analysis is not available.",
-        chartCount: 0,
-      },
-    ];
-  }
-  return cards.map((card) => ({
-    key: `${widget.id}:${card.id}`,
-    widget,
-    card,
+  return {
     map: null,
     text: null,
-    placeholder: null,
-    chartCount: cards.length,
-  }));
+    placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
+  };
 }
 
-/** The persisted column span for a cell (chart cells carry their own). */
-function cellSize(cell: GridCell): WidgetSize {
-  if (cell.card?.id) return chartSize(cell.widget.config, cell.card.id);
-  if (cell.widget.widget_type === "map")
-    return mapWidgetSize(cell.widget.config);
-  return widgetSize(cell.widget.config);
+/** The persisted column span for a top-level item (insights always span both). */
+function topLevelSize(widget: DashboardWidget): WidgetSize {
+  if (widget.widget_type === "insight") return "double";
+  if (widget.widget_type === "map") return mapWidgetSize(widget.config);
+  return widgetSize(widget.config);
 }
 
 /**
- * The dashboard's widget grid. Reordering is native HTML5 drag-and-drop,
- * armed only while the card's drag handle is pressed (so text selection and
- * chart interactions inside the card keep working); the drop target gets the
- * design's dashed outline. Cells map 1:1 to charts, but position and column
- * span persist on the underlying widget via the PATCH endpoint
- * (optimistically, in dashboardQueries) — dragging any card of a multi-chart
- * widget moves the whole widget, and its cards stay adjacent.
+ * The dashboard's widget grid. Each widget is one top-level item: insight
+ * widgets render as a full-width `DashboardInsightModule` (header · summary ·
+ * their chart cards packed inside), while map/text widgets keep their single
+ * cards and can still pair into two columns via `packCells`.
+ *
+ * Reordering is native HTML5 drag-and-drop at widget level, armed only while
+ * a drag handle is pressed (so text selection and chart interactions keep
+ * working); the drop target gets the design's dashed outline. Items are keyed
+ * on `widget.id` — never fold position in, or React remounts map widgets
+ * mid-drag (see DashboardWidgetsGrid.reorder.test.tsx).
  *
  * Layout is `packCells`' segments rather than CSS grid rows: each card is
- * only as tall as its content, and a run of half-width cards deals into two
+ * only as tall as its content, and a run of half-width cells deals into two
  * tightly-stacked columns so short cards don't leave voids beside tall
  * neighbours. Below `TWO_COLUMN_QUERY` everything is one column — the segment
- * wrappers flatten away (`display: contents`) and each card's `order` restores
+ * wrappers flatten away (`display: contents`) and each item's `order` restores
  * the flat arrangement order.
  */
 export default function DashboardWidgetsGrid({
@@ -167,9 +105,9 @@ export default function DashboardWidgetsGrid({
   const deleteWidget = useDeleteWidget(dashboard.id);
   const reorderWidgets = useReorderWidgets(dashboard.id);
 
-  // grabbedKey arms draggable on one grid item; dragIndex/overIndex track the
-  // HTML5 drag in flight (cell indices).
-  const [grabbedKey, setGrabbedKey] = useState<string | null>(null);
+  // grabbedId arms draggable on one grid item; dragIndex/overIndex track the
+  // HTML5 drag in flight (widget indices).
+  const [grabbedId, setGrabbedId] = useState<string | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
@@ -178,41 +116,23 @@ export default function DashboardWidgetsGrid({
     [dashboard.widgets]
   );
   const areaAoi = dashboard.aois[0];
-  const areaName = areaAoi?.name;
-  const cells = useMemo(
-    () => widgets.flatMap((widget) => cellsForWidget(widget, areaName)),
-    [widgets, areaName]
-  );
 
   const endDrag = () => {
-    setGrabbedKey(null);
+    setGrabbedId(null);
     setDragIndex(null);
     setOverIndex(null);
   };
 
-  // Cards of the same widget share a position — dropping on a sibling is a no-op.
   const isDropTarget = (index: number) => {
-    const dragged = dragIndex !== null ? cells[dragIndex] : undefined;
-    const target = cells[index];
-    return !!dragged && !!target && dragged.widget.id !== target.widget.id;
+    const dragged = dragIndex !== null ? widgets[dragIndex] : undefined;
+    const target = widgets[index];
+    return !!dragged && !!target && dragged.id !== target.id;
   };
 
   const dropOn = (targetIndex: number) => {
-    const draggedCell = dragIndex !== null ? cells[dragIndex] : undefined;
-    const targetCell = cells[targetIndex];
-    if (
-      draggedCell &&
-      targetCell &&
-      draggedCell.widget.id !== targetCell.widget.id
-    ) {
-      const fromIndex = widgets.findIndex(
-        (w) => w.id === draggedCell.widget.id
-      );
-      const toIndex = widgets.findIndex((w) => w.id === targetCell.widget.id);
-      if (fromIndex >= 0 && toIndex >= 0) {
-        const { patches } = computeReorder(widgets, fromIndex, toIndex);
-        if (patches.length > 0) reorderWidgets.mutate(patches);
-      }
+    if (dragIndex !== null && isDropTarget(targetIndex)) {
+      const { patches } = computeReorder(widgets, dragIndex, targetIndex);
+      if (patches.length > 0) reorderWidgets.mutate(patches);
     }
     endDrag();
   };
@@ -220,30 +140,30 @@ export default function DashboardWidgetsGrid({
   // Half-width runs deal into two packed columns; sizes and order both come
   // from persisted widget state, so the packing is stable across loads.
   const segments = useMemo(
-    () => packCells(cells, (cell) => cellSize(cell) === "double"),
-    [cells]
+    () => packCells(widgets, (widget) => topLevelSize(widget) === "double"),
+    [widgets]
   );
 
-  const renderCell = (cell: GridCell, i: number) => {
-    const { widget, card } = cell;
-    const size = cellSize(cell);
+  const renderWidget = (widget: DashboardWidget, i: number) => {
+    const size = topLevelSize(widget);
+    const body =
+      widget.widget_type === "insight" ? null : standaloneBody(widget);
     const title =
-      card?.title ??
-      cell.map?.title ??
+      body?.map?.title ??
       (typeof widget.config.title === "string" ? widget.config.title : "");
     return (
       <Box
-        key={cell.key}
+        key={widget.id}
         // One column flattens the column wrappers, so the flat arrangement
-        // order is restored per card; in two columns, DOM order rules each
+        // order is restored per item; in two columns, DOM order rules each
         // column. Cards clip internally rather than force the page wider than
         // the container near the two-column threshold.
         minW={0}
         css={{ order: i, [TWO_COLUMN_QUERY]: { order: 0 } }}
-        draggable={isOwner && grabbedKey === cell.key}
+        draggable={isOwner && grabbedId === widget.id}
         onDragStart={(e) => {
           // Required for Firefox to initiate drag-and-drop.
-          e.dataTransfer.setData("text/plain", cell.key);
+          e.dataTransfer.setData("text/plain", widget.id);
           e.dataTransfer.effectAllowed = "move";
           setDragIndex(i);
         }}
@@ -263,14 +183,26 @@ export default function DashboardWidgetsGrid({
         outlineColor="primary.solid"
         borderRadius="sm"
       >
-        {widget.widget_type === "text" ? (
+        {widget.widget_type === "insight" ? (
+          <DashboardInsightModule
+            widget={widget}
+            areaAoi={areaAoi}
+            isOwner={isOwner}
+            onArmDrag={() => setGrabbedId(widget.id)}
+            onDisarmDrag={() => setGrabbedId(null)}
+            onUpdateConfig={(config) =>
+              updateWidget.mutate({ widgetId: widget.id, patch: { config } })
+            }
+            onRemove={() => deleteWidget.mutate(widget.id)}
+          />
+        ) : widget.widget_type === "text" ? (
           <DashboardTextWidgetCard
-            text={cell.text}
-            placeholder={cell.placeholder}
+            text={body?.text ?? null}
+            placeholder={body?.placeholder ?? null}
             isOwner={isOwner}
             isDouble={size === "double"}
-            onArmDrag={() => setGrabbedKey(cell.key)}
-            onDisarmDrag={() => setGrabbedKey(null)}
+            onArmDrag={() => setGrabbedId(widget.id)}
+            onDisarmDrag={() => setGrabbedId(null)}
             onToggleSize={() =>
               updateWidget.mutate({
                 widgetId: widget.id,
@@ -293,72 +225,39 @@ export default function DashboardWidgetsGrid({
         ) : (
           <DashboardWidgetCard
             title={title}
-            card={card}
-            map={cell.map}
+            card={null}
+            map={body?.map}
             aoi={areaAoi}
             viewportBbox={
-              cell.map ? mapWidgetViewportBbox(widget.config) : null
+              body?.map ? mapWidgetViewportBbox(widget.config) : null
             }
-            placeholder={cell.placeholder}
-            chartCount={cell.chartCount}
+            placeholder={body?.placeholder ?? null}
+            chartCount={0}
             isOwner={isOwner}
             isDouble={size === "double"}
-            onArmDrag={() => setGrabbedKey(cell.key)}
-            onDisarmDrag={() => setGrabbedKey(null)}
+            onArmDrag={() => setGrabbedId(widget.id)}
+            onDisarmDrag={() => setGrabbedId(null)}
             onToggleSize={() =>
               updateWidget.mutate({
                 widgetId: widget.id,
                 patch: {
-                  config: card?.id
-                    ? withChartSize(
-                        widget.config,
-                        card.id,
-                        size === "double" ? "single" : "double"
-                      )
-                    : withSize(
-                        widget.config,
-                        size === "double" ? "single" : "double"
-                      ),
+                  config: withSize(
+                    widget.config,
+                    size === "double" ? "single" : "double"
+                  ),
                 },
               })
             }
             onRename={
-              // Renamable only for renderable cells (map/imagery/chart);
-              // per-chart titles key on card.id, single-card widgets on
-              // config.title.
-              cell.placeholder
+              body?.placeholder
                 ? undefined
                 : (name) =>
                     updateWidget.mutate({
                       widgetId: widget.id,
-                      patch: {
-                        config: card?.id
-                          ? withChartTitle(widget.config, card.id, name)
-                          : withWidgetTitle(widget.config, name),
-                      },
+                      patch: { config: withWidgetTitle(widget.config, name) },
                     })
             }
-            onRemove={() => {
-              // A chart card hides just its chart from the widget's shown
-              // set — the widget itself survives even with no shown charts
-              // (its summary can still render). Only placeholder cells with
-              // no chart id delete the widget.
-              const chartId = card?.id;
-              const charts = widget.insight?.charts;
-              if (!chartId || !charts) {
-                deleteWidget.mutate(widget.id);
-                return;
-              }
-              const allChartIds = [...charts]
-                .sort((a, b) => a.position - b.position)
-                .map((c) => c.id);
-              updateWidget.mutate({
-                widgetId: widget.id,
-                patch: {
-                  config: withChartHidden(widget.config, chartId, allChartIds),
-                },
-              });
-            }}
+            onRemove={() => deleteWidget.mutate(widget.id)}
           />
         )}
       </Box>
@@ -370,10 +269,10 @@ export default function DashboardWidgetsGrid({
       <Flex direction="column" gap={4} align="stretch">
         {segments.map((segment) =>
           segment.kind === "full" ? (
-            renderCell(segment.cell.item, segment.cell.index)
+            renderWidget(segment.cell.item, segment.cell.index)
           ) : (
             <Flex
-              key={`columns-${segment.left[0]?.item.key ?? "empty"}`}
+              key={`columns-${segment.left[0]?.item.id ?? "empty"}`}
               gap={4}
               align="flex-start"
               display="contents"
@@ -390,7 +289,7 @@ export default function DashboardWidgetsGrid({
                   css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
                 >
                   {column.map((packed) =>
-                    renderCell(packed.item, packed.index)
+                    renderWidget(packed.item, packed.index)
                   )}
                 </Flex>
               ))}
