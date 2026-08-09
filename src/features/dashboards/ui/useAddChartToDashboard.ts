@@ -31,8 +31,8 @@ export interface AddChartToDashboard {
  *
  * - no widget yet → POST a widget carrying `config.chartIds: [chartId]`
  * - widget exists, chart hidden → PATCH config to add the chart
- * - widget exists, chart shown → PATCH config to drop it, or DELETE the widget
- *   when it was the last shown chart
+ * - widget exists, chart shown → PATCH config to drop it (hiding the last
+ *   chart keeps the widget with `chartIds: []` — the summary may still show)
  *
  * Sibling of `useAddInsightToDashboard` (whole-analysis add, used by the
  * chat-side toggle); this is the per-chart control used by the Analyses pane.
@@ -89,15 +89,15 @@ export function useAddChartToDashboard(
     }
 
     if (shown) {
-      const next = withChartHidden(widget.config, chartId, allChartIds);
-      if (next === null) {
-        deleteWidget.mutate(widget.id, { onError: errorToast(false) });
-      } else {
-        updateWidget.mutate(
-          { widgetId: widget.id, patch: { config: next } },
-          { onError: errorToast(false) }
-        );
-      }
+      updateWidget.mutate(
+        {
+          widgetId: widget.id,
+          patch: {
+            config: withChartHidden(widget.config, chartId, allChartIds),
+          },
+        },
+        { onError: errorToast(false) }
+      );
       return;
     }
 

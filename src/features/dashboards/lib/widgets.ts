@@ -192,20 +192,100 @@ export function withChartShown(
 }
 
 /**
- * The full config to PATCH to hide a chart (config is replaced whole). Returns
- * `null` when it was the last shown chart — the caller should delete the widget
- * rather than persist an empty one.
+ * The full config to PATCH to hide a chart (config is replaced whole). Hiding
+ * the last shown chart keeps an explicit empty subset (`chartIds: []`) — the
+ * widget survives so its summary can still render and the Customize menu can
+ * re-show charts; absent `chartIds` still means "all charts".
  */
 export function withChartHidden(
   config: Record<string, unknown>,
   chartId: string,
   allChartIds: string[]
-): Record<string, unknown> | null {
+): Record<string, unknown> {
   const next = shownChartIds(config, allChartIds).filter(
     (id) => id !== chartId
   );
-  if (next.length === 0) return null;
   return { ...config, chartIds: next };
+}
+
+/**
+ * Whether the widget shows its insight narrative. Hidden only by an explicit
+ * `summaryHidden: true`, so older configs keep showing the summary.
+ */
+export function isSummaryShown(config: Record<string, unknown>): boolean {
+  return config.summaryHidden !== true;
+}
+
+/**
+ * The full config to PATCH for a summary visibility change (config is
+ * replaced whole). The key is dropped when shown to keep configs tidy.
+ */
+export function withSummaryShown(
+  config: Record<string, unknown>,
+  shown: boolean
+): Record<string, unknown> {
+  const out = { ...config };
+  if (shown) delete out.summaryHidden;
+  else out.summaryHidden = true;
+  return out;
+}
+
+/**
+ * The insight module's display title: the widget's `config.title` override,
+ * else the first chart's title in position order (all charts, not just shown
+ * ones, so the title doesn't jump when charts are hidden), else "Analysis" —
+ * the backend sends no title on the insight expansion.
+ */
+export function moduleTitle(widget: DashboardWidget): string {
+  const override =
+    typeof widget.config.title === "string" ? widget.config.title.trim() : "";
+  if (override) return override;
+  const charts = widget.insight?.charts ?? [];
+  const first = [...charts].sort((a, b) => a.position - b.position)[0];
+  return first?.title.trim() || "Analysis";
+}
+
+/**
+ * Everything the dashboard's insight module renders, in one node-testable
+ * shape: header title, narrative visibility, the shown chart cards
+ * (`dashboardWidgetToInsightWidgets`) and the full chart roster for the
+ * Customize menu (position order, with per-chart rename overrides applied).
+ */
+export interface InsightModuleView {
+  title: string;
+  /** The narrative to render; "" when absent or blank. */
+  summaryText: string;
+  summaryShown: boolean;
+  cards: InsightWidget[];
+  allCharts: { id: string; title: string; shown: boolean }[];
+}
+
+export function insightModule(
+  widget: DashboardWidget,
+  { areaName }: { areaName?: string } = {}
+): InsightModuleView {
+  const charts = [...(widget.insight?.charts ?? [])].sort(
+    (a, b) => a.position - b.position
+  );
+  const shown = new Set(
+    shownChartIds(
+      widget.config,
+      charts.map((c) => c.id)
+    )
+  );
+  return {
+    title: moduleTitle(widget),
+    summaryText: widget.insight?.insight_text?.trim()
+      ? widget.insight.insight_text
+      : "",
+    summaryShown: isSummaryShown(widget.config),
+    cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
+    allCharts: charts.map((chart) => ({
+      id: chart.id,
+      title: chartTitleOverride(widget.config, chart.id) ?? chart.title,
+      shown: shown.has(chart.id),
+    })),
+  };
 }
 
 /**

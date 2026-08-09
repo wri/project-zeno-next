@@ -147,7 +147,7 @@ describe("useAddChartToDashboard", () => {
     expect(deleteWidget).not.toHaveBeenCalled();
   });
 
-  it("deletes the widget when its last shown chart is hidden", async () => {
+  it("keeps the widget with an empty subset when its last shown chart is hidden", async () => {
     const { result } = renderHook(
       () => useAddChartToDashboard("ins-1", "c-a"),
       {
@@ -158,8 +158,12 @@ describe("useAddChartToDashboard", () => {
     expect(result.current.shown).toBe(true);
     act(() => result.current.toggle());
 
-    await waitFor(() => expect(deleteWidget).toHaveBeenCalledWith("d1", "w-1"));
-    expect(updateWidget).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(updateWidget).toHaveBeenCalledWith("d1", "w-1", {
+        config: { chartIds: [] },
+      })
+    );
+    expect(deleteWidget).not.toHaveBeenCalled();
   });
 
   it("is not addable off a dashboard or without ids", () => {
