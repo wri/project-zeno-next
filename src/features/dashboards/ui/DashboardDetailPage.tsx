@@ -109,29 +109,28 @@ export default function DashboardDetailPage() {
               Could not load this dashboard.
             </Text>
           ) : (
-            // The Figma page shell: white card with a 2px blue accent and a
-            // 200px graph-paper hero band across the top.
-            <Box
-              bgColor="white"
-              minH="70vh"
-              {...HERO_BAND_PROPS}
-              borderWidth="1px"
-              borderTopWidth="2px"
-              borderTopColor="#0049AA"
-              borderColor="rgba(19,22,25,0.1)"
-              borderRadius="8px"
-              px={{ base: 6, md: "46px" }}
-              pt={{ base: 6, md: "38px" }}
-              pb={{ base: 6, md: "46px" }}
-            >
-              {/* 75px puts the widgets at the mock's 174px card offset. */}
+            <>
+              {/* The Figma page shell: a white header card with a 2px blue
+                  accent and the 200px graph-paper hero band. Widgets float
+                  below it as their own cards on the page's gray background
+                  (per the grouped-insights design), so the shell wraps only
+                  the header. */}
               <Box
-                ref={sentinelRef}
-                mb={{ base: 8, md: "75px" }}
-                aria-hidden={pinned}
-                inert={pinned}
+                bgColor="white"
+                minH="200px"
+                {...HERO_BAND_PROPS}
+                borderWidth="1px"
+                borderTopWidth="2px"
+                borderTopColor="#0049AA"
+                borderColor="rgba(19,22,25,0.1)"
+                borderRadius="8px"
+                px={{ base: 6, md: "46px" }}
+                pt={{ base: 6, md: "38px" }}
+                pb={{ base: 6, md: "46px" }}
               >
-                <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
+                <Box ref={sentinelRef} aria-hidden={pinned} inert={pinned}>
+                  <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
+                </Box>
               </Box>
 
               {dashboard.widgets.length > 0 ? (
@@ -161,7 +160,7 @@ export default function DashboardDetailPage() {
                   </Box>
                 </Flex>
               )}
-            </Box>
+            </>
           )}
         </Flex>
       </Container>

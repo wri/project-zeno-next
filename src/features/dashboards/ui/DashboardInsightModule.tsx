@@ -18,7 +18,6 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 
-import InsightCaption from "@/app/components/InsightCaption";
 import type { InsightWidget } from "@/app/types/chat";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { packCells } from "../lib/packing";
@@ -127,18 +126,30 @@ export default function DashboardInsightModule({
   };
 
   return (
+    // The design's floating module card: white on the page's gray background,
+    // no border or shadow — separation comes from the contrast and the grid's
+    // vertical gaps (prototype .panel: radius 8, padding 20/24/24).
     <Flex
       flexDir="column"
       bg="white"
-      borderWidth="1px"
-      borderColor="border.muted"
-      borderRadius="md"
-      px="16px"
-      py="12px"
-      gap="12px"
+      borderRadius="8px"
+      px="24px"
+      pt="20px"
+      pb="24px"
+      gap="24px"
     >
-      {/* Header — drag handle · collapse · title · owner actions */}
-      <Flex align="center" gap="4px" minW={0}>
+      {/* Header — drag handle · collapse · title · owner actions, over the
+          design's full-width divider */}
+      <Flex
+        align="center"
+        gap="4px"
+        minW={0}
+        // The divider separates the header from the module body, so a
+        // collapsed module is just the header row.
+        borderBottom={collapsed ? "none" : "1px solid"}
+        borderColor="#E0E2E5"
+        pb={collapsed ? 0 : "12px"}
+      >
         {isOwner && (
           <Icon
             as={DotsSixVerticalIcon}
@@ -171,9 +182,9 @@ export default function DashboardInsightModule({
         <Text
           flex="1"
           minW={0}
-          fontSize="16px"
-          fontWeight="semibold"
-          lineHeight="20px"
+          fontSize="20px"
+          fontWeight="normal"
+          lineHeight="28px"
           color="fg"
           wordBreak="break-word"
         >
@@ -213,12 +224,26 @@ export default function DashboardInsightModule({
       {!collapsed && (
         <>
           {showSummary && (
-            <Flex direction="column" gap="4px">
-              <Text fontSize="14px" lineHeight="20px" color="fg">
-                {vm.summaryText}
-              </Text>
-              <InsightCaption curated={false} showLearnMore={false} />
-            </Flex>
+            <Text fontSize="16px" lineHeight="24px" color="fg">
+              {vm.summaryText}{" "}
+              {/* Inline "AI generated" chip per the design, riding at the
+                  end of the narrative. */}
+              <Box
+                as="span"
+                display="inline-block"
+                px="4px"
+                borderRadius="4px"
+                bg="#D7DFF2"
+                color="#3855A3"
+                fontSize="10px"
+                fontFamily="mono"
+                lineHeight="16px"
+                verticalAlign="2px"
+                whiteSpace="nowrap"
+              >
+                AI generated
+              </Box>
+            </Text>
           )}
 
           {!hasCharts ? (

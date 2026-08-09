@@ -113,7 +113,7 @@ describe("DashboardWidgetsGrid grouping", () => {
     );
 
     // The module: one header (first chart's title), the narrative, both charts.
-    expect(screen.getByText("Alerts spiked in July.")).toBeTruthy();
+    expect(screen.getByText(/Alerts spiked in July\./)).toBeTruthy();
     const cards = screen.getAllByTestId("widget-message");
     expect(cards.map((c) => c.textContent)).toEqual([
       "Alerts trend",

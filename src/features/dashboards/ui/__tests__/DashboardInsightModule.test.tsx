@@ -90,11 +90,13 @@ function renderModule({
 }
 
 describe("DashboardInsightModule", () => {
-  it("renders the header title, summary and one card per shown chart", () => {
+  it("renders the header title, summary with AI chip, and one card per shown chart", () => {
     renderModule();
     expect(
-      screen.getByText("There were 1,055 disturbance alerts.")
+      screen.getByText(/There were 1,055 disturbance alerts\./)
     ).toBeTruthy();
+    // The design's inline "AI generated" chip rides at the end of the summary.
+    expect(screen.getByText("AI generated")).toBeTruthy();
     const cards = screen.getAllByTestId("widget-message");
     expect(cards.map((c) => c.textContent)).toEqual([
       "Disturbance alerts trend",
@@ -104,19 +106,20 @@ describe("DashboardInsightModule", () => {
 
   it("hides the summary when config says so", () => {
     renderModule({ widget: widget({ config: { summaryHidden: true } }) });
-    expect(screen.queryByText("There were 1,055 disturbance alerts.")).toBe(
+    expect(screen.queryByText(/There were 1,055 disturbance alerts\./)).toBe(
       null
     );
+    expect(screen.queryByText("AI generated")).toBe(null);
     expect(screen.getAllByTestId("widget-message")).toHaveLength(2);
   });
 
   it("renders the summary alone when every chart is hidden", () => {
     renderModule({ widget: widget({ config: { chartIds: [] } }) });
     expect(
-      screen.getByText("There were 1,055 disturbance alerts.")
+      screen.getByText(/There were 1,055 disturbance alerts\./)
     ).toBeTruthy();
     expect(screen.queryAllByTestId("widget-message")).toHaveLength(0);
-    expect(screen.queryByText(/hidden/i)).toBe(null);
+    expect(screen.queryByText(/use Customize/i)).toBe(null);
   });
 
   it("shows the all-hidden placeholder for owners when summary and charts are hidden", () => {
@@ -134,7 +137,7 @@ describe("DashboardInsightModule", () => {
   it("collapses to the header only", () => {
     renderModule();
     fireEvent.click(screen.getByLabelText("Collapse analysis"));
-    expect(screen.queryByText("There were 1,055 disturbance alerts.")).toBe(
+    expect(screen.queryByText(/There were 1,055 disturbance alerts\./)).toBe(
       null
     );
     expect(screen.queryAllByTestId("widget-message")).toHaveLength(0);
