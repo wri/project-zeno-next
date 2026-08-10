@@ -204,8 +204,15 @@ function MessageBubble({
             />
           );
         }
+        const isExternal = !!href && /^https?:\/\//i.test(href);
         return (
-          <a href={href} {...rest}>
+          <a
+            href={href}
+            {...rest}
+            {...(isExternal
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
+          >
             {children}
           </a>
         );
@@ -253,7 +260,12 @@ function MessageBubble({
           },
         }}
       >
-        <Markdown remarkPlugins={[remarkBreaks]}>{message.message}</Markdown>
+        <Markdown
+          remarkPlugins={[remarkBreaks]}
+          components={markdownComponents}
+        >
+          {message.message}
+        </Markdown>
       </Box>
     );
   }
