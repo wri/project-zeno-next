@@ -3,14 +3,22 @@ import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AoiActions } from "../useAoiActions";
+import type { AoiActions, AoiActionsTarget } from "../useAoiActions";
 
 let actions: AoiActions | null;
 vi.mock("../useAoiActions", () => ({
   useAoiActions: () => actions,
 }));
 
-import AoiChipMenu from "../AoiChipMenu";
+import AoiActionsMenu from "../AoiActionsMenu";
+
+const target: AoiActionsTarget = {
+  layerId: "Paraná, Brazil",
+  areaName: "Paraná, Brazil",
+  source: "GADM",
+  srcId: "BRA.16_1",
+  subtype: "state-province",
+};
 
 const baseActions = (): AoiActions => ({
   areaName: "Paraná, Brazil",
@@ -30,7 +38,7 @@ const baseActions = (): AoiActions => ({
 const renderMenu = () =>
   render(
     <ChakraProvider value={defaultSystem}>
-      <AoiChipMenu />
+      <AoiActionsMenu target={target} />
     </ChakraProvider>
   );
 
@@ -45,19 +53,24 @@ const openMenu = async () => {
   await screen.findByRole("menu");
 };
 
-describe("AoiChipMenu", () => {
+describe("AoiActionsMenu", () => {
   beforeEach(() => {
     actions = baseActions();
   });
 
-  it("renders nothing with no area selected", () => {
+  it("renders nothing when the hook has no actions", () => {
     actions = null;
     expect(renderMenu().container.innerHTML).toBe("");
   });
 
-  it("shows the selected area's name", () => {
+  it("renders only a trigger until opened, not a chip with the area name", () => {
     renderMenu();
-    expect(screen.getByText("Paraná, Brazil")).toBeTruthy();
+
+    // The label itself (name, icon, close) belongs to the bbox Tag, not here.
+    expect(screen.queryByText("Paraná, Brazil")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Actions for Paraná, Brazil/i })
+    ).toBeTruthy();
   });
 
   it("offers all five actions when everything is available", async () => {
@@ -110,15 +123,5 @@ describe("AoiChipMenu", () => {
 
     expect(screen.getByText("Open Dashboard")).toBeTruthy();
     expect(screen.queryByText("Create Dashboard")).toBeNull();
-  });
-
-  it("removes the area from the map via the chip's close button", () => {
-    renderMenu();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: /Remove Paraná, Brazil from map/i })
-    );
-
-    expect(actions!.removeFromMap).toHaveBeenCalled();
   });
 });

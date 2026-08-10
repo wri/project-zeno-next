@@ -19,6 +19,24 @@ import {
 import { useCreateDashboardForArea } from "@/src/features/dashboards";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
+/**
+ * The area an actions menu is attached to.
+ *
+ * Passed in rather than read from `mapStore.analysisSelection`, because the
+ * menu lives on the map's bbox label, which renders for every area layer. That
+ * includes AOIs the agent picked, which never populate `analysisSelection`
+ * (only a manual GADM click does — see `VectorAreasLayer`).
+ */
+export interface AoiActionsTarget {
+  /** The managed layer this label belongs to; what "remove from map" drops. */
+  layerId: string;
+  areaName: string;
+  source: string;
+  /** Absent when the source feature carried no id/subtype. */
+  srcId?: string;
+  subtype?: string;
+}
+
 export interface AoiActions {
   areaName: string;
   /** True when a dataset is active, so the ANALYSIS group applies. */
@@ -38,15 +56,15 @@ export interface AoiActions {
 }
 
 /**
- * Everything the AOI chip's menu can do, independent of how it's presented.
+ * Everything the AOI label's menu can do, independent of how it's presented.
  *
- * Split from `AoiChipMenu` so the behaviour is testable without driving a
- * third-party menu widget's pointer choreography — the component then only
- * decides what to show. Returns null when nothing is selected.
+ * Split from the menu component so the behaviour is testable without driving a
+ * third-party menu widget's pointer choreography. Returns null without a target.
  */
-export function useAoiActions(): AoiActions | null {
+export function useAoiActions(
+  target: AoiActionsTarget | null
+): AoiActions | null {
   const router = useRouter();
-  const selection = useMapStore((state) => state.analysisSelection);
   const datasetLayer = useMapStore((state) =>
     state.layers.find(
       (l) => typeof l.datasetId === "number" && !l.parentLayerId
@@ -76,15 +94,15 @@ export function useAoiActions(): AoiActions | null {
     ? format(dateRange.end, "yyyy-MM-dd")
     : DEFAULT_ANALYSIS_END_DATE;
 
-  // A dashboard needs the full AOI identity; a click that resolved no id
+  // A dashboard needs the full AOI identity; a label whose area resolved no id
   // can't be turned into one.
   const dashboardInput =
-    selection?.name && selection.srcId && selection.subtype
+    target?.srcId && target.subtype
       ? {
-          areaName: selection.name,
-          source: selection.source,
-          srcId: selection.srcId,
-          subtype: selection.subtype,
+          areaName: target.areaName,
+          source: target.source,
+          srcId: target.srcId,
+          subtype: target.subtype,
           datasetId,
           datasetName,
           startDate,
@@ -98,9 +116,8 @@ export function useAoiActions(): AoiActions | null {
     create: createDashboardForArea,
   } = useCreateDashboardForArea(dashboardInput);
 
-  if (!selection?.name) return null;
-  const areaName = selection.name;
-  const source = selection.source;
+  if (!target?.areaName) return null;
+  const { areaName, source, layerId } = target;
 
   /**
    * The registry entry for this area, matched case-insensitively on source.
@@ -121,15 +138,22 @@ export function useAoiActions(): AoiActions | null {
       );
 
   const removeFromMap = () => {
-    const { clearAnalysis, removeLayer, removeFromRegistry } =
-      useMapStore.getState();
+    const {
+      clearAnalysis,
+      removeLayer,
+      removeFromRegistry,
+      analysisSelection,
+    } = useMapStore.getState();
     const entry = registryEntry();
-    // The clicked area's layer is keyed by its name; the registry entry is
-    // dropped by its own ref, since removeFromRegistry compares source exactly.
-    removeLayer(areaName);
+    removeLayer(layerId);
+    // Dropped by its own ref, since removeFromRegistry compares source exactly.
     if (entry) removeFromRegistry(entry.ref);
-    clearAnalysis();
-    useSelectionStore.getState().clear();
+    // Only clear the ephemeral selection when it is *this* area, so removing
+    // one label doesn't silently retract the nudges for another.
+    if (analysisSelection?.name === areaName) {
+      clearAnalysis();
+      useSelectionStore.getState().clear();
+    }
   };
 
   const saveArea = async () => {
@@ -160,7 +184,7 @@ export function useAoiActions(): AoiActions | null {
   return {
     areaName,
     hasDataset: activeDataset !== null,
-    canSaveArea: source !== "custom",
+    canSaveArea: source.toLowerCase() !== "custom",
     canUseDashboard:
       dashboardsEnabled && dashboardInput !== null && !isResolvingDashboards,
     dashboardLabel: existingDashboard ? "Open Dashboard" : "Create Dashboard",
@@ -180,8 +204,8 @@ export function useAoiActions(): AoiActions | null {
         area: {
           name: areaName,
           source,
-          srcId: selection.srcId,
-          subtype: selection.subtype,
+          srcId: target.srcId,
+          subtype: target.subtype,
         },
         dataset: activeDataset,
         startDate,

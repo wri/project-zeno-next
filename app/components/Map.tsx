@@ -36,7 +36,6 @@ import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import PendingDrawArea from "./map/layers/PendingDrawArea";
 import { Legend } from "@/app/components/legend/Legend";
 import InsightWorkspace from "./InsightWorkspace";
-import AoiChipMenu from "./map/AoiChipMenu";
 import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
@@ -211,20 +210,6 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <DisclaimerPanel />
         </Box>
-        {/* Top-centre overlay: the selected area's chip + actions menu. Sits
-            between the top-left disclaimer and the right insight column, above
-            both (450) so its menu isn't clipped by either. */}
-        <Flex
-          position="absolute"
-          top={{ base: "4rem", md: 4 }}
-          left="50%"
-          transform="translateX(-50%)"
-          maxW={{ base: "calc(100% - 1.5rem)", md: "24rem" }}
-          zIndex={450}
-          pointerEvents="none"
-        >
-          <AoiChipMenu />
-        </Flex>
         {/* Right overlay column: insight panel (top, scrollable) + legend (bottom).
             Base: spans the viewport (a fixed 420px would overhang narrow phones)
             and starts below the floating hamburger + header pill. */}

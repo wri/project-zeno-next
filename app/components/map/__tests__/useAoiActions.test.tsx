@@ -76,7 +76,18 @@ const polygon = {
   ],
 };
 
-const render = () => renderHook(() => useAoiActions());
+const target = {
+  layerId: "Paraná, Brazil",
+  areaName: "Paraná, Brazil",
+  source: "GADM",
+  srcId: "BRA.16_1",
+  subtype: "state-province",
+};
+
+const render = (override: Partial<typeof target> | null = {}) =>
+  renderHook(() =>
+    useAoiActions(override === null ? null : { ...target, ...override })
+  );
 
 describe("useAoiActions", () => {
   beforeEach(() => {
@@ -95,9 +106,8 @@ describe("useAoiActions", () => {
     });
   });
 
-  it("returns null with nothing selected", () => {
-    useMapStore.setState({ analysisSelection: null });
-    expect(render().result.current).toBeNull();
+  it("returns null without a target", () => {
+    expect(render(null).result.current).toBeNull();
   });
 
   it("reports the area and its available actions", () => {
@@ -123,10 +133,15 @@ describe("useAoiActions", () => {
   });
 
   it("cannot save an area the user already owns", () => {
-    useMapStore.setState({
-      analysisSelection: { ...selection, source: "custom" },
-    });
-    expect(render().result.current?.canSaveArea).toBe(false);
+    expect(render({ source: "custom" }).result.current?.canSaveArea).toBe(
+      false
+    );
+  });
+
+  it("hides the dashboard action when the area resolved no src id", () => {
+    expect(render({ srcId: undefined }).result.current?.canUseDashboard).toBe(
+      false
+    );
   });
 
   it("hides the dashboard action without the feature flag", () => {
@@ -183,7 +198,7 @@ describe("useAoiActions", () => {
     expect(runDirectAnalysis).toHaveBeenCalledWith({
       area: {
         name: "Paraná, Brazil",
-        source: "gadm",
+        source: "GADM",
         srcId: "BRA.16_1",
         subtype: "state-province",
       },
@@ -233,6 +248,29 @@ describe("useAoiActions", () => {
     expect(toaster.create).toHaveBeenCalledWith(
       expect.objectContaining({ type: "error" })
     );
+  });
+
+  it("leaves another area's ephemeral selection alone when removed", () => {
+    // The label renders per area layer, so removing one must not retract the
+    // nudges standing for a different one.
+    useMapStore.setState({
+      analysisSelection: { ...selection, name: "Acre, Brazil" },
+      layers: [
+        {
+          id: "Paraná, Brazil",
+          name: "Paraná, Brazil",
+          type: "geojson",
+          visible: true,
+        },
+      ],
+    });
+    const { result } = render();
+
+    act(() => result.current!.removeFromMap());
+
+    const state = useMapStore.getState();
+    expect(state.layers.some((l) => l.id === "Paraná, Brazil")).toBe(false);
+    expect(state.analysisSelection?.name).toBe("Acre, Brazil");
   });
 
   it("removes the area's layer and clears the selection", () => {
