@@ -17,16 +17,11 @@ vi.mock("@/app/utils/datasetLayerContext", () => ({
 }));
 
 import { pickDatasetTool } from "../pickDataset";
-import { StreamMessage, ChatMessage, SuggestedDataset } from "@/app/types/chat";
+import { StreamMessage, ChatMessage } from "@/app/types/chat";
 
 type AddMessageFn = (message: Omit<ChatMessage, "id">) => void;
 
 const timestamp = new Date().toISOString();
-
-const suggested: SuggestedDataset[] = [
-  { dataset_id: 4, dataset_name: "TCL Fires", reason: "Annual fire series." },
-  { dataset_id: 7, dataset_name: "DIST Alerts", reason: "Daily alerts." },
-];
 
 const baseMsg = (overrides: Partial<StreamMessage> = {}): StreamMessage => ({
   type: "tool",
@@ -40,17 +35,6 @@ describe("pickDatasetTool", () => {
 
   beforeEach(() => {
     addMessage = vi.fn<AddMessageFn>();
-  });
-
-  it("emits dataset-nudge with suggested datasets when no direct dataset", () => {
-    pickDatasetTool(baseMsg({ suggested_datasets: suggested }), addMessage);
-
-    expect(addMessage).toHaveBeenCalledOnce();
-    const msg = addMessage.mock.calls[0][0];
-    expect(msg.type).toBe("dataset-nudge");
-    expect(
-      (msg as { suggestedDatasets: SuggestedDataset[] }).suggestedDatasets
-    ).toEqual(suggested);
   });
 
   it("emits dataset-card widget when dataset has tile_url", () => {
@@ -89,26 +73,19 @@ describe("pickDatasetTool", () => {
     expect(reasonMsg.message).toBe("Best fit for trend questions.");
   });
 
-  it("prefers dataset over suggested_datasets when both are present", () => {
+  it("does nothing when no resolved dataset is present", () => {
+    // A pick_dataset turn that instead asks the user to choose carries a
+    // nudge, which processStreamMessage buffers generically — the tool
+    // handler itself only deals with resolved datasets.
     pickDatasetTool(
       baseMsg({
-        dataset: {
-          dataset_id: 4,
-          dataset_name: "TCL Fires",
-          tile_url: "https://example.com/tiles",
+        nudge: {
+          type: "dataset_choice",
+          options: ["TCL Fires", "DIST Alerts"],
         },
-        suggested_datasets: suggested,
       }),
       addMessage
     );
-
-    const types = addMessage.mock.calls.map((c) => c[0].type);
-    expect(types).not.toContain("dataset-nudge");
-    expect(types).toContain("widget");
-  });
-
-  it("does nothing when neither dataset nor suggested_datasets are present", () => {
-    pickDatasetTool(baseMsg(), addMessage);
     expect(addMessage).not.toHaveBeenCalled();
   });
 });
