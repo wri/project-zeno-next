@@ -85,7 +85,30 @@ export function parseStreamMessage(
       name: kwargs.name,
       content: typeof content === "string" ? content : String(content),
       dataset: langChainMessage.dataset || undefined,
-      suggested_datasets: langChainMessage.suggested_datasets || undefined,
+      // Legacy fallback: `suggested_datasets` was replaced by the generic
+      // `nudge` state (wri/project-zeno#770). This is NOT just a
+      // deploy-transition shim — threads created before the backend
+      // migration permanently contain suggested_datasets in their stored
+      // stream lines, and fetchThread replays them; without this mapping
+      // historical dataset nudges vanish on replay. It also makes deploy
+      // order safe (the frontend can ship first).
+      // A resolved dataset on the same update wins over the suggestions,
+      // mirroring the old pickDatasetTool gate — otherwise replaying such a
+      // thread would render both the dataset card and a clickable nudge.
+      nudge:
+        langChainMessage.nudge ??
+        (langChainMessage.suggested_datasets?.length &&
+        !langChainMessage.dataset
+          ? {
+              type: "dataset_choice",
+              options: langChainMessage.suggested_datasets.map(
+                (d) => d.dataset_name
+              ),
+              // Spread into plain records to satisfy Nudge["data"] (interfaces
+              // carry no implicit index signature).
+              data: langChainMessage.suggested_datasets.map((d) => ({ ...d })),
+            }
+          : undefined),
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
       insight_id: langChainMessage.insight_id || undefined,

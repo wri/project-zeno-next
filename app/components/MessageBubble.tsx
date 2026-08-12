@@ -36,7 +36,7 @@ import useAgentProfileStore from "../store/agentProfileStore";
 import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
-import DatasetNudge from "./DatasetNudge";
+import ChatNudge from "./ChatNudge";
 import AnalyseNudge from "./AnalyseNudge";
 import { ViewAnalysisNudge } from "@/src/features/analysis";
 import { CreateDashboardNudge } from "@/src/features/dashboards";
@@ -278,10 +278,10 @@ function MessageBubble({
     );
   }
 
-  if (message.type === "dataset-nudge" && message.suggestedDatasets) {
+  if (message.type === "nudge" && message.nudge) {
     return (
       <Box my={2}>
-        <DatasetNudge datasets={message.suggestedDatasets} />
+        <ChatNudge nudge={message.nudge} />
       </Box>
     );
   }

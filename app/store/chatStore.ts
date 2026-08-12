@@ -10,7 +10,7 @@ import {
   StreamMessage,
   QueryType,
   ToolStepData,
-  SuggestedDataset,
+  Nudge,
   BlogArticle,
   AnalyseSuggestion,
   ViewAnalysisSuggestion,
@@ -233,8 +233,8 @@ async function processStreamMessage(
   getPendingTraceId: () => string | null,
   setPendingTraceId: (traceId: string | null) => void,
   attachTraceToLastAssistant: (traceId: string) => boolean,
-  getPendingNudge: () => SuggestedDataset[] | null,
-  setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
+  getPendingNudge: () => Nudge | null,
+  setPendingNudge: (nudge: Nudge | null) => void,
   mergeCitedArticles: (articles: BlogArticle[]) => void,
   setGeneratingInsight: (generating: boolean) => void
 ) {
@@ -382,9 +382,9 @@ async function processStreamMessage(
     const pendingNudge = getPendingNudge();
     if (pendingNudge) {
       addMessage({
-        type: "dataset-nudge",
+        type: "nudge",
         message: "",
-        suggestedDatasets: pendingNudge,
+        nudge: pendingNudge,
         timestamp: streamMessage.timestamp,
       });
       setPendingNudge(null);
@@ -401,6 +401,13 @@ async function processStreamMessage(
     // Add tool step to reasoning display
     if (streamMessage.name) {
       addToolStep(streamMessage);
+    }
+
+    // Any tool update can carry a nudge (dataset_choice, aoi_choice, ad-hoc
+    // send_nudge, …). Buffer it so it renders right after the assistant text
+    // that asks the question — the backend guarantees a trailing text turn.
+    if (streamMessage.nudge?.options?.length) {
+      setPendingNudge(streamMessage.nudge);
     }
 
     // Special handling for generate_insights tool
@@ -438,14 +445,7 @@ async function processStreamMessage(
         useChatStore.getState().foldSentContext({ dataset: datasetId });
       }
       void Promise.resolve().then(() =>
-        pickDatasetTool(streamMessage, (message) => {
-          // Buffer dataset-nudge messages so they appear after the assistant narrative
-          if (message.type === "dataset-nudge" && message.suggestedDatasets) {
-            setPendingNudge(message.suggestedDatasets);
-          } else {
-            addMessage(message);
-          }
-        })
+        pickDatasetTool(streamMessage, addMessage)
       );
       return;
     }
@@ -770,7 +770,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       useAuthStore.getState().setUsageFromHeaders(response.headers);
 
       const reader = response.body.getReader();
-      let pendingNudge: SuggestedDataset[] | null = null;
+      let pendingNudge: Nudge | null = null;
 
       await readDataStream({
         abortController,
@@ -805,8 +805,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                 return attached;
               },
               () => pendingNudge,
-              (datasets) => {
-                pendingNudge = datasets;
+              (nudge) => {
+                pendingNudge = nudge;
               },
               get().mergeCitedArticles,
               setGeneratingInsight
@@ -824,6 +824,19 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           }
         },
       });
+
+      // Safety net: the backend guarantees a plain-text assistant turn after
+      // every nudge, but if that final turn was dropped or errored, flush the
+      // buffered nudge at stream end so the options still render.
+      if (pendingNudge) {
+        addMessage({
+          type: "nudge",
+          message: "",
+          nudge: pendingNudge,
+          timestamp: new Date().toISOString(),
+        });
+        pendingNudge = null;
+      }
 
       const { done: readerDone } = await reader.read();
       // Log why the loop ended
@@ -1042,7 +1055,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       const reader = response.body.getReader();
-      let pendingNudgeThread: SuggestedDataset[] | null = null;
+      let pendingNudgeThread: Nudge | null = null;
 
       await readDataStream({
         abortController,
@@ -1124,8 +1137,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                 return attached;
               },
               () => pendingNudgeThread,
-              (datasets) => {
-                pendingNudgeThread = datasets;
+              (nudge) => {
+                pendingNudgeThread = nudge;
               },
               mergeCitedArticles,
               setGeneratingInsight
@@ -1143,6 +1156,18 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           }
         },
       });
+
+      // Safety net mirroring sendMessage: flush a nudge whose trailing
+      // assistant text never arrived (dropped/errored final turn).
+      if (pendingNudgeThread) {
+        addMessage({
+          type: "nudge",
+          message: "",
+          nudge: pendingNudgeThread,
+          timestamp: new Date().toISOString(),
+        });
+        pendingNudgeThread = null;
+      }
 
       const { done: readerDone } = await reader.read();
       if (readerDone) {

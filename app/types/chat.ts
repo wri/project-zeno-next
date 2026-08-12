@@ -42,7 +42,7 @@ export interface ChatMessage {
     | "dashboard-card"
     | "error"
     | "warning"
-    | "dataset-nudge"
+    | "nudge"
     | "analyse-nudge"
     | "view-analysis-nudge"
     | "create-dashboard-nudge"
@@ -53,7 +53,7 @@ export interface ChatMessage {
   aoiSelection?: AOISelection; // For area-card messages
   dashboardId?: string; // For dashboard-card messages
   dashboardName?: string; // For dashboard-card messages; absent on threads that predate the backend streaming it
-  suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
+  nudge?: Nudge; // For nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
   viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
@@ -169,7 +169,7 @@ export interface StreamMessage {
   name?: string;
   content?: string;
   dataset?: object;
-  suggested_datasets?: SuggestedDataset[];
+  nudge?: Nudge;
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
@@ -309,6 +309,27 @@ export interface CreateDashboardSuggestion {
   endDate?: string;
 }
 
+// A question the agent asks the user, rendered as a row of clickable options
+// under the accompanying assistant message. Clicking an option submits that
+// exact string as the user's next chat message ("human_input") — there is no
+// separate resolve endpoint.
+export interface Nudge {
+  // Free-form label, not an enum. Known values: "dataset_choice",
+  // "aoi_choice", "dashboard_choice", "insight_choice" — plus arbitrary
+  // ad-hoc values from send_nudge ("confirm", "clarify", …). Unknown types
+  // render as plain option buttons.
+  type: string;
+  // Each string is BOTH the button label AND the exact text resubmitted as
+  // the user's next chat message on click.
+  options: string[];
+  // Optional structured payloads, same order/length as options. Only present
+  // for dataset_choice (SuggestedDataset entries) and aoi_choice (resolved
+  // AOI entries). Never assume alignment with options — validate per entry.
+  data?: Array<Record<string, unknown>>;
+}
+
+// Shape of a dataset_choice nudge `data` entry. Options arrive ranked;
+// treat index 0 as recommended.
 export interface SuggestedDataset {
   dataset_id: number;
   dataset_name: string;
@@ -317,7 +338,6 @@ export interface SuggestedDataset {
   start_date?: string;
   end_date?: string;
   reason?: string;
-  recommended?: boolean;
 }
 
 export interface DatasetInfo {
@@ -359,7 +379,12 @@ export interface LangChainResponse {
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
-  suggested_datasets?: SuggestedDataset[];
+  nudge?: Nudge;
+  // Legacy state field replaced by `nudge` (wri/project-zeno#770). Kept
+  // because threads created before the migration permanently contain
+  // suggested_datasets in their stored stream lines, which fetchThread
+  // replays — see the parser fallback in parse-stream-message.ts.
+  suggested_datasets?: (SuggestedDataset & { recommended?: boolean })[];
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
