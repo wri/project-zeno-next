@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Box,
   Button,
@@ -42,6 +42,7 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 
 import { CatalogCard } from "./CatalogCard";
+import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
 import { AreaToolbarButtons } from "./AreaToolbarButtons";
 import { AreaCatalogThumbnail } from "./AreaCatalogThumbnail";
 import { Tooltip } from "./ui/tooltip";
@@ -71,13 +72,6 @@ const AREA_TYPE_LABELS: Record<string, string> = {
 
 const AREA_LABEL_COLOR = "#2D6BE4";
 const AREA_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
-
-/**
- * Temporarily hides the "..." (more actions) kebab menu on area cards while its
- * behaviour is being reworked. Flip to `true` to restore the menu — the markup
- * is kept intact below, gated only by this flag.
- */
-const SHOW_AREA_ACTIONS_MENU = false;
 
 type AreaFilter = "conversation" | "monitored";
 
@@ -523,19 +517,13 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
         titleActions={
-          isVisible ? (
-            <AreaCardActions
-              onLocate={handleLocate}
-              onRemove={
-                layer
-                  ? () => {
-                      removeFromRegistry({ name: area.name, source: "custom" });
-                      removeLayer(area.id);
-                    }
-                  : undefined
-              }
-            />
-          ) : undefined
+          // Rename/delete act on the saved area, so the kebab must show even
+          // when the area isn't on the map; the locate button stays on-map only.
+          <AreaCardActions
+            onLocate={handleLocate}
+            showLocate={isVisible}
+            menu={<CustomAreaActionsMenu area={area} />}
+          />
         }
       />
     </Box>
@@ -545,9 +533,15 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
 function AreaCardActions({
   onLocate,
   onRemove,
+  showLocate = true,
+  menu,
 }: {
   onLocate: () => void;
   onRemove?: () => void;
+  /** Hide the locate button when the area isn't on the map. */
+  showLocate?: boolean;
+  /** Extra actions node (e.g. a custom-area kebab) rendered after the menu. */
+  menu?: ReactNode;
 }) {
   const compactIconProps = {
     variant: "ghost" as const,
@@ -568,24 +562,26 @@ function AreaCardActions({
 
   return (
     <Flex align="center" gap="16px" flexShrink={0} h="16px">
-      <Tooltip
-        content="Center on map"
-        positioning={{ placement: "top" }}
-        showArrow
-        variant="dark"
-      >
-        <IconButton
-          aria-label="Center on map"
-          {...compactIconProps}
-          onClick={(e) => {
-            e.stopPropagation();
-            onLocate();
-          }}
+      {showLocate && (
+        <Tooltip
+          content="Center on map"
+          positioning={{ placement: "top" }}
+          showArrow
+          variant="dark"
         >
-          <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
-        </IconButton>
-      </Tooltip>
-      {SHOW_AREA_ACTIONS_MENU && onRemove && (
+          <IconButton
+            aria-label="Center on map"
+            {...compactIconProps}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLocate();
+            }}
+          >
+            <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
+          </IconButton>
+        </Tooltip>
+      )}
+      {onRemove && (
         <Menu.Root positioning={{ placement: "bottom-end" }}>
           <Menu.Trigger asChild>
             <IconButton
@@ -607,6 +603,7 @@ function AreaCardActions({
           </Portal>
         </Menu.Root>
       )}
+      {menu}
     </Flex>
   );
 }
