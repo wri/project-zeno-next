@@ -6,19 +6,12 @@ import {
   Button,
   Flex,
   IconButton,
-  Menu,
-  Portal,
   Stack,
   Text,
   Wrap,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CrosshairIcon,
-  DotsThreeVerticalIcon,
-  PolygonIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { CrosshairIcon, PolygonIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 import type { Feature, MultiPolygon } from "geojson";
 
@@ -42,6 +35,7 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 
 import { CatalogCard } from "./CatalogCard";
+import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
 import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
 import { AreaToolbarButtons } from "./AreaToolbarButtons";
 import { AreaCatalogThumbnail } from "./AreaCatalogThumbnail";
@@ -382,7 +376,15 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
         titleActions={
-          <AreaCardActions onLocate={handleLocate} onRemove={handleRemove} />
+          <AreaCardActions
+            onLocate={handleLocate}
+            menu={
+              <ConversationAreaActionsMenu
+                layer={layer}
+                onRemove={handleRemove}
+              />
+            }
+          />
         }
       />
     </Box>
@@ -532,15 +534,13 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
 
 function AreaCardActions({
   onLocate,
-  onRemove,
   showLocate = true,
   menu,
 }: {
   onLocate: () => void;
-  onRemove?: () => void;
   /** Hide the locate button when the area isn't on the map. */
   showLocate?: boolean;
-  /** Extra actions node (e.g. a custom-area kebab) rendered after the menu. */
+  /** Kebab actions node for the card (per-tab: conversation vs. monitored). */
   menu?: ReactNode;
 }) {
   const compactIconProps = {
@@ -580,28 +580,6 @@ function AreaCardActions({
             <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
           </IconButton>
         </Tooltip>
-      )}
-      {onRemove && (
-        <Menu.Root positioning={{ placement: "bottom-end" }}>
-          <Menu.Trigger asChild>
-            <IconButton
-              aria-label="More area actions"
-              {...compactIconProps}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DotsThreeVerticalIcon size={16} color={AREA_LABEL_COLOR} />
-            </IconButton>
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item value="remove" onClick={onRemove}>
-                  Remove from conversation
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
       )}
       {menu}
     </Flex>
