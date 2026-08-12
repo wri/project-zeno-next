@@ -27,8 +27,7 @@ export type DatasetCategoryId =
   | "in-conversation"
   | "land-use"
   | "disturbance"
-  | "wildfires"
-  | "near-real-time";
+  | "wildfires";
 
 export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
   { id: "all", label: "All datasets" },
@@ -36,7 +35,6 @@ export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
   { id: "land-use", label: "Land use" },
   { id: "disturbance", label: "Disturbance" },
   { id: "wildfires", label: "Wildfires" },
-  { id: "near-real-time", label: "Near-real time" },
 ];
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
@@ -139,31 +137,6 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
 };
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
-  {
-    dataset_id: 0,
-    dataset_name: "Global all ecosystem disturbance alerts (DIST-ALERT)",
-    shortName: "DIST-ALERT",
-    data_layer: "Global all ecosystem disturbance alerts (DIST-ALERT)",
-    context_layer: null as string | null,
-    img: "/dataset_card_dist_alerts.webp",
-    cadence: "weekly",
-    resolution: "30 m",
-    geographic_coverage: "global",
-    provider: "UMD",
-    categories: ["disturbance", "near-real-time"],
-    description:
-      "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present.",
-    tile_url:
-      "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
-    legend: {
-      title: "Global all ecosystem disturbance alerts",
-      color: "#f69",
-      items: [{ label: "DIST alert", color: "#f69" }],
-      type: "symbol",
-      info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
-      note: "Near-real-time vegetation disturbance alerts across all ecosystems, updated weekly (2023-present).",
-    },
-  },
   {
     dataset_id: 11,
     dataset_name: "Integrated alerts",

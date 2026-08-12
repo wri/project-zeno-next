@@ -5,7 +5,7 @@ import type { AnalysisResult } from "../model/analysis-result";
 import { LROAnalysisService } from "../model/lro-analysis-service";
 import { RestAnalysisGateway } from "../api/rest-analysis-gateway";
 import { SystemClock } from "../lib/system-clock";
-import { chartsToWidgets } from "@/src/entities/insight";
+import { chartsToWidgets, generateInsightTitle } from "@/src/entities/insight";
 import type { InsightSink } from "../model/insight-sink";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
@@ -29,6 +29,22 @@ const defaultSink: InsightSink = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The dataset name to use in a chart's "{dataset} in {location}" title. Every
+ * dataset uses its own name, with one exception: a tree cover loss analysis
+ * also returns a GHG-emissions chart (see project-zeno `charts.py:
+ * TCLChartGenerator`), identified by its y-axis, which is titled as
+ * "GHG Emissions from Tree Cover Loss" instead.
+ */
+function chartDatasetName(
+  widget: { yAxis?: string },
+  datasetName: string
+): string {
+  return widget.yAxis === "carbon_emissions_MgCO2e"
+    ? "GHG Emissions from Tree Cover Loss"
+    : datasetName;
+}
 
 export type AnalysisStatus = "idle" | "running" | "done" | "error";
 
@@ -92,12 +108,29 @@ export function useAnalysis(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
-          const widgets = chartsToWidgets(
+          const rawWidgets = chartsToWidgets(
             analysisResult.charts,
             analysisResult.params
               ? { areas: [analysisResult.params.name] }
               : undefined
           );
+          // Give each widget a "{dataset} in {location}" title matching the
+          // curated insights, when the dataset's name is known (it always is
+          // for this flow's real callers — only test fixtures may omit it).
+          // The name is resolved per chart, not per analysis: a TCL analysis
+          // returns a loss chart AND a GHG-emissions chart, which must not
+          // share one title.
+          const datasetName = selection.dataset.name;
+          const widgets = datasetName
+            ? rawWidgets.map((widget) => ({
+                ...widget,
+                title: generateInsightTitle({
+                  datasetName: chartDatasetName(widget, datasetName),
+                  locationName: selection.area.name,
+                  areaLabel: selection.area.name,
+                }),
+              }))
+            : rawWidgets;
           // Add the chart and drop the skeleton flag together so the workspace
           // swaps skeleton → chart in one render (no empty flash).
           sink.add(widgets);
