@@ -2,9 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnalysisService } from "../model/analysis-service";
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
-import { LROAnalysisService } from "../model/lro-analysis-service";
-import { RestAnalysisGateway } from "../api/rest-analysis-gateway";
-import { SystemClock } from "../lib/system-clock";
+import { analysisService } from "./analysis-service";
 import { chartsToWidgets, generateInsightTitle } from "@/src/entities/insight";
 import type { InsightSink } from "../model/insight-sink";
 import useInsightStore from "@/app/store/insightStore";
@@ -14,10 +12,7 @@ import useChatStore from "@/app/store/chatStore";
 // Wire the real application service and the real insight sink with their driven
 // adapters. Tests inject their own fakes via the hook parameters.
 
-const defaultService: AnalysisService = new LROAnalysisService(
-  new RestAnalysisGateway(),
-  new SystemClock()
-);
+const defaultService: AnalysisService = analysisService;
 
 const defaultSink: InsightSink = {
   // Guard against empty arrays so the store isn't notified with nothing to add.

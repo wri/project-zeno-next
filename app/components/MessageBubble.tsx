@@ -39,6 +39,7 @@ import CopySelectionTooltip from "./CopySelectionTooltip";
 import ChatNudge from "./ChatNudge";
 import AnalyseNudge from "./AnalyseNudge";
 import { ViewAnalysisNudge } from "@/src/features/analysis";
+import { CreateDashboardNudge } from "@/src/features/dashboards";
 import BlogCitation from "./BlogCitation";
 import BlogCitationsList from "./BlogCitationsList";
 import {
@@ -308,6 +309,17 @@ function MessageBubble({
           messageId={message.id}
           suggestion={message.viewAnalysisSuggestion}
         />
+      </Box>
+    );
+  }
+
+  if (
+    message.type === "create-dashboard-nudge" &&
+    message.createDashboardSuggestion
+  ) {
+    return (
+      <Box mt={2} mb={2}>
+        <CreateDashboardNudge suggestion={message.createDashboardSuggestion} />
       </Box>
     );
   }
