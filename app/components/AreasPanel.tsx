@@ -72,6 +72,13 @@ const AREA_TYPE_LABELS: Record<string, string> = {
 const AREA_LABEL_COLOR = "#2D6BE4";
 const AREA_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
 
+/**
+ * Temporarily hides the "..." (more actions) kebab menu on area cards while its
+ * behaviour is being reworked. Flip to `true` to restore the menu — the markup
+ * is kept intact below, gated only by this flag.
+ */
+const SHOW_AREA_ACTIONS_MENU = false;
+
 type AreaFilter = "conversation" | "monitored";
 
 const AREA_FILTERS: { id: AreaFilter; label: string }[] = [
@@ -578,7 +585,7 @@ function AreaCardActions({
           <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
         </IconButton>
       </Tooltip>
-      {onRemove && (
+      {SHOW_AREA_ACTIONS_MENU && onRemove && (
         <Menu.Root positioning={{ placement: "bottom-end" }}>
           <Menu.Trigger asChild>
             <IconButton
