@@ -85,4 +85,37 @@ describe("toPolygons", () => {
       []
     );
   });
+
+  // GET /api/geometry/:source/:src_id returns ST_AsGeoJSON output — a BARE
+  // geometry, not a Feature — so registry entries for agent-picked areas
+  // arrive in this shape despite GeoJsonEntry's declared type.
+  it("accepts a bare MultiPolygon geometry (the /api/geometry shape)", () => {
+    const result = toPolygons({
+      type: "MultiPolygon",
+      coordinates: [square, otherSquare],
+    });
+
+    expect(result).toEqual([
+      { type: "Polygon", coordinates: square },
+      { type: "Polygon", coordinates: otherSquare },
+    ]);
+  });
+
+  it("accepts a bare Polygon geometry", () => {
+    expect(toPolygons({ type: "Polygon", coordinates: square })).toEqual([
+      { type: "Polygon", coordinates: square },
+    ]);
+  });
+
+  it("accepts a bare GeometryCollection (multi-part custom areas)", () => {
+    const result = toPolygons({
+      type: "GeometryCollection",
+      geometries: [
+        { type: "Polygon", coordinates: square },
+        { type: "Polygon", coordinates: otherSquare },
+      ],
+    });
+
+    expect(result).toHaveLength(2);
+  });
 });
