@@ -1,20 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  Button,
-  Dialog,
-  IconButton,
-  Input,
-  Menu,
-  Portal,
-} from "@chakra-ui/react";
-import {
-  DotsThreeVerticalIcon,
-  PencilSimpleIcon,
-  TrashIcon,
-} from "@phosphor-icons/react";
-import { useShallow } from "zustand/react/shallow";
+import { Button, Dialog, Input, Menu, Portal } from "@chakra-ui/react";
+import { PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import {
@@ -24,26 +12,7 @@ import {
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 import useMapStore from "@/app/store/mapStore";
 
-/** Matches the Areas panel accent used by the sibling card actions. */
-const AREA_LABEL_COLOR = "#2D6BE4";
-
-/** Compact 16px icon styling shared with the card's other title actions. */
-const compactIconProps = {
-  variant: "ghost" as const,
-  color: AREA_LABEL_COLOR,
-  boxSize: "16px",
-  minW: "16px",
-  maxW: "16px",
-  minH: "16px",
-  maxH: "16px",
-  p: 0,
-  css: {
-    "& svg": {
-      width: "16px",
-      height: "16px",
-    },
-  },
-};
+import { AreaCardMenu } from "./AreaCardMenu";
 
 /**
  * Kebab (⋮) menu for a saved custom area card: rename + delete, with toast
@@ -66,24 +35,21 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
   const { renameAreaAsync, isRenaming } = useCustomAreasUpdate();
   const { deleteAreaAsync, isDeleting } = useCustomAreasDelete();
 
-  const removeLayer = useMapStore((s) => s.removeLayer);
-  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
-  const isOnMap = useMapStore(
-    useShallow((s) => s.layers.some((l) => l.id === area.id))
-  );
-
-  // Returns true when the dialog should close (success or a no-op rename).
-  const handleRename = async (newName: string): Promise<boolean> => {
-    if (newName === area.name) return true;
+  // Dialogs stay open on failure so the user can retry; success closes them.
+  const handleRename = async (newName: string) => {
+    if (newName === area.name) {
+      setRenameOpen(false);
+      return;
+    }
     try {
       await renameAreaAsync({ areaId: area.id, name: newName });
+      setRenameOpen(false);
       toaster.create({
         title: "Area renamed",
         description: `Renamed to “${newName}”.`,
         type: "success",
         duration: 4000,
       });
-      return true;
     } catch {
       toaster.create({
         title: "Rename failed",
@@ -91,17 +57,18 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
         type: "error",
         duration: 4000,
       });
-      return false;
     }
   };
 
-  // Returns true when the dialog should close (deletion succeeded).
-  const handleDelete = async (): Promise<boolean> => {
+  const handleDelete = async () => {
     try {
       await deleteAreaAsync(area.id);
+      setDeleteOpen(false);
       // Map isn't auto-synced by the query invalidation — mirror the removal
       // done by the card's show-on-map toggle when the area is on the map.
-      if (isOnMap) {
+      const { layers, removeLayer, removeFromRegistry } =
+        useMapStore.getState();
+      if (layers.some((l) => l.id === area.id)) {
         removeFromRegistry({ name: area.name, source: "custom" });
         removeLayer(area.id);
       }
@@ -111,7 +78,6 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
         type: "success",
         duration: 4000,
       });
-      return true;
     } catch {
       toaster.create({
         title: "Delete failed",
@@ -119,51 +85,34 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
         type: "error",
         duration: 4000,
       });
-      return false;
     }
   };
 
   return (
     <>
-      <Menu.Root positioning={{ placement: "bottom-end" }}>
-        <Menu.Trigger asChild>
-          <IconButton
-            aria-label={`Actions for ${area.name}`}
-            {...compactIconProps}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DotsThreeVerticalIcon size={16} color={AREA_LABEL_COLOR} />
-          </IconButton>
-        </Menu.Trigger>
-        <Portal>
-          <Menu.Positioner>
-            <Menu.Content zIndex={1500}>
-              <Menu.Item
-                value="rename"
-                color="fg.muted"
-                onSelect={() => setRenameOpen(true)}
-              >
-                <PencilSimpleIcon />
-                Rename
-              </Menu.Item>
-              <Menu.Item
-                value="delete"
-                color="fg.error"
-                _hover={{ bg: "bg.error", color: "fg.error" }}
-                onSelect={() => setDeleteOpen(true)}
-              >
-                <TrashIcon />
-                Delete
-              </Menu.Item>
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu.Root>
+      <AreaCardMenu label={`Actions for ${area.name}`}>
+        <Menu.Item
+          value="rename"
+          color="fg.muted"
+          onSelect={() => setRenameOpen(true)}
+        >
+          <PencilSimpleIcon />
+          Rename
+        </Menu.Item>
+        <Menu.Item
+          value="delete"
+          color="fg.error"
+          _hover={{ bg: "bg.error", color: "fg.error" }}
+          onSelect={() => setDeleteOpen(true)}
+        >
+          <TrashIcon />
+          Delete
+        </Menu.Item>
+      </AreaCardMenu>
       {renameOpen && (
         <CustomAreaRenameDialog
           name={area.name}
-          isOpen={renameOpen}
-          onOpenChange={setRenameOpen}
+          onClose={() => setRenameOpen(false)}
           onRename={handleRename}
           isPending={isRenaming}
         />
@@ -171,8 +120,7 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
       {deleteOpen && (
         <CustomAreaDeleteDialog
           areaName={area.name}
-          isOpen={deleteOpen}
-          onOpenChange={setDeleteOpen}
+          onClose={() => setDeleteOpen(false)}
           onConfirm={handleDelete}
           isPending={isDeleting}
         />
@@ -183,38 +131,26 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
 
 function CustomAreaRenameDialog({
   name,
-  isOpen,
-  onOpenChange,
+  onClose,
   onRename,
   isPending,
 }: {
   name: string;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onRename: (newName: string) => Promise<boolean>;
+  onClose: () => void;
+  onRename: (newName: string) => Promise<void>;
   isPending: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  // Mounted fresh on each open, so this seeds from the current name.
   const [draft, setDraft] = useState(name);
-  // Re-seed the draft from the current name each time the dialog opens
-  // (render-time derived state, not an effect, to avoid a cascading render).
-  const [prevOpen, setPrevOpen] = useState(isOpen);
-  if (prevOpen !== isOpen) {
-    setPrevOpen(isOpen);
-    if (isOpen) setDraft(name);
-  }
-
-  const submit = async () => {
-    const trimmed = draft.trim();
-    if (!trimmed || isPending) return;
-    if (await onRename(trimmed)) onOpenChange(false);
-  };
 
   return (
     <Dialog.Root
       initialFocusEl={() => ref.current}
-      open={isOpen}
-      onOpenChange={({ open }) => onOpenChange(open)}
+      open
+      onOpenChange={({ open }) => {
+        if (!open) onClose();
+      }}
     >
       <Portal>
         <Dialog.Backdrop />
@@ -223,7 +159,9 @@ function CustomAreaRenameDialog({
             as="form"
             onSubmit={(e) => {
               e.preventDefault();
-              void submit();
+              const trimmed = draft.trim();
+              if (!trimmed || isPending) return;
+              void onRename(trimmed);
             }}
           >
             <Dialog.Header>
@@ -260,22 +198,22 @@ function CustomAreaRenameDialog({
 
 function CustomAreaDeleteDialog({
   areaName,
-  isOpen,
-  onOpenChange,
+  onClose,
   onConfirm,
   isPending,
 }: {
   areaName: string;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => Promise<boolean>;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
   isPending: boolean;
 }) {
   return (
     <Dialog.Root
       role="alertdialog"
-      open={isOpen}
-      onOpenChange={({ open }) => onOpenChange(open)}
+      open
+      onOpenChange={({ open }) => {
+        if (!open) onClose();
+      }}
     >
       <Portal>
         <Dialog.Backdrop />
@@ -299,9 +237,7 @@ function CustomAreaDeleteDialog({
               <Button
                 colorPalette="red"
                 loading={isPending}
-                onClick={async () => {
-                  if (await onConfirm()) onOpenChange(false);
-                }}
+                onClick={() => void onConfirm()}
               >
                 Delete
               </Button>

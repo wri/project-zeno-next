@@ -35,6 +35,7 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 
 import { CatalogCard } from "./CatalogCard";
+import { AREA_LABEL_COLOR, areaActionIconProps } from "./AreaCardMenu";
 import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
 import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
 import { AreaToolbarButtons } from "./AreaToolbarButtons";
@@ -64,7 +65,6 @@ const AREA_TYPE_LABELS: Record<string, string> = {
   custom: "User uploaded areas",
 };
 
-const AREA_LABEL_COLOR = "#2D6BE4";
 const AREA_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
 
 type AreaFilter = "conversation" | "monitored";
@@ -311,8 +311,6 @@ function ConversationAreasList() {
 
 function ConversationAreaCard({ layer }: { layer: Layer }) {
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const removeLayer = useMapStore((s) => s.removeLayer);
-  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
   const flyToGeoJson = useMapStore((s) => s.flyToGeoJson);
   const flyToBounds = useMapStore((s) => s.flyToBounds);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
@@ -326,11 +324,6 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
 
   function handleToggle(checked: boolean) {
     setLayerVisibility(layer.id, checked);
-  }
-
-  function handleRemove() {
-    (layer.featureRefs ?? []).forEach((ref) => removeFromRegistry(ref));
-    removeLayer(layer.id);
   }
 
   function handleLocate() {
@@ -378,12 +371,7 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
         titleActions={
           <AreaCardActions
             onLocate={handleLocate}
-            menu={
-              <ConversationAreaActionsMenu
-                layer={layer}
-                onRemove={handleRemove}
-              />
-            }
+            menu={<ConversationAreaActionsMenu layer={layer} />}
           />
         }
       />
@@ -522,8 +510,7 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
           // Rename/delete act on the saved area, so the kebab must show even
           // when the area isn't on the map; the locate button stays on-map only.
           <AreaCardActions
-            onLocate={handleLocate}
-            showLocate={isVisible}
+            onLocate={isVisible ? handleLocate : undefined}
             menu={<CustomAreaActionsMenu area={area} />}
           />
         }
@@ -534,35 +521,16 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
 
 function AreaCardActions({
   onLocate,
-  showLocate = true,
   menu,
 }: {
-  onLocate: () => void;
-  /** Hide the locate button when the area isn't on the map. */
-  showLocate?: boolean;
+  /** Omit to hide the locate button (e.g. when the area isn't on the map). */
+  onLocate?: () => void;
   /** Kebab actions node for the card (per-tab: conversation vs. monitored). */
-  menu?: ReactNode;
+  menu: ReactNode;
 }) {
-  const compactIconProps = {
-    variant: "ghost" as const,
-    color: AREA_LABEL_COLOR,
-    boxSize: "16px",
-    minW: "16px",
-    maxW: "16px",
-    minH: "16px",
-    maxH: "16px",
-    p: 0,
-    css: {
-      "& svg": {
-        width: "16px",
-        height: "16px",
-      },
-    },
-  };
-
   return (
     <Flex align="center" gap="16px" flexShrink={0} h="16px">
-      {showLocate && (
+      {onLocate && (
         <Tooltip
           content="Center on map"
           positioning={{ placement: "top" }}
@@ -571,7 +539,7 @@ function AreaCardActions({
         >
           <IconButton
             aria-label="Center on map"
-            {...compactIconProps}
+            {...areaActionIconProps}
             onClick={(e) => {
               e.stopPropagation();
               onLocate();
