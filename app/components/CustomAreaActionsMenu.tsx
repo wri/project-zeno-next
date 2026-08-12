@@ -137,7 +137,7 @@ export default function CustomAreaActionsMenu({ area }: { area: CustomArea }) {
         </Menu.Trigger>
         <Portal>
           <Menu.Positioner>
-            <Menu.Content>
+            <Menu.Content zIndex={1500}>
               <Menu.Item
                 value="rename"
                 color="fg.muted"

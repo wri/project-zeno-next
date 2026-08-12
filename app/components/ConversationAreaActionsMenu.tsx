@@ -113,7 +113,7 @@ export default function ConversationAreaActionsMenu({
       </Menu.Trigger>
       <Portal>
         <Menu.Positioner>
-          <Menu.Content>
+          <Menu.Content zIndex={1500}>
             {canSave && (
               <Menu.Item value="save" color="fg.muted" onSelect={handleSave}>
                 <FloppyDiskIcon />
