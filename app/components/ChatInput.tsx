@@ -199,7 +199,7 @@ export default function ChatInput({
   // isLoading, which is an overloaded flag also set during thread loading (not
   // cancellable) and whose meaning could drift in the future.
   const canCancelRequest = abortController !== null;
-  const hasNudge = messages.at(-1)?.type === "dataset-nudge";
+  const hasNudge = messages.at(-1)?.type === "nudge";
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
   );
