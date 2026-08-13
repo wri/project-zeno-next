@@ -23,11 +23,14 @@ import useChatStore from "../chatStore";
 import useViewContextStore from "../viewContextStore";
 import useAuthStore from "../authStore";
 import useAgentProfileStore from "../agentProfileStore";
+import useMapStore from "../mapStore";
+import useInsightStore from "../insightStore";
 import { apiFetch } from "@/app/lib/api-client";
 import type {
   AnalyseSuggestion,
   Nudge,
   ViewAnalysisSuggestion,
+  InsightWidget,
 } from "@/app/types/chat";
 
 // Error that mimics a fetch/stream abort: `name === "AbortError"` is what
@@ -175,6 +178,45 @@ describe("chatStore view_context", () => {
     await useChatStore.getState().sendMessage("hello");
 
     expect(sentBody()).not.toHaveProperty("view_context");
+  });
+
+  it("enriches the map surface with live viewport + visible insights", async () => {
+    useViewContextStore.getState().setViewContext({ page: "map" });
+    useInsightStore.getState().addInsights([
+      {
+        type: "bar",
+        title: "t",
+        description: "d",
+        data: [],
+        xAxis: "x",
+        yAxis: "y",
+        insightId: "i1",
+      } as InsightWidget,
+    ]);
+    useMapStore.setState({
+      mapRef: {
+        getMap: () => ({
+          getBounds: () => ({
+            getWest: () => -73.9876,
+            getSouth: () => 40.7661,
+            getEast: () => -73.9397,
+            getNorth: () => 40.8002,
+          }),
+          getZoom: () => 5,
+        }),
+      } as unknown as ReturnType<typeof useMapStore.getState>["mapRef"],
+    });
+
+    await useChatStore.getState().sendMessage("what's in this chart?");
+
+    expect(sentBody().view_context).toEqual({
+      page: "map",
+      viewport: { bbox: [-73.9876, 40.7661, -73.9397, 40.8002], zoom: 5 },
+      visible_insights: ["i1"],
+    });
+
+    useMapStore.setState({ mapRef: null });
+    useInsightStore.getState().clearInsights();
   });
 });
 
