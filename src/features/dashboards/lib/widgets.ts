@@ -231,6 +231,32 @@ export function withSummaryShown(
 }
 
 /**
+ * Whether a widget's config holds anything the owner arranged by hand — the
+ * per-chart spans and renames, the shown-chart subset, the summary toggle and
+ * the title override written by the `with*` helpers above.
+ *
+ * Deleting a widget discards all of it with no undo (the config lives only on
+ * the widget), so removal paths that would otherwise be a single click ask for
+ * confirmation when this is true. A widget added whole and left alone has an
+ * empty config, and stays a one-click remove.
+ */
+export function hasWidgetCustomization(
+  config: Record<string, unknown>
+): boolean {
+  if (config.summaryHidden === true) return true;
+  // An explicit `chartIds` is a customisation at any length: absent means "all
+  // charts", so even the empty array is a deliberate "hide everything".
+  if (Array.isArray(config.chartIds)) return true;
+  return ["sizes", "titles", "title", "size"].some((key) => {
+    const value = config[key];
+    if (typeof value === "string") return value.trim().length > 0;
+    if (value && typeof value === "object")
+      return Object.keys(value).length > 0;
+    return false;
+  });
+}
+
+/**
  * The insight module's display title: the widget's `config.title` override,
  * else the first chart's title in position order (all charts, not just shown
  * ones, so the title doesn't jump when charts are hidden), else "Analysis" —

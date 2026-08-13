@@ -40,6 +40,7 @@ import {
 // the dashboards pages into its bundle, and so mounting the pane on a dashboard
 // can't create a feature import cycle — matching how the app already reaches
 // dashboards/ui (e.g. WidgetMessage → AddToDashboardToggle).
+import RemoveAnalysisDialog from "@/src/features/dashboards/ui/RemoveAnalysisDialog";
 import { useAddInsightToDashboard } from "@/src/features/dashboards/ui/useAddInsightToDashboard";
 import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrentDashboardArea";
 import { useUserInsights } from "./use-user-insights";
@@ -484,6 +485,7 @@ function InsightGroupCard({
   onOpen: () => void;
 }) {
   const insight = useAddInsightToDashboard(group.addableInsightId);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const title = group.title;
 
   return (
@@ -497,7 +499,11 @@ function InsightGroupCard({
         selected={insight.added}
         selectedBg={INSIGHT_SELECTED_BG}
         showOnMap={insight.added}
-        onShowOnMapChange={() => insight.toggle()}
+        // Removing discards the module's arrangement, so confirm first when
+        // there is any — adding, and undoing a plain add, stay one click.
+        onShowOnMapChange={() =>
+          insight.removeNeedsConfirm ? setConfirmOpen(true) : insight.toggle()
+        }
         toggleLabel={insight.added ? "On dashboard" : "Add to dashboard"}
         toggleAriaLabel={
           insight.added
@@ -508,6 +514,12 @@ function InsightGroupCard({
         onInfoClick={onOpen}
         infoTooltip="View analysis"
         badge={<VerificationBadge verification={group.verification} />}
+      />
+      <RemoveAnalysisDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        customized
+        onConfirm={insight.toggle}
       />
     </Box>
   );

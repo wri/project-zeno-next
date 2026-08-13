@@ -202,4 +202,54 @@ describe("DashboardInsightModule", () => {
       withChartHidden({}, "c-1", ["c-1", "c-2"])
     );
   });
+
+  it("says a card's X removes a chart even when only one is left showing", async () => {
+    // The card's X hides, never deletes the widget, so the dialog must not
+    // promise a widget removal just because this is the last visible card.
+    const { onUpdateConfig, onRemove } = renderModule({
+      widget: widget({
+        config: { chartIds: ["c-1"] },
+        insight: {
+          id: "ins-1",
+          insight_text: "There were 1,055 disturbance alerts.",
+          codeact_parts: null,
+          charts: [
+            chart(),
+            chart({ id: "c-2", position: 1, title: "Alerts by month" }),
+            chart({ id: "c-3", position: 2, title: "Alerts by driver" }),
+          ],
+        },
+      }),
+    });
+    expect(screen.getAllByTestId("widget-message")).toHaveLength(1);
+
+    fireEvent.click(screen.getByLabelText("Remove from dashboard"));
+    expect(await screen.findByText("Remove chart?")).toBeTruthy();
+    expect(screen.queryByText("Remove widget?")).toBe(null);
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    expect(onUpdateConfig).toHaveBeenCalledWith(
+      withChartHidden({ chartIds: ["c-1"] }, "c-1", ["c-1", "c-2", "c-3"])
+    );
+    expect(onRemove).not.toHaveBeenCalled();
+  });
+
+  it("names the lost arrangement when removing a customised module", async () => {
+    renderModule({
+      widget: widget({ config: { sizes: { "c-1": "double" } } }),
+    });
+    fireEvent.click(screen.getByLabelText("Remove analysis from dashboard"));
+    expect(
+      await screen.findByText(/layout and visibility changes are lost/i)
+    ).toBeTruthy();
+  });
+
+  it("omits the lost-arrangement line for an untouched module", async () => {
+    renderModule();
+    fireEvent.click(screen.getByLabelText("Remove analysis from dashboard"));
+    expect(await screen.findByText("Remove analysis?")).toBeTruthy();
+    expect(screen.queryByText(/layout and visibility changes are lost/i)).toBe(
+      null
+    );
+  });
 });

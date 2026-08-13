@@ -5,6 +5,7 @@ import {
   chartTitleOverride,
   computeReorder,
   dashboardWidgetToInsightWidgets,
+  hasWidgetCustomization,
   insightModule,
   isChartShown,
   isSummaryShown,
@@ -537,5 +538,35 @@ describe("dashboardWidgetToInsightWidgets — chartIds filtering", () => {
   it("renders all charts when config has no chartIds", () => {
     const out = dashboardWidgetToInsightWidgets(twoChartWidget({}));
     expect(out.map((c) => c.id)).toEqual(["c-1", "c-2"]);
+  });
+});
+
+describe("hasWidgetCustomization", () => {
+  it("is false for a widget added whole and left alone", () => {
+    expect(hasWidgetCustomization({})).toBe(false);
+  });
+
+  it("is true for each thing the with* helpers write", () => {
+    expect(hasWidgetCustomization(withChartSize({}, "c-1", "double"))).toBe(
+      true
+    );
+    expect(hasWidgetCustomization(withChartTitle({}, "c-1", "Renamed"))).toBe(
+      true
+    );
+    expect(hasWidgetCustomization(withSummaryShown({}, false))).toBe(true);
+    expect(hasWidgetCustomization(withWidgetTitle({}, "Renamed"))).toBe(true);
+    expect(hasWidgetCustomization(withSize({}, "double"))).toBe(true);
+  });
+
+  it("counts an all-hidden chart subset, which is an empty array", () => {
+    const config = withChartHidden({ chartIds: ["c-1"] }, "c-1", ["c-1"]);
+    expect(config.chartIds).toEqual([]);
+    expect(hasWidgetCustomization(config)).toBe(true);
+  });
+
+  it("ignores keys the helpers clear back to their default", () => {
+    expect(hasWidgetCustomization(withSummaryShown({}, true))).toBe(false);
+    expect(hasWidgetCustomization(withWidgetTitle({}, "   "))).toBe(false);
+    expect(hasWidgetCustomization({ sizes: {}, titles: {} })).toBe(false);
   });
 });

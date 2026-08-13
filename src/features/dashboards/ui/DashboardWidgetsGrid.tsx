@@ -232,7 +232,7 @@ export default function DashboardWidgetsGrid({
               body?.map ? mapWidgetViewportBbox(widget.config) : null
             }
             placeholder={body?.placeholder ?? null}
-            chartCount={0}
+            removeMode="widget"
             isOwner={isOwner}
             isDouble={size === "double"}
             onArmDrag={() => setGrabbedId(widget.id)}

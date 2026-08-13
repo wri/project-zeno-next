@@ -145,4 +145,41 @@ describe("useAddInsightToDashboard", () => {
     });
     expect(result.current.addable).toBe(false);
   });
+
+  describe("removeNeedsConfirm", () => {
+    function withExistingConfig(config: Record<string, unknown>) {
+      return {
+        ...dashboard,
+        widgets: [{ ...dashboard.widgets[0], config }],
+      };
+    }
+
+    it("is false when nothing has been added", () => {
+      const { result } = renderHook(() => useAddInsightToDashboard("ins-new"), {
+        wrapper: makeWrapper(dashboard),
+      });
+      expect(result.current.removeNeedsConfirm).toBe(false);
+    });
+
+    it("is false for a widget added whole and left alone", () => {
+      const { result } = renderHook(
+        () => useAddInsightToDashboard("already-added"),
+        { wrapper: makeWrapper(withExistingConfig({})) }
+      );
+      expect(result.current.added).toBe(true);
+      expect(result.current.removeNeedsConfirm).toBe(false);
+    });
+
+    it("is true once the module carries a hand-arranged config", () => {
+      const { result } = renderHook(
+        () => useAddInsightToDashboard("already-added"),
+        {
+          wrapper: makeWrapper(
+            withExistingConfig({ sizes: { "c-1": "double" } })
+          ),
+        }
+      );
+      expect(result.current.removeNeedsConfirm).toBe(true);
+    });
+  });
 });

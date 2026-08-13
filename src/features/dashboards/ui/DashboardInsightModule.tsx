@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Box,
-  Button,
-  Dialog,
-  Flex,
-  Icon,
-  IconButton,
-  Portal,
-  Text,
-} from "@chakra-ui/react";
+import { Box, Flex, Icon, IconButton, Text } from "@chakra-ui/react";
 import {
   CaretDownIcon,
   ChartBarIcon,
@@ -23,6 +14,7 @@ import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { packCells } from "../lib/packing";
 import {
   chartSize,
+  hasWidgetCustomization,
   insightModule,
   withChartHidden,
   withChartShown,
@@ -33,6 +25,7 @@ import {
 import { TWO_COLUMN_QUERY } from "./gridLayout";
 import DashboardModuleCustomizeMenu from "./DashboardModuleCustomizeMenu";
 import DashboardWidgetCard from "./DashboardWidgetCard";
+import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
 
 /**
  * One insight rendered as a grouped module — the design's "analysis" section:
@@ -95,7 +88,9 @@ export default function DashboardInsightModule({
           title={card.title}
           card={card}
           placeholder={null}
-          chartCount={vm.cards.length}
+          // Inside a module the card's X hides the chart (withChartHidden);
+          // only the module header's X removes the widget.
+          removeMode="chart"
           isOwner={isOwner}
           isDouble={isDouble}
           // A chart's drag handle moves the whole module (reordering is
@@ -307,46 +302,12 @@ export default function DashboardInsightModule({
         </>
       )}
 
-      <Dialog.Root
+      <RemoveAnalysisDialog
         open={confirmOpen}
-        onOpenChange={(e) => setConfirmOpen(e.open)}
-        size="sm"
-        role="alertdialog"
-      >
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Dialog.Title>Remove analysis?</Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Body>
-                <Text>
-                  All its charts and summary are removed from this dashboard.
-                  The underlying analysis is not deleted.
-                </Text>
-              </Dialog.Body>
-              <Dialog.Footer>
-                <Dialog.ActionTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Cancel
-                  </Button>
-                </Dialog.ActionTrigger>
-                <Button
-                  colorPalette="red"
-                  size="sm"
-                  onClick={() => {
-                    setConfirmOpen(false);
-                    onRemove();
-                  }}
-                >
-                  Remove
-                </Button>
-              </Dialog.Footer>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
+        onOpenChange={setConfirmOpen}
+        customized={hasWidgetCustomization(widget.config)}
+        onConfirm={onRemove}
+      />
     </Flex>
   );
 }
