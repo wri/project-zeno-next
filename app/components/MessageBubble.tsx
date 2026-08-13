@@ -31,8 +31,6 @@ import { useEffect, useState, useCallback, useMemo, ReactNode } from "react";
 import remarkBreaks from "remark-breaks";
 import { WarningIcon } from "@phosphor-icons/react";
 import useChatStore from "../store/chatStore";
-import useAuthStore from "../store/authStore";
-import useAgentProfileStore from "../store/agentProfileStore";
 import { toaster } from "./ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import CopySelectionTooltip from "./CopySelectionTooltip";
@@ -47,7 +45,6 @@ import {
   isBlogCitation,
   resolveCitedArticle,
 } from "@/app/lib/blog-citations";
-import { isExperimentalProfileEnabled } from "@/app/config/feature-flags";
 
 function nodeToText(children: ReactNode): string {
   if (typeof children === "string" || typeof children === "number") {
@@ -81,8 +78,6 @@ function MessageBubble({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const { currentThreadId, citedArticlesBySlug } = useChatStore();
-  const userType = useAuthStore((s) => s.userType);
-  const agentProfile = useAgentProfileStore((s) => s.agentProfile);
 
   useEffect(() => {
     // This has to be done by a useEffect, otherwise there will be a hydration
@@ -179,16 +174,12 @@ function MessageBubble({
   const isWarning = message.type === "warning";
   const isStopped = message.type === "stopped";
   const isAssistant = message.type === "assistant";
-  const blogCitationsEnabled = isExperimentalProfileEnabled(
-    agentProfile,
-    userType
-  );
   const citedArticleRefs = useMemo(
     () =>
-      blogCitationsEnabled && isAssistant
+      isAssistant
         ? getCitedArticleRefsInOrder(message.message, citedArticlesBySlug)
         : [],
-    [blogCitationsEnabled, isAssistant, message.message, citedArticlesBySlug]
+    [isAssistant, message.message, citedArticlesBySlug]
   );
 
   const markdownComponents = useMemo<Components>(
@@ -196,7 +187,7 @@ function MessageBubble({
       a: ({ node, href, children, ...rest }) => {
         void node; // not forwarded to the DOM element
         const label = nodeToText(children);
-        if (blogCitationsEnabled && href && isBlogCitation(href, label)) {
+        if (href && isBlogCitation(href, label)) {
           return (
             <BlogCitation
               number={label}
@@ -212,7 +203,7 @@ function MessageBubble({
         );
       },
     }),
-    [blogCitationsEnabled, citedArticlesBySlug]
+    [citedArticlesBySlug]
   );
   const analysisWidgets = isAssistant
     ? (message.widgets ?? []).filter((w) => w.type !== "dataset-card")
