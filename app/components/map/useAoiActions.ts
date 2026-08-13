@@ -17,7 +17,6 @@ import {
   DEFAULT_ANALYSIS_END_DATE,
 } from "@/src/features/analysis";
 import { useCreateDashboardForArea } from "@/src/features/dashboards";
-import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 
 /**
  * The area an actions menu is attached to.
@@ -43,7 +42,7 @@ export interface AoiActions {
   hasDataset: boolean;
   /** False for areas the user already owns — a custom area is already saved. */
   canSaveArea: boolean;
-  /** False without the dashboards flag, or when the AOI has no resolvable id. */
+  /** False when the AOI has no resolvable id, or while dashboards resolve. */
   canUseDashboard: boolean;
   dashboardLabel: "Open Dashboard" | "Create Dashboard";
   isCreatingDashboard: boolean;
@@ -71,7 +70,6 @@ export function useAoiActions(
     )
   );
   const dateRange = useChatStore((state) => state.dateRange);
-  const dashboardsEnabled = useFeatureFlag("dashboard");
   const { run: runDirectAnalysis } = useAnalysis();
   const { createAreaAsync, isCreating: isSavingArea } = useCustomAreasCreate();
 
@@ -185,8 +183,7 @@ export function useAoiActions(
     areaName,
     hasDataset: activeDataset !== null,
     canSaveArea: source.toLowerCase() !== "custom",
-    canUseDashboard:
-      dashboardsEnabled && dashboardInput !== null && !isResolvingDashboards,
+    canUseDashboard: dashboardInput !== null && !isResolvingDashboards,
     dashboardLabel: existingDashboard ? "Open Dashboard" : "Create Dashboard",
     isCreatingDashboard,
     isSavingArea,
@@ -214,7 +211,7 @@ export function useAoiActions(
     },
     openOrCreateDashboard: () => {
       if (existingDashboard) {
-        router.push(`/dashboards/${existingDashboard.id}?ff=dashboard`);
+        router.push(`/dashboards/${existingDashboard.id}`);
         return;
       }
       void createDashboardForArea();

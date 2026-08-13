@@ -86,9 +86,13 @@ function ModuleCard({
 export default function DashboardSuggestedModules({
   dashboardId,
   isOwner,
+  // Space above the divider. Callers that already provide their own gap
+  // above this row (e.g. DashboardEmptyStateHero's hero copy) pass 0.
+  mt = 8,
 }: {
   dashboardId: string;
   isOwner: boolean;
+  mt?: number;
 }) {
   const sendMessage = useChatStore((s) => s.sendMessage);
   const isStreaming = useChatStore((s) => s.isLoading);
