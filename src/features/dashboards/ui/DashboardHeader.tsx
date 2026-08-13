@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -18,8 +18,32 @@ import {
 
 import { toaster } from "@/app/components/ui/toaster";
 import type { Dashboard } from "../api/schemas";
-import { updatedLabel, wasJustCreated } from "../lib/dates";
+import {
+  justCreatedMsRemaining,
+  updatedLabel,
+  wasJustCreated,
+} from "../lib/dates";
 import { useRenameDashboard } from "./dashboardQueries";
+
+/**
+ * Tracks the "Created just now" window as live state: nothing else re-renders
+ * the header when the 10 minutes elapse, so the pill schedules its own
+ * demotion to the "Updated …" label instead of lingering until an unrelated
+ * re-render.
+ */
+function useWasJustCreated(isoDate: string): boolean {
+  const [justCreated, setJustCreated] = useState(() => wasJustCreated(isoDate));
+
+  useEffect(() => {
+    const remainingMs = justCreatedMsRemaining(isoDate);
+    setJustCreated(remainingMs > 0);
+    if (remainingMs === 0) return;
+    const timer = setTimeout(() => setJustCreated(false), remainingMs);
+    return () => clearTimeout(timer);
+  }, [isoDate]);
+
+  return justCreated;
+}
 
 /**
  * Dashboard page header per the Figma "Dashboard default" frame: editable
@@ -40,6 +64,7 @@ export default function DashboardHeader({
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
   const editing = draft !== null;
+  const justCreated = useWasJustCreated(dashboard.created_at);
 
   const commit = () => {
     const name = draft?.trim();
@@ -128,7 +153,7 @@ export default function DashboardHeader({
             </IconButton>
           )}
         </Flex>
-        {wasJustCreated(dashboard.created_at) ? (
+        {justCreated ? (
           <Box
             mt="8px"
             display="inline-flex"
