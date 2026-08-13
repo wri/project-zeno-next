@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/app/lib/api-client", () => ({
+  apiFetch: vi.fn(),
+}));
+
+import { apiFetch } from "@/app/lib/api-client";
+import { addTextWidget } from "../api/dashboards";
 import {
   AoiSearchResponseSchema,
   DashboardListResponseSchema,
@@ -108,5 +114,21 @@ describe("dashboard date helpers", () => {
   it("uses a neutral updated label for invalid or future timestamps", () => {
     expect(updatedLabel("not-a-date")).toBe("Updated recently");
     expect(updatedLabel("2999-01-01T00:00:00Z")).toBe("Updated recently");
+  });
+});
+
+describe("addTextWidget", () => {
+  it("sends config.text as a string, per the backend's validate_text_config", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    await addTextWidget("d1");
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/widgets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
+    });
   });
 });
