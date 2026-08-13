@@ -50,7 +50,6 @@ import {
 } from "@/app/config/feature-flags";
 import useAgentProfileStore from "./agentProfileStore";
 import useViewContextStore from "./viewContextStore";
-import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -702,27 +701,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // user type is allowed to use feature flags (else the backend 403s).
     const userType = useAuthStore.getState().userType;
     const viewContext = useViewContextStore.getState().viewContext;
-    // The dashboard agent tools live in the backend's experimental profile, so
-    // default to it whenever the dashboards feature is active — either on a
-    // dashboard surface or with the ?ff=dashboard gate open — letting a single
-    // ?ff=dashboard stand in for ?agent_profile=experimental. Read live: nav
-    // helpers carry ?ff=dashboard across the thread-URL rewrite, so this tracks
-    // the visible feature rather than persisting a separate flag.
-    const dashboardsFeatureActive =
-      viewContext?.page === "dashboard" ||
-      (typeof window !== "undefined" &&
-        isFeatureEnabled(
-          new URLSearchParams(window.location.search),
-          "dashboard"
-        ));
+    // The dashboard agent tools live in the backend's experimental profile —
+    // now the default for every feature-flag-eligible user, since the
+    // dashboards feature itself is on unconditionally.
     const ff =
       effectiveAgentProfile(
         useAgentProfileStore.getState().agentProfile,
         userType
-      ) ??
-      (dashboardsFeatureActive && canUseFeatureFlags(userType)
-        ? EXPERIMENTAL_PROFILE
-        : null);
+      ) ?? (canUseFeatureFlags(userType) ? EXPERIMENTAL_PROFILE : null);
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
