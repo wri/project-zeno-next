@@ -16,7 +16,11 @@ import {
   sourceLabel,
   subtypeLabel,
 } from "../lib/aoi";
-import { updatedLabel } from "../lib/dates";
+import {
+  justCreatedMsRemaining,
+  updatedLabel,
+  wasJustCreated,
+} from "../lib/dates";
 
 describe("dashboard schemas", () => {
   it("parses AOI search results returned by the staging API", () => {
@@ -114,6 +118,40 @@ describe("dashboard date helpers", () => {
   it("uses a neutral updated label for invalid or future timestamps", () => {
     expect(updatedLabel("not-a-date")).toBe("Updated recently");
     expect(updatedLabel("2999-01-01T00:00:00Z")).toBe("Updated recently");
+  });
+
+  it("treats a dashboard as just created within the 10-minute window", () => {
+    const now = new Date("2026-08-13T12:00:00Z").getTime();
+    expect(wasJustCreated("2026-08-13T11:59:00Z", now)).toBe(true);
+    expect(wasJustCreated("2026-08-13T12:00:00Z", now)).toBe(true);
+  });
+
+  it("stops treating a dashboard as just created once the window elapses", () => {
+    const now = new Date("2026-08-13T12:00:00Z").getTime();
+    expect(wasJustCreated("2026-08-13T11:49:00Z", now)).toBe(false);
+  });
+
+  it("rejects invalid or future creation timestamps", () => {
+    const now = new Date("2026-08-13T12:00:00Z").getTime();
+    expect(wasJustCreated("not-a-date", now)).toBe(false);
+    expect(wasJustCreated("2026-08-13T12:01:00Z", now)).toBe(false);
+  });
+
+  it("reports how much of the just-created window remains", () => {
+    const now = new Date("2026-08-13T12:00:00Z").getTime();
+    expect(justCreatedMsRemaining("2026-08-13T11:59:00Z", now)).toBe(
+      9 * 60 * 1000
+    );
+    expect(justCreatedMsRemaining("2026-08-13T12:00:00Z", now)).toBe(
+      10 * 60 * 1000
+    );
+  });
+
+  it("reports zero remaining for expired, invalid, or future timestamps", () => {
+    const now = new Date("2026-08-13T12:00:00Z").getTime();
+    expect(justCreatedMsRemaining("2026-08-13T11:50:00Z", now)).toBe(0);
+    expect(justCreatedMsRemaining("not-a-date", now)).toBe(0);
+    expect(justCreatedMsRemaining("2026-08-13T12:01:00Z", now)).toBe(0);
   });
 });
 

@@ -13,6 +13,7 @@ import useViewContextStore from "@/app/store/viewContextStore";
 import usePinnedHeader from "../hooks/usePinnedHeader";
 import { useDashboard } from "./dashboardQueries";
 import DashboardBreadcrumb from "./DashboardBreadcrumb";
+import DashboardEmptyStateHero from "./DashboardEmptyStateHero";
 import DashboardHeader from "./DashboardHeader";
 import DashboardPinnedHeader from "./DashboardPinnedHeader";
 import DashboardSuggestedModules from "./DashboardSuggestedModules";
@@ -134,13 +135,21 @@ export default function DashboardDetailPage() {
                 <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
               </Box>
 
-              {dashboard.widgets.length > 0 && (
-                <DashboardWidgetsGrid dashboard={dashboard} />
+              {dashboard.widgets.length > 0 ? (
+                <>
+                  <DashboardWidgetsGrid dashboard={dashboard} />
+                  <DashboardSuggestedModules
+                    dashboardId={dashboard.id}
+                    isOwner={isOwner}
+                    hasWidgets
+                  />
+                </>
+              ) : (
+                <DashboardEmptyStateHero
+                  dashboard={dashboard}
+                  isOwner={isOwner}
+                />
               )}
-              <DashboardSuggestedModules
-                dashboardId={dashboard.id}
-                isOwner={isOwner}
-              />
             </Box>
           )}
         </Flex>

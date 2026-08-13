@@ -86,9 +86,16 @@ function ModuleCard({
 export default function DashboardSuggestedModules({
   dashboardId,
   isOwner,
+  hasWidgets,
+  // Space above the divider. Callers that already provide their own gap
+  // above this row (e.g. DashboardEmptyStateHero's hero copy) pass 0.
+  mt = 8,
 }: {
   dashboardId: string;
   isOwner: boolean;
+  /** Cards marked `requiresContent` are dropped on an empty dashboard. */
+  hasWidgets: boolean;
+  mt?: number;
 }) {
   const sendMessage = useChatStore((s) => s.sendMessage);
   const isStreaming = useChatStore((s) => s.isLoading);
@@ -105,6 +112,10 @@ export default function DashboardSuggestedModules({
   // too — under either condition the textarea it focuses is itself disabled.
   const chatDisabled = isStreaming || promptsExhausted;
 
+  const promptModules = SUGGESTED_PROMPT_MODULES.filter(
+    (card) => hasWidgets || !card.requiresContent
+  );
+
   if (!isOwner) return null;
 
   return (
@@ -115,7 +126,7 @@ export default function DashboardSuggestedModules({
     <Flex
       direction="column"
       gap={5}
-      mt={8}
+      mt={mt}
       display={{ base: "none", md: "flex" }}
     >
       <Flex align="center" gap={3}>
@@ -126,7 +137,7 @@ export default function DashboardSuggestedModules({
         <Box flex={1} h="1px" bg="#E0E2E5" />
       </Flex>
       <Flex wrap="wrap" gap="20px">
-        {SUGGESTED_PROMPT_MODULES.map((card) => (
+        {promptModules.map((card) => (
           <ModuleCard
             key={card.id}
             icon={card.icon}
