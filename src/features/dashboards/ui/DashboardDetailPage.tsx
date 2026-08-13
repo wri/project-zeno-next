@@ -2,8 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useEffect } from "react";
-import { Box, Container, Flex, Heading, Spinner, Text } from "@chakra-ui/react";
-import { SquaresFourIcon } from "@phosphor-icons/react";
+import { Box, Container, Flex, Spinner, Text } from "@chakra-ui/react";
 
 import ChatPanel from "@/app/ChatPanel";
 import { getDashboardContentLeftPx } from "@/app/explorationLayout";
@@ -16,6 +15,7 @@ import { useDashboard } from "./dashboardQueries";
 import DashboardBreadcrumb from "./DashboardBreadcrumb";
 import DashboardHeader from "./DashboardHeader";
 import DashboardPinnedHeader from "./DashboardPinnedHeader";
+import DashboardSuggestedModules from "./DashboardSuggestedModules";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 import { HERO_BAND_PROPS } from "./heroGrid";
 
@@ -134,33 +134,13 @@ export default function DashboardDetailPage() {
                 <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
               </Box>
 
-              {dashboard.widgets.length > 0 ? (
+              {dashboard.widgets.length > 0 && (
                 <DashboardWidgetsGrid dashboard={dashboard} />
-              ) : (
-                <Flex
-                  minH="320px"
-                  align="center"
-                  justify="center"
-                  borderWidth="1px"
-                  borderStyle="dashed"
-                  borderColor="border"
-                  borderRadius="sm"
-                  bg="white"
-                  px={6}
-                  textAlign="center"
-                >
-                  <Box maxW="md">
-                    <SquaresFourIcon size={32} color="#656E7B" />
-                    <Heading as="h2" size="md" mt={4} mb={2}>
-                      This dashboard is empty
-                    </Heading>
-                    <Text color="fg.muted">
-                      Ask the AI assistant to analyse this area — insights it
-                      adds to the dashboard will appear here.
-                    </Text>
-                  </Box>
-                </Flex>
               )}
+              <DashboardSuggestedModules
+                dashboardId={dashboard.id}
+                isOwner={isOwner}
+              />
             </Box>
           )}
         </Flex>

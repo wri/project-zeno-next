@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Button,
   Flex,
@@ -85,7 +85,24 @@ export default function ChatInput({
     toggleAreasPanel,
     insightsPanelOpen,
     toggleInsightsPanel,
+    chatInputFocusToken,
   } = useSidebarStore();
+
+  // Focus on request from outside (e.g. a dashboard's "Describe your own"
+  // suggested module) — skip the initial mount so the textarea isn't
+  // stolen-focused on every page load.
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    if (isMobile) {
+      onInputModalOpen();
+    }
+    focusEl?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatInputFocusToken]);
 
   const excludedLayerIds = useChatStore((s) => s.excludedContextLayerIds);
   const excludedSet = new Set(excludedLayerIds);
