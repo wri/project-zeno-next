@@ -3,6 +3,7 @@ import {
   GlobeIcon,
   GrainsIcon,
   LogIcon,
+  NotepadIcon,
   SirenIcon,
   SplitHorizontalIcon,
   type Icon,
@@ -16,8 +17,9 @@ import {
  * until a real backend source exists for more than tree cover loss.
  *
  * `kind` distinguishes the cards that ask the agent to run an analysis
- * (chart + text block + map, all added to the dashboard) from the one that's
- * a plain content add with no analysis framing (satellite imagery).
+ * (chart + text block + map, all added to the dashboard) from the ones that
+ * are a plain content add with no analysis framing (satellite imagery,
+ * summarising the dashboard's existing content).
  */
 export interface SuggestedPromptModule {
   id: string;
@@ -73,6 +75,14 @@ export const SUGGESTED_PROMPT_MODULES: SuggestedPromptModule[] = [
     label: "Recent satellite imagery",
     icon: GlobeIcon,
     prompt: "Add a recent satellite imagery map of this area to the dashboard.",
+    kind: "action",
+  },
+  {
+    id: "summarise-dashboard",
+    label: "Summarise the dashboard",
+    icon: NotepadIcon,
+    prompt:
+      "Summarize what this dashboard currently shows and add the summary to the dashboard as a text block.",
     kind: "action",
   },
 ];

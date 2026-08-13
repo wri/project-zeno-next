@@ -9,7 +9,12 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import { SUGGESTED_PROMPT_MODULES } from "../lib/suggested-modules";
 import { useAddTextWidget } from "./dashboardQueries";
 
-const CARD_WIDTH_PX = 168;
+// Cards grow to fill each row (flexGrow, capped at CARD_MAX_WIDTH_PX) rather
+// than staying pinned to their minimum width — a fixed width left a ragged
+// gap on the right of a row whenever the container was wider than an exact
+// multiple of (card + gap), including on a short last row.
+const CARD_MIN_WIDTH_PX = 168;
+const CARD_MAX_WIDTH_PX = 280;
 const CARD_HEIGHT_PX = 100;
 const ANALYSIS_CARD_BG = "#F7FBD9";
 const ANALYSIS_CARD_BORDER = "#C3D16F";
@@ -41,10 +46,12 @@ function ModuleCard({
       align="center"
       justify="center"
       gap={2}
-      w={`${CARD_WIDTH_PX}px`}
+      flexBasis={`${CARD_MIN_WIDTH_PX}px`}
+      flexGrow={1}
+      flexShrink={0}
+      maxW={`${CARD_MAX_WIDTH_PX}px`}
       h={`${CARD_HEIGHT_PX}px`}
       px={5}
-      flexShrink={0}
       bg={bg}
       borderWidth="1px"
       borderStyle="dashed"
@@ -129,7 +136,7 @@ export default function DashboardSuggestedModules({
         )}
         <ModuleCard
           icon={SparkleIcon}
-          label="Describe your own"
+          label="Describe your own via the chat"
           bg={NEUTRAL_CARD_BG}
           borderColor={NEUTRAL_CARD_BORDER}
           onClick={requestChatInputFocus}

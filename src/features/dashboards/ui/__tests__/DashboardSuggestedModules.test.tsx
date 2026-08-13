@@ -91,10 +91,12 @@ describe("DashboardSuggestedModules", () => {
     expect(screen.queryByRole("button", { name: "Text block" })).toBeNull();
   });
 
-  it("requests chat input focus on 'Describe your own'", () => {
+  it("requests chat input focus on 'Describe your own via the chat'", () => {
     renderModules(true);
 
-    fireEvent.click(screen.getByRole("button", { name: "Describe your own" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Describe your own via the chat" })
+    );
 
     expect(useSidebarStore.getState().chatInputFocusToken).toBe(1);
   });

@@ -16,8 +16,14 @@ describe("SUGGESTED_PROMPT_MODULES", () => {
     }
   });
 
-  it("scopes every prompt to the current area, per the chat pipeline's ui_context", () => {
-    for (const card of SUGGESTED_PROMPT_MODULES) {
+  it("scopes every analysis prompt to the current area, per the chat pipeline's ui_context", () => {
+    // Action cards vary: satellite imagery needs an area, summarising the
+    // dashboard's existing content doesn't — only analysis cards require it.
+    const analysisCards = SUGGESTED_PROMPT_MODULES.filter(
+      (m) => m.kind === "analysis"
+    );
+    expect(analysisCards.length).toBeGreaterThan(0);
+    for (const card of analysisCards) {
       expect(card.prompt.toLowerCase()).toContain("this area");
     }
   });
@@ -39,5 +45,13 @@ describe("SUGGESTED_PROMPT_MODULES", () => {
       (m) => m.id === "recent-satellite-imagery"
     );
     expect(imagery?.kind).toBe("action");
+  });
+
+  it("has the dashboard-summary card ask for a text block, but not a fresh analysis", () => {
+    const summary = SUGGESTED_PROMPT_MODULES.find(
+      (m) => m.id === "summarise-dashboard"
+    );
+    expect(summary?.kind).toBe("action");
+    expect(summary?.prompt.toLowerCase()).toContain("text block");
   });
 });
