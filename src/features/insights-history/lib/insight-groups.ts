@@ -1,5 +1,6 @@
 import {
   chartsToWidgets,
+  firstChartTitle,
   resolveInsightTitle,
   type InsightRecord,
   type InsightVerification,
@@ -38,7 +39,7 @@ export function recordToGroup(record: InsightRecord): InsightGroupItem {
   }));
   return {
     id: record.id,
-    title: resolveInsightTitle(record, widgets[0]?.title ?? ""),
+    title: resolveInsightTitle(record, firstChartTitle(record.charts)),
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,

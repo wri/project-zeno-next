@@ -1,3 +1,4 @@
+import { firstChartTitle } from "@/src/entities/insight";
 import type { CodeActPart, InsightWidget } from "@/app/types/chat";
 import type { DashboardWidget } from "../api/schemas";
 
@@ -258,17 +259,20 @@ export function hasWidgetCustomization(
 
 /**
  * The insight module's display title: the widget's `config.title` override,
- * else the first chart's title in position order (all charts, not just shown
- * ones, so the title doesn't jump when charts are hidden), else "Analysis" —
- * the backend sends no title on the insight expansion.
+ * else the shared `firstChartTitle` fallback over all charts (not just shown
+ * ones, so the title doesn't jump when charts are hidden), else "Analysis".
+ *
+ * The Analyses panel resolves a curated insight's own `record.title` ahead of
+ * that fallback; there is deliberately no equivalent here, because the
+ * dashboards API's insight expansion carries no title field. Add one here only
+ * once it does — mirroring the panel's rule against a title we don't have would
+ * just reintroduce the divergence the shared fallback removes.
  */
 export function moduleTitle(widget: DashboardWidget): string {
   const override =
     typeof widget.config.title === "string" ? widget.config.title.trim() : "";
   if (override) return override;
-  const charts = widget.insight?.charts ?? [];
-  const first = [...charts].sort((a, b) => a.position - b.position)[0];
-  return first?.title.trim() || "Analysis";
+  return firstChartTitle(widget.insight?.charts ?? []) || "Analysis";
 }
 
 /**
