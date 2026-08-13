@@ -697,8 +697,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // turn. Agent picks arriving during the stream fold their slots on top.
     set({ lastSentContext: keys });
 
-    // Send the agent profile as `ff` only when a profile is selected and the
-    // user type is allowed to use feature flags (else the backend 403s).
+    // Send an agent profile as `ff` only for user types the backend accepts
+    // feature flags from (else it 403s).
     const userType = useAuthStore.getState().userType;
     const viewContext = useViewContextStore.getState().viewContext;
     // The dashboard agent tools live in the backend's experimental profile —
