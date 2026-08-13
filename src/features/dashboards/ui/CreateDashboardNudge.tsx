@@ -32,7 +32,7 @@ export default function CreateDashboardNudge({
 
   const handleClick = () => {
     if (existing) {
-      router.push(`/dashboards/${existing.id}`);
+      router.push(`/dashboards/${existing.id}?ff=dashboard`);
       return;
     }
     void create();

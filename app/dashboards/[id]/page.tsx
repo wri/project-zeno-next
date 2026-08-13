@@ -6,7 +6,10 @@ import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawe
 import PageHeader from "@/app/components/PageHeader";
 import { CATALOG_COLUMN_Z_INDEX } from "@/app/explorationLayout";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
-import { DashboardDetailPage } from "@/src/features/dashboards";
+import {
+  DashboardDetailPage,
+  DashboardFeatureGate,
+} from "@/src/features/dashboards";
 import { InsightsPanel } from "@/src/features/insights-history";
 
 export default function DashboardDetailRoute() {
@@ -14,7 +17,7 @@ export default function DashboardDetailRoute() {
   if (!isReady) return null;
 
   return (
-    <>
+    <DashboardFeatureGate>
       <PageHeader />
       <ConversationHistoryDrawer />
       <DashboardDetailPage />
@@ -36,6 +39,6 @@ export default function DashboardDetailRoute() {
       >
         <InsightsPanel />
       </Box>
-    </>
+    </DashboardFeatureGate>
   );
 }

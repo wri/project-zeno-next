@@ -68,7 +68,7 @@ describe("DashboardPinnedHeader", () => {
     expect(screen.getAllByText("Paraná, Brazil").length).toBeGreaterThan(0);
     expect(screen.getByText("Dashboards").closest("a")).toHaveProperty(
       "href",
-      expect.stringContaining("/dashboards")
+      expect.stringContaining("/dashboards?ff=dashboard")
     );
     expect(screen.getByRole("button", { name: /export/i })).toBeInstanceOf(
       HTMLElement

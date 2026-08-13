@@ -149,7 +149,7 @@ describe("NewDashboardScreen", () => {
       })
     );
     await waitFor(() =>
-      expect(pushSpy).toHaveBeenCalledWith("/dashboards/dash-1")
+      expect(pushSpy).toHaveBeenCalledWith("/dashboards/dash-1?ff=dashboard")
     );
   });
 

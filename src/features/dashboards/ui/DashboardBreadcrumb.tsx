@@ -11,7 +11,7 @@ export default function DashboardBreadcrumb({ name }: { name?: string }) {
   return (
     <Flex align="center" gap="8px" fontSize="14px" lineHeight="16px">
       <ChakraLink asChild color="#565E7B">
-        <Link href="/dashboards">Dashboards</Link>
+        <Link href="/dashboards?ff=dashboard">Dashboards</Link>
       </ChakraLink>
       <Text color="#C2C7D0">/</Text>
       <Text color="#565E7B" truncate>

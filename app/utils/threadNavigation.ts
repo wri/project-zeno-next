@@ -58,7 +58,7 @@ export function firstMessageRedirectPath(
  * loads the thread into the global chat store in place, keeping the user on
  * the dashboard. Everywhere else (map, dashboards list — which has no chat
  * panel) the click navigates to the thread's canonical map URL, carrying
- * any remaining hidden-feature `?ff=…` (e.g. `voice`) along.
+ * `?ff=…` so hidden feature gates stay open.
  */
 export function threadClickTarget(
   pathname: string | null,
@@ -78,15 +78,20 @@ export function threadClickTarget(
  * conversation there must not navigate away — the conversation is global
  * session state that dashboard URLs don't encode (see ADR-003), so the
  * caller resets the stores in place instead. Everywhere else the button
- * navigates to the map's new-thread route.
+ * navigates to the map's new-thread route, carrying `?ff=dashboard` when the
+ * feature gate is open so the navigation doesn't close it.
  */
 export function newConversationTarget(
-  pathname: string | null
+  pathname: string | null,
+  dashboardFeatureEnabled: boolean
 ): { kind: "reset-in-place" } | { kind: "navigate"; href: string } {
   if (/^\/dashboards\/./.test(pathname ?? "")) {
     return { kind: "reset-in-place" };
   }
-  return { kind: "navigate", href: "/app" };
+  return {
+    kind: "navigate",
+    href: dashboardFeatureEnabled ? "/app?ff=dashboard" : "/app",
+  };
 }
 
 /**
@@ -94,8 +99,12 @@ export function newConversationTarget(
  * resets the chat and map stores — correct when nothing is under way, but it
  * would wipe a live conversation when returning from a dashboard. With an
  * active thread the tab links to its canonical URL instead: the thread page
- * skips its reset when the store already holds that thread.
+ * skips its reset when the store already holds that thread. The `ff`
+ * param keeps the dashboards feature gate open across navigation (the tab
+ * only renders when that gate is on).
  */
 export function mapTabHref(currentThreadId: string | null): string {
-  return currentThreadId ? `/app/threads/${currentThreadId}` : "/app";
+  return currentThreadId
+    ? `/app/threads/${currentThreadId}?ff=dashboard`
+    : "/app?ff=dashboard";
 }

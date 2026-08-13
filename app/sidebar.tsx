@@ -35,6 +35,7 @@ import ThreadActionsMenu from "./components/ThreadActionsMenu";
 import LclLogo from "./components/LclLogo";
 import { useThreadsInfinite } from "./hooks/useThreadsInfinite";
 import { useIntersectionObserver } from "./hooks/useIntersectionObserver";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import {
   newConversationTarget,
   threadClickTarget,
@@ -224,7 +225,8 @@ export function Sidebar() {
   const { logout, isLoggingOut } = useLogout();
 
   const pathname = usePathname();
-  const newConvo = newConversationTarget(pathname);
+  const dashboardFeatureEnabled = useFeatureFlag("dashboard");
+  const newConvo = newConversationTarget(pathname, dashboardFeatureEnabled);
   // Mirrors PageHeader's in-place reset: a dashboard detail page hosts its
   // own chat panel, so starting a new conversation must not navigate away.
   const startNewConversationInPlace = () => {

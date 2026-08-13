@@ -184,6 +184,9 @@ describe("chatStore ff (agent profile default)", () => {
     return JSON.parse((init?.body as string) ?? "{}");
   };
 
+  const stubUrl = (search: string) =>
+    vi.stubGlobal("window", { location: { search } });
+
   beforeEach(() => {
     useChatStore.getState().reset();
     useViewContextStore.setState({ viewContext: null });
@@ -201,31 +204,44 @@ describe("chatStore ff (agent profile default)", () => {
     useViewContextStore.setState({ viewContext: null });
     useAuthStore.setState({ userType: null });
     useAgentProfileStore.setState({ agentProfile: null });
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
-  it("defaults ff to experimental for a privileged user", async () => {
+  it("defaults ff to experimental when the ?ff=dashboard gate is open for a privileged user", async () => {
     useAuthStore.setState({ userType: "admin" });
+    stubUrl("?ff=dashboard");
 
     await useChatStore.getState().sendMessage("hi");
 
     expect(sentBody().ff).toBe("experimental");
   });
 
-  it("omits ff for a non-privileged user", async () => {
+  it("omits ff for a non-privileged user even with ?ff=dashboard", async () => {
     useAuthStore.setState({ userType: "regular" });
+    stubUrl("?ff=dashboard");
 
     await useChatStore.getState().sendMessage("hi");
 
     expect(sentBody()).not.toHaveProperty("ff");
   });
 
-  it("defaults to experimental on a dashboard surface too", async () => {
+  it("omits ff on the map surface when the dashboard gate is closed", async () => {
+    useAuthStore.setState({ userType: "admin" });
+    stubUrl("?ff=analysis");
+
+    await useChatStore.getState().sendMessage("hi");
+
+    expect(sentBody()).not.toHaveProperty("ff");
+  });
+
+  it("still defaults to experimental on a dashboard surface without ?ff in the URL", async () => {
     useAuthStore.setState({ userType: "admin" });
     useViewContextStore.getState().setViewContext({
       page: "dashboard",
       dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
     });
+    stubUrl("");
 
     await useChatStore.getState().sendMessage("hi");
 

@@ -50,6 +50,7 @@ import {
 } from "@/app/config/feature-flags";
 import useAgentProfileStore from "./agentProfileStore";
 import useViewContextStore from "./viewContextStore";
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -697,18 +698,31 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // turn. Agent picks arriving during the stream fold their slots on top.
     set({ lastSentContext: keys });
 
-    // Send an agent profile as `ff` only for user types the backend accepts
-    // feature flags from (else it 403s).
+    // Send the agent profile as `ff` only when a profile is selected and the
+    // user type is allowed to use feature flags (else the backend 403s).
     const userType = useAuthStore.getState().userType;
     const viewContext = useViewContextStore.getState().viewContext;
-    // The dashboard agent tools live in the backend's experimental profile —
-    // now the default for every feature-flag-eligible user, since the
-    // dashboards feature itself is on unconditionally.
+    // The dashboard agent tools live in the backend's experimental profile, so
+    // default to it whenever the dashboards feature is active — either on a
+    // dashboard surface or with the ?ff=dashboard gate open — letting a single
+    // ?ff=dashboard stand in for ?agent_profile=experimental. Read live: nav
+    // helpers carry ?ff=dashboard across the thread-URL rewrite, so this tracks
+    // the visible feature rather than persisting a separate flag.
+    const dashboardsFeatureActive =
+      viewContext?.page === "dashboard" ||
+      (typeof window !== "undefined" &&
+        isFeatureEnabled(
+          new URLSearchParams(window.location.search),
+          "dashboard"
+        ));
     const ff =
       effectiveAgentProfile(
         useAgentProfileStore.getState().agentProfile,
         userType
-      ) ?? (canUseFeatureFlags(userType) ? EXPERIMENTAL_PROFILE : null);
+      ) ??
+      (dashboardsFeatureActive && canUseFeatureFlags(userType)
+        ? EXPERIMENTAL_PROFILE
+        : null);
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,

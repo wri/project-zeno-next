@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 
 vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
@@ -35,10 +35,31 @@ const createDashboardNudges = () =>
     .getState()
     .messages.filter((m) => m.type === "create-dashboard-nudge");
 
+// The module reads the flag off the live URL (it runs outside React), so the
+// tests drive window.location.search directly rather than mocking the helper.
+const originalWindow = globalThis.window;
+
+function setSearch(search: string) {
+  Object.defineProperty(globalThis, "window", {
+    value: { location: { search } },
+    configurable: true,
+    writable: true,
+  });
+}
+
+afterAll(() => {
+  Object.defineProperty(globalThis, "window", {
+    value: originalWindow,
+    configurable: true,
+    writable: true,
+  });
+});
+
 describe("showCreateDashboardNudge", () => {
   beforeEach(() => {
     useChatStore.getState().reset();
     useMapStore.setState({ layers: [] });
+    setSearch("?ff=dashboard");
   });
 
   it("injects a nudge carrying the AOI identity and analysis inputs", () => {
@@ -164,6 +185,22 @@ describe("showCreateDashboardNudge", () => {
     expect(showCreateDashboardNudge({ ...selection, subtype: undefined })).toBe(
       false
     );
+    expect(createDashboardNudges()).toHaveLength(0);
+  });
+
+  it("does nothing when the dashboard feature flag is off", () => {
+    seedLayers([datasetLayer()]);
+    setSearch("");
+
+    expect(showCreateDashboardNudge(selection)).toBe(false);
+    expect(createDashboardNudges()).toHaveLength(0);
+  });
+
+  it("does nothing when another feature flag is on", () => {
+    seedLayers([datasetLayer()]);
+    setSearch("?ff=analysis");
+
+    expect(showCreateDashboardNudge(selection)).toBe(false);
     expect(createDashboardNudges()).toHaveLength(0);
   });
 });
