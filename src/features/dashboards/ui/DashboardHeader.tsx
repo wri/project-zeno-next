@@ -18,7 +18,7 @@ import {
 
 import { toaster } from "@/app/components/ui/toaster";
 import type { Dashboard } from "../api/schemas";
-import { updatedLabel } from "../lib/dates";
+import { updatedLabel, wasJustCreated } from "../lib/dates";
 import { useRenameDashboard } from "./dashboardQueries";
 
 /**
@@ -128,16 +128,35 @@ export default function DashboardHeader({
             </IconButton>
           )}
         </Flex>
-        <Text
-          // 8px title-to-timestamp gap per the Figma header frames.
-          mt="8px"
-          fontFamily="mono"
-          fontSize="10px"
-          lineHeight="16px"
-          color="rgba(19,22,25,0.7)"
-        >
-          {updatedLabel(dashboard.updated_at)}
-        </Text>
+        {wasJustCreated(dashboard.created_at) ? (
+          <Box
+            mt="8px"
+            display="inline-flex"
+            bg="#F0F4B4"
+            px="4px"
+            rounded="sm"
+          >
+            <Text
+              fontFamily="mono"
+              fontSize="10px"
+              lineHeight="16px"
+              color="#5B5F3A"
+            >
+              Created just now
+            </Text>
+          </Box>
+        ) : (
+          <Text
+            // 8px title-to-timestamp gap per the Figma header frames.
+            mt="8px"
+            fontFamily="mono"
+            fontSize="10px"
+            lineHeight="16px"
+            color="rgba(19,22,25,0.7)"
+          >
+            {updatedLabel(dashboard.updated_at)}
+          </Text>
+        )}
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>

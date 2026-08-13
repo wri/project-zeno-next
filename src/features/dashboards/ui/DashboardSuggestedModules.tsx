@@ -81,16 +81,20 @@ function ModuleCard({
 export default function DashboardSuggestedModules({
   dashboardId,
   isOwner,
+  // Space above the divider. Callers that already provide their own gap
+  // above this row (e.g. DashboardEmptyStateHero's hero copy) pass 0.
+  mt = 8,
 }: {
   dashboardId: string;
   isOwner: boolean;
+  mt?: number;
 }) {
   const sendMessage = useChatStore((s) => s.sendMessage);
   const requestChatInputFocus = useSidebarStore((s) => s.requestChatInputFocus);
   const addTextWidget = useAddTextWidget(dashboardId);
 
   return (
-    <Flex direction="column" gap={5} mt={8}>
+    <Flex direction="column" gap={5} mt={mt}>
       <Flex align="center" gap={3}>
         <Box flex={1} h="1px" bg="#E0E2E5" />
         <Text fontSize="xs" fontStyle="italic" color="#656E7B" flexShrink={0}>
