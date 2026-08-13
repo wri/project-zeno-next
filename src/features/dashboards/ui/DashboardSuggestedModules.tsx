@@ -4,6 +4,7 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 import { SparkleIcon, TextTIcon, type Icon } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
+import { usePromptQuota } from "@/app/hooks/usePromptQuota";
 import useChatStore from "@/app/store/chatStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import { SUGGESTED_PROMPT_MODULES } from "../lib/suggested-modules";
@@ -77,6 +78,10 @@ function ModuleCard({
  * block" adds an empty note widget directly, no chat round-trip. "Describe
  * your own" just focuses the chat textarea, whose placeholder already reads
  * "Or describe what you want to explore…" once the thread is empty.
+ *
+ * Every card here writes to the dashboard — the prompts all end in "…add it
+ * to the dashboard" — so the whole row is owner-only, and the cards that go
+ * through the chat honour the same gates ChatInput's submitPrompt does.
  */
 export default function DashboardSuggestedModules({
   dashboardId,
@@ -86,11 +91,33 @@ export default function DashboardSuggestedModules({
   isOwner: boolean;
 }) {
   const sendMessage = useChatStore((s) => s.sendMessage);
+  const isStreaming = useChatStore((s) => s.isLoading);
+  const { promptsExhausted } = usePromptQuota();
   const requestChatInputFocus = useSidebarStore((s) => s.requestChatInputFocus);
   const addTextWidget = useAddTextWidget(dashboardId);
 
+  // These cards are a second entry point into sendMessage, so they need the
+  // guards submitPrompt applies to the textarea (ChatInput's `disabled` is the
+  // same two conditions). Sending while a turn streams would clear the live
+  // turn's tool steps and overwrite its abort controller in the store, leaving
+  // the first request running but uncancellable; sending with no prompts left
+  // just earns a generic "service unavailable". "Describe your own" is gated
+  // too — under either condition the textarea it focuses is itself disabled.
+  const chatDisabled = isStreaming || promptsExhausted;
+
+  if (!isOwner) return null;
+
   return (
-    <Flex direction="column" gap={5} mt={8}>
+    // The chat panel this row drives is desktop-only for now (see the
+    // ChatPanel mount in DashboardDetailPage), so on mobile every card but
+    // "Text block" would post into a panel the user cannot see. Drop the row
+    // until the mobile bottom sheet lands.
+    <Flex
+      direction="column"
+      gap={5}
+      mt={8}
+      display={{ base: "none", md: "flex" }}
+    >
       <Flex align="center" gap={3}>
         <Box flex={1} h="1px" bg="#E0E2E5" />
         <Text fontSize="xs" fontStyle="italic" color="#656E7B" flexShrink={0}>
@@ -106,37 +133,37 @@ export default function DashboardSuggestedModules({
             label={card.label}
             bg={ANALYSIS_CARD_BG}
             borderColor={ANALYSIS_CARD_BORDER}
+            disabled={chatDisabled}
             onClick={() => void sendMessage(card.prompt)}
           />
         ))}
-        {isOwner && (
-          <ModuleCard
-            icon={TextTIcon}
-            label="Text block"
-            bg={NEUTRAL_CARD_BG}
-            borderColor={NEUTRAL_CARD_BORDER}
-            disabled={addTextWidget.isPending}
-            onClick={() =>
-              addTextWidget.mutate(undefined, {
-                onError: (error) =>
-                  toaster.create({
-                    title: "Couldn't add text block",
-                    description:
-                      error instanceof Error
-                        ? error.message
-                        : "Please try again.",
-                    type: "error",
-                    duration: 4000,
-                  }),
-              })
-            }
-          />
-        )}
+        <ModuleCard
+          icon={TextTIcon}
+          label="Text block"
+          bg={NEUTRAL_CARD_BG}
+          borderColor={NEUTRAL_CARD_BORDER}
+          disabled={addTextWidget.isPending}
+          onClick={() =>
+            addTextWidget.mutate(undefined, {
+              onError: (error) =>
+                toaster.create({
+                  title: "Couldn't add text block",
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : "Please try again.",
+                  type: "error",
+                  duration: 4000,
+                }),
+            })
+          }
+        />
         <ModuleCard
           icon={SparkleIcon}
           label="Describe your own via the chat"
           bg={NEUTRAL_CARD_BG}
           borderColor={NEUTRAL_CARD_BORDER}
+          disabled={chatDisabled}
           onClick={requestChatInputFocus}
         />
       </Flex>
