@@ -108,7 +108,7 @@ export function NewDashboardScreen() {
         type: "success",
         duration: 3000,
       });
-      router.push(`/dashboards/${dashboard.id}?ff=dashboard`);
+      router.push(`/dashboards/${dashboard.id}`);
     } catch (err) {
       toaster.create({
         title: "Could not create dashboard",

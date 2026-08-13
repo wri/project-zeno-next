@@ -121,7 +121,7 @@ describe("CreateDashboardNudge", () => {
     });
     fireEvent.click(button);
 
-    expect(push).toHaveBeenCalledWith("/dashboards/dash-1?ff=dashboard");
+    expect(push).toHaveBeenCalledWith("/dashboards/dash-1");
     expect(createDashboard).not.toHaveBeenCalled();
   });
 

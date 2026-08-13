@@ -38,11 +38,6 @@ vi.mock("@/src/features/dashboards", () => ({
   useCreateDashboardForArea: () => dashboardHookState,
 }));
 
-let flagEnabled = true;
-vi.mock("@/src/shared/lib/feature-flags", () => ({
-  useFeatureFlag: () => flagEnabled,
-}));
-
 import { toaster } from "@/app/components/ui/toaster";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 import useMapStore from "@/app/store/mapStore";
@@ -92,7 +87,6 @@ const render = (override: Partial<typeof target> | null = {}) =>
 describe("useAoiActions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    flagEnabled = true;
     dashboardHookState = {
       existing: null,
       isResolving: false,
@@ -144,11 +138,6 @@ describe("useAoiActions", () => {
     );
   });
 
-  it("hides the dashboard action without the feature flag", () => {
-    flagEnabled = false;
-    expect(render().result.current?.canUseDashboard).toBe(false);
-  });
-
   it("hides the dashboard action while the list is still resolving", () => {
     dashboardHookState = { ...dashboardHookState, isResolving: true };
     expect(render().result.current?.canUseDashboard).toBe(false);
@@ -165,7 +154,7 @@ describe("useAoiActions", () => {
 
     act(() => result.current!.openOrCreateDashboard());
 
-    expect(push).toHaveBeenCalledWith("/dashboards/dash-1?ff=dashboard");
+    expect(push).toHaveBeenCalledWith("/dashboards/dash-1");
     expect(createDashboardForArea).not.toHaveBeenCalled();
   });
 

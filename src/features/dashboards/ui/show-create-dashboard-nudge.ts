@@ -4,7 +4,6 @@ import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
 import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
-import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 import {
   DEFAULT_ANALYSIS_START_DATE,
   DEFAULT_ANALYSIS_END_DATE,
@@ -15,12 +14,8 @@ import {
  * gate as the analyse / view-analysis CTAs: only when a dataset is active
  * alongside the selected area. Returns whether a nudge was surfaced.
  *
- * Three things must hold beyond that gate:
+ * Two things must hold beyond that gate:
  *
- *  - the dashboards feature is on for this session. `/dashboards/*` is behind
- *    `?ff=dashboard` (DashboardFeatureGate bounces everyone else back to /app),
- *    so without this check the nudge would offer a destination the user can't
- *    reach.
  *  - the selection resolved a src id and a subtype. POST /api/dashboards
  *    requires both, so a nudge without them could only fail on click.
  *  - a dataset is active, which supplies the insight seeded into the new
@@ -31,15 +26,6 @@ export function showCreateDashboardNudge(
   selection: AnalysisSelection
 ): boolean {
   if (!selection.name) return false;
-
-  // Read live rather than through useFeatureFlag: this runs outside React, and
-  // nav helpers rewrite the URL across the thread redirect.
-  if (
-    typeof window === "undefined" ||
-    !isFeatureEnabled(new URLSearchParams(window.location.search), "dashboard")
-  ) {
-    return false;
-  }
 
   const { srcId, subtype } = selection;
   if (!srcId || !subtype) return false;
