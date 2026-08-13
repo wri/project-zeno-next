@@ -56,6 +56,7 @@ export default function DashboardEmptyStateHero({
         <DashboardSuggestedModules
           dashboardId={dashboard.id}
           isOwner={isOwner}
+          hasWidgets={false}
           mt={0}
         />
       </Box>

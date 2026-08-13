@@ -27,6 +27,12 @@ export interface SuggestedPromptModule {
   icon: Icon;
   prompt: string;
   kind: "analysis" | "action";
+  /**
+   * Card only makes sense once the dashboard has widgets (e.g. summarising
+   * existing content) — surfaces rendering the row for an empty dashboard
+   * filter these out.
+   */
+  requiresContent?: boolean;
 }
 
 export const SUGGESTED_PROMPT_MODULES: SuggestedPromptModule[] = [
@@ -84,5 +90,6 @@ export const SUGGESTED_PROMPT_MODULES: SuggestedPromptModule[] = [
     prompt:
       "Summarize what this dashboard currently shows and add the summary to the dashboard as a text block.",
     kind: "action",
+    requiresContent: true,
   },
 ];

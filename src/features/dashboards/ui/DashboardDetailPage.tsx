@@ -141,6 +141,7 @@ export default function DashboardDetailPage() {
                   <DashboardSuggestedModules
                     dashboardId={dashboard.id}
                     isOwner={isOwner}
+                    hasWidgets
                   />
                 </>
               ) : (

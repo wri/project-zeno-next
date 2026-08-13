@@ -59,6 +59,14 @@ describe("DashboardEmptyStateHero", () => {
     expect(screen.getByRole("button", { name: "Text block" })).toBeTruthy();
   });
 
+  it("omits the summarise card — an empty dashboard has nothing to summarize", () => {
+    renderHero(true);
+
+    expect(
+      screen.queryByRole("button", { name: "Summarise the dashboard" })
+    ).toBeNull();
+  });
+
   it("hides the owner-only 'Text block' card for a viewer", () => {
     renderHero(false);
 

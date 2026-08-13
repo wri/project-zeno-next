@@ -26,14 +26,18 @@ import useSidebarStore from "@/app/store/sidebarStore";
 
 const sendSpy = vi.fn().mockResolvedValue({ isNew: false, id: "t1" });
 
-const renderModules = (isOwner: boolean) => {
+const renderModules = (isOwner: boolean, hasWidgets = true) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
       <ChakraProvider value={defaultSystem}>
-        <DashboardSuggestedModules dashboardId="d1" isOwner={isOwner} />
+        <DashboardSuggestedModules
+          dashboardId="d1"
+          isOwner={isOwner}
+          hasWidgets={hasWidgets}
+        />
       </ChakraProvider>
     </QueryClientProvider>
   );
@@ -85,6 +89,21 @@ describe("DashboardSuggestedModules", () => {
         })
       )
     );
+  });
+
+  it("drops content-dependent cards on a dashboard with no widgets", () => {
+    renderModules(true, false);
+
+    expect(
+      screen.queryByRole("button", { name: "Summarise the dashboard" })
+    ).toBeNull();
+    // Cards that don't depend on existing content stay.
+    expect(
+      screen.getByRole("button", { name: "Recent satellite imagery" })
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Tree cover loss analysis" })
+    ).toBeTruthy();
   });
 
   it("renders nothing for a viewer who doesn't own the dashboard", () => {
