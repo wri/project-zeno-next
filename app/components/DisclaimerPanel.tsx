@@ -84,6 +84,8 @@ export default function DisclaimerPanel() {
               color="fg.link"
               textDecoration="underline"
               href={PREVIEW_FEEDBACK_FORM}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               here
             </Link>

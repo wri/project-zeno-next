@@ -97,3 +97,17 @@ describe("sidebarStore — catalog column panels", () => {
     expect(state.insightsPanelOpen).toBe(false);
   });
 });
+
+describe("sidebarStore — chat input focus requests", () => {
+  it("increments the focus token on each request", () => {
+    const before = useSidebarStore.getState().chatInputFocusToken;
+
+    useSidebarStore.getState().requestChatInputFocus();
+    expect(useSidebarStore.getState().chatInputFocusToken).toBe(before + 1);
+
+    // A second request bumps it again, even though nothing else changed —
+    // ChatInput's effect keys off the token changing, not a boolean flag.
+    useSidebarStore.getState().requestChatInputFocus();
+    expect(useSidebarStore.getState().chatInputFocusToken).toBe(before + 2);
+  });
+});

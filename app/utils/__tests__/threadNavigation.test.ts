@@ -84,31 +84,24 @@ describe("firstMessageRedirectPath", () => {
 
 describe("newConversationTarget", () => {
   it("resets in place on a dashboard detail page", () => {
-    expect(newConversationTarget("/dashboards/abc", true)).toEqual({
+    expect(newConversationTarget("/dashboards/abc")).toEqual({
       kind: "reset-in-place",
     });
   });
 
   it("navigates from the dashboards list (no chat panel there)", () => {
-    expect(newConversationTarget("/dashboards", true)).toEqual({
-      kind: "navigate",
-      href: "/app?ff=dashboard",
-    });
-  });
-
-  it("keeps the dashboards feature gate open when navigating", () => {
-    expect(newConversationTarget("/app/threads/t-1", true)).toEqual({
-      kind: "navigate",
-      href: "/app?ff=dashboard",
-    });
-  });
-
-  it("navigates plainly when the feature gate is closed", () => {
-    expect(newConversationTarget("/app", false)).toEqual({
+    expect(newConversationTarget("/dashboards")).toEqual({
       kind: "navigate",
       href: "/app",
     });
-    expect(newConversationTarget(null, false)).toEqual({
+  });
+
+  it("navigates plainly from the map surface or an unknown pathname", () => {
+    expect(newConversationTarget("/app/threads/t-1")).toEqual({
+      kind: "navigate",
+      href: "/app",
+    });
+    expect(newConversationTarget(null)).toEqual({
       kind: "navigate",
       href: "/app",
     });
@@ -159,10 +152,10 @@ describe("threadClickTarget", () => {
 
 describe("mapTabHref", () => {
   it("links to the live thread when a conversation is under way", () => {
-    expect(mapTabHref("t-1")).toBe("/app/threads/t-1?ff=dashboard");
+    expect(mapTabHref("t-1")).toBe("/app/threads/t-1");
   });
 
   it("links to the resetting new-thread page when idle", () => {
-    expect(mapTabHref(null)).toBe("/app?ff=dashboard");
+    expect(mapTabHref(null)).toBe("/app");
   });
 });

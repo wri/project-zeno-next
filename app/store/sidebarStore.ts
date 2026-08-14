@@ -42,6 +42,14 @@ interface SidebarState {
   insightsPanelOpen: boolean;
   setInsightsPanelOpen: (open: boolean) => void;
   toggleInsightsPanel: () => void;
+  /**
+   * Incremented each time something outside ChatInput (e.g. the dashboard's
+   * "Describe your own" suggested module) wants the chat textarea focused.
+   * A counter rather than a boolean so repeated requests each retrigger the
+   * effect even if the textarea never lost focus in between.
+   */
+  chatInputFocusToken: number;
+  requestChatInputFocus: () => void;
 }
 
 function updateThreadInCache(
@@ -109,6 +117,12 @@ const useSidebarStore = create<SidebarState>(() => ({
           }
         : { areasPanelOpen: false };
     }),
+  chatInputFocusToken: 0,
+  requestChatInputFocus: () =>
+    useSidebarStore.setState((state) => ({
+      chatInputFocusToken: state.chatInputFocusToken + 1,
+    })),
+
   insightsPanelOpen: false,
   setInsightsPanelOpen: (open) =>
     useSidebarStore.setState(

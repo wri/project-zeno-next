@@ -55,7 +55,7 @@ export function DashboardChatCard({
       title={dashboardName ?? dashboard?.name ?? "Dashboard"}
       description={description}
       interactive
-      onClick={() => router.push(`/dashboards/${dashboardId}?ff=dashboard`)}
+      onClick={() => router.push(`/dashboards/${dashboardId}`)}
     />
   );
 }

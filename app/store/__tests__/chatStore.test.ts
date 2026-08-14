@@ -184,9 +184,6 @@ describe("chatStore ff (agent profile default)", () => {
     return JSON.parse((init?.body as string) ?? "{}");
   };
 
-  const stubUrl = (search: string) =>
-    vi.stubGlobal("window", { location: { search } });
-
   beforeEach(() => {
     useChatStore.getState().reset();
     useViewContextStore.setState({ viewContext: null });
@@ -204,44 +201,31 @@ describe("chatStore ff (agent profile default)", () => {
     useViewContextStore.setState({ viewContext: null });
     useAuthStore.setState({ userType: null });
     useAgentProfileStore.setState({ agentProfile: null });
-    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
-  it("defaults ff to experimental when the ?ff=dashboard gate is open for a privileged user", async () => {
+  it("defaults ff to experimental for a privileged user", async () => {
     useAuthStore.setState({ userType: "admin" });
-    stubUrl("?ff=dashboard");
 
     await useChatStore.getState().sendMessage("hi");
 
     expect(sentBody().ff).toBe("experimental");
   });
 
-  it("omits ff for a non-privileged user even with ?ff=dashboard", async () => {
+  it("omits ff for a non-privileged user", async () => {
     useAuthStore.setState({ userType: "regular" });
-    stubUrl("?ff=dashboard");
 
     await useChatStore.getState().sendMessage("hi");
 
     expect(sentBody()).not.toHaveProperty("ff");
   });
 
-  it("omits ff on the map surface when the dashboard gate is closed", async () => {
-    useAuthStore.setState({ userType: "admin" });
-    stubUrl("?ff=analysis");
-
-    await useChatStore.getState().sendMessage("hi");
-
-    expect(sentBody()).not.toHaveProperty("ff");
-  });
-
-  it("still defaults to experimental on a dashboard surface without ?ff in the URL", async () => {
+  it("defaults to experimental on a dashboard surface too", async () => {
     useAuthStore.setState({ userType: "admin" });
     useViewContextStore.getState().setViewContext({
       page: "dashboard",
       dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
     });
-    stubUrl("");
 
     await useChatStore.getState().sendMessage("hi");
 
@@ -403,6 +387,120 @@ const viewAnalysisNudges = () =>
   useChatStore
     .getState()
     .messages.filter((m) => m.type === "view-analysis-nudge");
+
+const createDashboardNudges = () =>
+  useChatStore
+    .getState()
+    .messages.filter((m) => m.type === "create-dashboard-nudge");
+
+const createDashboardSuggestion = (areaName: string, srcId: string) => ({
+  areaName,
+  source: "gadm",
+  srcId,
+  subtype: "state-province",
+  datasetId: 4,
+  datasetName: "Tree cover loss",
+  startDate: "2001-01-01",
+  endDate: "2025-12-31",
+});
+
+describe("chatStore.upsertCreateDashboardNudge", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  it("appends a create-dashboard-nudge message carrying the suggestion", () => {
+    const suggestion = createDashboardSuggestion("Pará, Brazil", "BRA.14_1");
+    useChatStore.getState().upsertCreateDashboardNudge(suggestion);
+
+    const nudges = createDashboardNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].createDashboardSuggestion).toEqual(suggestion);
+    expect(useChatStore.getState().messages.at(-1)?.type).toBe(
+      "create-dashboard-nudge"
+    );
+  });
+
+  it("replaces any previous create-dashboard nudge", () => {
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Pará, Brazil", "BRA.14_1")
+      );
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Acre, Brazil", "BRA.1_1")
+      );
+
+    const nudges = createDashboardNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].createDashboardSuggestion?.areaName).toBe("Acre, Brazil");
+  });
+
+  it("is cleared by reset() along with the rest of the thread", () => {
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Pará, Brazil", "BRA.14_1")
+      );
+    useChatStore.getState().reset();
+    expect(createDashboardNudges()).toHaveLength(0);
+  });
+});
+
+describe("chatStore.addDashboardCard", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  const cards = () =>
+    useChatStore.getState().messages.filter((m) => m.type === "dashboard-card");
+
+  // reset() seeds the welcome message, so the pair under test is at the tail.
+  const lastPair = () => useChatStore.getState().messages.slice(-2);
+
+  it("appends an assistant line naming the dashboard, then the card", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.type).toBe("assistant");
+    expect(assistant.message).toContain('"Pará, Brazil" dashboard');
+    expect(card.type).toBe("dashboard-card");
+    expect(card.dashboardId).toBe("dash-1");
+    expect(card.dashboardName).toBe("Pará, Brazil");
+  });
+
+  it("falls back to unnamed wording when the dashboard has no name yet", () => {
+    useChatStore.getState().addDashboardCard("dash-1");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.message).toBe(
+      "I've created a dashboard for you. Open the card below to view it — I can keep adding insights to it as we explore."
+    );
+    expect(card.dashboardName).toBeUndefined();
+  });
+
+  it("gives each message a distinct id", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.id).not.toBe(card.id);
+  });
+
+  it("surfaces a second card for a second manual create", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+    useChatStore.getState().addDashboardCard("dash-2", "Acre, Brazil");
+
+    expect(cards().map((c) => c.dashboardId)).toEqual(["dash-1", "dash-2"]);
+  });
+
+  it("is cleared by reset()", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+    useChatStore.getState().reset();
+    expect(cards()).toHaveLength(0);
+  });
+});
 
 describe("chatStore.upsertViewAnalysisNudge", () => {
   beforeEach(() => {

@@ -100,6 +100,8 @@ export default function PreviewInfoPanel({ onClose }: PreviewInfoPanelProps) {
             color="#0049AA"
             textDecoration="underline"
             href={PREVIEW_FEEDBACK_FORM}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             here
           </Link>
