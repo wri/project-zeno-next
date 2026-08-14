@@ -26,6 +26,7 @@ import useAgentProfileStore from "../agentProfileStore";
 import { apiFetch } from "@/app/lib/api-client";
 import type {
   AnalyseSuggestion,
+  Nudge,
   ViewAnalysisSuggestion,
 } from "@/app/types/chat";
 
@@ -183,9 +184,6 @@ describe("chatStore ff (agent profile default)", () => {
     return JSON.parse((init?.body as string) ?? "{}");
   };
 
-  const stubUrl = (search: string) =>
-    vi.stubGlobal("window", { location: { search } });
-
   beforeEach(() => {
     useChatStore.getState().reset();
     useViewContextStore.setState({ viewContext: null });
@@ -203,44 +201,31 @@ describe("chatStore ff (agent profile default)", () => {
     useViewContextStore.setState({ viewContext: null });
     useAuthStore.setState({ userType: null });
     useAgentProfileStore.setState({ agentProfile: null });
-    vi.unstubAllGlobals();
     vi.clearAllMocks();
   });
 
-  it("defaults ff to experimental when the ?ff=dashboard gate is open for a privileged user", async () => {
+  it("defaults ff to experimental for a privileged user", async () => {
     useAuthStore.setState({ userType: "admin" });
-    stubUrl("?ff=dashboard");
 
     await useChatStore.getState().sendMessage("hi");
 
     expect(sentBody().ff).toBe("experimental");
   });
 
-  it("omits ff for a non-privileged user even with ?ff=dashboard", async () => {
+  it("omits ff for a non-privileged user", async () => {
     useAuthStore.setState({ userType: "regular" });
-    stubUrl("?ff=dashboard");
 
     await useChatStore.getState().sendMessage("hi");
 
     expect(sentBody()).not.toHaveProperty("ff");
   });
 
-  it("omits ff on the map surface when the dashboard gate is closed", async () => {
-    useAuthStore.setState({ userType: "admin" });
-    stubUrl("?ff=analysis");
-
-    await useChatStore.getState().sendMessage("hi");
-
-    expect(sentBody()).not.toHaveProperty("ff");
-  });
-
-  it("still defaults to experimental on a dashboard surface without ?ff in the URL", async () => {
+  it("defaults to experimental on a dashboard surface too", async () => {
     useAuthStore.setState({ userType: "admin" });
     useViewContextStore.getState().setViewContext({
       page: "dashboard",
       dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
     });
-    stubUrl("");
 
     await useChatStore.getState().sendMessage("hi");
 
@@ -403,6 +388,120 @@ const viewAnalysisNudges = () =>
     .getState()
     .messages.filter((m) => m.type === "view-analysis-nudge");
 
+const createDashboardNudges = () =>
+  useChatStore
+    .getState()
+    .messages.filter((m) => m.type === "create-dashboard-nudge");
+
+const createDashboardSuggestion = (areaName: string, srcId: string) => ({
+  areaName,
+  source: "gadm",
+  srcId,
+  subtype: "state-province",
+  datasetId: 4,
+  datasetName: "Tree cover loss",
+  startDate: "2001-01-01",
+  endDate: "2025-12-31",
+});
+
+describe("chatStore.upsertCreateDashboardNudge", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  it("appends a create-dashboard-nudge message carrying the suggestion", () => {
+    const suggestion = createDashboardSuggestion("Pará, Brazil", "BRA.14_1");
+    useChatStore.getState().upsertCreateDashboardNudge(suggestion);
+
+    const nudges = createDashboardNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].createDashboardSuggestion).toEqual(suggestion);
+    expect(useChatStore.getState().messages.at(-1)?.type).toBe(
+      "create-dashboard-nudge"
+    );
+  });
+
+  it("replaces any previous create-dashboard nudge", () => {
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Pará, Brazil", "BRA.14_1")
+      );
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Acre, Brazil", "BRA.1_1")
+      );
+
+    const nudges = createDashboardNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].createDashboardSuggestion?.areaName).toBe("Acre, Brazil");
+  });
+
+  it("is cleared by reset() along with the rest of the thread", () => {
+    useChatStore
+      .getState()
+      .upsertCreateDashboardNudge(
+        createDashboardSuggestion("Pará, Brazil", "BRA.14_1")
+      );
+    useChatStore.getState().reset();
+    expect(createDashboardNudges()).toHaveLength(0);
+  });
+});
+
+describe("chatStore.addDashboardCard", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+  });
+
+  const cards = () =>
+    useChatStore.getState().messages.filter((m) => m.type === "dashboard-card");
+
+  // reset() seeds the welcome message, so the pair under test is at the tail.
+  const lastPair = () => useChatStore.getState().messages.slice(-2);
+
+  it("appends an assistant line naming the dashboard, then the card", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.type).toBe("assistant");
+    expect(assistant.message).toContain('"Pará, Brazil" dashboard');
+    expect(card.type).toBe("dashboard-card");
+    expect(card.dashboardId).toBe("dash-1");
+    expect(card.dashboardName).toBe("Pará, Brazil");
+  });
+
+  it("falls back to unnamed wording when the dashboard has no name yet", () => {
+    useChatStore.getState().addDashboardCard("dash-1");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.message).toBe(
+      "I've created a dashboard for you. Open the card below to view it — I can keep adding insights to it as we explore."
+    );
+    expect(card.dashboardName).toBeUndefined();
+  });
+
+  it("gives each message a distinct id", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+
+    const [assistant, card] = lastPair();
+    expect(assistant.id).not.toBe(card.id);
+  });
+
+  it("surfaces a second card for a second manual create", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+    useChatStore.getState().addDashboardCard("dash-2", "Acre, Brazil");
+
+    expect(cards().map((c) => c.dashboardId)).toEqual(["dash-1", "dash-2"]);
+  });
+
+  it("is cleared by reset()", () => {
+    useChatStore.getState().addDashboardCard("dash-1", "Pará, Brazil");
+    useChatStore.getState().reset();
+    expect(cards()).toHaveLength(0);
+  });
+});
+
 describe("chatStore.upsertViewAnalysisNudge", () => {
   beforeEach(() => {
     useChatStore.getState().reset();
@@ -562,5 +661,385 @@ describe("chatStore.acceptAnalyseNudge", () => {
           (m) => m.type === "assistant" && m.message === "Narrative"
         )
     ).toBe(true);
+  });
+});
+
+// --- dashboard_updated → dashboard-card emission -------------------------
+
+/**
+ * One NDJSON line as the backend streams it for a dashboard write: a tools
+ * node whose ToolMessage carries the dashboard_updated signal (and, since the
+ * backend started sending it, the dashboard's name) in response_metadata.
+ */
+function dashboardWriteLine(
+  dashboardId: string,
+  dashboardName?: string,
+  tool = "create_dashboard"
+): string {
+  const update = {
+    dashboard_id: dashboardId,
+    messages: [
+      {
+        lc: 1,
+        type: "constructor",
+        id: ["x"],
+        kwargs: {
+          content: "ok",
+          type: "tool",
+          name: tool,
+          id: `m-${dashboardId}-${tool}`,
+          status: "success",
+          response_metadata: {
+            msg_type: "dashboard_updated",
+            dashboard_id: dashboardId,
+            ...(dashboardName ? { dashboard_name: dashboardName } : {}),
+          },
+        },
+      },
+    ],
+  };
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-21T00:00:00.000Z",
+    update: JSON.stringify(update),
+  });
+}
+
+/** A Response-like object that streams the given NDJSON lines, then ends. */
+function ndjsonResponse(lines: string[]): Response {
+  const encoder = new TextEncoder();
+  let delivered = false;
+  const reader = {
+    read: () => {
+      if (delivered) {
+        return Promise.resolve({ done: true, value: undefined });
+      }
+      delivered = true;
+      return Promise.resolve({
+        done: false,
+        value: encoder.encode(lines.join("\n") + "\n"),
+      });
+    },
+    releaseLock: () => {},
+    cancel: () => Promise.resolve(),
+  };
+  return {
+    ok: true,
+    headers: new Headers(),
+    body: { getReader: () => reader },
+  } as unknown as Response;
+}
+
+function dashboardCards() {
+  return useChatStore
+    .getState()
+    .messages.filter((m) => m.type === "dashboard-card");
+}
+
+describe("dashboard_updated stream signal → dashboard-card message", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  it("surfaces a navigation card with the streamed id and name", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
+    );
+
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    expect(dashboardCards()).toHaveLength(1);
+    expect(dashboardCards()[0]).toMatchObject({
+      dashboardId: "dash-1",
+      dashboardName: "Paraná",
+    });
+  });
+
+  it("announces a create with an assistant message ahead of the card", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
+    );
+
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    const messages = useChatStore.getState().messages;
+    const noteIndex = messages.findIndex(
+      (m) =>
+        m.type === "assistant" &&
+        m.message.includes('created the "Paraná" dashboard')
+    );
+    const cardIndex = messages.findIndex((m) => m.type === "dashboard-card");
+    expect(noteIndex).toBeGreaterThan(-1);
+    expect(cardIndex).toBe(noteIndex + 1);
+  });
+
+  it("uses the updated wording when the write is not a create", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("add it to my dashboard");
+
+    const note = useChatStore
+      .getState()
+      .messages.find(
+        (m) =>
+          m.type === "assistant" &&
+          m.message.includes('updated the "Paraná" dashboard')
+      );
+    expect(note).toBeDefined();
+  });
+
+  it("emits one card per dashboard per turn across create + widget adds", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná"),
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+        dashboardWriteLine("dash-1", "Paraná", "add_map_widget"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("dashboard with widgets");
+
+    expect(dashboardCards()).toHaveLength(1);
+    // The synthetic announcement is deduped with its card — and since the
+    // create streamed first, it keeps the "created" wording.
+    const notes = useChatStore
+      .getState()
+      .messages.filter(
+        (m) => m.type === "assistant" && m.message.includes("dashboard")
+      );
+    expect(notes).toHaveLength(1);
+    expect(notes[0].message).toContain("created");
+  });
+
+  it("surfaces the card again when a later turn touches the same dashboard", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
+    );
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
+      ])
+    );
+    await useChatStore.getState().sendMessage("add the insight to it");
+
+    expect(dashboardCards()).toHaveLength(2);
+  });
+
+  it("keeps the card (without a name) when the backend predates dashboard_name", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([dashboardWriteLine("dash-1")])
+    );
+
+    await useChatStore.getState().sendMessage("create a dashboard");
+
+    expect(dashboardCards()).toHaveLength(1);
+    expect(dashboardCards()[0].dashboardName).toBeUndefined();
+  });
+});
+
+// --- nudge state → "nudge" chat message -----------------------------------
+
+/**
+ * One NDJSON line as the backend streams it for a tool turn whose agent
+ * state update carries a `nudge` (dataset_choice, aoi_choice, send_nudge…).
+ */
+function toolNudgeLine(tool: string, nudge: Nudge): string {
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-30T00:00:00.000Z",
+    update: JSON.stringify({
+      nudge,
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: "ok",
+            type: "tool",
+            name: tool,
+            id: `m-${tool}`,
+            response_metadata: {},
+          },
+        },
+      ],
+    }),
+  });
+}
+
+/** One NDJSON line for a plain assistant text turn. */
+function agentTextLine(text: string): string {
+  return JSON.stringify({
+    node: "agent",
+    timestamp: "2026-07-30T00:00:01.000Z",
+    update: JSON.stringify({
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: text,
+            type: "ai",
+            id: "m-ai",
+            response_metadata: {},
+            tool_calls: [],
+            invalid_tool_calls: [],
+          },
+        },
+      ],
+    }),
+  });
+}
+
+/** One NDJSON line for a replayed human turn (fetchThread only). */
+function humanLine(text: string): string {
+  return JSON.stringify({
+    node: "agent",
+    timestamp: "2026-07-30T00:00:00.000Z",
+    update: JSON.stringify({
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: text,
+            type: "human",
+            id: "m-human",
+            response_metadata: {},
+          },
+        },
+      ],
+    }),
+  });
+}
+
+const aoiNudge: Nudge = {
+  type: "aoi_choice",
+  options: [
+    "Puri, Puri, Uíge, Angola - (municipality) [AGO]",
+    "Puri, Odisha, India - (district-county) [IND]",
+  ],
+  data: [
+    {
+      source: "gadm",
+      src_id: "AGO.17.11.1_1",
+      name: "Puri, Puri, Uíge, Angola",
+      subtype: "municipality",
+      bbox: [15.4949, -7.8846, 15.8243, -7.43],
+    },
+    {
+      source: "gadm",
+      src_id: "IND.26.26_1",
+      name: "Puri, Odisha, India",
+      subtype: "district-county",
+      bbox: [85.0865, 19.4617, 86.3727, 20.1884],
+    },
+  ],
+};
+
+const nudgeMessages = () =>
+  useChatStore.getState().messages.filter((m) => m.type === "nudge");
+
+describe("nudge stream state → nudge chat message", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders the nudge after the assistant text that asks the question", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        toolNudgeLine("pick_aoi", aoiNudge),
+        agentTextLine("Which Puri did you mean?"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("search for areas named puri");
+
+    const messages = useChatStore.getState().messages;
+    const textIndex = messages.findIndex(
+      (m) => m.type === "assistant" && m.message === "Which Puri did you mean?"
+    );
+    const nudgeIndex = messages.findIndex((m) => m.type === "nudge");
+    expect(textIndex).toBeGreaterThan(-1);
+    expect(nudgeIndex).toBe(textIndex + 1);
+    expect(messages[nudgeIndex].nudge).toEqual(aoiNudge);
+  });
+
+  it("flushes a buffered nudge at stream end when no assistant text follows", async () => {
+    // The backend guarantees a trailing text turn after every nudge; this is
+    // the safety net for a dropped/errored final turn.
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([toolNudgeLine("send_nudge", aoiNudge)])
+    );
+
+    await useChatStore.getState().sendMessage("search for areas named puri");
+
+    expect(nudgeMessages()).toHaveLength(1);
+    expect(nudgeMessages()[0].nudge).toEqual(aoiNudge);
+  });
+
+  it("does not add an area card for a pick_aoi turn that only carries a nudge", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        toolNudgeLine("pick_aoi", aoiNudge),
+        agentTextLine("Which Puri did you mean?"),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("search for areas named puri");
+
+    expect(nudgeMessages()).toHaveLength(1);
+    expect(
+      useChatStore.getState().messages.some((m) => m.type === "area-card")
+    ).toBe(false);
+  });
+
+  it("replays identically through fetchThread", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        humanLine("search for areas named puri"),
+        toolNudgeLine("pick_aoi", aoiNudge),
+        agentTextLine("Which Puri did you mean?"),
+      ])
+    );
+
+    await useChatStore.getState().fetchThread("thread-1");
+
+    const messages = useChatStore.getState().messages;
+    const textIndex = messages.findIndex(
+      (m) => m.type === "assistant" && m.message === "Which Puri did you mean?"
+    );
+    const nudgeIndex = messages.findIndex((m) => m.type === "nudge");
+    expect(textIndex).toBeGreaterThan(-1);
+    expect(nudgeIndex).toBe(textIndex + 1);
+    expect(messages[nudgeIndex].nudge).toEqual(aoiNudge);
+  });
+
+  it("flushes at replay end too when the stored thread lacks the trailing text", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        humanLine("search for areas named puri"),
+        toolNudgeLine("pick_aoi", aoiNudge),
+      ])
+    );
+
+    await useChatStore.getState().fetchThread("thread-1");
+
+    expect(nudgeMessages()).toHaveLength(1);
+    expect(nudgeMessages()[0].nudge).toEqual(aoiNudge);
   });
 });

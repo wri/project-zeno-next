@@ -6,6 +6,7 @@ import {
   computeReorder,
   dashboardWidgetToInsightWidgets,
   isChartShown,
+  mapWidgetSize,
   shownChartIds,
   widgetSize,
   widgetText,
@@ -64,6 +65,15 @@ describe("widgetSize / withSize", () => {
       title: "T",
       size: "double",
     });
+  });
+});
+
+describe("mapWidgetSize", () => {
+  it("defaults to double and honours an explicit single", () => {
+    expect(mapWidgetSize({})).toBe("double");
+    expect(mapWidgetSize({ size: "double" })).toBe("double");
+    expect(mapWidgetSize({ size: "garbage" })).toBe("double");
+    expect(mapWidgetSize({ size: "single" })).toBe("single");
   });
 });
 

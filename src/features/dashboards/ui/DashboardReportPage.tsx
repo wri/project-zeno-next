@@ -33,10 +33,10 @@ export default function DashboardReportPage() {
   const dashboardId = params?.id ?? "";
   const { data: dashboard, isLoading, isError } = useDashboard(dashboardId);
 
-  // Back-link to the interactive dashboard, preserving ?ff= (the gate) but
-  // not ?mode= — the detail page picks its own default. Read once on first
-  // client render (the useDashboardMode seeding pattern); the search string
-  // is stable for the page's lifetime.
+  // Back-link to the interactive dashboard, dropping ?mode= — the detail
+  // page picks its own default. Read once on first client render (the
+  // useDashboardMode seeding pattern); the search string is stable for the
+  // page's lifetime.
   const [backSearch] = useState(() =>
     typeof window === "undefined"
       ? ""
@@ -89,7 +89,10 @@ export default function DashboardReportPage() {
           <>
             <Box mb={{ base: 8, md: "56px" }}>
               <DashboardTitleHeading name={dashboard.name} />
-              <DashboardUpdatedLabel updatedAt={dashboard.updated_at} />
+              <DashboardUpdatedLabel
+                updatedAt={dashboard.updated_at}
+                createdAt={dashboard.created_at}
+              />
               {dashboard.aois[0]?.name && (
                 <Text mt="4px" fontSize="12px" color="#565E7B">
                   Area of interest: {dashboard.aois[0].name}

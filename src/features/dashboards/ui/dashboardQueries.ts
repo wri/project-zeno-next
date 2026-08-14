@@ -8,6 +8,7 @@ import {
 import { searchAois } from "../api/aois";
 import {
   addInsightWidget,
+  addTextWidget,
   createDashboard,
   createDashboardPayloadFromAoi,
   deleteDashboard,
@@ -195,6 +196,22 @@ export function useAddInsightWidget(dashboardId: string) {
     // the refetch reflects the new widget — so without this the button/switch
     // re-enables the instant the POST resolves, and a fast second click would
     // re-POST the same insight and create a duplicate widget.
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: dashboardKeys.detail(dashboardId),
+      }),
+  });
+}
+
+// "Text block" suggested module — adds a blank note widget directly, no chat
+// round-trip. Not optimistic for the same reason as useAddInsightWidget: the
+// server assigns the widget id/position, so the button stays disabled-safe
+// only once the refetch actually reflects the new card.
+export function useAddTextWidget(dashboardId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => addTextWidget(dashboardId),
     onSettled: () =>
       queryClient.invalidateQueries({
         queryKey: dashboardKeys.detail(dashboardId),

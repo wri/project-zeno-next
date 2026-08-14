@@ -44,7 +44,7 @@ export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
           outlineOffset: "2px",
         }}
       >
-        <Link href={`/dashboards/${dashboard.id}?ff=dashboard`}>
+        <Link href={`/dashboards/${dashboard.id}`}>
           <Flex
             flex="1"
             direction="column"

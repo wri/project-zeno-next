@@ -1,10 +1,7 @@
 "use client";
 
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
-import {
-  DashboardFeatureGate,
-  DashboardReportPage,
-} from "@/src/features/dashboards";
+import { DashboardReportPage } from "@/src/features/dashboards";
 
 /**
  * Print/export surface for a dashboard — the report rendering on its own
@@ -16,9 +13,5 @@ export default function DashboardReportRoute() {
   const isReady = useAuthGuard();
   if (!isReady) return null;
 
-  return (
-    <DashboardFeatureGate>
-      <DashboardReportPage />
-    </DashboardFeatureGate>
-  );
+  return <DashboardReportPage />;
 }

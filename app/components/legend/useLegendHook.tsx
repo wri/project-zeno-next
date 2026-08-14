@@ -26,6 +26,8 @@ import {
   buildImageryGroup,
   IMAGERY_LEGEND_GROUP_ID,
 } from "@/app/utils/imagery";
+import { useDatasetsCatalog } from "@/app/hooks/useDatasetsCatalog";
+import { applyPaletteOverride } from "@/app/components/legend/applyPaletteOverride";
 
 // Maps internal parameter keys to the badge label shown in the legend.
 const PARAMETER_LABELS: Record<string, string> = {
@@ -106,6 +108,7 @@ export interface LegendAoi {
 
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendEntry[]>([]);
+  const { palettesByDatasetId } = useDatasetsCatalog();
 
   const {
     layers: managedLayers,
@@ -165,7 +168,11 @@ export function useLegendHook() {
         );
         if (!relatedDataset?.legend) continue;
 
-        const { title, info, note } = relatedDataset.legend;
+        const legend = applyPaletteOverride(
+          relatedDataset.legend,
+          palettesByDatasetId[relatedDataset.dataset_id]
+        );
+        const { title, info, note } = legend;
 
         const yearParam = buildYearParam(layer.startDate, layer.endDate);
         const params = buildParams(layer.parameters ?? {}, yearParam);
@@ -177,7 +184,7 @@ export function useLegendHook() {
           info,
           params: params.length > 0 ? params : undefined,
           contextLayer: contextLayerByParentId.get(layer.id),
-          symbology: renderLegendSymbology(relatedDataset.legend),
+          symbology: renderLegendSymbology(legend),
           children: note ? <Text fontSize="xs">{note}</Text> : undefined,
         });
       }
@@ -192,7 +199,7 @@ export function useLegendHook() {
     };
 
     setLayers(buildEntries());
-  }, [managedLayers, isImageryUpdating]);
+  }, [managedLayers, isImageryUpdating, palettesByDatasetId]);
 
   // One chip per visible area layer, using the selection name as the label.
   // The visible layer IS the scope — removing the chip removes the layer.

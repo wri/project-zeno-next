@@ -43,11 +43,14 @@ export default function DashboardHeader({
   isOwner,
   mode,
   onModeChange,
+  condensed = false,
 }: {
   dashboard: Dashboard;
   isOwner: boolean;
   mode: DashboardMode;
   onModeChange: (mode: DashboardMode) => void;
+  /** Pinned-bar variant: the title truncates with an ellipsis instead of wrapping. */
+  condensed?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
@@ -78,9 +81,9 @@ export default function DashboardHeader({
     });
 
   const openReport = () => {
-    // New tab so the interactive dashboard stays put. Carry ?ff= (the route
-    // is behind the same gate) but not ?mode= — the report route is always
-    // the report.
+    // New tab so the interactive dashboard stays put. Drop ?mode= — the
+    // report route is always the report, regardless of the detail page's
+    // current mode.
     const search = searchWithMode(window.location.search, null);
     window.open(
       `/dashboards/${dashboard.id}/report${search}`,
@@ -92,7 +95,7 @@ export default function DashboardHeader({
   return (
     <Flex justify="space-between" align="flex-start" gap={6}>
       <Box minW={0} flex="1">
-        <Flex align="center" gap="12px">
+        <Flex align="center" gap="12px" minW={0}>
           {editing ? (
             <Input
               value={draft}
@@ -111,7 +114,10 @@ export default function DashboardHeader({
               maxW="2xl"
             />
           ) : (
-            <DashboardTitleHeading name={dashboard.name} />
+            <DashboardTitleHeading
+              name={dashboard.name}
+              condensed={condensed}
+            />
           )}
           {isOwner && mode === "edit" && !editing && (
             <IconButton
@@ -126,7 +132,10 @@ export default function DashboardHeader({
             </IconButton>
           )}
         </Flex>
-        <DashboardUpdatedLabel updatedAt={dashboard.updated_at} />
+        <DashboardUpdatedLabel
+          updatedAt={dashboard.updated_at}
+          createdAt={dashboard.created_at}
+        />
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>

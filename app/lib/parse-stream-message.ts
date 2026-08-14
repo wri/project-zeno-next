@@ -32,15 +32,18 @@ export function parseStreamMessage(
   // the update (the agent's narration can follow it in the same update), and
   // the carrying message may be classified as an error. Scan every message so
   // the signal rides on whatever StreamMessage this update produces.
-  let writeSignal: { msg_type: string; dashboard_id?: string } | undefined;
+  let writeSignal:
+    | { msg_type: string; dashboard_id?: string; dashboard_name?: string }
+    | undefined;
   for (const message of langChainMessage.messages ?? []) {
     const meta = message?.kwargs?.response_metadata as
-      | { msg_type?: string; dashboard_id?: string }
+      | { msg_type?: string; dashboard_id?: string; dashboard_name?: string }
       | undefined;
     if (meta?.msg_type) {
       writeSignal = {
         msg_type: meta.msg_type,
         dashboard_id: meta.dashboard_id,
+        dashboard_name: meta.dashboard_name,
       };
       break;
     }
@@ -82,7 +85,30 @@ export function parseStreamMessage(
       name: kwargs.name,
       content: typeof content === "string" ? content : String(content),
       dataset: langChainMessage.dataset || undefined,
-      suggested_datasets: langChainMessage.suggested_datasets || undefined,
+      // Legacy fallback: `suggested_datasets` was replaced by the generic
+      // `nudge` state (wri/project-zeno#770). This is NOT just a
+      // deploy-transition shim — threads created before the backend
+      // migration permanently contain suggested_datasets in their stored
+      // stream lines, and fetchThread replays them; without this mapping
+      // historical dataset nudges vanish on replay. It also makes deploy
+      // order safe (the frontend can ship first).
+      // A resolved dataset on the same update wins over the suggestions,
+      // mirroring the old pickDatasetTool gate — otherwise replaying such a
+      // thread would render both the dataset card and a clickable nudge.
+      nudge:
+        langChainMessage.nudge ??
+        (langChainMessage.suggested_datasets?.length &&
+        !langChainMessage.dataset
+          ? {
+              type: "dataset_choice",
+              options: langChainMessage.suggested_datasets.map(
+                (d) => d.dataset_name
+              ),
+              // Spread into plain records to satisfy Nudge["data"] (interfaces
+              // carry no implicit index signature).
+              data: langChainMessage.suggested_datasets.map((d) => ({ ...d })),
+            }
+          : undefined),
       insights: langChainMessage.insights || [],
       charts_data: langChainMessage.charts_data || [],
       insight_id: langChainMessage.insight_id || undefined,
@@ -99,6 +125,7 @@ export function parseStreamMessage(
       // refetch what the agent just changed.
       msg_type: writeSignal?.msg_type,
       dashboard_id: writeSignal?.dashboard_id,
+      dashboard_name: writeSignal?.dashboard_name,
     };
   } else if (messageType === "agent") {
     // For AI messages, handle different content formats

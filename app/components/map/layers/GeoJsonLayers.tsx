@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React from "react";
 import { Source, Layer as MapLayer, Marker } from "react-map-gl/maplibre";
-import { Tag } from "@chakra-ui/react";
+import { Flex, Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "../../ContextButton";
 import { Feature, FeatureCollection } from "geojson";
 import useMapStore from "@/app/store/mapStore";
@@ -18,6 +18,16 @@ import {
   aoiCasingPaint,
   aoiLinePaint,
 } from "./aoiStyle";
+import AoiActionsMenu from "../AoiActionsMenu";
+import type { AoiActionsTarget } from "../useAoiActions";
+import {
+  AOI_CHIP_GAP,
+  AOI_LABEL_BG,
+  AOI_LABEL_GAP,
+  AOI_LABEL_HEIGHT,
+  AOI_LABEL_PADDING,
+  AOI_LABEL_RADIUS,
+} from "../aoiLabelStyle";
 
 // Compute the combined bbox of a list of features
 function computeCombinedBbox(
@@ -42,33 +52,6 @@ function computeCombinedBbox(
     }
   }
   return combinedBbox;
-}
-
-// Hook to manage hover state for a feature
-function useHoverState() {
-  const [isHovered, setIsHovered] = useState(false);
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-  const setHoverState = useCallback(
-    (hovered: boolean) => {
-      if (hoverTimeout) {
-        clearTimeout(hoverTimeout);
-        setHoverTimeout(null);
-      }
-      if (hovered) {
-        setIsHovered(true);
-      } else {
-        const timeout = setTimeout(() => setIsHovered(false), 100);
-        setHoverTimeout(timeout);
-      }
-    },
-    [hoverTimeout]
-  );
-  useEffect(() => {
-    return () => {
-      if (hoverTimeout) clearTimeout(hoverTimeout);
-    };
-  }, [hoverTimeout]);
-  return { isHovered, setHoverState };
 }
 
 // Given a list of feature refs, resolve them to the corresponding geojson entries
@@ -126,7 +109,6 @@ function GeoJsonLayerGroup({
   basemapTheme,
 }: GeoJsonLayerGroupProps) {
   const removeLayer = useMapStore((s) => s.removeLayer);
-  const { isHovered, setHoverState } = useHoverState();
   // The visible layer IS the scope — every rendered area layer is in-scope, so
   // it always uses the highlighted (in-context) styling. Removing the layer is
   // the only mutation; there is no select/deselect.
@@ -155,6 +137,20 @@ function GeoJsonLayerGroup({
   })();
   const bboxPolygon = bboxCoords ? createBboxPolygon(bboxCoords) : null;
   const groupId = layer.id.replace(/\s+/g, "-").toLowerCase();
+
+  // Identity for the label's actions menu. The registry entry is the one place
+  // that carries src id and subtype for both origins: a manual map click
+  // (VectorAreasLayer) and an agent pick (pickAoiTool) both register it.
+  const soleEntry = !isMultiArea && entries.length === 1 ? entries[0] : null;
+  const actionsTarget: AoiActionsTarget | null = soleEntry
+    ? {
+        layerId: layer.id,
+        areaName: soleEntry.ref.name,
+        source: soleEntry.ref.source,
+        srcId: soleEntry.srcId,
+        subtype: soleEntry.subtype,
+      }
+    : null;
   return (
     <>
       {/* Polygon outlines per feature */}
@@ -239,31 +235,44 @@ function GeoJsonLayerGroup({
           latitude={bboxCoords[3]}
           anchor="bottom-left"
         >
-          <Tag.Root
-            colorPalette="primary"
-            px={2}
-            py={1}
-            size="md"
-            variant="solid"
-            roundedBottom="none"
-            onMouseEnter={() => setHoverState(true)}
-            onMouseLeave={() => setHoverState(false)}
-          >
-            <Tag.StartElement>{ChatContextOptions.area.icon}</Tag.StartElement>
-            <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
-            <Tag.EndElement>
-              <Tag.CloseTrigger
-                opacity={isHovered ? 1 : 0.25}
-                cursor="pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemove();
-                  setHoverState(false);
-                }}
-                aria-label="Remove area"
-              />
-            </Tag.EndElement>
-          </Tag.Root>
+          {/* Two chips in a horizontal row, per the AOI menu design: the name
+              label and the actions button are separate surfaces.
+              The menu is attached to single-AOI labels only, since a dashboard
+              is scoped to one AOI (POST /api/dashboards takes min 1, max 1)
+              and the analysis actions take one area. */}
+          <Flex align="center" gap={AOI_CHIP_GAP}>
+            <Tag.Root
+              colorPalette="primary"
+              bg={AOI_LABEL_BG}
+              color="white"
+              h={AOI_LABEL_HEIGHT}
+              px={AOI_LABEL_PADDING}
+              gap={AOI_LABEL_GAP}
+              rounded={AOI_LABEL_RADIUS}
+              size="md"
+              variant="solid"
+            >
+              <Tag.StartElement>
+                {ChatContextOptions.area.icon}
+              </Tag.StartElement>
+              <Tag.Label fontWeight="medium">{displayName}</Tag.Label>
+              <Tag.EndElement>
+                {/* Full-strength white at rest: the close is a primary action
+                    on the label, not a hover-revealed one. */}
+                <Tag.CloseTrigger
+                  color="white"
+                  opacity={1}
+                  cursor="pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemove();
+                  }}
+                  aria-label="Remove area"
+                />
+              </Tag.EndElement>
+            </Tag.Root>
+            {actionsTarget && <AoiActionsMenu target={actionsTarget} />}
+          </Flex>
         </Marker>
       )}
     </>

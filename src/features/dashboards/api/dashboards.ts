@@ -113,6 +113,21 @@ export async function addInsightWidget(
   });
 }
 
+// Adds a blank note (the "Text block" suggested module) — an empty
+// `widget_type: "text"` widget the owner fills in afterwards via
+// DashboardTextWidgetCard's pencil. Mirrors addInsightWidget: the backend
+// assigns id/position, so callers refetch rather than read the response.
+// The backend's `validate_text_config` requires `config.text` to be a
+// string (any string, including empty) — an empty string still renders as
+// a blank note client-side (`widgetText` treats a blank string as "no text").
+export async function addTextWidget(dashboardId: string): Promise<void> {
+  await readJson<unknown>(`/api/dashboards/${dashboardId}/widgets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
+  });
+}
+
 export async function deleteWidget(
   dashboardId: string,
   widgetId: string

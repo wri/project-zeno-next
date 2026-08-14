@@ -32,6 +32,7 @@ import {
 } from "@/app/explorationLayout";
 import {
   chartsToWidgets,
+  resolveInsightTitle,
   type InsightRecord,
   type InsightVerification,
 } from "@/src/entities/insight";
@@ -74,13 +75,10 @@ const INSIGHT_SELECTED_BG = "rgba(0, 73, 170, 0.06)";
 
 type InsightFilter = "conversation" | "verified" | "ai";
 
-// The "Curated" (verified) filter is hidden for now: product is rearchitecting
-// curated analyses, so the hand-written fixtures shouldn't be surfaced. The
-// filter branch and `verifiedInsights` are left in place so putting the chip
-// back is a one-line change once the real source exists.
 const INSIGHT_FILTERS: { id: InsightFilter; label: string }[] = [
   { id: "conversation", label: "In this conversation" },
   { id: "ai", label: "AI generated" },
+  { id: "verified", label: "Curated" },
 ];
 
 /**
@@ -109,7 +107,11 @@ function recordToItems(record: InsightRecord): InsightCardItem[] {
   const addableInsightId =
     record.verification === "ai-generated" ? record.id : undefined;
   return chartsToWidgets(record.charts).map((widget) => ({
-    widget: { ...widget, curated },
+    widget: {
+      ...widget,
+      title: resolveInsightTitle(record, widget.title),
+      curated,
+    },
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,

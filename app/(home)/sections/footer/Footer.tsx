@@ -68,7 +68,7 @@ export default function FooterSection() {
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
-              href="https://help.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
+              href="https://help.horizon.globalnaturewatch.org/privacy-and-terms/global-nature-watch-ai-privacy-policy"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -86,7 +86,7 @@ export default function FooterSection() {
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"
-              href="https://help.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
+              href="https://help.horizon.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
               target="_blank"
               rel="noopener noreferrer"
             >

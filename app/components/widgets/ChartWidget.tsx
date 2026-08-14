@@ -49,6 +49,11 @@ const TICK_ANGLE_RAD = (35 * Math.PI) / 180;
 const MAX_X_TICKS = 12; // density target before we thin tick labels
 const ANIMATION_MS = 650; // entry animation; disabled under reduced motion
 const MAX_LINE_DOTS = 14; // beyond this, per-point dots become noise
+// A donut can't use extra horizontal room (fixed radius, side legend), so in
+// a full-width dashboard card its content caps at the single-column content
+// width (~592px column minus card/shell padding) and centers. Without the cap
+// the pie sits far left and the 42%-wide legend pins to the far right edge.
+const PIE_FULL_WIDTH_MAX = "540px";
 
 // Chart wrapper components
 type ChartWrapperComponent =
@@ -77,6 +82,13 @@ interface ChartWidgetProps {
    * axes misrepresent bar charts, whose lengths encode magnitude.
    */
   fitYAxis?: boolean;
+  /**
+   * The host card spans both dashboard columns. Cartesian charts stretch to
+   * fill that room naturally; a pie instead caps its chart+legend block at
+   * the single-column width and centers it, so full width reads as a
+   * deliberate layout rather than a small chart with stranded legend.
+   */
+  fullWidth?: boolean;
 }
 
 /** Chart types where a fit-to-data y-axis is honest and useful. */
@@ -314,23 +326,44 @@ export default function ChartWidget({
   widget,
   expanded = false,
   fitYAxis = false,
+  fullWidth = false,
 }: ChartWidgetProps) {
-  const { data, xAxis, yAxis, type, seriesFields } = widget;
+  const {
+    data,
+    xAxis,
+    yAxis,
+    type,
+    seriesFields,
+    datasetName,
+    colorMap,
+    seriesColor,
+    divergentColors,
+  } = widget;
   const ChartTypeWrapper = chartWrappers[type as ChartType];
 
+  // Depends on the individual fields rather than `widget`: callers rebuild the
+  // widget object on render (see chartsToWidgets), but these values come
+  // straight off the fetched chart and keep a stable identity.
   const { data: formattedData, series } = useMemo(
     () =>
       xAxis
-        ? formatChartData(
-            data,
-            type,
-            xAxis,
-            yAxis,
-            widget.datasetName,
-            seriesFields
-          )
+        ? formatChartData(data, type, xAxis, yAxis, datasetName, seriesFields, {
+            colorMap,
+            seriesColor,
+            divergentColors,
+          })
         : { data: [], series: [] },
-    [data, type, xAxis, yAxis, widget.datasetName, seriesFields]
+    [
+      data,
+      type,
+      xAxis,
+      yAxis,
+      datasetName,
+      seriesFields,
+      colorMap,
+      seriesColor,
+      divergentColors,
+    ]
   );
 
   // Humanize series labels that are raw column keys (snake_case or the
@@ -588,12 +621,18 @@ export default function ChartWidget({
     .join(" ")
     .trim();
 
+  // Fullscreen sizes the pie itself (percentage radii), so the cap only
+  // applies to the in-card full-width case.
+  const capPieWidth = fullWidth && !expanded && type === "pie";
+
   return (
     <Box
       role="img"
       aria-label={chartLabel}
       tabIndex={0}
       borderRadius="sm"
+      maxW={capPieWidth ? PIE_FULL_WIDTH_MAX : undefined}
+      mx={capPieWidth ? "auto" : undefined}
       _focusVisible={{
         outline: "2px solid",
         outlineColor: "primary.focusRing",
