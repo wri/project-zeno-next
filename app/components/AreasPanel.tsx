@@ -1,24 +1,17 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Box,
   Button,
   Flex,
   IconButton,
-  Menu,
-  Portal,
   Stack,
   Text,
   Wrap,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CrosshairIcon,
-  DotsThreeVerticalIcon,
-  PolygonIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { CrosshairIcon, PolygonIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 import type { Feature, MultiPolygon } from "geojson";
 
@@ -42,6 +35,9 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 
 import { CatalogCard } from "./CatalogCard";
+import { AREA_LABEL_COLOR, areaActionIconProps } from "./AreaCardMenu";
+import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
+import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
 import { AreaToolbarButtons } from "./AreaToolbarButtons";
 import { AreaCatalogThumbnail } from "./AreaCatalogThumbnail";
 import { Tooltip } from "./ui/tooltip";
@@ -69,7 +65,6 @@ const AREA_TYPE_LABELS: Record<string, string> = {
   custom: "User uploaded areas",
 };
 
-const AREA_LABEL_COLOR = "#2D6BE4";
 const AREA_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
 
 type AreaFilter = "conversation" | "monitored";
@@ -316,8 +311,6 @@ function ConversationAreasList() {
 
 function ConversationAreaCard({ layer }: { layer: Layer }) {
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const removeLayer = useMapStore((s) => s.removeLayer);
-  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
   const flyToGeoJson = useMapStore((s) => s.flyToGeoJson);
   const flyToBounds = useMapStore((s) => s.flyToBounds);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
@@ -331,11 +324,6 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
 
   function handleToggle(checked: boolean) {
     setLayerVisibility(layer.id, checked);
-  }
-
-  function handleRemove() {
-    (layer.featureRefs ?? []).forEach((ref) => removeFromRegistry(ref));
-    removeLayer(layer.id);
   }
 
   function handleLocate() {
@@ -381,7 +369,10 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
         titleActions={
-          <AreaCardActions onLocate={handleLocate} onRemove={handleRemove} />
+          <AreaCardActions
+            onLocate={handleLocate}
+            menu={<ConversationAreaActionsMenu layer={layer} />}
+          />
         }
       />
     </Box>
@@ -516,19 +507,12 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
         titleActions={
-          isVisible ? (
-            <AreaCardActions
-              onLocate={handleLocate}
-              onRemove={
-                layer
-                  ? () => {
-                      removeFromRegistry({ name: area.name, source: "custom" });
-                      removeLayer(area.id);
-                    }
-                  : undefined
-              }
-            />
-          ) : undefined
+          // Rename/delete act on the saved area, so the kebab must show even
+          // when the area isn't on the map; the locate button stays on-map only.
+          <AreaCardActions
+            onLocate={isVisible ? handleLocate : undefined}
+            menu={<CustomAreaActionsMenu area={area} />}
+          />
         }
       />
     </Box>
@@ -537,69 +521,35 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
 
 function AreaCardActions({
   onLocate,
-  onRemove,
+  menu,
 }: {
-  onLocate: () => void;
-  onRemove?: () => void;
+  /** Omit to hide the locate button (e.g. when the area isn't on the map). */
+  onLocate?: () => void;
+  /** Kebab actions node for the card (per-tab: conversation vs. monitored). */
+  menu: ReactNode;
 }) {
-  const compactIconProps = {
-    variant: "ghost" as const,
-    color: AREA_LABEL_COLOR,
-    boxSize: "16px",
-    minW: "16px",
-    maxW: "16px",
-    minH: "16px",
-    maxH: "16px",
-    p: 0,
-    css: {
-      "& svg": {
-        width: "16px",
-        height: "16px",
-      },
-    },
-  };
-
   return (
     <Flex align="center" gap="16px" flexShrink={0} h="16px">
-      <Tooltip
-        content="Center on map"
-        positioning={{ placement: "top" }}
-        showArrow
-        variant="dark"
-      >
-        <IconButton
-          aria-label="Center on map"
-          {...compactIconProps}
-          onClick={(e) => {
-            e.stopPropagation();
-            onLocate();
-          }}
+      {onLocate && (
+        <Tooltip
+          content="Center on map"
+          positioning={{ placement: "top" }}
+          showArrow
+          variant="dark"
         >
-          <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
-        </IconButton>
-      </Tooltip>
-      {onRemove && (
-        <Menu.Root positioning={{ placement: "bottom-end" }}>
-          <Menu.Trigger asChild>
-            <IconButton
-              aria-label="More area actions"
-              {...compactIconProps}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DotsThreeVerticalIcon size={16} color={AREA_LABEL_COLOR} />
-            </IconButton>
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item value="remove" onClick={onRemove}>
-                  Remove from conversation
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
+          <IconButton
+            aria-label="Center on map"
+            {...areaActionIconProps}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLocate();
+            }}
+          >
+            <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
+          </IconButton>
+        </Tooltip>
       )}
+      {menu}
     </Flex>
   );
 }

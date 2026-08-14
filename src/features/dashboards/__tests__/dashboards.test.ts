@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/app/lib/api-client", () => ({
+  apiFetch: vi.fn(),
+}));
+
+import { apiFetch } from "@/app/lib/api-client";
+import { addTextWidget } from "../api/dashboards";
 import {
   AoiSearchResponseSchema,
   DashboardListResponseSchema,
@@ -10,7 +16,7 @@ import {
   sourceLabel,
   subtypeLabel,
 } from "../lib/aoi";
-import { updatedLabel } from "../lib/dates";
+import { updatedLabel, wasJustCreated } from "../lib/dates";
 
 describe("dashboard schemas", () => {
   it("parses AOI search results returned by the staging API", () => {
@@ -108,5 +114,38 @@ describe("dashboard date helpers", () => {
   it("uses a neutral updated label for invalid or future timestamps", () => {
     expect(updatedLabel("not-a-date")).toBe("Updated recently");
     expect(updatedLabel("2999-01-01T00:00:00Z")).toBe("Updated recently");
+  });
+
+  it("treats a dashboard as just created within the 10-minute window", () => {
+    const now = new Date("2026-08-13T12:00:00Z").getTime();
+    expect(wasJustCreated("2026-08-13T11:59:00Z", now)).toBe(true);
+    expect(wasJustCreated("2026-08-13T12:00:00Z", now)).toBe(true);
+  });
+
+  it("stops treating a dashboard as just created once the window elapses", () => {
+    const now = new Date("2026-08-13T12:00:00Z").getTime();
+    expect(wasJustCreated("2026-08-13T11:49:00Z", now)).toBe(false);
+  });
+
+  it("rejects invalid or future creation timestamps", () => {
+    const now = new Date("2026-08-13T12:00:00Z").getTime();
+    expect(wasJustCreated("not-a-date", now)).toBe(false);
+    expect(wasJustCreated("2026-08-13T12:01:00Z", now)).toBe(false);
+  });
+});
+
+describe("addTextWidget", () => {
+  it("sends config.text as a string, per the backend's validate_text_config", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({}), { status: 200 })
+    );
+
+    await addTextWidget("d1");
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/widgets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
+    });
   });
 });

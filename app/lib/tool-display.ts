@@ -19,6 +19,10 @@ const TOOL_DISPLAY: Record<string, { active: string; error: string }> = {
     active: "Pulling data",
     error: "Unable to retrieve the data. Please try again.",
   },
+  send_nudge: {
+    active: "Preparing options",
+    error: "Unable to prepare the options. Please try again.",
+  },
   search_blogs: {
     active: "Searching WRI Insights",
     error: "Unable to search WRI Insights articles. Please try again.",

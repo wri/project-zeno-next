@@ -1,5 +1,6 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+import type { ChartColorFields } from "@/app/types/chartColors";
 
 export type { BlogArticle };
 
@@ -38,28 +39,34 @@ export interface ChatMessage {
     | "system"
     | "widget"
     | "area-card"
+    | "dashboard-card"
     | "error"
     | "warning"
-    | "dataset-nudge"
+    | "nudge"
     | "analyse-nudge"
     | "view-analysis-nudge"
+    | "create-dashboard-nudge"
     | "stopped";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   aoiSelection?: AOISelection; // For area-card messages
-  suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
+  dashboardId?: string; // For dashboard-card messages
+  dashboardName?: string; // For dashboard-card messages; absent on threads that predate the backend streaming it
+  nudge?: Nudge; // For nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
   viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
+  createDashboardSuggestion?: CreateDashboardSuggestion; // For create-dashboard-nudge messages
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
   suppressFooter?: boolean; // Non-terminal segment of a [Chart uuid] split — no footer, tight spacing
 }
 
-// Widget types for insights
-export interface InsightWidget {
+// Widget types for insights. Extends ChartColorFields with the backend color
+// registry's resolution for this chart (absent for pre-migration insights).
+export interface InsightWidget extends ChartColorFields {
   id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
   type:
     | "line"
@@ -162,7 +169,7 @@ export interface StreamMessage {
   name?: string;
   content?: string;
   dataset?: object;
-  suggested_datasets?: SuggestedDataset[];
+  nudge?: Nudge;
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
@@ -188,6 +195,7 @@ export interface StreamMessage {
   // tells the client to refetch the named resource.
   msg_type?: string;
   dashboard_id?: string;
+  dashboard_name?: string;
 }
 
 // Sentinel-2 mosaic payload written to agent state by the show_imagery tool.
@@ -277,6 +285,51 @@ export interface ViewAnalysisSuggestion {
   accepted?: boolean;
 }
 
+// Payload of a create-dashboard-nudge message: the AOI identity snapshotted at
+// injection time, plus the analysis inputs used to seed the new dashboard.
+//
+// No `accepted` flag, unlike its analyse/view-analysis siblings: once the
+// dashboard exists the card relabels itself to "Open …" off the dashboards
+// query, so acceptance is derivable rather than stored.
+export interface CreateDashboardSuggestion {
+  areaName: string;
+  // POST /api/dashboards requires all three, so the nudge is only surfaced
+  // when the clicked feature resolved an id and a subtype.
+  source: string;
+  srcId: string;
+  subtype: string;
+  // The active dataset and window, used to attach a first insight to the new
+  // dashboard. Optional because the AOI menu can create without a dataset —
+  // that dashboard opens as an empty grid (PZB-1119).
+  datasetId?: number;
+  datasetName?: string;
+  /** ISO date string "yyyy-MM-dd" */
+  startDate?: string;
+  /** ISO date string "yyyy-MM-dd" */
+  endDate?: string;
+}
+
+// A question the agent asks the user, rendered as a row of clickable options
+// under the accompanying assistant message. Clicking an option submits that
+// exact string as the user's next chat message ("human_input") — there is no
+// separate resolve endpoint.
+export interface Nudge {
+  // Free-form label, not an enum. Known values: "dataset_choice",
+  // "aoi_choice", "dashboard_choice", "insight_choice" — plus arbitrary
+  // ad-hoc values from send_nudge ("confirm", "clarify", …). Unknown types
+  // render as plain option buttons.
+  type: string;
+  // Each string is BOTH the button label AND the exact text resubmitted as
+  // the user's next chat message on click.
+  options: string[];
+  // Optional structured payloads, same order/length as options. Only present
+  // for dataset_choice (SuggestedDataset entries) and aoi_choice (resolved
+  // AOI entries). Never assume alignment with options — validate per entry.
+  data?: Array<Record<string, unknown>>;
+}
+
+// Shape of a dataset_choice nudge `data` entry. Options arrive ranked;
+// treat index 0 as recommended.
 export interface SuggestedDataset {
   dataset_id: number;
   dataset_name: string;
@@ -285,7 +338,6 @@ export interface SuggestedDataset {
   start_date?: string;
   end_date?: string;
   reason?: string;
-  recommended?: boolean;
 }
 
 export interface DatasetInfo {
@@ -327,7 +379,12 @@ export interface LangChainResponse {
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
-  suggested_datasets?: SuggestedDataset[];
+  nudge?: Nudge;
+  // Legacy state field replaced by `nudge` (wri/project-zeno#770). Kept
+  // because threads created before the migration permanently contain
+  // suggested_datasets in their stored stream lines, which fetchThread
+  // replays — see the parser fallback in parse-stream-message.ts.
+  suggested_datasets?: (SuggestedDataset & { recommended?: boolean })[];
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;

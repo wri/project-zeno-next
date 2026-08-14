@@ -60,6 +60,8 @@ export type WidgetMessageVariant = "chat" | "workspace" | "report";
 interface WidgetMessageProps {
   widget: InsightWidget;
   variant?: WidgetMessageVariant;
+  /** The host dashboard card spans both columns — chart content adapts. */
+  fullWidth?: boolean;
 }
 
 /** Y-axis with the classic break squiggle — icon for the fit-axis toggle. */
@@ -86,6 +88,7 @@ function AxisBreakIcon({ size = 14 }: { size?: number }) {
 export default function WidgetMessage({
   widget,
   variant = "chat",
+  fullWidth,
 }: WidgetMessageProps) {
   const inChat = variant === "chat";
   const isReport = variant === "report";
@@ -294,7 +297,11 @@ export default function WidgetMessage({
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <Box ref={chartRef}>
-              <ChartWidget widget={widget} fitYAxis={fitYAxis} />
+              <ChartWidget
+                widget={widget}
+                fitYAxis={fitYAxis}
+                fullWidth={fullWidth}
+              />
             </Box>
           </WidgetErrorBoundary>
         )}

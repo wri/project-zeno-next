@@ -10,10 +10,11 @@ import {
   StreamMessage,
   QueryType,
   ToolStepData,
-  SuggestedDataset,
+  Nudge,
   BlogArticle,
   AnalyseSuggestion,
   ViewAnalysisSuggestion,
+  CreateDashboardSuggestion,
 } from "@/app/types/chat";
 import useMapStore from "./mapStore";
 import {
@@ -49,7 +50,6 @@ import {
 } from "@/app/config/feature-flags";
 import useAgentProfileStore from "./agentProfileStore";
 import useViewContextStore from "./viewContextStore";
-import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -91,6 +91,8 @@ interface ChatActions {
   acceptAnalyseNudge: (messageId: string) => void;
   upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
   acceptViewAnalysisNudge: (messageId: string) => void;
+  upsertCreateDashboardNudge: (suggestion: CreateDashboardSuggestion) => void;
+  addDashboardCard: (dashboardId: string, dashboardName?: string) => void;
   sendMessage: (
     message: string,
     queryType?: QueryType
@@ -124,9 +126,9 @@ const initialState: ChatState = {
       type: "system",
       message: `**Welcome to Global Nature Watch Horizon!**
 
-Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Forest Watch](https://globalforestwatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
+Hi, I'm your nature monitoring assistant, powered by AI and open data from [Global Nature Watch](https://globalnaturewatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).
 
-You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.globalnaturewatch.org/get-started).`,
+You can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.horizon.globalnaturewatch.org/get-started).`,
       timestamp: new Date().toISOString(),
     },
   ],
@@ -187,6 +189,41 @@ function parseLangChainLine(rawLine: string): StreamMessage | null {
   return parseStreamMessage(updateObject, messageType, date);
 }
 
+// The assistant line that precedes a dashboard-card message. Shared by the
+// agent-driven path (dashboard_updated on the stream) and the manual one
+// (addDashboardCard, from the create-dashboard nudge and the AOI menu) so a
+// dashboard the user made by hand reads the same as one the agent made.
+export function dashboardCreatedMessage(name?: string): string {
+  return name
+    ? `I've created the "${name}" dashboard. Open the card below to view it — I can keep adding insights to it as we explore.`
+    : "I've created a dashboard for you. Open the card below to view it — I can keep adding insights to it as we explore.";
+}
+
+export function dashboardUpdatedMessage(name?: string): string {
+  return name
+    ? `I've updated the "${name}" dashboard. Open the card below to see the changes.`
+    : "I've updated your dashboard. Open the card below to see the changes.";
+}
+
+// One dashboard card per dashboard per user turn: dashboard_updated fires on
+// creation and again for every widget add, but a single navigation card is
+// enough. Scanning back only to the last user message lets a later turn that
+// touches the same dashboard surface the card again.
+function dashboardCardExistsThisTurn(dashboardId: string): boolean {
+  const messages = useChatStore.getState().messages;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message.type === "user") return false;
+    if (
+      message.type === "dashboard-card" &&
+      message.dashboardId === dashboardId
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Helper function to process stream messages and add them to chat
 async function processStreamMessage(
   streamMessage: StreamMessage,
@@ -195,8 +232,8 @@ async function processStreamMessage(
   getPendingTraceId: () => string | null,
   setPendingTraceId: (traceId: string | null) => void,
   attachTraceToLastAssistant: (traceId: string) => boolean,
-  getPendingNudge: () => SuggestedDataset[] | null,
-  setPendingNudge: (datasets: SuggestedDataset[] | null) => void,
+  getPendingNudge: () => Nudge | null,
+  setPendingNudge: (nudge: Nudge | null) => void,
   mergeCitedArticles: (articles: BlogArticle[]) => void,
   setGeneratingInsight: (generating: boolean) => void
 ) {
@@ -213,6 +250,38 @@ async function processStreamMessage(
     streamMessage.msg_type === "insight_updated"
   ) {
     queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
+  }
+
+  // A dashboard write also surfaces a synthetic assistant line plus a
+  // navigation card in the thread — the stream carries only the dashboard's
+  // id and name, so the card is the user's one affordance to open what the
+  // agent just created or changed.
+  if (
+    streamMessage.msg_type === "dashboard_updated" &&
+    streamMessage.dashboard_id &&
+    !dashboardCardExistsThisTurn(streamMessage.dashboard_id)
+  ) {
+    // The signal itself doesn't distinguish a create from a widget add, but
+    // the tool result it rides on does. When it rides on agent narration or
+    // an error-classified message instead, there is no tool name — default
+    // to the "updated" wording.
+    const isCreate =
+      streamMessage.type === "tool" &&
+      streamMessage.name === "create_dashboard";
+    addMessage({
+      type: "assistant",
+      message: isCreate
+        ? dashboardCreatedMessage(streamMessage.dashboard_name)
+        : dashboardUpdatedMessage(streamMessage.dashboard_name),
+      timestamp: streamMessage.timestamp,
+    });
+    addMessage({
+      type: "dashboard-card",
+      message: "",
+      dashboardId: streamMessage.dashboard_id,
+      dashboardName: streamMessage.dashboard_name,
+      timestamp: streamMessage.timestamp,
+    });
   }
 
   // Capture standalone trace metadata sent as a separate stream message
@@ -312,9 +381,9 @@ async function processStreamMessage(
     const pendingNudge = getPendingNudge();
     if (pendingNudge) {
       addMessage({
-        type: "dataset-nudge",
+        type: "nudge",
         message: "",
-        suggestedDatasets: pendingNudge,
+        nudge: pendingNudge,
         timestamp: streamMessage.timestamp,
       });
       setPendingNudge(null);
@@ -331,6 +400,13 @@ async function processStreamMessage(
     // Add tool step to reasoning display
     if (streamMessage.name) {
       addToolStep(streamMessage);
+    }
+
+    // Any tool update can carry a nudge (dataset_choice, aoi_choice, ad-hoc
+    // send_nudge, …). Buffer it so it renders right after the assistant text
+    // that asks the question — the backend guarantees a trailing text turn.
+    if (streamMessage.nudge?.options?.length) {
+      setPendingNudge(streamMessage.nudge);
     }
 
     // Special handling for generate_insights tool
@@ -368,14 +444,7 @@ async function processStreamMessage(
         useChatStore.getState().foldSentContext({ dataset: datasetId });
       }
       void Promise.resolve().then(() =>
-        pickDatasetTool(streamMessage, (message) => {
-          // Buffer dataset-nudge messages so they appear after the assistant narrative
-          if (message.type === "dataset-nudge" && message.suggestedDatasets) {
-            setPendingNudge(message.suggestedDatasets);
-          } else {
-            addMessage(message);
-          }
-        })
+        pickDatasetTool(streamMessage, addMessage)
       );
       return;
     }
@@ -525,6 +594,56 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }));
   },
 
+  // Manual counterpart to the stream's dashboard_updated branch: the user
+  // created a dashboard directly over REST (create-dashboard nudge or AOI
+  // menu), so nothing arrives on the stream to announce it. Appends the same
+  // assistant line + navigation card the agent path emits.
+  //
+  // Unlike that path there is no per-turn dedupe: each manual create is a
+  // distinct, user-initiated act and deserves its own card.
+  addDashboardCard: (dashboardId, dashboardName) => {
+    const timestamp = new Date().toISOString();
+    const newId = () =>
+      Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11);
+    set((state) => ({
+      messages: [
+        ...state.messages,
+        {
+          id: newId(),
+          type: "assistant",
+          message: dashboardCreatedMessage(dashboardName),
+          timestamp,
+        },
+        {
+          id: newId(),
+          type: "dashboard-card",
+          message: "",
+          dashboardId,
+          dashboardName,
+          timestamp,
+        },
+      ],
+    }));
+  },
+
+  // UI-only create-dashboard nudge: at most one at a time (no accepted state
+  // yet), so a new selection always replaces the previous card.
+  upsertCreateDashboardNudge: (suggestion) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "create-dashboard-nudge",
+      message: "",
+      createDashboardSuggestion: suggestion,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter((m) => m.type !== "create-dashboard-nudge"),
+        newMessage,
+      ],
+    }));
+  },
+
   generateNewThread: () => {
     const threadId = uuidv4();
     set({ currentThreadId: threadId });
@@ -578,31 +697,18 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // turn. Agent picks arriving during the stream fold their slots on top.
     set({ lastSentContext: keys });
 
-    // Send the agent profile as `ff` only when a profile is selected and the
-    // user type is allowed to use feature flags (else the backend 403s).
+    // Send an agent profile as `ff` only for user types the backend accepts
+    // feature flags from (else it 403s).
     const userType = useAuthStore.getState().userType;
     const viewContext = useViewContextStore.getState().viewContext;
-    // The dashboard agent tools live in the backend's experimental profile, so
-    // default to it whenever the dashboards feature is active — either on a
-    // dashboard surface or with the ?ff=dashboard gate open — letting a single
-    // ?ff=dashboard stand in for ?agent_profile=experimental. Read live: nav
-    // helpers carry ?ff=dashboard across the thread-URL rewrite, so this tracks
-    // the visible feature rather than persisting a separate flag.
-    const dashboardsFeatureActive =
-      viewContext?.page === "dashboard" ||
-      (typeof window !== "undefined" &&
-        isFeatureEnabled(
-          new URLSearchParams(window.location.search),
-          "dashboard"
-        ));
+    // The dashboard agent tools live in the backend's experimental profile —
+    // now the default for every feature-flag-eligible user, since the
+    // dashboards feature itself is on unconditionally.
     const ff =
       effectiveAgentProfile(
         useAgentProfileStore.getState().agentProfile,
         userType
-      ) ??
-      (dashboardsFeatureActive && canUseFeatureFlags(userType)
-        ? EXPERIMENTAL_PROFILE
-        : null);
+      ) ?? (canUseFeatureFlags(userType) ? EXPERIMENTAL_PROFILE : null);
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
@@ -650,7 +756,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       useAuthStore.getState().setUsageFromHeaders(response.headers);
 
       const reader = response.body.getReader();
-      let pendingNudge: SuggestedDataset[] | null = null;
+      let pendingNudge: Nudge | null = null;
 
       await readDataStream({
         abortController,
@@ -685,8 +791,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                 return attached;
               },
               () => pendingNudge,
-              (datasets) => {
-                pendingNudge = datasets;
+              (nudge) => {
+                pendingNudge = nudge;
               },
               get().mergeCitedArticles,
               setGeneratingInsight
@@ -704,6 +810,19 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           }
         },
       });
+
+      // Safety net: the backend guarantees a plain-text assistant turn after
+      // every nudge, but if that final turn was dropped or errored, flush the
+      // buffered nudge at stream end so the options still render.
+      if (pendingNudge) {
+        addMessage({
+          type: "nudge",
+          message: "",
+          nudge: pendingNudge,
+          timestamp: new Date().toISOString(),
+        });
+        pendingNudge = null;
+      }
 
       const { done: readerDone } = await reader.read();
       // Log why the loop ended
@@ -922,7 +1041,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       }
 
       const reader = response.body.getReader();
-      let pendingNudgeThread: SuggestedDataset[] | null = null;
+      let pendingNudgeThread: Nudge | null = null;
 
       await readDataStream({
         abortController,
@@ -1004,8 +1123,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
                 return attached;
               },
               () => pendingNudgeThread,
-              (datasets) => {
-                pendingNudgeThread = datasets;
+              (nudge) => {
+                pendingNudgeThread = nudge;
               },
               mergeCitedArticles,
               setGeneratingInsight
@@ -1023,6 +1142,18 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
           }
         },
       });
+
+      // Safety net mirroring sendMessage: flush a nudge whose trailing
+      // assistant text never arrived (dropped/errored final turn).
+      if (pendingNudgeThread) {
+        addMessage({
+          type: "nudge",
+          message: "",
+          nudge: pendingNudgeThread,
+          timestamp: new Date().toISOString(),
+        });
+        pendingNudgeThread = null;
+      }
 
       const { done: readerDone } = await reader.read();
       if (readerDone) {

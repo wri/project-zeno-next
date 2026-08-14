@@ -20,7 +20,7 @@ import {
 import { toaster } from "@/app/components/ui/toaster";
 import type { Dashboard } from "../api/schemas";
 import type { DashboardMode } from "../hooks/useDashboardMode";
-import { updatedLabel } from "../lib/dates";
+import { updatedLabel, wasJustCreated } from "../lib/dates";
 import { useRenameDashboard } from "./dashboardQueries";
 
 /**
@@ -36,11 +36,14 @@ export default function DashboardHeader({
   isOwner,
   mode,
   onModeChange,
+  condensed = false,
 }: {
   dashboard: Dashboard;
   isOwner: boolean;
   mode: DashboardMode;
   onModeChange: (mode: DashboardMode) => void;
+  /** Pinned-bar variant: the title truncates with an ellipsis instead of wrapping. */
+  condensed?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
@@ -84,7 +87,7 @@ export default function DashboardHeader({
   return (
     <Flex justify="space-between" align="flex-start" gap={6}>
       <Box minW={0} flex="1">
-        <Flex align="center" gap="12px">
+        <Flex align="center" gap="12px" minW={0}>
           {editing ? (
             <Input
               value={draft}
@@ -104,12 +107,18 @@ export default function DashboardHeader({
             />
           ) : (
             <Heading
-              as="h1"
+              // The pinned bar duplicates the page title — keep one h1 per page.
+              as={condensed ? "h2" : "h1"}
               fontSize="30px"
               lineHeight="36px"
               fontWeight="normal"
               color="#131619"
-              wordBreak="break-word"
+              // The theme's globalCss gives every h2 a 16px margin-bottom,
+              // which would stretch the title row in the condensed variant.
+              mb="0"
+              {...(condensed
+                ? { truncate: true, minW: 0 }
+                : { wordBreak: "break-word" as const })}
             >
               {dashboard.name}
             </Heading>
@@ -127,15 +136,35 @@ export default function DashboardHeader({
             </IconButton>
           )}
         </Flex>
-        <Text
-          mt="7px"
-          fontFamily="mono"
-          fontSize="10px"
-          lineHeight="16px"
-          color="rgba(19,22,25,0.7)"
-        >
-          {updatedLabel(dashboard.updated_at)}
-        </Text>
+        {wasJustCreated(dashboard.created_at) ? (
+          <Box
+            mt="8px"
+            display="inline-flex"
+            bg="#F0F4B4"
+            px="4px"
+            rounded="sm"
+          >
+            <Text
+              fontFamily="mono"
+              fontSize="10px"
+              lineHeight="16px"
+              color="#5B5F3A"
+            >
+              Created just now
+            </Text>
+          </Box>
+        ) : (
+          <Text
+            // 8px title-to-timestamp gap per the Figma header frames.
+            mt="8px"
+            fontFamily="mono"
+            fontSize="10px"
+            lineHeight="16px"
+            color="rgba(19,22,25,0.7)"
+          >
+            {updatedLabel(dashboard.updated_at)}
+          </Text>
+        )}
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>
