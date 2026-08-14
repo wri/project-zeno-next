@@ -36,6 +36,10 @@ import {
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 
+// Printing (the report route) must not slice a widget across pages;
+// harmless on screen. Module-level so the per-cell render reuses one object.
+const PRINT_BREAK_INSIDE = { "@media print": { breakInside: "avoid" } };
+
 /**
  * Column count follows the grid's own width, not the viewport: the full-size
  * chat is a fixed overlay that narrows the content area without changing the
@@ -250,7 +254,11 @@ export default function DashboardWidgetsGrid({
         // column. Cards clip internally rather than force the page wider than
         // the container near the two-column threshold.
         minW={0}
-        css={{ order: i, [TWO_COLUMN_QUERY]: { order: 0 } }}
+        css={{
+          order: i,
+          [TWO_COLUMN_QUERY]: { order: 0 },
+          ...PRINT_BREAK_INSIDE,
+        }}
         draggable={canEdit && grabbedKey === cell.key}
         onDragStart={(e) => {
           // Required for Firefox to initiate drag-and-drop.

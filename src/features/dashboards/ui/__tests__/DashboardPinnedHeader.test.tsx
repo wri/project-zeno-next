@@ -80,7 +80,10 @@ describe("DashboardPinnedHeader", () => {
     );
   });
 
-  it("Export and Share behave identically to the full header (false-door toast)", () => {
+  it("Export and Share behave identically to the full header (report route / false-door toast)", () => {
+    const openSpy = vi.fn();
+    window.open = openSpy;
+
     renderPinned(
       <DashboardPinnedHeader
         dashboard={dashboard}
@@ -95,7 +98,12 @@ describe("DashboardPinnedHeader", () => {
     fireEvent.click(screen.getByRole("button", { name: /export/i }));
     fireEvent.click(screen.getByRole("button", { name: /share/i }));
 
-    expect(toaster.create).toHaveBeenCalledTimes(2);
+    expect(openSpy).toHaveBeenCalledWith(
+      `/dashboards/${dashboard.id}/report`,
+      "_blank",
+      "noopener"
+    );
+    expect(toaster.create).toHaveBeenCalledTimes(1);
     expect(vi.mocked(toaster.create).mock.calls[0][0]).toMatchObject({
       title: "Coming soon",
     });
