@@ -37,9 +37,9 @@ import DashboardMapWidget from "./DashboardMapWidget";
  * "Show params" row, and the white chart card (`WidgetMessage`) — or the
  * map body (`DashboardMapWidget`) for map widgets — inside.
  * A widget whose insight has several charts renders one of these per chart,
- * so `card` is a single insight card, not a list. Header actions still act
- * on the underlying widget (per the API: position/config/DELETE are
- * widget-level), which `chartCount` lets the remove dialog explain.
+ * so `card` is a single insight card, not a list. What the X actually does
+ * therefore depends on the call site — delete the widget, or hide one chart
+ * of a module — which `removeMode` lets the remove dialog explain.
  */
 export default function DashboardWidgetCard({
   title,
@@ -48,7 +48,7 @@ export default function DashboardWidgetCard({
   aoi,
   viewportBbox,
   placeholder,
-  chartCount,
+  removeMode,
   isOwner,
   isDouble,
   onArmDrag,
@@ -68,8 +68,12 @@ export default function DashboardWidgetCard({
   viewportBbox?: [number, number, number, number] | null;
   /** Placeholder copy when `card` is null (unsupported type / hidden insight). */
   placeholder: string | null;
-  /** How many cards the underlying widget renders in total (its chart count). */
-  chartCount: number;
+  /**
+   * What `onRemove` actually does, which the confirm dialog explains:
+   * `"widget"` deletes the widget from the dashboard, `"chart"` only hides
+   * this chart within its analysis module (recoverable from Customize).
+   */
+  removeMode: "widget" | "chart";
   isOwner: boolean;
   isDouble: boolean;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
@@ -295,13 +299,13 @@ export default function DashboardWidgetCard({
             <Dialog.Content>
               <Dialog.Header>
                 <Dialog.Title>
-                  {chartCount > 1 ? "Remove chart?" : "Remove widget?"}
+                  {removeMode === "chart" ? "Remove chart?" : "Remove widget?"}
                 </Dialog.Title>
               </Dialog.Header>
               <Dialog.Body>
                 <Text>
-                  {chartCount > 1
-                    ? "Only this chart is removed from the dashboard — the analysis's other charts stay, and the underlying analysis is not deleted."
+                  {removeMode === "chart"
+                    ? "This chart is hidden from the dashboard. Show it again from the analysis's Customize menu. The underlying analysis is not deleted."
                     : "The widget will be removed from this dashboard. The underlying analysis is not deleted."}
                 </Text>
               </Dialog.Body>

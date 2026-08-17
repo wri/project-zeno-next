@@ -1,3 +1,4 @@
+import { firstChartTitle } from "@/src/entities/insight";
 import type { CodeActPart, InsightWidget } from "@/app/types/chat";
 import type { DashboardWidget } from "../api/schemas";
 
@@ -192,20 +193,129 @@ export function withChartShown(
 }
 
 /**
- * The full config to PATCH to hide a chart (config is replaced whole). Returns
- * `null` when it was the last shown chart — the caller should delete the widget
- * rather than persist an empty one.
+ * The full config to PATCH to hide a chart (config is replaced whole). Hiding
+ * the last shown chart keeps an explicit empty subset (`chartIds: []`) — the
+ * widget survives so its summary can still render and the Customize menu can
+ * re-show charts; absent `chartIds` still means "all charts".
  */
 export function withChartHidden(
   config: Record<string, unknown>,
   chartId: string,
   allChartIds: string[]
-): Record<string, unknown> | null {
+): Record<string, unknown> {
   const next = shownChartIds(config, allChartIds).filter(
     (id) => id !== chartId
   );
-  if (next.length === 0) return null;
   return { ...config, chartIds: next };
+}
+
+/**
+ * Whether the widget shows its insight narrative. Hidden only by an explicit
+ * `summaryHidden: true`, so older configs keep showing the summary.
+ */
+export function isSummaryShown(config: Record<string, unknown>): boolean {
+  return config.summaryHidden !== true;
+}
+
+/**
+ * The full config to PATCH for a summary visibility change (config is
+ * replaced whole). The key is dropped when shown to keep configs tidy.
+ */
+export function withSummaryShown(
+  config: Record<string, unknown>,
+  shown: boolean
+): Record<string, unknown> {
+  const out = { ...config };
+  if (shown) delete out.summaryHidden;
+  else out.summaryHidden = true;
+  return out;
+}
+
+/**
+ * Whether a widget's config holds anything the owner arranged by hand — the
+ * per-chart spans and renames, the shown-chart subset, the summary toggle and
+ * the title override written by the `with*` helpers above.
+ *
+ * Deleting a widget discards all of it with no undo (the config lives only on
+ * the widget), so removal paths that would otherwise be a single click ask for
+ * confirmation when this is true. A widget added whole and left alone has an
+ * empty config, and stays a one-click remove.
+ */
+export function hasWidgetCustomization(
+  config: Record<string, unknown>
+): boolean {
+  if (config.summaryHidden === true) return true;
+  // An explicit `chartIds` is a customisation at any length: absent means "all
+  // charts", so even the empty array is a deliberate "hide everything".
+  if (Array.isArray(config.chartIds)) return true;
+  return ["sizes", "titles", "title", "size"].some((key) => {
+    const value = config[key];
+    if (typeof value === "string") return value.trim().length > 0;
+    if (value && typeof value === "object")
+      return Object.keys(value).length > 0;
+    return false;
+  });
+}
+
+/**
+ * The insight module's display title: the widget's `config.title` override,
+ * else the shared `firstChartTitle` fallback over all charts (not just shown
+ * ones, so the title doesn't jump when charts are hidden), else "Analysis".
+ *
+ * The Analyses panel resolves a curated insight's own `record.title` ahead of
+ * that fallback; there is deliberately no equivalent here, because the
+ * dashboards API's insight expansion carries no title field. Add one here only
+ * once it does — mirroring the panel's rule against a title we don't have would
+ * just reintroduce the divergence the shared fallback removes.
+ */
+export function moduleTitle(widget: DashboardWidget): string {
+  const override =
+    typeof widget.config.title === "string" ? widget.config.title.trim() : "";
+  if (override) return override;
+  return firstChartTitle(widget.insight?.charts ?? []) || "Analysis";
+}
+
+/**
+ * Everything the dashboard's insight module renders, in one node-testable
+ * shape: header title, narrative visibility, the shown chart cards
+ * (`dashboardWidgetToInsightWidgets`) and the full chart roster for the
+ * Customize menu (position order, with per-chart rename overrides applied).
+ */
+export interface InsightModuleView {
+  title: string;
+  /** The narrative to render; "" when absent or blank. */
+  summaryText: string;
+  summaryShown: boolean;
+  cards: InsightWidget[];
+  allCharts: { id: string; title: string; shown: boolean }[];
+}
+
+export function insightModule(
+  widget: DashboardWidget,
+  { areaName }: { areaName?: string } = {}
+): InsightModuleView {
+  const charts = [...(widget.insight?.charts ?? [])].sort(
+    (a, b) => a.position - b.position
+  );
+  const shown = new Set(
+    shownChartIds(
+      widget.config,
+      charts.map((c) => c.id)
+    )
+  );
+  return {
+    title: moduleTitle(widget),
+    summaryText: widget.insight?.insight_text?.trim()
+      ? widget.insight.insight_text
+      : "",
+    summaryShown: isSummaryShown(widget.config),
+    cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
+    allCharts: charts.map((chart) => ({
+      id: chart.id,
+      title: chartTitleOverride(widget.config, chart.id) ?? chart.title,
+      shown: shown.has(chart.id),
+    })),
+  };
 }
 
 /**

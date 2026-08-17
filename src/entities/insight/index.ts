@@ -12,4 +12,7 @@ export type {
 export { chartsToWidgets } from "./lib/charts-to-widgets";
 export { generateInsightTitle } from "./lib/insight-title";
 export type { InsightTitleInput } from "./lib/insight-title";
-export { resolveInsightTitle } from "./lib/resolve-insight-title";
+export {
+  firstChartTitle,
+  resolveInsightTitle,
+} from "./lib/resolve-insight-title";
