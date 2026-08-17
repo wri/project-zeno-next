@@ -56,11 +56,15 @@ const NOTE_BODY_MIN_H = "80px";
  * syntax toolbar, and a Done button) rather than a title rename; Done persists
  * `config.text` via `onSaveText`. Mutations are owned by the grid and passed as
  * callbacks, matching `DashboardWidgetCard`.
+ *
+ * In report mode the header and divider go entirely — the note body reads as
+ * a plain passage of the document.
  */
 export default function DashboardTextWidgetCard({
   text,
   placeholder,
-  isOwner,
+  canEdit,
+  isReport,
   isDouble,
   onArmDrag,
   onDisarmDrag,
@@ -72,7 +76,10 @@ export default function DashboardTextWidgetCard({
   text: string | null;
   /** Copy shown in the body when the note is empty. */
   placeholder: string | null;
-  isOwner: boolean;
+  /** Owner in edit mode — gates every editing affordance. */
+  canEdit: boolean;
+  /** Report mode: header and divider go — the note is a plain passage. */
+  isReport: boolean;
   isDouble: boolean;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
   onArmDrag: () => void;
@@ -221,141 +228,144 @@ export default function DashboardTextWidgetCard({
       // a card must never stretch to a taller neighbour's height.
       bg="white"
       borderWidth="1px"
-      borderColor={editing ? "#0049AA" : "#DDE2F5"}
+      borderColor={editing ? "#0049AA" : isReport ? "transparent" : "#DDE2F5"}
       borderRadius="sm"
       overflow="hidden"
     >
-      {/* Header — grey toolbar row while editing, else the AI caption + actions */}
-      <Flex
-        align="center"
-        justify="space-between"
-        gap="8px"
-        pl={editing || !isOwner ? "12px" : "4px"}
-        pr="12px"
-        py="8px"
-        minH="36px"
-        bg={editing ? "#F4F5F6" : "white"}
-        borderBottomWidth={editing ? "1px" : undefined}
-        borderColor="#E0E2E5"
-      >
-        {editing ? (
-          <>
-            <Flex align="center" gap="8px" minW={0} flexWrap="wrap">
-              {TOOLBAR_GROUPS.map((group, groupIndex) => (
-                <Flex align="center" gap="2px" key={group[0].key}>
-                  {groupIndex > 0 && (
-                    <Box
-                      w="1px"
-                      h="16px"
-                      bg="#D9D9D9"
-                      mr="6px"
-                      flexShrink={0}
-                    />
-                  )}
-                  {group.map(({ key, label, Glyph, run }) => (
-                    <IconButton
-                      key={key}
-                      aria-label={label}
-                      title={label}
-                      size="2xs"
-                      variant="ghost"
-                      color="fg.muted"
-                      // Keep focus (and the selection) in the textarea so the
-                      // transform reads the caret the user left there.
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={run}
-                    >
-                      <Glyph size={16} />
-                    </IconButton>
-                  ))}
-                </Flex>
-              ))}
-            </Flex>
-            <Button
-              size="xs"
-              variant="outline"
-              borderColor="rgba(19,22,25,0.2)"
-              color="rgba(19,22,25,0.7)"
-              gap="4px"
-              flexShrink={0}
-              onClick={commitEdit}
-            >
-              <CheckIcon size={16} />
-              Done
-            </Button>
-          </>
-        ) : (
-          <>
-            <Flex align="center" gap="4px" minW={0}>
-              {isOwner && (
-                <Icon
-                  as={DotsSixVerticalIcon}
-                  boxSize="16px"
-                  color="fg.muted"
-                  cursor="grab"
-                  flexShrink={0}
-                  aria-label="Drag to reposition"
-                  onPointerDown={onArmDrag}
-                  onPointerUp={onDisarmDrag}
-                />
-              )}
-              <InsightCaption />
-            </Flex>
-            {isOwner && (
-              <Flex align="center" gap="4px" flexShrink={0}>
-                <IconButton
-                  aria-label="Edit note"
-                  title="Edit note"
-                  size="2xs"
-                  variant="ghost"
-                  color="fg.muted"
-                  onClick={startEditing}
-                >
-                  <PencilSimpleIcon size={16} />
-                </IconButton>
-                <IconButton
-                  aria-label="Add to AI conversation"
-                  title="Add to AI conversation"
-                  size="2xs"
-                  variant="ghost"
-                  color="fg.muted"
-                  onClick={addToConversation}
-                >
-                  <ChatTeardropDotsIcon size={16} />
-                </IconButton>
-                <IconButton
-                  aria-label={
-                    isDouble ? "Shrink to one column" : "Expand to full width"
-                  }
-                  title={
-                    isDouble ? "Shrink to one column" : "Expand to full width"
-                  }
-                  size="2xs"
-                  variant="ghost"
-                  color="fg.muted"
-                  onClick={onToggleSize}
-                >
-                  <ArrowsOutLineHorizontalIcon size={16} />
-                </IconButton>
-                <IconButton
-                  aria-label="Remove from dashboard"
-                  title="Remove from dashboard"
-                  size="2xs"
-                  variant="ghost"
-                  color="fg.muted"
-                  onClick={() => setConfirmOpen(true)}
-                >
-                  <XIcon size={16} />
-                </IconButton>
+      {/* Header — grey toolbar row while editing, else the AI caption +
+          actions. Absent from the report: the note is a plain passage. */}
+      {!isReport && (
+        <Flex
+          align="center"
+          justify="space-between"
+          gap="8px"
+          pl={editing || !canEdit ? "12px" : "4px"}
+          pr="12px"
+          py="8px"
+          minH="36px"
+          bg={editing ? "#F4F5F6" : "white"}
+          borderBottomWidth={editing ? "1px" : undefined}
+          borderColor="#E0E2E5"
+        >
+          {editing ? (
+            <>
+              <Flex align="center" gap="8px" minW={0} flexWrap="wrap">
+                {TOOLBAR_GROUPS.map((group, groupIndex) => (
+                  <Flex align="center" gap="2px" key={group[0].key}>
+                    {groupIndex > 0 && (
+                      <Box
+                        w="1px"
+                        h="16px"
+                        bg="#D9D9D9"
+                        mr="6px"
+                        flexShrink={0}
+                      />
+                    )}
+                    {group.map(({ key, label, Glyph, run }) => (
+                      <IconButton
+                        key={key}
+                        aria-label={label}
+                        title={label}
+                        size="2xs"
+                        variant="ghost"
+                        color="fg.muted"
+                        // Keep focus (and the selection) in the textarea so the
+                        // transform reads the caret the user left there.
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={run}
+                      >
+                        <Glyph size={16} />
+                      </IconButton>
+                    ))}
+                  </Flex>
+                ))}
               </Flex>
-            )}
-          </>
-        )}
-      </Flex>
+              <Button
+                size="xs"
+                variant="outline"
+                borderColor="rgba(19,22,25,0.2)"
+                color="rgba(19,22,25,0.7)"
+                gap="4px"
+                flexShrink={0}
+                onClick={commitEdit}
+              >
+                <CheckIcon size={16} />
+                Done
+              </Button>
+            </>
+          ) : (
+            <>
+              <Flex align="center" gap="4px" minW={0}>
+                {canEdit && (
+                  <Icon
+                    as={DotsSixVerticalIcon}
+                    boxSize="16px"
+                    color="fg.muted"
+                    cursor="grab"
+                    flexShrink={0}
+                    aria-label="Drag to reposition"
+                    onPointerDown={onArmDrag}
+                    onPointerUp={onDisarmDrag}
+                  />
+                )}
+                <InsightCaption />
+              </Flex>
+              {canEdit && (
+                <Flex align="center" gap="4px" flexShrink={0}>
+                  <IconButton
+                    aria-label="Edit note"
+                    title="Edit note"
+                    size="2xs"
+                    variant="ghost"
+                    color="fg.muted"
+                    onClick={startEditing}
+                  >
+                    <PencilSimpleIcon size={16} />
+                  </IconButton>
+                  <IconButton
+                    aria-label="Add to AI conversation"
+                    title="Add to AI conversation"
+                    size="2xs"
+                    variant="ghost"
+                    color="fg.muted"
+                    onClick={addToConversation}
+                  >
+                    <ChatTeardropDotsIcon size={16} />
+                  </IconButton>
+                  <IconButton
+                    aria-label={
+                      isDouble ? "Shrink to one column" : "Expand to full width"
+                    }
+                    title={
+                      isDouble ? "Shrink to one column" : "Expand to full width"
+                    }
+                    size="2xs"
+                    variant="ghost"
+                    color="fg.muted"
+                    onClick={onToggleSize}
+                  >
+                    <ArrowsOutLineHorizontalIcon size={16} />
+                  </IconButton>
+                  <IconButton
+                    aria-label="Remove from dashboard"
+                    title="Remove from dashboard"
+                    size="2xs"
+                    variant="ghost"
+                    color="fg.muted"
+                    onClick={() => setConfirmOpen(true)}
+                  >
+                    <XIcon size={16} />
+                  </IconButton>
+                </Flex>
+              )}
+            </>
+          )}
+        </Flex>
+      )}
 
       {/* Divider inset from the card edges, matching the analysis card. In
           edit mode the filled grey header carries its own full-width border. */}
-      {!editing && (
+      {!editing && !isReport && (
         <Box mx="8px" borderBottomWidth="1px" borderColor="#E0E2E5" />
       )}
 
@@ -412,7 +422,7 @@ export default function DashboardTextWidgetCard({
             textAlign="center"
           >
             <Text fontSize="sm">{placeholder ?? "This note is empty."}</Text>
-            {isOwner && (
+            {canEdit && (
               <Text fontSize="xs">Use the pencil to add a note.</Text>
             )}
           </Flex>

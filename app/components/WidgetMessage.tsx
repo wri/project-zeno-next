@@ -47,9 +47,19 @@ import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 
+/**
+ * Presentation variants — same content, different chrome:
+ * - `chat`: gradient title header, disclaimer, add-to-dashboard toggle.
+ * - `workspace`: dashboard/insight-panel card — AI caption + toolbars, no header.
+ * - `report`: the workspace card stripped of every editing/inspection
+ *   affordance (toolbar, action row, caption, border) — chart/table only,
+ *   still hover-interactive. Dashboard report mode.
+ */
+export type WidgetMessageVariant = "chat" | "workspace" | "report";
+
 interface WidgetMessageProps {
   widget: InsightWidget;
-  inWorkspace?: boolean;
+  variant?: WidgetMessageVariant;
   /** The host dashboard card spans both columns — chart content adapts. */
   fullWidth?: boolean;
 }
@@ -77,9 +87,11 @@ function AxisBreakIcon({ size = 14 }: { size?: number }) {
 
 export default function WidgetMessage({
   widget,
-  inWorkspace,
+  variant = "chat",
   fullWidth,
 }: WidgetMessageProps) {
+  const inChat = variant === "chat";
+  const isReport = variant === "report";
   const [showAsTable, setShowAsTable] = useState(false);
   const [fitYAxis, setFitYAxis] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
@@ -181,11 +193,12 @@ export default function WidgetMessage({
       border="1px solid"
       // Workspace/dashboard cards sit inside the light-blue Analysis shell,
       // whose design pairs the white card with the blue-10 border (#DDE2F5).
-      borderColor={inWorkspace ? "#DDE2F5" : "blue.fg"}
+      // The report has no card at all — content sits on the page.
+      borderColor={inChat ? "blue.fg" : isReport ? "transparent" : "#DDE2F5"}
       overflow="hidden"
-      bg="neutral.100"
+      bg={isReport ? "transparent" : "neutral.100"}
     >
-      {!inWorkspace && (
+      {inChat && (
         <Flex
           px={4}
           py={3}
@@ -201,83 +214,86 @@ export default function WidgetMessage({
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">
         {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
-        {inWorkspace && (
+        {variant === "workspace" && (
           <InsightCaption curated={widget.curated ?? !widget.generation} />
         )}
-        {/* Toolbar row — segmented toggle + full-screen */}
-        <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
-          {/* Segmented Chart / Table toggle */}
-          {isChartType && hasData && (
-            <Flex
-              gap={0}
-              border="1px solid"
-              borderColor="border.emphasized"
-              rounded="md"
-              overflow="hidden"
-              role="group"
-              aria-label="Visualization format"
-            >
-              <Button
-                size="xs"
-                variant={!showAsTable ? "solid" : "ghost"}
-                colorPalette={!showAsTable ? "primary" : undefined}
-                onClick={() => setShowAsTable(false)}
-                h={6}
-                rounded="none"
-                fontWeight="medium"
-                aria-pressed={!showAsTable}
+        {/* Toolbar row — segmented toggle + full-screen. Editing chrome, so
+            absent from the report (the chart itself stays interactive). */}
+        {!isReport && (
+          <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
+            {/* Segmented Chart / Table toggle */}
+            {isChartType && hasData && (
+              <Flex
+                gap={0}
+                border="1px solid"
+                borderColor="border.emphasized"
+                rounded="md"
+                overflow="hidden"
+                role="group"
+                aria-label="Visualization format"
               >
-                <ChartBarIcon size={14} />
-                Chart
-              </Button>
-              <Button
-                size="xs"
-                variant={showAsTable ? "solid" : "ghost"}
-                colorPalette={showAsTable ? "primary" : undefined}
-                onClick={() => setShowAsTable(true)}
-                h={6}
-                rounded="none"
-                fontWeight="medium"
-                aria-pressed={showAsTable}
-              >
-                <TableIcon size={14} />
-                Table
-              </Button>
-            </Flex>
-          )}
-          {/* Fit y-axis to data — only for types where a non-zero baseline
+                <Button
+                  size="xs"
+                  variant={!showAsTable ? "solid" : "ghost"}
+                  colorPalette={!showAsTable ? "primary" : undefined}
+                  onClick={() => setShowAsTable(false)}
+                  h={6}
+                  rounded="none"
+                  fontWeight="medium"
+                  aria-pressed={!showAsTable}
+                >
+                  <ChartBarIcon size={14} />
+                  Chart
+                </Button>
+                <Button
+                  size="xs"
+                  variant={showAsTable ? "solid" : "ghost"}
+                  colorPalette={showAsTable ? "primary" : undefined}
+                  onClick={() => setShowAsTable(true)}
+                  h={6}
+                  rounded="none"
+                  fontWeight="medium"
+                  aria-pressed={showAsTable}
+                >
+                  <TableIcon size={14} />
+                  Table
+                </Button>
+              </Flex>
+            )}
+            {/* Fit y-axis to data — only for types where a non-zero baseline
               is honest (line/area/scatter; bar lengths encode magnitude) */}
-          {isChartType && hasData && supportsAxisFit && !showAsTable && (
-            <Button
-              size="xs"
-              variant={fitYAxis ? "solid" : "outline"}
-              colorPalette={fitYAxis ? "primary" : undefined}
-              onClick={() => setFitYAxis((v) => !v)}
-              h={6}
-              rounded="sm"
-              color={fitYAxis ? undefined : "neutral.500"}
-              aria-pressed={fitYAxis}
-              title="Rescale the y-axis to the data range instead of starting at zero"
-            >
-              <AxisBreakIcon />
-              Fit y-axis
-            </Button>
-          )}
-          {/* Show full-screen */}
-          {isChartType && hasData && (
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={onExpand}
-              h={6}
-              rounded="sm"
-              color="neutral.500"
-            >
-              <ArrowsOutIcon size={14} />
-              Full-screen
-            </Button>
-          )}
-        </Flex>
+            {isChartType && hasData && supportsAxisFit && !showAsTable && (
+              <Button
+                size="xs"
+                variant={fitYAxis ? "solid" : "outline"}
+                colorPalette={fitYAxis ? "primary" : undefined}
+                onClick={() => setFitYAxis((v) => !v)}
+                h={6}
+                rounded="sm"
+                color={fitYAxis ? undefined : "neutral.500"}
+                aria-pressed={fitYAxis}
+                title="Rescale the y-axis to the data range instead of starting at zero"
+              >
+                <AxisBreakIcon />
+                Fit y-axis
+              </Button>
+            )}
+            {/* Show full-screen */}
+            {isChartType && hasData && (
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={onExpand}
+                h={6}
+                rounded="sm"
+                color="neutral.500"
+              >
+                <ArrowsOutIcon size={14} />
+                Full-screen
+              </Button>
+            )}
+          </Flex>
+        )}
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <Box ref={chartRef}>
@@ -314,12 +330,13 @@ export default function WidgetMessage({
             </ScrollableTableWrapper>
           </WidgetErrorBoundary>
         )}
-        {/* Bottom action row — provenance + download + continue in AI */}
-        {(isChartType || widget.type === "table") && hasData && (
+        {/* Bottom action row — provenance + download + continue in AI.
+            Inspection/export chrome, so absent from the report. */}
+        {!isReport && (isChartType || widget.type === "table") && hasData && (
           <Flex
             justify="flex-start"
             gap={1}
-            flexWrap={inWorkspace ? "nowrap" : "wrap"}
+            flexWrap={inChat ? "wrap" : "nowrap"}
             align="center"
           >
             {widget.generation && (
@@ -433,12 +450,12 @@ export default function WidgetMessage({
             </Menu.Root>
             {/* Chat cards only: workspace/dashboard cards manage widgets via
                 their own shell (drag/resize/remove), so no toggle there. */}
-            {!inWorkspace && widget.insightId && (
+            {inChat && widget.insightId && (
               <AddToDashboardToggle insightId={widget.insightId} />
             )}
           </Flex>
         )}
-        {showDisclaimer && !inWorkspace && <VisualizationDisclaimer />}
+        {showDisclaimer && inChat && <VisualizationDisclaimer />}
       </Flex>
       <InsightProvenanceDrawer
         isOpen={open}

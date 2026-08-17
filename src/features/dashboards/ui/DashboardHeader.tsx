@@ -12,28 +12,36 @@ import {
 } from "@chakra-ui/react";
 import {
   FilePdfIcon,
+  FileTextIcon,
   PencilSimpleIcon,
   ShareIcon,
 } from "@phosphor-icons/react";
 
 import { toaster } from "@/app/components/ui/toaster";
 import type { Dashboard } from "../api/schemas";
+import type { DashboardMode } from "../hooks/useDashboardMode";
 import { updatedLabel, wasJustCreated } from "../lib/dates";
 import { useRenameDashboard } from "./dashboardQueries";
 
 /**
  * Dashboard page header per the Figma "Dashboard default" frame: editable
- * 30px title with a pencil affordance (owner only), the mono "Updated…"
- * label, and Export / Share actions top-right. Export and Share are false
- * doors — measure interest before building the real flows.
+ * 30px title with a pencil affordance (owner only, edit mode only), the mono
+ * "Updated…" label, and actions top-right — an Edit/Report mode toggle
+ * (owners only; everyone else is already in report mode) ahead of Export /
+ * Share. Export and Share are false doors — measure interest before building
+ * the real flows.
  */
 export default function DashboardHeader({
   dashboard,
   isOwner,
+  mode,
+  onModeChange,
   condensed = false,
 }: {
   dashboard: Dashboard;
   isOwner: boolean;
+  mode: DashboardMode;
+  onModeChange: (mode: DashboardMode) => void;
   /** Pinned-bar variant: the title truncates with an ellipsis instead of wrapping. */
   condensed?: boolean;
 }) {
@@ -115,7 +123,7 @@ export default function DashboardHeader({
               {dashboard.name}
             </Heading>
           )}
-          {isOwner && !editing && (
+          {isOwner && mode === "edit" && !editing && (
             <IconButton
               aria-label="Rename dashboard"
               title="Rename dashboard"
@@ -160,6 +168,47 @@ export default function DashboardHeader({
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>
+        {/* Edit/Report — the same segmented control as the chart card's
+            Chart/Table toggle. Report strips the editing chrome for a clean,
+            document-like read; the toggle stays visible so editing is always
+            one click away. */}
+        {isOwner && (
+          <Flex
+            gap={0}
+            border="1px solid"
+            borderColor="rgba(19,22,25,0.2)"
+            rounded="sm"
+            overflow="hidden"
+            role="group"
+            aria-label="Dashboard mode"
+          >
+            {(
+              [
+                { value: "edit", Icon: PencilSimpleIcon, label: "Edit" },
+                { value: "report", Icon: FileTextIcon, label: "Report" },
+              ] as const
+            ).map(({ value, Icon, label }) => (
+              <Button
+                key={value}
+                size="xs"
+                variant={mode === value ? "solid" : "ghost"}
+                colorPalette={mode === value ? "primary" : undefined}
+                color={mode === value ? undefined : "rgba(19,22,25,0.7)"}
+                onClick={() => onModeChange(value)}
+                h="24px"
+                px="8px"
+                gap="4px"
+                rounded="none"
+                fontSize="12px"
+                fontWeight="medium"
+                aria-pressed={mode === value}
+              >
+                <Icon size={14} />
+                {label}
+              </Button>
+            ))}
+          </Flex>
+        )}
         <Button
           variant="outline"
           {...actionStyle}

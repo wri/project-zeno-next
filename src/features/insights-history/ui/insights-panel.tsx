@@ -535,7 +535,7 @@ function InsightDetail({
         Back to analyses
       </Button>
 
-      <WidgetMessage widget={item.widget} inWorkspace />
+      <WidgetMessage widget={item.widget} variant="workspace" />
 
       {total > 1 && (
         <Flex mt={3} justify="space-between" align="center">

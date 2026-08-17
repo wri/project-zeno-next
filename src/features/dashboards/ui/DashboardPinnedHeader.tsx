@@ -3,6 +3,7 @@
 import { Box, Container, Flex } from "@chakra-ui/react";
 
 import type { Dashboard } from "../api/schemas";
+import type { DashboardMode } from "../hooks/useDashboardMode";
 import { PINNED_HEADER_TOP_OFFSET_PX } from "../hooks/usePinnedHeader";
 import DashboardBreadcrumb from "./DashboardBreadcrumb";
 import DashboardHeader from "./DashboardHeader";
@@ -25,11 +26,15 @@ export default function DashboardPinnedHeader({
   isOwner,
   pinned,
   contentLeftPx,
+  mode,
+  onModeChange,
 }: {
   dashboard: Dashboard;
   isOwner: boolean;
   pinned: boolean;
   contentLeftPx: number;
+  mode: DashboardMode;
+  onModeChange: (mode: DashboardMode) => void;
 }) {
   return (
     <Box
@@ -68,6 +73,8 @@ export default function DashboardPinnedHeader({
               <DashboardHeader
                 dashboard={dashboard}
                 isOwner={isOwner}
+                mode={mode}
+                onModeChange={onModeChange}
                 condensed
               />
             </Box>

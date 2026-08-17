@@ -10,6 +10,7 @@ import useAgentProfileStore from "@/app/store/agentProfileStore";
 import useAuthStore from "@/app/store/authStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import useViewContextStore from "@/app/store/viewContextStore";
+import { useDashboardMode } from "../hooks/useDashboardMode";
 import usePinnedHeader from "../hooks/usePinnedHeader";
 import { useDashboard } from "./dashboardQueries";
 import DashboardBreadcrumb from "./DashboardBreadcrumb";
@@ -18,7 +19,7 @@ import DashboardHeader from "./DashboardHeader";
 import DashboardPinnedHeader from "./DashboardPinnedHeader";
 import DashboardSuggestedModules from "./DashboardSuggestedModules";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
-import { HERO_BAND_PROPS } from "./heroGrid";
+import { HERO_BAND_PROPS, HERO_GRID_IMAGE } from "./heroGrid";
 
 export default function DashboardDetailPage() {
   const params = useParams<{ id: string }>();
@@ -27,6 +28,7 @@ export default function DashboardDetailPage() {
   const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
   const userId = useAuthStore((s) => s.userId);
   const isOwner = !!userId && userId === dashboard?.user_id;
+  const { mode, setMode } = useDashboardMode(isOwner);
   const contentLeftPx = getDashboardContentLeftPx(isChatFullSize);
   const { sentinelRef, pinned } = usePinnedHeader();
 
@@ -90,6 +92,8 @@ export default function DashboardDetailPage() {
           isOwner={isOwner}
           pinned={pinned}
           contentLeftPx={contentLeftPx}
+          mode={mode}
+          onModeChange={setMode}
         />
       )}
       <Container maxW="1232px">
@@ -111,11 +115,13 @@ export default function DashboardDetailPage() {
             </Text>
           ) : (
             // The Figma page shell: white card with a 2px blue accent and a
-            // 200px graph-paper hero band across the top.
+            // 200px graph-paper hero band across the top. Report mode keeps
+            // the card but drops the graph paper — a document surface.
             <Box
               bgColor="white"
               minH="70vh"
               {...HERO_BAND_PROPS}
+              backgroundImage={mode === "edit" ? HERO_GRID_IMAGE : undefined}
               borderWidth="1px"
               borderTopWidth="2px"
               borderTopColor="#0049AA"
@@ -132,12 +138,17 @@ export default function DashboardDetailPage() {
                 aria-hidden={pinned}
                 inert={pinned}
               >
-                <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
+                <DashboardHeader
+                  dashboard={dashboard}
+                  isOwner={isOwner}
+                  mode={mode}
+                  onModeChange={setMode}
+                />
               </Box>
 
               {dashboard.widgets.length > 0 ? (
                 <>
-                  <DashboardWidgetsGrid dashboard={dashboard} />
+                  <DashboardWidgetsGrid dashboard={dashboard} mode={mode} />
                   <DashboardSuggestedModules
                     dashboardId={dashboard.id}
                     isOwner={isOwner}

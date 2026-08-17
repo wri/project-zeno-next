@@ -31,7 +31,12 @@ const renderHeader = (dashboard: Dashboard) => {
   return render(
     <QueryClientProvider client={queryClient}>
       <ChakraProvider value={defaultSystem}>
-        <DashboardHeader dashboard={dashboard} isOwner />
+        <DashboardHeader
+          dashboard={dashboard}
+          isOwner
+          mode="edit"
+          onModeChange={() => {}}
+        />
       </ChakraProvider>
     </QueryClientProvider>
   );

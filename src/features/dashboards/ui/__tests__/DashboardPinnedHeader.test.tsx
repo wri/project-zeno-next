@@ -62,6 +62,8 @@ describe("DashboardPinnedHeader", () => {
         isOwner={false}
         pinned
         contentLeftPx={0}
+        mode="edit"
+        onModeChange={() => {}}
       />
     );
 
@@ -85,6 +87,8 @@ describe("DashboardPinnedHeader", () => {
         isOwner={false}
         pinned
         contentLeftPx={0}
+        mode="edit"
+        onModeChange={() => {}}
       />
     );
 
@@ -104,6 +108,8 @@ describe("DashboardPinnedHeader", () => {
         isOwner={false}
         pinned={false}
         contentLeftPx={0}
+        mode="edit"
+        onModeChange={() => {}}
       />
     );
 
@@ -118,6 +124,8 @@ describe("DashboardPinnedHeader", () => {
         isOwner
         pinned
         contentLeftPx={0}
+        mode="edit"
+        onModeChange={() => {}}
       />
     );
 
