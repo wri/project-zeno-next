@@ -21,6 +21,7 @@ import CHART_COLOR_MAPPING, {
   DATASET_DIVERGENT_COLORS,
 } from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
+import { NET_FLUX_DUMMY_WIDGET } from "@/src/features/net-flux";
 
 // ---------------------------------------------------------------------------
 // Fake provenance data for "View how this was generated" drawer
@@ -616,6 +617,12 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
       },
     },
     {
+      label: "Stacked bar with line overlay (net flux)",
+      notes:
+        "The curated 'Net flux over time' insight: stacked emissions/removals with a net-flux line overlay, plus the DETAIL/MEASURE toggle chrome.",
+      widget: NET_FLUX_DUMMY_WIDGET,
+    },
+    {
       label: "Wide table (scroll indicator)",
       notes: "Table with 8+ columns to test horizontal scroll fade indicators.",
       widget: {
@@ -822,7 +829,12 @@ export default function ChartDebugPanel() {
   const filtered = FIXTURES.filter((f) => {
     if (filter === "all") return true;
     if (filter === "bar")
-      return ["bar", "stacked-bar", "grouped-bar"].includes(f.widget.type);
+      return [
+        "bar",
+        "stacked-bar",
+        "grouped-bar",
+        "stacked-bar-with-line",
+      ].includes(f.widget.type);
     if (filter === "line") return ["line", "area"].includes(f.widget.type);
     if (filter === "pie") return f.widget.type === "pie";
     if (filter === "scatter") return f.widget.type === "scatter";
