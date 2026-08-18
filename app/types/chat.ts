@@ -77,13 +77,18 @@ export interface InsightWidget extends ChartColorFields {
     | "stacked-bar"
     | "grouped-bar"
     | "area"
-    | "scatter";
+    | "scatter"
+    | "stacked-bar-with-line";
   title: string;
   description: string;
   data: unknown;
   xAxis: string;
   yAxis: string;
   seriesFields?: string[];
+  // Column rendered as a Line overlay on top of the stacked bars — only
+  // meaningful for type "stacked-bar-with-line" (e.g. a net-flux line over
+  // emissions/removals stacks). Excluded from the stack itself.
+  lineField?: string;
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
   // Whether this insight is curated/verified rather than AI-generated. Set from

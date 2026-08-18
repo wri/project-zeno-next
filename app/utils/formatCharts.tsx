@@ -112,6 +112,8 @@ function filterChartDataColumns(
  *   registry). When present they take precedence over the local
  *   `chartColorMappings.ts` config, which remains the fallback for
  *   pre-migration insights and categories with no registry entry.
+ * @param lineField Column rendered as a Line overlay on top of the stacked
+ *   bars (stacked-bar-with-line only) — excluded from the stack itself.
  * @returns An object containing the transformed `data` and `series` arrays.
  */
 export default function formatChartData(
@@ -125,12 +127,14 @@ export default function formatChartData(
     | "stacked-bar"
     | "grouped-bar"
     | "area"
-    | "scatter",
+    | "scatter"
+    | "stacked-bar-with-line",
   xAxis?: string,
   yAxis?: string,
   datasetName?: string,
   seriesFields?: string[],
-  colorOverrides?: ChartColorFields
+  colorOverrides?: ChartColorFields,
+  lineField?: string
 ): { data: ChartData[]; series: ChartSeries[] } {
   const empty = { data: [], series: [] };
 
@@ -173,6 +177,7 @@ export default function formatChartData(
         xAxisKey,
         ...valueKeys,
         ...(keys.includes(xAxisSlugKey) ? [xAxisSlugKey] : []),
+        ...(lineField && keys.includes(lineField) ? [lineField] : []),
       ])
     : data;
   const scopedFirstRow = scopedData[0];
@@ -363,6 +368,55 @@ export default function formatChartData(
     }));
     // The data format is already correct for stacked charts.
     return { data: chartRows as ChartData[], series };
+  }
+
+  // --- Logic for a STACKED chart with a Line overlay (e.g. net flux) ---
+  if (type === "stacked-bar-with-line") {
+    const seriesKeys = resolveValueKeys(
+      scopedKeys,
+      xAxisKey,
+      yAxis,
+      seriesFields
+    ).filter((key) => key !== lineField);
+    // Per-series colors come from the backend color registry (`colorMap`),
+    // keyed by series name — the same mechanism the pie branch uses — so a
+    // caller can pin each stack segment to its designed color. Segments with
+    // no registry entry fall back to the default rotation.
+    const stackColorMap = colorOverrides?.colorMap;
+    const series: ChartSeries[] = seriesKeys.map((key, index) => ({
+      name: key,
+      color:
+        stackColorMap?.[key] ?? defaultColors[index % defaultColors.length],
+      stackId: "a",
+    }));
+
+    // A single bar series with divergent colors (e.g. "Net flux" alone, no
+    // detail breakdown) is tinted per-row by sign, mirroring the plain "bar"
+    // branch above.
+    const divergent =
+      colorOverrides?.divergentColors ??
+      (datasetName ? DATASET_DIVERGENT_COLORS[datasetName] : undefined);
+    let rows = chartRows as ChartData[];
+    if (divergent && seriesKeys.length === 1) {
+      const key = seriesKeys[0];
+      rows = rows.map((item) => {
+        const val = Number(item[key]);
+        return {
+          ...item,
+          _barColor: val < 0 ? divergent.negative : divergent.positive,
+        };
+      });
+      series[0] = { ...series[0], color: divergent.positive };
+    }
+
+    if (lineField && scopedKeys.includes(lineField)) {
+      series.push({
+        name: lineField,
+        color: "#172b7a",
+      });
+    }
+
+    return { data: rows, series };
   }
 
   // --- Logic for GROUPED charts ---
