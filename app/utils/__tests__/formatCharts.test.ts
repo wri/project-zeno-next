@@ -174,6 +174,84 @@ describe("formatChartData", () => {
     expect(result.data[0]).toMatchObject({ region: "A", 2020: 10, 2021: 12 });
   });
 
+  describe("stacked-bar-with-line", () => {
+    it("stacks the series fields and renders the line field on top, unstacked", () => {
+      // The line's value is precomputed by the caller (net-flux-variants), not
+      // by formatChartData — this only decides how to render an existing column.
+      const data = [
+        { year: 2020, Emissions: 100, Removals: -40, "Net flux": 60 },
+        { year: 2021, Emissions: 90, Removals: -50, "Net flux": 40 },
+      ];
+      const result = formatChartData(
+        data,
+        "stacked-bar-with-line",
+        "year",
+        undefined,
+        undefined,
+        ["Emissions", "Removals"],
+        undefined,
+        "Net flux"
+      );
+      expect(result.series.map((s) => s.name)).toEqual([
+        "Emissions",
+        "Removals",
+        "Net flux",
+      ]);
+      expect(result.series[0].stackId).toBe("a");
+      expect(result.series[1].stackId).toBe("a");
+      expect(result.series[2].stackId).toBeUndefined();
+      expect(result.data[0]["Net flux"]).toBe(60);
+      expect(result.data[1]["Net flux"]).toBe(40);
+    });
+
+    it("takes per-series colors from the backend colorMap, falling back to the rotation", () => {
+      const data = [{ year: 2020, Emissions: 100, Removals: -40, Other: 5 }];
+      const result = formatChartData(
+        data,
+        "stacked-bar-with-line",
+        "year",
+        undefined,
+        undefined,
+        ["Emissions", "Removals", "Other"],
+        { colorMap: { Emissions: "#8c510a", Removals: "url(#hatch)" } }
+      );
+      const byName = Object.fromEntries(
+        result.series.map((s) => [s.name, s.color])
+      );
+      expect(byName.Emissions).toBe("#8c510a");
+      // SVG paint references pass through untouched, so a series can be hatched.
+      expect(byName.Removals).toBe("url(#hatch)");
+      // No registry entry → default rotation, so it still renders.
+      expect(byName.Other).toBeTruthy();
+      expect(byName.Other).not.toBe("#8c510a");
+    });
+
+    it("tints a single divergent series by sign, mirroring the plain bar branch", () => {
+      const data = [
+        { year: 2020, "Net source": 850, "Net flux": 850 },
+        { year: 2021, "Net source": -120, "Net flux": -120 },
+      ];
+      const result = formatChartData(
+        data,
+        "stacked-bar-with-line",
+        "year",
+        undefined,
+        undefined,
+        ["Net source"],
+        {
+          divergentColors: { positive: "#8c510a", negative: "#01665e" },
+        },
+        "Net flux"
+      );
+      expect(result.series.map((s) => s.name)).toEqual([
+        "Net source",
+        "Net flux",
+      ]);
+      expect(result.data[0]._barColor).toBe("#8c510a");
+      expect(result.data[1]._barColor).toBe("#01665e");
+    });
+  });
+
   it("keeps the name column for scatter charts (regression)", () => {
     const data = [
       { country: "Brazil", gdp_per_capita: 8900, deforestation_ha: 4812000 },
