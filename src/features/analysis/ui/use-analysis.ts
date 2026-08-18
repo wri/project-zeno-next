@@ -32,6 +32,12 @@ const defaultSink: InsightSink = {
  * TCLChartGenerator`), identified by its y-axis, which is titled as
  * "GHG Emissions from Tree Cover Loss" instead.
  */
+/** Year from a "yyyy-MM-dd" selection bound, for the YEARS parameter chip. */
+function isoYear(date: string | undefined): number | undefined {
+  const year = Number(date?.slice(0, 4));
+  return Number.isInteger(year) ? year : undefined;
+}
+
 function chartDatasetName(
   widget: { yAxis?: string },
   datasetName: string
@@ -103,10 +109,18 @@ export function useAnalysis(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
+          // Carry the dataset and date range through as well as the area, so
+          // the workspace renders the full AREA / DATA / YEARS chip row rather
+          // than an area-only one.
           const rawWidgets = chartsToWidgets(
             analysisResult.charts,
             analysisResult.params
-              ? { areas: [analysisResult.params.name] }
+              ? {
+                  areas: [analysisResult.params.name],
+                  dataset: selection.dataset.name,
+                  startYear: isoYear(selection.startDate),
+                  endYear: isoYear(selection.endDate),
+                }
               : undefined
           );
           // Give each widget a "{dataset} in {location}" title matching the
