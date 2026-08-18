@@ -26,6 +26,12 @@ import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
+import {
+  NetFluxFootnote,
+  NetFluxToolbar,
+  isNetFluxWidget,
+  netFluxViewKey,
+} from "@/src/features/net-flux";
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -287,10 +293,25 @@ export default function InsightWorkspace() {
               </Box>
             )}
 
+            {/* Per-widget-type controls, rendered on the shell above the card
+                (the design calls this the "widget toolbar"). */}
+            {isNetFluxWidget(widget) && (
+              <Box px={2} pb={2}>
+                <NetFluxToolbar widgetId={netFluxViewKey(widget)} />
+              </Box>
+            )}
+
             {/* Inner chart card */}
             <Box px={2} pt={0} pb={2}>
               <WidgetMessage widget={widget} inWorkspace />
             </Box>
+
+            {/* Per-widget-type caveat card below the chart card */}
+            {isNetFluxWidget(widget) && (
+              <Box px={2} pb={2}>
+                <NetFluxFootnote />
+              </Box>
+            )}
           </Box>
 
           {/* Navigation footer — sticky so it never scrolls away */}

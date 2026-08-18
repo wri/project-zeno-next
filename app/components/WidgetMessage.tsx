@@ -46,6 +46,14 @@ import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
+import {
+  NetFluxChartBody,
+  NetFluxToolbar,
+  deriveNetFluxVariant,
+  isNetFluxWidget,
+  netFluxViewKey,
+  useNetFluxView,
+} from "@/src/features/net-flux";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
@@ -90,9 +98,25 @@ export default function WidgetMessage({
     onOpen: onExpand,
     onClose: onCollapse,
   } = useDisclosure();
+  // Shared with the workspace toolbar, which renders the DETAIL/MEASURE pills
+  // outside this card (see NetFluxToolbar). Hooks must run unconditionally, so
+  // this sits above the dataset-card early return.
+  const netFluxView = useNetFluxView(netFluxViewKey(widget));
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
+
+  // The curated net-flux insight always stores the full-detail/gross data;
+  // the DETAIL/MEASURE toggle re-derives which slice of it is shown. Every
+  // downstream consumer (chart, table, CSV, fullscreen) reads `displayWidget`
+  // so they stay in sync with the toggle.
+  const isNetFlux = isNetFluxWidget(widget);
+  const netFluxVariant = isNetFlux
+    ? deriveNetFluxVariant(widget, netFluxView.detail, netFluxView.measure)
+    : null;
+  const displayWidget: InsightWidget = netFluxVariant
+    ? { ...widget, ...netFluxVariant }
+    : widget;
 
   const handleOpen = () => {
     onOpen();
@@ -118,7 +142,7 @@ export default function WidgetMessage({
   };
 
   const handleDownloadCsv = () => {
-    const data = widget.data;
+    const data = displayWidget.data;
     if (!Array.isArray(data) || data.length === 0) return;
     const rows = data as Record<string, unknown>[];
     const headers = Object.keys(rows[0]);
@@ -148,7 +172,7 @@ export default function WidgetMessage({
   };
 
   const handleExportToAI = (provider: AIProvider) => {
-    const method = exportToAI(widget, provider);
+    const method = exportToAI(displayWidget, provider);
     if (method === "clipboard") {
       toaster.create({
         title: "Prompt copied to clipboard",
@@ -167,9 +191,11 @@ export default function WidgetMessage({
     "area",
     "pie",
     "scatter",
+    "stacked-bar-with-line",
   ];
   const isChartType = chartTypes.includes(widget.type);
-  const hasData = Array.isArray(widget.data) && widget.data.length > 0;
+  const hasData =
+    Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
   const fullscreenChips = widget.analysisParams
@@ -203,6 +229,15 @@ export default function WidgetMessage({
         {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
         {inWorkspace && (
           <InsightCaption curated={widget.curated ?? !widget.generation} />
+        )}
+        {/* In the workspace the design puts these pills above the card, so
+            InsightWorkspace renders them there; elsewhere (dashboards,
+            /chart-debug) they live inline so the toggle stays reachable. */}
+        {isNetFlux && !inWorkspace && (
+          <NetFluxToolbar
+            widgetId={netFluxViewKey(widget)}
+            showDivider={false}
+          />
         )}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
@@ -281,20 +316,34 @@ export default function WidgetMessage({
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <Box ref={chartRef}>
-              <ChartWidget
-                widget={widget}
-                fitYAxis={fitYAxis}
-                fullWidth={fullWidth}
-              />
+              {netFluxVariant ? (
+                <NetFluxChartBody
+                  widget={displayWidget}
+                  variant={netFluxVariant}
+                  detail={netFluxView.detail}
+                  measure={netFluxView.measure}
+                  fitYAxis={fitYAxis}
+                  fullWidth={fullWidth}
+                />
+              ) : (
+                <ChartWidget
+                  widget={displayWidget}
+                  fitYAxis={fitYAxis}
+                  fullWidth={fullWidth}
+                />
+              )}
             </Box>
           </WidgetErrorBoundary>
         )}
-        {isChartType && showAsTable && Array.isArray(widget.data) && (
+        {isChartType && showAsTable && Array.isArray(displayWidget.data) && (
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
             <ScrollableTableWrapper>
               <TableWidget
                 data={
-                  widget.data as Record<string, string | number | boolean>[]
+                  displayWidget.data as Record<
+                    string,
+                    string | number | boolean
+                  >[]
                 }
                 caption={widget.title}
               />
@@ -483,11 +532,22 @@ export default function WidgetMessage({
                 >
                   <Box flex="1" minW={0}>
                     <WidgetErrorBoundary fallbackTitle="Unable to render chart">
-                      <ChartWidget
-                        widget={widget}
-                        expanded
-                        fitYAxis={fitYAxis}
-                      />
+                      {netFluxVariant ? (
+                        <NetFluxChartBody
+                          widget={displayWidget}
+                          variant={netFluxVariant}
+                          detail={netFluxView.detail}
+                          measure={netFluxView.measure}
+                          expanded
+                          fitYAxis={fitYAxis}
+                        />
+                      ) : (
+                        <ChartWidget
+                          widget={displayWidget}
+                          expanded
+                          fitYAxis={fitYAxis}
+                        />
+                      )}
                     </WidgetErrorBoundary>
                   </Box>
                   {(widget.description ||
