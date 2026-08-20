@@ -14,6 +14,7 @@ const CHART_TYPES = new Set([
   "grouped-bar",
   "area",
   "scatter",
+  "hierarchical-bar",
 ]);
 
 export type WidgetSize = "single" | "double";

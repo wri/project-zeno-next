@@ -26,6 +26,10 @@ import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
+import {
+  GhgFluxMeasurePill,
+  isFluxTreeWidget,
+} from "@/src/features/ghg-flux-tree";
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -284,6 +288,14 @@ export default function InsightWorkspace() {
             {hasChips && paramsExpanded && (
               <Box px={4} py={2}>
                 <AnalysisParamsChips chips={chips} />
+              </Box>
+            )}
+
+            {/* Per-widget-type controls, on the shell above the card — the
+                design calls this frame the widget toolbar. */}
+            {isFluxTreeWidget(widget) && (
+              <Box px={2} pb={2}>
+                <GhgFluxMeasurePill widget={widget} />
               </Box>
             )}
 
