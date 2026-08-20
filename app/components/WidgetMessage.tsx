@@ -37,6 +37,11 @@ import { Tooltip } from "@/app/components/ui/tooltip";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
+import {
+  GhgFluxMeasurePill,
+  GhgFluxTreeBody,
+  isFluxTreeWidget,
+} from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
 import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
@@ -192,8 +197,12 @@ export default function WidgetMessage({
     "pie",
     "scatter",
     "stacked-bar-with-line",
+    "hierarchical-bar",
   ];
   const isChartType = chartTypes.includes(widget.type);
+  // This chart renders its own tree + plot + legend composition rather than
+  // going through ChartWidget, whose axis block assumes vertical bars.
+  const isFluxTree = isFluxTreeWidget(widget);
   const hasData =
     Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
@@ -235,6 +244,9 @@ export default function WidgetMessage({
             /chart-debug) they live inline so the toggle stays reachable. */}
         {isNetFlux && !inWorkspace && (
           <NetFluxToolbar widget={widget} showDivider={false} />
+        )}
+        {isFluxTree && !inWorkspace && (
+          <GhgFluxMeasurePill widget={widget} showDivider={false} />
         )}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
@@ -321,6 +333,8 @@ export default function WidgetMessage({
                   fitYAxis={fitYAxis}
                   fullWidth={fullWidth}
                 />
+              ) : isFluxTree ? (
+                <GhgFluxTreeBody widget={displayWidget} />
               ) : (
                 <ChartWidget
                   widget={displayWidget}
@@ -536,6 +550,8 @@ export default function WidgetMessage({
                           expanded
                           fitYAxis={fitYAxis}
                         />
+                      ) : isFluxTree ? (
+                        <GhgFluxTreeBody widget={displayWidget} />
                       ) : (
                         <ChartWidget
                           widget={displayWidget}

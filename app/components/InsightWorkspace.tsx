@@ -33,6 +33,10 @@ import {
   isNetFluxWidget,
   useNetFluxDetailSelection,
 } from "@/src/features/net-flux";
+import {
+  GhgFluxMeasurePill,
+  isFluxTreeWidget,
+} from "@/src/features/ghg-flux-tree";
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -304,10 +308,15 @@ export default function InsightWorkspace() {
             )}
 
             {/* Per-widget-type controls, rendered on the shell above the card
-                (the design calls this the "widget toolbar"). */}
+                (the design calls this frame the "widget toolbar"). */}
             {isNetFluxWidget(widget) && (
               <Box px={2} pb={2}>
                 <NetFluxToolbar widget={widget} />
+              </Box>
+            )}
+            {isFluxTreeWidget(widget) && (
+              <Box px={2} pb={2}>
+                <GhgFluxMeasurePill widget={widget} />
               </Box>
             )}
 
