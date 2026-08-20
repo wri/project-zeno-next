@@ -21,7 +21,13 @@ export const LEGEND_BG = "#f6f6f6";
  * the HTML tree/value columns are laid out at the same pitch so the two line up
  * without measuring anything.
  */
-export const ROW_HEIGHT = 48;
+export const ROW_HEIGHT = 36;
 /** Reserved for the top axis; the flanking columns pad by the same amount. */
 export const AXIS_HEIGHT = 28;
 export const BAR_SIZE = 14;
+/**
+ * Horizontal breathing room inside the plot, so the outermost axis tick label
+ * isn't clipped by the column edge (a leading minus sign is the first casualty).
+ * The `n/a` overlay has to account for it to stay on the zero line.
+ */
+export const PLOT_MARGIN_X = 14;

@@ -98,7 +98,9 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
   return (
     <Flex direction="column" gap="16px" w="full">
       <Box>
-        <Flex align="baseline" gap="8px" wrap="wrap">
+        {/* Centred, not baseline-aligned: on a 26px figure a baseline drops the
+            small mono caption to the number's foot rather than its middle. */}
+        <Flex align="center" gap="8px" wrap="wrap">
           <Text
             fontFamily="body"
             fontSize="26px"

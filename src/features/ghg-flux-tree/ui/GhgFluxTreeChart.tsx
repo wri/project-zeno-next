@@ -21,6 +21,7 @@ import {
   BAR_SIZE,
   EMISSIONS_COLOR,
   NET_TICK_COLOR,
+  PLOT_MARGIN_X,
   REMOVALS_COLOR,
   ROW_HEIGHT,
   ZERO_LINE_COLOR,
@@ -301,7 +302,12 @@ export function GhgFluxTreeChart({
             data={plotRows}
             layout="vertical"
             stackOffset="sign"
-            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            margin={{
+              top: 0,
+              right: PLOT_MARGIN_X,
+              bottom: 0,
+              left: PLOT_MARGIN_X,
+            }}
           >
             <XAxis
               type="number"
@@ -361,7 +367,9 @@ export function GhgFluxTreeChart({
                 position="absolute"
                 top={`${AXIS_HEIGHT + index * ROW_HEIGHT}px`}
                 h={`${ROW_HEIGHT}px`}
-                left={`${zeroFraction * 100}%`}
+                left={`calc(${PLOT_MARGIN_X}px + ${zeroFraction} * (100% - ${
+                  PLOT_MARGIN_X * 2
+                }px))`}
                 transform={
                   onRight
                     ? "translateX(6px)"
