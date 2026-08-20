@@ -78,7 +78,8 @@ export interface InsightWidget extends ChartColorFields {
     | "grouped-bar"
     | "area"
     | "scatter"
-    | "stacked-bar-with-line";
+    | "stacked-bar-with-line"
+    | "hierarchical-bar";
   title: string;
   description: string;
   data: unknown;
