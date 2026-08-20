@@ -42,6 +42,8 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import type { DatasetInfo } from "@/app/types/chat";
 import { datasetCardLayers } from "@/app/utils/datasetCardLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
+import { LGMS_DATASET_ID } from "@/src/features/ghg-flux-tree";
 
 import { CatalogCard } from "./CatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
@@ -83,6 +85,7 @@ export default function DataCatalogPanel() {
   const { dataCatalogOpen, setDataCatalogOpen, isChatFullSize } =
     useSidebarStore();
   const leftPx = getCatalogLeftPx(isChatFullSize);
+  const netFluxEnabled = useFeatureFlag("net-flux");
 
   // Build the "in this conversation" set from the visible dataset layers — the
   // layer manager is the source of truth. `useShallow` keeps re-renders stable
@@ -95,10 +98,12 @@ export default function DataCatalogPanel() {
     )
   );
 
-  const cards = useMemo(
-    () => filterDatasetsByCategory(DATASET_CARDS, category, activeDatasetIds),
-    [category, activeDatasetIds]
-  );
+  const cards = useMemo(() => {
+    const visibleCards = netFluxEnabled
+      ? DATASET_CARDS
+      : DATASET_CARDS.filter((card) => card.dataset_id !== LGMS_DATASET_ID);
+    return filterDatasetsByCategory(visibleCards, category, activeDatasetIds);
+  }, [category, activeDatasetIds, netFluxEnabled]);
 
   const compactSlide = !isChatFullSize;
 
