@@ -37,6 +37,11 @@ import { Tooltip } from "@/app/components/ui/tooltip";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
+import {
+  GhgFluxMeasurePill,
+  GhgFluxTreeBody,
+  isFluxTreeWidget,
+} from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
 import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
@@ -167,8 +172,12 @@ export default function WidgetMessage({
     "area",
     "pie",
     "scatter",
+    "hierarchical-bar",
   ];
   const isChartType = chartTypes.includes(widget.type);
+  // This chart renders its own tree + plot + legend composition rather than
+  // going through ChartWidget, whose axis block assumes vertical bars.
+  const isFluxTree = isFluxTreeWidget(widget);
   const hasData = Array.isArray(widget.data) && widget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
@@ -203,6 +212,9 @@ export default function WidgetMessage({
         {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
         {inWorkspace && (
           <InsightCaption curated={widget.curated ?? !widget.generation} />
+        )}
+        {isFluxTree && !inWorkspace && (
+          <GhgFluxMeasurePill widget={widget} showDivider={false} />
         )}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
@@ -281,11 +293,15 @@ export default function WidgetMessage({
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <Box ref={chartRef}>
-              <ChartWidget
-                widget={widget}
-                fitYAxis={fitYAxis}
-                fullWidth={fullWidth}
-              />
+              {isFluxTree ? (
+                <GhgFluxTreeBody widget={widget} />
+              ) : (
+                <ChartWidget
+                  widget={widget}
+                  fitYAxis={fitYAxis}
+                  fullWidth={fullWidth}
+                />
+              )}
             </Box>
           </WidgetErrorBoundary>
         )}
@@ -483,11 +499,15 @@ export default function WidgetMessage({
                 >
                   <Box flex="1" minW={0}>
                     <WidgetErrorBoundary fallbackTitle="Unable to render chart">
-                      <ChartWidget
-                        widget={widget}
-                        expanded
-                        fitYAxis={fitYAxis}
-                      />
+                      {isFluxTree ? (
+                        <GhgFluxTreeBody widget={widget} />
+                      ) : (
+                        <ChartWidget
+                          widget={widget}
+                          expanded
+                          fitYAxis={fitYAxis}
+                        />
+                      )}
                     </WidgetErrorBoundary>
                   </Box>
                   {(widget.description ||
