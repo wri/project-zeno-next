@@ -21,6 +21,7 @@ import CHART_COLOR_MAPPING, {
   DATASET_DIVERGENT_COLORS,
 } from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
+import { GHG_FLUX_TREE_DUMMY_WIDGET } from "@/src/features/ghg-flux-tree";
 
 // ---------------------------------------------------------------------------
 // Fake provenance data for "View how this was generated" drawer
@@ -616,6 +617,12 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
       },
     },
     {
+      label: "Hierarchical bar (net GHG flux, annual average)",
+      notes:
+        "Curated 'Net GHG flux (annual average)': indented collapsible tree, diverging bars around zero, top axis. Toggle MEASURE to see the gross view with back-to-back bars, net ticks and n/a markers.",
+      widget: GHG_FLUX_TREE_DUMMY_WIDGET,
+    },
+    {
       label: "Wide table (scroll indicator)",
       notes: "Table with 8+ columns to test horizontal scroll fade indicators.",
       widget: {
@@ -822,7 +829,9 @@ export default function ChartDebugPanel() {
   const filtered = FIXTURES.filter((f) => {
     if (filter === "all") return true;
     if (filter === "bar")
-      return ["bar", "stacked-bar", "grouped-bar"].includes(f.widget.type);
+      return ["bar", "stacked-bar", "grouped-bar", "hierarchical-bar"].includes(
+        f.widget.type
+      );
     if (filter === "line") return ["line", "area"].includes(f.widget.type);
     if (filter === "pie") return f.widget.type === "pie";
     if (filter === "scatter") return f.widget.type === "scatter";
