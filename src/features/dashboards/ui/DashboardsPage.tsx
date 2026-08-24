@@ -82,7 +82,7 @@ export default function DashboardsPage() {
               >
                 <Text color="fg.muted">
                   You have no dashboards yet. Search for an area below to create
-                  one.
+                  one, or ask the Assistant to help you get started.
                 </Text>
               </Box>
             ) : (
