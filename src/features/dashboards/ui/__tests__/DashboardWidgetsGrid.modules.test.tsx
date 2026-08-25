@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/components/ui/toaster", () => ({
@@ -24,6 +24,34 @@ import DashboardWidgetsGrid from "../DashboardWidgetsGrid";
 import type { Dashboard, DashboardWidget } from "../../api/schemas";
 import useAuthStore from "@/app/store/authStore";
 
+const insight = {
+  id: "ins-1",
+  insight_text: "Alerts spiked in July.",
+  codeact_parts: null,
+  charts: [
+    {
+      id: "c-1",
+      position: 0,
+      title: "Alerts trend",
+      chart_type: "line",
+      x_axis: "year",
+      y_axis: "area",
+      series_fields: null,
+      chart_data: [],
+    },
+    {
+      id: "c-2",
+      position: 1,
+      title: "Alerts by driver",
+      chart_type: "bar",
+      x_axis: "driver",
+      y_axis: "area",
+      series_fields: null,
+      chart_data: [],
+    },
+  ],
+};
+
 const insightWidget: DashboardWidget = {
   id: "w-ins",
   position: 0,
@@ -31,33 +59,7 @@ const insightWidget: DashboardWidget = {
   insight_id: "ins-1",
   config: {},
   created_at: "2026-07-01T00:00:00Z",
-  insight: {
-    id: "ins-1",
-    insight_text: "Alerts spiked in July.",
-    codeact_parts: null,
-    charts: [
-      {
-        id: "c-1",
-        position: 0,
-        title: "Alerts trend",
-        chart_type: "line",
-        x_axis: "year",
-        y_axis: "area",
-        series_fields: null,
-        chart_data: [],
-      },
-      {
-        id: "c-2",
-        position: 1,
-        title: "Alerts by driver",
-        chart_type: "bar",
-        x_axis: "driver",
-        y_axis: "area",
-        series_fields: null,
-        chart_data: [],
-      },
-    ],
-  },
+  insight,
 };
 
 const mapWidget: DashboardWidget = {
@@ -100,17 +102,21 @@ describe("DashboardWidgetsGrid grouping", () => {
     useAuthStore.setState({ userId: "u1" });
   });
 
-  it("renders an insight widget as one module with its charts, beside standalone widgets", () => {
+  function renderGrid(d: Dashboard) {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     render(
       <QueryClientProvider client={queryClient}>
         <ChakraProvider value={defaultSystem}>
-          <DashboardWidgetsGrid dashboard={dashboard} />
+          <DashboardWidgetsGrid dashboard={d} />
         </ChakraProvider>
       </QueryClientProvider>
     );
+  }
+
+  it("renders a multi-chart insight widget as one module with its charts, beside standalone widgets", () => {
+    renderGrid(dashboard);
 
     // The module: one header (first chart's title), the narrative, both charts.
     expect(screen.getByText(/Alerts spiked in July\./)).toBeTruthy();
@@ -125,5 +131,33 @@ describe("DashboardWidgetsGrid grouping", () => {
     expect(
       screen.getAllByLabelText("Remove analysis from dashboard")
     ).toHaveLength(1);
+  });
+
+  it("renders a single-chart insight as a plain card, without module chrome", async () => {
+    renderGrid({
+      ...dashboard,
+      widgets: [
+        {
+          ...insightWidget,
+          insight: { ...insight, charts: insight.charts.slice(0, 1) },
+        },
+      ],
+    });
+
+    // The chart card itself, with the plain widget remove.
+    expect(screen.getByTestId("widget-message").textContent).toBe(
+      "Alerts trend"
+    );
+    // No grouping chrome: no module remove, no Customize, no collapse.
+    expect(
+      screen.queryByLabelText("Remove analysis from dashboard")
+    ).toBeNull();
+    expect(screen.queryByText("Customize")).toBeNull();
+    expect(screen.queryByLabelText("Collapse analysis")).toBeNull();
+
+    // Deleting still counts as an analysis delete: the card's X confirms
+    // through the shared RemoveAnalysisDialog, like every other surface.
+    fireEvent.click(screen.getByLabelText("Remove from dashboard"));
+    expect(await screen.findByText("Remove analysis?")).toBeTruthy();
   });
 });

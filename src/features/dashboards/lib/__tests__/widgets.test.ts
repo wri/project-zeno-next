@@ -8,12 +8,17 @@ import {
   hasWidgetCustomization,
   insightModule,
   isChartShown,
+  isGroupedInsight,
   isSummaryShown,
   mapWidgetSize,
   moduleTitle,
   shownChartIds,
+  standaloneChartId,
+  standaloneInsightCard,
   widgetSize,
   widgetText,
+  withCardSize,
+  withCardTitle,
   withChartHidden,
   withChartShown,
   withChartSize,
@@ -57,6 +62,21 @@ function widget(overrides: Partial<DashboardWidget> = {}): DashboardWidget {
   };
 }
 
+function twoChartWidget(config: Record<string, unknown> = {}): DashboardWidget {
+  return widget({
+    config,
+    insight: {
+      id: "ins-1",
+      insight_text: "",
+      codeact_parts: null,
+      charts: [
+        chart({ id: "c-1", position: 0 }),
+        chart({ id: "c-2", position: 1 }),
+      ],
+    },
+  });
+}
+
 describe("widgetSize / withSize", () => {
   it("defaults to single and honours double", () => {
     expect(widgetSize({})).toBe("single");
@@ -89,6 +109,9 @@ describe("chartSize / withChartSize", () => {
     expect(chartSize({ sizes: { "c-1": "double" } }, "c-1")).toBe("double");
     expect(chartSize({ sizes: { "c-1": "double" } }, "c-2")).toBe("single");
     expect(chartSize({ sizes: { "c-1": "garbage" } }, "c-1")).toBe("single");
+    // No chart id at all — the widget-level size answers.
+    expect(chartSize({ sizes: { "c-1": "double" } }, undefined)).toBe("single");
+    expect(chartSize({ size: "double" }, undefined)).toBe("double");
   });
 
   it("withChartSize preserves other config keys and sibling chart sizes", () => {
@@ -510,24 +533,23 @@ describe("insightModule", () => {
     expect(vm.cards).toEqual([]);
     expect(vm.allCharts).toEqual([]);
   });
+
+  it("derives curated from the generation provenance, like the cards do", () => {
+    // The default fixture has no codeact parts.
+    expect(insightModule(widget()).curated).toBe(true);
+    const generated = widget({
+      insight: {
+        id: "ins-1",
+        insight_text: "Loss rose 12%.",
+        codeact_parts: [{ type: "code", content: "df.plot()" }],
+        charts: [chart()],
+      },
+    });
+    expect(insightModule(generated).curated).toBe(false);
+  });
 });
 
 describe("dashboardWidgetToInsightWidgets — chartIds filtering", () => {
-  function twoChartWidget(config: Record<string, unknown>): DashboardWidget {
-    return widget({
-      config,
-      insight: {
-        id: "ins-1",
-        insight_text: "",
-        codeact_parts: null,
-        charts: [
-          chart({ id: "c-1", position: 0 }),
-          chart({ id: "c-2", position: 1, title: "CO2" }),
-        ],
-      },
-    });
-  }
-
   it("renders only the shown charts", () => {
     const out = dashboardWidgetToInsightWidgets(
       twoChartWidget({ chartIds: ["c-2"] })
@@ -538,6 +560,74 @@ describe("dashboardWidgetToInsightWidgets — chartIds filtering", () => {
   it("renders all charts when config has no chartIds", () => {
     const out = dashboardWidgetToInsightWidgets(twoChartWidget({}));
     expect(out.map((c) => c.id)).toEqual(["c-1", "c-2"]);
+  });
+});
+
+describe("isGroupedInsight", () => {
+  it("groups only insight widgets with several charts", () => {
+    expect(isGroupedInsight(twoChartWidget())).toBe(true);
+    expect(isGroupedInsight(widget())).toBe(false);
+    expect(isGroupedInsight(widget({ insight: null }))).toBe(false);
+    // Only the insight widget type groups, whatever payload the API attaches.
+    expect(isGroupedInsight({ ...twoChartWidget(), widget_type: "map" })).toBe(
+      false
+    );
+  });
+
+  it("counts the full roster, not the shown subset", () => {
+    expect(isGroupedInsight(twoChartWidget({ chartIds: ["c-1"] }))).toBe(true);
+    expect(isGroupedInsight(twoChartWidget({ chartIds: [] }))).toBe(true);
+  });
+});
+
+describe("standaloneChartId", () => {
+  it("is the position-first chart of a single-chart insight", () => {
+    expect(standaloneChartId(widget())).toBe("c-1");
+  });
+
+  it("is undefined for grouped insights and other widget types", () => {
+    expect(standaloneChartId(twoChartWidget())).toBeUndefined();
+    expect(standaloneChartId(widget({ insight: null }))).toBeUndefined();
+    expect(
+      standaloneChartId({ ...widget(), widget_type: "map" })
+    ).toBeUndefined();
+  });
+});
+
+describe("standaloneInsightCard", () => {
+  it("returns the single chart's card with the insight narrative", () => {
+    const card = standaloneInsightCard(widget(), { areaName: "Brazil" });
+    expect(card?.id).toBe("c-1");
+    expect(card?.description).toBe("Loss rose 12%.");
+    expect(card?.analysisParams).toEqual({ areas: ["Brazil"] });
+  });
+
+  it("ignores a module-era hidden state (no Customize menu to restore from)", () => {
+    const hidden = widget({ config: { chartIds: [] } });
+    expect(standaloneInsightCard(hidden)?.id).toBe("c-1");
+    // The widget's own config stays untouched.
+    expect(hidden.config).toEqual({ chartIds: [] });
+  });
+
+  it("is null when the insight is hidden from this viewer", () => {
+    expect(standaloneInsightCard(widget({ insight: null }))).toBeNull();
+  });
+});
+
+describe("withCardSize / withCardTitle", () => {
+  it("persists per chart when there is a chart id, else widget-level", () => {
+    expect(withCardSize({}, "c-1", "double")).toEqual(
+      withChartSize({}, "c-1", "double")
+    );
+    expect(withCardSize({}, undefined, "double")).toEqual(
+      withSize({}, "double")
+    );
+    expect(withCardTitle({}, "c-1", "Renamed")).toEqual(
+      withChartTitle({}, "c-1", "Renamed")
+    );
+    expect(withCardTitle({}, undefined, "Renamed")).toEqual(
+      withWidgetTitle({}, "Renamed")
+    );
   });
 });
 
