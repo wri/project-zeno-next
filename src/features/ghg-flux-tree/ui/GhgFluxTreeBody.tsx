@@ -6,6 +6,7 @@ import type { InsightWidget } from "@/app/types/chat";
 import {
   nodeNet,
   parseFluxNodes,
+  reconciliationIssues,
   rootNodes,
   type FluxMeasure,
 } from "../model/hierarchy";
@@ -69,6 +70,11 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
     treeViewKey(widget),
     nodes
   );
+  // PoC (PZB-1185): the tree combines a ~30 m annual-average source (land
+  // use) with a ~10 km single-year source (agriculture) — flag it when the
+  // levels it was given don't actually sum, rather than silently trusting
+  // whatever a resampled/aggregated rollup reports. See reconciliationIssues.
+  const issues = reconciliationIssues(nodes);
 
   const root = rootNodes(nodes)[0];
   const rootNet = root ? nodeNet(root) : null;
@@ -112,14 +118,32 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
             {rootNet == null ? "—" : signed.format(rootNet)}
           </Text>
           <Text fontFamily="mono" fontSize="11px" color="#656E7B">
-            megatonnes CO2e/yr · {direction}
+            MgCO2e/yr · {direction}
             {fullyExpanded ? " · Full detail" : ""}
           </Text>
         </Flex>
         <Text fontFamily="body" fontSize="13px" color="#282D33" mt="2px">
-          Annual average · Land use 2016–24 · Agriculture fixed 2020
+          Annual average · Land use 2016–24 (30 m) · Agriculture fixed 2020 (~10
+          km)
         </Text>
       </Box>
+
+      {issues.length > 0 && (
+        <Box
+          border="1px solid"
+          borderColor="#F0C36D"
+          bg="#FCF3DE"
+          rounded="4px"
+          p="8px 10px"
+        >
+          <Text fontFamily="body" fontSize="12px" color="#6B4E12">
+            {issues.length} level{issues.length > 1 ? "s" : ""} of this tree
+            don&apos;t sum to their reported total — a mixed-resolution rollup
+            like this can drift out of reconciliation with the dashboard figures
+            it&apos;s meant to match.
+          </Text>
+        </Box>
+      )}
 
       <Box overflowX="auto">
         <GhgFluxTreeChart rows={rows} measure={measure} onToggle={toggleNode} />

@@ -21,7 +21,28 @@ import CHART_COLOR_MAPPING, {
   DATASET_DIVERGENT_COLORS,
 } from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
-import { GHG_FLUX_TREE_DUMMY_WIDGET } from "@/src/features/ghg-flux-tree";
+import {
+  GHG_FLUX_TREE_DUMMY_RESULT,
+  GHG_FLUX_TREE_DUMMY_WIDGET,
+} from "@/src/features/ghg-flux-tree";
+
+// PoC fixture (PZB-1185): the same tree, but "all_land" no longer equals the
+// sum of its "land_use" + "agriculture" children — standing in for a
+// resampled/independently-aggregated "Full LGMS" rollup that has drifted out
+// of reconciliation. Exercises GhgFluxTreeBody's reconciliation-warning
+// banner, which the clean fixture above never triggers.
+const GHG_FLUX_TREE_MISMATCH_WIDGET: InsightWidget = {
+  ...GHG_FLUX_TREE_DUMMY_WIDGET,
+  id: "ghg-flux-tree-mismatch-dummy",
+  title: "Net GHG flux (annual average) — reconciliation mismatch",
+  data: (
+    GHG_FLUX_TREE_DUMMY_RESULT.charts[0].data as Record<string, unknown>[]
+  ).map((row) =>
+    row.id === "all_land"
+      ? { ...row, avg_emissions: 1750, avg_removals: -700 }
+      : row
+  ),
+};
 
 // ---------------------------------------------------------------------------
 // Fake provenance data for "View how this was generated" drawer
@@ -621,6 +642,12 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
       notes:
         "Curated 'Net GHG flux (annual average)': indented collapsible tree, diverging bars around zero, top axis. Toggle MEASURE to see the gross view with back-to-back bars, net ticks and n/a markers.",
       widget: GHG_FLUX_TREE_DUMMY_WIDGET,
+    },
+    {
+      label: "Hierarchical bar (reconciliation mismatch, PoC)",
+      notes:
+        "PZB-1185 PoC: 'All land' no longer equals 'Land use' + 'Agriculture', simulating a resampled/aggregated rollup that has drifted out of reconciliation. Exercises the reconciliation-warning banner (reconciliationIssues) that the clean fixture above never triggers.",
+      widget: GHG_FLUX_TREE_MISMATCH_WIDGET,
     },
     {
       label: "Wide table (scroll indicator)",

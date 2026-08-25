@@ -15,11 +15,13 @@ export {
   isFluxTreeWidget,
   nodeNet,
   parseFluxNodes,
+  reconciliationIssues,
   singleSidedLabel,
   visibleRows,
   type FluxMeasure,
   type FluxNode,
   type FluxRow,
+  type ReconciliationIssue,
 } from "./model/hierarchy";
 export { treeViewKey } from "./model/tree-view-store";
 export { GhgFluxTreeBody } from "./ui/GhgFluxTreeBody";

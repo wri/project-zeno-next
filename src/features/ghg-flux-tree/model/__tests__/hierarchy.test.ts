@@ -4,6 +4,7 @@ import {
   isFullyExpanded,
   nodeNet,
   parseFluxNodes,
+  reconciliationIssues,
   rootNodes,
   singleSidedLabel,
   visibleRows,
@@ -177,6 +178,122 @@ describe("parseFluxNodes", () => {
   it("falls back to the id when a label is missing", () => {
     expect(parseFluxNodes([{ id: "mineral_soil" }])[0].label).toBe(
       "mineral_soil"
+    );
+  });
+});
+
+// TREE (above) is a "miniature" and deliberately doesn't sum cleanly at
+// every level (e.g. "land" has only "veg" as a stand-in child, omitting the
+// "soil" branch the real hierarchy has) — it exists to test expansion, not
+// reconciliation. RECONCILED_TREE is a small tree built so every parent
+// genuinely equals the sum of its children on both metrics, at every level.
+const RECONCILED_TREE: FluxNode[] = [
+  node({ id: "all", label: "All land", avgEmissions: 800, avgRemovals: -500 }),
+  node({
+    id: "land",
+    parentId: "all",
+    label: "Land use",
+    avgEmissions: 600,
+    avgRemovals: -500,
+  }),
+  node({
+    id: "veg",
+    parentId: "land",
+    label: "Vegetation",
+    avgEmissions: 400,
+    avgRemovals: -460,
+  }),
+  node({ id: "loss", parentId: "veg", label: "Tree loss", avgEmissions: 400 }),
+  node({ id: "gain", parentId: "veg", label: "Tree gain", avgRemovals: -460 }),
+  node({
+    id: "soil",
+    parentId: "land",
+    label: "Soil",
+    avgEmissions: 200,
+    avgRemovals: -40,
+  }),
+  node({
+    id: "agri",
+    parentId: "all",
+    label: "Agriculture",
+    avgEmissions: 200,
+  }),
+  node({
+    id: "crop",
+    parentId: "agri",
+    label: "Crop management",
+    avgEmissions: 120,
+  }),
+  node({
+    id: "live",
+    parentId: "agri",
+    label: "Livestock",
+    avgEmissions: 80,
+  }),
+];
+
+// PZB-1185's "Full LGMS" question, standing in for a resampled/independently
+// -aggregated rollup: only the root disagrees with the sum of its own
+// (otherwise-consistent) children.
+const MISMATCHED_TREE: FluxNode[] = RECONCILED_TREE.map((n) =>
+  n.id === "all" ? { ...n, avgEmissions: 900, avgRemovals: -450 } : n
+);
+
+describe("reconciliationIssues", () => {
+  it("reports nothing when every parent equals the sum of its children", () => {
+    expect(reconciliationIssues(RECONCILED_TREE)).toEqual([]);
+  });
+
+  it("flags a parent whose value disagrees with its children beyond tolerance", () => {
+    const issues = reconciliationIssues(MISMATCHED_TREE);
+    expect(issues).toEqual([
+      {
+        nodeId: "all",
+        label: "All land",
+        metric: "avgEmissions",
+        parentValue: 900,
+        childrenSum: 800, // land 600 + agriculture 200
+        diff: 100,
+      },
+      {
+        nodeId: "all",
+        label: "All land",
+        metric: "avgRemovals",
+        parentValue: -450,
+        childrenSum: -500, // land -500 + agriculture null(0)
+        diff: 50,
+      },
+    ]);
+  });
+
+  it("accepts a difference within tolerance", () => {
+    expect(reconciliationIssues(MISMATCHED_TREE, 100)).toEqual([]);
+  });
+
+  it("skips a metric where the parent's own value is null", () => {
+    const withNullParent: FluxNode[] = [
+      node({ id: "agri", label: "Agriculture", avgEmissions: 250 }),
+      node({
+        id: "crop",
+        parentId: "agri",
+        label: "Crop management",
+        avgEmissions: 150,
+      }),
+      node({
+        id: "live",
+        parentId: "agri",
+        label: "Livestock",
+        avgEmissions: 100,
+      }),
+    ];
+    // avgRemovals is null on "agri" itself (agriculture has no removals), so
+    // it's skipped even though children carry no removals either.
+    expect(reconciliationIssues(withNullParent)).toEqual([]);
+  });
+
+  it("ignores leaves, which have no children to reconcile against", () => {
+    expect(reconciliationIssues(TREE.filter((n) => n.id === "loss"))).toEqual(
+      []
     );
   });
 });

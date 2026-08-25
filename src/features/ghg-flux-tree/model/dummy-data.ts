@@ -14,10 +14,11 @@ export const LGMS_DATASET_ID = 12;
 export const FLUX_SERIES_FIELDS = ["avg_emissions", "avg_removals"];
 
 /**
- * Annual-average node tree in megatonnes CO2e/yr, taken from the design's
- * gross frame. Emissions positive, removals negative, `null` where a metric
- * does not apply — which is exactly the set of rows the design annotates
- * "emissions only" / "removals only".
+ * Annual-average node tree in MgCO2e/yr (megagrams, i.e. metric tonnes —
+ * matches project-zeno's land_ghg_inventory catalog entry, not megatonnes),
+ * taken from the design's gross frame. Emissions positive, removals
+ * negative, `null` where a metric does not apply — which is exactly the set
+ * of rows the design annotates "emissions only" / "removals only".
  *
  * Kept in the backend's snake_case wire shape so it flows through the same
  * `parseFluxNodes` anti-corruption layer the real endpoint will.

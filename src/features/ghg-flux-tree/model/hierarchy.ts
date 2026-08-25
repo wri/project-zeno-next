@@ -63,7 +63,9 @@ export function singleSidedLabel(
   return null;
 }
 
-function childrenByParent(nodes: FluxNode[]): Map<string | null, FluxNode[]> {
+export function childrenByParent(
+  nodes: FluxNode[]
+): Map<string | null, FluxNode[]> {
   const index = new Map<string | null, FluxNode[]>();
   for (const node of nodes) {
     const siblings = index.get(node.parentId);
@@ -71,6 +73,72 @@ function childrenByParent(nodes: FluxNode[]): Map<string | null, FluxNode[]> {
     else index.set(node.parentId, [node]);
   }
   return index;
+}
+
+type FluxMetric = "avgEmissions" | "avgRemovals";
+
+/** A parent's stored value disagreeing with the sum of its children's. */
+export interface ReconciliationIssue {
+  nodeId: string;
+  label: string;
+  metric: FluxMetric;
+  parentValue: number;
+  childrenSum: number;
+  diff: number;
+}
+
+/**
+ * PZB-1185 asks whether a rolled-up figure still "reconciles with the
+ * dashboard chart figures ... within an acceptable tolerance." This chart's
+ * `FluxNode` doc already states parent values arrive from the API as given —
+ * nothing here re-derives one from its children — so this function only
+ * *flags* disagreement; it never corrects it.
+ *
+ * A child's missing side is treated as 0 (matching `nodeNet`), and a parent
+ * whose own value is `null` is skipped rather than reported as a mismatch,
+ * since the metric doesn't apply at that level.
+ *
+ * `tolerance` is an absolute allowance on |parent - Σchildren|. The ticket
+ * leaves the acceptable tolerance for a resampled/aggregated rollup as an
+ * open product question — the default here is a placeholder for wiring this
+ * up, not a validated threshold.
+ */
+export function reconciliationIssues(
+  nodes: FluxNode[],
+  tolerance = 1
+): ReconciliationIssue[] {
+  const index = childrenByParent(nodes);
+  const issues: ReconciliationIssue[] = [];
+
+  for (const node of nodes) {
+    const children = index.get(node.id) ?? [];
+    if (children.length === 0) continue;
+
+    for (const metric of ["avgEmissions", "avgRemovals"] as const) {
+      const parentValue = node[metric];
+      if (parentValue == null) continue;
+
+      const childValues = children
+        .map((c) => c[metric])
+        .filter((v): v is number => v != null);
+      if (childValues.length === 0) continue;
+
+      const childrenSum = childValues.reduce((a, b) => a + b, 0);
+      const diff = parentValue - childrenSum;
+      if (Math.abs(diff) > tolerance) {
+        issues.push({
+          nodeId: node.id,
+          label: node.label,
+          metric,
+          parentValue,
+          childrenSum,
+          diff,
+        });
+      }
+    }
+  }
+
+  return issues;
 }
 
 /**

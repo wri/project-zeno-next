@@ -509,6 +509,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     geographic_coverage:
       "GADM administrative areas (country, state/province, district) only",
     provider: "WRI",
+    // PZB-1185 flag: getLayerContextFromDatasetCard appends
+    // `&start_year=${defaultStartYear}&end_year=${defaultEndYear}` to
+    // tile_url whenever both are set. That's correct for the LULUCF side
+    // (annual, 2016-2024) but wrong for Agri (2020-fixed) — harmless today
+    // only because tile_url is "". If this card, or a future Agri/LULUCF
+    // sub-layer, ever gets a real tile_url under this same defaultStartYear/
+    // defaultEndYear pair, the append would silently mislabel Agri's tiles.
     defaultStartYear: 2016,
     defaultEndYear: 2024,
     categories: ["land-use"],
