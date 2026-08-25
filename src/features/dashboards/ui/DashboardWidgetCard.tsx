@@ -30,6 +30,7 @@ import { toaster } from "@/app/components/ui/toaster";
 import type { InsightWidget } from "@/app/types/chat";
 import type { MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapWidget from "./DashboardMapWidget";
+import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
 
 /**
  * One dashboard card — the Figma "Analysis" container: a light-blue shell
@@ -49,6 +50,7 @@ export default function DashboardWidgetCard({
   viewportBbox,
   placeholder,
   removeMode,
+  removeCustomized,
   isOwner,
   isDouble,
   onArmDrag,
@@ -71,9 +73,13 @@ export default function DashboardWidgetCard({
   /**
    * What `onRemove` actually does, which the confirm dialog explains:
    * `"widget"` deletes the widget from the dashboard, `"chart"` only hides
-   * this chart within its analysis module (recoverable from Customize).
+   * this chart within its analysis module (recoverable from Customize), and
+   * `"analysis"` deletes a standalone insight widget — that one confirms via
+   * the shared `RemoveAnalysisDialog`, like every other analysis delete.
    */
-  removeMode: "widget" | "chart";
+  removeMode: "widget" | "chart" | "analysis";
+  /** For `removeMode: "analysis"`: whether hand-arranged config is lost. */
+  removeCustomized?: boolean;
   isOwner: boolean;
   isDouble: boolean;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
@@ -287,49 +293,60 @@ export default function DashboardWidgetCard({
         )
       )}
 
-      <Dialog.Root
-        open={confirmOpen}
-        onOpenChange={(e) => setConfirmOpen(e.open)}
-        size="sm"
-        role="alertdialog"
-      >
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Dialog.Title>
-                  {removeMode === "chart" ? "Remove chart?" : "Remove widget?"}
-                </Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Body>
-                <Text>
-                  {removeMode === "chart"
-                    ? "This chart is hidden from the dashboard. Show it again from the analysis's Customize menu. The underlying analysis is not deleted."
-                    : "The widget will be removed from this dashboard. The underlying analysis is not deleted."}
-                </Text>
-              </Dialog.Body>
-              <Dialog.Footer>
-                <Dialog.ActionTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Cancel
+      {removeMode === "analysis" ? (
+        <RemoveAnalysisDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          customized={removeCustomized ?? false}
+          onConfirm={onRemove}
+        />
+      ) : (
+        <Dialog.Root
+          open={confirmOpen}
+          onOpenChange={(e) => setConfirmOpen(e.open)}
+          size="sm"
+          role="alertdialog"
+        >
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content>
+                <Dialog.Header>
+                  <Dialog.Title>
+                    {removeMode === "chart"
+                      ? "Remove chart?"
+                      : "Remove widget?"}
+                  </Dialog.Title>
+                </Dialog.Header>
+                <Dialog.Body>
+                  <Text>
+                    {removeMode === "chart"
+                      ? "This chart is hidden from the dashboard. Show it again from the analysis's Customize menu. The underlying analysis is not deleted."
+                      : "The widget will be removed from this dashboard. The underlying analysis is not deleted."}
+                  </Text>
+                </Dialog.Body>
+                <Dialog.Footer>
+                  <Dialog.ActionTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Cancel
+                    </Button>
+                  </Dialog.ActionTrigger>
+                  <Button
+                    colorPalette="red"
+                    size="sm"
+                    onClick={() => {
+                      setConfirmOpen(false);
+                      onRemove();
+                    }}
+                  >
+                    Remove
                   </Button>
-                </Dialog.ActionTrigger>
-                <Button
-                  colorPalette="red"
-                  size="sm"
-                  onClick={() => {
-                    setConfirmOpen(false);
-                    onRemove();
-                  }}
-                >
-                  Remove
-                </Button>
-              </Dialog.Footer>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
+                </Dialog.Footer>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
+      )}
     </Flex>
   );
 }

@@ -45,14 +45,15 @@ export function withSize(
 /**
  * Per-chart column span. A widget's charts render as individual grid cards,
  * so each chart carries its own span under `config.sizes[chartId]`; the
- * widget-level `size` is the pre-split fallback for older configs.
+ * widget-level `size` is the pre-split fallback for older configs (and the
+ * answer when there is no chart id at all).
  */
 export function chartSize(
   config: Record<string, unknown>,
-  chartId: string
+  chartId: string | undefined
 ): WidgetSize {
   const sizes = config.sizes;
-  if (sizes && typeof sizes === "object") {
+  if (chartId && sizes && typeof sizes === "object") {
     const own = (sizes as Record<string, unknown>)[chartId];
     if (own === "double" || own === "single") return own;
   }
@@ -128,6 +129,33 @@ export function withWidgetTitle(
   if (trimmed) out.title = trimmed;
   else delete out.title;
   return out;
+}
+
+/**
+ * Size PATCH for a single-card grid item: per-chart when the card is an
+ * insight chart (so the span survives regrouping into a module), else the
+ * widget-level `size`. Keeps the "which config key does this card persist
+ * under" decision out of the grid's JSX.
+ */
+export function withCardSize(
+  config: Record<string, unknown>,
+  chartId: string | undefined,
+  size: WidgetSize
+): Record<string, unknown> {
+  return chartId
+    ? withChartSize(config, chartId, size)
+    : withSize(config, size);
+}
+
+/** Rename PATCH for a single-card grid item (same rule as `withCardSize`). */
+export function withCardTitle(
+  config: Record<string, unknown>,
+  chartId: string | undefined,
+  name: string
+): Record<string, unknown> {
+  return chartId
+    ? withChartTitle(config, chartId, name)
+    : withWidgetTitle(config, name);
 }
 
 /**
@@ -258,6 +286,38 @@ export function hasWidgetCustomization(
 }
 
 /**
+ * Whether a widget renders as a grouped insight module (header · summary ·
+ * Customize menu). Grouping is only for insight widgets the agent answered
+ * with several charts; a single-chart insight stays a plain standalone card,
+ * and other widget types are never grouped even if the API attaches an
+ * insight payload. Counts the full roster, not the shown subset, so a module
+ * whose charts were hidden via Customize stays a module — the menu must
+ * remain reachable to show them again.
+ */
+export function isGroupedInsight(widget: DashboardWidget): boolean {
+  return (
+    widget.widget_type === "insight" &&
+    (widget.insight?.charts?.length ?? 0) > 1
+  );
+}
+
+/**
+ * The chart id a standalone (single-chart) insight persists its per-chart
+ * span and rename under — the position-first chart, i.e. the one
+ * `standaloneInsightCard` renders. Undefined for grouped insights and other
+ * widget types, whose config is widget-level. Both the size read and the
+ * size/rename writes must resolve the chart through this one helper, or a
+ * card would read its span from one id and persist it under another.
+ */
+export function standaloneChartId(widget: DashboardWidget): string | undefined {
+  if (isGroupedInsight(widget) || widget.widget_type !== "insight")
+    return undefined;
+  return [...(widget.insight?.charts ?? [])].sort(
+    (a, b) => a.position - b.position
+  )[0]?.id;
+}
+
+/**
  * The insight module's display title: the widget's `config.title` override,
  * else the shared `firstChartTitle` fallback over all charts (not just shown
  * ones, so the title doesn't jump when charts are hidden), else "Analysis".
@@ -286,6 +346,12 @@ export interface InsightModuleView {
   /** The narrative to render; "" when absent or blank. */
   summaryText: string;
   summaryShown: boolean;
+  /**
+   * No generation provenance ⇒ curated — the same rule `WidgetMessage`
+   * applies to each card, so the module caption never contradicts the cards
+   * beneath it.
+   */
+  curated: boolean;
   cards: InsightWidget[];
   allCharts: { id: string; title: string; shown: boolean }[];
 }
@@ -309,6 +375,7 @@ export function insightModule(
       ? widget.insight.insight_text
       : "",
     summaryShown: isSummaryShown(widget.config),
+    curated: insightCodeactParts(widget.insight).length === 0,
     cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
     allCharts: charts.map((chart) => ({
       id: chart.id,
@@ -333,14 +400,11 @@ export function insightModule(
  * parameters, but a dashboard is scoped to exactly one area — pass its name
  * as `areaName` so every card gets an AREA param chip.
  */
-export function dashboardWidgetToInsightWidgets(
-  widget: DashboardWidget,
-  { areaName }: { areaName?: string } = {}
-): InsightWidget[] {
-  const insight = widget.insight;
-  if (!insight?.charts?.length) return [];
-
-  const codeactParts = Array.isArray(insight.codeact_parts)
+/** The insight's well-formed provenance parts; [] when absent or malformed. */
+function insightCodeactParts(
+  insight: DashboardWidget["insight"]
+): CodeActPart[] {
+  return Array.isArray(insight?.codeact_parts)
     ? insight.codeact_parts.filter(
         (p): p is CodeActPart =>
           typeof p === "object" &&
@@ -349,6 +413,16 @@ export function dashboardWidgetToInsightWidgets(
           typeof (p as CodeActPart).content === "string"
       )
     : [];
+}
+
+export function dashboardWidgetToInsightWidgets(
+  widget: DashboardWidget,
+  { areaName }: { areaName?: string } = {}
+): InsightWidget[] {
+  const insight = widget.insight;
+  if (!insight?.charts?.length) return [];
+
+  const codeactParts = insightCodeactParts(insight);
   const generation = codeactParts.length
     ? { codeact_parts: codeactParts }
     : undefined;
@@ -387,6 +461,27 @@ export function dashboardWidgetToInsightWidgets(
         ...(analysisParams ? { analysisParams } : {}),
       };
     });
+}
+
+/**
+ * The one card a single-chart insight renders as (`isGroupedInsight` false),
+ * or null when there is nothing to render (insight hidden from this viewer).
+ * The module-only hidden state (`config.chartIds`) is deliberately ignored:
+ * a standalone card has no Customize menu, so a chart hidden under the old
+ * grouped rendering would otherwise be unrecoverable.
+ */
+export function standaloneInsightCard(
+  widget: DashboardWidget,
+  { areaName }: { areaName?: string } = {}
+): InsightWidget | null {
+  // A non-array `chartIds` reads as "all charts" (`shownChartIds`); the
+  // widget's own persisted config is left untouched.
+  return (
+    dashboardWidgetToInsightWidgets(
+      { ...widget, config: { ...widget.config, chartIds: undefined } },
+      { areaName }
+    )[0] ?? null
+  );
 }
 
 /**

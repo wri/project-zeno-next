@@ -4,16 +4,23 @@ import { useMemo, useState } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 
 import useAuthStore from "@/app/store/authStore";
+import type { InsightWidget } from "@/app/types/chat";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { packCells } from "../lib/packing";
 import {
+  chartSize,
   computeReorder,
+  hasWidgetCustomization,
+  isGroupedInsight,
   mapWidgetSize,
+  standaloneChartId,
+  standaloneInsightCard,
   widgetSize,
   widgetText,
+  withCardSize,
+  withCardTitle,
   withSize,
   withText,
-  withWidgetTitle,
   type WidgetSize,
 } from "../lib/widgets";
 import {
@@ -32,53 +39,77 @@ import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 
 /**
- * The body of a standalone (non-insight) grid item: the map layer for map
- * widgets, the markdown text for notes, or placeholder copy when the config
- * can't be rendered. Insight widgets don't come through here — they render
- * whole as `DashboardInsightModule`.
+ * The body of a standalone (non-module) grid item: the single chart card for
+ * an ungrouped insight, the map layer for map widgets, the markdown text for
+ * notes, or placeholder copy when the config can't be rendered. Exactly one
+ * field is set per widget type. Multi-chart insight widgets don't come
+ * through here — they render whole as `DashboardInsightModule`.
  */
 interface StandaloneBody {
-  map: MapWidgetLayer | null;
-  text: string | null;
-  placeholder: string | null;
+  card?: InsightWidget | null;
+  map?: MapWidgetLayer | null;
+  text?: string | null;
+  placeholder?: string | null;
 }
 
-function standaloneBody(widget: DashboardWidget): StandaloneBody {
+function standaloneBody(
+  widget: DashboardWidget,
+  areaName: string | undefined
+): StandaloneBody {
+  if (widget.widget_type === "insight") {
+    const card = standaloneInsightCard(widget, { areaName });
+    return {
+      card,
+      placeholder: card ? null : "This analysis is not available.",
+    };
+  }
   if (widget.widget_type === "map") {
     const map = mapWidgetLayer(widget.config);
     return {
       map,
-      text: null,
       placeholder: map ? null : "This map widget can't be displayed.",
     };
   }
   if (widget.widget_type === "text") {
     const text = widgetText(widget.config);
-    return {
-      map: null,
-      text,
-      placeholder: text ? null : "This note is empty.",
-    };
+    return { text, placeholder: text ? null : "This note is empty." };
   }
   return {
-    map: null,
-    text: null,
     placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
   };
 }
 
-/** The persisted column span for a top-level item (insights always span both). */
+/**
+ * The persisted column span for a top-level item. Grouped insight modules
+ * always span both columns; a standalone single-chart insight keeps its
+ * chart's own span (`standaloneChartId`) so it can pair into two columns
+ * like any other card.
+ */
 function topLevelSize(widget: DashboardWidget): WidgetSize {
-  if (widget.widget_type === "insight") return "double";
+  if (isGroupedInsight(widget)) return "double";
+  if (widget.widget_type === "insight")
+    return chartSize(widget.config, standaloneChartId(widget));
   if (widget.widget_type === "map") return mapWidgetSize(widget.config);
   return widgetSize(widget.config);
 }
 
+/** Everything the grid derives per widget, shared by packing and render. */
+interface GridItem {
+  widget: DashboardWidget;
+  grouped: boolean;
+  size: WidgetSize;
+  /** null for grouped modules, which render their own body. */
+  body: StandaloneBody | null;
+  /** The write target for a standalone insight card's size/rename. */
+  cardId: string | undefined;
+}
+
 /**
- * The dashboard's widget grid. Each widget is one top-level item: insight
- * widgets render as a full-width `DashboardInsightModule` (header · summary ·
- * their chart cards packed inside), while map/text widgets keep their single
- * cards and can still pair into two columns via `packCells`.
+ * The dashboard's widget grid. Each widget is one top-level item: an insight
+ * with several charts renders as a full-width `DashboardInsightModule`
+ * (header · summary · its chart cards packed inside), while single-chart
+ * insights and map/text widgets keep their single cards and can still pair
+ * into two columns via `packCells`.
  *
  * Reordering is native HTML5 drag-and-drop at widget level, armed only while
  * a drag handle is pressed (so text selection and chart interactions keep
@@ -137,18 +168,36 @@ export default function DashboardWidgetsGrid({
     endDrag();
   };
 
+  // One derivation per widget, shared by the packing predicate and every
+  // render — the grid re-renders per drag event, so this stays off that path.
+  const items = useMemo(
+    () =>
+      widgets.map((widget): GridItem => {
+        const grouped = isGroupedInsight(widget);
+        return {
+          widget,
+          grouped,
+          size: topLevelSize(widget),
+          body: grouped ? null : standaloneBody(widget, areaAoi?.name),
+          // A standalone insight card's size/rename persist per chart, like
+          // the cards inside a module, so config survives regrouping.
+          cardId: standaloneChartId(widget),
+        };
+      }),
+    [widgets, areaAoi?.name]
+  );
+
   // Half-width runs deal into two packed columns; sizes and order both come
   // from persisted widget state, so the packing is stable across loads.
   const segments = useMemo(
-    () => packCells(widgets, (widget) => topLevelSize(widget) === "double"),
-    [widgets]
+    () => packCells(items, (item) => item.size === "double"),
+    [items]
   );
 
-  const renderWidget = (widget: DashboardWidget, i: number) => {
-    const size = topLevelSize(widget);
-    const body =
-      widget.widget_type === "insight" ? null : standaloneBody(widget);
+  const renderWidget = (item: GridItem, i: number) => {
+    const { widget, grouped, size, body, cardId } = item;
     const title =
+      body?.card?.title ??
       body?.map?.title ??
       (typeof widget.config.title === "string" ? widget.config.title : "");
     return (
@@ -183,7 +232,7 @@ export default function DashboardWidgetsGrid({
         outlineColor="primary.solid"
         borderRadius="sm"
       >
-        {widget.widget_type === "insight" ? (
+        {grouped ? (
           <DashboardInsightModule
             widget={widget}
             areaAoi={areaAoi}
@@ -225,14 +274,20 @@ export default function DashboardWidgetsGrid({
         ) : (
           <DashboardWidgetCard
             title={title}
-            card={null}
+            card={body?.card ?? null}
             map={body?.map}
             aoi={areaAoi}
             viewportBbox={
               body?.map ? mapWidgetViewportBbox(widget.config) : null
             }
             placeholder={body?.placeholder ?? null}
-            removeMode="widget"
+            // A standalone insight delete discards the same thing a module
+            // delete does, so it shares RemoveAnalysisDialog and its
+            // lost-customization warning.
+            removeMode={
+              widget.widget_type === "insight" ? "analysis" : "widget"
+            }
+            removeCustomized={hasWidgetCustomization(widget.config)}
             isOwner={isOwner}
             isDouble={size === "double"}
             onArmDrag={() => setGrabbedId(widget.id)}
@@ -241,8 +296,9 @@ export default function DashboardWidgetsGrid({
               updateWidget.mutate({
                 widgetId: widget.id,
                 patch: {
-                  config: withSize(
+                  config: withCardSize(
                     widget.config,
+                    cardId,
                     size === "double" ? "single" : "double"
                   ),
                 },
@@ -254,7 +310,9 @@ export default function DashboardWidgetsGrid({
                 : (name) =>
                     updateWidget.mutate({
                       widgetId: widget.id,
-                      patch: { config: withWidgetTitle(widget.config, name) },
+                      patch: {
+                        config: withCardTitle(widget.config, cardId, name),
+                      },
                     })
             }
             onRemove={() => deleteWidget.mutate(widget.id)}
@@ -272,7 +330,7 @@ export default function DashboardWidgetsGrid({
             renderWidget(segment.cell.item, segment.cell.index)
           ) : (
             <Flex
-              key={`columns-${segment.left[0]?.item.id ?? "empty"}`}
+              key={`columns-${segment.left[0]?.item.widget.id ?? "empty"}`}
               gap={4}
               align="flex-start"
               display="contents"
