@@ -9,6 +9,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 
+import InsightCaption from "@/app/components/InsightCaption";
 import type { InsightWidget } from "@/app/types/chat";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { packCells } from "../lib/packing";
@@ -219,26 +220,14 @@ export default function DashboardInsightModule({
       {!collapsed && (
         <>
           {showSummary && (
-            <Text fontSize="16px" lineHeight="24px" color="fg">
-              {vm.summaryText}{" "}
-              {/* Inline "AI generated" chip per the design, riding at the
-                  end of the narrative. */}
-              <Box
-                as="span"
-                display="inline-block"
-                px="4px"
-                borderRadius="4px"
-                bg="#D7DFF2"
-                color="#3855A3"
-                fontSize="10px"
-                fontFamily="mono"
-                lineHeight="16px"
-                verticalAlign="2px"
-                whiteSpace="nowrap"
-              >
-                AI generated
-              </Box>
-            </Text>
+            <Flex direction="column" gap="8px">
+              {/* Same provenance rule as the cards below, so the module
+                  header never contradicts them. */}
+              <InsightCaption curated={vm.curated} />
+              <Text fontSize="16px" lineHeight="24px" color="fg">
+                {vm.summaryText}
+              </Text>
+            </Flex>
           )}
 
           {!hasCharts ? (

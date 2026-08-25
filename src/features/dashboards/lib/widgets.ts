@@ -286,6 +286,12 @@ export interface InsightModuleView {
   /** The narrative to render; "" when absent or blank. */
   summaryText: string;
   summaryShown: boolean;
+  /**
+   * No generation provenance ⇒ curated — the same rule `WidgetMessage`
+   * applies to each card, so the module caption never contradicts the cards
+   * beneath it.
+   */
+  curated: boolean;
   cards: InsightWidget[];
   allCharts: { id: string; title: string; shown: boolean }[];
 }
@@ -309,6 +315,7 @@ export function insightModule(
       ? widget.insight.insight_text
       : "",
     summaryShown: isSummaryShown(widget.config),
+    curated: insightCodeactParts(widget.insight).length === 0,
     cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
     allCharts: charts.map((chart) => ({
       id: chart.id,
@@ -333,14 +340,11 @@ export function insightModule(
  * parameters, but a dashboard is scoped to exactly one area — pass its name
  * as `areaName` so every card gets an AREA param chip.
  */
-export function dashboardWidgetToInsightWidgets(
-  widget: DashboardWidget,
-  { areaName }: { areaName?: string } = {}
-): InsightWidget[] {
-  const insight = widget.insight;
-  if (!insight?.charts?.length) return [];
-
-  const codeactParts = Array.isArray(insight.codeact_parts)
+/** The insight's well-formed provenance parts; [] when absent or malformed. */
+function insightCodeactParts(
+  insight: DashboardWidget["insight"]
+): CodeActPart[] {
+  return Array.isArray(insight?.codeact_parts)
     ? insight.codeact_parts.filter(
         (p): p is CodeActPart =>
           typeof p === "object" &&
@@ -349,6 +353,16 @@ export function dashboardWidgetToInsightWidgets(
           typeof (p as CodeActPart).content === "string"
       )
     : [];
+}
+
+export function dashboardWidgetToInsightWidgets(
+  widget: DashboardWidget,
+  { areaName }: { areaName?: string } = {}
+): InsightWidget[] {
+  const insight = widget.insight;
+  if (!insight?.charts?.length) return [];
+
+  const codeactParts = insightCodeactParts(insight);
   const generation = codeactParts.length
     ? { codeact_parts: codeactParts }
     : undefined;

@@ -53,7 +53,8 @@ function widget(overrides: Partial<DashboardWidget> = {}): DashboardWidget {
     insight: {
       id: "ins-1",
       insight_text: "There were 1,055 disturbance alerts.",
-      codeact_parts: null,
+      // Provenance present ⇒ the AI-assisted caption (mirrors WidgetMessage).
+      codeact_parts: [{ type: "code", content: "df.plot()" }],
       charts: [
         chart(),
         chart({ id: "c-2", position: 1, title: "Alerts by month" }),
@@ -90,13 +91,13 @@ function renderModule({
 }
 
 describe("DashboardInsightModule", () => {
-  it("renders the header title, summary with AI chip, and one card per shown chart", () => {
+  it("renders the header title, summary with the AI caption, and one card per shown chart", () => {
     renderModule();
     expect(
       screen.getByText(/There were 1,055 disturbance alerts\./)
     ).toBeTruthy();
-    // The design's inline "AI generated" chip rides at the end of the summary.
-    expect(screen.getByText("AI generated")).toBeTruthy();
+    // The shared InsightCaption badge, as on workspace insight cards.
+    expect(screen.getByText(/AI-ASSISTED/)).toBeTruthy();
     const cards = screen.getAllByTestId("widget-message");
     expect(cards.map((c) => c.textContent)).toEqual([
       "Disturbance alerts trend",
@@ -104,12 +105,27 @@ describe("DashboardInsightModule", () => {
     ]);
   });
 
+  it("shows the curated caption when the insight has no generation provenance", () => {
+    renderModule({
+      widget: widget({
+        insight: {
+          id: "ins-1",
+          insight_text: "There were 1,055 disturbance alerts.",
+          codeact_parts: null,
+          charts: [chart()],
+        },
+      }),
+    });
+    expect(screen.getByText(/CURATED/)).toBeTruthy();
+    expect(screen.queryByText(/AI-ASSISTED/)).toBe(null);
+  });
+
   it("hides the summary when config says so", () => {
     renderModule({ widget: widget({ config: { summaryHidden: true } }) });
     expect(screen.queryByText(/There were 1,055 disturbance alerts\./)).toBe(
       null
     );
-    expect(screen.queryByText("AI generated")).toBe(null);
+    expect(screen.queryByText(/AI-ASSISTED/)).toBe(null);
     expect(screen.getAllByTestId("widget-message")).toHaveLength(2);
   });
 
