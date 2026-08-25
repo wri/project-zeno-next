@@ -402,7 +402,7 @@ export function GhgFluxTreeChart({
             color="#9AA0AB"
             whiteSpace="nowrap"
           >
-            Mt CO₂e/yr
+            MgCO2e/yr
           </Text>
         </Flex>
         {rows.map((row) => (

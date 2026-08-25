@@ -71,10 +71,17 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
     nodes
   );
   // PoC (PZB-1185): the tree combines a ~30 m annual-average source (land
-  // use) with a ~10 km single-year source (agriculture) — flag it when the
-  // levels it was given don't actually sum, rather than silently trusting
-  // whatever a resampled/aggregated rollup reports. See reconciliationIssues.
+  // use) with a ~10 km single-year source (agriculture) — flag it when a
+  // parent's own reported value doesn't match the sum of its own children,
+  // rather than silently trusting whatever a resampled/aggregated rollup
+  // reports. This is an internal self-consistency check on this one payload;
+  // it does not compare against the dashboard's chart figures, which is what
+  // PZB-1185's Q3 actually asks. See reconciliationIssues.
   const issues = reconciliationIssues(nodes);
+  // A node can appear twice (once per metric); the banner counts affected
+  // tree levels, not raw issues, so a two-metric mismatch on one node still
+  // reads as "1 level", not "2".
+  const affectedLevels = new Set(issues.map((i) => i.nodeId)).size;
 
   const root = rootNodes(nodes)[0];
   const rootNet = root ? nodeNet(root) : null;
@@ -137,10 +144,12 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
           p="8px 10px"
         >
           <Text fontFamily="body" fontSize="12px" color="#6B4E12">
-            {issues.length} level{issues.length > 1 ? "s" : ""} of this tree
-            don&apos;t sum to their reported total — a mixed-resolution rollup
-            like this can drift out of reconciliation with the dashboard figures
-            it&apos;s meant to match.
+            {affectedLevels} level{affectedLevels > 1 ? "s" : ""} of this tree{" "}
+            {affectedLevels > 1 ? "don't" : "doesn't"} sum to its own reported
+            children — a resampled or independently-aggregated rollup like this
+            can drift out of internal consistency, which is worth checking
+            before trusting it against the dashboard figures it&apos;s meant to
+            match.
           </Text>
         </Box>
       )}

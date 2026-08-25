@@ -88,11 +88,17 @@ export interface ReconciliationIssue {
 }
 
 /**
- * PZB-1185 asks whether a rolled-up figure still "reconciles with the
- * dashboard chart figures ... within an acceptable tolerance." This chart's
- * `FluxNode` doc already states parent values arrive from the API as given —
- * nothing here re-derives one from its children — so this function only
- * *flags* disagreement; it never corrects it.
+ * An *internal* self-consistency check: does each parent's own reported value
+ * match the sum of its own children, within this single tree payload? This is
+ * not the cross-source check PZB-1185's Q3 actually asks for — "does a
+ * rolled-up figure still reconcile with the dashboard chart figures ... within
+ * an acceptable tolerance" compares against an independently-derived number,
+ * which this function has no access to. Treat this as an early-warning proxy
+ * (a tree that doesn't even sum against itself is unlikely to reconcile with
+ * anything else), not as an answer to Q3. This chart's `FluxNode` doc already
+ * states parent values arrive from the API as given — nothing here re-derives
+ * one from its children — so this function only *flags* disagreement; it
+ * never corrects it.
  *
  * A child's missing side is treated as 0 (matching `nodeNet`), and a parent
  * whose own value is `null` is skipped rather than reported as a mismatch,
@@ -101,7 +107,9 @@ export interface ReconciliationIssue {
  * `tolerance` is an absolute allowance on |parent - Σchildren|. The ticket
  * leaves the acceptable tolerance for a resampled/aggregated rollup as an
  * open product question — the default here is a placeholder for wiring this
- * up, not a validated threshold.
+ * up, not a validated threshold. Note it's small relative to these values
+ * (hundreds to low thousands of MgCO2e/yr), so in practice it behaves close
+ * to zero-tolerance until a real threshold is set.
  */
 export function reconciliationIssues(
   nodes: FluxNode[],
