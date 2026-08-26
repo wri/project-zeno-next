@@ -286,6 +286,12 @@ export interface InsightModuleView {
   /** The narrative to render; "" when absent or blank. */
   summaryText: string;
   summaryShown: boolean;
+  /**
+   * No generation provenance ⇒ curated — the same rule `WidgetMessage`
+   * applies to each card, so the module caption never contradicts the cards
+   * beneath it.
+   */
+  curated: boolean;
   cards: InsightWidget[];
   allCharts: { id: string; title: string; shown: boolean }[];
 }
@@ -309,6 +315,7 @@ export function insightModule(
       ? widget.insight.insight_text
       : "",
     summaryShown: isSummaryShown(widget.config),
+    curated: insightCodeactParts(widget.insight).length === 0,
     cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
     allCharts: charts.map((chart) => ({
       id: chart.id,
@@ -316,6 +323,21 @@ export function insightModule(
       shown: shown.has(chart.id),
     })),
   };
+}
+
+/** The insight's well-formed provenance parts; [] when absent or malformed. */
+function insightCodeactParts(
+  insight: DashboardWidget["insight"]
+): CodeActPart[] {
+  return Array.isArray(insight?.codeact_parts)
+    ? insight.codeact_parts.filter(
+        (p): p is CodeActPart =>
+          typeof p === "object" &&
+          p !== null &&
+          typeof (p as CodeActPart).type === "string" &&
+          typeof (p as CodeActPart).content === "string"
+      )
+    : [];
 }
 
 /**
@@ -340,15 +362,7 @@ export function dashboardWidgetToInsightWidgets(
   const insight = widget.insight;
   if (!insight?.charts?.length) return [];
 
-  const codeactParts = Array.isArray(insight.codeact_parts)
-    ? insight.codeact_parts.filter(
-        (p): p is CodeActPart =>
-          typeof p === "object" &&
-          p !== null &&
-          typeof (p as CodeActPart).type === "string" &&
-          typeof (p as CodeActPart).content === "string"
-      )
-    : [];
+  const codeactParts = insightCodeactParts(insight);
   const generation = codeactParts.length
     ? { codeact_parts: codeactParts }
     : undefined;

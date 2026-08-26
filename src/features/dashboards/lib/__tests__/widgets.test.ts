@@ -510,6 +510,20 @@ describe("insightModule", () => {
     expect(vm.cards).toEqual([]);
     expect(vm.allCharts).toEqual([]);
   });
+
+  it("derives curated from the generation provenance, like the cards do", () => {
+    // The default fixture has no codeact parts.
+    expect(insightModule(widget()).curated).toBe(true);
+    const generated = widget({
+      insight: {
+        id: "ins-1",
+        insight_text: "Loss rose 12%.",
+        codeact_parts: [{ type: "code", content: "df.plot()" }],
+        charts: [chart()],
+      },
+    });
+    expect(insightModule(generated).curated).toBe(false);
+  });
 });
 
 describe("dashboardWidgetToInsightWidgets — chartIds filtering", () => {
