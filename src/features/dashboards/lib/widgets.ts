@@ -325,21 +325,6 @@ export function insightModule(
   };
 }
 
-/**
- * Maps a dashboard insight widget (snake_case REST shape) to the
- * `InsightWidget`s consumed by `WidgetMessage` — the persisted counterpart
- * of `generateInsightsTool`, which produces one card per chart. Only the
- * widget's shown charts (`config.chartIds`, or all when absent) are returned.
- * Returns `[]` when there is nothing to render (insight hidden from this
- * viewer, or no shown charts); the caller shows a "not available" placeholder
- * per the API contract.
- *
- * The widget's `config.title` override and the insight narrative apply to
- * the first chart (the card's visual header); provenance parts feed the
- * "view how this was generated" drawer. The API insight carries no analysis
- * parameters, but a dashboard is scoped to exactly one area — pass its name
- * as `areaName` so every card gets an AREA param chip.
- */
 /** The insight's well-formed provenance parts; [] when absent or malformed. */
 function insightCodeactParts(
   insight: DashboardWidget["insight"]
@@ -355,6 +340,21 @@ function insightCodeactParts(
     : [];
 }
 
+/**
+ * Maps a dashboard insight widget (snake_case REST shape) to the
+ * `InsightWidget`s consumed by `WidgetMessage` — the persisted counterpart
+ * of `generateInsightsTool`, which produces one card per chart. Only the
+ * widget's shown charts (`config.chartIds`, or all when absent) are returned.
+ * Returns `[]` when there is nothing to render (insight hidden from this
+ * viewer, or no shown charts); the caller shows a "not available" placeholder
+ * per the API contract.
+ *
+ * The widget's `config.title` override and the insight narrative apply to
+ * the first chart (the card's visual header); provenance parts feed the
+ * "view how this was generated" drawer. The API insight carries no analysis
+ * parameters, but a dashboard is scoped to exactly one area — pass its name
+ * as `areaName` so every card gets an AREA param chip.
+ */
 export function dashboardWidgetToInsightWidgets(
   widget: DashboardWidget,
   { areaName }: { areaName?: string } = {}
