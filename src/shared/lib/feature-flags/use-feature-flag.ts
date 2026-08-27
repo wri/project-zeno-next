@@ -21,8 +21,11 @@ export function useFeatureFlag(flag: string): boolean {
  * Every flag opted into by the URL. Use when gating a collection whose flags
  * aren't known at call time — one hook call covers all of them, where
  * `useFeatureFlag` would need one call per flag.
+ *
+ * Returned as a ReadonlySet: the set lives in React state, so mutating it
+ * would neither trigger a re-render nor survive as intended.
  */
-export function useEnabledFlags(): Set<string> {
+export function useEnabledFlags(): ReadonlySet<string> {
   const [flags] = useState(() => {
     const params = searchParams();
     return params ? enabledFlags(params) : new Set<string>();

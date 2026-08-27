@@ -26,13 +26,17 @@ import {
 export function showViewAnalysisNudge(selection: AreaSelection): boolean {
   if (!selection.name) return false;
 
-  // View-only datasets have no analytics endpoint — skip past them to the
-  // first analysable layer rather than nudging towards an analysis that can
-  // never run.
+  // Mirrors showAnalysisCta's gate: skip context sub-layers (parentLayerId
+  // set) so the sub-layer's own `name` can never stand in for the dataset
+  // name, and skip view-only datasets — they have no analytics endpoint, so
+  // nudging towards an analysis that can never run leads nowhere.
   const datasetLayer = useMapStore
     .getState()
     .layers.find(
-      (l) => typeof l.datasetId === "number" && !isViewOnlyDataset(l.datasetId)
+      (l) =>
+        typeof l.datasetId === "number" &&
+        !l.parentLayerId &&
+        !isViewOnlyDataset(l.datasetId)
     );
   if (!datasetLayer) return false;
 

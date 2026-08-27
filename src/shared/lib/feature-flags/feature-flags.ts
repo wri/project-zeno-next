@@ -13,7 +13,14 @@ const FLAGS_PARAM = "ff";
 export function enabledFlags(params: URLSearchParams): Set<string> {
   const raw = params.get(FLAGS_PARAM);
   if (!raw) return new Set();
-  return new Set(raw.split(",").map((value) => value.trim()));
+  // Empty tokens (`?ff=foo,,bar`, `?ff=,`) are dropped so the set only ever
+  // holds real flag names and `has("")` can never match.
+  return new Set(
+    raw
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+  );
 }
 
 export function isFeatureEnabled(
