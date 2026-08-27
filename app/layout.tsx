@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
-import Script from "next/script";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
 import CookieBanner from "@/app/components/CookieBanner";
 import CookiePreferencesDrawer from "@/app/components/CookiePreferencesDrawer";
@@ -24,9 +23,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <Script
+        <script
           id="gtm"
-          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
