@@ -65,6 +65,13 @@ export type DatasetCardConfig = {
   methodology?: string;
   citation?: string;
   viewOnly?: boolean;
+  /**
+   * Gates the card behind a URL feature flag (`?ff=<flag>`): browse surfaces
+   * (Data Catalog, layer menu) only list it while the flag is on. The card
+   * stays in `DATASET_CARDS` either way, so a layer that is already on the map
+   * keeps resolving its legend.
+   */
+  featureFlag?: string;
   defaultStartYear?: number;
   defaultEndYear?: number;
   /**
@@ -135,6 +142,20 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     },
   },
 };
+
+/**
+ * Feature flag gating the standalone Intact Forest Landscapes card while
+ * researchers review it (PZB-1231). Opt in with `?ff=ifl`.
+ */
+export const IFL_FEATURE_FLAG = "ifl";
+
+/**
+ * Standalone IFL raster tiles. Same endpoint the backend hands back as the
+ * `intact_forest` context layer, so the card and the context sub-layer render
+ * from one source.
+ */
+const INTACT_FOREST_TILE_URL =
+  "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2025/default/{z}/{x}/{y}.png";
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
@@ -260,6 +281,26 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       info: 'The Natural lands dataset is the best match because it provides a 2020 baseline map of natural vs non-natural land covers at 30m resolution, which can be used to identify intact/natural landscapes. This dataset specifically defines "natural" ecosystems as those that substantially resemble what would be found without major human impacts, making it ideal for assessing landscape intactness across Canadian provinces.',
       note: "Baseline map separating natural from non-natural lands for conversion assessments. This map may overestimate the extent of natural lands.",
     },
+  },
+  {
+    // Contextual-only layer: IFL has no analytics endpoint, so the card is
+    // flagged `viewOnly` and the catalogue badges it VIEW ONLY. Name, colors
+    // and description are reused from the context-layer metadata above so the
+    // standalone layer and the sub-layer under Tree Cover Loss stay identical.
+    dataset_id: CONTEXT_LAYER_METADATA.intact_forest.dataset_id,
+    dataset_name: CONTEXT_LAYER_METADATA.intact_forest.dataset_name,
+    shortName: "Intact forests",
+    context_layer: null,
+    cadence: "2000-2025",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "IFL Mapping Team",
+    categories: ["land-use"],
+    viewOnly: true,
+    featureFlag: IFL_FEATURE_FLAG,
+    description: CONTEXT_LAYER_METADATA.intact_forest.description,
+    tile_url: INTACT_FOREST_TILE_URL,
+    legend: CONTEXT_LAYER_METADATA.intact_forest.legend,
   },
   {
     dataset_id: 4,
@@ -559,4 +600,15 @@ const DATASET_SHORTNAME_BY_NAME: Record<string, string> = Object.fromEntries(
  */
 export function shortDatasetName(name: string): string {
   return DATASET_SHORTNAME_BY_NAME[name] ?? name;
+}
+
+// Datasets with no analytics endpoint — they can be shown on the map but never
+// analysed, so the analysis CTAs must skip them.
+const VIEW_ONLY_DATASET_IDS: ReadonlySet<number> = new Set(
+  DATASET_CARDS.filter((c) => c.viewOnly).map((c) => c.dataset_id)
+);
+
+/** Whether a dataset is contextual-only (badged VIEW ONLY, not analysable). */
+export function isViewOnlyDataset(datasetId: number): boolean {
+  return VIEW_ONLY_DATASET_IDS.has(datasetId);
 }

@@ -42,6 +42,8 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import type { DatasetInfo } from "@/app/types/chat";
 import { datasetCardLayers } from "@/app/utils/datasetCardLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
+import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
+import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 
 import { CatalogCard } from "./CatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
@@ -95,9 +97,18 @@ export default function DataCatalogPanel() {
     )
   );
 
+  // Flag-gated cards are hidden from the catalogue until their flag is on.
+  // Safe to branch on here: the panel only renders once the user opens it, so
+  // the flagged list never differs between the server render and hydration.
+  const enabledFlags = useEnabledFlags();
   const cards = useMemo(
-    () => filterDatasetsByCategory(DATASET_CARDS, category, activeDatasetIds),
-    [category, activeDatasetIds]
+    () =>
+      filterDatasetsByCategory(
+        filterDatasetsByFeatureFlag(DATASET_CARDS, enabledFlags),
+        category,
+        activeDatasetIds
+      ),
+    [category, activeDatasetIds, enabledFlags]
   );
 
   const compactSlide = !isChatFullSize;
