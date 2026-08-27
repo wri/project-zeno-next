@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
 import Providers from "@/app/components/providers";
-import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import HotjarTrigger from "@/app/components/HotjarTrigger";
 import CookieBanner from "@/app/components/CookieBanner";
 import CookiePreferencesDrawer from "@/app/components/CookiePreferencesDrawer";
-
-const ibmPlexSans = IBM_Plex_Sans({
-  variable: "--font-IBMPlexSans",
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-});
-const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-IBMPlexMono",
-  weight: ["400", "700"],
-  subsets: ["latin"],
-});
+import "@fontsource/ibm-plex-sans/400.css";
+import "@fontsource/ibm-plex-sans/500.css";
+import "@fontsource/ibm-plex-sans/600.css";
+import "@fontsource/ibm-plex-sans/700.css";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/700.css";
 
 export const metadata: Metadata = {
   title: "Global Nature Watch",
@@ -28,11 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${ibmPlexSans.variable} ${ibmPlexMono.variable}`}
-    >
+    <html lang="en" suppressHydrationWarning>
       <head>
         <Script
           id="gtm"
