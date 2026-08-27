@@ -2,7 +2,7 @@ import { format } from "date-fns";
 
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
-import { DATASET_BY_ID } from "@/app/constants/datasets";
+import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
 
 import type { AreaSelection } from "../model/area-selection";
 
@@ -26,9 +26,18 @@ import {
 export function showViewAnalysisNudge(selection: AreaSelection): boolean {
   if (!selection.name) return false;
 
+  // Mirrors showAnalysisCta's gate: skip context sub-layers (parentLayerId
+  // set) so the sub-layer's own `name` can never stand in for the dataset
+  // name, and skip view-only datasets — they have no analytics endpoint, so
+  // nudging towards an analysis that can never run leads nowhere.
   const datasetLayer = useMapStore
     .getState()
-    .layers.find((l) => typeof l.datasetId === "number");
+    .layers.find(
+      (l) =>
+        typeof l.datasetId === "number" &&
+        !l.parentLayerId &&
+        !isViewOnlyDataset(l.datasetId)
+    );
   if (!datasetLayer) return false;
 
   const datasetId = datasetLayer.datasetId!;

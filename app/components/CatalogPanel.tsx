@@ -19,6 +19,7 @@ import {
   EyeIcon,
   EyeSlashIcon,
   StackPlusIcon,
+  StackSimpleIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
@@ -42,6 +43,8 @@ import useSidebarStore from "@/app/store/sidebarStore";
 import type { DatasetInfo } from "@/app/types/chat";
 import { datasetCardLayers } from "@/app/utils/datasetCardLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
+import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
+import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 
 import { CatalogCard } from "./CatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
@@ -95,9 +98,18 @@ export default function DataCatalogPanel() {
     )
   );
 
+  // Flag-gated cards are hidden from the catalogue until their flag is on.
+  // Safe to branch on here: the panel only renders once the user opens it, so
+  // the flagged list never differs between the server render and hydration.
+  const enabledFlags = useEnabledFlags();
   const cards = useMemo(
-    () => filterDatasetsByCategory(DATASET_CARDS, category, activeDatasetIds),
-    [category, activeDatasetIds]
+    () =>
+      filterDatasetsByCategory(
+        filterDatasetsByFeatureFlag(DATASET_CARDS, enabledFlags),
+        category,
+        activeDatasetIds
+      ),
+    [category, activeDatasetIds, enabledFlags]
   );
 
   const compactSlide = !isChatFullSize;
@@ -269,13 +281,25 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
       />
       <CatalogCard
         thumbnail={
-          <Image
-            objectFit="cover"
-            w="100%"
-            h="100%"
-            src={card.img ?? "/globe.svg"}
-            alt={card.dataset_name}
-          />
+          card.img ? (
+            <Image
+              objectFit="cover"
+              w="100%"
+              h="100%"
+              src={card.img}
+              alt={card.dataset_name}
+            />
+          ) : (
+            <Flex
+              w="100%"
+              h="100%"
+              align="center"
+              justify="center"
+              bg="gray.50"
+            >
+              <StackSimpleIcon size={32} color="#656E7B" />
+            </Flex>
+          )
         }
         typeLabel={card.viewOnly ? "VIEW ONLY" : "DATA"}
         typeLabelColor={card.viewOnly ? "#656E7B" : "#1AA915"}
