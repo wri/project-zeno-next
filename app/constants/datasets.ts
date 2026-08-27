@@ -55,6 +55,14 @@ export type AssignableDatasetCategoryId = Exclude<
   "all" | "in-conversation"
 >;
 
+/** One of a dataset card's primary, independently-toggleable data layers. */
+export type DatasetCardLayer = {
+  name: string;
+  tile_url: string;
+  /** Falls back to the card's top-level `legend` when omitted. */
+  legend?: DatasetLegendConfig;
+};
+
 export type DatasetCardConfig = {
   dataset_id: number;
   dataset_name: string;
@@ -68,6 +76,13 @@ export type DatasetCardConfig = {
   description: string;
   img?: string;
   tile_url?: string;
+  /**
+   * The dataset's primary layer(s). Most cards omit this and rely on the
+   * single `tile_url` above; LGMS declares two (agriculture, lulucf) that can
+   * be toggled independently. When present, this is authoritative and
+   * `tile_url` is ignored by layer-building code.
+   */
+  layers?: DatasetCardLayer[];
   data_layer?: string;
   context_layer?: string | null;
   threshold?: number | null;
@@ -918,6 +933,7 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     context_layer,
     description,
     tile_url,
+    layers,
     data_layer,
     threshold,
   }) => ({
@@ -927,7 +943,15 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     description,
     reason: description, // for compatibility with LayerCardItem
     data_layer: (data_layer ?? DEFAULT_DATASET_FIELDS.data_layer) as string,
-    tile_url: (tile_url ?? DEFAULT_DATASET_FIELDS.tile_url) as string,
+    // tile_url mirrors layers[0] when the card declares multiple layers, so
+    // legacy single-tile_url readers still see a sensible default.
+    tile_url: (layers?.[0]?.tile_url ??
+      tile_url ??
+      DEFAULT_DATASET_FIELDS.tile_url) as string,
+    layers: layers?.map(({ name, tile_url: url }) => ({
+      name,
+      tile_url: url,
+    })),
     context_layer: (context_layer ?? DEFAULT_DATASET_FIELDS.context_layer) as
       | string
       | null,

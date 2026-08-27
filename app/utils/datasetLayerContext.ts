@@ -6,11 +6,22 @@ import {
 import type { Layer } from "@/app/store/layerManagerSlice";
 import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
 
+// One of a dataset's primary, independently-toggleable data layers (see
+// DatasetLayer in app/types/chat.ts).
+export interface DatasetLayerEntry {
+  name: string;
+  tileUrl: string;
+}
+
 // Minimal description of a dataset's map presence. Produced by the dataset-card
 // / pick_dataset helpers and consumed by buildDatasetLayers, which adds the
 // dataset's layer(s) to the map.
 export interface DatasetLayerSpec {
   datasetId: number;
+  // The dataset's primary layer(s), most datasets have exactly one, LGMS has
+  // two (agriculture, lulucf). Always used over `layerName`/`tileUrl` when
+  // non-empty.
+  layers?: DatasetLayerEntry[];
   layerName?: string;
   tileUrl?: string;
   parameters?: Record<string, unknown>;
@@ -20,30 +31,51 @@ export interface DatasetLayerSpec {
 }
 
 /**
- * Builds the managed map layers for a dataset: the main raster layer plus an
- * optional context sub-layer (e.g. Primary Forests beneath Tree Cover Loss).
+ * Builds the managed map layers for a dataset: one raster layer per entry in
+ * `spec.layers` (or, when absent, a single layer from `spec.layerName`/
+ * `spec.tileUrl`), plus an optional context sub-layer (e.g. Primary Forests
+ * beneath Tree Cover Loss) attached beneath the first/primary layer.
  *
- * Layers are returned main-first so callers can `forEach(addLayer)`: addLayer
- * appends, so the main layer keeps index 0 and DynamicTileLayers renders it on
- * top of its context sub-layer. Returns [] when there is no tile URL to render.
+ * Layers are returned primary-first so callers can `forEach(addLayer)`:
+ * addLayer appends, so the primary layer keeps index 0 and DynamicTileLayers
+ * renders it on top of its context sub-layer and any sibling layers. Returns
+ * [] when there is no layer to render.
  */
 export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
-  if (!spec.tileUrl) return [];
+  // The `spec.tileUrl` branch is dead for the live pick_dataset path — the
+  // backend's DatasetSelectionResult.layers is always populated (auto-derived
+  // from tile_url server-side when the yml has no explicit `layers`; see
+  // get_dataset_layers in pick_dataset/tool.py). It stays load-bearing here
+  // because this function is also called from the static DATASET_CARDS
+  // catalog-browse path (datasetCardLayers), where only LGMS has been
+  // migrated to declare `layers` — every other card still only sets
+  // `tile_url`.
+  const entries: DatasetLayerEntry[] =
+    spec.layers && spec.layers.length > 0
+      ? spec.layers
+      : spec.tileUrl
+        ? [
+            {
+              name: spec.layerName || String(spec.datasetId),
+              tileUrl: spec.tileUrl,
+            },
+          ]
+        : [];
+  if (entries.length === 0) return [];
 
-  const mainLayerId = `dataset-${spec.datasetId}`;
-  const layers: Layer[] = [
-    {
-      id: mainLayerId,
-      name: spec.layerName || String(spec.datasetId),
-      type: "raster",
-      visible: true,
-      tileUrl: spec.tileUrl,
-      datasetId: spec.datasetId,
-      parameters: spec.parameters,
-      startDate: spec.startDate,
-      endDate: spec.endDate,
-    },
-  ];
+  const primaryLayerId = `dataset-${spec.datasetId}`;
+  const layers: Layer[] = entries.map((entry, index) => ({
+    id:
+      index === 0 ? primaryLayerId : `dataset-${spec.datasetId}-${entry.name}`,
+    name: entry.name,
+    type: "raster",
+    visible: true,
+    tileUrl: entry.tileUrl,
+    datasetId: spec.datasetId,
+    parameters: spec.parameters,
+    startDate: spec.startDate,
+    endDate: spec.endDate,
+  }));
 
   if (spec.contextLayer) {
     const ctx = spec.contextLayer;
@@ -59,7 +91,7 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
         ? CONTEXT_LAYER_METADATA[ctx.name]?.vectorStyle
         : undefined,
       datasetId: spec.datasetId,
-      parentLayerId: mainLayerId,
+      parentLayerId: primaryLayerId,
     });
   }
 
