@@ -29,6 +29,9 @@ export interface InfoCardProps {
    * hover and a pressed state that tints the card (primary shades) while
    * active. Pair with onClick. */
   interactive?: boolean;
+  /** Accessible label for the interactive button role. Also serves as a
+   * stable identifier for analytics (GTM). */
+  ariaLabel?: string;
 }
 
 export function InfoCard({
@@ -44,6 +47,7 @@ export function InfoCard({
   titleActions,
   descriptionActions,
   interactive = false,
+  ariaLabel,
 }: InfoCardProps) {
   return (
     <Flex
@@ -63,6 +67,7 @@ export function InfoCard({
       // so it must be reachable and operable from the keyboard, not just the
       // mouse. Expose it as a button and activate on Enter/Space.
       role={interactive && onClick ? "button" : undefined}
+      aria-label={interactive && onClick ? ariaLabel : undefined}
       tabIndex={interactive && onClick ? 0 : undefined}
       onKeyDown={
         interactive && onClick

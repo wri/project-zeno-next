@@ -55,6 +55,7 @@ export function DashboardChatCard({
       title={dashboardName ?? dashboard?.name ?? "Dashboard"}
       description={description}
       interactive
+      ariaLabel="Open dashboard"
       onClick={() => router.push(`/dashboards/${dashboardId}`)}
     />
   );
