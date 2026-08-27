@@ -14,7 +14,9 @@ import type { MessageContext, UiContext } from "@/app/types/chat";
 // slot has been sent yet".
 export interface ContextKeys {
   aoi: string | null; // aoi_name of the first area layer
-  dataset: number | null; // datasetId of the active dataset layer
+  // datasetId plus the active sublayer names, e.g. "12:agriculture,lulucf",
+  // so toggling a sublayer on/off re-announces context to the agent.
+  dataset: string | null;
   daterange: string | null; // "start|end"
 }
 
@@ -47,13 +49,14 @@ const visibleAreaLayers = (
       l.visible && isAreaLayer(l) && !isContextExcluded(l, excludedLayerIds)
   );
 
-// The active dataset is the main dataset layer (carries datasetId, not a
-// context sub-layer). Matches resolveDatasetMeta in exportToAI.ts.
-const datasetLayer = (
+// The active dataset layers (carry datasetId, not a context sub-layer) — a
+// dataset can have more than one independently-toggled layer (e.g. LGMS's
+// agriculture/lulucf), so this is every match, not just the first.
+const datasetLayers = (
   layers: Layer[],
   excludedLayerIds: ReadonlySet<string>
-): Layer | undefined =>
-  layers.find(
+): Layer[] =>
+  layers.filter(
     (l) =>
       typeof l.datasetId === "number" &&
       !l.parentLayerId &&
@@ -136,12 +139,26 @@ export function deriveContext(
     keys.aoi = aoiSelected.aoi_name;
   }
 
-  const ds = datasetLayer(layers, excludedLayerIds);
-  if (typeof ds?.datasetId === "number") {
-    const info = DATASET_BY_ID[ds.datasetId];
+  const ds = datasetLayers(layers, excludedLayerIds);
+  const primaryDatasetId = ds[0]?.datasetId;
+  if (typeof primaryDatasetId === "number") {
+    const info = DATASET_BY_ID[primaryDatasetId];
     if (info) {
-      uiContext.dataset_selected = { dataset: info };
-      keys.dataset = ds.datasetId;
+      const primaryDatasetLayers = ds.filter(
+        (l) => l.datasetId === primaryDatasetId
+      );
+      // Only report active_layers for a genuinely multi-layer dataset (more
+      // than one active sibling) — an ordinary single-layer dataset is
+      // already fully identified by `dataset` alone.
+      const activeLayers =
+        primaryDatasetLayers.length > 1
+          ? primaryDatasetLayers.map((l) => l.name)
+          : [];
+      uiContext.dataset_selected = {
+        dataset: info,
+        ...(activeLayers.length > 0 ? { active_layers: activeLayers } : {}),
+      };
+      keys.dataset = `${primaryDatasetId}:${[...activeLayers].sort().join(",")}`;
     }
   }
 

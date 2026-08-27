@@ -111,7 +111,7 @@ describe("deriveContext", () => {
     expect(uiContext.dataset_selected).toEqual({
       dataset: DATASET_BY_ID[datasetId],
     });
-    expect(keys.dataset).toBe(datasetId);
+    expect(keys.dataset).toBe(`${datasetId}:`);
     expect(uiContext.daterange_selected).toEqual({
       start_date: "2020-01-01",
       end_date: "2023-12-31",
@@ -122,6 +122,34 @@ describe("deriveContext", () => {
       start_date: "2020-01-01",
       end_date: "2023-12-31",
     });
+  });
+
+  it("aggregates active_layers across a multi-layer dataset's sibling layers", () => {
+    const agricultureLayer: Layer = {
+      id: "dataset-12",
+      name: "agriculture",
+      type: "raster",
+      visible: true,
+      datasetId: 12,
+    };
+    const lulucfLayer: Layer = {
+      id: "dataset-12-lulucf",
+      name: "lulucf",
+      type: "raster",
+      visible: true,
+      datasetId: 12,
+    };
+    const { uiContext, keys } = deriveContext(
+      [agricultureLayer, lulucfLayer],
+      [],
+      null
+    );
+
+    expect(uiContext.dataset_selected?.active_layers).toEqual([
+      "agriculture",
+      "lulucf",
+    ]);
+    expect(keys.dataset).toBe("12:agriculture,lulucf");
   });
 
   it("ignores hidden area layers and context sub-layers", () => {
