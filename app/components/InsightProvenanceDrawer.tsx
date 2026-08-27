@@ -27,7 +27,6 @@ import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vs } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { fetchExternalData } from "@/app/actions/fetch-data";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import {
   buildProvenanceMarkdown,
@@ -63,7 +62,11 @@ function safeBase64Decode(str: string): string {
 async function fetchAndConvertToCsv(
   url: string
 ): Promise<{ csv: string; filename: string }> {
-  const json = await fetchExternalData(url);
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+  }
+  const json = await res.json();
 
   // Access nested result structure
   const result = json.data?.result;
