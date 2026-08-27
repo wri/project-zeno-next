@@ -198,7 +198,7 @@ export interface StreamMessage {
   dashboard_name?: string;
 }
 
-// Sentinel-2 mosaic payload written to agent state by the show_imagery tool.
+// Imagery payload written to agent state by the show_imagery tool.
 // tile_url / tilejson_url are absolute URLs to the tiler the backend is
 // configured to use. When TileJSON is unavailable, bounds and zoom limits may
 // be supplied directly. mosaic_id is an opaque recipe token, stable across

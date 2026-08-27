@@ -94,6 +94,16 @@ export async function showImageryTool(streamMessage: StreamMessage) {
     }
   }
 
+  if (
+    tileMetadata.minzoom === undefined ||
+    tileMetadata.maxzoom === undefined
+  ) {
+    console.warn(
+      "Imagery mosaic is missing min/max zoom limits; not showing layer"
+    );
+    return;
+  }
+
   const id = imageryLayerId(imagery.mosaic_id);
 
   // Newest capture wins: hide earlier captures so the map shows the mosaic
