@@ -19,6 +19,7 @@ import {
   EyeIcon,
   EyeSlashIcon,
   StackPlusIcon,
+  StackSimpleIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
@@ -280,13 +281,25 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
       />
       <CatalogCard
         thumbnail={
-          <Image
-            objectFit="cover"
-            w="100%"
-            h="100%"
-            src={card.img ?? "/globe.svg"}
-            alt={card.dataset_name}
-          />
+          card.img ? (
+            <Image
+              objectFit="cover"
+              w="100%"
+              h="100%"
+              src={card.img}
+              alt={card.dataset_name}
+            />
+          ) : (
+            <Flex
+              w="100%"
+              h="100%"
+              align="center"
+              justify="center"
+              bg="gray.50"
+            >
+              <StackSimpleIcon size={32} color="#656E7B" />
+            </Flex>
+          )
         }
         typeLabel={card.viewOnly ? "VIEW ONLY" : "DATA"}
         typeLabelColor={card.viewOnly ? "#656E7B" : "#1AA915"}
