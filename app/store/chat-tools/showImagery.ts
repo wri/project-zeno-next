@@ -52,10 +52,9 @@ async function fetchTileJson(
  * yields the same mosaic_id and simply upserts the existing layer, which
  * also makes thread replay idempotent.
  *
- * The TileJSON is fetched first for the mosaic's bounds and zoom range;
- * without the range MapLibre would request tiles outside it and get 404s
- * instead of overscaling. A failure to fetch it is a rare hard error
- * (expired mosaic, malformed URL) and the layer is simply not shown.
+ * When TileJSON is provided, it is fetched first for the mosaic's bounds and
+ * zoom range. Providers without TileJSON may supply bounds / min_zoom /
+ * max_zoom directly in the imagery payload instead.
  */
 export async function showImageryTool(streamMessage: StreamMessage) {
   const imagery = streamMessage.imagery;
@@ -64,29 +63,35 @@ export async function showImageryTool(streamMessage: StreamMessage) {
   const { addLayer, setLayerVisibility, reorderLayers } =
     useMapStore.getState();
 
-  let tileJson: TileJson;
-  try {
-    const { res, sameOrigin } = await fetchTileJson(imagery.tilejson_url);
-    // Only an auth failure against our own API means the session lapsed. The
-    // public tiler also answers 401/403 for rate limits and expired mosaics,
-    // where telling the user to sign in again sends them down a dead end.
-    if (sameOrigin && (res.status === 401 || res.status === 403)) {
-      showApiError(
-        "Your session has expired. Please sign in again to view satellite imagery.",
-        { title: "Session Expired" }
-      );
+  let tileMetadata: TileJson = {
+    bounds: imagery.bounds,
+    minzoom: imagery.min_zoom,
+    maxzoom: imagery.max_zoom,
+  };
+  if (imagery.tilejson_url) {
+    try {
+      const { res, sameOrigin } = await fetchTileJson(imagery.tilejson_url);
+      // Only an auth failure against our own API means the session lapsed. The
+      // public tiler also answers 401/403 for rate limits and expired mosaics,
+      // where telling the user to sign in again sends them down a dead end.
+      if (sameOrigin && (res.status === 401 || res.status === 403)) {
+        showApiError(
+          "Your session has expired. Please sign in again to view satellite imagery.",
+          { title: "Session Expired" }
+        );
+        return;
+      }
+      if (!res.ok) {
+        console.warn(
+          `Imagery mosaic unavailable (HTTP ${res.status}); not showing layer`
+        );
+        return;
+      }
+      tileMetadata = (await res.json()) as TileJson;
+    } catch (error) {
+      console.error("Failed to load imagery TileJSON:", error);
       return;
     }
-    if (!res.ok) {
-      console.warn(
-        `Imagery mosaic unavailable (HTTP ${res.status}); not showing layer`
-      );
-      return;
-    }
-    tileJson = (await res.json()) as TileJson;
-  } catch (error) {
-    console.error("Failed to load imagery TileJSON:", error);
-    return;
   }
 
   const id = imageryLayerId(imagery.mosaic_id);
@@ -104,9 +109,9 @@ export async function showImageryTool(streamMessage: StreamMessage) {
     type: "raster",
     visible: true,
     tileUrl: imagery.tile_url,
-    minzoom: tileJson.minzoom,
-    maxzoom: tileJson.maxzoom,
-    bounds: tileJson.bounds,
+    minzoom: tileMetadata.minzoom,
+    maxzoom: tileMetadata.maxzoom,
+    bounds: tileMetadata.bounds,
     attribution: IMAGERY_ATTRIBUTION,
     startDate: imagery.date_start,
     endDate: imagery.date_end,

@@ -123,6 +123,31 @@ describe("showImageryTool", () => {
     });
   });
 
+  it("uses inline bounds and zoom limits when TileJSON is absent", async () => {
+    const fetchMock = mockFetch({});
+    const inlineBounds: [number, number, number, number] = [-78, -15, -75, -12];
+
+    await showImageryTool(
+      baseMsg({
+        imagery: {
+          ...imagery,
+          tilejson_url: undefined,
+          bounds: inlineBounds,
+          min_zoom: 6,
+          max_zoom: 17,
+        },
+      })
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mapState.addLayer).toHaveBeenCalledOnce();
+    expect(mapState.addLayer.mock.calls[0][0]).toMatchObject({
+      bounds: inlineBounds,
+      minzoom: 6,
+      maxzoom: 17,
+    });
+  });
+
   it("attaches auth when the tiler is the Zeno API itself", async () => {
     const fetchMock = mockFetch({});
     const url = `${API_CONFIG.API_HOST}/api/tiles/tilejson.json`;
