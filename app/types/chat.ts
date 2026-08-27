@@ -200,11 +200,15 @@ export interface StreamMessage {
 
 // Sentinel-2 mosaic payload written to agent state by the show_imagery tool.
 // tile_url / tilejson_url are absolute URLs to the tiler the backend is
-// configured to use (currently the public GFW tiles service). mosaic_id is an
-// opaque recipe token, stable across reruns of the same request.
+// configured to use. When TileJSON is unavailable, bounds and zoom limits may
+// be supplied directly. mosaic_id is an opaque recipe token, stable across
+// reruns of the same request.
 export interface ImageryInfo {
   tile_url: string;
-  tilejson_url: string;
+  tilejson_url?: string;
+  bounds?: [number, number, number, number];
+  min_zoom?: number;
+  max_zoom?: number;
   mosaic_id: string;
   // Scene count and acquired date range; optional because payloads written
   // before wri/project-zeno#758 omitted them on mosaic cache hits.
