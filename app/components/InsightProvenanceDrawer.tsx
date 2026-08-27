@@ -4,6 +4,7 @@ import {
   Drawer,
   Flex,
   Heading,
+  Image,
   Text,
   useClipboard,
   Code,
@@ -33,7 +34,6 @@ import {
   provenanceFilename,
 } from "@/app/utils/provenanceRecord";
 import JSZip from "jszip";
-import Image from "next/image";
 
 interface InsightProvenanceDrawerProps {
   isOpen: boolean;
@@ -175,7 +175,7 @@ function CodeBlockViewer({ code, step }: { code: string; step?: number }) {
         borderColor="neutral.300"
       >
         <Flex gap={2} align="center">
-          <Image src="/python-logo.svg" alt="Python" width={14} height={14} />
+          <Image src="/python-logo.svg" alt="Python" w="14px" h="14px" />
           <Text fontSize="xs" color="neutral.600">
             Code
             {step !== undefined && (
