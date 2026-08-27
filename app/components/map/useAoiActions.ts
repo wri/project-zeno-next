@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/lib/router";
 import { format } from "date-fns";
 
 import { toaster } from "@/app/components/ui/toaster";

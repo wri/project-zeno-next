@@ -34,8 +34,8 @@ import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link } from "@/app/lib/router";
+import { usePathname } from "@/app/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
 import {

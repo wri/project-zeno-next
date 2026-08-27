@@ -8,7 +8,8 @@ vi.mock("@/app/components/ui/toaster", () => ({
 }));
 
 const push = vi.fn();
-vi.mock("next/navigation", () => ({
+vi.mock("@/app/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   useRouter: () => ({ push }),
 }));
 

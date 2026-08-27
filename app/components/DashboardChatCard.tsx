@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/lib/router";
 import { SquaresFourIcon } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";
 import { InfoCard } from "./InfoCard";
