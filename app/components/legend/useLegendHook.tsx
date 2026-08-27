@@ -164,12 +164,20 @@ export function useLegendHook() {
         }
 
         const relatedDataset = DATASET_CARDS.find(
-          (d) => `dataset-${d.dataset_id}` === layer.id
+          (d) => d.dataset_id === layer.datasetId
         );
-        if (!relatedDataset?.legend) continue;
+        if (!relatedDataset) continue;
+
+        // Multi-layer datasets (e.g. LGMS) carry a legend per sibling layer;
+        // single-layer datasets fall back to the card's top-level legend.
+        const sublayerLegend = relatedDataset.layers?.find(
+          (l) => l.name === layer.name
+        )?.legend;
+        const baseLegend = sublayerLegend ?? relatedDataset.legend;
+        if (!baseLegend) continue;
 
         const legend = applyPaletteOverride(
-          relatedDataset.legend,
+          baseLegend,
           palettesByDatasetId[relatedDataset.dataset_id]
         );
         const { title, info, note } = legend;
