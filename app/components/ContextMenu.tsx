@@ -30,6 +30,8 @@ const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[])
   }));
 
 import { DATASET_CARDS, DatasetCardConfig } from "../constants/datasets";
+import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
+import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
@@ -87,6 +89,11 @@ function LayerCardList({
   cards: (DatasetCardConfig & { img?: string })[];
 }) {
   const { layers, addLayer, removeDatasetLayers } = useMapStore();
+  // Same gate as the Data Catalog — a flagged dataset is browsable in neither
+  // surface until its flag is on. The menu is a dialog, so this only renders
+  // after the user opens it (no SSR/hydration branch).
+  const enabledFlags = useEnabledFlags();
+  const visibleCards = filterDatasetsByFeatureFlag(cards, enabledFlags);
 
   function handleToggle(card: DatasetCardConfig & { img?: string }) {
     const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
@@ -101,7 +108,7 @@ function LayerCardList({
 
   return (
     <Stack minH={0} overflowY="auto">
-      {cards.map((card) => {
+      {visibleCards.map((card) => {
         const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
         return (
           // flexShrink={0} pins the card height in the scrollable list so the

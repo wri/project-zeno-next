@@ -18,6 +18,8 @@ const selection: AnalysisSelection = {
   subtype: "state-province",
 };
 const TCL_ID = 4;
+// Intact Forest Landscapes — contextual, view-only, never analysable.
+const IFL_ID = 101;
 
 const datasetLayer = (overrides: Partial<Layer> = {}): Layer => ({
   id: `dataset-${TCL_ID}`,
@@ -39,6 +41,19 @@ describe("showCreateDashboardNudge", () => {
   beforeEach(() => {
     useChatStore.getState().reset();
     useMapStore.setState({ layers: [] });
+  });
+
+  it("does not nudge when the only active dataset is view-only", () => {
+    seedLayers([
+      datasetLayer({
+        id: `dataset-${IFL_ID}`,
+        name: "Intact Forest Landscapes",
+        datasetId: IFL_ID,
+      }),
+    ]);
+
+    expect(showCreateDashboardNudge(selection)).toBe(false);
+    expect(createDashboardNudges()).toHaveLength(0);
   });
 
   it("injects a nudge carrying the AOI identity and analysis inputs", () => {

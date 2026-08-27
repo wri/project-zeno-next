@@ -1,6 +1,6 @@
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
-import { DATASET_BY_ID } from "@/app/constants/datasets";
+import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
 import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
 
 /**
@@ -16,10 +16,18 @@ export function showAnalysisCta(selection: AnalysisSelection): boolean {
   if (!selection.name) return false;
 
   // A visible dataset layer IS the active dataset. Skip context sub-layers
-  // (parentLayerId set) so we read the main dataset, not its sub-layer.
+  // (parentLayerId set) so we read the main dataset, not its sub-layer, and
+  // skip view-only datasets — they have no analytics endpoint, so offering to
+  // analyse one leads nowhere. Several datasets can be on the map at once, so
+  // this picks the first analysable one rather than bailing outright.
   const datasetLayer = useMapStore
     .getState()
-    .layers.find((l) => typeof l.datasetId === "number" && !l.parentLayerId);
+    .layers.find(
+      (l) =>
+        typeof l.datasetId === "number" &&
+        !l.parentLayerId &&
+        !isViewOnlyDataset(l.datasetId)
+    );
   if (!datasetLayer) return false;
 
   const datasetId = datasetLayer.datasetId!;

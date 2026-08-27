@@ -21,6 +21,8 @@ const selection: AreaSelection = {
 
 // Tree cover loss in the dataset catalogue (DATASET_BY_ID)
 const TCL_ID = 4;
+// Intact Forest Landscapes — contextual, view-only, never analysable.
+const IFL_ID = 101;
 
 const seedLayer = (datasetId: number, name: string) =>
   useMapStore.setState({
@@ -39,6 +41,68 @@ describe("showViewAnalysisNudge", () => {
   beforeEach(() => {
     useChatStore.getState().reset();
     useMapStore.setState({ layers: [] });
+  });
+
+  it("does not nudge when the only active dataset is view-only", () => {
+    seedLayer(IFL_ID, "Intact Forest Landscapes");
+
+    expect(showViewAnalysisNudge(selection)).toBe(false);
+    expect(viewNudges()).toHaveLength(0);
+  });
+
+  it("skips a view-only dataset and nudges for a co-active analysable one", () => {
+    useMapStore.setState({
+      layers: [
+        {
+          id: `dataset-${IFL_ID}`,
+          name: "Intact Forest Landscapes",
+          type: "raster",
+          visible: true,
+          datasetId: IFL_ID,
+        },
+        {
+          id: `dataset-${TCL_ID}`,
+          name: "Tree cover loss",
+          type: "raster",
+          visible: true,
+          datasetId: TCL_ID,
+        },
+      ],
+    });
+
+    expect(showViewAnalysisNudge(selection)).toBe(true);
+    expect(viewNudges()[0].viewAnalysisSuggestion?.datasetId).toBe(TCL_ID);
+  });
+
+  it("ignores a context sub-layer when picking the active dataset", () => {
+    // A backend-picked dataset absent from DATASET_BY_ID, so datasetName falls
+    // back to the layer's own `name` — the only path where picking the
+    // sub-layer is observable (it would surface "intact_forest" instead).
+    const UNCATALOGUED_ID = 9999;
+    useMapStore.setState({
+      layers: [
+        {
+          id: `dataset-${UNCATALOGUED_ID}-ctx-intact_forest`,
+          name: "intact_forest",
+          type: "raster",
+          visible: true,
+          datasetId: UNCATALOGUED_ID,
+          parentLayerId: `dataset-${UNCATALOGUED_ID}`,
+        },
+        {
+          id: `dataset-${UNCATALOGUED_ID}`,
+          name: "Some backend dataset",
+          type: "raster",
+          visible: true,
+          datasetId: UNCATALOGUED_ID,
+        },
+      ],
+    });
+
+    expect(showViewAnalysisNudge(selection)).toBe(true);
+    expect(viewNudges()[0].viewAnalysisSuggestion?.datasetName).toBe(
+      "Some backend dataset"
+    );
   });
 
   it("injects a view-analysis-nudge when a dataset is active", () => {

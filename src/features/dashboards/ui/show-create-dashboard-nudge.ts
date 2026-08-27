@@ -2,7 +2,7 @@ import { format } from "date-fns";
 
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
-import { DATASET_BY_ID } from "@/app/constants/datasets";
+import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
 import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
 import {
   DEFAULT_ANALYSIS_START_DATE,
@@ -31,10 +31,17 @@ export function showCreateDashboardNudge(
   if (!srcId || !subtype) return false;
 
   // A visible dataset layer IS the active dataset. Skip context sub-layers
-  // (parentLayerId set) so we match showAnalysisCta's gate.
+  // (parentLayerId set) and view-only datasets so we match showAnalysisCta's
+  // gate — a dashboard is built from analytics, which a view-only dataset has
+  // no endpoint for.
   const datasetLayer = useMapStore
     .getState()
-    .layers.find((l) => typeof l.datasetId === "number" && !l.parentLayerId);
+    .layers.find(
+      (l) =>
+        typeof l.datasetId === "number" &&
+        !l.parentLayerId &&
+        !isViewOnlyDataset(l.datasetId)
+    );
   if (!datasetLayer) return false;
 
   const datasetId = datasetLayer.datasetId!;
