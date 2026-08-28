@@ -21,7 +21,6 @@ import CHART_COLOR_MAPPING, {
   DATASET_DIVERGENT_COLORS,
 } from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
-import { GHG_FLUX_TREE_DUMMY_WIDGET } from "@/src/features/ghg-flux-tree";
 
 // ---------------------------------------------------------------------------
 // Fake provenance data for "View how this was generated" drawer
@@ -78,6 +77,104 @@ const BAR_DATA = [
   { country: "Peru", tree_cover_loss_ha: 310000 },
   { country: "Colombia", tree_cover_loss_ha: 295000 },
   { country: "Cameroon", tree_cover_loss_ha: 270000 },
+];
+
+// Flat node list shaped like project-zeno's LGMSChartGenerator "Net GHG Flux —
+// Annual Average" chart: {id, parent_id, label, avg_emissions, avg_removals},
+// gross at every level, `null` where a metric doesn't apply. Fixture only — the
+// feature itself reads this from the API.
+const GHG_FLUX_TREE_DATA = [
+  {
+    id: "all_land",
+    parent_id: null,
+    label: "All land",
+    avg_emissions: 1600,
+    avg_removals: -750,
+  },
+  {
+    id: "land_use",
+    parent_id: "all_land",
+    label: "Land use",
+    avg_emissions: 1350,
+    avg_removals: -750,
+  },
+  {
+    id: "vegetation",
+    parent_id: "land_use",
+    label: "Vegetation",
+    avg_emissions: 530,
+    avg_removals: -710,
+  },
+  {
+    id: "tree_loss",
+    parent_id: "vegetation",
+    label: "Tree loss",
+    avg_emissions: 400,
+    avg_removals: null,
+  },
+  {
+    id: "tree_gain",
+    parent_id: "vegetation",
+    label: "Tree gain",
+    avg_emissions: null,
+    avg_removals: -560,
+  },
+  {
+    id: "trees_remaining_trees",
+    parent_id: "vegetation",
+    label: "Trees remaining trees",
+    avg_emissions: 100,
+    avg_removals: -140,
+  },
+  {
+    id: "non_trees_remaining_non_trees",
+    parent_id: "vegetation",
+    label: "Non-trees remaining non-trees",
+    avg_emissions: 30,
+    avg_removals: -10,
+  },
+  {
+    id: "soil",
+    parent_id: "land_use",
+    label: "Soil",
+    avg_emissions: 820,
+    avg_removals: -40,
+  },
+  {
+    id: "mineral_soil",
+    parent_id: "soil",
+    label: "Mineral soil",
+    avg_emissions: 130,
+    avg_removals: -40,
+  },
+  {
+    id: "organic_soil",
+    parent_id: "soil",
+    label: "Organic soil",
+    avg_emissions: 690,
+    avg_removals: null,
+  },
+  {
+    id: "agriculture",
+    parent_id: "all_land",
+    label: "Agriculture",
+    avg_emissions: 250,
+    avg_removals: null,
+  },
+  {
+    id: "cropland",
+    parent_id: "agriculture",
+    label: "Crop management",
+    avg_emissions: 150,
+    avg_removals: null,
+  },
+  {
+    id: "livestock",
+    parent_id: "agriculture",
+    label: "Livestock",
+    avg_emissions: 100,
+    avg_removals: null,
+  },
 ];
 
 const STACKED_BAR_DATA = [
@@ -620,7 +717,16 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
       label: "Hierarchical bar (net GHG flux, annual average)",
       notes:
         "Curated 'Net GHG flux (annual average)': indented collapsible tree, diverging bars around zero, top axis. Toggle MEASURE to see the gross view with back-to-back bars, net ticks and n/a markers.",
-      widget: GHG_FLUX_TREE_DUMMY_WIDGET,
+      widget: {
+        type: "hierarchical-bar",
+        title: "Net GHG flux (annual average)",
+        description:
+          "Period-of-record average net flux, as a tree of land-use categories.",
+        data: GHG_FLUX_TREE_DATA as unknown as InsightWidget["data"],
+        // A hierarchy has no cartesian axes; parent_id carries the structure.
+        xAxis: "",
+        yAxis: "",
+      },
     },
     {
       label: "Wide table (scroll indicator)",
