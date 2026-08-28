@@ -19,6 +19,7 @@ import {
   ChartLineIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
+import { orderInsightsForPager } from "@/src/entities/insight";
 import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
 import { Tooltip } from "./ui/tooltip";
@@ -113,12 +114,18 @@ function WorkspaceSkeleton() {
 export default function InsightWorkspace() {
   const allInsights = useInsightStore((state) => state.insights);
   const netFluxDetail = useNetFluxDetailSelection();
-  // The three LGMS time-series roll-ups are one analysis shown three ways, so
-  // they collapse to a single pager entry whose DETAIL pill switches between
-  // them — otherwise the pager and the pill would be two ways to do the same
-  // thing. Every other insight passes through untouched.
+  // Two passes to get the pager list. First: the three LGMS time-series
+  // roll-ups are one analysis shown three ways, so they collapse to a single
+  // entry whose DETAIL pill switches between them — otherwise the pager and
+  // the pill would be two ways to do the same thing. Every other insight
+  // passes through untouched. Then: newest analysis first, but the charts
+  // within one analysis left in the order the backend sent them, since they
+  // are all the same age and `position` is the intended reading order.
   const insights = useMemo(
-    () => collapseNetFluxSiblings(allInsights, netFluxDetail),
+    () =>
+      orderInsightsForPager(
+        collapseNetFluxSiblings(allInsights, netFluxDetail)
+      ),
     [allInsights, netFluxDetail]
   );
   // Drive the loading affordances off the insight-specific flag, not the
@@ -147,9 +154,8 @@ export default function InsightWorkspace() {
     return <WorkspaceSkeleton />;
   }
 
-  // currentIndex 0 = newest, total-1 = oldest
-  const widgetIndex = total - 1 - currentIndex;
-  const widget = insights[widgetIndex];
+  // `insights` is already in pager order, so index 0 is the lead entry.
+  const widget = insights[currentIndex];
   const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
   const hasChips = chips.length > 0;
   // currentIndex 0 = newest (shown as "1 of N"). The Left/Prev arrow
@@ -271,7 +277,7 @@ export default function InsightWorkspace() {
           {/* Keyed on the active insight so switching re-runs the entry
               animation; the media query keeps it off under reduced motion. */}
           <Box
-            key={widget.id ?? widgetIndex}
+            key={widget.id ?? currentIndex}
             css={{
               "@media (prefers-reduced-motion: no-preference)": {
                 animationName: "fadeSlideIn",

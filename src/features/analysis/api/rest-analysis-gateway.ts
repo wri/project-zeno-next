@@ -208,7 +208,8 @@ export class RestAnalysisGateway implements AnalysisGateway {
           title: c.title,
           type: c.chart_type,
           xAxis: c.x_axis,
-          yAxis: c.y_axis,
+          // Omitted entirely on some charts (the LGMS roll-ups), not just "".
+          yAxis: c.y_axis ?? "",
           colorField: c.color_field ?? "",
           stackField: c.stack_field ?? "",
           groupField: c.group_field ?? "",
