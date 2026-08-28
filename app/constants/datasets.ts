@@ -150,8 +150,8 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
 export const IFL_FEATURE_FLAG = "ifl";
 
 /**
- * Feature flag gating the curated LGMS net-flux insight while its backend
- * chart generator is still WIP (PZB-1247). Opt in with `?ff=net-flux`.
+ * Feature flag gating the curated LGMS net-flux insights while they are
+ * reviewed (PZB-1247/1248). Opt in with `?ff=net-flux`.
  */
 export const NET_FLUX_FEATURE_FLAG = "net-flux";
 

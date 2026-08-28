@@ -128,7 +128,11 @@ export default function formatChartData(
     | "grouped-bar"
     | "area"
     | "scatter"
-    | "stacked-bar-with-line",
+    | "stacked-bar-with-line"
+    // Listed only so ChartWidget's call site typechecks. A hierarchy has no
+    // cartesian axes and gets no branch below: WidgetMessage routes it to the
+    // ghg-flux-tree slice, which builds its own plot, so this never runs for it.
+    | "hierarchical-bar",
   xAxis?: string,
   yAxis?: string,
   datasetName?: string,
