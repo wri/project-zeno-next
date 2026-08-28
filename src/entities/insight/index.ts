@@ -10,6 +10,7 @@ export type {
   InsightVerification,
 } from "./model/insight-record";
 export { chartsToWidgets } from "./lib/charts-to-widgets";
+export { orderInsightsForPager } from "./lib/order-insights";
 export { generateInsightTitle } from "./lib/insight-title";
 export type { InsightTitleInput } from "./lib/insight-title";
 export {
