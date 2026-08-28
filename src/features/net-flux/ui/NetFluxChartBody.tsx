@@ -4,7 +4,6 @@ import { Flex, Text } from "@chakra-ui/react";
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import type { InsightWidget } from "@/app/types/chat";
 
-import { netFluxWidgetDetailLabel } from "../model/net-flux-siblings";
 import {
   type NetFluxMeasure,
   type NetFluxVariant,
@@ -12,6 +11,21 @@ import {
 import { NetFluxHatchDefs, NetFluxLegend } from "./NetFluxLegend";
 
 const EN_DASH = "–";
+
+/**
+ * The detail wording for the subtitle, taken from the backend's chart title
+ * ("Net GHG Flux — Full Detail" → "Full Detail"). Reads `backendTitle` first:
+ * useAnalysis overwrites `title` with one "{dataset} in {location}" string
+ * shared by every chart of the analysis.
+ */
+function detailLabelFromTitle(widget: InsightWidget): string {
+  const title = widget.backendTitle ?? widget.title;
+  const parts = title.split("—");
+  if (parts.length > 1) return parts[parts.length - 1].trim();
+  const by = title.match(/\bby\s+(.+)$/i);
+  if (by) return by[1].trim();
+  return /\bSummary\b/i.test(title) ? "Summary" : title.trim();
+}
 
 const signedFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
@@ -130,7 +144,7 @@ export function NetFluxChartBody({
         variant={variant}
         xAxis={widget.xAxis}
         measure={measure}
-        detailLabel={netFluxWidgetDetailLabel(widget)}
+        detailLabel={detailLabelFromTitle(widget)}
       />
       <ChartWidget
         widget={widget}

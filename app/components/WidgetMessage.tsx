@@ -243,7 +243,10 @@ export default function WidgetMessage({
             InsightWorkspace renders them there; elsewhere (dashboards,
             /chart-debug) they live inline so the toggle stays reachable. */}
         {isNetFlux && !inWorkspace && (
-          <NetFluxToolbar widget={widget} showDivider={false} />
+          <NetFluxToolbar
+            widgetId={netFluxViewKey(widget)}
+            showDivider={false}
+          />
         )}
         {isFluxTree && !inWorkspace && (
           <GhgFluxMeasurePill widget={widget} showDivider={false} />
