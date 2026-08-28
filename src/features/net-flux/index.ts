@@ -1,22 +1,17 @@
 /**
  * Public API of the `net-flux` feature (FSD slice).
  *
- * The curated "Net flux over time" insight (LGMS, dataset 12): dummy data for
- * the still-WIP backend endpoint, the DETAIL/MEASURE variant derivation, and
- * the bespoke card chrome the design specifies for it. Consumers import ONLY
- * from this barrel.
+ * The curated LGMS time-series insights — the three `stacked-bar-with-line`
+ * charts project-zeno's `LGMSChartGenerator` returns at positions 0-2 of an
+ * LGMS analysis — plus the MEASURE control the design places outside the
+ * widget card. Consumers import ONLY from this barrel.
  */
-export {
-  LGMS_DATASET_ID,
-  NET_FLUX_DUMMY_RESULT,
-  NET_FLUX_DUMMY_WIDGET,
-} from "./model/dummy-data";
 export {
   deriveNetFluxVariant,
   isNetFluxWidget,
-  DETAIL_LABEL,
   NET_FLUX_LINE_FIELD,
-  type NetFluxDetail,
+  seriesGroup,
+  seriesLabel,
   type NetFluxMeasure,
   type NetFluxVariant,
 } from "./model/net-flux-variants";

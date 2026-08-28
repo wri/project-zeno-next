@@ -112,7 +112,7 @@ export default function WidgetMessage({
   // so they stay in sync with the toggle.
   const isNetFlux = isNetFluxWidget(widget);
   const netFluxVariant = isNetFlux
-    ? deriveNetFluxVariant(widget, netFluxView.detail, netFluxView.measure)
+    ? deriveNetFluxVariant(widget, netFluxView.measure)
     : null;
   const displayWidget: InsightWidget = netFluxVariant
     ? { ...widget, ...netFluxVariant }
@@ -320,7 +320,6 @@ export default function WidgetMessage({
                 <NetFluxChartBody
                   widget={displayWidget}
                   variant={netFluxVariant}
-                  detail={netFluxView.detail}
                   measure={netFluxView.measure}
                   fitYAxis={fitYAxis}
                   fullWidth={fullWidth}
@@ -536,7 +535,6 @@ export default function WidgetMessage({
                         <NetFluxChartBody
                           widget={displayWidget}
                           variant={netFluxVariant}
-                          detail={netFluxView.detail}
                           measure={netFluxView.measure}
                           expanded
                           fitYAxis={fitYAxis}

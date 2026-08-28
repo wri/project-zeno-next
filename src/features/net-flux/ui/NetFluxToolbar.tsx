@@ -3,13 +3,7 @@ import { Box, Button, Flex, Menu, Portal, Text } from "@chakra-ui/react";
 import { CaretDownIcon } from "@phosphor-icons/react";
 
 import { useNetFluxView } from "./use-net-flux-view";
-import {
-  DETAIL_LABEL,
-  type NetFluxDetail,
-  type NetFluxMeasure,
-} from "../model/net-flux-variants";
-
-const DETAIL_OPTIONS: NetFluxDetail[] = ["full", "categories", "summary"];
+import { type NetFluxMeasure } from "../model/net-flux-variants";
 
 const MEASURE_LABEL: Record<NetFluxMeasure, string> = {
   gross: "Gross",
@@ -22,14 +16,13 @@ interface PillProps {
   value: string;
   options: { value: string; label: string }[];
   onSelect: (value: string) => void;
-  disabled?: boolean;
 }
 
 /**
  * The design's dropdown pill: a mono uppercase label, the current value, and a
  * caret — distinct from the segmented Chart/Table toggle inside the card.
  */
-function Pill({ label, value, options, onSelect, disabled }: PillProps) {
+function Pill({ label, value, options, onSelect }: PillProps) {
   return (
     <Menu.Root positioning={{ placement: "bottom-start" }}>
       <Menu.Trigger asChild>
@@ -44,9 +37,7 @@ function Pill({ label, value, options, onSelect, disabled }: PillProps) {
           borderColor="#E0E2E5"
           rounded="4px"
           variant="outline"
-          disabled={disabled}
-          opacity={disabled ? 0.5 : 1}
-          _hover={disabled ? undefined : { bg: "neutral.100" }}
+          _hover={{ bg: "neutral.100" }}
           aria-label={`${label}: ${value}`}
         >
           <Text
@@ -91,10 +82,14 @@ function Pill({ label, value, options, onSelect, disabled }: PillProps) {
 }
 
 /**
- * DETAIL / MEASURE controls for the net-flux insight. In the workspace these
- * sit above the widget card on the shell background, per the design's
- * "Widget toolbar (reusable)" frame; elsewhere (dashboards, /chart-debug)
- * `WidgetMessage` renders them inline at the top of the card instead.
+ * MEASURE control for the net-flux insight. In the workspace this sits above
+ * the widget card on the shell background, per the design's "Widget toolbar
+ * (reusable)" frame; elsewhere (dashboards, /chart-debug) `WidgetMessage`
+ * renders it inline at the top of the card instead.
+ *
+ * There is no DETAIL control: project-zeno's `LGMSChartGenerator` ships Full
+ * detail / Category / Summary as three separate charts, so the detail level is
+ * chosen by moving between insights rather than by re-slicing one payload.
  */
 export function NetFluxToolbar({
   widgetId,
@@ -103,25 +98,12 @@ export function NetFluxToolbar({
   widgetId: string;
   showDivider?: boolean;
 }) {
-  const { detail, measure, setDetail, setMeasure } = useNetFluxView(widgetId);
-  const isNetOnly = measure === "net";
+  const { measure, setMeasure } = useNetFluxView(widgetId);
 
   return (
     <Flex direction="column" gap="8px">
       {showDivider && <Box borderTop="1px solid" borderColor="#DDE2F5" />}
       <Flex gap="8px" wrap="wrap">
-        <Pill
-          label="DETAIL"
-          // The net measure collapses the breakdown entirely, so the detail
-          // level no longer applies — the design greys the pill out.
-          value={DETAIL_LABEL[detail]}
-          options={DETAIL_OPTIONS.map((value) => ({
-            value,
-            label: DETAIL_LABEL[value],
-          }))}
-          onSelect={(value) => setDetail(value as NetFluxDetail)}
-          disabled={isNetOnly}
-        />
         <Pill
           label="MEASURE"
           value={MEASURE_LABEL[measure]}

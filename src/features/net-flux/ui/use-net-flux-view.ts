@@ -3,10 +3,10 @@ import { useCallback } from "react";
 import useNetFluxViewStore, {
   DEFAULT_NET_FLUX_VIEW,
 } from "../model/net-flux-view-store";
-import type { NetFluxDetail, NetFluxMeasure } from "../model/net-flux-variants";
+import type { NetFluxMeasure } from "../model/net-flux-variants";
 
 /**
- * Driving adapter for the net-flux view store: binds the shared DETAIL/MEASURE
+ * Driving adapter for the net-flux view store: binds the shared MEASURE
  * selection to React. Lives in `ui` rather than `model` because `model` is the
  * framework-free core (ADR 0010) — the store itself stays pure.
  */
@@ -16,14 +16,10 @@ export function useNetFluxView(widgetId: string) {
   );
   const setView = useNetFluxViewStore((s) => s.setView);
 
-  const setDetail = useCallback(
-    (detail: NetFluxDetail) => setView(widgetId, { detail }),
-    [setView, widgetId]
-  );
   const setMeasure = useCallback(
     (measure: NetFluxMeasure) => setView(widgetId, { measure }),
     [setView, widgetId]
   );
 
-  return { ...view, setDetail, setMeasure };
+  return { ...view, setMeasure };
 }
