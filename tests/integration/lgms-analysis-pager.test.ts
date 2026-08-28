@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chartsToWidgets, orderInsightsForPager } from "@/src/entities/insight";
 import type { Chart } from "@/src/entities/insight";
-import {
-  collapseNetFluxSiblings,
-  isNetFluxWidget,
-  netFluxWidgetDetailLabel,
-} from "@/src/features/net-flux";
+import { isNetFluxWidget } from "@/src/features/net-flux";
 import { isFluxTreeWidget } from "@/src/features/ghg-flux-tree";
 import type { InsightWidget } from "@/app/types/chat";
 
@@ -71,7 +67,7 @@ function pagerEntries() {
   const widgets = applyDisplayTitle(chartsToWidgets(LGMS_CHARTS));
   return {
     widgets,
-    entries: orderInsightsForPager(collapseNetFluxSiblings(widgets, {})),
+    entries: orderInsightsForPager(widgets),
   };
 }
 
@@ -91,37 +87,13 @@ describe("LGMS analysis → insight workspace pager", () => {
     expect(isNetFluxWidget(hierarchy)).toBe(false);
   });
 
-  it("collapses the three roll-ups into a two-entry pager", () => {
-    const { entries } = pagerEntries();
-    expect(entries).toHaveLength(2);
-  });
-
   it("leads with the time-series, not the last chart the generator emitted", () => {
     const { entries } = pagerEntries();
-    expect(entries[0].backendTitle).toBe("Net GHG Flux — Full Detail");
-    expect(entries[1].backendTitle).toBe("Net GHG Flux — Annual Average");
-  });
-
-  it("keeps the DETAIL labels distinct under the shared display title", () => {
-    const { widgets } = pagerEntries();
-    const rollUps = widgets.filter(isNetFluxWidget);
-    expect(rollUps.map(netFluxWidgetDetailLabel)).toEqual([
-      "Full Detail",
-      "Category",
-      "Summary",
+    expect(entries.map((e) => e.backendTitle)).toEqual([
+      "Net GHG Flux — Full Detail",
+      "Net GHG Flux by Category",
+      "Net GHG Flux Summary",
+      "Net GHG Flux — Annual Average",
     ]);
-    // The display title alone would have made all three identical.
-    expect(new Set(rollUps.map((w) => w.title)).size).toBe(1);
-  });
-
-  it("follows the DETAIL selection for the collapsed entry", () => {
-    const { widgets } = pagerEntries();
-    const entries = orderInsightsForPager(
-      collapseNetFluxSiblings(widgets, {
-        [INSIGHT_ID]: `${INSIGHT_ID}-chart-2`,
-      })
-    );
-    expect(entries[0].backendTitle).toBe("Net GHG Flux Summary");
-    expect(entries).toHaveLength(2);
   });
 });

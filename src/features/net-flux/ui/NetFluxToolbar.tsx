@@ -2,16 +2,7 @@
 import { Box, Button, Flex, Menu, Portal, Text } from "@chakra-ui/react";
 import { CaretDownIcon } from "@phosphor-icons/react";
 
-import useInsightStore from "@/app/store/insightStore";
-import type { InsightWidget } from "@/app/types/chat";
-
-import { useNetFluxDetail, useNetFluxView } from "./use-net-flux-view";
-import {
-  netFluxGroupKey,
-  netFluxSiblings,
-  netFluxWidgetDetailLabel,
-} from "../model/net-flux-siblings";
-import { netFluxViewKey } from "../model/net-flux-view-store";
+import { useNetFluxView } from "./use-net-flux-view";
 import { type NetFluxMeasure } from "../model/net-flux-variants";
 
 const MEASURE_LABEL: Record<NetFluxMeasure, string> = {
@@ -91,44 +82,28 @@ function Pill({ label, value, options, onSelect }: PillProps) {
 }
 
 /**
- * DETAIL / MEASURE controls for the net-flux insight. In the workspace these
- * sit above the widget card on the shell background, per the design's "Widget
- * toolbar (reusable)" frame; elsewhere (dashboards, /chart-debug)
- * `WidgetMessage` renders them inline at the top of the card instead.
+ * MEASURE control for the net-flux insight. In the workspace this sits above
+ * the widget card on the shell background, per the design's "Widget toolbar
+ * (reusable)" frame; elsewhere (dashboards, /chart-debug) `WidgetMessage`
+ * renders it inline at the top of the card instead.
  *
- * DETAIL selects between the three roll-ups `LGMSChartGenerator` returns
- * (Full detail / Category / Summary) rather than re-slicing one payload. It is
- * hidden when the widget has no siblings — a single chart, or one rehydrated
- * without the id shape the grouping relies on.
+ * There is no DETAIL control: project-zeno's `LGMSChartGenerator` ships Full
+ * detail / Category / Summary as three separate charts, so the detail level is
+ * chosen by moving between insights rather than by re-slicing one payload.
  */
 export function NetFluxToolbar({
-  widget,
+  widgetId,
   showDivider = true,
 }: {
-  widget: InsightWidget;
+  widgetId: string;
   showDivider?: boolean;
 }) {
-  const insights = useInsightStore((s) => s.insights);
-  const siblings = netFluxSiblings(insights, widget);
-  const groupKey = netFluxGroupKey(widget);
-  const { selected, select } = useNetFluxDetail(groupKey, siblings);
-  const { measure, setMeasure } = useNetFluxView(netFluxViewKey(widget));
+  const { measure, setMeasure } = useNetFluxView(widgetId);
 
   return (
     <Flex direction="column" gap="8px">
       {showDivider && <Box borderTop="1px solid" borderColor="#DDE2F5" />}
       <Flex gap="8px" wrap="wrap">
-        {siblings.length > 1 && (
-          <Pill
-            label="DETAIL"
-            value={netFluxWidgetDetailLabel(selected ?? widget)}
-            options={siblings.map((w) => ({
-              value: w.id ?? w.title,
-              label: netFluxWidgetDetailLabel(w),
-            }))}
-            onSelect={select}
-          />
-        )}
         <Pill
           label="MEASURE"
           value={MEASURE_LABEL[measure]}
