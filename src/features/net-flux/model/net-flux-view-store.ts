@@ -12,6 +12,13 @@ export const DEFAULT_NET_FLUX_VIEW: NetFluxView = { measure: "gross" };
 export interface NetFluxViewState {
   byWidget: Record<string, NetFluxView>;
   setView: (widgetId: string, patch: Partial<NetFluxView>) => void;
+  /**
+   * Selected chart per net-flux group (see `netFluxGroupKey`). Keyed by group
+   * rather than widget because the choice is "which of these three roll-ups",
+   * which outlives any one of them.
+   */
+  detailByGroup: Record<string, string>;
+  selectDetail: (groupKey: string, widgetId: string) => void;
 }
 
 /**
@@ -25,6 +32,11 @@ export interface NetFluxViewState {
  */
 const useNetFluxViewStore = create<NetFluxViewState>((set) => ({
   byWidget: {},
+  detailByGroup: {},
+  selectDetail: (groupKey, widgetId) =>
+    set((state) => ({
+      detailByGroup: { ...state.detailByGroup, [groupKey]: widgetId },
+    })),
   setView: (widgetId, patch) =>
     set((state) => ({
       byWidget: {
