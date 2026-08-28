@@ -133,6 +133,10 @@ export function useAnalysis(
           const widgets = datasetName
             ? rawWidgets.map((widget) => ({
                 ...widget,
+                // Keep the backend's own title: the four LGMS charts of one
+                // analysis all collapse to the same display title, so the
+                // DETAIL pill needs the original to tell them apart.
+                backendTitle: widget.title,
                 title: generateInsightTitle({
                   datasetName: chartDatasetName(widget, datasetName),
                   locationName: selection.area.name,

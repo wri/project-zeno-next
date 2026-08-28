@@ -4,6 +4,7 @@ import {
   netFluxDetailLabel,
   netFluxGroupKey,
   netFluxSiblings,
+  netFluxWidgetDetailLabel,
 } from "../net-flux-siblings";
 import type { InsightWidget } from "@/app/types/chat";
 
@@ -68,6 +69,40 @@ describe("netFluxDetailLabel", () => {
 
   it("falls back to the whole title when it recognises nothing", () => {
     expect(netFluxDetailLabel("Something else")).toBe("Something else");
+  });
+});
+
+describe("netFluxWidgetDetailLabel", () => {
+  // useAnalysis overwrites every chart's title with one "{dataset} in
+  // {location}" string, so all three roll-ups would otherwise read alike.
+  const overridden = (backendTitle: string): InsightWidget => ({
+    ...chart("ins1-chart-0", "Land GHG Monitoring System (LGMS) in Peru"),
+    backendTitle,
+  });
+
+  it("reads the backend title through the display-title override", () => {
+    expect(
+      netFluxWidgetDetailLabel(overridden("Net GHG Flux — Full Detail"))
+    ).toBe("Full Detail");
+    expect(
+      netFluxWidgetDetailLabel(overridden("Net GHG Flux by Category"))
+    ).toBe("Category");
+    expect(netFluxWidgetDetailLabel(overridden("Net GHG Flux Summary"))).toBe(
+      "Summary"
+    );
+  });
+
+  it("gives the three roll-ups distinct labels", () => {
+    const labels = [
+      "Net GHG Flux — Full Detail",
+      "Net GHG Flux by Category",
+      "Net GHG Flux Summary",
+    ].map((t) => netFluxWidgetDetailLabel(overridden(t)));
+    expect(new Set(labels).size).toBe(3);
+  });
+
+  it("falls back to title when no backend title was preserved", () => {
+    expect(netFluxWidgetDetailLabel(FULL)).toBe("Full Detail");
   });
 });
 

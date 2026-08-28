@@ -18,6 +18,7 @@ export {
 export {
   collapseNetFluxSiblings,
   netFluxDetailLabel,
+  netFluxWidgetDetailLabel,
   netFluxGroupKey,
   netFluxSiblings,
 } from "./model/net-flux-siblings";

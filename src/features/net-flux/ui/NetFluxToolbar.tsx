@@ -7,9 +7,9 @@ import type { InsightWidget } from "@/app/types/chat";
 
 import { useNetFluxDetail, useNetFluxView } from "./use-net-flux-view";
 import {
-  netFluxDetailLabel,
   netFluxGroupKey,
   netFluxSiblings,
+  netFluxWidgetDetailLabel,
 } from "../model/net-flux-siblings";
 import { netFluxViewKey } from "../model/net-flux-view-store";
 import { type NetFluxMeasure } from "../model/net-flux-variants";
@@ -121,10 +121,10 @@ export function NetFluxToolbar({
         {siblings.length > 1 && (
           <Pill
             label="DETAIL"
-            value={netFluxDetailLabel((selected ?? widget).title)}
+            value={netFluxWidgetDetailLabel(selected ?? widget)}
             options={siblings.map((w) => ({
               value: w.id ?? w.title,
-              label: netFluxDetailLabel(w.title),
+              label: netFluxWidgetDetailLabel(w),
             }))}
             onSelect={select}
           />
