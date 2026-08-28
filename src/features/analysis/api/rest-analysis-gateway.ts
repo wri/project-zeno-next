@@ -203,6 +203,9 @@ export class RestAnalysisGateway implements AnalysisGateway {
       id: body.id,
       charts: body.charts.map(
         (c, i): Chart => ({
+          // Deliberately not `c.id`: the insight-scoped `{id}-chart-{n}`
+          // form is what `netFluxGroupKey` and `orderInsightsForPager` parse
+          // to group an analysis's charts. Changing it needs both consumers.
           id: `${body.id}-chart-${i}`,
           position: i,
           title: c.title,
