@@ -4,6 +4,7 @@ import { Flex, Text } from "@chakra-ui/react";
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import type { InsightWidget } from "@/app/types/chat";
 
+import { netFluxWidgetDetailLabel } from "../model/net-flux-siblings";
 import {
   type NetFluxMeasure,
   type NetFluxVariant,
@@ -16,20 +17,6 @@ const signedFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
   signDisplay: "always",
 });
-
-/**
- * The detail wording for the subtitle, taken from the backend's chart title
- * ("Net GHG Flux — Full Detail" → "Full Detail"). Falls back to the whole
- * title so an unrecognised one still reads sensibly.
- */
-function detailLabelFromTitle(title: string): string {
-  const parts = title.split("—");
-  if (parts.length > 1) return parts[parts.length - 1].trim();
-  const by = title.match(/\bby\s+(.+)$/i);
-  if (by) return by[1].trim();
-  const trailing = title.match(/\bSummary\b/i);
-  return trailing ? "Summary" : title.trim();
-}
 
 interface NetFluxChartBodyProps {
   /** The widget already narrowed to the active measure. */
@@ -143,7 +130,7 @@ export function NetFluxChartBody({
         variant={variant}
         xAxis={widget.xAxis}
         measure={measure}
-        detailLabel={detailLabelFromTitle(widget.title)}
+        detailLabel={netFluxWidgetDetailLabel(widget)}
       />
       <ChartWidget
         widget={widget}

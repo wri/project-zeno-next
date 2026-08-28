@@ -73,3 +73,12 @@ export function collapseNetFluxSiblings(
 
   return out;
 }
+
+/**
+ * The detail wording for a widget. Reads `backendTitle` first: `useAnalysis`
+ * overwrites `title` with one "{dataset} in {location}" string shared by every
+ * chart of the analysis, which would make all three roll-ups read alike.
+ */
+export function netFluxWidgetDetailLabel(widget: InsightWidget): string {
+  return netFluxDetailLabel(widget.backendTitle ?? widget.title);
+}

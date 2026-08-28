@@ -68,6 +68,13 @@ export interface ChatMessage {
 // registry's resolution for this chart (absent for pre-migration insights).
 export interface InsightWidget extends ChartColorFields {
   id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
+  /**
+   * The chart's own title as the backend sent it, preserved when `title` is
+   * overwritten with a "{dataset} in {location}" display title. Charts of one
+   * analysis all share that display title, so anything naming an individual
+   * chart (the net-flux DETAIL pill, its header subtitle) reads this instead.
+   */
+  backendTitle?: string;
   type:
     | "line"
     | "bar"
