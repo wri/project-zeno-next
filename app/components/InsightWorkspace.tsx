@@ -30,8 +30,9 @@ import { buildChips } from "./widgets/analysis-params-utils";
 import {
   NetFluxFootnote,
   NetFluxToolbar,
+  collapseNetFluxSiblings,
   isNetFluxWidget,
-  netFluxViewKey,
+  useNetFluxDetailSelection,
 } from "@/src/features/net-flux";
 import {
   GhgFluxMeasurePill,
@@ -112,12 +113,20 @@ function WorkspaceSkeleton() {
 
 export default function InsightWorkspace() {
   const allInsights = useInsightStore((state) => state.insights);
-  // Newest analysis first, but the charts within one analysis left in the
-  // order the backend sent them — they are all the same age, so `position` is
-  // the intended reading order.
+  const netFluxDetail = useNetFluxDetailSelection();
+  // Two passes to get the pager list. First: the three LGMS time-series
+  // roll-ups are one analysis shown three ways, so they collapse to a single
+  // entry whose DETAIL pill switches between them — otherwise the pager and
+  // the pill would be two ways to do the same thing. Every other insight
+  // passes through untouched. Then: newest analysis first, but the charts
+  // within one analysis left in the order the backend sent them, since they
+  // are all the same age and `position` is the intended reading order.
   const insights = useMemo(
-    () => orderInsightsForPager(allInsights),
-    [allInsights]
+    () =>
+      orderInsightsForPager(
+        collapseNetFluxSiblings(allInsights, netFluxDetail)
+      ),
+    [allInsights, netFluxDetail]
   );
   // Drive the loading affordances off the insight-specific flag, not the
   // request-wide isLoading: the skeleton/spinner should appear only while an
@@ -308,7 +317,7 @@ export default function InsightWorkspace() {
                 (the design calls this frame the "widget toolbar"). */}
             {isNetFluxWidget(widget) && (
               <Box px={2} pb={2}>
-                <NetFluxToolbar widgetId={netFluxViewKey(widget)} />
+                <NetFluxToolbar widget={widget} />
               </Box>
             )}
             {isFluxTreeWidget(widget) && (
