@@ -234,10 +234,7 @@ export default function WidgetMessage({
             InsightWorkspace renders them there; elsewhere (dashboards,
             /chart-debug) they live inline so the toggle stays reachable. */}
         {isNetFlux && !inWorkspace && (
-          <NetFluxToolbar
-            widgetId={netFluxViewKey(widget)}
-            showDivider={false}
-          />
+          <NetFluxToolbar widget={widget} showDivider={false} />
         )}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -29,8 +29,9 @@ import { buildChips } from "./widgets/analysis-params-utils";
 import {
   NetFluxFootnote,
   NetFluxToolbar,
+  collapseNetFluxSiblings,
   isNetFluxWidget,
-  netFluxViewKey,
+  useNetFluxDetailSelection,
 } from "@/src/features/net-flux";
 
 /**
@@ -106,7 +107,16 @@ function WorkspaceSkeleton() {
 }
 
 export default function InsightWorkspace() {
-  const { insights } = useInsightStore();
+  const allInsights = useInsightStore((state) => state.insights);
+  const netFluxDetail = useNetFluxDetailSelection();
+  // The three LGMS time-series roll-ups are one analysis shown three ways, so
+  // they collapse to a single pager entry whose DETAIL pill switches between
+  // them — otherwise the pager and the pill would be two ways to do the same
+  // thing. Every other insight passes through untouched.
+  const insights = useMemo(
+    () => collapseNetFluxSiblings(allInsights, netFluxDetail),
+    [allInsights, netFluxDetail]
+  );
   // Drive the loading affordances off the insight-specific flag, not the
   // request-wide isLoading: the skeleton/spinner should appear only while an
   // insight is actually being generated, not for every prompt.
@@ -297,7 +307,7 @@ export default function InsightWorkspace() {
                 (the design calls this the "widget toolbar"). */}
             {isNetFluxWidget(widget) && (
               <Box px={2} pb={2}>
-                <NetFluxToolbar widgetId={netFluxViewKey(widget)} />
+                <NetFluxToolbar widget={widget} />
               </Box>
             )}
 
