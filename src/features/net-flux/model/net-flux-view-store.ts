@@ -1,17 +1,13 @@
 import { create } from "zustand";
 import type { InsightWidget } from "@/app/types/chat";
-import type { NetFluxDetail, NetFluxMeasure } from "./net-flux-variants";
+import type { NetFluxMeasure } from "./net-flux-variants";
 
 export interface NetFluxView {
-  detail: NetFluxDetail;
   measure: NetFluxMeasure;
 }
 
-/** Matches the design's default frame ("TS · Gross · Full detail"). */
-export const DEFAULT_NET_FLUX_VIEW: NetFluxView = {
-  detail: "full",
-  measure: "gross",
-};
+/** Matches the design's default frame ("TS · Gross"). */
+export const DEFAULT_NET_FLUX_VIEW: NetFluxView = { measure: "gross" };
 
 export interface NetFluxViewState {
   byWidget: Record<string, NetFluxView>;
@@ -19,13 +15,13 @@ export interface NetFluxViewState {
 }
 
 /**
- * DETAIL/MEASURE selection for the net-flux insight, keyed by widget id.
+ * MEASURE selection for the net-flux insight, keyed by widget id.
  *
- * Shared rather than component-local because the design places the toggle
- * pills *outside* the widget card (in the workspace shell) while the chart
- * that reacts to them renders inside it — two components with no common
- * ancestor that knows about net flux. Keyed by widget id so several net-flux
- * insights in the workspace stack keep independent selections.
+ * Shared rather than component-local because the design places the pill
+ * *outside* the widget card (in the workspace shell) while the chart that
+ * reacts to it renders inside — two components with no common ancestor that
+ * knows about net flux. Keyed by widget id so several net-flux insights in the
+ * workspace stack keep independent selections.
  */
 const useNetFluxViewStore = create<NetFluxViewState>((set) => ({
   byWidget: {},

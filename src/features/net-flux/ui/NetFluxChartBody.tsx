@@ -5,8 +5,6 @@ import ChartWidget from "@/app/components/widgets/ChartWidget";
 import type { InsightWidget } from "@/app/types/chat";
 
 import {
-  DETAIL_LABEL,
-  type NetFluxDetail,
   type NetFluxMeasure,
   type NetFluxVariant,
 } from "../model/net-flux-variants";
@@ -19,11 +17,24 @@ const signedFormat = new Intl.NumberFormat("en-US", {
   signDisplay: "always",
 });
 
+/**
+ * The detail wording for the subtitle, taken from the backend's chart title
+ * ("Net GHG Flux — Full Detail" → "Full Detail"). Falls back to the whole
+ * title so an unrecognised one still reads sensibly.
+ */
+function detailLabelFromTitle(title: string): string {
+  const parts = title.split("—");
+  if (parts.length > 1) return parts[parts.length - 1].trim();
+  const by = title.match(/\bby\s+(.+)$/i);
+  if (by) return by[1].trim();
+  const trailing = title.match(/\bSummary\b/i);
+  return trailing ? "Summary" : title.trim();
+}
+
 interface NetFluxChartBodyProps {
-  /** The widget already narrowed to the active DETAIL × MEASURE variant. */
+  /** The widget already narrowed to the active measure. */
   widget: InsightWidget;
   variant: NetFluxVariant;
-  detail: NetFluxDetail;
   measure: NetFluxMeasure;
   expanded?: boolean;
   fitYAxis?: boolean;
@@ -55,13 +66,14 @@ function endpoints(
 function TimeSeriesHeader({
   variant,
   xAxis,
-  detail,
   measure,
+  detailLabel,
 }: {
   variant: NetFluxVariant;
   xAxis: string;
-  detail: NetFluxDetail;
   measure: NetFluxMeasure;
+  /** The backend's own chart title, which names the detail level. */
+  detailLabel: string;
 }) {
   const ends = endpoints(variant, xAxis);
   if (!ends) return null;
@@ -70,7 +82,7 @@ function TimeSeriesHeader({
   // Positive net flux means the land is a net source of emissions; negative
   // means it is absorbing more than it emits (a sink).
   const direction = last.value >= 0 ? "net source" : "net sink";
-  const detailLabel = measure === "net" ? "Net only" : DETAIL_LABEL[detail];
+  const label = measure === "net" ? "Net only" : detailLabel;
   const range =
     first.year === last.year
       ? first.year
@@ -95,7 +107,7 @@ function TimeSeriesHeader({
         </Text>
       </Text>
       <Text fontFamily="mono" fontSize="10px" color="#656E7B">
-        megatonnes CO₂e/yr · {direction} · {detailLabel}
+        megatonnes CO₂e/yr · {direction} · {label}
       </Text>
       <Text
         fontFamily="body"
@@ -119,7 +131,6 @@ function TimeSeriesHeader({
 export function NetFluxChartBody({
   widget,
   variant,
-  detail,
   measure,
   expanded,
   fitYAxis,
@@ -131,8 +142,8 @@ export function NetFluxChartBody({
       <TimeSeriesHeader
         variant={variant}
         xAxis={widget.xAxis}
-        detail={detail}
         measure={measure}
+        detailLabel={detailLabelFromTitle(widget.title)}
       />
       <ChartWidget
         widget={widget}

@@ -21,7 +21,6 @@ import CHART_COLOR_MAPPING, {
   DATASET_DIVERGENT_COLORS,
 } from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
-import { NET_FLUX_DUMMY_WIDGET } from "@/src/features/net-flux";
 
 // ---------------------------------------------------------------------------
 // Fake provenance data for "View how this was generated" drawer
@@ -78,6 +77,94 @@ const BAR_DATA = [
   { country: "Peru", tree_cover_loss_ha: 310000 },
   { country: "Colombia", tree_cover_loss_ha: 295000 },
   { country: "Cameroon", tree_cover_loss_ha: 270000 },
+];
+
+// Shaped like project-zeno's LGMSChartGenerator "Net GHG Flux by Category"
+// chart: one row per year, `{class}_{emissions|removals}` columns, emissions
+// positive and removals negative. Fixture only — the feature reads this from
+// the API.
+const NET_FLUX_CATEGORY_DATA = [
+  {
+    year: 2016,
+    vegetation_emissions: 530,
+    soil_emissions: 820,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -710,
+    soil_removals: -40,
+  },
+  {
+    year: 2017,
+    vegetation_emissions: 512,
+    soil_emissions: 793,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -726,
+    soil_removals: -41,
+  },
+  {
+    year: 2018,
+    vegetation_emissions: 495,
+    soil_emissions: 765,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -742,
+    soil_removals: -42,
+  },
+  {
+    year: 2019,
+    vegetation_emissions: 478,
+    soil_emissions: 738,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -757,
+    soil_removals: -43,
+  },
+  {
+    year: 2020,
+    vegetation_emissions: 460,
+    soil_emissions: 710,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -773,
+    soil_removals: -44,
+  },
+  {
+    year: 2021,
+    vegetation_emissions: 443,
+    soil_emissions: 683,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -789,
+    soil_removals: -45,
+  },
+  {
+    year: 2022,
+    vegetation_emissions: 425,
+    soil_emissions: 655,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -805,
+    soil_removals: -46,
+  },
+  {
+    year: 2023,
+    vegetation_emissions: 408,
+    soil_emissions: 628,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -820,
+    soil_removals: -47,
+  },
+  {
+    year: 2024,
+    vegetation_emissions: 390,
+    soil_emissions: 600,
+    cropland_emissions: 150,
+    livestock_emissions: 100,
+    vegetation_removals: -836,
+    soil_removals: -48,
+  },
 ];
 
 const STACKED_BAR_DATA = [
@@ -620,7 +707,23 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
       label: "Stacked bar with line overlay (net flux)",
       notes:
         "The curated 'Net flux over time' insight: stacked emissions/removals with a net-flux line overlay, plus the DETAIL/MEASURE toggle chrome.",
-      widget: NET_FLUX_DUMMY_WIDGET,
+      widget: {
+        type: "stacked-bar-with-line",
+        title: "Net GHG Flux by Category",
+        description:
+          "Gross emissions and removals by category, with the net-flux line.",
+        data: NET_FLUX_CATEGORY_DATA as unknown as InsightWidget["data"],
+        xAxis: "year",
+        yAxis: "",
+        seriesFields: [
+          "vegetation_emissions",
+          "soil_emissions",
+          "cropland_emissions",
+          "livestock_emissions",
+          "vegetation_removals",
+          "soil_removals",
+        ],
+      },
     },
     {
       label: "Wide table (scroll indicator)",

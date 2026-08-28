@@ -2,139 +2,139 @@ import { describe, expect, it } from "vitest";
 import {
   deriveNetFluxVariant,
   isPaintReference,
-  NET_FLUX_FULL_DETAIL_FIELDS,
+  seriesGroup,
+  seriesLabel,
 } from "../net-flux-variants";
 import type { InsightWidget } from "@/app/types/chat";
 
-// One row whose totals mirror the design's 2020 tooltip in miniature: every
-// variant must collapse to the same +67 net flux.
-const FULL_DETAIL_WIDGET: InsightWidget = {
+/**
+ * Shaped like project-zeno's "Net GHG Flux by Category" chart: `series_fields`
+ * in the backend's own order (emissions, then removals) and one row per year.
+ */
+const CATEGORY_WIDGET: InsightWidget = {
   type: "stacked-bar-with-line",
-  title: "Net flux over time",
+  title: "Net GHG Flux by Category",
   description: "",
   xAxis: "year",
-  yAxis: "net_flux_mt",
-  seriesFields: NET_FLUX_FULL_DETAIL_FIELDS,
+  yAxis: "",
+  seriesFields: [
+    "vegetation_emissions",
+    "soil_emissions",
+    "cropland_emissions",
+    "livestock_emissions",
+    "vegetation_removals",
+    "soil_removals",
+  ],
   data: [
     {
       year: 2020,
-      "Livestock (2020, static)": 6,
-      "Cropland management (2020, static)": 4,
-      "Organic soil": 20,
-      "Mineral soil": 5,
-      "Non-trees rem. non-trees": 3,
-      "Trees rem. trees": 2,
-      "Tree loss": 100,
-      "Tree gain": -50,
-      "Trees remaining": -10,
-      "Non-trees": -5,
-      Mineral: -8,
+      vegetation_emissions: 530,
+      soil_emissions: 820,
+      cropland_emissions: 150,
+      livestock_emissions: 100,
+      vegetation_removals: -710,
+      soil_removals: -40,
     },
   ],
 };
 
-const NET_FLUX = 67;
+// 530 + 820 + 150 + 100 - 710 - 40
+const NET = 850;
 
-describe("deriveNetFluxVariant", () => {
-  it("full + gross keeps every category field and sums them for the line", () => {
-    const variant = deriveNetFluxVariant(FULL_DETAIL_WIDGET, "full", "gross");
-    expect(variant.seriesFields).toEqual([
-      "Tree loss",
-      "Trees rem. trees",
-      "Non-trees rem. non-trees",
-      "Mineral soil",
-      "Organic soil",
-      "Cropland management (2020, static)",
-      "Livestock (2020, static)",
-      "Tree gain",
-      "Trees remaining",
-      "Non-trees",
-      "Mineral",
-    ]);
-    expect(variant.data[0]["Net flux"]).toBe(NET_FLUX);
+describe("seriesGroup", () => {
+  it("reads the side off the backend's field suffix", () => {
+    expect(seriesGroup("vegetation_emissions")).toBe("emissions");
+    expect(seriesGroup("tree_gain_removals")).toBe("removals");
   });
 
-  it("categories + gross collapses into the design's buckets", () => {
-    const variant = deriveNetFluxVariant(
-      FULL_DETAIL_WIDGET,
-      "categories",
-      "gross"
+  it("returns null for a field that is not a flux series", () => {
+    expect(seriesGroup("year")).toBeNull();
+    expect(seriesGroup("aoi_id")).toBeNull();
+  });
+});
+
+describe("seriesLabel", () => {
+  it("maps the class prefix to the backend's own display label", () => {
+    expect(seriesLabel("tree_loss_emissions")).toBe("Tree loss");
+    expect(seriesLabel("non_trees_remaining_non_trees_removals")).toBe(
+      "Non-trees remaining non-trees"
     );
-    const row = variant.data[0];
-    expect(row["Vegetation (emissions)"]).toBe(105);
-    expect(row["Mineral soil"]).toBe(25);
-    expect(row["Livestock (2020, static)"]).toBe(6);
-    expect(row["Cropland management (2020, static)"]).toBe(4);
-    expect(row["Vegetation (removals)"]).toBe(-65);
-    expect(row["Soil"]).toBe(-8);
-    expect(row["Net flux"]).toBe(NET_FLUX);
+    expect(seriesLabel("land_use_removals")).toBe("Land use");
   });
 
-  it("summary + gross collapses into agriculture + 2 land-use buckets", () => {
-    const variant = deriveNetFluxVariant(
-      FULL_DETAIL_WIDGET,
-      "summary",
-      "gross"
-    );
-    const row = variant.data[0];
-    expect(row["Agriculture (static)"]).toBe(10);
-    expect(row["Land use Emissions"]).toBe(130);
-    expect(row["Land use Removals"]).toBe(-73);
-    expect(row["Net flux"]).toBe(NET_FLUX);
+  it("names the two agriculture classes the backend does not label", () => {
+    expect(seriesLabel("cropland_emissions")).toBe("Crop management");
+    expect(seriesLabel("livestock_emissions")).toBe("Livestock");
   });
 
-  it("net measure ignores detail and collapses to one signed bar + line", () => {
-    for (const detail of ["full", "categories", "summary"] as const) {
-      const variant = deriveNetFluxVariant(FULL_DETAIL_WIDGET, detail, "net");
-      expect(variant.seriesFields).toEqual(["Net source"]);
-      expect(variant.data[0]["Net source"]).toBe(NET_FLUX);
-      expect(variant.data[0]["Net flux"]).toBe(NET_FLUX);
-      // Left empty so the divergent positive/negative tint drives the bars.
-      expect(variant.colorMap).toEqual({});
+  it("degrades readably for a class it has never seen", () => {
+    expect(seriesLabel("peat_burning_emissions")).toBe("peat burning");
+  });
+});
+
+describe("deriveNetFluxVariant — gross", () => {
+  it("keeps the backend's series and order", () => {
+    const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    expect(variant.seriesFields).toEqual(CATEGORY_WIDGET.seriesFields);
+  });
+
+  it("adds the net-flux line, which the backend does not send", () => {
+    const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    expect(variant.data[0]["Net flux"]).toBe(NET);
+  });
+
+  it("colours every series, hatching the fixed-2020 agriculture ones", () => {
+    const { colorMap } = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    for (const field of CATEGORY_WIDGET.seriesFields ?? []) {
+      expect(colorMap[field]).toBeTruthy();
     }
+    expect(colorMap.vegetation_emissions).toBe("#8c510a");
+    expect(colorMap.vegetation_removals).toBe("#01665e");
+    expect(isPaintReference(colorMap.cropland_emissions)).toBe(true);
+    expect(isPaintReference(colorMap.livestock_emissions)).toBe(true);
   });
 
-  it("maps every series to a colour, hatching the fixed-2020 agriculture ones", () => {
-    const variant = deriveNetFluxVariant(FULL_DETAIL_WIDGET, "full", "gross");
-    for (const field of variant.seriesFields) {
-      expect(variant.colorMap[field]).toBeTruthy();
-    }
-    expect(variant.colorMap["Tree loss"]).toBe("#543005");
-    expect(isPaintReference(variant.colorMap["Livestock (2020, static)"])).toBe(
-      true
-    );
-    expect(
-      isPaintReference(variant.colorMap["Cropland management (2020, static)"])
-    ).toBe(true);
-  });
-
-  it("orders the legend top-of-stack first for emissions, per the design", () => {
-    const { legend } = deriveNetFluxVariant(
-      FULL_DETAIL_WIDGET,
-      "full",
-      "gross"
-    );
+  it("groups the legend by suffix, emissions top-of-stack first", () => {
+    const { legend } = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
     expect(legend.layout).toBe("grouped");
+    // Reversed relative to stacking order, so it reads down the bar.
     expect(legend.emissions.map((i) => i.label)).toEqual([
-      "Livestock (2020, static)",
-      "Cropland management (2020, static)",
-      "Organic soil",
-      "Mineral soil",
-      "Non-trees remaining non-trees",
-      "Trees remaining trees",
-      "Tree loss",
+      "Livestock",
+      "Crop management",
+      "Soil",
+      "Vegetation",
     ]);
-    // Removals stack downward, so their stacking order already reads correctly.
-    expect(legend.removals.map((i) => i.label)).toEqual([
-      "Tree gain",
-      "Trees remaining",
-      "Non-trees",
-      "Mineral soil",
-    ]);
+    expect(legend.removals.map((i) => i.label)).toEqual(["Vegetation", "Soil"]);
   });
 
-  it("uses a flat legend for the net measure", () => {
-    const { legend } = deriveNetFluxVariant(FULL_DETAIL_WIDGET, "full", "net");
+  it("ignores non-series columns the backend may add to a row", () => {
+    const withExtras: InsightWidget = {
+      ...CATEGORY_WIDGET,
+      seriesFields: [...(CATEGORY_WIDGET.seriesFields ?? []), "aoi_id"],
+    };
+    const variant = deriveNetFluxVariant(withExtras, "gross");
+    expect(variant.seriesFields).not.toContain("aoi_id");
+    expect(variant.data[0]["Net flux"]).toBe(NET);
+  });
+});
+
+describe("deriveNetFluxVariant — net", () => {
+  it("collapses to one signed bar carrying the same total", () => {
+    const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "net");
+    expect(variant.seriesFields).toEqual(["Net source"]);
+    expect(variant.data[0]["Net source"]).toBe(NET);
+    expect(variant.data[0]["Net flux"]).toBe(NET);
+  });
+
+  it("leaves colorMap empty so the divergent tint drives the bar", () => {
+    const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "net");
+    expect(variant.colorMap).toEqual({});
+    expect(variant.divergentColors.positive).toBeTruthy();
+    expect(variant.divergentColors.negative).toBeTruthy();
+  });
+
+  it("uses a flat legend", () => {
+    const { legend } = deriveNetFluxVariant(CATEGORY_WIDGET, "net");
     expect(legend.layout).toBe("flat");
     expect(legend.emissions.map((i) => i.label)).toEqual([
       "Net source (+)",
@@ -142,16 +142,20 @@ describe("deriveNetFluxVariant", () => {
     ]);
     expect(legend.removals).toEqual([]);
   });
+});
 
-  it("labels repeat across groups where the design repeats them", () => {
-    const { legend } = deriveNetFluxVariant(
-      FULL_DETAIL_WIDGET,
-      "categories",
-      "gross"
-    );
-    // "Vegetation" appears in both columns; the underlying data keys differ so
-    // Recharts still sees unique dataKeys.
-    expect(legend.emissions.map((i) => i.label)).toContain("Vegetation");
-    expect(legend.removals.map((i) => i.label)).toContain("Vegetation");
+describe("deriveNetFluxVariant — resilience", () => {
+  it("survives an empty payload", () => {
+    const empty: InsightWidget = { ...CATEGORY_WIDGET, data: [] };
+    expect(deriveNetFluxVariant(empty, "gross").data).toEqual([]);
+    expect(deriveNetFluxVariant(empty, "net").data).toEqual([]);
+  });
+
+  it("treats a missing metric on a row as zero, not NaN", () => {
+    const sparse: InsightWidget = {
+      ...CATEGORY_WIDGET,
+      data: [{ year: 2020, vegetation_emissions: 100 }],
+    };
+    expect(deriveNetFluxVariant(sparse, "gross").data[0]["Net flux"]).toBe(100);
   });
 });

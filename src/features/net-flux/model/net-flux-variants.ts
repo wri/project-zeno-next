@@ -1,6 +1,5 @@
 import type { InsightWidget } from "@/app/types/chat";
 
-export type NetFluxDetail = "full" | "categories" | "summary";
 export type NetFluxMeasure = "gross" | "net";
 export type NetFluxGroup = "emissions" | "removals";
 
@@ -20,38 +19,76 @@ export function isPaintReference(color: string): boolean {
 }
 
 /**
- * The net-flux insight is the only producer of this chart type, so the type
- * doubles as the discriminator for its bespoke chrome.
+ * This slice renders the time-series LGMS charts, so the chart type doubles as
+ * the discriminator for its bespoke card.
  */
 export function isNetFluxWidget(widget: InsightWidget): boolean {
   return widget.type === "stacked-bar-with-line";
 }
 
-/** Net-flux line overlay: the signed total of whichever bars are shown. */
+/** Net-flux line overlay: the signed total of the bars shown. */
 export const NET_FLUX_LINE_FIELD = "Net flux";
 
-/** Bar rendered for the "net" measure — tinted by sign via `divergentColors`. */
+/** Bar rendered for the "net" measure — tinted by sign. */
 const NET_MEASURE_FIELD = "Net source";
 
 const NET_SOURCE_COLOR = "#8c510a";
 const NET_SINK_COLOR = "#01665e";
 
-export interface NetFluxSeriesSpec {
-  /**
-   * Data key, and the name shown in the tooltip. Unique within a variant —
-   * Recharts requires distinct dataKeys, and the design's own tooltips already
-   * disambiguate where its legend repeats a label (legend "Mineral soil" in
-   * removals vs. tooltip "Mineral"; legend "Land use" twice vs. tooltip
-   * "Land use Emissions"/"Land use Removals").
-   */
-  key: string;
-  /** Legend label, which may repeat across the two groups. */
-  label: string;
-  color: string;
-  group: NetFluxGroup;
-  /** Full-detail keys summed to produce this series. */
-  from: string[];
-}
+export const NET_FLUX_DIVERGENT_COLORS = {
+  positive: NET_SOURCE_COLOR,
+  negative: NET_SINK_COLOR,
+};
+
+/**
+ * Display label per LGMS class. The six leaf classes mirror the backend's own
+ * `LGMS_CLASS_LABELS` (`src/api/services/charts/lgms.py`); the aggregate levels
+ * and the two agriculture classes it doesn't name are supplied here.
+ */
+const CLASS_LABELS: Record<string, string> = {
+  tree_loss: "Tree loss",
+  tree_gain: "Tree gain",
+  trees_remaining_trees: "Trees remaining trees",
+  non_trees_remaining_non_trees: "Non-trees remaining non-trees",
+  mineral_soil: "Mineral soil",
+  organic_soil: "Organic soil",
+  cropland: "Crop management",
+  livestock: "Livestock",
+  vegetation: "Vegetation",
+  soil: "Soil",
+  land_use: "Land use",
+  agriculture: "Agriculture",
+};
+
+/**
+ * Colour per series field, keyed by the backend's own field names. The backend
+ * sets no `color_map`, so the palette from the design lives here.
+ */
+const SERIES_COLORS: Record<string, string> = {
+  // Full detail — emissions, darkest at the zero line outward.
+  tree_loss_emissions: "#543005",
+  trees_remaining_trees_emissions: "#8c510a",
+  non_trees_remaining_non_trees_emissions: "#bf812d",
+  mineral_soil_emissions: "#dfc27d",
+  organic_soil_emissions: "#ebd9b0",
+  cropland_emissions: HATCH_CROPLAND,
+  livestock_emissions: HATCH_LIVESTOCK,
+  // Full detail — removals.
+  tree_gain_removals: "#01665e",
+  trees_remaining_trees_removals: "#35978f",
+  non_trees_remaining_non_trees_removals: "#80cdc1",
+  mineral_soil_removals: "#003c30",
+  organic_soil_removals: "#003c30",
+  // Category roll-up.
+  vegetation_emissions: "#8c510a",
+  soil_emissions: "#dfc27d",
+  vegetation_removals: "#01665e",
+  soil_removals: "#80cdc1",
+  // Summary roll-up.
+  land_use_emissions: "#8c510a",
+  agriculture_emissions: HATCH_AGRICULTURE,
+  land_use_removals: "#01665e",
+};
 
 export interface NetFluxLegendItem {
   label: string;
@@ -71,238 +108,90 @@ export interface NetFluxVariant {
   lineField: string;
   /** Per-series colours, consumed via the chart's `colorMap` override. */
   colorMap: Record<string, string>;
+  /** Sign tint for the single-series "net" measure. */
+  divergentColors: typeof NET_FLUX_DIVERGENT_COLORS;
   legend: NetFluxLegend;
 }
 
 /**
- * Full-detail series in *stack* order: emissions from the zero line upward,
- * then removals from the zero line downward. Recharts stacks in declaration
- * order, and this order reproduces the design's plot exactly.
+ * Which side of the zero line a series belongs to. The backend names every
+ * field `{class}_{emissions|removals}`, so the suffix is the grouping — no
+ * per-field table needed.
  */
-const FULL_SERIES: NetFluxSeriesSpec[] = [
-  {
-    key: "Tree loss",
-    label: "Tree loss",
-    color: "#543005",
-    group: "emissions",
-    from: ["Tree loss"],
-  },
-  {
-    key: "Trees rem. trees",
-    label: "Trees remaining trees",
-    color: "#8c510a",
-    group: "emissions",
-    from: ["Trees rem. trees"],
-  },
-  {
-    key: "Non-trees rem. non-trees",
-    label: "Non-trees remaining non-trees",
-    color: "#bf812d",
-    group: "emissions",
-    from: ["Non-trees rem. non-trees"],
-  },
-  {
-    key: "Mineral soil",
-    label: "Mineral soil",
-    color: "#dfc27d",
-    group: "emissions",
-    from: ["Mineral soil"],
-  },
-  {
-    key: "Organic soil",
-    label: "Organic soil",
-    color: "#ebd9b0",
-    group: "emissions",
-    from: ["Organic soil"],
-  },
-  {
-    key: "Cropland management (2020, static)",
-    label: "Cropland management (2020, static)",
-    color: HATCH_CROPLAND,
-    group: "emissions",
-    from: ["Cropland management (2020, static)"],
-  },
-  {
-    key: "Livestock (2020, static)",
-    label: "Livestock (2020, static)",
-    color: HATCH_LIVESTOCK,
-    group: "emissions",
-    from: ["Livestock (2020, static)"],
-  },
-  {
-    key: "Tree gain",
-    label: "Tree gain",
-    color: "#01665e",
-    group: "removals",
-    from: ["Tree gain"],
-  },
-  {
-    key: "Trees remaining",
-    label: "Trees remaining",
-    color: "#35978f",
-    group: "removals",
-    from: ["Trees remaining"],
-  },
-  {
-    key: "Non-trees",
-    label: "Non-trees",
-    color: "#80cdc1",
-    group: "removals",
-    from: ["Non-trees"],
-  },
-  {
-    key: "Mineral",
-    label: "Mineral soil",
-    color: "#003c30",
-    group: "removals",
-    from: ["Mineral"],
-  },
-];
+export function seriesGroup(field: string): NetFluxGroup | null {
+  if (field.endsWith("_emissions")) return "emissions";
+  if (field.endsWith("_removals")) return "removals";
+  return null;
+}
 
-const CATEGORY_SERIES: NetFluxSeriesSpec[] = [
-  {
-    key: "Vegetation (emissions)",
-    label: "Vegetation",
-    color: "#8c510a",
-    group: "emissions",
-    from: ["Non-trees rem. non-trees", "Trees rem. trees", "Tree loss"],
-  },
-  {
-    key: "Mineral soil",
-    label: "Mineral soil",
-    color: "#dfc27d",
-    group: "emissions",
-    from: ["Organic soil", "Mineral soil"],
-  },
-  {
-    key: "Cropland management (2020, static)",
-    label: "Cropland management (2020, static)",
-    color: HATCH_CROPLAND,
-    group: "emissions",
-    from: ["Cropland management (2020, static)"],
-  },
-  {
-    key: "Livestock (2020, static)",
-    label: "Livestock (2020, static)",
-    color: HATCH_LIVESTOCK,
-    group: "emissions",
-    from: ["Livestock (2020, static)"],
-  },
-  {
-    key: "Vegetation (removals)",
-    label: "Vegetation",
-    color: "#01665e",
-    group: "removals",
-    from: ["Tree gain", "Trees remaining", "Non-trees"],
-  },
-  {
-    key: "Soil",
-    label: "Soil",
-    color: "#80cdc1",
-    group: "removals",
-    from: ["Mineral"],
-  },
-];
+/** Human label for a series field, derived from its class prefix. */
+export function seriesLabel(field: string): string {
+  const group = seriesGroup(field);
+  if (!group) return field;
+  const className = field.slice(0, -(group.length + 1));
+  return CLASS_LABELS[className] ?? className.replace(/_/g, " ");
+}
 
-const SUMMARY_SERIES: NetFluxSeriesSpec[] = [
-  {
-    key: "Land use Emissions",
-    label: "Land use",
-    color: "#8c510a",
-    group: "emissions",
-    from: [
-      "Organic soil",
-      "Mineral soil",
-      "Non-trees rem. non-trees",
-      "Trees rem. trees",
-      "Tree loss",
-    ],
-  },
-  {
-    key: "Agriculture (static)",
-    label: "Agriculture (2020, static)",
-    color: HATCH_AGRICULTURE,
-    group: "emissions",
-    from: ["Livestock (2020, static)", "Cropland management (2020, static)"],
-  },
-  {
-    key: "Land use Removals",
-    label: "Land use",
-    color: "#01665e",
-    group: "removals",
-    from: ["Tree gain", "Trees remaining", "Non-trees", "Mineral"],
-  },
-];
-
-const DETAIL_SERIES: Record<NetFluxDetail, NetFluxSeriesSpec[]> = {
-  full: FULL_SERIES,
-  categories: CATEGORY_SERIES,
-  summary: SUMMARY_SERIES,
-};
-
-/** Full-detail data keys — the shape the (dummy, and later real) API returns. */
-export const NET_FLUX_FULL_DETAIL_FIELDS = FULL_SERIES.map((s) => s.key);
-
-/** Colours for the full-detail series, used as the stored widget's colorMap. */
-export const NET_FLUX_FULL_DETAIL_COLOR_MAP: Record<string, string> =
-  Object.fromEntries(FULL_SERIES.map((s) => [s.key, s.color]));
-
-export const NET_FLUX_DIVERGENT_COLORS = {
-  positive: NET_SOURCE_COLOR,
-  negative: NET_SINK_COLOR,
-};
-
-/** Label shown in the chart's subtitle for the active detail level. */
-export const DETAIL_LABEL: Record<NetFluxDetail, string> = {
-  full: "Full detail",
-  categories: "Categories",
-  summary: "Summary",
-};
+function seriesColor(field: string, index: number, total: number): string {
+  const known = SERIES_COLORS[field];
+  if (known) return known;
+  // Unknown class (the backend grew a new one): fall back to a ramp in the
+  // right family so the chart still reads as emissions-up / removals-down.
+  const ramp =
+    seriesGroup(field) === "removals"
+      ? ["#01665e", "#35978f", "#80cdc1", "#003c30"]
+      : ["#543005", "#8c510a", "#bf812d", "#dfc27d", "#ebd9b0"];
+  return ramp[(total > 0 ? index : 0) % ramp.length];
+}
 
 function sumRow(row: Record<string, unknown>, fields: string[]): number {
   return fields.reduce((sum, field) => sum + (Number(row[field]) || 0), 0);
 }
 
 /**
- * Emissions read top-of-stack first (the reverse of the stacking order) so the
+ * Emissions read top-of-stack first (the reverse of stacking order) so the
  * legend runs in the same visual order as the bar segments; removals stack
- * downward, so their stacking order already matches. Both match the design.
+ * downward, so their order already matches. Both match the design.
  */
-function buildLegend(specs: NetFluxSeriesSpec[]): NetFluxLegend {
-  const toItem = (s: NetFluxSeriesSpec): NetFluxLegendItem => ({
-    label: s.label,
-    color: s.color,
+function buildLegend(fields: string[]): NetFluxLegend {
+  const item = (field: string, i: number): NetFluxLegendItem => ({
+    label: seriesLabel(field),
+    color: seriesColor(field, i, fields.length),
   });
+  const emissions = fields.filter((f) => seriesGroup(f) === "emissions");
+  const removals = fields.filter((f) => seriesGroup(f) === "removals");
   return {
     layout: "grouped",
-    emissions: specs
-      .filter((s) => s.group === "emissions")
-      .reverse()
-      .map(toItem),
-    removals: specs.filter((s) => s.group === "removals").map(toItem),
+    emissions: emissions.map(item).reverse(),
+    removals: removals.map(item),
   };
 }
 
 /**
- * Derives the chart data, series, colours and legend for one DETAIL × MEASURE
- * combination from the single full-detail, gross-measure widget held in the
- * store. The net-flux line is always the arithmetic sum of the bars shown —
- * verified against the design's own tooltips, whose per-variant rows reproduce
- * the same net flux at every detail level.
+ * Narrows one of the backend's three time-series charts to the active measure.
+ *
+ * The detail level is no longer derived here: project-zeno's `LGMSChartGenerator`
+ * ships Full detail / Category / Summary as three separate charts, so this only
+ * decides gross-vs-net and supplies the palette, labels and the net-flux line
+ * (which the backend does not send as a column).
  */
 export function deriveNetFluxVariant(
   widget: InsightWidget,
-  detail: NetFluxDetail,
   measure: NetFluxMeasure
 ): NetFluxVariant {
   const xAxis = widget.xAxis;
   const rows = Array.isArray(widget.data)
     ? (widget.data as Record<string, unknown>[])
     : [];
+  // Trust the backend's order: emissions first, then removals, which is the
+  // stacking order the design draws.
+  const fields = (widget.seriesFields ?? []).filter(
+    (f) => seriesGroup(f) !== null
+  );
 
   if (measure === "net") {
     const data = rows.map((row) => {
-      const net = sumRow(row, NET_FLUX_FULL_DETAIL_FIELDS);
+      const net = sumRow(row, fields);
       return {
         [xAxis]: row[xAxis],
         [NET_MEASURE_FIELD]: net,
@@ -313,8 +202,9 @@ export function deriveNetFluxVariant(
       data,
       seriesFields: [NET_MEASURE_FIELD],
       lineField: NET_FLUX_LINE_FIELD,
-      // Left empty so the divergent positive/negative tint drives the bars.
+      // Left empty so the divergent tint drives the single bar.
       colorMap: {},
+      divergentColors: NET_FLUX_DIVERGENT_COLORS,
       legend: {
         layout: "flat",
         emissions: [
@@ -326,20 +216,19 @@ export function deriveNetFluxVariant(
     };
   }
 
-  const specs = DETAIL_SERIES[detail];
-  const seriesFields = specs.map((s) => s.key);
-  const data = rows.map((row) => {
-    const out: Record<string, unknown> = { [xAxis]: row[xAxis] };
-    for (const spec of specs) out[spec.key] = sumRow(row, spec.from);
-    out[NET_FLUX_LINE_FIELD] = sumRow(out, seriesFields);
-    return out;
-  });
+  const data = rows.map((row) => ({
+    ...row,
+    [NET_FLUX_LINE_FIELD]: sumRow(row, fields),
+  }));
 
   return {
     data,
-    seriesFields,
+    seriesFields: fields,
     lineField: NET_FLUX_LINE_FIELD,
-    colorMap: Object.fromEntries(specs.map((s) => [s.key, s.color])),
-    legend: buildLegend(specs),
+    colorMap: Object.fromEntries(
+      fields.map((f, i) => [f, seriesColor(f, i, fields.length)])
+    ),
+    divergentColors: NET_FLUX_DIVERGENT_COLORS,
+    legend: buildLegend(fields),
   };
 }
