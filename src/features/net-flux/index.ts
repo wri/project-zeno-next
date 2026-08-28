@@ -15,8 +15,19 @@ export {
   type NetFluxMeasure,
   type NetFluxVariant,
 } from "./model/net-flux-variants";
+export {
+  collapseNetFluxSiblings,
+  netFluxDetailLabel,
+  netFluxWidgetDetailLabel,
+  netFluxGroupKey,
+  netFluxSiblings,
+} from "./model/net-flux-siblings";
 export { netFluxViewKey } from "./model/net-flux-view-store";
-export { useNetFluxView } from "./ui/use-net-flux-view";
+export {
+  useNetFluxDetail,
+  useNetFluxDetailSelection,
+  useNetFluxView,
+} from "./ui/use-net-flux-view";
 export { NetFluxToolbar } from "./ui/NetFluxToolbar";
 export { NetFluxChartBody } from "./ui/NetFluxChartBody";
 export { NetFluxFootnote } from "./ui/NetFluxFootnote";
