@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getDatasetLayerContextProps,
   buildDatasetLayers,
+  toLayerEntries,
 } from "../datasetLayerContext";
 import type { DatasetInfo } from "@/app/types/chat";
 
@@ -172,5 +173,59 @@ describe("buildDatasetLayers", () => {
     expect(layers).toHaveLength(3);
     const ctx = layers[2];
     expect(ctx.parentLayerId).toBe("dataset-12");
+  });
+
+  it("prefers a layer's own dates over the spec's dataset-level dates", () => {
+    const layers = buildDatasetLayers({
+      datasetId: 12,
+      startDate: "2016-01-01",
+      endDate: "2024-12-31",
+      layers: [
+        { name: "agriculture", tileUrl: "https://example.com/agriculture.png" },
+        {
+          name: "lulucf",
+          tileUrl: "https://example.com/lulucf.png",
+          startDate: "2020-01-01",
+          endDate: "2022-12-31",
+        },
+      ],
+    });
+
+    expect(layers[0]).toMatchObject({
+      startDate: "2016-01-01",
+      endDate: "2024-12-31",
+    });
+    expect(layers[1]).toMatchObject({
+      startDate: "2020-01-01",
+      endDate: "2022-12-31",
+    });
+  });
+});
+
+describe("toLayerEntries", () => {
+  it("converts wire-shaped layers to DatasetLayerEntry, carrying per-layer dates", () => {
+    const entries = toLayerEntries([
+      { name: "agriculture", tile_url: "https://example.com/agriculture.png" },
+      {
+        name: "lulucf",
+        tile_url: "https://example.com/lulucf.png",
+        start_date: "2020-01-01",
+        end_date: "2022-12-31",
+      },
+    ]);
+
+    expect(entries).toEqual([
+      { name: "agriculture", tileUrl: "https://example.com/agriculture.png" },
+      {
+        name: "lulucf",
+        tileUrl: "https://example.com/lulucf.png",
+        startDate: "2020-01-01",
+        endDate: "2022-12-31",
+      },
+    ]);
+  });
+
+  it("returns undefined when there are no layers", () => {
+    expect(toLayerEntries(undefined)).toBeUndefined();
   });
 });

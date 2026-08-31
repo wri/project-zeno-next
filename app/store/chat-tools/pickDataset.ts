@@ -8,6 +8,7 @@ import useMapStore from "../mapStore";
 import {
   getDatasetLayerContextProps,
   buildDatasetLayers,
+  toLayerEntries,
 } from "@/app/utils/datasetLayerContext";
 
 export function pickDatasetTool(
@@ -43,10 +44,7 @@ export function pickDatasetTool(
         datasetId: dataset.dataset_id,
         layerName: dataset.dataset_name,
         tileUrl: dataset.tile_url,
-        layers: dataset.layers?.map((l) => ({
-          name: l.name,
-          tileUrl: l.tile_url,
-        })),
+        layers: toLayerEntries(dataset.layers),
         ...layerContextProps, // contextLayer / parameters / start+end dates
       }).forEach(addLayer);
 

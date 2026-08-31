@@ -172,6 +172,25 @@ export const IFL_FEATURE_FLAG = "ifl";
 const INTACT_FOREST_TILE_URL =
   "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2025/default/{z}/{x}/{y}.png";
 
+// Shared -45..+45 MgCO2e/ha/yr diverging color scale for LGMS net flux,
+// reused by the combined legend and each sublayer's own legend below (the
+// data range is dataset-wide; only title/info/note/unit differ per layer).
+const LGMS_NET_FLUX_COLOR = "#3D2807";
+const LGMS_NET_FLUX_ITEMS: DatasetLegendConfig["items"] = [
+  { label: "-45.0 (sink)", color: "#003C30" },
+  { color: "#036860" },
+  { color: "#3C9C94" },
+  { color: "#8AD1C6" },
+  { color: "#D0ECE7" },
+  { color: "#F5F2E5" },
+  { color: "#EFDDAF" },
+  { color: "#D4AC62" },
+  { color: "#AC6F20" },
+  { color: "#77470B" },
+  { color: "#4D310A" },
+  { label: "+45.0 (source)", color: LGMS_NET_FLUX_COLOR },
+];
+
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 11,
@@ -582,21 +601,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         legend: {
           title: "LGMS lulucf net flux (2016-2024 average)",
           type: "divergent",
-          color: "#3D2807",
-          items: [
-            { label: "-45.0 (sink)", color: "#003C30" },
-            { color: "#036860" },
-            { color: "#3C9C94" },
-            { color: "#8AD1C6" },
-            { color: "#D0ECE7" },
-            { color: "#F5F2E5" },
-            { color: "#EFDDAF" },
-            { color: "#D4AC62" },
-            { color: "#AC6F20" },
-            { color: "#77470B" },
-            { color: "#4D310A" },
-            { label: "+45.0 (source)", color: "#3D2807" },
-          ],
+          color: LGMS_NET_FLUX_COLOR,
+          items: LGMS_NET_FLUX_ITEMS,
           info: "This layer maps the average annual net greenhouse-gas flux from land use, land-use change and forestry (vegetation and soil) from 2016-2024, showing where land is acting as a net carbon source or sink.",
           note: "Average 2016-2024 LULUCF net flux at the administrative-area level.",
           unit: "Mg CO2e/ha/yr",
@@ -609,21 +615,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
         legend: {
           title: "LGMS agriculture net flux (2016-2024 average)",
           type: "divergent",
-          color: "#3D2807",
-          items: [
-            { label: "-45.0 (sink)", color: "#003C30" },
-            { color: "#036860" },
-            { color: "#3C9C94" },
-            { color: "#8AD1C6" },
-            { color: "#D0ECE7" },
-            { color: "#F5F2E5" },
-            { color: "#EFDDAF" },
-            { color: "#D4AC62" },
-            { color: "#AC6F20" },
-            { color: "#77470B" },
-            { color: "#4D310A" },
-            { label: "+45.0 (source)", color: "#3D2807" },
-          ],
+          color: LGMS_NET_FLUX_COLOR,
+          items: LGMS_NET_FLUX_ITEMS,
           info: "This layer maps the average annual net greenhouse-gas flux from agriculture (cropland and livestock emissions) from 2016-2024, showing where agricultural land is acting as a net carbon source.",
           note: "Average 2016-2024 agriculture net flux at the administrative-area level.",
           unit: "Mg CO2e/ha/yr",
@@ -633,21 +626,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: {
       title: "LGMS net flux (2016-2024 average)",
       type: "divergent",
-      color: "#3D2807",
-      items: [
-        { label: "-45.0 (sink)", color: "#003C30" },
-        { color: "#036860" },
-        { color: "#3C9C94" },
-        { color: "#8AD1C6" },
-        { color: "#D0ECE7" },
-        { color: "#F5F2E5" },
-        { color: "#EFDDAF" },
-        { color: "#D4AC62" },
-        { color: "#AC6F20" },
-        { color: "#77470B" },
-        { color: "#4D310A" },
-        { label: "+45.0 (source)", color: "#3D2807" },
-      ],
+      color: LGMS_NET_FLUX_COLOR,
+      items: LGMS_NET_FLUX_ITEMS,
       info: "This dataset maps the average annual net greenhouse-gas flux from land (2016-2024), combining vegetation, soil, and agricultural emissions and removals, to show where land is acting as a net carbon source or sink.",
       note: "Average 2016-2024 net flux at the administrative-area level.",
       unit: "Mg CO2e/ha/yr",

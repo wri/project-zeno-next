@@ -4,6 +4,7 @@ import { DATASET_BY_ID } from "@/app/constants/datasets";
 import {
   getDatasetLayerContextProps,
   buildDatasetLayers,
+  toLayerEntries,
 } from "@/app/utils/datasetLayerContext";
 
 /**
@@ -82,10 +83,7 @@ export function addSuggestedDatasetToMap(selected: SuggestedDataset): void {
     datasetId: merged.dataset_id,
     layerName: merged.dataset_name,
     tileUrl: merged.tile_url,
-    layers: merged.layers?.map((l) => ({
-      name: l.name,
-      tileUrl: l.tile_url,
-    })),
+    layers: toLayerEntries(merged.layers),
     ...layerContextProps,
   }).forEach(addLayer);
 }

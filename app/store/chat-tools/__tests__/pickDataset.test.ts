@@ -14,6 +14,10 @@ vi.mock("@/app/utils/datasetLayerContext", () => ({
     endDate: undefined,
   }),
   buildDatasetLayers: () => [],
+  toLayerEntries: (
+    layers?: { name: string; tile_url: string }[]
+  ): { name: string; tileUrl: string }[] | undefined =>
+    layers?.map((l) => ({ name: l.name, tileUrl: l.tile_url })),
 }));
 
 import { pickDatasetTool } from "../pickDataset";
