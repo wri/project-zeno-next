@@ -3,6 +3,7 @@ import { Flex, Text } from "@chakra-ui/react";
 
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import type { InsightWidget } from "@/app/types/chat";
+import { formatTick } from "@/src/shared/lib/chart-ticks";
 
 import { netFluxWidgetDetailLabel } from "../model/net-flux-siblings";
 import {
@@ -138,6 +139,9 @@ export function NetFluxChartBody({
         expanded={expanded}
         fitYAxis={fitYAxis}
         fullWidth={fullWidth}
+        yTicks={variant.yTicks}
+        yDomain={variant.yDomain}
+        yTickFormatter={formatTick}
       />
       <NetFluxLegend legend={variant.legend} />
     </Flex>

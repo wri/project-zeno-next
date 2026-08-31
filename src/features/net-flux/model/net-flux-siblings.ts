@@ -17,14 +17,22 @@ export function netFluxGroupKey(widget: InsightWidget): string | null {
   return match ? match[1] : null;
 }
 
+/** "Full Detail" → "Full detail": the design prints the detail in sentence case. */
+function sentenceCase(label: string): string {
+  return label.replace(
+    /\s+(\S)/g,
+    (_, first: string) => ` ${first.toLowerCase()}`
+  );
+}
+
 /**
  * The detail wording for a chart, taken from the backend's own title
- * ("Net GHG Flux — Full Detail" → "Full Detail", "…by Category" → "Category").
+ * ("Net GHG Flux — Full Detail" → "Full detail", "…by Category" → "Category").
  * Falls back to the whole title so an unrecognised one still reads sensibly.
  */
 export function netFluxDetailLabel(title: string): string {
   const emDash = title.split("—");
-  if (emDash.length > 1) return emDash[emDash.length - 1].trim();
+  if (emDash.length > 1) return sentenceCase(emDash[emDash.length - 1].trim());
   const by = title.match(/\bby\s+(.+)$/i);
   if (by) return by[1].trim();
   if (/\bsummary\b/i.test(title)) return "Summary";
@@ -81,4 +89,16 @@ export function collapseNetFluxSiblings(
  */
 export function netFluxWidgetDetailLabel(widget: InsightWidget): string {
   return netFluxDetailLabel(widget.backendTitle ?? widget.title);
+}
+
+/**
+ * The DETAIL pill abbreviates where the card's caption spells out: the design's
+ * pill reads "Full" against a caption of "· Full detail". Only the longest
+ * option needs it, so this is a lookup rather than a rule.
+ */
+const PILL_ABBREVIATIONS: Record<string, string> = { "Full detail": "Full" };
+
+export function netFluxWidgetDetailPillLabel(widget: InsightWidget): string {
+  const label = netFluxWidgetDetailLabel(widget);
+  return PILL_ABBREVIATIONS[label] ?? label;
 }
