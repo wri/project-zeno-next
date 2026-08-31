@@ -4,6 +4,7 @@ import { Flex, Text } from "@chakra-ui/react";
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import type { InsightWidget } from "@/app/types/chat";
 import { formatTick } from "@/src/shared/lib/chart-ticks";
+import { signed } from "@/src/shared/lib/number-format";
 
 import { netFluxWidgetDetailLabel } from "../model/net-flux-siblings";
 import {
@@ -13,11 +14,6 @@ import {
 import { NetFluxHatchDefs, NetFluxLegend } from "./NetFluxLegend";
 
 const EN_DASH = "–";
-
-const signedFormat = new Intl.NumberFormat("en-US", {
-  maximumFractionDigits: 0,
-  signDisplay: "always",
-});
 
 interface NetFluxChartBodyProps {
   /** The widget already narrowed to the active measure. */
@@ -85,11 +81,11 @@ function TimeSeriesHeader({
         fontSize="18px"
         lineHeight="normal"
       >
-        {signedFormat.format(first.value)}{" "}
+        {signed.format(first.value)}{" "}
         <Text as="span" fontSize="12px" color="#565E7B">
           ({first.year})
         </Text>{" "}
-        → {signedFormat.format(last.value)}{" "}
+        → {signed.format(last.value)}{" "}
         <Text as="span" fontSize="12px" color="#565E7B">
           ({last.year})
         </Text>

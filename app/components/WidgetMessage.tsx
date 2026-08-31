@@ -58,6 +58,7 @@ import {
   isNetFluxWidget,
   netFluxViewKey,
   useNetFluxView,
+  type NetFluxVariant,
 } from "@/src/features/net-flux";
 
 interface WidgetMessageProps {
@@ -85,6 +86,50 @@ function AxisBreakIcon({ size = 14 }: { size?: number }) {
       <path d="M4.5 10l5-2" />
       <path d="M7 11v1.5" />
     </svg>
+  );
+}
+
+interface ChartBodyProps {
+  netFluxVariant: NetFluxVariant | null | undefined;
+  isFluxTree: boolean;
+  displayWidget: InsightWidget;
+  netFluxView: ReturnType<typeof useNetFluxView>;
+  fitYAxis: boolean;
+  expanded?: boolean;
+  fullWidth?: boolean;
+}
+
+function ChartBody({
+  netFluxVariant,
+  isFluxTree,
+  displayWidget,
+  netFluxView,
+  fitYAxis,
+  expanded,
+  fullWidth,
+}: ChartBodyProps) {
+  if (netFluxVariant) {
+    return (
+      <NetFluxChartBody
+        widget={displayWidget}
+        variant={netFluxVariant}
+        measure={netFluxView.measure}
+        fitYAxis={fitYAxis}
+        expanded={expanded}
+        fullWidth={fullWidth}
+      />
+    );
+  }
+  if (isFluxTree) {
+    return <GhgFluxTreeBody widget={displayWidget} />;
+  }
+  return (
+    <ChartWidget
+      widget={displayWidget}
+      fitYAxis={fitYAxis}
+      expanded={expanded}
+      fullWidth={fullWidth}
+    />
   );
 }
 
@@ -333,23 +378,14 @@ export default function WidgetMessage({
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <Box ref={chartRef}>
-              {netFluxVariant ? (
-                <NetFluxChartBody
-                  widget={displayWidget}
-                  variant={netFluxVariant}
-                  measure={netFluxView.measure}
-                  fitYAxis={fitYAxis}
-                  fullWidth={fullWidth}
-                />
-              ) : isFluxTree ? (
-                <GhgFluxTreeBody widget={displayWidget} />
-              ) : (
-                <ChartWidget
-                  widget={displayWidget}
-                  fitYAxis={fitYAxis}
-                  fullWidth={fullWidth}
-                />
-              )}
+              <ChartBody
+                netFluxVariant={netFluxVariant}
+                isFluxTree={isFluxTree}
+                displayWidget={displayWidget}
+                netFluxView={netFluxView}
+                fitYAxis={fitYAxis}
+                fullWidth={fullWidth}
+              />
             </Box>
           </WidgetErrorBoundary>
         )}
@@ -550,23 +586,14 @@ export default function WidgetMessage({
                 >
                   <Box flex="1" minW={0}>
                     <WidgetErrorBoundary fallbackTitle="Unable to render chart">
-                      {netFluxVariant ? (
-                        <NetFluxChartBody
-                          widget={displayWidget}
-                          variant={netFluxVariant}
-                          measure={netFluxView.measure}
-                          expanded
-                          fitYAxis={fitYAxis}
-                        />
-                      ) : isFluxTree ? (
-                        <GhgFluxTreeBody widget={displayWidget} />
-                      ) : (
-                        <ChartWidget
-                          widget={displayWidget}
-                          expanded
-                          fitYAxis={fitYAxis}
-                        />
-                      )}
+                      <ChartBody
+                        netFluxVariant={netFluxVariant}
+                        isFluxTree={isFluxTree}
+                        displayWidget={displayWidget}
+                        netFluxView={netFluxView}
+                        fitYAxis={fitYAxis}
+                        expanded
+                      />
                     </WidgetErrorBoundary>
                   </Box>
                   {(widget.description ||

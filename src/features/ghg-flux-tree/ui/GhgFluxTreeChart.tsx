@@ -12,13 +12,13 @@ import {
 } from "recharts";
 
 import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
+import { signed, signedPlain } from "@/src/shared/lib/number-format";
 
 import {
   singleSidedLabel,
   type FluxMeasure,
   type FluxRow,
 } from "../model/hierarchy";
-import { signed, signedPlain } from "./format";
 import {
   AXIS_FONT_SIZE,
   AXIS_HEIGHT,

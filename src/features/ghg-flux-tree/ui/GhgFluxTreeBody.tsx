@@ -2,6 +2,7 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 
 import type { InsightWidget } from "@/app/types/chat";
+import { signed } from "@/src/shared/lib/number-format";
 
 import {
   nodeNet,
@@ -10,7 +11,6 @@ import {
   type FluxMeasure,
 } from "../model/hierarchy";
 import { treeViewKey } from "../model/tree-view-store";
-import { signed } from "./format";
 import { GhgFluxTreeChart } from "./GhgFluxTreeChart";
 import {
   EMISSIONS_COLOR,
