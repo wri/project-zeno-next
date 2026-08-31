@@ -8,7 +8,11 @@ export interface TreeView {
   expanded?: string[];
 }
 
-/** Matches the frames, which are all drawn at the fully-expanded detail. */
+/**
+ * The design's default state: the MEASURE pill reads "Net" in both annual-average
+ * frames. Net draws one signed bar per row and drops the gross-only chrome (the
+ * value subtitle, the `n/a` markers, the net tick and its legend entry).
+ */
 export const DEFAULT_MEASURE: FluxMeasure = "net";
 
 interface TreeViewState {

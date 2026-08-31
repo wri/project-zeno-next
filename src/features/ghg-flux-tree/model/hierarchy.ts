@@ -1,4 +1,5 @@
 import type { InsightWidget } from "@/app/types/chat";
+import { mgToMt } from "@/src/shared/lib/units";
 
 /**
  * The hierarchical GHG-flux node list, as the API serves it.
@@ -131,6 +132,12 @@ function readNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** Backend flux fields arrive in Mg (metric tons); the domain model is Mt. */
+function readMegatonnes(value: unknown): number | null {
+  const parsed = readNumber(value);
+  return parsed === null ? null : mgToMt(parsed);
+}
+
 /**
  * Anti-corruption layer for the chart's row shape. `chartsToWidgets` passes
  * `chart_data` through untouched, so rows arrive in the backend's snake_case;
@@ -149,8 +156,8 @@ export function parseFluxNodes(data: unknown): FluxNode[] {
         id,
         parentId: typeof parentId === "string" && parentId ? parentId : null,
         label: typeof row.label === "string" ? row.label : id,
-        avgEmissions: readNumber(row.avg_emissions),
-        avgRemovals: readNumber(row.avg_removals),
+        avgEmissions: readMegatonnes(row.avg_emissions),
+        avgRemovals: readMegatonnes(row.avg_removals),
       },
     ];
   });

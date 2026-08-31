@@ -138,14 +138,14 @@ describe("expandableIds / isFullyExpanded", () => {
 });
 
 describe("parseFluxNodes", () => {
-  it("maps the backend's snake_case rows onto the domain shape", () => {
+  it("maps the backend's snake_case rows onto the domain shape, converting Mg to Mt", () => {
     const parsed = parseFluxNodes([
       {
         id: "soil",
         parent_id: "land_use",
         label: "Soil",
-        avg_emissions: 820,
-        avg_removals: -40,
+        avg_emissions: 820_000_000,
+        avg_removals: -40_000_000,
       },
     ]);
     expect(parsed).toEqual([
@@ -161,9 +161,15 @@ describe("parseFluxNodes", () => {
 
   it("normalises a null parent to a root and keeps null metrics null", () => {
     const [root] = parseFluxNodes([
-      { id: "all_land", parent_id: null, label: "All land", avg_emissions: 10 },
+      {
+        id: "all_land",
+        parent_id: null,
+        label: "All land",
+        avg_emissions: 10_000_000,
+      },
     ]);
     expect(root.parentId).toBeNull();
+    expect(root.avgEmissions).toBe(10);
     expect(root.avgRemovals).toBeNull();
     expect(rootNodes([root])).toHaveLength(1);
   });
