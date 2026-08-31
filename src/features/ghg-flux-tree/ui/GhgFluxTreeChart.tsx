@@ -11,61 +11,33 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
+
 import {
   singleSidedLabel,
   type FluxMeasure,
   type FluxRow,
 } from "../model/hierarchy";
+import { signed, signedPlain } from "./format";
 import {
+  AXIS_FONT_SIZE,
   AXIS_HEIGHT,
   BAR_SIZE,
   EMISSIONS_COLOR,
   NET_TICK_COLOR,
   PLOT_MARGIN_X,
+  PLOT_MIN_WIDTH,
   REMOVALS_COLOR,
   ROW_HEIGHT,
+  TREE_COLUMN_MAX_WIDTH,
   ZERO_LINE_COLOR,
 } from "./tree-chart-constants";
-
-/**
- * Signed, thousands-separated — the design prints every value with an explicit
- * sign so a reader never has to infer direction from colour alone.
- */
-const signed = new Intl.NumberFormat("en-US", {
-  maximumFractionDigits: 0,
-  signDisplay: "always",
-});
 
 interface PlotRow {
   id: string;
   avgEmissions: number | null;
   avgRemovals: number | null;
   net: number | null;
-}
-
-/** Round step at or above `raw`, from the usual 1/2/2.5/5/10 ladder. */
-function niceStep(raw: number): number {
-  if (!Number.isFinite(raw) || raw <= 0) return 1;
-  const magnitude = 10 ** Math.floor(Math.log10(raw));
-  const base = raw / magnitude;
-  const nice = [1, 2, 2.5, 5, 10].find((candidate) => candidate >= base) ?? 10;
-  return nice * magnitude;
-}
-
-/**
- * Ticks at round multiples of a nice step, which is what the design shows
- * (`-500 0 500`) — recharts' automatic ticks land on the padded data bounds
- * and read as noise (`-216.4 183.6 906.4`). Zero always falls on a multiple,
- * so the zero line is always labelled.
- */
-function niceTicks([min, max]: [number, number]): number[] {
-  const step = niceStep((max - min) / 5);
-  const ticks: number[] = [];
-  for (let t = Math.ceil(min / step) * step; t <= max; t += step) {
-    // Snap to the step grid so float drift can't produce -0 or 499.9999.
-    ticks.push(Math.round(t / step) * step);
-  }
-  return ticks;
 }
 
 /**
@@ -180,6 +152,10 @@ function TreeLabel({
         <Box w="12px" flexShrink={0} />
       )}
       <Text
+        flex="1"
+        minW={0}
+        truncate
+        title={row.node.label}
         fontFamily="body"
         fontSize={isRoot ? "15px" : "13px"}
         fontWeight={isRoot || row.hasChildren ? "medium" : "normal"}
@@ -231,9 +207,9 @@ function ValueCell({ row, measure }: { row: FluxRow; measure: FluxMeasure }) {
           css={{ fontVariantNumeric: "tabular-nums" }}
         >
           {showPair
-            ? `${signed.format(row.node.avgRemovals ?? 0)}/${signed.format(
-                row.node.avgEmissions ?? 0
-              )}`
+            ? `${signedPlain.format(
+                row.node.avgRemovals ?? 0
+              )}/${signedPlain.format(row.node.avgEmissions ?? 0)}`
             : (single ?? "")}
         </Text>
       )}
@@ -288,15 +264,38 @@ export function GhgFluxTreeChart({
   return (
     <Flex align="flex-start" w="full">
       {/* Tree column */}
-      <Flex direction="column" flexShrink={0}>
+      {/* Basis 0, not auto: with `auto` the column claims its longest label's
+          width up front and squeezes the plot below its floor, collapsing the
+          axis. Sharing free space instead lets the plot keep its minimum and
+          the labels clip, which is the degradation the design intends. */}
+      <Flex
+        direction="column"
+        flex="1 1 0"
+        minW={0}
+        maxW={`${TREE_COLUMN_MAX_WIDTH}px`}
+      >
         <Box h={`${AXIS_HEIGHT}px`} />
         {rows.map((row) => (
           <TreeLabel key={row.node.id} row={row} onToggle={onToggle} />
         ))}
       </Flex>
 
-      {/* Plot column */}
-      <Box flex="1" minW="80px" position="relative">
+      {/* Plot column.
+          The tick font has to be set in CSS, not through recharts' `tick`
+          prop: that renders an SVG `font-size` *presentation attribute*, which
+          loses to any matching CSS rule — Chakra's reset wins, and the labels
+          silently render at the inherited 16px. That is what made five axis
+          labels impossible to fit. */}
+      <Box
+        flex="1"
+        minW={`${PLOT_MIN_WIDTH}px`}
+        position="relative"
+        css={{
+          "& .recharts-cartesian-axis-tick-value": {
+            fontSize: `${AXIS_FONT_SIZE}px`,
+          },
+        }}
+      >
         <ResponsiveContainer width="100%" height={height}>
           <BarChart
             data={plotRows}
@@ -314,13 +313,15 @@ export function GhgFluxTreeChart({
               orientation="top"
               domain={domain}
               ticks={ticks}
-              // Without this recharts' default interval quietly drops ticks it
-              // thinks would crowd, losing the negative end of the scale.
+              // Render every tick `niceTicks` chose. Letting recharts thin them
+              // (`preserveStart` and friends) can drop the zero tick, which the
+              // design always labels and the bars are measured against.
               interval={0}
+              tickFormatter={formatTick}
               height={AXIS_HEIGHT}
               tickLine={false}
               axisLine={{ stroke: "#E7EBF5" }}
-              tick={{ fontSize: 10, fill: "#9AA0AB" }}
+              tick={{ fontSize: AXIS_FONT_SIZE, fill: "#9AA0AB" }}
             />
             <YAxis type="category" dataKey="id" hide />
             <ReferenceLine x={0} stroke={ZERO_LINE_COLOR} strokeWidth={1} />

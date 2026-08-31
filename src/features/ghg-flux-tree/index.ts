@@ -6,16 +6,8 @@
  * LGMS analysis — plus the MEASURE control the design places outside the widget
  * card. Consumers import ONLY from this barrel.
  */
-export {
-  isFluxTreeWidget,
-  nodeNet,
-  parseFluxNodes,
-  singleSidedLabel,
-  visibleRows,
-  type FluxMeasure,
-  type FluxNode,
-  type FluxRow,
-} from "./model/hierarchy";
+export { isFluxTreeWidget } from "./model/hierarchy";
 export { treeViewKey } from "./model/tree-view-store";
+export { FLUX_TREE_CARD_WIDTH } from "./ui/tree-chart-constants";
 export { GhgFluxTreeBody } from "./ui/GhgFluxTreeBody";
 export { GhgFluxMeasurePill } from "./ui/GhgFluxMeasurePill";
