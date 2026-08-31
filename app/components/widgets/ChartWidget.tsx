@@ -99,6 +99,21 @@ interface ChartWidgetProps {
    * which the generic legend can't express).
    */
   showLegend?: boolean;
+  /**
+   * Pin the y-axis to specific round-number ticks and the domain that holds
+   * them, instead of letting recharts pick. The curated net-flux card does
+   * this so its axis reads `1500 1000 500 0 -500` exactly as the design draws
+   * it. Both must be supplied together — ticks outside the domain don't render.
+   */
+  yTicks?: number[];
+  yDomain?: [number, number];
+  /**
+   * Format y-axis tick labels. Defaults to the shared `formatYAxisLabel`, which
+   * compacts at ≥1000 ("1.5K"); the net-flux card overrides it to print plain
+   * integers. Also drives the tick-width measurement, so the axis gutter is
+   * sized for the strings actually rendered.
+   */
+  yTickFormatter?: (value: number) => string;
 }
 
 /** Chart types where a fit-to-data y-axis is honest and useful. */
@@ -338,6 +353,9 @@ export default function ChartWidget({
   fitYAxis = false,
   fullWidth = false,
   showLegend = true,
+  yTicks,
+  yDomain,
+  yTickFormatter,
 }: ChartWidgetProps) {
   const {
     data,
@@ -467,6 +485,12 @@ export default function ChartWidget({
   let hasNegativeValues = false;
   let dataMinValue = Infinity;
   let dataMaxValue = -Infinity;
+  // The gutter has to be sized for the strings actually rendered, so the
+  // measurement below uses whatever formatter the axis will use.
+  const yTickLabel = (value: number) =>
+    yTickFormatter
+      ? yTickFormatter(value)
+      : String(formatYAxisLabel(value, yAxis));
   for (const row of formattedData) {
     const xFormatted =
       type === "scatter"
@@ -480,11 +504,14 @@ export default function ChartWidget({
       if (v < 0) hasNegativeValues = true;
       dataMinValue = Math.min(dataMinValue, v);
       dataMaxValue = Math.max(dataMaxValue, v);
-      longestYTickChars = Math.max(
-        longestYTickChars,
-        formatYAxisLabel(v, yAxis).length
-      );
+      longestYTickChars = Math.max(longestYTickChars, yTickLabel(v).length);
     }
+  }
+
+  // Pinned ticks can sit outside the data range (the domain is padded out to
+  // the next round number), so they get measured too.
+  for (const tick of yTicks ?? []) {
+    longestYTickChars = Math.max(longestYTickChars, yTickLabel(tick).length);
   }
 
   const xAxisHeight = needsAngledTicks
@@ -786,20 +813,28 @@ export default function ChartWidget({
                 width={yAxisWidth}
                 tickMargin={TICK_MARGIN}
                 tickFormatter={(value: number) =>
-                  String(formatYAxisLabel(value, chart.key(yAxis)))
+                  yTickFormatter
+                    ? yTickFormatter(value)
+                    : String(formatYAxisLabel(value, chart.key(yAxis)))
                 }
+                ticks={yTicks}
+                // Every pinned tick is rendered; letting recharts thin them
+                // can drop the zero tick the bars are measured against.
+                interval={yTicks ? 0 : undefined}
                 axisLine={false}
                 tickLine={false}
                 // Default: floor at 0 for all-positive data, but extend below
                 // zero for divergent datasets (e.g. GHG net flux sinks) so
                 // negative bars aren't clipped. "Fit y-axis" rescales to the
-                // data range for flat line/area/scatter series.
+                // data range for flat line/area/scatter series. A caller-pinned
+                // domain wins over both — it's what holds the pinned ticks.
                 domain={
-                  fitYAxis &&
+                  yDomain ??
+                  (fitYAxis &&
                   AXIS_FIT_TYPES.has(type) &&
                   Number.isFinite(dataMinValue)
                     ? [niceFloor(dataMinValue, dataMaxValue), "auto"]
-                    : [(dataMin: number) => Math.min(0, dataMin), "auto"]
+                    : [(dataMin: number) => Math.min(0, dataMin), "auto"])
                 }
                 // Without this, recharts re-expands a fitted domain to cover
                 // the 0 baseline that area fills contribute.
