@@ -11,6 +11,46 @@ import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
 export interface DatasetLayerEntry {
   name: string;
   tileUrl: string;
+  // Falls back to the spec's dataset-level startDate/endDate when a layer
+  // doesn't declare its own (true for every dataset today, including LGMS's
+  // two placeholder layers — see the TODO in datasets.ts).
+  startDate?: string;
+  endDate?: string;
+}
+
+// Maps a backend/catalog layer's wire shape ({name, tile_url, start_date?,
+// end_date?}) to DatasetLayerEntry. The one place this conversion lives, so
+// pickDatasetTool, nudgeDataset and the static DATASET_CARDS catalog can't
+// drift out of sync with each other or with buildDatasetLayers.
+export function toLayerEntries(
+  layers:
+    | {
+        name: string;
+        tile_url: string;
+        start_date?: string;
+        end_date?: string;
+      }[]
+    | undefined
+): DatasetLayerEntry[] | undefined {
+  return layers?.map((l) => ({
+    name: l.name,
+    tileUrl: l.tile_url,
+    startDate: l.start_date,
+    endDate: l.end_date,
+  }));
+}
+
+// The map layer id for one of a dataset's declared layers. The primary
+// (index 0) layer keeps the plain `dataset-${id}` id — legend/removeDatasetLayers/
+// exportToAI key off `datasetId`, not this string, but call sites that also
+// need the concrete id (e.g. CatalogPanel) must derive it the same way
+// buildDatasetLayers does, so this is the one place that formula lives.
+export function datasetLayerId(
+  datasetId: number,
+  index: number,
+  name: string
+): string {
+  return index === 0 ? `dataset-${datasetId}` : `dataset-${datasetId}-${name}`;
 }
 
 // Minimal description of a dataset's map presence. Produced by the dataset-card
@@ -63,18 +103,17 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
         : [];
   if (entries.length === 0) return [];
 
-  const primaryLayerId = `dataset-${spec.datasetId}`;
+  const primaryLayerId = datasetLayerId(spec.datasetId, 0, entries[0].name);
   const layers: Layer[] = entries.map((entry, index) => ({
-    id:
-      index === 0 ? primaryLayerId : `dataset-${spec.datasetId}-${entry.name}`,
+    id: datasetLayerId(spec.datasetId, index, entry.name),
     name: entry.name,
     type: "raster",
     visible: true,
     tileUrl: entry.tileUrl,
     datasetId: spec.datasetId,
     parameters: spec.parameters,
-    startDate: spec.startDate,
-    endDate: spec.endDate,
+    startDate: entry.startDate ?? spec.startDate,
+    endDate: entry.endDate ?? spec.endDate,
   }));
 
   if (spec.contextLayer) {

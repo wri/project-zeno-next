@@ -26,6 +26,22 @@ export const emptyContextKeys = (): ContextKeys => ({
   daterange: null,
 });
 
+// The `dataset` slot's identity key. Only a dataset that *declares* more than
+// one layer carries sublayer names in the key — an ordinary single-layer
+// dataset is already fully identified by its id — so toggling a sibling
+// layer on/off re-announces context, but a single-layer dataset's key stays
+// stable. Shared by deriveContext (from live map layers) and chatStore's
+// pick_dataset fold (from the tool result's own `layers`), which must agree
+// on this format or the agent's own picks get echoed back as "new".
+export function datasetContextKey(
+  datasetId: number,
+  declaredLayerNames: string[],
+  activeLayerNames: string[]
+): string {
+  const activeLayers = declaredLayerNames.length > 1 ? activeLayerNames : [];
+  return `${datasetId}:${[...activeLayers].sort().join(",")}`;
+}
+
 export interface DerivedContext {
   // Full payload for every slot currently present (before deduplication).
   uiContext: UiContext;
@@ -147,18 +163,28 @@ export function deriveContext(
       const primaryDatasetLayers = ds.filter(
         (l) => l.datasetId === primaryDatasetId
       );
-      // Only report active_layers for a genuinely multi-layer dataset (more
-      // than one active sibling) — an ordinary single-layer dataset is
-      // already fully identified by `dataset` alone.
+      const declaredLayerNames = (info.layers ?? []).map((l) => l.name);
+      // Filtered to visible: a sibling layer hidden via the catalog panel's
+      // per-layer eye toggle (visible: false, still on the map) shouldn't be
+      // reported as active — matches active_layers' doc comment in chat.ts.
+      const activeLayerNames = primaryDatasetLayers
+        .filter((l) => l.visible)
+        .map((l) => l.name);
+      // Only report active_layers for a genuinely multi-layer dataset —
+      // gated on what the dataset *declares*, not how many are currently
+      // active, so switching down to one visible sublayer still names it
+      // instead of going silent.
       const activeLayers =
-        primaryDatasetLayers.length > 1
-          ? primaryDatasetLayers.map((l) => l.name)
-          : [];
+        declaredLayerNames.length > 1 ? activeLayerNames : [];
       uiContext.dataset_selected = {
         dataset: info,
         ...(activeLayers.length > 0 ? { active_layers: activeLayers } : {}),
       };
-      keys.dataset = `${primaryDatasetId}:${[...activeLayers].sort().join(",")}`;
+      keys.dataset = datasetContextKey(
+        primaryDatasetId,
+        declaredLayerNames,
+        activeLayerNames
+      );
     }
   }
 
