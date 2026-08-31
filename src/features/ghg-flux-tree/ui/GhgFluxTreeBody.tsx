@@ -10,6 +10,7 @@ import {
   type FluxMeasure,
 } from "../model/hierarchy";
 import { treeViewKey } from "../model/tree-view-store";
+import { signed } from "./format";
 import { GhgFluxTreeChart } from "./GhgFluxTreeChart";
 import {
   EMISSIONS_COLOR,
@@ -18,11 +19,6 @@ import {
   REMOVALS_COLOR,
 } from "./tree-chart-constants";
 import { useTreeView } from "./use-tree-view";
-
-const signed = new Intl.NumberFormat("en-US", {
-  maximumFractionDigits: 0,
-  signDisplay: "always",
-});
 
 function LegendSwatch({ color }: { color: string }) {
   return <Box w="12px" h="12px" rounded="2px" bg={color} flexShrink={0} />;

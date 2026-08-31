@@ -1,4 +1,6 @@
 import type { InsightWidget } from "@/app/types/chat";
+import { niceTicks } from "@/src/shared/lib/chart-ticks";
+import { mgToMt } from "@/src/shared/lib/units";
 
 export type NetFluxMeasure = "gross" | "net";
 export type NetFluxGroup = "emissions" | "removals";
@@ -52,12 +54,26 @@ const CLASS_LABELS: Record<string, string> = {
   non_trees_remaining_non_trees: "Non-trees remaining non-trees",
   mineral_soil: "Mineral soil",
   organic_soil: "Organic soil",
-  cropland: "Crop management",
-  livestock: "Livestock",
+  // The agriculture classes are a fixed 2020 figure repeated across every year
+  // (the same caveat the card's footnote spells out), which the design surfaces
+  // in the legend itself.
+  cropland: "Cropland management (2020, static)",
+  livestock: "Livestock (2020, static)",
   vegetation: "Vegetation",
   soil: "Soil",
   land_use: "Land use",
   agriculture: "Agriculture",
+};
+
+/**
+ * Shorter labels for the removals column. The two columns sit side by side, so
+ * the design lets the removals side drop the qualifier its emissions twin needs
+ * ("Mineral" beside "Mineral soil") — the column heading already supplies it.
+ */
+const REMOVALS_LABELS: Record<string, string> = {
+  trees_remaining_trees: "Trees remaining",
+  non_trees_remaining_non_trees: "Non-trees",
+  mineral_soil: "Mineral",
 };
 
 /**
@@ -111,6 +127,41 @@ export interface NetFluxVariant {
   /** Sign tint for the single-series "net" measure. */
   divergentColors: typeof NET_FLUX_DIVERGENT_COLORS;
   legend: NetFluxLegend;
+  /**
+   * Round-number y-axis ticks and the domain that holds them, so the axis reads
+   * `1500 1000 500 0 -500` as the design draws it rather than recharts' compact
+   * `1.6K`. Passed straight through to `ChartWidget`.
+   */
+  yTicks: number[];
+  yDomain: [number, number];
+}
+
+/**
+ * Vertical extent of a sign-stacked chart: positives stack up from zero and
+ * negatives down, so each row's reach is the sum of each sign separately — not
+ * the largest single value. Zero is always inside, and 4% padding keeps a
+ * full-height bar off the plot edge.
+ */
+function stackDomain(
+  rows: Record<string, unknown>[],
+  fields: string[]
+): [number, number] {
+  let max = 0;
+  let min = 0;
+  for (const row of rows) {
+    let positive = 0;
+    let negative = 0;
+    for (const field of fields) {
+      const value = Number(row[field]);
+      if (!Number.isFinite(value)) continue;
+      if (value > 0) positive += value;
+      else negative += value;
+    }
+    max = Math.max(max, positive);
+    min = Math.min(min, negative);
+  }
+  const pad = Math.max(max - min, 1) * 0.04;
+  return [min - pad, max + pad];
 }
 
 /**
@@ -124,11 +175,15 @@ export function seriesGroup(field: string): NetFluxGroup | null {
   return null;
 }
 
-/** Human label for a series field, derived from its class prefix. */
+/** Human label for a series field, derived from its class prefix and side. */
 export function seriesLabel(field: string): string {
   const group = seriesGroup(field);
   if (!group) return field;
   const className = field.slice(0, -(group.length + 1));
+  if (group === "removals") {
+    const short = REMOVALS_LABELS[className];
+    if (short) return short;
+  }
   return CLASS_LABELS[className] ?? className.replace(/_/g, " ");
 }
 
@@ -146,6 +201,30 @@ function seriesColor(field: string, index: number, total: number): string {
 
 function sumRow(row: Record<string, unknown>, fields: string[]): number {
   return fields.reduce((sum, field) => sum + (Number(row[field]) || 0), 0);
+}
+
+/**
+ * The backend's flux fields (`{class}_emissions` / `{class}_removals`) arrive
+ * in Mg (metric tons), unconverted; the design's axis and headline are
+ * labelled "Mt CO2e/yr", so every series field is scaled to megatonnes here,
+ * before either the bars or the derived net-flux line read it. A field that
+ * is absent or non-numeric on a given row (the metric doesn't apply there)
+ * passes through untouched rather than becoming a fabricated 0.
+ */
+function scaleRowsToMegatonnes(
+  rows: Record<string, unknown>[],
+  fields: string[]
+): Record<string, unknown>[] {
+  return rows.map((row) => {
+    const scaled: Record<string, unknown> = { ...row };
+    for (const field of fields) {
+      const raw = row[field];
+      if (typeof raw === "number" && Number.isFinite(raw)) {
+        scaled[field] = mgToMt(raw);
+      }
+    }
+    return scaled;
+  });
 }
 
 /**
@@ -180,7 +259,7 @@ export function deriveNetFluxVariant(
   measure: NetFluxMeasure
 ): NetFluxVariant {
   const xAxis = widget.xAxis;
-  const rows = Array.isArray(widget.data)
+  const rawRows = Array.isArray(widget.data)
     ? (widget.data as Record<string, unknown>[])
     : [];
   // Trust the backend's order: emissions first, then removals, which is the
@@ -188,6 +267,7 @@ export function deriveNetFluxVariant(
   const fields = (widget.seriesFields ?? []).filter(
     (f) => seriesGroup(f) !== null
   );
+  const rows = scaleRowsToMegatonnes(rawRows, fields);
 
   if (measure === "net") {
     const data = rows.map((row) => {
@@ -198,6 +278,7 @@ export function deriveNetFluxVariant(
         [NET_FLUX_LINE_FIELD]: net,
       };
     });
+    const yDomain = stackDomain(data, [NET_MEASURE_FIELD]);
     return {
       data,
       seriesFields: [NET_MEASURE_FIELD],
@@ -205,6 +286,8 @@ export function deriveNetFluxVariant(
       // Left empty so the divergent tint drives the single bar.
       colorMap: {},
       divergentColors: NET_FLUX_DIVERGENT_COLORS,
+      yDomain,
+      yTicks: niceTicks(yDomain),
       legend: {
         layout: "flat",
         emissions: [
@@ -220,6 +303,7 @@ export function deriveNetFluxVariant(
     ...row,
     [NET_FLUX_LINE_FIELD]: sumRow(row, fields),
   }));
+  const yDomain = stackDomain(data, fields);
 
   return {
     data,
@@ -229,6 +313,8 @@ export function deriveNetFluxVariant(
       fields.map((f, i) => [f, seriesColor(f, i, fields.length)])
     ),
     divergentColors: NET_FLUX_DIVERGENT_COLORS,
+    yDomain,
+    yTicks: niceTicks(yDomain),
     legend: buildLegend(fields),
   };
 }

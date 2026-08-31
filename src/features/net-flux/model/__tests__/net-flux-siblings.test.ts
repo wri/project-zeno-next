@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collapseNetFluxSiblings,
   netFluxDetailLabel,
+  netFluxWidgetDetailPillLabel,
   netFluxGroupKey,
   netFluxSiblings,
   netFluxWidgetDetailLabel,
@@ -59,9 +60,9 @@ describe("netFluxGroupKey", () => {
 });
 
 describe("netFluxDetailLabel", () => {
-  it("reads the detail off the backend's own titles", () => {
+  it("reads the detail off the backend's own titles, in sentence case", () => {
     expect(netFluxDetailLabel("Net GHG Flux — Full Detail")).toBe(
-      "Full Detail"
+      "Full detail"
     );
     expect(netFluxDetailLabel("Net GHG Flux by Category")).toBe("Category");
     expect(netFluxDetailLabel("Net GHG Flux Summary")).toBe("Summary");
@@ -69,6 +70,19 @@ describe("netFluxDetailLabel", () => {
 
   it("falls back to the whole title when it recognises nothing", () => {
     expect(netFluxDetailLabel("Something else")).toBe("Something else");
+  });
+});
+
+describe("netFluxWidgetDetailPillLabel", () => {
+  it("abbreviates only the longest option, as the design's pill does", () => {
+    const pill = (backendTitle: string) =>
+      netFluxWidgetDetailPillLabel({
+        ...chart("ins1-chart-0", "Land GHG Monitoring System (LGMS) in Peru"),
+        backendTitle,
+      });
+    expect(pill("Net GHG Flux — Full Detail")).toBe("Full");
+    expect(pill("Net GHG Flux by Category")).toBe("Category");
+    expect(pill("Net GHG Flux Summary")).toBe("Summary");
   });
 });
 
@@ -83,7 +97,7 @@ describe("netFluxWidgetDetailLabel", () => {
   it("reads the backend title through the display-title override", () => {
     expect(
       netFluxWidgetDetailLabel(overridden("Net GHG Flux — Full Detail"))
-    ).toBe("Full Detail");
+    ).toBe("Full detail");
     expect(
       netFluxWidgetDetailLabel(overridden("Net GHG Flux by Category"))
     ).toBe("Category");
@@ -102,7 +116,7 @@ describe("netFluxWidgetDetailLabel", () => {
   });
 
   it("falls back to title when no backend title was preserved", () => {
-    expect(netFluxWidgetDetailLabel(FULL)).toBe("Full Detail");
+    expect(netFluxWidgetDetailLabel(FULL)).toBe("Full detail");
   });
 });
 

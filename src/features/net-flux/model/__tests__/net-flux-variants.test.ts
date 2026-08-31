@@ -28,17 +28,20 @@ const CATEGORY_WIDGET: InsightWidget = {
   data: [
     {
       year: 2020,
-      vegetation_emissions: 530,
-      soil_emissions: 820,
-      cropland_emissions: 150,
-      livestock_emissions: 100,
-      vegetation_removals: -710,
-      soil_removals: -40,
+      // The backend's flux fields are Mg (metric tons), unconverted — these
+      // round-number-in-megatonnes values are chosen so `deriveNetFluxVariant`'s
+      // Mg→Mt scaling produces the same friendly numbers the tests assert on.
+      vegetation_emissions: 530_000_000,
+      soil_emissions: 820_000_000,
+      cropland_emissions: 150_000_000,
+      livestock_emissions: 100_000_000,
+      vegetation_removals: -710_000_000,
+      soil_removals: -40_000_000,
     },
   ],
 };
 
-// 530 + 820 + 150 + 100 - 710 - 40
+// (530 + 820 + 150 + 100 - 710 - 40) once scaled from Mg to Mt
 const NET = 850;
 
 describe("seriesGroup", () => {
@@ -56,15 +59,32 @@ describe("seriesGroup", () => {
 describe("seriesLabel", () => {
   it("maps the class prefix to the backend's own display label", () => {
     expect(seriesLabel("tree_loss_emissions")).toBe("Tree loss");
-    expect(seriesLabel("non_trees_remaining_non_trees_removals")).toBe(
-      "Non-trees remaining non-trees"
-    );
+    expect(seriesLabel("organic_soil_emissions")).toBe("Organic soil");
     expect(seriesLabel("land_use_removals")).toBe("Land use");
   });
 
-  it("names the two agriculture classes the backend does not label", () => {
-    expect(seriesLabel("cropland_emissions")).toBe("Crop management");
-    expect(seriesLabel("livestock_emissions")).toBe("Livestock");
+  it("shortens the removals side where the design pairs the two columns", () => {
+    expect(seriesLabel("trees_remaining_trees_emissions")).toBe(
+      "Trees remaining trees"
+    );
+    expect(seriesLabel("trees_remaining_trees_removals")).toBe(
+      "Trees remaining"
+    );
+    expect(seriesLabel("non_trees_remaining_non_trees_emissions")).toBe(
+      "Non-trees remaining non-trees"
+    );
+    expect(seriesLabel("non_trees_remaining_non_trees_removals")).toBe(
+      "Non-trees"
+    );
+    expect(seriesLabel("mineral_soil_emissions")).toBe("Mineral soil");
+    expect(seriesLabel("mineral_soil_removals")).toBe("Mineral");
+  });
+
+  it("marks the two agriculture classes as the fixed 2020 figure", () => {
+    expect(seriesLabel("cropland_emissions")).toBe(
+      "Cropland management (2020, static)"
+    );
+    expect(seriesLabel("livestock_emissions")).toBe("Livestock (2020, static)");
   });
 
   it("degrades readably for a class it has never seen", () => {
@@ -99,8 +119,8 @@ describe("deriveNetFluxVariant — gross", () => {
     expect(legend.layout).toBe("grouped");
     // Reversed relative to stacking order, so it reads down the bar.
     expect(legend.emissions.map((i) => i.label)).toEqual([
-      "Livestock",
-      "Crop management",
+      "Livestock (2020, static)",
+      "Cropland management (2020, static)",
       "Soil",
       "Vegetation",
     ]);
@@ -144,6 +164,38 @@ describe("deriveNetFluxVariant — net", () => {
   });
 });
 
+describe("deriveNetFluxVariant — y axis", () => {
+  it("pins the round-number ticks the design draws", () => {
+    // The frame's 2020 column: +1600 emissions stacked, -750 removals.
+    const { yTicks, yDomain } = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    expect(yTicks).toEqual([-500, 0, 500, 1000, 1500]);
+    // The domain has to hold every tick, or recharts drops the outliers.
+    expect(yDomain[0]).toBeLessThanOrEqual(-500);
+    expect(yDomain[1]).toBeGreaterThanOrEqual(1500);
+  });
+
+  it("measures the stack, not the largest single series", () => {
+    // Six series none of which exceeds 820, but they stack to 1600.
+    const { yDomain } = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    expect(yDomain[1]).toBeGreaterThan(1600);
+    expect(yDomain[0]).toBeLessThan(-750);
+  });
+
+  it("rescales to the collapsed bar under the net measure", () => {
+    const { yTicks } = deriveNetFluxVariant(CATEGORY_WIDGET, "net");
+    // One +850 bar, so the axis no longer needs to reach 1500.
+    expect(yTicks).toEqual([0, 200, 400, 600, 800]);
+  });
+
+  it("always labels zero", () => {
+    for (const measure of ["gross", "net"] as const) {
+      expect(deriveNetFluxVariant(CATEGORY_WIDGET, measure).yTicks).toContain(
+        0
+      );
+    }
+  });
+});
+
 describe("deriveNetFluxVariant — resilience", () => {
   it("survives an empty payload", () => {
     const empty: InsightWidget = { ...CATEGORY_WIDGET, data: [] };
@@ -154,7 +206,7 @@ describe("deriveNetFluxVariant — resilience", () => {
   it("treats a missing metric on a row as zero, not NaN", () => {
     const sparse: InsightWidget = {
       ...CATEGORY_WIDGET,
-      data: [{ year: 2020, vegetation_emissions: 100 }],
+      data: [{ year: 2020, vegetation_emissions: 100_000_000 }],
     };
     expect(deriveNetFluxVariant(sparse, "gross").data[0]["Net flux"]).toBe(100);
   });
