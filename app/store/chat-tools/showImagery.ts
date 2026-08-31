@@ -43,7 +43,7 @@ async function fetchTileJson(
 }
 
 /**
- * Handles the show_imagery tool: renders the Sentinel-2 mosaic from the
+ * Handles the show_imagery and show_planet_iamgery tools: renders the mosaic from the
  * `imagery` agent-state entry as a raster layer.
  *
  * Each run adds a capture to the imagery legend group. The newest capture is

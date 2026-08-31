@@ -11,6 +11,7 @@ import {
   imageryLegendParams,
   imageryThumbnailUrl,
   isImageryLayerId,
+  isImageryTool,
 } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
 
@@ -131,6 +132,18 @@ describe("titles and ids", () => {
     expect(imageryLayerId("abc123")).toBe("imagery-abc123");
     expect(isImageryLayerId("imagery-abc123")).toBe(true);
     expect(isImageryLayerId("dataset-4")).toBe(false);
+  });
+});
+
+describe("isImageryTool", () => {
+  it("recognises every imagery provider's tool", () => {
+    expect(isImageryTool("show_imagery")).toBe(true);
+    expect(isImageryTool("show_planet_imagery")).toBe(true);
+  });
+
+  it("rejects other tools and a missing name", () => {
+    expect(isImageryTool("pick_dataset")).toBe(false);
+    expect(isImageryTool(undefined)).toBe(false);
   });
 });
 
