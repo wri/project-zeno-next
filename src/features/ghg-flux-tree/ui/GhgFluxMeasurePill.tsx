@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 
 import type { InsightWidget } from "@/app/types/chat";
@@ -30,7 +31,9 @@ export function GhgFluxMeasurePill({
   widget: InsightWidget;
   showDivider?: boolean;
 }) {
-  const nodes = parseFluxNodes(widget.data);
+  // See GhgFluxTreeBody: memoize on the source data so the expansion-seeding
+  // effect in useTreeView doesn't refire on every unrelated re-render.
+  const nodes = useMemo(() => parseFluxNodes(widget.data), [widget.data]);
   const { measure, setMeasure } = useTreeView(treeViewKey(widget), nodes);
 
   return (

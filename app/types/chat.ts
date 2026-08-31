@@ -67,7 +67,14 @@ export interface ChatMessage {
 // Widget types for insights. Extends ChartColorFields with the backend color
 // registry's resolution for this chart (absent for pre-migration insights).
 export interface InsightWidget extends ChartColorFields {
-  id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
+  /**
+   * Stable widget identity: React keys, view-store keys (net-flux/tree),
+   * sibling grouping (net-flux/order-insights), dashboard widget CRUD. NOT
+   * used to resolve `[Chart <id>]` chat markers — those are matched
+   * positionally by array index (see `insight-chat-messages.ts`); the
+   * marker's own id text is discarded.
+   */
+  id?: string;
   /**
    * The chart's own title as the backend sent it, preserved when `title` is
    * overwritten with a "{dataset} in {location}" display title. Charts of one
