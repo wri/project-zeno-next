@@ -43,8 +43,8 @@ async function fetchTileJson(
 }
 
 /**
- * Handles the show_imagery and show_planet_iamgery tools: renders the mosaic from the
- * `imagery` agent-state entry as a raster layer.
+ * Handles the show_imagery and show_planet_imagery tools: renders the mosaic
+ * from the `imagery` agent-state entry as a raster layer.
  *
  * Each run adds a capture to the imagery legend group. The newest capture is
  * shown and earlier ones are hidden (not removed) — the legend's per-capture
