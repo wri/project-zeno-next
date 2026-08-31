@@ -1,7 +1,7 @@
 /**
  * Signed, thousands-separated — the design prints every value with an explicit
- * sign so a reader never has to infer direction from colour alone. Shared by the
- * chart's value column and the body's headline so the two can never drift.
+ * sign so a reader never has to infer direction from colour alone. Shared
+ * across the curated LGMS charts so they can never drift apart.
  */
 export const signed = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
