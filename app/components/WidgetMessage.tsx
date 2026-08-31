@@ -229,7 +229,15 @@ export default function WidgetMessage({
           align="center"
         >
           {WidgetIcons[widget.type]}
-          <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
+          <Heading
+            size="xs"
+            fontWeight="medium"
+            color="primary.fg"
+            m={0}
+            minW={0}
+            truncate
+            title={widget.title}
+          >
             {widget.title}
           </Heading>
         </Flex>

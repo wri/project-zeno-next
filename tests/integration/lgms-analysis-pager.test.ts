@@ -58,12 +58,20 @@ const LGMS_CHARTS: Chart[] = [
   chart(3, "Net GHG Flux — Annual Average", "hierarchical-bar", "", []),
 ];
 
-/** What useAnalysis does to every widget: one shared display title. */
+/**
+ * What useAnalysis does to every widget: the design's per-chart-type title,
+ * with the backend's own kept on `backendTitle` for the DETAIL pill.
+ */
+const DISPLAY_TITLES: Record<string, string> = {
+  "stacked-bar-with-line": "Net flux over time",
+  "hierarchical-bar": "Net GHG flux (annual average)",
+};
+
 function applyDisplayTitle(widgets: InsightWidget[]): InsightWidget[] {
   return widgets.map((w) => ({
     ...w,
     backendTitle: w.title,
-    title: "Land GHG Monitoring System (LGMS) in Peru",
+    title: DISPLAY_TITLES[w.type] ?? w.title,
   }));
 }
 
@@ -102,11 +110,19 @@ describe("LGMS analysis → insight workspace pager", () => {
     expect(entries[1].backendTitle).toBe("Net GHG Flux — Annual Average");
   });
 
+  it("titles the two pager cards as the design names them", () => {
+    const { entries } = pagerEntries();
+    expect(entries.map((w) => w.title)).toEqual([
+      "Net flux over time",
+      "Net GHG flux (annual average)",
+    ]);
+  });
+
   it("keeps the DETAIL labels distinct under the shared display title", () => {
     const { widgets } = pagerEntries();
     const rollUps = widgets.filter(isNetFluxWidget);
     expect(rollUps.map(netFluxWidgetDetailLabel)).toEqual([
-      "Full Detail",
+      "Full detail",
       "Category",
       "Summary",
     ]);
