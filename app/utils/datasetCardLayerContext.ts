@@ -7,11 +7,12 @@ import {
 
 function withYearParam(
   url: string,
-  hasYears: boolean,
   startYear: number | undefined,
   endYear: number | undefined
 ): string {
-  return hasYears ? `${url}&start_year=${startYear}&end_year=${endYear}` : url;
+  return startYear != null && endYear != null
+    ? `${url}&start_year=${startYear}&end_year=${endYear}`
+    : url;
 }
 
 export function getLayerContextFromDatasetCard(
@@ -27,12 +28,10 @@ export function getLayerContextFromDatasetCard(
   return {
     datasetId: card.dataset_id,
     layerName: card.dataset_name,
-    tileUrl:
-      card.tile_url &&
-      withYearParam(card.tile_url, hasYears, startYear, endYear),
+    tileUrl: card.tile_url && withYearParam(card.tile_url, startYear, endYear),
     layers: card.layers?.map((l) => ({
       name: l.name,
-      tileUrl: withYearParam(l.tile_url, hasYears, startYear, endYear),
+      tileUrl: withYearParam(l.tile_url, startYear, endYear),
     })),
     ...(hasYears
       ? {
