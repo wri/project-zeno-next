@@ -42,6 +42,7 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import type { DatasetInfo } from "@/app/types/chat";
 import { datasetCardLayers } from "@/app/utils/datasetCardLayerContext";
+import { datasetLayerId } from "@/app/utils/datasetLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
@@ -242,18 +243,15 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
     onClose: onInfoClose,
   } = useDisclosure();
 
-  // A dataset's layer ids: `dataset-${id}` for the primary layer, and
-  // `dataset-${id}-${name}` for each sibling (see buildDatasetLayers). Single-
-  // layer cards fall back to a synthesized one-entry list so this stays a
-  // uniform "N layers" loop with no dataset-identity branching.
+  // Single-layer cards fall back to a synthesized one-entry list so this
+  // stays a uniform "N layers" loop with no dataset-identity branching. Ids
+  // are derived by datasetLayerId — the same formula buildDatasetLayers uses
+  // — so a card's rows always match the ids actually on the map.
   const layerRefs = (
     card.layers?.length ? card.layers : [{ name: card.dataset_name }]
   ).map((l, index) => ({
     name: l.name,
-    id:
-      index === 0
-        ? `dataset-${card.dataset_id}`
-        : `dataset-${card.dataset_id}-${l.name}`,
+    id: datasetLayerId(card.dataset_id, index, l.name),
   }));
 
   // The visible dataset layers IS the scope — the layer manager is the source

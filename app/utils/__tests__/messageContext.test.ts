@@ -152,6 +152,48 @@ describe("deriveContext", () => {
     expect(keys.dataset).toBe("12:agriculture,lulucf");
   });
 
+  it("still names the layer when only one sibling of a multi-layer dataset is active", () => {
+    const lulucfLayer: Layer = {
+      id: "dataset-12",
+      name: "lulucf",
+      type: "raster",
+      visible: true,
+      datasetId: 12,
+    };
+    const { uiContext, keys } = deriveContext([lulucfLayer], [], null);
+
+    expect(uiContext.dataset_selected?.active_layers).toEqual(["lulucf"]);
+    // Distinguishable from both "12:" (single-layer dataset) and
+    // "12:agriculture" (the other sibling active instead).
+    expect(keys.dataset).toBe("12:lulucf");
+  });
+
+  it("excludes a sibling layer hidden via the per-layer eye toggle", () => {
+    const agricultureLayer: Layer = {
+      id: "dataset-12",
+      name: "agriculture",
+      type: "raster",
+      visible: true,
+      datasetId: 12,
+    };
+    // Hidden via the catalog panel's eye toggle, not removed from the map.
+    const hiddenLulucfLayer: Layer = {
+      id: "dataset-12-lulucf",
+      name: "lulucf",
+      type: "raster",
+      visible: false,
+      datasetId: 12,
+    };
+    const { uiContext, keys } = deriveContext(
+      [agricultureLayer, hiddenLulucfLayer],
+      [],
+      null
+    );
+
+    expect(uiContext.dataset_selected?.active_layers).toEqual(["agriculture"]);
+    expect(keys.dataset).toBe("12:agriculture");
+  });
+
   it("ignores hidden area layers and context sub-layers", () => {
     const hiddenArea: Layer = { ...aiAreaLayer, id: "hidden", visible: false };
     const subLayer: Layer = {
