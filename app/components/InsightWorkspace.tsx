@@ -35,6 +35,7 @@ import {
   useNetFluxDetailSelection,
 } from "@/src/features/net-flux";
 import {
+  FLUX_TREE_CARD_WIDTH,
   GhgFluxMeasurePill,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
@@ -156,6 +157,7 @@ export default function InsightWorkspace() {
 
   // `insights` is already in pager order, so index 0 is the lead entry.
   const widget = insights[currentIndex];
+  const isFluxTree = isFluxTreeWidget(widget);
   const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
   const hasChips = chips.length > 0;
   // currentIndex 0 = newest (shown as "1 of N"). The Left/Prev arrow
@@ -183,7 +185,22 @@ export default function InsightWorkspace() {
       flex="0 1 auto"
       minH="0"
       overflowY="auto"
-      w="100%"
+      /* The flux tree carries three columns — labels, plot, values — and needs
+         more room than the 420px overlay column gives (`Map.tsx`), which
+         otherwise leaves its label column too narrow to read. It is the only
+         insight that asks for this, so the card widens just for it and every
+         other insight keeps the column width.
+
+         Growing leftward, not rightward: the overlay column is right-anchored,
+         so `alignSelf` pins this to its right edge and the extra width extends
+         back over the map. Below `md` the column already spans the viewport. */
+      w={{
+        base: "100%",
+        md: isFluxTree ? `${FLUX_TREE_CARD_WIDTH}px` : "100%",
+      }}
+      maxW={{ base: "100%", md: "calc(100vw - 2rem)" }}
+      alignSelf={{ base: "stretch", md: "flex-end" }}
+      transition="width 150ms ease-out"
       bg="primary.25"
       border="1px solid"
       borderColor="#DDE2F5"
@@ -293,6 +310,9 @@ export default function InsightWorkspace() {
                 fontWeight="semibold"
                 color="primary.fg"
                 flex={1}
+                minW={0}
+                truncate
+                title={widget.title}
                 mr={2}
                 mb={0}
               >
