@@ -35,6 +35,15 @@ export type ImageryLegendMeta = Partial<
   >
 >;
 
+export const IMAGERY_TOOL_NAMES: readonly string[] = [
+  "show_imagery",
+  "show_planet_imagery",
+];
+
+export function isImageryTool(toolName?: string): boolean {
+  return toolName !== undefined && IMAGERY_TOOL_NAMES.includes(toolName);
+}
+
 export const IMAGERY_LAYER_ID_PREFIX = "imagery-";
 export const IMAGERY_LEGEND_GROUP_ID = "imagery-group";
 export const IMAGERY_LAYER_NAME = "Satellite Imagery";

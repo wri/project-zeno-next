@@ -34,6 +34,7 @@ import { pickAoiTool } from "./chat-tools/pickAoi";
 import { pickDatasetTool } from "./chat-tools/pickDataset";
 import { pullDataTool } from "./chat-tools/pullData";
 import { showImageryTool } from "./chat-tools/showImagery";
+import { isImageryTool } from "@/app/utils/imagery";
 import { queryClient } from "@/app/lib/query-client";
 import { dashboardKeys } from "@/src/features/dashboards/ui/dashboardQueries";
 import {
@@ -303,7 +304,7 @@ async function processStreamMessage(
     if (streamMessage.tool_calls?.includes("generate_insights")) {
       setGeneratingInsight(true);
     }
-    if (streamMessage.tool_calls?.includes("show_imagery")) {
+    if (streamMessage.tool_calls?.some(isImageryTool)) {
       useChatStore.getState().setImageryUpdating(true);
     }
     return;
@@ -315,7 +316,7 @@ async function processStreamMessage(
       setGeneratingInsight(false);
     }
     // Likewise no mosaic is coming — clear the legend's updating state.
-    if (streamMessage.name === "show_imagery") {
+    if (isImageryTool(streamMessage.name)) {
       useChatStore.getState().setImageryUpdating(false);
     }
     // Handle timeout errors specifically
@@ -359,7 +360,7 @@ async function processStreamMessage(
     if (streamMessage.tool_calls?.includes("generate_insights")) {
       setGeneratingInsight(true);
     }
-    if (streamMessage.tool_calls?.includes("show_imagery")) {
+    if (streamMessage.tool_calls?.some(isImageryTool)) {
       useChatStore.getState().setImageryUpdating(true);
     }
     const pending = getPendingTraceId();
@@ -455,12 +456,8 @@ async function processStreamMessage(
       );
       return;
     }
-    // Handling for show_imagery tool: render the Sentinel-2 mosaic on the map.
-    // Deliberately not gated on `streamMessage.imagery`: a result carrying no
-    // payload (no scenes matched, soft backend failure) still has to clear the
-    // updating flag, or the legend sits on "Updating mosaic…" until the turn's
-    // safety net fires. showImageryTool no-ops when the payload is missing.
-    else if (streamMessage.name === "show_imagery") {
+    // Handling for imagery tools: render the imagery mosaic on the map.
+    else if (isImageryTool(streamMessage.name)) {
       // Clear the flag in the same microtask that adds the capture, so the
       // legend swaps "Updating mosaic…" → capture in a single render.
       void Promise.resolve().then(async () => {
