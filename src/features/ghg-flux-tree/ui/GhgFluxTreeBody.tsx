@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
 
 import type { InsightWidget } from "@/app/types/chat";
@@ -60,7 +61,10 @@ function TreeLegend({ measure }: { measure: FluxMeasure }) {
  * vertical bars and a fixed height.
  */
 export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
-  const nodes = parseFluxNodes(widget.data);
+  // `parseFluxNodes` builds a fresh array every call; memoize on the source
+  // data so `useTreeView`'s expansion-seeding effect (keyed on this array's
+  // identity) doesn't refire on every unrelated re-render.
+  const nodes = useMemo(() => parseFluxNodes(widget.data), [widget.data]);
   const { measure, rows, toggleNode, fullyExpanded } = useTreeView(
     treeViewKey(widget),
     nodes
