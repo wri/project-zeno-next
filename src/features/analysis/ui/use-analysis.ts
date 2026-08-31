@@ -47,6 +47,21 @@ function chartDatasetName(
     : datasetName;
 }
 
+/**
+ * The curated LGMS charts carry the title the design gives them rather than the
+ * generic "{dataset} in {location}" one.
+ *
+ * Keyed on chart type, deliberately: the three `stacked-bar-with-line` roll-ups
+ * must resolve to the SAME string. `collapseNetFluxSiblings` surfaces whichever
+ * sibling the DETAIL pill has selected and the workspace renders that widget's
+ * own title, so per-sibling titles would make the card heading flip as the user
+ * changes DETAIL.
+ */
+const CURATED_CHART_TITLES: Record<string, string> = {
+  "stacked-bar-with-line": "Net flux over time",
+  "hierarchical-bar": "Net GHG flux (annual average)",
+};
+
 export type AnalysisStatus = "idle" | "running" | "done" | "error";
 
 export interface UseAnalysis {
@@ -123,27 +138,37 @@ export function useAnalysis(
                 }
               : undefined
           );
-          // Give each widget a "{dataset} in {location}" title matching the
-          // curated insights, when the dataset's name is known (it always is
-          // for this flow's real callers — only test fixtures may omit it).
-          // The name is resolved per chart, not per analysis: a TCL analysis
-          // returns a loss chart AND a GHG-emissions chart, which must not
-          // share one title.
+          // A curated chart takes the title the design names it. Everything
+          // else gets "{dataset} in {location}", when the dataset's name is
+          // known (it always is for this flow's real callers — only test
+          // fixtures may omit it). That name is resolved per chart, not per
+          // analysis: a TCL analysis returns a loss chart AND a GHG-emissions
+          // chart, which must not share one title.
+          //
+          // Either way `backendTitle` keeps the backend's own title — the LGMS
+          // time-series charts all collapse to a single display title, so the
+          // DETAIL pill needs the original to tell them apart.
           const datasetName = selection.dataset.name;
-          const widgets = datasetName
-            ? rawWidgets.map((widget) => ({
+          const widgets = rawWidgets.map((widget) => {
+            const curatedTitle = CURATED_CHART_TITLES[widget.type];
+            if (curatedTitle) {
+              return {
                 ...widget,
-                // Keep the backend's own title: the four LGMS charts of one
-                // analysis all collapse to the same display title, so the
-                // DETAIL pill needs the original to tell them apart.
                 backendTitle: widget.title,
-                title: generateInsightTitle({
-                  datasetName: chartDatasetName(widget, datasetName),
-                  locationName: selection.area.name,
-                  areaLabel: selection.area.name,
-                }),
-              }))
-            : rawWidgets;
+                title: curatedTitle,
+              };
+            }
+            if (!datasetName) return widget;
+            return {
+              ...widget,
+              backendTitle: widget.title,
+              title: generateInsightTitle({
+                datasetName: chartDatasetName(widget, datasetName),
+                locationName: selection.area.name,
+                areaLabel: selection.area.name,
+              }),
+            };
+          });
           // Add the chart and drop the skeleton flag together so the workspace
           // swaps skeleton → chart in one render (no empty flash).
           sink.add(widgets);

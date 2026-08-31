@@ -237,6 +237,115 @@ describe("useAnalysis", () => {
     ]);
   });
 
+  it("titles the curated LGMS charts as the design names them", async () => {
+    // The four charts LGMSChartGenerator returns: three time-series roll-ups
+    // that collapse into one card, plus the hierarchy.
+    const base = {
+      position: 0,
+      xAxis: "year",
+      yAxis: "",
+      colorField: "",
+      stackField: "",
+      groupField: "",
+      seriesFields: [],
+      data: [],
+    };
+    const charts = [
+      {
+        ...base,
+        id: "c0",
+        type: "stacked-bar-with-line",
+        title: "Net GHG Flux — Full Detail",
+      },
+      {
+        ...base,
+        id: "c1",
+        position: 1,
+        type: "stacked-bar-with-line",
+        title: "Net GHG Flux by Category",
+      },
+      {
+        ...base,
+        id: "c2",
+        position: 2,
+        type: "stacked-bar-with-line",
+        title: "Net GHG Flux Summary",
+      },
+      {
+        ...base,
+        id: "c3",
+        position: 3,
+        type: "hierarchical-bar",
+        xAxis: "",
+        title: "Net GHG Flux — Annual Average",
+      },
+    ];
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({ id: "r1", charts }),
+    };
+    const sink: InsightSink = { add: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service, sink));
+
+    act(() => {
+      result.current.run({
+        ...selection,
+        dataset: { id: 4, name: "Land GHG Monitoring System (LGMS)" },
+      });
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+
+    const widgets = (sink.add as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    // All three siblings share one title, so the heading can't flip as the
+    // DETAIL pill changes which one is surfaced.
+    expect(widgets.map((w: { title: string }) => w.title)).toEqual([
+      "Net flux over time",
+      "Net flux over time",
+      "Net flux over time",
+      "Net GHG flux (annual average)",
+    ]);
+    // ...but each keeps its own backend title, which is what the DETAIL pill
+    // parses to label its three options.
+    expect(
+      widgets.map((w: { backendTitle?: string }) => w.backendTitle)
+    ).toEqual([
+      "Net GHG Flux — Full Detail",
+      "Net GHG Flux by Category",
+      "Net GHG Flux Summary",
+      "Net GHG Flux — Annual Average",
+    ]);
+  });
+
+  it("titles the curated charts even when the dataset name is unknown", async () => {
+    const chart = {
+      id: "c0",
+      position: 0,
+      type: "hierarchical-bar",
+      title: "Net GHG Flux — Annual Average",
+      xAxis: "",
+      yAxis: "",
+      colorField: "",
+      stackField: "",
+      groupField: "",
+      seriesFields: [],
+      data: [],
+    };
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({ id: "r1", charts: [chart] }),
+    };
+    const sink: InsightSink = { add: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service, sink));
+
+    act(() => {
+      result.current.run(selection);
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+    expect(sink.add).toHaveBeenCalledWith([
+      expect.objectContaining({ title: "Net GHG flux (annual average)" }),
+    ]);
+  });
+
   it("keeps the chart's own title when the dataset name is unknown", async () => {
     const chart = {
       id: "c1",
