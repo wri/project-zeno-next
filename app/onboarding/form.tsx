@@ -24,6 +24,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
+import RequirementHint from "@/app/onboarding/RequirementHint";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { apiFetch } from "@/app/lib/api-client";
@@ -362,6 +363,12 @@ export default function OnboardingForm({
           useful to you. This tool is experimental, and knowing you better helps
           us improve. Features may change or be removed over time.
         </Text>
+        <Text color="fg.muted" fontSize="xs" mb={6}>
+          <Text as="span" color="red.500">
+            *
+          </Text>{" "}
+          required fields
+        </Text>
         <form onSubmit={handleSubmit}>
           <Grid
             templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
@@ -371,11 +378,7 @@ export default function OnboardingForm({
               <Field.Root id="first-name" required={fieldRequired("firstName")}>
                 <Field.Label>
                   First name
-                  {fieldRequired("firstName") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
+                  <RequirementHint field="firstName" />
                 </Field.Label>
                 <Input
                   type="text"
@@ -390,11 +393,7 @@ export default function OnboardingForm({
               <Field.Root id="last-name" required={fieldRequired("lastName")}>
                 <Field.Label>
                   Last name
-                  {fieldRequired("lastName") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
+                  <RequirementHint field="lastName" />
                 </Field.Label>
                 <Input
                   type="text"
@@ -409,11 +408,7 @@ export default function OnboardingForm({
               <Field.Root id="email" required={fieldRequired("email")}>
                 <Field.Label>
                   Email address
-                  {fieldRequired("email") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
+                  <RequirementHint field="email" />
                 </Field.Label>
                 <Input
                   type="email"
@@ -446,11 +441,7 @@ export default function OnboardingForm({
                   <Select.HiddenSelect />
                   <Select.Label>
                     Sector
-                    {fieldRequired("sector") && (
-                      <Text as="span" color="red.500" ml={1}>
-                        *
-                      </Text>
-                    )}
+                    <RequirementHint field="sector" />
                   </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
@@ -489,11 +480,7 @@ export default function OnboardingForm({
                   <Select.HiddenSelect />
                   <Select.Label>
                     Role
-                    {fieldRequired("role") && (
-                      <Text as="span" color="red.500" ml={1}>
-                        *
-                      </Text>
-                    )}
+                    <RequirementHint field="role" />
                   </Select.Label>
                   <Select.Control _disabled={{ bg: "bg.subtle" }}>
                     <Select.Trigger>
@@ -520,7 +507,10 @@ export default function OnboardingForm({
             </GridItem>
             <GridItem>
               <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
-                <Field.Label>Job title</Field.Label>
+                <Field.Label>
+                  Job title
+                  <RequirementHint field="jobTitle" />
+                </Field.Label>
                 <Input
                   type="text"
                   value={form.jobTitle}
@@ -534,11 +524,7 @@ export default function OnboardingForm({
               <Field.Root id="company" required={fieldRequired("company")}>
                 <Field.Label>
                   Company / Organization
-                  {fieldRequired("company") && (
-                    <Text as="span" color="red.500" ml={1}>
-                      *
-                    </Text>
-                  )}
+                  <RequirementHint field="company" />
                 </Field.Label>
                 <Input
                   type="text"
@@ -547,6 +533,11 @@ export default function OnboardingForm({
                     setForm((p) => ({ ...p, company: e.target.value }))
                   }
                 />
+                <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
+                  Please input your organization or company&rsquo;s name in
+                  full, e.g. &ldquo;World Resources Institute&rdquo; rather than
+                  &ldquo;WRI.&rdquo;
+                </Field.HelperText>
               </Field.Root>
             </GridItem>
             <GridItem>
@@ -562,11 +553,7 @@ export default function OnboardingForm({
                   <Select.HiddenSelect />
                   <Select.Label>
                     Country
-                    {fieldRequired("country") && (
-                      <Text as="span" color="red.500" ml={1}>
-                        *
-                      </Text>
-                    )}
+                    <RequirementHint field="country" />
                   </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
@@ -602,7 +589,10 @@ export default function OnboardingForm({
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Level of technical expertise</Select.Label>
+                  <Select.Label>
+                    Level of technical expertise
+                    <RequirementHint field="expertise" />
+                  </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Level" />
@@ -643,7 +633,10 @@ export default function OnboardingForm({
                   }
                 >
                   <Select.HiddenSelect />
-                  <Select.Label>Preferred language</Select.Label>
+                  <Select.Label>
+                    Preferred language
+                    <RequirementHint field="preferredLanguage" />
+                  </Select.Label>
                   <Select.Control>
                     <Select.Trigger>
                       <Select.ValueText placeholder="Select Language" />
@@ -674,9 +667,7 @@ export default function OnboardingForm({
               <Field.Root id="topics" required={fieldRequired("topics")}>
                 <Field.Label>
                   What topic(s) are you most interested in?
-                  <Text as="span" color="red.500" ml={1}>
-                    *
-                  </Text>
+                  <RequirementHint field="topics" />
                 </Field.Label>
                 <Flex gap={2} flexWrap="wrap" pt={2}>
                   {Object.entries(config?.topics || {}).map(([code, label]) => {
@@ -798,11 +789,7 @@ export default function OnboardingForm({
                   Global Nature Watch AI Privacy Policy
                 </Link>
                 .
-                {fieldRequired("termsAccepted") && (
-                  <Text as="span" color="red.500" ml={1}>
-                    *
-                  </Text>
-                )}
+                <RequirementHint field="termsAccepted" />
               </Checkbox.Label>
             </Checkbox.Root>
             <Flex gap={4}>
