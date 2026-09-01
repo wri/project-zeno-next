@@ -363,6 +363,12 @@ export default function OnboardingForm({
           useful to you. This tool is experimental, and knowing you better helps
           us improve. Features may change or be removed over time.
         </Text>
+        <Text color="fg.muted" fontSize="xs" mb={6}>
+          <Text as="span" color="red.500">
+            *
+          </Text>{" "}
+          required fields
+        </Text>
         <form onSubmit={handleSubmit}>
           <Grid
             templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
