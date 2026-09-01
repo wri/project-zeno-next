@@ -1,6 +1,6 @@
 import z from "zod";
 import {
-  getOnboardingRequiredFields,
+  isOnboardingFieldRequired,
   type OnboardingFieldKey,
 } from "@/app/config/onboarding";
 
@@ -21,10 +21,8 @@ const optionalStringArray = () =>
 const requiredStringArray = () => z.array(z.string()).min(1);
 
 export const getOnboardingFormSchema = () => {
-  const req = getOnboardingRequiredFields();
-
   const str = (key: OnboardingFieldKey) =>
-    req.has(key) ? requiredString() : optionalString();
+    isOnboardingFieldRequired(key) ? requiredString() : optionalString();
 
   return z.object({
     firstName: str("firstName"),
@@ -37,10 +35,12 @@ export const getOnboardingFormSchema = () => {
     country: str("country"),
     expertise: str("expertise"),
     preferredLanguage: str("preferredLanguage"),
-    topics: req.has("topics") ? requiredStringArray() : optionalStringArray(),
+    topics: isOnboardingFieldRequired("topics")
+      ? requiredStringArray()
+      : optionalStringArray(),
     receiveNewsEmails: z.boolean().optional(),
     helpTestFeatures: z.boolean().optional(),
-    termsAccepted: req.has("termsAccepted")
+    termsAccepted: isOnboardingFieldRequired("termsAccepted")
       ? z.literal(true)
       : z.boolean().optional(),
   });
