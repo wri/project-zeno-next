@@ -534,9 +534,9 @@ export default function OnboardingForm({
                   }
                 />
                 <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
-                  Please input your organization or company&rsquo;s name in
-                  full. For example, enter &ldquo;World Resources
-                  Institute&rdquo; rather than &ldquo;WRI.&rdquo;
+                  Please input your organization or company&rsquo;s name in full
+                  e.g. &ldquo;World Resources Institute&rdquo; rather than
+                  &ldquo;WRI.&rdquo;
                 </Field.HelperText>
               </Field.Root>
             </GridItem>
