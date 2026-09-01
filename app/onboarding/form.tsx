@@ -534,8 +534,8 @@ export default function OnboardingForm({
                   }
                 />
                 <Field.HelperText color="fg.muted" fontSize="xs" mt={1}>
-                  Please input your organization or company&rsquo;s name in full
-                  e.g. &ldquo;World Resources Institute&rdquo; rather than
+                  Please input your organization or company&rsquo;s name in
+                  full, e.g. &ldquo;World Resources Institute&rdquo; rather than
                   &ldquo;WRI.&rdquo;
                 </Field.HelperText>
               </Field.Root>

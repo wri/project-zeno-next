@@ -20,7 +20,8 @@ export type OnboardingFieldKey =
  * Single source of truth — this list drives all three of:
  *   - Zod validation (`app/onboarding/schema.ts`), which gates the submit button
  *   - `aria-required` on each `Field.Root`
- *   - the visible red asterisk (`<RequiredMark />` in `app/onboarding/form.tsx`)
+ *   - the visible marker — a red asterisk, or "(Optional)" — rendered by
+ *     `RequirementHint` (`app/onboarding/RequirementHint.tsx`)
  *
  * Any key omitted here is optional. Add or remove a key and the label, the
  * accessibility attribute, and the validation all follow automatically.
