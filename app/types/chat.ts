@@ -198,34 +198,49 @@ export interface StreamMessage {
   dashboard_name?: string;
 }
 
-// Imagery payload written to agent state by the show_imagery tool.
-// tile_url / tilejson_url are absolute URLs to the tiler the backend is
-// configured to use. When TileJSON is unavailable, bounds and zoom limits may
-// be supplied directly. mosaic_id is an opaque recipe token, stable across
-// reruns of the same request.
+export type ImageryProvider = "sentinel-2" | "planet";
+
+// Imagery payload written to agent state by the show_imagery /
+// show_planet_imagery tools. tile_url / tilejson_url are absolute URLs to the
+// tiler the backend is configured to use. When TileJSON is unavailable,
+// bounds and zoom limits may be supplied directly. mosaic_id is an opaque
+// recipe token, stable across reruns of the same request.
+//
+// Since wri/project-zeno#800 the backend serialises every optional field it
+// has no value for as an explicit JSON null (e.g. Planet's monthly basemap
+// has no scene count or cloud stats), so consumers must treat null and
+// undefined alike (`== null`, never `=== undefined`).
 export interface ImageryInfo {
+  // Absent on payloads written before wri/project-zeno#800, which were all
+  // Sentinel-2.
+  provider?: ImageryProvider | null;
   tile_url: string;
-  tilejson_url?: string;
-  bounds?: [number, number, number, number];
-  min_zoom?: number;
-  max_zoom?: number;
+  tilejson_url?: string | null;
+  bounds?: [number, number, number, number] | null;
+  min_zoom?: number | null;
+  max_zoom?: number | null;
   mosaic_id: string;
-  // Scene count and acquired date range; optional because payloads written
-  // before wri/project-zeno#758 omitted them on mosaic cache hits.
-  item_count?: number;
-  date_start?: string;
-  date_end?: string;
+  // Scene count; null/absent when the provider has no per-scene data
+  // (Planet) or on pre-#758 mosaic cache hits.
+  item_count?: number | null;
+  // Acquired date range. Renamed from date_start/date_end by
+  // wri/project-zeno#800; the old names survive on replayed old threads.
+  start_date?: string | null;
+  end_date?: string | null;
+  date_start?: string | null;
+  date_end?: string | null;
   // Observed cloud-cover stats across the mosaic's scenes (%), added by
-  // wri/project-zeno#758 — absent on older payloads.
-  mean_cloud_cover?: number;
-  min_cloud_cover?: number;
-  max_cloud_cover_observed?: number;
-  target_date: string;
+  // wri/project-zeno#758 — absent on older payloads, null for Planet.
+  mean_cloud_cover?: number | null;
+  min_cloud_cover?: number | null;
+  max_cloud_cover_observed?: number | null;
+  target_date?: string | null;
   aoi_names: string[];
   // Search constraints used to build the mosaic. Absent on payloads created
-  // before these fields existed (replayed old threads).
-  window_days?: number;
-  max_cloud_cover?: number;
+  // before these fields existed (replayed old threads), null for Planet
+  // where they don't apply.
+  window_days?: number | null;
+  max_cloud_cover?: number | null;
 }
 
 export interface AOI {

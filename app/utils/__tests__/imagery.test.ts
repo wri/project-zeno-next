@@ -4,25 +4,45 @@ import {
   buildImageryGroup,
   captureMetaLabel,
   formatCaptureDate,
+  imageryAttribution,
   imageryCloudNote,
   imageryLayerId,
   imageryLayerTitle,
   imageryLegendInfo,
   imageryLegendParams,
+  imagerySubtitle,
   imageryThumbnailUrl,
   isImageryLayerId,
   isImageryTool,
 } from "@/app/utils/imagery";
+import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
 
 const fullMeta = {
   item_count: 9,
-  date_start: "2026-06-12",
-  date_end: "2026-06-16",
+  start_date: "2026-06-12",
+  end_date: "2026-06-16",
   target_date: "2026-06-15",
   window_days: 30,
   max_cloud_cover: 50,
   aoi_names: ["Paracas National Reserve"],
+};
+
+// A Planet monthly-basemap payload as the backend actually serialises it
+// (wri/project-zeno#800): fields the provider has no value for are explicit
+// JSON nulls, not omitted.
+const planetMeta: ImageryLegendMeta = {
+  provider: "planet",
+  item_count: null,
+  start_date: "2026-07-01",
+  end_date: "2026-07-31",
+  mean_cloud_cover: null,
+  min_cloud_cover: null,
+  max_cloud_cover_observed: null,
+  target_date: "2026-07-01",
+  window_days: null,
+  max_cloud_cover: null,
+  aoi_names: ["Tabatinga, Amazonas, Brazil"],
 };
 
 describe("imageryLegendParams", () => {
@@ -55,14 +75,36 @@ describe("imageryLegendParams", () => {
 
   it("omits every chip whose metadata is missing", () => {
     expect(imageryLegendParams({})).toEqual([]);
-    expect(imageryLegendParams({ date_start: "2026-06-12" })).toEqual([]);
+    expect(imageryLegendParams({ start_date: "2026-06-12" })).toEqual([]);
     expect(imageryLegendParams({ aoi_names: [] })).toEqual([]);
+  });
+
+  it("reads the legacy date_start/date_end names from old payloads", () => {
+    const params = imageryLegendParams({
+      date_start: "2026-06-12",
+      date_end: "2026-06-16",
+    });
+    expect(params[0]).toMatchObject({
+      label: "DATES",
+      value: "Jun 12 – Jun 16, 2026",
+    });
+  });
+
+  it("treats explicit nulls as absent (Planet monthly basemap payload)", () => {
+    expect(imageryLegendParams(planetMeta)).toEqual([
+      {
+        label: "DATES",
+        value: "Jul 1 – Jul 31, 2026",
+        maxValueWidth: "26ch",
+      },
+      { label: "AREA", value: "Tabatinga, Amazonas, Brazil" },
+    ]);
   });
 
   it("falls back to full dates when a bound is unparseable", () => {
     const params = imageryLegendParams({
-      date_start: "not-a-date",
-      date_end: "2026-06-16",
+      start_date: "not-a-date",
+      end_date: "2026-06-16",
     });
     expect(params[0].value).toBe("not-a-date – Jun 16, 2026");
   });
@@ -89,6 +131,27 @@ describe("imageryLegendInfo", () => {
       "Mean observed cloud cover 12%."
     );
   });
+
+  it("describes and attributes Planet mosaics, skipping null stats", () => {
+    expect(imageryLegendInfo(planetMeta)).toBe(
+      "Planet monthly true-colour mosaic closest to Jul 1, 2026. Imagery © Planet Labs PBC."
+    );
+  });
+});
+
+describe("provider display", () => {
+  it("defaults to Sentinel-2 when the provider is missing or null", () => {
+    expect(imagerySubtitle(undefined)).toBe("Sentinel-2 · True-colour");
+    expect(imagerySubtitle(null)).toBe("Sentinel-2 · True-colour");
+    expect(imageryAttribution(undefined)).toBe(
+      "Contains modified Copernicus Sentinel data"
+    );
+  });
+
+  it("labels and attributes Planet imagery as Planet", () => {
+    expect(imagerySubtitle("planet")).toBe("Planet · Monthly mosaic");
+    expect(imageryAttribution("planet")).toBe("Imagery © Planet Labs PBC");
+  });
 });
 
 describe("imageryCloudNote", () => {
@@ -102,6 +165,7 @@ describe("imageryCloudNote", () => {
     expect(imageryCloudNote({ max_cloud_cover: 20 })).toBeUndefined();
     expect(imageryCloudNote({ max_cloud_cover: 10 })).toBeUndefined();
     expect(imageryCloudNote({})).toBeUndefined();
+    expect(imageryCloudNote({ max_cloud_cover: null })).toBeUndefined();
   });
 });
 
@@ -111,6 +175,13 @@ describe("captureMetaLabel", () => {
     expect(captureMetaLabel({ item_count: 1 })).toBe("1 scene");
     expect(captureMetaLabel({ max_cloud_cover: 20 })).toBe("cloud <20%");
     expect(captureMetaLabel({})).toBe("");
+  });
+
+  it("renders nothing for explicit nulls instead of the string 'null'", () => {
+    expect(captureMetaLabel(planetMeta)).toBe("");
+    expect(captureMetaLabel({ item_count: null, max_cloud_cover: null })).toBe(
+      ""
+    );
   });
 });
 
@@ -188,6 +259,7 @@ describe("buildImageryGroup", () => {
       kind: "imagery",
       id: "imagery-group",
       title: "Satellite Imagery",
+      subtitle: "Sentinel-2 · True-colour",
       opacity: 80,
       updating: false,
       areaCount: 2,
@@ -213,6 +285,15 @@ describe("buildImageryGroup", () => {
       areaLabel: "Pacaya-Samiria",
     });
     expect(group?.captures[0].thumbnailUrl).toContain("/8/128/128");
+  });
+
+  it("labels the group after the live capture's provider", () => {
+    const group = buildImageryGroup(
+      [imageryLayer("imagery-planet:2026-07", {}, planetMeta)],
+      false
+    );
+    expect(group?.subtitle).toBe("Planet · Monthly mosaic");
+    expect(group?.captures[0].metaLabel).toBe("");
   });
 
   it("returns an updating stub when no capture has landed yet", () => {
