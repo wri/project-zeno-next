@@ -43,6 +43,14 @@ export type AssignableDatasetCategoryId = Exclude<
   "all" | "in-conversation"
 >;
 
+/** One of a dataset card's primary, independently-toggleable data layers. */
+export type DatasetCardLayer = {
+  name: string;
+  tile_url: string;
+  /** Falls back to the card's top-level `legend` when omitted. */
+  legend?: DatasetLegendConfig;
+};
+
 export type DatasetCardConfig = {
   dataset_id: number;
   dataset_name: string;
@@ -54,6 +62,13 @@ export type DatasetCardConfig = {
   description: string;
   img?: string;
   tile_url?: string;
+  /**
+   * The dataset's primary layer(s). Most cards omit this and rely on the
+   * single `tile_url` above; LGMS declares two (agriculture, lulucf) that can
+   * be toggled independently. When present, this is authoritative and
+   * `tile_url` is ignored by layer-building code.
+   */
+  layers?: DatasetCardLayer[];
   data_layer?: string;
   context_layer?: string | null;
   threshold?: number | null;
@@ -156,6 +171,25 @@ export const IFL_FEATURE_FLAG = "ifl";
  */
 const INTACT_FOREST_TILE_URL =
   "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2025/default/{z}/{x}/{y}.png";
+
+// Shared -45..+45 MgCO2e/ha/yr diverging color scale for LGMS net flux,
+// reused by the combined legend and each sublayer's own legend below (the
+// data range is dataset-wide; only title/info/note/unit differ per layer).
+const LGMS_NET_FLUX_COLOR = "#3D2807";
+const LGMS_NET_FLUX_ITEMS: DatasetLegendConfig["items"] = [
+  { label: "-45.0 (sink)", color: "#003C30" },
+  { color: "#036860" },
+  { color: "#3C9C94" },
+  { color: "#8AD1C6" },
+  { color: "#D0ECE7" },
+  { color: "#F5F2E5" },
+  { color: "#EFDDAF" },
+  { color: "#D4AC62" },
+  { color: "#AC6F20" },
+  { color: "#77470B" },
+  { color: "#4D310A" },
+  { label: "+45.0 (source)", color: LGMS_NET_FLUX_COLOR },
+];
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
@@ -538,6 +572,67 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       unit: "tCO2e/ha",
     },
   },
+  {
+    dataset_id: 12,
+    dataset_name: "Land GHG Monitoring System (LGMS)",
+    shortName: "LGMS net flux",
+    data_layer: "Land GHG Monitoring System (LGMS)",
+    context_layer: null,
+    img: "/dataset_card_net_flux.webp",
+    cadence: "annual",
+    resolution: "reported per admin area",
+    geographic_coverage:
+      "GADM administrative areas (country, state/province, district) only",
+    provider: "WRI",
+    defaultStartYear: 2016,
+    defaultEndYear: 2024,
+    categories: ["land-use"],
+    description:
+      "Maps annual gross greenhouse-gas emissions, gross CO2 removals, and net GHG flux from land — vegetation, soil, and agriculture — for GADM administrative areas from 2016 to 2024. Values are in MgCO2e; emissions are positive (a source), removals negative (a sink).",
+    // TODO(PZB-1247): both layers currently point at the same combined
+    // net-flux mosaic as a placeholder — project-zeno-data-infra doesn't yet
+    // publish separate agriculture/lulucf COG mosaics. Swap in the real
+    // per-category tile URLs once those pipelines exist.
+    layers: [
+      {
+        name: "lulucf",
+        tile_url:
+          "https://tiles.globalforestwatch.org/cog/mosaic/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=s3://gfw-data-lake/wri_land_ghg_monitoring_system/v1.0.3/raster/epsg-4326/cog/mosaic.json&nodata=0&colormap=%5B%5B%5B-45.0%2C-42.977%5D%2C%5B0%2C60%2C48%2C255%5D%5D%2C%5B%5B-42.977%2C-40.985%5D%2C%5B0%2C67%2C56%2C255%5D%5D%2C%5B%5B-40.985%2C-39.05%5D%2C%5B0%2C75%2C64%2C255%5D%5D%2C%5B%5B-39.05%2C-37.12%5D%2C%5B1%2C82%2C72%2C255%5D%5D%2C%5B%5B-37.12%2C-35.274%5D%2C%5B1%2C89%2C80%2C255%5D%5D%2C%5B%5B-35.274%2C-33.434%5D%2C%5B1%2C97%2C88%2C255%5D%5D%2C%5B%5B-33.434%2C-31.626%5D%2C%5B3%2C104%2C96%2C255%5D%5D%2C%5B%5B-31.626%2C-29.878%5D%2C%5B13%2C113%2C105%2C255%5D%5D%2C%5B%5B-29.878%2C-28.163%5D%2C%5B22%2C121%2C113%2C255%5D%5D%2C%5B%5B-28.163%2C-26.51%5D%2C%5B31%2C130%2C122%2C255%5D%5D%2C%5B%5B-26.51%2C-24.863%5D%2C%5B40%2C139%2C131%2C255%5D%5D%2C%5B%5B-24.863%2C-23.278%5D%2C%5B49%2C147%2C139%2C255%5D%5D%2C%5B%5B-23.278%2C-21.729%5D%2C%5B60%2C156%2C148%2C255%5D%5D%2C%5B%5B-21.729%2C-20.215%5D%2C%5B73%2C166%2C156%2C255%5D%5D%2C%5B%5B-20.215%2C-18.767%5D%2C%5B86%2C175%2C165%2C255%5D%5D%2C%5B%5B-18.767%2C-17.326%5D%2C%5B99%2C184%2C174%2C255%5D%5D%2C%5B%5B-17.326%2C-15.951%5D%2C%5B113%2C194%2C183%2C255%5D%5D%2C%5B%5B-15.951%2C-14.646%5D%2C%5B126%2C203%2C191%2C255%5D%5D%2C%5B%5B-14.646%2C-13.348%5D%2C%5B138%2C209%2C198%2C255%5D%5D%2C%5B%5B-13.348%2C-12.122%5D%2C%5B151%2C214%2C204%2C255%5D%5D%2C%5B%5B-12.122%2C-10.935%5D%2C%5B163%2C219%2C211%2C255%5D%5D%2C%5B%5B-10.935%2C-9.79%5D%2C%5B175%2C224%2C217%2C255%5D%5D%2C%5B%5B-9.79%2C-8.686%5D%2C%5B188%2C229%2C223%2C255%5D%5D%2C%5B%5B-8.686%2C-7.66%5D%2C%5B200%2C234%2C229%2C255%5D%5D%2C%5B%5B-7.66%2C-6.679%5D%2C%5B208%2C236%2C231%2C255%5D%5D%2C%5B%5B-6.679%2C-5.742%5D%2C%5B216%2C238%2C233%2C255%5D%5D%2C%5B%5B-5.742%2C-4.891%5D%2C%5B224%2C240%2C235%2C255%5D%5D%2C%5B%5B-4.891%2C-4.049%5D%2C%5B232%2C242%2C237%2C255%5D%5D%2C%5B%5B-4.049%2C-3.298%5D%2C%5B240%2C244%2C239%2C255%5D%5D%2C%5B%5B-3.298%2C-2.598%5D%2C%5B245%2C244%2C237%2C255%5D%5D%2C%5B%5B-2.598%2C-2.0%5D%2C%5B245%2C242%2C229%2C255%5D%5D%2C%5B%5B-2.0%2C2.0%5D%2C%5B245%2C240%2C221%2C255%5D%5D%2C%5B%5B2.0%2C2.598%5D%2C%5B246%2C237%2C214%2C255%5D%5D%2C%5B%5B2.598%2C3.298%5D%2C%5B246%2C235%2C206%2C255%5D%5D%2C%5B%5B3.298%2C4.049%5D%2C%5B246%2C233%2C198%2C255%5D%5D%2C%5B%5B4.049%2C4.891%5D%2C%5B243%2C228%2C187%2C255%5D%5D%2C%5B%5B4.891%2C5.742%5D%2C%5B239%2C221%2C175%2C255%5D%5D%2C%5B%5B5.742%2C6.679%5D%2C%5B235%2C215%2C163%2C255%5D%5D%2C%5B%5B6.679%2C7.66%5D%2C%5B231%2C208%2C151%2C255%5D%5D%2C%5B%5B7.66%2C8.686%5D%2C%5B227%2C201%2C138%2C255%5D%5D%2C%5B%5B8.686%2C9.79%5D%2C%5B223%2C195%2C126%2C255%5D%5D%2C%5B%5B9.79%2C10.935%5D%2C%5B218%2C184%2C112%2C255%5D%5D%2C%5B%5B10.935%2C12.122%5D%2C%5B212%2C172%2C98%2C255%5D%5D%2C%5B%5B12.122%2C13.348%5D%2C%5B207%2C161%2C84%2C255%5D%5D%2C%5B%5B13.348%2C14.646%5D%2C%5B201%2C150%2C70%2C255%5D%5D%2C%5B%5B14.646%2C15.951%5D%2C%5B196%2C138%2C56%2C255%5D%5D%2C%5B%5B15.951%2C17.326%5D%2C%5B189%2C127%2C44%2C255%5D%5D%2C%5B%5B17.326%2C18.767%5D%2C%5B180%2C119%2C38%2C255%5D%5D%2C%5B%5B18.767%2C20.215%5D%2C%5B172%2C111%2C32%2C255%5D%5D%2C%5B%5B20.215%2C21.729%5D%2C%5B163%2C102%2C26%2C255%5D%5D%2C%5B%5B21.729%2C23.278%5D%2C%5B154%2C94%2C19%2C255%5D%5D%2C%5B%5B23.278%2C24.863%5D%2C%5B145%2C86%2C13%2C255%5D%5D%2C%5B%5B24.863%2C26.51%5D%2C%5B136%2C79%2C10%2C255%5D%5D%2C%5B%5B26.51%2C28.163%5D%2C%5B128%2C75%2C11%2C255%5D%5D%2C%5B%5B28.163%2C29.878%5D%2C%5B119%2C71%2C11%2C255%5D%5D%2C%5B%5B29.878%2C31.626%5D%2C%5B111%2C67%2C12%2C255%5D%5D%2C%5B%5B31.626%2C33.434%5D%2C%5B103%2C63%2C12%2C255%5D%5D%2C%5B%5B33.434%2C35.274%5D%2C%5B94%2C59%2C13%2C255%5D%5D%2C%5B%5B35.274%2C37.12%5D%2C%5B88%2C56%2C12%2C255%5D%5D%2C%5B%5B37.12%2C39.05%5D%2C%5B83%2C53%2C11%2C255%5D%5D%2C%5B%5B39.05%2C40.985%5D%2C%5B77%2C49%2C10%2C255%5D%5D%2C%5B%5B40.985%2C42.977%5D%2C%5B72%2C46%2C9%2C255%5D%5D%2C%5B%5B42.977%2C45.0%5D%2C%5B66%2C43%2C8%2C255%5D%5D%2C%5B%5B45.0%2C1000%5D%2C%5B61%2C40%2C7%2C255%5D%5D%5D",
+        legend: {
+          title: "LGMS lulucf net flux (2016-2024 average)",
+          type: "divergent",
+          color: LGMS_NET_FLUX_COLOR,
+          items: LGMS_NET_FLUX_ITEMS,
+          info: "This layer maps the average annual net greenhouse-gas flux from land use, land-use change and forestry (vegetation and soil) from 2016-2024, showing where land is acting as a net carbon source or sink.",
+          note: "Average 2016-2024 LULUCF net flux at the administrative-area level.",
+          unit: "Mg CO2e/ha/yr",
+        },
+      },
+      {
+        name: "agriculture",
+        tile_url:
+          "https://tiles.globalforestwatch.org/cog/mosaic/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=s3://gfw-data-lake/wri_land_ghg_monitoring_system/v1.0.3/raster/epsg-4326/cog/mosaic.json&nodata=0&colormap=%5B%5B%5B-45.0%2C-42.977%5D%2C%5B0%2C60%2C48%2C255%5D%5D%2C%5B%5B-42.977%2C-40.985%5D%2C%5B0%2C67%2C56%2C255%5D%5D%2C%5B%5B-40.985%2C-39.05%5D%2C%5B0%2C75%2C64%2C255%5D%5D%2C%5B%5B-39.05%2C-37.12%5D%2C%5B1%2C82%2C72%2C255%5D%5D%2C%5B%5B-37.12%2C-35.274%5D%2C%5B1%2C89%2C80%2C255%5D%5D%2C%5B%5B-35.274%2C-33.434%5D%2C%5B1%2C97%2C88%2C255%5D%5D%2C%5B%5B-33.434%2C-31.626%5D%2C%5B3%2C104%2C96%2C255%5D%5D%2C%5B%5B-31.626%2C-29.878%5D%2C%5B13%2C113%2C105%2C255%5D%5D%2C%5B%5B-29.878%2C-28.163%5D%2C%5B22%2C121%2C113%2C255%5D%5D%2C%5B%5B-28.163%2C-26.51%5D%2C%5B31%2C130%2C122%2C255%5D%5D%2C%5B%5B-26.51%2C-24.863%5D%2C%5B40%2C139%2C131%2C255%5D%5D%2C%5B%5B-24.863%2C-23.278%5D%2C%5B49%2C147%2C139%2C255%5D%5D%2C%5B%5B-23.278%2C-21.729%5D%2C%5B60%2C156%2C148%2C255%5D%5D%2C%5B%5B-21.729%2C-20.215%5D%2C%5B73%2C166%2C156%2C255%5D%5D%2C%5B%5B-20.215%2C-18.767%5D%2C%5B86%2C175%2C165%2C255%5D%5D%2C%5B%5B-18.767%2C-17.326%5D%2C%5B99%2C184%2C174%2C255%5D%5D%2C%5B%5B-17.326%2C-15.951%5D%2C%5B113%2C194%2C183%2C255%5D%5D%2C%5B%5B-15.951%2C-14.646%5D%2C%5B126%2C203%2C191%2C255%5D%5D%2C%5B%5B-14.646%2C-13.348%5D%2C%5B138%2C209%2C198%2C255%5D%5D%2C%5B%5B-13.348%2C-12.122%5D%2C%5B151%2C214%2C204%2C255%5D%5D%2C%5B%5B-12.122%2C-10.935%5D%2C%5B163%2C219%2C211%2C255%5D%5D%2C%5B%5B-10.935%2C-9.79%5D%2C%5B175%2C224%2C217%2C255%5D%5D%2C%5B%5B-9.79%2C-8.686%5D%2C%5B188%2C229%2C223%2C255%5D%5D%2C%5B%5B-8.686%2C-7.66%5D%2C%5B200%2C234%2C229%2C255%5D%5D%2C%5B%5B-7.66%2C-6.679%5D%2C%5B208%2C236%2C231%2C255%5D%5D%2C%5B%5B-6.679%2C-5.742%5D%2C%5B216%2C238%2C233%2C255%5D%5D%2C%5B%5B-5.742%2C-4.891%5D%2C%5B224%2C240%2C235%2C255%5D%5D%2C%5B%5B-4.891%2C-4.049%5D%2C%5B232%2C242%2C237%2C255%5D%5D%2C%5B%5B-4.049%2C-3.298%5D%2C%5B240%2C244%2C239%2C255%5D%5D%2C%5B%5B-3.298%2C-2.598%5D%2C%5B245%2C244%2C237%2C255%5D%5D%2C%5B%5B-2.598%2C-2.0%5D%2C%5B245%2C242%2C229%2C255%5D%5D%2C%5B%5B-2.0%2C2.0%5D%2C%5B245%2C240%2C221%2C255%5D%5D%2C%5B%5B2.0%2C2.598%5D%2C%5B246%2C237%2C214%2C255%5D%5D%2C%5B%5B2.598%2C3.298%5D%2C%5B246%2C235%2C206%2C255%5D%5D%2C%5B%5B3.298%2C4.049%5D%2C%5B246%2C233%2C198%2C255%5D%5D%2C%5B%5B4.049%2C4.891%5D%2C%5B243%2C228%2C187%2C255%5D%5D%2C%5B%5B4.891%2C5.742%5D%2C%5B239%2C221%2C175%2C255%5D%5D%2C%5B%5B5.742%2C6.679%5D%2C%5B235%2C215%2C163%2C255%5D%5D%2C%5B%5B6.679%2C7.66%5D%2C%5B231%2C208%2C151%2C255%5D%5D%2C%5B%5B7.66%2C8.686%5D%2C%5B227%2C201%2C138%2C255%5D%5D%2C%5B%5B8.686%2C9.79%5D%2C%5B223%2C195%2C126%2C255%5D%5D%2C%5B%5B9.79%2C10.935%5D%2C%5B218%2C184%2C112%2C255%5D%5D%2C%5B%5B10.935%2C12.122%5D%2C%5B212%2C172%2C98%2C255%5D%5D%2C%5B%5B12.122%2C13.348%5D%2C%5B207%2C161%2C84%2C255%5D%5D%2C%5B%5B13.348%2C14.646%5D%2C%5B201%2C150%2C70%2C255%5D%5D%2C%5B%5B14.646%2C15.951%5D%2C%5B196%2C138%2C56%2C255%5D%5D%2C%5B%5B15.951%2C17.326%5D%2C%5B189%2C127%2C44%2C255%5D%5D%2C%5B%5B17.326%2C18.767%5D%2C%5B180%2C119%2C38%2C255%5D%5D%2C%5B%5B18.767%2C20.215%5D%2C%5B172%2C111%2C32%2C255%5D%5D%2C%5B%5B20.215%2C21.729%5D%2C%5B163%2C102%2C26%2C255%5D%5D%2C%5B%5B21.729%2C23.278%5D%2C%5B154%2C94%2C19%2C255%5D%5D%2C%5B%5B23.278%2C24.863%5D%2C%5B145%2C86%2C13%2C255%5D%5D%2C%5B%5B24.863%2C26.51%5D%2C%5B136%2C79%2C10%2C255%5D%5D%2C%5B%5B26.51%2C28.163%5D%2C%5B128%2C75%2C11%2C255%5D%5D%2C%5B%5B28.163%2C29.878%5D%2C%5B119%2C71%2C11%2C255%5D%5D%2C%5B%5B29.878%2C31.626%5D%2C%5B111%2C67%2C12%2C255%5D%5D%2C%5B%5B31.626%2C33.434%5D%2C%5B103%2C63%2C12%2C255%5D%5D%2C%5B%5B33.434%2C35.274%5D%2C%5B94%2C59%2C13%2C255%5D%5D%2C%5B%5B35.274%2C37.12%5D%2C%5B88%2C56%2C12%2C255%5D%5D%2C%5B%5B37.12%2C39.05%5D%2C%5B83%2C53%2C11%2C255%5D%5D%2C%5B%5B39.05%2C40.985%5D%2C%5B77%2C49%2C10%2C255%5D%5D%2C%5B%5B40.985%2C42.977%5D%2C%5B72%2C46%2C9%2C255%5D%5D%2C%5B%5B42.977%2C45.0%5D%2C%5B66%2C43%2C8%2C255%5D%5D%2C%5B%5B45.0%2C1000%5D%2C%5B61%2C40%2C7%2C255%5D%5D%5D",
+        legend: {
+          title: "LGMS agriculture net flux (2016-2024 average)",
+          type: "divergent",
+          color: LGMS_NET_FLUX_COLOR,
+          items: LGMS_NET_FLUX_ITEMS,
+          info: "This layer maps the average annual net greenhouse-gas flux from agriculture (cropland and livestock emissions) from 2016-2024, showing where agricultural land is acting as a net carbon source.",
+          note: "Average 2016-2024 agriculture net flux at the administrative-area level.",
+          unit: "Mg CO2e/ha/yr",
+        },
+      },
+    ],
+    legend: {
+      title: "LGMS net flux (2016-2024 average)",
+      type: "divergent",
+      color: LGMS_NET_FLUX_COLOR,
+      items: LGMS_NET_FLUX_ITEMS,
+      info: "This dataset maps the average annual net greenhouse-gas flux from land (2016-2024), combining vegetation, soil, and agricultural emissions and removals, to show where land is acting as a net carbon source or sink.",
+      note: "Average 2016-2024 net flux at the administrative-area level.",
+      unit: "Mg CO2e/ha/yr",
+    },
+  },
 ];
 
 // Defaults applied to DatasetInfo when not provided by cards
@@ -563,6 +658,7 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     context_layer,
     description,
     tile_url,
+    layers,
     data_layer,
     threshold,
   }) => ({
@@ -572,7 +668,15 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     description,
     reason: description, // for compatibility with LayerCardItem
     data_layer: (data_layer ?? DEFAULT_DATASET_FIELDS.data_layer) as string,
-    tile_url: (tile_url ?? DEFAULT_DATASET_FIELDS.tile_url) as string,
+    // tile_url mirrors layers[0] when the card declares multiple layers, so
+    // legacy single-tile_url readers still see a sensible default.
+    tile_url: (layers?.[0]?.tile_url ??
+      tile_url ??
+      DEFAULT_DATASET_FIELDS.tile_url) as string,
+    layers: layers?.map(({ name, tile_url: url }) => ({
+      name,
+      tile_url: url,
+    })),
     context_layer: (context_layer ?? DEFAULT_DATASET_FIELDS.context_layer) as
       | string
       | null,

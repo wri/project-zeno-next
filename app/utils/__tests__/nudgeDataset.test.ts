@@ -32,6 +32,10 @@ vi.mock("@/app/utils/datasetLayerContext", () => ({
   buildDatasetLayers: vi.fn(() => [
     { id: "dataset-4", datasetId: 4, name: "Tree cover loss" },
   ]),
+  toLayerEntries: (
+    layers?: { name: string; tile_url: string }[]
+  ): { name: string; tileUrl: string }[] | undefined =>
+    layers?.map((l) => ({ name: l.name, tileUrl: l.tile_url })),
 }));
 
 import {

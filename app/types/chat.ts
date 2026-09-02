@@ -146,7 +146,13 @@ export interface UiContext {
     aoi_name: string;
     subtype?: string;
   };
-  dataset_selected?: { dataset: DatasetInfo };
+  dataset_selected?: {
+    dataset: DatasetInfo;
+    // Names of the dataset's layers currently visible on the map. Lets the
+    // agent know which of a multi-layer dataset's layers (e.g. LGMS's
+    // agriculture/lulucf) are active, not just that the dataset is active.
+    active_layers?: string[];
+  };
   daterange_selected?: {
     start_date: string;
     end_date: string;
@@ -247,6 +253,17 @@ export interface DatasetContextLayer {
   tile_url: string | null;
   source_layer?: string | null; // present => render as MVT vector
   type?: "raster" | "vector"; // optional explicit override from backend
+}
+
+// A primary, independently-toggleable data layer belonging to a dataset (e.g.
+// LGMS's "agriculture" and "lulucf" layers). Distinct from DatasetContextLayer,
+// which is a mutually-exclusive masking/reference overlay rendered beneath the
+// primary layer(s) — sibling DatasetLayers can all be visible at once.
+export interface DatasetLayer {
+  name: string;
+  tile_url: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface DatasetParameter {
@@ -350,7 +367,13 @@ export interface DatasetInfo {
   source?: string;
   reason?: string;
   data_layer?: string;
+  // Deprecated: mirrors layers[0].tile_url. Kept for callers that haven't
+  // migrated to `layers` yet — new code should read `layers` instead.
   tile_url: string;
+  // The dataset's primary, independently-toggleable data layer(s). Always at
+  // least one entry. Most datasets have exactly one; LGMS has two
+  // (agriculture, lulucf) that can be shown independently or together.
+  layers?: DatasetLayer[];
   context_layer?: string | null;
   context_layers?: DatasetContextLayer[];
   parameters?: DatasetParameter[] | null;

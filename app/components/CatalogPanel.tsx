@@ -42,6 +42,7 @@ import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import type { DatasetInfo } from "@/app/types/chat";
 import { datasetCardLayers } from "@/app/utils/datasetCardLayerContext";
+import { datasetLayerId } from "@/app/utils/datasetLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
@@ -242,21 +243,29 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
     onClose: onInfoClose,
   } = useDisclosure();
 
-  // The visible dataset layer IS the scope — the layer manager is the source
-  // of truth for "is this dataset active?".
-  const layer = useMapStore(
-    useShallow((s) =>
-      s.layers.find((l) => l.id === `dataset-${card.dataset_id}`)
-    )
+  // Single-layer cards fall back to a synthesized one-entry list so this
+  // stays a uniform "N layers" loop with no dataset-identity branching. Ids
+  // are derived by datasetLayerId — the same formula buildDatasetLayers uses
+  // — so a card's rows always match the ids actually on the map.
+  const layerRefs = (
+    card.layers?.length ? card.layers : [{ name: card.dataset_name }]
+  ).map((l, index) => ({
+    name: l.name,
+    id: datasetLayerId(card.dataset_id, index, l.name),
+  }));
+
+  // The visible dataset layers IS the scope — the layer manager is the source
+  // of truth for "is this dataset active?". Active if any of its layers are on.
+  const activeLayerIds = useMapStore(
+    useShallow((s) => {
+      const ids = new Set(layerRefs.map((r) => r.id));
+      return s.layers.filter((l) => ids.has(l.id)).map((l) => l.id);
+    })
   );
   const addLayer = useMapStore((s) => s.addLayer);
   const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
-  const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const setLayerOpacity = useMapStore((s) => s.setLayerOpacity);
 
-  const isActive = !!layer;
-  const isVisible = layer?.visible ?? true;
-  const opacity = Math.round((layer?.opacity ?? 1) * 100);
+  const isActive = activeLayerIds.length > 0;
 
   function handleToggle(checked: boolean) {
     if (!checked) {
@@ -310,74 +319,101 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
         onShowOnMapChange={handleToggle}
         onInfoClick={onInfoOpen}
       />
-      {isActive && layer && (
-        <Flex
-          align="center"
-          gap={2}
-          mt={1}
-          px={2}
-          py={2}
-          w="100%"
-          minW={0}
-          bg="bg.subtle"
-          borderRadius="4px"
-          border="1px solid"
-          borderColor="border"
-        >
-          <Tooltip
-            content={isVisible ? "Hide layer" : "Show layer"}
-            positioning={{ placement: "top" }}
-            showArrow
-            variant="dark"
-          >
-            <IconButton
-              aria-label={
-                isVisible
-                  ? `Hide ${card.dataset_name} layer`
-                  : `Show ${card.dataset_name} layer`
-              }
-              size="xs"
-              variant="ghost"
-              onClick={() => setLayerVisibility(layer.id, !isVisible)}
-            >
-              {isVisible ? <EyeIcon size={16} /> : <EyeSlashIcon size={16} />}
-            </IconButton>
-          </Tooltip>
-          <CircleHalfIcon size={14} color="#656E7B" />
-          <Slider.Root
-            flex="1"
-            minW={0}
-            size="sm"
-            value={[opacity]}
-            min={0}
-            max={100}
-            onValueChange={(v: { value: number[] }) =>
-              setLayerOpacity(layer.id, v.value[0] / 100)
-            }
-            // Chakra's Slider.Root expects string[] (one label per thumb);
-            // this conflicts with jsx-a11y/aria-proptypes which expects a
-            // plain string, so we suppress the lint rule for this prop.
-            // eslint-disable-next-line jsx-a11y/aria-proptypes
-            aria-label={[`${card.dataset_name} opacity`]}
-          >
-            <Slider.Control>
-              <Slider.Track>
-                <Slider.Range />
-              </Slider.Track>
-              <Slider.Thumb index={0} />
-            </Slider.Control>
-          </Slider.Root>
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            color="fg.muted"
-            w="4ch"
-            textAlign="right"
-          >
-            {opacity}%
-          </Text>
-        </Flex>
-      )}
+      {isActive &&
+        layerRefs.map((ref) => (
+          <LayerControlsRow
+            key={ref.id}
+            layerId={ref.id}
+            // Only label sub-rows when there's more than one layer to
+            // disambiguate — a single-layer dataset's row stays unlabeled.
+            label={layerRefs.length > 1 ? ref.name : card.dataset_name}
+          />
+        ))}
     </Box>
+  );
+}
+
+/** Visibility + opacity controls for one map layer, shown while it's active. */
+function LayerControlsRow({
+  layerId,
+  label,
+}: {
+  layerId: string;
+  label: string;
+}) {
+  const layer = useMapStore(
+    useShallow((s) => s.layers.find((l) => l.id === layerId))
+  );
+  const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
+  const setLayerOpacity = useMapStore((s) => s.setLayerOpacity);
+
+  if (!layer) return null;
+
+  const isVisible = layer.visible;
+  const opacity = Math.round((layer.opacity ?? 1) * 100);
+
+  return (
+    <Flex
+      align="center"
+      gap={2}
+      mt={1}
+      px={2}
+      py={2}
+      w="100%"
+      minW={0}
+      bg="bg.subtle"
+      borderRadius="4px"
+      border="1px solid"
+      borderColor="border"
+    >
+      <Tooltip
+        content={isVisible ? "Hide layer" : "Show layer"}
+        positioning={{ placement: "top" }}
+        showArrow
+        variant="dark"
+      >
+        <IconButton
+          aria-label={isVisible ? `Hide ${label} layer` : `Show ${label} layer`}
+          size="xs"
+          variant="ghost"
+          onClick={() => setLayerVisibility(layer.id, !isVisible)}
+        >
+          {isVisible ? <EyeIcon size={16} /> : <EyeSlashIcon size={16} />}
+        </IconButton>
+      </Tooltip>
+      <CircleHalfIcon size={14} color="#656E7B" />
+      <Slider.Root
+        flex="1"
+        minW={0}
+        size="sm"
+        value={[opacity]}
+        min={0}
+        max={100}
+        onValueChange={(v: { value: number[] }) =>
+          setLayerOpacity(layer.id, v.value[0] / 100)
+        }
+        // Chakra's Slider.Root expects string[] (one label per thumb);
+        // this conflicts with jsx-a11y/aria-proptypes which expects a
+        // plain string, so we suppress the lint rule for this prop.
+        // eslint-disable-next-line jsx-a11y/aria-proptypes
+        aria-label={[`${label} opacity`]}
+      >
+        <Slider.Control>
+          <Slider.Track>
+            <Slider.Range />
+          </Slider.Track>
+          <Slider.Thumb index={0} />
+        </Slider.Control>
+      </Slider.Root>
+      <Text
+        fontFamily="mono"
+        fontSize="10px"
+        color="fg.muted"
+        w="4ch"
+        textAlign="right"
+      >
+        {opacity}%
+      </Text>
+    </Flex>
   );
 }

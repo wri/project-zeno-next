@@ -18,6 +18,7 @@ import {
 } from "@/app/types/chat";
 import useMapStore from "./mapStore";
 import {
+  datasetContextKey,
   deriveContext,
   diffUiContext,
   emptyContextKeys,
@@ -437,11 +438,19 @@ async function processStreamMessage(
     }
     // Handling for pick_dataset tool
     else if (streamMessage.name === "pick_dataset") {
-      const datasetId = (
-        streamMessage.dataset as { dataset_id?: number } | undefined
-      )?.dataset_id;
+      const dataset = streamMessage.dataset as
+        | { dataset_id?: number; layers?: { name: string }[] }
+        | undefined;
+      const datasetId = dataset?.dataset_id;
       if (typeof datasetId === "number") {
-        useChatStore.getState().foldSentContext({ dataset: datasetId });
+        // pick_dataset adds every declared layer to the map (see
+        // pickDatasetTool), so declared === active here — must match
+        // deriveContext's key format or this pick gets echoed back as "new"
+        // context on the next user message.
+        const layerNames = (dataset?.layers ?? []).map((l) => l.name);
+        useChatStore.getState().foldSentContext({
+          dataset: datasetContextKey(datasetId, layerNames, layerNames),
+        });
       }
       void Promise.resolve().then(() =>
         pickDatasetTool(streamMessage, addMessage)

@@ -8,6 +8,7 @@ import useMapStore from "../mapStore";
 import {
   getDatasetLayerContextProps,
   buildDatasetLayers,
+  toLayerEntries,
 } from "@/app/utils/datasetLayerContext";
 
 export function pickDatasetTool(
@@ -20,7 +21,7 @@ export function pickDatasetTool(
     // buffered generically in processStreamMessage — not handled here.
     const dataset = streamMessage.dataset as DatasetInfo | undefined;
 
-    if (dataset && dataset.tile_url) {
+    if (dataset && (dataset.tile_url || dataset.layers?.length)) {
       // Create a dataset card widget for interactive tile layer adding
       const datasetWidget: InsightWidget = {
         type: "dataset-card",
@@ -43,6 +44,7 @@ export function pickDatasetTool(
         datasetId: dataset.dataset_id,
         layerName: dataset.dataset_name,
         tileUrl: dataset.tile_url,
+        layers: toLayerEntries(dataset.layers),
         ...layerContextProps, // contextLayer / parameters / start+end dates
       }).forEach(addLayer);
 

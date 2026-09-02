@@ -14,7 +14,9 @@ import type { MessageContext, UiContext } from "@/app/types/chat";
 // slot has been sent yet".
 export interface ContextKeys {
   aoi: string | null; // aoi_name of the first area layer
-  dataset: number | null; // datasetId of the active dataset layer
+  // datasetId plus the active sublayer names, e.g. "12:agriculture,lulucf",
+  // so toggling a sublayer on/off re-announces context to the agent.
+  dataset: string | null;
   daterange: string | null; // "start|end"
 }
 
@@ -23,6 +25,22 @@ export const emptyContextKeys = (): ContextKeys => ({
   dataset: null,
   daterange: null,
 });
+
+// The `dataset` slot's identity key. Only a dataset that *declares* more than
+// one layer carries sublayer names in the key — an ordinary single-layer
+// dataset is already fully identified by its id — so toggling a sibling
+// layer on/off re-announces context, but a single-layer dataset's key stays
+// stable. Shared by deriveContext (from live map layers) and chatStore's
+// pick_dataset fold (from the tool result's own `layers`), which must agree
+// on this format or the agent's own picks get echoed back as "new".
+export function datasetContextKey(
+  datasetId: number,
+  declaredLayerNames: string[],
+  activeLayerNames: string[]
+): string {
+  const activeLayers = declaredLayerNames.length > 1 ? activeLayerNames : [];
+  return `${datasetId}:${[...activeLayers].sort().join(",")}`;
+}
 
 export interface DerivedContext {
   // Full payload for every slot currently present (before deduplication).
@@ -47,13 +65,14 @@ const visibleAreaLayers = (
       l.visible && isAreaLayer(l) && !isContextExcluded(l, excludedLayerIds)
   );
 
-// The active dataset is the main dataset layer (carries datasetId, not a
-// context sub-layer). Matches resolveDatasetMeta in exportToAI.ts.
-const datasetLayer = (
+// The active dataset layers (carry datasetId, not a context sub-layer) — a
+// dataset can have more than one independently-toggled layer (e.g. LGMS's
+// agriculture/lulucf), so this is every match, not just the first.
+const datasetLayers = (
   layers: Layer[],
   excludedLayerIds: ReadonlySet<string>
-): Layer | undefined =>
-  layers.find(
+): Layer[] =>
+  layers.filter(
     (l) =>
       typeof l.datasetId === "number" &&
       !l.parentLayerId &&
@@ -136,12 +155,36 @@ export function deriveContext(
     keys.aoi = aoiSelected.aoi_name;
   }
 
-  const ds = datasetLayer(layers, excludedLayerIds);
-  if (typeof ds?.datasetId === "number") {
-    const info = DATASET_BY_ID[ds.datasetId];
+  const ds = datasetLayers(layers, excludedLayerIds);
+  const primaryDatasetId = ds[0]?.datasetId;
+  if (typeof primaryDatasetId === "number") {
+    const info = DATASET_BY_ID[primaryDatasetId];
     if (info) {
-      uiContext.dataset_selected = { dataset: info };
-      keys.dataset = ds.datasetId;
+      const primaryDatasetLayers = ds.filter(
+        (l) => l.datasetId === primaryDatasetId
+      );
+      const declaredLayerNames = (info.layers ?? []).map((l) => l.name);
+      // Filtered to visible: a sibling layer hidden via the catalog panel's
+      // per-layer eye toggle (visible: false, still on the map) shouldn't be
+      // reported as active — matches active_layers' doc comment in chat.ts.
+      const activeLayerNames = primaryDatasetLayers
+        .filter((l) => l.visible)
+        .map((l) => l.name);
+      // Only report active_layers for a genuinely multi-layer dataset —
+      // gated on what the dataset *declares*, not how many are currently
+      // active, so switching down to one visible sublayer still names it
+      // instead of going silent.
+      const activeLayers =
+        declaredLayerNames.length > 1 ? activeLayerNames : [];
+      uiContext.dataset_selected = {
+        dataset: info,
+        ...(activeLayers.length > 0 ? { active_layers: activeLayers } : {}),
+      };
+      keys.dataset = datasetContextKey(
+        primaryDatasetId,
+        declaredLayerNames,
+        activeLayerNames
+      );
     }
   }
 
