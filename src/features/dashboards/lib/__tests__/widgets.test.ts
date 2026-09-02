@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  chartSize,
   chartTitleOverride,
-  computeReorder,
   dashboardWidgetToInsightWidgets,
   hasWidgetCustomization,
   insightModule,
@@ -16,7 +14,6 @@ import {
   widgetText,
   withChartHidden,
   withChartShown,
-  withChartSize,
   withChartTitle,
   withSize,
   withSummaryShown,
@@ -79,25 +76,6 @@ describe("mapWidgetSize", () => {
     expect(mapWidgetSize({ size: "double" })).toBe("double");
     expect(mapWidgetSize({ size: "garbage" })).toBe("double");
     expect(mapWidgetSize({ size: "single" })).toBe("single");
-  });
-});
-
-describe("chartSize / withChartSize", () => {
-  it("reads the per-chart size and falls back to the widget size", () => {
-    expect(chartSize({}, "c-1")).toBe("single");
-    expect(chartSize({ size: "double" }, "c-1")).toBe("double");
-    expect(chartSize({ sizes: { "c-1": "double" } }, "c-1")).toBe("double");
-    expect(chartSize({ sizes: { "c-1": "double" } }, "c-2")).toBe("single");
-    expect(chartSize({ sizes: { "c-1": "garbage" } }, "c-1")).toBe("single");
-  });
-
-  it("withChartSize preserves other config keys and sibling chart sizes", () => {
-    expect(
-      withChartSize({ title: "T", sizes: { "c-1": "double" } }, "c-2", "double")
-    ).toEqual({
-      title: "T",
-      sizes: { "c-1": "double", "c-2": "double" },
-    });
   });
 });
 
@@ -292,45 +270,6 @@ describe("withText", () => {
     expect(withText({ text: "old", size: "single" }, "   ")).toEqual({
       size: "single",
     });
-  });
-});
-
-describe("computeReorder", () => {
-  const widgets = [
-    widget({ id: "a", position: 0 }),
-    widget({ id: "b", position: 1 }),
-    widget({ id: "c", position: 2 }),
-  ];
-
-  it("moves a widget and patches only positions that changed", () => {
-    const { order, patches } = computeReorder(widgets, 0, 2);
-    expect(order.map((w) => w.id)).toEqual(["b", "c", "a"]);
-    expect(patches).toEqual([
-      { id: "b", position: 0 },
-      { id: "c", position: 1 },
-      { id: "a", position: 2 },
-    ]);
-  });
-
-  it("is a no-op when from equals to", () => {
-    const { order, patches } = computeReorder(widgets, 1, 1);
-    expect(order.map((w) => w.id)).toEqual(["a", "b", "c"]);
-    expect(patches).toEqual([]);
-  });
-
-  it("normalises non-contiguous server positions", () => {
-    const sparse = [
-      widget({ id: "a", position: 0 }),
-      widget({ id: "b", position: 3 }),
-    ];
-    const { patches } = computeReorder(sparse, 0, 0);
-    expect(patches).toEqual([{ id: "b", position: 1 }]);
-  });
-
-  it("ignores out-of-range indices but still normalises", () => {
-    const { order, patches } = computeReorder(widgets, 5, 0);
-    expect(order.map((w) => w.id)).toEqual(["a", "b", "c"]);
-    expect(patches).toEqual([]);
   });
 });
 
@@ -561,9 +500,8 @@ describe("hasWidgetCustomization", () => {
   });
 
   it("is true for each thing the with* helpers write", () => {
-    expect(hasWidgetCustomization(withChartSize({}, "c-1", "double"))).toBe(
-      true
-    );
+    // No helper writes `sizes` any more, but older configs carry it.
+    expect(hasWidgetCustomization({ sizes: { "c-1": "double" } })).toBe(true);
     expect(hasWidgetCustomization(withChartTitle({}, "c-1", "Renamed"))).toBe(
       true
     );

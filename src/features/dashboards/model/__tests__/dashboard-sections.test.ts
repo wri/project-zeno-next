@@ -147,4 +147,15 @@ describe("widgetContainers", () => {
     expect(containers).toHaveLength(1);
     expect(ids(containers[0].widgets)).toEqual(["w1", "w2"]);
   });
+
+  // A drag lifts a widget out of its container; the panel it left has to stay
+  // on screen as somewhere it can be put back.
+  it("keeps the empty top level when asked", () => {
+    const d = dashboard([section("s1", 0)], [widget("w1", 0, "s1")]);
+
+    expect(widgetContainers(d).map((c) => c.key)).toEqual(["s1"]);
+    expect(
+      widgetContainers(d, { keepEmptyTopLevel: true }).map((c) => c.key)
+    ).toEqual(["", "s1"]);
+  });
 });

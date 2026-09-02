@@ -19,7 +19,7 @@ import {
   type WidgetUpdate,
 } from "../api/dashboards";
 import type { AoiSearchResult, Dashboard } from "../api/schemas";
-import type { WidgetPositionPatch } from "../lib/widgets";
+import type { WidgetMovePatch } from "../model/widget-move";
 import { dashboardKeys } from "../hooks/dashboardKeys";
 
 export { dashboardKeys } from "../hooks/dashboardKeys";
@@ -232,16 +232,27 @@ export function useDeleteWidget(dashboardId: string) {
   );
 }
 
-export function useReorderWidgets(dashboardId: string) {
+// A drag's whole write: the new position of every widget the move renumbered,
+// plus `section_id` on the one that changed container. Optimistic, so the card
+// lands in its new panel on drop rather than after the refetch.
+export function useMoveWidgets(dashboardId: string) {
   return useOptimisticWidgetMutation(
     dashboardId,
-    (patches: WidgetPositionPatch[]) =>
+    (patches: WidgetMovePatch[]) =>
       Promise.all(patches.map((p) => updateWidget(dashboardId, p.id, p))),
     (widgets, patches) => {
-      const positions = new Map(patches.map((p) => [p.id, p.position]));
-      return widgets.map((w) =>
-        positions.has(w.id) ? { ...w, position: positions.get(w.id)! } : w
-      );
+      const byId = new Map(patches.map((p) => [p.id, p]));
+      return widgets.map((w) => {
+        const patch = byId.get(w.id);
+        if (!patch) return w;
+        return {
+          ...w,
+          position: patch.position,
+          // Mirrors the PATCH's three-valued grouping: an explicit null is a
+          // move to the top level, so test the key rather than the value.
+          ...("section_id" in patch ? { section_id: patch.section_id } : {}),
+        };
+      });
     }
   );
 }

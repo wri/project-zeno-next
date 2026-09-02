@@ -35,6 +35,12 @@ export interface ContainerOptions {
    * someone else's dashboard sees only containers that hold something.
    */
   keepEmptySections?: boolean;
+  /**
+   * Keep the ungrouped top-level container even when it holds nothing. Set
+   * while a drag is in flight: the widget being dragged is the container's
+   * last one, and dropping it back has to stay possible.
+   */
+  keepEmptyTopLevel?: boolean;
 }
 
 /**
@@ -45,12 +51,16 @@ export interface ContainerOptions {
  * the top level rather than vanishing — a dangling reference should degrade to
  * a visible widget in the wrong place, never to silently missing content.
  *
- * The empty top-level container is always dropped, so a fully sectioned
- * dashboard opens on its first section rather than a blank band.
+ * The empty top-level container is dropped unless `keepEmptyTopLevel` asks
+ * for it, so a fully sectioned dashboard opens on its first section rather
+ * than a blank band.
  */
 export function widgetContainers(
   dashboard: Dashboard,
-  { keepEmptySections = false }: ContainerOptions = {}
+  {
+    keepEmptySections = false,
+    keepEmptyTopLevel = false,
+  }: ContainerOptions = {}
 ): WidgetContainer[] {
   const sections = [...dashboard.sections].sort(byPosition);
   const known = new Set(sections.map((s) => s.id));
@@ -76,5 +86,9 @@ export function widgetContainers(
   return [
     container("", null),
     ...sections.map((section) => container(section.id, section)),
-  ].filter((c) => c.widgets.length > 0 || (keepEmptySections && !!c.section));
+  ].filter(
+    (c) =>
+      c.widgets.length > 0 ||
+      (c.section ? keepEmptySections : keepEmptyTopLevel)
+  );
 }

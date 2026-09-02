@@ -101,7 +101,7 @@ describe("DashboardWidgetsGrid grouping", () => {
     useAuthStore.setState({ userId: "u1" });
   });
 
-  it("renders an insight widget as one module with its charts, beside standalone widgets", () => {
+  it("renders an insight widget as one card, beside standalone widgets", () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -113,18 +113,15 @@ describe("DashboardWidgetsGrid grouping", () => {
       </QueryClientProvider>
     );
 
-    // The module: one header (first chart's title), the narrative, both charts.
+    // The insight is one card: the narrative and the first of its charts,
+    // with the rest a page away — not one card per chart.
     expect(screen.getByText(/Alerts spiked in July\./)).toBeTruthy();
     const cards = screen.getAllByTestId("widget-message");
-    expect(cards.map((c) => c.textContent)).toEqual([
-      "Alerts trend",
-      "Alerts by driver",
-    ]);
+    expect(cards.map((c) => c.textContent)).toEqual(["Alerts trend"]);
+    expect(screen.getByText("1 of 2 charts")).toBeTruthy();
     // The map widget still renders standalone.
     expect(screen.getByTestId("map-widget")).toBeTruthy();
-    // Whole-module remove exists exactly once (one insight module).
-    expect(
-      screen.getAllByLabelText("Remove analysis from dashboard")
-    ).toHaveLength(1);
+    // Two widgets, so two cards — the insight has no extra remove of its own.
+    expect(screen.getAllByLabelText("Remove from dashboard")).toHaveLength(2);
   });
 });
