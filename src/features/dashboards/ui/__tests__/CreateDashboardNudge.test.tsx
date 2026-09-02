@@ -63,6 +63,7 @@ function dashboard(overrides: Partial<Dashboard> = {}): Dashboard {
         name: "Paraná, Brazil",
       },
     ],
+    sections: [],
     widgets: [],
     ...overrides,
   };

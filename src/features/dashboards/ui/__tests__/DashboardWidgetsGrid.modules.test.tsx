@@ -92,6 +92,7 @@ const dashboard: Dashboard = {
       position: 0,
     },
   ],
+  sections: [],
   widgets: [insightWidget, mapWidget],
 };
 

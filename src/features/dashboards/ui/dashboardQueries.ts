@@ -171,6 +171,11 @@ export function useUpdateWidget(dashboardId: string) {
                 ? { position: patch.position }
                 : {}),
               ...(patch.config ? { config: patch.config } : {}),
+              // Mirrors the PATCH's three-valued grouping: an explicit null is
+              // a move to the top level, so test the key rather than the value.
+              ...("section_id" in patch
+                ? { section_id: patch.section_id }
+                : {}),
             }
           : w
       )

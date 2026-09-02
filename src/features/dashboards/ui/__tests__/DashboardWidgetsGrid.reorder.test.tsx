@@ -83,6 +83,7 @@ const dashboard: Dashboard = {
       position: 0,
     },
   ],
+  sections: [],
   widgets: [mapWidget("m1", 0), mapWidget("m2", 1)],
 };
 

@@ -34,11 +34,13 @@ const emptyDashboard: Dashboard = {
   created_at: "2026-07-01T00:00:00Z",
   updated_at: "2026-07-01T00:00:00Z",
   aois: [],
+  sections: [],
   widgets: [],
 };
 
 const populatedDashboard: Dashboard = {
   ...emptyDashboard,
+  sections: [],
   widgets: [
     {
       id: "w1",

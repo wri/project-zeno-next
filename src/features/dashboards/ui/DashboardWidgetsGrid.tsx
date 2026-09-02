@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Box, Flex } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 
 import useAuthStore from "@/app/store/authStore";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { packCells } from "../lib/packing";
+import { widgetContainers } from "../model/dashboard-sections";
 import {
   computeReorder,
   mapWidgetSize,
@@ -28,6 +29,7 @@ import {
 } from "./dashboardQueries";
 import { TWO_COLUMN_QUERY } from "./gridLayout";
 import DashboardInsightModule from "./DashboardInsightModule";
+import DashboardSectionHeading from "./DashboardSectionHeading";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 
@@ -75,16 +77,23 @@ function topLevelSize(widget: DashboardWidget): WidgetSize {
 }
 
 /**
- * The dashboard's widget grid. Each widget is one top-level item: insight
- * widgets render as a full-width `DashboardInsightModule` (header · summary ·
- * their chart cards packed inside), while map/text widgets keep their single
- * cards and can still pair into two columns via `packCells`.
+ * One container's grid — the ungrouped top level, or one section's widgets.
+ * Each widget is one item: insight widgets render as a full-width
+ * `DashboardInsightModule` (header · summary · their chart cards packed
+ * inside), while map/text widgets keep their single cards and can still pair
+ * into two columns via `packCells`.
  *
  * Reordering is native HTML5 drag-and-drop at widget level, armed only while
  * a drag handle is pressed (so text selection and chart interactions keep
  * working); the drop target gets the design's dashed outline. Items are keyed
  * on `widget.id` — never fold position in, or React remounts map widgets
  * mid-drag (see DashboardWidgetsGrid.reorder.test.tsx).
+ *
+ * Drag state lives here rather than in the page, so a drag is scoped to one
+ * container. That mirrors the API, whose widget `position` is an index within
+ * its own container: reordering inside one section can never renumber
+ * another's. Dragging a widget *between* containers is a different operation
+ * (a `section_id` PATCH) and is not wired up here.
  *
  * Layout is `packCells`' segments rather than CSS grid rows: each card is
  * only as tall as its content, and a run of half-width cells deals into two
@@ -93,28 +102,26 @@ function topLevelSize(widget: DashboardWidget): WidgetSize {
  * wrappers flatten away (`display: contents`) and each item's `order` restores
  * the flat arrangement order.
  */
-export default function DashboardWidgetsGrid({
+function ContainerGrid({
   dashboard,
+  widgets,
+  isOwner,
 }: {
   dashboard: Dashboard;
+  /** This container's widgets, already in render order. */
+  widgets: DashboardWidget[];
+  isOwner: boolean;
 }) {
-  const userId = useAuthStore((s) => s.userId);
-  const isOwner = !!userId && userId === dashboard.user_id;
-
   const updateWidget = useUpdateWidget(dashboard.id);
   const deleteWidget = useDeleteWidget(dashboard.id);
   const reorderWidgets = useReorderWidgets(dashboard.id);
 
   // grabbedId arms draggable on one grid item; dragIndex/overIndex track the
-  // HTML5 drag in flight (widget indices).
+  // HTML5 drag in flight (indices into this container's widgets).
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
-  const widgets = useMemo(
-    () => [...dashboard.widgets].sort((a, b) => a.position - b.position),
-    [dashboard.widgets]
-  );
   const areaAoi = dashboard.aois[0];
 
   const endDrag = () => {
@@ -154,6 +161,9 @@ export default function DashboardWidgetsGrid({
     return (
       <Box
         key={widget.id}
+        // The drop handler resolves its target from the DOM, so each item
+        // names the widget it carries.
+        data-widget-id={widget.id}
         // One column flattens the column wrappers, so the flat arrangement
         // order is restored per item; in two columns, DOM order rules each
         // column. Cards clip internally rather than force the page wider than
@@ -265,37 +275,87 @@ export default function DashboardWidgetsGrid({
   };
 
   return (
+    <Flex direction="column" gap={4} align="stretch">
+      {segments.map((segment) =>
+        segment.kind === "full" ? (
+          renderWidget(segment.cell.item, segment.cell.index)
+        ) : (
+          <Flex
+            key={`columns-${segment.left[0]?.item.id ?? "empty"}`}
+            gap={4}
+            align="flex-start"
+            display="contents"
+            css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
+          >
+            {[segment.left, segment.right].map((column, side) => (
+              <Flex
+                key={side === 0 ? "left" : "right"}
+                direction="column"
+                gap={4}
+                flex="1"
+                minW={0}
+                display="contents"
+                css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
+              >
+                {column.map((packed) =>
+                  renderWidget(packed.item, packed.index)
+                )}
+              </Flex>
+            ))}
+          </Flex>
+        )
+      )}
+    </Flex>
+  );
+}
+
+/**
+ * The dashboard's widgets, grouped into their containers: the ungrouped
+ * top-level list first, then one heading-and-grid block per section.
+ *
+ * The API returns `widgets` flat, with each `position` scoped to that widget's
+ * own container, so the array is never a render order on its own —
+ * `widgetContainers` does the grouping this component renders. Owners also see
+ * sections holding nothing yet: the agent creates a section before it fills
+ * one, and the heading is the structure it just reported making.
+ */
+export default function DashboardWidgetsGrid({
+  dashboard,
+}: {
+  dashboard: Dashboard;
+}) {
+  const userId = useAuthStore((s) => s.userId);
+  const isOwner = !!userId && userId === dashboard.user_id;
+
+  const containers = useMemo(
+    () => widgetContainers(dashboard, { keepEmptySections: isOwner }),
+    [dashboard, isOwner]
+  );
+
+  return (
     <Box css={{ containerType: "inline-size", containerName: "widgets-grid" }}>
-      <Flex direction="column" gap={4} align="stretch">
-        {segments.map((segment) =>
-          segment.kind === "full" ? (
-            renderWidget(segment.cell.item, segment.cell.index)
-          ) : (
-            <Flex
-              key={`columns-${segment.left[0]?.item.id ?? "empty"}`}
-              gap={4}
-              align="flex-start"
-              display="contents"
-              css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
-            >
-              {[segment.left, segment.right].map((column, side) => (
-                <Flex
-                  key={side === 0 ? "left" : "right"}
-                  direction="column"
-                  gap={4}
-                  flex="1"
-                  minW={0}
-                  display="contents"
-                  css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
-                >
-                  {column.map((packed) =>
-                    renderWidget(packed.item, packed.index)
-                  )}
-                </Flex>
-              ))}
-            </Flex>
-          )
-        )}
+      {/* Sections read as bands of the page: a wider gap between them than
+          between the cards inside one, so the grouping is legible before the
+          headings are read. */}
+      <Flex direction="column" gap={8} align="stretch">
+        {containers.map((container) => (
+          <Flex key={container.key} direction="column" gap={4} align="stretch">
+            {container.section && (
+              <DashboardSectionHeading section={container.section} />
+            )}
+            {container.widgets.length > 0 ? (
+              <ContainerGrid
+                dashboard={dashboard}
+                widgets={container.widgets}
+                isOwner={isOwner}
+              />
+            ) : (
+              <Text fontSize="14px" color="fg.muted">
+                Nothing in this section yet.
+              </Text>
+            )}
+          </Flex>
+        ))}
       </Flex>
     </Box>
   );
