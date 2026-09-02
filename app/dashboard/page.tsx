@@ -12,6 +12,7 @@ import {
   Input,
   Field,
   Separator,
+  Text,
   createListCollection,
   Container,
 } from "@chakra-ui/react";
@@ -21,6 +22,9 @@ import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import SettingsShell from "@/app/components/SettingsShell";
+import { isOnboardingFieldRequired } from "@/app/config/onboarding";
+import { getSettingsFormSchema } from "@/app/dashboard/schema";
+import RequirementHint from "@/app/onboarding/RequirementHint";
 
 type ProfileConfig = {
   sectors: Record<string, string>;
@@ -51,6 +55,8 @@ type ValueChangeDetails = { value: string[] };
 
 export default function UserSettingsPage() {
   const isReady = useAuthGuard();
+  const fieldRequired = isOnboardingFieldRequired;
+  const schema = useMemo(() => getSettingsFormSchema(), []);
   const [config, setConfig] = useState<ProfileConfig | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
     firstName: "",
@@ -68,6 +74,7 @@ export default function UserSettingsPage() {
     helpTestFeatures: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const isValid = useMemo(() => schema.safeParse(form).success, [schema, form]);
 
   useEffect(() => {
     const load = async () => {
@@ -171,25 +178,24 @@ export default function UserSettingsPage() {
   }, []);
 
   const handleSave = async () => {
-    if (isSaving) return;
+    if (!isValid || isSaving) return;
     setIsSaving(true);
     try {
+      // Same required-field contract as onboarding, minus the terms checkbox
+      const validated = schema.parse(form);
       const payload = PatchProfileRequestSchema.parse({
-        first_name: form.firstName,
-        last_name: form.lastName,
+        first_name: validated.firstName,
+        last_name: validated.lastName,
         profile_description: undefined,
-        sector_code: form.sector || null,
-        role_code: form.role || null,
-        job_title: form.jobTitle || null,
-        company_organization: form.company || null,
-        country_code: form.country || null,
-        preferred_language_code: form.preferredLanguage || null,
-        gis_expertise_level: form.expertise || null,
+        sector_code: validated.sector || null,
+        role_code: validated.role || null,
+        job_title: validated.jobTitle || null,
+        company_organization: validated.company || null,
+        country_code: validated.country || null,
+        preferred_language_code: validated.preferredLanguage || null,
+        gis_expertise_level: validated.expertise || null,
         // Only send when there are selections; omit the key to avoid clearing inadvertently
-        topics:
-          Array.isArray(form.topics) && form.topics.length
-            ? form.topics
-            : undefined,
+        topics: validated.topics?.length ? validated.topics : undefined,
         receive_news_emails: form.receiveNewsEmails,
         help_test_features: form.helpTestFeatures,
         has_profile: true,
@@ -279,19 +285,29 @@ export default function UserSettingsPage() {
             size="sm"
             onClick={handleSave}
             loading={isSaving}
-            disabled={isSaving}
+            disabled={!isValid || isSaving}
           >
             <FloppyDiskIcon />
             Save changes
           </Button>
         </Flex>
 
+        <Text color="fg.muted" fontSize="xs" mb={6}>
+          <Text as="span" color="red.500">
+            *
+          </Text>{" "}
+          required fields
+        </Text>
+
         {/* Form Grid Layout */}
         <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
           {/* First Name */}
           <GridItem>
-            <Field.Root id="first-name">
-              <Field.Label>First name</Field.Label>
+            <Field.Root id="first-name" required={fieldRequired("firstName")}>
+              <Field.Label>
+                First name
+                <RequirementHint field="firstName" />
+              </Field.Label>
               <Input
                 type="text"
                 width="320px"
@@ -305,8 +321,11 @@ export default function UserSettingsPage() {
 
           {/* Last Name */}
           <GridItem>
-            <Field.Root id="last-name">
-              <Field.Label>Last name</Field.Label>
+            <Field.Root id="last-name" required={fieldRequired("lastName")}>
+              <Field.Label>
+                Last name
+                <RequirementHint field="lastName" />
+              </Field.Label>
               <Input
                 type="text"
                 width="320px"
@@ -320,8 +339,11 @@ export default function UserSettingsPage() {
 
           {/* Email Address */}
           <GridItem>
-            <Field.Root id="email">
-              <Field.Label>Email address</Field.Label>
+            <Field.Root id="email" required={fieldRequired("email")}>
+              <Field.Label>
+                Email address
+                <RequirementHint field="email" />
+              </Field.Label>
               <Input
                 type="email"
                 width="320px"
@@ -341,12 +363,12 @@ export default function UserSettingsPage() {
 
         {/* Second Section of the Form */}
         <Heading size="xs" color="fg.subtle" fontWeight="normal">
-          Additional Details (Optional)
+          Additional Details
         </Heading>
         <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
           {/* Sector */}
           <GridItem>
-            <Field.Root id="sector">
+            <Field.Root id="sector" required={fieldRequired("sector")}>
               <Select.Root
                 collection={sectors}
                 size="sm"
@@ -357,7 +379,10 @@ export default function UserSettingsPage() {
                 }
               >
                 <Select.HiddenSelect />
-                <Select.Label>Sector</Select.Label>
+                <Select.Label>
+                  Sector
+                  <RequirementHint field="sector" />
+                </Select.Label>
                 <Select.Control>
                   <Select.Trigger>
                     <Select.ValueText placeholder="Select Sector" />
@@ -384,7 +409,7 @@ export default function UserSettingsPage() {
 
           {/* Role */}
           <GridItem>
-            <Field.Root id="role">
+            <Field.Root id="role" required={fieldRequired("role")}>
               <Select.Root
                 collection={roles}
                 size="sm"
@@ -396,7 +421,10 @@ export default function UserSettingsPage() {
                 }
               >
                 <Select.HiddenSelect />
-                <Select.Label>Role</Select.Label>
+                <Select.Label>
+                  Role
+                  <RequirementHint field="role" />
+                </Select.Label>
                 <Select.Control
                   _disabled={{
                     bg: "bg.subtle",
@@ -427,8 +455,11 @@ export default function UserSettingsPage() {
 
           {/* Job Title */}
           <GridItem>
-            <Field.Root id="job-title">
-              <Field.Label>Job title</Field.Label>
+            <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
+              <Field.Label>
+                Job title
+                <RequirementHint field="jobTitle" />
+              </Field.Label>
               <Input
                 type="text"
                 width="320px"
@@ -442,8 +473,11 @@ export default function UserSettingsPage() {
 
           {/* Company / Organization */}
           <GridItem>
-            <Field.Root id="company">
-              <Field.Label>Company / Organization</Field.Label>
+            <Field.Root id="company" required={fieldRequired("company")}>
+              <Field.Label>
+                Company / Organization
+                <RequirementHint field="company" />
+              </Field.Label>
               <Input
                 type="text"
                 width="320px"
@@ -457,7 +491,7 @@ export default function UserSettingsPage() {
 
           {/* Country */}
           <GridItem>
-            <Field.Root id="country">
+            <Field.Root id="country" required={fieldRequired("country")}>
               <Select.Root
                 collection={countries}
                 size="sm"
@@ -468,7 +502,10 @@ export default function UserSettingsPage() {
                 }
               >
                 <Select.HiddenSelect />
-                <Select.Label>Country</Select.Label>
+                <Select.Label>
+                  Country
+                  <RequirementHint field="country" />
+                </Select.Label>
                 <Select.Control>
                   <Select.Trigger>
                     <Select.ValueText placeholder="Select Country" />
@@ -495,7 +532,7 @@ export default function UserSettingsPage() {
 
           {/* Level of technical expertise */}
           <GridItem>
-            <Field.Root id="expertise">
+            <Field.Root id="expertise" required={fieldRequired("expertise")}>
               <Select.Root
                 collection={expertises}
                 size="sm"
@@ -506,7 +543,10 @@ export default function UserSettingsPage() {
                 }
               >
                 <Select.HiddenSelect />
-                <Select.Label>Level of technical expertise</Select.Label>
+                <Select.Label>
+                  Level of technical expertise
+                  <RequirementHint field="expertise" />
+                </Select.Label>
                 <Select.Control>
                   <Select.Trigger>
                     <Select.ValueText placeholder="Select Level of technical expertise" />
@@ -533,7 +573,10 @@ export default function UserSettingsPage() {
 
           {/* Preferred Language */}
           <GridItem>
-            <Field.Root id="preferred-language">
+            <Field.Root
+              id="preferred-language"
+              required={fieldRequired("preferredLanguage")}
+            >
               <Select.Root
                 collection={languages}
                 size="sm"
@@ -547,7 +590,10 @@ export default function UserSettingsPage() {
                 }
               >
                 <Select.HiddenSelect />
-                <Select.Label>Preferred language</Select.Label>
+                <Select.Label>
+                  Preferred language
+                  <RequirementHint field="preferredLanguage" />
+                </Select.Label>
                 <Select.Control>
                   <Select.Trigger>
                     <Select.ValueText placeholder="Select Language" />
@@ -577,9 +623,10 @@ export default function UserSettingsPage() {
 
           {/* Topics (from profile) */}
           <GridItem colSpan={{ base: 1, md: 2 }}>
-            <Field.Root id="topics">
+            <Field.Root id="topics" required={fieldRequired("topics")}>
               <Field.Label>
-                What area(s) are you most interested in?
+                What topic(s) are you most interested in?
+                <RequirementHint field="topics" />
               </Field.Label>
               <Flex gap={2} flexWrap="wrap" pt={2}>
                 {Object.entries(config?.topics || {}).map(([code, label]) => {
