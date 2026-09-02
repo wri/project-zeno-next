@@ -4,7 +4,7 @@ import { API_CONFIG } from "@/app/config/api";
 import { getAuthHeaders } from "@/app/lib/api-client";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import {
-  IMAGERY_ATTRIBUTION,
+  imageryAttribution,
   imageryLayerId,
   imageryLayerTitle,
   isImageryLayerId,
@@ -63,10 +63,12 @@ export async function showImageryTool(streamMessage: StreamMessage) {
   const { addLayer, setLayerVisibility, reorderLayers } =
     useMapStore.getState();
 
+  // The backend serialises fields it has no value for as explicit JSON null
+  // (see ImageryInfo); normalise to undefined so the checks below hold.
   let tileMetadata: TileJson = {
-    bounds: imagery.bounds,
-    minzoom: imagery.min_zoom,
-    maxzoom: imagery.max_zoom,
+    bounds: imagery.bounds ?? undefined,
+    minzoom: imagery.min_zoom ?? undefined,
+    maxzoom: imagery.max_zoom ?? undefined,
   };
   if (imagery.tilejson_url) {
     try {
@@ -94,10 +96,7 @@ export async function showImageryTool(streamMessage: StreamMessage) {
     }
   }
 
-  if (
-    tileMetadata.minzoom === undefined ||
-    tileMetadata.maxzoom === undefined
-  ) {
+  if (tileMetadata.minzoom == null || tileMetadata.maxzoom == null) {
     console.warn(
       "Imagery mosaic is missing min/max zoom limits; not showing layer"
     );
@@ -122,9 +121,11 @@ export async function showImageryTool(streamMessage: StreamMessage) {
     minzoom: tileMetadata.minzoom,
     maxzoom: tileMetadata.maxzoom,
     bounds: tileMetadata.bounds,
-    attribution: IMAGERY_ATTRIBUTION,
-    startDate: imagery.date_start,
-    endDate: imagery.date_end,
+    attribution: imageryAttribution(imagery.provider),
+    // start_date/end_date since wri/project-zeno#800; the old names survive
+    // on replayed old threads.
+    startDate: imagery.start_date ?? imagery.date_start ?? undefined,
+    endDate: imagery.end_date ?? imagery.date_end ?? undefined,
     imagery,
   });
 
