@@ -40,7 +40,7 @@ export type ImageryLegendMeta = Partial<
   >
 >;
 
-export const IMAGERY_TOOL_NAMES: readonly string[] = [
+const IMAGERY_TOOL_NAMES: readonly string[] = [
   "show_imagery",
   "show_planet_imagery",
 ];
@@ -73,9 +73,7 @@ const PROVIDER_DISPLAY: Record<
 };
 
 function providerDisplay(provider?: ImageryProvider | null) {
-  return (
-    PROVIDER_DISPLAY[provider ?? "sentinel-2"] ?? PROVIDER_DISPLAY["sentinel-2"]
-  );
+  return PROVIDER_DISPLAY[provider ?? "sentinel-2"];
 }
 
 /** Legend subtitle for a provider, e.g. "Sentinel-2 · True-colour". */
