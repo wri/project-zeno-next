@@ -259,6 +259,7 @@ export function InsightsPanel() {
                   display="flex"
                   alignItems="center"
                   gap="8px"
+                  data-panel="analyses"
                 >
                   <Switch.HiddenInput />
                   <Switch.Control>
@@ -511,6 +512,7 @@ function InsightGroupCard({
             : `Add ${title} to dashboard`
         }
         toggleDisabled={!insight.addable || insight.pending}
+        dataPanel="analyses"
         onInfoClick={onOpen}
         infoTooltip="View analysis"
         badge={<VerificationBadge verification={group.verification} />}
@@ -559,6 +561,7 @@ function InsightCard({
         selectedBg={INSIGHT_SELECTED_BG}
         showOnMap={shown}
         onShowOnMapChange={handleToggle}
+        dataPanel="analyses"
         onInfoClick={onOpen}
         infoTooltip="View analysis"
         badge={<VerificationBadge verification={item.verification} />}

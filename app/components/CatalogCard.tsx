@@ -28,6 +28,8 @@ export interface CatalogCardProps {
   toggleAriaLabel?: string;
   /** Disables the footer toggle (e.g. an analysis that can't be added). */
   toggleDisabled?: boolean;
+  /** Identifies the panel this card belongs to for analytics (e.g. GTM). */
+  dataPanel?: string;
   /** Optional info button click handler. When omitted, the info button is hidden. */
   onInfoClick?: () => void;
   /** Optional info button tooltip / aria text. Defaults to "Show dataset info". */
@@ -62,6 +64,7 @@ export function CatalogCard({
   toggleLabel = "Show on map",
   toggleAriaLabel,
   toggleDisabled = false,
+  dataPanel,
   onInfoClick,
   infoTooltip = "Show dataset info",
   titleActions,
@@ -185,6 +188,7 @@ export function CatalogCard({
               toggleAriaLabel ??
               (showOnMap ? `Hide ${title} from map` : `Show ${title} on map`)
             }
+            data-panel={dataPanel}
           >
             <Switch.HiddenInput />
             <Switch.Control>

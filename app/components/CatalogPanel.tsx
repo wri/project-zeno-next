@@ -309,6 +309,7 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
         showOnMap={isActive}
         onShowOnMapChange={handleToggle}
         onInfoClick={onInfoOpen}
+        dataPanel="datasets"
       />
       {isActive && layer && (
         <Flex

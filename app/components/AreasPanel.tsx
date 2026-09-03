@@ -368,6 +368,7 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
         selectedBg={AREA_SELECTED_BG}
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
+        dataPanel="areas"
         titleActions={
           <AreaCardActions
             onLocate={handleLocate}
@@ -506,6 +507,7 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
         selectedBg={AREA_SELECTED_BG}
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
+        dataPanel="areas"
         titleActions={
           // Rename/delete act on the saved area, so the kebab must show even
           // when the area isn't on the map; the locate button stays on-map only.
