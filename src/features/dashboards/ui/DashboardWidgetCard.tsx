@@ -35,11 +35,15 @@ import DashboardMapWidget from "./DashboardMapWidget";
  * One dashboard card — the Figma "Analysis" container: a light-blue shell
  * with a header row (drag handle · insight title · owner actions), a
  * "Show params" row, and the white chart card (`WidgetMessage`) — or the
- * map body (`DashboardMapWidget`) for map widgets — inside.
- * A widget whose insight has several charts renders one of these per chart,
- * so `card` is a single insight card, not a list. What the X actually does
- * therefore depends on the call site — delete the widget, or hide one chart
- * of a module — which `removeMode` lets the remove dialog explain.
+ * map body (`DashboardMapWidget`) for map widgets — inside. Every widget on
+ * the page is one of these, so the blue shell is the only box a dashboard
+ * widget ever draws.
+ *
+ * `card` is a single insight card, never a list: an insight with several
+ * charts pages through them inside one shell (`DashboardInsightModule` owns
+ * the pager and passes the chart on show). The `intro`, `footer` and
+ * `headerActions` slots are what it hangs off the shell; `onRequestRemove`
+ * lets it confirm removal with its own copy.
  */
 export default function DashboardWidgetCard({
   title,
@@ -51,11 +55,14 @@ export default function DashboardWidgetCard({
   removeMode,
   isOwner,
   isDouble,
+  headerActions,
+  intro,
+  footer,
   onArmDrag,
-  onDisarmDrag,
   onToggleSize,
   onRename,
   onRemove,
+  onRequestRemove,
 }: {
   title: string;
   /** The insight card to render, or null for a map/text/placeholder cell. */
@@ -76,13 +83,27 @@ export default function DashboardWidgetCard({
   removeMode: "widget" | "chart";
   isOwner: boolean;
   isDouble: boolean;
+  /** Owner actions rendered before the built-in ones (the analysis Customize menu). */
+  headerActions?: React.ReactNode;
+  /**
+   * Rendered inside the shell above the body — the analysis narrative. Carries
+   * its own padding, so a call site can align it with whatever it introduces.
+   */
+  intro?: React.ReactNode;
+  /** Rendered inside the shell below the body — the analysis chart pager. */
+  footer?: React.ReactNode;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
-  onArmDrag: () => void;
-  onDisarmDrag: () => void;
+  onArmDrag: (event: React.PointerEvent) => void;
   onToggleSize: () => void;
   /** Persist a manual title (blank reverts to default); omitted disables rename. */
   onRename?: (name: string) => void;
   onRemove: () => void;
+  /**
+   * Takes over the X instead of the card's own confirm dialog, for a call site
+   * whose removal needs different copy. `onRemove` is then the caller's to
+   * fire once its own dialog is confirmed.
+   */
+  onRequestRemove?: () => void;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
@@ -146,7 +167,6 @@ export default function DashboardWidgetCard({
             flexShrink={0}
             aria-label="Drag to reposition"
             onPointerDown={onArmDrag}
-            onPointerUp={onDisarmDrag}
           />
         )}
         {editing ? (
@@ -185,6 +205,7 @@ export default function DashboardWidgetCard({
         )}
         {isOwner && (
           <Flex align="center" gap="4px" flexShrink={0}>
+            {headerActions}
             {onRename && !editing && (
               <IconButton
                 aria-label="Rename widget"
@@ -225,7 +246,9 @@ export default function DashboardWidgetCard({
               size="2xs"
               variant="ghost"
               color="fg.muted"
-              onClick={() => setConfirmOpen(true)}
+              onClick={() =>
+                onRequestRemove ? onRequestRemove() : setConfirmOpen(true)
+              }
             >
               <XIcon size={16} />
             </IconButton>
@@ -254,6 +277,8 @@ export default function DashboardWidgetCard({
           )}
         </Box>
       )}
+
+      {intro}
 
       {placeholder ? (
         <Flex
@@ -286,6 +311,8 @@ export default function DashboardWidgetCard({
           </Box>
         )
       )}
+
+      {footer}
 
       <Dialog.Root
         open={confirmOpen}

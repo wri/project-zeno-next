@@ -48,11 +48,24 @@ export const DashboardWidgetResponseSchema = z.object({
   position: z.number(),
   widget_type: z.string(),
   insight_id: z.string().nullable().optional(),
+  // Null (or absent, for a pre-sections backend) means the widget sits in the
+  // ungrouped top-level list rendered above the first section.
+  section_id: z.string().nullable().optional(),
   config: z.record(z.string(), z.unknown()).default({}),
   created_at: z.string(),
   // A malformed insight payload degrades to the "not available" placeholder
   // (catch → null) rather than failing the whole dashboard parse.
   insight: DashboardInsightSchema.nullable().optional().catch(null),
+});
+
+// One flat level of grouping. Widgets carry the back-reference
+// (`section_id`); a section never nests inside another.
+export const DashboardSectionResponseSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  position: z.number(),
+  created_at: z.string(),
 });
 
 export const DashboardResponseSchema = z.object({
@@ -64,6 +77,10 @@ export const DashboardResponseSchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   aois: z.array(DashboardAoiResponseSchema).default([]),
+  // Defaults to [] so a pre-sections backend parses as "no sections".
+  sections: z.array(DashboardSectionResponseSchema).default([]),
+  // Flat across every container, so `position` alone does NOT give render
+  // order — group with `widgetContainers` (model/dashboard-sections).
   widgets: z.array(DashboardWidgetResponseSchema).default([]),
 });
 
@@ -79,6 +96,7 @@ export type AoiSearchResult = z.infer<typeof AoiSearchResultSchema>;
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;
+export type DashboardSection = z.infer<typeof DashboardSectionResponseSchema>;
 export type DashboardInsight = z.infer<typeof DashboardInsightSchema>;
 export type DashboardCreateRequest = z.infer<
   typeof DashboardCreateRequestSchema
