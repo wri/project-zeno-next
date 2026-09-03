@@ -17,7 +17,7 @@ import { usePromptQuota } from "./hooks/usePromptQuota";
 import useChatStore from "./store/chatStore";
 import useSidebarStore from "./store/sidebarStore";
 import { isAppRoute, isDashboardDetailRoute } from "./utils/threadNavigation";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/app/lib/router";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // Intentionally narrower than the full-size panel (see FULLSIZE_CHAT_PANEL_WIDTH_PX).

@@ -20,7 +20,7 @@ import {
   Link,
   Badge,
 } from "@chakra-ui/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "@/app/lib/router";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";

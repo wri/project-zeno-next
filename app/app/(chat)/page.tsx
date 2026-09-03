@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, Suspense } from "react";
 import { Loader } from "@chakra-ui/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "@/app/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_CARDS } from "@/app/constants/datasets";

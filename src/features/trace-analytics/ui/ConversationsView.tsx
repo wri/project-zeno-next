@@ -6,8 +6,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Link } from "@/app/lib/router";
+import { useRouter, useSearchParams } from "@/app/lib/router";
 import {
   Box,
   Button,

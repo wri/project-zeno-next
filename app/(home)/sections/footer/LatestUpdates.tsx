@@ -14,7 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { Carousel } from "../../../components/ui/carousel";
 
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 const POSTS = [
