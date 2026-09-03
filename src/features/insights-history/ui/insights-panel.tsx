@@ -251,6 +251,7 @@ export function InsightsPanel() {
                   display="flex"
                   alignItems="center"
                   gap="8px"
+                  data-panel="analyses"
                 >
                   <Switch.HiddenInput />
                   <Switch.Control>
@@ -474,6 +475,7 @@ function InsightCard({
         selectedBg={INSIGHT_SELECTED_BG}
         showOnMap={shown}
         onShowOnMapChange={handleToggle}
+        dataPanel="analyses"
         onInfoClick={onOpen}
         infoTooltip="View analysis"
         badge={<VerificationBadge verification={item.verification} />}
