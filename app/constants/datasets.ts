@@ -150,6 +150,12 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
 export const IFL_FEATURE_FLAG = "ifl";
 
 /**
+ * Feature flag gating the curated LGMS net-flux insights while they are
+ * reviewed (PZB-1247/1248). Opt in with `?ff=net-flux`.
+ */
+export const NET_FLUX_FEATURE_FLAG = "net-flux";
+
+/**
  * Standalone IFL raster tiles. Same endpoint the backend hands back as the
  * `intact_forest` context layer, so the card and the context sub-layer render
  * from one source.
@@ -537,6 +543,28 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       note: "Balance between forest emissions and removals at the selected canopy density.",
       unit: "tCO2e/ha",
     },
+  },
+  {
+    dataset_id: 12,
+    dataset_name: "Land GHG Monitoring System (LGMS)",
+    shortName: "LGMS net flux",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "Land GHG Monitoring System (LGMS)",
+    context_layer: null,
+    img: "/dataset_card_net_flux.webp",
+    cadence: "annual",
+    resolution: "reported per admin area",
+    geographic_coverage:
+      "GADM administrative areas (country, state/province, district) only",
+    provider: "WRI",
+    defaultStartYear: 2016,
+    defaultEndYear: 2024,
+    categories: ["land-use"],
+    description:
+      "Maps annual gross greenhouse-gas emissions, gross CO2 removals, and net GHG flux from land — vegetation, soil, and agriculture — for GADM administrative areas from 2016 to 2024. Values are in MgCO2e; emissions are positive (a source), removals negative (a sink).",
+    // Analytics-only: no map tile layer. Picking this card enables the "View
+    // Analysis" flow for a GADM admin AOI without adding a raster to the map.
+    tile_url: "",
   },
 ];
 

@@ -285,4 +285,58 @@ describe("RestAnalysisGateway.fetchResult", () => {
       status: 404,
     });
   });
+
+  // Load-bearing: `netFluxGroupKey` and `orderInsightsForPager` both parse
+  // `{insightId}-chart-{n}` to tell which analysis a chart belongs to. The API
+  // sends its own per-chart UUID, and passing that through instead — which
+  // reads like the obviously-correct fix — silently splits the LGMS roll-ups
+  // back into separate pager entries and hides the DETAIL pill, with nothing
+  // else failing. Change the scheme only alongside both consumers.
+  it("ids charts by insight and position, not by the API's chart uuid", async () => {
+    const fetch = mockFetch({
+      id: INSIGHT_ID,
+      charts: [
+        {
+          id: "cb5498e0-5842-4344-8080-e68ccfa331ab",
+          title: "Net GHG Flux — Full Detail",
+          chart_type: "stacked-bar-with-line",
+          x_axis: "year",
+          chart_data: [],
+        },
+        {
+          id: "41d4deef-3c9c-4460-871e-e1c9e25fb306",
+          title: "Net GHG Flux by Category",
+          chart_type: "stacked-bar-with-line",
+          x_axis: "year",
+          chart_data: [],
+        },
+      ],
+    });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const result = await gateway.fetchResult(RESOURCE_URL);
+
+    expect(result.charts.map((c) => c.id)).toEqual([
+      `${INSIGHT_ID}-chart-0`,
+      `${INSIGHT_ID}-chart-1`,
+    ]);
+    // Charts of one analysis must share a prefix the consumers can group on.
+    const prefixes = result.charts.map((c) => c.id.replace(/-chart-\d+$/, ""));
+    expect(new Set(prefixes)).toEqual(new Set([INSIGHT_ID]));
+  });
+
+  it('defaults a missing y_axis to ""', async () => {
+    // The LGMS roll-ups omit y_axis entirely; Chart.yAxis is typed string.
+    const fetch = mockFetch({
+      id: INSIGHT_ID,
+      charts: [
+        { title: "Roll-up", chart_type: "bar", x_axis: "year", chart_data: [] },
+      ],
+    });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const result = await gateway.fetchResult(RESOURCE_URL);
+
+    expect(result.charts[0].yAxis).toBe("");
+  });
 });

@@ -203,12 +203,16 @@ export class RestAnalysisGateway implements AnalysisGateway {
       id: body.id,
       charts: body.charts.map(
         (c, i): Chart => ({
+          // Deliberately not `c.id`: the insight-scoped `{id}-chart-{n}`
+          // form is what `netFluxGroupKey` and `orderInsightsForPager` parse
+          // to group an analysis's charts. Changing it needs both consumers.
           id: `${body.id}-chart-${i}`,
           position: i,
           title: c.title,
           type: c.chart_type,
           xAxis: c.x_axis,
-          yAxis: c.y_axis,
+          // Omitted entirely on some charts (the LGMS roll-ups), not just "".
+          yAxis: c.y_axis ?? "",
           colorField: c.color_field ?? "",
           stackField: c.stack_field ?? "",
           groupField: c.group_field ?? "",
