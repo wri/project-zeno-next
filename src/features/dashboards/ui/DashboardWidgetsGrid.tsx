@@ -5,7 +5,6 @@ import { Box, type BoxProps, Flex, Text } from "@chakra-ui/react";
 
 import useAuthStore from "@/app/store/authStore";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
-import { packCells } from "../lib/packing";
 import {
   computeSectionMove,
   widgetContainers,
@@ -150,14 +149,22 @@ function DropSlot({ height, ...props }: { height: number } & BoxProps) {
   );
 }
 
+/** A grid item's flex basis: half a row for a single card, the whole row
+    for a double one; one column below `TWO_COLUMN_QUERY`. */
+function cellCss(double: boolean) {
+  return {
+    flex: "1 1 100%",
+    [TWO_COLUMN_QUERY]: { flex: `1 1 ${double ? "100%" : "calc(50% - 8px)"}` },
+  };
+}
+
 /**
  * One container's grid — the ungrouped top level, or one section's widgets.
  *
- * Layout is `packCells`' segments rather than CSS grid rows: each card is only
- * as tall as its content, and a run of half-width cells deals into two
- * tightly-stacked columns. Below `TWO_COLUMN_QUERY` everything is one column —
- * the wrappers flatten away (`display: contents`) and each item's `order`
- * restores the flat arrangement order.
+ * Cards flow in arrangement order into rows of at most two, per the design:
+ * a wrapping flex list where every card is a sibling. That is what makes the
+ * drop slot an exact preview — it takes a cell and every later card shifts
+ * along — and a lone card on the last row stretches to the full width.
  *
  * Items are keyed on `widget.id` — never fold position in, or React remounts
  * map widgets mid-drag (see DashboardWidgetsGrid.reorder.test.tsx).
@@ -183,21 +190,10 @@ function ContainerGrid({
 
   const areaAoi = dashboard.aois[0];
 
-  // Packing sees only the persisted widgets: the drop slot is rendered beside
-  // the card it precedes, never packed with them. A slot that joined the deal
-  // would flip later half-width cards between the columns on every pointer
-  // move — a different React parent each time, which unmounts a map widget
-  // mid-frame (the crash the reorder test guards).
-  const segments = useMemo(
-    () =>
-      packCells(
-        container.widgets,
-        (widget) => topLevelSize(widget) === "double"
-      ),
-    [container.widgets]
-  );
   const isDropTarget = !!drag && drag.key === container.key;
   const slotBeforeId = isDropTarget ? drag.beforeId : null;
+  // The slot takes the cell the card in flight would: its own span.
+  const dragged = drag && dashboard.widgets.find((w) => w.id === drag.id);
 
   const toggleSize = (widget: DashboardWidget) =>
     updateWidget.mutate({
@@ -210,15 +206,15 @@ function ContainerGrid({
       },
     });
 
-  const renderPlaceholder = (order: number) => (
+  const placeholder = (
     <DropSlot
       data-testid="widget-drop-slot"
       height={drag?.rect.height ?? 0}
-      css={{ order, [TWO_COLUMN_QUERY]: { order: 0 } }}
+      css={cellCss(!!dragged && topLevelSize(dragged) === "double")}
     />
   );
 
-  const renderWidget = (widget: DashboardWidget, order: number) => {
+  const renderWidget = (widget: DashboardWidget) => {
     const size = topLevelSize(widget);
     const body =
       widget.widget_type === "insight" ? null : standaloneBody(widget);
@@ -238,7 +234,7 @@ function ContainerGrid({
         data-widget-id={widget.id}
         {...(lifted ? {} : { [DRAG_ITEM_ATTR]: widget.id })}
         minW={0}
-        css={{ order, [TWO_COLUMN_QUERY]: { order: 0 } }}
+        css={cellCss(size === "double")}
         borderRadius="sm"
         {...(lifted && liftedProps(lifted))}
       >
@@ -304,17 +300,8 @@ function ContainerGrid({
     );
   };
 
-  // The slot renders as the card's own sibling, so it can appear and vanish
-  // without moving a single widget's fiber.
-  const renderCell = (widget: DashboardWidget, order: number) => (
-    <Fragment key={widget.id}>
-      {slotBeforeId === widget.id && renderPlaceholder(order)}
-      {renderWidget(widget, order)}
-    </Fragment>
-  );
-
   if (container.widgets.length === 0) {
-    if (isDropTarget) return renderPlaceholder(0);
+    if (isDropTarget) return placeholder;
     // An empty top level is only on screen mid-drag, as the panel the dragged
     // widget can be put back into — it just holds the space.
     return container.section ? (
@@ -327,41 +314,15 @@ function ContainerGrid({
   }
 
   return (
-    <Flex direction="column" gap={4} align="stretch">
-      {segments.map((segment, segmentIndex) =>
-        segment.kind === "full" ? (
-          renderCell(segment.cell.item, segment.cell.index)
-        ) : (
-          <Flex
-            // Keyed on the run's ordinal, not its first card: a key that moved
-            // with the content would remount every card in the run whenever
-            // the arrangement above it changed.
-            key={`columns-${segmentIndex}`}
-            gap={4}
-            align="flex-start"
-            display="contents"
-            css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
-          >
-            {[segment.left, segment.right].map((column, side) => (
-              <Flex
-                key={side === 0 ? "left" : "right"}
-                direction="column"
-                gap={4}
-                flex="1"
-                minW={0}
-                display="contents"
-                css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
-              >
-                {column.map((packed) => renderCell(packed.item, packed.index))}
-              </Flex>
-            ))}
-          </Flex>
-        )
-      )}
+    <Flex wrap="wrap" gap={4} align="flex-start">
+      {container.widgets.map((widget) => (
+        <Fragment key={widget.id}>
+          {slotBeforeId === widget.id && placeholder}
+          {renderWidget(widget)}
+        </Fragment>
+      ))}
       {/* "After everything" — the one slot that follows no card. */}
-      {isDropTarget &&
-        slotBeforeId === null &&
-        renderPlaceholder(container.widgets.length)}
+      {isDropTarget && slotBeforeId === null && placeholder}
     </Flex>
   );
 }
