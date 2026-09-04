@@ -21,7 +21,7 @@ interface RawJobResource {
 
 interface RawJobResponse {
   id: string;
-  status: "pending" | "running" | "completed";
+  status: "pending" | "running" | "completed" | "failed";
   resources: RawJobResource[];
 }
 
@@ -155,6 +155,11 @@ export class RestAnalysisGateway implements AnalysisGateway {
           })
         ),
       };
+    }
+
+    // Terminal failure: no Retry-After is sent and `resources` stays empty.
+    if (body.status === "failed") {
+      return { status: "failed" };
     }
 
     const retryAfterRaw = response.headers.get("Retry-After");

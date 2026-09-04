@@ -162,6 +162,17 @@ describe("RestAnalysisGateway.poll", () => {
     });
   });
 
+  it("returns a failed outcome when the job status is failed", async () => {
+    // The backend sends no Retry-After for a terminal failure and leaves
+    // resources empty; neither may leak into the outcome.
+    const fetch = mockFetch({ id: JOB_ID, status: "failed", resources: [] });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const outcome = await gateway.poll(JOB_ID);
+
+    expect(outcome).toEqual({ status: "failed" });
+  });
+
   it("GETs /api/jobs/{id}", async () => {
     const fetch = mockFetch({ id: JOB_ID, status: "pending", resources: [] });
     const gateway = new RestAnalysisGateway(fetch);

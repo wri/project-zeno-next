@@ -3,6 +3,7 @@ import type { AnalysisGateway } from "./analysis-gateway";
 import type { Clock } from "./clock";
 import type { AnalysisSelection } from "./analysis-selection";
 import type { AnalysisResult } from "./analysis-result";
+import { AnalysisJobFailedError } from "./analysis-error";
 
 /** Stop polling once the sum of Retry-After values exceeds this many seconds. */
 const DEFAULT_TIMEOUT_SECS = 60;
@@ -57,6 +58,13 @@ export class LROAnalysisService implements AnalysisService {
             name: selection.area.name,
           },
         };
+      }
+
+      // Terminal failure: surface it at once. Without this branch a failed job
+      // would be re-polled until the timeout budget ran out, so a fast
+      // backend "no" looked like a minute-long stall.
+      if (outcome.status === "failed") {
+        throw new AnalysisJobFailedError(job.id);
       }
 
       waitedSecs += outcome.retryAfterSecs;
