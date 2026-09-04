@@ -21,6 +21,13 @@ export interface LiftedRect {
 
 export interface DragState extends DropSlot {
   id: string;
+  /**
+   * Set once the item is dropped and its move is pending: the slot stays
+   * where it is, and the item hidden, until the caller's data reflects the
+   * move and it calls `finish()`. Ending the drag any earlier paints the old
+   * order for a frame before the optimistic update lands.
+   */
+  dropped?: boolean;
   /** Where the item was lifted from; it stays this size while in flight. */
   rect: LiftedRect;
   /**
@@ -143,7 +150,8 @@ export function useDrag({
   attrs = { zone: DROP_ZONE_ATTR, item: DRAG_ITEM_ATTR },
   tilt = 2,
 }: {
-  onDrop: (id: string, slot: DropSlot) => void;
+  /** Returns whether a change is pending — if so the drag ends on `finish()`. */
+  onDrop: (id: string, slot: DropSlot) => boolean;
   /** The attributes naming this gesture's zones and items. */
   attrs?: { zone: string; item: string };
   /** The lifted item's rotation, in degrees. */
@@ -151,6 +159,10 @@ export function useDrag({
 }) {
   const { zone: zoneAttr, item: itemAttr } = attrs;
   const [state, setState] = useState<DragState | null>(null);
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  });
   // The lifted item follows the cursor through the DOM, not through React
   // state: the grid attaches this to the item in flight.
   const liftedRef = useRef<HTMLDivElement | null>(null);
@@ -181,8 +193,15 @@ export function useDrag({
     []
   );
 
-  // One origin per drag, so the listeners subscribe once per gesture.
-  const origin = state?.origin ?? null;
+  /** Ends a dropped drag; a no-op otherwise. */
+  const finish = useCallback(
+    () => setState((current) => (current?.dropped ? null : current)),
+    []
+  );
+
+  // One origin per gesture, so the listeners subscribe once per drag and
+  // let go at the drop.
+  const origin = state && !state.dropped ? state.origin : null;
 
   useEffect(() => {
     if (!origin) return;
@@ -242,15 +261,13 @@ export function useDrag({
     };
 
     const onUp = () => {
-      setState((current) => {
-        if (current) {
-          dropRef.current(current.id, {
-            key: current.key,
-            beforeId: current.beforeId,
-          });
-        }
-        return null;
+      const current = stateRef.current;
+      if (!current) return;
+      const pending = dropRef.current(current.id, {
+        key: current.key,
+        beforeId: current.beforeId,
       });
+      setState(pending ? { ...current, dropped: true } : null);
     };
 
     document.addEventListener("pointermove", onMove);
@@ -279,5 +296,5 @@ export function useDrag({
     };
   }, [origin]);
 
-  return { state, start, liftedRef };
+  return { state, start, finish, liftedRef };
 }

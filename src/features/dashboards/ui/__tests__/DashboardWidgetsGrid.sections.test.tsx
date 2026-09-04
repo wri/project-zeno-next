@@ -237,6 +237,43 @@ describe("DashboardWidgetsGrid sections", () => {
     );
   });
 
+  // Ending the drag before the data moves would paint the old order for a
+  // frame, then jump. So the slot holds the landing spot, and the card stays
+  // out of the layout, until the dashboard reflects the drop.
+  it("keeps the drop slot until the dashboard reflects the move", async () => {
+    twoContainerLayout();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const tree = (d: Dashboard) => (
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetsGrid dashboard={d} />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+    const { rerender } = render(tree(fourNotes()));
+
+    dragTo("w2", 500, 210);
+    await waitFor(() => expect(updateWidget).toHaveBeenCalled());
+    expect(screen.getByTestId("widget-drop-slot")).toBeTruthy();
+
+    rerender(
+      tree(
+        dashboard(
+          [section("s1", "Deforestation", 0)],
+          [
+            note("t1", "Top note", 0),
+            note("t2", "Second top note", 1),
+            note("w2", "Grouped second", 0, "s1"),
+            note("w1", "Grouped first", 1, "s1"),
+          ]
+        )
+      )
+    );
+    expect(screen.queryByTestId("widget-drop-slot")).toBeNull();
+  });
+
   // The move the prototype's cross-container drag performs: the widget's own
   // patch carries the grouping, and both containers renumber from 0.
   it("moves a widget into a section it was dropped on", async () => {

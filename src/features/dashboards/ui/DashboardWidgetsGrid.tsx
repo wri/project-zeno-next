@@ -119,9 +119,11 @@ function liftFrom(
  * keeps its measured box, so a map inside never resizes. `useDrag` moves and
  * shrinks it with a `transform`, around the grab point.
  */
-function liftedProps({ rect, grab }: DragState): BoxProps {
+function liftedProps({ rect, grab, dropped }: DragState): BoxProps {
   return {
     position: "absolute",
+    // Dropped: the slot marks the landing spot until the data catches up.
+    visibility: dropped ? "hidden" : undefined,
     left: `${rect.left}px`,
     top: `${rect.top}px`,
     w: `${rect.width}px`,
@@ -356,7 +358,7 @@ export default function DashboardWidgetsGrid({
     onDrop: (widgetId, slot) => {
       const containers = containersRef.current;
       const target = containers.find((c) => c.key === slot.key);
-      if (!target) return;
+      if (!target) return false;
       // The slot's index counts the container without the dragged widget,
       // which is what `computeWidgetMove` expects.
       const ids = target.widgets
@@ -370,6 +372,7 @@ export default function DashboardWidgetsGrid({
         at === -1 ? ids.length : at
       );
       if (patches.length > 0) moveWidgets.mutate(patches);
+      return patches.length > 0;
     },
   });
 
@@ -387,11 +390,21 @@ export default function DashboardWidgetsGrid({
         at === -1 ? ids.length : at
       );
       if (patches.length > 0) moveSections.mutate(patches);
+      return patches.length > 0;
     },
   });
 
   const dragState = drag.state;
   const sectionState = sectionDrag.state;
+
+  // A dropped drag ends once the dashboard reflects the move (the optimistic
+  // update, or its rollback), so the item lands straight in its new slot.
+  const { finish: finishDrag } = drag;
+  const { finish: finishSectionDrag } = sectionDrag;
+  useEffect(() => {
+    finishDrag();
+    finishSectionDrag();
+  }, [dashboard, finishDrag, finishSectionDrag]);
 
   // A drag keeps every container on screen, the empty ones included: the panel
   // a widget was lifted out of has to stay somewhere it can go back to.
