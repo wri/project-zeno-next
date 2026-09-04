@@ -3,7 +3,10 @@ import { describe, it, expect } from "vitest";
 import {
   chartTitleOverride,
   dashboardWidgetToInsightWidgets,
+  findCuratedWidgetForDataset,
+  hasDashboardContent,
   hasWidgetCustomization,
+  unresolvedPendingInsightWidgets,
   insightModule,
   isChartShown,
   isSummaryShown,
@@ -462,6 +465,132 @@ describe("insightModule", () => {
       },
     });
     expect(insightModule(generated).curated).toBe(false);
+  });
+});
+
+describe("findCuratedWidgetForDataset", () => {
+  const curatedTcl = widget({
+    id: "w-tcl",
+    insight_id: "ins-tcl",
+    insight: {
+      id: "ins-tcl",
+      insight_text: "",
+      codeact_parts: [],
+      charts: [
+        chart({ id: "c-1", dataset_id: 4 }),
+        chart({ id: "c-2", position: 1, dataset_id: 4 }),
+      ],
+    },
+  });
+
+  it("finds the curated widget whose charts all carry the dataset id", () => {
+    expect(findCuratedWidgetForDataset([widget(), curatedTcl], 4)?.id).toBe(
+      "w-tcl"
+    );
+  });
+
+  it("returns undefined when no curated widget matches the dataset", () => {
+    expect(findCuratedWidgetForDataset([curatedTcl], 5)).toBeUndefined();
+  });
+
+  it("ignores AI-generated insights even when their charts carry the id", () => {
+    const generated = widget({
+      insight: {
+        id: "ins-ai",
+        insight_text: "",
+        codeact_parts: [{ type: "code_block", content: "ZGY=" }],
+        charts: [chart({ dataset_id: 4 })],
+      },
+    });
+    expect(findCuratedWidgetForDataset([generated], 4)).toBeUndefined();
+  });
+
+  it("ignores widgets with no insight, no charts, or charts without a dataset id", () => {
+    const noInsight = widget({ insight: null });
+    const noCharts = widget({
+      insight: { id: "x", insight_text: "", codeact_parts: [], charts: [] },
+    });
+    const legacy = widget(); // curated by provenance, but charts lack dataset_id
+    expect(
+      findCuratedWidgetForDataset([noInsight, noCharts, legacy], 4)
+    ).toBeUndefined();
+  });
+
+  it("ignores text widgets", () => {
+    const text = widget({
+      widget_type: "text",
+      insight_id: null,
+      insight: null,
+      config: { text: "note" },
+    });
+    expect(findCuratedWidgetForDataset([text], 4)).toBeUndefined();
+  });
+});
+
+describe("hasDashboardContent", () => {
+  it("shows the grid for real widgets, pending analyses, or both", () => {
+    expect(hasDashboardContent(0, 0)).toBe(false);
+    expect(hasDashboardContent(1, 0)).toBe(true);
+    expect(hasDashboardContent(0, 1)).toBe(true);
+    expect(hasDashboardContent(2, 3)).toBe(true);
+  });
+});
+
+describe("unresolvedPendingInsightWidgets", () => {
+  const pendingTcl = {
+    key: "d1:4",
+    dashboardId: "d1",
+    datasetId: 4,
+    title: "Tree cover loss in Pará",
+    datasetName: "Tree cover loss",
+    chartCountHint: 2,
+    startedAt: 1_000,
+  };
+  const curatedTcl = widget({
+    id: "w-tcl",
+    insight_id: "ins-tcl",
+    insight: {
+      id: "ins-tcl",
+      insight_text: "",
+      codeact_parts: [],
+      charts: [chart({ dataset_id: 4 })],
+    },
+  });
+
+  it("keeps an entry no widget has superseded", () => {
+    expect(unresolvedPendingInsightWidgets([pendingTcl], [widget()])).toEqual([
+      pendingTcl,
+    ]);
+  });
+
+  it("drops an entry once a widget carries its insight id", () => {
+    const landed = widget({ id: "w-new", insight_id: "ins-new" });
+    expect(
+      unresolvedPendingInsightWidgets(
+        [{ ...pendingTcl, insightId: "ins-new" }],
+        [landed]
+      )
+    ).toEqual([]);
+  });
+
+  it("drops an entry when a curated widget for its dataset is on the dashboard", () => {
+    expect(unresolvedPendingInsightWidgets([pendingTcl], [curatedTcl])).toEqual(
+      []
+    );
+  });
+
+  it("keeps an entry when only an AI-generated widget covers the dataset", () => {
+    const generated = widget({
+      insight: {
+        id: "ins-ai",
+        insight_text: "",
+        codeact_parts: [{ type: "code_block", content: "ZGY=" }],
+        charts: [chart({ dataset_id: 4 })],
+      },
+    });
+    expect(unresolvedPendingInsightWidgets([pendingTcl], [generated])).toEqual([
+      pendingTcl,
+    ]);
   });
 });
 

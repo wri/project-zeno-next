@@ -34,6 +34,9 @@ export const DashboardInsightChartSchema = z.object({
   y_axis: z.string().default(""),
   series_fields: z.array(z.string()).nullable().optional(),
   chart_data: z.unknown(),
+  // The catalogue dataset a curated chart was computed from; absent on older
+  // rows and on AI-generated charts.
+  dataset_id: z.number().nullable().optional(),
 });
 
 export const DashboardInsightSchema = z.object({

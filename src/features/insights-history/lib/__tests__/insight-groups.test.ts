@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  analysisResultToGroup,
   liveWidgetsToGroups,
   mergeGroupsById,
+  partitionByVerification,
   recordToGroup,
 } from "../insight-groups";
 import type { InsightRecord } from "@/src/entities/insight";
+import type { AnalysisResult } from "@/src/features/analysis";
 import type { InsightWidget } from "@/app/types/chat";
 
 function chart(overrides: Record<string, unknown> = {}) {
@@ -61,7 +64,7 @@ describe("recordToGroup", () => {
     expect(group.verification).toBe("ai-generated");
   });
 
-  it("prefers the record title and marks curated groups unaddable", () => {
+  it("prefers the record title and keeps curated groups addable by their id", () => {
     const group = recordToGroup(
       record({
         verification: "verified",
@@ -70,9 +73,80 @@ describe("recordToGroup", () => {
       })
     );
     expect(group.title).toBe("Tree cover loss in Brazil");
-    expect(group.addableInsightId).toBeUndefined();
+    // A persisted curated insight is a real row the dashboards API can add.
+    expect(group.addableInsightId).toBe("ins-1");
     expect(group.widgets.every((w) => w.curated)).toBe(true);
     expect(group.source).toBe("Global Forest Watch");
+  });
+});
+
+describe("analysisResultToGroup", () => {
+  const result: AnalysisResult = {
+    id: "ins-7",
+    charts: [
+      chart({ id: "c-7a", title: "Annual tree cover loss" }),
+      chart({ id: "c-7b", position: 1, title: "Annual GHG emissions" }),
+    ],
+    params: { source: "gadm", srcId: "BRA.14", name: "Pará" },
+  };
+  const ctx = { datasetName: "Tree cover loss", areaName: "Pará" };
+
+  it("builds a verified, addable group titled after the dataset and area", () => {
+    const group = analysisResultToGroup(result, ctx);
+    expect(group.id).toBe("ins-7");
+    expect(group.title).toBe("Tree cover loss in Pará");
+    expect(group.source).toBe("Tree cover loss");
+    expect(group.verification).toBe("verified");
+    expect(group.addableInsightId).toBe("ins-7");
+  });
+
+  it("stamps every widget with the insight id, curated flag and dataset", () => {
+    const group = analysisResultToGroup(result, ctx);
+    expect(group.widgets).toHaveLength(2);
+    for (const widget of group.widgets) {
+      expect(widget.insightId).toBe("ins-7");
+      expect(widget.curated).toBe(true);
+      expect(widget.datasetName).toBe("Tree cover loss");
+      expect(widget.analysisParams).toEqual({
+        areas: ["Pará"],
+        dataset: "Tree cover loss",
+      });
+    }
+  });
+
+  it("keeps each chart's own title inside the group", () => {
+    const group = analysisResultToGroup(result, ctx);
+    expect(group.widgets.map((w) => w.title)).toEqual([
+      "Annual tree cover loss",
+      "Annual GHG emissions",
+    ]);
+  });
+
+  it("maps a completed job with no charts to an empty group", () => {
+    const group = analysisResultToGroup({ id: "ins-8", charts: [] }, ctx);
+    expect(group.widgets).toEqual([]);
+    expect(group.addableInsightId).toBe("ins-8");
+  });
+});
+
+describe("partitionByVerification", () => {
+  it("splits records by verification, preserving order within each side", () => {
+    const records = [
+      record({ id: "a", verification: "verified" }),
+      record({ id: "b" }),
+      record({ id: "c", verification: "verified" }),
+      record({ id: "d" }),
+    ];
+    const { curated, aiGenerated } = partitionByVerification(records);
+    expect(curated.map((r) => r.id)).toEqual(["a", "c"]);
+    expect(aiGenerated.map((r) => r.id)).toEqual(["b", "d"]);
+  });
+
+  it("returns two empty lists for no records", () => {
+    expect(partitionByVerification([])).toEqual({
+      curated: [],
+      aiGenerated: [],
+    });
   });
 });
 

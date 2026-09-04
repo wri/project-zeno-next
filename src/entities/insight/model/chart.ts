@@ -21,6 +21,12 @@ export interface Chart {
   seriesFields: string[];
   /** Maps to InsightChartResponse.chart_data */
   data: Record<string, unknown>[];
+  /**
+   * Maps to InsightChartResponse.dataset_id — the catalogue dataset the chart
+   * was computed from. Populated for curated (deterministic) charts; absent
+   * on older rows and on AI-generated charts.
+   */
+  datasetId?: number;
   /** Maps to InsightChartResponse.color_map */
   colorMap?: Record<string, string>;
   /** Maps to InsightChartResponse.series_color */
