@@ -20,10 +20,17 @@ const updateWidget = vi
     (dashboardId: string, widgetId: string, patch: unknown) => Promise<void>
   >()
   .mockResolvedValue(undefined);
+const updateSection = vi
+  .fn<
+    (dashboardId: string, sectionId: string, patch: unknown) => Promise<void>
+  >()
+  .mockResolvedValue(undefined);
 vi.mock("../../api/dashboards", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../api/dashboards")>()),
   updateWidget: (dashboardId: string, widgetId: string, patch: unknown) =>
     updateWidget(dashboardId, widgetId, patch),
+  updateSection: (dashboardId: string, sectionId: string, patch: unknown) =>
+    updateSection(dashboardId, sectionId, patch),
 }));
 
 import DashboardWidgetsGrid from "../DashboardWidgetsGrid";
@@ -95,6 +102,7 @@ const renderGrid = (d: Dashboard) =>
 describe("DashboardWidgetsGrid sections", () => {
   beforeEach(() => {
     updateWidget.mockClear();
+    updateSection.mockClear();
     useAuthStore.setState({ userId: "u1" });
   });
 
@@ -262,6 +270,62 @@ describe("DashboardWidgetsGrid sections", () => {
         ["w2", { id: "w2", position: 0 }],
       ])
     );
+  });
+
+  // Sections drag as a stack: the panels' column is the zone, each panel an
+  // item, and a drop writes each moved section's new position.
+  it("reorders sections by dragging one above another", async () => {
+    const boxes: Record<string, [number, number, number, number]> = {
+      "zone:sections": [0, 0, 1000, 400],
+      "section:s1": [0, 0, 1000, 200],
+      "section:s2": [0, 200, 1000, 400],
+    };
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: Element) {
+        const zone = this.getAttribute("data-section-zone");
+        const id = this.getAttribute("data-section-id");
+        const [left, top, right, bottom] = (zone !== null
+          ? boxes[`zone:${zone}`]
+          : id
+            ? boxes[`section:${id}`]
+            : undefined) ?? [0, 0, 0, 0];
+        return {
+          left,
+          top,
+          right,
+          bottom,
+          x: left,
+          y: top,
+          width: right - left,
+          height: bottom - top,
+          toJSON: () => ({}),
+        } as DOMRect;
+      }
+    );
+    renderGrid(
+      dashboard(
+        [section("s1", "Deforestation", 0), section("s2", "Fires", 1)],
+        [note("w1", "Grouped first", 0, "s1"), note("w2", "Fire note", 0, "s2")]
+      )
+    );
+
+    const s2 = document.querySelector<HTMLElement>('[data-section-id="s2"]')!;
+    fireEvent.pointerDown(
+      within(s2).getByLabelText("Drag to reposition section"),
+      { button: 0 }
+    );
+    // Onto the top half of the first section.
+    fireEvent.pointerMove(document, { clientX: 500, clientY: 10 });
+    expect(screen.getByTestId("section-drop-slot")).toBeTruthy();
+    fireEvent.pointerUp(document);
+
+    await waitFor(() =>
+      expect(updateSection.mock.calls.map((c) => [c[1], c[2]])).toEqual([
+        ["s2", { position: 0 }],
+        ["s1", { position: 1 }],
+      ])
+    );
+    expect(updateWidget).not.toHaveBeenCalled();
   });
 
   it("collapses a section to its heading and back", async () => {

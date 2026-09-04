@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Flex, Heading, IconButton, Text } from "@chakra-ui/react";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import { Box, Flex, Heading, Icon, IconButton, Text } from "@chakra-ui/react";
+import { CaretDownIcon, DotsSixVerticalIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import type { DashboardSection as Section } from "../api/schemas";
-import { DROP_ZONE_ATTR } from "./useWidgetDrag";
+import { DROP_ZONE_ATTR } from "./useDrag";
 
 /**
  * The white panel one container of the dashboard renders in — a section, or
@@ -14,8 +14,9 @@ import { DROP_ZONE_ATTR } from "./useWidgetDrag";
  * gutter between panels, never the ground a card floats on: that contrast is
  * what makes a section read as one band.
  *
- * A section adds a heading block — collapse toggle, title, provenance caption,
- * then the agent's description as a subtitle — closed by a full-width rule.
+ * A section adds a heading block — drag handle, collapse toggle, title,
+ * provenance caption, then the agent's description as a subtitle — closed by
+ * a full-width rule.
  * Collapsing is view-only state, never persisted, so it can't race the agent's
  * own edits to the section.
  */
@@ -25,11 +26,16 @@ export default function DashboardSection({
   isDropTarget = false,
   /** The drop-zone identity the grid's drag hit-testing looks for. */
   dropZoneKey,
+  isOwner = false,
+  /** Pointer down on the drag handle — starts the grid's section drag. */
+  onArmDrag,
   children,
 }: {
   section: Section | null;
   isDropTarget?: boolean;
   dropZoneKey?: string;
+  isOwner?: boolean;
+  onArmDrag?: (event: React.PointerEvent) => void;
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -57,18 +63,31 @@ export default function DashboardSection({
           pb={collapsed ? 0 : "12px"}
         >
           <Flex align="center" gap="4px" minW={0}>
+            {isOwner && onArmDrag && (
+              <Icon
+                as={DotsSixVerticalIcon}
+                boxSize="16px"
+                color="fg.muted"
+                cursor="grab"
+                flexShrink={0}
+                aria-label="Drag to reposition section"
+                onPointerDown={onArmDrag}
+              />
+            )}
             <IconButton
               aria-label={collapsed ? "Expand section" : "Collapse section"}
               title={collapsed ? "Expand section" : "Collapse section"}
               aria-expanded={!collapsed}
               size="2xs"
+              minW="20px"
+              h="20px"
               variant="ghost"
               color="fg.muted"
               flexShrink={0}
               onClick={() => setCollapsed((value) => !value)}
             >
               <CaretDownIcon
-                size={16}
+                size={12}
                 style={{
                   transform: collapsed ? "rotate(-90deg)" : undefined,
                   transition: "transform 0.15s",

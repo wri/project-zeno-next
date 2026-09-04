@@ -1,12 +1,13 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef } from "react";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, type BoxProps, Flex, Text } from "@chakra-ui/react";
 
 import useAuthStore from "@/app/store/authStore";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { packCells } from "../lib/packing";
 import {
+  computeSectionMove,
   widgetContainers,
   type WidgetContainer,
 } from "../model/dashboard-sections";
@@ -28,6 +29,7 @@ import {
 } from "../lib/mapWidgets";
 import {
   useDeleteWidget,
+  useMoveSections,
   useMoveWidgets,
   useUpdateWidget,
 } from "./dashboardQueries";
@@ -39,9 +41,12 @@ import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
 import {
   DRAG_ITEM_ATTR,
-  useWidgetDrag,
-  type WidgetDragState,
-} from "./useWidgetDrag";
+  SECTION_ITEM_ATTR,
+  SECTION_ZONE_ATTR,
+  useDrag,
+  type DragState,
+  type LiftedRect,
+} from "./useDrag";
 
 /**
  * The body of a standalone (non-insight) grid item: the map layer for map
@@ -86,6 +91,54 @@ function topLevelSize(widget: DashboardWidget): WidgetSize {
 }
 
 /**
+ * An item's box relative to `within` — the grid, whose container query makes
+ * it the containing block a lifted item is positioned in.
+ */
+function rectWithin(item: Element | null, within: Element | null): LiftedRect {
+  const box = item?.getBoundingClientRect();
+  const bounds = within?.getBoundingClientRect();
+  return {
+    left: (box?.left ?? 0) - (bounds?.left ?? 0),
+    top: (box?.top ?? 0) - (bounds?.top ?? 0),
+    width: box?.width ?? 0,
+    height: box?.height ?? 0,
+  };
+}
+
+/**
+ * The item in flight leaves the layout (its slot is the placeholder) and
+ * keeps its measured box, so a map inside never resizes. `useDrag` moves it
+ * with a `transform`.
+ */
+function liftedProps(rect: LiftedRect): BoxProps {
+  return {
+    position: "absolute",
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    w: `${rect.width}px`,
+    zIndex: 2000,
+    pointerEvents: "none",
+    boxShadow: "0 16px 32px rgba(19,22,25,0.22), 0 3px 8px rgba(19,22,25,0.14)",
+  };
+}
+
+/** The dashed slot a lifted item would drop into. */
+function DropSlot({ height, ...props }: { height: number } & BoxProps) {
+  return (
+    <Box
+      minW={0}
+      h={`${Math.max(height, 80)}px`}
+      bg="#F0F4FF"
+      border="2px dashed"
+      borderColor="primary.solid"
+      borderRadius="sm"
+      aria-hidden
+      {...props}
+    />
+  );
+}
+
+/**
  * One container's grid — the ungrouped top level, or one section's widgets.
  *
  * Layout is `packCells`' segments rather than CSS grid rows: each card is only
@@ -108,7 +161,7 @@ function ContainerGrid({
   dashboard: Dashboard;
   container: WidgetContainer;
   isOwner: boolean;
-  drag: WidgetDragState | null;
+  drag: DragState | null;
   /** Attached to the card in flight, which the drag moves via `transform`. */
   liftedRef: React.Ref<HTMLDivElement>;
   onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
@@ -146,16 +199,10 @@ function ContainerGrid({
     });
 
   const renderPlaceholder = (order: number) => (
-    <Box
+    <DropSlot
       data-testid="widget-drop-slot"
-      minW={0}
-      h={`${Math.max(drag?.rect.height ?? 0, 80)}px`}
-      bg="#F0F4FF"
-      border="2px dashed"
-      borderColor="primary.solid"
-      borderRadius="sm"
+      height={drag?.rect.height ?? 0}
       css={{ order, [TWO_COLUMN_QUERY]: { order: 0 } }}
-      aria-hidden
     />
   );
 
@@ -166,7 +213,7 @@ function ContainerGrid({
     const title =
       body?.map?.title ??
       (typeof widget.config.title === "string" ? widget.config.title : "");
-    const lifted = drag?.widgetId === widget.id ? drag.rect : null;
+    const lifted = drag?.id === widget.id ? drag.rect : null;
     const armDrag = (event: React.PointerEvent) => onDragStart(event, widget);
 
     return (
@@ -181,19 +228,7 @@ function ContainerGrid({
         minW={0}
         css={{ order, [TWO_COLUMN_QUERY]: { order: 0 } }}
         borderRadius="sm"
-        // The card in flight leaves the layout (its slot is the placeholder)
-        // and keeps its measured box, so the map inside never resizes. The
-        // grid's container query makes the grid its containing block.
-        {...(lifted && {
-          position: "absolute",
-          left: `${lifted.left}px`,
-          top: `${lifted.top}px`,
-          w: `${lifted.width}px`,
-          zIndex: 2000,
-          pointerEvents: "none",
-          boxShadow:
-            "0 16px 32px rgba(19,22,25,0.22), 0 3px 8px rgba(19,22,25,0.14)",
-        })}
+        {...(lifted && liftedProps(lifted))}
       >
         <DashboardWidgetBoundary resetKey={JSON.stringify(widget.config)}>
           {widget.widget_type === "insight" ? (
@@ -324,9 +359,10 @@ function ContainerGrid({
  * top-level list first, then one panel per section (`widgetContainers` does
  * the grouping — the API's flat `widgets` is never a render order on its own).
  *
- * Drag-and-drop is owned here rather than per container because a drag can
- * cross containers: a widget dropped in a section is a `section_id` PATCH
- * alongside the renumbering of both containers (`computeWidgetMove`).
+ * Two drags live here. A widget drag can cross containers: a widget dropped
+ * in a section is a `section_id` PATCH alongside the renumbering of both
+ * containers (`computeWidgetMove`). A section drag reorders the panels
+ * themselves (`computeSectionMove`); the top-level panel always stays first.
  */
 export default function DashboardWidgetsGrid({
   dashboard,
@@ -336,13 +372,14 @@ export default function DashboardWidgetsGrid({
   const userId = useAuthStore((s) => s.userId);
   const isOwner = !!userId && userId === dashboard.user_id;
   const moveWidgets = useMoveWidgets(dashboard.id);
+  const moveSections = useMoveSections(dashboard.id);
 
-  // Read by the drop callback, which outlives the render that created it.
+  // Read by the drop callbacks, which outlive the render that created them.
   const containersRef = useRef<WidgetContainer[]>([]);
-  // The lifted card is positioned inside this box (see ContainerGrid).
+  // Lifted items are positioned inside this box.
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const drag = useWidgetDrag({
+  const drag = useDrag({
     onDrop: (widgetId, slot) => {
       const containers = containersRef.current;
       const target = containers.find((c) => c.key === slot.key);
@@ -362,7 +399,25 @@ export default function DashboardWidgetsGrid({
       if (patches.length > 0) moveWidgets.mutate(patches);
     },
   });
+
+  const sectionDrag = useDrag({
+    attrs: { zone: SECTION_ZONE_ATTR, item: SECTION_ITEM_ATTR },
+    onDrop: (sectionId, slot) => {
+      const ids = containersRef.current.flatMap((c) =>
+        c.section && c.section.id !== sectionId ? [c.section.id] : []
+      );
+      const at = slot.beforeId ? ids.indexOf(slot.beforeId) : -1;
+      const patches = computeSectionMove(
+        dashboard.sections,
+        sectionId,
+        at === -1 ? ids.length : at
+      );
+      if (patches.length > 0) moveSections.mutate(patches);
+    },
+  });
+
   const dragState = drag.state;
+  const sectionState = sectionDrag.state;
 
   // A drag keeps every container on screen, the empty ones included: the panel
   // a widget was lifted out of has to stay somewhere it can go back to.
@@ -377,6 +432,7 @@ export default function DashboardWidgetsGrid({
   useEffect(() => {
     containersRef.current = containers;
   });
+  const sections = containers.flatMap((c) => (c.section ? [c.section] : []));
 
   return (
     <Box
@@ -385,44 +441,96 @@ export default function DashboardWidgetsGrid({
     >
       {/* Panels read as bands of the page: the grey gutter between them is the
           only grey a widget ever sits next to. */}
-      <Flex direction="column" gap="12px" align="stretch">
-        {containers.map((container) => (
-          <DashboardSection
-            key={container.key}
-            section={container.section}
-            isDropTarget={!!dragState && dragState.key === container.key}
-            dropZoneKey={container.key}
-          >
-            <ContainerGrid
-              dashboard={dashboard}
-              container={container}
-              isOwner={isOwner}
-              drag={dragState}
-              liftedRef={drag.liftedRef}
-              onDragStart={(event, widget) => {
-                const next =
-                  container.widgets[container.widgets.indexOf(widget) + 1];
-                const item = (event.currentTarget as HTMLElement).closest(
-                  "[data-widget-id]"
-                );
-                const box = item?.getBoundingClientRect();
-                const grid = gridRef.current?.getBoundingClientRect();
-                drag.start(event, {
-                  widgetId: widget.id,
-                  key: container.key,
-                  // The slot opens where the card was.
-                  beforeId: next?.id ?? null,
-                  rect: {
-                    left: (box?.left ?? 0) - (grid?.left ?? 0),
-                    top: (box?.top ?? 0) - (grid?.top ?? 0),
-                    width: box?.width ?? 0,
-                    height: box?.height ?? 0,
-                  },
-                });
-              }}
-            />
-          </DashboardSection>
-        ))}
+      <Flex
+        direction="column"
+        gap="12px"
+        align="stretch"
+        {...{ [SECTION_ZONE_ATTR]: "sections" }}
+      >
+        {containers.map((container) => {
+          const section = container.section;
+          const lifted =
+            section && sectionState?.id === section.id
+              ? sectionState.rect
+              : null;
+          return (
+            <Fragment key={container.key}>
+              {section && sectionState?.beforeId === section.id && (
+                <DropSlot
+                  data-testid="section-drop-slot"
+                  height={sectionState.rect.height}
+                />
+              )}
+              <Box
+                ref={lifted ? sectionDrag.liftedRef : undefined}
+                data-section-id={section?.id}
+                {...(section && !lifted
+                  ? { [SECTION_ITEM_ATTR]: section.id }
+                  : {})}
+                {...(lifted && liftedProps(lifted))}
+              >
+                <DashboardSection
+                  section={section}
+                  isOwner={isOwner}
+                  isDropTarget={!!dragState && dragState.key === container.key}
+                  dropZoneKey={container.key}
+                  onArmDrag={
+                    section
+                      ? (event) => {
+                          const next = sections[sections.indexOf(section) + 1];
+                          sectionDrag.start(event, {
+                            id: section.id,
+                            key: "sections",
+                            // The slot opens where the section was.
+                            beforeId: next?.id ?? null,
+                            rect: rectWithin(
+                              (event.currentTarget as HTMLElement).closest(
+                                "[data-section-id]"
+                              ),
+                              gridRef.current
+                            ),
+                          });
+                        }
+                      : undefined
+                  }
+                >
+                  <ContainerGrid
+                    dashboard={dashboard}
+                    container={container}
+                    isOwner={isOwner}
+                    drag={dragState}
+                    liftedRef={drag.liftedRef}
+                    onDragStart={(event, widget) => {
+                      const next =
+                        container.widgets[
+                          container.widgets.indexOf(widget) + 1
+                        ];
+                      drag.start(event, {
+                        id: widget.id,
+                        key: container.key,
+                        // The slot opens where the card was.
+                        beforeId: next?.id ?? null,
+                        rect: rectWithin(
+                          (event.currentTarget as HTMLElement).closest(
+                            "[data-widget-id]"
+                          ),
+                          gridRef.current
+                        ),
+                      });
+                    }}
+                  />
+                </DashboardSection>
+              </Box>
+            </Fragment>
+          );
+        })}
+        {/* "After everything" — the slot below the last section. */}
+        {sectionState && sectionState.beforeId === null && (
+          <DropSlot
+            data-testid="section-drop-slot"
+            height={sectionState.rect.height}
+          />
+        )}
       </Flex>
     </Box>
   );

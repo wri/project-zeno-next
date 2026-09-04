@@ -92,3 +92,30 @@ export function widgetContainers(
       (c.section ? keepEmptySections : keepEmptyTopLevel)
   );
 }
+
+/** One section's new place after a drag: an index among the sections. */
+export interface SectionMovePatch {
+  id: string;
+  position: number;
+}
+
+/**
+ * The patches that move `sectionId` to index `toIndex` among the dashboard's
+ * sections, renumbered from 0. `toIndex` counts the list without the dragged
+ * section. A section already at its index is left out; a drop that changes
+ * nothing returns `[]`.
+ */
+export function computeSectionMove(
+  sections: readonly DashboardSection[],
+  sectionId: string,
+  toIndex: number
+): SectionMovePatch[] {
+  const sorted = [...sections].sort(byPosition);
+  if (!sorted.some((s) => s.id === sectionId)) return [];
+  const ids = sorted.map((s) => s.id).filter((id) => id !== sectionId);
+  ids.splice(Math.max(0, Math.min(toIndex, ids.length)), 0, sectionId);
+  const positions = new Map(sorted.map((s) => [s.id, s.position]));
+  return ids.flatMap((id, position) =>
+    positions.get(id) === position ? [] : [{ id, position }]
+  );
+}
