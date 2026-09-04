@@ -1,5 +1,9 @@
-import { firstChartTitle } from "@/src/entities/insight";
-import type { CodeActPart, InsightWidget } from "@/app/types/chat";
+import {
+  codeActParts,
+  firstChartTitle,
+  isCuratedInsight,
+} from "@/src/entities/insight";
+import type { InsightWidget } from "@/app/types/chat";
 import type { DashboardWidget } from "../api/schemas";
 
 // Chart types the chart widget can render (InsightWidget["type"] minus
@@ -296,7 +300,7 @@ export function insightModule(
       ? widget.insight.insight_text
       : "",
     summaryShown: isSummaryShown(widget.config),
-    curated: insightCodeactParts(widget.insight).length === 0,
+    curated: isCuratedInsight(widget.insight?.codeact_parts),
     cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
     allCharts: charts.map((chart) => ({
       id: chart.id,
@@ -304,21 +308,6 @@ export function insightModule(
       shown: shown.has(chart.id),
     })),
   };
-}
-
-/** The insight's well-formed provenance parts; [] when absent or malformed. */
-function insightCodeactParts(
-  insight: DashboardWidget["insight"]
-): CodeActPart[] {
-  return Array.isArray(insight?.codeact_parts)
-    ? insight.codeact_parts.filter(
-        (p): p is CodeActPart =>
-          typeof p === "object" &&
-          p !== null &&
-          typeof (p as CodeActPart).type === "string" &&
-          typeof (p as CodeActPart).content === "string"
-      )
-    : [];
 }
 
 /**
@@ -343,7 +332,7 @@ export function dashboardWidgetToInsightWidgets(
   const insight = widget.insight;
   if (!insight?.charts?.length) return [];
 
-  const codeactParts = insightCodeactParts(insight);
+  const codeactParts = codeActParts(insight.codeact_parts);
   const generation = codeactParts.length
     ? { codeact_parts: codeactParts }
     : undefined;
