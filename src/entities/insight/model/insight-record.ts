@@ -9,9 +9,11 @@ export type InsightVerification = "verified" | "ai-generated";
  * `insightText`, but has no title or source of its own — the card derives its
  * title from the first chart, and no source/methodology is available.
  *
- * `verification` is a frontend classification, not a backend field: the API has
- * no "verified" concept, so live insights are always "ai-generated"; the
- * "verified" value only comes from curated fixtures.
+ * `verification` is a frontend classification, not a backend field: the API
+ * has no "verified" flag, so it is derived from provenance by
+ * `isCuratedInsight` — an insight with no CodeAct parts was produced by the
+ * deterministic `POST /api/analyze` path and is "verified"; one with
+ * provenance came from the agent and is "ai-generated".
  */
 export interface InsightRecord {
   id: string;
