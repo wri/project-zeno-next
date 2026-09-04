@@ -11,7 +11,9 @@ import useAuthStore from "@/app/store/authStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import useViewContextStore from "@/app/store/viewContextStore";
 import usePinnedHeader from "../hooks/usePinnedHeader";
+import { hasDashboardContent } from "../lib/widgets";
 import { useDashboard } from "./dashboardQueries";
+import { usePendingInsightWidgets } from "./usePendingInsightWidget";
 import DashboardBreadcrumb from "./DashboardBreadcrumb";
 import DashboardEmptyStateHero from "./DashboardEmptyStateHero";
 import DashboardHeader from "./DashboardHeader";
@@ -29,6 +31,10 @@ export default function DashboardDetailPage() {
   const isOwner = !!userId && userId === dashboard?.user_id;
   const contentLeftPx = getDashboardContentLeftPx(isChatFullSize);
   const { sentinelRef, pinned } = usePinnedHeader();
+  // A curated analysis being added counts as content: the grid must take over
+  // from the empty-state hero as soon as its loading module has something to
+  // show, not once the whole run-then-add chain has landed.
+  const pendingWidgets = usePendingInsightWidgets(dashboardId);
 
   useEffect(() => {
     // The dashboard agent tools are gated behind ?agent_profile=…; capture it
@@ -135,7 +141,10 @@ export default function DashboardDetailPage() {
                 </Box>
               </Box>
 
-              {dashboard.widgets.length > 0 ? (
+              {hasDashboardContent(
+                dashboard.widgets.length,
+                pendingWidgets.length
+              ) ? (
                 <>
                   <DashboardWidgetsGrid dashboard={dashboard} />
                   <DashboardSuggestedModules
