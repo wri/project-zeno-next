@@ -317,7 +317,11 @@ describe("DashboardWidgetsGrid sections", () => {
     // Onto the top half of the first section.
     fireEvent.pointerMove(document, { clientX: 500, clientY: 10 });
     expect(screen.getByTestId("section-drop-slot")).toBeTruthy();
+    // The lifted panel follows the pointer through its own transform, which
+    // must be gone once it is back in the layout.
+    expect(s2.style.transform).toContain("translate3d");
     fireEvent.pointerUp(document);
+    expect(s2.style.transform).toBe("");
 
     await waitFor(() =>
       expect(updateSection.mock.calls.map((c) => [c[1], c[2]])).toEqual([

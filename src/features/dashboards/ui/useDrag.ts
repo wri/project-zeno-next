@@ -160,10 +160,13 @@ export function useDrag({
 
   useEffect(() => {
     if (!origin) return;
+    // The lifted item stays mounted after the drop, so the transform written
+    // here must be cleared on the way out or the item lands displaced.
+    const lifted = liftedRef.current;
 
     const onMove = (event: PointerEvent) => {
-      if (liftedRef.current) {
-        liftedRef.current.style.transform = `translate3d(${event.pageX - origin.x}px, ${event.pageY - origin.y}px, 0)`;
+      if (lifted) {
+        lifted.style.transform = `translate3d(${event.pageX - origin.x}px, ${event.pageY - origin.y}px, 0)`;
       }
       // Between zones the slot stays where it was.
       const zone = zoneAt(event.clientX, event.clientY, zoneAttr);
@@ -203,6 +206,7 @@ export function useDrag({
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
       document.removeEventListener("pointercancel", onUp);
+      if (lifted) lifted.style.transform = "";
     };
   }, [origin, zoneAttr, itemAttr]);
 
