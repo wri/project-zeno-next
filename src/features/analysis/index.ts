@@ -25,3 +25,9 @@ export {
   type CuratedAnalysisEntry,
   type CuratedAnalysisSpec,
 } from "./lib/curated-catalogue";
+export {
+  useCuratedAnalysis,
+  curatedAnalysisQueryOptions,
+  type CuratedAnalysisState,
+  type UseCuratedAnalysis,
+} from "./ui/use-curated-analysis";
