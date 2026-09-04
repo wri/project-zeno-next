@@ -11,36 +11,34 @@ export interface DropSlot {
   beforeId: string | null;
 }
 
-export interface WidgetDragState extends DropSlot {
-  widgetId: string;
-  /** Shown in the cursor-following ghost. */
-  title: string;
-  /** The dragged card's own box, so the placeholder holds its space. */
+/** A lifted card's box, relative to the grid it is positioned in. */
+export interface LiftedRect {
+  left: number;
+  top: number;
   width: number;
   height: number;
+}
+
+export interface WidgetDragState extends DropSlot {
+  widgetId: string;
+  /** Where the card was lifted from; it stays this size while in flight. */
+  rect: LiftedRect;
   /**
-   * The pointer at drag start — the ghost's first position. Every later
-   * position is written straight to the ghost's `transform` (see `ghostRef`)
-   * so a page of maps and charts doesn't re-render on every pointer move.
+   * The pointer at drag start, in page coordinates. Every later position is
+   * written straight to the lifted card's `transform` (see `liftedRef`) so a
+   * page of maps and charts doesn't re-render on every pointer move.
    */
   origin: { x: number; y: number };
 }
 
 export interface DragStartArgs extends DropSlot {
   widgetId: string;
-  title: string;
-  /** The grid item being dragged — measured for the placeholder. */
-  element: HTMLElement | null;
+  rect: LiftedRect;
 }
 
 /** Drop zones name themselves; grid items name the widget they carry. */
 export const DROP_ZONE_ATTR = "data-drop-zone";
 export const DRAG_ITEM_ATTR = "data-drag-item";
-
-/** The ghost's transform for a pointer position — offset clear of the cursor. */
-export function ghostAt(x: number, y: number): string {
-  return `translate3d(${x + 12}px, ${y + 12}px, 0) rotate(2deg)`;
-}
 
 /** The drop zone under the cursor, or null between zones. */
 function zoneAt(x: number, y: number): HTMLElement | null {
@@ -105,10 +103,11 @@ export function insertBefore(
 
 /**
  * Pointer-driven drag-and-drop for the dashboard grid: pressing a card's
- * handle lifts it, a ghost follows the cursor, and a dashed placeholder marks
- * the slot it would take — in its own container or any other on the page.
+ * handle lifts the card out of the layout to follow the cursor, and a dashed
+ * placeholder marks the slot it would take — in its own container or any
+ * other on the page.
  *
- * Native HTML5 drag can't do the cross-container part (no ghost the page
+ * Native HTML5 drag can't do the cross-container part (no drag image the page
  * controls, and `dragover` stops firing once a chart or map swallows the
  * events), so this listens on `document` for the whole gesture instead.
  */
@@ -118,8 +117,9 @@ export function useWidgetDrag({
   onDrop: (widgetId: string, slot: DropSlot) => void;
 }) {
   const [state, setState] = useState<WidgetDragState | null>(null);
-  // The ghost follows the cursor through the DOM, not through React state.
-  const ghostRef = useRef<HTMLDivElement | null>(null);
+  // The lifted card follows the cursor through the DOM, not through React
+  // state: the grid attaches this to the card in flight.
+  const liftedRef = useRef<HTMLDivElement | null>(null);
   // The gesture reads the freshest handler without re-subscribing mid-drag.
   const dropRef = useRef(onDrop);
   useEffect(() => {
@@ -129,39 +129,38 @@ export function useWidgetDrag({
   const start = useCallback(
     (
       event: React.PointerEvent,
-      { widgetId, key, beforeId, title, element }: DragStartArgs
+      { widgetId, key, beforeId, rect }: DragStartArgs
     ) => {
       if (event.button !== 0) return;
       // Phosphor renders SVG handles, which the browser drags natively —
       // that hijacks the pointer stream this gesture needs.
       event.preventDefault();
-      const box = element?.getBoundingClientRect();
       setState({
         widgetId,
         key,
         beforeId,
-        title,
-        width: box?.width ?? 0,
-        height: box?.height ?? 0,
-        origin: { x: event.clientX, y: event.clientY },
+        rect,
+        origin: { x: event.pageX, y: event.pageY },
       });
     },
     []
   );
 
-  const dragging = !!state;
+  // One origin per drag, so the listeners subscribe once per gesture.
+  const origin = state?.origin ?? null;
 
   useEffect(() => {
-    if (!dragging) return;
+    if (!origin) return;
 
     const onMove = (event: PointerEvent) => {
-      const { clientX: x, clientY: y } = event;
-      if (ghostRef.current) ghostRef.current.style.transform = ghostAt(x, y);
+      if (liftedRef.current) {
+        liftedRef.current.style.transform = `translate3d(${event.pageX - origin.x}px, ${event.pageY - origin.y}px, 0)`;
+      }
       // Between zones the slot stays where it was.
-      const zone = zoneAt(x, y);
+      const zone = zoneAt(event.clientX, event.clientY);
       if (!zone) return;
       const key = zone.getAttribute(DROP_ZONE_ATTR) ?? "";
-      const beforeId = insertBefore(zone, x, y);
+      const beforeId = insertBefore(zone, event.clientX, event.clientY);
       // Same slot, same render: the grid only re-lays-out when the drop
       // target actually moves.
       setState((current) =>
@@ -191,12 +190,12 @@ export function useWidgetDrag({
       document.removeEventListener("pointerup", onUp);
       document.removeEventListener("pointercancel", onUp);
     };
-  }, [dragging]);
+  }, [origin]);
 
   // Grabbing cursor and no text selection for the whole gesture, so dragging
   // across a chart or a note doesn't select its text.
   useEffect(() => {
-    if (!dragging) return;
+    if (!origin) return;
     const { style } = document.body;
     const previous = { cursor: style.cursor, userSelect: style.userSelect };
     style.cursor = "grabbing";
@@ -205,7 +204,7 @@ export function useWidgetDrag({
       style.cursor = previous.cursor;
       style.userSelect = previous.userSelect;
     };
-  }, [dragging]);
+  }, [origin]);
 
-  return { state, start, ghostRef };
+  return { state, start, liftedRef };
 }

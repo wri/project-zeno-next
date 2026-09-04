@@ -1,9 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef } from "react";
-import { createPortal } from "react-dom";
-import { Box, Flex, Icon, Text } from "@chakra-ui/react";
-import { DotsSixVerticalIcon } from "@phosphor-icons/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 
 import useAuthStore from "@/app/store/authStore";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
@@ -41,7 +39,6 @@ import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
 import {
   DRAG_ITEM_ATTR,
-  ghostAt,
   useWidgetDrag,
   type WidgetDragState,
 } from "./useWidgetDrag";
@@ -88,18 +85,6 @@ function topLevelSize(widget: DashboardWidget): WidgetSize {
   return widgetSize(widget.config);
 }
 
-/** A widget's own name, for the drag ghost. */
-function widgetLabel(widget: DashboardWidget): string {
-  const title = widget.config.title;
-  if (typeof title === "string" && title.trim()) return title;
-  if (widget.widget_type === "map") {
-    const map = mapWidgetLayer(widget.config);
-    if (map?.title) return map.title;
-  }
-  if (widget.widget_type === "text") return "Note";
-  return "Analysis";
-}
-
 /**
  * One container's grid — the ungrouped top level, or one section's widgets.
  *
@@ -117,12 +102,15 @@ function ContainerGrid({
   container,
   isOwner,
   drag,
+  liftedRef,
   onDragStart,
 }: {
   dashboard: Dashboard;
   container: WidgetContainer;
   isOwner: boolean;
   drag: WidgetDragState | null;
+  /** Attached to the card in flight, which the drag moves via `transform`. */
+  liftedRef: React.Ref<HTMLDivElement>;
   onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
 }) {
   const updateWidget = useUpdateWidget(dashboard.id);
@@ -161,7 +149,7 @@ function ContainerGrid({
     <Box
       data-testid="widget-drop-slot"
       minW={0}
-      h={`${Math.max(drag?.height ?? 0, 80)}px`}
+      h={`${Math.max(drag?.rect.height ?? 0, 80)}px`}
       bg="#F0F4FF"
       border="2px dashed"
       borderColor="primary.solid"
@@ -178,21 +166,34 @@ function ContainerGrid({
     const title =
       body?.map?.title ??
       (typeof widget.config.title === "string" ? widget.config.title : "");
-    const isDragged = drag?.widgetId === widget.id;
+    const lifted = drag?.widgetId === widget.id ? drag.rect : null;
     const armDrag = (event: React.PointerEvent) => onDragStart(event, widget);
 
     return (
       <Box
         key={widget.id}
+        ref={lifted ? liftedRef : undefined}
         // The drop hit-test resolves its target from the DOM, so each item
         // names the widget it carries — except the one in flight, which can't
         // be a slot for itself.
         data-widget-id={widget.id}
-        {...(isDragged ? {} : { [DRAG_ITEM_ATTR]: widget.id })}
+        {...(lifted ? {} : { [DRAG_ITEM_ATTR]: widget.id })}
         minW={0}
-        opacity={isDragged ? 0.4 : 1}
         css={{ order, [TWO_COLUMN_QUERY]: { order: 0 } }}
         borderRadius="sm"
+        // The card in flight leaves the layout (its slot is the placeholder)
+        // and keeps its measured box, so the map inside never resizes. The
+        // grid's container query makes the grid its containing block.
+        {...(lifted && {
+          position: "absolute",
+          left: `${lifted.left}px`,
+          top: `${lifted.top}px`,
+          w: `${lifted.width}px`,
+          zIndex: 2000,
+          pointerEvents: "none",
+          boxShadow:
+            "0 16px 32px rgba(19,22,25,0.22), 0 3px 8px rgba(19,22,25,0.14)",
+        })}
       >
         <DashboardWidgetBoundary resetKey={JSON.stringify(widget.config)}>
           {widget.widget_type === "insight" ? (
@@ -319,48 +320,6 @@ function ContainerGrid({
 }
 
 /**
- * The card the prototype lifts out of the layout to follow the cursor.
- * Positioned from the drag's origin only; `useWidgetDrag` writes every later
- * position onto this node's `transform` directly.
- */
-function DragGhost({
-  state,
-  ghostRef,
-}: {
-  state: WidgetDragState;
-  ghostRef: React.Ref<HTMLDivElement>;
-}) {
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <Flex
-      ref={ghostRef}
-      position="fixed"
-      left="0"
-      top="0"
-      zIndex={2000}
-      pointerEvents="none"
-      align="center"
-      gap="8px"
-      maxW="320px"
-      px="12px"
-      py="8px"
-      bg="white"
-      borderWidth="1px"
-      borderColor="#DDE2F5"
-      borderRadius="sm"
-      boxShadow="0 16px 32px rgba(19,22,25,0.22), 0 3px 8px rgba(19,22,25,0.14)"
-      transform={ghostAt(state.origin.x, state.origin.y)}
-    >
-      <Icon as={DotsSixVerticalIcon} boxSize="16px" color="fg.muted" />
-      <Text fontSize="14px" fontWeight="medium" color="#172B7A" truncate>
-        {state.title}
-      </Text>
-    </Flex>,
-    document.body
-  );
-}
-
-/**
  * The dashboard's widgets, grouped into their containers: the ungrouped
  * top-level list first, then one panel per section (`widgetContainers` does
  * the grouping — the API's flat `widgets` is never a render order on its own).
@@ -380,6 +339,8 @@ export default function DashboardWidgetsGrid({
 
   // Read by the drop callback, which outlives the render that created it.
   const containersRef = useRef<WidgetContainer[]>([]);
+  // The lifted card is positioned inside this box (see ContainerGrid).
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const drag = useWidgetDrag({
     onDrop: (widgetId, slot) => {
@@ -418,7 +379,10 @@ export default function DashboardWidgetsGrid({
   });
 
   return (
-    <Box css={{ containerType: "inline-size", containerName: "widgets-grid" }}>
+    <Box
+      ref={gridRef}
+      css={{ containerType: "inline-size", containerName: "widgets-grid" }}
+    >
       {/* Panels read as bands of the page: the grey gutter between them is the
           only grey a widget ever sits next to. */}
       <Flex direction="column" gap="12px" align="stretch">
@@ -434,25 +398,32 @@ export default function DashboardWidgetsGrid({
               container={container}
               isOwner={isOwner}
               drag={dragState}
+              liftedRef={drag.liftedRef}
               onDragStart={(event, widget) => {
                 const next =
                   container.widgets[container.widgets.indexOf(widget) + 1];
+                const item = (event.currentTarget as HTMLElement).closest(
+                  "[data-widget-id]"
+                );
+                const box = item?.getBoundingClientRect();
+                const grid = gridRef.current?.getBoundingClientRect();
                 drag.start(event, {
                   widgetId: widget.id,
                   key: container.key,
                   // The slot opens where the card was.
                   beforeId: next?.id ?? null,
-                  title: widgetLabel(widget),
-                  element: (event.currentTarget as HTMLElement).closest(
-                    "[data-widget-id]"
-                  ) as HTMLElement | null,
+                  rect: {
+                    left: (box?.left ?? 0) - (grid?.left ?? 0),
+                    top: (box?.top ?? 0) - (grid?.top ?? 0),
+                    width: box?.width ?? 0,
+                    height: box?.height ?? 0,
+                  },
                 });
               }}
             />
           </DashboardSection>
         ))}
       </Flex>
-      {dragState && <DragGhost state={dragState} ghostRef={drag.ghostRef} />}
     </Box>
   );
 }
