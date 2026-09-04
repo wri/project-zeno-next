@@ -42,6 +42,14 @@ export interface DragStartArgs extends DropSlot {
   grab: { x: number; y: number };
 }
 
+/**
+ * Dragging within this many pixels of the viewport's top or bottom scrolls
+ * the page, faster the closer to the edge — so a drop target below the fold
+ * can be reached without letting go.
+ */
+const SCROLL_EDGE = 80;
+const SCROLL_MAX_STEP = 24;
+
 /** The lifted item at half size with a slight tilt, per the design. */
 function liftedTransform(dx: number, dy: number, tilt: number): string {
   return `translate3d(${dx}px, ${dy}px, 0) rotate(${tilt}deg) scale(0.5)`;
@@ -183,24 +191,20 @@ export function useDrag({
     const lifted = liftedRef.current;
     if (lifted) lifted.style.transform = liftedTransform(0, 0, tilt);
 
-    const onMove = (event: PointerEvent) => {
+    // The pointer in viewport coordinates; the page may scroll under it.
+    const update = (x: number, y: number) => {
       if (lifted) {
         lifted.style.transform = liftedTransform(
-          event.pageX - origin.x,
-          event.pageY - origin.y,
+          x + window.scrollX - origin.x,
+          y + window.scrollY - origin.y,
           tilt
         );
       }
       // Between zones the slot stays where it was.
-      const zone = zoneAt(event.clientX, event.clientY, zoneAttr);
+      const zone = zoneAt(x, y, zoneAttr);
       if (!zone) return;
       const key = zone.getAttribute(zoneAttr) ?? "";
-      const beforeId = insertBefore(
-        zone,
-        event.clientX,
-        event.clientY,
-        itemAttr
-      );
+      const beforeId = insertBefore(zone, x, y, itemAttr);
       // Same slot, same render: the grid only re-lays-out when the drop
       // target actually moves.
       setState((current) =>
@@ -208,6 +212,33 @@ export function useDrag({
           ? current
           : { ...current, key, beforeId }
       );
+    };
+
+    // While the pointer sits near an edge the page keeps scrolling, and the
+    // slot and lifted item are re-resolved against the moved page each frame.
+    let last = { x: 0, y: 0 };
+    let frame = 0;
+    const autoScroll = () => {
+      const { y } = last;
+      const overshoot =
+        y < SCROLL_EDGE
+          ? y - SCROLL_EDGE
+          : y > window.innerHeight - SCROLL_EDGE
+            ? y - (window.innerHeight - SCROLL_EDGE)
+            : 0;
+      if (overshoot === 0) {
+        frame = 0;
+        return;
+      }
+      window.scrollBy(0, (overshoot / SCROLL_EDGE) * SCROLL_MAX_STEP);
+      update(last.x, last.y);
+      frame = requestAnimationFrame(autoScroll);
+    };
+
+    const onMove = (event: PointerEvent) => {
+      last = { x: event.clientX, y: event.clientY };
+      update(last.x, last.y);
+      if (!frame) frame = requestAnimationFrame(autoScroll);
     };
 
     const onUp = () => {
@@ -229,6 +260,7 @@ export function useDrag({
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
       document.removeEventListener("pointercancel", onUp);
+      cancelAnimationFrame(frame);
       if (lifted) lifted.style.transform = "";
     };
   }, [origin, zoneAttr, itemAttr, tilt]);
