@@ -18,3 +18,10 @@ export type { AnalysisResult } from "./model/analysis-result";
 export { default as useSelectionStore } from "./model/selection-store";
 export type { AreaSelection } from "./model/area-selection";
 export type { AnalysisSelection } from "./model/analysis-selection";
+export {
+  CURATED_ANALYSES,
+  curatedCatalogue,
+  stripYearRangeSuffix,
+  type CuratedAnalysisEntry,
+  type CuratedAnalysisSpec,
+} from "./lib/curated-catalogue";
