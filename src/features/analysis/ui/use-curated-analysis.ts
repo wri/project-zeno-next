@@ -65,8 +65,36 @@ export type CuratedAnalysisState =
   | "unavailable"
   | "error";
 
+/**
+ * Classifies a query's state: reactive (`useQuery` result) and imperative
+ * (`queryClient.getQueryState`) callers must agree, so both go through here.
+ */
+function classify(query: {
+  fetchStatus: "fetching" | "paused" | "idle";
+  status: "pending" | "error" | "success";
+  error: unknown;
+  data: AnalysisResult | undefined;
+}): CuratedAnalysisState {
+  if (query.fetchStatus === "fetching") return "running";
+  if (query.status === "error") {
+    return query.error instanceof AnalysisJobFailedError
+      ? "unavailable"
+      : "error";
+  }
+  if (query.status === "success" && query.data) {
+    return query.data.charts.length === 0 ? "no-data" : "ready";
+  }
+  return "not-run";
+}
+
 export interface UseCuratedAnalysis {
   state: CuratedAnalysisState;
+  /**
+   * Non-reactive read of the current state, for async handlers that have just
+   * awaited `start`/`retry` and need to know how the run ended without waiting
+   * for a render (a component's `state` is stale inside such a closure).
+   */
+  readState: () => CuratedAnalysisState;
   /** The completed analysis (charts may be empty); null until it completes. */
   result: AnalysisResult | null;
   /** The persisted insight id once the analysis has completed; else null. */
@@ -119,17 +147,19 @@ export function useCuratedAnalysis(
     }
   }, [queryClient, options]);
 
-  let state: CuratedAnalysisState;
-  if (query.isFetching) state = "running";
-  else if (query.isError)
-    state =
-      query.error instanceof AnalysisJobFailedError ? "unavailable" : "error";
-  else if (query.isSuccess)
-    state = query.data.charts.length === 0 ? "no-data" : "ready";
-  else state = "not-run";
+  const readState = useCallback(() => {
+    const cached = queryClient.getQueryState<AnalysisResult>(options.queryKey);
+    return classify({
+      fetchStatus: cached?.fetchStatus ?? "idle",
+      status: cached?.status ?? "pending",
+      error: cached?.error,
+      data: cached?.data,
+    });
+  }, [queryClient, options]);
 
   return {
-    state,
+    state: classify(query),
+    readState,
     result: query.data ?? null,
     insightId: query.data?.id ?? null,
     start,

@@ -23,7 +23,10 @@ import {
 } from "../../api/dashboards";
 import { toaster } from "@/app/components/ui/toaster";
 import { dashboardKeys } from "../dashboardQueries";
-import { useAddCuratedAnalysisToDashboard } from "../useAddCuratedAnalysisToDashboard";
+import {
+  useAddCuratedAnalysisToDashboard,
+  type AddCuratedAnalysisOutcome,
+} from "../useAddCuratedAnalysisToDashboard";
 import type { CurrentDashboardArea } from "../useCurrentDashboardArea";
 import type { Dashboard, DashboardWidget } from "../../api/schemas";
 import { usePendingInsightWidgetsStore } from "../../model/pending-insight-widgets-store";
@@ -182,7 +185,7 @@ describe("useAddCuratedAnalysisToDashboard", () => {
       { wrapper: makeWrapper() }
     );
 
-    let done: Promise<void>;
+    let done: Promise<AddCuratedAnalysisOutcome>;
     act(() => {
       done = result.current.addNow();
     });
@@ -214,6 +217,7 @@ describe("useAddCuratedAnalysisToDashboard", () => {
       await done;
     });
 
+    await expect(done!).resolves.toBe("added");
     expect(addInsightWidget).toHaveBeenCalledWith("d1", "ins-1", undefined);
     expect(entries()).toEqual([]);
     await waitFor(() => expect(result.current.pending).toBe(false));
@@ -228,7 +232,7 @@ describe("useAddCuratedAnalysisToDashboard", () => {
       { wrapper: makeWrapper() }
     );
 
-    let done: Promise<void>;
+    let done: Promise<AddCuratedAnalysisOutcome>;
     act(() => {
       done = result.current.addNow();
     });
@@ -242,6 +246,7 @@ describe("useAddCuratedAnalysisToDashboard", () => {
       await done;
     });
 
+    await expect(done!).resolves.toBe("cancelled");
     expect(addInsightWidget).not.toHaveBeenCalled();
     // The run itself completed into the cache and stays usable.
     await waitFor(() => expect(result.current.state).toBe("ready"));
@@ -257,10 +262,12 @@ describe("useAddCuratedAnalysisToDashboard", () => {
       { wrapper: makeWrapper() }
     );
 
+    let outcome = "";
     await act(async () => {
-      await result.current.addNow();
+      outcome = await result.current.addNow();
     });
 
+    expect(outcome).toBe("unavailable");
     await waitFor(() => expect(result.current.state).toBe("unavailable"));
     expect(entries()).toEqual([]);
     expect(addInsightWidget).not.toHaveBeenCalled();
@@ -275,11 +282,30 @@ describe("useAddCuratedAnalysisToDashboard", () => {
       { wrapper: makeWrapper() }
     );
 
+    let outcome = "";
     await act(async () => {
-      await result.current.addNow();
+      outcome = await result.current.addNow();
     });
 
+    expect(outcome).toBe("no-data");
     await waitFor(() => expect(result.current.state).toBe("no-data"));
+    expect(entries()).toEqual([]);
+    expect(addInsightWidget).not.toHaveBeenCalled();
+  });
+
+  it("a transport failure reports error and clears the module", async () => {
+    const service = fakeService(() => Promise.reject(new Error("offline")));
+    const { result } = renderHook(
+      () => useAddCuratedAnalysisToDashboard(spec, area, service),
+      { wrapper: makeWrapper() }
+    );
+
+    let outcome = "";
+    await act(async () => {
+      outcome = await result.current.addNow();
+    });
+
+    expect(outcome).toBe("error");
     expect(entries()).toEqual([]);
     expect(addInsightWidget).not.toHaveBeenCalled();
   });
@@ -293,10 +319,12 @@ describe("useAddCuratedAnalysisToDashboard", () => {
 
     expect(result.current.added).toBe(true);
 
+    let outcome = "";
     await act(async () => {
-      await result.current.addNow();
+      outcome = await result.current.addNow();
     });
 
+    expect(outcome).toBe("not-allowed");
     expect(service.run).not.toHaveBeenCalled();
     expect(addInsightWidget).not.toHaveBeenCalled();
 
@@ -316,10 +344,12 @@ describe("useAddCuratedAnalysisToDashboard", () => {
 
     expect(result.current.canAdd).toBe(false);
 
+    let outcome = "";
     await act(async () => {
-      await result.current.addNow();
+      outcome = await result.current.addNow();
     });
 
+    expect(outcome).toBe("not-allowed");
     expect(service.run).not.toHaveBeenCalled();
     expect(entries()).toEqual([]);
   });
