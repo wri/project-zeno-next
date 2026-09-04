@@ -24,6 +24,11 @@ export interface DragState extends DropSlot {
   /** Where the item was lifted from; it stays this size while in flight. */
   rect: LiftedRect;
   /**
+   * The pointer's offset inside the item at grab time. The lifted item
+   * shrinks around this point, so it stays under the cursor.
+   */
+  grab: { x: number; y: number };
+  /**
    * The pointer at drag start, in page coordinates. Every later position is
    * written straight to the lifted item's `transform` (see `liftedRef`) so a
    * page of maps and charts doesn't re-render on every pointer move.
@@ -34,6 +39,12 @@ export interface DragState extends DropSlot {
 export interface DragStartArgs extends DropSlot {
   id: string;
   rect: LiftedRect;
+  grab: { x: number; y: number };
+}
+
+/** The lifted item at half size with a slight tilt, per the design. */
+function liftedTransform(dx: number, dy: number, tilt: number): string {
+  return `translate3d(${dx}px, ${dy}px, 0) rotate(${tilt}deg) scale(0.5)`;
 }
 
 /**
@@ -122,10 +133,13 @@ export function insertBefore(
 export function useDrag({
   onDrop,
   attrs = { zone: DROP_ZONE_ATTR, item: DRAG_ITEM_ATTR },
+  tilt = 2,
 }: {
   onDrop: (id: string, slot: DropSlot) => void;
   /** The attributes naming this gesture's zones and items. */
   attrs?: { zone: string; item: string };
+  /** The lifted item's rotation, in degrees. */
+  tilt?: number;
 }) {
   const { zone: zoneAttr, item: itemAttr } = attrs;
   const [state, setState] = useState<DragState | null>(null);
@@ -139,7 +153,10 @@ export function useDrag({
   });
 
   const start = useCallback(
-    (event: React.PointerEvent, { id, key, beforeId, rect }: DragStartArgs) => {
+    (
+      event: React.PointerEvent,
+      { id, key, beforeId, rect, grab }: DragStartArgs
+    ) => {
       if (event.button !== 0) return;
       // Phosphor renders SVG handles, which the browser drags natively —
       // that hijacks the pointer stream this gesture needs.
@@ -149,6 +166,7 @@ export function useDrag({
         key,
         beforeId,
         rect,
+        grab,
         origin: { x: event.pageX, y: event.pageY },
       });
     },
@@ -163,10 +181,15 @@ export function useDrag({
     // The lifted item stays mounted after the drop, so the transform written
     // here must be cleared on the way out or the item lands displaced.
     const lifted = liftedRef.current;
+    if (lifted) lifted.style.transform = liftedTransform(0, 0, tilt);
 
     const onMove = (event: PointerEvent) => {
       if (lifted) {
-        lifted.style.transform = `translate3d(${event.pageX - origin.x}px, ${event.pageY - origin.y}px, 0)`;
+        lifted.style.transform = liftedTransform(
+          event.pageX - origin.x,
+          event.pageY - origin.y,
+          tilt
+        );
       }
       // Between zones the slot stays where it was.
       const zone = zoneAt(event.clientX, event.clientY, zoneAttr);
@@ -208,7 +231,7 @@ export function useDrag({
       document.removeEventListener("pointercancel", onUp);
       if (lifted) lifted.style.transform = "";
     };
-  }, [origin, zoneAttr, itemAttr]);
+  }, [origin, zoneAttr, itemAttr, tilt]);
 
   // Grabbing cursor and no text selection for the whole gesture, so dragging
   // across a chart or a note doesn't select its text.

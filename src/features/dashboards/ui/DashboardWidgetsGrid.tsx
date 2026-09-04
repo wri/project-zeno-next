@@ -45,7 +45,6 @@ import {
   SECTION_ZONE_ATTR,
   useDrag,
   type DragState,
-  type LiftedRect,
 } from "./useDrag";
 
 /**
@@ -91,31 +90,44 @@ function topLevelSize(widget: DashboardWidget): WidgetSize {
 }
 
 /**
- * An item's box relative to `within` — the grid, whose container query makes
- * it the containing block a lifted item is positioned in.
+ * Where an item is lifted from: its box relative to `within` — the grid,
+ * whose container query makes it the containing block a lifted item is
+ * positioned in — and the pointer's offset inside it.
  */
-function rectWithin(item: Element | null, within: Element | null): LiftedRect {
+function liftFrom(
+  event: React.PointerEvent,
+  item: Element | null,
+  within: Element | null
+): Pick<DragState, "rect" | "grab"> {
   const box = item?.getBoundingClientRect();
   const bounds = within?.getBoundingClientRect();
   return {
-    left: (box?.left ?? 0) - (bounds?.left ?? 0),
-    top: (box?.top ?? 0) - (bounds?.top ?? 0),
-    width: box?.width ?? 0,
-    height: box?.height ?? 0,
+    rect: {
+      left: (box?.left ?? 0) - (bounds?.left ?? 0),
+      top: (box?.top ?? 0) - (bounds?.top ?? 0),
+      width: box?.width ?? 0,
+      height: box?.height ?? 0,
+    },
+    grab: {
+      x: event.clientX - (box?.left ?? 0),
+      y: event.clientY - (box?.top ?? 0),
+    },
   };
 }
 
 /**
  * The item in flight leaves the layout (its slot is the placeholder) and
- * keeps its measured box, so a map inside never resizes. `useDrag` moves it
- * with a `transform`.
+ * keeps its measured box, so a map inside never resizes. `useDrag` moves and
+ * shrinks it with a `transform`, around the grab point.
  */
-function liftedProps(rect: LiftedRect): BoxProps {
+function liftedProps({ rect, grab }: DragState): BoxProps {
   return {
     position: "absolute",
     left: `${rect.left}px`,
     top: `${rect.top}px`,
     w: `${rect.width}px`,
+    transformOrigin: `${grab.x}px ${grab.y}px`,
+    opacity: 0.98,
     zIndex: 2000,
     pointerEvents: "none",
     boxShadow: "0 16px 32px rgba(19,22,25,0.22), 0 3px 8px rgba(19,22,25,0.14)",
@@ -213,7 +225,7 @@ function ContainerGrid({
     const title =
       body?.map?.title ??
       (typeof widget.config.title === "string" ? widget.config.title : "");
-    const lifted = drag?.id === widget.id ? drag.rect : null;
+    const lifted = drag?.id === widget.id ? drag : null;
     const armDrag = (event: React.PointerEvent) => onDragStart(event, widget);
 
     return (
@@ -402,6 +414,7 @@ export default function DashboardWidgetsGrid({
 
   const sectionDrag = useDrag({
     attrs: { zone: SECTION_ZONE_ATTR, item: SECTION_ITEM_ATTR },
+    tilt: 1,
     onDrop: (sectionId, slot) => {
       const ids = containersRef.current.flatMap((c) =>
         c.section && c.section.id !== sectionId ? [c.section.id] : []
@@ -450,15 +463,14 @@ export default function DashboardWidgetsGrid({
         {containers.map((container) => {
           const section = container.section;
           const lifted =
-            section && sectionState?.id === section.id
-              ? sectionState.rect
-              : null;
+            section && sectionState?.id === section.id ? sectionState : null;
           return (
             <Fragment key={container.key}>
               {section && sectionState?.beforeId === section.id && (
                 <DropSlot
                   data-testid="section-drop-slot"
                   height={sectionState.rect.height}
+                  borderRadius="8px"
                 />
               )}
               <Box
@@ -483,7 +495,8 @@ export default function DashboardWidgetsGrid({
                             key: "sections",
                             // The slot opens where the section was.
                             beforeId: next?.id ?? null,
-                            rect: rectWithin(
+                            ...liftFrom(
+                              event,
                               (event.currentTarget as HTMLElement).closest(
                                 "[data-section-id]"
                               ),
@@ -510,7 +523,8 @@ export default function DashboardWidgetsGrid({
                         key: container.key,
                         // The slot opens where the card was.
                         beforeId: next?.id ?? null,
-                        rect: rectWithin(
+                        ...liftFrom(
+                          event,
                           (event.currentTarget as HTMLElement).closest(
                             "[data-widget-id]"
                           ),
@@ -529,6 +543,7 @@ export default function DashboardWidgetsGrid({
           <DropSlot
             data-testid="section-drop-slot"
             height={sectionState.rect.height}
+            borderRadius="8px"
           />
         )}
       </Flex>
