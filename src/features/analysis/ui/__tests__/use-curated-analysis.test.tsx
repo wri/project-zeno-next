@@ -100,6 +100,55 @@ describe("useCuratedAnalysis", () => {
     expect(result.current.result).toEqual(RESULT);
   });
 
+  it("readState() reports the state imperatively, in step with the rendered state", async () => {
+    const d = deferred<AnalysisResult>();
+    const service = fakeService(() => d.promise);
+    const { result } = renderHook(
+      () => useCuratedAnalysis(selection, service),
+      { wrapper: wrapperFor(makeClient()) }
+    );
+
+    expect(result.current.readState()).toBe("not-run");
+
+    let started: Promise<AnalysisResult | null>;
+    act(() => {
+      started = result.current.start();
+    });
+    await waitFor(() => expect(result.current.state).toBe("running"));
+    expect(result.current.readState()).toBe("running");
+
+    await act(async () => {
+      d.resolve(RESULT);
+      await started;
+    });
+
+    // Readable straight after the awaited start, before any re-render.
+    expect(result.current.readState()).toBe("ready");
+    await waitFor(() => expect(result.current.state).toBe("ready"));
+  });
+
+  it("readState() distinguishes a failed job from a transport error", async () => {
+    const failed = fakeService(() =>
+      Promise.reject(new AnalysisJobFailedError("job-1"))
+    );
+    const a = renderHook(() => useCuratedAnalysis(selection, failed), {
+      wrapper: wrapperFor(makeClient()),
+    });
+    await act(async () => {
+      await a.result.current.start();
+    });
+    expect(a.result.current.readState()).toBe("unavailable");
+
+    const offline = fakeService(() => Promise.reject(new Error("offline")));
+    const b = renderHook(() => useCuratedAnalysis(selection, offline), {
+      wrapper: wrapperFor(makeClient()),
+    });
+    await act(async () => {
+      await b.result.current.start();
+    });
+    expect(b.result.current.readState()).toBe("error");
+  });
+
   it("does not run again once a result is cached", async () => {
     const service = fakeService(() => Promise.resolve(RESULT));
     const { result } = renderHook(
