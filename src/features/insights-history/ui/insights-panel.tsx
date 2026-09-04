@@ -38,6 +38,7 @@ import RemoveAnalysisDialog from "@/src/features/dashboards/ui/RemoveAnalysisDia
 import { useAddInsightToDashboard } from "@/src/features/dashboards/ui/useAddInsightToDashboard";
 import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrentDashboardArea";
 import { useUserInsights } from "./use-user-insights";
+import { CuratedInsightsList } from "./curated-insights-list";
 import {
   INSIGHT_LABEL_COLOR,
   INSIGHT_SELECTED_BG,
@@ -46,10 +47,10 @@ import {
   InsightThumbnail,
   VerificationBadge,
 } from "./insight-card-parts";
-import { verifiedInsights } from "../lib/verified-fixtures";
 import {
   liveWidgetsToGroups,
   mergeGroupsById,
+  partitionByVerification,
   recordToGroup,
   type InsightGroupItem,
 } from "../lib/insight-groups";
@@ -357,13 +358,20 @@ function InsightsList({
     threadId: currentThreadId,
   });
   const { insights: allInsights } = useUserInsights(aiScope);
+  // Stored insights split by how they were produced, so the Curated and AI
+  // generated filters never list the same record.
+  const { curated: curatedInsights, aiGenerated: aiInsights } = useMemo(
+    () => partitionByVerification(allInsights),
+    [allInsights]
+  );
 
   // Dashboard surface: one card per analysis, added/removed whole — per-chart
-  // visibility lives in the module's Customize menu on the grid.
+  // visibility lives in the module's Customize menu on the grid. The Curated
+  // filter is not a list of records here but the run-on-demand catalogue
+  // (`CuratedInsightsList`), rendered below.
   const groups = useMemo<InsightGroupItem[]>(() => {
-    if (!isDashboard) return [];
-    if (filter === "verified") return verifiedInsights.map(recordToGroup);
-    if (filter === "ai") return allInsights.map(recordToGroup);
+    if (!isDashboard || filter === "verified") return [];
+    if (filter === "ai") return aiInsights.map(recordToGroup);
     return mergeGroupsById(
       currentThreadId ? threadInsights.map(recordToGroup) : [],
       liveWidgetsToGroups(liveWidgets)
@@ -371,18 +379,20 @@ function InsightsList({
   }, [
     isDashboard,
     filter,
-    allInsights,
+    aiInsights,
     threadInsights,
     liveWidgets,
     currentThreadId,
   ]);
 
   // Map surface: one card per chart — each chart toggles onto the map
-  // independently via the InsightWorkspace overlay.
+  // independently via the InsightWorkspace overlay. Curated here means the
+  // user's persisted curated insights (run from a dashboard or the View
+  // Analysis nudge); the map has no single AOI to run a catalogue against.
   const items = useMemo<InsightCardItem[]>(() => {
     if (isDashboard) return [];
-    if (filter === "verified") return verifiedInsights.flatMap(recordToItems);
-    if (filter === "ai") return allInsights.flatMap(recordToItems);
+    if (filter === "verified") return curatedInsights.flatMap(recordToItems);
+    if (filter === "ai") return aiInsights.flatMap(recordToItems);
     return mergeById(
       currentThreadId ? threadInsights.flatMap(recordToItems) : [],
       liveWidgets.map(liveWidgetToItem)
@@ -390,7 +400,8 @@ function InsightsList({
   }, [
     isDashboard,
     filter,
-    allInsights,
+    curatedInsights,
+    aiInsights,
     threadInsights,
     liveWidgets,
     currentThreadId,
@@ -399,6 +410,17 @@ function InsightsList({
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (isDashboard) {
+    if (filter === "verified") {
+      // The catalogue needs the dashboard's AOI; until the detail query
+      // resolves there is nothing to scope the cards to.
+      return dashboardArea ? (
+        <CuratedInsightsList area={dashboardArea} />
+      ) : (
+        <Text fontSize="sm" color="fg.muted" mt={4}>
+          Loading this dashboard&apos;s area...
+        </Text>
+      );
+    }
     if (groups.length === 0) return <EmptyState filter={filter} />;
     const selectedGroup = groups.find((g) => g.id === selectedId);
     if (selectedGroup) {
@@ -456,7 +478,7 @@ function InsightsList({
 function EmptyState({ filter }: { filter: InsightFilter }) {
   const message =
     filter === "verified"
-      ? "No curated analyses yet."
+      ? "No curated analyses yet. Open a dashboard to run one for its area."
       : filter === "ai"
         ? "No analyses generated yet. Ask the assistant to analyse an area."
         : "No analyses in this conversation yet. Ask the assistant to analyse an area, or generate one from a dataset and area.";
