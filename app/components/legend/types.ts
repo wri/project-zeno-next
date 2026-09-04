@@ -21,6 +21,14 @@ export interface LegendContextLayer {
   color: string;
   opacity: number;
   info?: string;
+  /**
+   * Symbol list for context layers whose legend has more than one class.
+   * Single-class layers (e.g. Primary Forests) are fully described by the
+   * swatch beside the title, so they leave this unset; multi-class ones
+   * (Intact Forest Landscapes, with its reduction epochs) would otherwise
+   * render with no legend for every class but the first.
+   */
+  symbology?: ReactNode;
 }
 
 /**

@@ -99,6 +99,47 @@ export type ContextLayerMetadata = {
   vectorStyle?: VectorStyleSpec;
 };
 
+/**
+ * Intact Forest Landscapes symbology, mirrored from the flagship map's own
+ * legend (globalnaturewatch.org) and verified against the published tiles.
+ * Researchers review the two side by side, so the swatches have to agree.
+ *
+ * The dataset is published in epochs — 2000 / 2013 / 2016 / 2020 / 2025 — and
+ * each epoch after the first is an area that stopped being intact during it.
+ */
+const IFL_EXTENT_COLOR = "#5C8C50";
+const IFL_REDUCTION_COLORS = {
+  "2000-2013": "#8B8B2A",
+  "2013-2016": "#6B6B2A",
+  "2016-2020": "#4A4A2A",
+  "2020-2025": "#2D2D2D",
+} as const;
+
+const IFL_DESCRIPTION =
+  "The Intact Forest Landscapes (IFL) data set identifies unbroken expanses of natural ecosystems within the zone of forest extent that show no signs of significant human activity and are large enough that all native biodiversity, including viable populations of wide-ranging species, could be maintained.";
+
+/**
+ * Shared by the standalone card and the context sub-layer: the backend serves
+ * both from the same v2025 raster, so one drifting from the other would show
+ * the same pixels under two different keys.
+ */
+const IFL_LEGEND: DatasetLegendConfig = {
+  title: "Intact Forest Landscapes (2000-2025)",
+  color: IFL_EXTENT_COLOR,
+  items: [
+    { label: "Intact Forest Landscapes", color: IFL_EXTENT_COLOR },
+    ...(
+      Object.keys(IFL_REDUCTION_COLORS) as (keyof typeof IFL_REDUCTION_COLORS)[]
+    ).map((epoch) => ({
+      label: `Reduction in extent ${epoch}`,
+      color: IFL_REDUCTION_COLORS[epoch],
+    })),
+  ],
+  type: "symbol",
+  info: "Identifies the world's last remaining unfragmented forest landscapes, large enough to retain all native biodiversity and showing no signs of human alteration.",
+  note: "Extent of Intact Forest Landscapes (IFL) in 2000-2025. Global coverage, IFL Mapping Team.",
+};
+
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
     dataset_id: 100,
@@ -115,29 +156,40 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
       note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
     },
   },
+  // Sub-layer rendered beneath Tree Cover Loss. The backend hands this back as
+  // the same v2025 raster the standalone card uses, so both share one legend.
   intact_forest: {
     dataset_id: 101,
     dataset_name: "Intact Forest Landscapes",
     context_layer: null as string | null,
-    description:
-      "The Intact Forest Landscapes (IFL) data set identifies unbroken expanses of natural ecosystems within the zone of forest extent that show no signs of significant human activity and are large enough that all native biodiversity, including viable populations of wide-ranging species, could be maintained.",
-    legend: {
-      title: "Intact Forest Landscapes (2000-2025)",
-      color: "#5C8C50",
-      items: [
-        { label: "Intact Forest Landscapes", color: "#5C8C50" },
-        { label: "Reduction in extent 2000-2013", color: "#91896F" },
-        { label: "Reduction in extent 2013-2016", color: "#969904" },
-        { label: "Reduction in extent 2016-2020", color: "#635731" },
-      ],
-      type: "symbol",
-      info: "Identifies the world's last remaining unfragmented forest landscapes, large enough to retain all native biodiversity and showing no signs of human alteration.",
-      note: "Extent of Intact Forest Landscapes (IFL) in 2000-2025. Global coverage, IFL Mapping Team.",
-    },
+    description: IFL_DESCRIPTION,
+    legend: IFL_LEGEND,
+    // Styling for the v2021 *vector* build of the same layer. The backend
+    // stopped sending it (project-zeno "remove IFL vector tile for now as it
+    // is not supported"), so today only the debug panel's MVT mock exercises
+    // this path — it is kept because that build may come back, and because a
+    // wrong mapping here is invisible until it does.
+    //
+    // Each polygon carries the *start* year of the epoch it belongs to, and
+    // the surviving extent is stamped with the tileset vintage:
+    //
+    //   year 2020 -> ifl_2020_buff             (still intact)
+    //   year 2000 -> ifl_2013_reduction_buffer (lost 2000-2013)
+    //   year 2013 -> ifl_2016_reduction_buffer (lost 2013-2016)
+    //   year 2016 -> ifl_2020_reduction_buffer (lost 2016-2020)
+    //
+    // Reading 2000 as "the 2000 extent" paints the first loss epoch as intact
+    // forest and hides the extent altogether, so the mapping is spelled out.
+    // v2021 has no 2020-2025 epoch; that class simply never matches here.
     vectorStyle: {
       property: "year",
-      coerceToString: true, // tiles may encode 2000 as number or string
-      colorMap: [{ value: 2000, color: "#5C8C50" }],
+      coerceToString: true, // tiles may encode the year as number or string
+      colorMap: [
+        { value: 2020, color: IFL_EXTENT_COLOR },
+        { value: 2000, color: IFL_REDUCTION_COLORS["2000-2013"] },
+        { value: 2013, color: IFL_REDUCTION_COLORS["2013-2016"] },
+        { value: 2016, color: IFL_REDUCTION_COLORS["2016-2020"] },
+      ],
       fallbackColor: "transparent", // every other year stays unstyled
     },
   },
@@ -298,9 +350,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     categories: ["land-use"],
     viewOnly: true,
     featureFlag: IFL_FEATURE_FLAG,
-    description: CONTEXT_LAYER_METADATA.intact_forest.description,
+    description: IFL_DESCRIPTION,
     tile_url: INTACT_FOREST_TILE_URL,
-    legend: CONTEXT_LAYER_METADATA.intact_forest.legend,
+    legend: IFL_LEGEND,
   },
   {
     dataset_id: 4,
