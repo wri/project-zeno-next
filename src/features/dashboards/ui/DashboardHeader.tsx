@@ -18,13 +18,13 @@ import {
 
 import { toaster } from "@/app/components/ui/toaster";
 import type { Dashboard } from "../api/schemas";
-import { updatedLabel, wasJustCreated } from "../lib/dates";
+import { wasJustCreated } from "../lib/dates";
 import { useRenameDashboard } from "./dashboardQueries";
 
 /**
  * Dashboard page header per the Figma "Dashboard default" frame: editable
- * 30px title with a pencil affordance (owner only), the mono "Updated…"
- * label, and Export / Share actions top-right. Export and Share are false
+ * 30px title with a pencil affordance (owner only, revealed on hover or
+ * focus), and Export / Share actions top-right. Export and Share are false
  * doors — measure interest before building the real flows.
  */
 export default function DashboardHeader({
@@ -79,7 +79,15 @@ export default function DashboardHeader({
   return (
     <Flex justify="space-between" align="flex-start" gap={6}>
       <Box minW={0} flex="1">
-        <Flex align="center" gap="12px" minW={0}>
+        <Flex
+          align="center"
+          gap="12px"
+          minW={0}
+          // The pencil shows on hover or keyboard focus; on touch (no hover)
+          // it stays visible.
+          _hover={{ "& [data-rename]": { opacity: 1 } }}
+          _focusWithin={{ "& [data-rename]": { opacity: 1 } }}
+        >
           {editing ? (
             <Input
               value={draft}
@@ -117,18 +125,21 @@ export default function DashboardHeader({
           )}
           {isOwner && !editing && (
             <IconButton
+              data-rename
               aria-label="Rename dashboard"
               title="Rename dashboard"
               size="xs"
               variant="ghost"
               color="fg.muted"
+              opacity={{ base: 1, md: 0 }}
+              transition="opacity 0.12s"
               onClick={() => setDraft(dashboard.name)}
             >
               <PencilSimpleIcon size={20} />
             </IconButton>
           )}
         </Flex>
-        {wasJustCreated(dashboard.created_at) ? (
+        {wasJustCreated(dashboard.created_at) && (
           <Box
             mt="8px"
             display="inline-flex"
@@ -145,17 +156,6 @@ export default function DashboardHeader({
               Created just now
             </Text>
           </Box>
-        ) : (
-          <Text
-            // 8px title-to-timestamp gap per the Figma header frames.
-            mt="8px"
-            fontFamily="mono"
-            fontSize="10px"
-            lineHeight="16px"
-            color="rgba(19,22,25,0.7)"
-          >
-            {updatedLabel(dashboard.updated_at)}
-          </Text>
         )}
       </Box>
 
