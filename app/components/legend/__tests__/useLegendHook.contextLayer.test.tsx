@@ -1,7 +1,5 @@
 // @vitest-environment happy-dom
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useLegendHook } from "../useLegendHook";
@@ -17,12 +15,6 @@ vi.mock("@/app/hooks/useDatasetsCatalog", () => {
   const catalog = { palettesByDatasetId: {}, isLoading: false, error: null };
   return { useDatasetsCatalog: () => catalog };
 });
-
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={new QueryClient()}>
-    {children}
-  </QueryClientProvider>
-);
 
 const treeCoverLoss: Layer = {
   id: "dataset-4",
@@ -46,7 +38,7 @@ const contextSubLayer = (name: string): Layer => ({
 
 function contextLayerFor(name: string) {
   useMapStore.setState({ layers: [treeCoverLoss, contextSubLayer(name)] });
-  const { result } = renderHook(() => useLegendHook(), { wrapper });
+  const { result } = renderHook(() => useLegendHook());
   const parent = result.current.layers.find((l) => l.id === "dataset-4");
   return parent && "contextLayer" in parent ? parent.contextLayer : undefined;
 }
