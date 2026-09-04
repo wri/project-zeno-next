@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   chartTitleOverride,
   dashboardWidgetToInsightWidgets,
+  findCuratedWidgetForDataset,
   hasWidgetCustomization,
   insightModule,
   isChartShown,
@@ -462,6 +463,65 @@ describe("insightModule", () => {
       },
     });
     expect(insightModule(generated).curated).toBe(false);
+  });
+});
+
+describe("findCuratedWidgetForDataset", () => {
+  const curatedTcl = widget({
+    id: "w-tcl",
+    insight_id: "ins-tcl",
+    insight: {
+      id: "ins-tcl",
+      insight_text: "",
+      codeact_parts: [],
+      charts: [
+        chart({ id: "c-1", dataset_id: 4 }),
+        chart({ id: "c-2", position: 1, dataset_id: 4 }),
+      ],
+    },
+  });
+
+  it("finds the curated widget whose charts all carry the dataset id", () => {
+    expect(findCuratedWidgetForDataset([widget(), curatedTcl], 4)?.id).toBe(
+      "w-tcl"
+    );
+  });
+
+  it("returns undefined when no curated widget matches the dataset", () => {
+    expect(findCuratedWidgetForDataset([curatedTcl], 5)).toBeUndefined();
+  });
+
+  it("ignores AI-generated insights even when their charts carry the id", () => {
+    const generated = widget({
+      insight: {
+        id: "ins-ai",
+        insight_text: "",
+        codeact_parts: [{ type: "code_block", content: "ZGY=" }],
+        charts: [chart({ dataset_id: 4 })],
+      },
+    });
+    expect(findCuratedWidgetForDataset([generated], 4)).toBeUndefined();
+  });
+
+  it("ignores widgets with no insight, no charts, or charts without a dataset id", () => {
+    const noInsight = widget({ insight: null });
+    const noCharts = widget({
+      insight: { id: "x", insight_text: "", codeact_parts: [], charts: [] },
+    });
+    const legacy = widget(); // curated by provenance, but charts lack dataset_id
+    expect(
+      findCuratedWidgetForDataset([noInsight, noCharts, legacy], 4)
+    ).toBeUndefined();
+  });
+
+  it("ignores text widgets", () => {
+    const text = widget({
+      widget_type: "text",
+      insight_id: null,
+      insight: null,
+      config: { text: "note" },
+    });
+    expect(findCuratedWidgetForDataset([text], 4)).toBeUndefined();
   });
 });
 

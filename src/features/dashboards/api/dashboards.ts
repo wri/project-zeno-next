@@ -105,8 +105,9 @@ export async function updateWidget(
 }
 
 // Adds a persisted insight to a dashboard (the chat-side "Add to dashboard"
-// toggle). The backend is idempotent for duplicate insight adds and returns
-// the dashboard without insight expansion — callers invalidate and refetch.
+// toggle). Adding an insight that is already on the dashboard fails with 409
+// (the error carries `status`), and the response is the dashboard without
+// insight expansion — callers invalidate and refetch.
 export async function addInsightWidget(
   dashboardId: string,
   insightId: string,

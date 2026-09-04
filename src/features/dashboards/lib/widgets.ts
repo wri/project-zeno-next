@@ -311,6 +311,28 @@ export function insightModule(
 }
 
 /**
+ * The dashboard widget already showing the curated analysis of `datasetId`,
+ * if any. A curated insight's charts are all computed from one dataset, so a
+ * match is an insight widget with no generation provenance whose every chart
+ * carries that `dataset_id`. Rows persisted before `dataset_id` existed never
+ * match, so this is a best-effort "On dashboard" signal, not a guarantee.
+ */
+export function findCuratedWidgetForDataset(
+  widgets: DashboardWidget[],
+  datasetId: number
+): DashboardWidget | undefined {
+  return widgets.find((widget) => {
+    const insight = widget.insight;
+    if (widget.widget_type !== "insight" || !insight) return false;
+    if (!isCuratedInsight(insight.codeact_parts)) return false;
+    return (
+      insight.charts.length > 0 &&
+      insight.charts.every((chart) => chart.dataset_id === datasetId)
+    );
+  });
+}
+
+/**
  * Maps a dashboard insight widget (snake_case REST shape) to the
  * `InsightWidget`s consumed by `WidgetMessage` — the persisted counterpart
  * of `generateInsightsTool`, which produces one card per chart. Only the
