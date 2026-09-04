@@ -17,9 +17,12 @@ GitHub raw** (the repo is public; CORS is `*`) and aggregates client-side:
 | `cases/<store>/cases_index.json` | uid join table (query text, cohorts, notes) |
 
 The branch is pinned in `api/github.ts` (`NEXT_PUBLIC_EVALS_DATA_BRANCH`
-overrides it for development). Flip the default to `main` once the
-`challenge-set` branch merges. GitHub raw caches ~5 minutes per path, so the
-dashboard can lag a push by a few minutes.
+overrides it per environment). The default is TEMPORARILY the tooling
+branch `evals-dashboard-artefacts` so preview deploys work before
+gnw-gold-evals#32 merges; flip it to `challenge-set` when #32 lands and to
+`main` once challenge-set merges (#28) — merged feature branches get
+deleted, at which point a stale pin 404s. GitHub raw caches ~5 minutes per
+path, so the dashboard can lag a push by a few minutes.
 
 The superuser gate (`app/evals/page.tsx`) is UX-only: the underlying data is
 already public on GitHub.
@@ -52,6 +55,7 @@ already public on GitHub.
 
 - Promote the copied `ui/primitives/` (KpiCard, ChartCard, InlineAlert) to
   `src/shared/ui` once a second consumer appears.
-- Flip `EVALS_DATA_BRANCH` default to `main` after the challenge-set merge.
+- Flip the `EVALS_DATA_BRANCH` default: to `challenge-set` after
+  gnw-gold-evals#32, then to `main` after the challenge-set merge (#28).
 - Upstream `strict_clean()` in `tools/challenge_rollup.py` iterates a dict
   where the ledger stores a list; the TS port (`lib/verdict.ts`) is correct.
