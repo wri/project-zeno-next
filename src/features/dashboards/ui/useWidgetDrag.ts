@@ -2,40 +2,33 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-/** Where a dragged widget would land: a container key and an index in it. */
+/**
+ * Where a dragged widget would land: a container key and the widget the slot
+ * sits in front of there, or null for "after everything".
+ */
 export interface DropSlot {
   key: string;
-  index: number;
+  beforeId: string | null;
 }
 
 export interface WidgetDragState extends DropSlot {
   widgetId: string;
-  /** The container the drag started in — the slot to fall back to. */
-  fromKey: string;
   /** Shown in the cursor-following ghost. */
   title: string;
-  /** The dragged card's column span, so the drop slot matches its shape. */
-  isDouble: boolean;
   /** The dragged card's own box, so the placeholder holds its space. */
   width: number;
   height: number;
   /**
-   * Where the pointer was when the drag began — the ghost's first position.
-   * It deliberately does not track the cursor: every later position is written
-   * straight to the ghost's `transform` (see `ghostRef`), so a page of maps and
-   * charts doesn't re-render on every pointer move.
+   * The pointer at drag start — the ghost's first position. Every later
+   * position is written straight to the ghost's `transform` (see `ghostRef`)
+   * so a page of maps and charts doesn't re-render on every pointer move.
    */
   origin: { x: number; y: number };
 }
 
-export interface DragStartArgs {
+export interface DragStartArgs extends DropSlot {
   widgetId: string;
-  fromKey: string;
   title: string;
-  isDouble: boolean;
-  /** The widget's current index in `fromKey` — the slot a drag that goes
-      nowhere drops back into. */
-  index: number;
   /** The grid item being dragged — measured for the placeholder. */
   element: HTMLElement | null;
 }
@@ -43,10 +36,6 @@ export interface DragStartArgs {
 /** Drop zones name themselves; grid items name the widget they carry. */
 export const DROP_ZONE_ATTR = "data-drop-zone";
 export const DRAG_ITEM_ATTR = "data-drag-item";
-
-function rectOf(el: Element) {
-  return el.getBoundingClientRect();
-}
 
 /** The ghost's transform for a pointer position — offset clear of the cursor. */
 export function ghostAt(x: number, y: number): string {
@@ -57,7 +46,7 @@ export function ghostAt(x: number, y: number): string {
 function zoneAt(x: number, y: number): HTMLElement | null {
   const zones = document.querySelectorAll<HTMLElement>(`[${DROP_ZONE_ATTR}]`);
   for (const zone of zones) {
-    const r = rectOf(zone);
+    const r = zone.getBoundingClientRect();
     if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return zone;
   }
   return null;
@@ -68,15 +57,10 @@ function zoneAt(x: number, y: number): HTMLElement | null {
  * to append.
  *
  * A zone wraps at two columns, so it holds several visual rows: pick the row
- * the cursor is over (the first whose bottom is past it), then the first card
- * in that row whose centre is still right of the cursor. Past every card in the
- * row, the slot is the next row's first card — which is what "after the last
- * card of this row" means once the rows are read as one sequence.
- *
- * A row holding one card is a full-width card, and there the cursor's side of
- * its *vertical* middle decides: a stack of full-width cards is read down the
- * page, so aiming at the right half of one has nothing to do with going after
- * it.
+ * the cursor is over, then the first card in it whose centre is still right of
+ * the cursor; past every card in the row, the next row's first card. A row
+ * holding one card is full-width, and there the cursor's side of its vertical
+ * middle decides, since a stack of full-width cards is read down the page.
  */
 export function insertBefore(
   zone: HTMLElement,
@@ -88,7 +72,7 @@ export function insertBefore(
 
   const rows: { top: number; bottom: number; items: HTMLElement[] }[] = [];
   for (const item of items) {
-    const r = rectOf(item);
+    const r = item.getBoundingClientRect();
     const row = rows.find((candidate) => Math.abs(candidate.top - r.top) < 4);
     if (row) {
       row.bottom = Math.max(row.bottom, r.bottom);
@@ -108,11 +92,11 @@ export function insertBefore(
   const after =
     row.items.length === 1
       ? row.items.find((item) => {
-          const r = rectOf(item);
+          const r = item.getBoundingClientRect();
           return y < r.top + r.height / 2;
         })
       : row.items.find((item) => {
-          const r = rectOf(item);
+          const r = item.getBoundingClientRect();
           return r.left + r.width / 2 > x;
         });
   const target = after ?? rows[rowIndex + 1]?.items[0] ?? null;
@@ -120,45 +104,32 @@ export function insertBefore(
 }
 
 /**
- * Pointer-driven drag-and-drop for the dashboard grid, per the interaction
- * prototype: pressing a card's handle lifts it out of the layout, a ghost
- * follows the cursor, and a dashed placeholder marks the slot it would take —
- * in its own container or in any other one on the page.
+ * Pointer-driven drag-and-drop for the dashboard grid: pressing a card's
+ * handle lifts it, a ghost follows the cursor, and a dashed placeholder marks
+ * the slot it would take — in its own container or any other on the page.
  *
- * Native HTML5 drag can't do the cross-container part legibly (no ghost the
- * page controls, and `dragover` fires only over the source's own drop targets
- * once a chart or map swallows the events), so this listens on `document` for
- * the whole gesture instead.
- *
- * `resolveSlot` turns a hovered zone and an "insert before this widget" answer
- * into the index the caller's model wants; it reads the caller's own container
- * state, so this hook never needs to know the widget lists.
+ * Native HTML5 drag can't do the cross-container part (no ghost the page
+ * controls, and `dragover` stops firing once a chart or map swallows the
+ * events), so this listens on `document` for the whole gesture instead.
  */
 export function useWidgetDrag({
-  resolveSlot,
   onDrop,
 }: {
-  resolveSlot: (
-    widgetId: string,
-    zoneKey: string,
-    beforeWidgetId: string | null
-  ) => number;
   onDrop: (widgetId: string, slot: DropSlot) => void;
 }) {
   const [state, setState] = useState<WidgetDragState | null>(null);
   // The ghost follows the cursor through the DOM, not through React state.
   const ghostRef = useRef<HTMLDivElement | null>(null);
-  // The gesture reads the freshest resolver/handler without re-subscribing the
-  // document listeners mid-drag.
-  const resolveRef = useRef(resolveSlot);
+  // The gesture reads the freshest handler without re-subscribing mid-drag.
   const dropRef = useRef(onDrop);
-  resolveRef.current = resolveSlot;
-  dropRef.current = onDrop;
+  useEffect(() => {
+    dropRef.current = onDrop;
+  });
 
   const start = useCallback(
     (
       event: React.PointerEvent,
-      { widgetId, fromKey, title, isDouble, index, element }: DragStartArgs
+      { widgetId, key, beforeId, title, element }: DragStartArgs
     ) => {
       if (event.button !== 0) return;
       // Phosphor renders SVG handles, which the browser drags natively —
@@ -167,11 +138,9 @@ export function useWidgetDrag({
       const box = element?.getBoundingClientRect();
       setState({
         widgetId,
-        fromKey,
+        key,
+        beforeId,
         title,
-        isDouble,
-        key: fromKey,
-        index,
         width: box?.width ?? 0,
         height: box?.height ?? 0,
         origin: { x: event.clientX, y: event.clientY },
@@ -188,19 +157,18 @@ export function useWidgetDrag({
     const onMove = (event: PointerEvent) => {
       const { clientX: x, clientY: y } = event;
       if (ghostRef.current) ghostRef.current.style.transform = ghostAt(x, y);
-      setState((current) => {
-        if (!current) return current;
-        const zone = zoneAt(x, y);
-        const key = zone?.getAttribute(DROP_ZONE_ATTR) ?? current.key;
-        const index = zone
-          ? resolveRef.current(current.widgetId, key, insertBefore(zone, x, y))
-          : current.index;
-        // Same slot, same render: the grid only re-lays-out when the drop
-        // target actually moves.
-        return key === current.key && index === current.index
+      // Between zones the slot stays where it was.
+      const zone = zoneAt(x, y);
+      if (!zone) return;
+      const key = zone.getAttribute(DROP_ZONE_ATTR) ?? "";
+      const beforeId = insertBefore(zone, x, y);
+      // Same slot, same render: the grid only re-lays-out when the drop
+      // target actually moves.
+      setState((current) =>
+        !current || (current.key === key && current.beforeId === beforeId)
           ? current
-          : { ...current, key, index };
-      });
+          : { ...current, key, beforeId }
+      );
     };
 
     const onUp = () => {
@@ -208,7 +176,7 @@ export function useWidgetDrag({
         if (current) {
           dropRef.current(current.widgetId, {
             key: current.key,
-            index: current.index,
+            beforeId: current.beforeId,
           });
         }
         return null;

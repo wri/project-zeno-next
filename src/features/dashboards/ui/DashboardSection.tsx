@@ -6,37 +6,30 @@ import { CaretDownIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import type { DashboardSection as Section } from "../api/schemas";
+import { DROP_ZONE_ATTR } from "./useWidgetDrag";
 
 /**
  * The white panel one container of the dashboard renders in — a section, or
- * (with no `section`) the ungrouped top-level list.
+ * (with no `section`) the ungrouped top-level list. The page's grey is the
+ * gutter between panels, never the ground a card floats on: that contrast is
+ * what makes a section read as one band.
  *
- * Every widget on the page sits on white: the page's grey is the gutter
- * between panels, never the ground a card floats on. That is the design's
- * grouping cue and the reason a section reads as one band before its heading
- * is read.
- *
- * A section adds the heading block: a collapse toggle and the title, with the
- * provenance caption right-aligned on the same row, then the agent's own
- * statement of what the section is for as a subtitle directly below. A
- * full-width rule closes the block and separates it from the widgets. The
- * caption labels the section itself, so it shows whether or not the agent
- * wrote a description. That block is the page's one heading
- * voice — the analyses inside it are cards like every other widget, and none
- * of them repeats it. Collapsing is view-only state: it is not persisted, so
- * it never races the agent's own edits to the section.
+ * A section adds a heading block — collapse toggle, title, provenance caption,
+ * then the agent's description as a subtitle — closed by a full-width rule.
+ * Collapsing is view-only state, never persisted, so it can't race the agent's
+ * own edits to the section.
  */
 export default function DashboardSection({
   section,
   /** Highlighted as the drop target of a drag in flight. */
   isDropTarget = false,
   /** The drop-zone identity the grid's drag hit-testing looks for. */
-  dropZoneProps,
+  dropZoneKey,
   children,
 }: {
   section: Section | null;
   isDropTarget?: boolean;
-  dropZoneProps?: Record<string, string>;
+  dropZoneKey?: string;
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -51,7 +44,7 @@ export default function DashboardSection({
       pb="24px"
       gap="16px"
       transition="background 0.12s ease"
-      {...dropZoneProps}
+      {...{ [DROP_ZONE_ATTR]: dropZoneKey }}
     >
       {section && (
         <Flex

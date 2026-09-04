@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Box, Flex, Icon, Text } from "@chakra-ui/react";
 import { DotsSixVerticalIcon } from "@phosphor-icons/react";
@@ -41,7 +41,6 @@ import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
 import {
   DRAG_ITEM_ATTR,
-  DROP_ZONE_ATTR,
   ghostAt,
   useWidgetDrag,
   type WidgetDragState,
@@ -50,8 +49,7 @@ import {
 /**
  * The body of a standalone (non-insight) grid item: the map layer for map
  * widgets, the markdown text for notes, or placeholder copy when the config
- * can't be rendered. Insight widgets don't come through here — their body is
- * the chart on show, which `DashboardInsightModule` picks.
+ * can't be rendered.
  */
 interface StandaloneBody {
   map: MapWidgetLayer | null;
@@ -103,35 +101,13 @@ function widgetLabel(widget: DashboardWidget): string {
 }
 
 /**
- * The widget the drag's dashed slot sits in front of in this container, or
- * null for "after everything" (and for a drag aimed somewhere else).
- *
- * A slot index counts the container *without* the dragged widget — what
- * `computeWidgetMove` writes — while the rendered list still holds it, so the
- * index is resolved to a widget id rather than used as a position.
- */
-function slotBeforeId(
-  widgets: DashboardWidget[],
-  containerKey: string,
-  drag: WidgetDragState | null
-): string | null {
-  if (!drag || drag.key !== containerKey) return null;
-  const without = widgets.filter((widget) => widget.id !== drag.widgetId);
-  return without[drag.index]?.id ?? null;
-}
-
-/**
  * One container's grid — the ungrouped top level, or one section's widgets.
- * Each widget is one card, insights included (`DashboardInsightModule` pages
- * through the insight's charts inside its one card), so any pair of
- * half-width widgets can share a row via `packCells`.
  *
- * Layout is `packCells`' segments rather than CSS grid rows: each card is
- * only as tall as its content, and a run of half-width cells deals into two
- * tightly-stacked columns so short cards don't leave voids beside tall
- * neighbours. Below `TWO_COLUMN_QUERY` everything is one column — the segment
- * wrappers flatten away (`display: contents`) and each item's `order` restores
- * the flat arrangement order.
+ * Layout is `packCells`' segments rather than CSS grid rows: each card is only
+ * as tall as its content, and a run of half-width cells deals into two
+ * tightly-stacked columns. Below `TWO_COLUMN_QUERY` everything is one column —
+ * the wrappers flatten away (`display: contents`) and each item's `order`
+ * restores the flat arrangement order.
  *
  * Items are keyed on `widget.id` — never fold position in, or React remounts
  * map widgets mid-drag (see DashboardWidgetsGrid.reorder.test.tsx).
@@ -147,11 +123,7 @@ function ContainerGrid({
   container: WidgetContainer;
   isOwner: boolean;
   drag: WidgetDragState | null;
-  onDragStart: (
-    event: React.PointerEvent,
-    widget: DashboardWidget,
-    index: number
-  ) => void;
+  onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
 }) {
   const updateWidget = useUpdateWidget(dashboard.id);
   const deleteWidget = useDeleteWidget(dashboard.id);
@@ -160,10 +132,9 @@ function ContainerGrid({
 
   // Packing sees only the persisted widgets: the drop slot is rendered beside
   // the card it precedes, never packed with them. A slot that joined the deal
-  // would flip every later half-width card between the two columns on every
-  // pointer move — a different React parent each time, which unmounts a map
-  // widget and leaves MapLibre's next frame with no style (the crash the
-  // reorder test guards).
+  // would flip later half-width cards between the columns on every pointer
+  // move — a different React parent each time, which unmounts a map widget
+  // mid-frame (the crash the reorder test guards).
   const segments = useMemo(
     () =>
       packCells(
@@ -172,8 +143,19 @@ function ContainerGrid({
       ),
     [container.widgets]
   );
-  const beforeId = slotBeforeId(container.widgets, container.key, drag);
   const isDropTarget = !!drag && drag.key === container.key;
+  const slotBeforeId = isDropTarget ? drag.beforeId : null;
+
+  const toggleSize = (widget: DashboardWidget) =>
+    updateWidget.mutate({
+      widgetId: widget.id,
+      patch: {
+        config: withSize(
+          widget.config,
+          topLevelSize(widget) === "double" ? "single" : "double"
+        ),
+      },
+    });
 
   const renderPlaceholder = (order: number) => (
     <Box
@@ -197,25 +179,16 @@ function ContainerGrid({
       body?.map?.title ??
       (typeof widget.config.title === "string" ? widget.config.title : "");
     const isDragged = drag?.widgetId === widget.id;
-    const armDrag = (event: React.PointerEvent) =>
-      onDragStart(
-        event,
-        widget,
-        container.widgets.findIndex((w) => w.id === widget.id)
-      );
+    const armDrag = (event: React.PointerEvent) => onDragStart(event, widget);
 
     return (
       <Box
         key={widget.id}
         // The drop hit-test resolves its target from the DOM, so each item
-        // names the widget it carries. The one in flight drops out of the
-        // hit-test — a card can't be a slot for itself.
+        // names the widget it carries — except the one in flight, which can't
+        // be a slot for itself.
         data-widget-id={widget.id}
         {...(isDragged ? {} : { [DRAG_ITEM_ATTR]: widget.id })}
-        // One column flattens the column wrappers, so the flat arrangement
-        // order is restored per item; in two columns, DOM order rules each
-        // column. Cards clip internally rather than force the page wider than
-        // the container near the two-column threshold.
         minW={0}
         opacity={isDragged ? 0.4 : 1}
         css={{ order, [TWO_COLUMN_QUERY]: { order: 0 } }}
@@ -229,17 +202,7 @@ function ContainerGrid({
               isOwner={isOwner}
               isDouble={size === "double"}
               onArmDrag={armDrag}
-              onToggleSize={() =>
-                updateWidget.mutate({
-                  widgetId: widget.id,
-                  patch: {
-                    config: withSize(
-                      widget.config,
-                      size === "double" ? "single" : "double"
-                    ),
-                  },
-                })
-              }
+              onToggleSize={() => toggleSize(widget)}
               onUpdateConfig={(config) =>
                 updateWidget.mutate({ widgetId: widget.id, patch: { config } })
               }
@@ -252,17 +215,7 @@ function ContainerGrid({
               isOwner={isOwner}
               isDouble={size === "double"}
               onArmDrag={armDrag}
-              onToggleSize={() =>
-                updateWidget.mutate({
-                  widgetId: widget.id,
-                  patch: {
-                    config: withSize(
-                      widget.config,
-                      size === "double" ? "single" : "double"
-                    ),
-                  },
-                })
-              }
+              onToggleSize={() => toggleSize(widget)}
               onSaveText={(next) =>
                 updateWidget.mutate({
                   widgetId: widget.id,
@@ -285,17 +238,7 @@ function ContainerGrid({
               isOwner={isOwner}
               isDouble={size === "double"}
               onArmDrag={armDrag}
-              onToggleSize={() =>
-                updateWidget.mutate({
-                  widgetId: widget.id,
-                  patch: {
-                    config: withSize(
-                      widget.config,
-                      size === "double" ? "single" : "double"
-                    ),
-                  },
-                })
-              }
+              onToggleSize={() => toggleSize(widget)}
               onRename={
                 body?.placeholder
                   ? undefined
@@ -317,16 +260,15 @@ function ContainerGrid({
   // without moving a single widget's fiber.
   const renderCell = (widget: DashboardWidget, order: number) => (
     <Fragment key={widget.id}>
-      {beforeId === widget.id && renderPlaceholder(order)}
+      {slotBeforeId === widget.id && renderPlaceholder(order)}
       {renderWidget(widget, order)}
     </Fragment>
   );
 
   if (container.widgets.length === 0) {
     if (isDropTarget) return renderPlaceholder(0);
-    // An empty top level is only ever on screen mid-drag, as the panel the
-    // dragged widget can be put back into — it says nothing, it just holds
-    // the space.
+    // An empty top level is only on screen mid-drag, as the panel the dragged
+    // widget can be put back into — it just holds the space.
     return container.section ? (
       <Text fontSize="14px" color="fg.muted">
         Nothing in this section yet.
@@ -370,7 +312,7 @@ function ContainerGrid({
       )}
       {/* "After everything" — the one slot that follows no card. */}
       {isDropTarget &&
-        beforeId === null &&
+        slotBeforeId === null &&
         renderPlaceholder(container.widgets.length)}
     </Flex>
   );
@@ -378,10 +320,8 @@ function ContainerGrid({
 
 /**
  * The card the prototype lifts out of the layout to follow the cursor.
- *
  * Positioned from the drag's origin only; `useWidgetDrag` writes every later
- * position onto this node's `transform` directly, so React never re-renders
- * the page to move it.
+ * position onto this node's `transform` directly.
  */
 function DragGhost({
   state,
@@ -422,20 +362,12 @@ function DragGhost({
 
 /**
  * The dashboard's widgets, grouped into their containers: the ungrouped
- * top-level list first, then one panel per section.
+ * top-level list first, then one panel per section (`widgetContainers` does
+ * the grouping — the API's flat `widgets` is never a render order on its own).
  *
- * The API returns `widgets` flat, with each `position` scoped to that widget's
- * own container, so the array is never a render order on its own —
- * `widgetContainers` does the grouping this component renders. Owners also see
- * sections holding nothing yet: the agent creates a section before it fills
- * one, and the heading is the structure it just reported making.
- *
- * Drag-and-drop is owned here rather than per container, because a drag can
+ * Drag-and-drop is owned here rather than per container because a drag can
  * cross containers: a widget dropped in a section is a `section_id` PATCH
- * alongside the renumbering, and both the container it left and the one it
- * joined are renumbered from 0 (`computeWidgetMove`). Dragging a *section*, and
- * dropping a widget between panels to spawn a new one, are in the interaction
- * prototype but not here — neither has an API to write to yet.
+ * alongside the renumbering of both containers (`computeWidgetMove`).
  */
 export default function DashboardWidgetsGrid({
   dashboard,
@@ -446,25 +378,25 @@ export default function DashboardWidgetsGrid({
   const isOwner = !!userId && userId === dashboard.user_id;
   const moveWidgets = useMoveWidgets(dashboard.id);
 
-  // Read by the drag callbacks, which outlive the render that created them.
+  // Read by the drop callback, which outlives the render that created it.
   const containersRef = useRef<WidgetContainer[]>([]);
 
   const drag = useWidgetDrag({
-    resolveSlot: (widgetId, zoneKey, beforeWidgetId) => {
-      const container = containersRef.current.find((c) => c.key === zoneKey);
-      if (!container) return 0;
-      const ids = container.widgets
-        .filter((widget) => widget.id !== widgetId)
-        .map((widget) => widget.id);
-      const at = beforeWidgetId ? ids.indexOf(beforeWidgetId) : -1;
-      return at === -1 ? ids.length : at;
-    },
     onDrop: (widgetId, slot) => {
+      const containers = containersRef.current;
+      const target = containers.find((c) => c.key === slot.key);
+      if (!target) return;
+      // The slot's index counts the container without the dragged widget,
+      // which is what `computeWidgetMove` expects.
+      const ids = target.widgets
+        .map((widget) => widget.id)
+        .filter((id) => id !== widgetId);
+      const at = slot.beforeId ? ids.indexOf(slot.beforeId) : -1;
       const patches = computeWidgetMove(
-        containersRef.current,
+        containers,
         widgetId,
         slot.key,
-        slot.index
+        at === -1 ? ids.length : at
       );
       if (patches.length > 0) moveWidgets.mutate(patches);
     },
@@ -481,7 +413,9 @@ export default function DashboardWidgetsGrid({
       }),
     [dashboard, isOwner, dragState]
   );
-  containersRef.current = containers;
+  useEffect(() => {
+    containersRef.current = containers;
+  });
 
   return (
     <Box css={{ containerType: "inline-size", containerName: "widgets-grid" }}>
@@ -493,25 +427,27 @@ export default function DashboardWidgetsGrid({
             key={container.key}
             section={container.section}
             isDropTarget={!!dragState && dragState.key === container.key}
-            dropZoneProps={{ [DROP_ZONE_ATTR]: container.key }}
+            dropZoneKey={container.key}
           >
             <ContainerGrid
               dashboard={dashboard}
               container={container}
               isOwner={isOwner}
               drag={dragState}
-              onDragStart={(event, widget, index) =>
+              onDragStart={(event, widget) => {
+                const next =
+                  container.widgets[container.widgets.indexOf(widget) + 1];
                 drag.start(event, {
                   widgetId: widget.id,
-                  fromKey: container.key,
+                  key: container.key,
+                  // The slot opens where the card was.
+                  beforeId: next?.id ?? null,
                   title: widgetLabel(widget),
-                  isDouble: topLevelSize(widget) === "double",
-                  index,
                   element: (event.currentTarget as HTMLElement).closest(
                     "[data-widget-id]"
                   ) as HTMLElement | null,
-                })
-              }
+                });
+              }}
             />
           </DashboardSection>
         ))}

@@ -157,6 +157,17 @@ function useOptimisticWidgetMutation<TVars>(
   });
 }
 
+// Mirrors the PATCH's three-valued grouping: an explicit null is a move to the
+// top level, so the key is tested rather than the value.
+function withSectionId<T extends { section_id?: string | null }>(
+  widget: T,
+  patch: { section_id?: string | null }
+): T {
+  return "section_id" in patch
+    ? { ...widget, section_id: patch.section_id }
+    : widget;
+}
+
 export function useUpdateWidget(dashboardId: string) {
   return useOptimisticWidgetMutation(
     dashboardId,
@@ -165,18 +176,16 @@ export function useUpdateWidget(dashboardId: string) {
     (widgets, { widgetId, patch }) =>
       widgets.map((w) =>
         w.id === widgetId
-          ? {
-              ...w,
-              ...(patch.position !== undefined
-                ? { position: patch.position }
-                : {}),
-              ...(patch.config ? { config: patch.config } : {}),
-              // Mirrors the PATCH's three-valued grouping: an explicit null is
-              // a move to the top level, so test the key rather than the value.
-              ...("section_id" in patch
-                ? { section_id: patch.section_id }
-                : {}),
-            }
+          ? withSectionId(
+              {
+                ...w,
+                ...(patch.position !== undefined
+                  ? { position: patch.position }
+                  : {}),
+                ...(patch.config ? { config: patch.config } : {}),
+              },
+              patch
+            )
           : w
       )
   );
@@ -245,13 +254,7 @@ export function useMoveWidgets(dashboardId: string) {
       return widgets.map((w) => {
         const patch = byId.get(w.id);
         if (!patch) return w;
-        return {
-          ...w,
-          position: patch.position,
-          // Mirrors the PATCH's three-valued grouping: an explicit null is a
-          // move to the top level, so test the key rather than the value.
-          ...("section_id" in patch ? { section_id: patch.section_id } : {}),
-        };
+        return withSectionId({ ...w, position: patch.position }, patch);
       });
     }
   );
