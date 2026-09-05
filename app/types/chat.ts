@@ -210,6 +210,10 @@ export type ImageryProvider = "sentinel-2" | "planet";
 // has no value for as an explicit JSON null (e.g. Planet's monthly basemap
 // has no scene count or cloud stats), so consumers must treat null and
 // undefined alike (`== null`, never `=== undefined`).
+//
+// This is the raw wire shape. Legend/display code should use `ImageryMeta`
+// via `toImageryMeta` (app/utils/imagery.ts) instead of reading these fields
+// directly.
 export interface ImageryInfo {
   // Absent on payloads written before wri/project-zeno#800, which were all
   // Sentinel-2.
