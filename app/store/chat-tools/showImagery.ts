@@ -8,6 +8,7 @@ import {
   imageryLayerId,
   imageryLayerTitle,
   isImageryLayerId,
+  toImageryMeta,
 } from "@/app/utils/imagery";
 
 interface TileJson {
@@ -63,6 +64,10 @@ export async function showImageryTool(streamMessage: StreamMessage) {
   const { addLayer, setLayerVisibility, reorderLayers } =
     useMapStore.getState();
 
+  // Normalize once at the boundary (ImageryLegendMeta's raw nulls/legacy
+  // field names never leak past this call) — see toImageryMeta.
+  const meta = toImageryMeta(imagery);
+
   // The backend serialises fields it has no value for as explicit JSON null
   // (see ImageryInfo); normalise to undefined so the checks below hold.
   let tileMetadata: TileJson = {
@@ -114,18 +119,16 @@ export async function showImageryTool(streamMessage: StreamMessage) {
 
   addLayer({
     id,
-    name: imageryLayerTitle(imagery.target_date),
+    name: imageryLayerTitle(meta.targetDate),
     type: "raster",
     visible: true,
     tileUrl: imagery.tile_url,
     minzoom: tileMetadata.minzoom,
     maxzoom: tileMetadata.maxzoom,
     bounds: tileMetadata.bounds,
-    attribution: imageryAttribution(imagery.provider),
-    // start_date/end_date since wri/project-zeno#800; the old names survive
-    // on replayed old threads.
-    startDate: imagery.start_date ?? imagery.date_start ?? undefined,
-    endDate: imagery.end_date ?? imagery.date_end ?? undefined,
+    attribution: imageryAttribution(meta.provider),
+    startDate: meta.startDate,
+    endDate: meta.endDate,
     imagery,
   });
 
