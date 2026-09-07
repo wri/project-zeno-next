@@ -137,6 +137,13 @@ export function useLegendHook() {
           color,
           opacity: (layer.opacity ?? 1) * 100,
           info: legend?.info,
+          // The swatch beside the title already stands for a single-class
+          // layer. Multi-class ones (IFL's reduction epochs) need the full
+          // symbol list, or every class but the first goes unexplained.
+          symbology:
+            legend && (legend.items?.length ?? 0) > 1
+              ? renderLegendSymbology(legend)
+              : undefined,
         });
       }
 
