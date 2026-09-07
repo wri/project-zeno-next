@@ -117,11 +117,13 @@ function liftFrom(
 /**
  * The item in flight leaves the layout (its slot is the placeholder) and
  * keeps its measured box, so a map inside never resizes. `useDrag` moves and
- * shrinks it with a `transform`, around the grab point.
+ * shrinks it with a `transform`, around the grab point; the pick-up eases
+ * into that from flat.
  */
 function liftedProps({ rect, grab, dropped }: DragState): BoxProps {
   return {
     position: "absolute",
+    _motionSafe: { animation: "dragLift 120ms ease" },
     // Dropped: the slot marks the landing spot until the data catches up.
     visibility: dropped ? "hidden" : undefined,
     left: `${rect.left}px`,
@@ -132,6 +134,14 @@ function liftedProps({ rect, grab, dropped }: DragState): BoxProps {
     zIndex: 2000,
     pointerEvents: "none",
     boxShadow: "0 16px 32px rgba(19,22,25,0.22), 0 3px 8px rgba(19,22,25,0.14)",
+  };
+}
+
+/** The item that just landed settles into its slot. */
+function landedProps(onSettle: () => void): BoxProps {
+  return {
+    _motionSafe: { animation: "scale-in 150ms ease-out" },
+    onAnimationEnd: onSettle,
   };
 }
 
@@ -176,16 +186,21 @@ function ContainerGrid({
   container,
   isOwner,
   drag,
+  landed,
   liftedRef,
   onDragStart,
+  onSettle,
 }: {
   dashboard: Dashboard;
   container: WidgetContainer;
   isOwner: boolean;
   drag: DragState | null;
+  /** The widget that just landed, until its settle animation ends. */
+  landed: string | null;
   /** Attached to the card in flight, which the drag moves via `transform`. */
   liftedRef: React.Ref<HTMLDivElement>;
   onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
+  onSettle: () => void;
 }) {
   const updateWidget = useUpdateWidget(dashboard.id);
   const deleteWidget = useDeleteWidget(dashboard.id);
@@ -239,6 +254,7 @@ function ContainerGrid({
         css={cellCss(size === "double")}
         borderRadius="sm"
         {...(lifted && liftedProps(lifted))}
+        {...(landed === widget.id && landedProps(onSettle))}
       >
         <DashboardWidgetBoundary resetKey={JSON.stringify(widget.config)}>
           {widget.widget_type === "insight" ? (
@@ -454,6 +470,9 @@ export default function DashboardWidgetsGrid({
                   ? { [SECTION_ITEM_ATTR]: section.id }
                   : {})}
                 {...(lifted && liftedProps(lifted))}
+                {...(section &&
+                  sectionDrag.landed === section.id &&
+                  landedProps(sectionDrag.settle))}
               >
                 <DashboardSection
                   section={section}
@@ -486,7 +505,9 @@ export default function DashboardWidgetsGrid({
                     container={container}
                     isOwner={isOwner}
                     drag={dragState}
+                    landed={drag.landed}
                     liftedRef={drag.liftedRef}
+                    onSettle={drag.settle}
                     onDragStart={(event, widget) => {
                       const next =
                         container.widgets[

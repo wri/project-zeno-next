@@ -159,6 +159,8 @@ export function useDrag({
 }) {
   const { zone: zoneAttr, item: itemAttr } = attrs;
   const [state, setState] = useState<DragState | null>(null);
+  // The item that just landed, for the caller's settle animation.
+  const [landed, setLanded] = useState<string | null>(null);
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
@@ -194,10 +196,14 @@ export function useDrag({
   );
 
   /** Ends a dropped drag; a no-op otherwise. */
-  const finish = useCallback(
-    () => setState((current) => (current?.dropped ? null : current)),
-    []
-  );
+  const finish = useCallback(() => {
+    const current = stateRef.current;
+    if (!current?.dropped) return;
+    setLanded(current.id);
+    setState(null);
+  }, []);
+  /** Forgets the landed item, once its settle animation has played. */
+  const settle = useCallback(() => setLanded(null), []);
 
   // One origin per gesture, so the listeners subscribe once per drag and
   // let go at the drop.
@@ -296,5 +302,5 @@ export function useDrag({
     };
   }, [origin]);
 
-  return { state, start, finish, liftedRef };
+  return { state, landed, start, finish, settle, liftedRef };
 }
