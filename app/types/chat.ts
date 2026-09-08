@@ -374,6 +374,10 @@ export interface DatasetInfo {
   // least one entry. Most datasets have exactly one; LGMS has two
   // (agriculture, lulucf) that can be shown independently or together.
   layers?: DatasetLayer[];
+  // Name of the one layer (from `layers`) shown on the map by default when a
+  // dataset has more than one. The rest are added to the layer list but
+  // hidden (opacity 0) until the user toggles them on.
+  selected_layer?: string;
   context_layer?: string | null;
   context_layers?: DatasetContextLayer[];
   parameters?: DatasetParameter[] | null;
