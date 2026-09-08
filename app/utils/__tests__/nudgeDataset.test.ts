@@ -33,9 +33,19 @@ vi.mock("@/app/utils/datasetLayerContext", () => ({
     { id: "dataset-4", datasetId: 4, name: "Tree cover loss" },
   ]),
   toLayerEntries: (
-    layers?: { name: string; tile_url: string }[]
-  ): { name: string; tileUrl: string }[] | undefined =>
-    layers?.map((l) => ({ name: l.name, tileUrl: l.tile_url })),
+    layers?: {
+      name: string;
+      tile_url: string;
+      start_date?: string;
+      end_date?: string;
+    }[]
+  ) =>
+    layers?.map((l) => ({
+      name: l.name,
+      tileUrl: l.tile_url,
+      startDate: l.start_date,
+      endDate: l.end_date,
+    })),
 }));
 
 import {
