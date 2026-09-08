@@ -153,6 +153,43 @@ describe("buildDatasetLayers", () => {
     expect(layers[0].id).not.toBe(layers[1].id);
   });
 
+  it("hides all but the first layer by default when multiple layers exist", () => {
+    const layers = buildDatasetLayers({
+      datasetId: 12,
+      layers: [
+        { name: "agriculture", tileUrl: "https://example.com/agriculture.png" },
+        { name: "lulucf", tileUrl: "https://example.com/lulucf.png" },
+      ],
+    });
+
+    expect(layers[0].opacity).toBeUndefined();
+    expect(layers[1].opacity).toBe(0);
+  });
+
+  it("hides all but the requested `selectedLayerName` layer", () => {
+    const layers = buildDatasetLayers({
+      datasetId: 12,
+      selectedLayerName: "lulucf",
+      layers: [
+        { name: "agriculture", tileUrl: "https://example.com/agriculture.png" },
+        { name: "lulucf", tileUrl: "https://example.com/lulucf.png" },
+      ],
+    });
+
+    expect(layers[0].opacity).toBe(0);
+    expect(layers[1].opacity).toBeUndefined();
+  });
+
+  it("leaves opacity untouched for a single layer", () => {
+    const layers = buildDatasetLayers({
+      datasetId: 4,
+      layerName: "Tree cover loss",
+      tileUrl: "https://example.com/tiles/{z}/{x}/{y}.png",
+    });
+
+    expect(layers[0].opacity).toBeUndefined();
+  });
+
   it("returns [] when there is nothing to render", () => {
     expect(buildDatasetLayers({ datasetId: 4 })).toEqual([]);
   });

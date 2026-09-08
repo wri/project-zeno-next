@@ -194,6 +194,34 @@ describe("deriveContext", () => {
     expect(keys.dataset).toBe("12:agriculture");
   });
 
+  it("excludes a sibling layer hidden via opacity 0 (a multi-layer dataset's default hiding)", () => {
+    const agricultureLayer: Layer = {
+      id: "dataset-12",
+      name: "agriculture",
+      type: "raster",
+      visible: true,
+      datasetId: 12,
+    };
+    // Still `visible: true` (it's in the layer list) but hidden by opacity,
+    // matching buildDatasetLayers' default single-visible-layer behavior.
+    const hiddenLulucfLayer: Layer = {
+      id: "dataset-12-lulucf",
+      name: "lulucf",
+      type: "raster",
+      visible: true,
+      opacity: 0,
+      datasetId: 12,
+    };
+    const { uiContext, keys } = deriveContext(
+      [agricultureLayer, hiddenLulucfLayer],
+      [],
+      null
+    );
+
+    expect(uiContext.dataset_selected?.active_layers).toEqual(["agriculture"]);
+    expect(keys.dataset).toBe("12:agriculture");
+  });
+
   it("ignores hidden area layers and context sub-layers", () => {
     const hiddenArea: Layer = { ...aiAreaLayer, id: "hidden", visible: false };
     const subLayer: Layer = {
