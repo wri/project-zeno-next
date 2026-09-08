@@ -309,6 +309,53 @@ describe("DashboardWidgetsGrid sections", () => {
     );
   });
 
+  // A panel is taller than the cards it holds, so a drop in its bottom padding
+  // sits below every row. That must append, not fold back to the first row.
+  it("appends a widget dropped below every card in a panel", async () => {
+    // The section's zone runs to 440; its two full-width cards end at 400.
+    const boxes: Record<string, [number, number, number, number]> = {
+      "zone:": [0, 0, 1000, 200],
+      "widget:t1": [0, 0, 1000, 100],
+      "widget:t2": [0, 100, 1000, 200],
+      "zone:s1": [0, 200, 1000, 440],
+      "widget:w1": [0, 200, 1000, 300],
+      "widget:w2": [0, 300, 1000, 400],
+    };
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: Element) {
+        const zone = this.getAttribute("data-drop-zone");
+        const widget = this.getAttribute("data-widget-id");
+        const [left, top, right, bottom] = (zone !== null
+          ? boxes[`zone:${zone}`]
+          : widget
+            ? boxes[`widget:${widget}`]
+            : undefined) ?? [0, 0, 0, 0];
+        return {
+          left,
+          top,
+          right,
+          bottom,
+          x: left,
+          y: top,
+          width: right - left,
+          height: bottom - top,
+          toJSON: () => ({}),
+        } as DOMRect;
+      }
+    );
+    renderGrid(fourNotes());
+
+    // Into the panel's padding, below both of its cards.
+    dragTo("t1", 500, 420);
+
+    await waitFor(() =>
+      expect(updateWidget.mock.calls.map((c) => [c[1], c[2]])).toEqual([
+        ["t1", { id: "t1", position: 2, section_id: "s1" }],
+        ["t2", { id: "t2", position: 0 }],
+      ])
+    );
+  });
+
   // Sections drag as a stack: the panels' column is the zone, each panel an
   // item, and a drop writes each moved section's new position.
   it("reorders sections by dragging one above another", async () => {
@@ -347,10 +394,9 @@ describe("DashboardWidgetsGrid sections", () => {
     );
 
     const s2 = document.querySelector<HTMLElement>('[data-section-id="s2"]')!;
-    fireEvent.pointerDown(
-      within(s2).getByLabelText("Drag to reposition section"),
-      { button: 0 }
-    );
+    fireEvent.pointerDown(within(s2).getByLabelText(/Reposition section/), {
+      button: 0,
+    });
     // Onto the top half of the first section.
     fireEvent.pointerMove(document, { clientX: 500, clientY: 10 });
     expect(screen.getByTestId("section-drop-slot")).toBeTruthy();
@@ -367,6 +413,60 @@ describe("DashboardWidgetsGrid sections", () => {
       ])
     );
     expect(updateWidget).not.toHaveBeenCalled();
+  });
+
+  // The drag needs a pointer, so the handle's arrow keys are the only route to
+  // a reorder for keyboard and switch users.
+  it("reorders sections with the arrow keys on the handle", async () => {
+    renderGrid(
+      dashboard(
+        [section("s1", "Deforestation", 0), section("s2", "Fires", 1)],
+        [note("w1", "Grouped first", 0, "s1"), note("w2", "Fire note", 0, "s2")]
+      )
+    );
+
+    const s2 = document.querySelector<HTMLElement>('[data-section-id="s2"]')!;
+    const handle = within(s2).getByLabelText(/Reposition section/);
+    fireEvent.keyDown(handle, { key: "ArrowUp" });
+
+    await waitFor(() =>
+      expect(updateSection.mock.calls.map((c) => [c[1], c[2]])).toEqual([
+        ["s2", { position: 0 }],
+        ["s1", { position: 1 }],
+      ])
+    );
+
+    // At the top of the list there is nowhere further to go, and nothing is
+    // written.
+    updateSection.mockClear();
+    const s1 = document.querySelector<HTMLElement>('[data-section-id="s1"]')!;
+    fireEvent.keyDown(within(s1).getByLabelText(/Reposition section/), {
+      key: "ArrowUp",
+    });
+    expect(updateSection).not.toHaveBeenCalled();
+  });
+
+  // A gesture the browser aborts (touch scrolling taking over) is not a drop.
+  it("writes nothing when a section drag is cancelled", async () => {
+    renderGrid(
+      dashboard(
+        [section("s1", "Deforestation", 0), section("s2", "Fires", 1)],
+        [note("w1", "Grouped first", 0, "s1"), note("w2", "Fire note", 0, "s2")]
+      )
+    );
+
+    const s2 = document.querySelector<HTMLElement>('[data-section-id="s2"]')!;
+    fireEvent.pointerDown(within(s2).getByLabelText(/Reposition section/), {
+      button: 0,
+    });
+    fireEvent.pointerMove(document, { clientX: 500, clientY: 10 });
+    fireEvent.pointerCancel(document);
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("section-drop-slot")).toBeNull()
+    );
+    expect(updateSection).not.toHaveBeenCalled();
+    expect(s2.style.transform).toBe("");
   });
 
   it("collapses a section to its heading and back", async () => {

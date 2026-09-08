@@ -437,6 +437,22 @@ export default function DashboardWidgetsGrid({
   });
   const sections = containers.flatMap((c) => (c.section ? [c.section] : []));
 
+  // The keyboard route to the same reorder: the arrow keys on a section's
+  // handle move it one place. `from + delta` is already the target index in the
+  // list without the section itself, which is what `computeSectionMove` counts
+  // — and at either end it clamps to where the section is, so nothing is
+  // written.
+  const moveSection = (from: number, delta: -1 | 1) => {
+    const section = sections[from];
+    if (!section) return;
+    const patches = computeSectionMove(
+      dashboard.sections,
+      section.id,
+      from + delta
+    );
+    if (patches.length > 0) moveSections.mutate(patches);
+  };
+
   return (
     <Box
       ref={gridRef}
@@ -479,6 +495,11 @@ export default function DashboardWidgetsGrid({
                   isOwner={isOwner}
                   isDropTarget={!!dragState && dragState.key === container.key}
                   dropZoneKey={container.key}
+                  onMove={
+                    section
+                      ? (delta) => moveSection(sections.indexOf(section), delta)
+                      : undefined
+                  }
                   onArmDrag={
                     section
                       ? (event) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Flex, Heading, Icon, IconButton, Text } from "@chakra-ui/react";
+import { Box, Flex, Heading, IconButton, Text } from "@chakra-ui/react";
 import { CaretDownIcon, DotsSixVerticalIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
@@ -16,7 +16,8 @@ import { DROP_ZONE_ATTR } from "./useDrag";
  *
  * A section adds a heading block — drag handle, collapse toggle, title,
  * provenance caption, then the agent's description as a subtitle — closed by
- * a full-width rule.
+ * a full-width rule. The handle is a button, and the arrow keys on it move the
+ * section one place up or down, so repositioning is not pointer-only.
  * Collapsing is view-only state, never persisted, so it can't race the agent's
  * own edits to the section.
  */
@@ -29,6 +30,11 @@ export default function DashboardSection({
   isOwner = false,
   /** Pointer down on the drag handle — starts the grid's section drag. */
   onArmDrag,
+  /**
+   * Move the section one place up (`-1`) or down (`1`) — the keyboard route to
+   * the same reorder the drag performs. At either end it is a no-op.
+   */
+  onMove,
   children,
 }: {
   section: Section | null;
@@ -36,6 +42,7 @@ export default function DashboardSection({
   dropZoneKey?: string;
   isOwner?: boolean;
   onArmDrag?: (event: React.PointerEvent) => void;
+  onMove?: (delta: -1 | 1) => void;
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -64,15 +71,36 @@ export default function DashboardSection({
         >
           <Flex align="center" gap="4px" minW={0}>
             {isOwner && onArmDrag && (
-              <Icon
-                as={DotsSixVerticalIcon}
-                boxSize="16px"
+              <IconButton
+                // A button, not a bare icon: the drag needs a pointer, so the
+                // arrow keys on this control are the only way to reposition a
+                // section from the keyboard.
+                aria-label="Reposition section: drag, or press the up and down arrow keys"
+                title="Drag to reposition section, or use the arrow keys"
+                size="2xs"
+                minW="20px"
+                h="20px"
+                variant="ghost"
                 color="fg.muted"
                 cursor="grab"
                 flexShrink={0}
-                aria-label="Drag to reposition section"
                 onPointerDown={onArmDrag}
-              />
+                onKeyDown={(event) => {
+                  const delta =
+                    event.key === "ArrowUp"
+                      ? -1
+                      : event.key === "ArrowDown"
+                        ? 1
+                        : 0;
+                  if (delta === 0 || !onMove) return;
+                  // The arrows would scroll the page otherwise, and the
+                  // section moving under a held key reads as the scroll.
+                  event.preventDefault();
+                  onMove(delta);
+                }}
+              >
+                <DotsSixVerticalIcon size={16} />
+              </IconButton>
             )}
             <IconButton
               aria-label={collapsed ? "Expand section" : "Collapse section"}

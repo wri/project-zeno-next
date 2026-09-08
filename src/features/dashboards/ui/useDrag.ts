@@ -115,11 +115,12 @@ export function insertBefore(
   }
   rows.sort((a, b) => a.top - b.top);
 
-  const rowIndex = Math.max(
-    0,
-    rows.findIndex((row) => y < row.bottom)
-  );
-  const row = rows[rowIndex] ?? rows[rows.length - 1];
+  // Below every row — the cursor is in the zone's bottom padding — the drop
+  // appends to the last row; folding back to the first would land the item
+  // near the top of a zone it was dropped at the bottom of.
+  const found = rows.findIndex((row) => y < row.bottom);
+  const rowIndex = found === -1 ? rows.length - 1 : found;
+  const row = rows[rowIndex];
 
   const after =
     row.items.length === 1
@@ -276,13 +277,18 @@ export function useDrag({
       setState(pending ? { ...current, dropped: true } : null);
     };
 
+    // The browser aborted the gesture (touch scrolling taking over, say).
+    // That is not a drop: the drag is forgotten and nothing is written, so a
+    // cancelled interaction can never reorder anything.
+    const onCancel = () => setState(null);
+
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", onUp);
-    document.addEventListener("pointercancel", onUp);
+    document.addEventListener("pointercancel", onCancel);
     return () => {
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", onUp);
-      document.removeEventListener("pointercancel", onUp);
+      document.removeEventListener("pointercancel", onCancel);
       cancelAnimationFrame(frame);
       if (lifted) lifted.style.transform = "";
     };

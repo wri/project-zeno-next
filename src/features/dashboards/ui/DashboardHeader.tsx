@@ -131,7 +131,11 @@ export default function DashboardHeader({
               size="xs"
               variant="ghost"
               color="fg.muted"
-              opacity={{ base: 1, md: 0 }}
+              opacity={0}
+              // Hover is the reveal, so a device that has no hover keeps the
+              // pencil visible. A viewport breakpoint is the wrong test: a
+              // touch-only tablet is wide and would get an invisible control.
+              css={{ "@media (hover: none)": { opacity: 1 } }}
               transition="opacity 0.12s"
               onClick={() => setDraft(dashboard.name)}
             >

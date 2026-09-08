@@ -167,13 +167,15 @@ function useOptimisticWidgetMutation<TVars>(
   }));
 }
 
-// Mirrors the PATCH's three-valued grouping: an explicit null is a move to the
-// top level, so the key is tested rather than the value.
+// Mirrors the PATCH's three-valued grouping: a string moves the widget into
+// that section and an explicit null moves it to the top level, while
+// `undefined` leaves the grouping alone — `JSON.stringify` drops that key, so
+// the server never sees it, and the cache must not act on it either.
 function withSectionId<T extends { section_id?: string | null }>(
   widget: T,
   patch: { section_id?: string | null }
 ): T {
-  return "section_id" in patch
+  return patch.section_id !== undefined
     ? { ...widget, section_id: patch.section_id }
     : widget;
 }

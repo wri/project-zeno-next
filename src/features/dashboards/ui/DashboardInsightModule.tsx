@@ -82,6 +82,11 @@ export default function DashboardInsightModule({
   return (
     <>
       <DashboardWidgetCard
+        // Keyed on the chart, so paging remounts the shell: the card holds its
+        // own rename draft and full-screen state, and an in-flight rename left
+        // over from the previous chart would show — and never reconcile — on
+        // the next one.
+        key={chartId ?? "no-chart"}
         // The card is the analysis: its title is the chart on show, so paging
         // renames the header the way the workspace does.
         title={card?.title ?? vm.title}
