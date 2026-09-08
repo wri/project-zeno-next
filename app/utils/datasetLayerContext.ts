@@ -62,6 +62,10 @@ export interface DatasetLayerSpec {
   // two (agriculture, lulucf). Always used over `layerName`/`tileUrl` when
   // non-empty.
   layers?: DatasetLayerEntry[];
+  // Name of the one entry in `layers` to show by default when there's more
+  // than one; the rest are added hidden (opacity 0). Ignored when there's
+  // only one layer.
+  selectedLayerName?: string;
   layerName?: string;
   tileUrl?: string;
   parameters?: Record<string, unknown>;
@@ -104,11 +108,18 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
   if (entries.length === 0) return [];
 
   const primaryLayerId = datasetLayerId(spec.datasetId, 0, entries[0].name);
+  // When a dataset declares multiple layers, only one is shown by default —
+  // the rest are added to the map (so they appear in the layer list) but
+  // hidden via opacity 0 until the user toggles them on.
+  const selectedLayerName =
+    entries.length > 1 ? (spec.selectedLayerName ?? entries[0].name) : null;
   const layers: Layer[] = entries.map((entry, index) => ({
     id: datasetLayerId(spec.datasetId, index, entry.name),
     name: entry.name,
     type: "raster",
     visible: true,
+    opacity:
+      selectedLayerName && entry.name !== selectedLayerName ? 0 : undefined,
     tileUrl: entry.tileUrl,
     datasetId: spec.datasetId,
     parameters: spec.parameters,

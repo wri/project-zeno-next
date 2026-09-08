@@ -45,6 +45,7 @@ export function pickDatasetTool(
         layerName: dataset.dataset_name,
         tileUrl: dataset.tile_url,
         layers: toLayerEntries(dataset.layers),
+        selectedLayerName: dataset.selected_layer,
         ...layerContextProps, // contextLayer / parameters / start+end dates
       }).forEach(addLayer);
 
