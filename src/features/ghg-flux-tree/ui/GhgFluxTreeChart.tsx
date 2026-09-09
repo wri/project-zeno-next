@@ -1,12 +1,13 @@
 "use client";
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
-import { CaretDownIcon, CaretRightIcon, InfoIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 import {
   Bar,
   BarChart,
   Cell,
   ReferenceLine,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -164,11 +165,6 @@ function TreeLabel({
       >
         {row.node.label}
       </Text>
-      {isRoot && (
-        <Box color="#656E7B" lineHeight={0} flexShrink={0}>
-          <InfoIcon size={13} />
-        </Box>
-      )}
     </Flex>
   );
 }
@@ -179,6 +175,9 @@ function ValueCell({ row, measure }: { row: FluxRow; measure: FluxMeasure }) {
     measure === "gross" &&
     !single &&
     (row.node.avgEmissions != null || row.node.avgRemovals != null);
+  // Same rule as the tree label: root and any row with children (a category)
+  // gets emphasis; a leaf subcategory does not.
+  const isEmphasized = row.depth === 0 || row.hasChildren;
 
   return (
     <Flex
@@ -192,8 +191,8 @@ function ValueCell({ row, measure }: { row: FluxRow; measure: FluxMeasure }) {
       <Text
         fontFamily="body"
         fontSize="14px"
-        fontWeight="medium"
-        color="#172B7A"
+        fontWeight={isEmphasized ? "medium" : "normal"}
+        color={NET_TICK_COLOR}
         css={{ fontVariantNumeric: "tabular-nums" }}
       >
         {row.net == null ? "—" : signed.format(row.net)}
@@ -202,18 +201,86 @@ function ValueCell({ row, measure }: { row: FluxRow; measure: FluxMeasure }) {
         <Text
           fontFamily="mono"
           fontSize="10px"
-          color="#565E7B"
           whiteSpace="nowrap"
           css={{ fontVariantNumeric: "tabular-nums" }}
         >
-          {showPair
-            ? `${signedPlain.format(
-                row.node.avgRemovals ?? 0
-              )}/${signedPlain.format(row.node.avgEmissions ?? 0)}`
-            : (single ?? "")}
+          {showPair ? (
+            <>
+              <Text as="span" color={REMOVALS_COLOR}>
+                {signedPlain.format(row.node.avgRemovals ?? 0)}
+              </Text>
+              <Text as="span" color="#565E7B">
+                /
+              </Text>
+              <Text as="span" color={EMISSIONS_COLOR}>
+                {signedPlain.format(row.node.avgEmissions ?? 0)}
+              </Text>
+            </>
+          ) : (
+            <Text as="span" color="#565E7B">
+              {single ?? ""}
+            </Text>
+          )}
         </Text>
       )}
     </Flex>
+  );
+}
+
+const UNITS = "Mt CO₂e/yr";
+
+interface TreeTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: PlotRow }>;
+  rows: FluxRow[];
+  measure: FluxMeasure;
+}
+
+/** Bar-hover tooltip: category, value and units — matching the time series' `ChartWidget` tooltip pattern. */
+function GhgFluxTooltip({ active, payload, rows, measure }: TreeTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const row = rows.find((r) => r.node.id === payload[0].payload.id);
+  if (!row) return null;
+
+  const line = (label: string, value: number | null, color?: string) => (
+    <Flex key={label} justify="space-between" gap={4} fontSize="xs">
+      <Text as="span" color="fg.muted">
+        {label}
+      </Text>
+      <Text
+        as="span"
+        fontFamily="mono"
+        color={color}
+        css={{ fontVariantNumeric: "tabular-nums" }}
+      >
+        {value == null ? "—" : signed.format(value)} {UNITS}
+      </Text>
+    </Flex>
+  );
+
+  return (
+    <Box
+      bg="bg.panel"
+      p={2}
+      py={1}
+      borderRadius="md"
+      boxShadow="md"
+      border="1px"
+      borderColor="border"
+    >
+      <Text fontSize="xs" fontWeight="medium" mb={1}>
+        {row.node.label}
+      </Text>
+      <Flex direction="column" gap={0.5}>
+        {measure === "gross" &&
+          row.node.avgEmissions != null &&
+          line("Emissions", row.node.avgEmissions, EMISSIONS_COLOR)}
+        {measure === "gross" &&
+          row.node.avgRemovals != null &&
+          line("Removals", row.node.avgRemovals, REMOVALS_COLOR)}
+        {line("Net flux", row.net)}
+      </Flex>
+    </Box>
   );
 }
 
@@ -325,6 +392,10 @@ export function GhgFluxTreeChart({
             />
             <YAxis type="category" dataKey="id" hide />
             <ReferenceLine x={0} stroke={ZERO_LINE_COLOR} strokeWidth={1} />
+            <Tooltip
+              cursor={{ fill: "var(--chakra-colors-black-alpha-200)" }}
+              content={<GhgFluxTooltip rows={rows} measure={measure} />}
+            />
             {measure === "net" ? (
               <Bar dataKey="net" barSize={BAR_SIZE} isAnimationActive={false}>
                 {plotRows.map((row) => (
