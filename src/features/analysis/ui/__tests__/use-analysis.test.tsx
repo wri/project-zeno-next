@@ -299,9 +299,9 @@ describe("useAnalysis", () => {
     // All three siblings share one title, so the heading can't flip as the
     // DETAIL pill changes which one is surfaced.
     expect(widgets.map((w: { title: string }) => w.title)).toEqual([
-      "Net flux over time",
-      "Net flux over time",
-      "Net flux over time",
+      "Land GHG flux over time",
+      "Land GHG flux over time",
+      "Land GHG flux over time",
       "Net GHG flux (annual average)",
     ]);
     // ...but each keeps its own backend title, which is what the DETAIL pill

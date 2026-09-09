@@ -809,7 +809,7 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
     {
       label: "Stacked bar with line overlay (net flux)",
       notes:
-        "The curated 'Net flux over time' insight: stacked emissions/removals with a net-flux line overlay, plus the DETAIL/MEASURE toggle chrome.",
+        "The curated 'Land GHG flux over time' insight: stacked emissions/removals with a net-flux line overlay, plus the DETAIL/MEASURE toggle chrome.",
       widget: {
         type: "stacked-bar-with-line",
         title: "Net GHG Flux by Category",

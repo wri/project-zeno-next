@@ -58,7 +58,9 @@ function chartDatasetName(
  * changes DETAIL.
  */
 const CURATED_CHART_TITLES: Record<string, string> = {
-  "stacked-bar-with-line": "Net flux over time",
+  // Gross is the default measure, and its bars are gross emissions/removals,
+  // not a net figure — "Net flux" as the title read as wrong in that view.
+  "stacked-bar-with-line": "Land GHG flux over time",
   "hierarchical-bar": "Net GHG flux (annual average)",
 };
 
