@@ -3,12 +3,14 @@ import { describe, expect, it } from "vitest";
 import {
   DATASET_CARDS,
   IFL_FEATURE_FLAG,
+  NET_FLUX_FEATURE_FLAG,
   isViewOnlyDataset,
   type DatasetCardConfig,
 } from "@/app/constants/datasets";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 
 const IFL_DATASET_ID = 101;
+const LGMS_DATASET_ID = 12;
 
 const sample: DatasetCardConfig[] = [
   { dataset_id: 1, dataset_name: "Ungated", description: "" },
@@ -82,5 +84,34 @@ describe("Intact Forest Landscapes catalogue card", () => {
   it("leaves analysable datasets unflagged", () => {
     // Tree cover loss — the default landing layer — must stay analysable.
     expect(isViewOnlyDataset(4)).toBe(false);
+  });
+});
+
+describe("the LGMS net-flux card", () => {
+  const lgms = DATASET_CARDS.find((c) => c.dataset_id === LGMS_DATASET_ID);
+
+  it("is registered in the catalogue", () => {
+    expect(lgms).toBeDefined();
+    expect(lgms!.dataset_name).toBe("Land GHG Monitoring System (LGMS)");
+  });
+
+  it("is hidden from the catalogue until ?ff=net-flux is set", () => {
+    const withoutFlag = filterDatasetsByFeatureFlag(DATASET_CARDS, new Set());
+    expect(withoutFlag.some((c) => c.dataset_id === LGMS_DATASET_ID)).toBe(
+      false
+    );
+
+    // An unrelated flag must not reveal it either.
+    const otherFlag = filterDatasetsByFeatureFlag(
+      DATASET_CARDS,
+      new Set([IFL_FEATURE_FLAG])
+    );
+    expect(otherFlag.some((c) => c.dataset_id === LGMS_DATASET_ID)).toBe(false);
+
+    const withFlag = filterDatasetsByFeatureFlag(
+      DATASET_CARDS,
+      new Set([NET_FLUX_FEATURE_FLAG])
+    );
+    expect(withFlag.some((c) => c.dataset_id === LGMS_DATASET_ID)).toBe(true);
   });
 });
