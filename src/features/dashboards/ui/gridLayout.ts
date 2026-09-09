@@ -6,8 +6,6 @@
  * roughly 330px) and the grid would overflow the page horizontally. 700px
  * fits two minimum-width cards plus the gap.
  *
- * Shared by the grid (top-level segments) and the insight module (its
- * internal chart columns) — both resolve against the same `widgets-grid`
- * container, so the whole page switches columns together.
+ * Resolved against the grid's own `widgets-grid` container.
  */
 export const TWO_COLUMN_QUERY = "@container widgets-grid (min-width: 700px)";

@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Box,
   Button,
+  CloseButton,
   Dialog,
   Flex,
   Icon,
@@ -13,6 +14,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
+  ArrowsOutIcon,
   ArrowsOutLineHorizontalIcon,
   ChartBarIcon,
   ChatTeardropDotsIcon,
@@ -106,6 +108,7 @@ export default function DashboardWidgetCard({
   onRequestRemove?: () => void;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
   // null = not editing; a string is the in-progress title draft.
   const [draft, setDraft] = useState<string | null>(null);
@@ -202,6 +205,20 @@ export default function DashboardWidgetCard({
           >
             {displayTitle}
           </Text>
+        )}
+        {/* Viewers get full screen too, so it sits outside the owner cluster. */}
+        {map && (
+          <IconButton
+            aria-label="View map full screen"
+            title="View map full screen"
+            size="2xs"
+            variant="ghost"
+            color="fg.muted"
+            flexShrink={0}
+            onClick={() => setFullscreen(true)}
+          >
+            <ArrowsOutIcon size={16} />
+          </IconButton>
         )}
         {isOwner && (
           <Flex align="center" gap="4px" flexShrink={0}>
@@ -313,6 +330,47 @@ export default function DashboardWidgetCard({
       )}
 
       {footer}
+
+      {/* A second map mounts only while the dialog is open — the same MapLibre
+          instance is never rendered in two places. */}
+      {map && (
+        <Dialog.Root
+          open={fullscreen}
+          onOpenChange={(e) => setFullscreen(e.open)}
+          size="cover"
+          lazyMount
+          unmountOnExit
+        >
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content p={4}>
+                <Dialog.Header px={0} pt={0} pb={3}>
+                  <Dialog.Title fontSize="md" fontWeight="medium">
+                    {displayTitle}
+                  </Dialog.Title>
+                  <Dialog.CloseTrigger
+                    asChild
+                    position="absolute"
+                    top={3}
+                    right={3}
+                  >
+                    <CloseButton size="sm" />
+                  </Dialog.CloseTrigger>
+                </Dialog.Header>
+                <Dialog.Body p={0} flex="1" minH={0}>
+                  <DashboardMapWidget
+                    layer={map}
+                    aoi={aoi}
+                    bboxOverride={viewportBbox ?? null}
+                    fill
+                  />
+                </Dialog.Body>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
+      )}
 
       <Dialog.Root
         open={confirmOpen}

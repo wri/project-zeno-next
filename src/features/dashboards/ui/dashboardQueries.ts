@@ -16,9 +16,11 @@ import {
   getDashboard,
   renameDashboard,
   updateWidget,
+  updateSection,
   type WidgetUpdate,
 } from "../api/dashboards";
 import type { AoiSearchResult, Dashboard } from "../api/schemas";
+import type { SectionMovePatch } from "../model/dashboard-sections";
 import type { WidgetMovePatch } from "../model/widget-move";
 import { dashboardKeys } from "../hooks/dashboardKeys";
 
@@ -127,10 +129,10 @@ export function useDeleteDashboard() {
 // Shared optimistic-update plumbing for the widget mutations: snapshot the
 // cached dashboard, apply `apply` to its widgets, roll back on error and
 // refetch on settle (the server is the position/config authority).
-function useOptimisticWidgetMutation<TVars>(
+function useOptimisticDashboardMutation<TVars>(
   dashboardId: string,
   mutationFn: (vars: TVars) => Promise<unknown>,
-  apply: (widgets: Dashboard["widgets"], vars: TVars) => Dashboard["widgets"]
+  apply: (dashboard: Dashboard, vars: TVars) => Dashboard
 ) {
   const queryClient = useQueryClient();
   const key = dashboardKeys.detail(dashboardId);
@@ -141,10 +143,7 @@ function useOptimisticWidgetMutation<TVars>(
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<Dashboard>(key);
       if (previous) {
-        queryClient.setQueryData<Dashboard>(key, {
-          ...previous,
-          widgets: apply(previous.widgets, vars),
-        });
+        queryClient.setQueryData<Dashboard>(key, apply(previous, vars));
       }
       return { previous };
     },
@@ -157,6 +156,30 @@ function useOptimisticWidgetMutation<TVars>(
   });
 }
 
+function useOptimisticWidgetMutation<TVars>(
+  dashboardId: string,
+  mutationFn: (vars: TVars) => Promise<unknown>,
+  apply: (widgets: Dashboard["widgets"], vars: TVars) => Dashboard["widgets"]
+) {
+  return useOptimisticDashboardMutation(dashboardId, mutationFn, (d, vars) => ({
+    ...d,
+    widgets: apply(d.widgets, vars),
+  }));
+}
+
+// Mirrors the PATCH's three-valued grouping: a string moves the widget into
+// that section and an explicit null moves it to the top level, while
+// `undefined` leaves the grouping alone — `JSON.stringify` drops that key, so
+// the server never sees it, and the cache must not act on it either.
+function withSectionId<T extends { section_id?: string | null }>(
+  widget: T,
+  patch: { section_id?: string | null }
+): T {
+  return patch.section_id !== undefined
+    ? { ...widget, section_id: patch.section_id }
+    : widget;
+}
+
 export function useUpdateWidget(dashboardId: string) {
   return useOptimisticWidgetMutation(
     dashboardId,
@@ -165,18 +188,16 @@ export function useUpdateWidget(dashboardId: string) {
     (widgets, { widgetId, patch }) =>
       widgets.map((w) =>
         w.id === widgetId
-          ? {
-              ...w,
-              ...(patch.position !== undefined
-                ? { position: patch.position }
-                : {}),
-              ...(patch.config ? { config: patch.config } : {}),
-              // Mirrors the PATCH's three-valued grouping: an explicit null is
-              // a move to the top level, so test the key rather than the value.
-              ...("section_id" in patch
-                ? { section_id: patch.section_id }
-                : {}),
-            }
+          ? withSectionId(
+              {
+                ...w,
+                ...(patch.position !== undefined
+                  ? { position: patch.position }
+                  : {}),
+                ...(patch.config ? { config: patch.config } : {}),
+              },
+              patch
+            )
           : w
       )
   );
@@ -245,14 +266,31 @@ export function useMoveWidgets(dashboardId: string) {
       return widgets.map((w) => {
         const patch = byId.get(w.id);
         if (!patch) return w;
-        return {
-          ...w,
-          position: patch.position,
-          // Mirrors the PATCH's three-valued grouping: an explicit null is a
-          // move to the top level, so test the key rather than the value.
-          ...("section_id" in patch ? { section_id: patch.section_id } : {}),
-        };
+        return withSectionId({ ...w, position: patch.position }, patch);
       });
+    }
+  );
+}
+
+// A section drag's write: the new position of every section the move
+// renumbered. Optimistic, like widget moves.
+export function useMoveSections(dashboardId: string) {
+  return useOptimisticDashboardMutation(
+    dashboardId,
+    (patches: SectionMovePatch[]) =>
+      Promise.all(
+        patches.map((p) =>
+          updateSection(dashboardId, p.id, { position: p.position })
+        )
+      ),
+    (dashboard, patches) => {
+      const positions = new Map(patches.map((p) => [p.id, p.position]));
+      return {
+        ...dashboard,
+        sections: dashboard.sections.map((s) =>
+          positions.has(s.id) ? { ...s, position: positions.get(s.id)! } : s
+        ),
+      };
     }
   );
 }

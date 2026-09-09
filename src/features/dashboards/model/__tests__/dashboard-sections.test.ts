@@ -5,7 +5,7 @@ import type {
   DashboardSection,
   DashboardWidget,
 } from "../../api/schemas";
-import { widgetContainers } from "../dashboard-sections";
+import { computeSectionMove, widgetContainers } from "../dashboard-sections";
 
 const section = (
   id: string,
@@ -157,5 +157,33 @@ describe("widgetContainers", () => {
     expect(
       widgetContainers(d, { keepEmptyTopLevel: true }).map((c) => c.key)
     ).toEqual(["", "s1"]);
+  });
+});
+
+describe("computeSectionMove", () => {
+  const sections = [section("a", 0), section("b", 1), section("c", 2)];
+
+  it("returns nothing for a drop back into the same slot", () => {
+    expect(computeSectionMove(sections, "b", 1)).toEqual([]);
+  });
+
+  it("renumbers the sections a move down passes", () => {
+    expect(computeSectionMove(sections, "a", 2)).toEqual([
+      { id: "b", position: 0 },
+      { id: "c", position: 1 },
+      { id: "a", position: 2 },
+    ]);
+  });
+
+  it("renumbers the sections a move up passes", () => {
+    expect(computeSectionMove(sections, "c", 0)).toEqual([
+      { id: "c", position: 0 },
+      { id: "a", position: 1 },
+      { id: "b", position: 2 },
+    ]);
+  });
+
+  it("ignores a section the dashboard does not have", () => {
+    expect(computeSectionMove(sections, "zzz", 0)).toEqual([]);
   });
 });

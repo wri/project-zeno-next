@@ -104,6 +104,23 @@ export async function updateWidget(
   );
 }
 
+// Reorders a section. The backend accepts title/description too, but only
+// position has a caller yet (the section drag).
+export async function updateSection(
+  dashboardId: string,
+  sectionId: string,
+  patch: { position: number }
+): Promise<void> {
+  await readJson<unknown>(
+    `/api/dashboards/${dashboardId}/sections/${sectionId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }
+  );
+}
+
 // Adds a persisted insight to a dashboard (the chat-side "Add to dashboard"
 // toggle). Adding an insight that is already on the dashboard fails with 409
 // (the error carries `status`), and the response is the dashboard without
