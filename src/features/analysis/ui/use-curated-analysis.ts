@@ -103,7 +103,16 @@ export function useCuratedAnalysis(
 
   const start = useCallback(async () => {
     try {
-      return await queryClient.ensureQueryData(options);
+      // `ensureQueryData` hands back cached data even while a refetch is in
+      // flight; a `retry()` the user just asked for must win over the stale
+      // (empty or failed) result underneath it, so join that fetch instead.
+      // staleTime 0 makes `fetchQuery` look past the cached data, and it
+      // dedupes with the in-flight run rather than starting another.
+      const fetching =
+        queryClient.getQueryState(options.queryKey)?.fetchStatus === "fetching";
+      return fetching
+        ? await queryClient.fetchQuery({ ...options, staleTime: 0 })
+        : await queryClient.ensureQueryData(options);
     } catch {
       return null;
     }

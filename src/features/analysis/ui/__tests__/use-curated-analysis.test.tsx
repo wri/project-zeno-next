@@ -276,6 +276,44 @@ describe("useCuratedAnalysis", () => {
     expect(service.run).toHaveBeenCalledTimes(2);
   });
 
+  it("start() during a retry joins the fresh run rather than returning the stale result", async () => {
+    // A no-data result is cached; Try again is in flight; the user toggles the
+    // card on. The toggle must wait for the run it can see, not act on the
+    // cached empty result underneath it.
+    const fresh = deferred<AnalysisResult>();
+    const service = fakeService(
+      vi
+        .fn<AnalysisService["run"]>()
+        .mockResolvedValueOnce({ id: "ins-empty", charts: [] })
+        .mockReturnValueOnce(fresh.promise)
+    );
+    const { result } = renderHook(
+      () => useCuratedAnalysis(selection, service),
+      { wrapper: wrapperFor(makeClient()) }
+    );
+
+    await act(async () => {
+      await result.current.start();
+    });
+    await waitFor(() => expect(result.current.state).toBe("no-data"));
+
+    act(() => {
+      void result.current.retry();
+    });
+    await waitFor(() => expect(result.current.state).toBe("running"));
+
+    let joined: Promise<AnalysisResult | null>;
+    act(() => {
+      joined = result.current.start();
+    });
+    await act(async () => {
+      fresh.resolve(RESULT);
+    });
+
+    await expect(joined!).resolves.toEqual(RESULT);
+    expect(service.run).toHaveBeenCalledTimes(2);
+  });
+
   it("caches per dataset: a different dataset runs separately", async () => {
     const service = fakeService((sel) =>
       Promise.resolve({ id: `ins-${sel.dataset.id}`, charts: [chart] })
