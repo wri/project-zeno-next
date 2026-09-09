@@ -10,6 +10,7 @@ export {
   deriveNetFluxVariant,
   isNetFluxWidget,
   NET_FLUX_LINE_FIELD,
+  netFluxTableProps,
   seriesGroup,
   seriesLabel,
   type NetFluxMeasure,

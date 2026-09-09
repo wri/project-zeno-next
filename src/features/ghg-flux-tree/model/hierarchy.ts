@@ -126,6 +126,22 @@ export function rootNodes(nodes: FluxNode[]): FluxNode[] {
   return nodes.filter((n) => n.parentId === null);
 }
 
+/**
+ * Table display config for this chart's raw (untransformed) `chart_data`:
+ * the backend's own `id`/`parent_id` columns are implementation detail, not
+ * something a reader can act on, and the root ("All land") row reads as a
+ * total — both were review feedback on the generic table rendering.
+ */
+export function fluxTreeTableProps(): {
+  hiddenColumns: string[];
+  boldRowWhen: (row: Record<string, string | number | boolean>) => boolean;
+} {
+  return {
+    hiddenColumns: ["id", "parent_id"],
+    boldRowWhen: (row) => !row.parent_id,
+  };
+}
+
 function readNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);

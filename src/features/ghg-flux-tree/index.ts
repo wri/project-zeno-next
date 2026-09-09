@@ -6,7 +6,7 @@
  * LGMS analysis — plus the MEASURE control the design places outside the widget
  * card. Consumers import ONLY from this barrel.
  */
-export { isFluxTreeWidget } from "./model/hierarchy";
+export { fluxTreeTableProps, isFluxTreeWidget } from "./model/hierarchy";
 export { treeViewKey } from "./model/tree-view-store";
 export { FLUX_TREE_CARD_WIDTH } from "./ui/tree-chart-constants";
 export { GhgFluxTreeBody } from "./ui/GhgFluxTreeBody";

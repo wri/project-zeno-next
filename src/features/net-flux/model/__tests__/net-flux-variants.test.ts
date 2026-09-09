@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   deriveNetFluxVariant,
   isPaintReference,
+  netFluxTableProps,
   seriesGroup,
   seriesLabel,
 } from "../net-flux-variants";
@@ -209,5 +210,39 @@ describe("deriveNetFluxVariant — resilience", () => {
       data: [{ year: 2020, vegetation_emissions: 100_000_000 }],
     };
     expect(deriveNetFluxVariant(sparse, "gross").data[0]["Net flux"]).toBe(100);
+  });
+});
+
+describe("netFluxTableProps", () => {
+  it("groups gross-measure table columns vegetation, then soil, then agriculture", () => {
+    const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    const { columnOrder } = netFluxTableProps(variant, "year", "gross");
+    expect(columnOrder).toEqual([
+      "year",
+      "vegetation_emissions",
+      "vegetation_removals",
+      "soil_emissions",
+      "soil_removals",
+      "cropland_emissions",
+      "livestock_emissions",
+      "Net flux",
+    ]);
+  });
+
+  it("hides the redundant Net source column only for the net measure", () => {
+    const gross = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    expect(netFluxTableProps(gross, "year", "gross").hiddenColumns).toEqual([]);
+
+    const net = deriveNetFluxVariant(CATEGORY_WIDGET, "net");
+    expect(netFluxTableProps(net, "year", "net").hiddenColumns).toEqual([
+      "Net source",
+    ]);
+  });
+
+  it("bolds the net-flux column", () => {
+    const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    expect(netFluxTableProps(variant, "year", "gross").boldColumns).toEqual([
+      "Net flux",
+    ]);
   });
 });

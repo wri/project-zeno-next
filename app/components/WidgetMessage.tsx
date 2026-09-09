@@ -38,6 +38,7 @@ import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
 import {
+  fluxTreeTableProps,
   GhgFluxMeasurePill,
   GhgFluxTreeBody,
   isFluxTreeWidget,
@@ -56,6 +57,7 @@ import {
   NetFluxToolbar,
   deriveNetFluxVariant,
   isNetFluxWidget,
+  netFluxTableProps,
   netFluxViewKey,
   useNetFluxView,
   type NetFluxVariant,
@@ -248,6 +250,13 @@ export default function WidgetMessage({
   // This chart renders its own tree + plot + legend composition rather than
   // going through ChartWidget, whose axis block assumes vertical bars.
   const isFluxTree = isFluxTreeWidget(widget);
+  // Per-chart-type table display config — every other chart type keeps
+  // TableWidget's fully generic default (no props).
+  const tableProps = netFluxVariant
+    ? netFluxTableProps(netFluxVariant, widget.xAxis, netFluxView.measure)
+    : isFluxTree
+      ? fluxTreeTableProps()
+      : undefined;
   const hasData =
     Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
@@ -400,6 +409,7 @@ export default function WidgetMessage({
                   >[]
                 }
                 caption={widget.title}
+                {...tableProps}
               />
             </ScrollableTableWrapper>
           </WidgetErrorBoundary>

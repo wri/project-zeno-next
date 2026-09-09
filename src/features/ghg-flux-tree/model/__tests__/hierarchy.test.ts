@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   expandableIds,
+  fluxTreeTableProps,
   isFullyExpanded,
   nodeNet,
   parseFluxNodes,
@@ -184,5 +185,20 @@ describe("parseFluxNodes", () => {
     expect(parseFluxNodes([{ id: "mineral_soil" }])[0].label).toBe(
       "mineral_soil"
     );
+  });
+});
+
+describe("fluxTreeTableProps", () => {
+  const { hiddenColumns, boldRowWhen } = fluxTreeTableProps();
+
+  it("hides the raw id/parent_id columns", () => {
+    expect(hiddenColumns).toEqual(["id", "parent_id"]);
+  });
+
+  it("bolds only the root row (no parent_id)", () => {
+    expect(boldRowWhen({ id: "all_land", label: "All land" })).toBe(true);
+    expect(
+      boldRowWhen({ id: "mineral_soil", parent_id: "soil", label: "Mineral" })
+    ).toBe(false);
   });
 });

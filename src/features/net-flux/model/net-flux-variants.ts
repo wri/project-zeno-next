@@ -187,6 +187,73 @@ export function seriesLabel(field: string): string {
   return CLASS_LABELS[className] ?? className.replace(/_/g, " ");
 }
 
+/**
+ * Class → table-column group, independent of Full/Category/Summary detail
+ * level. The backend orders fields emissions-then-removals, which splits a
+ * class's own emissions and removals columns apart from its sibling classes
+ * (e.g. vegetation's `tree_gain_removals` lands after every agriculture
+ * column) — this groups by class family instead, so the table reads
+ * vegetation, then soil, then agriculture, as the design asks.
+ */
+const COLUMN_GROUP: Record<string, number> = {
+  tree_loss: 0,
+  tree_gain: 0,
+  trees_remaining_trees: 0,
+  non_trees_remaining_non_trees: 0,
+  vegetation: 0,
+  land_use: 0, // Summary combines vegetation+soil into one class.
+  mineral_soil: 1,
+  organic_soil: 1,
+  soil: 1,
+  cropland: 2,
+  livestock: 2,
+  agriculture: 2,
+};
+
+/** Table column order for a net-flux variant's fields (stable within a group). */
+export function tableColumnOrder(fields: string[]): string[] {
+  return [...fields]
+    .map((field, index) => ({ field, index }))
+    .sort((a, b) => {
+      const groupA = COLUMN_GROUP[seriesClass(a.field)] ?? 99;
+      const groupB = COLUMN_GROUP[seriesClass(b.field)] ?? 99;
+      return groupA !== groupB ? groupA - groupB : a.index - b.index;
+    })
+    .map(({ field }) => field);
+}
+
+function seriesClass(field: string): string {
+  const group = seriesGroup(field);
+  return group ? field.slice(0, -(group.length + 1)) : field;
+}
+
+/**
+ * Table display config for a derived variant: columns grouped
+ * vegetation → soil → agriculture, the net-flux line bolded to read as the
+ * total, and — for the "net" measure — the `NET_MEASURE_FIELD` bar column
+ * hidden, since it duplicates the net-flux column exactly (both are the same
+ * summed value; showing both was a redundant pair of categories in review).
+ */
+export function netFluxTableProps(
+  variant: NetFluxVariant,
+  xAxis: string,
+  measure: NetFluxMeasure
+): {
+  columnOrder: string[];
+  hiddenColumns: string[];
+  boldColumns: string[];
+} {
+  return {
+    columnOrder: [
+      xAxis,
+      ...tableColumnOrder(variant.seriesFields),
+      variant.lineField,
+    ],
+    hiddenColumns: measure === "net" ? [NET_MEASURE_FIELD] : [],
+    boldColumns: [variant.lineField],
+  };
+}
+
 function seriesColor(field: string, index: number, total: number): string {
   const known = SERIES_COLORS[field];
   if (known) return known;
