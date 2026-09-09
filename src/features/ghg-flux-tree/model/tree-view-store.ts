@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { InsightWidget } from "@/app/types/chat";
+import { widgetViewKey } from "@/src/shared/lib/widget-view-key";
 import type { FluxMeasure } from "./hierarchy";
 
 export interface TreeView {
@@ -73,9 +73,6 @@ const useTreeViewStore = create<TreeViewState>((set) => ({
     }),
 }));
 
-/** Stable key for a widget's view state; ids are set by `chartsToWidgets`. */
-export function treeViewKey(widget: InsightWidget): string {
-  return widget.id ?? widget.title;
-}
+export const treeViewKey = widgetViewKey;
 
 export default useTreeViewStore;

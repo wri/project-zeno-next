@@ -13,7 +13,10 @@ export type NetFluxGroup = "emissions" | "removals";
  */
 export const HATCH_LIVESTOCK = "url(#net-flux-hatch-livestock)";
 export const HATCH_CROPLAND = "url(#net-flux-hatch-cropland)";
-export const HATCH_AGRICULTURE = "url(#net-flux-hatch-agriculture)";
+/** Same swatch as livestock's — the summary roll-up's "agriculture" bucket
+ * folds cropland+livestock together, and the design draws it in livestock's
+ * colors, so this reuses that pattern rather than declaring an identical one. */
+export const HATCH_AGRICULTURE = HATCH_LIVESTOCK;
 
 /** True for a colour that is an SVG paint reference rather than a CSS colour. */
 export function isPaintReference(color: string): boolean {

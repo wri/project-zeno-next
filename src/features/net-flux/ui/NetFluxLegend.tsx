@@ -13,6 +13,10 @@ const NET_FLUX_LINE_COLOR = "#172b7a";
  * Hatch patterns for the fixed-2020 agriculture series. Rendered once per
  * chart into a zero-size SVG; `url(#…)` paint references resolve document-wide,
  * so both the Recharts bars and the legend swatches below can use them.
+ *
+ * Only two patterns: the summary roll-up's "agriculture" bucket reuses the
+ * livestock pattern (see `HATCH_AGRICULTURE` in net-flux-variants.ts) rather
+ * than getting an identical one of its own.
  */
 export function NetFluxHatchDefs() {
   return (
@@ -55,23 +59,6 @@ export function NetFluxHatchDefs() {
             x2="0"
             y2="6"
             stroke="#cbab7d"
-            strokeWidth="2.5"
-          />
-        </pattern>
-        <pattern
-          id="net-flux-hatch-agriculture"
-          width="6"
-          height="6"
-          patternUnits="userSpaceOnUse"
-          patternTransform="rotate(45)"
-        >
-          <rect width="6" height="6" fill="#d8bd9d" />
-          <line
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="6"
-            stroke="#b9925f"
             strokeWidth="2.5"
           />
         </pattern>

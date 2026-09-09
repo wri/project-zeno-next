@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { InsightWidget } from "@/app/types/chat";
+import { widgetViewKey } from "@/src/shared/lib/widget-view-key";
 import type { NetFluxMeasure } from "./net-flux-variants";
 
 export interface NetFluxView {
@@ -50,9 +50,6 @@ const useNetFluxViewStore = create<NetFluxViewState>((set) => ({
     })),
 }));
 
-/** Stable key for a widget's view state; ids are set by `chartsToWidgets`. */
-export function netFluxViewKey(widget: InsightWidget): string {
-  return widget.id ?? widget.title;
-}
+export const netFluxViewKey = widgetViewKey;
 
 export default useNetFluxViewStore;

@@ -1,13 +1,10 @@
 import type { InsightWidget } from "@/app/types/chat";
+import { chartBatchKey } from "./chart-batch-key";
 
-/**
- * The analysis a chart belongs to. `RestAnalysisGateway` ids every chart of one
- * insight `{insightId}-chart-{n}`, so the prefix groups them. Widgets without
- * that shape (rehydrated history, dataset cards) get a key of their own.
- */
+/** Widgets without the `{insightId}-chart-{n}` id shape get a key of their own. */
 function batchKey(widget: InsightWidget, index: number): string {
-  const match = widget.id?.match(/^(.+)-chart-\d+$/);
-  return match ? `batch:${match[1]}` : `single:${widget.id ?? index}`;
+  const key = chartBatchKey(widget.id);
+  return key ? `batch:${key}` : `single:${widget.id ?? index}`;
 }
 
 /**

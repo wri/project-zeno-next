@@ -70,6 +70,22 @@ function buildMultiSeriesBar(
   return { data, series };
 }
 
+/** Tints each row's `_barColor` by the sign of `key`'s value, for a single
+ *  divergent bar series (shared by the "bar" and "stacked-bar-with-line" branches). */
+function tintBarsBySign(
+  rows: ChartData[],
+  key: string,
+  divergent: { positive: string; negative: string }
+): ChartData[] {
+  return rows.map((item) => {
+    const val = Number(item[key]);
+    return {
+      ...item,
+      _barColor: val < 0 ? divergent.negative : divergent.positive,
+    };
+  });
+}
+
 function resolveValueKeys(
   keys: string[],
   xAxisKey: string,
@@ -333,13 +349,11 @@ export default function formatChartData(
     // For bar charts with divergent colors, add per-bar _barColor based on value sign
     if (type === "bar" && divergent && chartValueKeys.length === 1) {
       const yKey = chartValueKeys[0];
-      const coloredData = (chartRows as ChartData[]).map((item) => {
-        const val = Number(item[yKey]);
-        return {
-          ...item,
-          _barColor: val < 0 ? divergent.negative : divergent.positive,
-        };
-      });
+      const coloredData = tintBarsBySign(
+        chartRows as ChartData[],
+        yKey,
+        divergent
+      );
       const series: ChartSeries[] = [{ name: yKey, color: divergent.positive }];
       return { data: coloredData, series };
     }
@@ -403,13 +417,7 @@ export default function formatChartData(
     let rows = chartRows as ChartData[];
     if (divergent && seriesKeys.length === 1) {
       const key = seriesKeys[0];
-      rows = rows.map((item) => {
-        const val = Number(item[key]);
-        return {
-          ...item,
-          _barColor: val < 0 ? divergent.negative : divergent.positive,
-        };
-      });
+      rows = tintBarsBySign(rows, key, divergent);
       series[0] = { ...series[0], color: divergent.positive };
     }
 

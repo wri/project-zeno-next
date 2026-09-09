@@ -1,11 +1,12 @@
+import { chartBatchKey } from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
 import { isNetFluxWidget } from "./net-flux-variants";
 
 /**
  * The three LGMS time-series charts arrive as separate charts of one analysis,
- * and `RestAnalysisGateway` ids them `{insightId}-chart-{n}`. That shared
- * prefix is the group: it ties the Full detail / Category / Summary roll-ups
- * together without the frontend having to match on titles.
+ * grouped by `chartBatchKey`'s `{insightId}-chart-{n}` id prefix. That shared
+ * prefix ties the Full detail / Category / Summary roll-ups together without
+ * the frontend having to match on titles.
  *
  * Returns null when the widget isn't one of these charts, or when its id
  * doesn't follow that shape (an insight rehydrated from history, say) — in
@@ -13,8 +14,7 @@ import { isNetFluxWidget } from "./net-flux-variants";
  */
 export function netFluxGroupKey(widget: InsightWidget): string | null {
   if (!isNetFluxWidget(widget)) return null;
-  const match = widget.id?.match(/^(.+)-chart-\d+$/);
-  return match ? match[1] : null;
+  return chartBatchKey(widget.id);
 }
 
 /** "Full Detail" → "Full detail": the design prints the detail in sentence case. */
