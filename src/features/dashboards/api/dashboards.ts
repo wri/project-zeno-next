@@ -73,6 +73,18 @@ export interface WidgetUpdate {
   position?: number;
   // Replaced whole by the backend (not merged) — always send the full config.
   config?: Record<string, unknown>;
+  /**
+   * Three-valued, and the distinction is load-bearing: a section id moves the
+   * widget into that section, an explicit `null` moves it back to the
+   * ungrouped top level, and omitting the key leaves the grouping alone.
+   * `JSON.stringify` drops `undefined` keys, so the omitted case must be
+   * spelled by leaving the property out (or setting it `undefined`) — never
+   * by sending `null`, which would silently ungroup the widget.
+   *
+   * A move without a `position` appends the widget to the end of its new
+   * container.
+   */
+  section_id?: string | null;
 }
 
 // The PATCH response is the dashboard without insight expansion — callers
@@ -84,6 +96,23 @@ export async function updateWidget(
 ): Promise<void> {
   await readJson<unknown>(
     `/api/dashboards/${dashboardId}/widgets/${widgetId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }
+  );
+}
+
+// Reorders a section. The backend accepts title/description too, but only
+// position has a caller yet (the section drag).
+export async function updateSection(
+  dashboardId: string,
+  sectionId: string,
+  patch: { position: number }
+): Promise<void> {
+  await readJson<unknown>(
+    `/api/dashboards/${dashboardId}/sections/${sectionId}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

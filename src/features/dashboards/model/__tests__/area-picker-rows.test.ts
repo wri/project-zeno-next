@@ -18,6 +18,7 @@ const dashboard = (aois: Dashboard["aois"]): Dashboard => ({
   created_at: "2026-01-01",
   updated_at: "2026-01-01",
   aois,
+  sections: [],
   widgets: [],
 });
 

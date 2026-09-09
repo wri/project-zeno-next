@@ -43,33 +43,11 @@ export function withSize(
 }
 
 /**
- * Per-chart column span. A widget's charts render as individual grid cards,
- * so each chart carries its own span under `config.sizes[chartId]`; the
- * widget-level `size` is the pre-split fallback for older configs.
+ * Insight widgets default to full width: the analysis card holds a chart and
+ * its pager, so it spans both columns until the owner shrinks it.
  */
-export function chartSize(
-  config: Record<string, unknown>,
-  chartId: string
-): WidgetSize {
-  const sizes = config.sizes;
-  if (sizes && typeof sizes === "object") {
-    const own = (sizes as Record<string, unknown>)[chartId];
-    if (own === "double" || own === "single") return own;
-  }
-  return widgetSize(config);
-}
-
-/** The full config to PATCH for a per-chart size change (config is replaced whole). */
-export function withChartSize(
-  config: Record<string, unknown>,
-  chartId: string,
-  size: WidgetSize
-): Record<string, unknown> {
-  const sizes =
-    config.sizes && typeof config.sizes === "object"
-      ? (config.sizes as Record<string, unknown>)
-      : {};
-  return { ...config, sizes: { ...sizes, [chartId]: size } };
+export function insightWidgetSize(config: Record<string, unknown>): WidgetSize {
+  return config.size === "single" ? "single" : "double";
 }
 
 /**
@@ -248,6 +226,9 @@ export function hasWidgetCustomization(
   // An explicit `chartIds` is a customisation at any length: absent means "all
   // charts", so even the empty array is a deliberate "hide everything".
   if (Array.isArray(config.chartIds)) return true;
+  // `sizes` is the per-chart span written while an insight's charts each had
+  // their own grid card. Nothing writes it now, but a config that carries one
+  // was still arranged by hand.
   return ["sizes", "titles", "title", "size"].some((key) => {
     const value = config[key];
     if (typeof value === "string") return value.trim().length > 0;
@@ -412,38 +393,4 @@ export function widgetText(config: Record<string, unknown>): string | null {
   return typeof config.text === "string" && config.text.trim()
     ? config.text
     : null;
-}
-
-export interface WidgetPositionPatch {
-  id: string;
-  position: number;
-}
-
-/**
- * Moves a widget within the given render order and computes the widget
- * `position` PATCHes needed to persist it. The backend PATCH sets only the
- * targeted widget's position (no sibling renumbering), so every widget whose
- * stored position differs from its new index gets a patch — this also
- * normalises non-contiguous server positions (e.g. after deletions).
- */
-export function computeReorder(
-  widgets: DashboardWidget[],
-  fromIndex: number,
-  toIndex: number
-): { order: DashboardWidget[]; patches: WidgetPositionPatch[] } {
-  const order = [...widgets];
-  if (
-    fromIndex !== toIndex &&
-    fromIndex >= 0 &&
-    fromIndex < order.length &&
-    toIndex >= 0 &&
-    toIndex < order.length
-  ) {
-    const [moved] = order.splice(fromIndex, 1);
-    order.splice(toIndex, 0, moved);
-  }
-  const patches = order.flatMap((widget, index) =>
-    widget.position === index ? [] : [{ id: widget.id, position: index }]
-  );
-  return { order, patches };
 }

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // The card's toaster import reaches a .tsx module boundary — stub it.
 vi.mock("@/app/components/ui/toaster", () => ({
@@ -23,8 +23,8 @@ vi.mock("../DashboardMapWidget", () => ({ default: () => null }));
 import DashboardInsightModule from "../DashboardInsightModule";
 import type { DashboardWidget } from "../../api/schemas";
 import {
-  withChartHidden,
   withChartShown,
+  withChartTitle,
   withSummaryShown,
 } from "../../lib/widgets";
 
@@ -69,40 +69,109 @@ function renderModule({
   isOwner = true,
   onUpdateConfig = vi.fn(),
   onRemove = vi.fn(),
+  onToggleSize = vi.fn(),
 }: {
   widget?: DashboardWidget;
   isOwner?: boolean;
   onUpdateConfig?: (config: Record<string, unknown>) => void;
   onRemove?: () => void;
+  onToggleSize?: () => void;
 } = {}) {
-  render(
+  const view = render(
     <ChakraProvider value={defaultSystem}>
       <DashboardInsightModule
         widget={w}
         isOwner={isOwner}
+        isDouble
         onArmDrag={() => {}}
-        onDisarmDrag={() => {}}
+        onToggleSize={onToggleSize}
         onUpdateConfig={onUpdateConfig}
         onRemove={onRemove}
       />
     </ChakraProvider>
   );
-  return { onUpdateConfig, onRemove };
+  return { ...view, onUpdateConfig, onRemove, onToggleSize };
 }
 
+/** The chart body the stubbed WidgetMessage rendered, or null. */
+const shownChart = () =>
+  screen.queryByTestId("widget-message")?.textContent ?? null;
+
 describe("DashboardInsightModule", () => {
-  it("renders the header title, summary with the AI caption, and one card per shown chart", () => {
+  // Chakra's confirm dialog restores focus a tick after it unmounts. Left
+  // pending, that restore lands inside the next test and blurs whatever it
+  // just focused — which silently cancels an in-progress rename.
+  afterEach(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+  it("renders one card: the first chart, the summary and the AI caption", () => {
     renderModule();
     expect(
       screen.getByText(/There were 1,055 disturbance alerts\./)
     ).toBeTruthy();
     // The shared InsightCaption badge, as on workspace insight cards.
     expect(screen.getByText(/AI-ASSISTED/)).toBeTruthy();
-    const cards = screen.getAllByTestId("widget-message");
-    expect(cards.map((c) => c.textContent)).toEqual([
-      "Disturbance alerts trend",
-      "Alerts by month",
-    ]);
+    // One chart on show — not one card per chart.
+    expect(screen.getAllByTestId("widget-message")).toHaveLength(1);
+    // The header names the chart on show, beside the body's own title.
+    expect(shownChart()).toBe("Disturbance alerts trend");
+    expect(screen.getAllByText("Disturbance alerts trend")).toHaveLength(2);
+  });
+
+  it("pages through the insight's charts", () => {
+    renderModule();
+    expect(screen.getByText("1 of 2 charts")).toBeTruthy();
+    expect(screen.getByLabelText("Previous chart")).toHaveProperty(
+      "disabled",
+      true
+    );
+
+    fireEvent.click(screen.getByLabelText("Next chart"));
+    expect(shownChart()).toBe("Alerts by month");
+    expect(screen.getByText("2 of 2 charts")).toBeTruthy();
+    expect(screen.getByLabelText("Next chart")).toHaveProperty(
+      "disabled",
+      true
+    );
+
+    fireEvent.click(screen.getByLabelText("Previous chart"));
+    expect(shownChart()).toBe("Disturbance alerts trend");
+  });
+
+  it("omits the pager for a single-chart insight", () => {
+    renderModule({
+      widget: widget({
+        insight: {
+          id: "ins-1",
+          insight_text: "There were 1,055 disturbance alerts.",
+          codeact_parts: null,
+          charts: [chart()],
+        },
+      }),
+    });
+    expect(screen.queryByLabelText("Next chart")).toBe(null);
+  });
+
+  it("keeps a chart on show when the page it was on is hidden", () => {
+    // Hiding the last chart while it is the one on show must not leave the
+    // card blank — the pager clamps back into the shown set.
+    const { rerender } = renderModule();
+    fireEvent.click(screen.getByLabelText("Next chart"));
+    expect(shownChart()).toBe("Alerts by month");
+
+    rerender(
+      <ChakraProvider value={defaultSystem}>
+        <DashboardInsightModule
+          widget={widget({ config: { chartIds: ["c-1"] } })}
+          isOwner
+          isDouble
+          onArmDrag={() => {}}
+          onToggleSize={() => {}}
+          onUpdateConfig={() => {}}
+          onRemove={() => {}}
+        />
+      </ChakraProvider>
+    );
+    expect(shownChart()).toBe("Disturbance alerts trend");
   });
 
   it("shows the curated caption when the insight has no generation provenance", () => {
@@ -125,8 +194,7 @@ describe("DashboardInsightModule", () => {
     expect(screen.queryByText(/There were 1,055 disturbance alerts\./)).toBe(
       null
     );
-    expect(screen.queryByText(/AI-ASSISTED/)).toBe(null);
-    expect(screen.getAllByTestId("widget-message")).toHaveLength(2);
+    expect(shownChart()).toBe("Disturbance alerts trend");
   });
 
   it("renders the summary alone when every chart is hidden", () => {
@@ -150,34 +218,38 @@ describe("DashboardInsightModule", () => {
     expect(screen.getByText("This analysis is not available.")).toBeTruthy();
   });
 
-  it("collapses to the header only", () => {
-    renderModule();
-    fireEvent.click(screen.getByLabelText("Collapse analysis"));
-    expect(screen.queryByText(/There were 1,055 disturbance alerts\./)).toBe(
-      null
-    );
-    expect(screen.queryAllByTestId("widget-message")).toHaveLength(0);
-    // Header title survives the collapse.
-    expect(screen.getByText("Disturbance alerts trend")).toBeTruthy();
-    fireEvent.click(screen.getByLabelText("Expand analysis"));
-    expect(screen.getAllByTestId("widget-message")).toHaveLength(2);
-  });
-
-  it("hides owner controls from non-owners but keeps collapse", () => {
+  it("hides owner controls from non-owners", () => {
     renderModule({ isOwner: false });
-    expect(screen.queryByLabelText("Remove analysis from dashboard")).toBe(
-      null
-    );
-    expect(screen.queryByLabelText("Drag to reposition analysis")).toBe(null);
-    expect(screen.getByLabelText("Collapse analysis")).toBeTruthy();
+    expect(screen.queryByLabelText("Remove from dashboard")).toBe(null);
+    expect(screen.queryByLabelText("Drag to reposition")).toBe(null);
+    expect(screen.queryByRole("button", { name: "Customize" })).toBe(null);
+    // The chart body and its pager stay: paging is reading, not editing.
+    expect(shownChart()).toBe("Disturbance alerts trend");
+    expect(screen.getByLabelText("Next chart")).toBeTruthy();
   });
 
-  it("removes the whole module through a confirm dialog", async () => {
+  it("removes the whole widget through the analysis confirm dialog", async () => {
     const { onRemove } = renderModule();
-    fireEvent.click(screen.getByLabelText("Remove analysis from dashboard"));
+    fireEvent.click(screen.getByLabelText("Remove from dashboard"));
+    // The analysis copy, not the card's generic "Remove widget?".
+    expect(await screen.findByText("Remove analysis?")).toBeTruthy();
     expect(onRemove).not.toHaveBeenCalled();
-    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it("renames the chart on show", async () => {
+    const { onUpdateConfig } = renderModule();
+    fireEvent.click(screen.getByLabelText("Next chart"));
+    fireEvent.click(screen.getByLabelText("Rename widget"));
+    const input = (await screen.findByLabelText(
+      "Widget title"
+    )) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Monthly alerts" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onUpdateConfig).toHaveBeenCalledWith(
+      withChartTitle({}, "c-2", "Monthly alerts")
+    );
   });
 
   it("customize menu toggles summary and charts via config patches", async () => {
@@ -204,57 +276,11 @@ describe("DashboardInsightModule", () => {
     );
   });
 
-  it("hides the customize menu from non-owners", () => {
-    renderModule({ isOwner: false });
-    expect(screen.queryByRole("button", { name: "Customize" })).toBe(null);
-  });
-
-  it("hides a chart via its card's remove control by patching config", async () => {
-    const { onUpdateConfig } = renderModule();
-    // Each chart card keeps its own X; removing one hides just that chart.
-    fireEvent.click(screen.getAllByLabelText("Remove from dashboard")[0]);
-    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
-    expect(onUpdateConfig).toHaveBeenCalledWith(
-      withChartHidden({}, "c-1", ["c-1", "c-2"])
-    );
-  });
-
-  it("says a card's X removes a chart even when only one is left showing", async () => {
-    // The card's X hides, never deletes the widget, so the dialog must not
-    // promise a widget removal just because this is the last visible card.
-    const { onUpdateConfig, onRemove } = renderModule({
-      widget: widget({
-        config: { chartIds: ["c-1"] },
-        insight: {
-          id: "ins-1",
-          insight_text: "There were 1,055 disturbance alerts.",
-          codeact_parts: null,
-          charts: [
-            chart(),
-            chart({ id: "c-2", position: 1, title: "Alerts by month" }),
-            chart({ id: "c-3", position: 2, title: "Alerts by driver" }),
-          ],
-        },
-      }),
-    });
-    expect(screen.getAllByTestId("widget-message")).toHaveLength(1);
-
-    fireEvent.click(screen.getByLabelText("Remove from dashboard"));
-    expect(await screen.findByText("Remove chart?")).toBeTruthy();
-    expect(screen.queryByText("Remove widget?")).toBe(null);
-
-    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
-    expect(onUpdateConfig).toHaveBeenCalledWith(
-      withChartHidden({ chartIds: ["c-1"] }, "c-1", ["c-1", "c-2", "c-3"])
-    );
-    expect(onRemove).not.toHaveBeenCalled();
-  });
-
   it("names the lost arrangement when removing a customised module", async () => {
     renderModule({
-      widget: widget({ config: { sizes: { "c-1": "double" } } }),
+      widget: widget({ config: { titles: { "c-1": "Renamed" } } }),
     });
-    fireEvent.click(screen.getByLabelText("Remove analysis from dashboard"));
+    fireEvent.click(screen.getByLabelText("Remove from dashboard"));
     expect(
       await screen.findByText(/layout and visibility changes are lost/i)
     ).toBeTruthy();
@@ -262,7 +288,7 @@ describe("DashboardInsightModule", () => {
 
   it("omits the lost-arrangement line for an untouched module", async () => {
     renderModule();
-    fireEvent.click(screen.getByLabelText("Remove analysis from dashboard"));
+    fireEvent.click(screen.getByLabelText("Remove from dashboard"));
     expect(await screen.findByText("Remove analysis?")).toBeTruthy();
     expect(screen.queryByText(/layout and visibility changes are lost/i)).toBe(
       null
