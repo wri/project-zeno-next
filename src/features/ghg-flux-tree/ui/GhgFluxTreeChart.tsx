@@ -14,7 +14,7 @@ import {
 } from "recharts";
 
 import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
-import { signed, signedPlain } from "@/src/shared/lib/number-format";
+import { signed } from "@/src/shared/lib/number-format";
 
 import {
   singleSidedLabel,
@@ -171,11 +171,6 @@ function TreeLabel({
 }
 
 function ValueCell({ row, measure }: { row: FluxRow; measure: FluxMeasure }) {
-  const single = singleSidedLabel(row.node);
-  const showPair =
-    measure === "gross" &&
-    !single &&
-    (row.node.avgEmissions != null || row.node.avgRemovals != null);
   // Same rule as the tree label: root and any row with children (a category)
   // gets emphasis; a leaf subcategory does not.
   const isEmphasized = row.depth === 0 || row.hasChildren;
@@ -198,32 +193,6 @@ function ValueCell({ row, measure }: { row: FluxRow; measure: FluxMeasure }) {
       >
         {row.net == null ? "—" : signed.format(row.net)}
       </Text>
-      {measure === "gross" && (
-        <Text
-          fontFamily="mono"
-          fontSize="10px"
-          whiteSpace="nowrap"
-          css={{ fontVariantNumeric: "tabular-nums" }}
-        >
-          {showPair ? (
-            <>
-              <Text as="span" color={REMOVALS_COLOR}>
-                {signedPlain.format(row.node.avgRemovals ?? 0)}
-              </Text>
-              <Text as="span" color="#565E7B">
-                /
-              </Text>
-              <Text as="span" color={EMISSIONS_COLOR}>
-                {signedPlain.format(row.node.avgEmissions ?? 0)}
-              </Text>
-            </>
-          ) : (
-            <Text as="span" color="#565E7B">
-              {single ?? ""}
-            </Text>
-          )}
-        </Text>
-      )}
     </Flex>
   );
 }
