@@ -112,10 +112,13 @@ export function useAddCuratedAnalysisToDashboard(
   const analysis = useCuratedAnalysis(selection, service);
   // A curated analysis of this dataset may already sit on the dashboard from
   // an earlier session; its insight id lets the entry read as added (and be
-  // removed) without running anything.
+  // removed) without running anything. It takes precedence over a run made
+  // this session: viewing the card runs a fresh job with a new insight id,
+  // and that id must not make the persisted widget read as absent (the card
+  // would flip to "Add to dashboard" and a toggle would add a duplicate).
   const onDashboardInsightId = useCuratedInsightOnDashboard(spec.datasetId);
   const insight = useAddInsightToDashboard(
-    analysis.insightId ?? onDashboardInsightId
+    onDashboardInsightId ?? analysis.insightId ?? undefined
   );
   const pendingWidget = usePendingInsightWidget(spec.datasetId);
 

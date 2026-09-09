@@ -306,6 +306,35 @@ describe("useAddCuratedAnalysisToDashboard", () => {
     );
   });
 
+  it("stays added, and removes the persisted widget, after the analysis is viewed", async () => {
+    // Viewing runs a fresh job (a new insight id); the widget already on the
+    // dashboard must remain the source of truth for added/remove, or the card
+    // flips to "Add to dashboard" and a second toggle adds a duplicate.
+    const service = fakeService(() => Promise.resolve(RESULT));
+    const { result } = renderHook(
+      () => useAddCuratedAnalysisToDashboard(spec, area, service),
+      { wrapper: makeWrapper({ ...dashboard, widgets: [curatedTclWidget] }) }
+    );
+
+    await act(async () => {
+      await result.current.start();
+    });
+    await waitFor(() => expect(result.current.state).toBe("ready"));
+
+    expect(result.current.added).toBe(true);
+
+    await act(async () => {
+      await result.current.addNow();
+    });
+    expect(addInsightWidget).not.toHaveBeenCalled();
+    expect(entries()).toEqual([]);
+
+    act(() => result.current.remove());
+    await waitFor(() =>
+      expect(deleteWidget).toHaveBeenCalledWith("d1", "w-tcl")
+    );
+  });
+
   it("is not addable for a non-owner, and addNow is a no-op", async () => {
     useAuthStore.setState({ userId: "visitor" });
     const service = fakeService(() => Promise.resolve(RESULT));
