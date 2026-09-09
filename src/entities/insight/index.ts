@@ -10,6 +10,7 @@ export type {
   InsightVerification,
 } from "./model/insight-record";
 export { chartsToWidgets } from "./lib/charts-to-widgets";
+export { codeActParts, isCuratedInsight } from "./lib/is-curated-insight";
 export { generateInsightTitle } from "./lib/insight-title";
 export type { InsightTitleInput } from "./lib/insight-title";
 export {

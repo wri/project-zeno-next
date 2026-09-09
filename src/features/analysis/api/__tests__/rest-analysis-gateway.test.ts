@@ -162,6 +162,17 @@ describe("RestAnalysisGateway.poll", () => {
     });
   });
 
+  it("returns a failed outcome when the job status is failed", async () => {
+    // The backend sends no Retry-After for a terminal failure and leaves
+    // resources empty; neither may leak into the outcome.
+    const fetch = mockFetch({ id: JOB_ID, status: "failed", resources: [] });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const outcome = await gateway.poll(JOB_ID);
+
+    expect(outcome).toEqual({ status: "failed" });
+  });
+
   it("GETs /api/jobs/{id}", async () => {
     const fetch = mockFetch({ id: JOB_ID, status: "pending", resources: [] });
     const gateway = new RestAnalysisGateway(fetch);
@@ -239,6 +250,47 @@ describe("RestAnalysisGateway.fetchResult", () => {
 
     expect(result.charts[0].position).toBe(0);
     expect(result.charts[1].position).toBe(1);
+  });
+
+  it("keeps the backend chart id when present", async () => {
+    const fetch = mockFetch({
+      id: INSIGHT_ID,
+      charts: [
+        {
+          id: "5d1f0c1e-9c3b-4a1e-8b2a-0f8a1c2d3e4f",
+          title: "A",
+          chart_type: "bar",
+          x_axis: "x",
+          y_axis: "y",
+          chart_data: [],
+        },
+      ],
+    });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const result = await gateway.fetchResult(RESOURCE_URL);
+
+    expect(result.charts[0].id).toBe("5d1f0c1e-9c3b-4a1e-8b2a-0f8a1c2d3e4f");
+  });
+
+  it("synthesises a chart id from the insight id when the payload has none", async () => {
+    const fetch = mockFetch({
+      id: INSIGHT_ID,
+      charts: [
+        {
+          title: "A",
+          chart_type: "bar",
+          x_axis: "x",
+          y_axis: "y",
+          chart_data: [],
+        },
+      ],
+    });
+    const gateway = new RestAnalysisGateway(fetch);
+
+    const result = await gateway.fetchResult(RESOURCE_URL);
+
+    expect(result.charts[0].id).toBe(`${INSIGHT_ID}-chart-0`);
   });
 
   it("defaults optional chart fields to empty values when absent", async () => {

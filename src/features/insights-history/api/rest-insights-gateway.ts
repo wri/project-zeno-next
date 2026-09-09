@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { apiFetch } from "@/app/lib/api-client";
-import type { Chart, InsightRecord } from "@/src/entities/insight";
+import {
+  isCuratedInsight,
+  type Chart,
+  type InsightRecord,
+} from "@/src/entities/insight";
 import type { InsightQuery, InsightsGateway } from "../model/insights-gateway";
 
 // ── Raw API shapes (anti-corruption layer — never leave this file) ─────────────
@@ -18,15 +22,19 @@ const RawChartSchema = z.object({
   group_field: z.string().default(""),
   series_fields: z.array(z.string()).default([]),
   chart_data: z.array(z.record(z.string(), z.unknown())).default([]),
+  dataset_id: z.number().nullable().optional(),
 });
 
 // Mirrors the backend `InsightResponse`. Only `id` is required; the rest default
 // so a sparse row still parses. Unknown keys (user_id, thread_id, is_public,
-// follow_up_suggestions, statistics_ids, codeact_parts) are ignored by Zod.
+// follow_up_suggestions, statistics_ids) are ignored by Zod. `codeact_parts`
+// is read only to classify the insight (see `isCuratedInsight`), so its
+// entries stay opaque here.
 const RawInsightSchema = z.object({
   id: z.string(),
   insight_text: z.string().default(""),
   created_at: z.string().default(""),
+  codeact_parts: z.array(z.unknown()).nullable().optional(),
   charts: z.array(RawChartSchema).default([]),
 });
 
@@ -45,13 +53,18 @@ function toInsightRecord(raw: RawInsight): InsightRecord {
     groupField: c.group_field,
     seriesFields: c.series_fields,
     data: c.chart_data,
+    ...(typeof c.dataset_id === "number" ? { datasetId: c.dataset_id } : {}),
   }));
 
   return {
     id: raw.id,
     createdAt: raw.created_at,
     insightText: raw.insight_text,
-    verification: "ai-generated",
+    // Curated (deterministic) insights carry no CodeAct provenance; the
+    // agent's always do. Same rule as the dashboard grid and the workspace.
+    verification: isCuratedInsight(raw.codeact_parts)
+      ? "verified"
+      : "ai-generated",
     charts,
   };
 }

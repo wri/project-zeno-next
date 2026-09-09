@@ -1,6 +1,11 @@
-import { firstChartTitle } from "@/src/entities/insight";
-import type { CodeActPart, InsightWidget } from "@/app/types/chat";
+import {
+  codeActParts,
+  firstChartTitle,
+  isCuratedInsight,
+} from "@/src/entities/insight";
+import type { InsightWidget } from "@/app/types/chat";
 import type { DashboardWidget } from "../api/schemas";
+import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 
 // Chart types the chart widget can render (InsightWidget["type"] minus
 // "dataset-card", which never comes from the dashboards API). Unknown types
@@ -296,7 +301,7 @@ export function insightModule(
       ? widget.insight.insight_text
       : "",
     summaryShown: isSummaryShown(widget.config),
-    curated: insightCodeactParts(widget.insight).length === 0,
+    curated: isCuratedInsight(widget.insight?.codeact_parts),
     cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
     allCharts: charts.map((chart) => ({
       id: chart.id,
@@ -306,19 +311,62 @@ export function insightModule(
   };
 }
 
-/** The insight's well-formed provenance parts; [] when absent or malformed. */
-function insightCodeactParts(
-  insight: DashboardWidget["insight"]
-): CodeActPart[] {
-  return Array.isArray(insight?.codeact_parts)
-    ? insight.codeact_parts.filter(
-        (p): p is CodeActPart =>
-          typeof p === "object" &&
-          p !== null &&
-          typeof (p as CodeActPart).type === "string" &&
-          typeof (p as CodeActPart).content === "string"
-      )
-    : [];
+/**
+ * The dashboard widget already showing the curated analysis of `datasetId`,
+ * if any. A curated insight's charts are all computed from one dataset, so a
+ * match is an insight widget with no generation provenance whose every chart
+ * carries that `dataset_id`. Rows persisted before `dataset_id` existed never
+ * match, so this is a best-effort "On dashboard" signal, not a guarantee.
+ */
+export function findCuratedWidgetForDataset(
+  widgets: readonly DashboardWidget[],
+  datasetId: number
+): DashboardWidget | undefined {
+  return widgets.find((widget) => {
+    const insight = widget.insight;
+    if (widget.widget_type !== "insight" || !insight) return false;
+    if (!isCuratedInsight(insight.codeact_parts)) return false;
+    return (
+      insight.charts.length > 0 &&
+      insight.charts.every((chart) => chart.dataset_id === datasetId)
+    );
+  });
+}
+
+/**
+ * Whether the dashboard page shows the widget grid rather than the empty-state
+ * hero. A curated analysis on its way onto the dashboard counts as content:
+ * its loading module must appear the moment the user toggles the card, even
+ * on a dashboard that has no widgets yet.
+ */
+export function hasDashboardContent(
+  widgetCount: number,
+  pendingCount: number
+): boolean {
+  return widgetCount > 0 || pendingCount > 0;
+}
+
+/**
+ * The pending entries the grid should still render as loading modules: those
+ * not yet superseded by a real widget. A completed run is matched by its
+ * persisted insight id once the entry carries one, else by the curated widget
+ * for its dataset. Covers the moment between the dashboard refetch landing
+ * and the owner of the entry clearing it, so the grid never shows a module
+ * twice.
+ */
+export function unresolvedPendingInsightWidgets(
+  pending: readonly PendingInsightWidget[],
+  widgets: readonly DashboardWidget[]
+): PendingInsightWidget[] {
+  return pending.filter((entry) => {
+    if (
+      entry.insightId &&
+      widgets.some((w) => w.insight_id === entry.insightId)
+    ) {
+      return false;
+    }
+    return !findCuratedWidgetForDataset(widgets, entry.datasetId);
+  });
 }
 
 /**
@@ -343,7 +391,7 @@ export function dashboardWidgetToInsightWidgets(
   const insight = widget.insight;
   if (!insight?.charts?.length) return [];
 
-  const codeactParts = insightCodeactParts(insight);
+  const codeactParts = codeActParts(insight.codeact_parts);
   const generation = codeactParts.length
     ? { codeact_parts: codeactParts }
     : undefined;

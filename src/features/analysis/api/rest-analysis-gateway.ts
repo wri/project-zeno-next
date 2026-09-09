@@ -21,11 +21,13 @@ interface RawJobResource {
 
 interface RawJobResponse {
   id: string;
-  status: "pending" | "running" | "completed";
+  status: "pending" | "running" | "completed" | "failed";
   resources: RawJobResource[];
 }
 
 interface RawChart {
+  /** Backend chart UUID; older payloads may omit it. */
+  id?: string;
   title: string;
   chart_type: string;
   x_axis: string;
@@ -157,6 +159,11 @@ export class RestAnalysisGateway implements AnalysisGateway {
       };
     }
 
+    // Terminal failure: no Retry-After is sent and `resources` stays empty.
+    if (body.status === "failed") {
+      return { status: "failed" };
+    }
+
     const retryAfterRaw = response.headers.get("Retry-After");
     const parsed = retryAfterRaw
       ? parseInt(retryAfterRaw, 10)
@@ -203,7 +210,10 @@ export class RestAnalysisGateway implements AnalysisGateway {
       id: body.id,
       charts: body.charts.map(
         (c, i): Chart => ({
-          id: `${body.id}-chart-${i}`,
+          // Prefer the persisted chart id so the same chart carries one id
+          // everywhere (the insights list gateway does the same); synthesise
+          // only when the payload lacks it.
+          id: c.id ?? `${body.id}-chart-${i}`,
           position: i,
           title: c.title,
           type: c.chart_type,

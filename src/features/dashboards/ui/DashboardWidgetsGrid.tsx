@@ -11,9 +11,11 @@ import {
   type WidgetContainer,
 } from "../model/dashboard-sections";
 import { computeWidgetMove } from "../model/widget-move";
+import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 import {
   insightWidgetSize,
   mapWidgetSize,
+  unresolvedPendingInsightWidgets,
   widgetSize,
   widgetText,
   withSize,
@@ -34,10 +36,12 @@ import {
 } from "./dashboardQueries";
 import { TWO_COLUMN_QUERY } from "./gridLayout";
 import DashboardInsightModule from "./DashboardInsightModule";
+import DashboardPendingInsightCard from "./DashboardPendingInsightCard";
 import DashboardSection from "./DashboardSection";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
+import { usePendingInsightWidgets } from "./usePendingInsightWidget";
 import {
   DRAG_ITEM_ATTR,
   SECTION_ITEM_ATTR,
@@ -186,6 +190,7 @@ function ContainerGrid({
   container,
   isOwner,
   drag,
+  pending,
   landed,
   liftedRef,
   onDragStart,
@@ -199,6 +204,15 @@ function ContainerGrid({
   landed: string | null;
   /** Attached to the card in flight, which the drag moves via `transform`. */
   liftedRef: React.Ref<HTMLDivElement>;
+  /**
+   * Curated analyses on their way into this container, rendered as loading
+   * cards after its widgets. Only the ungrouped top level ever has any: a
+   * curated add lands as an ungrouped widget appended last, so its loading
+   * card stands where the real one will. They are not in `container.widgets`
+   * and carry no widget or drag-item identity, so the drag machinery (slot,
+   * hit-test, renumbering) never sees them.
+   */
+  pending: PendingInsightWidget[];
   onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
   onSettle: () => void;
 }) {
@@ -318,8 +332,26 @@ function ContainerGrid({
     );
   };
 
+  // Loading cards for analyses on their way in, after every persisted widget.
+  // Full width, like a fresh insight widget, so each is its own row.
+  const renderPending = () =>
+    pending.map((entry) => (
+      <Box key={`pending:${entry.key}`} minW={0} css={cellCss(true)}>
+        <DashboardPendingInsightCard pending={entry} isOwner={isOwner} />
+      </Box>
+    ));
+
   if (container.widgets.length === 0) {
     if (isDropTarget) return placeholder;
+    // A top level with nothing persisted yet can still be showing an analysis
+    // on its way in; that is the only content it has.
+    if (pending.length > 0) {
+      return (
+        <Flex wrap="wrap" gap={4} align="flex-start">
+          {renderPending()}
+        </Flex>
+      );
+    }
     // An empty top level is only on screen mid-drag, as the panel the dragged
     // widget can be put back into — it just holds the space.
     return container.section ? (
@@ -341,6 +373,7 @@ function ContainerGrid({
       ))}
       {/* "After everything" — the one slot that follows no card. */}
       {isDropTarget && slotBeforeId === null && placeholder}
+      {renderPending()}
     </Flex>
   );
 }
@@ -422,15 +455,27 @@ export default function DashboardWidgetsGrid({
     finishSectionDrag();
   }, [dashboard, finishDrag, finishSectionDrag]);
 
+  // Curated analyses on their way onto this dashboard render as loading cards
+  // at the end of the ungrouped top level, where the backend will append the
+  // real widget. Entries already superseded by a refetched widget are dropped
+  // here rather than shown twice.
+  const pendingEntries = usePendingInsightWidgets(dashboard.id);
+  const pendingCards = useMemo(
+    () => unresolvedPendingInsightWidgets(pendingEntries, dashboard.widgets),
+    [pendingEntries, dashboard.widgets]
+  );
+
   // A drag keeps every container on screen, the empty ones included: the panel
-  // a widget was lifted out of has to stay somewhere it can go back to.
+  // a widget was lifted out of has to stay somewhere it can go back to. So
+  // does a pending analysis: its loading card needs the top-level panel even
+  // when every persisted widget is sectioned.
   const containers = useMemo(
     () =>
       widgetContainers(dashboard, {
         keepEmptySections: isOwner,
-        keepEmptyTopLevel: !!dragState,
+        keepEmptyTopLevel: !!dragState || pendingCards.length > 0,
       }),
-    [dashboard, isOwner, dragState]
+    [dashboard, isOwner, dragState, pendingCards.length]
   );
   useEffect(() => {
     containersRef.current = containers;
@@ -528,6 +573,7 @@ export default function DashboardWidgetsGrid({
                     drag={dragState}
                     landed={drag.landed}
                     liftedRef={drag.liftedRef}
+                    pending={container.section ? [] : pendingCards}
                     onSettle={drag.settle}
                     onDragStart={(event, widget) => {
                       const next =
