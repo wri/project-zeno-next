@@ -191,6 +191,112 @@ export function seriesLabel(field: string): string {
 }
 
 /**
+ * Shorter still for the hover tooltip, which is about half the legend's width
+ * and puts the value in its own right-hand column. Only the two longest
+ * emissions labels need it; the removals column already has `REMOVALS_LABELS`.
+ */
+const TOOLTIP_LABELS: Record<string, string> = {
+  trees_remaining_trees: "Trees rem. trees",
+  non_trees_remaining_non_trees: "Non-trees rem. non-trees",
+};
+
+/** Human label for a series field as the hover tooltip prints it. */
+export function tooltipSeriesLabel(field: string): string {
+  const short = TOOLTIP_LABELS[seriesClass(field)];
+  // The removals side is already abbreviated by `seriesLabel`, and its short
+  // forms ("Trees remaining") differ from these — so only override emissions.
+  if (short && seriesGroup(field) === "emissions") return short;
+  return seriesLabel(field);
+}
+
+/**
+ * Cropland and livestock are the same fixed-2020 figure under two names (see
+ * `CLASS_LABELS`), drawn in near-identical hatching and sat side by side in
+ * the stack. The design reads them as one bar and gives them one tooltip row.
+ */
+const AGRICULTURE_CLASSES = new Set(["cropland", "livestock"]);
+const AGRICULTURE_TOOLTIP_LABEL = "Agriculture (static)";
+
+/** One rendered line of the hover tooltip: swatch, label, value. */
+export interface NetFluxTooltipRow {
+  /** Stable across re-renders — the merged agriculture row has no single field. */
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface NetFluxTooltipModel {
+  rows: NetFluxTooltipRow[];
+  /** The net-flux line's own value, which the design prints below a rule. */
+  net: number | null;
+}
+
+/** What recharts hands a tooltip content renderer, narrowed to what's used. */
+export interface NetFluxTooltipEntry {
+  dataKey?: string | number;
+  name?: string | number;
+  value?: number;
+  color?: string;
+}
+
+/**
+ * Tooltip rows for one hovered x-value, in the design's own order: emissions
+ * top-of-stack first (so the list reads down the bar as drawn), then removals
+ * in stacking order — the same order `buildLegend` gives the legend below the
+ * chart. Agriculture's two classes fold into one row where the first of them
+ * falls. Series the active measure doesn't draw simply aren't in `payload`, so
+ * the row list follows the Measure/Detail the user picked without being told
+ * which one it is.
+ */
+export function netFluxTooltipRows(
+  payload: NetFluxTooltipEntry[]
+): NetFluxTooltipModel {
+  const emissions: NetFluxTooltipRow[] = [];
+  const removals: NetFluxTooltipRow[] = [];
+  let agriculture: NetFluxTooltipRow | null = null;
+  let net: number | null = null;
+
+  for (const entry of payload) {
+    const field = String(entry.dataKey ?? entry.name ?? "");
+    const value = entry.value;
+    if (field === NET_FLUX_LINE_FIELD) {
+      net = typeof value === "number" ? value : null;
+      continue;
+    }
+    const group = seriesGroup(field);
+    // The "net" measure's single bar carries no group suffix; it holds the same
+    // value as the net-flux line, so the row below the rule already shows it.
+    if (!group || typeof value !== "number") continue;
+
+    if (AGRICULTURE_CLASSES.has(seriesClass(field))) {
+      if (agriculture) {
+        agriculture.value += value;
+      } else {
+        agriculture = {
+          key: "agriculture",
+          label: AGRICULTURE_TOOLTIP_LABEL,
+          value,
+          color: HATCH_AGRICULTURE,
+        };
+        emissions.push(agriculture);
+      }
+      continue;
+    }
+
+    const row: NetFluxTooltipRow = {
+      key: field,
+      label: tooltipSeriesLabel(field),
+      value,
+      color: entry.color ?? SERIES_COLORS[field] ?? "currentColor",
+    };
+    (group === "emissions" ? emissions : removals).push(row);
+  }
+
+  return { rows: [...emissions.reverse(), ...removals], net };
+}
+
+/**
  * Class → table-column group, independent of Full/Category/Summary detail
  * level. The backend orders fields emissions-then-removals, which splits a
  * class's own emissions and removals columns apart from its sibling classes

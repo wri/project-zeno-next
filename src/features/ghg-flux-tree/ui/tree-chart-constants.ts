@@ -70,3 +70,6 @@ export const BAR_SIZE = 14;
  * The `n/a` overlay has to account for it to stay on the zero line.
  */
 export const PLOT_MARGIN_X = 14;
+
+/** Matches the tooltip's own `maxWidth` in `GhgFluxTreeChart.tsx`. */
+export const TOOLTIP_WIDTH = 200;

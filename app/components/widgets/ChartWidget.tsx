@@ -120,6 +120,23 @@ interface ChartWidgetProps {
    * gets too narrow for four digits per tick.
    */
   xTickFormatter?: (value: string | number, key?: string) => string;
+  /**
+   * Override the tooltip's content renderer entirely. Escape hatch for a
+   * chart whose series count makes the default per-series `Chart.Tooltip`
+   * list (one line per series) taller than the plot itself — the net-flux
+   * card's Full-detail view is 12 series tall. Takes recharts' own
+   * tooltip props, not `ChartWidgetProps`.
+   */
+  tooltipContent?: (props: {
+    active?: boolean;
+    payload?: Array<{
+      dataKey?: string | number;
+      name?: string | number;
+      value?: number;
+      color?: string;
+    }>;
+    label?: string | number;
+  }) => React.ReactNode;
 }
 
 /**
@@ -379,6 +396,7 @@ export default function ChartWidget({
   yDomain,
   yTickFormatter,
   xTickFormatter,
+  tooltipContent,
 }: ChartWidgetProps) {
   const {
     data,
@@ -915,6 +933,8 @@ export default function ChartWidget({
                 <CustomScatterTooltip />
               ) : type === "pie" ? (
                 <CustomPieTooltip total={pieTotal} />
+              ) : tooltipContent ? (
+                tooltipContent
               ) : (
                 <Chart.Tooltip
                   formatter={(value) =>

@@ -270,6 +270,143 @@ const GHG_FLUX_TREE_DATA = [
   },
 ];
 
+// Same insight as NET_FLUX_CATEGORY_DATA, but at project-zeno's "Full detail"
+// level: one field per LGMS leaf class rather than per category roll-up — the
+// 11-series shape (7 emissions + 4 removals) the design's own Full-detail
+// frame draws, which the 6-series category fixture doesn't reach.
+//
+// Values are the design frame's own figures: its 2020 tooltip reads +567 tree
+// loss, +162 trees rem., +81 non-trees rem., +162 mineral, +378 organic,
+// +250 agriculture and -506/-135/-34/-75 removals — a +1,600/-750 gross split
+// and a +850 net, matching GHG_FLUX_TREE_DATA's "All land" averages. The other
+// years drift to the design's own endpoints (+1,050 in 2016 → +610 in 2024);
+// agriculture stays flat, as the card's fixed-2020 caveat says it must.
+// In Mg (metric tons), like the backend's `..._MgCO2e` fields.
+const AGRICULTURE_STATIC = {
+  cropland_emissions: 150_000_000,
+  livestock_emissions: 100_000_000,
+};
+
+const NET_FLUX_FULL_DETAIL_DATA = [
+  {
+    year: 2016,
+    tree_loss_emissions: 711_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 402_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -474_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+  {
+    year: 2017,
+    tree_loss_emissions: 675_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 396_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -482_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+  {
+    year: 2018,
+    tree_loss_emissions: 639_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 390_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -490_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+  {
+    year: 2019,
+    tree_loss_emissions: 603_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 384_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -498_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+  {
+    year: 2020,
+    tree_loss_emissions: 567_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 378_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -506_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+  {
+    year: 2021,
+    tree_loss_emissions: 521_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 372_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -514_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+  {
+    year: 2022,
+    tree_loss_emissions: 475_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 366_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -522_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+  {
+    year: 2023,
+    tree_loss_emissions: 429_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 360_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -530_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+  {
+    year: 2024,
+    tree_loss_emissions: 383_000_000,
+    trees_remaining_trees_emissions: 162_000_000,
+    non_trees_remaining_non_trees_emissions: 81_000_000,
+    mineral_soil_emissions: 162_000_000,
+    organic_soil_emissions: 354_000_000,
+    ...AGRICULTURE_STATIC,
+    tree_gain_removals: -538_000_000,
+    trees_remaining_trees_removals: -135_000_000,
+    non_trees_remaining_non_trees_removals: -34_000_000,
+    mineral_soil_removals: -75_000_000,
+  },
+];
+
 const STACKED_BAR_DATA = [
   { year: 2018, "Natural forests": 3200, Plantations: 800, Other: 400 },
   { year: 2019, "Natural forests": 3400, Plantations: 900, Other: 350 },
@@ -825,6 +962,35 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
           "livestock_emissions",
           "vegetation_removals",
           "soil_removals",
+        ],
+      },
+    },
+    {
+      label: "Stacked bar with line overlay (net flux, full detail)",
+      notes:
+        "Same insight at project-zeno's 'Full detail' level — one series per LGMS leaf class (11 total) instead of the 6-series category roll-up, with the design frame's own figures. Exercises the legend and the per-series tooltip at a density the category fixture doesn't reach.",
+      widget: {
+        type: "stacked-bar-with-line",
+        // The em-dash form is what `netFluxDetailLabel` parses to "Full detail".
+        title: "Net GHG Flux — Full Detail",
+        description:
+          "Gross emissions and removals by LGMS leaf class, with the net-flux line.",
+        data: NET_FLUX_FULL_DETAIL_DATA as unknown as InsightWidget["data"],
+        xAxis: "year",
+        yAxis: "",
+        // Emissions then removals, matching SERIES_COLORS' stacking order.
+        seriesFields: [
+          "tree_loss_emissions",
+          "trees_remaining_trees_emissions",
+          "non_trees_remaining_non_trees_emissions",
+          "mineral_soil_emissions",
+          "organic_soil_emissions",
+          "cropland_emissions",
+          "livestock_emissions",
+          "tree_gain_removals",
+          "trees_remaining_trees_removals",
+          "non_trees_remaining_non_trees_removals",
+          "mineral_soil_removals",
         ],
       },
     },

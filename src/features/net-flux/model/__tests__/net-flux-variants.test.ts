@@ -3,8 +3,11 @@ import {
   deriveNetFluxVariant,
   isPaintReference,
   netFluxTableProps,
+  netFluxTooltipRows,
   seriesGroup,
   seriesLabel,
+  HATCH_CROPLAND,
+  HATCH_LIVESTOCK,
 } from "../net-flux-variants";
 import type { InsightWidget } from "@/app/types/chat";
 
@@ -244,5 +247,98 @@ describe("netFluxTableProps", () => {
     expect(netFluxTableProps(variant, "year", "gross").boldColumns).toEqual([
       "Net flux",
     ]);
+  });
+});
+
+describe("netFluxTooltipRows", () => {
+  /** What recharts hands the tooltip: one entry per drawn series, plus the line. */
+  const fullDetailPayload = [
+    { dataKey: "tree_loss_emissions", value: 567, color: "#543005" },
+    {
+      dataKey: "trees_remaining_trees_emissions",
+      value: 162,
+      color: "#8c510a",
+    },
+    {
+      dataKey: "non_trees_remaining_non_trees_emissions",
+      value: 81,
+      color: "#bf812d",
+    },
+    { dataKey: "mineral_soil_emissions", value: 162, color: "#dfc27d" },
+    { dataKey: "organic_soil_emissions", value: 378, color: "#ebd9b0" },
+    { dataKey: "cropland_emissions", value: 150, color: HATCH_CROPLAND },
+    { dataKey: "livestock_emissions", value: 100, color: HATCH_LIVESTOCK },
+    { dataKey: "tree_gain_removals", value: -506, color: "#01665e" },
+    {
+      dataKey: "trees_remaining_trees_removals",
+      value: -135,
+      color: "#35978f",
+    },
+    {
+      dataKey: "non_trees_remaining_non_trees_removals",
+      value: -34,
+      color: "#80cdc1",
+    },
+    { dataKey: "mineral_soil_removals", value: -75, color: "#003c30" },
+    { dataKey: "Net flux", value: 850, color: "#172b7a" },
+  ];
+
+  it("orders emissions top-of-stack first, then removals, as the legend does", () => {
+    const { rows } = netFluxTooltipRows(fullDetailPayload);
+    expect(rows.map((r) => r.label)).toEqual([
+      "Agriculture (static)",
+      "Organic soil",
+      "Mineral soil",
+      "Non-trees rem. non-trees",
+      "Trees rem. trees",
+      "Tree loss",
+      "Tree gain",
+      "Trees remaining",
+      "Non-trees",
+      "Mineral",
+    ]);
+  });
+
+  it("folds cropland and livestock into one hatched agriculture row", () => {
+    const { rows } = netFluxTooltipRows(fullDetailPayload);
+    const agriculture = rows.filter((r) => r.label === "Agriculture (static)");
+    expect(agriculture).toHaveLength(1);
+    expect(agriculture[0].value).toBe(250);
+    expect(isPaintReference(agriculture[0].color)).toBe(true);
+  });
+
+  it("takes the net total from the line, not from the bars", () => {
+    expect(netFluxTooltipRows(fullDetailPayload).net).toBe(850);
+  });
+
+  it("reduces to the net row alone for the net measure", () => {
+    // The net measure draws one bar whose name carries no group suffix; it
+    // holds the same value as the line, so it must not become its own row.
+    const { rows, net } = netFluxTooltipRows([
+      { dataKey: "Net source", value: 850, color: "#8c510a" },
+      { dataKey: "Net flux", value: 850, color: "#172b7a" },
+    ]);
+    expect(rows).toEqual([]);
+    expect(net).toBe(850);
+  });
+
+  it("lists whatever the active detail level draws", () => {
+    const { rows, net } = netFluxTooltipRows([
+      { dataKey: "vegetation_emissions", value: 810, color: "#8c510a" },
+      { dataKey: "soil_emissions", value: 540, color: "#dfc27d" },
+      { dataKey: "cropland_emissions", value: 150, color: HATCH_CROPLAND },
+      { dataKey: "livestock_emissions", value: 100, color: HATCH_LIVESTOCK },
+      { dataKey: "vegetation_removals", value: -675, color: "#01665e" },
+      { dataKey: "soil_removals", value: -75, color: "#80cdc1" },
+      { dataKey: "Net flux", value: 850, color: "#172b7a" },
+    ]);
+    expect(rows.map((r) => r.label)).toEqual([
+      "Agriculture (static)",
+      "Soil",
+      "Vegetation",
+      "Vegetation",
+      "Soil",
+    ]);
+    expect(net).toBe(850);
   });
 });

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { FLUX_UNITS } from "@/src/shared/lib/units";
@@ -31,6 +32,7 @@ import {
   PLOT_MIN_WIDTH,
   REMOVALS_COLOR,
   ROW_HEIGHT,
+  TOOLTIP_WIDTH,
   TREE_COLUMN_MAX_WIDTH,
   ZERO_LINE_COLOR,
 } from "./tree-chart-constants";
@@ -170,7 +172,7 @@ function TreeLabel({
   );
 }
 
-function ValueCell({ row, measure }: { row: FluxRow; measure: FluxMeasure }) {
+function ValueCell({ row }: { row: FluxRow }) {
   // Same rule as the tree label: root and any row with children (a category)
   // gets emphasis; a leaf subcategory does not.
   const isEmphasized = row.depth === 0 || row.hasChildren;
@@ -235,6 +237,11 @@ function GhgFluxTooltip({ active, payload, rows, measure }: TreeTooltipProps) {
       boxShadow="md"
       border="1px"
       borderColor="border"
+      css={{
+        maxWidth: `${TOOLTIP_WIDTH}px`,
+        whiteSpace: "normal",
+        wordWrap: "break-word",
+      }}
     >
       <Text fontSize="xs" fontWeight="medium" mb={1}>
         {row.node.label}
@@ -296,6 +303,22 @@ export function GhgFluxTreeChart({
 
   const height = AXIS_HEIGHT + rows.length * ROW_HEIGHT;
 
+  // The tooltip is taller than a row and the plot has no empty space in
+  // either axis (every pixel band belongs to some row's bar), so recharts'
+  // default cursor-following placement always sits on top of bars. Pin it
+  // instead: x escapes the plot to the left, over the bar-free tree-label
+  // column; y is computed from the hovered row's own index, using this
+  // component's own uniform row pitch (see the file doc comment) rather than
+  // trusting recharts' cursor coordinate.
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const tooltipPosition =
+    activeIndex == null
+      ? undefined
+      : {
+          x: -(TOOLTIP_WIDTH + 8),
+          y: AXIS_HEIGHT + activeIndex * ROW_HEIGHT,
+        };
+
   return (
     <Flex align="flex-start" w="full">
       {/* Tree column */}
@@ -342,6 +365,13 @@ export function GhgFluxTreeChart({
               bottom: 0,
               left: PLOT_MARGIN_X,
             }}
+            onMouseMove={(state) => {
+              // recharts reports `activeTooltipIndex` as a numeric string
+              // (`"0"`, `"1"`, ...), not a number.
+              const index = Number(state?.activeTooltipIndex);
+              setActiveIndex(Number.isInteger(index) ? index : null);
+            }}
+            onMouseLeave={() => setActiveIndex(null)}
           >
             <XAxis
               type="number"
@@ -363,6 +393,9 @@ export function GhgFluxTreeChart({
             <Tooltip
               cursor={{ fill: "var(--chakra-colors-black-alpha-200)" }}
               content={<GhgFluxTooltip rows={rows} measure={measure} />}
+              position={tooltipPosition}
+              allowEscapeViewBox={{ x: true }}
+              wrapperStyle={{ pointerEvents: "none" }}
             />
             {measure === "net" ? (
               <Bar dataKey="net" barSize={BAR_SIZE} isAnimationActive={false}>
@@ -446,7 +479,7 @@ export function GhgFluxTreeChart({
           </Text>
         </Flex>
         {rows.map((row) => (
-          <ValueCell key={row.node.id} row={row} measure={measure} />
+          <ValueCell key={row.node.id} row={row} />
         ))}
       </Flex>
     </Flex>

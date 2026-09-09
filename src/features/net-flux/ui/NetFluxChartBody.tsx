@@ -15,6 +15,7 @@ import {
   type NetFluxVariant,
 } from "../model/net-flux-variants";
 import { NetFluxHatchDefs, NetFluxLegend } from "./NetFluxLegend";
+import { NetFluxTooltip } from "./NetFluxTooltip";
 
 const EN_DASH = "–";
 
@@ -162,6 +163,7 @@ export function NetFluxChartBody({
           yTicks={variant.yTicks}
           yDomain={variant.yDomain}
           yTickFormatter={formatTick}
+          tooltipContent={NetFluxTooltip}
           xTickFormatter={
             isNarrow
               ? (value, key) =>
