@@ -4,6 +4,7 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 
 import type { InsightWidget } from "@/app/types/chat";
 import { signed } from "@/src/shared/lib/number-format";
+import { FLUX_UNITS } from "@/src/shared/lib/units";
 
 import {
   nodeNet,
@@ -112,7 +113,7 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
             {rootNet == null ? "—" : signed.format(rootNet)}
           </Text>
           <Text fontFamily="mono" fontSize="11px" color="#656E7B">
-            megatonnes CO2e/yr · {direction}
+            {FLUX_UNITS} · {direction}
             {fullyExpanded ? " · Full detail" : ""}
           </Text>
         </Flex>

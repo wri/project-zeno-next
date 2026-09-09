@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import {
   Box,
   Heading,
@@ -152,23 +152,22 @@ export default function WidgetMessage({
   } = useDisclosure();
   // Shared with the workspace toolbar, which renders the DETAIL/MEASURE pills
   // outside this card (see NetFluxToolbar). Hooks must run unconditionally, so
-  // this sits above the dataset-card early return.
+  // these sit above the dataset-card early return.
   const netFluxView = useNetFluxView(netFluxViewKey(widget));
-  if (widget.type === "dataset-card") {
-    return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
-  }
-
-  // The curated net-flux insight always stores the full-detail/gross data;
-  // the DETAIL/MEASURE toggle re-derives which slice of it is shown. Every
-  // downstream consumer (chart, table, CSV, fullscreen) reads `displayWidget`
-  // so they stay in sync with the toggle.
   const isNetFlux = isNetFluxWidget(widget);
   const netFluxVariant = isNetFlux
     ? deriveNetFluxVariant(widget, netFluxView.measure)
     : null;
-  const displayWidget: InsightWidget = netFluxVariant
-    ? { ...widget, ...netFluxVariant }
-    : widget;
+  // Memoize the spread operation to preserve object identity, so formatChartData's
+  // stable-data assumption holds and recharts doesn't re-render on every parent render.
+  const displayWidget: InsightWidget = useMemo(
+    () => (netFluxVariant ? { ...widget, ...netFluxVariant } : widget),
+    [widget, netFluxVariant]
+  );
+
+  if (widget.type === "dataset-card") {
+    return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
+  }
 
   const handleOpen = () => {
     onOpen();

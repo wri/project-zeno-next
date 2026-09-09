@@ -9,3 +9,6 @@
 export function mgToMt(value: number): number {
   return value / 1_000_000;
 }
+
+/** Shared units label for LGMS flux charts (tooltips, axis labels, tables). */
+export const FLUX_UNITS = "Mt CO₂e/yr";

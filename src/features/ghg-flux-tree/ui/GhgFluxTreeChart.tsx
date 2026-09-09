@@ -1,6 +1,7 @@
 "use client";
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
+import { FLUX_UNITS } from "@/src/shared/lib/units";
 import {
   Bar,
   BarChart,
@@ -227,8 +228,6 @@ function ValueCell({ row, measure }: { row: FluxRow; measure: FluxMeasure }) {
   );
 }
 
-const UNITS = "Mt CO₂e/yr";
-
 interface TreeTooltipProps {
   active?: boolean;
   payload?: Array<{ payload: PlotRow }>;
@@ -253,7 +252,7 @@ function GhgFluxTooltip({ active, payload, rows, measure }: TreeTooltipProps) {
         color={color}
         css={{ fontVariantNumeric: "tabular-nums" }}
       >
-        {value == null ? "—" : signed.format(value)} {UNITS}
+        {value == null ? "—" : signed.format(value)} {FLUX_UNITS}
       </Text>
     </Flex>
   );

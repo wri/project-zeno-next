@@ -7,6 +7,7 @@ import type { InsightWidget } from "@/app/types/chat";
 import { abbreviateYear, formatXAxisLabel } from "@/app/utils/formatCharts";
 import { formatTick } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
+import { FLUX_UNITS } from "@/src/shared/lib/units";
 
 import { netFluxWidgetDetailLabel } from "../model/net-flux-siblings";
 import {
@@ -93,7 +94,7 @@ function TimeSeriesHeader({
         </Text>
       </Text>
       <Text fontFamily="mono" fontSize="10px" color="#656E7B">
-        megatonnes CO₂e/yr · {direction} · {label}
+        {FLUX_UNITS} · {direction} · {label}
       </Text>
       <Text
         fontFamily="body"
