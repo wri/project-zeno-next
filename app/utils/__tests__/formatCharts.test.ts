@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import formatChartData, {
+  abbreviateYear,
   toAxisLabel,
   formatYAxisLabel,
   formatXAxisLabel,
@@ -89,6 +90,18 @@ describe("formatXAxisLabel", () => {
 
   it("keeps short labels intact", () => {
     expect(formatXAxisLabel("Brazil")).toBe("Brazil");
+  });
+});
+
+describe("abbreviateYear", () => {
+  it("shortens a 4-digit year to a leading apostrophe + last two digits", () => {
+    expect(abbreviateYear(2017)).toBe("'17");
+    expect(abbreviateYear("2024")).toBe("'24");
+  });
+
+  it("leaves a non-4-digit value unchanged", () => {
+    expect(abbreviateYear("Brazil")).toBe("Brazil");
+    expect(abbreviateYear(99)).toBe("99");
   });
 });
 

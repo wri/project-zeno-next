@@ -553,6 +553,12 @@ export const formatXAxisLabel = (value: string | number, key?: string) => {
   return value;
 };
 
+/** "2017" -> "'17", for a year axis squeezed too narrow for the full 4 digits. */
+export const abbreviateYear = (value: string | number): string => {
+  const str = value.toString();
+  return str.length === 4 ? `'${str.slice(2)}` : str;
+};
+
 // Custom formatter for Y-axis (format large numbers)
 export const formatYAxisLabel = (value: number, key?: string) => {
   // Check if the axis key is 'year' to prevent special formatting

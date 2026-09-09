@@ -1,8 +1,10 @@
 "use client";
+import { useRef, useState, useLayoutEffect } from "react";
 import { Flex, Text } from "@chakra-ui/react";
 
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import type { InsightWidget } from "@/app/types/chat";
+import { abbreviateYear, formatXAxisLabel } from "@/app/utils/formatCharts";
 import { formatTick } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
 
@@ -106,6 +108,13 @@ function TimeSeriesHeader({
   );
 }
 
+// ponytail: no design spec gives an exact breakpoint for the 20XX→'XX switch,
+// just "when the container width reduces beyond a point" — 450px is picked as
+// the point below which the default in-card width (~388-420px) falls but the
+// fullscreen/dashboard-fullWidth views don't. Revisit against the real design
+// once it specifies one.
+const NARROW_X_AXIS_WIDTH = 450;
+
 /**
  * Net-flux chart body — the design's own composition of a stat header, the
  * stacked/line plot, and a grouped Emissions/Removals legend. Swapped in by
@@ -120,6 +129,19 @@ export function NetFluxChartBody({
   fitYAxis,
   fullWidth,
 }: NetFluxChartBodyProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useLayoutEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setIsNarrow(entry.contentRect.width < NARROW_X_AXIS_WIDTH);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <Flex direction="column" gap="16px" w="full">
       <NetFluxHatchDefs />
@@ -129,16 +151,26 @@ export function NetFluxChartBody({
         measure={measure}
         detailLabel={netFluxWidgetDetailLabel(widget)}
       />
-      <ChartWidget
-        widget={widget}
-        showLegend={false}
-        expanded={expanded}
-        fitYAxis={fitYAxis}
-        fullWidth={fullWidth}
-        yTicks={variant.yTicks}
-        yDomain={variant.yDomain}
-        yTickFormatter={formatTick}
-      />
+      <div ref={containerRef}>
+        <ChartWidget
+          widget={widget}
+          showLegend={false}
+          expanded={expanded}
+          fitYAxis={fitYAxis}
+          fullWidth={fullWidth}
+          yTicks={variant.yTicks}
+          yDomain={variant.yDomain}
+          yTickFormatter={formatTick}
+          xTickFormatter={
+            isNarrow
+              ? (value, key) =>
+                  key?.toString().toLowerCase() === "year"
+                    ? abbreviateYear(value)
+                    : String(formatXAxisLabel(value, key))
+              : undefined
+          }
+        />
+      </div>
       <NetFluxLegend legend={variant.legend} />
     </Flex>
   );

@@ -114,6 +114,28 @@ interface ChartWidgetProps {
    * sized for the strings actually rendered.
    */
   yTickFormatter?: (value: number) => string;
+  /**
+   * Format x-axis tick labels. Defaults to the shared `formatXAxisLabel`; the
+   * net-flux card overrides it to abbreviate years ("'17") once its container
+   * gets too narrow for four digits per tick.
+   */
+  xTickFormatter?: (value: string | number, key?: string) => string;
+}
+
+/**
+ * Y-axis gutter width: tick text plus its margin, plus a title band ONLY when
+ * a y-axis title will actually render (`{yAxis && <Label .../>}` below) — an
+ * empty `yAxis` (the curated LGMS charts) got 22px of unused whitespace
+ * reserved for a title that never draws, crowding the plot and its x-axis
+ * ticks. Exported for a regression test; not meant as a general utility.
+ */
+export function computeYAxisWidth(
+  longestYTickChars: number,
+  hasYAxisTitle: boolean
+): number {
+  return Math.ceil(
+    longestYTickChars * CHAR_PX + TICK_MARGIN + (hasYAxisTitle ? TITLE_BAND : 0)
+  );
 }
 
 /** Chart types where a fit-to-data y-axis is honest and useful. */
@@ -356,6 +378,7 @@ export default function ChartWidget({
   yTicks,
   yDomain,
   yTickFormatter,
+  xTickFormatter,
 }: ChartWidgetProps) {
   const {
     data,
@@ -495,7 +518,10 @@ export default function ChartWidget({
     const xFormatted =
       type === "scatter"
         ? formatYAxisLabel(Number(row[xAxis]), xAxis)
-        : formatXAxisLabel(row[xAxis] as string | number, xAxis);
+        : (xTickFormatter ?? formatXAxisLabel)(
+            row[xAxis] as string | number,
+            xAxis
+          );
     longestXTickChars = Math.max(longestXTickChars, String(xFormatted).length);
 
     for (const k of yKeys) {
@@ -523,9 +549,7 @@ export default function ChartWidget({
       )
     : TICK_MARGIN + TICK_FONT_PX + TITLE_BAND;
 
-  const yAxisWidth = Math.ceil(
-    longestYTickChars * CHAR_PX + TICK_MARGIN + TITLE_BAND
-  );
+  const yAxisWidth = computeYAxisWidth(longestYTickChars, Boolean(yAxis));
 
   const animationProps = {
     isAnimationActive: animate,
@@ -718,6 +742,19 @@ export default function ChartWidget({
         outlineColor: "primary.focusRing",
         outlineOffset: "2px",
       }}
+      // Recharts' `tick={{ fontSize }}` renders an SVG `font-size`
+      // presentation attribute, which loses to Chakra's CSS reset — ticks
+      // render at the inherited ~16-12px, not TICK_FONT_PX. That under-sized
+      // the CHAR_PX-based width/height measurements below, which `yAxisWidth`
+      // used to over-cover thanks to an unrelated 22px title-band margin;
+      // removing that margin (see `yAxisWidth`) exposed the mismatch as
+      // clipped tick text ("1500" rendering as "500"). Same fix as
+      // `GhgFluxTreeChart`: force the real font-size in CSS instead.
+      css={{
+        "& .recharts-cartesian-axis-tick-value": {
+          fontSize: `${TICK_FONT_PX}px`,
+        },
+      }}
     >
       <Chart.Root
         maxH={expanded ? "75vh" : type === "pie" ? "190px" : "280px"}
@@ -779,7 +816,12 @@ export default function ChartWidget({
                 tickFormatter={(value: number) =>
                   type === "scatter"
                     ? String(formatYAxisLabel(value, chart.key(xAxis)))
-                    : String(formatXAxisLabel(value, chart.key(xAxis)))
+                    : String(
+                        (xTickFormatter ?? formatXAxisLabel)(
+                          value,
+                          chart.key(xAxis)
+                        )
+                      )
                 }
                 domain={type === "scatter" ? ["auto", "auto"] : undefined}
                 angle={needsAngledTicks ? -35 : 0}
