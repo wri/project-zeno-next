@@ -10,5 +10,10 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
   curated LGMS charts. Import from `@/src/shared/lib/chart-ticks`.
 - `lib/number-format/` — `signed`, the design's always-signed, two-significant-digit number format shared
   by the net-flux and flux-tree charts. Import from `@/src/shared/lib/number-format`.
+- `lib/tooltip-placement/` — `clampToViewport`, keeping a floating panel on screen; the placement
+  behind `ui/FloatingTooltip.tsx`. Import from `@/src/shared/lib/tooltip-placement`.
 - `ui/Pill.tsx` — the DETAIL/MEASURE dropdown pill shared by the net-flux and flux-tree curated
   charts. Import from `@/src/shared/ui/Pill`.
+- `ui/FloatingTooltip.tsx` — frame for a recharts tooltip that must escape a clipping or scrolling
+  chart ancestor: a portalled, fixed-position panel placed from chart pixels. Import from
+  `@/src/shared/ui/FloatingTooltip`.
