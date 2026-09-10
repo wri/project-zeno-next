@@ -1,22 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Box, Flex } from "@chakra-ui/react";
+import { Fragment, useEffect, useMemo, useRef } from "react";
+import { Box, type BoxProps, Flex, Text } from "@chakra-ui/react";
 
 import useAuthStore from "@/app/store/authStore";
-import type { InsightWidget } from "@/app/types/chat";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
-import { packCells } from "../lib/packing";
 import {
-  chartSize,
-  computeReorder,
-  dashboardWidgetToInsightWidgets,
+  computeSectionMove,
+  widgetContainers,
+  type WidgetContainer,
+} from "../model/dashboard-sections";
+import { computeWidgetMove } from "../model/widget-move";
+import {
+  insightWidgetSize,
   mapWidgetSize,
   widgetSize,
   widgetText,
-  withChartHidden,
-  withChartSize,
-  withChartTitle,
   withSize,
   withText,
   withWidgetTitle,
@@ -29,131 +28,332 @@ import {
 } from "../lib/mapWidgets";
 import {
   useDeleteWidget,
-  useReorderWidgets,
+  useMoveSections,
+  useMoveWidgets,
   useUpdateWidget,
 } from "./dashboardQueries";
+import { TWO_COLUMN_QUERY } from "./gridLayout";
+import DashboardInsightModule from "./DashboardInsightModule";
+import DashboardSection from "./DashboardSection";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
+import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
+import {
+  DRAG_ITEM_ATTR,
+  SECTION_ITEM_ATTR,
+  SECTION_ZONE_ATTR,
+  useDrag,
+  type DragState,
+} from "./useDrag";
 
 /**
- * Column count follows the grid's own width, not the viewport: the full-size
- * chat is a fixed overlay that narrows the content area without changing the
- * viewport, so a viewport breakpoint would keep two columns the cards can't
- * fit into (each has a real minimum — chart toolbar + axis margins — of
- * roughly 330px) and the grid would overflow the page horizontally. 700px
- * fits two minimum-width cards plus the gap.
+ * The body of a standalone (non-insight) grid item: the map layer for map
+ * widgets, the markdown text for notes, or placeholder copy when the config
+ * can't be rendered.
  */
-const TWO_COLUMN_QUERY = "@container widgets-grid (min-width: 700px)";
-
-/**
- * One grid cell. A widget whose insight has several charts renders one cell
- * per chart (each its own card, per design); map widgets render one cell
- * with `map` set; placeholder cells (unsupported widget type, hidden
- * insight, malformed map config) carry `card: null` and placeholder copy.
- */
-interface GridCell {
-  key: string;
-  widget: DashboardWidget;
-  card: InsightWidget | null;
+interface StandaloneBody {
   map: MapWidgetLayer | null;
   text: string | null;
   placeholder: string | null;
-  chartCount: number;
 }
 
-function cellsForWidget(
-  widget: DashboardWidget,
-  areaName: string | undefined
-): GridCell[] {
+function standaloneBody(widget: DashboardWidget): StandaloneBody {
   if (widget.widget_type === "map") {
     const map = mapWidgetLayer(widget.config);
-    return [
-      {
-        key: widget.id,
-        widget,
-        card: null,
-        map,
-        text: null,
-        placeholder: map ? null : "This map widget can't be displayed.",
-        chartCount: 0,
-      },
-    ];
+    return {
+      map,
+      text: null,
+      placeholder: map ? null : "This map widget can't be displayed.",
+    };
   }
   if (widget.widget_type === "text") {
     const text = widgetText(widget.config);
-    return [
-      {
-        key: widget.id,
-        widget,
-        card: null,
-        map: null,
-        text,
-        placeholder: text ? null : "This note is empty.",
-        chartCount: 0,
-      },
-    ];
+    return {
+      map: null,
+      text,
+      placeholder: text ? null : "This note is empty.",
+    };
   }
-  if (widget.widget_type !== "insight") {
-    return [
-      {
-        key: widget.id,
-        widget,
-        card: null,
-        map: null,
-        text: null,
-        placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
-        chartCount: 0,
-      },
-    ];
-  }
-  const cards = dashboardWidgetToInsightWidgets(widget, { areaName });
-  if (cards.length === 0) {
-    return [
-      {
-        key: widget.id,
-        widget,
-        card: null,
-        map: null,
-        text: null,
-        placeholder: "This analysis is not available.",
-        chartCount: 0,
-      },
-    ];
-  }
-  return cards.map((card) => ({
-    key: `${widget.id}:${card.id}`,
-    widget,
-    card,
+  return {
     map: null,
     text: null,
-    placeholder: null,
-    chartCount: cards.length,
-  }));
+    placeholder: `This ${widget.widget_type} widget isn't supported here yet.`,
+  };
 }
 
-/** The persisted column span for a cell (chart cells carry their own). */
-function cellSize(cell: GridCell): WidgetSize {
-  if (cell.card?.id) return chartSize(cell.widget.config, cell.card.id);
-  if (cell.widget.widget_type === "map")
-    return mapWidgetSize(cell.widget.config);
-  return widgetSize(cell.widget.config);
+/** The persisted column span for a top-level item. */
+function topLevelSize(widget: DashboardWidget): WidgetSize {
+  if (widget.widget_type === "insight") return insightWidgetSize(widget.config);
+  if (widget.widget_type === "map") return mapWidgetSize(widget.config);
+  return widgetSize(widget.config);
 }
 
 /**
- * The dashboard's widget grid. Reordering is native HTML5 drag-and-drop,
- * armed only while the card's drag handle is pressed (so text selection and
- * chart interactions inside the card keep working); the drop target gets the
- * design's dashed outline. Cells map 1:1 to charts, but position and column
- * span persist on the underlying widget via the PATCH endpoint
- * (optimistically, in dashboardQueries) — dragging any card of a multi-chart
- * widget moves the whole widget, and its cards stay adjacent.
+ * Where an item is lifted from: its box relative to `within` — the grid,
+ * whose container query makes it the containing block a lifted item is
+ * positioned in — and the pointer's offset inside it.
+ */
+function liftFrom(
+  event: React.PointerEvent,
+  item: Element | null,
+  within: Element | null
+): Pick<DragState, "rect" | "grab"> {
+  const box = item?.getBoundingClientRect();
+  const bounds = within?.getBoundingClientRect();
+  return {
+    rect: {
+      left: (box?.left ?? 0) - (bounds?.left ?? 0),
+      top: (box?.top ?? 0) - (bounds?.top ?? 0),
+      width: box?.width ?? 0,
+      height: box?.height ?? 0,
+    },
+    grab: {
+      x: event.clientX - (box?.left ?? 0),
+      y: event.clientY - (box?.top ?? 0),
+    },
+  };
+}
+
+/**
+ * The item in flight leaves the layout (its slot is the placeholder) and
+ * keeps its measured box, so a map inside never resizes. `useDrag` moves and
+ * shrinks it with a `transform`, around the grab point; the pick-up eases
+ * into that from flat.
+ */
+function liftedProps({ rect, grab, dropped }: DragState): BoxProps {
+  return {
+    position: "absolute",
+    _motionSafe: { animation: "dragLift 120ms ease" },
+    // Dropped: the slot marks the landing spot until the data catches up.
+    visibility: dropped ? "hidden" : undefined,
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    w: `${rect.width}px`,
+    transformOrigin: `${grab.x}px ${grab.y}px`,
+    opacity: 0.98,
+    zIndex: 2000,
+    pointerEvents: "none",
+    boxShadow: "0 16px 32px rgba(19,22,25,0.22), 0 3px 8px rgba(19,22,25,0.14)",
+  };
+}
+
+/** The item that just landed settles into its slot. */
+function landedProps(onSettle: () => void): BoxProps {
+  return {
+    _motionSafe: { animation: "scale-in 150ms ease-out" },
+    onAnimationEnd: onSettle,
+  };
+}
+
+/** The dashed slot a lifted item would drop into. */
+function DropSlot({ height, ...props }: { height: number } & BoxProps) {
+  return (
+    <Box
+      minW={0}
+      h={`${Math.max(height, 80)}px`}
+      bg="#F0F4FF"
+      border="2px dashed"
+      borderColor="primary.solid"
+      borderRadius="sm"
+      aria-hidden
+      {...props}
+    />
+  );
+}
+
+/** A grid item's flex basis: half a row for a single card, the whole row
+    for a double one; one column below `TWO_COLUMN_QUERY`. */
+function cellCss(double: boolean) {
+  return {
+    flex: "1 1 100%",
+    [TWO_COLUMN_QUERY]: { flex: `1 1 ${double ? "100%" : "calc(50% - 8px)"}` },
+  };
+}
+
+/**
+ * One container's grid — the ungrouped top level, or one section's widgets.
  *
- * Layout is `packCells`' segments rather than CSS grid rows: each card is
- * only as tall as its content, and a run of half-width cards deals into two
- * tightly-stacked columns so short cards don't leave voids beside tall
- * neighbours. Below `TWO_COLUMN_QUERY` everything is one column — the segment
- * wrappers flatten away (`display: contents`) and each card's `order` restores
- * the flat arrangement order.
+ * Cards flow in arrangement order into rows of at most two, per the design:
+ * a wrapping flex list where every card is a sibling. That is what makes the
+ * drop slot an exact preview — it takes a cell and every later card shifts
+ * along — and a lone card on the last row stretches to the full width.
+ *
+ * Items are keyed on `widget.id` — never fold position in, or React remounts
+ * map widgets mid-drag (see DashboardWidgetsGrid.reorder.test.tsx).
+ */
+function ContainerGrid({
+  dashboard,
+  container,
+  isOwner,
+  drag,
+  landed,
+  liftedRef,
+  onDragStart,
+  onSettle,
+}: {
+  dashboard: Dashboard;
+  container: WidgetContainer;
+  isOwner: boolean;
+  drag: DragState | null;
+  /** The widget that just landed, until its settle animation ends. */
+  landed: string | null;
+  /** Attached to the card in flight, which the drag moves via `transform`. */
+  liftedRef: React.Ref<HTMLDivElement>;
+  onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
+  onSettle: () => void;
+}) {
+  const updateWidget = useUpdateWidget(dashboard.id);
+  const deleteWidget = useDeleteWidget(dashboard.id);
+
+  const areaAoi = dashboard.aois[0];
+
+  const isDropTarget = !!drag && drag.key === container.key;
+  const slotBeforeId = isDropTarget ? drag.beforeId : null;
+  // The slot takes the cell the card in flight would: its own span.
+  const dragged = drag && dashboard.widgets.find((w) => w.id === drag.id);
+
+  const toggleSize = (widget: DashboardWidget) =>
+    updateWidget.mutate({
+      widgetId: widget.id,
+      patch: {
+        config: withSize(
+          widget.config,
+          topLevelSize(widget) === "double" ? "single" : "double"
+        ),
+      },
+    });
+
+  const placeholder = (
+    <DropSlot
+      data-testid="widget-drop-slot"
+      height={drag?.rect.height ?? 0}
+      css={cellCss(!!dragged && topLevelSize(dragged) === "double")}
+    />
+  );
+
+  const renderWidget = (widget: DashboardWidget) => {
+    const size = topLevelSize(widget);
+    const body =
+      widget.widget_type === "insight" ? null : standaloneBody(widget);
+    const title =
+      body?.map?.title ??
+      (typeof widget.config.title === "string" ? widget.config.title : "");
+    const lifted = drag?.id === widget.id ? drag : null;
+    const armDrag = (event: React.PointerEvent) => onDragStart(event, widget);
+
+    return (
+      <Box
+        key={widget.id}
+        ref={lifted ? liftedRef : undefined}
+        // The drop hit-test resolves its target from the DOM, so each item
+        // names the widget it carries — except the one in flight, which can't
+        // be a slot for itself.
+        data-widget-id={widget.id}
+        {...(lifted ? {} : { [DRAG_ITEM_ATTR]: widget.id })}
+        minW={0}
+        css={cellCss(size === "double")}
+        borderRadius="sm"
+        {...(lifted && liftedProps(lifted))}
+        {...(landed === widget.id && landedProps(onSettle))}
+      >
+        <DashboardWidgetBoundary resetKey={JSON.stringify(widget.config)}>
+          {widget.widget_type === "insight" ? (
+            <DashboardInsightModule
+              widget={widget}
+              areaAoi={areaAoi}
+              isOwner={isOwner}
+              isDouble={size === "double"}
+              onArmDrag={armDrag}
+              onToggleSize={() => toggleSize(widget)}
+              onUpdateConfig={(config) =>
+                updateWidget.mutate({ widgetId: widget.id, patch: { config } })
+              }
+              onRemove={() => deleteWidget.mutate(widget.id)}
+            />
+          ) : widget.widget_type === "text" ? (
+            <DashboardTextWidgetCard
+              text={body?.text ?? null}
+              placeholder={body?.placeholder ?? null}
+              isOwner={isOwner}
+              isDouble={size === "double"}
+              onArmDrag={armDrag}
+              onToggleSize={() => toggleSize(widget)}
+              onSaveText={(next) =>
+                updateWidget.mutate({
+                  widgetId: widget.id,
+                  patch: { config: withText(widget.config, next) },
+                })
+              }
+              onRemove={() => deleteWidget.mutate(widget.id)}
+            />
+          ) : (
+            <DashboardWidgetCard
+              title={title}
+              card={null}
+              map={body?.map}
+              aoi={areaAoi}
+              viewportBbox={
+                body?.map ? mapWidgetViewportBbox(widget.config) : null
+              }
+              placeholder={body?.placeholder ?? null}
+              removeMode="widget"
+              isOwner={isOwner}
+              isDouble={size === "double"}
+              onArmDrag={armDrag}
+              onToggleSize={() => toggleSize(widget)}
+              onRename={
+                body?.placeholder
+                  ? undefined
+                  : (name) =>
+                      updateWidget.mutate({
+                        widgetId: widget.id,
+                        patch: { config: withWidgetTitle(widget.config, name) },
+                      })
+              }
+              onRemove={() => deleteWidget.mutate(widget.id)}
+            />
+          )}
+        </DashboardWidgetBoundary>
+      </Box>
+    );
+  };
+
+  if (container.widgets.length === 0) {
+    if (isDropTarget) return placeholder;
+    // An empty top level is only on screen mid-drag, as the panel the dragged
+    // widget can be put back into — it just holds the space.
+    return container.section ? (
+      <Text fontSize="14px" color="fg.muted">
+        Nothing in this section yet.
+      </Text>
+    ) : (
+      <Box minH="48px" />
+    );
+  }
+
+  return (
+    <Flex wrap="wrap" gap={4} align="flex-start">
+      {container.widgets.map((widget) => (
+        <Fragment key={widget.id}>
+          {slotBeforeId === widget.id && placeholder}
+          {renderWidget(widget)}
+        </Fragment>
+      ))}
+      {/* "After everything" — the one slot that follows no card. */}
+      {isDropTarget && slotBeforeId === null && placeholder}
+    </Flex>
+  );
+}
+
+/**
+ * The dashboard's widgets, grouped into their containers: the ungrouped
+ * top-level list first, then one panel per section (`widgetContainers` does
+ * the grouping — the API's flat `widgets` is never a render order on its own).
+ *
+ * Two drags live here. A widget drag can cross containers: a widget dropped
+ * in a section is a `section_id` PATCH alongside the renumbering of both
+ * containers (`computeWidgetMove`). A section drag reorders the panels
+ * themselves (`computeSectionMove`); the top-level panel always stays first.
  */
 export default function DashboardWidgetsGrid({
   dashboard,
@@ -162,240 +362,205 @@ export default function DashboardWidgetsGrid({
 }) {
   const userId = useAuthStore((s) => s.userId);
   const isOwner = !!userId && userId === dashboard.user_id;
+  const moveWidgets = useMoveWidgets(dashboard.id);
+  const moveSections = useMoveSections(dashboard.id);
 
-  const updateWidget = useUpdateWidget(dashboard.id);
-  const deleteWidget = useDeleteWidget(dashboard.id);
-  const reorderWidgets = useReorderWidgets(dashboard.id);
+  // Read by the drop callbacks, which outlive the render that created them.
+  const containersRef = useRef<WidgetContainer[]>([]);
+  // Lifted items are positioned inside this box.
+  const gridRef = useRef<HTMLDivElement>(null);
 
-  // grabbedKey arms draggable on one grid item; dragIndex/overIndex track the
-  // HTML5 drag in flight (cell indices).
-  const [grabbedKey, setGrabbedKey] = useState<string | null>(null);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
-
-  const widgets = useMemo(
-    () => [...dashboard.widgets].sort((a, b) => a.position - b.position),
-    [dashboard.widgets]
-  );
-  const areaAoi = dashboard.aois[0];
-  const areaName = areaAoi?.name;
-  const cells = useMemo(
-    () => widgets.flatMap((widget) => cellsForWidget(widget, areaName)),
-    [widgets, areaName]
-  );
-
-  const endDrag = () => {
-    setGrabbedKey(null);
-    setDragIndex(null);
-    setOverIndex(null);
-  };
-
-  // Cards of the same widget share a position — dropping on a sibling is a no-op.
-  const isDropTarget = (index: number) => {
-    const dragged = dragIndex !== null ? cells[dragIndex] : undefined;
-    const target = cells[index];
-    return !!dragged && !!target && dragged.widget.id !== target.widget.id;
-  };
-
-  const dropOn = (targetIndex: number) => {
-    const draggedCell = dragIndex !== null ? cells[dragIndex] : undefined;
-    const targetCell = cells[targetIndex];
-    if (
-      draggedCell &&
-      targetCell &&
-      draggedCell.widget.id !== targetCell.widget.id
-    ) {
-      const fromIndex = widgets.findIndex(
-        (w) => w.id === draggedCell.widget.id
+  const drag = useDrag({
+    onDrop: (widgetId, slot) => {
+      const containers = containersRef.current;
+      const target = containers.find((c) => c.key === slot.key);
+      if (!target) return false;
+      // The slot's index counts the container without the dragged widget,
+      // which is what `computeWidgetMove` expects.
+      const ids = target.widgets
+        .map((widget) => widget.id)
+        .filter((id) => id !== widgetId);
+      const at = slot.beforeId ? ids.indexOf(slot.beforeId) : -1;
+      const patches = computeWidgetMove(
+        containers,
+        widgetId,
+        slot.key,
+        at === -1 ? ids.length : at
       );
-      const toIndex = widgets.findIndex((w) => w.id === targetCell.widget.id);
-      if (fromIndex >= 0 && toIndex >= 0) {
-        const { patches } = computeReorder(widgets, fromIndex, toIndex);
-        if (patches.length > 0) reorderWidgets.mutate(patches);
-      }
-    }
-    endDrag();
-  };
+      if (patches.length > 0) moveWidgets.mutate(patches);
+      return patches.length > 0;
+    },
+  });
 
-  // Half-width runs deal into two packed columns; sizes and order both come
-  // from persisted widget state, so the packing is stable across loads.
-  const segments = useMemo(
-    () => packCells(cells, (cell) => cellSize(cell) === "double"),
-    [cells]
+  const sectionDrag = useDrag({
+    attrs: { zone: SECTION_ZONE_ATTR, item: SECTION_ITEM_ATTR },
+    tilt: 1,
+    onDrop: (sectionId, slot) => {
+      const ids = containersRef.current.flatMap((c) =>
+        c.section && c.section.id !== sectionId ? [c.section.id] : []
+      );
+      const at = slot.beforeId ? ids.indexOf(slot.beforeId) : -1;
+      const patches = computeSectionMove(
+        dashboard.sections,
+        sectionId,
+        at === -1 ? ids.length : at
+      );
+      if (patches.length > 0) moveSections.mutate(patches);
+      return patches.length > 0;
+    },
+  });
+
+  const dragState = drag.state;
+  const sectionState = sectionDrag.state;
+
+  // A dropped drag ends once the dashboard reflects the move (the optimistic
+  // update, or its rollback), so the item lands straight in its new slot.
+  const { finish: finishDrag } = drag;
+  const { finish: finishSectionDrag } = sectionDrag;
+  useEffect(() => {
+    finishDrag();
+    finishSectionDrag();
+  }, [dashboard, finishDrag, finishSectionDrag]);
+
+  // A drag keeps every container on screen, the empty ones included: the panel
+  // a widget was lifted out of has to stay somewhere it can go back to.
+  const containers = useMemo(
+    () =>
+      widgetContainers(dashboard, {
+        keepEmptySections: isOwner,
+        keepEmptyTopLevel: !!dragState,
+      }),
+    [dashboard, isOwner, dragState]
   );
+  useEffect(() => {
+    containersRef.current = containers;
+  });
+  const sections = containers.flatMap((c) => (c.section ? [c.section] : []));
 
-  const renderCell = (cell: GridCell, i: number) => {
-    const { widget, card } = cell;
-    const size = cellSize(cell);
-    const title =
-      card?.title ??
-      cell.map?.title ??
-      (typeof widget.config.title === "string" ? widget.config.title : "");
-    return (
-      <Box
-        key={cell.key}
-        // One column flattens the column wrappers, so the flat arrangement
-        // order is restored per card; in two columns, DOM order rules each
-        // column. Cards clip internally rather than force the page wider than
-        // the container near the two-column threshold.
-        minW={0}
-        css={{ order: i, [TWO_COLUMN_QUERY]: { order: 0 } }}
-        draggable={isOwner && grabbedKey === cell.key}
-        onDragStart={(e) => {
-          // Required for Firefox to initiate drag-and-drop.
-          e.dataTransfer.setData("text/plain", cell.key);
-          e.dataTransfer.effectAllowed = "move";
-          setDragIndex(i);
-        }}
-        onDragEnd={endDrag}
-        onDragOver={(e) => {
-          if (dragIndex === null) return;
-          e.preventDefault();
-          setOverIndex(i);
-        }}
-        onDrop={() => dropOn(i)}
-        opacity={dragIndex === i ? 0.4 : 1}
-        outline={
-          overIndex === i && dragIndex !== null && isDropTarget(i)
-            ? "2px dashed"
-            : undefined
-        }
-        outlineColor="primary.solid"
-        borderRadius="sm"
-      >
-        {widget.widget_type === "text" ? (
-          <DashboardTextWidgetCard
-            text={cell.text}
-            placeholder={cell.placeholder}
-            isOwner={isOwner}
-            isDouble={size === "double"}
-            onArmDrag={() => setGrabbedKey(cell.key)}
-            onDisarmDrag={() => setGrabbedKey(null)}
-            onToggleSize={() =>
-              updateWidget.mutate({
-                widgetId: widget.id,
-                patch: {
-                  config: withSize(
-                    widget.config,
-                    size === "double" ? "single" : "double"
-                  ),
-                },
-              })
-            }
-            onSaveText={(next) =>
-              updateWidget.mutate({
-                widgetId: widget.id,
-                patch: { config: withText(widget.config, next) },
-              })
-            }
-            onRemove={() => deleteWidget.mutate(widget.id)}
-          />
-        ) : (
-          <DashboardWidgetCard
-            title={title}
-            card={card}
-            map={cell.map}
-            aoi={areaAoi}
-            viewportBbox={
-              cell.map ? mapWidgetViewportBbox(widget.config) : null
-            }
-            placeholder={cell.placeholder}
-            chartCount={cell.chartCount}
-            isOwner={isOwner}
-            isDouble={size === "double"}
-            onArmDrag={() => setGrabbedKey(cell.key)}
-            onDisarmDrag={() => setGrabbedKey(null)}
-            onToggleSize={() =>
-              updateWidget.mutate({
-                widgetId: widget.id,
-                patch: {
-                  config: card?.id
-                    ? withChartSize(
-                        widget.config,
-                        card.id,
-                        size === "double" ? "single" : "double"
-                      )
-                    : withSize(
-                        widget.config,
-                        size === "double" ? "single" : "double"
-                      ),
-                },
-              })
-            }
-            onRename={
-              // Renamable only for renderable cells (map/imagery/chart);
-              // per-chart titles key on card.id, single-card widgets on
-              // config.title.
-              cell.placeholder
-                ? undefined
-                : (name) =>
-                    updateWidget.mutate({
-                      widgetId: widget.id,
-                      patch: {
-                        config: card?.id
-                          ? withChartTitle(widget.config, card.id, name)
-                          : withWidgetTitle(widget.config, name),
-                      },
-                    })
-            }
-            onRemove={() => {
-              // A chart card hides just its chart from the widget's shown
-              // set; the widget is deleted only when its last chart goes
-              // (or for placeholder cells that have no chart id).
-              const chartId = card?.id;
-              const charts = widget.insight?.charts;
-              if (!chartId || !charts) {
-                deleteWidget.mutate(widget.id);
-                return;
-              }
-              const allChartIds = [...charts]
-                .sort((a, b) => a.position - b.position)
-                .map((c) => c.id);
-              const next = withChartHidden(widget.config, chartId, allChartIds);
-              if (next === null) deleteWidget.mutate(widget.id);
-              else
-                updateWidget.mutate({
-                  widgetId: widget.id,
-                  patch: { config: next },
-                });
-            }}
-          />
-        )}
-      </Box>
+  // The keyboard route to the same reorder: the arrow keys on a section's
+  // handle move it one place. `from + delta` is already the target index in the
+  // list without the section itself, which is what `computeSectionMove` counts
+  // — and at either end it clamps to where the section is, so nothing is
+  // written.
+  const moveSection = (from: number, delta: -1 | 1) => {
+    const section = sections[from];
+    if (!section) return;
+    const patches = computeSectionMove(
+      dashboard.sections,
+      section.id,
+      from + delta
     );
+    if (patches.length > 0) moveSections.mutate(patches);
   };
 
   return (
-    <Box css={{ containerType: "inline-size", containerName: "widgets-grid" }}>
-      <Flex direction="column" gap={4} align="stretch">
-        {segments.map((segment) =>
-          segment.kind === "full" ? (
-            renderCell(segment.cell.item, segment.cell.index)
-          ) : (
-            <Flex
-              key={`columns-${segment.left[0]?.item.key ?? "empty"}`}
-              gap={4}
-              align="flex-start"
-              display="contents"
-              css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
-            >
-              {[segment.left, segment.right].map((column, side) => (
-                <Flex
-                  key={side === 0 ? "left" : "right"}
-                  direction="column"
-                  gap={4}
-                  flex="1"
-                  minW={0}
-                  display="contents"
-                  css={{ [TWO_COLUMN_QUERY]: { display: "flex" } }}
+    <Box
+      ref={gridRef}
+      css={{ containerType: "inline-size", containerName: "widgets-grid" }}
+    >
+      {/* Panels read as bands of the page: the grey gutter between them is the
+          only grey a widget ever sits next to. */}
+      <Flex
+        direction="column"
+        gap="12px"
+        align="stretch"
+        {...{ [SECTION_ZONE_ATTR]: "sections" }}
+      >
+        {containers.map((container) => {
+          const section = container.section;
+          const lifted =
+            section && sectionState?.id === section.id ? sectionState : null;
+          return (
+            <Fragment key={container.key}>
+              {section && sectionState?.beforeId === section.id && (
+                <DropSlot
+                  data-testid="section-drop-slot"
+                  height={sectionState.rect.height}
+                  borderRadius="8px"
+                />
+              )}
+              <Box
+                ref={lifted ? sectionDrag.liftedRef : undefined}
+                data-section-id={section?.id}
+                {...(section && !lifted
+                  ? { [SECTION_ITEM_ATTR]: section.id }
+                  : {})}
+                {...(lifted && liftedProps(lifted))}
+                {...(section &&
+                  sectionDrag.landed === section.id &&
+                  landedProps(sectionDrag.settle))}
+              >
+                <DashboardSection
+                  section={section}
+                  isOwner={isOwner}
+                  isDropTarget={!!dragState && dragState.key === container.key}
+                  dropZoneKey={container.key}
+                  onMove={
+                    section
+                      ? (delta) => moveSection(sections.indexOf(section), delta)
+                      : undefined
+                  }
+                  onArmDrag={
+                    section
+                      ? (event) => {
+                          const next = sections[sections.indexOf(section) + 1];
+                          sectionDrag.start(event, {
+                            id: section.id,
+                            key: "sections",
+                            // The slot opens where the section was.
+                            beforeId: next?.id ?? null,
+                            ...liftFrom(
+                              event,
+                              (event.currentTarget as HTMLElement).closest(
+                                "[data-section-id]"
+                              ),
+                              gridRef.current
+                            ),
+                          });
+                        }
+                      : undefined
+                  }
                 >
-                  {column.map((packed) =>
-                    renderCell(packed.item, packed.index)
-                  )}
-                </Flex>
-              ))}
-            </Flex>
-          )
+                  <ContainerGrid
+                    dashboard={dashboard}
+                    container={container}
+                    isOwner={isOwner}
+                    drag={dragState}
+                    landed={drag.landed}
+                    liftedRef={drag.liftedRef}
+                    onSettle={drag.settle}
+                    onDragStart={(event, widget) => {
+                      const next =
+                        container.widgets[
+                          container.widgets.indexOf(widget) + 1
+                        ];
+                      drag.start(event, {
+                        id: widget.id,
+                        key: container.key,
+                        // The slot opens where the card was.
+                        beforeId: next?.id ?? null,
+                        ...liftFrom(
+                          event,
+                          (event.currentTarget as HTMLElement).closest(
+                            "[data-widget-id]"
+                          ),
+                          gridRef.current
+                        ),
+                      });
+                    }}
+                  />
+                </DashboardSection>
+              </Box>
+            </Fragment>
+          );
+        })}
+        {/* "After everything" — the slot below the last section. */}
+        {sectionState && sectionState.beforeId === null && (
+          <DropSlot
+            data-testid="section-drop-slot"
+            height={sectionState.rect.height}
+            borderRadius="8px"
+          />
         )}
       </Flex>
     </Box>

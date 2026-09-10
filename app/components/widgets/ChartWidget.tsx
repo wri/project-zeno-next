@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { createElement, useMemo } from "react";
 import { Chart, useChart } from "@chakra-ui/charts";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import {
@@ -13,6 +13,7 @@ import {
   Cell,
   ScatterChart,
   Scatter,
+  ComposedChart,
   CartesianGrid,
   Label,
   Legend,
@@ -39,7 +40,8 @@ type ChartType =
   | "line"
   | "area"
   | "pie"
-  | "scatter";
+  | "scatter"
+  | "stacked-bar-with-line";
 
 const TICK_FONT_PX = 11;
 const CHAR_PX = 6.5; // empirical sans-serif glyph width at 11px
@@ -61,7 +63,8 @@ type ChartWrapperComponent =
   | typeof AreaChart
   | typeof LineChart
   | typeof PieChart
-  | typeof ScatterChart;
+  | typeof ScatterChart
+  | typeof ComposedChart;
 
 const chartWrappers: Record<ChartType, ChartWrapperComponent> = {
   bar: BarChart,
@@ -71,6 +74,7 @@ const chartWrappers: Record<ChartType, ChartWrapperComponent> = {
   area: AreaChart,
   pie: PieChart,
   scatter: ScatterChart,
+  "stacked-bar-with-line": ComposedChart,
 };
 
 interface ChartWidgetProps {
@@ -89,6 +93,69 @@ interface ChartWidgetProps {
    * deliberate layout rather than a small chart with stranded legend.
    */
   fullWidth?: boolean;
+  /**
+   * Render the built-in legend. Set false when the host supplies its own
+   * (the net-flux card groups its series into Emissions/Removals columns,
+   * which the generic legend can't express).
+   */
+  showLegend?: boolean;
+  /**
+   * Pin the y-axis to specific round-number ticks and the domain that holds
+   * them, instead of letting recharts pick. The curated net-flux card does
+   * this so its axis reads `1500 1000 500 0 -500` exactly as the design draws
+   * it. Both must be supplied together — ticks outside the domain don't render.
+   */
+  yTicks?: number[];
+  yDomain?: [number, number];
+  /**
+   * Format y-axis tick labels. Defaults to the shared `formatYAxisLabel`, which
+   * compacts at ≥1000 ("1.5K"); the net-flux card overrides it to print plain
+   * integers. Also drives the tick-width measurement, so the axis gutter is
+   * sized for the strings actually rendered.
+   */
+  yTickFormatter?: (value: number) => string;
+  /**
+   * Format x-axis tick labels. Defaults to the shared `formatXAxisLabel`; the
+   * net-flux card overrides it to abbreviate years ("'17") once its container
+   * gets too narrow for four digits per tick.
+   */
+  xTickFormatter?: (value: string | number, key?: string) => string;
+  /**
+   * Override the tooltip's content renderer entirely. Escape hatch for a
+   * chart whose series count makes the default per-series `Chart.Tooltip`
+   * list (one line per series) taller than the plot itself — the net-flux
+   * card's Full-detail view is 12 series tall. Takes recharts' own
+   * tooltip props, not `ChartWidgetProps`, plus `seriesOrder`: the series
+   * names in declaration (stacking) order, because recharts' `payload` order
+   * is its registration order and can differ.
+   */
+  tooltipContent?: (props: {
+    active?: boolean;
+    payload?: Array<{
+      dataKey?: string | number;
+      name?: string | number;
+      value?: number;
+      color?: string;
+    }>;
+    label?: string | number;
+    seriesOrder: string[];
+  }) => React.ReactNode;
+}
+
+/**
+ * Y-axis gutter width: tick text plus its margin, plus a title band ONLY when
+ * a y-axis title will actually render (`{yAxis && <Label .../>}` below) — an
+ * empty `yAxis` (the curated LGMS charts) got 22px of unused whitespace
+ * reserved for a title that never draws, crowding the plot and its x-axis
+ * ticks. Exported for a regression test; not meant as a general utility.
+ */
+export function computeYAxisWidth(
+  longestYTickChars: number,
+  hasYAxisTitle: boolean
+): number {
+  return Math.ceil(
+    longestYTickChars * CHAR_PX + TICK_MARGIN + (hasYAxisTitle ? TITLE_BAND : 0)
+  );
 }
 
 /** Chart types where a fit-to-data y-axis is honest and useful. */
@@ -327,6 +394,12 @@ export default function ChartWidget({
   expanded = false,
   fitYAxis = false,
   fullWidth = false,
+  showLegend = true,
+  yTicks,
+  yDomain,
+  yTickFormatter,
+  xTickFormatter,
+  tooltipContent,
 }: ChartWidgetProps) {
   const {
     data,
@@ -334,6 +407,7 @@ export default function ChartWidget({
     yAxis,
     type,
     seriesFields,
+    lineField,
     datasetName,
     colorMap,
     seriesColor,
@@ -347,11 +421,16 @@ export default function ChartWidget({
   const { data: formattedData, series } = useMemo(
     () =>
       xAxis
-        ? formatChartData(data, type, xAxis, yAxis, datasetName, seriesFields, {
-            colorMap,
-            seriesColor,
-            divergentColors,
-          })
+        ? formatChartData(
+            data,
+            type,
+            xAxis,
+            yAxis,
+            datasetName,
+            seriesFields,
+            { colorMap, seriesColor, divergentColors },
+            lineField
+          )
         : { data: [], series: [] },
     [
       data,
@@ -360,6 +439,7 @@ export default function ChartWidget({
       yAxis,
       datasetName,
       seriesFields,
+      lineField,
       colorMap,
       seriesColor,
       divergentColors,
@@ -449,11 +529,20 @@ export default function ChartWidget({
   let hasNegativeValues = false;
   let dataMinValue = Infinity;
   let dataMaxValue = -Infinity;
+  // The gutter has to be sized for the strings actually rendered, so the
+  // measurement below uses whatever formatter the axis will use.
+  const yTickLabel = (value: number) =>
+    yTickFormatter
+      ? yTickFormatter(value)
+      : String(formatYAxisLabel(value, yAxis));
   for (const row of formattedData) {
     const xFormatted =
       type === "scatter"
         ? formatYAxisLabel(Number(row[xAxis]), xAxis)
-        : formatXAxisLabel(row[xAxis] as string | number, xAxis);
+        : (xTickFormatter ?? formatXAxisLabel)(
+            row[xAxis] as string | number,
+            xAxis
+          );
     longestXTickChars = Math.max(longestXTickChars, String(xFormatted).length);
 
     for (const k of yKeys) {
@@ -462,11 +551,14 @@ export default function ChartWidget({
       if (v < 0) hasNegativeValues = true;
       dataMinValue = Math.min(dataMinValue, v);
       dataMaxValue = Math.max(dataMaxValue, v);
-      longestYTickChars = Math.max(
-        longestYTickChars,
-        formatYAxisLabel(v, yAxis).length
-      );
+      longestYTickChars = Math.max(longestYTickChars, yTickLabel(v).length);
     }
+  }
+
+  // Pinned ticks can sit outside the data range (the domain is padded out to
+  // the next round number), so they get measured too.
+  for (const tick of yTicks ?? []) {
+    longestYTickChars = Math.max(longestYTickChars, yTickLabel(tick).length);
   }
 
   const xAxisHeight = needsAngledTicks
@@ -478,9 +570,7 @@ export default function ChartWidget({
       )
     : TICK_MARGIN + TICK_FONT_PX + TITLE_BAND;
 
-  const yAxisWidth = Math.ceil(
-    longestYTickChars * CHAR_PX + TICK_MARGIN + TITLE_BAND
-  );
+  const yAxisWidth = computeYAxisWidth(longestYTickChars, Boolean(yAxis));
 
   const animationProps = {
     isAnimationActive: animate,
@@ -604,6 +694,41 @@ export default function ChartWidget({
           </Bar>
         ));
       }
+      case "stacked-bar-with-line": {
+        return chart.series.map((item) =>
+          item.name === lineField ? (
+            <Line
+              key={item.name}
+              type="monotone"
+              name={item.name?.toString()}
+              dataKey={chart.key(item.name)}
+              stroke={chart.color(item.color)}
+              strokeWidth={2}
+              dot={{ r: 3, strokeWidth: 1, fill: chart.color(item.color) }}
+              activeDot={{
+                r: 4.5,
+                strokeWidth: 2,
+                stroke: "var(--chakra-colors-bg)",
+              }}
+              {...animationProps}
+            />
+          ) : (
+            <Bar
+              key={item.name}
+              name={item.name?.toString()}
+              dataKey={chart.key(item.name)}
+              stackId="a"
+              fill={chart.color(item.color)}
+              {...animationProps}
+            >
+              {typeof formattedData[0]?._barColor === "string" &&
+                formattedData.map((entry, index) => (
+                  <Cell key={index} fill={String(entry._barColor)} />
+                ))}
+            </Bar>
+          )
+        );
+      }
       default:
         return null;
     }
@@ -638,6 +763,19 @@ export default function ChartWidget({
         outlineColor: "primary.focusRing",
         outlineOffset: "2px",
       }}
+      // Recharts' `tick={{ fontSize }}` renders an SVG `font-size`
+      // presentation attribute, which loses to Chakra's CSS reset — ticks
+      // render at the inherited ~16-12px, not TICK_FONT_PX. That under-sized
+      // the CHAR_PX-based width/height measurements below, which `yAxisWidth`
+      // used to over-cover thanks to an unrelated 22px title-band margin;
+      // removing that margin (see `yAxisWidth`) exposed the mismatch as
+      // clipped tick text ("1500" rendering as "500"). Same fix as
+      // `GhgFluxTreeChart`: force the real font-size in CSS instead.
+      css={{
+        "& .recharts-cartesian-axis-tick-value": {
+          fontSize: `${TICK_FONT_PX}px`,
+        },
+      }}
     >
       <Chart.Root
         maxH={expanded ? "75vh" : type === "pie" ? "190px" : "280px"}
@@ -645,34 +783,50 @@ export default function ChartWidget({
         overflow="hidden"
       >
         <ChartTypeWrapper
+          // Remount when the series set changes. Recharts stacks bars and
+          // orders the tooltip payload by registration order, and a series
+          // kept across a change (same `Bar` key) keeps its old slot while
+          // the new ones register behind it — e.g. the LGMS agriculture bars
+          // when the card swaps roll-ups — so the stack would draw out of
+          // order.
+          key={yKeys.join("|")}
           data={chart.data}
           // Anchor area fills to the data minimum when fitting, so the 0
           // baseline stops forcing the y-domain down to zero.
           {...(type === "area" && fitYAxis
             ? { baseValue: "dataMin" as const }
             : {})}
+          // Diverging stacks (emissions up / removals down) need the sign
+          // offset: recharts' default accumulates the running total ignoring
+          // sign, which draws negative segments back down from the positive
+          // total instead of below the zero line.
+          {...(type === "stacked-bar-with-line"
+            ? { stackOffset: "sign" as const }
+            : {})}
         >
           {type !== "pie" && (
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
           )}
-          <Legend
-            content={
-              type === "pie" ? (
-                <CustomPieLegend series={chart.series} shares={pieShares} />
-              ) : (
-                <Chart.Legend />
-              )
-            }
-            align={type === "pie" ? "right" : "left"}
-            layout={type === "pie" ? "vertical" : "horizontal"}
-            verticalAlign={type === "pie" ? "middle" : "top"}
-            wrapperStyle={{
-              paddingBottom: "0.5rem",
-              maxHeight: "100%",
-              width: type === "pie" ? "42%" : undefined,
-              overflow: "hidden",
-            }}
-          />
+          {showLegend && (
+            <Legend
+              content={
+                type === "pie" ? (
+                  <CustomPieLegend series={chart.series} shares={pieShares} />
+                ) : (
+                  <Chart.Legend />
+                )
+              }
+              align={type === "pie" ? "right" : "left"}
+              layout={type === "pie" ? "vertical" : "horizontal"}
+              verticalAlign={type === "pie" ? "middle" : "top"}
+              wrapperStyle={{
+                paddingBottom: "0.5rem",
+                maxHeight: "100%",
+                width: type === "pie" ? "42%" : undefined,
+                overflow: "hidden",
+              }}
+            />
+          )}
           {type !== "pie" && (
             <>
               <XAxis
@@ -690,7 +844,12 @@ export default function ChartWidget({
                 tickFormatter={(value: number) =>
                   type === "scatter"
                     ? String(formatYAxisLabel(value, chart.key(xAxis)))
-                    : String(formatXAxisLabel(value, chart.key(xAxis)))
+                    : String(
+                        (xTickFormatter ?? formatXAxisLabel)(
+                          value,
+                          chart.key(xAxis)
+                        )
+                      )
                 }
                 domain={type === "scatter" ? ["auto", "auto"] : undefined}
                 angle={needsAngledTicks ? -35 : 0}
@@ -724,20 +883,28 @@ export default function ChartWidget({
                 width={yAxisWidth}
                 tickMargin={TICK_MARGIN}
                 tickFormatter={(value: number) =>
-                  String(formatYAxisLabel(value, chart.key(yAxis)))
+                  yTickFormatter
+                    ? yTickFormatter(value)
+                    : String(formatYAxisLabel(value, chart.key(yAxis)))
                 }
+                ticks={yTicks}
+                // Every pinned tick is rendered; letting recharts thin them
+                // can drop the zero tick the bars are measured against.
+                interval={yTicks ? 0 : undefined}
                 axisLine={false}
                 tickLine={false}
                 // Default: floor at 0 for all-positive data, but extend below
                 // zero for divergent datasets (e.g. GHG net flux sinks) so
                 // negative bars aren't clipped. "Fit y-axis" rescales to the
-                // data range for flat line/area/scatter series.
+                // data range for flat line/area/scatter series. A caller-pinned
+                // domain wins over both — it's what holds the pinned ticks.
                 domain={
-                  fitYAxis &&
+                  yDomain ??
+                  (fitYAxis &&
                   AXIS_FIT_TYPES.has(type) &&
                   Number.isFinite(dataMinValue)
                     ? [niceFloor(dataMinValue, dataMaxValue), "auto"]
-                    : [(dataMin: number) => Math.min(0, dataMin), "auto"]
+                    : [(dataMin: number) => Math.min(0, dataMin), "auto"])
                 }
                 // Without this, recharts re-expands a fitted domain to cover
                 // the 0 baseline that area fills contribute.
@@ -776,6 +943,8 @@ export default function ChartWidget({
                 <CustomScatterTooltip />
               ) : type === "pie" ? (
                 <CustomPieTooltip total={pieTotal} />
+              ) : tooltipContent ? (
+                createElement(tooltipContent, { seriesOrder: yKeys })
               ) : (
                 <Chart.Tooltip
                   formatter={(value) =>

@@ -63,7 +63,6 @@ export default function DashboardTextWidgetCard({
   isOwner,
   isDouble,
   onArmDrag,
-  onDisarmDrag,
   onToggleSize,
   onSaveText,
   onRemove,
@@ -75,8 +74,7 @@ export default function DashboardTextWidgetCard({
   isOwner: boolean;
   isDouble: boolean;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
-  onArmDrag: () => void;
-  onDisarmDrag: () => void;
+  onArmDrag: (event: React.PointerEvent) => void;
   onToggleSize: () => void;
   /** Persist the edited markdown (blank clears the note). */
   onSaveText: (text: string) => void;
@@ -296,7 +294,6 @@ export default function DashboardTextWidgetCard({
                   flexShrink={0}
                   aria-label="Drag to reposition"
                   onPointerDown={onArmDrag}
-                  onPointerUp={onDisarmDrag}
                 />
               )}
               <InsightCaption />
