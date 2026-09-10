@@ -362,19 +362,22 @@ describe("netFluxTooltipRows", () => {
     expect(net).toBe(850);
   });
 
-  it("omits a series that draws no segment because its value is 0", () => {
-    const withZeros = fullDetailPayload.map((entry) =>
-      entry.dataKey === "organic_soil_emissions" ||
-      entry.dataKey === "cropland_emissions" ||
-      entry.dataKey === "livestock_emissions"
-        ? { ...entry, value: 0 }
-        : entry
+  /** The full-detail payload with these series zeroed out. */
+  const zeroed = (...keys: string[]) =>
+    fullDetailPayload.map((entry) =>
+      keys.includes(String(entry.dataKey)) ? { ...entry, value: 0 } : entry
     );
-    const { rows } = netFluxTooltipRows(withZeros, fullDetailOrder);
-    const labels = rows.map((r) => r.label);
-    expect(labels).not.toContain("Organic soil");
-    expect(labels).not.toContain("Agriculture (static)");
-    expect(labels).toEqual([
+
+  it("omits a series that draws no segment because its value is 0", () => {
+    const { rows } = netFluxTooltipRows(
+      zeroed(
+        "organic_soil_emissions",
+        "cropland_emissions",
+        "livestock_emissions"
+      ),
+      fullDetailOrder
+    );
+    expect(rows.map((r) => r.label)).toEqual([
       "Mineral soil",
       "Non-trees rem. non-trees",
       "Trees rem. trees",
@@ -387,10 +390,10 @@ describe("netFluxTooltipRows", () => {
   });
 
   it("keeps the agriculture row while either of its classes is non-zero", () => {
-    const croplandOnly = fullDetailPayload.map((entry) =>
-      entry.dataKey === "livestock_emissions" ? { ...entry, value: 0 } : entry
+    const { rows } = netFluxTooltipRows(
+      zeroed("livestock_emissions"),
+      fullDetailOrder
     );
-    const { rows } = netFluxTooltipRows(croplandOnly, fullDetailOrder);
     const agriculture = rows.find((r) => r.key === "agriculture");
     expect(agriculture?.value).toBe(150);
   });
