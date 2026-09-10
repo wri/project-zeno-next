@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 import { Box, Flex, Heading, Link as ChakraLink, Text } from "@chakra-ui/react";
 import { LockIcon, PolygonIcon } from "@phosphor-icons/react";
 

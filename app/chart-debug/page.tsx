@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound } from "@/app/lib/router";
 import ChartDebugPanel from "./ChartDebugPanel";
 
 export const metadata = { title: "Chart Debug", robots: "noindex, nofollow" };

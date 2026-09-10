@@ -2,7 +2,7 @@ import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { usePromptStore } from "../store/promptStore";
 import useChatStore from "../store/chatStore";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "@/app/lib/router";
 import { firstMessageRedirectPath } from "../utils/threadNavigation";
 
 export default function SamplePrompts() {

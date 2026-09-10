@@ -12,15 +12,12 @@ vi.mock("@/app/components/ui/toaster", () => ({
   Toaster: () => null,
 }));
 
-// The breadcrumb renders a next/link; outside a Next router it needs a stand-in.
-vi.mock("next/link", () => ({
-  default: ({
-    href,
-    children,
-  }: {
-    href: string;
-    children: React.ReactNode;
-  }) => <a href={href}>{children}</a>,
+// The breadcrumb renders a router Link; outside a router it needs a stand-in.
+vi.mock("@/app/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 import { toaster } from "@/app/components/ui/toaster";

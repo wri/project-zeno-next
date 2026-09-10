@@ -11,17 +11,12 @@ vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
   Toaster: () => null,
 }));
-vi.mock("next/navigation", () => ({
+vi.mock("@/app/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   useParams: () => ({ id: "d1" }),
-}));
-vi.mock("next/link", () => ({
-  default: ({
-    href,
-    children,
-  }: {
-    href: string;
-    children: React.ReactNode;
-  }) => <a href={href}>{children}</a>,
+  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 vi.mock("../../api/dashboards", async (importOriginal) => ({
   ...(await importOriginal<object>()),

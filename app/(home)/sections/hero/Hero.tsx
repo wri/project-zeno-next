@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/lib/router";
 import {
   Box,
   Button,

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Menu, IconButton } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/lib/router";
 import useSidebarStore from "../store/sidebarStore";
 import useChatStore from "../store/chatStore";
 import {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams } from "@/app/lib/router";
 import { useEffect } from "react";
 import { Box, Container, Flex, Spinner, Text } from "@chakra-ui/react";
 
