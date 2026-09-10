@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, type RefObject } from "react";
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { FLUX_UNITS } from "@/src/shared/lib/units";
@@ -16,6 +16,7 @@ import {
 
 import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
+import { FloatingTooltip } from "@/src/shared/ui/FloatingTooltip";
 
 import {
   singleSidedLabel,
@@ -204,13 +205,36 @@ interface TreeTooltipProps {
   payload?: Array<{ payload: PlotRow }>;
   rows: FluxRow[];
   measure: FluxMeasure;
+  /** The plot column the chart fills; the pinned spot is measured from it. */
+  anchorRef: RefObject<HTMLElement | null>;
 }
 
-/** Bar-hover tooltip: category, value and units — matching the time series' `ChartWidget` tooltip pattern. */
-function GhgFluxTooltip({ active, payload, rows, measure }: TreeTooltipProps) {
+/**
+ * Bar-hover tooltip: category, value and units — matching the time series'
+ * `ChartWidget` tooltip pattern. The panel is taller than a row and the plot
+ * has no empty space in either axis (every pixel band belongs to some row's
+ * bar), so recharts' default cursor-following placement would always cover
+ * bars. It is pinned instead: x escapes the plot to the left, over the
+ * bar-free tree-label column; y is the hovered row's own top, from the uniform
+ * row pitch the whole chart is laid out on (see the file doc comment). The
+ * pinned spot usually lies outside the chart, which is why `FloatingTooltip`
+ * renders the panel rather than recharts.
+ */
+function GhgFluxTooltip({
+  active,
+  payload,
+  rows,
+  measure,
+  anchorRef,
+}: TreeTooltipProps) {
   if (!active || !payload?.length) return null;
-  const row = rows.find((r) => r.node.id === payload[0].payload.id);
-  if (!row) return null;
+  const index = rows.findIndex((r) => r.node.id === payload[0].payload.id);
+  if (index < 0) return null;
+  const row = rows[index];
+  const point = {
+    x: -(TOOLTIP_WIDTH + 8),
+    y: AXIS_HEIGHT + index * ROW_HEIGHT,
+  };
 
   const line = (label: string, value: number | null, color?: string) => (
     <Flex key={label} justify="space-between" gap={4} fontSize="xs">
@@ -229,33 +253,35 @@ function GhgFluxTooltip({ active, payload, rows, measure }: TreeTooltipProps) {
   );
 
   return (
-    <Box
-      bg="bg.panel"
-      p={2}
-      py={1}
-      borderRadius="md"
-      boxShadow="md"
-      border="1px"
-      borderColor="border"
-      css={{
-        maxWidth: `${TOOLTIP_WIDTH}px`,
-        whiteSpace: "normal",
-        wordWrap: "break-word",
-      }}
-    >
-      <Text fontSize="xs" fontWeight="medium" mb={1}>
-        {row.node.label}
-      </Text>
-      <Flex direction="column" gap={0.5}>
-        {measure === "gross" &&
-          row.node.avgEmissions != null &&
-          line("Emissions", row.node.avgEmissions, EMISSIONS_COLOR)}
-        {measure === "gross" &&
-          row.node.avgRemovals != null &&
-          line("Removals", row.node.avgRemovals, REMOVALS_COLOR)}
-        {line("Net flux", row.net)}
-      </Flex>
-    </Box>
+    <FloatingTooltip anchorRef={anchorRef} point={point}>
+      <Box
+        bg="bg.panel"
+        p={2}
+        py={1}
+        borderRadius="md"
+        boxShadow="md"
+        border="1px"
+        borderColor="border"
+        css={{
+          maxWidth: `${TOOLTIP_WIDTH}px`,
+          whiteSpace: "normal",
+          wordWrap: "break-word",
+        }}
+      >
+        <Text fontSize="xs" fontWeight="medium" mb={1}>
+          {row.node.label}
+        </Text>
+        <Flex direction="column" gap={0.5}>
+          {measure === "gross" &&
+            row.node.avgEmissions != null &&
+            line("Emissions", row.node.avgEmissions, EMISSIONS_COLOR)}
+          {measure === "gross" &&
+            row.node.avgRemovals != null &&
+            line("Removals", row.node.avgRemovals, REMOVALS_COLOR)}
+          {line("Net flux", row.net)}
+        </Flex>
+      </Box>
+    </FloatingTooltip>
   );
 }
 
@@ -303,21 +329,8 @@ export function GhgFluxTreeChart({
 
   const height = AXIS_HEIGHT + rows.length * ROW_HEIGHT;
 
-  // The tooltip is taller than a row and the plot has no empty space in
-  // either axis (every pixel band belongs to some row's bar), so recharts'
-  // default cursor-following placement always sits on top of bars. Pin it
-  // instead: x escapes the plot to the left, over the bar-free tree-label
-  // column; y is computed from the hovered row's own index, using this
-  // component's own uniform row pitch (see the file doc comment) rather than
-  // trusting recharts' cursor coordinate.
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const tooltipPosition =
-    activeIndex == null
-      ? undefined
-      : {
-          x: -(TOOLTIP_WIDTH + 8),
-          y: AXIS_HEIGHT + activeIndex * ROW_HEIGHT,
-        };
+  // `GhgFluxTooltip` pins its panel relative to the plot column; see there.
+  const plotRef = useRef<HTMLDivElement>(null);
 
   return (
     <Flex align="flex-start" w="full">
@@ -345,6 +358,7 @@ export function GhgFluxTreeChart({
           silently render at the inherited 16px. That is what made five axis
           labels impossible to fit. */}
       <Box
+        ref={plotRef}
         flex="1"
         minW={`${PLOT_MIN_WIDTH}px`}
         position="relative"
@@ -365,13 +379,6 @@ export function GhgFluxTreeChart({
               bottom: 0,
               left: PLOT_MARGIN_X,
             }}
-            onMouseMove={(state) => {
-              // recharts reports `activeTooltipIndex` as a numeric string
-              // (`"0"`, `"1"`, ...), not a number.
-              const index = Number(state?.activeTooltipIndex);
-              setActiveIndex(Number.isInteger(index) ? index : null);
-            }}
-            onMouseLeave={() => setActiveIndex(null)}
           >
             <XAxis
               type="number"
@@ -392,10 +399,13 @@ export function GhgFluxTreeChart({
             <ReferenceLine x={0} stroke={ZERO_LINE_COLOR} strokeWidth={1} />
             <Tooltip
               cursor={{ fill: "var(--chakra-colors-black-alpha-200)" }}
-              content={<GhgFluxTooltip rows={rows} measure={measure} />}
-              position={tooltipPosition}
-              allowEscapeViewBox={{ x: true }}
-              wrapperStyle={{ pointerEvents: "none" }}
+              content={
+                <GhgFluxTooltip
+                  rows={rows}
+                  measure={measure}
+                  anchorRef={plotRef}
+                />
+              }
             />
             {measure === "net" ? (
               <Bar dataKey="net" barSize={BAR_SIZE} isAnimationActive={false}>
