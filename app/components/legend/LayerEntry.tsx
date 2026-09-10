@@ -213,14 +213,18 @@ function ContextLayerRow(props: {
         <Text fontSize="xs" color="fg.muted" fontStyle="italic" flexShrink={0}>
           within
         </Text>
-        {/* Colour swatch */}
-        <Box
-          w="10px"
-          h="10px"
-          borderRadius="2px"
-          bg={contextLayer.color}
-          flexShrink={0}
-        />
+        {/* Colour swatch — stands in for a single-class layer's symbology.
+            Multi-class layers render the full list below instead, where the
+            same colour already leads the first row. */}
+        {!contextLayer.symbology && (
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="2px"
+            bg={contextLayer.color}
+            flexShrink={0}
+          />
+        )}
         <Text fontSize="xs" truncate flex={1}>
           {contextLayer.title}
         </Text>
@@ -268,6 +272,11 @@ function ContextLayerRow(props: {
           </OpacityControl>
         </ButtonGroup>
       </Flex>
+      {contextLayer.symbology && (
+        <Box pl={8} fontSize="xs">
+          {contextLayer.symbology}
+        </Box>
+      )}
     </Flex>
   );
 }

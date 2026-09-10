@@ -31,6 +31,10 @@ const TOOL_DISPLAY: Record<string, { active: string; error: string }> = {
     active: "Loading satellite imagery",
     error: "Unable to load satellite imagery. Please try again.",
   },
+  show_planet_imagery: {
+    active: "Loading satellite imagery",
+    error: "Unable to load satellite imagery. Please try again.",
+  },
 };
 
 const DEFAULT_TOOL_ERROR = "Unable to process this step. Please try again.";
