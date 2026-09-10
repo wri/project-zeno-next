@@ -8,7 +8,7 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
   megatonnes the curated charts display. Import from `@/src/shared/lib/units`.
 - `lib/chart-ticks/` — `niceStep`, `niceTicks`, `formatTick`, round-number y-axis ticks for the
   curated LGMS charts. Import from `@/src/shared/lib/chart-ticks`.
-- `lib/number-format/` — `signed`, `signedPlain`, the design's always-signed number format shared
+- `lib/number-format/` — `signed`, the design's always-signed, two-significant-digit number format shared
   by the net-flux and flux-tree charts. Import from `@/src/shared/lib/number-format`.
 - `ui/Pill.tsx` — the DETAIL/MEASURE dropdown pill shared by the net-flux and flux-tree curated
   charts. Import from `@/src/shared/ui/Pill`.

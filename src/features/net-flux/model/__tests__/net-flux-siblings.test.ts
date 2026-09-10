@@ -121,10 +121,20 @@ describe("netFluxWidgetDetailLabel", () => {
 });
 
 describe("netFluxSiblings", () => {
-  it("returns the three roll-ups, in the order the backend sent", () => {
-    expect(netFluxSiblings(ANALYSIS, CATEGORY).map((w) => w.id)).toEqual([
-      "ins1-chart-0",
+  it("leads with Category, then the rest in the order the backend sent", () => {
+    // The backend emits Full detail first; the DETAIL menu opens on and lists
+    // Category first instead, so the same order feeds the pill's options.
+    expect(netFluxSiblings(ANALYSIS, FULL).map((w) => w.id)).toEqual([
       "ins1-chart-1",
+      "ins1-chart-0",
+      "ins1-chart-2",
+    ]);
+  });
+
+  it("keeps the backend order when no Category roll-up is present", () => {
+    const partial = [FULL, SUMMARY];
+    expect(netFluxSiblings(partial, SUMMARY).map((w) => w.id)).toEqual([
+      "ins1-chart-0",
       "ins1-chart-2",
     ]);
   });
@@ -135,10 +145,10 @@ describe("netFluxSiblings", () => {
 });
 
 describe("collapseNetFluxSiblings", () => {
-  it("folds the three roll-ups into one entry, defaulting to the first", () => {
+  it("folds the three roll-ups into one entry, defaulting to Category", () => {
     const out = collapseNetFluxSiblings(ANALYSIS, {});
     expect(out.map((w) => w.id)).toEqual([
-      "ins1-chart-0", // the group, represented by Full Detail
+      "ins1-chart-1", // the group, represented by Category
       "ins1-chart-3", // hierarchy passes through
       "ins2-chart-0", // unrelated insight passes through
     ]);
@@ -158,9 +168,9 @@ describe("collapseNetFluxSiblings", () => {
     expect(out[0].title).toBe("Net GHG Flux Summary");
   });
 
-  it("falls back to the first sibling if the selection is stale", () => {
+  it("falls back to the default detail if the selection is stale", () => {
     const out = collapseNetFluxSiblings(ANALYSIS, { ins1: "deleted-chart" });
-    expect(out[0].id).toBe("ins1-chart-0");
+    expect(out[0].id).toBe("ins1-chart-1");
   });
 
   it("keeps groups from separate analyses independent", () => {
@@ -172,7 +182,7 @@ describe("collapseNetFluxSiblings", () => {
       ins9: "ins9-chart-1",
     });
     expect(out.map((w) => w.id)).toEqual([
-      "ins1-chart-0",
+      "ins1-chart-1", // unselected group opens on Category
       "ins1-chart-3",
       "ins2-chart-0",
       "ins9-chart-1",

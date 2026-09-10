@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { createElement, useMemo } from "react";
 import { Chart, useChart } from "@chakra-ui/charts";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import {
@@ -125,7 +125,9 @@ interface ChartWidgetProps {
    * chart whose series count makes the default per-series `Chart.Tooltip`
    * list (one line per series) taller than the plot itself — the net-flux
    * card's Full-detail view is 12 series tall. Takes recharts' own
-   * tooltip props, not `ChartWidgetProps`.
+   * tooltip props, not `ChartWidgetProps`, plus `seriesOrder`: the series
+   * names in declaration (stacking) order, because recharts' `payload` order
+   * is its registration order and can differ.
    */
   tooltipContent?: (props: {
     active?: boolean;
@@ -136,6 +138,7 @@ interface ChartWidgetProps {
       color?: string;
     }>;
     label?: string | number;
+    seriesOrder: string[];
   }) => React.ReactNode;
 }
 
@@ -780,6 +783,13 @@ export default function ChartWidget({
         overflow="hidden"
       >
         <ChartTypeWrapper
+          // Remount when the series set changes. Recharts stacks bars and
+          // orders the tooltip payload by registration order, and a series
+          // kept across a change (same `Bar` key) keeps its old slot while
+          // the new ones register behind it — e.g. the LGMS agriculture bars
+          // when the card swaps roll-ups — so the stack would draw out of
+          // order.
+          key={yKeys.join("|")}
           data={chart.data}
           // Anchor area fills to the data minimum when fitting, so the 0
           // baseline stops forcing the y-domain down to zero.
@@ -934,7 +944,7 @@ export default function ChartWidget({
               ) : type === "pie" ? (
                 <CustomPieTooltip total={pieTotal} />
               ) : tooltipContent ? (
-                tooltipContent
+                createElement(tooltipContent, { seriesOrder: yKeys })
               ) : (
                 <Chart.Tooltip
                   formatter={(value) =>

@@ -240,6 +240,28 @@ export interface NetFluxTooltipEntry {
   color?: string;
 }
 
+/** The series a tooltip entry belongs to, as recharts names it. */
+function entryField(entry: NetFluxTooltipEntry): string {
+  return String(entry.dataKey ?? entry.name ?? "");
+}
+
+/**
+ * Recharts hands the tooltip its entries in the order the series *registered*
+ * with its store, not the order the bars are declared and stacked in, and a
+ * bar that re-renders on its own re-registers at the end. Sorting by the
+ * declared order pins the rows to the stack regardless; entries not in it (the
+ * net-flux line) sort last, keeping their relative order.
+ */
+function inStackOrder(
+  payload: NetFluxTooltipEntry[],
+  seriesOrder: readonly string[]
+): NetFluxTooltipEntry[] {
+  const rank = new Map(seriesOrder.map((field, index) => [field, index]));
+  const at = (entry: NetFluxTooltipEntry) =>
+    rank.get(entryField(entry)) ?? seriesOrder.length;
+  return [...payload].sort((a, b) => at(a) - at(b));
+}
+
 /**
  * Tooltip rows for one hovered x-value, in the design's own order: emissions
  * top-of-stack first (so the list reads down the bar as drawn), then removals
@@ -247,18 +269,22 @@ export interface NetFluxTooltipEntry {
  * chart. Agriculture's two classes fold into one row where the first of them
  * falls. Series the active measure doesn't draw simply aren't in `payload`, so
  * the row list follows the Measure/Detail the user picked without being told
- * which one it is.
+ * which one it is, and a series whose value is 0 that year draws no segment,
+ * so it gets no row either. `seriesOrder` is the series' declaration order,
+ * i.e. the stacking order (see `inStackOrder` for why the payload's own order
+ * won't do).
  */
 export function netFluxTooltipRows(
-  payload: NetFluxTooltipEntry[]
+  payload: NetFluxTooltipEntry[],
+  seriesOrder: readonly string[]
 ): NetFluxTooltipModel {
   const emissions: NetFluxTooltipRow[] = [];
   const removals: NetFluxTooltipRow[] = [];
   let agriculture: NetFluxTooltipRow | null = null;
   let net: number | null = null;
 
-  for (const entry of payload) {
-    const field = String(entry.dataKey ?? entry.name ?? "");
+  for (const entry of inStackOrder(payload, seriesOrder)) {
+    const field = entryField(entry);
     const value = entry.value;
     if (field === NET_FLUX_LINE_FIELD) {
       net = typeof value === "number" ? value : null;
@@ -293,7 +319,14 @@ export function netFluxTooltipRows(
     (group === "emissions" ? emissions : removals).push(row);
   }
 
-  return { rows: [...emissions.reverse(), ...removals], net };
+  // Filtered after folding so agriculture only disappears when both of its
+  // classes are 0, not when one of them is.
+  return {
+    rows: [...emissions.reverse(), ...removals].filter(
+      (row) => row.value !== 0
+    ),
+    net,
+  };
 }
 
 /**

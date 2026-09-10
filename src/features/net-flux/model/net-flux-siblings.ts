@@ -39,7 +39,24 @@ export function netFluxDetailLabel(title: string): string {
   return title.trim();
 }
 
-/** Every chart sharing this widget's group, in the order the backend sent. */
+/**
+ * The roll-up a group opens on, and the first DETAIL option. The backend sends
+ * Full detail first, but eleven series is too dense a first read; Category
+ * shows what drives the flux at a glance, so it leads and Full/Summary follow
+ * in the order the backend sent them.
+ */
+const DEFAULT_DETAIL_LABEL = "Category";
+
+/** The default detail first, then the rest in the order the backend sent. */
+function orderSiblings(group: InsightWidget[]): InsightWidget[] {
+  const lead = group.findIndex(
+    (w) => netFluxWidgetDetailLabel(w) === DEFAULT_DETAIL_LABEL
+  );
+  if (lead <= 0) return group;
+  return [group[lead], ...group.slice(0, lead), ...group.slice(lead + 1)];
+}
+
+/** Every chart sharing this widget's group, default detail first. */
 export function netFluxSiblings(
   insights: InsightWidget[],
   widget: InsightWidget
@@ -47,13 +64,13 @@ export function netFluxSiblings(
   const key = netFluxGroupKey(widget);
   if (!key) return [widget];
   const group = insights.filter((w) => netFluxGroupKey(w) === key);
-  return group.length > 0 ? group : [widget];
+  return group.length > 0 ? orderSiblings(group) : [widget];
 }
 
 /**
  * The workspace's pager list with each net-flux group folded to a single
  * entry — the sibling currently selected by its DETAIL pill, defaulting to the
- * first the backend sent (Full detail).
+ * group's lead roll-up (Category, per `orderSiblings`).
  *
  * Without this the three roll-ups would be three pager entries *and* three
  * DETAIL options, giving two competing ways to reach the same chart.
@@ -74,7 +91,9 @@ export function collapseNetFluxSiblings(
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const group = insights.filter((w) => netFluxGroupKey(w) === key);
+    const group = orderSiblings(
+      insights.filter((w) => netFluxGroupKey(w) === key)
+    );
     const selectedId = selectedByGroup[key];
     out.push(group.find((w) => w.id === selectedId) ?? group[0]);
   }
