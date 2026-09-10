@@ -1,1 +1,1 @@
-export { signed, signedPlain } from "./number-format";
+export { signed } from "./number-format";
