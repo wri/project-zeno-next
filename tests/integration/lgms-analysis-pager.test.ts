@@ -106,7 +106,9 @@ describe("LGMS analysis → insight workspace pager", () => {
 
   it("leads with the time-series, not the last chart the generator emitted", () => {
     const { entries } = pagerEntries();
-    expect(entries[0].backendTitle).toBe("Net GHG Flux — Full Detail");
+    // The group is represented by its default DETAIL (Category), not by the
+    // Full-detail chart the generator happens to emit first.
+    expect(entries[0].backendTitle).toBe("Net GHG Flux by Category");
     expect(entries[1].backendTitle).toBe("Net GHG Flux — Annual Average");
   });
 
