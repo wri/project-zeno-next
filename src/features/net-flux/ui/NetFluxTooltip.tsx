@@ -28,6 +28,8 @@ interface NetFluxTooltipProps {
   payload?: NetFluxTooltipEntry[];
   /** The hovered x value — the year, which the design uses as the heading. */
   label?: string | number;
+  /** The stacking order, supplied by `ChartWidget`; see `netFluxTooltipRows`. */
+  seriesOrder: readonly string[];
 }
 
 function Row({ row }: { row: NetFluxTooltipRow }) {
@@ -66,10 +68,11 @@ export function NetFluxTooltip({
   active,
   payload,
   label,
+  seriesOrder,
 }: NetFluxTooltipProps) {
   if (!active || !payload?.length) return null;
 
-  const { rows, net } = netFluxTooltipRows(payload);
+  const { rows, net } = netFluxTooltipRows(payload, seriesOrder);
   if (rows.length === 0 && net == null) return null;
 
   return (

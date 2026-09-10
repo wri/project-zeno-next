@@ -282,9 +282,21 @@ describe("netFluxTooltipRows", () => {
     { dataKey: "mineral_soil_removals", value: -75, color: "#003c30" },
     { dataKey: "Net flux", value: 850, color: "#172b7a" },
   ];
+  /** The declaration order `ChartWidget` passes — here the payload's own. */
+  const fullDetailOrder = fullDetailPayload.map((e) => e.dataKey);
+
+  const categoryOrder = [
+    "vegetation_emissions",
+    "soil_emissions",
+    "cropland_emissions",
+    "livestock_emissions",
+    "vegetation_removals",
+    "soil_removals",
+    "Net flux",
+  ];
 
   it("orders emissions top-of-stack first, then removals, as the legend does", () => {
-    const { rows } = netFluxTooltipRows(fullDetailPayload);
+    const { rows } = netFluxTooltipRows(fullDetailPayload, fullDetailOrder);
     expect(rows.map((r) => r.label)).toEqual([
       "Agriculture (static)",
       "Organic soil",
@@ -300,7 +312,7 @@ describe("netFluxTooltipRows", () => {
   });
 
   it("folds cropland and livestock into one hatched agriculture row", () => {
-    const { rows } = netFluxTooltipRows(fullDetailPayload);
+    const { rows } = netFluxTooltipRows(fullDetailPayload, fullDetailOrder);
     const agriculture = rows.filter((r) => r.label === "Agriculture (static)");
     expect(agriculture).toHaveLength(1);
     expect(agriculture[0].value).toBe(250);
@@ -308,30 +320,38 @@ describe("netFluxTooltipRows", () => {
   });
 
   it("takes the net total from the line, not from the bars", () => {
-    expect(netFluxTooltipRows(fullDetailPayload).net).toBe(850);
+    expect(netFluxTooltipRows(fullDetailPayload, fullDetailOrder).net).toBe(
+      850
+    );
   });
 
   it("reduces to the net row alone for the net measure", () => {
     // The net measure draws one bar whose name carries no group suffix; it
     // holds the same value as the line, so it must not become its own row.
-    const { rows, net } = netFluxTooltipRows([
-      { dataKey: "Net source", value: 850, color: "#8c510a" },
-      { dataKey: "Net flux", value: 850, color: "#172b7a" },
-    ]);
+    const { rows, net } = netFluxTooltipRows(
+      [
+        { dataKey: "Net source", value: 850, color: "#8c510a" },
+        { dataKey: "Net flux", value: 850, color: "#172b7a" },
+      ],
+      ["Net source", "Net flux"]
+    );
     expect(rows).toEqual([]);
     expect(net).toBe(850);
   });
 
   it("lists whatever the active detail level draws", () => {
-    const { rows, net } = netFluxTooltipRows([
-      { dataKey: "vegetation_emissions", value: 810, color: "#8c510a" },
-      { dataKey: "soil_emissions", value: 540, color: "#dfc27d" },
-      { dataKey: "cropland_emissions", value: 150, color: HATCH_CROPLAND },
-      { dataKey: "livestock_emissions", value: 100, color: HATCH_LIVESTOCK },
-      { dataKey: "vegetation_removals", value: -675, color: "#01665e" },
-      { dataKey: "soil_removals", value: -75, color: "#80cdc1" },
-      { dataKey: "Net flux", value: 850, color: "#172b7a" },
-    ]);
+    const { rows, net } = netFluxTooltipRows(
+      [
+        { dataKey: "vegetation_emissions", value: 810, color: "#8c510a" },
+        { dataKey: "soil_emissions", value: 540, color: "#dfc27d" },
+        { dataKey: "cropland_emissions", value: 150, color: HATCH_CROPLAND },
+        { dataKey: "livestock_emissions", value: 100, color: HATCH_LIVESTOCK },
+        { dataKey: "vegetation_removals", value: -675, color: "#01665e" },
+        { dataKey: "soil_removals", value: -75, color: "#80cdc1" },
+        { dataKey: "Net flux", value: 850, color: "#172b7a" },
+      ],
+      categoryOrder
+    );
     expect(rows.map((r) => r.label)).toEqual([
       "Agriculture (static)",
       "Soil",
@@ -339,6 +359,66 @@ describe("netFluxTooltipRows", () => {
       "Vegetation",
       "Soil",
     ]);
+    expect(net).toBe(850);
+  });
+
+  it("omits a series that draws no segment because its value is 0", () => {
+    const withZeros = fullDetailPayload.map((entry) =>
+      entry.dataKey === "organic_soil_emissions" ||
+      entry.dataKey === "cropland_emissions" ||
+      entry.dataKey === "livestock_emissions"
+        ? { ...entry, value: 0 }
+        : entry
+    );
+    const { rows } = netFluxTooltipRows(withZeros, fullDetailOrder);
+    const labels = rows.map((r) => r.label);
+    expect(labels).not.toContain("Organic soil");
+    expect(labels).not.toContain("Agriculture (static)");
+    expect(labels).toEqual([
+      "Mineral soil",
+      "Non-trees rem. non-trees",
+      "Trees rem. trees",
+      "Tree loss",
+      "Tree gain",
+      "Trees remaining",
+      "Non-trees",
+      "Mineral",
+    ]);
+  });
+
+  it("keeps the agriculture row while either of its classes is non-zero", () => {
+    const croplandOnly = fullDetailPayload.map((entry) =>
+      entry.dataKey === "livestock_emissions" ? { ...entry, value: 0 } : entry
+    );
+    const { rows } = netFluxTooltipRows(croplandOnly, fullDetailOrder);
+    const agriculture = rows.find((r) => r.key === "agriculture");
+    expect(agriculture?.value).toBe(150);
+  });
+
+  it("follows the stacking order when recharts' payload order has drifted", () => {
+    // The order recharts is left with after a Full → Category switch: the two
+    // agriculture bars survive the switch and keep their slots, the rest
+    // register behind them, and the line re-registers last.
+    const drifted = [
+      { dataKey: "cropland_emissions", value: 150, color: HATCH_CROPLAND },
+      { dataKey: "livestock_emissions", value: 100, color: HATCH_LIVESTOCK },
+      { dataKey: "soil_removals", value: -75, color: "#80cdc1" },
+      { dataKey: "vegetation_removals", value: -675, color: "#01665e" },
+      { dataKey: "soil_emissions", value: 540, color: "#dfc27d" },
+      { dataKey: "vegetation_emissions", value: 810, color: "#8c510a" },
+      { dataKey: "Net flux", value: 850, color: "#172b7a" },
+    ];
+
+    const { rows, net } = netFluxTooltipRows(drifted, categoryOrder);
+
+    expect(rows.map((r) => r.label)).toEqual([
+      "Agriculture (static)",
+      "Soil",
+      "Vegetation",
+      "Vegetation",
+      "Soil",
+    ]);
+    expect(rows.find((r) => r.key === "agriculture")?.value).toBe(250);
     expect(net).toBe(850);
   });
 });
