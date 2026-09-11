@@ -699,7 +699,9 @@ export default function ChartWidget({
           item.name === lineField ? (
             <Line
               key={item.name}
-              type="monotone"
+              // Straight segments: the line is a per-year total, and a curve
+              // through the points reads as smoothing the data never had.
+              type="linear"
               name={item.name?.toString()}
               dataKey={chart.key(item.name)}
               stroke={chart.color(item.color)}
