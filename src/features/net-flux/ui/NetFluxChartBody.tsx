@@ -17,8 +17,6 @@ import {
 import { NetFluxHatchDefs, NetFluxLegend } from "./NetFluxLegend";
 import { NetFluxTooltip } from "./NetFluxTooltip";
 
-const EN_DASH = "–";
-
 interface NetFluxChartBodyProps {
   /** The widget already narrowed to the active measure. */
   widget: InsightWidget;
@@ -49,8 +47,7 @@ function endpoints(
 
 /**
  * The design's chart header: the named metric with its value at each end of
- * the series and the units, then the direction/detail line, then the fixed
- * caption describing the series.
+ * the series and the units, then the direction/detail line.
  */
 function TimeSeriesHeader({
   variant,
@@ -72,10 +69,6 @@ function TimeSeriesHeader({
   // means it is absorbing more than it emits (a sink).
   const direction = last.value >= 0 ? "net source" : "net sink";
   const label = measure === "net" ? "Net only" : detailLabel;
-  const range =
-    first.year === last.year
-      ? first.year
-      : `${first.year}${EN_DASH}${last.year}`;
 
   return (
     <Flex direction="column" gap="3px">
@@ -100,15 +93,6 @@ function TimeSeriesHeader({
       </Text>
       <Text fontFamily="mono" fontSize="10px" color="#656E7B">
         {direction} · {label}
-      </Text>
-      <Text
-        fontFamily="body"
-        fontSize="12px"
-        fontWeight="normal"
-        lineHeight="16px"
-        color="#282D33"
-      >
-        Land use annual · {range} · Agriculture fixed 2020
       </Text>
     </Flex>
   );
