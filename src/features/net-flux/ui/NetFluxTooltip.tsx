@@ -63,8 +63,8 @@ function Row({ row }: { row: NetFluxTooltipRow }) {
  * `tooltipContent` prop) for two reasons: that one can't render the hatched
  * agriculture swatches, and it lists cropland and livestock separately where
  * the design folds them into one "Agriculture (static)" row. Values carry no
- * unit — the axis and the stat line above the chart both already state it,
- * and repeating it on a dozen rows is what made the tooltip outgrow the plot.
+ * unit — the y-axis title already states it, and repeating it on a dozen rows
+ * is what made the tooltip outgrow the plot.
  */
 export function NetFluxTooltip({
   active,
