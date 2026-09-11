@@ -32,7 +32,7 @@ import {
   useMoveWidgets,
   useUpdateWidget,
 } from "./dashboardQueries";
-import { TWO_COLUMN_QUERY } from "./gridLayout";
+import { GRID_GAP_PX, TWO_COLUMN_QUERY } from "./gridLayout";
 import DashboardInsightModule from "./DashboardInsightModule";
 import DashboardSection from "./DashboardSection";
 import DashboardWidgetCard from "./DashboardWidgetCard";
@@ -161,12 +161,17 @@ function DropSlot({ height, ...props }: { height: number } & BoxProps) {
   );
 }
 
+/** A single card's cell: half the row minus its share of the gap. */
+const HALF_ROW = `calc(50% - ${GRID_GAP_PX / 2}px)`;
+
 /** A grid item's flex basis: half a row for a single card, the whole row
-    for a double one; one column below `TWO_COLUMN_QUERY`. */
+    for a double one; one column below `TWO_COLUMN_QUERY`. Cells never grow,
+    so a single card alone in a row keeps its half-row cell and the size
+    toggle always has a visible effect. */
 function cellCss(double: boolean) {
   return {
     flex: "1 1 100%",
-    [TWO_COLUMN_QUERY]: { flex: `1 1 ${double ? "100%" : "calc(50% - 8px)"}` },
+    [TWO_COLUMN_QUERY]: { flex: `0 1 ${double ? "100%" : HALF_ROW}` },
   };
 }
 
@@ -176,7 +181,7 @@ function cellCss(double: boolean) {
  * Cards flow in arrangement order into rows of at most two, per the design:
  * a wrapping flex list where every card is a sibling. That is what makes the
  * drop slot an exact preview — it takes a cell and every later card shifts
- * along — and a lone card on the last row stretches to the full width.
+ * along.
  *
  * Items are keyed on `widget.id` — never fold position in, or React remounts
  * map widgets mid-drag (see DashboardWidgetsGrid.reorder.test.tsx).
@@ -332,7 +337,7 @@ function ContainerGrid({
   }
 
   return (
-    <Flex wrap="wrap" gap={4} align="flex-start">
+    <Flex wrap="wrap" gap={`${GRID_GAP_PX}px`} align="flex-start">
       {container.widgets.map((widget) => (
         <Fragment key={widget.id}>
           {slotBeforeId === widget.id && placeholder}
