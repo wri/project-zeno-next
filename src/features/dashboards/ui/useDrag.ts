@@ -88,10 +88,12 @@ function zoneAt(x: number, y: number, zoneAttr: string): HTMLElement | null {
  *
  * A zone may wrap at two columns, so it holds several visual rows: pick the
  * row the cursor is over, then the first item in it whose centre is still
- * right of the cursor; past every item in the row, the next row's first. A
- * row holding one item is full-width, and there the cursor's side of its
- * vertical middle decides, since a stack of full-width items is read down the
- * page.
+ * right of the cursor; past every item in the row, the next row's first. For
+ * a full-width item the cursor's side of its vertical middle decides instead,
+ * since a stack of full-width items is read down the page — measured, not
+ * inferred from the row's count: a row can hold a lone half-width card (odd
+ * count, or a single next to a double), and there the empty half means
+ * "after", like any other cell to the card's right.
  */
 export function insertBefore(
   zone: HTMLElement,
@@ -122,12 +124,13 @@ export function insertBefore(
   const rowIndex = found === -1 ? rows.length - 1 : found;
   const row = rows[rowIndex];
 
+  const only = row.items.length === 1 ? row.items[0] : null;
+  const onlyRect = only?.getBoundingClientRect();
   const after =
-    row.items.length === 1
-      ? row.items.find((item) => {
-          const r = item.getBoundingClientRect();
-          return y < r.top + r.height / 2;
-        })
+    only && onlyRect && onlyRect.width > zone.clientWidth * 0.75
+      ? y < onlyRect.top + onlyRect.height / 2
+        ? only
+        : undefined
       : row.items.find((item) => {
           const r = item.getBoundingClientRect();
           return r.left + r.width / 2 > x;

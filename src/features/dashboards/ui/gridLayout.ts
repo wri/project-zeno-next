@@ -9,3 +9,10 @@
  * Resolved against the grid's own `widgets-grid` container.
  */
 export const TWO_COLUMN_QUERY = "@container widgets-grid (min-width: 700px)";
+
+/**
+ * The gap between grid cells, in px. A single card's half-row basis subtracts
+ * half of it, and with `flex-grow: 0` that arithmetic is exact — so the grid's
+ * `gap` and the cell basis must both derive from this constant.
+ */
+export const GRID_GAP_PX = 16;
