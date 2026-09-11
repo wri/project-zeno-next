@@ -233,13 +233,25 @@ export interface NetFluxTooltipRow {
   color: string;
 }
 
+/**
+ * The tooltip's closing line: the sum of the rows above it, printed bold so
+ * it reads as a total and not as one more series.
+ */
+export interface NetFluxTooltipTotal {
+  label: string;
+  value: number;
+  /** Swatch colour — the net measure tints its total by sign like its bar. */
+  color?: string;
+}
+
 export interface NetFluxTooltipModel {
   rows: NetFluxTooltipRow[];
   /**
-   * The net-flux line's own value, which the design prints below a rule. Null
-   * under the net measure, whose single sign-labelled row already is the total.
+   * The net-flux line's own value, which the design prints below a rule; under
+   * the net measure it is the only line, labelled by sign. Null only when the
+   * payload carried no line.
    */
-  net: number | null;
+  total: NetFluxTooltipTotal | null;
 }
 
 /** What recharts hands a tooltip content renderer, narrowed to what's used. */
@@ -273,16 +285,15 @@ function inStackOrder(
 }
 
 /**
- * The net measure's one tooltip row. Its bar and the net-flux line carry the
+ * The net measure's one tooltip line. Its bar and the net-flux line carry the
  * same value, so printing both read as a duplicate in review; the bar wins,
  * labelled and tinted by sign exactly as the flat legend names it, so the
  * hover ties back to the legend rather than to a "Net flux" total the
  * measure has no breakdown for. Zero counts as a source, as the header does.
  */
-function netMeasureTooltipRow(value: number): NetFluxTooltipRow {
+function netMeasureTotal(value: number): NetFluxTooltipTotal {
   const sink = value < 0;
   return {
-    key: NET_MEASURE_FIELD,
     label: sink ? NET_SINK_LABEL : NET_SOURCE_LABEL,
     value,
     color: sink ? NET_SINK_COLOR : NET_SOURCE_COLOR,
@@ -298,8 +309,8 @@ function netMeasureTooltipRow(value: number): NetFluxTooltipRow {
  * the row list follows the Measure/Detail the user picked without being told
  * which one it is, and a series whose value is 0 that year draws no segment,
  * so it gets no row either. Under the net measure the payload holds only the
- * collapsed bar and the line, and the model reduces to one sign-labelled row
- * (see `netMeasureTooltipRow`). `seriesOrder` is the series' declaration
+ * collapsed bar and the line, and the model reduces to a sign-labelled total
+ * with no rows (see `netMeasureTotal`). `seriesOrder` is the series' declaration
  * order, i.e. the stacking order (see `inStackOrder` for why the payload's
  * own order won't do).
  */
@@ -354,7 +365,7 @@ export function netFluxTooltipRows(
   // Not filtered on zero: a bar at 0 is still the year's answer under the net
   // measure, where there is nothing else to show.
   if (netMeasure != null) {
-    return { rows: [netMeasureTooltipRow(netMeasure)], net: null };
+    return { rows: [], total: netMeasureTotal(netMeasure) };
   }
 
   // Filtered after folding so agriculture only disappears when both of its
@@ -363,7 +374,7 @@ export function netFluxTooltipRows(
     rows: [...emissions.reverse(), ...removals].filter(
       (row) => row.value !== 0
     ),
-    net,
+    total: net == null ? null : { label: NET_FLUX_LINE_FIELD, value: net },
   };
 }
 

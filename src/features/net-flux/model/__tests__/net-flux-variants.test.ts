@@ -319,16 +319,16 @@ describe("netFluxTooltipRows", () => {
     expect(isPaintReference(agriculture[0].color)).toBe(true);
   });
 
-  it("takes the net total from the line, not from the bars", () => {
-    expect(netFluxTooltipRows(fullDetailPayload, fullDetailOrder).net).toBe(
-      850
-    );
+  it("takes the total from the line, not from the bars, and names it Net flux", () => {
+    expect(
+      netFluxTooltipRows(fullDetailPayload, fullDetailOrder).total
+    ).toEqual({ label: "Net flux", value: 850 });
   });
 
   describe("net measure", () => {
     // The net measure's bar and line carry the same value, so the tooltip
-    // shows it once: as a row labelled by sign like the legend, not as the
-    // "Net flux" total (that name stays on the table column).
+    // shows it once: as the bold total, labelled and swatched by sign like the
+    // legend rather than "Net flux" (that name stays on the table column).
     const netPayload = (value: number) => [
       { dataKey: "Net source", value, color: "#8c510a" },
       { dataKey: "Net flux", value, color: "#172b7a" },
@@ -336,35 +336,34 @@ describe("netFluxTooltipRows", () => {
     const netOrder = ["Net source", "Net flux"];
 
     it("shows a positive year once, as a source", () => {
-      const { rows, net } = netFluxTooltipRows(netPayload(850), netOrder);
-      expect(rows).toEqual([
-        {
-          key: "Net source",
-          label: "Net source",
-          value: 850,
-          color: "#8c510a",
-        },
-      ]);
-      expect(net).toBeNull();
+      const { rows, total } = netFluxTooltipRows(netPayload(850), netOrder);
+      expect(rows).toEqual([]);
+      expect(total).toEqual({
+        label: "Net source",
+        value: 850,
+        color: "#8c510a",
+      });
     });
 
     it("shows a negative year once, as a sink", () => {
-      const { rows, net } = netFluxTooltipRows(netPayload(-320), netOrder);
-      expect(rows).toEqual([
-        { key: "Net source", label: "Net sink", value: -320, color: "#01665e" },
-      ]);
-      expect(net).toBeNull();
+      const { rows, total } = netFluxTooltipRows(netPayload(-320), netOrder);
+      expect(rows).toEqual([]);
+      expect(total).toEqual({
+        label: "Net sink",
+        value: -320,
+        color: "#01665e",
+      });
     });
 
     it("keeps a zero year rather than showing nothing, and calls it a source", () => {
-      const { rows, net } = netFluxTooltipRows(netPayload(0), netOrder);
-      expect(rows.map((r) => r.label)).toEqual(["Net source"]);
-      expect(net).toBeNull();
+      const { rows, total } = netFluxTooltipRows(netPayload(0), netOrder);
+      expect(rows).toEqual([]);
+      expect(total?.label).toBe("Net source");
     });
   });
 
   it("lists whatever the active detail level draws", () => {
-    const { rows, net } = netFluxTooltipRows(
+    const { rows, total } = netFluxTooltipRows(
       [
         { dataKey: "vegetation_emissions", value: 810, color: "#8c510a" },
         { dataKey: "soil_emissions", value: 540, color: "#dfc27d" },
@@ -383,7 +382,7 @@ describe("netFluxTooltipRows", () => {
       "Vegetation",
       "Soil",
     ]);
-    expect(net).toBe(850);
+    expect(total).toEqual({ label: "Net flux", value: 850 });
   });
 
   it("omits a series that draws no segment because its value is 0", () => {
@@ -433,7 +432,7 @@ describe("netFluxTooltipRows", () => {
       { dataKey: "Net flux", value: 850, color: "#172b7a" },
     ];
 
-    const { rows, net } = netFluxTooltipRows(drifted, categoryOrder);
+    const { rows, total } = netFluxTooltipRows(drifted, categoryOrder);
 
     expect(rows.map((r) => r.label)).toEqual([
       "Agriculture (static)",
@@ -443,6 +442,6 @@ describe("netFluxTooltipRows", () => {
       "Soil",
     ]);
     expect(rows.find((r) => r.key === "agriculture")?.value).toBe(250);
-    expect(net).toBe(850);
+    expect(total).toEqual({ label: "Net flux", value: 850 });
   });
 });
