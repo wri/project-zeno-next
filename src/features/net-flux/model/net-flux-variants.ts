@@ -37,6 +37,13 @@ export const NET_FLUX_LINE_FIELD = "Net flux";
 /** Bar rendered for the "net" measure — tinted by sign. */
 const NET_MEASURE_FIELD = "Net source";
 
+/**
+ * What the net bar reads as at each sign — the legend's two entries and the
+ * tooltip's single row share these so they can never disagree.
+ */
+const NET_SOURCE_LABEL = "Net source";
+const NET_SINK_LABEL = "Net sink";
+
 const NET_SOURCE_COLOR = "#8c510a";
 const NET_SINK_COLOR = "#01665e";
 
@@ -228,7 +235,10 @@ export interface NetFluxTooltipRow {
 
 export interface NetFluxTooltipModel {
   rows: NetFluxTooltipRow[];
-  /** The net-flux line's own value, which the design prints below a rule. */
+  /**
+   * The net-flux line's own value, which the design prints below a rule. Null
+   * under the net measure, whose single sign-labelled row already is the total.
+   */
   net: number | null;
 }
 
@@ -263,6 +273,23 @@ function inStackOrder(
 }
 
 /**
+ * The net measure's one tooltip row. Its bar and the net-flux line carry the
+ * same value, so printing both read as a duplicate in review; the bar wins,
+ * labelled and tinted by sign exactly as the flat legend names it, so the
+ * hover ties back to the legend rather than to a "Net flux" total the
+ * measure has no breakdown for. Zero counts as a source, as the header does.
+ */
+function netMeasureTooltipRow(value: number): NetFluxTooltipRow {
+  const sink = value < 0;
+  return {
+    key: NET_MEASURE_FIELD,
+    label: sink ? NET_SINK_LABEL : NET_SOURCE_LABEL,
+    value,
+    color: sink ? NET_SINK_COLOR : NET_SOURCE_COLOR,
+  };
+}
+
+/**
  * Tooltip rows for one hovered x-value, in the design's own order: emissions
  * top-of-stack first (so the list reads down the bar as drawn), then removals
  * in stacking order — the same order `buildLegend` gives the legend below the
@@ -270,9 +297,11 @@ function inStackOrder(
  * falls. Series the active measure doesn't draw simply aren't in `payload`, so
  * the row list follows the Measure/Detail the user picked without being told
  * which one it is, and a series whose value is 0 that year draws no segment,
- * so it gets no row either. `seriesOrder` is the series' declaration order,
- * i.e. the stacking order (see `inStackOrder` for why the payload's own order
- * won't do).
+ * so it gets no row either. Under the net measure the payload holds only the
+ * collapsed bar and the line, and the model reduces to one sign-labelled row
+ * (see `netMeasureTooltipRow`). `seriesOrder` is the series' declaration
+ * order, i.e. the stacking order (see `inStackOrder` for why the payload's
+ * own order won't do).
  */
 export function netFluxTooltipRows(
   payload: NetFluxTooltipEntry[],
@@ -282,6 +311,7 @@ export function netFluxTooltipRows(
   const removals: NetFluxTooltipRow[] = [];
   let agriculture: NetFluxTooltipRow | null = null;
   let net: number | null = null;
+  let netMeasure: number | null = null;
 
   for (const entry of inStackOrder(payload, seriesOrder)) {
     const field = entryField(entry);
@@ -290,9 +320,11 @@ export function netFluxTooltipRows(
       net = typeof value === "number" ? value : null;
       continue;
     }
+    if (field === NET_MEASURE_FIELD) {
+      netMeasure = typeof value === "number" ? value : null;
+      continue;
+    }
     const group = seriesGroup(field);
-    // The "net" measure's single bar carries no group suffix; it holds the same
-    // value as the net-flux line, so the row below the rule already shows it.
     if (!group || typeof value !== "number") continue;
 
     if (AGRICULTURE_CLASSES.has(seriesClass(field))) {
@@ -317,6 +349,12 @@ export function netFluxTooltipRows(
       color: entry.color ?? SERIES_COLORS[field] ?? "currentColor",
     };
     (group === "emissions" ? emissions : removals).push(row);
+  }
+
+  // Not filtered on zero: a bar at 0 is still the year's answer under the net
+  // measure, where there is nothing else to show.
+  if (netMeasure != null) {
+    return { rows: [netMeasureTooltipRow(netMeasure)], net: null };
   }
 
   // Filtered after folding so agriculture only disappears when both of its
@@ -500,8 +538,8 @@ export function deriveNetFluxVariant(
       legend: {
         layout: "flat",
         emissions: [
-          { label: "Net source (+)", color: NET_SOURCE_COLOR },
-          { label: "Net sink (−)", color: NET_SINK_COLOR },
+          { label: `${NET_SOURCE_LABEL} (+)`, color: NET_SOURCE_COLOR },
+          { label: `${NET_SINK_LABEL} (−)`, color: NET_SINK_COLOR },
         ],
         removals: [],
       },

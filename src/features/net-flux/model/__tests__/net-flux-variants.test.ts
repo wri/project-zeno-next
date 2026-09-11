@@ -325,18 +325,42 @@ describe("netFluxTooltipRows", () => {
     );
   });
 
-  it("reduces to the net row alone for the net measure", () => {
-    // The net measure draws one bar whose name carries no group suffix; it
-    // holds the same value as the line, so it must not become its own row.
-    const { rows, net } = netFluxTooltipRows(
-      [
-        { dataKey: "Net source", value: 850, color: "#8c510a" },
-        { dataKey: "Net flux", value: 850, color: "#172b7a" },
-      ],
-      ["Net source", "Net flux"]
-    );
-    expect(rows).toEqual([]);
-    expect(net).toBe(850);
+  describe("net measure", () => {
+    // The net measure's bar and line carry the same value, so the tooltip
+    // shows it once: as a row labelled by sign like the legend, not as the
+    // "Net flux" total (that name stays on the table column).
+    const netPayload = (value: number) => [
+      { dataKey: "Net source", value, color: "#8c510a" },
+      { dataKey: "Net flux", value, color: "#172b7a" },
+    ];
+    const netOrder = ["Net source", "Net flux"];
+
+    it("shows a positive year once, as a source", () => {
+      const { rows, net } = netFluxTooltipRows(netPayload(850), netOrder);
+      expect(rows).toEqual([
+        {
+          key: "Net source",
+          label: "Net source",
+          value: 850,
+          color: "#8c510a",
+        },
+      ]);
+      expect(net).toBeNull();
+    });
+
+    it("shows a negative year once, as a sink", () => {
+      const { rows, net } = netFluxTooltipRows(netPayload(-320), netOrder);
+      expect(rows).toEqual([
+        { key: "Net source", label: "Net sink", value: -320, color: "#01665e" },
+      ]);
+      expect(net).toBeNull();
+    });
+
+    it("keeps a zero year rather than showing nothing, and calls it a source", () => {
+      const { rows, net } = netFluxTooltipRows(netPayload(0), netOrder);
+      expect(rows.map((r) => r.label)).toEqual(["Net source"]);
+      expect(net).toBeNull();
+    });
   });
 
   it("lists whatever the active detail level draws", () => {
