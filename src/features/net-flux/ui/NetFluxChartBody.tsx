@@ -52,7 +52,7 @@ function endpoints(
 
 /**
  * The design's chart header: the named metric with its value at each end of
- * the series. The unit is on the y-axis.
+ * the series, followed by the unit.
  */
 function TimeSeriesHeader({
   variant,
@@ -68,9 +68,9 @@ function TimeSeriesHeader({
   return (
     <Text
       fontFamily="body"
-      fontWeight="medium"
+      fontWeight="normal"
       color="#172B7A"
-      fontSize="18px"
+      fontSize="15px"
       lineHeight="normal"
     >
       Net land flux: {signed.format(first.value)}{" "}
@@ -80,6 +80,9 @@ function TimeSeriesHeader({
       → {signed.format(last.value)}{" "}
       <Text as="span" fontSize="12px" color="#565E7B">
         ({last.year})
+      </Text>{" "}
+      <Text as="span" fontSize="14px" color="#565E7B">
+        {FLUX_UNITS}
       </Text>
     </Text>
   );
