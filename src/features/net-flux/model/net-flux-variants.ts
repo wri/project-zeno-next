@@ -58,8 +58,8 @@ const CLASS_LABELS: Record<string, string> = {
   mineral_soil: "Mineral soil",
   organic_soil: "Organic soil",
   // The agriculture classes are a fixed 2020 figure repeated across every year
-  // (the same caveat the card's footnote spells out), which the design surfaces
-  // in the legend itself.
+  // (the same caveat the chart header's subtitle spells out), which the design
+  // surfaces in the legend itself.
   cropland: "Cropland management (2020, static)",
   livestock: "Livestock (2020, static)",
   vegetation: "Vegetation",
