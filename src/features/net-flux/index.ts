@@ -32,4 +32,3 @@ export {
 } from "./ui/use-net-flux-view";
 export { NetFluxToolbar } from "./ui/NetFluxToolbar";
 export { NetFluxChartBody } from "./ui/NetFluxChartBody";
-export { NetFluxFootnote } from "./ui/NetFluxFootnote";

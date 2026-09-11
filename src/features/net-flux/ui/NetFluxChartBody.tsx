@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState, useLayoutEffect } from "react";
-import { Flex, Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import type { InsightWidget } from "@/app/types/chat";
@@ -51,7 +51,7 @@ function endpoints(
 
 /**
  * The design's chart header: the named metric with its value at each end of
- * the series, followed by the unit.
+ * the series, the unit, and the fixed-agriculture caveat beneath.
  */
 function TimeSeriesHeader({
   variant,
@@ -67,31 +67,36 @@ function TimeSeriesHeader({
   const { negative, positive } = variant.divergentColors;
   const tint = (value: number) => (value < 0 ? negative : positive);
   return (
-    <Text
-      fontFamily="body"
-      fontWeight="normal"
-      color="#172B7A"
-      fontSize="15px"
-      lineHeight="normal"
-    >
-      Net land flux:{" "}
-      <Text as="span" color={tint(first.value)}>
-        {signed.format(first.value)}
-      </Text>{" "}
-      <Text as="span" fontSize="12px" color="#565E7B">
-        ({first.year})
-      </Text>{" "}
-      →{" "}
-      <Text as="span" color={tint(last.value)}>
-        {signed.format(last.value)}
-      </Text>{" "}
-      <Text as="span" fontSize="12px" color="#565E7B">
-        ({last.year})
-      </Text>{" "}
-      <Text as="span" fontSize="14px" color="#565E7B">
-        {FLUX_UNITS}
+    <Box>
+      <Text
+        fontFamily="body"
+        fontWeight="normal"
+        color="#172B7A"
+        fontSize="15px"
+        lineHeight="normal"
+      >
+        Net land flux:{" "}
+        <Text as="span" color={tint(first.value)}>
+          {signed.format(first.value)}
+        </Text>{" "}
+        <Text as="span" fontSize="12px" color="#565E7B">
+          ({first.year})
+        </Text>{" "}
+        →{" "}
+        <Text as="span" color={tint(last.value)}>
+          {signed.format(last.value)}
+        </Text>{" "}
+        <Text as="span" fontSize="12px" color="#565E7B">
+          ({last.year})
+        </Text>{" "}
+        <Text as="span" fontSize="14px" color="#565E7B">
+          {FLUX_UNITS}
+        </Text>
       </Text>
-    </Text>
+      <Text fontFamily="body" fontSize="13px" color="neutral.700" mt="2px">
+        Land use: varies by year · Agriculture: fixed 2020 value
+      </Text>
+    </Box>
   );
 }
 

@@ -109,8 +109,8 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
             {FLUX_UNITS}
           </Text>
         </Text>
-        <Text fontFamily="body" fontSize="13px" color="#282D33" mt="2px">
-          Annual average · Land use 2016–24 · Agriculture fixed 2020
+        <Text fontFamily="body" fontSize="13px" color="neutral.700" mt="2px">
+          Land use: 2016–24 annual average · Agriculture: fixed 2020 value
         </Text>
       </Box>
 
