@@ -560,7 +560,13 @@ export default function ChartWidget({
       if (v < 0) hasNegativeValues = true;
       dataMinValue = Math.min(dataMinValue, v);
       dataMaxValue = Math.max(dataMaxValue, v);
-      longestYTickChars = Math.max(longestYTickChars, yTickLabel(v).length);
+      // With pinned ticks the rendered strings are exactly `yTicks`, measured
+      // below; data values are a stand-in only for recharts' own tick choice.
+      // Measuring them regardless let an unrounded "-559.12" widen the gutter
+      // that only ever draws "-500", leaving a gap between title and ticks.
+      if (!yTicks) {
+        longestYTickChars = Math.max(longestYTickChars, yTickLabel(v).length);
+      }
     }
   }
 
