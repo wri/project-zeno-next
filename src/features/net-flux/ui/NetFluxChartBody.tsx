@@ -17,7 +17,6 @@ import { NetFluxHatchDefs, NetFluxLegend } from "./NetFluxLegend";
 import { NetFluxTooltip } from "./NetFluxTooltip";
 
 /**
- * The unit lives on the axis, once, rather than beside each headline figure.
  * Named after the line series so the axis title, the table column and the
  * tooltip's total all read as the same quantity.
  */
@@ -65,6 +64,8 @@ function TimeSeriesHeader({
   if (!ends) return null;
 
   const { first, last } = ends;
+  const { negative, positive } = variant.divergentColors;
+  const tint = (value: number) => (value < 0 ? negative : positive);
   return (
     <Text
       fontFamily="body"
@@ -73,11 +74,17 @@ function TimeSeriesHeader({
       fontSize="15px"
       lineHeight="normal"
     >
-      Net land flux: {signed.format(first.value)}{" "}
+      Net land flux:{" "}
+      <Text as="span" color={tint(first.value)}>
+        {signed.format(first.value)}
+      </Text>{" "}
       <Text as="span" fontSize="12px" color="#565E7B">
         ({first.year})
       </Text>{" "}
-      → {signed.format(last.value)}{" "}
+      →{" "}
+      <Text as="span" color={tint(last.value)}>
+        {signed.format(last.value)}
+      </Text>{" "}
       <Text as="span" fontSize="12px" color="#565E7B">
         ({last.year})
       </Text>{" "}

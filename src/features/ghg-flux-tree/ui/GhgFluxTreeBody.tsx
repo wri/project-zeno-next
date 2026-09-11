@@ -19,6 +19,7 @@ import {
   LEGEND_BG,
   NET_TICK_COLOR,
   REMOVALS_COLOR,
+  netFluxColor,
 } from "./tree-chart-constants";
 import { useTreeView } from "./use-tree-view";
 
@@ -66,17 +67,11 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
   // data so `useTreeView`'s expansion-seeding effect (keyed on this array's
   // identity) doesn't refire on every unrelated re-render.
   const nodes = useMemo(() => parseFluxNodes(widget.data), [widget.data]);
-  const { measure, rows, toggleNode, fullyExpanded } = useTreeView(
-    treeViewKey(widget),
-    nodes
-  );
+  const { measure, rows, toggleNode } = useTreeView(treeViewKey(widget), nodes);
 
   const root = rootNodes(nodes)[0];
   const rootNet = root ? nodeNet(root) : null;
-  // Positive net flux means the land is a net source; negative means it absorbs
-  // more than it emits.
-  const direction = (rootNet ?? 0) < 0 ? "Net Sink" : "Net Source";
-  const headlineColor = (rootNet ?? 0) < 0 ? REMOVALS_COLOR : EMISSIONS_COLOR;
+  const headlineColor = netFluxColor(rootNet);
 
   if (nodes.length === 0) {
     return (
@@ -99,24 +94,21 @@ export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
   return (
     <Flex direction="column" gap="16px" w="full">
       <Box>
-        {/* Centred, not baseline-aligned: on a 26px figure a baseline drops the
-            small mono caption to the number's foot rather than its middle. */}
-        <Flex align="center" gap="8px" wrap="wrap">
-          <Text
-            fontFamily="body"
-            fontSize="26px"
-            fontWeight="medium"
-            lineHeight="1.1"
-            color={headlineColor}
-            css={{ fontVariantNumeric: "tabular-nums" }}
-          >
+        <Text
+          fontFamily="body"
+          fontWeight="normal"
+          color="#172B7A"
+          fontSize="15px"
+          lineHeight="normal"
+        >
+          Net land flux:{" "}
+          <Text as="span" color={headlineColor}>
             {rootNet == null ? "—" : signed.format(rootNet)}
+          </Text>{" "}
+          <Text as="span" fontSize="14px" color="#565E7B">
+            {FLUX_UNITS}
           </Text>
-          <Text fontFamily="mono" fontSize="11px" color="#656E7B">
-            {FLUX_UNITS} · {direction}
-            {fullyExpanded ? " · Full detail" : ""}
-          </Text>
-        </Flex>
+        </Text>
         <Text fontFamily="body" fontSize="13px" color="#282D33" mt="2px">
           Annual average · Land use 2016–24 · Agriculture fixed 2020
         </Text>

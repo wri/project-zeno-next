@@ -35,6 +35,7 @@ import {
   TOOLTIP_WIDTH,
   TREE_COLUMN_MAX_WIDTH,
   ZERO_LINE_COLOR,
+  netFluxColor,
 } from "./tree-chart-constants";
 
 interface PlotRow {
@@ -400,10 +401,7 @@ export function GhgFluxTreeChart({
             {measure === "net" ? (
               <Bar dataKey="net" barSize={BAR_SIZE} isAnimationActive={false}>
                 {plotRows.map((row) => (
-                  <Cell
-                    key={row.id}
-                    fill={(row.net ?? 0) < 0 ? REMOVALS_COLOR : EMISSIONS_COLOR}
-                  />
+                  <Cell key={row.id} fill={netFluxColor(row.net)} />
                 ))}
               </Bar>
             ) : (

@@ -10,6 +10,11 @@
 export const EMISSIONS_COLOR = "#bf812d";
 /** Sink / gross removals — negative, left of zero. */
 export const REMOVALS_COLOR = "#01665e";
+
+/** Sign tint for a net figure; zero and missing values read as a source. */
+export function netFluxColor(net: number | null | undefined): string {
+  return (net ?? 0) < 0 ? REMOVALS_COLOR : EMISSIONS_COLOR;
+}
 /** The net marker overlaid on a gross row. */
 export const NET_TICK_COLOR = "#1a1812";
 export const ZERO_LINE_COLOR = "#9aa0ab";
