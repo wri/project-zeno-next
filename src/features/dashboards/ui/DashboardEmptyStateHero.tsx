@@ -54,7 +54,7 @@ export default function DashboardEmptyStateHero({
       </Flex>
       <Box w="full">
         <DashboardSuggestedModules
-          dashboardId={dashboard.id}
+          dashboard={dashboard}
           isOwner={isOwner}
           mt={0}
         />
