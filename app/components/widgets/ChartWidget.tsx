@@ -121,6 +121,14 @@ interface ChartWidgetProps {
    */
   xTickFormatter?: (value: string | number, key?: string) => string;
   /**
+   * Y-axis title, rendered verbatim in place of the default `toAxisLabel(yAxis)`.
+   * For a chart whose `yAxis` key is empty (the curated LGMS charts): setting
+   * the key instead would also re-route tick and tooltip formatting through it.
+   * The net-flux card passes "Net flux (Mt CO₂e/yr)" so the unit reads off the
+   * axis rather than the stat header.
+   */
+  yAxisLabel?: string;
+  /**
    * Override the tooltip's content renderer entirely. Escape hatch for a
    * chart whose series count makes the default per-series `Chart.Tooltip`
    * list (one line per series) taller than the plot itself — the net-flux
@@ -144,10 +152,10 @@ interface ChartWidgetProps {
 
 /**
  * Y-axis gutter width: tick text plus its margin, plus a title band ONLY when
- * a y-axis title will actually render (`{yAxis && <Label .../>}` below) — an
- * empty `yAxis` (the curated LGMS charts) got 22px of unused whitespace
- * reserved for a title that never draws, crowding the plot and its x-axis
- * ticks. Exported for a regression test; not meant as a general utility.
+ * a y-axis title will actually render (`{yAxisTitle && <Label .../>}` below) —
+ * an empty `yAxis` with no `yAxisLabel` got 22px of unused whitespace reserved
+ * for a title that never draws, crowding the plot and its x-axis ticks.
+ * Exported for a regression test; not meant as a general utility.
  */
 export function computeYAxisWidth(
   longestYTickChars: number,
@@ -399,6 +407,7 @@ export default function ChartWidget({
   yDomain,
   yTickFormatter,
   xTickFormatter,
+  yAxisLabel,
   tooltipContent,
 }: ChartWidgetProps) {
   const {
@@ -570,7 +579,8 @@ export default function ChartWidget({
       )
     : TICK_MARGIN + TICK_FONT_PX + TITLE_BAND;
 
-  const yAxisWidth = computeYAxisWidth(longestYTickChars, Boolean(yAxis));
+  const yAxisTitle = yAxisLabel ?? toAxisLabel(yAxis);
+  const yAxisWidth = computeYAxisWidth(longestYTickChars, Boolean(yAxisTitle));
 
   const animationProps = {
     isAnimationActive: animate,
@@ -911,9 +921,9 @@ export default function ChartWidget({
                 allowDataOverflow={fitYAxis && AXIS_FIT_TYPES.has(type)}
                 fontSize={TICK_FONT_PX}
               >
-                {yAxis && (
+                {yAxisTitle && (
                   <Label
-                    value={toAxisLabel(yAxis)}
+                    value={yAxisTitle}
                     angle={-90}
                     position="insideLeft"
                     offset={0}

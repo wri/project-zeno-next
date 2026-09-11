@@ -9,19 +9,24 @@ import { formatTick } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
 import { FLUX_UNITS } from "@/src/shared/lib/units";
 
-import { netFluxWidgetDetailLabel } from "../model/net-flux-siblings";
 import {
-  type NetFluxMeasure,
+  NET_FLUX_LINE_FIELD,
   type NetFluxVariant,
 } from "../model/net-flux-variants";
 import { NetFluxHatchDefs, NetFluxLegend } from "./NetFluxLegend";
 import { NetFluxTooltip } from "./NetFluxTooltip";
 
+/**
+ * The unit lives on the axis, once, rather than beside each headline figure.
+ * Named after the line series so the axis title, the table column and the
+ * tooltip's total all read as the same quantity.
+ */
+const Y_AXIS_LABEL = `${NET_FLUX_LINE_FIELD} (${FLUX_UNITS})`;
+
 interface NetFluxChartBodyProps {
   /** The widget already narrowed to the active measure. */
   widget: InsightWidget;
   variant: NetFluxVariant;
-  measure: NetFluxMeasure;
   expanded?: boolean;
   fitYAxis?: boolean;
   fullWidth?: boolean;
@@ -47,54 +52,36 @@ function endpoints(
 
 /**
  * The design's chart header: the named metric with its value at each end of
- * the series and the units, then the direction/detail line.
+ * the series. The unit is on the y-axis.
  */
 function TimeSeriesHeader({
   variant,
   xAxis,
-  measure,
-  detailLabel,
 }: {
   variant: NetFluxVariant;
   xAxis: string;
-  measure: NetFluxMeasure;
-  /** The backend's own chart title, which names the detail level. */
-  detailLabel: string;
 }) {
   const ends = endpoints(variant, xAxis);
   if (!ends) return null;
 
   const { first, last } = ends;
-  // Positive net flux means the land is a net source of emissions; negative
-  // means it is absorbing more than it emits (a sink).
-  const direction = last.value >= 0 ? "net source" : "net sink";
-  const label = measure === "net" ? "Net only" : detailLabel;
-
   return (
-    <Flex direction="column" gap="3px">
-      <Text
-        fontFamily="body"
-        fontWeight="medium"
-        color="#172B7A"
-        fontSize="18px"
-        lineHeight="normal"
-      >
-        Net land flux: {signed.format(first.value)}{" "}
-        <Text as="span" fontSize="12px" color="#565E7B">
-          ({first.year})
-        </Text>{" "}
-        → {signed.format(last.value)}{" "}
-        <Text as="span" fontSize="12px" color="#565E7B">
-          ({last.year})
-        </Text>{" "}
-        <Text as="span" fontSize="12px" color="#565E7B">
-          {FLUX_UNITS}
-        </Text>
+    <Text
+      fontFamily="body"
+      fontWeight="medium"
+      color="#172B7A"
+      fontSize="18px"
+      lineHeight="normal"
+    >
+      Net land flux: {signed.format(first.value)}{" "}
+      <Text as="span" fontSize="12px" color="#565E7B">
+        ({first.year})
+      </Text>{" "}
+      → {signed.format(last.value)}{" "}
+      <Text as="span" fontSize="12px" color="#565E7B">
+        ({last.year})
       </Text>
-      <Text fontFamily="mono" fontSize="10px" color="#656E7B">
-        {direction} · {label}
-      </Text>
-    </Flex>
+    </Text>
   );
 }
 
@@ -114,7 +101,6 @@ const NARROW_X_AXIS_WIDTH = 450;
 export function NetFluxChartBody({
   widget,
   variant,
-  measure,
   expanded,
   fitYAxis,
   fullWidth,
@@ -135,12 +121,7 @@ export function NetFluxChartBody({
   return (
     <Flex direction="column" gap="16px" w="full">
       <NetFluxHatchDefs />
-      <TimeSeriesHeader
-        variant={variant}
-        xAxis={widget.xAxis}
-        measure={measure}
-        detailLabel={netFluxWidgetDetailLabel(widget)}
-      />
+      <TimeSeriesHeader variant={variant} xAxis={widget.xAxis} />
       <div ref={containerRef}>
         <ChartWidget
           widget={widget}
@@ -151,6 +132,7 @@ export function NetFluxChartBody({
           yTicks={variant.yTicks}
           yDomain={variant.yDomain}
           yTickFormatter={formatTick}
+          yAxisLabel={Y_AXIS_LABEL}
           tooltipContent={NetFluxTooltip}
           xTickFormatter={
             isNarrow
