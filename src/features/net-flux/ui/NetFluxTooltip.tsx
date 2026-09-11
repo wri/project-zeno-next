@@ -55,7 +55,9 @@ function Row({ row }: { row: NetFluxTooltipRow }) {
 /**
  * Hover tooltip for the net-flux time series, as the design draws it: the
  * year, every series the active Measure/Detail actually draws — swatch, label
- * and value — then the net-flux total below a rule.
+ * and value — then the total, bold, below a rule. Under the net measure the
+ * single bar *is* the total, so it is the only line: labelled "Net source" or
+ * "Net sink" and swatched by sign like the legend.
  *
  * It replaces `ChartWidget`'s generic `Chart.Tooltip` (wired through its
  * `tooltipContent` prop) for two reasons: that one can't render the hatched
