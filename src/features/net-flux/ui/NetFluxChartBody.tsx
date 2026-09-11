@@ -48,8 +48,9 @@ function endpoints(
 }
 
 /**
- * The design's chart header: the net flux at each end of the series, then the
- * unit/direction/detail line, then the fixed caption describing the series.
+ * The design's chart header: the named metric with its value at each end of
+ * the series and the units, then the direction/detail line, then the fixed
+ * caption describing the series.
  */
 function TimeSeriesHeader({
   variant,
@@ -85,17 +86,20 @@ function TimeSeriesHeader({
         fontSize="18px"
         lineHeight="normal"
       >
-        {signed.format(first.value)}{" "}
+        Net land flux: {signed.format(first.value)}{" "}
         <Text as="span" fontSize="12px" color="#565E7B">
           ({first.year})
         </Text>{" "}
         → {signed.format(last.value)}{" "}
         <Text as="span" fontSize="12px" color="#565E7B">
           ({last.year})
+        </Text>{" "}
+        <Text as="span" fontSize="12px" color="#565E7B">
+          {FLUX_UNITS}
         </Text>
       </Text>
       <Text fontFamily="mono" fontSize="10px" color="#656E7B">
-        {FLUX_UNITS} · {direction} · {label}
+        {direction} · {label}
       </Text>
       <Text
         fontFamily="body"
