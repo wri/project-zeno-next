@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Box,
   Button,
+  CloseButton,
   Dialog,
   Flex,
   Icon,
@@ -13,6 +14,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
+  ArrowsOutIcon,
   ArrowsOutLineHorizontalIcon,
   ChartBarIcon,
   ChatTeardropDotsIcon,
@@ -35,11 +37,15 @@ import DashboardMapWidget from "./DashboardMapWidget";
  * One dashboard card — the Figma "Analysis" container: a light-blue shell
  * with a header row (drag handle · insight title · owner actions), a
  * "Show params" row, and the white chart card (`WidgetMessage`) — or the
- * map body (`DashboardMapWidget`) for map widgets — inside.
- * A widget whose insight has several charts renders one of these per chart,
- * so `card` is a single insight card, not a list. Header actions still act
- * on the underlying widget (per the API: position/config/DELETE are
- * widget-level), which `chartCount` lets the remove dialog explain.
+ * map body (`DashboardMapWidget`) for map widgets — inside. Every widget on
+ * the page is one of these, so the blue shell is the only box a dashboard
+ * widget ever draws.
+ *
+ * `card` is a single insight card, never a list: an insight with several
+ * charts pages through them inside one shell (`DashboardInsightModule` owns
+ * the pager and passes the chart on show). The `intro`, `footer` and
+ * `headerActions` slots are what it hangs off the shell; `onRequestRemove`
+ * lets it confirm removal with its own copy.
  */
 export default function DashboardWidgetCard({
   title,
@@ -48,14 +54,17 @@ export default function DashboardWidgetCard({
   aoi,
   viewportBbox,
   placeholder,
-  chartCount,
+  removeMode,
   isOwner,
   isDouble,
+  headerActions,
+  intro,
+  footer,
   onArmDrag,
-  onDisarmDrag,
   onToggleSize,
   onRename,
   onRemove,
+  onRequestRemove,
 }: {
   title: string;
   /** The insight card to render, or null for a map/text/placeholder cell. */
@@ -68,19 +77,38 @@ export default function DashboardWidgetCard({
   viewportBbox?: [number, number, number, number] | null;
   /** Placeholder copy when `card` is null (unsupported type / hidden insight). */
   placeholder: string | null;
-  /** How many cards the underlying widget renders in total (its chart count). */
-  chartCount: number;
+  /**
+   * What `onRemove` actually does, which the confirm dialog explains:
+   * `"widget"` deletes the widget from the dashboard, `"chart"` only hides
+   * this chart within its analysis module (recoverable from Customize).
+   */
+  removeMode: "widget" | "chart";
   isOwner: boolean;
   isDouble: boolean;
+  /** Owner actions rendered before the built-in ones (the analysis Customize menu). */
+  headerActions?: React.ReactNode;
+  /**
+   * Rendered inside the shell above the body — the analysis narrative. Carries
+   * its own padding, so a call site can align it with whatever it introduces.
+   */
+  intro?: React.ReactNode;
+  /** Rendered inside the shell below the body — the analysis chart pager. */
+  footer?: React.ReactNode;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
-  onArmDrag: () => void;
-  onDisarmDrag: () => void;
+  onArmDrag: (event: React.PointerEvent) => void;
   onToggleSize: () => void;
   /** Persist a manual title (blank reverts to default); omitted disables rename. */
   onRename?: (name: string) => void;
   onRemove: () => void;
+  /**
+   * Takes over the X instead of the card's own confirm dialog, for a call site
+   * whose removal needs different copy. `onRemove` is then the caller's to
+   * fire once its own dialog is confirmed.
+   */
+  onRequestRemove?: () => void;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [paramsExpanded, setParamsExpanded] = useState(false);
   // null = not editing; a string is the in-progress title draft.
   const [draft, setDraft] = useState<string | null>(null);
@@ -142,7 +170,6 @@ export default function DashboardWidgetCard({
             flexShrink={0}
             aria-label="Drag to reposition"
             onPointerDown={onArmDrag}
-            onPointerUp={onDisarmDrag}
           />
         )}
         {editing ? (
@@ -179,8 +206,23 @@ export default function DashboardWidgetCard({
             {displayTitle}
           </Text>
         )}
+        {/* Viewers get full screen too, so it sits outside the owner cluster. */}
+        {map && (
+          <IconButton
+            aria-label="View map full screen"
+            title="View map full screen"
+            size="2xs"
+            variant="ghost"
+            color="fg.muted"
+            flexShrink={0}
+            onClick={() => setFullscreen(true)}
+          >
+            <ArrowsOutIcon size={16} />
+          </IconButton>
+        )}
         {isOwner && (
           <Flex align="center" gap="4px" flexShrink={0}>
+            {headerActions}
             {onRename && !editing && (
               <IconButton
                 aria-label="Rename widget"
@@ -221,7 +263,9 @@ export default function DashboardWidgetCard({
               size="2xs"
               variant="ghost"
               color="fg.muted"
-              onClick={() => setConfirmOpen(true)}
+              onClick={() =>
+                onRequestRemove ? onRequestRemove() : setConfirmOpen(true)
+              }
             >
               <XIcon size={16} />
             </IconButton>
@@ -250,6 +294,8 @@ export default function DashboardWidgetCard({
           )}
         </Box>
       )}
+
+      {intro}
 
       {placeholder ? (
         <Flex
@@ -283,6 +329,49 @@ export default function DashboardWidgetCard({
         )
       )}
 
+      {footer}
+
+      {/* A second map mounts only while the dialog is open — the same MapLibre
+          instance is never rendered in two places. */}
+      {map && (
+        <Dialog.Root
+          open={fullscreen}
+          onOpenChange={(e) => setFullscreen(e.open)}
+          size="cover"
+          lazyMount
+          unmountOnExit
+        >
+          <Portal>
+            <Dialog.Backdrop />
+            <Dialog.Positioner>
+              <Dialog.Content p={4}>
+                <Dialog.Header px={0} pt={0} pb={3}>
+                  <Dialog.Title fontSize="md" fontWeight="medium">
+                    {displayTitle}
+                  </Dialog.Title>
+                  <Dialog.CloseTrigger
+                    asChild
+                    position="absolute"
+                    top={3}
+                    right={3}
+                  >
+                    <CloseButton size="sm" />
+                  </Dialog.CloseTrigger>
+                </Dialog.Header>
+                <Dialog.Body p={0} flex="1" minH={0}>
+                  <DashboardMapWidget
+                    layer={map}
+                    aoi={aoi}
+                    bboxOverride={viewportBbox ?? null}
+                    fill
+                  />
+                </Dialog.Body>
+              </Dialog.Content>
+            </Dialog.Positioner>
+          </Portal>
+        </Dialog.Root>
+      )}
+
       <Dialog.Root
         open={confirmOpen}
         onOpenChange={(e) => setConfirmOpen(e.open)}
@@ -295,13 +384,13 @@ export default function DashboardWidgetCard({
             <Dialog.Content>
               <Dialog.Header>
                 <Dialog.Title>
-                  {chartCount > 1 ? "Remove chart?" : "Remove widget?"}
+                  {removeMode === "chart" ? "Remove chart?" : "Remove widget?"}
                 </Dialog.Title>
               </Dialog.Header>
               <Dialog.Body>
                 <Text>
-                  {chartCount > 1
-                    ? "Only this chart is removed from the dashboard — the analysis's other charts stay, and the underlying analysis is not deleted."
+                  {removeMode === "chart"
+                    ? "This chart is hidden from the dashboard. Show it again from the analysis's Customize menu. The underlying analysis is not deleted."
                     : "The widget will be removed from this dashboard. The underlying analysis is not deleted."}
                 </Text>
               </Dialog.Body>

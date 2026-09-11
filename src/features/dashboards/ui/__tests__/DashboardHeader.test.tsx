@@ -21,6 +21,7 @@ const baseDashboard: Dashboard = {
   created_at: "2020-01-01T00:00:00Z",
   updated_at: "2020-01-01T00:00:00Z",
   aois: [],
+  sections: [],
   widgets: [],
 };
 
@@ -45,10 +46,18 @@ describe("DashboardHeader", () => {
     expect(screen.queryByText(/^Updated/)).toBeNull();
   });
 
-  it("falls back to the usual updated label once the dashboard has aged past the window", () => {
+  it("shows no timestamp once the dashboard has aged past the window", () => {
     renderHeader(baseDashboard);
 
-    expect(screen.getByText(/^Updated/)).toBeTruthy();
+    expect(screen.queryByText(/^Updated/)).toBeNull();
     expect(screen.queryByText("Created just now")).toBeNull();
+  });
+
+  it("keeps the rename affordance in the tree for the owner", () => {
+    renderHeader(baseDashboard);
+
+    expect(
+      screen.getByRole("button", { name: "Rename dashboard" })
+    ).toBeTruthy();
   });
 });

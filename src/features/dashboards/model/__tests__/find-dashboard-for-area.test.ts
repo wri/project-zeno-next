@@ -31,6 +31,7 @@ function dashboard(
         name: aoi.name ?? "Paraná, Brazil",
       },
     ],
+    sections: [],
     widgets: [],
   };
 }

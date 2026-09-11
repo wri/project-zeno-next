@@ -3,6 +3,7 @@
 import { toaster } from "@/app/components/ui/toaster";
 import useAuthStore from "@/app/store/authStore";
 import useViewContextStore from "@/app/store/viewContextStore";
+import { hasWidgetCustomization } from "../lib/widgets";
 import {
   useAddInsightWidget,
   useDashboard,
@@ -21,6 +22,12 @@ export interface AddInsightToDashboard {
   addable: boolean;
   /** True when the insight is already a widget on the current dashboard. */
   added: boolean;
+  /**
+   * True when removing would discard config the owner arranged by hand (chart
+   * sizes, renames, hidden charts, summary toggle). Callers confirm first —
+   * `toggle` itself never asks, and none of it survives a re-add.
+   */
+  removeNeedsConfirm: boolean;
   pending: boolean;
   /** Adds the insight if absent, removes it if present. No-op unless `addable`. */
   toggle: () => void;
@@ -83,5 +90,12 @@ export function useAddInsightToDashboard(
     }
   };
 
-  return { active, addable, added: !!existing, pending, toggle };
+  return {
+    active,
+    addable,
+    added: !!existing,
+    removeNeedsConfirm: !!existing && hasWidgetCustomization(existing.config),
+    pending,
+    toggle,
+  };
 }

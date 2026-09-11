@@ -119,7 +119,7 @@ export default function DashboardSuggestedModules({
     <Flex
       direction="column"
       gap={5}
-      mt={8}
+      mt={mt}
       display={{ base: "none", md: "flex" }}
     >
       <Flex align="center" gap={3}>

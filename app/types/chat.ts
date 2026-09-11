@@ -67,7 +67,21 @@ export interface ChatMessage {
 // Widget types for insights. Extends ChartColorFields with the backend color
 // registry's resolution for this chart (absent for pre-migration insights).
 export interface InsightWidget extends ChartColorFields {
-  id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
+  /**
+   * Stable widget identity: React keys, view-store keys (net-flux/tree),
+   * sibling grouping (net-flux/order-insights), dashboard widget CRUD. NOT
+   * used to resolve `[Chart <id>]` chat markers — those are matched
+   * positionally by array index (see `insight-chat-messages.ts`); the
+   * marker's own id text is discarded.
+   */
+  id?: string;
+  /**
+   * The chart's own title as the backend sent it, preserved when `title` is
+   * overwritten with a "{dataset} in {location}" display title. Charts of one
+   * analysis all share that display title, so anything naming an individual
+   * chart (the net-flux DETAIL pill, its header subtitle) reads this instead.
+   */
+  backendTitle?: string;
   type:
     | "line"
     | "bar"
@@ -77,13 +91,19 @@ export interface InsightWidget extends ChartColorFields {
     | "stacked-bar"
     | "grouped-bar"
     | "area"
-    | "scatter";
+    | "scatter"
+    | "stacked-bar-with-line"
+    | "hierarchical-bar";
   title: string;
   description: string;
   data: unknown;
   xAxis: string;
   yAxis: string;
   seriesFields?: string[];
+  // Column rendered as a Line overlay on top of the stacked bars — only
+  // meaningful for type "stacked-bar-with-line" (e.g. a net-flux line over
+  // emissions/removals stacks). Excluded from the stack itself.
+  lineField?: string;
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
   // Whether this insight is curated/verified rather than AI-generated. Set from
@@ -210,6 +230,10 @@ export type ImageryProvider = "sentinel-2" | "planet";
 // has no value for as an explicit JSON null (e.g. Planet's monthly basemap
 // has no scene count or cloud stats), so consumers must treat null and
 // undefined alike (`== null`, never `=== undefined`).
+//
+// This is the raw wire shape. Legend/display code should use `ImageryMeta`
+// via `toImageryMeta` (app/utils/imagery.ts) instead of reading these fields
+// directly.
 export interface ImageryInfo {
   // Absent on payloads written before wri/project-zeno#800, which were all
   // Sentinel-2.

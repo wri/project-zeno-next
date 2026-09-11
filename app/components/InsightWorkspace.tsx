@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -19,6 +19,7 @@ import {
   ChartLineIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
+import { orderInsightsForPager } from "@/src/entities/insight";
 import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
 import { Tooltip } from "./ui/tooltip";
@@ -26,6 +27,18 @@ import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
+import {
+  NetFluxFootnote,
+  NetFluxToolbar,
+  collapseNetFluxSiblings,
+  isNetFluxWidget,
+  useNetFluxDetailSelection,
+} from "@/src/features/net-flux";
+import {
+  FLUX_TREE_CARD_WIDTH,
+  GhgFluxMeasurePill,
+  isFluxTreeWidget,
+} from "@/src/features/ghg-flux-tree";
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -100,7 +113,22 @@ function WorkspaceSkeleton() {
 }
 
 export default function InsightWorkspace() {
-  const { insights } = useInsightStore();
+  const allInsights = useInsightStore((state) => state.insights);
+  const netFluxDetail = useNetFluxDetailSelection();
+  // Two passes to get the pager list. First: the three LGMS time-series
+  // roll-ups are one analysis shown three ways, so they collapse to a single
+  // entry whose DETAIL pill switches between them — otherwise the pager and
+  // the pill would be two ways to do the same thing. Every other insight
+  // passes through untouched. Then: newest analysis first, but the charts
+  // within one analysis left in the order the backend sent them, since they
+  // are all the same age and `position` is the intended reading order.
+  const insights = useMemo(
+    () =>
+      orderInsightsForPager(
+        collapseNetFluxSiblings(allInsights, netFluxDetail)
+      ),
+    [allInsights, netFluxDetail]
+  );
   // Drive the loading affordances off the insight-specific flag, not the
   // request-wide isLoading: the skeleton/spinner should appear only while an
   // insight is actually being generated, not for every prompt.
@@ -127,9 +155,9 @@ export default function InsightWorkspace() {
     return <WorkspaceSkeleton />;
   }
 
-  // currentIndex 0 = newest, total-1 = oldest
-  const widgetIndex = total - 1 - currentIndex;
-  const widget = insights[widgetIndex];
+  // `insights` is already in pager order, so index 0 is the lead entry.
+  const widget = insights[currentIndex];
+  const isFluxTree = isFluxTreeWidget(widget);
   const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
   const hasChips = chips.length > 0;
   // currentIndex 0 = newest (shown as "1 of N"). The Left/Prev arrow
@@ -157,7 +185,22 @@ export default function InsightWorkspace() {
       flex="0 1 auto"
       minH="0"
       overflowY="auto"
-      w="100%"
+      /* The flux tree carries three columns — labels, plot, values — and needs
+         more room than the 420px overlay column gives (`Map.tsx`), which
+         otherwise leaves its label column too narrow to read. It is the only
+         insight that asks for this, so the card widens just for it and every
+         other insight keeps the column width.
+
+         Growing leftward, not rightward: the overlay column is right-anchored,
+         so `alignSelf` pins this to its right edge and the extra width extends
+         back over the map. Below `md` the column already spans the viewport. */
+      w={{
+        base: "100%",
+        md: isFluxTree ? `${FLUX_TREE_CARD_WIDTH}px` : "100%",
+      }}
+      maxW={{ base: "100%", md: "calc(100vw - 2rem)" }}
+      alignSelf={{ base: "stretch", md: "flex-end" }}
+      transition="width 150ms ease-out"
       bg="primary.25"
       border="1px solid"
       borderColor="#DDE2F5"
@@ -251,7 +294,7 @@ export default function InsightWorkspace() {
           {/* Keyed on the active insight so switching re-runs the entry
               animation; the media query keeps it off under reduced motion. */}
           <Box
-            key={widget.id ?? widgetIndex}
+            key={widget.id ?? currentIndex}
             css={{
               "@media (prefers-reduced-motion: no-preference)": {
                 animationName: "fadeSlideIn",
@@ -267,6 +310,9 @@ export default function InsightWorkspace() {
                 fontWeight="semibold"
                 color="primary.fg"
                 flex={1}
+                minW={0}
+                truncate
+                title={widget.title}
                 mr={2}
                 mb={0}
               >
@@ -287,10 +333,30 @@ export default function InsightWorkspace() {
               </Box>
             )}
 
+            {/* Per-widget-type controls, rendered on the shell above the card
+                (the design calls this frame the "widget toolbar"). */}
+            {isNetFluxWidget(widget) && (
+              <Box px={2} pb={2}>
+                <NetFluxToolbar widget={widget} />
+              </Box>
+            )}
+            {isFluxTreeWidget(widget) && (
+              <Box px={2} pb={2}>
+                <GhgFluxMeasurePill widget={widget} />
+              </Box>
+            )}
+
             {/* Inner chart card */}
             <Box px={2} pt={0} pb={2}>
               <WidgetMessage widget={widget} inWorkspace />
             </Box>
+
+            {/* Per-widget-type caveat card below the chart card */}
+            {isNetFluxWidget(widget) && (
+              <Box px={2} pb={2}>
+                <NetFluxFootnote />
+              </Box>
+            )}
           </Box>
 
           {/* Navigation footer — sticky so it never scrolls away */}
