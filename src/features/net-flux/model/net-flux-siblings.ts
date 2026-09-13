@@ -91,9 +91,7 @@ export function collapseNetFluxSiblings(
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const group = orderSiblings(
-      insights.filter((w) => netFluxGroupKey(w) === key)
-    );
+    const group = netFluxSiblings(insights, widget);
     const selectedId = selectedByGroup[key];
     out.push(group.find((w) => w.id === selectedId) ?? group[0]);
   }
