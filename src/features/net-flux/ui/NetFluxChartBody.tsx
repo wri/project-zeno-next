@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState, useLayoutEffect } from "react";
-import { Flex, Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 
 import ChartWidget from "@/app/components/widgets/ChartWidget";
 import type { InsightWidget } from "@/app/types/chat";
@@ -9,21 +9,23 @@ import { formatTick } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
 import { FLUX_UNITS } from "@/src/shared/lib/units";
 
-import { netFluxWidgetDetailLabel } from "../model/net-flux-siblings";
 import {
-  type NetFluxMeasure,
+  NET_FLUX_LINE_FIELD,
   type NetFluxVariant,
 } from "../model/net-flux-variants";
 import { NetFluxHatchDefs, NetFluxLegend } from "./NetFluxLegend";
 import { NetFluxTooltip } from "./NetFluxTooltip";
 
-const EN_DASH = "–";
+/**
+ * Named after the line series so the axis title, the table column and the
+ * tooltip's total all read as the same quantity.
+ */
+const Y_AXIS_LABEL = `${NET_FLUX_LINE_FIELD} (${FLUX_UNITS})`;
 
 interface NetFluxChartBodyProps {
   /** The widget already narrowed to the active measure. */
   widget: InsightWidget;
   variant: NetFluxVariant;
-  measure: NetFluxMeasure;
   expanded?: boolean;
   fitYAxis?: boolean;
   fullWidth?: boolean;
@@ -48,65 +50,53 @@ function endpoints(
 }
 
 /**
- * The design's chart header: the net flux at each end of the series, then the
- * unit/direction/detail line, then the fixed caption describing the series.
+ * The design's chart header: the named metric with its value at each end of
+ * the series, the unit, and the fixed-agriculture caveat beneath.
  */
 function TimeSeriesHeader({
   variant,
   xAxis,
-  measure,
-  detailLabel,
 }: {
   variant: NetFluxVariant;
   xAxis: string;
-  measure: NetFluxMeasure;
-  /** The backend's own chart title, which names the detail level. */
-  detailLabel: string;
 }) {
   const ends = endpoints(variant, xAxis);
   if (!ends) return null;
 
   const { first, last } = ends;
-  // Positive net flux means the land is a net source of emissions; negative
-  // means it is absorbing more than it emits (a sink).
-  const direction = last.value >= 0 ? "net source" : "net sink";
-  const label = measure === "net" ? "Net only" : detailLabel;
-  const range =
-    first.year === last.year
-      ? first.year
-      : `${first.year}${EN_DASH}${last.year}`;
-
+  const { negative, positive } = variant.divergentColors;
+  const tint = (value: number) => (value < 0 ? negative : positive);
   return (
-    <Flex direction="column" gap="3px">
+    <Box>
       <Text
         fontFamily="body"
-        fontWeight="medium"
+        fontWeight="normal"
         color="#172B7A"
-        fontSize="18px"
+        fontSize="15px"
         lineHeight="normal"
       >
-        {signed.format(first.value)}{" "}
+        Net land flux:{" "}
+        <Text as="span" color={tint(first.value)}>
+          {signed.format(first.value)}
+        </Text>{" "}
         <Text as="span" fontSize="12px" color="#565E7B">
           ({first.year})
         </Text>{" "}
-        → {signed.format(last.value)}{" "}
+        →{" "}
+        <Text as="span" color={tint(last.value)}>
+          {signed.format(last.value)}
+        </Text>{" "}
         <Text as="span" fontSize="12px" color="#565E7B">
           ({last.year})
+        </Text>{" "}
+        <Text as="span" fontSize="14px" color="#565E7B">
+          {FLUX_UNITS}
         </Text>
       </Text>
-      <Text fontFamily="mono" fontSize="10px" color="#656E7B">
-        {FLUX_UNITS} · {direction} · {label}
+      <Text fontFamily="body" fontSize="13px" color="neutral.700" mt="2px">
+        Land use: varies by year · Agriculture: fixed 2020 value
       </Text>
-      <Text
-        fontFamily="body"
-        fontSize="12px"
-        fontWeight="normal"
-        lineHeight="16px"
-        color="#282D33"
-      >
-        Land use annual · {range} · Agriculture fixed 2020
-      </Text>
-    </Flex>
+    </Box>
   );
 }
 
@@ -126,7 +116,6 @@ const NARROW_X_AXIS_WIDTH = 450;
 export function NetFluxChartBody({
   widget,
   variant,
-  measure,
   expanded,
   fitYAxis,
   fullWidth,
@@ -147,12 +136,7 @@ export function NetFluxChartBody({
   return (
     <Flex direction="column" gap="16px" w="full">
       <NetFluxHatchDefs />
-      <TimeSeriesHeader
-        variant={variant}
-        xAxis={widget.xAxis}
-        measure={measure}
-        detailLabel={netFluxWidgetDetailLabel(widget)}
-      />
+      <TimeSeriesHeader variant={variant} xAxis={widget.xAxis} />
       <div ref={containerRef}>
         <ChartWidget
           widget={widget}
@@ -163,6 +147,7 @@ export function NetFluxChartBody({
           yTicks={variant.yTicks}
           yDomain={variant.yDomain}
           yTickFormatter={formatTick}
+          yAxisLabel={Y_AXIS_LABEL}
           tooltipContent={NetFluxTooltip}
           xTickFormatter={
             isNarrow

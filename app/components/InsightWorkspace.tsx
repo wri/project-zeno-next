@@ -28,7 +28,6 @@ import AnalysisParametersToggle, {
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import {
-  NetFluxFootnote,
   NetFluxToolbar,
   collapseNetFluxSiblings,
   isNetFluxWidget,
@@ -350,13 +349,6 @@ export default function InsightWorkspace() {
             <Box px={2} pt={0} pb={2}>
               <WidgetMessage widget={widget} inWorkspace />
             </Box>
-
-            {/* Per-widget-type caveat card below the chart card */}
-            {isNetFluxWidget(widget) && (
-              <Box px={2} pb={2}>
-                <NetFluxFootnote />
-              </Box>
-            )}
           </Box>
 
           {/* Navigation footer — sticky so it never scrolls away */}

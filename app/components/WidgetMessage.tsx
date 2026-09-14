@@ -95,7 +95,6 @@ interface ChartBodyProps {
   netFluxVariant: NetFluxVariant | null | undefined;
   isFluxTree: boolean;
   displayWidget: InsightWidget;
-  netFluxView: ReturnType<typeof useNetFluxView>;
   fitYAxis: boolean;
   expanded?: boolean;
   fullWidth?: boolean;
@@ -105,7 +104,6 @@ function ChartBody({
   netFluxVariant,
   isFluxTree,
   displayWidget,
-  netFluxView,
   fitYAxis,
   expanded,
   fullWidth,
@@ -115,7 +113,6 @@ function ChartBody({
       <NetFluxChartBody
         widget={displayWidget}
         variant={netFluxVariant}
-        measure={netFluxView.measure}
         fitYAxis={fitYAxis}
         expanded={expanded}
         fullWidth={fullWidth}
@@ -390,7 +387,6 @@ export default function WidgetMessage({
                 netFluxVariant={netFluxVariant}
                 isFluxTree={isFluxTree}
                 displayWidget={displayWidget}
-                netFluxView={netFluxView}
                 fitYAxis={fitYAxis}
                 fullWidth={fullWidth}
               />
@@ -599,7 +595,6 @@ export default function WidgetMessage({
                         netFluxVariant={netFluxVariant}
                         isFluxTree={isFluxTree}
                         displayWidget={displayWidget}
-                        netFluxView={netFluxView}
                         fitYAxis={fitYAxis}
                         expanded
                       />
