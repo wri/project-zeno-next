@@ -115,3 +115,66 @@ describe("the LGMS net-flux card", () => {
     expect(withFlag.some((c) => c.dataset_id === LGMS_DATASET_ID)).toBe(true);
   });
 });
+
+describe("the LGMS sector map layers", () => {
+  const LGMS_SECTOR_IDS = [13, 14, 15, 16, 17];
+  const cards = LGMS_SECTOR_IDS.map(
+    (id) => DATASET_CARDS.find((c) => c.dataset_id === id)!
+  );
+
+  it("registers one card per sector layer", () => {
+    expect(cards.every(Boolean)).toBe(true);
+    expect(cards.map((c) => c.dataset_name)).toEqual([
+      "LGMS total net GHG flux",
+      "LGMS LULUCF net GHG flux",
+      "LGMS agriculture emissions",
+      "LGMS cropland emissions",
+      "LGMS livestock emissions",
+    ]);
+  });
+
+  it("hides them behind the same flag as the LGMS analysis card", () => {
+    const withoutFlag = filterDatasetsByFeatureFlag(DATASET_CARDS, new Set());
+    const withFlag = filterDatasetsByFeatureFlag(
+      DATASET_CARDS,
+      new Set([NET_FLUX_FEATURE_FLAG])
+    );
+
+    for (const id of LGMS_SECTOR_IDS) {
+      expect(withoutFlag.some((c) => c.dataset_id === id)).toBe(false);
+      expect(withFlag.some((c) => c.dataset_id === id)).toBe(true);
+    }
+  });
+
+  it("marks them view-only — the analytics endpoint is per-admin-area", () => {
+    for (const id of LGMS_SECTOR_IDS) {
+      expect(isViewOnlyDataset(id)).toBe(true);
+    }
+  });
+
+  // The tile server rejects any other `flux_type` with a 422 and the layer
+  // then silently never paints, so the exact spelling is worth pinning.
+  it("requests each sector with the flux_type the tile server accepts", () => {
+    expect(cards.map((c) => c.tile_url)).toEqual([
+      expect.stringContaining("?layer=lgms&flux_type=net"),
+      expect.stringContaining("?layer=lulucf&flux_type=net"),
+      expect.stringContaining("?layer=agriculture&flux_type=gross_emissions"),
+      expect.stringContaining("?layer=cropland&flux_type=gross_emissions"),
+      expect.stringContaining("?layer=livestock&flux_type=gross_emissions"),
+    ]);
+    for (const card of cards) {
+      expect(card.tile_url).not.toContain("flux_type=net_flux");
+    }
+  });
+
+  it("gives every card a legend the map legend can render", () => {
+    for (const card of cards) {
+      const legend = card.legend!;
+      expect(legend).toBeDefined();
+      expect(["divergent", "sequential"]).toContain(legend.type);
+      // The ramp legends label only their two end stops.
+      expect(legend.items?.[0]?.label).toBeTruthy();
+      expect(legend.items?.[legend.items.length - 1]?.label).toBeTruthy();
+    }
+  });
+});

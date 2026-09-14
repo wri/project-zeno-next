@@ -215,6 +215,102 @@ export const NET_FLUX_FEATURE_FLAG = "net-flux";
 const INTACT_FOREST_TILE_URL =
   "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2025/default/{z}/{x}/{y}.png";
 
+/**
+ * LGMS raster tiles (v1.0.3). One endpoint serves the whole system: `layer`
+ * picks the sector and `flux_type` the measure, so the cards below differ only
+ * in those two query params.
+ *
+ * `flux_type` is a strict enum — `net` | `gross_emissions` | `gross_removals`.
+ * Anything else (`net_flux`, notably) is rejected with a 422, and the tile
+ * simply never paints.
+ */
+const LGMS_TILE_BASE =
+  "https://tiles.globalforestwatch.org/wri_land_ghg_monitoring_system/v1.0.3/dynamic/{z}/{x}/{y}.png";
+
+type LgmsLayer = "lgms" | "lulucf" | "agriculture" | "cropland" | "livestock";
+type LgmsFluxType = "net" | "gross_emissions" | "gross_removals";
+
+const lgmsTileUrl = (layer: LgmsLayer, fluxType: LgmsFluxType): string =>
+  `${LGMS_TILE_BASE}?layer=${layer}&flux_type=${fluxType}`;
+
+/**
+ * BrBG ramp the LGMS tiles render net flux with, sink (teal) → source (brown),
+ * sampled from the published v1.0.3 tiles. These are the same browns and teals
+ * the net-flux charts use (`src/features/net-flux`), so the map layer and the
+ * analysis read as one dataset. The pale middle class straddles zero — the
+ * divergent legend labels that midpoint itself.
+ */
+const LGMS_NET_FLUX_RAMP = [
+  "#003c30",
+  "#01665e",
+  "#35978f",
+  "#80cdc1",
+  "#c7eae5",
+  "#d9e7d5",
+  "#f6e8c3",
+  "#dfc27d",
+  "#bf812d",
+  "#8c510a",
+  "#543005",
+];
+
+/** YlOrBr ramp the LGMS tiles render gross agricultural emissions with. */
+const LGMS_EMISSIONS_RAMP = [
+  "#ffffd4",
+  "#fee391",
+  "#fec44f",
+  "#fe9929",
+  "#d95f0e",
+  "#993404",
+];
+
+/**
+ * The tile server publishes no class breaks, so the ramps are labelled by
+ * direction rather than by invented numbers. Units come from the data-lake
+ * asset path (`.../Mg_CO2e_yr-1/...`): per-pixel megagrams CO2e per year.
+ */
+const LGMS_UNIT = "Mg CO2e/yr";
+
+// Only the two end stops carry a label: the divergent/sequential legends read
+// `items[0]` and `items[at(-1)]` and render the rest as a continuous bar.
+const lgmsRampItems = (ramp: string[], minLabel: string, maxLabel: string) =>
+  ramp.map((color, i) => ({
+    color,
+    label: i === 0 ? minLabel : i === ramp.length - 1 ? maxLabel : "",
+  }));
+
+const lgmsNetFluxLegend = (
+  title: string,
+  info: string,
+  note: string
+): DatasetLegendConfig => ({
+  title,
+  type: "divergent",
+  color: "#543005",
+  unit: LGMS_UNIT,
+  items: lgmsRampItems(
+    LGMS_NET_FLUX_RAMP,
+    "Removals (sink)",
+    "Emissions (source)"
+  ),
+  info,
+  note,
+});
+
+const lgmsEmissionsLegend = (
+  title: string,
+  info: string,
+  note: string
+): DatasetLegendConfig => ({
+  title,
+  type: "sequential",
+  color: "#993404",
+  unit: LGMS_UNIT,
+  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "Lower", "Higher"),
+  info,
+  note,
+});
+
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
     dataset_id: 11,
@@ -617,6 +713,129 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     // Analytics-only: no map tile layer. Picking this card enables the "View
     // Analysis" flow for a GADM admin AOI without adding a raster to the map.
     tile_url: "",
+  },
+  // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
+  // that one scopes the "View Analysis" flow to a GADM admin area, these paint
+  // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
+  // is per-admin-area and knows nothing about the individual sector layers —
+  // and share the LGMS review flag so the family is revealed together.
+  //
+  // NOTE: ids 13-17 are claimed client-side. The backend catalogue currently
+  // stops at 8; if it ever grows into this range these need renumbering.
+  {
+    dataset_id: 13,
+    dataset_name: "LGMS total net GHG flux",
+    shortName: "LGMS total net flux",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS total net GHG flux",
+    context_layer: null,
+    img: "/dataset_card_lgms_net_flux.webp",
+    viewOnly: true,
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["land-use"],
+    description:
+      "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
+    tile_url: lgmsTileUrl("lgms", "net"),
+    legend: lgmsNetFluxLegend(
+      "LGMS total net GHG flux",
+      "The balance of emissions and removals across every LGMS sector, so a single layer shows whether land is a net source or a net sink.",
+      "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+    ),
+  },
+  {
+    dataset_id: 14,
+    dataset_name: "LGMS LULUCF net GHG flux",
+    shortName: "LULUCF net flux",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS LULUCF net GHG flux",
+    context_layer: null,
+    img: "/dataset_card_lgms_lulucf.webp",
+    viewOnly: true,
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["land-use"],
+    description:
+      "Net greenhouse-gas flux from land use, land-use change and forestry (LULUCF) — the vegetation and soil half of the Land GHG Monitoring System, excluding agricultural emissions.",
+    tile_url: lgmsTileUrl("lulucf", "net"),
+    legend: lgmsNetFluxLegend(
+      "LGMS LULUCF net GHG flux",
+      "Isolates the LULUCF sector, so forest loss and regrowth can be read without agricultural emissions on top of them.",
+      "Per-pixel annual LULUCF net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+    ),
+  },
+  {
+    dataset_id: 15,
+    dataset_name: "LGMS agriculture emissions",
+    shortName: "Agriculture emissions",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS agriculture emissions",
+    context_layer: null,
+    img: "/dataset_card_lgms_agriculture.webp",
+    viewOnly: true,
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["land-use"],
+    description:
+      "Gross greenhouse-gas emissions from agriculture in the Land GHG Monitoring System — cropland and livestock combined. Agriculture is a source only, so this layer has no removals.",
+    tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
+    legend: lgmsEmissionsLegend(
+      "LGMS agriculture emissions",
+      "Total agricultural emissions, useful for seeing where farming rather than land-use change drives the land-sector footprint.",
+      "Per-pixel annual gross agricultural emissions in Mg CO2e/yr."
+    ),
+  },
+  {
+    dataset_id: 16,
+    dataset_name: "LGMS cropland emissions",
+    shortName: "Cropland emissions",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS cropland emissions",
+    context_layer: null,
+    img: "/dataset_card_lgms_cropland.webp",
+    viewOnly: true,
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["land-use"],
+    description:
+      "Gross greenhouse-gas emissions from cropland in the Land GHG Monitoring System — the crop half of the agriculture layer, covering sources such as rice cultivation, fertiliser use and crop-residue burning.",
+    tile_url: lgmsTileUrl("cropland", "gross_emissions"),
+    legend: lgmsEmissionsLegend(
+      "LGMS cropland emissions",
+      "The cropland component of agricultural emissions, for separating crop production from livestock in the land-sector total.",
+      "Per-pixel annual gross cropland emissions in Mg CO2e/yr."
+    ),
+  },
+  {
+    dataset_id: 17,
+    dataset_name: "LGMS livestock emissions",
+    shortName: "Livestock emissions",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS livestock emissions",
+    context_layer: null,
+    img: "/dataset_card_lgms_livestock.webp",
+    viewOnly: true,
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["land-use"],
+    description:
+      "Gross greenhouse-gas emissions from livestock in the Land GHG Monitoring System — the livestock half of the agriculture layer, covering sources such as enteric fermentation and manure management.",
+    tile_url: lgmsTileUrl("livestock", "gross_emissions"),
+    legend: lgmsEmissionsLegend(
+      "LGMS livestock emissions",
+      "The livestock component of agricultural emissions, for separating herds from crop production in the land-sector total.",
+      "Per-pixel annual gross livestock emissions in Mg CO2e/yr."
+    ),
   },
 ];
 
