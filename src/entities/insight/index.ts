@@ -12,6 +12,7 @@ export type {
 export { chartsToWidgets } from "./lib/charts-to-widgets";
 export { chartBatchKey } from "./lib/chart-batch-key";
 export { orderInsightsForPager } from "./lib/order-insights";
+export { codeActParts, isCuratedInsight } from "./lib/is-curated-insight";
 export { generateInsightTitle } from "./lib/insight-title";
 export type { InsightTitleInput } from "./lib/insight-title";
 export {
