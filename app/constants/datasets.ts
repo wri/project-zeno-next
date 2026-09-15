@@ -453,7 +453,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "IFL Mapping Team",
-    categories: ["land-use"],
+    categories: ["forests"],
     viewOnly: true,
     featureFlag: IFL_FEATURE_FLAG,
     description: IFL_DESCRIPTION,
@@ -473,7 +473,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "UMD",
     defaultStartYear: 2001,
     defaultEndYear: 2025,
-    categories: ["disturbance"],
+    categories: ["disturbance", "forests"],
     description:
       "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2025 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
@@ -500,7 +500,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "1 km",
     geographic_coverage: "global",
     provider: "WRI / Google",
-    categories: ["disturbance"],
+    categories: ["disturbance", "forests"],
     description:
       "Shows the primary driver or cause of tree cover loss over the entire range 2001-2025. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
@@ -533,7 +533,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    categories: ["land-use"],
+    categories: ["forests"],
     description:
       "Tree Cover Gain (Hansen/UMD/GLAD) identifies areas where new tree canopy was established between 2000 and 2012 at 30-meter resolution, using Landsat 7 imagery. It captures both  natural forest regrowth and tree plantation cycles, and is useful for tracking large-scale forest recovery trends. Users should note that it is a cumulative layer and should not be combined directly with loss or tree cover data to calculate net change.",
     tile_url:
@@ -559,7 +559,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    categories: ["land-use"],
+    categories: ["forests"],
     description:
       "Tree Cover provides global percent tree canopy cover at 30-meter resolution for the year 2000 based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
@@ -588,7 +588,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "UMD",
     defaultStartYear: 2001,
     defaultEndYear: 2025,
-    categories: ["disturbance", "wildfires"],
+    categories: ["disturbance", "wildfires", "forests"],
     description:
       "Tree Cover Loss due to Fires (Hansen/UMD/GLAD) maps annual global tree cover loss attributed to fire from 2001 to 2025 at 30-meter resolution. This subset of the broader Tree Cover Loss dataset isolates fire-driven stand-replacement disturbances in vegetation over 5 meters tall, helping users understand where fire is a dominant driver of forest loss.",
     tile_url:
@@ -619,7 +619,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["disturbance"],
+    categories: ["disturbance", "carbon-flux", "forests"],
     description:
       "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2025, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
     tile_url:
@@ -711,7 +711,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "WRI",
     defaultStartYear: 2016,
     defaultEndYear: 2024,
-    categories: ["land-use"],
+    categories: ["carbon-flux"],
     description:
       "Maps annual gross greenhouse-gas emissions, gross CO2 removals, and net GHG flux from land — vegetation, soil, and agriculture — for GADM administrative areas from 2016 to 2024. Values are in MgCO2e; emissions are positive (a source), removals negative (a sink).",
     // Analytics-only: no map tile layer. Picking this card enables the "View
@@ -739,7 +739,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["carbon-flux"],
     description:
       "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
     tile_url: lgmsTileUrl("lgms", "net"),
@@ -762,7 +762,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["carbon-flux"],
     description:
       "Net greenhouse-gas flux from land use, land-use change and forestry (LULUCF) — the vegetation and soil half of the Land GHG Monitoring System, excluding agricultural emissions.",
     tile_url: lgmsTileUrl("lulucf", "net"),
@@ -785,7 +785,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["carbon-flux"],
     description:
       "Gross greenhouse-gas emissions from agriculture in the Land GHG Monitoring System — cropland and livestock combined. Agriculture is a source only, so this layer has no removals.",
     tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
@@ -808,7 +808,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["carbon-flux"],
     description:
       "Gross greenhouse-gas emissions from cropland in the Land GHG Monitoring System — the crop half of the agriculture layer, covering sources such as rice cultivation, fertiliser use and crop-residue burning.",
     tile_url: lgmsTileUrl("cropland", "gross_emissions"),
@@ -831,7 +831,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["carbon-flux"],
     description:
       "Gross greenhouse-gas emissions from livestock in the Land GHG Monitoring System — the livestock half of the agriculture layer, covering sources such as enteric fermentation and manure management.",
     tile_url: lgmsTileUrl("livestock", "gross_emissions"),
