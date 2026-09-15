@@ -13,6 +13,12 @@ export interface DatasetLayerSpec {
   datasetId: number;
   layerName?: string;
   tileUrl?: string;
+  /**
+   * Highest zoom the tile endpoint serves. Set it and MapLibre overzooms
+   * (stretches) the deepest available tile instead of requesting levels the
+   * server will reject — LGMS caps at z12 and returns a 422 above it.
+   */
+  maxZoom?: number;
   parameters?: Record<string, unknown>;
   startDate?: string;
   endDate?: string;
@@ -38,6 +44,7 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
       type: "raster",
       visible: true,
       tileUrl: spec.tileUrl,
+      maxzoom: spec.maxZoom,
       datasetId: spec.datasetId,
       parameters: spec.parameters,
       startDate: spec.startDate,

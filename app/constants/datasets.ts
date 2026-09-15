@@ -70,6 +70,12 @@ export type DatasetCardConfig = {
   citation?: string;
   viewOnly?: boolean;
   /**
+   * Highest zoom this dataset's tile endpoint serves. Omit when the endpoint
+   * serves every zoom; set it and the raster source overzooms past that level
+   * rather than requesting tiles the server rejects.
+   */
+  maxZoom?: number;
+  /**
    * Gates the card behind a URL feature flag (`?ff=<flag>`): browse surfaces
    * (Data Catalog, layer menu) only list it while the flag is on. The card
    * stays in `DATASET_CARDS` either way, so a layer that is already on the map
@@ -735,6 +741,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_net_flux.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
@@ -758,6 +766,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_lulucf.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
@@ -781,6 +791,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_agriculture.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
@@ -804,6 +816,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_cropland.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
@@ -827,6 +841,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_livestock.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
