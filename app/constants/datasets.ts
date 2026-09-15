@@ -28,7 +28,7 @@ export type DatasetCategoryId =
   | "land-use"
   | "disturbance"
   | "wildfires"
-  | "carbon-flux"
+  | "ghg-fluxes"
   | "forests";
 
 export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
@@ -38,7 +38,7 @@ export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
   { id: "land-use", label: "Land use" },
   { id: "disturbance", label: "Disturbance" },
   { id: "wildfires", label: "Wildfires" },
-  { id: "carbon-flux", label: "Carbon flux" },
+  { id: "ghg-fluxes", label: "GHG fluxes" },
 ];
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
@@ -619,7 +619,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["disturbance"],
+    categories: ["disturbance", "ghg-fluxes", "forests"],
     description:
       "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2025, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
     tile_url:
@@ -711,7 +711,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "WRI",
     defaultStartYear: 2016,
     defaultEndYear: 2024,
-    categories: ["land-use"],
+    categories: ["ghg-fluxes"],
     description:
       "Maps annual gross greenhouse-gas emissions, gross CO2 removals, and net GHG flux from land — vegetation, soil, and agriculture — for GADM administrative areas from 2016 to 2024. Values are in MgCO2e; emissions are positive (a source), removals negative (a sink).",
     // Analytics-only: no map tile layer. Picking this card enables the "View
@@ -739,7 +739,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["ghg-fluxes"],
     description:
       "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
     tile_url: lgmsTileUrl("lgms", "net"),
@@ -762,7 +762,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["ghg-fluxes"],
     description:
       "Net greenhouse-gas flux from land use, land-use change and forestry (LULUCF) — the vegetation and soil half of the Land GHG Monitoring System, excluding agricultural emissions.",
     tile_url: lgmsTileUrl("lulucf", "net"),
@@ -785,7 +785,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["ghg-fluxes"],
     description:
       "Gross greenhouse-gas emissions from agriculture in the Land GHG Monitoring System — cropland and livestock combined. Agriculture is a source only, so this layer has no removals.",
     tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
@@ -808,7 +808,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["ghg-fluxes"],
     description:
       "Gross greenhouse-gas emissions from cropland in the Land GHG Monitoring System — the crop half of the agriculture layer, covering sources such as rice cultivation, fertiliser use and crop-residue burning.",
     tile_url: lgmsTileUrl("cropland", "gross_emissions"),
@@ -831,7 +831,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["land-use"],
+    categories: ["ghg-fluxes"],
     description:
       "Gross greenhouse-gas emissions from livestock in the Land GHG Monitoring System — the livestock half of the agriculture layer, covering sources such as enteric fermentation and manure management.",
     tile_url: lgmsTileUrl("livestock", "gross_emissions"),
