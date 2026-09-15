@@ -29,7 +29,10 @@ const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[])
     icon: ChatContextOptions[type].icon,
   }));
 
-import { DATASET_CARDS, DatasetCardConfig } from "../constants/datasets";
+import {
+  ORDERED_DATASET_CARDS,
+  DatasetCardConfig,
+} from "../constants/datasets";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
@@ -39,7 +42,7 @@ import { isAreaLayer } from "../store/layerManagerSlice";
 import type { Feature, MultiPolygon } from "geojson";
 import { datasetCardLayers } from "../utils/datasetCardLayerContext";
 
-const LAYER_CARDS = DATASET_CARDS;
+const LAYER_CARDS = ORDERED_DATASET_CARDS;
 
 function ContextNav({
   selected,
