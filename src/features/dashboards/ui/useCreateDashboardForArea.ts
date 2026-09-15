@@ -7,8 +7,7 @@ import { toaster } from "@/app/components/ui/toaster";
 import useChatStore from "@/app/store/chatStore";
 import {
   analysisService,
-  DEFAULT_ANALYSIS_START_DATE,
-  DEFAULT_ANALYSIS_END_DATE,
+  resolveAnalysisWindow,
 } from "@/src/features/analysis";
 
 import { addInsightWidget, createDashboard } from "../api/dashboards";
@@ -124,6 +123,8 @@ export function useCreateDashboardForArea(
 
     if (input.datasetId === undefined) return;
 
+    const fallbackWindow = resolveAnalysisWindow(input.datasetId);
+
     // Deliberately not awaited by the caller and not tied to an AbortController:
     // the user is free to navigate into the dashboard (or away) while this runs,
     // and the insight should still land.
@@ -136,9 +137,11 @@ export function useCreateDashboardForArea(
           subtype: input.subtype,
         },
         dataset: { id: input.datasetId, name: input.datasetName },
-        // The nudge always supplies a window; the AOI menu may not.
-        startDate: input.startDate ?? DEFAULT_ANALYSIS_START_DATE,
-        endDate: input.endDate ?? DEFAULT_ANALYSIS_END_DATE,
+        // The nudge always supplies a window; the AOI menu may not. Falling
+        // back per dataset keeps a window-less caller on the same period the
+        // nudges would have picked.
+        startDate: input.startDate ?? fallbackWindow.startDate,
+        endDate: input.endDate ?? fallbackWindow.endDate,
       });
       await addInsightWidget(dashboard.id, result.id);
       queryClient.invalidateQueries({

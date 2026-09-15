@@ -23,6 +23,9 @@ const selection: AreaSelection = {
 const TCL_ID = 4;
 // Intact Forest Landscapes — contextual, view-only, never analysable.
 const IFL_ID = 101;
+// Land GHG Monitoring System — the one card whose declared coverage
+// (2016–2024) is narrower than the catalogue-wide default.
+const LGMS_ID = 12;
 
 const seedLayer = (datasetId: number, name: string) =>
   useMapStore.setState({
@@ -127,6 +130,19 @@ describe("showViewAnalysisNudge", () => {
     expect(viewNudges()[0].viewAnalysisSuggestion).toMatchObject({
       startDate: "2001-01-01",
       endDate: "2025-12-31",
+    });
+  });
+
+  it("falls back to the dataset's own coverage when it declares one", () => {
+    // PZB-1355: LGMS covers 2016–2024. Seeding the catalogue-wide window made
+    // the YEARS chip read 2001–25 over a chart of 2016–2024 figures.
+    seedLayer(LGMS_ID, "Land GHG Monitoring System (LGMS)");
+
+    showViewAnalysisNudge(selection);
+
+    expect(viewNudges()[0].viewAnalysisSuggestion).toMatchObject({
+      startDate: "2016-01-01",
+      endDate: "2024-12-31",
     });
   });
 

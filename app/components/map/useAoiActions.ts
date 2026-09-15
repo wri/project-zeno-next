@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 
 import { toaster } from "@/app/components/ui/toaster";
 import { DATASET_BY_ID } from "@/app/constants/datasets";
@@ -13,8 +12,7 @@ import { toPolygons } from "@/app/utils/selectionPolygons";
 import {
   useAnalysis,
   useSelectionStore,
-  DEFAULT_ANALYSIS_START_DATE,
-  DEFAULT_ANALYSIS_END_DATE,
+  resolveAnalysisWindow,
 } from "@/src/features/analysis";
 import { useCreateDashboardForArea } from "@/src/features/dashboards";
 
@@ -85,12 +83,7 @@ export function useAoiActions(
       ? { id: datasetId, name: datasetName }
       : null;
 
-  const startDate = dateRange
-    ? format(dateRange.start, "yyyy-MM-dd")
-    : DEFAULT_ANALYSIS_START_DATE;
-  const endDate = dateRange
-    ? format(dateRange.end, "yyyy-MM-dd")
-    : DEFAULT_ANALYSIS_END_DATE;
+  const { startDate, endDate } = resolveAnalysisWindow(datasetId, dateRange);
 
   // A dashboard needs the full AOI identity; a label whose area resolved no id
   // can't be turned into one.
