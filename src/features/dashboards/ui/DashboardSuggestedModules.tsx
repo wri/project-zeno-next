@@ -305,12 +305,9 @@ export default function DashboardSuggestedModules({
       </Flex>
       <Flex wrap="wrap" gap="20px">
         {CURATED_SUGGESTED_MODULES.map((module) => {
-          const spec = specById.get(module.datasetId);
-          if (!spec) {
-            throw new Error(
-              `Suggested module ${module.id} names dataset ${module.datasetId}, which is not in the curated catalogue`
-            );
-          }
+          // curatedCatalogue() already validates every dataset id exists in
+          // the FE catalogue, so specById is guaranteed to have this entry.
+          const spec = specById.get(module.datasetId)!;
           return area ? (
             <CuratedModuleTile
               key={module.id}
