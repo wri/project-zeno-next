@@ -61,10 +61,10 @@ function Row({ row }: { row: NetFluxTooltipRow }) {
  *
  * It replaces `ChartWidget`'s generic `Chart.Tooltip` (wired through its
  * `tooltipContent` prop) for two reasons: that one can't render the hatched
- * agriculture swatches, and it lists cropland and livestock separately where
- * the design folds them into one "Agriculture (static)" row. Values carry no
- * unit — the y-axis title already states it, and repeating it on a dozen rows
- * is what made the tooltip outgrow the plot.
+ * agriculture swatches, and it prints a unit on every line, which is what made
+ * it outgrow the plot at Full detail. Values here carry no unit — the y-axis
+ * title already states it. Each bar segment gets its own row, so the tooltip
+ * lists exactly what the stack draws and the legend names.
  */
 export function NetFluxTooltip({
   active,
