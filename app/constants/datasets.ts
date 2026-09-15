@@ -859,6 +859,31 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
 ];
 
+const DATASET_CARD_BY_ID = new Map(DATASET_CARDS.map((c) => [c.dataset_id, c]));
+
+const DATASET_CARD_DISPLAY_ORDER: number[] = [
+  11, // Integrated alerts
+  1, // Global land cover
+  2, // Grasslands
+  3, // SBTN Natural lands
+  101, // Intact Forest Landscapes
+  4, // Tree cover loss
+  8, // TCL by driver
+  5, // Tree cover gain
+  7, // Tree cover
+  10, // TCL from fires
+  12, // LGMS
+  13, // LGMS total net flux
+  14, // LGMS LULUCF
+  15, // LGMS agriculture
+  16, // LGMS cropland
+  17, // LGMS livestock
+  6, // Forest GHG net flux
+];
+
+export const ORDERED_DATASET_CARDS: (DatasetCardConfig & { img?: string })[] =
+  DATASET_CARD_DISPLAY_ORDER.map((id) => DATASET_CARD_BY_ID.get(id)!);
+
 // Defaults applied to DatasetInfo when not provided by cards
 const DEFAULT_DATASET_FIELDS: Omit<
   DatasetInfo,
