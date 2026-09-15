@@ -31,10 +31,11 @@ export const ROW_HEIGHT = 36;
 export const AXIS_HEIGHT = 28;
 /**
  * Ceiling for the tree label column, which otherwise grows with its longest
- * label and starves the plot. 215px is what the deepest label the design shows
- * in full ("Trees remaining trees") measures at; the longer
- * "Non-trees remaining non-trees" needs 269px and so clips, exactly as the
- * frame draws it.
+ * label and starves the plot. 215px is what the longest label the design shows
+ * in full ("Trees remaining trees") measures at. The frame's own longest
+ * label, "Non-trees remaining non-trees", needed 269px and clipped; the product
+ * has since renamed that class "Non-tree vegetation" (see `lgms-labels`),
+ * which fits within the ceiling.
  *
  * It is a *maximum*, not a fixed width: the column flexes below it when the
  * card is too narrow to give the plot its floor as well. That is the design's
