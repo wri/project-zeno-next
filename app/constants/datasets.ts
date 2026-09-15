@@ -27,14 +27,18 @@ export type DatasetCategoryId =
   | "in-conversation"
   | "land-use"
   | "disturbance"
-  | "wildfires";
+  | "wildfires"
+  | "carbon-flux"
+  | "forests";
 
 export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
   { id: "all", label: "All datasets" },
   { id: "in-conversation", label: "In this conversation" },
+  { id: "forests", label: "Forests" },
   { id: "land-use", label: "Land use" },
   { id: "disturbance", label: "Disturbance" },
   { id: "wildfires", label: "Wildfires" },
+  { id: "carbon-flux", label: "Carbon flux" },
 ];
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
