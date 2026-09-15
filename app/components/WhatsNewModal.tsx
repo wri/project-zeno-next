@@ -39,12 +39,11 @@ const ANNOUNCEMENT = {
     "https://www.globalforestwatch.org/blog/data-and-tools/gfw-now-global-nature-watch/?utm_medium=notification&utm_source=homepage&utm_campaign=gnwannoucement",
 };
 
-// TODO: placeholder images pending final screenshots for the v5 features.
 const FEATURE_IMAGES: Record<number, string> = {
-  1: "/whats_new/map_workspace.png",
-  2: "/whats_new/charts.png",
-  3: "/whats_new/multi_area.png",
-  4: "/whats_new/smarter_agent.png",
+  1: "/whats_new/dashboards.png",
+  2: "/whats_new/organise_dashboards.png",
+  3: "/whats_new/satellite.png",
+  4: "/whats_new/wri_sources.png",
 };
 
 interface Feature {
@@ -64,7 +63,7 @@ const FEATURES: Feature[] = [
     step: 2,
     title: "Make a dashboard your own",
     description:
-      "Group charts into modules, drag sections to reorder them, and customise any chart from its menu. Suggested modules help you fill a new dashboard quickly.",
+      "Group charts into sections, drag sections to reorder them, and customise any chart using the section menu. Ask the assistant to create a new section for you.",
   },
   {
     step: 3,
