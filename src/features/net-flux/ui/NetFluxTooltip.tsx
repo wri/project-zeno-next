@@ -20,7 +20,10 @@ const PANEL_BG = "#1B1D29";
 const PANEL_RULE = "rgba(255, 255, 255, 0.18)";
 const LABEL_COLOR = "#DFE2EA";
 const VALUE_COLOR = "#FFFFFF";
-/** Wide enough for "Non-trees rem. non-trees" over two lines, per the design. */
+/**
+ * The design's panel width. The longest row label, "Cropland mgmt (static)",
+ * fits beside its value in at most two lines.
+ */
 const PANEL_WIDTH = 196;
 
 interface NetFluxTooltipProps {

@@ -1,5 +1,6 @@
 import type { InsightWidget } from "@/app/types/chat";
 import { niceTicks } from "@/src/shared/lib/chart-ticks";
+import { lgmsClassLabel } from "@/src/shared/lib/lgms-labels";
 import { mgToMt } from "@/src/shared/lib/units";
 
 export type NetFluxMeasure = "gross" | "net";
@@ -55,12 +56,15 @@ export const NET_FLUX_DIVERGENT_COLORS = {
 /**
  * Display label per LGMS class. The six leaf classes mirror the backend's own
  * `LGMS_CLASS_LABELS` (`src/api/services/charts/lgms.py`); the aggregate levels
- * and the two agriculture classes it doesn't name are supplied here.
+ * and the two agriculture classes it doesn't name are supplied here. Product
+ * renames are not written into this table: `seriesLabel` applies them from the
+ * shared `lgms-labels` module, which the tree chart reads too.
  */
 const CLASS_LABELS: Record<string, string> = {
   tree_loss: "Tree loss",
   tree_gain: "Tree gain",
   trees_remaining_trees: "Trees remaining trees",
+  // Renders as "Non-tree vegetation" — see `LGMS_CLASS_RENAMES`.
   non_trees_remaining_non_trees: "Non-trees remaining non-trees",
   mineral_soil: "Mineral soil",
   organic_soil: "Organic soil",
@@ -77,13 +81,13 @@ const CLASS_LABELS: Record<string, string> = {
 
 /**
  * Shorter labels for the removals column. The two columns sit side by side, so
- * the design lets the removals side drop the qualifier its emissions twin needs
- * ("Mineral" beside "Mineral soil") — the column heading already supplies it.
+ * the design lets the removals side shorten a label its emissions twin spells
+ * out ("Trees remaining" beside "Trees remaining trees"). Only that one class
+ * is shortened: a label that dropped its noun ("Mineral" for mineral soil)
+ * read as a different thing from its emissions twin, so those now match.
  */
 const REMOVALS_LABELS: Record<string, string> = {
   trees_remaining_trees: "Trees remaining",
-  non_trees_remaining_non_trees: "Non-trees",
-  mineral_soil: "Mineral",
 };
 
 /**
@@ -185,7 +189,11 @@ export function seriesGroup(field: string): NetFluxGroup | null {
   return null;
 }
 
-/** Human label for a series field, derived from its class prefix and side. */
+/**
+ * Human label for a series field, derived from its class prefix and side:
+ * the removals short form where there is one, else the class label with the
+ * product's renames applied.
+ */
 export function seriesLabel(field: string): string {
   const group = seriesGroup(field);
   if (!group) return field;
@@ -194,19 +202,21 @@ export function seriesLabel(field: string): string {
     const short = REMOVALS_LABELS[className];
     if (short) return short;
   }
-  return CLASS_LABELS[className] ?? className.replace(/_/g, " ");
+  return lgmsClassLabel(
+    className,
+    CLASS_LABELS[className] ?? className.replace(/_/g, " ")
+  );
 }
 
 /**
  * Shorter still for the hover tooltip, which is about half the legend's width
- * and puts the value in its own right-hand column. The two longest emissions
- * labels need it, and so do the two agriculture classes, which keep the
- * "static" caveat but drop the year — the chart header already dates it. The
- * removals column already has `REMOVALS_LABELS`.
+ * and puts the value in its own right-hand column. The longest emissions label
+ * needs it, and so do the two agriculture classes, which keep the "static"
+ * caveat but drop the year — the chart header already dates it. The removals
+ * column already has `REMOVALS_LABELS`.
  */
 const TOOLTIP_LABELS: Record<string, string> = {
   trees_remaining_trees: "Trees rem. trees",
-  non_trees_remaining_non_trees: "Non-trees rem. non-trees",
   cropland: "Cropland mgmt (static)",
   livestock: "Livestock (static)",
 };

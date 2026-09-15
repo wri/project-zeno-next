@@ -132,21 +132,27 @@ describe("seriesLabel", () => {
     expect(seriesLabel("land_use_removals")).toBe("Land use");
   });
 
-  it("shortens the removals side where the design pairs the two columns", () => {
+  it("shortens only trees-remaining on the removals side, where the design pairs the columns", () => {
     expect(seriesLabel("trees_remaining_trees_emissions")).toBe(
       "Trees remaining trees"
     );
     expect(seriesLabel("trees_remaining_trees_removals")).toBe(
       "Trees remaining"
     );
+  });
+
+  it("names the non-trees class as non-tree vegetation on both sides", () => {
     expect(seriesLabel("non_trees_remaining_non_trees_emissions")).toBe(
-      "Non-trees remaining non-trees"
+      "Non-tree vegetation"
     );
     expect(seriesLabel("non_trees_remaining_non_trees_removals")).toBe(
-      "Non-trees"
+      "Non-tree vegetation"
     );
+  });
+
+  it("keeps the soil qualifier on both sides", () => {
     expect(seriesLabel("mineral_soil_emissions")).toBe("Mineral soil");
-    expect(seriesLabel("mineral_soil_removals")).toBe("Mineral");
+    expect(seriesLabel("mineral_soil_removals")).toBe("Mineral soil");
   });
 
   it("marks the two agriculture classes as the fixed 2020 figure", () => {
@@ -171,12 +177,18 @@ describe("tooltipSeriesLabel", () => {
     );
   });
 
-  it("abbreviates the two longest emissions labels", () => {
+  it("abbreviates the longest emissions label", () => {
     expect(tooltipSeriesLabel("trees_remaining_trees_emissions")).toBe(
       "Trees rem. trees"
     );
+  });
+
+  it("prints non-tree vegetation in full on both sides, as the legend does", () => {
     expect(tooltipSeriesLabel("non_trees_remaining_non_trees_emissions")).toBe(
-      "Non-trees rem. non-trees"
+      "Non-tree vegetation"
+    );
+    expect(tooltipSeriesLabel("non_trees_remaining_non_trees_removals")).toBe(
+      "Non-tree vegetation"
     );
   });
 
@@ -395,13 +407,13 @@ describe("netFluxTooltipRows", () => {
       "Cropland mgmt (static)",
       "Organic soil",
       "Mineral soil",
-      "Non-trees rem. non-trees",
+      "Non-tree vegetation",
       "Trees rem. trees",
       "Tree loss",
       "Tree gain",
       "Trees remaining",
-      "Non-trees",
-      "Mineral",
+      "Non-tree vegetation",
+      "Mineral soil",
     ]);
   });
 
@@ -504,13 +516,13 @@ describe("netFluxTooltipRows", () => {
     expect(labels).not.toContain("Livestock (static)");
     expect(labels).toEqual([
       "Mineral soil",
-      "Non-trees rem. non-trees",
+      "Non-tree vegetation",
       "Trees rem. trees",
       "Tree loss",
       "Tree gain",
       "Trees remaining",
-      "Non-trees",
-      "Mineral",
+      "Non-tree vegetation",
+      "Mineral soil",
     ]);
   });
 
