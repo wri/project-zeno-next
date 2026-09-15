@@ -148,7 +148,7 @@ export default function DashboardDetailPage() {
                 <>
                   <DashboardWidgetsGrid dashboard={dashboard} />
                   <DashboardSuggestedModules
-                    dashboard={dashboard}
+                    dashboardId={dashboard.id}
                     isOwner={isOwner}
                   />
                 </>

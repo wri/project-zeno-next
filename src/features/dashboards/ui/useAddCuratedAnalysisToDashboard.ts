@@ -55,19 +55,6 @@ export function curatedAnalysisTitle(
   });
 }
 
-/**
- * How an `addNow` ended. `not-allowed` covers every early return: not the
- * owner, already added, the add already locked, no data known for the area,
- * or an add already pending for this entry.
- */
-export type AddCuratedAnalysisOutcome =
-  | "added"
-  | "cancelled"
-  | "unavailable"
-  | "no-data"
-  | "error"
-  | "not-allowed";
-
 export interface AddCuratedAnalysisToDashboard {
   title: string;
   /** The run's lifecycle (see `CuratedAnalysisState`). */
@@ -95,10 +82,11 @@ export interface AddCuratedAnalysisToDashboard {
   removeNeedsConfirm: boolean;
   /**
    * One gesture: register the loading module, run the analysis (or reuse /
-   * retry it), then add the persisted insight. Resolves with how it ended,
-   * once the add has settled or the flow stopped short. Never throws.
+   * retry it), then add the persisted insight. Resolves when the add has
+   * settled or the flow ended without adding (unavailable, no data, error,
+   * cancelled, not allowed). Never throws.
    */
-  addNow: () => Promise<AddCuratedAnalysisOutcome>;
+  addNow: () => Promise<void>;
   /** Abandon a pending run-then-add: drops the loading module, adds nothing. */
   cancel: () => void;
   /** Removes the widget when `added`. Does not confirm; see `removeNeedsConfirm`. */
@@ -139,7 +127,7 @@ export function useAddCuratedAnalysisToDashboard(
   const pending = pendingWidget.isPending;
   const busy = state === "running" || pending || insight.pending;
 
-  const addNow = async (): Promise<AddCuratedAnalysisOutcome> => {
+  const addNow = async () => {
     if (
       insight.added ||
       !insight.canAdd ||
@@ -147,7 +135,7 @@ export function useAddCuratedAnalysisToDashboard(
       state === "no-data" ||
       pendingWidget.isPendingNow()
     ) {
-      return "not-allowed";
+      return;
     }
     pendingWidget.begin({
       title,
@@ -162,16 +150,11 @@ export function useAddCuratedAnalysisToDashboard(
           ? await analysis.retry()
           : await analysis.start();
       // Cancelled meanwhile: the entry is gone, so nothing is added.
-      if (!pendingWidget.isPendingNow()) return "cancelled";
+      if (!pendingWidget.isPendingNow()) return;
       if (result && result.charts.length > 0) {
         pendingWidget.attachInsightId(result.id);
         await insight.add(result.id);
-        return "added";
       }
-      // The run ended without charts: read how, since this closure's `state`
-      // predates the run.
-      const ended = analysis.readState();
-      return ended === "unavailable" || ended === "no-data" ? ended : "error";
     } finally {
       // Whatever happened (added, unavailable, no data, error, cancelled),
       // release the module so nothing sticks in "Running".
