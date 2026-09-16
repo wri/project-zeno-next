@@ -63,8 +63,8 @@ export interface DatasetLayerSpec {
   // non-empty.
   layers?: DatasetLayerEntry[];
   // Name of the one entry in `layers` to show by default when there's more
-  // than one; the rest are added hidden (opacity 0). Ignored when there's
-  // only one layer.
+  // than one; the rest are added hidden (visible: false). Ignored when
+  // there's only one layer.
   selectedLayerName?: string;
   layerName?: string;
   tileUrl?: string;
@@ -109,17 +109,16 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
 
   const primaryLayerId = datasetLayerId(spec.datasetId, 0, entries[0].name);
   // When a dataset declares multiple layers, only one is shown by default —
-  // the rest are added to the map (so they appear in the layer list) but
-  // hidden via opacity 0 until the user toggles them on.
+  // the rest are added to the map with visible: false (so they appear in
+  // the layer list, toggleable via the catalog's eye icon) until the user
+  // turns them on.
   const selectedLayerName =
     entries.length > 1 ? (spec.selectedLayerName ?? entries[0].name) : null;
   const layers: Layer[] = entries.map((entry, index) => ({
     id: datasetLayerId(spec.datasetId, index, entry.name),
     name: entry.name,
     type: "raster",
-    visible: true,
-    opacity:
-      selectedLayerName && entry.name !== selectedLayerName ? 0 : undefined,
+    visible: !(selectedLayerName && entry.name !== selectedLayerName),
     tileUrl: entry.tileUrl,
     datasetId: spec.datasetId,
     parameters: spec.parameters,
