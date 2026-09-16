@@ -1,7 +1,7 @@
 "use client";
 import { Box, Container, Heading, Text, Flex } from "@chakra-ui/react";
 import { WarningIcon } from "@phosphor-icons/react";
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 import LclLogo from "./components/LclLogo";
 
 export default function NotFound() {

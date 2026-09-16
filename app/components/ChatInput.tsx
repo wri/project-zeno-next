@@ -31,7 +31,7 @@ import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "@/app/lib/router";
 import {
   firstMessageRedirectPath,
   isAppRoute,

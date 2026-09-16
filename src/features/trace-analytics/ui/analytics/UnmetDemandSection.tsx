@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react";
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 import { Box, Flex, Table, Text } from "@chakra-ui/react";
 import { ChartCard } from "../charts/ChartCard";
 import { OUTCOME_COLORS, OUTCOME_LABELS } from "../charts/palette";

@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, BoxProps, Text, Link as ChLink } from "@chakra-ui/react";
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 
 import ChatStatusInfo from "./components/ChatStatusInfo";
 import { usePromptQuota } from "./hooks/usePromptQuota";

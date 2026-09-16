@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 import { tabHref } from "../links";
 import { Badge, Box, Button, Flex, Table, Text } from "@chakra-ui/react";
 import type { UserActivity } from "../../lib/analytics/topUsers";

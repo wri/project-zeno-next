@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/app/lib/router";
 import {
   Button,
   Flex,
@@ -16,7 +16,7 @@ import {
   Progress,
   Spinner,
 } from "@chakra-ui/react";
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {

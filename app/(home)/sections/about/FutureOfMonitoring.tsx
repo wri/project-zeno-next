@@ -1,5 +1,4 @@
-import NextImage from "next/image";
-import { Box, Container, Heading, Flex, Text } from "@chakra-ui/react";
+import { Box, Container, Heading, Flex, Image, Text } from "@chakra-ui/react";
 
 export default function FutureOfMonitoringSection() {
   return (
@@ -68,11 +67,14 @@ export default function FutureOfMonitoringSection() {
                 rounded="md"
                 overflow="hidden"
               >
-                <NextImage
+                <Image
                   src="/fm-1a.webp"
                   alt="image of a field"
-                  fill
-                  style={{ objectFit: "cover" }}
+                  position="absolute"
+                  inset="0"
+                  w="full"
+                  h="full"
+                  objectFit="cover"
                 />
               </Box>
               <Box
@@ -84,11 +86,14 @@ export default function FutureOfMonitoringSection() {
                 rounded="md"
                 overflow="hidden"
               >
-                <NextImage
+                <Image
                   src="/fm-1b.webp"
                   alt="image of a field"
-                  fill
-                  style={{ objectFit: "cover" }}
+                  position="absolute"
+                  inset="0"
+                  w="full"
+                  h="full"
+                  objectFit="cover"
                 />
               </Box>
               <Box
@@ -100,11 +105,14 @@ export default function FutureOfMonitoringSection() {
                 rounded="md"
                 overflow="hidden"
               >
-                <NextImage
+                <Image
                   src="/fm-1c.webp"
                   alt="image of a field"
-                  fill
-                  style={{ objectFit: "cover" }}
+                  position="absolute"
+                  inset="0"
+                  w="full"
+                  h="full"
+                  objectFit="cover"
                 />
               </Box>
             </Box>
@@ -162,11 +170,15 @@ export default function FutureOfMonitoringSection() {
                 left="50%"
                 transform="translateX(-50%)"
               >
-                <NextImage
+                <Image
                   src="/fm-2.webp"
                   alt="Smartphone mockup of monitoring application"
-                  fill
-                  style={{ objectFit: "cover", objectPosition: "80%" }}
+                  position="absolute"
+                  inset="0"
+                  w="full"
+                  h="full"
+                  objectFit="cover"
+                  objectPosition="80%"
                 />
               </Box>
             </Box>
@@ -193,15 +205,16 @@ export default function FutureOfMonitoringSection() {
               w="full"
               h={{ base: "14rem", md: "17rem" }}
             >
-              <NextImage
-                style={{
-                  objectPosition: "80%",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                }}
+              <Image
                 src="/integrations.svg"
                 alt="Global Nature Watch Horizon integrations"
-                fill
+                position="absolute"
+                inset="0"
+                w="full"
+                h="full"
+                objectPosition="80%"
+                left="50%"
+                transform="translateX(-50%)"
               />
             </Box>
           </Flex>
