@@ -7,9 +7,11 @@
  * widget card. Consumers import ONLY from this barrel.
  */
 export {
+  csvColumnName,
   deriveNetFluxVariant,
   isNetFluxWidget,
   NET_FLUX_LINE_FIELD,
+  netFluxCsvRows,
   netFluxTableProps,
   seriesGroup,
   seriesLabel,
