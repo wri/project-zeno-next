@@ -49,6 +49,7 @@ export function Pill({
           rounded="4px"
           variant="outline"
           _hover={{ bg: "neutral.100" }}
+          _icon={{ width: "auto", height: "auto" }}
           aria-label={`${label}: ${value}`}
         >
           <Text
@@ -89,7 +90,7 @@ export function Pill({
                 }}
                 onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
               >
-                <InfoIcon size={14} color="#656E7B" />
+                <InfoIcon size={16} color="#737C94" />
               </Box>
             </Tooltip>
           )}

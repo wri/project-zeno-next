@@ -15,7 +15,7 @@ export function ChartInfoTooltip({ children }: { children: ReactNode }) {
       positioning={{ placement: "bottom" }}
     >
       <Box as="span" display="inline-flex" cursor="pointer" flexShrink={0}>
-        <InfoIcon size={16} color="#656E7B" />
+        <InfoIcon size={16} color="#737C94" />
       </Box>
     </Tooltip>
   );
