@@ -213,6 +213,34 @@ describe("useCreateDashboardForArea", () => {
     expect(addInsightWidget).toHaveBeenCalledWith("new-dash", "insight-1");
   });
 
+  it("falls back to the dataset's own coverage when no window is supplied", async () => {
+    // PZB-1355: LGMS covers 2016–2024; the catalogue-wide 2001–2025 default
+    // would seed the dashboard with an analysis labelled for years it lacks.
+    const lgmsWithoutWindow: CreateDashboardForAreaInput = {
+      areaName: input.areaName,
+      source: input.source,
+      srcId: input.srcId,
+      subtype: input.subtype,
+      datasetId: 12,
+      datasetName: "Land GHG Monitoring System (LGMS)",
+    };
+    const { result } = renderHook(
+      () => useCreateDashboardForArea(lgmsWithoutWindow),
+      { wrapper: wrapper() }
+    );
+    await waitFor(() => expect(result.current.isResolving).toBe(false));
+
+    await act(() => result.current.create());
+
+    expect(analysisService.run).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataset: { id: 12, name: "Land GHG Monitoring System (LGMS)" },
+        startDate: "2016-01-01",
+        endDate: "2024-12-31",
+      })
+    );
+  });
+
   it("skips the analysis when no dataset is active", async () => {
     const noDataset: CreateDashboardForAreaInput = {
       areaName: input.areaName,

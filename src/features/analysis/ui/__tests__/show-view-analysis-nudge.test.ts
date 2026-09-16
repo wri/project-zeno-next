@@ -197,6 +197,25 @@ describe("showViewAnalysisNudge", () => {
     expect(nudges[0].id).toBe(firstId);
   });
 
+  it("re-offers when the pinned date range changes under the same area", () => {
+    seedLayer(TCL_ID, "Tree cover loss");
+    showViewAnalysisNudge(selection);
+    const firstId = viewNudges()[0].id;
+
+    seedDateRange(new Date(2020, 2, 1), new Date(2021, 3, 2));
+    showViewAnalysisNudge(selection);
+
+    // Accepting runs the suggestion's own dates, so a stale payload here would
+    // analyse (and label the YEARS chip with) the previous window.
+    const nudges = viewNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].id).not.toBe(firstId);
+    expect(nudges[0].viewAnalysisSuggestion).toMatchObject({
+      startDate: "2020-03-01",
+      endDate: "2021-04-02",
+    });
+  });
+
   it("does nothing when no dataset is active (analysis stays gated)", () => {
     expect(showViewAnalysisNudge(selection)).toBe(false);
     expect(viewNudges()).toHaveLength(0);

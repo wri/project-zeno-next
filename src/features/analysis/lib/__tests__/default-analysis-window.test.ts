@@ -9,7 +9,7 @@ import {
 // Catalogue ids under test (app/constants/datasets.ts).
 const LGMS_ID = 12; // declares 2016–2024
 const TCL_ID = 4; // declares 2001–2025 — same as the catalogue-wide default
-const IFL_ID = 11; // declares no coverage of its own
+const INTEGRATED_ALERTS_ID = 11; // declares no coverage of its own
 const UNCATALOGUED_ID = 9999;
 
 describe("resolveAnalysisWindow", () => {
@@ -30,7 +30,7 @@ describe("resolveAnalysisWindow", () => {
   });
 
   it("falls back to the catalogue-wide default when the card declares no coverage", () => {
-    expect(resolveAnalysisWindow(IFL_ID)).toEqual({
+    expect(resolveAnalysisWindow(INTEGRATED_ALERTS_ID)).toEqual({
       startDate: DEFAULT_ANALYSIS_START_DATE,
       endDate: DEFAULT_ANALYSIS_END_DATE,
     });
