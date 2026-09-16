@@ -3,6 +3,7 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 
 import useInsightStore from "@/app/store/insightStore";
 import type { InsightWidget } from "@/app/types/chat";
+import { MeasureInfo } from "@/src/shared/ui/MeasureInfo";
 import { Pill } from "@/src/shared/ui/Pill";
 
 import { useNetFluxDetail, useNetFluxView } from "./use-net-flux-view";
@@ -19,29 +20,6 @@ const MEASURE_LABEL: Record<NetFluxMeasure, string> = {
   net: "Net",
 };
 const MEASURE_OPTIONS: NetFluxMeasure[] = ["gross", "net"];
-
-function MeasureInfo() {
-  return (
-    <Box>
-      <Text fontWeight="bold" mb="4px">
-        Measure
-      </Text>
-      <Text mb="8px">
-        <Text as="span" fontWeight="bold">
-          Gross:
-        </Text>{" "}
-        Gross emissions and removals with net flux depicted as a line.
-      </Text>
-      <Text>
-        <Text as="span" fontWeight="bold">
-          Net:
-        </Text>{" "}
-        Only net fluxes. For categories with only emissions, gross and net
-        values are the same.
-      </Text>
-    </Box>
-  );
-}
 
 function DetailInfo() {
   return (

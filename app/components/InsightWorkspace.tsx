@@ -41,6 +41,7 @@ import {
 import {
   FLUX_TREE_CARD_WIDTH,
   GhgFluxMeasurePill,
+  GhgFluxTreeChartInfo,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
 
@@ -302,6 +303,7 @@ export default function InsightWorkspace() {
                   {widget.title}
                 </Heading>
                 {isNetFluxWidget(widget) && <NetFluxChartInfo />}
+                {isFluxTreeWidget(widget) && <GhgFluxTreeChartInfo />}
               </Flex>
               {hasChips && (
                 <AnalysisParametersToggle

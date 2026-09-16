@@ -41,6 +41,7 @@ import {
   fluxTreeTableProps,
   GhgFluxMeasurePill,
   GhgFluxTreeBody,
+  GhgFluxTreeChartInfo,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
@@ -292,6 +293,7 @@ export default function WidgetMessage({
             {widget.title}
           </Heading>
           {isNetFlux && <NetFluxChartInfo />}
+          {isFluxTree && <GhgFluxTreeChartInfo />}
         </Flex>
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">

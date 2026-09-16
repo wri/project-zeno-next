@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Box, Flex } from "@chakra-ui/react";
 
 import type { InsightWidget } from "@/app/types/chat";
+import { MeasureInfo } from "@/src/shared/ui/MeasureInfo";
 import { Pill } from "@/src/shared/ui/Pill";
 
 import { parseFluxNodes, type FluxMeasure } from "../model/hierarchy";
@@ -48,6 +49,7 @@ export function GhgFluxMeasurePill({
             label: MEASURE_LABEL[value],
           }))}
           onSelect={(value) => setMeasure(value as FluxMeasure)}
+          info={<MeasureInfo />}
         />
       </Flex>
     </Flex>
