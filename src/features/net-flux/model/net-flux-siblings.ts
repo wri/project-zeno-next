@@ -60,13 +60,11 @@ function orderSiblings(group: InsightWidget[]): InsightWidget[] {
 /** The Category widget from an ordered siblings list, or the first if missing. */
 export function defaultNetFluxSibling(
   siblings: InsightWidget[]
-): InsightWidget | null {
+): InsightWidget | undefined {
   return (
     siblings.find(
       (w) => netFluxWidgetDetailLabel(w) === DEFAULT_DETAIL_LABEL
-    ) ??
-    siblings[0] ??
-    null
+    ) ?? siblings[0]
   );
 }
 
@@ -110,9 +108,7 @@ export function collapseNetFluxSiblings(
     );
     const selectedId = selectedByGroup[key];
     out.push(
-      group.find((w) => w.id === selectedId) ??
-        defaultNetFluxSibling(group) ??
-        group[0]
+      group.find((w) => w.id === selectedId) ?? defaultNetFluxSibling(group)!
     );
   }
 
