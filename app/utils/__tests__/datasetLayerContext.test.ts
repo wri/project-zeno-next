@@ -162,8 +162,8 @@ describe("buildDatasetLayers", () => {
       ],
     });
 
-    expect(layers[0].opacity).toBeUndefined();
-    expect(layers[1].opacity).toBe(0);
+    expect(layers[0].visible).toBe(true);
+    expect(layers[1].visible).toBe(false);
   });
 
   it("hides all but the requested `selectedLayerName` layer", () => {
@@ -176,8 +176,8 @@ describe("buildDatasetLayers", () => {
       ],
     });
 
-    expect(layers[0].opacity).toBe(0);
-    expect(layers[1].opacity).toBeUndefined();
+    expect(layers[0].visible).toBe(false);
+    expect(layers[1].visible).toBe(true);
   });
 
   it("leaves opacity untouched for a single layer", () => {

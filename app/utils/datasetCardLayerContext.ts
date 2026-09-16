@@ -46,7 +46,7 @@ export function getLayerContextFromDatasetCard(
  * plus an optional context sub-layer. */
 export function datasetCardLayers(card: DatasetCardConfig): Layer[] {
   const context = getLayerContextFromDatasetCard(card);
-  if (!context.tileUrl) {
+  if (!context.tileUrl && !context.layers?.length) {
     // Analytics-only dataset (e.g. LGMS): no raster to render, but the layer
     // manager is still the source of truth for "is this dataset active" (see
     // showViewAnalysisNudge). DynamicTileLayers already skips raster layers
