@@ -40,23 +40,37 @@ export function netFluxDetailLabel(title: string): string {
 }
 
 /**
- * The roll-up a group opens on, and the first DETAIL option. The backend sends
- * Full detail first, but eleven series is too dense a first read; Category
- * shows what drives the flux at a glance, so it leads and Full/Summary follow
- * in the order the backend sent them.
+ * The roll-up a group opens on. Category shows what drives the flux at a
+ * glance, so it's the initial selection even though it's second in the
+ * DETAIL pill order (Summary → Category → Full).
  */
 const DEFAULT_DETAIL_LABEL = "Category";
 
-/** The default detail first, then the rest in the order the backend sent. */
+const DETAIL_DISPLAY_ORDER = ["Summary", "Category", "Full detail"];
+
+/** Tabs ordered Summary → Category → Full, regardless of backend order. */
 function orderSiblings(group: InsightWidget[]): InsightWidget[] {
-  const lead = group.findIndex(
-    (w) => netFluxWidgetDetailLabel(w) === DEFAULT_DETAIL_LABEL
-  );
-  if (lead <= 0) return group;
-  return [group[lead], ...group.slice(0, lead), ...group.slice(lead + 1)];
+  return [...group].sort((a, b) => {
+    const ia = DETAIL_DISPLAY_ORDER.indexOf(netFluxWidgetDetailLabel(a));
+    const ib = DETAIL_DISPLAY_ORDER.indexOf(netFluxWidgetDetailLabel(b));
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
 }
 
-/** Every chart sharing this widget's group, default detail first. */
+/** The Category widget from an ordered siblings list, or the first if missing. */
+export function defaultNetFluxSibling(
+  siblings: InsightWidget[]
+): InsightWidget | null {
+  return (
+    siblings.find(
+      (w) => netFluxWidgetDetailLabel(w) === DEFAULT_DETAIL_LABEL
+    ) ??
+    siblings[0] ??
+    null
+  );
+}
+
+/** Every chart sharing this widget's group, in display order. */
 export function netFluxSiblings(
   insights: InsightWidget[],
   widget: InsightWidget
@@ -69,8 +83,8 @@ export function netFluxSiblings(
 
 /**
  * The workspace's pager list with each net-flux group folded to a single
- * entry — the sibling currently selected by its DETAIL pill, defaulting to the
- * group's lead roll-up (Category, per `orderSiblings`).
+ * entry — the sibling currently selected by its DETAIL pill, defaulting to
+ * the Category roll-up regardless of display order.
  *
  * Without this the three roll-ups would be three pager entries *and* three
  * DETAIL options, giving two competing ways to reach the same chart.
@@ -95,7 +109,11 @@ export function collapseNetFluxSiblings(
       insights.filter((w) => netFluxGroupKey(w) === key)
     );
     const selectedId = selectedByGroup[key];
-    out.push(group.find((w) => w.id === selectedId) ?? group[0]);
+    out.push(
+      group.find((w) => w.id === selectedId) ??
+        defaultNetFluxSibling(group) ??
+        group[0]
+    );
   }
 
   return out;

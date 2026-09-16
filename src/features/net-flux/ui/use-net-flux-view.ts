@@ -4,6 +4,7 @@ import useNetFluxViewStore, {
   DEFAULT_NET_FLUX_VIEW,
 } from "../model/net-flux-view-store";
 import type { InsightWidget } from "@/app/types/chat";
+import { defaultNetFluxSibling } from "../model/net-flux-siblings";
 import type { NetFluxMeasure } from "../model/net-flux-variants";
 
 /**
@@ -40,7 +41,8 @@ export function useNetFluxDetail(
   const selectDetail = useNetFluxViewStore((s) => s.selectDetail);
 
   const selected =
-    siblings.find((w) => w.id === selectedId) ?? siblings[0] ?? null;
+    siblings.find((w) => w.id === selectedId) ??
+    defaultNetFluxSibling(siblings);
 
   const select = useCallback(
     (widgetId: string) => {

@@ -18,6 +18,7 @@ export {
 } from "./model/net-flux-variants";
 export {
   collapseNetFluxSiblings,
+  defaultNetFluxSibling,
   netFluxDetailLabel,
   netFluxWidgetDetailLabel,
   netFluxWidgetDetailPillLabel,
@@ -31,4 +32,5 @@ export {
   useNetFluxView,
 } from "./ui/use-net-flux-view";
 export { NetFluxToolbar } from "./ui/NetFluxToolbar";
+export { NetFluxChartInfo } from "./ui/NetFluxChartInfo";
 export { NetFluxChartBody } from "./ui/NetFluxChartBody";

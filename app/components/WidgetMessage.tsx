@@ -54,6 +54,7 @@ import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 import {
   NetFluxChartBody,
+  NetFluxChartInfo,
   NetFluxToolbar,
   deriveNetFluxVariant,
   isNetFluxWidget,
@@ -290,6 +291,7 @@ export default function WidgetMessage({
           >
             {widget.title}
           </Heading>
+          {isNetFlux && <NetFluxChartInfo />}
         </Flex>
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">

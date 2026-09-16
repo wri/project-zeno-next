@@ -1,5 +1,5 @@
 "use client";
-import { Box, Flex } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 
 import useInsightStore from "@/app/store/insightStore";
 import type { InsightWidget } from "@/app/types/chat";
@@ -19,6 +19,60 @@ const MEASURE_LABEL: Record<NetFluxMeasure, string> = {
   net: "Net",
 };
 const MEASURE_OPTIONS: NetFluxMeasure[] = ["gross", "net"];
+
+function MeasureInfo() {
+  return (
+    <Box>
+      <Text fontWeight="bold" mb="4px">
+        Measure
+      </Text>
+      <Text mb="8px">
+        <Text as="span" fontWeight="bold">
+          Gross:
+        </Text>{" "}
+        Gross emissions and removals with net flux depicted as a line.
+      </Text>
+      <Text>
+        <Text as="span" fontWeight="bold">
+          Net:
+        </Text>{" "}
+        Only net fluxes. For categories with only emissions, gross and net
+        values are the same.
+      </Text>
+    </Box>
+  );
+}
+
+function DetailInfo() {
+  return (
+    <Box>
+      <Text fontWeight="bold" mb="4px">
+        Detail
+      </Text>
+      <Text mb="8px">
+        <Text as="span" fontWeight="bold">
+          Full:
+        </Text>{" "}
+        Vegetation and soil fluxes are separated into components. Cropland
+        management and livestock are separate.
+      </Text>
+      <Text mb="8px">
+        <Text as="span" fontWeight="bold">
+          Categories:
+        </Text>{" "}
+        Vegetation and soil are separate. Cropland management and livestock are
+        separate.
+      </Text>
+      <Text>
+        <Text as="span" fontWeight="bold">
+          Summary:
+        </Text>{" "}
+        Vegetation and soil are combined into land use. Cropland management and
+        livestock are combined into agriculture.
+      </Text>
+    </Box>
+  );
+}
 
 /**
  * DETAIL / MEASURE controls for the net-flux insight. In the workspace these
@@ -58,6 +112,7 @@ export function NetFluxToolbar({
             }))}
             onSelect={select}
             minW="160px"
+            info={<DetailInfo />}
           />
         )}
         <Pill
@@ -69,6 +124,7 @@ export function NetFluxToolbar({
           }))}
           onSelect={(value) => setMeasure(value as NetFluxMeasure)}
           minW="160px"
+          info={<MeasureInfo />}
         />
       </Flex>
     </Flex>

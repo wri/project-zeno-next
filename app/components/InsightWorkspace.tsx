@@ -32,6 +32,7 @@ import AnalysisParametersToggle, {
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import {
+  NetFluxChartInfo,
   NetFluxToolbar,
   collapseNetFluxSiblings,
   isNetFluxWidget,
@@ -288,19 +289,20 @@ export default function InsightWorkspace() {
           >
             {/* Title row */}
             <Flex px={4} py={1} justify="space-between" align="flex-start">
-              <Heading
-                size="sm"
-                fontWeight="semibold"
-                color="primary.fg"
-                flex={1}
-                minW={0}
-                truncate
-                title={widget.title}
-                mr={2}
-                mb={0}
-              >
-                {widget.title}
-              </Heading>
+              <Flex align="center" gap="6px" flex={1} minW={0} mr={2}>
+                <Heading
+                  size="sm"
+                  fontWeight="semibold"
+                  color="primary.fg"
+                  minW={0}
+                  truncate
+                  title={widget.title}
+                  mb={0}
+                >
+                  {widget.title}
+                </Heading>
+                {isNetFluxWidget(widget) && <NetFluxChartInfo />}
+              </Flex>
               {hasChips && (
                 <AnalysisParametersToggle
                   expanded={paramsExpanded}

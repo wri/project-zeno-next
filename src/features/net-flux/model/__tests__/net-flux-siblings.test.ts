@@ -121,21 +121,19 @@ describe("netFluxWidgetDetailLabel", () => {
 });
 
 describe("netFluxSiblings", () => {
-  it("leads with Category, then the rest in the order the backend sent", () => {
-    // The backend emits Full detail first; the DETAIL menu opens on and lists
-    // Category first instead, so the same order feeds the pill's options.
+  it("orders tabs Summary → Category → Full", () => {
     expect(netFluxSiblings(ANALYSIS, FULL).map((w) => w.id)).toEqual([
+      "ins1-chart-2",
       "ins1-chart-1",
       "ins1-chart-0",
-      "ins1-chart-2",
     ]);
   });
 
-  it("keeps the backend order when no Category roll-up is present", () => {
+  it("keeps canonical order when a roll-up is missing", () => {
     const partial = [FULL, SUMMARY];
     expect(netFluxSiblings(partial, SUMMARY).map((w) => w.id)).toEqual([
-      "ins1-chart-0",
       "ins1-chart-2",
+      "ins1-chart-0",
     ]);
   });
 
