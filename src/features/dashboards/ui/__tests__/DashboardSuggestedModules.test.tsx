@@ -36,6 +36,7 @@ import DashboardSuggestedModules from "../DashboardSuggestedModules";
 import type { Dashboard, DashboardWidget } from "../../api/schemas";
 import {
   AnalysisJobFailedError,
+  curatedCatalogue,
   type AnalysisResult,
   type AnalysisService,
 } from "@/src/features/analysis";
@@ -153,6 +154,23 @@ const renderModules = (
   );
 };
 
+/**
+ * The curated tiles the row actually renders here: `CURATED_SUGGESTED_MODULES`
+ * minus the ones whose catalogue entry is gated (LGMS, behind `?ff=net-flux`
+ * and administrative areas only). Tests that opt into a flag say so.
+ */
+const OFFERED_CURATED_MODULES = CURATED_SUGGESTED_MODULES.filter((m) =>
+  curatedCatalogue().some((spec) => spec.datasetId === m.datasetId)
+);
+
+/** Point `useEnabledFlags` (which reads the URL) at a set of flags. */
+const setFlags = (...flags: string[]) =>
+  window.history.replaceState(
+    {},
+    "",
+    flags.length ? `/?ff=${flags.join(",")}` : "/"
+  );
+
 const tile = (name: string) => screen.getByRole("button", { name });
 const pendingEntries = () => usePendingInsightWidgetsStore.getState().entries;
 
@@ -166,6 +184,7 @@ describe("DashboardSuggestedModules", () => {
     useViewContextStore
       .getState()
       .setViewContext({ page: "dashboard", dashboard_id: "d1" });
+    setFlags();
   });
 
   it("lists the curated tiles first, in suite order, then the prompt tiles, then the neutral cards", () => {
@@ -173,7 +192,7 @@ describe("DashboardSuggestedModules", () => {
 
     const names = screen.getAllByRole("button").map((b) => b.textContent ?? "");
     const expectedStart = [
-      ...CURATED_SUGGESTED_MODULES.map((m) => m.label),
+      ...OFFERED_CURATED_MODULES.map((m) => m.label),
       ...SUGGESTED_PROMPT_MODULES.map((m) => m.label),
       "Text block",
       "Describe your own via the chat",
@@ -182,8 +201,64 @@ describe("DashboardSuggestedModules", () => {
     expectedStart.forEach((label, i) => expect(names[i]).toContain(label));
     // Every curated tile carries the CURATED badge.
     expect(screen.getAllByText("CURATED")).toHaveLength(
-      CURATED_SUGGESTED_MODULES.length
+      OFFERED_CURATED_MODULES.length
     );
+  });
+
+  describe("the LGMS tile", () => {
+    const LABEL = "Land GHG net flux";
+    const kbaDashboard: Dashboard = {
+      ...dashboard,
+      aois: [
+        {
+          id: "a1",
+          position: 0,
+          source: "kba",
+          src_id: "18325",
+          subtype: "key-biodiversity-area",
+          name: "Serra dos Órgãos",
+        },
+      ],
+    };
+
+    it("is hidden until ?ff=net-flux is set", () => {
+      renderModules(true);
+      expect(screen.queryByRole("button", { name: LABEL })).toBeNull();
+    });
+
+    it("appears for an administrative area once the flag is set", () => {
+      setFlags("net-flux");
+      renderModules(true);
+      expect(tile(LABEL)).toBeTruthy();
+    });
+
+    it("stays hidden for an area LGMS does not cover, flag or not", () => {
+      setFlags("net-flux");
+      renderModules(true, { seed: kbaDashboard });
+      expect(screen.queryByRole("button", { name: LABEL })).toBeNull();
+      // The ungated tiles are unaffected by the area.
+      expect(screen.getAllByText("CURATED")).toHaveLength(
+        OFFERED_CURATED_MODULES.length
+      );
+    });
+
+    it("runs the curated LGMS analysis for the dashboard's area", async () => {
+      setFlags("net-flux");
+      const service = fakeService(() =>
+        Promise.resolve({ ...RESULT, id: "ins-lgms" })
+      );
+      renderModules(true, { service });
+
+      fireEvent.click(tile(LABEL));
+
+      await waitFor(() => expect(service.run).toHaveBeenCalled());
+      expect(service.run).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dataset: { id: 12, name: "Land GHG Monitoring System (LGMS)" },
+          area: expect.objectContaining({ srcId: "BRA.14_1" }),
+        })
+      );
+    });
   });
 
   it("sends each prompt card's canned prompt as a chat message", () => {
@@ -254,7 +329,7 @@ describe("DashboardSuggestedModules", () => {
     expect(service.run).not.toHaveBeenCalled();
     // The other curated tiles are unaffected.
     expect(screen.getAllByText("CURATED")).toHaveLength(
-      CURATED_SUGGESTED_MODULES.length - 1
+      OFFERED_CURATED_MODULES.length - 1
     );
   });
 
