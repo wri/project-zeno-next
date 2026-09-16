@@ -13,6 +13,8 @@ export { AnalysisJobFailedError } from "./model/analysis-error";
 export {
   DEFAULT_ANALYSIS_START_DATE,
   DEFAULT_ANALYSIS_END_DATE,
+  resolveAnalysisWindow,
+  type AnalysisWindow,
 } from "./lib/default-analysis-window";
 export type { AnalysisResult } from "./model/analysis-result";
 export { default as useSelectionStore } from "./model/selection-store";

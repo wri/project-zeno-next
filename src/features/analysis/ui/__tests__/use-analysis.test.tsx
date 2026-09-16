@@ -5,6 +5,7 @@ import type { AnalysisService } from "../../model/analysis-service";
 import type { AnalysisSelection } from "../../model/analysis-selection";
 import type { InsightSink } from "../../model/insight-sink";
 import { useAnalysis } from "../use-analysis";
+import { resolveAnalysisWindow } from "../../lib/default-analysis-window";
 
 const selection: AnalysisSelection = {
   area: { name: "Brazil", source: "gadm", srcId: "BRA", subtype: "country" },
@@ -314,6 +315,52 @@ describe("useAnalysis", () => {
       "Net GHG Flux Summary",
       "Net GHG Flux — Annual Average",
     ]);
+  });
+
+  it("builds the YEARS param from the window the LGMS analysis ran over", async () => {
+    // PZB-1355: the chip is built from the analysed window, so an LGMS
+    // analysis seeded with the dataset's own coverage must report 2016–2024,
+    // not the catalogue-wide 2001–2025 default.
+    const chart = {
+      id: "c0",
+      position: 0,
+      type: "stacked-bar-with-line",
+      title: "Net GHG Flux by Category",
+      xAxis: "year",
+      yAxis: "",
+      colorField: "",
+      stackField: "",
+      groupField: "",
+      seriesFields: [],
+      data: [{ year: 2016 }, { year: 2024 }],
+    };
+    const service: AnalysisService = {
+      run: vi.fn().mockResolvedValue({
+        id: "r1",
+        charts: [chart],
+        params: { source: "gadm", srcId: "BRA", name: "Brazil" },
+      }),
+    };
+    const sink: InsightSink = { add: vi.fn() };
+    const { result } = renderHook(() => useAnalysis(service, sink));
+
+    act(() => {
+      result.current.run({
+        ...selection,
+        dataset: { id: 12, name: "Land GHG Monitoring System (LGMS)" },
+        ...resolveAnalysisWindow(12),
+      });
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("done"));
+
+    const widgets = (sink.add as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(widgets[0].analysisParams).toMatchObject({
+      areas: ["Brazil"],
+      dataset: "Land GHG Monitoring System (LGMS)",
+      startYear: 2016,
+      endYear: 2024,
+    });
   });
 
   it("titles the curated charts even when the dataset name is unknown", async () => {
