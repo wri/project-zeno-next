@@ -280,7 +280,7 @@ const GHG_FLUX_TREE_DATA = [
 // +250 agriculture and -506/-135/-34/-75 removals — a +1,600/-750 gross split
 // and a +850 net, matching GHG_FLUX_TREE_DATA's "All land" averages. The other
 // years drift to the design's own endpoints (+1,050 in 2016 → +610 in 2024);
-// agriculture stays flat, as the card's fixed-2020 caveat says it must.
+// agriculture stays flat, as the header's fixed-2020 caveat says it must.
 // In Mg (metric tons), like the backend's `..._MgCO2e` fields.
 const AGRICULTURE_STATIC = {
   cropland_emissions: 150_000_000,

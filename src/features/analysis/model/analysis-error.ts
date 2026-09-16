@@ -25,3 +25,21 @@ export class AnalysisError extends Error {
     this.method = options?.method;
   }
 }
+
+/**
+ * The analysis job itself reached the terminal `failed` status — the backend
+ * accepted and ran it, but could not produce a result for this area/dataset
+ * (typically its upstream analytics call gave up). Distinct from
+ * `AnalysisError` (a transport/HTTP failure) so callers can show "not
+ * available for this area" rather than "something went wrong". The backend
+ * exposes no failure text, so there is nothing more specific to carry.
+ */
+export class AnalysisJobFailedError extends Error {
+  readonly jobId: string;
+
+  constructor(jobId: string) {
+    super("This analysis is not available for the selected area right now.");
+    this.name = "AnalysisJobFailedError";
+    this.jobId = jobId;
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/lib/router";
 
 import { toaster } from "@/app/components/ui/toaster";
 import { DATASET_BY_ID } from "@/app/constants/datasets";

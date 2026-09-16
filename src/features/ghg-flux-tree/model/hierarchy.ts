@@ -1,4 +1,5 @@
 import type { InsightWidget } from "@/app/types/chat";
+import { lgmsClassLabel } from "@/src/shared/lib/lgms-labels";
 import { mgToMt } from "@/src/shared/lib/units";
 
 /**
@@ -157,7 +158,9 @@ function readMegatonnes(value: unknown): number | null {
 /**
  * Anti-corruption layer for the chart's row shape. `chartsToWidgets` passes
  * `chart_data` through untouched, so rows arrive in the backend's snake_case;
- * this is the single place that knows those key names.
+ * this is the single place that knows those key names. It also applies the
+ * product's class renames over the backend's labels, so the tree names a
+ * class the way the time-series chart does.
  */
 export function parseFluxNodes(data: unknown): FluxNode[] {
   if (!Array.isArray(data)) return [];
@@ -171,7 +174,10 @@ export function parseFluxNodes(data: unknown): FluxNode[] {
       {
         id,
         parentId: typeof parentId === "string" && parentId ? parentId : null,
-        label: typeof row.label === "string" ? row.label : id,
+        label: lgmsClassLabel(
+          id,
+          typeof row.label === "string" ? row.label : id
+        ),
         avgEmissions: readMegatonnes(row.avg_emissions),
         avgRemovals: readMegatonnes(row.avg_removals),
       },

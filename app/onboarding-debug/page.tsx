@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound } from "@/app/lib/router";
 import OnboardingForm, { type ProfileConfig } from "@/app/onboarding/form";
 
 export const metadata = {

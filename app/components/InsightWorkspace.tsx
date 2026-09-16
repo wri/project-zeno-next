@@ -22,13 +22,16 @@ import useInsightStore from "@/app/store/insightStore";
 import { orderInsightsForPager } from "@/src/entities/insight";
 import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
+import {
+  ChartCardSkeleton,
+  skeletonToneCss,
+} from "./widgets/ChartCardSkeleton";
 import { Tooltip } from "./ui/tooltip";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import {
-  NetFluxFootnote,
   NetFluxToolbar,
   collapseNetFluxSiblings,
   isNetFluxWidget,
@@ -61,14 +64,7 @@ function WorkspaceSkeleton() {
       display="flex"
       flexDirection="column"
       overflow="hidden"
-      // Lighten the skeleton tiling to the neutral palette (the default
-      // bg.muted→bg.emphasized gradient reads too dark against the white card).
-      css={{
-        "& .chakra-skeleton": {
-          "--start-color": "colors.neutral.200",
-          "--end-color": "colors.neutral.300",
-        },
-      }}
+      css={skeletonToneCss}
     >
       {/* Indeterminate loading bar pinned to the top edge */}
       <Progress.Root value={null} size="xs" colorPalette="primary">
@@ -87,21 +83,8 @@ function WorkspaceSkeleton() {
         <SkeletonText noOfLines={2} gap="3" />
       </Box>
 
-      {/* Toolbar placeholder — segmented toggle + full-screen button */}
-      <Flex px={4} pb={3} gap={3} align="center">
-        <Flex gap={0}>
-          <Skeleton h="24px" w="64px" roundedLeft="md" />
-          <Skeleton h="24px" w="64px" roundedRight="md" />
-        </Flex>
-        <Skeleton h="24px" w="150px" rounded="md" />
-      </Flex>
-
-      <Box borderTop="1px solid" borderColor="#DDE2F5" />
-
-      {/* Chart body placeholder */}
-      <Box px={4} py={3}>
-        <Skeleton h="320px" w="100%" rounded="md" />
-      </Box>
+      {/* Toolbar + chart body placeholder, shared with the dashboard grid */}
+      <ChartCardSkeleton />
 
       {/* Nav footer placeholder */}
       <Flex px={4} py={2} justify="space-between" align="center">
@@ -350,13 +333,6 @@ export default function InsightWorkspace() {
             <Box px={2} pt={0} pb={2}>
               <WidgetMessage widget={widget} inWorkspace />
             </Box>
-
-            {/* Per-widget-type caveat card below the chart card */}
-            {isNetFluxWidget(widget) && (
-              <Box px={2} pb={2}>
-                <NetFluxFootnote />
-              </Box>
-            )}
           </Box>
 
           {/* Navigation footer — sticky so it never scrolls away */}

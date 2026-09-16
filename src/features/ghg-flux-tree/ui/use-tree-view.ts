@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo } from "react";
 import useTreeViewStore, { DEFAULT_MEASURE } from "../model/tree-view-store";
 import {
   expandableIds,
-  isFullyExpanded,
   visibleRows,
   type FluxMeasure,
   type FluxNode,
@@ -41,10 +40,6 @@ export function useTreeView(widgetId: string, nodes: FluxNode[]) {
   );
 
   const rows = useMemo(() => visibleRows(nodes, expanded), [nodes, expanded]);
-  const fullyExpanded = useMemo(
-    () => isFullyExpanded(nodes, expanded),
-    [nodes, expanded]
-  );
 
   const setMeasure = useCallback(
     (next: FluxMeasure) => setMeasureRaw(widgetId, next),
@@ -55,5 +50,5 @@ export function useTreeView(widgetId: string, nodes: FluxNode[]) {
     [toggleNodeRaw, widgetId]
   );
 
-  return { measure, setMeasure, rows, toggleNode, fullyExpanded };
+  return { measure, setMeasure, rows, toggleNode };
 }

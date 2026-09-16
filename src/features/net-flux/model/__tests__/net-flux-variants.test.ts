@@ -6,8 +6,10 @@ import {
   netFluxTooltipRows,
   seriesGroup,
   seriesLabel,
+  tooltipSeriesLabel,
   HATCH_CROPLAND,
   HATCH_LIVESTOCK,
+  type NetFluxVariant,
 } from "../net-flux-variants";
 import type { InsightWidget } from "@/app/types/chat";
 
@@ -48,6 +50,69 @@ const CATEGORY_WIDGET: InsightWidget = {
 // (530 + 820 + 150 + 100 - 710 - 40) once scaled from Mg to Mt
 const NET = 850;
 
+/**
+ * The same analysis at project-zeno's "Full Detail" level: one field per LGMS
+ * leaf class, 7 emissions then 4 removals, in the backend's own order.
+ */
+const FULL_DETAIL_WIDGET: InsightWidget = {
+  type: "stacked-bar-with-line",
+  title: "Net GHG Flux — Full Detail",
+  description: "",
+  xAxis: "year",
+  yAxis: "",
+  seriesFields: [
+    "tree_loss_emissions",
+    "trees_remaining_trees_emissions",
+    "non_trees_remaining_non_trees_emissions",
+    "mineral_soil_emissions",
+    "organic_soil_emissions",
+    "cropland_emissions",
+    "livestock_emissions",
+    "tree_gain_removals",
+    "trees_remaining_trees_removals",
+    "non_trees_remaining_non_trees_removals",
+    "mineral_soil_removals",
+  ],
+  data: [
+    {
+      year: 2020,
+      tree_loss_emissions: 567_000_000,
+      trees_remaining_trees_emissions: 162_000_000,
+      non_trees_remaining_non_trees_emissions: 81_000_000,
+      mineral_soil_emissions: 162_000_000,
+      organic_soil_emissions: 378_000_000,
+      cropland_emissions: 150_000_000,
+      livestock_emissions: 100_000_000,
+      tree_gain_removals: -506_000_000,
+      trees_remaining_trees_removals: -135_000_000,
+      non_trees_remaining_non_trees_removals: -34_000_000,
+      mineral_soil_removals: -75_000_000,
+    },
+  ],
+};
+
+/** And at the "Summary" level: land use vs agriculture, three fields. */
+const SUMMARY_WIDGET: InsightWidget = {
+  type: "stacked-bar-with-line",
+  title: "Net GHG Flux — Summary",
+  description: "",
+  xAxis: "year",
+  yAxis: "",
+  seriesFields: [
+    "land_use_emissions",
+    "agriculture_emissions",
+    "land_use_removals",
+  ],
+  data: [
+    {
+      year: 2020,
+      land_use_emissions: 1_350_000_000,
+      agriculture_emissions: 250_000_000,
+      land_use_removals: -750_000_000,
+    },
+  ],
+};
+
 describe("seriesGroup", () => {
   it("reads the side off the backend's field suffix", () => {
     expect(seriesGroup("vegetation_emissions")).toBe("emissions");
@@ -67,21 +132,27 @@ describe("seriesLabel", () => {
     expect(seriesLabel("land_use_removals")).toBe("Land use");
   });
 
-  it("shortens the removals side where the design pairs the two columns", () => {
+  it("shortens only trees-remaining on the removals side, where the design pairs the columns", () => {
     expect(seriesLabel("trees_remaining_trees_emissions")).toBe(
       "Trees remaining trees"
     );
     expect(seriesLabel("trees_remaining_trees_removals")).toBe(
       "Trees remaining"
     );
+  });
+
+  it("names the non-trees class as non-tree vegetation on both sides", () => {
     expect(seriesLabel("non_trees_remaining_non_trees_emissions")).toBe(
-      "Non-trees remaining non-trees"
+      "Non-tree vegetation"
     );
     expect(seriesLabel("non_trees_remaining_non_trees_removals")).toBe(
-      "Non-trees"
+      "Non-tree vegetation"
     );
+  });
+
+  it("keeps the soil qualifier on both sides", () => {
     expect(seriesLabel("mineral_soil_emissions")).toBe("Mineral soil");
-    expect(seriesLabel("mineral_soil_removals")).toBe("Mineral");
+    expect(seriesLabel("mineral_soil_removals")).toBe("Mineral soil");
   });
 
   it("marks the two agriculture classes as the fixed 2020 figure", () => {
@@ -93,6 +164,40 @@ describe("seriesLabel", () => {
 
   it("degrades readably for a class it has never seen", () => {
     expect(seriesLabel("peat_burning_emissions")).toBe("peat burning");
+  });
+});
+
+describe("tooltipSeriesLabel", () => {
+  it("abbreviates the two agriculture classes, keeping the static caveat", () => {
+    expect(tooltipSeriesLabel("cropland_emissions")).toBe(
+      "Cropland mgmt (static)"
+    );
+    expect(tooltipSeriesLabel("livestock_emissions")).toBe(
+      "Livestock (static)"
+    );
+  });
+
+  it("abbreviates the longest emissions label", () => {
+    expect(tooltipSeriesLabel("trees_remaining_trees_emissions")).toBe(
+      "Trees rem. trees"
+    );
+  });
+
+  it("prints non-tree vegetation in full on both sides, as the legend does", () => {
+    expect(tooltipSeriesLabel("non_trees_remaining_non_trees_emissions")).toBe(
+      "Non-tree vegetation"
+    );
+    expect(tooltipSeriesLabel("non_trees_remaining_non_trees_removals")).toBe(
+      "Non-tree vegetation"
+    );
+  });
+
+  it("otherwise prints the legend's own label", () => {
+    expect(tooltipSeriesLabel("tree_loss_emissions")).toBe("Tree loss");
+    expect(tooltipSeriesLabel("trees_remaining_trees_removals")).toBe(
+      "Trees remaining"
+    );
+    expect(tooltipSeriesLabel("agriculture_emissions")).toBe("Agriculture");
   });
 });
 
@@ -298,25 +403,35 @@ describe("netFluxTooltipRows", () => {
   it("orders emissions top-of-stack first, then removals, as the legend does", () => {
     const { rows } = netFluxTooltipRows(fullDetailPayload, fullDetailOrder);
     expect(rows.map((r) => r.label)).toEqual([
-      "Agriculture (static)",
+      "Livestock (static)",
+      "Cropland mgmt (static)",
       "Organic soil",
       "Mineral soil",
-      "Non-trees rem. non-trees",
+      "Non-tree vegetation",
       "Trees rem. trees",
       "Tree loss",
       "Tree gain",
       "Trees remaining",
-      "Non-trees",
-      "Mineral",
+      "Non-tree vegetation",
+      "Mineral soil",
     ]);
   });
 
-  it("folds cropland and livestock into one hatched agriculture row", () => {
+  it("gives cropland and livestock their own rows, each in its own hatch", () => {
     const { rows } = netFluxTooltipRows(fullDetailPayload, fullDetailOrder);
-    const agriculture = rows.filter((r) => r.label === "Agriculture (static)");
-    expect(agriculture).toHaveLength(1);
-    expect(agriculture[0].value).toBe(250);
-    expect(isPaintReference(agriculture[0].color)).toBe(true);
+    expect(rows.find((r) => r.key === "cropland_emissions")).toEqual({
+      key: "cropland_emissions",
+      label: "Cropland mgmt (static)",
+      value: 150,
+      color: HATCH_CROPLAND,
+    });
+    expect(rows.find((r) => r.key === "livestock_emissions")).toEqual({
+      key: "livestock_emissions",
+      label: "Livestock (static)",
+      value: 100,
+      color: HATCH_LIVESTOCK,
+    });
+    expect(rows.map((r) => r.label)).not.toContain("Agriculture (static)");
   });
 
   it("takes the total from the line, not from the bars, and names it Net flux", () => {
@@ -376,7 +491,8 @@ describe("netFluxTooltipRows", () => {
       categoryOrder
     );
     expect(rows.map((r) => r.label)).toEqual([
-      "Agriculture (static)",
+      "Livestock (static)",
+      "Cropland mgmt (static)",
       "Soil",
       "Vegetation",
       "Vegetation",
@@ -396,26 +512,27 @@ describe("netFluxTooltipRows", () => {
     const { rows } = netFluxTooltipRows(withZeros, fullDetailOrder);
     const labels = rows.map((r) => r.label);
     expect(labels).not.toContain("Organic soil");
-    expect(labels).not.toContain("Agriculture (static)");
+    expect(labels).not.toContain("Cropland mgmt (static)");
+    expect(labels).not.toContain("Livestock (static)");
     expect(labels).toEqual([
       "Mineral soil",
-      "Non-trees rem. non-trees",
+      "Non-tree vegetation",
       "Trees rem. trees",
       "Tree loss",
       "Tree gain",
       "Trees remaining",
-      "Non-trees",
-      "Mineral",
+      "Non-tree vegetation",
+      "Mineral soil",
     ]);
   });
 
-  it("keeps the agriculture row while either of its classes is non-zero", () => {
+  it("drops only the agriculture class that drew nothing, not its sibling", () => {
     const croplandOnly = fullDetailPayload.map((entry) =>
       entry.dataKey === "livestock_emissions" ? { ...entry, value: 0 } : entry
     );
     const { rows } = netFluxTooltipRows(croplandOnly, fullDetailOrder);
-    const agriculture = rows.find((r) => r.key === "agriculture");
-    expect(agriculture?.value).toBe(150);
+    expect(rows.find((r) => r.key === "cropland_emissions")?.value).toBe(150);
+    expect(rows.find((r) => r.key === "livestock_emissions")).toBeUndefined();
   });
 
   it("follows the stacking order when recharts' payload order has drifted", () => {
@@ -435,13 +552,81 @@ describe("netFluxTooltipRows", () => {
     const { rows, total } = netFluxTooltipRows(drifted, categoryOrder);
 
     expect(rows.map((r) => r.label)).toEqual([
-      "Agriculture (static)",
+      "Livestock (static)",
+      "Cropland mgmt (static)",
       "Soil",
       "Vegetation",
       "Vegetation",
       "Soil",
     ]);
-    expect(rows.find((r) => r.key === "agriculture")?.value).toBe(250);
     expect(total).toEqual({ label: "Net flux", value: 850 });
   });
+});
+
+/**
+ * The acceptance rule for the three DETAIL charts: every bar segment drawn
+ * has one legend entry and one tooltip row, in the same order and the same
+ * swatch, so the three read as one another.
+ */
+describe("legend, bar segments and tooltip agree", () => {
+  /**
+   * What recharts hands the tooltip for a variant's first row: one entry per
+   * bar drawn, carrying the fill `ChartWidget` gave it from `colorMap`, plus
+   * the line.
+   */
+  const payloadFor = (variant: NetFluxVariant) => [
+    ...variant.seriesFields.map((field) => ({
+      dataKey: field,
+      value: Number(variant.data[0][field]),
+      color: variant.colorMap[field],
+    })),
+    {
+      dataKey: variant.lineField,
+      value: Number(variant.data[0][variant.lineField]),
+    },
+  ];
+
+  /** The legend's reading order: emissions top-of-stack first, then removals. */
+  const legendOrder = (variant: NetFluxVariant) => [
+    ...variant.seriesFields
+      .filter((f) => seriesGroup(f) === "emissions")
+      .reverse(),
+    ...variant.seriesFields.filter((f) => seriesGroup(f) === "removals"),
+  ];
+
+  it.each([
+    ["Full detail", FULL_DETAIL_WIDGET],
+    ["Category", CATEGORY_WIDGET],
+    ["Summary", SUMMARY_WIDGET],
+  ])("%s: one tooltip row per bar segment, in legend order", (_, widget) => {
+    const variant = deriveNetFluxVariant(widget, "gross");
+    const { rows } = netFluxTooltipRows(payloadFor(variant), [
+      ...variant.seriesFields,
+      variant.lineField,
+    ]);
+    const fields = legendOrder(variant);
+
+    expect(rows).toHaveLength(variant.seriesFields.length);
+    expect(rows.map((r) => r.key)).toEqual(fields);
+    expect(rows.map((r) => r.label)).toEqual(fields.map(tooltipSeriesLabel));
+  });
+
+  it.each([
+    ["Full detail", FULL_DETAIL_WIDGET],
+    ["Category", CATEGORY_WIDGET],
+    ["Summary", SUMMARY_WIDGET],
+  ])(
+    "%s: tooltip swatches match the legend's, entry for entry",
+    (_, widget) => {
+      const variant = deriveNetFluxVariant(widget, "gross");
+      const { rows } = netFluxTooltipRows(payloadFor(variant), [
+        ...variant.seriesFields,
+        variant.lineField,
+      ]);
+      const legend = [...variant.legend.emissions, ...variant.legend.removals];
+
+      expect(legend).toHaveLength(variant.seriesFields.length);
+      expect(rows.map((r) => r.color)).toEqual(legend.map((i) => i.color));
+    }
+  );
 });
