@@ -756,7 +756,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["carbon-flux"],
+    categories: ["ghg-fluxes"],
     description:
       "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
     tile_url: lgmsTileUrl("lgms", "net"),
