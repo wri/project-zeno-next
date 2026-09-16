@@ -26,6 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import InsightCaption from "./InsightCaption";
+import InsightChartPills from "./InsightChartPills";
 import {
   exportToAI,
   AI_PROVIDERS,
@@ -39,7 +40,6 @@ import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
 import {
   fluxTreeTableProps,
-  GhgFluxMeasurePill,
   GhgFluxTreeBody,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
@@ -54,7 +54,6 @@ import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 import {
   NetFluxChartBody,
-  NetFluxToolbar,
   deriveNetFluxVariant,
   isNetFluxWidget,
   netFluxTableProps,
@@ -147,9 +146,9 @@ export default function WidgetMessage({
     onOpen: onExpand,
     onClose: onCollapse,
   } = useDisclosure();
-  // Shared with the workspace toolbar, which renders the DETAIL/MEASURE pills
-  // outside this card (see NetFluxToolbar). Hooks must run unconditionally, so
-  // these sit above the dataset-card early return.
+  // Shared with the shell toolbar, which renders the DETAIL/MEASURE pills
+  // outside this card (see InsightChartPills). Hooks must run unconditionally,
+  // so these sit above the dataset-card early return.
   const netFluxView = useNetFluxView(netFluxViewKey(widget));
   const isNetFlux = isNetFluxWidget(widget);
   const netFluxVariant = isNetFlux
@@ -297,15 +296,10 @@ export default function WidgetMessage({
         {inWorkspace && (
           <InsightCaption curated={widget.curated ?? !widget.generation} />
         )}
-        {/* In the workspace the design puts these pills above the card, so
-            InsightWorkspace renders them there; elsewhere (dashboards,
-            /chart-debug) they live inline so the toggle stays reachable. */}
-        {isNetFlux && !inWorkspace && (
-          <NetFluxToolbar widget={widget} showDivider={false} />
-        )}
-        {isFluxTree && !inWorkspace && (
-          <GhgFluxMeasurePill widget={widget} showDivider={false} />
-        )}
+        {/* Every surface with a shell of its own puts these pills above the
+            card (see InsightChartPills); inline is the fallback for a host
+            that has none, today only /chart-debug. */}
+        {!inWorkspace && <InsightChartPills widget={widget} />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}

@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Flex, IconButton, Text } from "@chakra-ui/react";
 import { ArrowArcLeftIcon, ArrowArcRightIcon } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
+import InsightChartPills, {
+  hasChartPills,
+} from "@/app/components/InsightChartPills";
+import {
+  collapseNetFluxRollups,
+  netFluxRollups,
+  useNetFluxDetail,
+} from "@/src/features/net-flux";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import {
   hasWidgetCustomization,
@@ -28,6 +36,12 @@ import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
  * rather than dealing one card per chart into the grid, which made an
  * analysis outweigh every other widget on the page. The narrative rides above
  * the chart body as the card's `intro`; the pager is its `footer`.
+ *
+ * An LGMS analysis is the one case where the pager shows fewer cards than the
+ * widget has shown charts: its three time-series roll-ups fold into the one
+ * the DETAIL pill selects, so the module reads as two charts rather than
+ * four, as it does on the map. The Customize menu still lists all four —
+ * which charts a widget holds stays the owner's business.
  *
  * Mutation-agnostic on purpose: every config edit flows through
  * `onUpdateConfig` with a full config built by the `with*` helpers (the
@@ -65,11 +79,21 @@ export default function DashboardInsightModule({
   const vm = insightModule(widget, { areaName: areaAoi?.name });
   const showSummary = vm.summaryShown && vm.summaryText.length > 0;
   const allChartIds = vm.allCharts.map((c) => c.id);
-  const total = vm.cards.length;
+  // The widget's charts are one analysis by construction, and they carry
+  // backend UUIDs rather than the `{insightId}-chart-{n}` ids the workspace
+  // groups by — so the roll-ups are found within this module and keyed on the
+  // widget (see `netFluxRollups`).
+  const rollups = useMemo(() => netFluxRollups(vm.cards), [vm.cards]);
+  const { selected } = useNetFluxDetail(widget.id, rollups);
+  const cards = useMemo(
+    () => collapseNetFluxRollups(vm.cards, selected?.id),
+    [vm.cards, selected?.id]
+  );
+  const total = cards.length;
   // Hiding a chart can strand the pager past the end — clamp on the way out
   // rather than in an effect, so the card never paints an empty frame first.
   const index = Math.min(page, Math.max(total - 1, 0));
-  const card = vm.cards[index] ?? null;
+  const card = cards[index] ?? null;
   const chartId = card?.id;
 
   const placeholder =
@@ -125,14 +149,28 @@ export default function DashboardInsightModule({
           />
         }
         intro={
-          showSummary ? (
+          showSummary || (card && hasChartPills(card)) ? (
             <Flex direction="column" gap="8px" px="12px" pb="12px">
-              {/* Same provenance rule as the chart card below, so the
-                  narrative never contradicts it. */}
-              <InsightCaption curated={vm.curated} />
-              <Text fontSize="14px" lineHeight="20px" color="fg">
-                {vm.summaryText}
-              </Text>
+              {showSummary && (
+                <>
+                  {/* Same provenance rule as the chart card below, so the
+                      narrative never contradicts it. */}
+                  <InsightCaption curated={vm.curated} />
+                  <Text fontSize="14px" lineHeight="20px" color="fg">
+                    {vm.summaryText}
+                  </Text>
+                </>
+              )}
+              {/* The design puts these above the card, and the shell that
+                  hosts it is this module (DashboardWidgetCard mounts
+                  WidgetMessage `inWorkspace`, which suppresses them inline). */}
+              {card && (
+                <InsightChartPills
+                  widget={card}
+                  siblings={rollups}
+                  groupKey={widget.id}
+                />
+              )}
             </Flex>
           ) : null
         }
