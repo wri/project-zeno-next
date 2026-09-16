@@ -19,6 +19,8 @@ export interface DatasetLayerSpec {
    * server will reject — LGMS caps at z12 and returns a 422 above it.
    */
   maxZoom?: number;
+  /** Raster resampling when overzoomed; see `resampling` on DatasetCardConfig. */
+  resampling?: "linear" | "nearest";
   parameters?: Record<string, unknown>;
   startDate?: string;
   endDate?: string;
@@ -45,6 +47,7 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
       visible: true,
       tileUrl: spec.tileUrl,
       maxzoom: spec.maxZoom,
+      resampling: spec.resampling,
       datasetId: spec.datasetId,
       parameters: spec.parameters,
       startDate: spec.startDate,

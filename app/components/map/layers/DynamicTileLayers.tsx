@@ -82,6 +82,9 @@ function DynamicTileLayers() {
                 "raster-opacity": rasterLayer.visible
                   ? (rasterLayer.opacity ?? 0.8)
                   : 0,
+                ...(rasterLayer.resampling
+                  ? { "raster-resampling": rasterLayer.resampling }
+                  : {}),
               }}
             />
           </Source>
