@@ -443,19 +443,34 @@ async function processStreamMessage(
         | { dataset_id?: number; layers?: { name: string }[] }
         | undefined;
       const datasetId = dataset?.dataset_id;
-      if (typeof datasetId === "number") {
-        // pick_dataset adds every declared layer to the map (see
-        // pickDatasetTool), so declared === active here — must match
-        // deriveContext's key format or this pick gets echoed back as "new"
-        // context on the next user message.
-        const layerNames = (dataset?.layers ?? []).map((l) => l.name);
-        useChatStore.getState().foldSentContext({
-          dataset: datasetContextKey(datasetId, layerNames, layerNames),
+      // Deferred until after pickDatasetTool applies the resulting map
+      // layers (including a multi-layer dataset's default single-visible-
+      // layer opacity) — folding from dataset.layers directly would treat
+      // every *declared* layer as active instead of just the one shown by
+      // default, desyncing from deriveContext's key on the next turn.
+      void Promise.resolve()
+        .then(() => pickDatasetTool(streamMessage, addMessage))
+        .then(() => {
+          if (typeof datasetId !== "number") return;
+          const declaredLayerNames = (dataset?.layers ?? []).map((l) => l.name);
+          const activeLayerNames = useMapStore
+            .getState()
+            .layers.filter(
+              (l) =>
+                l.datasetId === datasetId &&
+                !l.parentLayerId &&
+                l.visible &&
+                (l.opacity ?? 1) !== 0
+            )
+            .map((l) => l.name);
+          useChatStore.getState().foldSentContext({
+            dataset: datasetContextKey(
+              datasetId,
+              declaredLayerNames,
+              activeLayerNames
+            ),
+          });
         });
-      }
-      void Promise.resolve().then(() =>
-        pickDatasetTool(streamMessage, addMessage)
-      );
       return;
     }
     // Handling for pull_data tool
