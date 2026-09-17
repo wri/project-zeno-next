@@ -135,12 +135,12 @@ describe("seriesLabel", () => {
     expect(seriesLabel("land_use_removals")).toBe("Land use");
   });
 
-  it("shortens only trees-remaining on the removals side, where the design pairs the columns", () => {
+  it("uses the full class name on both sides", () => {
     expect(seriesLabel("trees_remaining_trees_emissions")).toBe(
       "Trees remaining trees"
     );
     expect(seriesLabel("trees_remaining_trees_removals")).toBe(
-      "Trees remaining"
+      "Trees remaining trees"
     );
   });
 
@@ -195,11 +195,14 @@ describe("tooltipSeriesLabel", () => {
     );
   });
 
+  it("abbreviates the removals side the same way as emissions", () => {
+    expect(tooltipSeriesLabel("trees_remaining_trees_removals")).toBe(
+      "Trees rem. trees"
+    );
+  });
+
   it("otherwise prints the legend's own label", () => {
     expect(tooltipSeriesLabel("tree_loss_emissions")).toBe("Tree loss");
-    expect(tooltipSeriesLabel("trees_remaining_trees_removals")).toBe(
-      "Trees remaining"
-    );
     expect(tooltipSeriesLabel("agriculture_emissions")).toBe("Agriculture");
   });
 });
@@ -418,7 +421,7 @@ describe("netFluxTooltipRows", () => {
       "Trees rem. trees",
       "Tree loss",
       "Tree gain",
-      "Trees remaining",
+      "Trees rem. trees",
       "Non-tree vegetation",
       "Mineral soil",
     ]);
@@ -533,7 +536,7 @@ describe("netFluxTooltipRows", () => {
       "Trees rem. trees",
       "Tree loss",
       "Tree gain",
-      "Trees remaining",
+      "Trees rem. trees",
       "Non-tree vegetation",
       "Mineral soil",
     ]);

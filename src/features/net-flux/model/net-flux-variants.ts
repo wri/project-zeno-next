@@ -80,15 +80,12 @@ const CLASS_LABELS: Record<string, string> = {
 };
 
 /**
- * Shorter labels for the removals column. The two columns sit side by side, so
- * the design lets the removals side shorten a label its emissions twin spells
- * out ("Trees remaining" beside "Trees remaining trees"). Only that one class
- * is shortened: a label that dropped its noun ("Mineral" for mineral soil)
- * read as a different thing from its emissions twin, so those now match.
+ * Shorter labels for the removals column. Previously this shortened
+ * "Trees remaining trees" to "Trees remaining", but the legend should show
+ * the full class name on both sides — the tooltip handles abbreviation
+ * separately via `TOOLTIP_LABELS`.
  */
-const REMOVALS_LABELS: Record<string, string> = {
-  trees_remaining_trees: "Trees remaining",
-};
+const REMOVALS_LABELS: Record<string, string> = {};
 
 /**
  * Colour per series field, keyed by the backend's own field names. The backend
@@ -224,9 +221,7 @@ const TOOLTIP_LABELS: Record<string, string> = {
 /** Human label for a series field as the hover tooltip prints it. */
 export function tooltipSeriesLabel(field: string): string {
   const short = TOOLTIP_LABELS[seriesClass(field)];
-  // The removals side is already abbreviated by `seriesLabel`, and its short
-  // forms ("Trees remaining") differ from these — so only override emissions.
-  if (short && seriesGroup(field) === "emissions") return short;
+  if (short) return short;
   return seriesLabel(field);
 }
 
