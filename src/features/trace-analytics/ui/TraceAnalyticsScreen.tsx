@@ -15,7 +15,7 @@ import {
   ChatsCircleIcon,
   MagnifyingGlassIcon,
 } from "@phosphor-icons/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "@/app/lib/router";
 import { AnalyticsView } from "./AnalyticsView";
 import { ConversationsView } from "./ConversationsView";
 import { TracesView } from "./TracesView";

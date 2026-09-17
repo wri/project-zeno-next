@@ -1,15 +1,10 @@
-import { format } from "date-fns";
-
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
 
 import type { AreaSelection } from "../model/area-selection";
 
-import {
-  DEFAULT_ANALYSIS_START_DATE,
-  DEFAULT_ANALYSIS_END_DATE,
-} from "../lib/default-analysis-window";
+import { resolveAnalysisWindow } from "../lib/default-analysis-window";
 
 /**
  * Surfaces the "View Analysis" nudge for an area selection. Like the analyse
@@ -47,16 +42,18 @@ export function showViewAnalysisNudge(selection: AreaSelection): boolean {
     DATASET_BY_ID[datasetId]?.dataset_name ?? datasetLayer.name;
   if (!datasetName) return false;
 
-  const dateRange = useChatStore.getState().dateRange;
-  const startDate = dateRange
-    ? format(dateRange.start, "yyyy-MM-dd")
-    : DEFAULT_ANALYSIS_START_DATE;
-  const endDate = dateRange
-    ? format(dateRange.end, "yyyy-MM-dd")
-    : DEFAULT_ANALYSIS_END_DATE;
+  const { startDate, endDate } = resolveAnalysisWindow(
+    datasetId,
+    useChatStore.getState().dateRange
+  );
 
   // Idempotent for the live pending nudge: the reactive trigger re-runs on
   // every context change, and an identical re-upsert would churn the card.
+  //
+  // The key is every input accepting would act on, not just the AOI: the card
+  // runs its own stored window, so leaving the dates out would let a re-run
+  // short-circuit on a stale payload and analyse the previous period after the
+  // user changed the pinned range.
   const pending = useChatStore
     .getState()
     .messages.find(
@@ -65,7 +62,9 @@ export function showViewAnalysisNudge(selection: AreaSelection): boolean {
     );
   if (
     pending?.viewAnalysisSuggestion?.area.name === selection.name &&
-    pending.viewAnalysisSuggestion.datasetId === datasetId
+    pending.viewAnalysisSuggestion.datasetId === datasetId &&
+    pending.viewAnalysisSuggestion.startDate === startDate &&
+    pending.viewAnalysisSuggestion.endDate === endDate
   ) {
     return true;
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams } from "@/app/lib/router";
 import { useEffect, useMemo } from "react";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";

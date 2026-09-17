@@ -1,13 +1,8 @@
-import { format } from "date-fns";
-
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
 import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
-import {
-  DEFAULT_ANALYSIS_START_DATE,
-  DEFAULT_ANALYSIS_END_DATE,
-} from "@/src/features/analysis";
+import { resolveAnalysisWindow } from "@/src/features/analysis";
 
 /**
  * Surfaces the create-dashboard nudge for an area selection. Same intentional
@@ -51,13 +46,10 @@ export function showCreateDashboardNudge(
     DATASET_BY_ID[datasetId]?.dataset_name ?? datasetLayer.name;
   if (!datasetName) return false;
 
-  const dateRange = useChatStore.getState().dateRange;
-  const startDate = dateRange
-    ? format(dateRange.start, "yyyy-MM-dd")
-    : DEFAULT_ANALYSIS_START_DATE;
-  const endDate = dateRange
-    ? format(dateRange.end, "yyyy-MM-dd")
-    : DEFAULT_ANALYSIS_END_DATE;
+  const { startDate, endDate } = resolveAnalysisWindow(
+    datasetId,
+    useChatStore.getState().dateRange
+  );
 
   // Idempotent for the live nudge: the reactive trigger re-runs on every
   // context change, and an identical re-upsert would churn the card.

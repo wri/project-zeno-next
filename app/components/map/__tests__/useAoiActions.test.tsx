@@ -8,7 +8,8 @@ vi.mock("@/app/components/ui/toaster", () => ({
 }));
 
 const push = vi.fn();
-vi.mock("next/navigation", () => ({
+vi.mock("@/app/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   useRouter: () => ({ push }),
 }));
 
@@ -40,6 +41,7 @@ vi.mock("@/src/features/dashboards", () => ({
 
 import { toaster } from "@/app/components/ui/toaster";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
+import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
 import { useAoiActions } from "../useAoiActions";
@@ -98,6 +100,7 @@ describe("useAoiActions", () => {
       layers: [datasetLayer],
       geoJsonRegistry: [],
     });
+    useChatStore.getState().clearDateRange();
   });
 
   it("returns null without a target", () => {
@@ -195,6 +198,62 @@ describe("useAoiActions", () => {
       startDate: "2001-01-01",
       endDate: "2025-12-31",
     });
+  });
+
+  it("analyses a dataset over its own declared coverage when no range is pinned", () => {
+    // PZB-1355: LGMS covers 2016–2024, so the catalogue-wide 2001–2025 default
+    // would label its chart "YEARS 2001–25".
+    useMapStore.setState({
+      layers: [
+        {
+          id: "dataset-12",
+          name: "Land GHG Monitoring System (LGMS)",
+          type: "raster",
+          visible: true,
+          datasetId: 12,
+        },
+      ],
+    });
+    const { result } = render();
+
+    act(() => result.current!.viewAnalysis());
+
+    expect(runDirectAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dataset: { id: 12, name: "Land GHG Monitoring System (LGMS)" },
+        startDate: "2016-01-01",
+        endDate: "2024-12-31",
+      })
+    );
+  });
+
+  it("prefers a pinned range over the dataset's declared coverage", () => {
+    useMapStore.setState({
+      layers: [
+        {
+          id: "dataset-12",
+          name: "Land GHG Monitoring System (LGMS)",
+          type: "raster",
+          visible: true,
+          datasetId: 12,
+        },
+      ],
+    });
+    // Local-time dates, so date-fns `format` can't shift across a day boundary.
+    useChatStore.getState().setDateRange({
+      start: new Date(2018, 0, 1),
+      end: new Date(2020, 11, 31),
+    });
+    const { result } = render();
+
+    act(() => result.current!.viewAnalysis());
+
+    expect(runDirectAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startDate: "2018-01-01",
+        endDate: "2020-12-31",
+      })
+    );
   });
 
   it("does not analyse without a dataset", () => {

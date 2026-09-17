@@ -1,5 +1,6 @@
 import type { InsightWidget } from "@/app/types/chat";
 import { niceTicks } from "@/src/shared/lib/chart-ticks";
+import { lgmsClassLabel } from "@/src/shared/lib/lgms-labels";
 import { mgToMt } from "@/src/shared/lib/units";
 
 export type NetFluxMeasure = "gross" | "net";
@@ -37,6 +38,13 @@ export const NET_FLUX_LINE_FIELD = "Net flux";
 /** Bar rendered for the "net" measure — tinted by sign. */
 const NET_MEASURE_FIELD = "Net source";
 
+/**
+ * What the net bar reads as at each sign — the legend's two entries and the
+ * tooltip's single row share these so they can never disagree.
+ */
+const NET_SOURCE_LABEL = "Net source";
+const NET_SINK_LABEL = "Net sink";
+
 const NET_SOURCE_COLOR = "#8c510a";
 const NET_SINK_COLOR = "#01665e";
 
@@ -48,18 +56,21 @@ export const NET_FLUX_DIVERGENT_COLORS = {
 /**
  * Display label per LGMS class. The six leaf classes mirror the backend's own
  * `LGMS_CLASS_LABELS` (`src/api/services/charts/lgms.py`); the aggregate levels
- * and the two agriculture classes it doesn't name are supplied here.
+ * and the two agriculture classes it doesn't name are supplied here. Product
+ * renames are not written into this table: `seriesLabel` applies them from the
+ * shared `lgms-labels` module, which the tree chart reads too.
  */
 const CLASS_LABELS: Record<string, string> = {
   tree_loss: "Tree loss",
   tree_gain: "Tree gain",
   trees_remaining_trees: "Trees remaining trees",
+  // Renders as "Non-tree vegetation" — see `LGMS_CLASS_RENAMES`.
   non_trees_remaining_non_trees: "Non-trees remaining non-trees",
   mineral_soil: "Mineral soil",
   organic_soil: "Organic soil",
   // The agriculture classes are a fixed 2020 figure repeated across every year
-  // (the same caveat the card's footnote spells out), which the design surfaces
-  // in the legend itself.
+  // (the same caveat the chart header's subtitle spells out), which the design
+  // surfaces in the legend itself.
   cropland: "Cropland management (2020, static)",
   livestock: "Livestock (2020, static)",
   vegetation: "Vegetation",
@@ -70,13 +81,13 @@ const CLASS_LABELS: Record<string, string> = {
 
 /**
  * Shorter labels for the removals column. The two columns sit side by side, so
- * the design lets the removals side drop the qualifier its emissions twin needs
- * ("Mineral" beside "Mineral soil") — the column heading already supplies it.
+ * the design lets the removals side shorten a label its emissions twin spells
+ * out ("Trees remaining" beside "Trees remaining trees"). Only that one class
+ * is shortened: a label that dropped its noun ("Mineral" for mineral soil)
+ * read as a different thing from its emissions twin, so those now match.
  */
 const REMOVALS_LABELS: Record<string, string> = {
   trees_remaining_trees: "Trees remaining",
-  non_trees_remaining_non_trees: "Non-trees",
-  mineral_soil: "Mineral",
 };
 
 /**
@@ -178,7 +189,11 @@ export function seriesGroup(field: string): NetFluxGroup | null {
   return null;
 }
 
-/** Human label for a series field, derived from its class prefix and side. */
+/**
+ * Human label for a series field, derived from its class prefix and side:
+ * the removals short form where there is one, else the class label with the
+ * product's renames applied.
+ */
 export function seriesLabel(field: string): string {
   const group = seriesGroup(field);
   if (!group) return field;
@@ -187,17 +202,23 @@ export function seriesLabel(field: string): string {
     const short = REMOVALS_LABELS[className];
     if (short) return short;
   }
-  return CLASS_LABELS[className] ?? className.replace(/_/g, " ");
+  return lgmsClassLabel(
+    className,
+    CLASS_LABELS[className] ?? className.replace(/_/g, " ")
+  );
 }
 
 /**
  * Shorter still for the hover tooltip, which is about half the legend's width
- * and puts the value in its own right-hand column. Only the two longest
- * emissions labels need it; the removals column already has `REMOVALS_LABELS`.
+ * and puts the value in its own right-hand column. The longest emissions label
+ * needs it, and so do the two agriculture classes, which keep the "static"
+ * caveat but drop the year — the chart header already dates it. The removals
+ * column already has `REMOVALS_LABELS`.
  */
 const TOOLTIP_LABELS: Record<string, string> = {
   trees_remaining_trees: "Trees rem. trees",
-  non_trees_remaining_non_trees: "Non-trees rem. non-trees",
+  cropland: "Cropland mgmt (static)",
+  livestock: "Livestock (static)",
 };
 
 /** Human label for a series field as the hover tooltip prints it. */
@@ -209,27 +230,34 @@ export function tooltipSeriesLabel(field: string): string {
   return seriesLabel(field);
 }
 
-/**
- * Cropland and livestock are the same fixed-2020 figure under two names (see
- * `CLASS_LABELS`), drawn in near-identical hatching and sat side by side in
- * the stack. The design reads them as one bar and gives them one tooltip row.
- */
-const AGRICULTURE_CLASSES = new Set(["cropland", "livestock"]);
-const AGRICULTURE_TOOLTIP_LABEL = "Agriculture (static)";
-
 /** One rendered line of the hover tooltip: swatch, label, value. */
 export interface NetFluxTooltipRow {
-  /** Stable across re-renders — the merged agriculture row has no single field. */
+  /** The series field the row was read from. */
   key: string;
   label: string;
   value: number;
   color: string;
 }
 
+/**
+ * The tooltip's closing line: the sum of the rows above it, printed bold so
+ * it reads as a total and not as one more series.
+ */
+export interface NetFluxTooltipTotal {
+  label: string;
+  value: number;
+  /** Swatch colour — the net measure tints its total by sign like its bar. */
+  color?: string;
+}
+
 export interface NetFluxTooltipModel {
   rows: NetFluxTooltipRow[];
-  /** The net-flux line's own value, which the design prints below a rule. */
-  net: number | null;
+  /**
+   * The net-flux line's own value, which the design prints below a rule; under
+   * the net measure it is the only line, labelled by sign. Null only when the
+   * payload carried no line.
+   */
+  total: NetFluxTooltipTotal | null;
 }
 
 /** What recharts hands a tooltip content renderer, narrowed to what's used. */
@@ -263,16 +291,35 @@ function inStackOrder(
 }
 
 /**
+ * The net measure's one tooltip line. Its bar and the net-flux line carry the
+ * same value, so printing both read as a duplicate in review; the bar wins,
+ * labelled and tinted by sign exactly as the flat legend names it, so the
+ * hover ties back to the legend rather than to a "Net flux" total the
+ * measure has no breakdown for. Zero counts as a source, as the header does.
+ */
+function netMeasureTotal(value: number): NetFluxTooltipTotal {
+  const sink = value < 0;
+  return {
+    label: sink ? NET_SINK_LABEL : NET_SOURCE_LABEL,
+    value,
+    color: sink ? NET_SINK_COLOR : NET_SOURCE_COLOR,
+  };
+}
+
+/**
  * Tooltip rows for one hovered x-value, in the design's own order: emissions
  * top-of-stack first (so the list reads down the bar as drawn), then removals
  * in stacking order — the same order `buildLegend` gives the legend below the
- * chart. Agriculture's two classes fold into one row where the first of them
- * falls. Series the active measure doesn't draw simply aren't in `payload`, so
- * the row list follows the Measure/Detail the user picked without being told
- * which one it is, and a series whose value is 0 that year draws no segment,
- * so it gets no row either. `seriesOrder` is the series' declaration order,
- * i.e. the stacking order (see `inStackOrder` for why the payload's own order
- * won't do).
+ * chart. Every bar segment drawn gets a row of its own, cropland and livestock
+ * included, so the tooltip, the stack and the legend list the same series in
+ * the same swatches. Series the active measure doesn't draw simply aren't in
+ * `payload`, so the row list follows the Measure/Detail the user picked
+ * without being told which one it is, and a series whose value is 0 that year
+ * draws no segment, so it gets no row either. Under the net measure the
+ * payload holds only the collapsed bar and the line, and the model reduces to
+ * a sign-labelled total with no rows (see `netMeasureTotal`). `seriesOrder` is
+ * the series' declaration order, i.e. the stacking order (see `inStackOrder`
+ * for why the payload's own order won't do).
  */
 export function netFluxTooltipRows(
   payload: NetFluxTooltipEntry[],
@@ -280,8 +327,8 @@ export function netFluxTooltipRows(
 ): NetFluxTooltipModel {
   const emissions: NetFluxTooltipRow[] = [];
   const removals: NetFluxTooltipRow[] = [];
-  let agriculture: NetFluxTooltipRow | null = null;
   let net: number | null = null;
+  let netMeasure: number | null = null;
 
   for (const entry of inStackOrder(payload, seriesOrder)) {
     const field = entryField(entry);
@@ -290,25 +337,12 @@ export function netFluxTooltipRows(
       net = typeof value === "number" ? value : null;
       continue;
     }
-    const group = seriesGroup(field);
-    // The "net" measure's single bar carries no group suffix; it holds the same
-    // value as the net-flux line, so the row below the rule already shows it.
-    if (!group || typeof value !== "number") continue;
-
-    if (AGRICULTURE_CLASSES.has(seriesClass(field))) {
-      if (agriculture) {
-        agriculture.value += value;
-      } else {
-        agriculture = {
-          key: "agriculture",
-          label: AGRICULTURE_TOOLTIP_LABEL,
-          value,
-          color: HATCH_AGRICULTURE,
-        };
-        emissions.push(agriculture);
-      }
+    if (field === NET_MEASURE_FIELD) {
+      netMeasure = typeof value === "number" ? value : null;
       continue;
     }
+    const group = seriesGroup(field);
+    if (!group || typeof value !== "number") continue;
 
     const row: NetFluxTooltipRow = {
       key: field,
@@ -319,13 +353,17 @@ export function netFluxTooltipRows(
     (group === "emissions" ? emissions : removals).push(row);
   }
 
-  // Filtered after folding so agriculture only disappears when both of its
-  // classes are 0, not when one of them is.
+  // Not filtered on zero: a bar at 0 is still the year's answer under the net
+  // measure, where there is nothing else to show.
+  if (netMeasure != null) {
+    return { rows: [], total: netMeasureTotal(netMeasure) };
+  }
+
   return {
     rows: [...emissions.reverse(), ...removals].filter(
       (row) => row.value !== 0
     ),
-    net,
+    total: net == null ? null : { label: NET_FLUX_LINE_FIELD, value: net },
   };
 }
 
@@ -500,8 +538,8 @@ export function deriveNetFluxVariant(
       legend: {
         layout: "flat",
         emissions: [
-          { label: "Net source (+)", color: NET_SOURCE_COLOR },
-          { label: "Net sink (−)", color: NET_SINK_COLOR },
+          { label: `${NET_SOURCE_LABEL} (+)`, color: NET_SOURCE_COLOR },
+          { label: `${NET_SINK_LABEL} (−)`, color: NET_SINK_COLOR },
         ],
         removals: [],
       },
