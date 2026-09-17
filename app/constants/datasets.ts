@@ -832,8 +832,6 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
 ];
 
-const DATASET_CARD_BY_ID = new Map(DATASET_CARDS.map((c) => [c.dataset_id, c]));
-
 const DATASET_CARD_DISPLAY_ORDER: number[] = [
   11, // Integrated alerts
   1, // Global land cover
@@ -854,7 +852,7 @@ const DATASET_CARD_DISPLAY_ORDER: number[] = [
 ];
 
 export const ORDERED_DATASET_CARDS: (DatasetCardConfig & { img?: string })[] =
-  DATASET_CARD_DISPLAY_ORDER.map((id) => DATASET_CARD_BY_ID.get(id)!);
+  DATASET_CARD_DISPLAY_ORDER.map((id) => DATASET_CARD_BY_ID[id]);
 
 // Defaults applied to DatasetInfo when not provided by cards
 const DEFAULT_DATASET_FIELDS: Omit<
