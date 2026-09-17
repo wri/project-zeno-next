@@ -719,9 +719,6 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     data_layer: "Land GHG Monitoring System (LGMS)",
     context_layer: null,
     img: "/dataset_card_lgms_net_flux.webp",
-    // The LGMS tile endpoint caps at z12 and 422s above it.
-    maxZoom: 12,
-    resampling: "nearest",
     cadence: "annual",
     resolution: "reported per admin area",
     geographic_coverage:
