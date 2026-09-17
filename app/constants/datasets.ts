@@ -832,6 +832,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
 ];
 
+export const DATASET_CARD_BY_ID: Record<number, DatasetCardConfig> =
+  Object.fromEntries(DATASET_CARDS.map((c) => [c.dataset_id, c]));
+
 const DATASET_CARD_DISPLAY_ORDER: number[] = [
   11, // Integrated alerts
   1, // Global land cover
@@ -897,15 +900,6 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
 export const DATASET_BY_ID: Record<number, DatasetInfo> = Object.fromEntries(
   DATASETS.map((d) => [d.dataset_id, d])
 );
-
-/**
- * The catalogue cards keyed by id. Distinct from `DATASET_BY_ID`, which holds
- * the `DatasetInfo` the agent exchanges — that projection drops the card-only
- * fields, so anything reading a card's own configuration (its declared
- * coverage, its categories) has to come through here.
- */
-export const DATASET_CARD_BY_ID: Record<number, DatasetCardConfig> =
-  Object.fromEntries(DATASET_CARDS.map((c) => [c.dataset_id, c]));
 
 // Full dataset_name -> short label, for the datasets that define one. Keyed by
 // name (not id) because the only handle available at chip-build time is the
