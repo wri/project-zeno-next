@@ -62,9 +62,9 @@ export interface DatasetLayerSpec {
   // two (agriculture, lulucf). Always used over `layerName`/`tileUrl` when
   // non-empty.
   layers?: DatasetLayerEntry[];
-  // Name of the one entry in `layers` to show by default when there's more
-  // than one; the rest are added hidden (visible: false). Ignored when
-  // there's only one layer.
+  // Name of the one entry in `layers` to render when there's more than one;
+  // the others are not added to the map at all (so they stay out of the
+  // legend and the layer list). Ignored when there's only one layer.
   selectedLayerName?: string;
   layerName?: string;
   tileUrl?: string;
@@ -75,15 +75,19 @@ export interface DatasetLayerSpec {
 }
 
 /**
- * Builds the managed map layers for a dataset: one raster layer per entry in
- * `spec.layers` (or, when absent, a single layer from `spec.layerName`/
- * `spec.tileUrl`), plus an optional context sub-layer (e.g. Primary Forests
- * beneath Tree Cover Loss) attached beneath the first/primary layer.
+ * Builds the managed map layers for a dataset: exactly one raster layer —
+ * the entry named by `spec.selectedLayerName` (or the first entry) when the
+ * dataset declares several, otherwise its single layer from `spec.layers` or
+ * `spec.layerName`/`spec.tileUrl` — plus an optional context sub-layer (e.g.
+ * Primary Forests beneath Tree Cover Loss) attached beneath it.
+ *
+ * A multi-layer dataset's unselected layers are deliberately NOT added: the
+ * map, legend and layer list only ever show the one layer in play.
  *
  * Layers are returned primary-first so callers can `forEach(addLayer)`:
  * addLayer appends, so the primary layer keeps index 0 and DynamicTileLayers
- * renders it on top of its context sub-layer and any sibling layers. Returns
- * [] when there is no layer to render.
+ * renders it on top of its context sub-layer. Returns [] when there is no
+ * layer to render.
  */
 export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
   // The `spec.tileUrl` branch is dead for the live pick_dataset path — the
@@ -107,24 +111,39 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
         : [];
   if (entries.length === 0) return [];
 
-  const primaryLayerId = datasetLayerId(spec.datasetId, 0, entries[0].name);
-  // When a dataset declares multiple layers, only one is shown by default —
-  // the rest are added to the map with visible: false (so they appear in
-  // the layer list, toggleable via the catalog's eye icon) until the user
-  // turns them on.
-  const selectedLayerName =
-    entries.length > 1 ? (spec.selectedLayerName ?? entries[0].name) : null;
-  const layers: Layer[] = entries.map((entry, index) => ({
-    id: datasetLayerId(spec.datasetId, index, entry.name),
-    name: entry.name,
-    type: "raster",
-    visible: !(selectedLayerName && entry.name !== selectedLayerName),
-    tileUrl: entry.tileUrl,
-    datasetId: spec.datasetId,
-    parameters: spec.parameters,
-    startDate: entry.startDate ?? spec.startDate,
-    endDate: entry.endDate ?? spec.endDate,
-  }));
+  // When a dataset declares multiple layers, only the selected one is
+  // rendered — the others aren't added to the map at all, so they stay out
+  // of the legend and the layer list. The user switches between them via the
+  // catalog panel / a new pick_dataset turn, which rebuilds this list.
+  const selectedIndex =
+    entries.length > 1
+      ? Math.max(
+          0,
+          entries.findIndex((e) => e.name === spec.selectedLayerName)
+        )
+      : 0;
+  const selected = entries[selectedIndex];
+  // Ids stay keyed to the entry's position in the dataset's declared layer
+  // list, so CatalogPanel's datasetLayerId-derived rows still match whichever
+  // single layer is on the map.
+  const primaryLayerId = datasetLayerId(
+    spec.datasetId,
+    selectedIndex,
+    selected.name
+  );
+  const layers: Layer[] = [
+    {
+      id: primaryLayerId,
+      name: selected.name,
+      type: "raster",
+      visible: true,
+      tileUrl: selected.tileUrl,
+      datasetId: spec.datasetId,
+      parameters: spec.parameters,
+      startDate: selected.startDate ?? spec.startDate,
+      endDate: selected.endDate ?? spec.endDate,
+    },
+  ];
 
   if (spec.contextLayer) {
     const ctx = spec.contextLayer;

@@ -194,7 +194,7 @@ describe("deriveContext", () => {
     expect(keys.dataset).toBe("12:agriculture");
   });
 
-  it("excludes a sibling layer hidden via opacity 0 (a multi-layer dataset's default hiding)", () => {
+  it("excludes a sibling layer faded out to opacity 0", () => {
     const agricultureLayer: Layer = {
       id: "dataset-12",
       name: "agriculture",
@@ -202,8 +202,8 @@ describe("deriveContext", () => {
       visible: true,
       datasetId: 12,
     };
-    // Still `visible: true` (it's in the layer list) but hidden by opacity,
-    // matching buildDatasetLayers' default single-visible-layer behavior.
+    // Still `visible: true` (it's in the layer list) but hidden by the
+    // catalog panel's opacity slider.
     const hiddenLulucfLayer: Layer = {
       id: "dataset-12-lulucf",
       name: "lulucf",
