@@ -696,6 +696,14 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       unit: "tCO2e/ha",
     },
   },
+  // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
+  // that one scopes the "View Analysis" flow to a GADM admin area, these paint
+  // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
+  // is per-admin-area and knows nothing about the individual sector layers —
+  // and share the LGMS review flag so the family is revealed together.
+  //
+  // NOTE: ids 13-17 are claimed client-side. The backend catalogue currently
+  // stops at 8; if it ever grows into this range these need renumbering.
   {
     dataset_id: 12,
     dataset_name: "Land GHG Monitoring System (LGMS)",
@@ -713,35 +721,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     defaultEndYear: 2024,
     categories: ["ghg-fluxes"],
     description:
-      "Maps annual gross greenhouse-gas emissions, gross CO2 removals, and net GHG flux from land — vegetation, soil, and agriculture — for GADM administrative areas from 2016 to 2024. Values are in MgCO2e; emissions are positive (a source), removals negative (a sink).",
-    // Analytics-only: no map tile layer. Picking this card enables the "View
-    // Analysis" flow for a GADM admin AOI without adding a raster to the map.
-    tile_url: "",
-  },
-  // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
-  // that one scopes the "View Analysis" flow to a GADM admin area, these paint
-  // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
-  // is per-admin-area and knows nothing about the individual sector layers —
-  // and share the LGMS review flag so the family is revealed together.
-  //
-  // NOTE: ids 13-17 are claimed client-side. The backend catalogue currently
-  // stops at 8; if it ever grows into this range these need renumbering.
-  {
-    dataset_id: 13,
-    dataset_name: "LGMS total net GHG flux",
-    shortName: "LGMS total net flux",
-    featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS total net GHG flux",
-    context_layer: null,
-    img: "/dataset_card_lgms_net_flux.webp",
-    viewOnly: true,
-    cadence: "annual",
-    resolution: "30 m",
-    geographic_coverage: "global",
-    provider: "WRI",
-    categories: ["ghg-fluxes"],
-    description:
       "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
+    // Analysis" flow for a GADM admin AOI without adding a raster to the map.
     tile_url: lgmsTileUrl("lgms", "net"),
     legend: lgmsNetFluxLegend(
       "LGMS total net GHG flux",
