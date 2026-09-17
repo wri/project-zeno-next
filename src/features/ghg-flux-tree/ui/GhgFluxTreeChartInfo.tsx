@@ -1,15 +1,13 @@
 "use client";
 import { Box, Text } from "@chakra-ui/react";
 
-import { ChartInfoTooltip } from "@/src/shared/ui/ChartInfoTooltip";
+import { InfoTitle, InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 
 export function GhgFluxTreeChartInfo() {
   return (
-    <ChartInfoTooltip>
+    <InfoTooltip>
       <Box>
-        <Text fontWeight="bold" mb="4px">
-          About this chart
-        </Text>
+        <InfoTitle>About this chart</InfoTitle>
         <Text mb="8px">
           This graph reports average annual emissions, removals, and net flux
           from land use and agriculture between 2016 and 2024 for the specified
@@ -25,6 +23,6 @@ export function GhgFluxTreeChartInfo() {
           More information about each component can be found next to it.
         </Text>
       </Box>
-    </ChartInfoTooltip>
+    </InfoTooltip>
   );
 }

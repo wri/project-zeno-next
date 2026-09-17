@@ -1,8 +1,8 @@
 "use client";
-import { Box, Button, Menu, Portal, Text } from "@chakra-ui/react";
-import { CaretDownIcon, InfoIcon } from "@phosphor-icons/react";
+import { Button, Flex, Menu, Portal, Text } from "@chakra-ui/react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 
-import { Tooltip } from "@/app/components/ui/tooltip";
+import { InfoTooltip } from "./InfoTooltip";
 
 export interface PillOption {
   value: string;
@@ -16,7 +16,7 @@ export interface PillProps {
   onSelect: (value: string) => void;
   /** Matches the widest option label across both curated net-flux/tree pills. */
   minW?: string;
-  /** When set, renders an info icon inside the pill with a dark tooltip. */
+  /** Tooltip body for an info icon rendered inside the pill, after the caret. */
   info?: React.ReactNode;
 }
 
@@ -25,6 +25,10 @@ export interface PillProps {
  * caret. Shared by the net-flux DETAIL/MEASURE pills and the flux-tree MEASURE
  * pill — both curated LGMS charts render the identical control, styled from
  * the same design spec.
+ *
+ * The pill chrome sits on a wrapper so the optional info icon is a sibling of
+ * the menu trigger rather than a child of its `<button>`: hovering the icon
+ * opens only the tooltip, with no click guards needed.
  */
 export function Pill({
   label,
@@ -35,83 +39,70 @@ export function Pill({
   info,
 }: PillProps) {
   return (
-    <Menu.Root positioning={{ placement: "bottom-start" }}>
-      <Menu.Trigger asChild>
-        <Button
-          h="24px"
-          minH="24px"
-          px="8px"
-          py="5px"
-          gap="4px"
-          bg="white"
-          border="1px solid"
-          borderColor="#E0E2E5"
-          rounded="4px"
-          variant="outline"
-          _hover={{ bg: "neutral.100" }}
-          _icon={{ width: "auto", height: "auto" }}
-          aria-label={`${label}: ${value}`}
-        >
-          <Text
-            fontFamily="mono"
-            fontSize="10px"
-            fontWeight="400"
-            lineHeight="16px"
-            letterSpacing="0.5px"
-            color="#4A64CB"
+    <Flex
+      align="center"
+      gap="4px"
+      h="24px"
+      pr={info ? "8px" : 0}
+      bg="white"
+      border="1px solid"
+      borderColor="#E0E2E5"
+      rounded="4px"
+      _hover={{ bg: "neutral.100" }}
+    >
+      <Menu.Root positioning={{ placement: "bottom-start" }}>
+        <Menu.Trigger asChild>
+          <Button
+            variant="plain"
+            h="100%"
+            pl="8px"
+            pr={info ? 0 : "8px"}
+            gap="4px"
+            border="none"
+            // The button recipe sizes every descendant svg to 20px; let the
+            // caret keep its declared 12px.
+            _icon={{ width: "auto", height: "auto" }}
+            aria-label={`${label}: ${value}`}
           >
-            {label}
-          </Text>
-          <Text
-            fontFamily="body"
-            fontSize="12px"
-            fontWeight="medium"
-            color="#656E7B"
-          >
-            {value}
-          </Text>
-          <CaretDownIcon size={12} color="#656E7B" />
-          {info && (
-            <Tooltip
-              content={info}
-              variant="dark"
-              showArrow
-              openDelay={200}
-              positioning={{ placement: "bottom" }}
+            <Text
+              fontFamily="mono"
+              fontSize="10px"
+              fontWeight="400"
+              lineHeight="16px"
+              letterSpacing="0.5px"
+              color="#4A64CB"
             >
-              <Box
-                as="span"
-                display="inline-flex"
-                cursor="pointer"
-                flexShrink={0}
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }}
-                onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-              >
-                <InfoIcon size={16} color="#737C94" />
-              </Box>
-            </Tooltip>
-          )}
-        </Button>
-      </Menu.Trigger>
-      <Portal>
-        <Menu.Positioner>
-          <Menu.Content minW={minW} zIndex={1400}>
-            {options.map((option) => (
-              <Menu.Item
-                key={option.value}
-                value={option.value}
-                onSelect={() => onSelect(option.value)}
-                fontSize="12px"
-              >
-                {option.label}
-              </Menu.Item>
-            ))}
-          </Menu.Content>
-        </Menu.Positioner>
-      </Portal>
-    </Menu.Root>
+              {label}
+            </Text>
+            <Text
+              fontFamily="body"
+              fontSize="12px"
+              fontWeight="medium"
+              color="#656E7B"
+            >
+              {value}
+            </Text>
+            <CaretDownIcon size={12} color="#656E7B" />
+          </Button>
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content minW={minW} zIndex={1400}>
+              {options.map((option) => (
+                <Menu.Item
+                  key={option.value}
+                  value={option.value}
+                  onSelect={() => onSelect(option.value)}
+                  fontSize="12px"
+                >
+                  {option.label}
+                </Menu.Item>
+              ))}
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu.Root>
+      {info && <InfoTooltip>{info}</InfoTooltip>}
+    </Flex>
   );
 }

@@ -1,15 +1,13 @@
 "use client";
 import { Box, Text } from "@chakra-ui/react";
 
-import { ChartInfoTooltip } from "@/src/shared/ui/ChartInfoTooltip";
+import { InfoTitle, InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 
 export function NetFluxChartInfo() {
   return (
-    <ChartInfoTooltip>
+    <InfoTooltip>
       <Box>
-        <Text fontWeight="bold" mb="4px">
-          About this chart
-        </Text>
+        <InfoTitle>About this chart</InfoTitle>
         <Text>
           This graph reports annual emissions, removals, and net flux from land
           use and agriculture between 2016 and 2024 for the specified area. Net
@@ -18,6 +16,6 @@ export function NetFluxChartInfo() {
           (sources).
         </Text>
       </Box>
-    </ChartInfoTooltip>
+    </InfoTooltip>
   );
 }

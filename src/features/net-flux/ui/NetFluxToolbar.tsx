@@ -1,8 +1,9 @@
 "use client";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Flex } from "@chakra-ui/react";
 
 import useInsightStore from "@/app/store/insightStore";
 import type { InsightWidget } from "@/app/types/chat";
+import { InfoDefinition, InfoTitle } from "@/src/shared/ui/InfoTooltip";
 import { MeasureInfo } from "@/src/shared/ui/MeasureInfo";
 import { Pill } from "@/src/shared/ui/Pill";
 
@@ -24,30 +25,19 @@ const MEASURE_OPTIONS: NetFluxMeasure[] = ["gross", "net"];
 function DetailInfo() {
   return (
     <Box>
-      <Text fontWeight="bold" mb="4px">
-        Detail
-      </Text>
-      <Text mb="8px">
-        <Text as="span" fontWeight="bold">
-          Full:
-        </Text>{" "}
+      <InfoTitle>Detail</InfoTitle>
+      <InfoDefinition term="Full">
         Vegetation and soil fluxes are separated into components. Cropland
         management and livestock are separate.
-      </Text>
-      <Text mb="8px">
-        <Text as="span" fontWeight="bold">
-          Categories:
-        </Text>{" "}
+      </InfoDefinition>
+      <InfoDefinition term="Categories">
         Vegetation and soil are separate. Cropland management and livestock are
         separate.
-      </Text>
-      <Text>
-        <Text as="span" fontWeight="bold">
-          Summary:
-        </Text>{" "}
+      </InfoDefinition>
+      <InfoDefinition term="Summary">
         Vegetation and soil are combined into land use. Cropland management and
         livestock are combined into agriculture.
-      </Text>
+      </InfoDefinition>
     </Box>
   );
 }

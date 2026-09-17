@@ -18,7 +18,6 @@ export {
 } from "./model/net-flux-variants";
 export {
   collapseNetFluxSiblings,
-  defaultNetFluxSibling,
   netFluxDetailLabel,
   netFluxWidgetDetailLabel,
   netFluxWidgetDetailPillLabel,

@@ -142,6 +142,7 @@ export default function InsightWorkspace() {
 
   // `insights` is already in pager order, so index 0 is the lead entry.
   const widget = insights[currentIndex];
+  const isNetFlux = isNetFluxWidget(widget);
   const isFluxTree = isFluxTreeWidget(widget);
   const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
   const hasChips = chips.length > 0;
@@ -302,8 +303,8 @@ export default function InsightWorkspace() {
                 >
                   {widget.title}
                 </Heading>
-                {isNetFluxWidget(widget) && <NetFluxChartInfo />}
-                {isFluxTreeWidget(widget) && <GhgFluxTreeChartInfo />}
+                {isNetFlux && <NetFluxChartInfo />}
+                {isFluxTree && <GhgFluxTreeChartInfo />}
               </Flex>
               {hasChips && (
                 <AnalysisParametersToggle
@@ -322,12 +323,12 @@ export default function InsightWorkspace() {
 
             {/* Per-widget-type controls, rendered on the shell above the card
                 (the design calls this frame the "widget toolbar"). */}
-            {isNetFluxWidget(widget) && (
+            {isNetFlux && (
               <Box px={2} pb={2}>
                 <NetFluxToolbar widget={widget} />
               </Box>
             )}
-            {isFluxTreeWidget(widget) && (
+            {isFluxTree && (
               <Box px={2} pb={2}>
                 <GhgFluxMeasurePill widget={widget} />
               </Box>
