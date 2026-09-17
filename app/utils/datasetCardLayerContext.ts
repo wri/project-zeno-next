@@ -21,6 +21,8 @@ export function getLayerContextFromDatasetCard(
       hasYears && card.tile_url
         ? `${card.tile_url}&start_year=${startYear}&end_year=${endYear}`
         : card.tile_url,
+    maxZoom: card.maxZoom,
+    resampling: card.resampling,
     ...(hasYears
       ? {
           startDate: `${startYear}-01-01`,

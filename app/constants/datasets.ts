@@ -70,6 +70,20 @@ export type DatasetCardConfig = {
   citation?: string;
   viewOnly?: boolean;
   /**
+   * Highest zoom this dataset's tile endpoint serves. Omit when the endpoint
+   * serves every zoom; set it and the raster source overzooms past that level
+   * rather than requesting tiles the server rejects.
+   */
+  maxZoom?: number;
+  /**
+   * How the raster is resampled when the map zooms past its native
+   * resolution. Defaults to MapLibre's `"linear"`, which bilinearly smears an
+   * overzoomed tile; `"nearest"` keeps hard pixel edges, which suits a
+   * discrete class ramp (you see the real cells instead of mush) but looks
+   * worse on photographic layers like imagery mosaics.
+   */
+  resampling?: "linear" | "nearest";
+  /**
    * Gates the card behind a URL feature flag (`?ff=<flag>`): browse surfaces
    * (Data Catalog, layer menu) only list it while the flag is on. The card
    * stays in `DATASET_CARDS` either way, so a layer that is already on the map
@@ -696,28 +710,6 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       unit: "tCO2e/ha",
     },
   },
-  {
-    dataset_id: 12,
-    dataset_name: "Land GHG Monitoring System (LGMS)",
-    shortName: "LGMS net flux",
-    featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "Land GHG Monitoring System (LGMS)",
-    context_layer: null,
-    img: "/dataset_card_net_flux.webp",
-    cadence: "annual",
-    resolution: "reported per admin area",
-    geographic_coverage:
-      "GADM administrative areas (country, state/province, district) only",
-    provider: "WRI",
-    defaultStartYear: 2016,
-    defaultEndYear: 2024,
-    categories: ["ghg-fluxes"],
-    description:
-      "Maps annual gross greenhouse-gas emissions, gross CO2 removals, and net GHG flux from land — vegetation, soil, and agriculture — for GADM administrative areas from 2016 to 2024. Values are in MgCO2e; emissions are positive (a source), removals negative (a sink).",
-    // Analytics-only: no map tile layer. Picking this card enables the "View
-    // Analysis" flow for a GADM admin AOI without adding a raster to the map.
-    tile_url: "",
-  },
   // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
   // that one scopes the "View Analysis" flow to a GADM admin area, these paint
   // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
@@ -727,21 +719,24 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   // NOTE: ids 13-17 are claimed client-side. The backend catalogue currently
   // stops at 8; if it ever grows into this range these need renumbering.
   {
-    dataset_id: 13,
-    dataset_name: "LGMS total net GHG flux",
-    shortName: "LGMS total net flux",
+    dataset_id: 12,
+    dataset_name: "Land GHG Monitoring System (LGMS)",
+    shortName: "LGMS net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS total net GHG flux",
+    data_layer: "Land GHG Monitoring System (LGMS)",
     context_layer: null,
     img: "/dataset_card_lgms_net_flux.webp",
-    viewOnly: true,
     cadence: "annual",
-    resolution: "30 m",
-    geographic_coverage: "global",
+    resolution: "reported per admin area",
+    geographic_coverage:
+      "GADM administrative areas (country, state/province, district) only",
     provider: "WRI",
+    defaultStartYear: 2016,
+    defaultEndYear: 2024,
     categories: ["ghg-fluxes"],
     description:
       "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
+    // Analysis" flow for a GADM admin AOI without adding a raster to the map.
     tile_url: lgmsTileUrl("lgms", "net"),
     legend: lgmsNetFluxLegend(
       "LGMS total net GHG flux",
@@ -749,8 +744,16 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
     ),
   },
+  // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
+  // that one scopes the "View Analysis" flow to a GADM admin area, these paint
+  // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
+  // is per-admin-area and knows nothing about the individual sector layers —
+  // and share the LGMS review flag so the family is revealed together.
+  //
+  // NOTE: ids 13-16 are claimed client-side. The backend catalogue currently
+  // stops at 8; if it ever grows into this range these need renumbering.
   {
-    dataset_id: 14,
+    dataset_id: 13,
     dataset_name: "LGMS LULUCF net GHG flux",
     shortName: "LULUCF net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
@@ -758,6 +761,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_lulucf.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
+    resampling: "nearest",
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
@@ -773,7 +779,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     ),
   },
   {
-    dataset_id: 15,
+    dataset_id: 14,
     dataset_name: "LGMS agriculture emissions",
     shortName: "Agriculture emissions",
     featureFlag: NET_FLUX_FEATURE_FLAG,
@@ -781,6 +787,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_agriculture.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
+    resampling: "nearest",
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
@@ -796,7 +805,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     ),
   },
   {
-    dataset_id: 16,
+    dataset_id: 15,
     dataset_name: "LGMS cropland emissions",
     shortName: "Cropland emissions",
     featureFlag: NET_FLUX_FEATURE_FLAG,
@@ -804,6 +813,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_cropland.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
+    resampling: "nearest",
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
@@ -819,7 +831,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     ),
   },
   {
-    dataset_id: 17,
+    dataset_id: 16,
     dataset_name: "LGMS livestock emissions",
     shortName: "Livestock emissions",
     featureFlag: NET_FLUX_FEATURE_FLAG,
@@ -827,6 +839,9 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     context_layer: null,
     img: "/dataset_card_lgms_livestock.webp",
     viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    maxZoom: 12,
+    resampling: "nearest",
     cadence: "annual",
     resolution: "30 m",
     geographic_coverage: "global",
@@ -864,11 +879,10 @@ const DATASET_CARD_DISPLAY_ORDER: number[] = [
   7, // Tree cover
   10, // TCL from fires
   12, // LGMS
-  13, // LGMS total net flux
-  14, // LGMS LULUCF
-  15, // LGMS agriculture
-  16, // LGMS cropland
-  17, // LGMS livestock
+  13, // LGMS LULUCF
+  14, // LGMS agriculture
+  15, // LGMS cropland
+  16, // LGMS livestock
   6, // Forest GHG net flux
 ];
 

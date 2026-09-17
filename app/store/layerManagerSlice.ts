@@ -55,6 +55,10 @@ export interface Layer {
   maxzoom?: number;
   bounds?: [number, number, number, number];
   attribution?: string;
+  // Raster resampling past the source's native resolution. MapLibre defaults
+  // to "linear", which smears an overzoomed tile; "nearest" keeps hard pixel
+  // edges, which reads better for discrete class ramps than for imagery.
+  resampling?: "linear" | "nearest";
   // Set when added from show_imagery (Sentinel-2 mosaic legend metadata)
   imagery?: ImageryInfo;
 }
