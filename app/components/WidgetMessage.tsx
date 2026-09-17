@@ -41,6 +41,7 @@ import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
 import {
   fluxTreeTableProps,
   GhgFluxTreeBody,
+  GhgFluxTreeChartInfo,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
@@ -52,10 +53,14 @@ import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
+import { rowsToCsv, csvFilename } from "@/app/utils/csvExport";
 import {
   NetFluxChartBody,
+  NetFluxChartInfo,
+  csvColumnName,
   deriveNetFluxVariant,
   isNetFluxWidget,
+  netFluxCsvRows,
   netFluxTableProps,
   netFluxViewKey,
   useNetFluxView,
@@ -189,31 +194,22 @@ export default function WidgetMessage({
   };
 
   const handleDownloadCsv = () => {
-    const data = displayWidget.data;
+    // The chart's own data is scaled to Mt for display; the download must
+    // always report the backend's raw Mg values, so net-flux widgets read
+    // their own unscaled rows rather than `displayWidget.data`.
+    const data = isNetFlux
+      ? netFluxCsvRows(widget, netFluxView.measure)
+      : displayWidget.data;
     if (!Array.isArray(data) || data.length === 0) return;
     const rows = data as Record<string, unknown>[];
-    const headers = Object.keys(rows[0]);
-    const csvLines = [
-      headers.join(","),
-      ...rows.map((row) =>
-        headers
-          .map((h) => {
-            const val = row[h];
-            const str = val === null || val === undefined ? "" : String(val);
-            return str.includes(",") || str.includes('"') || str.includes("\n")
-              ? `"${str.replace(/"/g, '""')}"`
-              : str;
-          })
-          .join(",")
-      ),
-    ];
-    const blob = new Blob([csvLines.join("\n")], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const rowKeys = Object.keys(rows[0]);
+    const headers = isNetFlux ? rowKeys.map(csvColumnName) : rowKeys;
+    const csv = rowsToCsv(rows, headers, rowKeys);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${(widget.title || "data").replace(/[^a-z0-9]/gi, "_")}.csv`;
+    a.download = csvFilename(widget.title);
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -289,6 +285,8 @@ export default function WidgetMessage({
           >
             {widget.title}
           </Heading>
+          {isNetFlux && <NetFluxChartInfo />}
+          {isFluxTree && <GhgFluxTreeChartInfo />}
         </Flex>
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">

@@ -11,3 +11,4 @@ export { treeViewKey } from "./model/tree-view-store";
 export { FLUX_TREE_CARD_WIDTH } from "./ui/tree-chart-constants";
 export { GhgFluxTreeBody } from "./ui/GhgFluxTreeBody";
 export { GhgFluxMeasurePill } from "./ui/GhgFluxMeasurePill";
+export { GhgFluxTreeChartInfo } from "./ui/GhgFluxTreeChartInfo";

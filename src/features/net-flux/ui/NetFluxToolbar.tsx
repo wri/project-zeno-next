@@ -3,6 +3,8 @@ import { Box, Flex } from "@chakra-ui/react";
 
 import useInsightStore from "@/app/store/insightStore";
 import type { InsightWidget } from "@/app/types/chat";
+import { InfoDefinition, InfoTitle } from "@/src/shared/ui/InfoTooltip";
+import { MeasureInfo } from "@/src/shared/ui/MeasureInfo";
 import { Pill } from "@/src/shared/ui/Pill";
 
 import { useNetFluxDetail, useNetFluxView } from "./use-net-flux-view";
@@ -19,6 +21,26 @@ const MEASURE_LABEL: Record<NetFluxMeasure, string> = {
   net: "Net",
 };
 const MEASURE_OPTIONS: NetFluxMeasure[] = ["gross", "net"];
+
+function DetailInfo() {
+  return (
+    <Box>
+      <InfoTitle>Detail</InfoTitle>
+      <InfoDefinition term="Full">
+        Vegetation and soil fluxes are separated into components. Cropland
+        management and livestock are separate.
+      </InfoDefinition>
+      <InfoDefinition term="Categories">
+        Vegetation and soil are separate. Cropland management and livestock are
+        separate.
+      </InfoDefinition>
+      <InfoDefinition term="Summary">
+        Vegetation and soil are combined into land use. Cropland management and
+        livestock are combined into agriculture.
+      </InfoDefinition>
+    </Box>
+  );
+}
 
 /**
  * DETAIL / MEASURE controls for the net-flux insight. In the workspace these
@@ -70,6 +92,7 @@ export function NetFluxToolbar({
             }))}
             onSelect={select}
             minW="160px"
+            info={<DetailInfo />}
           />
         )}
         <Pill
@@ -81,6 +104,7 @@ export function NetFluxToolbar({
           }))}
           onSelect={(value) => setMeasure(value as NetFluxMeasure)}
           minW="160px"
+          info={<MeasureInfo />}
         />
       </Flex>
     </Flex>

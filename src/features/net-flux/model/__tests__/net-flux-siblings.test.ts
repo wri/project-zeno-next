@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   collapseNetFluxRollups,
   collapseNetFluxSiblings,
+  defaultNetFluxSibling,
   netFluxDetailLabel,
   netFluxWidgetDetailPillLabel,
   netFluxGroupKey,
@@ -123,22 +124,27 @@ describe("netFluxWidgetDetailLabel", () => {
 });
 
 describe("netFluxSiblings", () => {
-  it("leads with Category, then the rest in the order the backend sent", () => {
-    // The backend emits Full detail first; the DETAIL menu opens on and lists
-    // Category first instead, so the same order feeds the pill's options.
+  it("orders tabs Summary → Category → Full", () => {
     expect(netFluxSiblings(ANALYSIS, FULL).map((w) => w.id)).toEqual([
+      "ins1-chart-2",
       "ins1-chart-1",
       "ins1-chart-0",
-      "ins1-chart-2",
     ]);
   });
 
-  it("keeps the backend order when no Category roll-up is present", () => {
+  it("orders a partial group the same way", () => {
     const partial = [FULL, SUMMARY];
     expect(netFluxSiblings(partial, SUMMARY).map((w) => w.id)).toEqual([
-      "ins1-chart-0",
       "ins1-chart-2",
+      "ins1-chart-0",
     ]);
+  });
+
+  it("sorts a detail it doesn't recognise after the known three", () => {
+    const odd = chart("ins1-chart-4", "Net GHG Flux — Experimental");
+    expect(
+      netFluxSiblings([odd, FULL, CATEGORY, SUMMARY], FULL).map((w) => w.id)
+    ).toEqual(["ins1-chart-2", "ins1-chart-1", "ins1-chart-0", "ins1-chart-4"]);
   });
 
   it("returns just the widget when it has no group", () => {
@@ -146,7 +152,28 @@ describe("netFluxSiblings", () => {
   });
 });
 
+describe("defaultNetFluxSibling", () => {
+  it("opens on Category wherever it sits in the group", () => {
+    expect(defaultNetFluxSibling([FULL, SUMMARY, CATEGORY])).toBe(CATEGORY);
+  });
+
+  it("falls back to the first in display order when Category is missing", () => {
+    // Unsorted on purpose: the default must not depend on the caller sorting.
+    expect(defaultNetFluxSibling([FULL, SUMMARY])).toBe(SUMMARY);
+  });
+
+  it("is undefined for an empty group", () => {
+    expect(defaultNetFluxSibling([])).toBeUndefined();
+  });
+});
+
 describe("collapseNetFluxSiblings", () => {
+  it("opens a group without Category on its first roll-up in display order", () => {
+    expect(
+      collapseNetFluxSiblings([FULL, SUMMARY], {}).map((w) => w.id)
+    ).toEqual(["ins1-chart-2"]);
+  });
+
   it("folds the three roll-ups into one entry, defaulting to Category", () => {
     const out = collapseNetFluxSiblings(ANALYSIS, {});
     expect(out.map((w) => w.id)).toEqual([
@@ -205,11 +232,11 @@ const UUID_SUMMARY = chart("c3d4e5", "Net GHG Flux Summary");
 const UUID_ANALYSIS = [UUID_TREE, UUID_FULL, UUID_CATEGORY, UUID_SUMMARY];
 
 describe("netFluxRollups", () => {
-  it("lists one analysis's roll-ups with Category leading, whatever the ids", () => {
+  it("lists one analysis's roll-ups in display order, whatever the ids", () => {
     expect(netFluxRollups(UUID_ANALYSIS)).toEqual([
+      UUID_SUMMARY,
       UUID_CATEGORY,
       UUID_FULL,
-      UUID_SUMMARY,
     ]);
   });
 
@@ -229,14 +256,14 @@ describe("collapseNetFluxRollups", () => {
   it("falls back to the lead roll-up when nothing is selected", () => {
     expect(collapseNetFluxRollups(UUID_ANALYSIS)).toEqual([
       UUID_TREE,
-      UUID_CATEGORY,
+      UUID_SUMMARY,
     ]);
   });
 
   it("falls back to the lead roll-up when the selection is not one of them", () => {
     expect(collapseNetFluxRollups(UUID_ANALYSIS, "gone")).toEqual([
       UUID_TREE,
-      UUID_CATEGORY,
+      UUID_SUMMARY,
     ]);
   });
 

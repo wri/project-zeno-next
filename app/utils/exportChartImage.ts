@@ -69,8 +69,16 @@ function drawTitle(
   );
 }
 
+/** Shared sanitizer for export filenames: strips anything but letters/digits. */
+export function sanitizeFilenameBase(
+  title: string | undefined,
+  fallback: string
+): string {
+  return (title || fallback).replace(/[^a-z0-9]/gi, "_");
+}
+
 export function chartImageFilename(title: string | undefined): string {
-  return `${(title || "chart").replace(/[^a-z0-9]/gi, "_")}.png`;
+  return `${sanitizeFilenameBase(title, "chart")}.png`;
 }
 
 export async function exportChartImage(

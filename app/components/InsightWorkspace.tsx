@@ -32,11 +32,14 @@ import AnalysisParametersToggle, {
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import {
+  NetFluxChartInfo,
   collapseNetFluxSiblings,
+  isNetFluxWidget,
   useNetFluxDetailSelection,
 } from "@/src/features/net-flux";
 import {
   FLUX_TREE_CARD_WIDTH,
+  GhgFluxTreeChartInfo,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
 import InsightChartPills, { hasChartPills } from "./InsightChartPills";
@@ -138,6 +141,7 @@ export default function InsightWorkspace() {
 
   // `insights` is already in pager order, so index 0 is the lead entry.
   const widget = insights[currentIndex];
+  const isNetFlux = isNetFluxWidget(widget);
   const isFluxTree = isFluxTreeWidget(widget);
   const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
   const hasChips = chips.length > 0;
@@ -286,19 +290,21 @@ export default function InsightWorkspace() {
           >
             {/* Title row */}
             <Flex px={4} py={1} justify="space-between" align="flex-start">
-              <Heading
-                size="sm"
-                fontWeight="semibold"
-                color="primary.fg"
-                flex={1}
-                minW={0}
-                truncate
-                title={widget.title}
-                mr={2}
-                mb={0}
-              >
-                {widget.title}
-              </Heading>
+              <Flex align="center" gap="6px" flex={1} minW={0} mr={2}>
+                <Heading
+                  size="sm"
+                  fontWeight="semibold"
+                  color="primary.fg"
+                  minW={0}
+                  truncate
+                  title={widget.title}
+                  mb={0}
+                >
+                  {widget.title}
+                </Heading>
+                {isNetFlux && <NetFluxChartInfo />}
+                {isFluxTree && <GhgFluxTreeChartInfo />}
+              </Flex>
               {hasChips && (
                 <AnalysisParametersToggle
                   expanded={paramsExpanded}
