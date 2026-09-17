@@ -129,7 +129,7 @@ describe("buildDatasetLayers", () => {
     expect(layers[0].name).toBe("Tree cover loss");
   });
 
-  it("builds one independently-toggleable layer per entry in `layers`", () => {
+  it("renders only the first layer by default when multiple layers exist", () => {
     const layers = buildDatasetLayers({
       datasetId: 12,
       layers: [
@@ -138,35 +138,16 @@ describe("buildDatasetLayers", () => {
       ],
     });
 
-    expect(layers).toHaveLength(2);
+    expect(layers).toHaveLength(1);
     expect(layers[0]).toMatchObject({
       id: "dataset-12",
       name: "agriculture",
       datasetId: 12,
     });
-    expect(layers[1]).toMatchObject({
-      id: "dataset-12-lulucf",
-      name: "lulucf",
-      datasetId: 12,
-    });
-    // Distinct ids so each can be independently shown/hidden/opacity-tuned.
-    expect(layers[0].id).not.toBe(layers[1].id);
+    expect(layers[0].opacity).toBeUndefined();
   });
 
-  it("hides all but the first layer by default when multiple layers exist", () => {
-    const layers = buildDatasetLayers({
-      datasetId: 12,
-      layers: [
-        { name: "agriculture", tileUrl: "https://example.com/agriculture.png" },
-        { name: "lulucf", tileUrl: "https://example.com/lulucf.png" },
-      ],
-    });
-
-    expect(layers[0].visible).toBe(true);
-    expect(layers[1].visible).toBe(false);
-  });
-
-  it("hides all but the requested `selectedLayerName` layer", () => {
+  it("renders only the requested `selectedLayerName` layer", () => {
     const layers = buildDatasetLayers({
       datasetId: 12,
       selectedLayerName: "lulucf",
@@ -176,8 +157,28 @@ describe("buildDatasetLayers", () => {
       ],
     });
 
-    expect(layers[0].visible).toBe(false);
-    expect(layers[1].visible).toBe(true);
+    expect(layers).toHaveLength(1);
+    // Id keyed to the entry's declared index, so CatalogPanel's rows match.
+    expect(layers[0]).toMatchObject({
+      id: "dataset-12-lulucf",
+      name: "lulucf",
+      datasetId: 12,
+    });
+    expect(layers[0].opacity).toBeUndefined();
+  });
+
+  it("falls back to the first layer when `selectedLayerName` is unknown", () => {
+    const layers = buildDatasetLayers({
+      datasetId: 12,
+      selectedLayerName: "nope",
+      layers: [
+        { name: "agriculture", tileUrl: "https://example.com/agriculture.png" },
+        { name: "lulucf", tileUrl: "https://example.com/lulucf.png" },
+      ],
+    });
+
+    expect(layers).toHaveLength(1);
+    expect(layers[0].name).toBe("agriculture");
   });
 
   it("leaves opacity untouched for a single layer", () => {
@@ -194,9 +195,10 @@ describe("buildDatasetLayers", () => {
     expect(buildDatasetLayers({ datasetId: 4 })).toEqual([]);
   });
 
-  it("attaches a context sub-layer beneath the first/primary layer", () => {
+  it("attaches a context sub-layer beneath the selected layer", () => {
     const layers = buildDatasetLayers({
       datasetId: 12,
+      selectedLayerName: "lulucf",
       layers: [
         { name: "agriculture", tileUrl: "https://example.com/agriculture.png" },
         { name: "lulucf", tileUrl: "https://example.com/lulucf.png" },
@@ -207,13 +209,13 @@ describe("buildDatasetLayers", () => {
       },
     });
 
-    expect(layers).toHaveLength(3);
-    const ctx = layers[2];
-    expect(ctx.parentLayerId).toBe("dataset-12");
+    expect(layers).toHaveLength(2);
+    const ctx = layers[1];
+    expect(ctx.parentLayerId).toBe("dataset-12-lulucf");
   });
 
   it("prefers a layer's own dates over the spec's dataset-level dates", () => {
-    const layers = buildDatasetLayers({
+    const spec = {
       datasetId: 12,
       startDate: "2016-01-01",
       endDate: "2024-12-31",
@@ -226,13 +228,18 @@ describe("buildDatasetLayers", () => {
           endDate: "2022-12-31",
         },
       ],
-    });
+    };
 
-    expect(layers[0]).toMatchObject({
+    // Falls back to the dataset-level dates when the selected layer has none.
+    expect(
+      buildDatasetLayers({ ...spec, selectedLayerName: "agriculture" })[0]
+    ).toMatchObject({
       startDate: "2016-01-01",
       endDate: "2024-12-31",
     });
-    expect(layers[1]).toMatchObject({
+    expect(
+      buildDatasetLayers({ ...spec, selectedLayerName: "lulucf" })[0]
+    ).toMatchObject({
       startDate: "2020-01-01",
       endDate: "2022-12-31",
     });
