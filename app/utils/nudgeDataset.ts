@@ -83,7 +83,7 @@ export function addSuggestedDatasetToMap(selected: SuggestedDataset): void {
     datasetId: merged.dataset_id,
     layerName: merged.dataset_name,
     tileUrl: merged.tile_url,
-    layers: toLayerEntries(merged.layers),
+    layers: toLayerEntries(merged.layers, merged.dataset_id),
     ...layerContextProps,
   }).forEach(addLayer);
 }

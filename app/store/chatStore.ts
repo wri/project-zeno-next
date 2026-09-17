@@ -22,6 +22,7 @@ import {
   deriveContext,
   diffUiContext,
   emptyContextKeys,
+  isLayerActive,
   type ContextKeys,
 } from "@/app/utils/messageContext";
 import { readDataStream } from "@/app/lib/read-data-stream";
@@ -452,21 +453,20 @@ async function processStreamMessage(
         .then(() => pickDatasetTool(streamMessage, addMessage))
         .then(() => {
           if (typeof datasetId !== "number") return;
-          const declaredLayerNames = (dataset?.layers ?? []).map((l) => l.name);
+          const isMultiLayer = (dataset?.layers ?? []).length > 1;
           const activeLayerNames = useMapStore
             .getState()
             .layers.filter(
               (l) =>
                 l.datasetId === datasetId &&
                 !l.parentLayerId &&
-                l.visible &&
-                (l.opacity ?? 1) !== 0
+                isLayerActive(l)
             )
             .map((l) => l.name);
           useChatStore.getState().foldSentContext({
             dataset: datasetContextKey(
               datasetId,
-              declaredLayerNames,
+              isMultiLayer,
               activeLayerNames
             ),
           });

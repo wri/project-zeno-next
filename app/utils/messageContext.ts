@@ -35,12 +35,19 @@ export const emptyContextKeys = (): ContextKeys => ({
 // on this format or the agent's own picks get echoed back as "new".
 export function datasetContextKey(
   datasetId: number,
-  declaredLayerNames: string[],
+  isMultiLayer: boolean,
   activeLayerNames: string[]
 ): string {
-  const activeLayers = declaredLayerNames.length > 1 ? activeLayerNames : [];
+  const activeLayers = isMultiLayer ? activeLayerNames : [];
   return `${datasetId}:${[...activeLayers].sort().join(",")}`;
 }
+
+// A dataset layer counts as "active" once it's on the map, visible and not
+// faded out — matches the catalog panel's per-layer eye toggle / opacity
+// slider. Shared by deriveContext (live map layers) and chatStore's
+// pick_dataset fold, which must agree on this predicate.
+export const isLayerActive = (l: Pick<Layer, "visible" | "opacity">) =>
+  l.visible && (l.opacity ?? 1) !== 0;
 
 export interface DerivedContext {
   // Full payload for every slot currently present (before deduplication).
@@ -163,28 +170,22 @@ export function deriveContext(
       const primaryDatasetLayers = ds.filter(
         (l) => l.datasetId === primaryDatasetId
       );
-      const declaredLayerNames = (info.layers ?? []).map((l) => l.name);
-      // Filtered to visible and non-zero-opacity: a layer hidden or faded
-      // out via the catalog panel's per-layer eye toggle / opacity slider is
-      // still on the map but shouldn't be reported as active — matches
-      // active_layers' doc comment in chat.ts. (A multi-layer dataset's
-      // unselected layers aren't on the map at all; see buildDatasetLayers.)
-      const activeLayerNames = primaryDatasetLayers
-        .filter((l) => l.visible && (l.opacity ?? 1) !== 0)
-        .map((l) => l.name);
-      // Only report active_layers for a genuinely multi-layer dataset —
+      // Only report/key active_layers for a genuinely multi-layer dataset —
       // gated on what the dataset *declares*, not how many are currently
       // active, so switching down to one visible sublayer still names it
       // instead of going silent.
-      const activeLayers =
-        declaredLayerNames.length > 1 ? activeLayerNames : [];
+      const isMultiLayer = (info.layers ?? []).length > 1;
+      const activeLayerNames = primaryDatasetLayers
+        .filter(isLayerActive)
+        .map((l) => l.name);
+      const activeLayers = isMultiLayer ? activeLayerNames : [];
       uiContext.dataset_selected = {
         dataset: info,
         ...(activeLayers.length > 0 ? { active_layers: activeLayers } : {}),
       };
       keys.dataset = datasetContextKey(
         primaryDatasetId,
-        declaredLayerNames,
+        isMultiLayer,
         activeLayerNames
       );
     }
