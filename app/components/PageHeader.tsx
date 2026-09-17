@@ -46,7 +46,7 @@ import useMapStore from "../store/mapStore";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
-const WHATS_NEW_STORAGE_KEY = "whats-new-v4-dismissed";
+const WHATS_NEW_STORAGE_KEY = "whats-new-v5-dismissed";
 
 // Exploration (uncommitted): measure the toggle before paint so the sliding
 // pill never flashes from a wrong spot. useLayoutEffect on the server warns,
