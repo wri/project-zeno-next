@@ -41,6 +41,7 @@ import {
   fluxTreeTableProps,
   GhgFluxMeasurePill,
   GhgFluxTreeBody,
+  GhgFluxTreeChartInfo,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
@@ -55,6 +56,7 @@ import { exportChartImage } from "@/app/utils/exportChartImage";
 import { rowsToCsv, csvFilename } from "@/app/utils/csvExport";
 import {
   NetFluxChartBody,
+  NetFluxChartInfo,
   NetFluxToolbar,
   csvColumnName,
   deriveNetFluxVariant,
@@ -284,6 +286,8 @@ export default function WidgetMessage({
           >
             {widget.title}
           </Heading>
+          {isNetFlux && <NetFluxChartInfo />}
+          {isFluxTree && <GhgFluxTreeChartInfo />}
         </Flex>
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">

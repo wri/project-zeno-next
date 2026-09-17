@@ -12,3 +12,8 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
   by the net-flux and flux-tree charts. Import from `@/src/shared/lib/number-format`.
 - `ui/Pill.tsx` — the DETAIL/MEASURE dropdown pill shared by the net-flux and flux-tree curated
   charts. Import from `@/src/shared/ui/Pill`.
+- `ui/InfoTooltip.tsx` — the info icon + dark tooltip used by the curated chart titles and the
+  pills, with `InfoTitle` / `InfoDefinition` for laying out its body. Import from
+  `@/src/shared/ui/InfoTooltip`.
+- `ui/MeasureInfo.tsx` — the Gross/Net MEASURE tooltip copy shared by the net-flux and flux-tree
+  pills. Import from `@/src/shared/ui/MeasureInfo`.
