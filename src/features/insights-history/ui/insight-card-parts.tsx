@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Box, Button, Flex, IconButton, Stack, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, IconButton, Text } from "@chakra-ui/react";
 import {
   ArrowArcLeftIcon,
   ArrowArcRightIcon,
@@ -60,16 +60,14 @@ export function VerificationBadge({
 }
 
 /**
- * Detail view for one analysis: every chart at once, one card under the next,
- * with no pager. An analysis's charts are one finding — tree cover loss beside
- * the emissions it caused, the LGMS tree beside its time series — and paging
- * put half of each pair behind an arrow.
+ * Detail view for one analysis: pages through its own charts.
  *
  * An LGMS analysis arrives as four charts, three of which are the same time
- * series at different roll-ups; they fold into the one the DETAIL pill selects,
- * so two cards show rather than four. The pane's charts carry backend UUIDs
- * rather than the `{insightId}-chart-{n}` ids, so the roll-ups are found within
- * this one analysis and keyed on its id (see `netFluxRollups`).
+ * series at different roll-ups. They fold into one entry chosen by the DETAIL
+ * pill, so the pane pages through two charts and not four — the same reading
+ * the map workspace gives. The pane's charts carry backend UUIDs rather than
+ * the `{insightId}-chart-{n}` ids, so the roll-ups are found within this one
+ * analysis and keyed on its id (see `netFluxRollups`).
  */
 export function InsightGroupDetail({
   group,
@@ -78,51 +76,35 @@ export function InsightGroupDetail({
   group: InsightGroupItem;
   onBack: () => void;
 }) {
+  const [chartIndex, setChartIndex] = useState(0);
   const rollups = useMemo(() => netFluxRollups(group.widgets), [group.widgets]);
   const { selected } = useNetFluxDetail(group.id, rollups);
   const widgets = useMemo(
     () => collapseNetFluxRollups(group.widgets, selected?.id),
     [group.widgets, selected?.id]
   );
+  // Switching DETAIL can shorten nothing here (the fold is 1-for-1), but a
+  // group that reloads with fewer charts would strand the pager past the end.
+  const index = Math.min(chartIndex, Math.max(widgets.length - 1, 0));
+  const widget = widgets[index];
 
   return (
-    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
-      <BackToAnalyses onBack={onBack} />
-      <Stack gap={4}>
-        {widgets.map((widget) => (
-          <Box key={widget.id ?? widget.title}>
-            {/* The pane is this card's shell, so the pills sit above it —
-                `WidgetMessage` is mounted `inWorkspace` and suppresses its
-                own inline copy. */}
-            <Box mb={2}>
-              <InsightChartPills
-                widget={widget}
-                siblings={rollups}
-                groupKey={group.id}
-              />
-            </Box>
-            <WidgetMessage widget={widget} inWorkspace />
-          </Box>
-        ))}
-      </Stack>
-    </Box>
-  );
-}
-
-/** The pane's way back out of a detail view. */
-function BackToAnalyses({ onBack }: { onBack: () => void }) {
-  return (
-    <Button
-      variant="ghost"
-      size="xs"
-      px={1}
-      mb={2}
-      color="#656E7B"
-      onClick={onBack}
-    >
-      <CaretLeftIcon size={14} />
-      Back to analyses
-    </Button>
+    <InsightDetail
+      widgets={widgets}
+      index={index}
+      onIndexChange={setChartIndex}
+      onBack={onBack}
+      unit="chart"
+      toolbar={
+        widget ? (
+          <InsightChartPills
+            widget={widget}
+            siblings={rollups}
+            groupKey={group.id}
+          />
+        ) : null
+      }
+    />
   );
 }
 
@@ -132,6 +114,7 @@ export function InsightDetail({
   onIndexChange,
   onBack,
   unit,
+  toolbar,
 }: {
   widgets: InsightWidget[];
   index: number;
@@ -139,6 +122,12 @@ export function InsightDetail({
   onBack: () => void;
   /** What prev/next steps through: sibling analyses, or one analysis's charts. */
   unit: "analysis" | "chart";
+  /**
+   * Per-chart controls for the chart on show, rendered above the card the way
+   * the workspace shell does (`InsightChartPills`). The pane is the shell
+   * here, so `WidgetMessage` is still mounted `inWorkspace`.
+   */
+  toolbar?: ReactNode;
 }) {
   const widget = widgets[index];
   const total = widgets.length;
@@ -160,6 +149,8 @@ export function InsightDetail({
         <CaretLeftIcon size={14} />
         Back to analyses
       </Button>
+
+      {toolbar && <Box mb={2}>{toolbar}</Box>}
 
       <WidgetMessage widget={widget} inWorkspace />
 

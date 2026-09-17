@@ -292,29 +292,30 @@ describe("CuratedInsightsList", () => {
       expect(screen.getAllByText("CURATED")).toHaveLength(11);
     });
 
-    it("shows both charts of its detail at once, the roll-ups folded into one", async () => {
+    it("pages its detail through two charts, the three roll-ups folded into one", async () => {
       setFlags("net-flux");
       renderList(fakeService(() => Promise.resolve(LGMS_RESULT)));
 
       fireEvent.click(screen.getByLabelText(`Show ${LGMS_TITLE} info`));
 
-      // Both cards on screen, no pager. Category leads the roll-ups, so it is
-      // what the fold shows.
       await waitFor(() =>
-        expect(
-          screen.getAllByTestId("widget-message").map((el) => el.textContent)
-        ).toEqual(["Net GHG Flux — Annual Average", "Net GHG Flux by Category"])
+        expect(screen.getByText("1 of 2 charts in this analysis")).toBeTruthy()
       );
-      expect(screen.queryByLabelText("Next chart")).toBeNull();
-      expect(screen.queryByText(/of \d+ charts/)).toBeNull();
-      // Each card carries its own controls: MEASURE on both, DETAIL only on
-      // the time series.
-      expect(screen.getAllByRole("button", { name: /^MEASURE/ })).toHaveLength(
-        2
+      expect(screen.getByTestId("widget-message").textContent).toBe(
+        "Net GHG Flux — Annual Average"
+      );
+      // The tree card's own control, rendered on the pane's shell.
+      expect(screen.getByRole("button", { name: "MEASURE: Net" })).toBeTruthy();
+
+      fireEvent.click(screen.getByLabelText("Next chart"));
+      // Category leads the roll-ups, so it is what the fold shows.
+      expect(screen.getByTestId("widget-message").textContent).toBe(
+        "Net GHG Flux by Category"
       );
       expect(
         screen.getByRole("button", { name: "DETAIL: Category" })
       ).toBeTruthy();
+      expect(screen.getByText("2 of 2 charts in this analysis")).toBeTruthy();
     });
   });
 

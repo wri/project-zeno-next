@@ -57,8 +57,6 @@ export default function DashboardWidgetCard({
   removeMode,
   isOwner,
   isDouble,
-  bodyFullWidth = isDouble,
-  showWidgetControls = true,
   headerActions,
   intro,
   footer,
@@ -86,22 +84,7 @@ export default function DashboardWidgetCard({
    */
   removeMode: "widget" | "chart";
   isOwner: boolean;
-  /** The WIDGET's column span — drives the expand/shrink control's wording. */
   isDouble: boolean;
-  /**
-   * Whether THIS card's body gets the full-width treatment. Defaults to the
-   * widget's span, which is right for a widget drawing one card; a module
-   * dealing several cards side by side inside one double cell passes false,
-   * since each card is only half as wide as the widget.
-   */
-  bodyFullWidth?: boolean;
-  /**
-   * Whether this card carries the WIDGET-level controls — the drag handle and
-   * the column-span toggle. A module dealing several cards from one widget
-   * shows them on its lead card only: they act on the widget, and one copy
-   * per chart would read as several independent widgets.
-   */
-  showWidgetControls?: boolean;
   /** Owner actions rendered before the built-in ones (the analysis Customize menu). */
   headerActions?: React.ReactNode;
   /**
@@ -178,7 +161,7 @@ export default function DashboardWidgetCard({
     >
       {/* Header — drag handle · title · actions (per the Figma LegendItemHeader) */}
       <Flex align="center" gap="4px" pl="4px" pr="12px" pt="12px" pb="8px">
-        {isOwner && showWidgetControls && (
+        {isOwner && (
           <Icon
             as={DotsSixVerticalIcon}
             boxSize="16px"
@@ -262,33 +245,21 @@ export default function DashboardWidgetCard({
             >
               <ChatTeardropDotsIcon size={16} />
             </IconButton>
-            {showWidgetControls && (
-              <IconButton
-                aria-label={
-                  isDouble ? "Shrink to one column" : "Expand to full width"
-                }
-                title={
-                  isDouble ? "Shrink to one column" : "Expand to full width"
-                }
-                size="2xs"
-                variant="ghost"
-                color="fg.muted"
-                onClick={onToggleSize}
-              >
-                <ArrowsOutLineHorizontalIcon size={16} />
-              </IconButton>
-            )}
             <IconButton
-              // A chart-mode X hides this chart within its analysis, which
-              // is a different act from removing the widget — and with a set
-              // of cards on screen the two sit side by side, so they must not
-              // read alike.
               aria-label={
-                removeMode === "chart" ? "Hide chart" : "Remove from dashboard"
+                isDouble ? "Shrink to one column" : "Expand to full width"
               }
-              title={
-                removeMode === "chart" ? "Hide chart" : "Remove from dashboard"
-              }
+              title={isDouble ? "Shrink to one column" : "Expand to full width"}
+              size="2xs"
+              variant="ghost"
+              color="fg.muted"
+              onClick={onToggleSize}
+            >
+              <ArrowsOutLineHorizontalIcon size={16} />
+            </IconButton>
+            <IconButton
+              aria-label="Remove from dashboard"
+              title="Remove from dashboard"
               size="2xs"
               variant="ghost"
               color="fg.muted"
@@ -347,17 +318,13 @@ export default function DashboardWidgetCard({
             layer={map}
             aoi={aoi}
             bboxOverride={viewportBbox ?? null}
-            tall={bodyFullWidth}
+            tall={isDouble}
           />
         </Box>
       ) : (
         card && (
           <Box px="8px" pb="8px" flex="1" minW={0}>
-            <WidgetMessage
-              widget={card}
-              inWorkspace
-              fullWidth={bodyFullWidth}
-            />
+            <WidgetMessage widget={card} inWorkspace fullWidth={isDouble} />
           </Box>
         )
       )}
