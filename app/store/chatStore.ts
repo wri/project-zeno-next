@@ -18,9 +18,11 @@ import {
 } from "@/app/types/chat";
 import useMapStore from "./mapStore";
 import {
+  datasetContextKey,
   deriveContext,
   diffUiContext,
   emptyContextKeys,
+  isLayerActive,
   type ContextKeys,
 } from "@/app/utils/messageContext";
 import { readDataStream } from "@/app/lib/read-data-stream";
@@ -438,15 +440,37 @@ async function processStreamMessage(
     }
     // Handling for pick_dataset tool
     else if (streamMessage.name === "pick_dataset") {
-      const datasetId = (
-        streamMessage.dataset as { dataset_id?: number } | undefined
-      )?.dataset_id;
-      if (typeof datasetId === "number") {
-        useChatStore.getState().foldSentContext({ dataset: datasetId });
-      }
-      void Promise.resolve().then(() =>
-        pickDatasetTool(streamMessage, addMessage)
-      );
+      const dataset = streamMessage.dataset as
+        | { dataset_id?: number; layers?: { name: string }[] }
+        | undefined;
+      const datasetId = dataset?.dataset_id;
+      // Deferred until after pickDatasetTool applies the resulting map
+      // layers (including a multi-layer dataset's default single-visible-
+      // layer opacity) — folding from dataset.layers directly would treat
+      // every *declared* layer as active instead of just the one shown by
+      // default, desyncing from deriveContext's key on the next turn.
+      void Promise.resolve()
+        .then(() => pickDatasetTool(streamMessage, addMessage))
+        .then(() => {
+          if (typeof datasetId !== "number") return;
+          const isMultiLayer = (dataset?.layers ?? []).length > 1;
+          const activeLayerNames = useMapStore
+            .getState()
+            .layers.filter(
+              (l) =>
+                l.datasetId === datasetId &&
+                !l.parentLayerId &&
+                isLayerActive(l)
+            )
+            .map((l) => l.name);
+          useChatStore.getState().foldSentContext({
+            dataset: datasetContextKey(
+              datasetId,
+              isMultiLayer,
+              activeLayerNames
+            ),
+          });
+        });
       return;
     }
     // Handling for pull_data tool
