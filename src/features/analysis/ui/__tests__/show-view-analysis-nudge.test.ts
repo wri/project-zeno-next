@@ -23,6 +23,9 @@ const selection: AreaSelection = {
 const TCL_ID = 4;
 // Intact Forest Landscapes — contextual, view-only, never analysable.
 const IFL_ID = 101;
+// Land GHG Monitoring System — the one card whose declared coverage
+// (2016–2024) is narrower than the catalogue-wide default.
+const LGMS_ID = 12;
 
 const seedLayer = (datasetId: number, name: string) =>
   useMapStore.setState({
@@ -130,6 +133,19 @@ describe("showViewAnalysisNudge", () => {
     });
   });
 
+  it("falls back to the dataset's own coverage when it declares one", () => {
+    // PZB-1355: LGMS covers 2016–2024. Seeding the catalogue-wide window made
+    // the YEARS chip read 2001–25 over a chart of 2016–2024 figures.
+    seedLayer(LGMS_ID, "Land GHG Monitoring System (LGMS)");
+
+    showViewAnalysisNudge(selection);
+
+    expect(viewNudges()[0].viewAnalysisSuggestion).toMatchObject({
+      startDate: "2016-01-01",
+      endDate: "2024-12-31",
+    });
+  });
+
   it("uses the date range from context when present", () => {
     // Construct local-time dates (month is 0-indexed) so date-fns `format`
     // doesn't shift a UTC-parsed midnight across the day boundary.
@@ -179,6 +195,25 @@ describe("showViewAnalysisNudge", () => {
     const nudges = viewNudges();
     expect(nudges).toHaveLength(1);
     expect(nudges[0].id).toBe(firstId);
+  });
+
+  it("re-offers when the pinned date range changes under the same area", () => {
+    seedLayer(TCL_ID, "Tree cover loss");
+    showViewAnalysisNudge(selection);
+    const firstId = viewNudges()[0].id;
+
+    seedDateRange(new Date(2020, 2, 1), new Date(2021, 3, 2));
+    showViewAnalysisNudge(selection);
+
+    // Accepting runs the suggestion's own dates, so a stale payload here would
+    // analyse (and label the YEARS chip with) the previous window.
+    const nudges = viewNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].id).not.toBe(firstId);
+    expect(nudges[0].viewAnalysisSuggestion).toMatchObject({
+      startDate: "2020-03-01",
+      endDate: "2021-04-02",
+    });
   });
 
   it("does nothing when no dataset is active (analysis stays gated)", () => {

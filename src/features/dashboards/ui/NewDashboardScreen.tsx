@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/lib/router";
 import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
 import { MagnifyingGlassIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 

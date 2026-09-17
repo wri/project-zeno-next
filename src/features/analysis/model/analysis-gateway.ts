@@ -18,7 +18,9 @@ export interface JobResource {
  * Outcome of a single poll call.
  *
  * Non-terminal: the LRO state machine should retry after `retryAfterSecs`.
- * Terminal:     the job is done; `resources` carries the result references.
+ * Terminal:     `completed` carries the result references in `resources`;
+ *               `failed` carries nothing — the backend exposes no error text
+ *               for a failed analysis job.
  *
  * `retryAfterSecs` is expressed in seconds and comes from the backend's
  * retry guidance — the adapter is responsible for translating that signal
@@ -27,7 +29,8 @@ export interface JobResource {
  */
 export type PollOutcome =
   | { status: "pending" | "running"; retryAfterSecs: number }
-  | { status: "completed"; resources: JobResource[] };
+  | { status: "completed"; resources: JobResource[] }
+  | { status: "failed" };
 
 /**
  * Driven port — the only seam the application layer uses to reach the

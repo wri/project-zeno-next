@@ -186,6 +186,29 @@ describe("parseFluxNodes", () => {
       "mineral_soil"
     );
   });
+
+  it("applies the product's class renames over the backend's labels", () => {
+    const [renamed, kept] = parseFluxNodes([
+      {
+        id: "non_trees_remaining_non_trees",
+        parent_id: "vegetation",
+        label: "Non-trees remaining non-trees",
+      },
+      {
+        id: "trees_remaining_trees",
+        parent_id: "vegetation",
+        label: "Trees remaining trees",
+      },
+    ]);
+    expect(renamed.label).toBe("Non-tree vegetation");
+    expect(kept.label).toBe("Trees remaining trees");
+  });
+
+  it("renames by id even when the backend sent no label", () => {
+    expect(
+      parseFluxNodes([{ id: "non_trees_remaining_non_trees" }])[0].label
+    ).toBe("Non-tree vegetation");
+  });
 });
 
 describe("fluxTreeTableProps", () => {

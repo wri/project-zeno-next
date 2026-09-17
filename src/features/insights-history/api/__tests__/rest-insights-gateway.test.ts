@@ -14,6 +14,8 @@ const rawInsight = {
   insight_text: "Tree cover loss in Brazil.",
   created_at: "2024-05-01T00:00:00.000Z",
   is_public: false, // unknown-to-us field — must be tolerated, not rejected
+  // Agent provenance: what makes this row AI-generated rather than curated.
+  codeact_parts: [{ type: "code_block", content: "cHJpbnQoKQ==" }],
   charts: [
     {
       id: "ch-1",
@@ -106,5 +108,45 @@ describe("RestInsightsGateway.list", () => {
     ]);
     const records = await new RestInsightsGateway(fetch).list();
     expect(records[0].charts[0].id).toBe("ins-2-chart-0");
+  });
+
+  it("classifies an insight with empty provenance as verified (curated)", async () => {
+    // POST /api/analyze persists deterministic insights with codeact_parts: [].
+    const fetch = mockFetch([{ ...rawInsight, codeact_parts: [] }]);
+    const records = await new RestInsightsGateway(fetch).list();
+    expect(records[0].verification).toBe("verified");
+  });
+
+  it("classifies an insight with no provenance field as verified (curated)", async () => {
+    // `undefined` is what a missing JSON key parses to on the client.
+    const fetch = mockFetch([{ ...rawInsight, codeact_parts: undefined }]);
+    const records = await new RestInsightsGateway(fetch).list();
+    expect(records[0].verification).toBe("verified");
+  });
+
+  it("carries a chart's dataset_id through as datasetId", async () => {
+    const fetch = mockFetch([
+      {
+        ...rawInsight,
+        charts: [{ ...rawInsight.charts[0], dataset_id: 4 }],
+      },
+    ]);
+    const records = await new RestInsightsGateway(fetch).list();
+    expect(records[0].charts[0].datasetId).toBe(4);
+  });
+
+  it("leaves datasetId undefined when dataset_id is null or absent", async () => {
+    const fetch = mockFetch([
+      {
+        ...rawInsight,
+        charts: [
+          { ...rawInsight.charts[0], dataset_id: null },
+          { ...rawInsight.charts[0], id: "ch-2" },
+        ],
+      },
+    ]);
+    const records = await new RestInsightsGateway(fetch).list();
+    expect(records[0].charts[0].datasetId).toBeUndefined();
+    expect(records[0].charts[1].datasetId).toBeUndefined();
   });
 });
