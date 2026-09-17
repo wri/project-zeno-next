@@ -174,9 +174,8 @@ function TreeLabel({
 }
 
 function ValueCell({ row }: { row: FluxRow }) {
-  // Same rule as the tree label: root and any row with children (a category)
-  // gets emphasis; a leaf subcategory does not.
-  const isEmphasized = row.depth === 0 || row.hasChildren;
+  const isRoot = row.depth === 0;
+  const isCategory = row.hasChildren && !isRoot;
 
   return (
     <Flex
@@ -189,9 +188,9 @@ function ValueCell({ row }: { row: FluxRow }) {
     >
       <Text
         fontFamily="body"
-        fontSize="14px"
-        fontWeight={isEmphasized ? "medium" : "normal"}
-        color={NET_TICK_COLOR}
+        fontSize={isRoot ? "15px" : "14px"}
+        fontWeight={isRoot || isCategory ? "medium" : "normal"}
+        color={isRoot ? "#172B7A" : "#282D33"}
         css={{ fontVariantNumeric: "tabular-nums" }}
       >
         {row.net == null ? "—" : signed.format(row.net)}
