@@ -11,7 +11,14 @@ import { Tooltip } from "@/app/components/ui/tooltip";
  * decided once. The body is mounted only while open — it is a handful of
  * styled nodes per tooltip and there are several per card.
  */
-export function InfoTooltip({ children }: { children: ReactNode }) {
+export function InfoTooltip({
+  children,
+  about = "this chart",
+}: {
+  children: ReactNode;
+  /** Names the icon for screen readers: "About DETAIL", "About this chart". */
+  about?: string;
+}) {
   return (
     <Tooltip
       content={children}
@@ -22,7 +29,18 @@ export function InfoTooltip({ children }: { children: ReactNode }) {
       lazyMount
       unmountOnExit
     >
-      <Box as="span" display="inline-flex" cursor="pointer" flexShrink={0}>
+      <Box
+        as="span"
+        display="inline-flex"
+        cursor="pointer"
+        flexShrink={0}
+        // Focusable and named, so the tooltip is reachable without a mouse.
+        // `img` rather than `button`: the icon has no action of its own, so
+        // announcing one would promise a press that does nothing.
+        tabIndex={0}
+        role="img"
+        aria-label={`About ${about}`}
+      >
         <InfoIcon size={16} color="#737C94" />
       </Box>
     </Tooltip>

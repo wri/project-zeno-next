@@ -102,7 +102,7 @@ export function Pill({
           </Menu.Positioner>
         </Portal>
       </Menu.Root>
-      {info && <InfoTooltip>{info}</InfoTooltip>}
+      {info && <InfoTooltip about={label}>{info}</InfoTooltip>}
     </Flex>
   );
 }
