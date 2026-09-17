@@ -24,6 +24,7 @@ import useNetFluxViewStore from "@/src/features/net-flux/model/net-flux-view-sto
 import DashboardInsightModule from "../DashboardInsightModule";
 import type { DashboardWidget } from "../../api/schemas";
 import {
+  withChartHidden,
   withChartShown,
   withChartTitle,
   withSummaryShown,
@@ -94,9 +95,12 @@ function renderModule({
   return { ...view, onUpdateConfig, onRemove, onToggleSize };
 }
 
-/** The chart body the stubbed WidgetMessage rendered, or null. */
-const shownChart = () =>
-  screen.queryByTestId("widget-message")?.textContent ?? null;
+/** Every chart body the stubbed WidgetMessage rendered, in render order. */
+const shownCharts = () =>
+  screen.queryAllByTestId("widget-message").map((el) => el.textContent);
+
+/** The first chart body, for the single-card cases. */
+const shownChart = () => shownCharts()[0] ?? null;
 
 describe("DashboardInsightModule", () => {
   // Chakra's confirm dialog restores focus a tick after it unmounts. Left
@@ -107,41 +111,31 @@ describe("DashboardInsightModule", () => {
   // Module-level singleton: a DETAIL choice would otherwise leak between tests.
   beforeEach(() => useNetFluxViewStore.setState({ detailByGroup: {} }));
 
-  it("renders one card: the first chart, the summary and the AI caption", () => {
+  it("deals one card per chart as a set, with the summary and AI caption", () => {
     renderModule();
     expect(
       screen.getByText(/There were 1,055 disturbance alerts\./)
     ).toBeTruthy();
     // The shared InsightCaption badge, as on workspace insight cards.
     expect(screen.getByText(/AI-ASSISTED/)).toBeTruthy();
-    // One chart on show — not one card per chart.
-    expect(screen.getAllByTestId("widget-message")).toHaveLength(1);
-    // The header names the chart on show, beside the body's own title.
-    expect(shownChart()).toBe("Disturbance alerts trend");
+    // Both charts on screen at once — the pair reads as one finding.
+    expect(shownCharts()).toEqual([
+      "Disturbance alerts trend",
+      "Alerts by month",
+    ]);
+    // Each card's header names its own chart, beside the body's own title.
     expect(screen.getAllByText("Disturbance alerts trend")).toHaveLength(2);
+    expect(screen.getAllByText("Alerts by month")).toHaveLength(2);
   });
 
-  it("pages through the insight's charts", () => {
+  it("has no chart pager at all", () => {
     renderModule();
-    expect(screen.getByText("1 of 2 charts")).toBeTruthy();
-    expect(screen.getByLabelText("Previous chart")).toHaveProperty(
-      "disabled",
-      true
-    );
-
-    fireEvent.click(screen.getByLabelText("Next chart"));
-    expect(shownChart()).toBe("Alerts by month");
-    expect(screen.getByText("2 of 2 charts")).toBeTruthy();
-    expect(screen.getByLabelText("Next chart")).toHaveProperty(
-      "disabled",
-      true
-    );
-
-    fireEvent.click(screen.getByLabelText("Previous chart"));
-    expect(shownChart()).toBe("Disturbance alerts trend");
+    expect(screen.queryByLabelText("Next chart")).toBe(null);
+    expect(screen.queryByLabelText("Previous chart")).toBe(null);
+    expect(screen.queryByText(/of \d+ charts/)).toBe(null);
   });
 
-  it("omits the pager for a single-chart insight", () => {
+  it("renders a single-chart insight as one card", () => {
     renderModule({
       widget: widget({
         insight: {
@@ -152,30 +146,38 @@ describe("DashboardInsightModule", () => {
         },
       }),
     });
-    expect(screen.queryByLabelText("Next chart")).toBe(null);
+    expect(shownCharts()).toEqual(["Disturbance alerts trend"]);
   });
 
-  it("keeps a chart on show when the page it was on is hidden", () => {
-    // Hiding the last chart while it is the one on show must not leave the
-    // card blank — the pager clamps back into the shown set.
-    const { rerender } = renderModule();
-    fireEvent.click(screen.getByLabelText("Next chart"));
-    expect(shownChart()).toBe("Alerts by month");
+  it("drops a hidden chart's card and keeps the rest", () => {
+    renderModule({ widget: widget({ config: { chartIds: ["c-1"] } }) });
+    expect(shownCharts()).toEqual(["Disturbance alerts trend"]);
+  });
 
-    rerender(
-      <ChakraProvider value={defaultSystem}>
-        <DashboardInsightModule
-          widget={widget({ config: { chartIds: ["c-1"] } })}
-          isOwner
-          isDouble
-          onArmDrag={() => {}}
-          onToggleSize={() => {}}
-          onUpdateConfig={() => {}}
-          onRemove={() => {}}
-        />
-      </ChakraProvider>
+  it("shows the widget-level controls on the lead card only", () => {
+    renderModule();
+    // Drag, span and whole-widget removal act on the widget, so one copy each.
+    expect(screen.getAllByLabelText("Drag to reposition")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Shrink to one column")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Remove from dashboard")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Customize" })).toHaveLength(
+      1
     );
-    expect(shownChart()).toBe("Disturbance alerts trend");
+    // The later card's X hides its own chart instead.
+    expect(screen.getAllByLabelText("Hide chart")).toHaveLength(1);
+  });
+
+  it("hides just that chart when a later card's X is confirmed", async () => {
+    const { onUpdateConfig, onRemove } = renderModule();
+    fireEvent.click(screen.getByLabelText("Hide chart"));
+    expect(await screen.findByText("Remove chart?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    await waitFor(() =>
+      expect(onUpdateConfig).toHaveBeenCalledWith(
+        withChartHidden({}, "c-2", ["c-1", "c-2"])
+      )
+    );
+    expect(onRemove).not.toHaveBeenCalled();
   });
 
   it("shows the curated caption when the insight has no generation provenance", () => {
@@ -198,7 +200,10 @@ describe("DashboardInsightModule", () => {
     expect(screen.queryByText(/There were 1,055 disturbance alerts\./)).toBe(
       null
     );
-    expect(shownChart()).toBe("Disturbance alerts trend");
+    expect(shownCharts()).toEqual([
+      "Disturbance alerts trend",
+      "Alerts by month",
+    ]);
   });
 
   it("renders the summary alone when every chart is hidden", () => {
@@ -264,48 +269,46 @@ describe("DashboardInsightModule", () => {
         },
       });
 
-    it("pages through two cards, the three roll-ups folded into one", () => {
+    it("deals two cards from its four charts, the roll-ups folded into one", () => {
       renderModule({ widget: lgmsWidget() });
-
-      expect(screen.getByText("1 of 2 charts")).toBeTruthy();
-      expect(shownChart()).toBe("Net GHG Flux — Annual Average");
-
-      fireEvent.click(screen.getByLabelText("Next chart"));
       // Category leads the roll-ups: it is what the fold shows by default.
-      expect(shownChart()).toBe("Net GHG Flux by Category");
-      expect(screen.getByText("2 of 2 charts")).toBeTruthy();
+      expect(shownCharts()).toEqual([
+        "Net GHG Flux — Annual Average",
+        "Net GHG Flux by Category",
+      ]);
     });
 
-    it("offers the DETAIL pill on the roll-up card, reading the lead roll-up", () => {
+    it("gives each card its own pills, DETAIL only on the roll-up", () => {
       renderModule({ widget: lgmsWidget() });
-      fireEvent.click(screen.getByLabelText("Next chart"));
       // The pill's accessible name carries the selection; the menu itself is
       // Ark's and is exercised by the shared Pill, not here.
       expect(
         screen.getByRole("button", { name: "DETAIL: Category" })
       ).toBeTruthy();
+      // The tree card has a MEASURE pill but no DETAIL of its own — its detail
+      // is the tree's disclosure carets. Both cards carry a MEASURE.
+      expect(screen.getAllByRole("button", { name: /^MEASURE/ })).toHaveLength(
+        2
+      );
+      expect(screen.getAllByRole("button", { name: /^DETAIL/ })).toHaveLength(
+        1
+      );
     });
 
     it("swaps the folded card when another roll-up is selected", async () => {
       renderModule({ widget: lgmsWidget() });
-      fireEvent.click(screen.getByLabelText("Next chart"));
 
       // What the DETAIL pill does on select. The store is the contract between
       // the pill (inside the card) and this shell, which is why it exists.
       useNetFluxViewStore.getState().selectDetail("w-1", "c-full");
 
       await waitFor(() =>
-        expect(shownChart()).toBe("Net GHG Flux — Full Detail")
+        expect(shownCharts()).toEqual([
+          "Net GHG Flux — Annual Average",
+          "Net GHG Flux — Full Detail",
+        ])
       );
       expect(screen.getByRole("button", { name: "DETAIL: Full" })).toBeTruthy();
-      // Still two cards: the pill chooses within the fold, it doesn't unfold.
-      expect(screen.getByText("2 of 2 charts")).toBeTruthy();
-    });
-
-    it("shows the tree card's MEASURE pill, which has no DETAIL of its own", () => {
-      renderModule({ widget: lgmsWidget() });
-      expect(screen.getByRole("button", { name: "MEASURE: Net" })).toBeTruthy();
-      expect(screen.queryByRole("button", { name: /^DETAIL/ })).toBeNull();
     });
 
     it("keeps all four charts in the Customize menu", async () => {
@@ -335,9 +338,12 @@ describe("DashboardInsightModule", () => {
     expect(screen.queryByLabelText("Remove from dashboard")).toBe(null);
     expect(screen.queryByLabelText("Drag to reposition")).toBe(null);
     expect(screen.queryByRole("button", { name: "Customize" })).toBe(null);
-    // The chart body and its pager stay: paging is reading, not editing.
-    expect(shownChart()).toBe("Disturbance alerts trend");
-    expect(screen.getByLabelText("Next chart")).toBeTruthy();
+    expect(screen.queryByLabelText("Hide chart")).toBe(null);
+    // The chart bodies stay: reading the set is not editing it.
+    expect(shownCharts()).toEqual([
+      "Disturbance alerts trend",
+      "Alerts by month",
+    ]);
   });
 
   it("removes the whole widget through the analysis confirm dialog", async () => {
@@ -350,10 +356,10 @@ describe("DashboardInsightModule", () => {
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 
-  it("renames the chart on show", async () => {
+  it("renames a chart through its own card's header", async () => {
     const { onUpdateConfig } = renderModule();
-    fireEvent.click(screen.getByLabelText("Next chart"));
-    fireEvent.click(screen.getByLabelText("Rename widget"));
+    // Each card renames its own chart: the second card's header edits c-2.
+    fireEvent.click(screen.getAllByLabelText("Rename widget")[1]);
     const input = (await screen.findByLabelText(
       "Widget title"
     )) as HTMLInputElement;

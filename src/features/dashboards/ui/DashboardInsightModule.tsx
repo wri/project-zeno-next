@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Flex, IconButton, Text } from "@chakra-ui/react";
-import { ArrowArcLeftIcon, ArrowArcRightIcon } from "@phosphor-icons/react";
+import { useState } from "react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
 import InsightChartPills, {
@@ -13,6 +12,7 @@ import {
   netFluxRollups,
   useNetFluxDetail,
 } from "@/src/features/net-flux";
+import type { InsightWidget } from "@/app/types/chat";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import {
   hasWidgetCustomization,
@@ -27,21 +27,24 @@ import DashboardWidgetCard from "./DashboardWidgetCard";
 import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
 
 /**
- * One insight rendered as a single dashboard card — the same light-blue shell
- * every other widget draws (`DashboardWidgetCard`), never a white panel of
- * its own: the white belongs to the section around it.
+ * One insight rendered on the dashboard as a SET of cards — one light-blue
+ * `DashboardWidgetCard` per chart, laid out side by side inside the widget's
+ * own grid cell and wrapping when they don't fit. An analysis that returns two
+ * charts (tree cover loss and the GHG emissions it caused; LGMS's tree and its
+ * time series) therefore shows both at once, the way a pair reads as one
+ * finding rather than as a chart with something hidden behind an arrow. The
+ * charts previously paged through a single shell behind a "1 of N charts"
+ * footer, which buried the second half of every pair.
  *
- * An insight usually carries several charts. They page through one shell,
- * first chart first, the way the map workspace pages through analyses —
- * rather than dealing one card per chart into the grid, which made an
- * analysis outweigh every other widget on the page. The narrative rides above
- * the chart body as the card's `intro`; the pager is its `footer`.
+ * The set is still ONE widget: one grid item, one position, one drag. So the
+ * widget-level chrome lives on the first card only — the narrative, the
+ * Customize menu, and the X that deletes the whole analysis. Every later
+ * card's X hides just that chart (`removeMode="chart"`), recoverable from
+ * Customize. Each card carries its own title, rename and per-chart pills.
  *
- * An LGMS analysis is the one case where the pager shows fewer cards than the
- * widget has shown charts: its three time-series roll-ups fold into the one
- * the DETAIL pill selects, so the module reads as two charts rather than
- * four, as it does on the map. The Customize menu still lists all four —
- * which charts a widget holds stays the owner's business.
+ * An LGMS analysis deals two cards from four charts: its three time-series
+ * roll-ups fold into the one the DETAIL pill selects. The Customize menu still
+ * lists all four — which charts a widget holds stays the owner's business.
  *
  * Mutation-agnostic on purpose: every config edit flows through
  * `onUpdateConfig` with a full config built by the `with*` helpers (the
@@ -73,8 +76,6 @@ export default function DashboardInsightModule({
   onRemove: () => void;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  // The chart on show, by position in the shown set.
-  const [page, setPage] = useState(0);
 
   const vm = insightModule(widget, { areaName: areaAoi?.name });
   const showSummary = vm.summaryShown && vm.summaryText.length > 0;
@@ -83,143 +84,131 @@ export default function DashboardInsightModule({
   // backend UUIDs rather than the `{insightId}-chart-{n}` ids the workspace
   // groups by — so the roll-ups are found within this module and keyed on the
   // widget (see `netFluxRollups`).
-  const rollups = useMemo(() => netFluxRollups(vm.cards), [vm.cards]);
+  // Not memoized: `insightModule` rebuilds `vm.cards` every render anyway, so
+  // a useMemo keyed on it could never hit — and the React Compiler rejects the
+  // mismatch between the dependency it infers (`vm`) and the one written.
+  const rollups = netFluxRollups(vm.cards);
   const { selected } = useNetFluxDetail(widget.id, rollups);
-  const cards = useMemo(
-    () => collapseNetFluxRollups(vm.cards, selected?.id),
-    [vm.cards, selected?.id]
-  );
-  const total = cards.length;
-  // Hiding a chart can strand the pager past the end — clamp on the way out
-  // rather than in an effect, so the card never paints an empty frame first.
-  const index = Math.min(page, Math.max(total - 1, 0));
-  const card = cards[index] ?? null;
-  const chartId = card?.id;
+  const cards = collapseNetFluxRollups(vm.cards, selected?.id);
 
   const placeholder =
     vm.allCharts.length === 0
       ? "This analysis is not available."
-      : total === 0 && !showSummary && isOwner
+      : cards.length === 0 && !showSummary && isOwner
         ? "All content in this analysis is hidden — use Customize to show it."
         : null;
 
+  // With nothing to show there is still one card: the shell that carries the
+  // placeholder, the narrative and the owner's way back via Customize.
+  const entries: (InsightWidget | null)[] = cards.length > 0 ? cards : [null];
+  // Side by side inside one cell means each card is only half as wide as the
+  // widget, whatever the widget's own span.
+  const single = entries.length === 1;
+
   return (
     <>
-      <DashboardWidgetCard
-        // Keyed on the chart, so paging remounts the shell: the card holds its
-        // own rename draft and full-screen state, and an in-flight rename left
-        // over from the previous chart would show — and never reconcile — on
-        // the next one.
-        key={chartId ?? "no-chart"}
-        // The card is the analysis: its title is the chart on show, so paging
-        // renames the header the way the workspace does.
-        title={card?.title ?? vm.title}
-        card={card}
-        placeholder={placeholder}
-        removeMode="widget"
-        isOwner={isOwner}
-        isDouble={isDouble}
-        onArmDrag={onArmDrag}
-        onToggleSize={onToggleSize}
-        onRename={
-          chartId
-            ? (name) =>
-                onUpdateConfig(withChartTitle(widget.config, chartId, name))
-            : undefined
-        }
-        // Removal drops the whole widget, arrangement included, so it asks
-        // with the module's own copy instead of the card's.
-        onRequestRemove={() => setConfirmOpen(true)}
-        onRemove={onRemove}
-        headerActions={
-          <DashboardModuleCustomizeMenu
-            summaryAvailable={vm.summaryText.length > 0}
-            summaryShown={vm.summaryShown}
-            charts={vm.allCharts}
-            onToggleSummary={(shown) =>
-              onUpdateConfig(withSummaryShown(widget.config, shown))
-            }
-            onToggleChart={(chartId, shown) =>
-              onUpdateConfig(
-                shown
-                  ? withChartShown(widget.config, chartId, allChartIds)
-                  : withChartHidden(widget.config, chartId, allChartIds)
-              )
-            }
-          />
-        }
-        intro={
-          showSummary || (card && hasChartPills(card)) ? (
-            <Flex direction="column" gap="8px" px="12px" pb="12px">
-              {showSummary && (
-                <>
-                  {/* Same provenance rule as the chart card below, so the
-                      narrative never contradicts it. */}
-                  <InsightCaption curated={vm.curated} />
-                  <Text fontSize="14px" lineHeight="20px" color="fg">
-                    {vm.summaryText}
-                  </Text>
-                </>
-              )}
-              {/* The design puts these above the card, and the shell that
-                  hosts it is this module (DashboardWidgetCard mounts
-                  WidgetMessage `inWorkspace`, which suppresses them inline). */}
-              {card && (
-                <InsightChartPills
-                  widget={card}
-                  siblings={rollups}
-                  groupKey={widget.id}
-                />
-              )}
-            </Flex>
-          ) : null
-        }
-        footer={
-          total > 1 ? (
-            <Flex
-              align="center"
-              justify="space-between"
-              px="12px"
-              py="8px"
-              borderTopWidth="1px"
-              borderColor="rgba(19,22,25,0.05)"
+      <Flex wrap="wrap" gap="12px" align="stretch">
+        {entries.map((card, i) => {
+          const chartId = card?.id;
+          const lead = i === 0;
+          return (
+            <Box
+              // Keyed on the chart so a card remounts when the chart under it
+              // changes (the DETAIL pill swapping one roll-up for another):
+              // the card holds its own rename draft and full-screen state,
+              // and an in-flight rename would otherwise show — and never
+              // reconcile — against the new chart.
+              key={chartId ?? "no-chart"}
+              // A basis rather than an equal share, so two cards sit side by
+              // side when there is room and stack once the column is narrow.
+              flex="1 1 320px"
+              minW={0}
             >
-              <IconButton
-                aria-label="Previous chart"
-                title="Previous chart"
-                size="xs"
-                variant="ghost"
-                border="1px solid"
-                borderColor="border.emphasized"
-                disabled={index === 0}
-                onClick={() => setPage(index - 1)}
-              >
-                <ArrowArcLeftIcon size={14} />
-              </IconButton>
-              <Text
-                fontSize="12px"
-                color="fg.muted"
-                aria-live="polite"
-                css={{ fontVariantNumeric: "tabular-nums" }}
-              >
-                {index + 1} of {total} charts
-              </Text>
-              <IconButton
-                aria-label="Next chart"
-                title="Next chart"
-                size="xs"
-                variant="ghost"
-                border="1px solid"
-                borderColor="border.emphasized"
-                disabled={index === total - 1}
-                onClick={() => setPage(index + 1)}
-              >
-                <ArrowArcRightIcon size={14} />
-              </IconButton>
-            </Flex>
-          ) : null
-        }
-      />
+              <DashboardWidgetCard
+                title={card?.title ?? vm.title}
+                card={card}
+                placeholder={lead ? placeholder : null}
+                // The lead card owns the analysis: its X removes the whole
+                // widget. A later card's X only hides its own chart.
+                removeMode={lead ? "widget" : "chart"}
+                isOwner={isOwner}
+                isDouble={isDouble}
+                bodyFullWidth={isDouble && single}
+                showWidgetControls={lead}
+                onArmDrag={onArmDrag}
+                onToggleSize={onToggleSize}
+                onRename={
+                  chartId
+                    ? (name) =>
+                        onUpdateConfig(
+                          withChartTitle(widget.config, chartId, name)
+                        )
+                    : undefined
+                }
+                // Removing the analysis discards the whole arrangement, so the
+                // lead card asks with the module's own copy instead of the
+                // card's. Hiding one chart is recoverable and does not ask.
+                onRequestRemove={lead ? () => setConfirmOpen(true) : undefined}
+                onRemove={
+                  lead
+                    ? onRemove
+                    : () =>
+                        chartId &&
+                        onUpdateConfig(
+                          withChartHidden(widget.config, chartId, allChartIds)
+                        )
+                }
+                headerActions={
+                  lead ? (
+                    <DashboardModuleCustomizeMenu
+                      summaryAvailable={vm.summaryText.length > 0}
+                      summaryShown={vm.summaryShown}
+                      charts={vm.allCharts}
+                      onToggleSummary={(shown) =>
+                        onUpdateConfig(withSummaryShown(widget.config, shown))
+                      }
+                      onToggleChart={(id, shown) =>
+                        onUpdateConfig(
+                          shown
+                            ? withChartShown(widget.config, id, allChartIds)
+                            : withChartHidden(widget.config, id, allChartIds)
+                        )
+                      }
+                    />
+                  ) : undefined
+                }
+                intro={
+                  (lead && showSummary) || (card && hasChartPills(card)) ? (
+                    <Flex direction="column" gap="8px" px="12px" pb="12px">
+                      {lead && showSummary && (
+                        <>
+                          {/* Same provenance rule as the chart card below, so
+                              the narrative never contradicts it. */}
+                          <InsightCaption curated={vm.curated} />
+                          <Text fontSize="14px" lineHeight="20px" color="fg">
+                            {vm.summaryText}
+                          </Text>
+                        </>
+                      )}
+                      {/* The design puts these above the card, and the shell
+                          that hosts it is this module (DashboardWidgetCard
+                          mounts WidgetMessage `inWorkspace`, which suppresses
+                          them inline). */}
+                      {card && (
+                        <InsightChartPills
+                          widget={card}
+                          siblings={rollups}
+                          groupKey={widget.id}
+                        />
+                      )}
+                    </Flex>
+                  ) : null
+                }
+              />
+            </Box>
+          );
+        })}
+      </Flex>
 
       <RemoveAnalysisDialog
         open={confirmOpen}

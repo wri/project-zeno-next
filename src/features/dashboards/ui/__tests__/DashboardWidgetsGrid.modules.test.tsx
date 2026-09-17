@@ -101,7 +101,7 @@ describe("DashboardWidgetsGrid grouping", () => {
     useAuthStore.setState({ userId: "u1" });
   });
 
-  it("renders an insight widget as one card, beside standalone widgets", () => {
+  it("renders an insight widget as a set of cards, beside standalone widgets", () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -113,15 +113,19 @@ describe("DashboardWidgetsGrid grouping", () => {
       </QueryClientProvider>
     );
 
-    // The insight is one card: the narrative and the first of its charts,
-    // with the rest a page away — not one card per chart.
+    // The insight deals one card per chart, all on screen at once.
     expect(screen.getByText(/Alerts spiked in July\./)).toBeTruthy();
     const cards = screen.getAllByTestId("widget-message");
-    expect(cards.map((c) => c.textContent)).toEqual(["Alerts trend"]);
-    expect(screen.getByText("1 of 2 charts")).toBeTruthy();
+    expect(cards.map((c) => c.textContent)).toEqual([
+      "Alerts trend",
+      "Alerts by driver",
+    ]);
+    expect(screen.queryByText(/of \d+ charts/)).toBe(null);
     // The map widget still renders standalone.
     expect(screen.getByTestId("map-widget")).toBeTruthy();
-    // Two widgets, so two cards — the insight has no extra remove of its own.
+    // Still two WIDGETS: the insight's set carries one whole-widget remove,
+    // on its lead card, plus a hide for its second chart.
     expect(screen.getAllByLabelText("Remove from dashboard")).toHaveLength(2);
+    expect(screen.getAllByLabelText("Hide chart")).toHaveLength(1);
   });
 });
