@@ -27,14 +27,18 @@ export type DatasetCategoryId =
   | "in-conversation"
   | "land-use"
   | "disturbance"
-  | "wildfires";
+  | "wildfires"
+  | "ghg-fluxes"
+  | "forests";
 
 export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
   { id: "all", label: "All datasets" },
   { id: "in-conversation", label: "In this conversation" },
+  { id: "forests", label: "Forests" },
   { id: "land-use", label: "Land use" },
   { id: "disturbance", label: "Disturbance" },
   { id: "wildfires", label: "Wildfires" },
+  { id: "ghg-fluxes", label: "GHG fluxes" },
 ];
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
@@ -214,6 +218,102 @@ export const NET_FLUX_FEATURE_FLAG = "net-flux";
  */
 const INTACT_FOREST_TILE_URL =
   "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2025/default/{z}/{x}/{y}.png";
+
+/**
+ * LGMS raster tiles (v1.0.3). One endpoint serves the whole system: `layer`
+ * picks the sector and `flux_type` the measure, so the cards below differ only
+ * in those two query params.
+ *
+ * `flux_type` is a strict enum — `net` | `gross_emissions` | `gross_removals`.
+ * Anything else (`net_flux`, notably) is rejected with a 422, and the tile
+ * simply never paints.
+ */
+const LGMS_TILE_BASE =
+  "https://tiles.globalforestwatch.org/wri_land_ghg_monitoring_system/v1.0.3/dynamic/{z}/{x}/{y}.png";
+
+type LgmsLayer = "lgms" | "lulucf" | "agriculture" | "cropland" | "livestock";
+type LgmsFluxType = "net" | "gross_emissions" | "gross_removals";
+
+const lgmsTileUrl = (layer: LgmsLayer, fluxType: LgmsFluxType): string =>
+  `${LGMS_TILE_BASE}?layer=${layer}&flux_type=${fluxType}`;
+
+/**
+ * BrBG ramp the LGMS tiles render net flux with, sink (teal) → source (brown),
+ * sampled from the published v1.0.3 tiles. These are the same browns and teals
+ * the net-flux charts use (`src/features/net-flux`), so the map layer and the
+ * analysis read as one dataset. The pale middle class straddles zero — the
+ * divergent legend labels that midpoint itself.
+ */
+const LGMS_NET_FLUX_RAMP = [
+  "#003c30",
+  "#01665e",
+  "#35978f",
+  "#80cdc1",
+  "#c7eae5",
+  "#d9e7d5",
+  "#f6e8c3",
+  "#dfc27d",
+  "#bf812d",
+  "#8c510a",
+  "#543005",
+];
+
+/** YlOrBr ramp the LGMS tiles render gross agricultural emissions with. */
+const LGMS_EMISSIONS_RAMP = [
+  "#ffffd4",
+  "#fee391",
+  "#fec44f",
+  "#fe9929",
+  "#d95f0e",
+  "#993404",
+];
+
+/**
+ * The tile server publishes no class breaks, so the ramps are labelled by
+ * direction rather than by invented numbers. Units come from the data-lake
+ * asset path (`.../Mg_CO2e_yr-1/...`): per-pixel megagrams CO2e per year.
+ */
+const LGMS_UNIT = "Mg CO2e/yr";
+
+// Only the two end stops carry a label: the divergent/sequential legends read
+// `items[0]` and `items[at(-1)]` and render the rest as a continuous bar.
+const lgmsRampItems = (ramp: string[], minLabel: string, maxLabel: string) =>
+  ramp.map((color, i) => ({
+    color,
+    label: i === 0 ? minLabel : i === ramp.length - 1 ? maxLabel : "",
+  }));
+
+const lgmsNetFluxLegend = (
+  title: string,
+  info: string,
+  note: string
+): DatasetLegendConfig => ({
+  title,
+  type: "divergent",
+  color: "#543005",
+  unit: LGMS_UNIT,
+  items: lgmsRampItems(
+    LGMS_NET_FLUX_RAMP,
+    "Removals (sink)",
+    "Emissions (source)"
+  ),
+  info,
+  note,
+});
+
+const lgmsEmissionsLegend = (
+  title: string,
+  info: string,
+  note: string
+): DatasetLegendConfig => ({
+  title,
+  type: "sequential",
+  color: "#993404",
+  unit: LGMS_UNIT,
+  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "Lower", "Higher"),
+  info,
+  note,
+});
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
@@ -519,7 +619,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["disturbance"],
+    categories: ["disturbance", "ghg-fluxes", "forests"],
     description:
       "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2025, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
     tile_url:
@@ -596,14 +696,22 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       unit: "tCO2e/ha",
     },
   },
+  // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
+  // that one scopes the "View Analysis" flow to a GADM admin area, these paint
+  // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
+  // is per-admin-area and knows nothing about the individual sector layers —
+  // and share the LGMS review flag so the family is revealed together.
+  //
+  // NOTE: ids 13-17 are claimed client-side. The backend catalogue currently
+  // stops at 8; if it ever grows into this range these need renumbering.
   {
     dataset_id: 12,
-    dataset_name: "Land GHG Monitoring System (LGMS)",
+    dataset_name: "Land GHG Monitoring System",
     shortName: "LGMS net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
     data_layer: "Land GHG Monitoring System (LGMS)",
     context_layer: null,
-    img: "/dataset_card_net_flux.webp",
+    img: "/dataset_card_lgms_net_flux.webp",
     cadence: "annual",
     resolution: "reported per admin area",
     geographic_coverage:
@@ -611,14 +719,150 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "WRI",
     defaultStartYear: 2016,
     defaultEndYear: 2024,
-    categories: ["land-use"],
+    categories: ["ghg-fluxes"],
     description:
-      "Maps annual gross greenhouse-gas emissions, gross CO2 removals, and net GHG flux from land — vegetation, soil, and agriculture — for GADM administrative areas from 2016 to 2024. Values are in MgCO2e; emissions are positive (a source), removals negative (a sink).",
-    // Analytics-only: no map tile layer. Picking this card enables the "View
+      "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
     // Analysis" flow for a GADM admin AOI without adding a raster to the map.
-    tile_url: "",
+    tile_url: lgmsTileUrl("lgms", "net"),
+    legend: lgmsNetFluxLegend(
+      "LGMS total net GHG flux  (2016-2024)",
+      "The balance of emissions and removals across every LGMS sector, so a single layer shows whether land is a net source or a net sink.",
+      "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+    ),
+  },
+  // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
+  // that one scopes the "View Analysis" flow to a GADM admin area, these paint
+  // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
+  // is per-admin-area and knows nothing about the individual sector layers —
+  // and share the LGMS review flag so the family is revealed together.
+  //
+  // NOTE: ids 13-16 are claimed client-side. The backend catalogue currently
+  // stops at 8; if it ever grows into this range these need renumbering.
+  {
+    dataset_id: 13,
+    dataset_name: "LGMS LULUCF net GHG flux",
+    shortName: "LULUCF net flux",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS LULUCF net GHG flux",
+    context_layer: null,
+    img: "/dataset_card_lgms_lulucf.webp",
+    viewOnly: true,
+    // The LGMS tile endpoint caps at z12 and 422s above it.
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["ghg-fluxes"],
+    description:
+      "Net greenhouse-gas flux from land use, land-use change and forestry (LULUCF) — the vegetation and soil half of the Land GHG Monitoring System, excluding agricultural emissions.",
+    tile_url: lgmsTileUrl("lulucf", "net"),
+    legend: lgmsNetFluxLegend(
+      "LGMS LULUCF net GHG flux  (2016-2024)",
+      "Isolates the LULUCF sector, so forest loss and regrowth can be read without agricultural emissions on top of them.",
+      "Per-pixel annual LULUCF net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+    ),
+  },
+  {
+    dataset_id: 14,
+    dataset_name: "LGMS agriculture emissions",
+    shortName: "Agriculture emissions",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS agriculture emissions",
+    context_layer: null,
+    img: "/dataset_card_lgms_agriculture.webp",
+    viewOnly: true,
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["ghg-fluxes"],
+    description:
+      "Gross greenhouse-gas emissions from agriculture in the Land GHG Monitoring System — cropland and livestock combined. Agriculture is a source only, so this layer has no removals.",
+    tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
+    legend: lgmsEmissionsLegend(
+      "LGMS agriculture emissions (2020)",
+      "Total agricultural emissions, useful for seeing where farming rather than land-use change drives the land-sector footprint.",
+      "Per-pixel annual gross agricultural emissions in Mg CO2e/yr."
+    ),
+  },
+  {
+    dataset_id: 15,
+    dataset_name: "LGMS cropland emissions",
+    shortName: "Cropland emissions",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS cropland emissions",
+    context_layer: null,
+    img: "/dataset_card_lgms_cropland.webp",
+    viewOnly: true,
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["ghg-fluxes"],
+    description:
+      "Gross greenhouse-gas emissions from cropland in the Land GHG Monitoring System — the crop half of the agriculture layer, covering sources such as rice cultivation, fertiliser use and crop-residue burning.",
+    tile_url: lgmsTileUrl("cropland", "gross_emissions"),
+    legend: lgmsEmissionsLegend(
+      "LGMS cropland emissions (2020)",
+      "The cropland component of agricultural emissions, for separating crop production from livestock in the land-sector total.",
+      "Per-pixel annual gross cropland emissions in Mg CO2e/yr."
+    ),
+  },
+  {
+    dataset_id: 16,
+    dataset_name: "LGMS livestock emissions",
+    shortName: "Livestock emissions",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "LGMS livestock emissions",
+    context_layer: null,
+    img: "/dataset_card_lgms_livestock.webp",
+    viewOnly: true,
+    cadence: "annual",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "WRI",
+    categories: ["ghg-fluxes"],
+    description:
+      "Gross greenhouse-gas emissions from livestock in the Land GHG Monitoring System — the livestock half of the agriculture layer, covering sources such as enteric fermentation and manure management.",
+    tile_url: lgmsTileUrl("livestock", "gross_emissions"),
+    legend: lgmsEmissionsLegend(
+      "LGMS livestock emissions (2020)",
+      "The livestock component of agricultural emissions, for separating herds from crop production in the land-sector total.",
+      "Per-pixel annual gross livestock emissions in Mg CO2e/yr."
+    ),
   },
 ];
+
+/**
+ * The catalogue cards keyed by id. Distinct from `DATASET_BY_ID`, which holds
+ * the `DatasetInfo` the agent exchanges — that projection drops the card-only
+ * fields, so anything reading a card's own configuration (its declared
+ * coverage, its categories) has to come through here.
+ */
+export const DATASET_CARD_BY_ID: Record<number, DatasetCardConfig> =
+  Object.fromEntries(DATASET_CARDS.map((c) => [c.dataset_id, c]));
+
+const DATASET_CARD_DISPLAY_ORDER: number[] = [
+  11, // Integrated alerts
+  1, // Global land cover
+  2, // Grasslands
+  3, // SBTN Natural lands
+  101, // Intact Forest Landscapes
+  4, // Tree cover loss
+  8, // TCL by driver
+  5, // Tree cover gain
+  7, // Tree cover
+  10, // TCL from fires
+  12, // LGMS
+  13, // LGMS LULUCF
+  14, // LGMS agriculture
+  15, // LGMS cropland
+  16, // LGMS livestock
+  6, // Forest GHG net flux
+];
+
+export const ORDERED_DATASET_CARDS: (DatasetCardConfig & { img?: string })[] =
+  DATASET_CARD_DISPLAY_ORDER.map((id) => DATASET_CARD_BY_ID[id]);
 
 // Defaults applied to DatasetInfo when not provided by cards
 const DEFAULT_DATASET_FIELDS: Omit<
@@ -663,15 +907,6 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
 export const DATASET_BY_ID: Record<number, DatasetInfo> = Object.fromEntries(
   DATASETS.map((d) => [d.dataset_id, d])
 );
-
-/**
- * The catalogue cards keyed by id. Distinct from `DATASET_BY_ID`, which holds
- * the `DatasetInfo` the agent exchanges — that projection drops the card-only
- * fields, so anything reading a card's own configuration (its declared
- * coverage, its categories) has to come through here.
- */
-export const DATASET_CARD_BY_ID: Record<number, DatasetCardConfig> =
-  Object.fromEntries(DATASET_CARDS.map((c) => [c.dataset_id, c]));
 
 // Full dataset_name -> short label, for the datasets that define one. Keyed by
 // name (not id) because the only handle available at chip-build time is the
