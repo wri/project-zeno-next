@@ -720,7 +720,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   // stops at 8; if it ever grows into this range these need renumbering.
   {
     dataset_id: 12,
-    dataset_name: "Land GHG Monitoring System (LGMS)",
+    dataset_name: "Land GHG Monitoring System (2016-2024)",
     shortName: "LGMS net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
     data_layer: "Land GHG Monitoring System (LGMS)",
@@ -754,7 +754,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   // stops at 8; if it ever grows into this range these need renumbering.
   {
     dataset_id: 13,
-    dataset_name: "LGMS LULUCF net GHG flux",
+    dataset_name: "LGMS LULUCF net GHG flux  (2016-2024)",
     shortName: "LULUCF net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
     data_layer: "LGMS LULUCF net GHG flux",
@@ -780,7 +780,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
   {
     dataset_id: 14,
-    dataset_name: "LGMS agriculture emissions",
+    dataset_name: "LGMS agriculture emissions (2020)",
     shortName: "Agriculture emissions",
     featureFlag: NET_FLUX_FEATURE_FLAG,
     data_layer: "LGMS agriculture emissions",
@@ -806,7 +806,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
   {
     dataset_id: 15,
-    dataset_name: "LGMS cropland emissions",
+    dataset_name: "LGMS cropland emissions (2020)",
     shortName: "Cropland emissions",
     featureFlag: NET_FLUX_FEATURE_FLAG,
     data_layer: "LGMS cropland emissions",
@@ -832,7 +832,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
   {
     dataset_id: 16,
-    dataset_name: "LGMS livestock emissions",
+    dataset_name: "LGMS livestock emissions (2020)",
     shortName: "Livestock emissions",
     featureFlag: NET_FLUX_FEATURE_FLAG,
     data_layer: "LGMS livestock emissions",
