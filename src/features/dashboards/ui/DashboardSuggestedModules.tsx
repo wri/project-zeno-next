@@ -15,6 +15,7 @@ import { toaster } from "@/app/components/ui/toaster";
 import { usePromptQuota } from "@/app/hooks/usePromptQuota";
 import useChatStore from "@/app/store/chatStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import {
   curatedCatalogue,
   type AnalysisService,
@@ -253,12 +254,8 @@ export default function DashboardSuggestedModules({
   const isStreaming = useChatStore((s) => s.isLoading);
   const { promptsExhausted } = usePromptQuota();
   const requestChatInputFocus = useSidebarStore((s) => s.requestChatInputFocus);
+  const enabledFlags = useEnabledFlags();
   const addTextWidget = useAddTextWidget(dashboard.id);
-  // Resolved lazily so a catalogue drift throws at render, not at module load.
-  const specById = useMemo(
-    () => new Map(curatedCatalogue().map((s) => [s.datasetId, s])),
-    []
-  );
 
   // The prompt cards are a second entry point into sendMessage, so they need
   // the guards submitPrompt applies to the textarea (ChatInput's `disabled` is
@@ -283,6 +280,20 @@ export default function DashboardSuggestedModules({
       }
     : null;
 
+  // Resolved lazily so a catalogue drift throws at render, not at module load.
+  // Gated by the URL flags and this dashboard's area, so a tile whose analysis
+  // is not offered here resolves to nothing and is dropped below.
+  const specById = useMemo(
+    () =>
+      new Map(
+        curatedCatalogue({
+          enabledFlags,
+          aoiSource: area?.aoiSource,
+        }).map((s) => [s.datasetId, s])
+      ),
+    [enabledFlags, area?.aoiSource]
+  );
+
   if (!isOwner) return null;
 
   return (
@@ -305,9 +316,11 @@ export default function DashboardSuggestedModules({
       </Flex>
       <Flex wrap="wrap" gap="20px">
         {CURATED_SUGGESTED_MODULES.map((module) => {
-          // curatedCatalogue() already validates every dataset id exists in
-          // the FE catalogue, so specById is guaranteed to have this entry.
-          const spec = specById.get(module.datasetId)!;
+          // No spec means the catalogue does not offer this analysis here (a
+          // feature flag that is off, an area its dataset does not cover), so
+          // the tile is not rendered at all.
+          const spec = specById.get(module.datasetId);
+          if (!spec) return null;
           return area ? (
             <CuratedModuleTile
               key={module.id}

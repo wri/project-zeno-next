@@ -52,17 +52,29 @@ function DetailInfo() {
  * (Full detail / Category / Summary) rather than re-slicing one payload. It is
  * hidden when the widget has no siblings — a single chart, or one rehydrated
  * without the id shape the grouping relies on.
+ *
+ * By default the siblings are found in the map workspace's insight store by
+ * `chartBatchKey`. Surfaces that render an analysis from somewhere else (the
+ * dashboard module, the Analyses pane) hold its charts directly and their ids
+ * do not carry that shape, so they pass `siblings` and the `groupKey` the
+ * DETAIL choice is remembered under — see `netFluxRollups`.
  */
 export function NetFluxToolbar({
   widget,
+  siblings: siblingsProp,
+  groupKey: groupKeyProp,
   showDivider = true,
 }: {
   widget: InsightWidget;
+  /** The roll-ups to choose between, default detail first. */
+  siblings?: InsightWidget[];
+  /** Key the DETAIL choice is stored under; required alongside `siblings`. */
+  groupKey?: string;
   showDivider?: boolean;
 }) {
   const insights = useInsightStore((s) => s.insights);
-  const siblings = netFluxSiblings(insights, widget);
-  const groupKey = netFluxGroupKey(widget);
+  const siblings = siblingsProp ?? netFluxSiblings(insights, widget);
+  const groupKey = groupKeyProp ?? netFluxGroupKey(widget);
   const { selected, select } = useNetFluxDetail(groupKey, siblings);
   const { measure, setMeasure } = useNetFluxView(netFluxViewKey(widget));
 

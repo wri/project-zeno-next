@@ -148,3 +148,48 @@ export function netFluxWidgetDetailPillLabel(widget: InsightWidget): string {
   const label = netFluxWidgetDetailLabel(widget);
   return detailLevelOf(label)?.pill ?? label;
 }
+
+/**
+ * The net-flux roll-ups among the charts of ONE analysis, default detail
+ * first (`orderSiblings`).
+ *
+ * The sibling functions above group by `chartBatchKey`, which only parses the
+ * `{insightId}-chart-{n}` ids `RestAnalysisGateway` mints. Dashboard widgets
+ * and stored insights carry the backend chart UUID instead, so grouping is
+ * unavailable there — but those callers already hold exactly one analysis's
+ * charts, which makes the grouping step unnecessary rather than impossible.
+ */
+export function netFluxRollups(cards: InsightWidget[]): InsightWidget[] {
+  return orderSiblings(cards.filter(isNetFluxWidget));
+}
+
+/**
+ * One analysis's charts with its net-flux roll-ups folded to a single entry —
+ * `selectedId` when it names one of them, else the lead roll-up. The folded
+ * entry keeps the position of the first roll-up, so the reading order the
+ * backend chose survives.
+ *
+ * The grouping-free counterpart of `collapseNetFluxSiblings`; see
+ * `netFluxRollups` for why both exist.
+ */
+export function collapseNetFluxRollups(
+  cards: InsightWidget[],
+  selectedId?: string
+): InsightWidget[] {
+  const rollups = netFluxRollups(cards);
+  if (rollups.length < 2) return cards;
+  const selected = rollups.find((w) => w.id === selectedId) ?? rollups[0];
+
+  let placed = false;
+  const out: InsightWidget[] = [];
+  for (const card of cards) {
+    if (!isNetFluxWidget(card)) {
+      out.push(card);
+      continue;
+    }
+    if (placed) continue;
+    placed = true;
+    out.push(selected);
+  }
+  return out;
+}

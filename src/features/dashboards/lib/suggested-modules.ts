@@ -8,6 +8,7 @@ import {
   LogIcon,
   NotepadIcon,
   PlantIcon,
+  ScalesIcon,
   SirenIcon,
   SplitHorizontalIcon,
   TractorIcon,
@@ -51,11 +52,16 @@ export type SuggestedModule = CuratedSuggestedModule | PromptSuggestedModule;
 
 /**
  * The lime cards in the "Suggested modules" row (Figma node 1475:4879), in
- * display order: every curated analysis first, in the suite's order (the ten
+ * display order: every curated analysis first, in the suite's order (the
  * datasets of `CURATED_ANALYSES` in the analysis slice; the lib test pins the
  * two lists to each other), then the chat-driven tiles. The row's two neutral
  * cards ("Text block", "Describe your own via the chat") are not modules and
  * live in the component.
+ *
+ * A curated tile is only as available as its catalogue entry: the component
+ * resolves each `datasetId` against the gated `curatedCatalogue()` and drops
+ * the tiles that resolve to nothing, so a flagged or area-restricted analysis
+ * (LGMS) needs no second gate here.
  */
 export const SUGGESTED_MODULES: readonly SuggestedModule[] = [
   {
@@ -127,6 +133,13 @@ export const SUGGESTED_MODULES: readonly SuggestedModule[] = [
     label: "Monitor disturbance alerts",
     icon: SirenIcon,
     datasetId: 11,
+  },
+  {
+    kind: "curated",
+    id: "land-ghg-net-flux",
+    label: "Land GHG net flux",
+    icon: ScalesIcon,
+    datasetId: 12,
   },
   {
     kind: "prompt",

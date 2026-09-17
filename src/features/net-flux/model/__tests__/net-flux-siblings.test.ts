@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  collapseNetFluxRollups,
   collapseNetFluxSiblings,
   defaultNetFluxSibling,
   netFluxDetailLabel,
   netFluxWidgetDetailPillLabel,
   netFluxGroupKey,
+  netFluxRollups,
   netFluxSiblings,
   netFluxWidgetDetailLabel,
 } from "../net-flux-siblings";
@@ -218,5 +220,58 @@ describe("collapseNetFluxSiblings", () => {
 
   it("leaves a list with no net-flux charts untouched", () => {
     expect(collapseNetFluxSiblings([OTHER, TREE], {})).toEqual([OTHER, TREE]);
+  });
+});
+
+// The same analysis as it arrives off the dashboards API and the stored
+// insights list: backend chart UUIDs, so no `chartBatchKey` prefix to group by.
+const UUID_TREE = chart("d4e5f6", "Net GHG Flux — Annual Average", "bar");
+const UUID_FULL = chart("a1b2c3", "Net GHG Flux — Full Detail");
+const UUID_CATEGORY = chart("b2c3d4", "Net GHG Flux by Category");
+const UUID_SUMMARY = chart("c3d4e5", "Net GHG Flux Summary");
+const UUID_ANALYSIS = [UUID_TREE, UUID_FULL, UUID_CATEGORY, UUID_SUMMARY];
+
+describe("netFluxRollups", () => {
+  it("lists one analysis's roll-ups in display order, whatever the ids", () => {
+    expect(netFluxRollups(UUID_ANALYSIS)).toEqual([
+      UUID_SUMMARY,
+      UUID_CATEGORY,
+      UUID_FULL,
+    ]);
+  });
+
+  it("ignores charts that are not time series", () => {
+    expect(netFluxRollups([UUID_TREE])).toEqual([]);
+  });
+});
+
+describe("collapseNetFluxRollups", () => {
+  it("folds the roll-ups to the selected one, keeping their place in the order", () => {
+    expect(collapseNetFluxRollups(UUID_ANALYSIS, UUID_SUMMARY.id)).toEqual([
+      UUID_TREE,
+      UUID_SUMMARY,
+    ]);
+  });
+
+  it("falls back to the lead roll-up when nothing is selected", () => {
+    expect(collapseNetFluxRollups(UUID_ANALYSIS)).toEqual([
+      UUID_TREE,
+      UUID_SUMMARY,
+    ]);
+  });
+
+  it("falls back to the lead roll-up when the selection is not one of them", () => {
+    expect(collapseNetFluxRollups(UUID_ANALYSIS, "gone")).toEqual([
+      UUID_TREE,
+      UUID_SUMMARY,
+    ]);
+  });
+
+  it("leaves an analysis with a single roll-up, or none, untouched", () => {
+    expect(collapseNetFluxRollups([UUID_TREE, UUID_FULL])).toEqual([
+      UUID_TREE,
+      UUID_FULL,
+    ]);
+    expect(collapseNetFluxRollups([UUID_TREE])).toEqual([UUID_TREE]);
   });
 });

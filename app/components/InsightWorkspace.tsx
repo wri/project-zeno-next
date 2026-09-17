@@ -33,17 +33,16 @@ import AnalysisParametersToggle, {
 import { buildChips } from "./widgets/analysis-params-utils";
 import {
   NetFluxChartInfo,
-  NetFluxToolbar,
   collapseNetFluxSiblings,
   isNetFluxWidget,
   useNetFluxDetailSelection,
 } from "@/src/features/net-flux";
 import {
   FLUX_TREE_CARD_WIDTH,
-  GhgFluxMeasurePill,
   GhgFluxTreeChartInfo,
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
+import InsightChartPills, { hasChartPills } from "./InsightChartPills";
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -323,14 +322,9 @@ export default function InsightWorkspace() {
 
             {/* Per-widget-type controls, rendered on the shell above the card
                 (the design calls this frame the "widget toolbar"). */}
-            {isNetFlux && (
+            {hasChartPills(widget) && (
               <Box px={2} pb={2}>
-                <NetFluxToolbar widget={widget} />
-              </Box>
-            )}
-            {isFluxTree && (
-              <Box px={2} pb={2}>
-                <GhgFluxMeasurePill widget={widget} />
+                <InsightChartPills widget={widget} showDivider />
               </Box>
             )}
 
