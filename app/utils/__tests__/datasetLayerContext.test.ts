@@ -272,4 +272,23 @@ describe("toLayerEntries", () => {
   it("returns undefined when there are no layers", () => {
     expect(toLayerEntries(undefined)).toBeUndefined();
   });
+
+  it("reorders backend layers to the dataset's canonical DATASET_CARDS order", () => {
+    // LGMS (dataset_id 12) declares [lgms, lulucf, agriculture, cropland,
+    // livestock] in DATASET_CARDS. A backend response listing them in a
+    // different order must still resolve to that canonical order, or
+    // buildDatasetLayers' index-keyed ids desync from CatalogPanel's.
+    const entries = toLayerEntries(
+      [
+        {
+          name: "agriculture",
+          tile_url: "https://example.com/agriculture.png",
+        },
+        { name: "lulucf", tile_url: "https://example.com/lulucf.png" },
+      ],
+      12
+    );
+
+    expect(entries?.map((e) => e.name)).toEqual(["lulucf", "agriculture"]);
+  });
 });

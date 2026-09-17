@@ -19,9 +19,16 @@ export interface DatasetLayerEntry {
 }
 
 // Maps a backend/catalog layer's wire shape ({name, tile_url, start_date?,
-// end_date?}) to DatasetLayerEntry. The one place this conversion lives, so
-// pickDatasetTool, nudgeDataset and the static DATASET_CARDS catalog can't
-// drift out of sync with each other or with buildDatasetLayers.
+// end_date?}) to DatasetLayerEntry, in the dataset's *canonical* order (the
+// static DATASET_CARDS declaration) rather than whatever order the backend
+// sent — buildDatasetLayers keys each layer's map-layer id off its position
+// in this list, and CatalogPanel derives the same ids from the catalog's own
+// (always-canonical) order, so the two would desync if a differently-ordered
+// backend array were used as-is. Falls back to the backend's order for a
+// dataset the catalog doesn't declare `layers` for. The one place this
+// conversion lives, so pickDatasetTool, nudgeDataset and the static
+// DATASET_CARDS catalog can't drift out of sync with each other or with
+// buildDatasetLayers.
 export function toLayerEntries(
   layers:
     | {
@@ -30,9 +37,20 @@ export function toLayerEntries(
         start_date?: string;
         end_date?: string;
       }[]
-    | undefined
+    | undefined,
+  datasetId?: number
 ): DatasetLayerEntry[] | undefined {
-  return layers?.map((l) => ({
+  if (!layers) return undefined;
+  const canonicalNames = DATASET_CARDS.find(
+    (c) => c.dataset_id === datasetId
+  )?.layers?.map((l) => l.name);
+  const ordered = canonicalNames
+    ? [...layers].sort(
+        (a, b) =>
+          canonicalNames.indexOf(a.name) - canonicalNames.indexOf(b.name)
+      )
+    : layers;
+  return ordered.map((l) => ({
     name: l.name,
     tileUrl: l.tile_url,
     startDate: l.start_date,
@@ -115,17 +133,14 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
   // rendered — the others aren't added to the map at all, so they stay out
   // of the legend and the layer list. The user switches between them via the
   // catalog panel / a new pick_dataset turn, which rebuilds this list.
-  const selectedIndex =
-    entries.length > 1
-      ? Math.max(
-          0,
-          entries.findIndex((e) => e.name === spec.selectedLayerName)
-        )
-      : 0;
+  const selectedIndex = Math.max(
+    0,
+    entries.findIndex((e) => e.name === spec.selectedLayerName)
+  );
   const selected = entries[selectedIndex];
-  // Ids stay keyed to the entry's position in the dataset's declared layer
-  // list, so CatalogPanel's datasetLayerId-derived rows still match whichever
-  // single layer is on the map.
+  // entries is already in the dataset's canonical order (toLayerEntries
+  // reorders backend layers to match DATASET_CARDS), so this index matches
+  // the one CatalogPanel derives from the catalog directly.
   const primaryLayerId = datasetLayerId(
     spec.datasetId,
     selectedIndex,
