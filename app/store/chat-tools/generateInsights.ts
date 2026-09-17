@@ -15,7 +15,7 @@ import { pickChartColors } from "@/app/utils/pickChartColors";
 interface ChartData extends ChartColorFields {
   id: string;
   title: string;
-  type: "line" | "bar" | "table";
+  type: InsightWidget["type"];
   insight: string;
   data: unknown;
   xAxis: string;
