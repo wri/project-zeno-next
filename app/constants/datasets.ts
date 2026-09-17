@@ -230,30 +230,101 @@ export const NET_FLUX_FEATURE_FLAG = "net-flux";
 const INTACT_FOREST_TILE_URL =
   "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2025/default/{z}/{x}/{y}.png";
 
-// Shared -45..+45 MgCO2e/ha/yr diverging color scale for LGMS net flux,
-// reused by the combined legend and each sublayer's own legend below (the
-// data range is dataset-wide; only title/info/note/unit differ per layer).
-const LGMS_NET_FLUX_COLOR = "#3D2807";
-// TODO(PZB-1247): both LGMS layers currently point at the same combined
-// net-flux mosaic as a placeholder — project-zeno-data-infra doesn't yet
-// publish separate agriculture/lulucf COG mosaics. Swap in the real
-// per-category tile URLs once those pipelines exist.
-const LGMS_PLACEHOLDER_TILE_URL =
-  "https://tiles.globalforestwatch.org/cog/mosaic/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=s3://gfw-data-lake/wri_land_ghg_monitoring_system/v1.0.3/raster/epsg-4326/cog/mosaic.json&nodata=0&colormap=%5B%5B%5B-45.0%2C-42.977%5D%2C%5B0%2C60%2C48%2C255%5D%5D%2C%5B%5B-42.977%2C-40.985%5D%2C%5B0%2C67%2C56%2C255%5D%5D%2C%5B%5B-40.985%2C-39.05%5D%2C%5B0%2C75%2C64%2C255%5D%5D%2C%5B%5B-39.05%2C-37.12%5D%2C%5B1%2C82%2C72%2C255%5D%5D%2C%5B%5B-37.12%2C-35.274%5D%2C%5B1%2C89%2C80%2C255%5D%5D%2C%5B%5B-35.274%2C-33.434%5D%2C%5B1%2C97%2C88%2C255%5D%5D%2C%5B%5B-33.434%2C-31.626%5D%2C%5B3%2C104%2C96%2C255%5D%5D%2C%5B%5B-31.626%2C-29.878%5D%2C%5B13%2C113%2C105%2C255%5D%5D%2C%5B%5B-29.878%2C-28.163%5D%2C%5B22%2C121%2C113%2C255%5D%5D%2C%5B%5B-28.163%2C-26.51%5D%2C%5B31%2C130%2C122%2C255%5D%5D%2C%5B%5B-26.51%2C-24.863%5D%2C%5B40%2C139%2C131%2C255%5D%5D%2C%5B%5B-24.863%2C-23.278%5D%2C%5B49%2C147%2C139%2C255%5D%5D%2C%5B%5B-23.278%2C-21.729%5D%2C%5B60%2C156%2C148%2C255%5D%5D%2C%5B%5B-21.729%2C-20.215%5D%2C%5B73%2C166%2C156%2C255%5D%5D%2C%5B%5B-20.215%2C-18.767%5D%2C%5B86%2C175%2C165%2C255%5D%5D%2C%5B%5B-18.767%2C-17.326%5D%2C%5B99%2C184%2C174%2C255%5D%5D%2C%5B%5B-17.326%2C-15.951%5D%2C%5B113%2C194%2C183%2C255%5D%5D%2C%5B%5B-15.951%2C-14.646%5D%2C%5B126%2C203%2C191%2C255%5D%5D%2C%5B%5B-14.646%2C-13.348%5D%2C%5B138%2C209%2C198%2C255%5D%5D%2C%5B%5B-13.348%2C-12.122%5D%2C%5B151%2C214%2C204%2C255%5D%5D%2C%5B%5B-12.122%2C-10.935%5D%2C%5B163%2C219%2C211%2C255%5D%5D%2C%5B%5B-10.935%2C-9.79%5D%2C%5B175%2C224%2C217%2C255%5D%5D%2C%5B%5B-9.79%2C-8.686%5D%2C%5B188%2C229%2C223%2C255%5D%5D%2C%5B%5B-8.686%2C-7.66%5D%2C%5B200%2C234%2C229%2C255%5D%5D%2C%5B%5B-7.66%2C-6.679%5D%2C%5B208%2C236%2C231%2C255%5D%5D%2C%5B%5B-6.679%2C-5.742%5D%2C%5B216%2C238%2C233%2C255%5D%5D%2C%5B%5B-5.742%2C-4.891%5D%2C%5B224%2C240%2C235%2C255%5D%5D%2C%5B%5B-4.891%2C-4.049%5D%2C%5B232%2C242%2C237%2C255%5D%5D%2C%5B%5B-4.049%2C-3.298%5D%2C%5B240%2C244%2C239%2C255%5D%5D%2C%5B%5B-3.298%2C-2.598%5D%2C%5B245%2C244%2C237%2C255%5D%5D%2C%5B%5B-2.598%2C-2.0%5D%2C%5B245%2C242%2C229%2C255%5D%5D%2C%5B%5B-2.0%2C2.0%5D%2C%5B245%2C240%2C221%2C255%5D%5D%2C%5B%5B2.0%2C2.598%5D%2C%5B246%2C237%2C214%2C255%5D%5D%2C%5B%5B2.598%2C3.298%5D%2C%5B246%2C235%2C206%2C255%5D%5D%2C%5B%5B3.298%2C4.049%5D%2C%5B246%2C233%2C198%2C255%5D%5D%2C%5B%5B4.049%2C4.891%5D%2C%5B243%2C228%2C187%2C255%5D%5D%2C%5B%5B4.891%2C5.742%5D%2C%5B239%2C221%2C175%2C255%5D%5D%2C%5B%5B5.742%2C6.679%5D%2C%5B235%2C215%2C163%2C255%5D%5D%2C%5B%5B6.679%2C7.66%5D%2C%5B231%2C208%2C151%2C255%5D%5D%2C%5B%5B7.66%2C8.686%5D%2C%5B227%2C201%2C138%2C255%5D%5D%2C%5B%5B8.686%2C9.79%5D%2C%5B223%2C195%2C126%2C255%5D%5D%2C%5B%5B9.79%2C10.935%5D%2C%5B218%2C184%2C112%2C255%5D%5D%2C%5B%5B10.935%2C12.122%5D%2C%5B212%2C172%2C98%2C255%5D%5D%2C%5B%5B12.122%2C13.348%5D%2C%5B207%2C161%2C84%2C255%5D%5D%2C%5B%5B13.348%2C14.646%5D%2C%5B201%2C150%2C70%2C255%5D%5D%2C%5B%5B14.646%2C15.951%5D%2C%5B196%2C138%2C56%2C255%5D%5D%2C%5B%5B15.951%2C17.326%5D%2C%5B189%2C127%2C44%2C255%5D%5D%2C%5B%5B17.326%2C18.767%5D%2C%5B180%2C119%2C38%2C255%5D%5D%2C%5B%5B18.767%2C20.215%5D%2C%5B172%2C111%2C32%2C255%5D%5D%2C%5B%5B20.215%2C21.729%5D%2C%5B163%2C102%2C26%2C255%5D%5D%2C%5B%5B21.729%2C23.278%5D%2C%5B154%2C94%2C19%2C255%5D%5D%2C%5B%5B23.278%2C24.863%5D%2C%5B145%2C86%2C13%2C255%5D%5D%2C%5B%5B24.863%2C26.51%5D%2C%5B136%2C79%2C10%2C255%5D%5D%2C%5B%5B26.51%2C28.163%5D%2C%5B128%2C75%2C11%2C255%5D%5D%2C%5B%5B28.163%2C29.878%5D%2C%5B119%2C71%2C11%2C255%5D%5D%2C%5B%5B29.878%2C31.626%5D%2C%5B111%2C67%2C12%2C255%5D%5D%2C%5B%5B31.626%2C33.434%5D%2C%5B103%2C63%2C12%2C255%5D%5D%2C%5B%5B33.434%2C35.274%5D%2C%5B94%2C59%2C13%2C255%5D%5D%2C%5B%5B35.274%2C37.12%5D%2C%5B88%2C56%2C12%2C255%5D%5D%2C%5B%5B37.12%2C39.05%5D%2C%5B83%2C53%2C11%2C255%5D%5D%2C%5B%5B39.05%2C40.985%5D%2C%5B77%2C49%2C10%2C255%5D%5D%2C%5B%5B40.985%2C42.977%5D%2C%5B72%2C46%2C9%2C255%5D%5D%2C%5B%5B42.977%2C45.0%5D%2C%5B66%2C43%2C8%2C255%5D%5D%2C%5B%5B45.0%2C1000%5D%2C%5B61%2C40%2C7%2C255%5D%5D%5D";
-const LGMS_NET_FLUX_ITEMS: DatasetLegendConfig["items"] = [
-  { label: "-45.0 (sink)", color: "#003C30" },
-  { color: "#036860" },
-  { color: "#3C9C94" },
-  { color: "#8AD1C6" },
-  { color: "#D0ECE7" },
-  { color: "#F5F2E5" },
-  { color: "#EFDDAF" },
-  { color: "#D4AC62" },
-  { color: "#AC6F20" },
-  { color: "#77470B" },
-  { color: "#4D310A" },
-  { label: "+45.0 (source)", color: LGMS_NET_FLUX_COLOR },
+/**
+ * LGMS raster tiles (v1.0.3). One endpoint serves the whole system: `layer`
+ * picks the sector and `flux_type` the measure, so the layers below differ
+ * only in those two query params.
+ *
+ * `flux_type` is a strict enum — `net` | `gross_emissions` | `gross_removals`.
+ * Anything else (`net_flux`, notably) is rejected with a 422, and the tile
+ * simply never paints.
+ */
+const LGMS_TILE_BASE =
+  "https://tiles.globalforestwatch.org/wri_land_ghg_monitoring_system/v1.0.3/dynamic/{z}/{x}/{y}.png";
+
+type LgmsLayer = "lgms" | "lulucf" | "agriculture" | "cropland" | "livestock";
+type LgmsFluxType = "net" | "gross_emissions" | "gross_removals";
+
+const lgmsTileUrl = (layer: LgmsLayer, fluxType: LgmsFluxType): string =>
+  `${LGMS_TILE_BASE}?layer=${layer}&flux_type=${fluxType}`;
+
+/**
+ * BrBG ramp the LGMS tiles render net flux with, sink (teal) → source (brown),
+ * sampled from the published v1.0.3 tiles. These are the same browns and teals
+ * the net-flux charts use (`src/features/net-flux`), so the map layer and the
+ * analysis read as one dataset. The pale middle class straddles zero — the
+ * divergent legend labels that midpoint itself.
+ */
+const LGMS_NET_FLUX_RAMP = [
+  "#003c30",
+  "#01665e",
+  "#35978f",
+  "#80cdc1",
+  "#c7eae5",
+  "#d9e7d5",
+  "#f6e8c3",
+  "#dfc27d",
+  "#bf812d",
+  "#8c510a",
+  "#543005",
 ];
+
+/** YlOrBr ramp the LGMS tiles render gross agricultural emissions with. */
+const LGMS_EMISSIONS_RAMP = [
+  "#ffffd4",
+  "#fee391",
+  "#fec44f",
+  "#fe9929",
+  "#d95f0e",
+  "#993404",
+];
+
+/**
+ * The tile server publishes no class breaks, so the ramps are labelled by
+ * direction rather than by invented numbers. Units come from the data-lake
+ * asset path (`.../Mg_CO2e_yr-1/...`): per-pixel megagrams CO2e per year.
+ */
+const LGMS_UNIT = "Mg CO2e/yr";
+
+// Only the two end stops carry a label: the divergent/sequential legends read
+// `items[0]` and `items[at(-1)]` and render the rest as a continuous bar.
+const lgmsRampItems = (ramp: string[], minLabel: string, maxLabel: string) =>
+  ramp.map((color, i) => ({
+    color,
+    label: i === 0 ? minLabel : i === ramp.length - 1 ? maxLabel : "",
+  }));
+
+const lgmsNetFluxLegend = (
+  title: string,
+  info: string,
+  note: string
+): DatasetLegendConfig => ({
+  title,
+  type: "divergent",
+  color: "#543005",
+  unit: LGMS_UNIT,
+  items: lgmsRampItems(
+    LGMS_NET_FLUX_RAMP,
+    "Removals (sink)",
+    "Emissions (source)"
+  ),
+  info,
+  note,
+});
+
+const lgmsEmissionsLegend = (
+  title: string,
+  info: string,
+  note: string
+): DatasetLegendConfig => ({
+  title,
+  type: "sequential",
+  color: "#993404",
+  unit: LGMS_UNIT,
+  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "Lower", "Higher"),
+  info,
+  note,
+});
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
@@ -654,43 +725,61 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     categories: ["land-use"],
     description:
       "Maps annual gross greenhouse-gas emissions, gross CO2 removals, and net GHG flux from land — vegetation, soil, and agriculture — for GADM administrative areas from 2016 to 2024. Values are in MgCO2e; emissions are positive (a source), removals negative (a sink).",
+    // Layer names match the backend catalog yml (land_ghg_inventory.yml)
+    // exactly — the legend is resolved by `layer.name`, so a mismatch here
+    // silently falls back to the card's dataset-level legend below.
     layers: [
       {
+        name: "lgms",
+        tile_url: lgmsTileUrl("lgms", "net"),
+        legend: lgmsNetFluxLegend(
+          "LGMS total net GHG flux",
+          "The balance of emissions and removals across every LGMS sector, so a single layer shows whether land is a net source or a net sink.",
+          "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+        ),
+      },
+      {
         name: "lulucf",
-        tile_url: LGMS_PLACEHOLDER_TILE_URL,
-        legend: {
-          title: "LGMS lulucf net flux (2016-2024 average)",
-          type: "divergent",
-          color: LGMS_NET_FLUX_COLOR,
-          items: LGMS_NET_FLUX_ITEMS,
-          info: "This layer maps the average annual net greenhouse-gas flux from land use, land-use change and forestry (vegetation and soil) from 2016-2024, showing where land is acting as a net carbon source or sink.",
-          note: "Average 2016-2024 LULUCF net flux at the administrative-area level.",
-          unit: "Mg CO2e/ha/yr",
-        },
+        tile_url: lgmsTileUrl("lulucf", "net"),
+        legend: lgmsNetFluxLegend(
+          "LGMS LULUCF net GHG flux",
+          "Isolates the LULUCF sector, so forest loss and regrowth can be read without agricultural emissions on top of them.",
+          "Per-pixel annual LULUCF net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+        ),
       },
       {
         name: "agriculture",
-        tile_url: LGMS_PLACEHOLDER_TILE_URL,
-        legend: {
-          title: "LGMS agriculture net flux (2016-2024 average)",
-          type: "divergent",
-          color: LGMS_NET_FLUX_COLOR,
-          items: LGMS_NET_FLUX_ITEMS,
-          info: "This layer maps the average annual net greenhouse-gas flux from agriculture (cropland and livestock emissions) from 2016-2024, showing where agricultural land is acting as a net carbon source.",
-          note: "Average 2016-2024 agriculture net flux at the administrative-area level.",
-          unit: "Mg CO2e/ha/yr",
-        },
+        tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS agriculture emissions",
+          "Total agricultural emissions, useful for seeing where farming rather than land-use change drives the land-sector footprint.",
+          "Per-pixel annual gross agricultural emissions in Mg CO2e/yr."
+        ),
+      },
+      {
+        name: "cropland",
+        tile_url: lgmsTileUrl("cropland", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS cropland emissions",
+          "The cropland component of agricultural emissions, for separating crop production from livestock in the land-sector total.",
+          "Per-pixel annual gross cropland emissions in Mg CO2e/yr."
+        ),
+      },
+      {
+        name: "livestock",
+        tile_url: lgmsTileUrl("livestock", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS livestock emissions",
+          "The livestock component of agricultural emissions, for separating herds from crop production in the land-sector total.",
+          "Per-pixel annual gross livestock emissions in Mg CO2e/yr."
+        ),
       },
     ],
-    legend: {
-      title: "LGMS net flux (2016-2024 average)",
-      type: "divergent",
-      color: LGMS_NET_FLUX_COLOR,
-      items: LGMS_NET_FLUX_ITEMS,
-      info: "This dataset maps the average annual net greenhouse-gas flux from land (2016-2024), combining vegetation, soil, and agricultural emissions and removals, to show where land is acting as a net carbon source or sink.",
-      note: "Average 2016-2024 net flux at the administrative-area level.",
-      unit: "Mg CO2e/ha/yr",
-    },
+    legend: lgmsNetFluxLegend(
+      "LGMS total net GHG flux",
+      "This dataset maps annual net greenhouse-gas flux from land, combining vegetation, soil, and agricultural emissions and removals, to show where land is acting as a net carbon source or sink.",
+      "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+    ),
   },
 ];
 

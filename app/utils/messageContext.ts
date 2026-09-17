@@ -164,11 +164,11 @@ export function deriveContext(
         (l) => l.datasetId === primaryDatasetId
       );
       const declaredLayerNames = (info.layers ?? []).map((l) => l.name);
-      // Filtered to visible and non-zero-opacity: a sibling layer hidden via
-      // the catalog panel's per-layer eye toggle, or left hidden by default
-      // by a multi-layer dataset (buildDatasetLayers), is `visible: false`
-      // either way and shouldn't be reported as active — matches
-      // active_layers' doc comment in chat.ts.
+      // Filtered to visible and non-zero-opacity: a layer hidden or faded
+      // out via the catalog panel's per-layer eye toggle / opacity slider is
+      // still on the map but shouldn't be reported as active — matches
+      // active_layers' doc comment in chat.ts. (A multi-layer dataset's
+      // unselected layers aren't on the map at all; see buildDatasetLayers.)
       const activeLayerNames = primaryDatasetLayers
         .filter((l) => l.visible && (l.opacity ?? 1) !== 0)
         .map((l) => l.name);
