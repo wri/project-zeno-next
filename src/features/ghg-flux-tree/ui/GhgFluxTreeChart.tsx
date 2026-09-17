@@ -188,7 +188,7 @@ function ValueCell({ row }: { row: FluxRow }) {
     >
       <Text
         fontFamily="body"
-        fontSize="14px"
+        fontSize={isRoot ? "15px" : "14px"}
         fontWeight={isRoot || isCategory ? "medium" : "normal"}
         color={isRoot ? "#172B7A" : "#282D33"}
         css={{ fontVariantNumeric: "tabular-nums" }}
