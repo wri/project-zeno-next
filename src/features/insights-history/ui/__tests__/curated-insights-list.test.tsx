@@ -164,7 +164,7 @@ function renderList(
 }
 
 const TCL_TITLE = "Tree cover loss in Pará";
-const LGMS_TITLE = "Land GHG Monitoring System in Pará";
+const LGMS_TITLE = "Land GHG Monitoring System (LGMS) in Pará";
 
 /** Point `useEnabledFlags` (which reads the URL) at a set of flags. */
 const setFlags = (...flags: string[]) =>

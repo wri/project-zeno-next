@@ -254,7 +254,7 @@ describe("DashboardSuggestedModules", () => {
       await waitFor(() => expect(service.run).toHaveBeenCalled());
       expect(service.run).toHaveBeenCalledWith(
         expect.objectContaining({
-          dataset: { id: 12, name: "Land GHG Monitoring System" },
+          dataset: { id: 12, name: "Land GHG Monitoring System (LGMS)" },
           area: expect.objectContaining({ srcId: "BRA.14_1" }),
         })
       );

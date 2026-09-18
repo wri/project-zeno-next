@@ -706,7 +706,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   // stops at 8; if it ever grows into this range these need renumbering.
   {
     dataset_id: 12,
-    dataset_name: "Land GHG Monitoring System",
+    dataset_name: "Land GHG Monitoring System (LGMS)",
     shortName: "LGMS net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
     data_layer: "Land GHG Monitoring System (LGMS)",
