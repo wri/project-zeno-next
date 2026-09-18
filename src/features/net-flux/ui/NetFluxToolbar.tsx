@@ -26,17 +26,17 @@ function DetailInfo() {
   return (
     <Box>
       <InfoTitle>Detail</InfoTitle>
-      <InfoDefinition term="Full">
-        Vegetation and soil fluxes are separated into components. Cropland
-        management and livestock are separate.
+      <InfoDefinition term="Summary (low detail)">
+        Vegetation and soil are combined into land use. Cropland management and
+        livestock are combined into agriculture.
       </InfoDefinition>
-      <InfoDefinition term="Categories">
+      <InfoDefinition term="Categories (medium detail)">
         Vegetation and soil are separate. Cropland management and livestock are
         separate.
       </InfoDefinition>
-      <InfoDefinition term="Summary">
-        Vegetation and soil are combined into land use. Cropland management and
-        livestock are combined into agriculture.
+      <InfoDefinition term="Full (high detail)">
+        Vegetation and soil fluxes are separated into components. Cropland
+        management and livestock are separate.
       </InfoDefinition>
     </Box>
   );
