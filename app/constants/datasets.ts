@@ -714,8 +714,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_lgms_net_flux.webp",
     cadence: "annual",
     resolution: "reported per admin area",
-    geographic_coverage:
-      "GADM administrative areas (country, state/province, district) only",
+    geographic_coverage: "global",
     provider: "WRI",
     defaultStartYear: 2016,
     defaultEndYear: 2024,

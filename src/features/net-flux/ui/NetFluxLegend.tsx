@@ -1,6 +1,8 @@
 "use client";
 import { Box, Flex, Text } from "@chakra-ui/react";
 
+import { LgmsClassInfo } from "@/src/shared/ui/LgmsClassInfo";
+
 import {
   isPaintReference,
   type NetFluxLegend as NetFluxLegendSpec,
@@ -8,6 +10,12 @@ import {
 } from "../model/net-flux-variants";
 
 const NET_FLUX_LINE_COLOR = "#172b7a";
+
+/**
+ * Per-entry info icon: the largest glyph that stays inside the 9.5px label's
+ * ~14px line box, so adding it doesn't open up the 4px row gap.
+ */
+const LEGEND_INFO_ICON_SIZE = 12;
 
 /**
  * Hatch patterns for the fixed-2020 agriculture series. Rendered once per
@@ -119,6 +127,11 @@ function LegendEntry({ item }: { item: NetFluxLegendItem }) {
       >
         {item.label}
       </Text>
+      <LgmsClassInfo
+        classId={item.classId}
+        label={item.label}
+        size={LEGEND_INFO_ICON_SIZE}
+      />
     </Flex>
   );
 }
