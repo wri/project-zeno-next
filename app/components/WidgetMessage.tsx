@@ -54,6 +54,7 @@ import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 import { rowsToCsv, csvFilename } from "@/app/utils/csvExport";
+import { FLUX_UNIT_COLUMN_SUFFIX } from "@/src/shared/lib/units";
 import {
   NetFluxChartBody,
   NetFluxChartInfo,
@@ -203,7 +204,15 @@ export default function WidgetMessage({
     if (!Array.isArray(data) || data.length === 0) return;
     const rows = data as Record<string, unknown>[];
     const rowKeys = Object.keys(rows[0]);
-    const headers = isNetFlux ? rowKeys.map(csvColumnName) : rowKeys;
+    const isFluxTree = isFluxTreeWidget(widget);
+    const FLUX_TREE_VALUE_COLS = new Set(["avg_emissions", "avg_removals"]);
+    const headers = isNetFlux
+      ? rowKeys.map(csvColumnName)
+      : isFluxTree
+        ? rowKeys.map((k) =>
+            FLUX_TREE_VALUE_COLS.has(k) ? `${k}_${FLUX_UNIT_COLUMN_SUFFIX}` : k
+          )
+        : rowKeys;
     const csv = rowsToCsv(rows, headers, rowKeys);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

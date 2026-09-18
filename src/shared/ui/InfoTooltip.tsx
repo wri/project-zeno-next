@@ -14,10 +14,18 @@ import { Tooltip } from "@/app/components/ui/tooltip";
 export function InfoTooltip({
   children,
   about = "this chart",
+  size = 16,
 }: {
   children: ReactNode;
   /** Names the icon for screen readers: "About DETAIL", "About this chart". */
   about?: string;
+  /**
+   * Glyph size in px. The default matches the headings and pills the icon was
+   * introduced on; a caller sitting beside smaller type (the flux tree's 13px
+   * row labels) steps it down so the icon reads as an annotation rather than
+   * competing with the label.
+   */
+  size?: number;
 }) {
   return (
     <Tooltip
@@ -41,7 +49,7 @@ export function InfoTooltip({
         role="img"
         aria-label={`About ${about}`}
       >
-        <InfoIcon size={16} color="#737C94" />
+        <InfoIcon size={size} color="#737C94" />
       </Box>
     </Tooltip>
   );

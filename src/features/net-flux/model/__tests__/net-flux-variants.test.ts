@@ -15,106 +15,11 @@ import {
 } from "../net-flux-variants";
 import type { InsightWidget } from "@/app/types/chat";
 import { isPaintReference } from "@/src/shared/lib/paint";
-
-/**
- * Shaped like project-zeno's "Net GHG Flux by Category" chart: `series_fields`
- * in the backend's own order (emissions, then removals) and one row per year.
- */
-const CATEGORY_WIDGET: InsightWidget = {
-  type: "stacked-bar-with-line",
-  title: "Net GHG Flux by Category",
-  description: "",
-  xAxis: "year",
-  yAxis: "",
-  seriesFields: [
-    "vegetation_emissions",
-    "soil_emissions",
-    "cropland_management_emissions",
-    "livestock_emissions",
-    "vegetation_removals",
-    "soil_removals",
-  ],
-  data: [
-    {
-      year: 2020,
-      // The backend's flux fields are Mg (metric tons), unconverted — these
-      // round-number-in-megatonnes values are chosen so `deriveNetFluxVariant`'s
-      // Mg→Mt scaling produces the same friendly numbers the tests assert on.
-      vegetation_emissions: 530_000_000,
-      soil_emissions: 820_000_000,
-      cropland_management_emissions: 150_000_000,
-      livestock_emissions: 100_000_000,
-      vegetation_removals: -710_000_000,
-      soil_removals: -40_000_000,
-    },
-  ],
-};
-
-// (530 + 820 + 150 + 100 - 710 - 40) once scaled from Mg to Mt
-const NET = 850;
-
-/**
- * The same analysis at project-zeno's "Full Detail" level: one field per LGMS
- * leaf class, 7 emissions then 4 removals, in the backend's own order.
- */
-const FULL_DETAIL_WIDGET: InsightWidget = {
-  type: "stacked-bar-with-line",
-  title: "Net GHG Flux — Full Detail",
-  description: "",
-  xAxis: "year",
-  yAxis: "",
-  seriesFields: [
-    "tree_loss_emissions",
-    "trees_remaining_trees_emissions",
-    "non_trees_remaining_non_trees_emissions",
-    "mineral_soil_emissions",
-    "organic_soil_emissions",
-    "cropland_management_emissions",
-    "livestock_emissions",
-    "tree_gain_removals",
-    "trees_remaining_trees_removals",
-    "non_trees_remaining_non_trees_removals",
-    "mineral_soil_removals",
-  ],
-  data: [
-    {
-      year: 2020,
-      tree_loss_emissions: 567_000_000,
-      trees_remaining_trees_emissions: 162_000_000,
-      non_trees_remaining_non_trees_emissions: 81_000_000,
-      mineral_soil_emissions: 162_000_000,
-      organic_soil_emissions: 378_000_000,
-      cropland_management_emissions: 150_000_000,
-      livestock_emissions: 100_000_000,
-      tree_gain_removals: -506_000_000,
-      trees_remaining_trees_removals: -135_000_000,
-      non_trees_remaining_non_trees_removals: -34_000_000,
-      mineral_soil_removals: -75_000_000,
-    },
-  ],
-};
-
-/** And at the "Summary" level: land use vs agriculture, three fields. */
-const SUMMARY_WIDGET: InsightWidget = {
-  type: "stacked-bar-with-line",
-  title: "Net GHG Flux — Summary",
-  description: "",
-  xAxis: "year",
-  yAxis: "",
-  seriesFields: [
-    "land_use_emissions",
-    "agriculture_emissions",
-    "land_use_removals",
-  ],
-  data: [
-    {
-      year: 2020,
-      land_use_emissions: 1_350_000_000,
-      agriculture_emissions: 250_000_000,
-      land_use_removals: -750_000_000,
-    },
-  ],
-};
+import {
+  CATEGORY_NET,
+  CATEGORY_WIDGET,
+  DETAIL_LEVEL_WIDGETS,
+} from "./fixtures";
 
 describe("seriesGroup", () => {
   it("reads the side off the backend's field suffix", () => {
@@ -163,6 +68,14 @@ describe("seriesLabel", () => {
       "Cropland management (2020, static)"
     );
     expect(seriesLabel("livestock_emissions")).toBe("Livestock (2020, static)");
+  });
+
+  it("keeps the static caveat on the raw `cropland` spelling, through the shared rename", () => {
+    // `lgms-labels` names `cropland` "Cropland management" (the tree's node
+    // arrives as "Crop management"); the caveat is appended after that rename.
+    expect(seriesLabel("cropland_emissions")).toBe(
+      "Cropland management (2020, static)"
+    );
   });
 
   it("degrades readably for a class it has never seen", () => {
@@ -215,7 +128,7 @@ describe("deriveNetFluxVariant — gross", () => {
 
   it("adds the net-flux line, which the backend does not send", () => {
     const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
-    expect(variant.data[0]["Net flux"]).toBe(NET);
+    expect(variant.data[0]["Net flux"]).toBe(CATEGORY_NET);
   });
 
   it("colours every series, hatching the fixed-2020 agriculture ones", () => {
@@ -242,6 +155,21 @@ describe("deriveNetFluxVariant — gross", () => {
     expect(legend.removals.map((i) => i.label)).toEqual(["Vegetation", "Soil"]);
   });
 
+  it("names each entry's class, so the legend can describe it", () => {
+    const { legend } = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    // The roll-up's `cropland_management` field folds to the raw class.
+    expect(legend.emissions.map((i) => i.classId)).toEqual([
+      "livestock",
+      "cropland",
+      "soil",
+      "vegetation",
+    ]);
+    expect(legend.removals.map((i) => i.classId)).toEqual([
+      "vegetation",
+      "soil",
+    ]);
+  });
+
   it("ignores non-series columns the backend may add to a row", () => {
     const withExtras: InsightWidget = {
       ...CATEGORY_WIDGET,
@@ -249,7 +177,7 @@ describe("deriveNetFluxVariant — gross", () => {
     };
     const variant = deriveNetFluxVariant(withExtras, "gross");
     expect(variant.seriesFields).not.toContain("aoi_id");
-    expect(variant.data[0]["Net flux"]).toBe(NET);
+    expect(variant.data[0]["Net flux"]).toBe(CATEGORY_NET);
   });
 });
 
@@ -257,8 +185,8 @@ describe("deriveNetFluxVariant — net", () => {
   it("collapses to one signed bar carrying the same total", () => {
     const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "net");
     expect(variant.seriesFields).toEqual(["Net source"]);
-    expect(variant.data[0]["Net source"]).toBe(NET);
-    expect(variant.data[0]["Net flux"]).toBe(NET);
+    expect(variant.data[0]["Net source"]).toBe(CATEGORY_NET);
+    expect(variant.data[0]["Net flux"]).toBe(CATEGORY_NET);
   });
 
   it("leaves colorMap empty so the divergent tint drives the bar", () => {
@@ -276,6 +204,11 @@ describe("deriveNetFluxVariant — net", () => {
       "Net sink (−)",
     ]);
     expect(legend.removals).toEqual([]);
+  });
+
+  it("names no class on the sign entries, so they carry no info icon", () => {
+    const { legend } = deriveNetFluxVariant(CATEGORY_WIDGET, "net");
+    expect(legend.emissions.every((i) => i.classId === undefined)).toBe(true);
   });
 });
 
@@ -616,28 +549,23 @@ describe("legend, bar segments and tooltip agree", () => {
     ...variant.seriesFields.filter((f) => seriesGroup(f) === "removals"),
   ];
 
-  it.each([
-    ["Full detail", FULL_DETAIL_WIDGET],
-    ["Category", CATEGORY_WIDGET],
-    ["Summary", SUMMARY_WIDGET],
-  ])("%s: one tooltip row per bar segment, in legend order", (_, widget) => {
-    const variant = deriveNetFluxVariant(widget, "gross");
-    const { rows } = netFluxTooltipRows(payloadFor(variant), [
-      ...variant.seriesFields,
-      variant.lineField,
-    ]);
-    const fields = legendOrder(variant);
+  it.each(DETAIL_LEVEL_WIDGETS)(
+    "%s: one tooltip row per bar segment, in legend order",
+    (_, widget) => {
+      const variant = deriveNetFluxVariant(widget, "gross");
+      const { rows } = netFluxTooltipRows(payloadFor(variant), [
+        ...variant.seriesFields,
+        variant.lineField,
+      ]);
+      const fields = legendOrder(variant);
 
-    expect(rows).toHaveLength(variant.seriesFields.length);
-    expect(rows.map((r) => r.key)).toEqual(fields);
-    expect(rows.map((r) => r.label)).toEqual(fields.map(tooltipSeriesLabel));
-  });
+      expect(rows).toHaveLength(variant.seriesFields.length);
+      expect(rows.map((r) => r.key)).toEqual(fields);
+      expect(rows.map((r) => r.label)).toEqual(fields.map(tooltipSeriesLabel));
+    }
+  );
 
-  it.each([
-    ["Full detail", FULL_DETAIL_WIDGET],
-    ["Category", CATEGORY_WIDGET],
-    ["Summary", SUMMARY_WIDGET],
-  ])(
+  it.each(DETAIL_LEVEL_WIDGETS)(
     "%s: tooltip swatches match the legend's, entry for entry",
     (_, widget) => {
       const variant = deriveNetFluxVariant(widget, "gross");
@@ -690,7 +618,7 @@ describe("netFluxCsvRows", () => {
     ]);
 
     const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
-    expect(variant.data[0][NET_FLUX_LINE_FIELD]).toBe(NET);
+    expect(variant.data[0][NET_FLUX_LINE_FIELD]).toBe(CATEGORY_NET);
   });
 
   it("keeps the net measure's total in Mg too", () => {
