@@ -10,18 +10,26 @@ import {
 } from "@chakra-ui/react";
 import useMapStore from "../store/mapStore";
 import { useRef, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  ACCEPTED_FILE_TYPES,
+  BATCH_UPLOAD_MAX_FILE_SIZE_MB,
   MAX_FILE_SIZE_MB,
 } from "../constants/custom-areas";
+import {
+  isBatchUploadFile,
+  UPLOAD_DIALOG_FILE_TYPES,
+} from "../store/uploadAreaSlice";
 import { UploadSimpleIcon } from "@phosphor-icons/react";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
+import { toaster } from "./ui/toaster";
 
 function UploadAreaDialog() {
   const {
     dialogVisible,
     toggleUploadAreaDialog,
     uploadFile,
+    uploadBatchFile,
+    selectedFile,
     isUploading,
     isFileSelected,
     setCreateAreaFn,
@@ -30,13 +38,33 @@ function UploadAreaDialog() {
     flyToGeoJson,
   } = useMapStore();
 
+  const queryClient = useQueryClient();
   const { createAreaAsync, isCreating } = useCustomAreasCreate();
 
   useEffect(() => {
     setCreateAreaFn(createAreaAsync);
   }, [setCreateAreaFn, createAreaAsync]);
 
+  const handleBatchUpload = async () => {
+    const result = await uploadBatchFile();
+    if (!result) return;
+
+    queryClient.invalidateQueries({ queryKey: ["customAreas"] });
+    const count = result.areas.length;
+    toaster.create({
+      title: count === 1 ? "1 area uploaded" : `${count} areas uploaded`,
+      description: "Find them under Monitored areas in the Areas panel.",
+      type: "success",
+      duration: 5000,
+    });
+  };
+
   const handleUpload = async () => {
+    if (selectedFile && isBatchUploadFile(selectedFile.name)) {
+      await handleBatchUpload();
+      return;
+    }
+
     try {
       const result = await uploadFile();
       if (!result) return;
@@ -146,7 +174,7 @@ export default UploadAreaDialog;
 
 function DropFileZone() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { errorType, errorMessage, handleFile } = useMapStore();
+  const { errorType, errorMessage, errorDetails, handleFile } = useMapStore();
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -193,14 +221,26 @@ function DropFileZone() {
         Drag and drop a <strong>polygon data file</strong> here or click to
         upload.
       </Text>
-      <Text fontSize="xs" lineHeight="16px">
-        Files with extension {ACCEPTED_FILE_TYPES.join(", ")} up to{" "}
-        {MAX_FILE_SIZE_MB} MB
+      <Text fontSize="xs" lineHeight="16px" textAlign="center">
+        .geojson up to {MAX_FILE_SIZE_MB} MB, or .csv / zipped shapefile (.zip)
+        up to {BATCH_UPLOAD_MAX_FILE_SIZE_MB} MB with one area per row
+      </Text>
+      <Text fontSize="xs" lineHeight="16px" color="fg.muted" textAlign="center">
+        CSV needs a <code>name</code> column and a <code>geom</code> column of
+        WKT polygons in lon/lat. Shapefiles need a <code>.prj</code> file and a{" "}
+        <code>name</code> attribute.
       </Text>
       {errorType !== "none" && (
-        <Text color="red.500" fontSize="sm">
-          {errorMessage}
-        </Text>
+        <Box color="red.500" fontSize="sm" maxH="160px" overflowY="auto">
+          <Text>{errorMessage}</Text>
+          {errorDetails.length > 0 && (
+            <Box as="ul" pl="4" listStyleType="disc">
+              {errorDetails.map((detail, i) => (
+                <li key={`${i}-${detail}`}>{detail}</li>
+              ))}
+            </Box>
+          )}
+        </Box>
       )}
       <Button variant="solid" size="2xs" colorPalette="primary">
         Select File
@@ -213,7 +253,7 @@ function DropFileZone() {
             const file = e.target.files?.[0];
             if (file) handleFile(file);
           }}
-          accept={ACCEPTED_FILE_TYPES.join(",")}
+          accept={UPLOAD_DIALOG_FILE_TYPES.join(",")}
         />
       </VisuallyHidden>
     </Box>

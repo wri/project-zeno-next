@@ -7,23 +7,40 @@ import {
 import { useErrorHandler } from "./useErrorHandler";
 import { apiFetch } from "@/app/lib/api-client";
 
-async function fetchCustomAreas(): Promise<ListCustomAreasResponse> {
-  const res = await apiFetch("/api/custom_areas", {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
+const PAGE_SIZE = 100;
 
-  if (!res.ok) {
-    const error = await res.json();
-    const errorWithStatus = new Error(
-      error.error || `Request failed: ${res.statusText}`
+/**
+ * Fetches every custom area of the user. The endpoint is paginated (50 rows
+ * by default) and sets `X-Next-Offset` while more pages remain.
+ */
+export async function fetchCustomAreas(): Promise<ListCustomAreasResponse> {
+  const areas: ListCustomAreasResponse = [];
+  let offset: number | null = 0;
+
+  while (offset !== null) {
+    const res = await apiFetch(
+      `/api/custom_areas?limit=${PAGE_SIZE}&offset=${offset}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
     );
-    (errorWithStatus as Error & { status?: number }).status = res.status;
-    throw errorWithStatus;
+
+    if (!res.ok) {
+      const error = await res.json();
+      const errorWithStatus = new Error(
+        error.error || `Request failed: ${res.statusText}`
+      );
+      (errorWithStatus as Error & { status?: number }).status = res.status;
+      throw errorWithStatus;
+    }
+
+    areas.push(...ListCustomAreasResponseSchema.parse(await res.json()));
+    const next = res.headers.get("X-Next-Offset");
+    offset = next === null ? null : Number(next);
   }
 
-  const data = await res.json();
-  return ListCustomAreasResponseSchema.parse(data);
+  return areas;
 }
 
 export function useCustomAreasList() {

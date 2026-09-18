@@ -1,6 +1,7 @@
 import { Layer, Source, MapMouseEvent } from "react-map-gl/maplibre";
-import { FeatureCollection, Polygon } from "geojson";
+import { FeatureCollection } from "geojson";
 import { useCustomAreasList } from "@/app/hooks/useCustomAreasList";
+import { toPolygons } from "@/app/utils/selectionPolygons";
 import { useCallback, useEffect, useState } from "react";
 import useMapStore from "@/app/store/mapStore";
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
@@ -113,8 +114,9 @@ function CustomAreasLayer() {
     return null;
   }
 
+  // One Polygon feature per part: the fill/line layers filter on Polygon.
   const allFeatures = customAreas.flatMap(({ id, name, geometries }) =>
-    geometries.map((geometry: Polygon) => ({
+    geometries.flatMap(toPolygons).map((geometry) => ({
       type: "Feature" as const,
       id,
       geometry,

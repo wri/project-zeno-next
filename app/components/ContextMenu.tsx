@@ -39,8 +39,8 @@ import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
-import type { Feature, MultiPolygon } from "geojson";
 import { datasetCardLayers } from "../utils/datasetCardLayerContext";
+import { customAreaToFeature } from "../utils/customAreaFeature";
 
 const LAYER_CARDS = ORDERED_DATASET_CARDS;
 
@@ -296,21 +296,11 @@ function AreaMenu() {
     // is keyed by the area id, so re-selecting replaces in place (the `cards`
     // lookup already disables the card once selected). No separate context item.
 
-    // Build a single MultiPolygon Feature from the selected custom area's geometries
     const selected = (customAreas as unknown as CustomArea[] | undefined)?.find(
       (a) => a.id === area.id
     );
     if (selected) {
-      const multi: MultiPolygon = {
-        type: "MultiPolygon",
-        coordinates: selected.geometries.map((poly) => poly.coordinates),
-      };
-      const feature: Feature = {
-        type: "Feature",
-        id: selected.id,
-        geometry: multi,
-        properties: { id: selected.id, name: selected.name },
-      };
+      const feature = customAreaToFeature(selected);
       addToRegistry({
         ref: { name: selected.name, source: "custom" },
         data: feature,
