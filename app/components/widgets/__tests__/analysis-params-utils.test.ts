@@ -42,7 +42,7 @@ describe("buildChips", () => {
     // rather than on LGMS's own coverage.
     const chips = buildChips({
       areas: ["Pará, Brazil"],
-      dataset: "Land GHG Monitoring System (LGMS)",
+      dataset: "Land GHG Monitoring System",
       startYear: 2016,
       endYear: 2024,
     });

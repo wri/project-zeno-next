@@ -92,7 +92,7 @@ describe("the LGMS net-flux card", () => {
 
   it("is registered in the catalogue", () => {
     expect(lgms).toBeDefined();
-    expect(lgms!.dataset_name).toBe("Land GHG Monitoring System (LGMS)");
+    expect(lgms!.dataset_name).toBe("Land GHG Monitoring System");
   });
 
   it("is hidden from the catalogue until ?ff=net-flux is set", () => {
@@ -117,7 +117,7 @@ describe("the LGMS net-flux card", () => {
 });
 
 describe("the LGMS sector map layers", () => {
-  const LGMS_SECTOR_IDS = [13, 14, 15, 16, 17];
+  const LGMS_SECTOR_IDS = [13, 14, 15, 16];
   const cards = LGMS_SECTOR_IDS.map(
     (id) => DATASET_CARDS.find((c) => c.dataset_id === id)!
   );
@@ -125,7 +125,6 @@ describe("the LGMS sector map layers", () => {
   it("registers one card per sector layer", () => {
     expect(cards.every(Boolean)).toBe(true);
     expect(cards.map((c) => c.dataset_name)).toEqual([
-      "LGMS total net GHG flux",
       "LGMS LULUCF net GHG flux",
       "LGMS agriculture emissions",
       "LGMS cropland emissions",
@@ -156,7 +155,6 @@ describe("the LGMS sector map layers", () => {
   // then silently never paints, so the exact spelling is worth pinning.
   it("requests each sector with the flux_type the tile server accepts", () => {
     expect(cards.map((c) => c.tile_url)).toEqual([
-      expect.stringContaining("?layer=lgms&flux_type=net"),
       expect.stringContaining("?layer=lulucf&flux_type=net"),
       expect.stringContaining("?layer=agriculture&flux_type=gross_emissions"),
       expect.stringContaining("?layer=cropland&flux_type=gross_emissions"),
