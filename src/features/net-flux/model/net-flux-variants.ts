@@ -77,6 +77,7 @@ const CLASS_LABELS: Record<string, string> = {
   soil: "Soil",
   land_use: "Land use",
   agriculture: "Agriculture",
+  cropland: "Cropland management (2020, static)",
 };
 
 /**
@@ -216,6 +217,7 @@ const TOOLTIP_LABELS: Record<string, string> = {
   trees_remaining_trees: "Trees rem. trees",
   cropland_management: "Cropland mgmt (static)",
   livestock: "Livestock (static)",
+  cropland: "Cropland management (static)",
 };
 
 /** Human label for a series field as the hover tooltip prints it. */
