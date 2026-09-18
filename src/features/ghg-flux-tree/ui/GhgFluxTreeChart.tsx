@@ -16,9 +16,8 @@ import {
 
 import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
-import { InfoTitle, InfoTooltip } from "@/src/shared/ui/InfoTooltip";
+import { LgmsClassInfo } from "@/src/shared/ui/LgmsClassInfo";
 
-import { fluxNodeDescription } from "../lib/node-info";
 import {
   singleSidedLabel,
   type FluxMeasure,
@@ -116,25 +115,6 @@ function GrossBar({ x, y, width, height, payload, side }: ShapeProps) {
   );
 }
 
-/**
- * What a row measures, on the same info icon the chart title and the pills use.
- * Aggregate rows say what they sum; leaves carry the science team's method note
- * and its citation. Keyed by node id, so the copy survives a class rename.
- */
-function NodeInfo({ row }: { row: FluxRow }) {
-  const description = fluxNodeDescription(row.node.id);
-  if (!description) return null;
-
-  return (
-    <InfoTooltip about={row.node.label} size={NODE_INFO_ICON_SIZE}>
-      <Box maxW="280px">
-        <InfoTitle>{row.node.label}</InfoTitle>
-        <Text>{description}</Text>
-      </Box>
-    </InfoTooltip>
-  );
-}
-
 function TreeLabel({
   row,
   onToggle,
@@ -196,7 +176,11 @@ function TreeLabel({
       >
         {row.node.label}
       </Text>
-      <NodeInfo row={row} />
+      <LgmsClassInfo
+        classId={row.node.id}
+        label={row.node.label}
+        size={NODE_INFO_ICON_SIZE}
+      />
     </Flex>
   );
 }

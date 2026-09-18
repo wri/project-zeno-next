@@ -1,17 +1,22 @@
 /**
- * What each row of the annual-average tree measures, as the science team wrote
- * it — the copy behind the per-row info icons.
+ * What each LGMS class measures, as the science team wrote it — the copy behind
+ * the per-class info icons on both LGMS charts: the rows of the annual-average
+ * tree and the legend entries of the time series at every DETAIL level.
  *
- * Keyed by the backend's raw node id (`src/api/services/charts/lgms.py`
- * `_hierarchy_rows`), not by label, so a product rename of a class (see
- * `lgms-labels`) never silently drops a row's description. A node with no
- * entry simply shows no icon, which is how a class the backend adds later
- * degrades.
+ * Keyed by the raw class id project-zeno uses in `chart_data`
+ * (`src/api/services/charts/lgms.py`): a node `id` in the tree's
+ * `_hierarchy_rows`, and the class of a `{class}_emissions|removals` series
+ * field (the time series folds the category roll-up's `cropland_management`
+ * back to `cropland` before looking anything up). Same key as `lgms-labels`,
+ * for the same reason: a product rename never silently drops a description. A
+ * class with no entry simply shows no icon, which is how a class the backend
+ * adds later degrades.
  *
- * Aggregate rows state what they sum rather than describing a measurement,
- * because that is the only thing about them a reader can't see in the tree.
+ * Aggregate classes state what they sum rather than describing a measurement,
+ * because that is the only thing about them a reader can't see in the chart.
  */
-export const FLUX_NODE_DESCRIPTIONS: Readonly<Record<string, string>> = {
+
+export const LGMS_CLASS_DESCRIPTIONS: Readonly<Record<string, string>> = {
   all_land: "Sum of land use and agriculture.",
 
   land_use: "Sum of vegetation and soil.",
@@ -74,7 +79,7 @@ export const FLUX_NODE_DESCRIPTIONS: Readonly<Record<string, string>> = {
     "et al. in prep.",
 };
 
-/** The description for a tree node, or null when the class has none. */
-export function fluxNodeDescription(nodeId: string): string | null {
-  return FLUX_NODE_DESCRIPTIONS[nodeId] ?? null;
+/** The description for an LGMS class, or null when the class has none. */
+export function lgmsClassDescription(classId: string): string | null {
+  return LGMS_CLASS_DESCRIPTIONS[classId] ?? null;
 }
