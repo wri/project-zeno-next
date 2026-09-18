@@ -706,10 +706,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   // stops at 8; if it ever grows into this range these need renumbering.
   {
     dataset_id: 12,
-    dataset_name: "Land GHG Monitoring System (LGMS)",
+    dataset_name: "LGMS total net GHG flux",
     shortName: "LGMS net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "Land GHG Monitoring System (LGMS)",
+    data_layer: "LGMS total net GHG flux",
     context_layer: null,
     img: "/dataset_card_lgms_net_flux.webp",
     cadence: "annual",
@@ -725,7 +725,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     // Analysis" flow for a GADM admin AOI without adding a raster to the map.
     tile_url: lgmsTileUrl("lgms", "net"),
     legend: lgmsNetFluxLegend(
-      "LGMS total net GHG flux  (2016-2024)",
+      "LGMS total net GHG flux (2016-2024)",
       "The balance of emissions and removals across every LGMS sector, so a single layer shows whether land is a net source or a net sink.",
       "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
     ),
@@ -757,7 +757,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Net greenhouse-gas flux from land use, land-use change and forestry (LULUCF) — the vegetation and soil half of the Land GHG Monitoring System, excluding agricultural emissions.",
     tile_url: lgmsTileUrl("lulucf", "net"),
     legend: lgmsNetFluxLegend(
-      "LGMS LULUCF net GHG flux  (2016-2024)",
+      "LGMS LULUCF net GHG flux (2016-2024)",
       "Isolates the LULUCF sector, so forest loss and regrowth can be read without agricultural emissions on top of them.",
       "Per-pixel annual LULUCF net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
     ),
@@ -787,10 +787,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
   {
     dataset_id: 15,
-    dataset_name: "LGMS cropland emissions",
+    dataset_name: "LGMS cropland management emissions",
     shortName: "Cropland emissions",
     featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS cropland emissions",
+    data_layer: "LGMS cropland management emissions",
     context_layer: null,
     img: "/dataset_card_lgms_cropland.webp",
     viewOnly: true,
@@ -803,7 +803,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Gross greenhouse-gas emissions from cropland in the Land GHG Monitoring System — the crop half of the agriculture layer, covering sources such as rice cultivation, fertiliser use and crop-residue burning.",
     tile_url: lgmsTileUrl("cropland", "gross_emissions"),
     legend: lgmsEmissionsLegend(
-      "LGMS cropland emissions (2020)",
+      "LGMS cropland management emissions (2020)",
       "The cropland component of agricultural emissions, for separating crop production from livestock in the land-sector total.",
       "Per-pixel annual gross cropland emissions in Mg CO2e/yr."
     ),
