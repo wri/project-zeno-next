@@ -1,0 +1,1 @@
+export { isPaintReference } from "./paint";

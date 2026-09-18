@@ -5,6 +5,7 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 import type { InsightWidget } from "@/app/types/chat";
 import { signed } from "@/src/shared/lib/number-format";
 import { FLUX_UNITS } from "@/src/shared/lib/units";
+import { Swatch } from "@/src/shared/ui/Swatch";
 
 import {
   nodeNet,
@@ -12,25 +13,21 @@ import {
   rootNodes,
   type FluxMeasure,
 } from "../model/hierarchy";
-import { treeViewKey } from "../model/tree-view-store";
-import { GhgFluxTreeChart } from "./GhgFluxTreeChart";
 import {
   EMISSIONS_COLOR,
   LEGEND_BG,
   NET_TICK_COLOR,
   REMOVALS_COLOR,
   netFluxColor,
-} from "./tree-chart-constants";
+} from "../model/palette";
+import { treeViewKey } from "../model/tree-view-store";
+import { GhgFluxTreeChart } from "./GhgFluxTreeChart";
 import { useTreeView } from "./use-tree-view";
-
-function LegendSwatch({ color }: { color: string }) {
-  return <Box w="12px" h="12px" rounded="2px" bg={color} flexShrink={0} />;
-}
 
 function LegendEntry({ color, label }: { color: string; label: string }) {
   return (
     <Flex align="center" gap="6px">
-      <LegendSwatch color={color} />
+      <Swatch color={color} width={12} height={12} />
       <Text fontFamily="body" fontSize="11px" color="#3A4048">
         {label}
       </Text>

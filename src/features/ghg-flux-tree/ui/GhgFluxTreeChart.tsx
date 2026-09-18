@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
-import { FLUX_UNITS } from "@/src/shared/lib/units";
 import {
   Bar,
   BarChart,
@@ -16,6 +15,7 @@ import {
 
 import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
+import { FLUX_TOOLTIP_WIDTH, FluxTooltip } from "@/src/shared/ui/FluxTooltip";
 
 import {
   singleSidedLabel,
@@ -23,19 +23,21 @@ import {
   type FluxRow,
 } from "../model/hierarchy";
 import {
+  EMISSIONS_COLOR,
+  NET_TICK_COLOR,
+  REMOVALS_COLOR,
+  ZERO_LINE_COLOR,
+  netFluxColor,
+} from "../model/palette";
+import { fluxTreeTooltipModel } from "../model/tree-tooltip";
+import {
   AXIS_FONT_SIZE,
   AXIS_HEIGHT,
   BAR_SIZE,
-  EMISSIONS_COLOR,
-  NET_TICK_COLOR,
   PLOT_MARGIN_X,
   PLOT_MIN_WIDTH,
-  REMOVALS_COLOR,
   ROW_HEIGHT,
-  TOOLTIP_WIDTH,
   TREE_COLUMN_MAX_WIDTH,
-  ZERO_LINE_COLOR,
-  netFluxColor,
 } from "./tree-chart-constants";
 
 interface PlotRow {
@@ -199,62 +201,43 @@ function ValueCell({ row }: { row: FluxRow }) {
   );
 }
 
-interface TreeTooltipProps {
-  active?: boolean;
-  payload?: Array<{ payload: PlotRow }>;
-  rows: FluxRow[];
+/** Gap between the tooltip's right edge and the plot column. */
+const TOOLTIP_GAP = 8;
+
+/**
+ * Bar-hover tooltip: the category as heading, then its lines per
+ * `fluxTreeTooltipModel`, in the same shared panel the time series uses.
+ *
+ * The tooltip is taller than a row and the plot has no empty space in either
+ * axis (every pixel band belongs to some row's bar), so recharts' own
+ * cursor-following placement always lands on bars. Instead this is rendered
+ * as an overlay in the bar-free label column, level with the hovered row —
+ * placed by the row's index and this component's uniform row pitch (see the
+ * file doc comment). It hugs the plot when the column has room and is flush
+ * with the column's left edge when it doesn't: pinning it a fixed distance
+ * left of the plot let it run out of the card and get clipped by the card's
+ * horizontal-scroll wrapper whenever the column had flexed below the panel's
+ * width.
+ */
+function TreeTooltipOverlay({
+  row,
+  index,
+  measure,
+}: {
+  row: FluxRow;
+  index: number;
   measure: FluxMeasure;
-}
-
-/** Bar-hover tooltip: category, value and units — matching the time series' `ChartWidget` tooltip pattern. */
-function GhgFluxTooltip({ active, payload, rows, measure }: TreeTooltipProps) {
-  if (!active || !payload?.length) return null;
-  const row = rows.find((r) => r.node.id === payload[0].payload.id);
-  if (!row) return null;
-
-  const line = (label: string, value: number | null, color?: string) => (
-    <Flex key={label} justify="space-between" gap={4} fontSize="xs">
-      <Text as="span" color="fg.muted">
-        {label}
-      </Text>
-      <Text
-        as="span"
-        fontFamily="mono"
-        color={color}
-        css={{ fontVariantNumeric: "tabular-nums" }}
-      >
-        {value == null ? "—" : signed.format(value)} {FLUX_UNITS}
-      </Text>
-    </Flex>
-  );
-
+}) {
+  const { rows, total } = fluxTreeTooltipModel(row, measure);
   return (
     <Box
-      bg="bg.panel"
-      p={2}
-      py={1}
-      borderRadius="md"
-      boxShadow="md"
-      border="1px"
-      borderColor="border"
-      css={{
-        maxWidth: `${TOOLTIP_WIDTH}px`,
-        whiteSpace: "normal",
-        wordWrap: "break-word",
-      }}
+      position="absolute"
+      top={`${AXIS_HEIGHT + index * ROW_HEIGHT}px`}
+      left={`max(0px, calc(100% - ${FLUX_TOOLTIP_WIDTH + TOOLTIP_GAP}px))`}
+      zIndex={1}
+      pointerEvents="none"
     >
-      <Text fontSize="xs" fontWeight="medium" mb={1}>
-        {row.node.label}
-      </Text>
-      <Flex direction="column" gap={0.5}>
-        {measure === "gross" &&
-          row.node.avgEmissions != null &&
-          line("Emissions", row.node.avgEmissions, EMISSIONS_COLOR)}
-        {measure === "gross" &&
-          row.node.avgRemovals != null &&
-          line("Removals", row.node.avgRemovals, REMOVALS_COLOR)}
-        {line("Net flux", row.net)}
-      </Flex>
+      <FluxTooltip title={row.node.label} rows={rows} total={total} />
     </Box>
   );
 }
@@ -303,21 +286,9 @@ export function GhgFluxTreeChart({
 
   const height = AXIS_HEIGHT + rows.length * ROW_HEIGHT;
 
-  // The tooltip is taller than a row and the plot has no empty space in
-  // either axis (every pixel band belongs to some row's bar), so recharts'
-  // default cursor-following placement always sits on top of bars. Pin it
-  // instead: x escapes the plot to the left, over the bar-free tree-label
-  // column; y is computed from the hovered row's own index, using this
-  // component's own uniform row pitch (see the file doc comment) rather than
-  // trusting recharts' cursor coordinate.
+  // Which row the pointer is over, from recharts; drives `TreeTooltipOverlay`.
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const tooltipPosition =
-    activeIndex == null
-      ? undefined
-      : {
-          x: -(TOOLTIP_WIDTH + 8),
-          y: AXIS_HEIGHT + activeIndex * ROW_HEIGHT,
-        };
+  const activeRow = activeIndex == null ? undefined : rows[activeIndex];
 
   return (
     <Flex align="flex-start" w="full">
@@ -331,11 +302,19 @@ export function GhgFluxTreeChart({
         flex="1 1 0"
         minW={0}
         maxW={`${TREE_COLUMN_MAX_WIDTH}px`}
+        position="relative"
       >
         <Box h={`${AXIS_HEIGHT}px`} />
         {rows.map((row) => (
           <TreeLabel key={row.node.id} row={row} onToggle={onToggle} />
         ))}
+        {activeRow && activeIndex != null && (
+          <TreeTooltipOverlay
+            row={activeRow}
+            index={activeIndex}
+            measure={measure}
+          />
+        )}
       </Flex>
 
       {/* Plot column.
@@ -390,12 +369,11 @@ export function GhgFluxTreeChart({
             />
             <YAxis type="category" dataKey="id" hide />
             <ReferenceLine x={0} stroke={ZERO_LINE_COLOR} strokeWidth={1} />
+            {/* Only for the hover band and `activeTooltipIndex`; the panel
+                itself is `TreeTooltipOverlay` in the label column. */}
             <Tooltip
               cursor={{ fill: "var(--chakra-colors-black-alpha-200)" }}
-              content={<GhgFluxTooltip rows={rows} measure={measure} />}
-              position={tooltipPosition}
-              allowEscapeViewBox={{ x: true }}
-              wrapperStyle={{ pointerEvents: "none" }}
+              content={() => null}
             />
             {measure === "net" ? (
               <Bar dataKey="net" barSize={BAR_SIZE} isAnimationActive={false}>

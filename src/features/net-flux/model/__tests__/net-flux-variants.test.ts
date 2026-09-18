@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   csvColumnName,
   deriveNetFluxVariant,
-  isPaintReference,
   netFluxCsvRows,
   netFluxTableProps,
   netFluxTooltipRows,
@@ -15,6 +14,7 @@ import {
   type NetFluxVariant,
 } from "../net-flux-variants";
 import type { InsightWidget } from "@/app/types/chat";
+import { isPaintReference } from "@/src/shared/lib/paint";
 
 /**
  * Shaped like project-zeno's "Net GHG Flux by Category" chart: `series_fields`
