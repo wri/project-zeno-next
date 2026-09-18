@@ -6,10 +6,11 @@ import {
   Heading,
   Box,
   Separator,
+  Link,
 } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import { DatasetInfo } from "@/app/types/chat";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 
 interface DatasetInfoModalProps {
@@ -17,6 +18,27 @@ interface DatasetInfoModalProps {
   onClose: () => void;
   dataset: DatasetInfo;
 }
+
+/**
+ * Source links in catalog prose. Without this the markdown links the catalog
+ * already writes (David's LGMS sources, tree_cover.yml, global_land_cover.yml,
+ * …) render in the body text colour with no underline, and follow in the same
+ * tab — navigating the app away and losing chat state.
+ */
+const markdownComponents: Components = {
+  a: ({ href, children }) => (
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      color="blue.600"
+      textDecoration="underline"
+      wordBreak="break-word"
+    >
+      {children}
+    </Link>
+  ),
+};
 
 export function DatasetInfoModal({
   isOpen,
@@ -49,7 +71,10 @@ export function DatasetInfoModal({
                     Description
                   </Heading>
                   <Box>
-                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkBreaks]}
+                      components={markdownComponents}
+                    >
                       {dataset.description ?? ""}
                     </ReactMarkdown>
                   </Box>
@@ -61,7 +86,10 @@ export function DatasetInfoModal({
                       Methodology
                     </Heading>
                     <Box>
-                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkBreaks]}
+                        components={markdownComponents}
+                      >
                         {dataset.methodology}
                       </ReactMarkdown>
                     </Box>
@@ -74,7 +102,10 @@ export function DatasetInfoModal({
                       Cautions
                     </Heading>
                     <Box>
-                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkBreaks]}
+                        components={markdownComponents}
+                      >
                         {dataset.cautions}
                       </ReactMarkdown>
                     </Box>
@@ -87,7 +118,10 @@ export function DatasetInfoModal({
                       Citation
                     </Heading>
                     <Box>
-                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkBreaks]}
+                        components={markdownComponents}
+                      >
                         {dataset.citation}
                       </ReactMarkdown>
                     </Box>
