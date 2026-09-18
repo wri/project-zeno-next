@@ -16,7 +16,9 @@ import {
 
 import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
+import { InfoTitle, InfoTooltip } from "@/src/shared/ui/InfoTooltip";
 
+import { fluxNodeDescription } from "../lib/node-info";
 import {
   singleSidedLabel,
   type FluxMeasure,
@@ -28,6 +30,7 @@ import {
   BAR_SIZE,
   EMISSIONS_COLOR,
   NET_TICK_COLOR,
+  NODE_INFO_ICON_SIZE,
   PLOT_MARGIN_X,
   PLOT_MIN_WIDTH,
   REMOVALS_COLOR,
@@ -113,6 +116,25 @@ function GrossBar({ x, y, width, height, payload, side }: ShapeProps) {
   );
 }
 
+/**
+ * What a row measures, on the same info icon the chart title and the pills use.
+ * Aggregate rows say what they sum; leaves carry the science team's method note
+ * and its citation. Keyed by node id, so the copy survives a class rename.
+ */
+function NodeInfo({ row }: { row: FluxRow }) {
+  const description = fluxNodeDescription(row.node.id);
+  if (!description) return null;
+
+  return (
+    <InfoTooltip about={row.node.label} size={NODE_INFO_ICON_SIZE}>
+      <Box maxW="280px">
+        <InfoTitle>{row.node.label}</InfoTitle>
+        <Text>{description}</Text>
+      </Box>
+    </InfoTooltip>
+  );
+}
+
 function TreeLabel({
   row,
   onToggle,
@@ -157,7 +179,12 @@ function TreeLabel({
         <Box w="12px" flexShrink={0} />
       )}
       <Text
-        flex="1"
+        // Shrink-to-fit, not `flex="1"`: the label claiming the row's free
+        // space would park every info icon on a right-hand rail, far from the
+        // class it belongs to. `minW={0}` still lets it ellipsize when the
+        // column is too narrow, and the icon keeps its place just after the
+        // text.
+        flex="0 1 auto"
         minW={0}
         truncate
         title={row.node.label}
@@ -169,6 +196,7 @@ function TreeLabel({
       >
         {row.node.label}
       </Text>
+      <NodeInfo row={row} />
     </Flex>
   );
 }
