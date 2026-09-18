@@ -36,6 +36,16 @@ describe("SUGGESTED_MODULES", () => {
     expect(byId.get(4)?.label).toBe("Tree cover loss analysis");
     expect(byId.get(8)?.label).toBe("Tree cover loss by driver");
     expect(byId.get(11)?.label).toBe("Monitor disturbance alerts");
+    expect(byId.get(12)?.label).toBe("Land GHG net flux");
+  });
+
+  it("carries no gate of its own — the catalogue entry is the only one", () => {
+    // The component resolves each tile against the gated `curatedCatalogue()`,
+    // so a second copy of the flag/area rules here could only drift from it.
+    for (const tile of CURATED_SUGGESTED_MODULES) {
+      expect(tile).not.toHaveProperty("featureFlag");
+      expect(tile).not.toHaveProperty("aoiSources");
+    }
   });
 });
 

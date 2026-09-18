@@ -142,7 +142,11 @@ function fakeService(impl: AnalysisService["run"]): AnalysisService {
   return { run: vi.fn(impl) };
 }
 
-function renderList(service: AnalysisService, seed: Dashboard = dashboard) {
+function renderList(
+  service: AnalysisService,
+  seed: Dashboard = dashboard,
+  forArea: CurrentDashboardArea = area
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -154,12 +158,68 @@ function renderList(service: AnalysisService, seed: Dashboard = dashboard) {
       </QueryClientProvider>
     );
   }
-  return render(<CuratedInsightsList area={area} service={service} />, {
+  return render(<CuratedInsightsList area={forArea} service={service} />, {
     wrapper: Wrapper,
   });
 }
 
 const TCL_TITLE = "Tree cover loss in Pará";
+const LGMS_TITLE = "LGMS total net GHG flux in Pará";
+
+/** Point `useEnabledFlags` (which reads the URL) at a set of flags. */
+const setFlags = (...flags: string[]) =>
+  window.history.replaceState(
+    {},
+    "",
+    flags.length ? `/?ff=${flags.join(",")}` : "/"
+  );
+
+/** An LGMS run: the four charts `charts/lgms.py` returns, in its order. */
+const LGMS_RESULT: AnalysisResult = {
+  id: "ins-lgms",
+  charts: [
+    {
+      ...chart,
+      id: "ins-lgms-chart-0",
+      position: 0,
+      title: "Net GHG Flux — Annual Average",
+      type: "hierarchical-bar",
+      xAxis: "",
+      yAxis: "",
+      data: [{ id: "total", parent_id: null, avg_emissions: 4_000_000 }],
+    },
+    {
+      ...chart,
+      id: "ins-lgms-chart-1",
+      position: 1,
+      title: "Net GHG Flux — Full Detail",
+      type: "stacked-bar-with-line",
+      xAxis: "year",
+      yAxis: "",
+      data: [{ year: 2020, tree_loss_emissions: 1 }],
+    },
+    {
+      ...chart,
+      id: "ins-lgms-chart-2",
+      position: 2,
+      title: "Net GHG Flux by Category",
+      type: "stacked-bar-with-line",
+      xAxis: "year",
+      yAxis: "",
+      data: [{ year: 2020, vegetation_emissions: 1 }],
+    },
+    {
+      ...chart,
+      id: "ins-lgms-chart-3",
+      position: 3,
+      title: "Net GHG Flux Summary",
+      type: "stacked-bar-with-line",
+      xAxis: "year",
+      yAxis: "",
+      data: [{ year: 2020, land_use_emissions: 1 }],
+    },
+  ],
+};
 
 /** The card's footer switch: the Switch.Root label carries the aria-label. */
 function switchFor(ariaLabel: string): HTMLInputElement {
@@ -185,6 +245,7 @@ describe("CuratedInsightsList", () => {
     useViewContextStore
       .getState()
       .setViewContext({ page: "dashboard", dashboard_id: "d1" });
+    setFlags();
   });
 
   it("lists one curated card per catalogue dataset, titled for the dashboard's area", () => {
@@ -200,6 +261,62 @@ describe("CuratedInsightsList", () => {
     expect(screen.getAllByText("Add to dashboard")).toHaveLength(10);
     // Nothing runs eagerly.
     expect(service.run).not.toHaveBeenCalled();
+  });
+
+  describe("the LGMS card", () => {
+    it("is absent until ?ff=net-flux is set", () => {
+      renderList(fakeService(() => Promise.resolve(RESULT)));
+      expect(screen.queryByText(LGMS_TITLE)).toBeNull();
+    });
+
+    it("is absent for an area LGMS does not cover, flag or not", () => {
+      setFlags("net-flux");
+      renderList(
+        fakeService(() => Promise.resolve(RESULT)),
+        dashboard,
+        {
+          ...area,
+          aoiSource: "kba",
+          subtype: "key-biodiversity-area",
+        }
+      );
+      expect(screen.queryByText(LGMS_TITLE)).toBeNull();
+      // The ungated cards are unaffected by the area.
+      expect(screen.getAllByText("CURATED")).toHaveLength(10);
+    });
+
+    it("appears for an administrative area once the flag is set", () => {
+      setFlags("net-flux");
+      renderList(fakeService(() => Promise.resolve(RESULT)));
+      expect(screen.getByText(LGMS_TITLE)).toBeTruthy();
+      expect(screen.getAllByText("CURATED")).toHaveLength(11);
+    });
+
+    it("pages its detail through two charts, the three roll-ups folded into one", async () => {
+      setFlags("net-flux");
+      renderList(fakeService(() => Promise.resolve(LGMS_RESULT)));
+
+      fireEvent.click(screen.getByLabelText(`Show ${LGMS_TITLE} info`));
+
+      await waitFor(() =>
+        expect(screen.getByText("1 of 2 charts in this analysis")).toBeTruthy()
+      );
+      expect(screen.getByTestId("widget-message").textContent).toBe(
+        "Net GHG Flux — Annual Average"
+      );
+      // The tree card's own control, rendered on the pane's shell.
+      expect(screen.getByRole("button", { name: "MEASURE: Net" })).toBeTruthy();
+
+      fireEvent.click(screen.getByLabelText("Next chart"));
+      // Category leads the roll-ups, so it is what the fold shows.
+      expect(screen.getByTestId("widget-message").textContent).toBe(
+        "Net GHG Flux by Category"
+      );
+      expect(
+        screen.getByRole("button", { name: "DETAIL: Category" })
+      ).toBeTruthy();
+      expect(screen.getByText("2 of 2 charts in this analysis")).toBeTruthy();
+    });
   });
 
   it("toggling an un-run card runs the analysis, then adds the persisted insight", async () => {

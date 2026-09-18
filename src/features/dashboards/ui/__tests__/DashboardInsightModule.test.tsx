@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The card's toaster import reaches a .tsx module boundary — stub it.
 vi.mock("@/app/components/ui/toaster", () => ({
@@ -20,6 +20,7 @@ vi.mock("@/app/components/WidgetMessage", () => ({
 // Map bodies need WebGL — never rendered here, but keep the import inert.
 vi.mock("../DashboardMapWidget", () => ({ default: () => null }));
 
+import useNetFluxViewStore from "@/src/features/net-flux/model/net-flux-view-store";
 import DashboardInsightModule from "../DashboardInsightModule";
 import type { DashboardWidget } from "../../api/schemas";
 import {
@@ -102,6 +103,9 @@ describe("DashboardInsightModule", () => {
   // pending, that restore lands inside the next test and blurs whatever it
   // just focused — which silently cancels an in-progress rename.
   afterEach(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+  // Module-level singleton: a DETAIL choice would otherwise leak between tests.
+  beforeEach(() => useNetFluxViewStore.setState({ detailByGroup: {} }));
 
   it("renders one card: the first chart, the summary and the AI caption", () => {
     renderModule();
@@ -211,6 +215,114 @@ describe("DashboardInsightModule", () => {
       widget: widget({ config: { chartIds: [], summaryHidden: true } }),
     });
     expect(screen.getByText(/hidden/i)).toBeTruthy();
+  });
+
+  describe("an LGMS analysis", () => {
+    // The four charts `charts/lgms.py` returns, with the backend chart UUIDs
+    // a dashboard widget carries (not the `{insightId}-chart-{n}` ids the map
+    // workspace groups by).
+    const lgmsWidget = () =>
+      widget({
+        insight: {
+          id: "ins-lgms",
+          insight_text: "",
+          codeact_parts: [],
+          charts: [
+            chart({
+              id: "c-tree",
+              position: 0,
+              title: "Net GHG Flux — Annual Average",
+              chart_type: "hierarchical-bar",
+              x_axis: "",
+              y_axis: "",
+              chart_data: [
+                { id: "total", parent_id: null, avg_emissions: 4_000_000 },
+              ],
+            }),
+            chart({
+              id: "c-full",
+              position: 1,
+              title: "Net GHG Flux — Full Detail",
+              chart_type: "stacked-bar-with-line",
+              chart_data: [{ year: 2020, tree_loss_emissions: 1 }],
+            }),
+            chart({
+              id: "c-category",
+              position: 2,
+              title: "Net GHG Flux by Category",
+              chart_type: "stacked-bar-with-line",
+              chart_data: [{ year: 2020, vegetation_emissions: 1 }],
+            }),
+            chart({
+              id: "c-summary",
+              position: 3,
+              title: "Net GHG Flux Summary",
+              chart_type: "stacked-bar-with-line",
+              chart_data: [{ year: 2020, land_use_emissions: 1 }],
+            }),
+          ],
+        },
+      });
+
+    it("pages through two cards, the three roll-ups folded into one", () => {
+      renderModule({ widget: lgmsWidget() });
+
+      expect(screen.getByText("1 of 2 charts")).toBeTruthy();
+      expect(shownChart()).toBe("Net GHG Flux — Annual Average");
+
+      fireEvent.click(screen.getByLabelText("Next chart"));
+      // Category leads the roll-ups: it is what the fold shows by default.
+      expect(shownChart()).toBe("Net GHG Flux by Category");
+      expect(screen.getByText("2 of 2 charts")).toBeTruthy();
+    });
+
+    it("offers the DETAIL pill on the roll-up card, reading the lead roll-up", () => {
+      renderModule({ widget: lgmsWidget() });
+      fireEvent.click(screen.getByLabelText("Next chart"));
+      // The pill's accessible name carries the selection; the menu itself is
+      // Ark's and is exercised by the shared Pill, not here.
+      expect(
+        screen.getByRole("button", { name: "DETAIL: Category" })
+      ).toBeTruthy();
+    });
+
+    it("swaps the folded card when another roll-up is selected", async () => {
+      renderModule({ widget: lgmsWidget() });
+      fireEvent.click(screen.getByLabelText("Next chart"));
+
+      // What the DETAIL pill does on select. The store is the contract between
+      // the pill (inside the card) and this shell, which is why it exists.
+      useNetFluxViewStore.getState().selectDetail("w-1", "c-full");
+
+      await waitFor(() =>
+        expect(shownChart()).toBe("Net GHG Flux — Full Detail")
+      );
+      expect(screen.getByRole("button", { name: "DETAIL: Full" })).toBeTruthy();
+      // Still two cards: the pill chooses within the fold, it doesn't unfold.
+      expect(screen.getByText("2 of 2 charts")).toBeTruthy();
+    });
+
+    it("shows the tree card's MEASURE pill, which has no DETAIL of its own", () => {
+      renderModule({ widget: lgmsWidget() });
+      expect(screen.getByRole("button", { name: "MEASURE: Net" })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /^DETAIL/ })).toBeNull();
+    });
+
+    it("keeps all four charts in the Customize menu", async () => {
+      renderModule({ widget: lgmsWidget() });
+      fireEvent.click(screen.getByRole("button", { name: "Customize" }));
+
+      for (const title of [
+        "Net GHG Flux — Annual Average",
+        "Net GHG Flux — Full Detail",
+        "Net GHG Flux by Category",
+        "Net GHG Flux Summary",
+      ]) {
+        expect(
+          await screen.findByRole("checkbox", { name: `Chart · ${title}` })
+        ).toBeTruthy();
+      }
+    });
   });
 
   it("shows the not-available placeholder when the insight is missing", () => {

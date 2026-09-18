@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  csvColumnName,
   deriveNetFluxVariant,
   isPaintReference,
+  netFluxCsvRows,
   netFluxTableProps,
   netFluxTooltipRows,
   seriesGroup,
@@ -9,6 +11,7 @@ import {
   tooltipSeriesLabel,
   HATCH_CROPLAND,
   HATCH_LIVESTOCK,
+  NET_FLUX_LINE_FIELD,
   type NetFluxVariant,
 } from "../net-flux-variants";
 import type { InsightWidget } from "@/app/types/chat";
@@ -26,7 +29,7 @@ const CATEGORY_WIDGET: InsightWidget = {
   seriesFields: [
     "vegetation_emissions",
     "soil_emissions",
-    "cropland_emissions",
+    "cropland_management_emissions",
     "livestock_emissions",
     "vegetation_removals",
     "soil_removals",
@@ -39,7 +42,7 @@ const CATEGORY_WIDGET: InsightWidget = {
       // Mg→Mt scaling produces the same friendly numbers the tests assert on.
       vegetation_emissions: 530_000_000,
       soil_emissions: 820_000_000,
-      cropland_emissions: 150_000_000,
+      cropland_management_emissions: 150_000_000,
       livestock_emissions: 100_000_000,
       vegetation_removals: -710_000_000,
       soil_removals: -40_000_000,
@@ -66,7 +69,7 @@ const FULL_DETAIL_WIDGET: InsightWidget = {
     "non_trees_remaining_non_trees_emissions",
     "mineral_soil_emissions",
     "organic_soil_emissions",
-    "cropland_emissions",
+    "cropland_management_emissions",
     "livestock_emissions",
     "tree_gain_removals",
     "trees_remaining_trees_removals",
@@ -81,7 +84,7 @@ const FULL_DETAIL_WIDGET: InsightWidget = {
       non_trees_remaining_non_trees_emissions: 81_000_000,
       mineral_soil_emissions: 162_000_000,
       organic_soil_emissions: 378_000_000,
-      cropland_emissions: 150_000_000,
+      cropland_management_emissions: 150_000_000,
       livestock_emissions: 100_000_000,
       tree_gain_removals: -506_000_000,
       trees_remaining_trees_removals: -135_000_000,
@@ -132,12 +135,12 @@ describe("seriesLabel", () => {
     expect(seriesLabel("land_use_removals")).toBe("Land use");
   });
 
-  it("shortens only trees-remaining on the removals side, where the design pairs the columns", () => {
+  it("uses the full class name on both sides", () => {
     expect(seriesLabel("trees_remaining_trees_emissions")).toBe(
       "Trees remaining trees"
     );
     expect(seriesLabel("trees_remaining_trees_removals")).toBe(
-      "Trees remaining"
+      "Trees remaining trees"
     );
   });
 
@@ -156,7 +159,7 @@ describe("seriesLabel", () => {
   });
 
   it("marks the two agriculture classes as the fixed 2020 figure", () => {
-    expect(seriesLabel("cropland_emissions")).toBe(
+    expect(seriesLabel("cropland_management_emissions")).toBe(
       "Cropland management (2020, static)"
     );
     expect(seriesLabel("livestock_emissions")).toBe("Livestock (2020, static)");
@@ -169,7 +172,7 @@ describe("seriesLabel", () => {
 
 describe("tooltipSeriesLabel", () => {
   it("abbreviates the two agriculture classes, keeping the static caveat", () => {
-    expect(tooltipSeriesLabel("cropland_emissions")).toBe(
+    expect(tooltipSeriesLabel("cropland_management_emissions")).toBe(
       "Cropland mgmt (static)"
     );
     expect(tooltipSeriesLabel("livestock_emissions")).toBe(
@@ -192,11 +195,14 @@ describe("tooltipSeriesLabel", () => {
     );
   });
 
+  it("abbreviates the removals side the same way as emissions", () => {
+    expect(tooltipSeriesLabel("trees_remaining_trees_removals")).toBe(
+      "Trees rem. trees"
+    );
+  });
+
   it("otherwise prints the legend's own label", () => {
     expect(tooltipSeriesLabel("tree_loss_emissions")).toBe("Tree loss");
-    expect(tooltipSeriesLabel("trees_remaining_trees_removals")).toBe(
-      "Trees remaining"
-    );
     expect(tooltipSeriesLabel("agriculture_emissions")).toBe("Agriculture");
   });
 });
@@ -219,7 +225,7 @@ describe("deriveNetFluxVariant — gross", () => {
     }
     expect(colorMap.vegetation_emissions).toBe("#8c510a");
     expect(colorMap.vegetation_removals).toBe("#01665e");
-    expect(isPaintReference(colorMap.cropland_emissions)).toBe(true);
+    expect(isPaintReference(colorMap.cropland_management_emissions)).toBe(true);
     expect(isPaintReference(colorMap.livestock_emissions)).toBe(true);
   });
 
@@ -331,7 +337,7 @@ describe("netFluxTableProps", () => {
       "vegetation_removals",
       "soil_emissions",
       "soil_removals",
-      "cropland_emissions",
+      "cropland_management_emissions",
       "livestock_emissions",
       "Net flux",
     ]);
@@ -371,7 +377,11 @@ describe("netFluxTooltipRows", () => {
     },
     { dataKey: "mineral_soil_emissions", value: 162, color: "#dfc27d" },
     { dataKey: "organic_soil_emissions", value: 378, color: "#ebd9b0" },
-    { dataKey: "cropland_emissions", value: 150, color: HATCH_CROPLAND },
+    {
+      dataKey: "cropland_management_emissions",
+      value: 150,
+      color: HATCH_CROPLAND,
+    },
     { dataKey: "livestock_emissions", value: 100, color: HATCH_LIVESTOCK },
     { dataKey: "tree_gain_removals", value: -506, color: "#01665e" },
     {
@@ -393,7 +403,7 @@ describe("netFluxTooltipRows", () => {
   const categoryOrder = [
     "vegetation_emissions",
     "soil_emissions",
-    "cropland_emissions",
+    "cropland_management_emissions",
     "livestock_emissions",
     "vegetation_removals",
     "soil_removals",
@@ -411,7 +421,7 @@ describe("netFluxTooltipRows", () => {
       "Trees rem. trees",
       "Tree loss",
       "Tree gain",
-      "Trees remaining",
+      "Trees rem. trees",
       "Non-tree vegetation",
       "Mineral soil",
     ]);
@@ -419,12 +429,14 @@ describe("netFluxTooltipRows", () => {
 
   it("gives cropland and livestock their own rows, each in its own hatch", () => {
     const { rows } = netFluxTooltipRows(fullDetailPayload, fullDetailOrder);
-    expect(rows.find((r) => r.key === "cropland_emissions")).toEqual({
-      key: "cropland_emissions",
-      label: "Cropland mgmt (static)",
-      value: 150,
-      color: HATCH_CROPLAND,
-    });
+    expect(rows.find((r) => r.key === "cropland_management_emissions")).toEqual(
+      {
+        key: "cropland_management_emissions",
+        label: "Cropland mgmt (static)",
+        value: 150,
+        color: HATCH_CROPLAND,
+      }
+    );
     expect(rows.find((r) => r.key === "livestock_emissions")).toEqual({
       key: "livestock_emissions",
       label: "Livestock (static)",
@@ -482,7 +494,11 @@ describe("netFluxTooltipRows", () => {
       [
         { dataKey: "vegetation_emissions", value: 810, color: "#8c510a" },
         { dataKey: "soil_emissions", value: 540, color: "#dfc27d" },
-        { dataKey: "cropland_emissions", value: 150, color: HATCH_CROPLAND },
+        {
+          dataKey: "cropland_management_emissions",
+          value: 150,
+          color: HATCH_CROPLAND,
+        },
         { dataKey: "livestock_emissions", value: 100, color: HATCH_LIVESTOCK },
         { dataKey: "vegetation_removals", value: -675, color: "#01665e" },
         { dataKey: "soil_removals", value: -75, color: "#80cdc1" },
@@ -504,7 +520,7 @@ describe("netFluxTooltipRows", () => {
   it("omits a series that draws no segment because its value is 0", () => {
     const withZeros = fullDetailPayload.map((entry) =>
       entry.dataKey === "organic_soil_emissions" ||
-      entry.dataKey === "cropland_emissions" ||
+      entry.dataKey === "cropland_management_emissions" ||
       entry.dataKey === "livestock_emissions"
         ? { ...entry, value: 0 }
         : entry
@@ -520,7 +536,7 @@ describe("netFluxTooltipRows", () => {
       "Trees rem. trees",
       "Tree loss",
       "Tree gain",
-      "Trees remaining",
+      "Trees rem. trees",
       "Non-tree vegetation",
       "Mineral soil",
     ]);
@@ -531,7 +547,9 @@ describe("netFluxTooltipRows", () => {
       entry.dataKey === "livestock_emissions" ? { ...entry, value: 0 } : entry
     );
     const { rows } = netFluxTooltipRows(croplandOnly, fullDetailOrder);
-    expect(rows.find((r) => r.key === "cropland_emissions")?.value).toBe(150);
+    expect(
+      rows.find((r) => r.key === "cropland_management_emissions")?.value
+    ).toBe(150);
     expect(rows.find((r) => r.key === "livestock_emissions")).toBeUndefined();
   });
 
@@ -540,7 +558,11 @@ describe("netFluxTooltipRows", () => {
     // agriculture bars survive the switch and keep their slots, the rest
     // register behind them, and the line re-registers last.
     const drifted = [
-      { dataKey: "cropland_emissions", value: 150, color: HATCH_CROPLAND },
+      {
+        dataKey: "cropland_management_emissions",
+        value: 150,
+        color: HATCH_CROPLAND,
+      },
       { dataKey: "livestock_emissions", value: 100, color: HATCH_LIVESTOCK },
       { dataKey: "soil_removals", value: -75, color: "#80cdc1" },
       { dataKey: "vegetation_removals", value: -675, color: "#01665e" },
@@ -629,4 +651,50 @@ describe("legend, bar segments and tooltip agree", () => {
       expect(rows.map((r) => r.color)).toEqual(legend.map((i) => i.color));
     }
   );
+});
+
+describe("csvColumnName", () => {
+  it("appends the unit suffix to an emissions/removals field", () => {
+    expect(csvColumnName("cropland_management_emissions")).toBe(
+      "cropland_management_emissions_MgCO2e"
+    );
+    expect(csvColumnName("vegetation_removals")).toBe(
+      "vegetation_removals_MgCO2e"
+    );
+  });
+
+  it("renames the net-flux line field without disturbing its on-screen label", () => {
+    expect(csvColumnName(NET_FLUX_LINE_FIELD)).toBe("land_net_flux_MgCO2e");
+    expect(NET_FLUX_LINE_FIELD).toBe("Net flux");
+  });
+
+  it("passes an unrecognized field (e.g. the x-axis) through unchanged", () => {
+    expect(csvColumnName("year")).toBe("year");
+  });
+});
+
+describe("netFluxCsvRows", () => {
+  it("keeps the gross measure's values in Mg, unlike the Mt-scaled chart variant", () => {
+    const csvRows = netFluxCsvRows(CATEGORY_WIDGET, "gross");
+    expect(csvRows).toEqual([
+      {
+        year: 2020,
+        vegetation_emissions: 530_000_000,
+        soil_emissions: 820_000_000,
+        cropland_management_emissions: 150_000_000,
+        livestock_emissions: 100_000_000,
+        vegetation_removals: -710_000_000,
+        soil_removals: -40_000_000,
+        [NET_FLUX_LINE_FIELD]: 850_000_000,
+      },
+    ]);
+
+    const variant = deriveNetFluxVariant(CATEGORY_WIDGET, "gross");
+    expect(variant.data[0][NET_FLUX_LINE_FIELD]).toBe(NET);
+  });
+
+  it("keeps the net measure's total in Mg too", () => {
+    const csvRows = netFluxCsvRows(CATEGORY_WIDGET, "net");
+    expect(csvRows[0][NET_FLUX_LINE_FIELD]).toBe(850_000_000);
+  });
 });

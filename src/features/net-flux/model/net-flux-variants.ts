@@ -1,7 +1,7 @@
 import type { InsightWidget } from "@/app/types/chat";
 import { niceTicks } from "@/src/shared/lib/chart-ticks";
 import { lgmsClassLabel } from "@/src/shared/lib/lgms-labels";
-import { mgToMt } from "@/src/shared/lib/units";
+import { mgToMt, FLUX_UNIT_COLUMN_SUFFIX } from "@/src/shared/lib/units";
 
 export type NetFluxMeasure = "gross" | "net";
 export type NetFluxGroup = "emissions" | "removals";
@@ -71,7 +71,7 @@ const CLASS_LABELS: Record<string, string> = {
   // The agriculture classes are a fixed 2020 figure repeated across every year
   // (the same caveat the chart header's subtitle spells out), which the design
   // surfaces in the legend itself.
-  cropland: "Cropland management (2020, static)",
+  cropland_management: "Cropland management (2020, static)",
   livestock: "Livestock (2020, static)",
   vegetation: "Vegetation",
   soil: "Soil",
@@ -80,15 +80,12 @@ const CLASS_LABELS: Record<string, string> = {
 };
 
 /**
- * Shorter labels for the removals column. The two columns sit side by side, so
- * the design lets the removals side shorten a label its emissions twin spells
- * out ("Trees remaining" beside "Trees remaining trees"). Only that one class
- * is shortened: a label that dropped its noun ("Mineral" for mineral soil)
- * read as a different thing from its emissions twin, so those now match.
+ * Shorter labels for the removals column. Previously this shortened
+ * "Trees remaining trees" to "Trees remaining", but the legend should show
+ * the full class name on both sides — the tooltip handles abbreviation
+ * separately via `TOOLTIP_LABELS`.
  */
-const REMOVALS_LABELS: Record<string, string> = {
-  trees_remaining_trees: "Trees remaining",
-};
+const REMOVALS_LABELS: Record<string, string> = {};
 
 /**
  * Colour per series field, keyed by the backend's own field names. The backend
@@ -101,7 +98,7 @@ const SERIES_COLORS: Record<string, string> = {
   non_trees_remaining_non_trees_emissions: "#bf812d",
   mineral_soil_emissions: "#dfc27d",
   organic_soil_emissions: "#ebd9b0",
-  cropland_emissions: HATCH_CROPLAND,
+  cropland_management_emissions: HATCH_CROPLAND,
   livestock_emissions: HATCH_LIVESTOCK,
   // Full detail — removals.
   tree_gain_removals: "#01665e",
@@ -217,17 +214,30 @@ export function seriesLabel(field: string): string {
  */
 const TOOLTIP_LABELS: Record<string, string> = {
   trees_remaining_trees: "Trees rem. trees",
-  cropland: "Cropland mgmt (static)",
+  cropland_management: "Cropland mgmt (static)",
   livestock: "Livestock (static)",
 };
 
 /** Human label for a series field as the hover tooltip prints it. */
 export function tooltipSeriesLabel(field: string): string {
   const short = TOOLTIP_LABELS[seriesClass(field)];
-  // The removals side is already abbreviated by `seriesLabel`, and its short
-  // forms ("Trees remaining") differ from these — so only override emissions.
-  if (short && seriesGroup(field) === "emissions") return short;
+  if (short) return short;
   return seriesLabel(field);
+}
+
+/**
+ * Column name for a net-flux field in a downloaded CSV: unit-suffixed,
+ * snake_case, independent of the field's on-screen label (`seriesLabel`) or
+ * its in-app table/tooltip name (`NET_FLUX_LINE_FIELD` itself, "Net flux",
+ * which this must not disturb since it's also what the tooltip and TableWidget
+ * display).
+ */
+export function csvColumnName(field: string): string {
+  if (field === NET_FLUX_LINE_FIELD) {
+    return `land_net_flux_${FLUX_UNIT_COLUMN_SUFFIX}`;
+  }
+  if (seriesGroup(field)) return `${field}_${FLUX_UNIT_COLUMN_SUFFIX}`;
+  return field; // x-axis field, or anything else — no known unit
 }
 
 /** One rendered line of the hover tooltip: swatch, label, value. */
@@ -385,7 +395,7 @@ const COLUMN_GROUP: Record<string, number> = {
   mineral_soil: 1,
   organic_soil: 1,
   soil: 1,
-  cropland: 2,
+  cropland_management: 2,
   livestock: 2,
   agriculture: 2,
 };
@@ -494,6 +504,57 @@ function buildLegend(fields: string[]): NetFluxLegend {
 }
 
 /**
+ * The rows a net-flux widget renders as, for the given measure: gross keeps
+ * every series field plus the summed net-flux line; net collapses to a single
+ * signed bar. Shared by the chart (scaled to Mt, via `deriveNetFluxVariant`)
+ * and the CSV download (left in Mg, via `netFluxCsvRows`) — only the caller's
+ * choice of already-scaled or raw `rows` differs.
+ */
+function buildFluxRows(
+  rows: Record<string, unknown>[],
+  fields: string[],
+  xAxis: string,
+  measure: NetFluxMeasure
+): Record<string, unknown>[] {
+  if (measure === "net") {
+    return rows.map((row) => {
+      const net = sumRow(row, fields);
+      return {
+        [xAxis]: row[xAxis],
+        [NET_MEASURE_FIELD]: net,
+        [NET_FLUX_LINE_FIELD]: net,
+      };
+    });
+  }
+  return rows.map((row) => ({
+    ...row,
+    [NET_FLUX_LINE_FIELD]: sumRow(row, fields),
+  }));
+}
+
+/** Series fields to sum for a net-flux widget, in the backend's own order. */
+function netFluxSeriesFields(widget: InsightWidget): string[] {
+  return (widget.seriesFields ?? []).filter((f) => seriesGroup(f) !== null);
+}
+
+/**
+ * CSV-download rows for a net-flux widget: the same fields and net-flux total
+ * as the chart, but left in Mg (metric tons) rather than scaled to Mt — the
+ * download should always report the raw unit, regardless of what the chart
+ * displays (PZB-1402).
+ */
+export function netFluxCsvRows(
+  widget: InsightWidget,
+  measure: NetFluxMeasure
+): Record<string, unknown>[] {
+  const rawRows = Array.isArray(widget.data)
+    ? (widget.data as Record<string, unknown>[])
+    : [];
+  const fields = netFluxSeriesFields(widget);
+  return buildFluxRows(rawRows, fields, widget.xAxis, measure);
+}
+
+/**
  * Narrows one of the backend's three time-series charts to the active measure.
  *
  * The detail level is no longer derived here: project-zeno's `LGMSChartGenerator`
@@ -511,20 +572,11 @@ export function deriveNetFluxVariant(
     : [];
   // Trust the backend's order: emissions first, then removals, which is the
   // stacking order the design draws.
-  const fields = (widget.seriesFields ?? []).filter(
-    (f) => seriesGroup(f) !== null
-  );
+  const fields = netFluxSeriesFields(widget);
   const rows = scaleRowsToMegatonnes(rawRows, fields);
+  const data = buildFluxRows(rows, fields, xAxis, measure);
 
   if (measure === "net") {
-    const data = rows.map((row) => {
-      const net = sumRow(row, fields);
-      return {
-        [xAxis]: row[xAxis],
-        [NET_MEASURE_FIELD]: net,
-        [NET_FLUX_LINE_FIELD]: net,
-      };
-    });
     const yDomain = stackDomain(data, [NET_MEASURE_FIELD]);
     return {
       data,
@@ -546,10 +598,6 @@ export function deriveNetFluxVariant(
     };
   }
 
-  const data = rows.map((row) => ({
-    ...row,
-    [NET_FLUX_LINE_FIELD]: sumRow(row, fields),
-  }));
   const yDomain = stackDomain(data, fields);
 
   return {

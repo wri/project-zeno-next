@@ -136,7 +136,7 @@ describe("showViewAnalysisNudge", () => {
   it("falls back to the dataset's own coverage when it declares one", () => {
     // PZB-1355: LGMS covers 2016–2024. Seeding the catalogue-wide window made
     // the YEARS chip read 2001–25 over a chart of 2016–2024 figures.
-    seedLayer(LGMS_ID, "Land GHG Monitoring System (LGMS)");
+    seedLayer(LGMS_ID, "LGMS total net GHG flux");
 
     showViewAnalysisNudge(selection);
 

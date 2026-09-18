@@ -25,7 +25,7 @@ import {
 import { useShallow } from "zustand/react/shallow";
 
 import {
-  DATASET_CARDS,
+  ORDERED_DATASET_CARDS,
   DATASET_CATEGORIES,
   type DatasetCardConfig,
   type DatasetCategoryId,
@@ -105,7 +105,7 @@ export default function DataCatalogPanel() {
   const cards = useMemo(
     () =>
       filterDatasetsByCategory(
-        filterDatasetsByFeatureFlag(DATASET_CARDS, enabledFlags),
+        filterDatasetsByFeatureFlag(ORDERED_DATASET_CARDS, enabledFlags),
         category,
         activeDatasetIds
       ),

@@ -6,6 +6,7 @@ import { CaretLeftIcon } from "@phosphor-icons/react";
 
 import { CatalogCard } from "@/app/components/CatalogCard";
 import { CATALOG_CARD_WIDTH_PX } from "@/app/explorationLayout";
+import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import {
   curatedCatalogue,
   type AnalysisResult,
@@ -74,9 +75,15 @@ export function CuratedInsightsList({
   area: CurrentDashboardArea;
   service?: AnalysisService;
 }) {
+  const enabledFlags = useEnabledFlags();
   // Resolved lazily so a catalogue/registry drift throws at render, not at
-  // module load, where it would take every importer down with it.
-  const specs = useMemo(() => curatedCatalogue(), []);
+  // module load, where it would take every importer down with it. Gated by the
+  // URL flags and this dashboard's area, exactly as the suggested-module tiles
+  // are, so a card and its tile can never disagree about what is offered.
+  const specs = useMemo(
+    () => curatedCatalogue({ enabledFlags, aoiSource: area.aoiSource }),
+    [enabledFlags, area.aoiSource]
+  );
   const [openDatasetId, setOpenDatasetId] = useState<number | null>(null);
   const open = specs.find((s) => s.datasetId === openDatasetId);
 

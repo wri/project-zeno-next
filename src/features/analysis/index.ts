@@ -26,6 +26,7 @@ export {
   stripYearRangeSuffix,
   type CuratedAnalysisEntry,
   type CuratedAnalysisSpec,
+  type CuratedCatalogueOptions,
 } from "./lib/curated-catalogue";
 export {
   useCuratedAnalysis,

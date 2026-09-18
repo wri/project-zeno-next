@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DATASET_BY_ID } from "@/app/constants/datasets";
+import { DATASET_BY_ID, NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
 import {
   CURATED_ANALYSES,
   curatedCatalogue,
@@ -10,16 +10,29 @@ import {
 describe("CURATED_ANALYSES", () => {
   it("lists exactly the FE-catalogue datasets with a deterministic generator, in display order", () => {
     // Mirrors project-zeno charts/registry.py::DETERMINISTIC_GENERATORS minus
-    // 9 (sLUC) and 12 (LGMS), which the FE catalogue does not expose.
+    // 9 (sLUC), which the FE catalogue does not expose.
     expect(CURATED_ANALYSES.map((e) => e.datasetId)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 10, 11,
+      1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12,
     ]);
   });
 
-  it("excludes the two registry datasets the FE does not expose", () => {
+  it("excludes the registry dataset the FE does not expose", () => {
     const ids = new Set(CURATED_ANALYSES.map((e) => e.datasetId));
     expect(ids.has(9)).toBe(false);
-    expect(ids.has(12)).toBe(false);
+  });
+
+  it("gates LGMS behind ?ff=net-flux and the administrative areas it covers", () => {
+    const lgms = CURATED_ANALYSES.find((e) => e.datasetId === 12);
+    expect(lgms?.featureFlag).toBe(NET_FLUX_FEATURE_FLAG);
+    expect(lgms?.aoiSources).toEqual(["gadm"]);
+  });
+
+  it("leaves every other entry ungated", () => {
+    for (const entry of CURATED_ANALYSES) {
+      if (entry.datasetId === 12) continue;
+      expect(entry.featureFlag).toBeUndefined();
+      expect(entry.aoiSources).toBeUndefined();
+    }
   });
 
   it("gives every entry a one-line description that fits a catalogue card", () => {
@@ -29,11 +42,13 @@ describe("CURATED_ANALYSES", () => {
     }
   });
 
-  it("expects two charts from tree cover loss and one from every other generator", () => {
+  it("expects two cards from tree cover loss and LGMS, one from every other generator", () => {
     // charts/tcl.py emits annual loss + annual emissions; land_cover.py emits
-    // either the composition pie or the transitions table, never both.
+    // either the composition pie or the transitions table, never both;
+    // charts/lgms.py emits four that collapse to two cards.
+    const two = new Set([4, 12]);
     for (const entry of CURATED_ANALYSES) {
-      expect(entry.chartCountHint).toBe(entry.datasetId === 4 ? 2 : 1);
+      expect(entry.chartCountHint).toBe(two.has(entry.datasetId) ? 2 : 1);
     }
   });
 });
@@ -57,7 +72,7 @@ describe("stripYearRangeSuffix", () => {
   it.each([
     "Tree cover loss",
     "Tree cover (30%)",
-    "Land GHG Monitoring System (LGMS)",
+    "LGMS total net GHG flux",
     "Loss (2001-2025) by driver",
     "Alerts (2025)",
   ])("leaves other names alone: %s", (name) => {
@@ -66,9 +81,13 @@ describe("stripYearRangeSuffix", () => {
 });
 
 describe("curatedCatalogue", () => {
+  // Every ungated entry, which is what an unflagged caller gets back.
+  const UNGATED = CURATED_ANALYSES.filter((e) => !e.featureFlag);
+  const netFlux = new Set([NET_FLUX_FEATURE_FLAG]);
+
   it("attaches each dataset's catalogue name, minus dataset 6's year range", () => {
     const specs = curatedCatalogue();
-    expect(specs).toHaveLength(CURATED_ANALYSES.length);
+    expect(specs).toHaveLength(UNGATED.length);
     for (const spec of specs) {
       const catalogueName = DATASET_BY_ID[spec.datasetId].dataset_name;
       if (spec.datasetId === 6) {
@@ -88,8 +107,42 @@ describe("curatedCatalogue", () => {
   });
 
   it("throws when an entry's dataset is missing from the catalogue", () => {
-    expect(() => curatedCatalogue({})).toThrow(
+    expect(() => curatedCatalogue({ byId: {} })).toThrow(
       /Curated dataset 1 is missing from the FE catalogue/
     );
+  });
+
+  describe("gating", () => {
+    const ids = (options?: Parameters<typeof curatedCatalogue>[0]) =>
+      curatedCatalogue(options).map((s) => s.datasetId);
+
+    it("withholds LGMS until its flag is opted into", () => {
+      expect(ids()).not.toContain(12);
+      expect(ids({ enabledFlags: new Set(["other"]) })).not.toContain(12);
+      expect(ids({ enabledFlags: netFlux })).toContain(12);
+    });
+
+    it("offers LGMS for an administrative area only", () => {
+      const flagged = { enabledFlags: netFlux };
+      expect(ids({ ...flagged, aoiSource: "gadm" })).toContain(12);
+      for (const source of ["kba", "wdpa", "landmark", "custom"]) {
+        expect(ids({ ...flagged, aoiSource: source })).not.toContain(12);
+      }
+    });
+
+    it("leaves the ungated entries alone whatever the area", () => {
+      const ungated = UNGATED.map((e) => e.datasetId);
+      expect(ids({ aoiSource: "kba" })).toEqual(ungated);
+      expect(ids({ enabledFlags: netFlux, aoiSource: "wdpa" })).toEqual(
+        ungated
+      );
+    });
+
+    it("keeps display order when a gated entry is admitted", () => {
+      expect(ids({ enabledFlags: netFlux, aoiSource: "gadm" })).toEqual([
+        ...UNGATED.map((e) => e.datasetId),
+        12,
+      ]);
+    });
   });
 });

@@ -3,6 +3,8 @@ import { Box, Flex } from "@chakra-ui/react";
 
 import useInsightStore from "@/app/store/insightStore";
 import type { InsightWidget } from "@/app/types/chat";
+import { InfoDefinition, InfoTitle } from "@/src/shared/ui/InfoTooltip";
+import { MeasureInfo } from "@/src/shared/ui/MeasureInfo";
 import { Pill } from "@/src/shared/ui/Pill";
 
 import { useNetFluxDetail, useNetFluxView } from "./use-net-flux-view";
@@ -20,6 +22,26 @@ const MEASURE_LABEL: Record<NetFluxMeasure, string> = {
 };
 const MEASURE_OPTIONS: NetFluxMeasure[] = ["gross", "net"];
 
+function DetailInfo() {
+  return (
+    <Box>
+      <InfoTitle>Detail</InfoTitle>
+      <InfoDefinition term="Full">
+        Vegetation and soil fluxes are separated into components. Cropland
+        management and livestock are separate.
+      </InfoDefinition>
+      <InfoDefinition term="Categories">
+        Vegetation and soil are separate. Cropland management and livestock are
+        separate.
+      </InfoDefinition>
+      <InfoDefinition term="Summary">
+        Vegetation and soil are combined into land use. Cropland management and
+        livestock are combined into agriculture.
+      </InfoDefinition>
+    </Box>
+  );
+}
+
 /**
  * DETAIL / MEASURE controls for the net-flux insight. In the workspace these
  * sit above the widget card on the shell background, per the design's "Widget
@@ -30,17 +52,29 @@ const MEASURE_OPTIONS: NetFluxMeasure[] = ["gross", "net"];
  * (Full detail / Category / Summary) rather than re-slicing one payload. It is
  * hidden when the widget has no siblings — a single chart, or one rehydrated
  * without the id shape the grouping relies on.
+ *
+ * By default the siblings are found in the map workspace's insight store by
+ * `chartBatchKey`. Surfaces that render an analysis from somewhere else (the
+ * dashboard module, the Analyses pane) hold its charts directly and their ids
+ * do not carry that shape, so they pass `siblings` and the `groupKey` the
+ * DETAIL choice is remembered under — see `netFluxRollups`.
  */
 export function NetFluxToolbar({
   widget,
+  siblings: siblingsProp,
+  groupKey: groupKeyProp,
   showDivider = true,
 }: {
   widget: InsightWidget;
+  /** The roll-ups to choose between, default detail first. */
+  siblings?: InsightWidget[];
+  /** Key the DETAIL choice is stored under; required alongside `siblings`. */
+  groupKey?: string;
   showDivider?: boolean;
 }) {
   const insights = useInsightStore((s) => s.insights);
-  const siblings = netFluxSiblings(insights, widget);
-  const groupKey = netFluxGroupKey(widget);
+  const siblings = siblingsProp ?? netFluxSiblings(insights, widget);
+  const groupKey = groupKeyProp ?? netFluxGroupKey(widget);
   const { selected, select } = useNetFluxDetail(groupKey, siblings);
   const { measure, setMeasure } = useNetFluxView(netFluxViewKey(widget));
 
@@ -58,6 +92,7 @@ export function NetFluxToolbar({
             }))}
             onSelect={select}
             minW="160px"
+            info={<DetailInfo />}
           />
         )}
         <Pill
@@ -69,6 +104,7 @@ export function NetFluxToolbar({
           }))}
           onSelect={(value) => setMeasure(value as NetFluxMeasure)}
           minW="160px"
+          info={<MeasureInfo />}
         />
       </Flex>
     </Flex>
