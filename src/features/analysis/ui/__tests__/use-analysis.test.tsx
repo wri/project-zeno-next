@@ -290,7 +290,7 @@ describe("useAnalysis", () => {
     act(() => {
       result.current.run({
         ...selection,
-        dataset: { id: 4, name: "Land GHG Monitoring System (LGMS)" },
+        dataset: { id: 4, name: "LGMS total net GHG flux" },
       });
     });
 
@@ -347,7 +347,7 @@ describe("useAnalysis", () => {
     act(() => {
       result.current.run({
         ...selection,
-        dataset: { id: 12, name: "Land GHG Monitoring System (LGMS)" },
+        dataset: { id: 12, name: "LGMS total net GHG flux" },
         ...resolveAnalysisWindow(12),
       });
     });
@@ -357,7 +357,7 @@ describe("useAnalysis", () => {
     const widgets = (sink.add as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(widgets[0].analysisParams).toMatchObject({
       areas: ["Brazil"],
-      dataset: "Land GHG Monitoring System (LGMS)",
+      dataset: "LGMS total net GHG flux",
       startYear: 2016,
       endYear: 2024,
     });

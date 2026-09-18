@@ -72,7 +72,7 @@ describe("stripYearRangeSuffix", () => {
   it.each([
     "Tree cover loss",
     "Tree cover (30%)",
-    "Land GHG Monitoring System (LGMS)",
+    "LGMS total net GHG flux",
     "Loss (2001-2025) by driver",
     "Alerts (2025)",
   ])("leaves other names alone: %s", (name) => {

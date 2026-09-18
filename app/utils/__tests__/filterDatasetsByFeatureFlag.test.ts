@@ -92,7 +92,7 @@ describe("the LGMS net-flux card", () => {
 
   it("is registered in the catalogue", () => {
     expect(lgms).toBeDefined();
-    expect(lgms!.dataset_name).toBe("Land GHG Monitoring System (LGMS)");
+    expect(lgms!.dataset_name).toBe("LGMS total net GHG flux");
   });
 
   it("is hidden from the catalogue until ?ff=net-flux is set", () => {
@@ -127,7 +127,7 @@ describe("the LGMS sector map layers", () => {
     expect(cards.map((c) => c.dataset_name)).toEqual([
       "LGMS LULUCF net GHG flux",
       "LGMS agriculture emissions",
-      "LGMS cropland emissions",
+      "LGMS cropland management emissions",
       "LGMS livestock emissions",
     ]);
   });

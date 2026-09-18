@@ -222,7 +222,7 @@ describe("useCreateDashboardForArea", () => {
       srcId: input.srcId,
       subtype: input.subtype,
       datasetId: 12,
-      datasetName: "Land GHG Monitoring System (LGMS)",
+      datasetName: "LGMS total net GHG flux",
     };
     const { result } = renderHook(
       () => useCreateDashboardForArea(lgmsWithoutWindow),
@@ -234,7 +234,7 @@ describe("useCreateDashboardForArea", () => {
 
     expect(analysisService.run).toHaveBeenCalledWith(
       expect.objectContaining({
-        dataset: { id: 12, name: "Land GHG Monitoring System (LGMS)" },
+        dataset: { id: 12, name: "LGMS total net GHG flux" },
         startDate: "2016-01-01",
         endDate: "2024-12-31",
       })

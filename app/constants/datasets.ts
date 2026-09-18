@@ -706,10 +706,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   // stops at 8; if it ever grows into this range these need renumbering.
   {
     dataset_id: 12,
-    dataset_name: "Land GHG Monitoring System (LGMS)",
+    dataset_name: "LGMS total net GHG flux",
     shortName: "LGMS net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "Land GHG Monitoring System (LGMS)",
+    data_layer: "LGMS total net GHG flux",
     context_layer: null,
     img: "/dataset_card_lgms_net_flux.webp",
     cadence: "annual",
@@ -787,10 +787,10 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   },
   {
     dataset_id: 15,
-    dataset_name: "LGMS cropland emissions",
+    dataset_name: "LGMS cropland management emissions",
     shortName: "Cropland emissions",
     featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS cropland emissions",
+    data_layer: "LGMS cropland management emissions",
     context_layer: null,
     img: "/dataset_card_lgms_cropland.webp",
     viewOnly: true,
@@ -803,7 +803,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       "Gross greenhouse-gas emissions from cropland in the Land GHG Monitoring System — the crop half of the agriculture layer, covering sources such as rice cultivation, fertiliser use and crop-residue burning.",
     tile_url: lgmsTileUrl("cropland", "gross_emissions"),
     legend: lgmsEmissionsLegend(
-      "LGMS cropland emissions (2020)",
+      "LGMS cropland management emissions (2020)",
       "The cropland component of agricultural emissions, for separating crop production from livestock in the land-sector total.",
       "Per-pixel annual gross cropland emissions in Mg CO2e/yr."
     ),

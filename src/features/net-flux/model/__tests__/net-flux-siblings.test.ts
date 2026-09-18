@@ -80,7 +80,7 @@ describe("netFluxWidgetDetailPillLabel", () => {
   it("abbreviates only the longest option, as the design's pill does", () => {
     const pill = (backendTitle: string) =>
       netFluxWidgetDetailPillLabel({
-        ...chart("ins1-chart-0", "Land GHG Monitoring System (LGMS) in Peru"),
+        ...chart("ins1-chart-0", "LGMS total net GHG flux in Peru"),
         backendTitle,
       });
     expect(pill("Net GHG Flux — Full Detail")).toBe("Full");
@@ -93,7 +93,7 @@ describe("netFluxWidgetDetailLabel", () => {
   // useAnalysis overwrites every chart's title with one "{dataset} in
   // {location}" string, so all three roll-ups would otherwise read alike.
   const overridden = (backendTitle: string): InsightWidget => ({
-    ...chart("ins1-chart-0", "Land GHG Monitoring System (LGMS) in Peru"),
+    ...chart("ins1-chart-0", "LGMS total net GHG flux in Peru"),
     backendTitle,
   });
 
