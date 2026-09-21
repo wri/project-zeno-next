@@ -396,6 +396,7 @@ export interface DatasetInfo {
   start_date?: string;
   end_date?: string;
   threshold?: number | null;
+  summary?: string;
   description?: string;
   methodology?: string;
   cautions?: string;
