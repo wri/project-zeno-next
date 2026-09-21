@@ -259,20 +259,24 @@ const LGMS_NET_FLUX_RAMP = [
   "#543005",
 ];
 
-/** YlOrBr ramp the LGMS tiles render gross agricultural emissions with. */
+/**
+ * Brown ramp the LGMS tiles render gross agricultural emissions with, sampled
+ * from the published v1.0.3 AgricultureEmissions colormap. These must stay in
+ * sync with the tile-cache algorithm — the earlier YlOrBr ramp was replaced
+ * because it read as orange/red on screen while the tiles are brown (PZB-1426).
+ */
 const LGMS_EMISSIONS_RAMP = [
-  "#ffffd4",
-  "#fee391",
-  "#fec44f",
-  "#fe9929",
-  "#d95f0e",
-  "#993404",
+  "#fef6e4",
+  "#f6e8c3",
+  "#dfc27d",
+  "#bf812d",
+  "#8c510a",
+  "#54300d",
 ];
 
 /**
- * The tile server publishes no class breaks, so the ramps are labelled by
- * direction rather than by invented numbers. Units come from the data-lake
- * asset path (`.../Mg_CO2e_yr-1/...`): per-pixel megagrams CO2e per year.
+ * Units come from the data-lake asset path (`.../Mg_CO2e_yr-1/...`):
+ * per-pixel megagrams CO2e per year.
  */
 const LGMS_UNIT = "Mg CO2e/yr";
 
@@ -293,11 +297,7 @@ const lgmsNetFluxLegend = (
   type: "divergent",
   color: "#543005",
   unit: LGMS_UNIT,
-  items: lgmsRampItems(
-    LGMS_NET_FLUX_RAMP,
-    "Removals (sink)",
-    "Emissions (source)"
-  ),
+  items: lgmsRampItems(LGMS_NET_FLUX_RAMP, "< −30", "> 90"),
   info,
   note,
 });
@@ -305,13 +305,14 @@ const lgmsNetFluxLegend = (
 const lgmsEmissionsLegend = (
   title: string,
   info: string,
-  note: string
+  note: string,
+  maxValue: number
 ): DatasetLegendConfig => ({
   title,
   type: "sequential",
-  color: "#993404",
+  color: "#54300d",
   unit: LGMS_UNIT,
-  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "Lower", "Higher"),
+  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "0", `> ${maxValue}`),
   info,
   note,
 });
@@ -818,7 +819,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: lgmsEmissionsLegend(
       "LGMS agriculture emissions (2020)",
       "This layer maps the GHG emissions (CH4, N2O) from agriculture, including cropland management and livestock. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
-      "Gross GHG emissions from agriculture, including cropland management and livestock."
+      "Gross GHG emissions from agriculture, including cropland management and livestock.",
+      26
     ),
   },
   {
@@ -841,7 +843,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: lgmsEmissionsLegend(
       "LGMS cropland management emissions (2020)",
       "This layer maps the GHG emissions (CH4, N2O) from cropland management, including manure application, fertilizer application, rice cultivation, and crop residue decomposition. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
-      "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation."
+      "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation.",
+      23
     ),
   },
   {
@@ -864,7 +867,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: lgmsEmissionsLegend(
       "LGMS livestock emissions (2020)",
       "This layer maps the GHG emissions (CH4, N2O) from livestock, including monogastrics and ruminants. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
-      "Gross GHG emissions from livestock, including monogastrics and ruminants. "
+      "Gross GHG emissions from livestock, including monogastrics and ruminants.",
+      14
     ),
   },
 ];
