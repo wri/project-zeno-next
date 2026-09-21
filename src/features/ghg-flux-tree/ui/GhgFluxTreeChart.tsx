@@ -16,6 +16,7 @@ import {
 
 import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
+import { LgmsClassInfo } from "@/src/shared/ui/LgmsClassInfo";
 
 import {
   singleSidedLabel,
@@ -28,6 +29,7 @@ import {
   BAR_SIZE,
   EMISSIONS_COLOR,
   NET_TICK_COLOR,
+  NODE_INFO_ICON_SIZE,
   PLOT_MARGIN_X,
   PLOT_MIN_WIDTH,
   REMOVALS_COLOR,
@@ -157,7 +159,12 @@ function TreeLabel({
         <Box w="12px" flexShrink={0} />
       )}
       <Text
-        flex="1"
+        // Shrink-to-fit, not `flex="1"`: the label claiming the row's free
+        // space would park every info icon on a right-hand rail, far from the
+        // class it belongs to. `minW={0}` still lets it ellipsize when the
+        // column is too narrow, and the icon keeps its place just after the
+        // text.
+        flex="0 1 auto"
         minW={0}
         truncate
         title={row.node.label}
@@ -169,6 +176,11 @@ function TreeLabel({
       >
         {row.node.label}
       </Text>
+      <LgmsClassInfo
+        classId={row.node.id}
+        label={row.node.label}
+        size={NODE_INFO_ICON_SIZE}
+      />
     </Flex>
   );
 }

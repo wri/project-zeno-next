@@ -67,6 +67,7 @@ export type DatasetCardConfig = {
   geographic_coverage?: string;
   provider?: string;
   methodology?: string;
+  cautions?: string;
   citation?: string;
   viewOnly?: boolean;
   /**
@@ -314,6 +315,42 @@ const lgmsEmissionsLegend = (
   info,
   note,
 });
+
+/**
+ * LGMS panel copy, mirrored from the backend catalog entry
+ * (`land_ghg_inventory.yml` in project-zeno), which in turn carries David
+ * Gibbs' approved text for the "Full net annual average (net AFOLU)" dataset
+ * menu entry (PZB-1346). The Data Catalog builds the info modal from this card
+ * rather than from an agent response, so the two have to stay in step.
+ *
+ * His entry has no Methodology block — the methodology sentence closes the
+ * overview instead — so this card deliberately declares none.
+ */
+const LGMS_DESCRIPTION = [
+  "This dataset maps the average annual net GHG flux from land use and agriculture for 2016-2024. Net flux is the difference between gross emissions (positive) and gross removals (negative). It integrates five datasets: growth and disturbance of vegetation (trees, shrubs, grasses, crops), carbon stock change in mineral soil (0-30 cm depth), disturbance of organic soil (e.g., peat), cropland management emissions, and livestock emissions. Emissions arise from disturbance or loss of vegetation, loss of soil organic carbon in mineral soil, disturbance of organic soil, and agriculture (cropland management and livestock). Removals arise from growth of vegetation and gain of soil organic carbon in mineral soil. Emissions include CO2, CH4, and N2O; the latter two gases arise from fires, drainage of organic soil, and agriculture. Carbon pools in vegetation include aboveground, belowground, deadwood, and litter.",
+  "Each constituent dataset was developed using flux-appropriate methods, then harmonized for a more complete view of land use-based fluxes. Generally speaking, constituent data sets are based on the IPCC Guidelines for National Greenhouse Gas Inventories (2019 refinement).",
+  "This dataset supports monitoring the climate change impacts of land use and agriculture across spatial scales and can assist a variety of actors and organizations with decreasing land use-based emissions or increasing removals. It can be used to determine the relative contributions of land use and agriculture to land use-based GHG fluxes.",
+].join("\n\n");
+
+const LGMS_CAUTIONS = [
+  "1. Values are modeled and, as such, have multiple sources of uncertainty. Users are strongly encouraged to read and fully comprehend the metadata and other available documentation prior to data use. Only uncertainty estimates for global fluxes have been calculated but they cannot be displayed at this time.",
+  "2. Vegetation emissions, removals, and net flux are annual (2016-2024). All other datasets are not annual. Organic soil is in multi-year blocks (2016-2020 and 2021-2024). Mineral soil is the change over 2010/2015 vs. 2015-2020, with that change over that period applied to every year between 2016 and 2024. Cropland management and livestock are for 2020 but applied to all years.",
+  "3. Land use datasets are at 30-m resolution but agriculture datasets are at 10-km resolution. The difference is due to the resolution of input datasets.",
+  "4. Emissions and removals due to changes in vegetation and soil carbon stocks on croplands are covered in the vegetation and soil datasets, not the cropland management dataset. Likewise, emissions from land use change related to cropland (e.g., forest to crops) are in the vegetation and soil data, not the cropland management dataset.",
+  "5. This does not distinguish between permanent and temporary loss or gain, anthropogenic and natural disturbances, or natural and planted trees. Emissions from deforestation are not currently provided. Likewise, removals due to afforestation or reforestation (active or passive) are not currently provided.",
+  "6. These datasets cannot be used to estimate carbon stocks or densities in a given year or over a range of years.",
+  "7. These datasets cannot be used to estimate or calculate carbon credits or offsets at the jurisdictional or project scale.",
+].join("\n");
+
+const LGMS_PREPRINT = "https://www.researchsquare.com/article/rs-10244608/v1";
+
+const LGMS_CITATION = [
+  `- Vegetation: Gibbs et al. under review (preprint: [${LGMS_PREPRINT}](${LGMS_PREPRINT}))`,
+  `- Mineral soil: Gibbs et al. under review (preprint: [${LGMS_PREPRINT}](${LGMS_PREPRINT})), Hengl et al. 2026 ([https://essd.copernicus.org/articles/18/989/2026/](https://essd.copernicus.org/articles/18/989/2026/), with summary at [https://landcarbonlab.org/insights/soil-carbon-dynamics-maps/](https://landcarbonlab.org/insights/soil-carbon-dynamics-maps/))`,
+  "- Organic soil: Glen et al. 2026 (link available upon publication)",
+  "- Cropland management: Cao et al. 2026 ([https://www.nature.com/articles/s41558-026-02558-4](https://www.nature.com/articles/s41558-026-02558-4)), with additional explanation at [https://www.wri.org/insights/climate-emissions-growing-crops](https://www.wri.org/insights/climate-emissions-growing-crops)",
+  "- Livestock: Bilotto et al. in prep",
+].join("\n");
 
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
   {
@@ -714,15 +751,14 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_lgms_net_flux.webp",
     cadence: "annual",
     resolution: "reported per admin area",
-    geographic_coverage:
-      "GADM administrative areas (country, state/province, district) only",
+    geographic_coverage: "global",
     provider: "WRI",
     defaultStartYear: 2016,
     defaultEndYear: 2024,
     categories: ["ghg-fluxes"],
-    description:
-      "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
-    // Analysis" flow for a GADM admin AOI without adding a raster to the map.
+    description: LGMS_DESCRIPTION,
+    cautions: LGMS_CAUTIONS,
+    citation: LGMS_CITATION,
     tile_url: lgmsTileUrl("lgms", "net"),
     legend: lgmsNetFluxLegend(
       "LGMS total net GHG flux (2016-2024)",

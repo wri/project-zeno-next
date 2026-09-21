@@ -5,12 +5,14 @@ import { Loader } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "@/app/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
-import { DATASET_CARDS } from "@/app/constants/datasets";
+import { DATASET_CARDS, NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
 import { getLayerContextFromDatasetCard } from "@/app/utils/datasetCardLayerContext";
 import { buildDatasetLayers } from "@/app/utils/datasetLayerContext";
 import { firstMessageRedirectPath } from "@/app/utils/threadNavigation";
+import { useFeatureFlag } from "@/src/shared/lib/feature-flags/use-feature-flag";
 
-const DEFAULT_LANDING_DATASET_ID = 4;
+const TCL_DATASET_ID = 4;
+const LGMS_NET_FLUX_DATASET_ID = 12;
 
 function NewThread() {
   const {
@@ -22,21 +24,14 @@ function NewThread() {
   const searchParams = useSearchParams();
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
+  const isNetFlux = useFeatureFlag(NET_FLUX_FEATURE_FLAG);
+
+  // NOTE: This is super custom code for ff=net-flux. We should remove asap.
+  const defaultDatasetId = isNetFlux
+    ? LGMS_NET_FLUX_DATASET_ID
+    : TCL_DATASET_ID;
 
   useEffect(() => {
-    // /app is the fresh-landing / new-thread surface: clear any conversation
-    // and map state left in the (singleton) stores, then seed Tree Cover Loss
-    // as the default active layer so an idle map always looks like a first
-    // visit. A live conversation never reaches this page — the header's Map tab
-    // links straight to the thread URL — so this only runs when no conversation
-    // has started.
-    //
-    // Seed here, right after resetMapStore() has emptied the layers, reading
-    // the store via getState() rather than a render-time `layers` snapshot: an
-    // earlier /app visit leaves the seeded TCL layer in the singleton store,
-    // and deciding against that stale pre-reset snapshot used to mark the map
-    // "already seeded" and suppress re-seeding when returning from the
-    // dashboards view.
     resetChatStore();
     resetMapStore();
 
@@ -45,14 +40,14 @@ function NewThread() {
     if (hasDatasetLayer) return;
 
     const defaultCard = DATASET_CARDS.find(
-      (card) => card.dataset_id === DEFAULT_LANDING_DATASET_ID
+      (card) => card.dataset_id === defaultDatasetId
     );
     if (!defaultCard) return;
 
     buildDatasetLayers(getLayerContextFromDatasetCard(defaultCard)).forEach(
       addLayer
     );
-  }, [resetChatStore, resetMapStore]);
+  }, [resetChatStore, resetMapStore, defaultDatasetId]);
 
   useEffect(() => {
     setHasMounted(true);

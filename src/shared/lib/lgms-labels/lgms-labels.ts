@@ -13,6 +13,10 @@ export const LGMS_CLASS_RENAMES: Readonly<Record<string, string>> = {
   // The backend names the transition ("non-trees remaining non-trees"); the
   // product names the land cover.
   non_trees_remaining_non_trees: "Non-tree vegetation",
+  // The backend labels the tree node "Crop management"; the time series'
+  // legend, the DETAIL info and the class descriptions all say "cropland
+  // management", so the tree says it too.
+  cropland: "Cropland management",
 };
 
 /**
