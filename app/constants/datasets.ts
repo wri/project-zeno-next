@@ -63,6 +63,8 @@ export type DatasetCardConfig = {
    * full dataset_name is too long. Omit when the full name is already short.
    */
   shortName?: string;
+  /** One-line lede shown above the description in the info modal. */
+  summary?: string;
   description: string;
   img?: string;
   tile_url?: string;
@@ -728,6 +730,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     defaultStartYear: 2016,
     defaultEndYear: 2024,
     categories: ["ghg-fluxes"],
+    summary: LGMS_NET_FLUX_METADATA.summary,
     description: LGMS_NET_FLUX_METADATA.description,
     cautions: LGMS_NET_FLUX_METADATA.cautions,
     citation: LGMS_NET_FLUX_METADATA.citation,
@@ -761,6 +764,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     geographic_coverage: "global",
     provider: "WRI",
     categories: ["ghg-fluxes"],
+    summary: LGMS_LULUCF_METADATA.summary,
     description: LGMS_LULUCF_METADATA.description,
     cautions: LGMS_LULUCF_METADATA.cautions,
     citation: LGMS_LULUCF_METADATA.citation,
@@ -785,6 +789,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     geographic_coverage: "global",
     provider: "WRI",
     categories: ["ghg-fluxes"],
+    summary: LGMS_AGRICULTURE_METADATA.summary,
     description: LGMS_AGRICULTURE_METADATA.description,
     cautions: LGMS_AGRICULTURE_METADATA.cautions,
     citation: LGMS_AGRICULTURE_METADATA.citation,
@@ -809,6 +814,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     geographic_coverage: "global",
     provider: "WRI",
     categories: ["ghg-fluxes"],
+    summary: LGMS_CROPLAND_METADATA.summary,
     description: LGMS_CROPLAND_METADATA.description,
     cautions: LGMS_CROPLAND_METADATA.cautions,
     citation: LGMS_CROPLAND_METADATA.citation,
@@ -833,6 +839,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     geographic_coverage: "global",
     provider: "WRI",
     categories: ["ghg-fluxes"],
+    summary: LGMS_LIVESTOCK_METADATA.summary,
     description: LGMS_LIVESTOCK_METADATA.description,
     cautions: LGMS_LIVESTOCK_METADATA.cautions,
     citation: LGMS_LIVESTOCK_METADATA.citation,

@@ -10,6 +10,7 @@
  */
 
 export type LgmsLayerMetadata = {
+  summary: string;
   description: string;
   cautions: string;
   citation: string;
@@ -31,6 +32,7 @@ const SOURCE_CROPLAND = `- Cropland management: Cao et al. 2026 (${link("https:/
 const SOURCE_LIVESTOCK = "- Livestock: Bilotto et al. in prep";
 
 export const LGMS_NET_FLUX_METADATA: LgmsLayerMetadata = {
+  summary: "Average annual net GHG flux from land use and agriculture",
   description: paragraphs([
     "This dataset maps the average annual net GHG flux from land use and agriculture for 2016-2024. Net flux is the difference between gross emissions (positive) and gross removals (negative). It integrates five datasets: growth and disturbance of vegetation (trees, shrubs, grasses, crops), carbon stock change in mineral soil (0-30 cm depth), disturbance of organic soil (e.g., peat), cropland management emissions, and livestock emissions. Emissions arise from disturbance or loss of vegetation, loss of soil organic carbon in mineral soil, disturbance of organic soil, and agriculture (cropland management and livestock). Removals arise from growth of vegetation and gain of soil organic carbon in mineral soil. Emissions include CO2, CH4, and N2O; the latter two gases arise from fires, drainage of organic soil, and agriculture. Carbon pools in vegetation include aboveground, belowground, deadwood, and litter.",
     "Each constituent dataset was developed using flux-appropriate methods, then harmonized for a more complete view of land use-based fluxes. Generally speaking, constituent data sets are based on the IPCC Guidelines for National Greenhouse Gas Inventories (2019 refinement).",
@@ -55,6 +57,8 @@ export const LGMS_NET_FLUX_METADATA: LgmsLayerMetadata = {
 };
 
 export const LGMS_LULUCF_METADATA: LgmsLayerMetadata = {
+  summary:
+    "Average annual net GHG flux from vegetation and soil due to land use and land-use change",
   description: paragraphs([
     "This dataset maps the average annual net GHG flux from land use and land-use change at 30-m resolution for 2016-2024. Net flux is the difference between gross emissions (positive) and gross removals (negative). It integrates three datasets: growth and disturbance of vegetation (trees, shrubs, grasses, crops), carbon stock change in mineral soil (0-30 cm depth), and disturbance of organic soil (e.g., peat). Emissions arise from disturbance or loss of vegetation, loss of soil organic carbon in mineral soil, and disturbance of organic soil. Removals arise from growth of vegetation and gain of soil organic carbon in mineral soil. Emissions include CO2, CH4, and N2O; the latter two gases arise from fires and drainage of organic soil. Carbon pools in vegetation include aboveground, belowground, deadwood, and litter.",
     "Each constituent dataset was developed using flux-appropriate methods, then harmonized for a more complete view of land use-based fluxes. Generally speaking, constituent data sets are based on multiple Earth observation data sets—each supported by field data—that have been integrated using the IPCC Guidelines for National Greenhouse Gas Inventories (2019 refinement).",
@@ -77,6 +81,7 @@ export const LGMS_LULUCF_METADATA: LgmsLayerMetadata = {
 };
 
 export const LGMS_AGRICULTURE_METADATA: LgmsLayerMetadata = {
+  summary: "GHG emissions from agriculture in 2020",
   description: paragraphs([
     "This dataset maps the GHG emissions from agriculture in 2020. It integrates two emissions datasets: cropland management emissions and livestock emissions. Cropland management includes manure application, synthetic fertilizer application, and crop residue decomposition for over 40 crops, as well as rice cultivation emissions. It is based on maps of crop extent, crop management, climate, and more. Livestock emissions includes monogastrics and ruminants, with multiple production systems for each. GHGs include CH4 and N2O. Emissions from land-use change and soil are covered in separate layers.",
     "Each constituent dataset was developed using flux-appropriate methods, then harmonized for a more complete view of land use-based fluxes. Generally speaking, constituent data sets are based on the IPCC Guidelines for National Greenhouse Gas Inventories (2019 refinement).",
@@ -91,6 +96,7 @@ export const LGMS_AGRICULTURE_METADATA: LgmsLayerMetadata = {
 };
 
 export const LGMS_CROPLAND_METADATA: LgmsLayerMetadata = {
+  summary: "GHG emissions from cropland management in 2020",
   description: paragraphs([
     "This dataset maps the GHG emissions from cropland management in 2020, including manure application, synthetic fertilizer application, and crop residue decomposition for over 40 crops, as well as rice cultivation emissions. It is based on maps of crop extent, crop management, climate, and more. GHGs include CH4 and N2O. Emissions from land-use change and soil are covered in separate layers. It was created by combining geospatial and statistical (survey) data within the methods of the IPCC Guidelines for National Greenhouse Gas Inventories (2019 refinement).",
     "This dataset supports monitoring the climate change impacts of agriculture across spatial scales and can assist a variety of actors and organizations with decreasing agriculture-based emissions.",
@@ -104,6 +110,7 @@ export const LGMS_CROPLAND_METADATA: LgmsLayerMetadata = {
 };
 
 export const LGMS_LIVESTOCK_METADATA: LgmsLayerMetadata = {
+  summary: "GHG emissions from livestock in 2020",
   description: paragraphs([
     "This dataset maps the GHG emissions from livestock in 2020, including monogastrics and ruminants, with multiple production systems for each. GHGs include CH4 and N2O. Emissions from land-use change and soil are covered in separate layers.",
     "This dataset supports monitoring the climate change impacts of livestock across spatial scales and can assist a variety of actors and organizations with decreasing agriculture-based emissions.",

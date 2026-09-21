@@ -56,13 +56,43 @@ describe("DatasetInfoModal", () => {
 
     expect(screen.getByText("Methodology")).toBeTruthy();
   });
+
+  it("renders the summary as a lede when the dataset declares one", () => {
+    renderModal({
+      dataset_id: 1,
+      dataset_name: "Some dataset",
+      tile_url: "",
+      summary: "A one-line summary",
+      description: "A description",
+    });
+
+    expect(screen.getByText("A one-line summary")).toBeTruthy();
+  });
+
+  it("renders no lede when the dataset has no summary", () => {
+    renderModal({
+      dataset_id: 1,
+      dataset_name: "Some dataset",
+      tile_url: "",
+      description: "A description",
+    });
+
+    expect(screen.queryByText("A one-line summary")).toBeNull();
+  });
 });
 
 describe("the LGMS catalog card", () => {
   it("carries the approved copy the panel renders", () => {
+    expect(lgmsCard?.summary).toBeTruthy();
     expect(lgmsCard?.description).toBeTruthy();
     expect(lgmsCard?.cautions).toBeTruthy();
     expect(lgmsCard?.citation).toBeTruthy();
+  });
+
+  it("opens with the summary lede", () => {
+    renderModal(lgmsCard as unknown as DatasetInfo);
+
+    expect(screen.getByText(lgmsCard?.summary as string)).toBeTruthy();
   });
 
   it("declares no methodology, matching David's entry", () => {
