@@ -794,8 +794,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url: lgmsTileUrl("lulucf", "net"),
     legend: lgmsNetFluxLegend(
       "LGMS LULUCF net GHG flux (2016-2024)",
-      "Isolates the LULUCF sector, so forest loss and regrowth can be read without agricultural emissions on top of them.",
-      "Per-pixel annual LULUCF net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+      "This layer maps the average annual net GHG flux from land use and land-use change. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, and organic soil. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
+      "Average annual net GHG flux from vegetation and soil due to land use and land-use change. Net flux is the difference between gross emissions and gross removals."
     ),
   },
   {
@@ -817,8 +817,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
     legend: lgmsEmissionsLegend(
       "LGMS agriculture emissions (2020)",
-      "Total agricultural emissions, useful for seeing where farming rather than land-use change drives the land-sector footprint.",
-      "Per-pixel annual gross agricultural emissions in Mg CO2e/yr."
+      "This layer maps the GHG emissions (CH4, N2O) from cropland management, including manure application, fertilizer application, rice cultivation, and crop residue decomposition. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+      "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation."
     ),
   },
   {
@@ -840,8 +840,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url: lgmsTileUrl("cropland", "gross_emissions"),
     legend: lgmsEmissionsLegend(
       "LGMS cropland management emissions (2020)",
-      "The cropland component of agricultural emissions, for separating crop production from livestock in the land-sector total.",
-      "Per-pixel annual gross cropland emissions in Mg CO2e/yr."
+      "This layer maps the GHG emissions (CH4, N2O) from cropland management, including manure application, fertilizer application, rice cultivation, and crop residue decomposition. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+      "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation."
     ),
   },
   {
@@ -863,8 +863,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url: lgmsTileUrl("livestock", "gross_emissions"),
     legend: lgmsEmissionsLegend(
       "LGMS livestock emissions (2020)",
-      "The livestock component of agricultural emissions, for separating herds from crop production in the land-sector total.",
-      "Per-pixel annual gross livestock emissions in Mg CO2e/yr."
+      "This layer maps the GHG emissions (CH4, N2O) from livestock, including monogastrics and ruminants. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+      "Gross GHG emissions from livestock, including monogastrics and ruminants. "
     ),
   },
 ];
