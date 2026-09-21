@@ -8,7 +8,7 @@
  * the HTML tree/value columns are laid out at the same pitch so the two line up
  * without measuring anything.
  */
-export const ROW_HEIGHT = 36;
+export const ROW_HEIGHT = 30;
 /** Reserved for the top axis; the flanking columns pad by the same amount. */
 export const AXIS_HEIGHT = 28;
 /**
