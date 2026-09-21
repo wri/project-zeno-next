@@ -222,34 +222,41 @@ const TOOLTIP_GAP = 8;
  *
  * The tooltip is taller than a row and the plot has no empty space in either
  * axis (every pixel band belongs to some row's bar), so recharts' own
- * cursor-following placement always lands on bars. Instead this is rendered
- * as an overlay in the bar-free label column, level with the hovered row —
- * placed by the row's index and this component's uniform row pitch (see the
- * file doc comment). It hugs the plot when the column has room and is flush
- * with the column's left edge when it doesn't: pinning it a fixed distance
- * left of the plot let it run out of the card and get clipped by the card's
- * horizontal-scroll wrapper whenever the column had flexed below the panel's
- * width.
+ * cursor-following placement always lands on bars. Instead recharts renders
+ * this into the bar-free label column (its `portal`), level with the hovered
+ * row — placed by the row's index and this component's uniform row pitch (see
+ * the file doc comment). recharts still decides *when* it shows, so mouse,
+ * touch and keyboard activation all reach it. It hugs the plot when the column
+ * has room, and is flush left and no wider than the column when it doesn't:
+ * overhanging the column put it over the bars, and pinning it left of the plot
+ * let the card's horizontal-scroll wrapper clip it.
  */
-function TreeTooltipOverlay({
-  row,
-  index,
+export function TreeTooltipContent({
+  active,
+  payload,
+  rows,
   measure,
 }: {
-  row: FluxRow;
-  index: number;
+  active?: boolean;
+  payload?: Array<{ payload: PlotRow }>;
+  rows: FluxRow[];
   measure: FluxMeasure;
 }) {
-  const { rows, total } = fluxTreeTooltipModel(row, measure);
+  if (!active || !payload?.length) return null;
+  const index = rows.findIndex((r) => r.node.id === payload[0].payload.id);
+  if (index < 0) return null;
+  const row = rows[index];
+  const { rows: lines, total } = fluxTreeTooltipModel(row, measure);
   return (
     <Box
       position="absolute"
       top={`${AXIS_HEIGHT + index * ROW_HEIGHT}px`}
       left={`max(0px, calc(100% - ${FLUX_TOOLTIP_WIDTH + TOOLTIP_GAP}px))`}
+      w={`min(${FLUX_TOOLTIP_WIDTH}px, 100%)`}
       zIndex={1}
       pointerEvents="none"
     >
-      <FluxTooltip title={row.node.label} rows={rows} total={total} />
+      <FluxTooltip title={row.node.label} rows={lines} total={total} />
     </Box>
   );
 }
@@ -298,9 +305,9 @@ export function GhgFluxTreeChart({
 
   const height = AXIS_HEIGHT + rows.length * ROW_HEIGHT;
 
-  // Which row the pointer is over, from recharts; drives `TreeTooltipOverlay`.
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const activeRow = activeIndex == null ? undefined : rows[activeIndex];
+  // recharts renders the hover tooltip into the label column. State, not a
+  // ref, so the element reaching `<Tooltip portal>` re-renders the chart.
+  const [labelColumn, setLabelColumn] = useState<HTMLDivElement | null>(null);
 
   return (
     <Flex align="flex-start" w="full">
@@ -315,18 +322,12 @@ export function GhgFluxTreeChart({
         minW={0}
         maxW={`${TREE_COLUMN_MAX_WIDTH}px`}
         position="relative"
+        ref={setLabelColumn}
       >
         <Box h={`${AXIS_HEIGHT}px`} />
         {rows.map((row) => (
           <TreeLabel key={row.node.id} row={row} onToggle={onToggle} />
         ))}
-        {activeRow && activeIndex != null && (
-          <TreeTooltipOverlay
-            row={activeRow}
-            index={activeIndex}
-            measure={measure}
-          />
-        )}
       </Flex>
 
       {/* Plot column.
@@ -356,13 +357,6 @@ export function GhgFluxTreeChart({
               bottom: 0,
               left: PLOT_MARGIN_X,
             }}
-            onMouseMove={(state) => {
-              // recharts reports `activeTooltipIndex` as a numeric string
-              // (`"0"`, `"1"`, ...), not a number.
-              const index = Number(state?.activeTooltipIndex);
-              setActiveIndex(Number.isInteger(index) ? index : null);
-            }}
-            onMouseLeave={() => setActiveIndex(null)}
           >
             <XAxis
               type="number"
@@ -381,11 +375,10 @@ export function GhgFluxTreeChart({
             />
             <YAxis type="category" dataKey="id" hide />
             <ReferenceLine x={0} stroke={ZERO_LINE_COLOR} strokeWidth={1} />
-            {/* Only for the hover band and `activeTooltipIndex`; the panel
-                itself is `TreeTooltipOverlay` in the label column. */}
             <Tooltip
               cursor={{ fill: "var(--chakra-colors-black-alpha-200)" }}
-              content={() => null}
+              portal={labelColumn}
+              content={<TreeTooltipContent rows={rows} measure={measure} />}
             />
             {measure === "net" ? (
               <Bar dataKey="net" barSize={BAR_SIZE} isAnimationActive={false}>

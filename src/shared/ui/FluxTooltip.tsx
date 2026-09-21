@@ -94,6 +94,7 @@ export function FluxTooltip({ title, rows, total }: FluxTooltipProps) {
       px="10px"
       py="8px"
       w={`${FLUX_TOOLTIP_WIDTH}px`}
+      maxW="100%"
       fontFamily="mono"
       fontSize="9.5px"
       fontWeight="normal"
