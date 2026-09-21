@@ -1,4 +1,4 @@
-import { sanitizeFilenameBase } from "./exportChartImage";
+import { sanitizeFilenameBase, todayStamp } from "./exportChartImage";
 
 /** One CSV cell, quoted only when it needs it (comma, quote, or newline). */
 function csvCell(value: unknown): string {
@@ -19,10 +19,6 @@ export function rowsToCsv(
     headers.map(csvCell).join(","),
     ...rows.map((row) => rowKeys.map((key) => csvCell(row[key])).join(",")),
   ].join("\n");
-}
-
-function todayStamp(): string {
-  return new Date().toISOString().slice(0, 10).replace(/-/g, "");
 }
 
 /** Download filename for a widget's CSV export: sanitized title + date. */
