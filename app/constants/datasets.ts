@@ -817,8 +817,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
     legend: lgmsEmissionsLegend(
       "LGMS agriculture emissions (2020)",
-      "This layer maps the GHG emissions (CH4, N2O) from cropland management, including manure application, fertilizer application, rice cultivation, and crop residue decomposition. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
-      "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation."
+      "This layer maps the GHG emissions (CH4, N2O) from agriculture, including cropland management and livestock. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+      "Gross GHG emissions from agriculture, including cropland management and livestock."
     ),
   },
   {
