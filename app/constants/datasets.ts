@@ -762,8 +762,8 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     tile_url: lgmsTileUrl("lgms", "net"),
     legend: lgmsNetFluxLegend(
       "LGMS total net GHG flux (2016-2024)",
-      "The balance of emissions and removals across every LGMS sector, so a single layer shows whether land is a net source or a net sink.",
-      "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+      "This layer maps the average annual net GHG flux from land use, land-use change, and agriculture. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, organic soil, cropland management, and livestock. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
+      "Average annual net GHG flux from land use, land-use change, and agriculture. Net flux is the difference between gross emissions and gross removals."
     ),
   },
   // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
