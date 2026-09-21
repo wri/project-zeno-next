@@ -297,7 +297,7 @@ const lgmsNetFluxLegend = (
   type: "divergent",
   color: "#543005",
   unit: LGMS_UNIT,
-  items: lgmsRampItems(LGMS_NET_FLUX_RAMP, "< −30", "> 90"),
+  items: lgmsRampItems(LGMS_NET_FLUX_RAMP, "<−30", ">90"),
   info,
   note,
 });
@@ -312,7 +312,7 @@ const lgmsEmissionsLegend = (
   type: "sequential",
   color: "#54300d",
   unit: LGMS_UNIT,
-  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "0", `> ${maxValue}`),
+  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "0", `>${maxValue}`),
   info,
   note,
 });
