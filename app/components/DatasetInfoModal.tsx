@@ -7,6 +7,7 @@ import {
   Box,
   Separator,
   Link,
+  Text,
 } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import { DatasetInfo } from "@/app/types/chat";
@@ -51,9 +52,19 @@ export function DatasetInfoModal({
         <Dialog.Backdrop backdropFilter="blur(8px)" />
         <Dialog.Positioner zIndex={1600}>
           <Dialog.Content maxW="3xl" p="10" borderRadius="8px">
-            <Dialog.Title mb="4" fontSize="xl" fontWeight="bold" pr="6">
+            <Dialog.Title
+              mb={dataset.summary ? "2" : "4"}
+              fontSize="xl"
+              fontWeight="bold"
+              pr="6"
+            >
               {dataset.dataset_name}
             </Dialog.Title>
+            {dataset.summary && (
+              <Text mb="4" pr="6" color="gray.600" fontSize="md">
+                {dataset.summary}
+              </Text>
+            )}
             <Dialog.Description
               asChild
               css={{ "& p": { whiteSpace: "pre-wrap" } }}
