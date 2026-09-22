@@ -80,6 +80,18 @@ describe("singleSidedLabel", () => {
     expect(singleSidedLabel(TREE[4])).toBe("removals only");
   });
 
+  it("treats zero the same as null (no visible bar)", () => {
+    expect(
+      singleSidedLabel(node({ id: "z", avgEmissions: 100, avgRemovals: 0 }))
+    ).toBe("emissions only");
+    expect(
+      singleSidedLabel(node({ id: "z", avgEmissions: 0, avgRemovals: -50 }))
+    ).toBe("removals only");
+    expect(
+      singleSidedLabel(node({ id: "z", avgEmissions: 0, avgRemovals: 0 }))
+    ).toBeNull();
+  });
+
   it("is null when both sides are present or both absent", () => {
     expect(singleSidedLabel(TREE[0])).toBeNull();
     expect(singleSidedLabel(node({ id: "x" }))).toBeNull();
