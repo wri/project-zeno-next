@@ -11,6 +11,10 @@ import useInsightStore from "../insightStore";
 import useChatStore from "../chatStore";
 import type { ChartColorFields } from "@/app/types/chartColors";
 import { pickChartColors } from "@/app/utils/pickChartColors";
+import {
+  isCuratedInsight,
+  codeActParts,
+} from "@/src/entities/insight/lib/is-curated-insight";
 
 interface ChartData extends ChartColorFields {
   id: string;
@@ -105,6 +109,8 @@ export function generateInsightsTool(
         streamMessage.charts_data as ChartData[]
       ).map((chart: ChartData) => {
         const seriesFields = getSeriesFields(chart);
+        const curated = isCuratedInsight(streamMessage.codeact_parts);
+        const parts = codeActParts(streamMessage.codeact_parts);
         return {
           id: chart.id,
           type: chart.type,
@@ -116,10 +122,15 @@ export function generateInsightsTool(
           ...(seriesFields ? { seriesFields } : {}),
           ...(datasetName ? { datasetName } : {}),
           ...pickChartColors(chart),
-          generation: {
-            codeact_parts: streamMessage.codeact_parts,
-            source_urls: streamMessage.source_urls,
-          },
+          curated,
+          ...(parts.length > 0
+            ? {
+                generation: {
+                  codeact_parts: parts,
+                  source_urls: streamMessage.source_urls,
+                },
+              }
+            : {}),
           ...(hasParams ? { analysisParams } : {}),
           // Shared by all charts of the analysis — the handle for the
           // "Add to dashboard" toggle (REST widget add, no chat round trip).
