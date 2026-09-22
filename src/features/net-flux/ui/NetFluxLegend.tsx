@@ -2,11 +2,11 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 
 import { LgmsClassInfo } from "@/src/shared/ui/LgmsClassInfo";
+import { Swatch } from "@/src/shared/ui/Swatch";
 
-import {
-  isPaintReference,
-  type NetFluxLegend as NetFluxLegendSpec,
-  type NetFluxLegendItem,
+import type {
+  NetFluxLegend as NetFluxLegendSpec,
+  NetFluxLegendItem,
 } from "../model/net-flux-variants";
 
 const NET_FLUX_LINE_COLOR = "#172b7a";
@@ -72,46 +72,6 @@ export function NetFluxHatchDefs() {
         </pattern>
       </defs>
     </svg>
-  );
-}
-
-/**
- * Series swatch — an SVG rect when the fill is a hatch pattern (a CSS
- * background can't resolve a `url(#…)` paint reference), else a box. Defaults
- * to the legend's 14×10; the tooltip shares it at its own smaller size.
- */
-export function Swatch({
-  color,
-  width = 14,
-  height = 10,
-}: {
-  color: string;
-  width?: number;
-  height?: number;
-}) {
-  if (isPaintReference(color)) {
-    return (
-      <Box
-        as="span"
-        w={`${width}px`}
-        h={`${height}px`}
-        flexShrink={0}
-        lineHeight={0}
-      >
-        <svg width={width} height={height} aria-hidden focusable="false">
-          <rect width={width} height={height} rx="2" fill={color} />
-        </svg>
-      </Box>
-    );
-  }
-  return (
-    <Box
-      w={`${width}px`}
-      h={`${height}px`}
-      rounded="2px"
-      bg={color}
-      flexShrink={0}
-    />
   );
 }
 

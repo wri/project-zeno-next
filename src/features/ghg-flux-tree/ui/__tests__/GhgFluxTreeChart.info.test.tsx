@@ -50,6 +50,6 @@ describe("GhgFluxTreeChart info icons", () => {
       screen.queryByRole("img", { name: "About Peat burning" })
     ).toBeNull();
     // The row itself still renders — only its icon is absent.
-    expect(screen.getByTitle("Peat burning")).toBeTruthy();
+    expect(screen.getByText("Peat burning")).toBeTruthy();
   });
 });

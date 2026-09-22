@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveTableColumns } from "../TableWidget";
+import { paginateRows, resolveTableColumns } from "../TableWidget";
 
 describe("resolveTableColumns", () => {
   const allHeaders = ["year", "id", "parent_id", "vegetation_emissions"];
@@ -28,5 +28,41 @@ describe("resolveTableColumns", () => {
         ["id", "parent_id"]
       )
     ).toEqual(["vegetation_emissions", "year"]);
+  });
+});
+
+describe("paginateRows", () => {
+  const rows = Array.from({ length: 13 }, (_, i) => i);
+
+  it("pages by 10 rows by default", () => {
+    expect(paginateRows(rows, 0)).toEqual({
+      pageRows: rows.slice(0, 10),
+      startIndex: 0,
+      totalPages: 2,
+      needsPagination: true,
+    });
+    expect(paginateRows(rows, 1)).toMatchObject({
+      pageRows: [10, 11, 12],
+      startIndex: 10,
+    });
+  });
+
+  it("does not paginate when rows fit on one page", () => {
+    expect(paginateRows(rows.slice(0, 10), 0)).toEqual({
+      pageRows: rows.slice(0, 10),
+      startIndex: 0,
+      totalPages: 1,
+      needsPagination: false,
+    });
+  });
+
+  it("renders every row on one page when pageSize is Infinity", () => {
+    // startIndex must stay finite: it feeds React row keys.
+    expect(paginateRows(rows, 0, Infinity)).toEqual({
+      pageRows: rows,
+      startIndex: 0,
+      totalPages: 1,
+      needsPagination: false,
+    });
   });
 });

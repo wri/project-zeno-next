@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import { CaretDownIcon, CaretRightIcon } from "@phosphor-icons/react";
-import { FLUX_UNITS } from "@/src/shared/lib/units";
 import {
   Bar,
   BarChart,
@@ -16,6 +15,7 @@ import {
 
 import { formatTick, niceTicks } from "@/src/shared/lib/chart-ticks";
 import { signed } from "@/src/shared/lib/number-format";
+import { FLUX_TOOLTIP_WIDTH, FluxTooltip } from "@/src/shared/ui/FluxTooltip";
 import { LgmsClassInfo } from "@/src/shared/ui/LgmsClassInfo";
 
 import {
@@ -24,21 +24,27 @@ import {
   type FluxRow,
 } from "../model/hierarchy";
 import {
+  EMISSIONS_COLOR,
+  NET_TICK_COLOR,
+  REMOVALS_COLOR,
+  ZERO_LINE_COLOR,
+  netFluxColor,
+} from "../model/palette";
+import { fluxTreeTooltipModel } from "../model/tree-tooltip";
+import {
   AXIS_FONT_SIZE,
   AXIS_HEIGHT,
   BAR_SIZE,
-  EMISSIONS_COLOR,
-  NET_TICK_COLOR,
   NODE_INFO_ICON_SIZE,
   PLOT_MARGIN_X,
   PLOT_MIN_WIDTH,
-  REMOVALS_COLOR,
   ROW_HEIGHT,
-  TOOLTIP_WIDTH,
   TREE_COLUMN_MAX_WIDTH,
-  ZERO_LINE_COLOR,
-  netFluxColor,
 } from "./tree-chart-constants";
+
+const TREE_LABEL_ABBREVS: Readonly<Record<string, string>> = {
+  trees_remaining_trees: "Trees rem. trees",
+};
 
 interface PlotRow {
   id: string;
@@ -127,6 +133,7 @@ function TreeLabel({
   // The root is always open in the design — it carries an info icon, not a
   // caret — so only descendants get a disclosure control.
   const showCaret = row.hasChildren && !isRoot;
+  const displayLabel = TREE_LABEL_ABBREVS[row.node.id] ?? row.node.label;
 
   return (
     <Flex
@@ -159,22 +166,16 @@ function TreeLabel({
         <Box w="12px" flexShrink={0} />
       )}
       <Text
-        // Shrink-to-fit, not `flex="1"`: the label claiming the row's free
-        // space would park every info icon on a right-hand rail, far from the
-        // class it belongs to. `minW={0}` still lets it ellipsize when the
-        // column is too narrow, and the icon keeps its place just after the
-        // text.
         flex="0 1 auto"
         minW={0}
-        truncate
-        title={row.node.label}
         fontFamily="body"
-        fontSize={isRoot ? "15px" : "13px"}
+        fontSize={isRoot ? "14px" : "12px"}
         fontWeight={isRoot || row.hasChildren ? "medium" : "normal"}
         color={isRoot ? "#172B7A" : "#282D33"}
         lineHeight="1.25"
+        title={row.node.label}
       >
-        {row.node.label}
+        {displayLabel}
       </Text>
       <LgmsClassInfo
         classId={row.node.id}
@@ -200,7 +201,7 @@ function ValueCell({ row }: { row: FluxRow }) {
     >
       <Text
         fontFamily="body"
-        fontSize={isRoot ? "15px" : "14px"}
+        fontSize={isRoot ? "14px" : "12px"}
         fontWeight={isRoot || isCategory ? "medium" : "normal"}
         color={isRoot ? "#172B7A" : "#282D33"}
         css={{ fontVariantNumeric: "tabular-nums" }}
@@ -211,62 +212,50 @@ function ValueCell({ row }: { row: FluxRow }) {
   );
 }
 
-interface TreeTooltipProps {
+/** Gap between the tooltip's right edge and the plot column. */
+const TOOLTIP_GAP = 8;
+
+/**
+ * Bar-hover tooltip: the category as heading, then its lines per
+ * `fluxTreeTooltipModel`, in the same shared panel the time series uses.
+ *
+ * The tooltip is taller than a row and the plot has no empty space in either
+ * axis (every pixel band belongs to some row's bar), so recharts' own
+ * cursor-following placement always lands on bars. Instead recharts renders
+ * this into the bar-free label column (its `portal`), level with the hovered
+ * row — placed by the row's index and this component's uniform row pitch (see
+ * the file doc comment). recharts still decides *when* it shows, so mouse,
+ * touch and keyboard activation all reach it. It hugs the plot when the column
+ * has room, and is flush left and no wider than the column when it doesn't:
+ * overhanging the column put it over the bars, and pinning it left of the plot
+ * let the card's horizontal-scroll wrapper clip it.
+ */
+export function TreeTooltipContent({
+  active,
+  payload,
+  rows,
+  measure,
+}: {
   active?: boolean;
   payload?: Array<{ payload: PlotRow }>;
   rows: FluxRow[];
   measure: FluxMeasure;
-}
-
-/** Bar-hover tooltip: category, value and units — matching the time series' `ChartWidget` tooltip pattern. */
-function GhgFluxTooltip({ active, payload, rows, measure }: TreeTooltipProps) {
+}) {
   if (!active || !payload?.length) return null;
-  const row = rows.find((r) => r.node.id === payload[0].payload.id);
-  if (!row) return null;
-
-  const line = (label: string, value: number | null, color?: string) => (
-    <Flex key={label} justify="space-between" gap={4} fontSize="xs">
-      <Text as="span" color="fg.muted">
-        {label}
-      </Text>
-      <Text
-        as="span"
-        fontFamily="mono"
-        color={color}
-        css={{ fontVariantNumeric: "tabular-nums" }}
-      >
-        {value == null ? "—" : signed.format(value)} {FLUX_UNITS}
-      </Text>
-    </Flex>
-  );
-
+  const index = rows.findIndex((r) => r.node.id === payload[0].payload.id);
+  if (index < 0) return null;
+  const row = rows[index];
+  const { rows: lines, total } = fluxTreeTooltipModel(row, measure);
   return (
     <Box
-      bg="bg.panel"
-      p={2}
-      py={1}
-      borderRadius="md"
-      boxShadow="md"
-      border="1px"
-      borderColor="border"
-      css={{
-        maxWidth: `${TOOLTIP_WIDTH}px`,
-        whiteSpace: "normal",
-        wordWrap: "break-word",
-      }}
+      position="absolute"
+      top={`${AXIS_HEIGHT + index * ROW_HEIGHT}px`}
+      left={`max(0px, calc(100% - ${FLUX_TOOLTIP_WIDTH + TOOLTIP_GAP}px))`}
+      w={`min(${FLUX_TOOLTIP_WIDTH}px, 100%)`}
+      zIndex={1}
+      pointerEvents="none"
     >
-      <Text fontSize="xs" fontWeight="medium" mb={1}>
-        {row.node.label}
-      </Text>
-      <Flex direction="column" gap={0.5}>
-        {measure === "gross" &&
-          row.node.avgEmissions != null &&
-          line("Emissions", row.node.avgEmissions, EMISSIONS_COLOR)}
-        {measure === "gross" &&
-          row.node.avgRemovals != null &&
-          line("Removals", row.node.avgRemovals, REMOVALS_COLOR)}
-        {line("Net flux", row.net)}
-      </Flex>
+      <FluxTooltip title={row.node.label} rows={lines} total={total} />
     </Box>
   );
 }
@@ -315,21 +304,9 @@ export function GhgFluxTreeChart({
 
   const height = AXIS_HEIGHT + rows.length * ROW_HEIGHT;
 
-  // The tooltip is taller than a row and the plot has no empty space in
-  // either axis (every pixel band belongs to some row's bar), so recharts'
-  // default cursor-following placement always sits on top of bars. Pin it
-  // instead: x escapes the plot to the left, over the bar-free tree-label
-  // column; y is computed from the hovered row's own index, using this
-  // component's own uniform row pitch (see the file doc comment) rather than
-  // trusting recharts' cursor coordinate.
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const tooltipPosition =
-    activeIndex == null
-      ? undefined
-      : {
-          x: -(TOOLTIP_WIDTH + 8),
-          y: AXIS_HEIGHT + activeIndex * ROW_HEIGHT,
-        };
+  // recharts renders the hover tooltip into the label column. State, not a
+  // ref, so the element reaching `<Tooltip portal>` re-renders the chart.
+  const [labelColumn, setLabelColumn] = useState<HTMLDivElement | null>(null);
 
   return (
     <Flex align="flex-start" w="full">
@@ -343,6 +320,8 @@ export function GhgFluxTreeChart({
         flex="1 1 0"
         minW={0}
         maxW={`${TREE_COLUMN_MAX_WIDTH}px`}
+        position="relative"
+        ref={setLabelColumn}
       >
         <Box h={`${AXIS_HEIGHT}px`} />
         {rows.map((row) => (
@@ -377,13 +356,6 @@ export function GhgFluxTreeChart({
               bottom: 0,
               left: PLOT_MARGIN_X,
             }}
-            onMouseMove={(state) => {
-              // recharts reports `activeTooltipIndex` as a numeric string
-              // (`"0"`, `"1"`, ...), not a number.
-              const index = Number(state?.activeTooltipIndex);
-              setActiveIndex(Number.isInteger(index) ? index : null);
-            }}
-            onMouseLeave={() => setActiveIndex(null)}
           >
             <XAxis
               type="number"
@@ -404,10 +376,8 @@ export function GhgFluxTreeChart({
             <ReferenceLine x={0} stroke={ZERO_LINE_COLOR} strokeWidth={1} />
             <Tooltip
               cursor={{ fill: "var(--chakra-colors-black-alpha-200)" }}
-              content={<GhgFluxTooltip rows={rows} measure={measure} />}
-              position={tooltipPosition}
-              allowEscapeViewBox={{ x: true }}
-              wrapperStyle={{ pointerEvents: "none" }}
+              portal={labelColumn}
+              content={<TreeTooltipContent rows={rows} measure={measure} />}
             />
             {measure === "net" ? (
               <Bar dataKey="net" barSize={BAR_SIZE} isAnimationActive={false}>
