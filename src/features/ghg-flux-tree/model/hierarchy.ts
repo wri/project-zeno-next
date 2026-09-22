@@ -56,12 +56,10 @@ export function nodeNet(node: FluxNode): number | null {
 export function singleSidedLabel(
   node: FluxNode
 ): "emissions only" | "removals only" | null {
-  if (node.avgEmissions != null && node.avgRemovals == null) {
-    return "emissions only";
-  }
-  if (node.avgRemovals != null && node.avgEmissions == null) {
-    return "removals only";
-  }
+  const hasEmissions = node.avgEmissions != null && node.avgEmissions !== 0;
+  const hasRemovals = node.avgRemovals != null && node.avgRemovals !== 0;
+  if (hasEmissions && !hasRemovals) return "emissions only";
+  if (hasRemovals && !hasEmissions) return "removals only";
   return null;
 }
 
