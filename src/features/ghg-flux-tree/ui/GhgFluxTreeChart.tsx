@@ -42,6 +42,10 @@ import {
   TREE_COLUMN_MAX_WIDTH,
 } from "./tree-chart-constants";
 
+const TREE_LABEL_ABBREVS: Readonly<Record<string, string>> = {
+  trees_remaining_trees: "Trees rem. trees",
+};
+
 interface PlotRow {
   id: string;
   avgEmissions: number | null;
@@ -129,6 +133,7 @@ function TreeLabel({
   // The root is always open in the design — it carries an info icon, not a
   // caret — so only descendants get a disclosure control.
   const showCaret = row.hasChildren && !isRoot;
+  const displayLabel = TREE_LABEL_ABBREVS[row.node.id] ?? row.node.label;
 
   return (
     <Flex
@@ -161,22 +166,16 @@ function TreeLabel({
         <Box w="12px" flexShrink={0} />
       )}
       <Text
-        // Shrink-to-fit, not `flex="1"`: the label claiming the row's free
-        // space would park every info icon on a right-hand rail, far from the
-        // class it belongs to. `minW={0}` still lets it ellipsize when the
-        // column is too narrow, and the icon keeps its place just after the
-        // text.
         flex="0 1 auto"
         minW={0}
-        truncate
-        title={row.node.label}
         fontFamily="body"
-        fontSize={isRoot ? "15px" : "13px"}
+        fontSize={isRoot ? "14px" : "12px"}
         fontWeight={isRoot || row.hasChildren ? "medium" : "normal"}
         color={isRoot ? "#172B7A" : "#282D33"}
         lineHeight="1.25"
+        title={row.node.label}
       >
-        {row.node.label}
+        {displayLabel}
       </Text>
       <LgmsClassInfo
         classId={row.node.id}
@@ -202,7 +201,7 @@ function ValueCell({ row }: { row: FluxRow }) {
     >
       <Text
         fontFamily="body"
-        fontSize={isRoot ? "15px" : "14px"}
+        fontSize={isRoot ? "14px" : "12px"}
         fontWeight={isRoot || isCategory ? "medium" : "normal"}
         color={isRoot ? "#172B7A" : "#282D33"}
         css={{ fontVariantNumeric: "tabular-nums" }}
