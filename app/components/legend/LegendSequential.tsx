@@ -12,17 +12,25 @@ import { ColorBar } from "./ColorBar";
  * @param props.color - Array of colors or color/value stops for the ramp.
  */
 export function LegendSequential(props: {
+  unit?: string;
   minLabel: string;
   maxLabel: string;
   color: SymbolColor[] | SymbolColorValue[];
 }) {
-  const { minLabel, maxLabel, color } = props;
+  const { unit, minLabel, maxLabel, color } = props;
 
   const colorRamp = makeColorRamp(color);
   if (!colorRamp) return null;
 
   return (
     <Box w="100%">
+      {unit && (
+        <Flex justifyContent="flex-end">
+          <Text as="span" fontSize="xs">
+            {unit}
+          </Text>
+        </Flex>
+      )}
       <ColorBar color={colorRamp} />
       <Flex justifyContent="space-between" fontSize="xs">
         <VisuallyHidden>From</VisuallyHidden>

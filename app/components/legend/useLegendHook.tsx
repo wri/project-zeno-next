@@ -75,6 +75,7 @@ export function renderLegendSymbology(legend: DatasetLegendConfig) {
     />
   ) : type === "sequential" ? (
     <LegendSequential
+      unit={unit ?? undefined}
       minLabel={items?.[0]?.label ?? ""}
       maxLabel={items?.[items.length - 1]?.label ?? ""}
       color={
