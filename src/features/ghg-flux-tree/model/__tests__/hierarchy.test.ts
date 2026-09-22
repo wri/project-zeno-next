@@ -212,7 +212,7 @@ describe("parseFluxNodes", () => {
 });
 
 describe("fluxTreeTableProps", () => {
-  const { hiddenColumns, boldRowWhen } = fluxTreeTableProps();
+  const { hiddenColumns, boldRowWhen, pageSize } = fluxTreeTableProps();
 
   it("hides the raw id/parent_id columns", () => {
     expect(hiddenColumns).toEqual(["id", "parent_id"]);
@@ -223,5 +223,9 @@ describe("fluxTreeTableProps", () => {
     expect(
       boldRowWhen({ id: "mineral_soil", parent_id: "soil", label: "Mineral" })
     ).toBe(false);
+  });
+
+  it("shows the whole tree on one page", () => {
+    expect(pageSize).toBe(Infinity);
   });
 });

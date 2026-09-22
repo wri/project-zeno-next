@@ -16,7 +16,35 @@ import {
   CaretUpDownIcon,
 } from "@phosphor-icons/react";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
+
+/**
+ * Slice for the current page. `pageSize: Infinity` disables paging, for
+ * fixed-size tables (e.g. a hierarchy) that must read as one unit.
+ */
+export function paginateRows<T>(
+  rows: T[],
+  page: number,
+  pageSize: number = DEFAULT_PAGE_SIZE
+): {
+  pageRows: T[];
+  /** Index of the first page row within `rows` (0 when not paginating). */
+  startIndex: number;
+  totalPages: number;
+  needsPagination: boolean;
+} {
+  const needsPagination = rows.length > pageSize;
+  // Only multiply by pageSize when paging: `0 * Infinity` is NaN.
+  const startIndex = needsPagination ? page * pageSize : 0;
+  return {
+    pageRows: needsPagination
+      ? rows.slice(startIndex, startIndex + pageSize)
+      : rows,
+    startIndex,
+    totalPages: needsPagination ? Math.ceil(rows.length / pageSize) : 1,
+    needsPagination,
+  };
+}
 
 /** Column list after applying an optional preferred order and hidden set. */
 export function resolveTableColumns(
@@ -51,6 +79,8 @@ interface TableWidgetProps {
   boldRowWhen?: (row: Record<string, string | number | boolean>) => boolean;
   /** Columns to render bold (exact key match), e.g. a derived net/total column. */
   boldColumns?: string[];
+  /** Rows per page (default 10). `Infinity` renders every row, no paging. */
+  pageSize?: number;
 }
 
 type SortDir = "asc" | "desc" | null;
@@ -62,6 +92,7 @@ export default function TableWidget({
   hiddenColumns,
   boldRowWhen,
   boldColumns,
+  pageSize = DEFAULT_PAGE_SIZE,
 }: TableWidgetProps) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
@@ -124,11 +155,12 @@ export default function TableWidget({
     setPage(0);
   };
 
-  const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
-  const needsPagination = sortedData.length > PAGE_SIZE;
-  const pageData = needsPagination
-    ? sortedData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-    : sortedData;
+  const {
+    pageRows: pageData,
+    startIndex,
+    totalPages,
+    needsPagination,
+  } = paginateRows(sortedData, page, pageSize);
 
   return (
     <Box>
@@ -211,7 +243,7 @@ export default function TableWidget({
             ) => {
               const isBoldRow = boldRowWhen?.(row) ?? false;
               return (
-                <Table.Row key={page * PAGE_SIZE + rowIndex} bg="transparent">
+                <Table.Row key={startIndex + rowIndex} bg="transparent">
                   {headers.map((key: string, cellIndex: number) => {
                     const value = row[key];
 
@@ -266,8 +298,8 @@ export default function TableWidget({
       {needsPagination && (
         <Flex align="center" justify="space-between" mt={2} px={1}>
           <Text fontSize="xs" color="fg.muted">
-            Showing {page * PAGE_SIZE + 1}–
-            {Math.min((page + 1) * PAGE_SIZE, sortedData.length)} of{" "}
+            Showing {startIndex + 1}–
+            {Math.min(startIndex + pageSize, sortedData.length)} of{" "}
             {sortedData.length}
           </Text>
           <Flex gap={1}>
