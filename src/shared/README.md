@@ -15,6 +15,9 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
   `@/src/shared/lib/flux-tooltip`.
 - `lib/paint/` — `isPaintReference`, true for an SVG `url(#…)` paint reference as opposed to a CSS colour.
   Import from `@/src/shared/lib/paint`.
+- `lib/router/` — the only routing API (`Link`, `useRouter`, `useSearchParams`, `usePathname`, `useParams`),
+  a Next-style facade over react-router. Import from `@/src/shared/lib/router`; direct `react-router`
+  imports are lint errors outside it and `src/app/main.tsx`.
 - `ui/Pill.tsx` — the DETAIL/MEASURE dropdown pill shared by the net-flux and flux-tree curated
   charts. Import from `@/src/shared/ui/Pill`.
 - `ui/InfoTooltip.tsx` — the info icon + dark tooltip used by the curated chart titles and the

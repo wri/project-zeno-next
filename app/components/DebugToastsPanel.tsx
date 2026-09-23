@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "@/app/lib/router";
-import { Link as NextLink } from "@/app/lib/router";
+import { useSearchParams } from "@/src/shared/lib/router";
+import { Link as NextLink } from "@/src/shared/lib/router";
 import { Box, Button, CloseButton, Link, Stack, Text } from "@chakra-ui/react";
 import {
   BugIcon,

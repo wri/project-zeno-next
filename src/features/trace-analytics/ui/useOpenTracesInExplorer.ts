@@ -12,7 +12,7 @@
  */
 
 import { useCallback } from "react";
-import { useRouter } from "@/app/lib/router";
+import { useRouter } from "@/src/shared/lib/router";
 import type { TraceRow } from "../model/types";
 import { useExplorerStore } from "../model/dataStores";
 import { EXPLORER_MAX_TRACES } from "../model/config";
