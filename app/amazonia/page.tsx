@@ -6,8 +6,8 @@ import Article from "./sections/Article";
 import Partners from "./sections/Partners";
 
 export default function AmazoniaPage() {
-  // ponytail: set client-side, so crawlers and link previews still see
-  // index.html's generic title/description; prerender this route if that matters.
+  // Set client-side, so crawlers and link previews still see index.html's
+  // generic title/description until this route is prerendered.
   useEffect(() => {
     const previous = document.title;
     document.title = "Amazon.ia | Global Nature Watch Horizon";
