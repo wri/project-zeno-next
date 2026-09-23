@@ -6,12 +6,24 @@ type NudgeClickEvent = {
     | "dataset_choice"
     | "create_dashboard"
     | "open_dashboard"
-    | "dashboard_chip";
+    | "dashboard_chip"
+    // Agent (backend) nudge types other than dataset_choice. Ad hoc or empty
+    // backend types collapse to agent_other so a GA dimension never receives
+    // arbitrary model-chosen strings; the raw type rides in agent_nudge_type.
+    | "aoi_choice"
+    | "dashboard_choice"
+    | "insight_choice"
+    | "agent_other";
   dataset_name?: string;
   area_name?: string;
   dataset_id?: number;
   chip_text?: string;
+  agent_nudge_type?: string;
+  option_index?: number;
+  option_text?: string;
 };
+
+export type { NudgeClickEvent };
 
 type TrackableEvent = NudgeClickEvent;
 

@@ -33,6 +33,23 @@ describe("ChatNudge", () => {
   beforeEach(() => {
     sendSpy.mockClear();
     useChatStore.setState({ sendMessage: sendSpy });
+    window.dataLayer = [];
+  });
+
+  it("pushes the real backend nudge type to GTM, not dataset_choice", () => {
+    renderNudge({ type: "aoi_choice", options: ["Pará", "Paraná"] });
+
+    fireEvent.click(screen.getByText("Pará"));
+
+    expect(window.dataLayer).toEqual([
+      {
+        event: "nudge_click",
+        nudge_type: "aoi_choice",
+        agent_nudge_type: "aoi_choice",
+        option_index: 0,
+        option_text: "Pará",
+      },
+    ]);
   });
 
   it("sends the picked option as a nudge response carrying the nudge type and index", () => {

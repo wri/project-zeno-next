@@ -5,6 +5,7 @@ import { CheckIcon } from "@phosphor-icons/react";
 import { Nudge } from "@/app/types/chat";
 import useChatStore from "@/app/store/chatStore";
 import { trackEvent } from "@/app/lib/track-event";
+import { toNudgeClickEvent } from "@/app/utils/nudgeClickEvent";
 import {
   addSuggestedDatasetToMap,
   datasetChoiceEntry,
@@ -31,13 +32,8 @@ export default function ChatNudge({ nudge }: { nudge: Nudge }) {
     if (selectedIndex !== null) return;
     setSelectedIndex(index);
 
+    trackEvent(toNudgeClickEvent(nudge, index));
     const dataset = datasetChoiceEntry(nudge, index);
-    trackEvent({
-      event: "nudge_click",
-      nudge_type: "dataset_choice",
-      dataset_name: dataset?.dataset_name ?? nudge.options[index],
-      dataset_id: dataset?.dataset_id,
-    });
     if (dataset) addSuggestedDatasetToMap(dataset);
 
     useChatStore.getState().sendMessage(nudge.options[index], {
