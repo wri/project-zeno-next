@@ -23,6 +23,7 @@ import {
 } from "@/app/utils/areaHelpers";
 
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
+import { getBoundaryFeatureDetails } from "@/app/utils/boundaryFeatureDetails";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
 // Direct-analysis "View Analysis" nudge alongside the live analyse nudge.
@@ -85,6 +86,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             lat,
             lng,
             name: aoiName,
+            details: getBoundaryFeatureDetails(layerId, feature!.properties),
           });
 
           if (hoverId !== undefined) {
