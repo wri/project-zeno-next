@@ -42,6 +42,22 @@ export function getLayerContextFromDatasetCard(
   };
 }
 
+/**
+ * Build the managed map layers for one specific declared layer of a
+ * multi-layer card (e.g. picking "lulucf" from LGMS's supporting layers in
+ * the Data Catalog panel) — the rest of the card's layers are not added, per
+ * `buildDatasetLayers`'s single-visible-layer rule.
+ */
+export function selectDatasetCardLayer(
+  card: DatasetCardConfig,
+  layerName: string
+): Layer[] {
+  return buildDatasetLayers({
+    ...getLayerContextFromDatasetCard(card),
+    selectedLayerName: layerName,
+  });
+}
+
 /** Build the managed map layers for a dataset card — one per declared layer,
  * plus an optional context sub-layer. */
 export function datasetCardLayers(card: DatasetCardConfig): Layer[] {

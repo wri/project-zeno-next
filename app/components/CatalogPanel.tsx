@@ -15,6 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  CaretDownIcon,
   CircleHalfIcon,
   EyeIcon,
   EyeSlashIcon,
@@ -28,6 +29,7 @@ import {
   ORDERED_DATASET_CARDS,
   DATASET_CATEGORIES,
   type DatasetCardConfig,
+  type DatasetCardLayer,
   type DatasetCategoryId,
 } from "@/app/constants/datasets";
 import {
@@ -41,7 +43,10 @@ import {
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import type { DatasetInfo } from "@/app/types/chat";
-import { datasetCardLayers } from "@/app/utils/datasetCardLayerContext";
+import {
+  datasetCardLayers,
+  selectDatasetCardLayer,
+} from "@/app/utils/datasetCardLayerContext";
 import { datasetLayerId } from "@/app/utils/datasetLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
@@ -330,7 +335,196 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
             label={layerRefs.length > 1 ? ref.name : card.dataset_name}
           />
         ))}
+      {/* layers[0] is the card's own default layer, shown above by the
+          card's own toggle; layers[1:] are "supporting layers" (e.g. LGMS's
+          LULUCF/agriculture) disclosed here as their own selectable rows,
+          each with its own info modal — PZB-1346 / project-zeno PR #830. */}
+      {card.layers && card.layers.length > 1 && (
+        <SupportingLayersDisclosure
+          card={card}
+          layers={card.layers.slice(1)}
+          layerRefs={layerRefs.slice(1)}
+          activeLayerIds={activeLayerIds}
+        />
+      )}
     </Box>
+  );
+}
+
+/** Collapsible "N supporting layers — view only" section under a multi-layer
+ * card, listing each non-default layer as its own selectable row. */
+function SupportingLayersDisclosure({
+  card,
+  layers,
+  layerRefs,
+  activeLayerIds,
+}: {
+  card: DatasetCardConfig;
+  layers: DatasetCardLayer[];
+  layerRefs: { name: string; id: string }[];
+  activeLayerIds: string[];
+}) {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <Box
+      mt={1}
+      borderRadius="4px"
+      overflow="hidden"
+      border="1px solid"
+      borderColor="rgba(19, 22, 25, 0.1)"
+    >
+      <Flex
+        as="button"
+        onClick={() => setOpen((o) => !o)}
+        align="center"
+        gap={2}
+        w="100%"
+        px={4}
+        py="10px"
+        bg="#FAFBFC"
+      >
+        <Box
+          transform={open ? "rotate(180deg)" : undefined}
+          transition="transform 0.15s ease"
+          display="flex"
+        >
+          <CaretDownIcon size={12} color="#3A4048" />
+        </Box>
+        <Text
+          fontFamily="body"
+          fontWeight="medium"
+          fontSize="12px"
+          color="#3A4048"
+        >
+          {layers.length} supporting layer{layers.length === 1 ? "" : "s"}
+        </Text>
+        <Text fontFamily="mono" fontSize="10px" color="#656E7B">
+          — view only
+        </Text>
+      </Flex>
+      {open &&
+        layers.map((layer, i) => (
+          <SupportingLayerRow
+            key={layer.name}
+            card={card}
+            layer={layer}
+            isSelected={activeLayerIds.includes(layerRefs[i].id)}
+          />
+        ))}
+    </Box>
+  );
+}
+
+/** One "supporting layer" row: its own thumbnail, info modal, and toggle —
+ * turning it on swaps the card's single visible layer to this one. */
+function SupportingLayerRow({
+  card,
+  layer,
+  isSelected,
+}: {
+  card: DatasetCardConfig;
+  layer: DatasetCardLayer;
+  isSelected: boolean;
+}) {
+  const {
+    open: infoOpen,
+    onOpen: onInfoOpen,
+    onClose: onInfoClose,
+  } = useDisclosure();
+  const addLayer = useMapStore((s) => s.addLayer);
+  const removeDatasetLayers = useMapStore((s) => s.removeDatasetLayers);
+
+  function handleToggle(checked: boolean) {
+    removeDatasetLayers(card.dataset_id);
+    if (checked) {
+      selectDatasetCardLayer(card, layer.name).forEach(addLayer);
+    }
+  }
+
+  const title = layer.title ?? layer.name;
+  const layerDataset = {
+    dataset_id: card.dataset_id,
+    dataset_name: title,
+    tile_url: layer.tile_url,
+    summary: layer.summary,
+    description: layer.description,
+    cautions: layer.cautions,
+    citation: layer.citation,
+    cadence: layer.cadence ?? card.cadence,
+    resolution: layer.resolution ?? card.resolution,
+    geographic_coverage: layer.geographic_coverage ?? card.geographic_coverage,
+    provider: layer.provider ?? card.provider,
+  } as unknown as DatasetInfo;
+  const layerText =
+    [
+      layer.cadence ?? card.cadence,
+      layer.geographic_coverage ?? card.geographic_coverage,
+      layer.provider ?? card.provider,
+    ]
+      .filter(Boolean)
+      .join(" · ") || undefined;
+
+  return (
+    <Flex borderTop="1px solid" borderColor="rgba(19, 22, 25, 0.1)">
+      <Box w="4px" flexShrink={0} bg={isSelected ? "#8EA5EA" : "#E0E2E5"} />
+      <Box flex="1" minW={0}>
+        <DatasetInfoModal
+          isOpen={infoOpen}
+          onClose={onInfoClose}
+          dataset={layerDataset}
+        />
+        <CatalogCard
+          thumbnail={
+            layer.img ? (
+              <Image
+                objectFit="cover"
+                w="100%"
+                h="100%"
+                src={layer.img}
+                alt={title}
+              />
+            ) : (
+              <Flex
+                w="100%"
+                h="100%"
+                align="center"
+                justify="center"
+                bg="gray.50"
+              >
+                <StackSimpleIcon size={32} color="#656E7B" />
+              </Flex>
+            )
+          }
+          typeLabel="DATA"
+          typeLabelColor="#1AA915"
+          badge={
+            <Box
+              bg={isSelected ? "#C2CCF2" : "#F4F5F6"}
+              borderRadius="4px"
+              px="5px"
+              py="2px"
+            >
+              <Text
+                fontFamily="mono"
+                fontSize="9px"
+                color={isSelected ? "#172B7A" : "#3A4048"}
+              >
+                VIEW ONLY
+              </Text>
+            </Box>
+          }
+          title={title}
+          description={layerText}
+          selected={isSelected}
+          selectedBg="#F0F4FF"
+          showOnMap={isSelected}
+          onShowOnMapChange={handleToggle}
+          onInfoClick={onInfoOpen}
+          dataPanel="datasets"
+        />
+      </Box>
+    </Flex>
   );
 }
 
