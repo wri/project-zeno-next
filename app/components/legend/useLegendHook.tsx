@@ -21,6 +21,7 @@ import {
 import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
+import { selectLayerOptions } from "@/app/types/map";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 import {
   buildImageryGroup,
@@ -107,6 +108,11 @@ export interface LegendAoi {
   name: string;
 }
 
+/** The visible boundary layer, shown as an AREA pill named after the dataset. */
+export interface LegendBoundary {
+  name: string;
+}
+
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendEntry[]>([]);
   const { palettesByDatasetId } = useDatasetsCatalog();
@@ -117,6 +123,8 @@ export function useLegendHook() {
     setLayerVisibility,
     removeLayer,
     reorderLayers,
+    selectAreaLayer,
+    setSelectAreaLayer,
   } = useMapStore();
   const isImageryUpdating = useChatStore((s) => s.isImageryUpdating);
 
@@ -216,6 +224,19 @@ export function useLegendHook() {
     name: l.selectionName ?? l.name,
   }));
 
+  const boundaryName = selectLayerOptions.find(
+    (o) => o.id === selectAreaLayer
+  )?.name;
+  const boundary: LegendBoundary | null = boundaryName
+    ? { name: boundaryName }
+    : null;
+
+  // Closing the boundary pill turns the layer off (and its Boundaries card).
+  const handleRemoveBoundary = useCallback(
+    () => setSelectAreaLayer(null),
+    [setSelectAreaLayer]
+  );
+
   const handleRemoveAoi = useCallback(
     (layerId: string) => removeLayer(layerId),
     [removeLayer]
@@ -286,5 +307,12 @@ export function useLegendHook() {
     ]
   );
 
-  return { layers, handleLayerAction, aois, handleRemoveAoi };
+  return {
+    layers,
+    handleLayerAction,
+    aois,
+    handleRemoveAoi,
+    boundary,
+    handleRemoveBoundary,
+  };
 }
