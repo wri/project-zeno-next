@@ -44,7 +44,7 @@ import {
 } from "@/app/utils/threadNavigation";
 import useMapStore from "../store/mapStore";
 
-const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
+const isPrototype = import.meta.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 const WHATS_NEW_STORAGE_KEY = "whats-new-v5-dismissed";
 

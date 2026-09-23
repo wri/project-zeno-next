@@ -1,9 +1,9 @@
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ||
+  import.meta.env.NEXT_PUBLIC_API_HOST ||
   "https://api.staging.globalnaturewatch.org";
 
 const RW_API_HOST =
-  process.env.NEXT_PUBLIC_RW_API_URL || "https://api.resourcewatch.org";
+  import.meta.env.NEXT_PUBLIC_RW_API_URL || "https://api.resourcewatch.org";
 
 export const API_CONFIG = {
   API_HOST,

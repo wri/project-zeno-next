@@ -6,10 +6,12 @@ import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawe
 import PageHeader from "@/app/components/PageHeader";
 import { CATALOG_COLUMN_Z_INDEX } from "@/app/explorationLayout";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
+import { useParams } from "@/app/lib/router";
 import { DashboardDetailPage } from "@/src/features/dashboards";
 import { InsightsPanel } from "@/src/features/insights-history";
 
 export default function DashboardDetailRoute() {
+  const id = useParams<{ id: string }>()?.id;
   const isReady = useAuthGuard();
   if (!isReady) return null;
 
@@ -17,7 +19,8 @@ export default function DashboardDetailRoute() {
     <>
       <PageHeader />
       <ConversationHistoryDrawer />
-      <DashboardDetailPage />
+      {/* Keyed so switching dashboards starts from fresh state. */}
+      <DashboardDetailPage key={id} />
       {/* Analyses pane overlay — opened from the chat input's "Analyses"
           button (sidebarStore). Mounted here (app layer) so the dashboards
           feature never imports the insights-history feature. Its own fixed,

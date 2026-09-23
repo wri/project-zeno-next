@@ -12,7 +12,7 @@ import { Carousel } from "../../../components/ui/carousel";
 import { CaretRightIcon, CaretLeftIcon } from "@phosphor-icons/react";
 import { Link } from "@/app/lib/router";
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+const LANDING_PAGE_VERSION = import.meta.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 const SUPPORT_TABS = [
   {
     title: "Track the vegetation disturbances that matter most",

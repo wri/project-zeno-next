@@ -10,6 +10,7 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  { ignores: [".next/", ".claude/", "dist/", "coverage/", "next-env.d.ts"] },
   ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),
   {
     rules: {
@@ -28,13 +29,17 @@ const eslintConfig = [
               name: "next/navigation",
               message: "Import routing hooks from @/app/lib/router instead.",
             },
+            {
+              name: "react-router",
+              message: "Import routing APIs from @/app/lib/router instead.",
+            },
           ],
         },
       ],
     },
   },
   {
-    files: ["app/lib/router.ts"],
+    files: ["app/lib/router.tsx", "src/app/main.tsx"],
     rules: {
       "no-restricted-imports": "off",
     },
