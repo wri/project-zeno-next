@@ -207,7 +207,7 @@ describe("useAoiActions", () => {
       layers: [
         {
           id: "dataset-12",
-          name: "LGMS total net GHG flux",
+          name: "lgms",
           type: "raster",
           visible: true,
           datasetId: 12,
@@ -220,7 +220,7 @@ describe("useAoiActions", () => {
 
     expect(runDirectAnalysis).toHaveBeenCalledWith(
       expect.objectContaining({
-        dataset: { id: 12, name: "LGMS total net GHG flux" },
+        dataset: { id: 12, name: "Land GHG Monitoring System (LGMS)" },
         startDate: "2016-01-01",
         endDate: "2024-12-31",
       })
@@ -232,7 +232,7 @@ describe("useAoiActions", () => {
       layers: [
         {
           id: "dataset-12",
-          name: "LGMS total net GHG flux",
+          name: "lgms",
           type: "raster",
           visible: true,
           datasetId: 12,
