@@ -66,7 +66,7 @@ All state lives in Zustand stores under `app/store/`:
 | `mapStore`     | MapLibre ref, layers (via `layerManagerSlice`), TerraDraw, flyTo — the AOI + dataset query context     |
 | `authStore`    | Auth status, token, prompt usage quota (read from `X-Prompts-Used`/`X-Prompts-Quota` response headers) |
 | `sidebarStore` | Sidebar open/closed, thread list                                                                       |
-| `promptStore`  | Welcome prompt suggestions (read from `public/welcome-prompts.json`)                                   |
+| `promptStore`  | Welcome prompt suggestions (read from `app/constants/welcome-prompts.json`)                            |
 
 **Key pattern:** tool handlers write to stores imperatively via `.getState()` (outside React); components read reactively via hooks. See `pickAoi.ts` as the canonical example.
 

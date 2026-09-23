@@ -26,6 +26,10 @@ const router = vi.hoisted(() => ({ pathname: "/app" }));
 
 vi.mock("@/app/lib/router", async (importOriginal) => ({
   ...(await importOriginal<object>()),
+  // React Router's Link needs a router; a plain anchor is enough here.
+  Link: ({ href, ...rest }: { href: string } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest} />
+  ),
   usePathname: () => router.pathname,
   useRouter: () => ({ push: vi.fn() }),
 }));

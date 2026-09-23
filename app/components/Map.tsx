@@ -43,7 +43,7 @@ import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { MAP_LEGEND_ATTR } from "@/app/explorationLayout";
 
-const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);

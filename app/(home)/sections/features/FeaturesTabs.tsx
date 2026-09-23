@@ -10,7 +10,7 @@ import {
 import { CaretRightIcon } from "@phosphor-icons/react";
 import { Link } from "@/app/lib/router";
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+const LANDING_PAGE_VERSION = import.meta.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 const FEATURE_TABS = [
   {

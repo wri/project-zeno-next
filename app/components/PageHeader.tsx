@@ -37,7 +37,7 @@ import { useLogout } from "@/app/hooks/useLogout";
 import { openWhatsNew, useWhatsNewUnread } from "@/app/hooks/useWhatsNew";
 import { mapTabHref } from "@/app/utils/threadNavigation";
 
-const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
+const isPrototype = import.meta.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 
 /**

@@ -88,7 +88,7 @@ export default function LandingHero({
   ]);
   // Measure the width of one set of prompts after render
 
-  const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+  const LANDING_PAGE_VERSION = import.meta.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Submit on Enter (without Shift) or Command+Enter
