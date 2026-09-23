@@ -108,7 +108,7 @@ export default function DashboardChatNudges({
                     nudge_type: "dashboard_chip",
                     chip_text: chip,
                   });
-                  void sendMessage(chip);
+                  void sendMessage(chip, { inputSource: "dashboard_chip" });
                 }}
               >
                 {chip}

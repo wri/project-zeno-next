@@ -26,7 +26,7 @@ export default function AnalyseNudge({
       area_name: suggestion.areaName,
     });
     useChatStore.getState().acceptAnalyseNudge(messageId);
-    runAnalysis(suggestion);
+    runAnalysis(suggestion, "analyse_nudge");
   };
 
   // Matches the agent prompt wording (buildAnalysisPrompt) so the message the

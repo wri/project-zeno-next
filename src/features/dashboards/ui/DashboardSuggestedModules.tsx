@@ -350,7 +350,9 @@ export default function DashboardSuggestedModules({
             bg={ANALYSIS_CARD_BG}
             borderColor={ANALYSIS_CARD_BORDER}
             disabled={chatDisabled}
-            onClick={() => void sendMessage(card.prompt)}
+            onClick={() =>
+              void sendMessage(card.prompt, { inputSource: "dashboard_module" })
+            }
           />
         ))}
         <ModuleCard

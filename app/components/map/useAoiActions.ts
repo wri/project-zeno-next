@@ -182,11 +182,14 @@ export function useAoiActions(
     isSavingArea,
     generateInsights: () => {
       if (!activeDataset) return;
-      runAnalysis({
-        areaName,
-        datasetId: activeDataset.id,
-        datasetName: activeDataset.name,
-      });
+      runAnalysis(
+        {
+          areaName,
+          datasetId: activeDataset.id,
+          datasetName: activeDataset.name,
+        },
+        "map_action"
+      );
     },
     viewAnalysis: () => {
       if (!activeDataset) return;

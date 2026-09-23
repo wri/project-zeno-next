@@ -1,6 +1,6 @@
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
-import type { AnalyseSuggestion } from "@/app/types/chat";
+import type { AnalyseSuggestion, InputSource } from "@/app/types/chat";
 import { buildAnalysisPrompt } from "./buildAnalysisPrompt";
 
 /**
@@ -11,9 +11,13 @@ import { buildAnalysisPrompt } from "./buildAnalysisPrompt";
  * active map layers). A future enhancement may serve a curated default from the
  * analytics API instead — that swap should be contained to this module.
  */
-export function runAnalysis(suggestion: AnalyseSuggestion): void {
+export function runAnalysis(
+  suggestion: AnalyseSuggestion,
+  // Required so each entry point (analyse CTA vs map AOI menu) states its own.
+  inputSource: Extract<InputSource, "analyse_nudge" | "map_action">
+): void {
   useMapStore.getState().clearAnalysis();
   void useChatStore
     .getState()
-    .sendMessage(buildAnalysisPrompt(suggestion), "query");
+    .sendMessage(buildAnalysisPrompt(suggestion), { inputSource });
 }

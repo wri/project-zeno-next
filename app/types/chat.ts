@@ -150,7 +150,11 @@ export interface InsightGeneration {
 
 export interface ChatPrompt {
   query: string;
-  query_type: string;
+  // Legacy marker kept for BE builds that predate input_source.
+  query_type: QueryType;
+  input_source: InputSource;
+  // Only present when input_source is "nudge".
+  nudge_response?: NudgeResponse;
   thread_id: string;
   ff?: string;
 }
@@ -463,3 +467,31 @@ export interface LangChainUpdate {
 }
 
 export type QueryType = "query" | "human_input";
+
+// Which UI entry point produced a chat message, sent as `input_source` on
+// POST /api/chat so the BE can tag the turn in Langfuse. The BE rejects
+// unknown values with a 422, so a new literal must land in the BE enum
+// before (or with) the FE code that sends it.
+export type InputSource =
+  | "typed"
+  | "nudge"
+  | "starter_prompt"
+  | "dashboard_chip"
+  | "dashboard_module"
+  | "analyse_nudge"
+  | "url_prompt"
+  | "map_action";
+
+// Wire shape of `nudge_response`: the clicked option of an agent nudge.
+// `type` is the nudge's type exactly as the BE sent it (may be "" or ad hoc).
+export interface NudgeResponse {
+  type: string;
+  option_index: number;
+}
+
+// Caller-facing source argument for chatStore.sendMessage. Required at every
+// call site so a new entry point cannot silently report "typed"; the union
+// makes the nudge response mandatory for nudges and impossible otherwise.
+export type SendSource =
+  | { inputSource: "nudge"; nudgeResponse: NudgeResponse }
+  | { inputSource: Exclude<InputSource, "nudge"> };

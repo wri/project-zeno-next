@@ -8,7 +8,7 @@ import {
   LangChainResponse,
   LangChainUpdate,
   StreamMessage,
-  QueryType,
+  SendSource,
   ToolStepData,
   Nudge,
   BlogArticle,
@@ -28,6 +28,7 @@ import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
 import { mergeCitedArticlesIntoMap } from "@/app/lib/blog-citations";
 import { apiFetch } from "@/app/lib/api-client";
+import { toChatRequestSource } from "@/app/utils/chatInputSource";
 import { getToolErrorMessage, isKnownTool } from "@/app/lib/tool-display";
 import { generateInsightsTool } from "./chat-tools/generateInsights";
 import { pickAoiTool } from "./chat-tools/pickAoi";
@@ -96,7 +97,7 @@ interface ChatActions {
   addDashboardCard: (dashboardId: string, dashboardName?: string) => void;
   sendMessage: (
     message: string,
-    queryType?: QueryType
+    source: SendSource
   ) => Promise<{ isNew: boolean; id: string }>;
   setLoading: (loading: boolean) => void;
   setGeneratingInsight: (generating: boolean) => void;
@@ -647,7 +648,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     return threadId;
   },
 
-  sendMessage: async (message: string, queryType: QueryType = "query") => {
+  sendMessage: async (message: string, source: SendSource) => {
     const {
       addMessage,
       setLoading,
@@ -708,7 +709,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       ) ?? (canUseFeatureFlags(userType) ? EXPERIMENTAL_PROFILE : null);
     const prompt: ChatPrompt = {
       query: message,
-      query_type: queryType,
+      ...toChatRequestSource(source),
       thread_id: threadId,
       ...(ff && { ff }),
     };

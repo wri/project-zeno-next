@@ -55,7 +55,7 @@ function NewThread() {
 
   const submitPrompt = useCallback(
     async (prompt: string) => {
-      const result = await sendMessage(prompt);
+      const result = await sendMessage(prompt, { inputSource: "url_prompt" });
       if (result.isNew) {
         const redirect = firstMessageRedirectPath(
           window.location.pathname,

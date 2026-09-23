@@ -186,7 +186,7 @@ export default function ChatInput({
       onInputModalClose();
     }
 
-    const result = await sendMessage(message);
+    const result = await sendMessage(message, { inputSource: "typed" });
     if (result.isNew) {
       const redirect = firstMessageRedirectPath(
         pathname,

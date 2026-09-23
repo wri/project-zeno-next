@@ -270,7 +270,9 @@ describe("DashboardSuggestedModules", () => {
 
     expect(sendSpy).toHaveBeenCalledTimes(SUGGESTED_PROMPT_MODULES.length);
     for (const card of SUGGESTED_PROMPT_MODULES) {
-      expect(sendSpy).toHaveBeenCalledWith(card.prompt);
+      expect(sendSpy).toHaveBeenCalledWith(card.prompt, {
+        inputSource: "dashboard_module",
+      });
     }
   });
 

@@ -112,7 +112,8 @@ describe("DashboardChatNudges", () => {
     );
 
     expect(sendSpy).toHaveBeenCalledWith(
-      "Add a satellite imagery map of this area"
+      "Add a satellite imagery map of this area",
+      { inputSource: "dashboard_chip" }
     );
   });
 

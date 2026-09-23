@@ -27,8 +27,11 @@ import { apiFetch } from "@/app/lib/api-client";
 import type {
   AnalyseSuggestion,
   Nudge,
+  SendSource,
   ViewAnalysisSuggestion,
 } from "@/app/types/chat";
+
+const TYPED: SendSource = { inputSource: "typed" };
 
 // Error that mimics a fetch/stream abort: `name === "AbortError"` is what
 // chatStore.sendMessage keys off of to take its abort branch.
@@ -98,7 +101,7 @@ describe("chatStore cancellation", () => {
         Promise.resolve(makeAbortableResponse(init!.signal as AbortSignal))
       );
 
-      const promise = useChatStore.getState().sendMessage("hello");
+      const promise = useChatStore.getState().sendMessage("hello", TYPED);
       // sendMessage runs synchronously up to the first await, so the controller
       // is already in state here. cancelRequest() nulls it *before* aborting,
       // which is how the catch block detects a user cancel vs. a timeout.
@@ -117,7 +120,7 @@ describe("chatStore cancellation", () => {
         Promise.resolve(makeAbortableResponse(init!.signal as AbortSignal))
       );
 
-      const promise = useChatStore.getState().sendMessage("hello");
+      const promise = useChatStore.getState().sendMessage("hello", TYPED);
       // Simulate the client-timeout path: it aborts the controller directly
       // without nulling state, so the catch block sees abortController !== null.
       useChatStore.getState().abortController?.abort();
@@ -162,7 +165,7 @@ describe("chatStore view_context", () => {
       dashboard_name: "Paraná",
     });
 
-    await useChatStore.getState().sendMessage("refine this dashboard");
+    await useChatStore.getState().sendMessage("refine this dashboard", TYPED);
 
     expect(sentBody().view_context).toEqual({
       page: "dashboard",
@@ -172,7 +175,7 @@ describe("chatStore view_context", () => {
   });
 
   it("omits view_context when no surface has registered", async () => {
-    await useChatStore.getState().sendMessage("hello");
+    await useChatStore.getState().sendMessage("hello", TYPED);
 
     expect(sentBody()).not.toHaveProperty("view_context");
   });
@@ -207,7 +210,7 @@ describe("chatStore ff (agent profile default)", () => {
   it("defaults ff to experimental for a privileged user", async () => {
     useAuthStore.setState({ userType: "admin" });
 
-    await useChatStore.getState().sendMessage("hi");
+    await useChatStore.getState().sendMessage("hi", TYPED);
 
     expect(sentBody().ff).toBe("experimental");
   });
@@ -215,7 +218,7 @@ describe("chatStore ff (agent profile default)", () => {
   it("omits ff for a non-privileged user", async () => {
     useAuthStore.setState({ userType: "regular" });
 
-    await useChatStore.getState().sendMessage("hi");
+    await useChatStore.getState().sendMessage("hi", TYPED);
 
     expect(sentBody()).not.toHaveProperty("ff");
   });
@@ -227,9 +230,73 @@ describe("chatStore ff (agent profile default)", () => {
       dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
     });
 
-    await useChatStore.getState().sendMessage("hi");
+    await useChatStore.getState().sendMessage("hi", TYPED);
 
     expect(sentBody().ff).toBe("experimental");
+  });
+});
+
+describe("chatStore input_source", () => {
+  const sentBody = (): Record<string, unknown> => {
+    const init = vi.mocked(apiFetch).mock.calls[0]?.[1];
+    return JSON.parse((init?.body as string) ?? "{}");
+  };
+
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    useChatStore.setState({ currentThreadId: "thread-1" });
+    useViewContextStore.setState({ viewContext: null });
+    useAuthStore.setState({ userType: "regular" });
+    useAgentProfileStore.setState({ agentProfile: null });
+    vi.mocked(apiFetch).mockReset();
+    vi.mocked(apiFetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      headers: new Headers(),
+    } as unknown as Response);
+  });
+
+  afterEach(() => {
+    useAuthStore.setState({ userType: null });
+    vi.clearAllMocks();
+  });
+
+  it("sends a typed message as input_source typed with legacy query_type", async () => {
+    await useChatStore.getState().sendMessage("Tree cover loss in Pará", TYPED);
+
+    expect(sentBody()).toEqual({
+      query: "Tree cover loss in Pará",
+      query_type: "query",
+      input_source: "typed",
+      thread_id: "thread-1",
+    });
+  });
+
+  it("sends a nudge click with nudge_response and legacy human_input", async () => {
+    await useChatStore.getState().sendMessage("Tree cover loss", {
+      inputSource: "nudge",
+      nudgeResponse: { type: "dataset_choice", option_index: 0 },
+    });
+
+    expect(sentBody()).toEqual({
+      query: "Tree cover loss",
+      query_type: "human_input",
+      input_source: "nudge",
+      nudge_response: { type: "dataset_choice", option_index: 0 },
+      thread_id: "thread-1",
+    });
+  });
+
+  it("forwards non-typed entry points as their own source", async () => {
+    await useChatStore
+      .getState()
+      .sendMessage("Show me deforestation", { inputSource: "starter_prompt" });
+
+    expect(sentBody()).toMatchObject({
+      input_source: "starter_prompt",
+      query_type: "query",
+    });
+    expect(sentBody()).not.toHaveProperty("nudge_response");
   });
 });
 
@@ -308,7 +375,7 @@ describe("chatStore recoverable tool errors", () => {
       ])
     );
 
-    await useChatStore.getState().sendMessage("hello");
+    await useChatStore.getState().sendMessage("hello", TYPED);
 
     expect(warnings()).toHaveLength(1);
     expect(warnings()[0].message).toBe(
@@ -328,7 +395,7 @@ describe("chatStore recoverable tool errors", () => {
       ])
     );
 
-    await useChatStore.getState().sendMessage("hello");
+    await useChatStore.getState().sendMessage("hello", TYPED);
 
     expect(warnings()).toHaveLength(0);
   });
@@ -343,7 +410,7 @@ describe("chatStore recoverable tool errors", () => {
       ])
     );
 
-    await useChatStore.getState().sendMessage("hello");
+    await useChatStore.getState().sendMessage("hello", TYPED);
 
     const step = useChatStore
       .getState()
@@ -359,7 +426,7 @@ describe("chatStore recoverable tool errors", () => {
       ])
     );
 
-    await useChatStore.getState().sendMessage("hello");
+    await useChatStore.getState().sendMessage("hello", TYPED);
 
     expect(warnings()).toHaveLength(0);
     expect(useChatStore.getState().toolSteps).toHaveLength(0);
@@ -747,7 +814,7 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
       ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
     );
 
-    await useChatStore.getState().sendMessage("create a dashboard");
+    await useChatStore.getState().sendMessage("create a dashboard", TYPED);
 
     expect(dashboardCards()).toHaveLength(1);
     expect(dashboardCards()[0]).toMatchObject({
@@ -761,7 +828,7 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
       ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
     );
 
-    await useChatStore.getState().sendMessage("create a dashboard");
+    await useChatStore.getState().sendMessage("create a dashboard", TYPED);
 
     const messages = useChatStore.getState().messages;
     const noteIndex = messages.findIndex(
@@ -781,7 +848,7 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
       ])
     );
 
-    await useChatStore.getState().sendMessage("add it to my dashboard");
+    await useChatStore.getState().sendMessage("add it to my dashboard", TYPED);
 
     const note = useChatStore
       .getState()
@@ -802,7 +869,7 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
       ])
     );
 
-    await useChatStore.getState().sendMessage("dashboard with widgets");
+    await useChatStore.getState().sendMessage("dashboard with widgets", TYPED);
 
     expect(dashboardCards()).toHaveLength(1);
     // The synthetic announcement is deduped with its card — and since the
@@ -820,14 +887,14 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
     vi.mocked(apiFetch).mockResolvedValue(
       ndjsonResponse([dashboardWriteLine("dash-1", "Paraná")])
     );
-    await useChatStore.getState().sendMessage("create a dashboard");
+    await useChatStore.getState().sendMessage("create a dashboard", TYPED);
 
     vi.mocked(apiFetch).mockResolvedValue(
       ndjsonResponse([
         dashboardWriteLine("dash-1", "Paraná", "add_to_dashboard"),
       ])
     );
-    await useChatStore.getState().sendMessage("add the insight to it");
+    await useChatStore.getState().sendMessage("add the insight to it", TYPED);
 
     expect(dashboardCards()).toHaveLength(2);
   });
@@ -837,7 +904,7 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
       ndjsonResponse([dashboardWriteLine("dash-1")])
     );
 
-    await useChatStore.getState().sendMessage("create a dashboard");
+    await useChatStore.getState().sendMessage("create a dashboard", TYPED);
 
     expect(dashboardCards()).toHaveLength(1);
     expect(dashboardCards()[0].dashboardName).toBeUndefined();
@@ -967,7 +1034,9 @@ describe("nudge stream state → nudge chat message", () => {
       ])
     );
 
-    await useChatStore.getState().sendMessage("search for areas named puri");
+    await useChatStore
+      .getState()
+      .sendMessage("search for areas named puri", TYPED);
 
     const messages = useChatStore.getState().messages;
     const textIndex = messages.findIndex(
@@ -986,7 +1055,9 @@ describe("nudge stream state → nudge chat message", () => {
       ndjsonResponse([toolNudgeLine("send_nudge", aoiNudge)])
     );
 
-    await useChatStore.getState().sendMessage("search for areas named puri");
+    await useChatStore
+      .getState()
+      .sendMessage("search for areas named puri", TYPED);
 
     expect(nudgeMessages()).toHaveLength(1);
     expect(nudgeMessages()[0].nudge).toEqual(aoiNudge);
@@ -1000,7 +1071,9 @@ describe("nudge stream state → nudge chat message", () => {
       ])
     );
 
-    await useChatStore.getState().sendMessage("search for areas named puri");
+    await useChatStore
+      .getState()
+      .sendMessage("search for areas named puri", TYPED);
 
     expect(nudgeMessages()).toHaveLength(1);
     expect(

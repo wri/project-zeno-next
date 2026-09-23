@@ -175,11 +175,14 @@ describe("useAoiActions", () => {
 
     act(() => result.current!.generateInsights());
 
-    expect(runAnalysis).toHaveBeenCalledWith({
-      areaName: "Paraná, Brazil",
-      datasetId: 4,
-      datasetName: "Tree cover loss",
-    });
+    expect(runAnalysis).toHaveBeenCalledWith(
+      {
+        areaName: "Paraná, Brazil",
+        datasetId: 4,
+        datasetName: "Tree cover loss",
+      },
+      "map_action"
+    );
   });
 
   it("runs the direct analysis for View Analysis", () => {

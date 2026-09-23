@@ -35,17 +35,26 @@ describe("runAnalysis", () => {
   });
 
   it("sends the structured prompt through the generative pipeline", () => {
-    runAnalysis(suggestion);
+    runAnalysis(suggestion, "analyse_nudge");
 
     expect(sendMessage).toHaveBeenCalledTimes(1);
     expect(sendMessage).toHaveBeenCalledWith(
       "Analyse Tree cover loss in Pará, Brazil.",
-      "query"
+      { inputSource: "analyse_nudge" }
+    );
+  });
+
+  it("tags the map AOI menu entry point as map_action", () => {
+    runAnalysis(suggestion, "map_action");
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      "Analyse Tree cover loss in Pará, Brazil.",
+      { inputSource: "map_action" }
     );
   });
 
   it("clears the analysis selection once the analysis is triggered", () => {
-    runAnalysis(suggestion);
+    runAnalysis(suggestion, "analyse_nudge");
     expect(useMapStore.getState().analysisSelection).toBeNull();
   });
 });

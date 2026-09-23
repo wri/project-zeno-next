@@ -40,7 +40,10 @@ export default function ChatNudge({ nudge }: { nudge: Nudge }) {
     });
     if (dataset) addSuggestedDatasetToMap(dataset);
 
-    useChatStore.getState().sendMessage(nudge.options[index], "human_input");
+    useChatStore.getState().sendMessage(nudge.options[index], {
+      inputSource: "nudge",
+      nudgeResponse: { type: nudge.type, option_index: index },
+    });
   };
 
   return (

@@ -19,7 +19,7 @@ export default function SamplePrompts() {
   }, [prompts, samplePrompts.length]);
 
   const submitPrompt = async (prompt: string) => {
-    const result = await sendMessage(prompt);
+    const result = await sendMessage(prompt, { inputSource: "starter_prompt" });
     if (result.isNew) {
       const redirect = firstMessageRedirectPath(
         pathname,
