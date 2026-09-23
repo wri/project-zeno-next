@@ -4,7 +4,7 @@ import { useReducer } from "react";
 // eslint-disable-next-line no-restricted-imports -- tests drive a real router
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { describe, expect, it } from "vitest";
-import { useRouter, useSearchParams } from "../router";
+import { useRouter, useSearchParams } from "..";
 
 function setup(initialEntry: string) {
   const hooks = {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "@/app/lib/router";
+import { useRouter } from "@/src/shared/lib/router";
 import {
   Box,
   Button,

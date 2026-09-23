@@ -1,5 +1,5 @@
 import { Box, Button, Container, Heading, Text } from "@chakra-ui/react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 import { CaretRightIcon } from "@phosphor-icons/react";
 
 const LANDING_PAGE_VERSION = import.meta.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;

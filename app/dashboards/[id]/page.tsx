@@ -5,7 +5,7 @@ import { Box } from "@chakra-ui/react";
 import PageHeader from "@/app/components/PageHeader";
 import { CATALOG_COLUMN_Z_INDEX } from "@/app/explorationLayout";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
-import { useParams } from "@/app/lib/router";
+import { useParams } from "@/src/shared/lib/router";
 import { DashboardDetailPage } from "@/src/features/dashboards";
 import { InsightsPanel } from "@/src/features/insights-history";
 

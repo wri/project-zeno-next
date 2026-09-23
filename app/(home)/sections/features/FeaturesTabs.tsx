@@ -8,7 +8,7 @@ import {
   Image,
 } from "@chakra-ui/react";
 import { CaretRightIcon } from "@phosphor-icons/react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 
 const LANDING_PAGE_VERSION = import.meta.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 

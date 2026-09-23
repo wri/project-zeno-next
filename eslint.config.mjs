@@ -37,7 +37,8 @@ const eslintConfig = [
           paths: [
             {
               name: "react-router",
-              message: "Import routing APIs from @/app/lib/router instead.",
+              message:
+                "Import routing APIs from @/src/shared/lib/router instead.",
             },
           ],
         },
@@ -45,7 +46,7 @@ const eslintConfig = [
     },
   },
   {
-    files: ["app/lib/router.tsx", "src/app/main.tsx"],
+    files: ["src/shared/lib/router/index.tsx", "src/app/main.tsx"],
     rules: {
       "no-restricted-imports": "off",
     },

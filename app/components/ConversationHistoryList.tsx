@@ -11,7 +11,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 
-import { Link, usePathname } from "@/app/lib/router";
+import { Link, usePathname } from "@/src/shared/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
