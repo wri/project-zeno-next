@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 pnpm dev              # Start dev server at localhost:3000
-pnpm build            # Production build (Turbopack)
+pnpm build            # Production build (Vite)
 pnpm lint             # ESLint
 pnpm format           # Prettier write
 pnpm format:check     # Prettier check (used in CI)
@@ -72,7 +72,7 @@ All state lives in Zustand stores under `app/store/`:
 
 ### API Client
 
-`app/lib/api-client.ts` exports `apiFetch(path, init)`, which calls the FastAPI backend directly (not through a Next.js route handler). The base URL is `NEXT_PUBLIC_API_HOST`. Auth token is stored in `localStorage` under the key `auth_token` and attached as `Authorization: Bearer <token>`.
+`app/lib/api-client.ts` exports `apiFetch(path, init)`, which calls the FastAPI backend directly. The base URL is `NEXT_PUBLIC_API_HOST`. Auth token is stored in `localStorage` under the key `auth_token` and attached as `Authorization: Bearer <token>`.
 
 ### Chat Stream Pipeline
 
