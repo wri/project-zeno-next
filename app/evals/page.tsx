@@ -1,5 +1,4 @@
 "use client";
-import { Suspense } from "react";
 import { Center, Heading, Text, VStack } from "@chakra-ui/react";
 import SettingsShell from "@/app/components/SettingsShell";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
@@ -31,10 +30,7 @@ export default function EvalsPage() {
 
   return (
     <SettingsShell activePath="/evals">
-      {/* useSearchParams (tab + deep links) requires a Suspense boundary. */}
-      <Suspense fallback={null}>
-        <EvalsScreen />
-      </Suspense>
+      <EvalsScreen />
     </SettingsShell>
   );
 }

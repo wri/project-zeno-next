@@ -6,7 +6,7 @@ import MapGl, {
   Source,
   MapRef,
 } from "react-map-gl/maplibre";
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
@@ -171,7 +171,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             buildBasemapTileUrl(
               basemapTiles,
               MAPBOX_ACCESS_TOKEN,
-              typeof window === "undefined" ? 1 : window.devicePixelRatio
+              window.devicePixelRatio
             ),
           ]}
         >
@@ -251,9 +251,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
               pointerEvents="all"
               hideBelow="md"
             >
-              <Suspense fallback={null}>
-                <DebugToastsPanel />
-              </Suspense>
+              <DebugToastsPanel />
             </Box>
             <Legend
               layers={layers}

@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import OnboardingForm, { type ProfileConfig } from "@/app/onboarding/form";
 
 // Representative mock so every control renders populated without the API.
@@ -52,9 +51,5 @@ const MOCK_PROFILE_CONFIG: ProfileConfig = {
 // Debug-only mirror of /onboarding that renders the real form with mock data
 // and no API/auth — for visual review of the page, content, and form offline.
 export default function OnboardingDebugPage() {
-  return (
-    <Suspense fallback={null}>
-      <OnboardingForm previewConfig={MOCK_PROFILE_CONFIG} />
-    </Suspense>
-  );
+  return <OnboardingForm previewConfig={MOCK_PROFILE_CONFIG} />;
 }

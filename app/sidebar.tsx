@@ -42,14 +42,11 @@ import {
 
 /**
  * The current `location.search`, captured once on mount (mirroring
- * `useFeatureFlag`): the URL only exists client-side, and the first-message
- * thread rewrite can drop query params mid-session — the mount-time value is
- * the trustworthy one.
+ * `useFeatureFlag`): the first-message thread rewrite can drop query params
+ * mid-session — the mount-time value is the trustworthy one.
  */
-function useMountSearch(): string | null {
-  const [search] = useState(() =>
-    typeof window === "undefined" ? null : window.location.search
-  );
+function useMountSearch(): string {
+  const [search] = useState(() => window.location.search);
   return search;
 }
 

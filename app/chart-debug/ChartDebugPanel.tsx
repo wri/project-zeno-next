@@ -27,8 +27,7 @@ import getChartColors from "@/app/utils/ChartColors";
 // ---------------------------------------------------------------------------
 
 function b64(str: string): string {
-  if (typeof window !== "undefined") return btoa(str);
-  return Buffer.from(str).toString("base64");
+  return btoa(str);
 }
 
 const FAKE_GENERATION: InsightGeneration = {

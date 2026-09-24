@@ -44,13 +44,9 @@ interface InsightProvenanceDrawerProps {
 // Helper to safely decode base64 strings (utf-8)
 function safeBase64Decode(str: string): string {
   try {
-    if (typeof window === "undefined") {
-      return Buffer.from(str, "base64").toString("utf8");
-    } else {
-      const binary = atob(str);
-      const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-      return new TextDecoder().decode(bytes);
-    }
+    const binary = atob(str);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
   } catch {
     // Return original string if decoding fails
     return str;

@@ -119,10 +119,7 @@ export default function ChatInput({
   const prefersReducedMotion = usePrefersReducedMotion();
   const dictationBaseRef = useRef("");
   const speech = useSpeechInput({
-    initialLang: resolveSpeechLang(
-      preferredLanguageCode,
-      typeof navigator !== "undefined" ? navigator.language : null
-    ),
+    initialLang: resolveSpeechLang(preferredLanguageCode, navigator.language),
     onStart: () => {
       dictationBaseRef.current = inputValue.trim()
         ? `${inputValue.trim()} `
