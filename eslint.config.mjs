@@ -7,7 +7,16 @@ import prettier from "eslint-config-prettier";
 // Same rule set eslint-config-next's core-web-vitals + typescript presets
 // enabled, minus the @next/* rules.
 const eslintConfig = [
-  { ignores: [".next/", ".claude/", "dist/", "coverage/", "next-env.d.ts"] },
+  {
+    ignores: [
+      ".next/",
+      ".claude/",
+      "dist/",
+      "dist-ssr/",
+      "coverage/",
+      "next-env.d.ts",
+    ],
+  },
   ...tseslint.configs.recommended,
   react.configs.flat.recommended,
   reactHooks.configs.flat.recommended,
@@ -46,7 +55,12 @@ const eslintConfig = [
     },
   },
   {
-    files: ["src/shared/lib/router/index.tsx", "src/app/main.tsx"],
+    files: [
+      "src/shared/lib/router/index.tsx",
+      "src/app/main.tsx",
+      "src/app/routes.tsx",
+      "src/app/entry-server.tsx",
+    ],
     rules: {
       "no-restricted-imports": "off",
     },
