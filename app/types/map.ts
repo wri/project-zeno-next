@@ -16,15 +16,23 @@ export const selectLayerOptions = Object.freeze([
   {
     id: "WDPA",
     name: "Protected Areas",
-    url: "https://tiles.globalforestwatch.org/wdpa_protected_areas/latest/default/{z}/{x}/{y}.pbf",
+    // Pinned to the release the backend ingests (project-zeno
+    // `ingest_wdpa.py`), so a clicked feature's `wdpa_pid` is an id
+    // /api/analyze and /api/dashboards know. Later releases renamed it
+    // `site_pid`. Bump together with the backend ingest.
+    url: "https://tiles.globalforestwatch.org/wdpa_protected_areas/v202407/default/{z}/{x}/{y}.pbf",
     sourceLayer: "wdpa_protected_areas",
     nameKeys: ["name"],
   },
   {
     id: "LandMark",
     name: "Indigenous Lands",
-    url: "https://tiles.globalforestwatch.org/landmark_indigenous_and_community_lands/latest/default/{z}/{x}/{y}.pbf",
-    sourceLayer: "landmark_indigenous_and_community_lands",
+    // The dataset and release the backend ingests (project-zeno
+    // `ingest_landmark.py`): unlike `landmark_indigenous_and_community_lands`
+    // its features carry `landmark_id`, the id the backend addresses them by.
+    // Bump together with the backend ingest.
+    url: "https://tiles.globalforestwatch.org/landmark_ip_lc_and_indicative_poly/v20250625/default/{z}/{x}/{y}.pbf",
+    sourceLayer: "landmark_ip_lc_and_indicative_poly",
     nameKeys: ["name"],
   },
   {
