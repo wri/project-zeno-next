@@ -6,7 +6,7 @@ import {
 import type { Layer } from "@/app/store/layerManagerSlice";
 import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
 
-// One of a dataset's primary, independently-toggleable data layers (see
+// One of a dataset's primary, mutually exclusive data layers (see
 // DatasetLayer in app/types/chat.ts).
 export interface DatasetLayerEntry {
   name: string;

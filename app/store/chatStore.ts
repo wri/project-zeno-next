@@ -445,10 +445,10 @@ async function processStreamMessage(
         | undefined;
       const datasetId = dataset?.dataset_id;
       // Deferred until after pickDatasetTool applies the resulting map
-      // layers (including a multi-layer dataset's default single-visible-
-      // layer opacity) — folding from dataset.layers directly would treat
-      // every *declared* layer as active instead of just the one shown by
-      // default, desyncing from deriveContext's key on the next turn.
+      // layers (only the selected one of a multi-layer dataset is added) —
+      // folding from dataset.layers directly would treat every *declared*
+      // layer as active instead of just the one on the map, desyncing from
+      // deriveContext's key on the next turn.
       void Promise.resolve()
         .then(() => pickDatasetTool(streamMessage, addMessage))
         .then(() => {
