@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { useRouter } from "@/app/lib/router";
 
 import { toaster } from "@/app/components/ui/toaster";
@@ -68,7 +70,7 @@ export function useAoiActions(
     )
   );
   const dateRange = useChatStore((state) => state.dateRange);
-  const { run: runDirectAnalysis } = useAnalysis();
+  const { run: runDirectAnalysis, status: analysisStatus } = useAnalysis();
   const { createAreaAsync, isCreating: isSavingArea } = useCustomAreasCreate();
 
   const datasetId = datasetLayer?.datasetId;
@@ -91,7 +93,8 @@ export function useAoiActions(
     target?.srcId && target.subtype
       ? {
           areaName: target.areaName,
-          source: target.source,
+          // Canonical lowercase: the target carries the map layer id ("GADM").
+          source: target.source.toLowerCase(),
           srcId: target.srcId,
           subtype: target.subtype,
           datasetId,
@@ -106,6 +109,18 @@ export function useAoiActions(
     isCreating: isCreatingDashboard,
     create: createDashboardForArea,
   } = useCreateDashboardForArea(dashboardInput);
+
+  // useAnalysis reports a failed run through its status only; without this the
+  // skeleton would vanish and the click would look like it did nothing.
+  useEffect(() => {
+    if (analysisStatus !== "error") return;
+    toaster.create({
+      title: "Couldn't run this analysis",
+      description: "Something went wrong analysing this area. Try again.",
+      type: "error",
+      duration: 4000,
+    });
+  }, [analysisStatus]);
 
   if (!target?.areaName) return null;
   const { areaName, source, layerId } = target;
@@ -190,10 +205,23 @@ export function useAoiActions(
     },
     viewAnalysis: () => {
       if (!activeDataset) return;
+      // Without a backend id the job cannot be addressed; say so rather than
+      // submit one that fails.
+      if (!target.srcId) {
+        toaster.create({
+          title: "Analysis isn't available for this area",
+          description: "We couldn't match this area to our records.",
+          type: "error",
+          duration: 4000,
+        });
+        return;
+      }
       runDirectAnalysis({
         area: {
           name: areaName,
-          source,
+          // The target carries the map layer id ("GADM", "WDPA"); the backend
+          // expects its canonical lowercase source.
+          source: source.toLowerCase(),
           srcId: target.srcId,
           subtype: target.subtype,
         },
