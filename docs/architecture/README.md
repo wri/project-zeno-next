@@ -8,7 +8,7 @@ This folder is the source of truth for that design, kept in-repo so both the tea
 
 ## The one invariant
 
-> **The core (`model`) never imports React, Next, or HTTP.** `api`/`lib` depend on `model`'s ports — never the reverse; cross-slice imports go only through the slice's public API (`index.ts`).
+> **The core (`model`) never imports React, the router, or HTTP.** `api`/`lib` depend on `model`'s ports — never the reverse; cross-slice imports go only through the slice's public API (`index.ts`).
 
 This is enforced as a build-time fitness function, not a guideline. If you only remember one thing, remember this.
 
