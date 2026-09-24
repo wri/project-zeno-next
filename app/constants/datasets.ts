@@ -1,5 +1,13 @@
 import type { DatasetInfo } from "@/app/types/chat";
 
+import {
+  LGMS_AGRICULTURE_METADATA,
+  LGMS_CROPLAND_METADATA,
+  LGMS_LIVESTOCK_METADATA,
+  LGMS_LULUCF_METADATA,
+  LGMS_NET_FLUX_METADATA,
+} from "./lgms-metadata";
+
 const EOAPI_HOST =
   process.env.NEXT_PUBLIC_EOAPI_HOST ||
   "https://eoapi-cache.globalnaturewatch.org/";
@@ -55,6 +63,8 @@ export type DatasetCardConfig = {
    * full dataset_name is too long. Omit when the full name is already short.
    */
   shortName?: string;
+  /** One-line lede shown above the description in the info modal. */
+  summary?: string;
   description: string;
   img?: string;
   tile_url?: string;
@@ -67,6 +77,7 @@ export type DatasetCardConfig = {
   geographic_coverage?: string;
   provider?: string;
   methodology?: string;
+  cautions?: string;
   citation?: string;
   viewOnly?: boolean;
   /**
@@ -258,20 +269,24 @@ const LGMS_NET_FLUX_RAMP = [
   "#543005",
 ];
 
-/** YlOrBr ramp the LGMS tiles render gross agricultural emissions with. */
+/**
+ * Brown ramp the LGMS tiles render gross agricultural emissions with, sampled
+ * from the published v1.0.3 AgricultureEmissions colormap. These must stay in
+ * sync with the tile-cache algorithm — the earlier YlOrBr ramp was replaced
+ * because it read as orange/red on screen while the tiles are brown (PZB-1426).
+ */
 const LGMS_EMISSIONS_RAMP = [
-  "#ffffd4",
-  "#fee391",
-  "#fec44f",
-  "#fe9929",
-  "#d95f0e",
-  "#993404",
+  "#fef6e4",
+  "#f6e8c3",
+  "#dfc27d",
+  "#bf812d",
+  "#8c510a",
+  "#54300d",
 ];
 
 /**
- * The tile server publishes no class breaks, so the ramps are labelled by
- * direction rather than by invented numbers. Units come from the data-lake
- * asset path (`.../Mg_CO2e_yr-1/...`): per-pixel megagrams CO2e per year.
+ * Units come from the data-lake asset path (`.../Mg_CO2e_yr-1/...`):
+ * per-pixel megagrams CO2e per year.
  */
 const LGMS_UNIT = "Mg CO2e/yr";
 
@@ -292,11 +307,7 @@ const lgmsNetFluxLegend = (
   type: "divergent",
   color: "#543005",
   unit: LGMS_UNIT,
-  items: lgmsRampItems(
-    LGMS_NET_FLUX_RAMP,
-    "Removals (sink)",
-    "Emissions (source)"
-  ),
+  items: lgmsRampItems(LGMS_NET_FLUX_RAMP, "<−30", ">90"),
   info,
   note,
 });
@@ -304,13 +315,14 @@ const lgmsNetFluxLegend = (
 const lgmsEmissionsLegend = (
   title: string,
   info: string,
-  note: string
+  note: string,
+  maxValue: number
 ): DatasetLegendConfig => ({
   title,
   type: "sequential",
-  color: "#993404",
+  color: "#54300d",
   unit: LGMS_UNIT,
-  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "Lower", "Higher"),
+  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "0", `>${maxValue}`),
   info,
   note,
 });
@@ -714,20 +726,20 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     img: "/dataset_card_lgms_net_flux.webp",
     cadence: "annual",
     resolution: "reported per admin area",
-    geographic_coverage:
-      "GADM administrative areas (country, state/province, district) only",
+    geographic_coverage: "global",
     provider: "WRI",
     defaultStartYear: 2016,
     defaultEndYear: 2024,
     categories: ["ghg-fluxes"],
-    description:
-      "Net greenhouse-gas flux across the whole Land GHG Monitoring System — land use, land-use change and forestry plus agriculture — as a global raster. Emissions are positive (a source), removals negative (a sink).",
-    // Analysis" flow for a GADM admin AOI without adding a raster to the map.
+    summary: LGMS_NET_FLUX_METADATA.summary,
+    description: LGMS_NET_FLUX_METADATA.description,
+    cautions: LGMS_NET_FLUX_METADATA.cautions,
+    citation: LGMS_NET_FLUX_METADATA.citation,
     tile_url: lgmsTileUrl("lgms", "net"),
     legend: lgmsNetFluxLegend(
       "LGMS total net GHG flux (2016-2024)",
-      "The balance of emissions and removals across every LGMS sector, so a single layer shows whether land is a net source or a net sink.",
-      "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+      "This layer maps the average annual net GHG flux from land use, land-use change, and agriculture. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, organic soil, cropland management, and livestock. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
+      "Average annual net GHG flux from land use, land-use change, and agriculture. Net flux is the difference between gross emissions and gross removals."
     ),
   },
   // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
@@ -752,14 +764,18 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
+    defaultStartYear: 2016,
+    defaultEndYear: 2024,
     categories: ["ghg-fluxes"],
-    description:
-      "Net greenhouse-gas flux from land use, land-use change and forestry (LULUCF) — the vegetation and soil half of the Land GHG Monitoring System, excluding agricultural emissions.",
+    summary: LGMS_LULUCF_METADATA.summary,
+    description: LGMS_LULUCF_METADATA.description,
+    cautions: LGMS_LULUCF_METADATA.cautions,
+    citation: LGMS_LULUCF_METADATA.citation,
     tile_url: lgmsTileUrl("lulucf", "net"),
     legend: lgmsNetFluxLegend(
       "LGMS LULUCF net GHG flux (2016-2024)",
-      "Isolates the LULUCF sector, so forest loss and regrowth can be read without agricultural emissions on top of them.",
-      "Per-pixel annual LULUCF net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+      "This layer maps the average annual net GHG flux from land use and land-use change. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, and organic soil. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
+      "Average annual net GHG flux from vegetation and soil due to land use and land-use change. Net flux is the difference between gross emissions and gross removals."
     ),
   },
   {
@@ -775,14 +791,19 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
+    defaultStartYear: 2020,
+    defaultEndYear: 2020,
     categories: ["ghg-fluxes"],
-    description:
-      "Gross greenhouse-gas emissions from agriculture in the Land GHG Monitoring System — cropland and livestock combined. Agriculture is a source only, so this layer has no removals.",
+    summary: LGMS_AGRICULTURE_METADATA.summary,
+    description: LGMS_AGRICULTURE_METADATA.description,
+    cautions: LGMS_AGRICULTURE_METADATA.cautions,
+    citation: LGMS_AGRICULTURE_METADATA.citation,
     tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
     legend: lgmsEmissionsLegend(
       "LGMS agriculture emissions (2020)",
-      "Total agricultural emissions, useful for seeing where farming rather than land-use change drives the land-sector footprint.",
-      "Per-pixel annual gross agricultural emissions in Mg CO2e/yr."
+      "This layer maps the GHG emissions (CH4, N2O) from agriculture, including cropland management and livestock. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+      "Gross GHG emissions from agriculture, including cropland management and livestock.",
+      26
     ),
   },
   {
@@ -798,14 +819,19 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
+    defaultStartYear: 2020,
+    defaultEndYear: 2020,
     categories: ["ghg-fluxes"],
-    description:
-      "Gross greenhouse-gas emissions from cropland in the Land GHG Monitoring System — the crop half of the agriculture layer, covering sources such as rice cultivation, fertiliser use and crop-residue burning.",
+    summary: LGMS_CROPLAND_METADATA.summary,
+    description: LGMS_CROPLAND_METADATA.description,
+    cautions: LGMS_CROPLAND_METADATA.cautions,
+    citation: LGMS_CROPLAND_METADATA.citation,
     tile_url: lgmsTileUrl("cropland", "gross_emissions"),
     legend: lgmsEmissionsLegend(
       "LGMS cropland management emissions (2020)",
-      "The cropland component of agricultural emissions, for separating crop production from livestock in the land-sector total.",
-      "Per-pixel annual gross cropland emissions in Mg CO2e/yr."
+      "This layer maps the GHG emissions (CH4, N2O) from cropland management, including manure application, fertilizer application, rice cultivation, and crop residue decomposition. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+      "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation.",
+      23
     ),
   },
   {
@@ -821,14 +847,19 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
+    defaultStartYear: 2020,
+    defaultEndYear: 2020,
     categories: ["ghg-fluxes"],
-    description:
-      "Gross greenhouse-gas emissions from livestock in the Land GHG Monitoring System — the livestock half of the agriculture layer, covering sources such as enteric fermentation and manure management.",
+    summary: LGMS_LIVESTOCK_METADATA.summary,
+    description: LGMS_LIVESTOCK_METADATA.description,
+    cautions: LGMS_LIVESTOCK_METADATA.cautions,
+    citation: LGMS_LIVESTOCK_METADATA.citation,
     tile_url: lgmsTileUrl("livestock", "gross_emissions"),
     legend: lgmsEmissionsLegend(
       "LGMS livestock emissions (2020)",
-      "The livestock component of agricultural emissions, for separating herds from crop production in the land-sector total.",
-      "Per-pixel annual gross livestock emissions in Mg CO2e/yr."
+      "This layer maps the GHG emissions (CH4, N2O) from livestock, including monogastrics and ruminants. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+      "Gross GHG emissions from livestock, including monogastrics and ruminants.",
+      14
     ),
   },
 ];

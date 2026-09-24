@@ -11,9 +11,8 @@ export function GhgFluxTreeChartInfo() {
         <Text mb="8px">
           This graph reports average annual emissions, removals, and net flux
           from land use and agriculture between 2016 and 2024 for the specified
-          area. Net flux is the difference between gross emissions and gross
-          removals. Negative values are removals (sinks) and positive values are
-          emissions (sources).
+          area. Net flux is the difference between gross emissions (positive)
+          and gross removals (negative).
         </Text>
         <Text mb="8px">
           The graph is organized hierarchically, with land use and agriculture

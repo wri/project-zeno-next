@@ -80,6 +80,18 @@ describe("singleSidedLabel", () => {
     expect(singleSidedLabel(TREE[4])).toBe("removals only");
   });
 
+  it("treats zero the same as null (no visible bar)", () => {
+    expect(
+      singleSidedLabel(node({ id: "z", avgEmissions: 100, avgRemovals: 0 }))
+    ).toBe("emissions only");
+    expect(
+      singleSidedLabel(node({ id: "z", avgEmissions: 0, avgRemovals: -50 }))
+    ).toBe("removals only");
+    expect(
+      singleSidedLabel(node({ id: "z", avgEmissions: 0, avgRemovals: 0 }))
+    ).toBeNull();
+  });
+
   it("is null when both sides are present or both absent", () => {
     expect(singleSidedLabel(TREE[0])).toBeNull();
     expect(singleSidedLabel(node({ id: "x" }))).toBeNull();
@@ -212,7 +224,7 @@ describe("parseFluxNodes", () => {
 });
 
 describe("fluxTreeTableProps", () => {
-  const { hiddenColumns, boldRowWhen } = fluxTreeTableProps();
+  const { hiddenColumns, boldRowWhen, pageSize } = fluxTreeTableProps();
 
   it("hides the raw id/parent_id columns", () => {
     expect(hiddenColumns).toEqual(["id", "parent_id"]);
@@ -223,5 +235,9 @@ describe("fluxTreeTableProps", () => {
     expect(
       boldRowWhen({ id: "mineral_soil", parent_id: "soil", label: "Mineral" })
     ).toBe(false);
+  });
+
+  it("shows the whole tree on one page", () => {
+    expect(pageSize).toBe(Infinity);
   });
 });

@@ -3,6 +3,7 @@
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 
 import useChatStore from "@/app/store/chatStore";
+import { trackEvent } from "@/app/lib/track-event";
 import useViewContextStore from "@/app/store/viewContextStore";
 import { useDashboard } from "./dashboardQueries";
 
@@ -101,7 +102,14 @@ export default function DashboardChatNudges({
                   bg: "bg.subtle",
                   borderColor: "primary.solid",
                 }}
-                onClick={() => void sendMessage(chip)}
+                onClick={() => {
+                  trackEvent({
+                    event: "nudge_click",
+                    nudge_type: "dashboard_chip",
+                    chip_text: chip,
+                  });
+                  void sendMessage(chip);
+                }}
               >
                 {chip}
               </Box>

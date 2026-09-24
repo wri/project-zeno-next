@@ -1,51 +1,45 @@
 /**
- * Palette and metrics for the hierarchical flux chart.
- *
- * The colours were sampled from the design's own PNG export (the Figma MCP was
- * rate-limited), reading the legend swatches and bar fills directly rather than
- * eyeballing them.
+ * Layout metrics for the hierarchical flux chart. Its palette lives in
+ * `../model/palette.ts`, where the tooltip model can reach it too.
  */
-
-/** Source / gross emissions — positive, right of zero. */
-export const EMISSIONS_COLOR = "#bf812d";
-/** Sink / gross removals — negative, left of zero. */
-export const REMOVALS_COLOR = "#01665e";
-
-/** Sign tint for a net figure; zero and missing values read as a source. */
-export function netFluxColor(net: number | null | undefined): string {
-  return (net ?? 0) < 0 ? REMOVALS_COLOR : EMISSIONS_COLOR;
-}
-/** The net marker overlaid on a gross row. */
-export const NET_TICK_COLOR = "#1a1812";
-export const ZERO_LINE_COLOR = "#9aa0ab";
-/** Panel behind the legend. */
-export const LEGEND_BG = "#f6f6f6";
 
 /**
  * One row per tree node. Uniform because recharts' category bands are uniform —
  * the HTML tree/value columns are laid out at the same pitch so the two line up
  * without measuring anything.
  */
-export const ROW_HEIGHT = 36;
+export const ROW_HEIGHT = 30;
 /** Reserved for the top axis; the flanking columns pad by the same amount. */
 export const AXIS_HEIGHT = 28;
 /**
  * Ceiling for the tree label column, which otherwise grows with its longest
  * label and starves the plot. 215px is what the longest label the design shows
- * in full ("Trees remaining trees") measures at. The frame's own longest
- * label, "Non-trees remaining non-trees", needed 269px and clipped; the product
- * has since renamed that class "Non-tree vegetation" (see `lgms-labels`),
- * which fits within the ceiling.
+ * in full ("Trees remaining trees") measures at, plus 17px for the per-row info
+ * icon that now trails every label (`NODE_INFO_ICON_SIZE` + its 4px gap) —
+ * without that allowance the icon would be taken out of the label's share and
+ * clip the very label the ceiling was sized for. The frame's own longest label,
+ * "Non-trees remaining non-trees", needed 269px and clipped; the product has
+ * since renamed that class "Non-tree vegetation" (see `lgms-labels`), which
+ * fits within the ceiling.
  *
  * It is a *maximum*, not a fixed width: the column flexes below it when the
  * card is too narrow to give the plot its floor as well. That is the design's
  * own "(degradation)" state — labels clip progressively rather than the axis
  * collapsing.
  */
-export const TREE_COLUMN_MAX_WIDTH = 215;
+export const TREE_COLUMN_MAX_WIDTH = 232;
 
 /** Axis tick labels sit a step below the row labels, as the design draws them. */
 export const AXIS_FONT_SIZE = 9;
+
+/**
+ * The per-row info icon, a step down from the 16px the shared `InfoTooltip`
+ * uses on the card heading and the pills. Those sit beside 15px headings; these
+ * sit beside 13px row labels in a 36px band, thirteen of them at once, so at
+ * the default size they read as a column of controls rather than a quiet
+ * annotation on each class. `TREE_COLUMN_MAX_WIDTH` reserves this plus its gap.
+ */
+export const NODE_INFO_ICON_SIZE = 13;
 
 /**
  * Floor for the plot column, derived rather than guessed. The outermost ticks
@@ -62,13 +56,13 @@ export const PLOT_MIN_WIDTH = 150;
  * Width this chart needs from its host card, so that the only row label the
  * design clips is the longest one:
  *
- *   32 (card padding) + 215 (tree) + 150 (plot) + ~96 (value column) ≈ 493
+ *   32 (card padding) + 232 (tree) + 150 (plot) + ~96 (value column) ≈ 510
  *
  * The workspace's other insights sit in a 420px column (`Map.tsx`), which is
- * ~70px short of that — enough to eat most of the label column. `InsightWorkspace`
+ * ~90px short of that — enough to eat most of the label column. `InsightWorkspace`
  * widens the card to this only while the flux tree is the visible insight.
  */
-export const FLUX_TREE_CARD_WIDTH = 520;
+export const FLUX_TREE_CARD_WIDTH = 540;
 export const BAR_SIZE = 14;
 /**
  * Horizontal breathing room inside the plot, so the outermost axis tick label
@@ -76,6 +70,3 @@ export const BAR_SIZE = 14;
  * The `n/a` overlay has to account for it to stay on the zero line.
  */
 export const PLOT_MARGIN_X = 14;
-
-/** Matches the tooltip's own `maxWidth` in `GhgFluxTreeChart.tsx`. */
-export const TOOLTIP_WIDTH = 200;

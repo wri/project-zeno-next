@@ -1,30 +1,10 @@
 "use client";
-import { Box, Flex, Text } from "@chakra-ui/react";
-
-import { signed } from "@/src/shared/lib/number-format";
+import { FluxTooltip } from "@/src/shared/ui/FluxTooltip";
 
 import {
   netFluxTooltipRows,
   type NetFluxTooltipEntry,
-  type NetFluxTooltipRow,
 } from "../model/net-flux-variants";
-import { Swatch } from "./NetFluxLegend";
-
-/**
- * Dark panel sampled from the design's export. It is deliberately not the
- * generic `bg.panel` tooltip the other charts use: this one sits on top of a
- * dense stack of light browns and greens, and only a dark card keeps its own
- * swatches legible against them.
- */
-const PANEL_BG = "#1B1D29";
-const PANEL_RULE = "rgba(255, 255, 255, 0.18)";
-const LABEL_COLOR = "#DFE2EA";
-const VALUE_COLOR = "#FFFFFF";
-/**
- * The design's panel width. The longest row label, "Cropland mgmt (static)",
- * fits beside its value in at most two lines.
- */
-const PANEL_WIDTH = 196;
 
 interface NetFluxTooltipProps {
   active?: boolean;
@@ -35,39 +15,16 @@ interface NetFluxTooltipProps {
   seriesOrder: readonly string[];
 }
 
-function Row({ row }: { row: NetFluxTooltipRow }) {
-  return (
-    <Flex align="flex-start" gap="6px" lineHeight="1.35">
-      <Box pt="2px">
-        <Swatch color={row.color} width={9} height={9} />
-      </Box>
-      <Text flex="1" minW={0} color={LABEL_COLOR}>
-        {row.label}
-      </Text>
-      <Text
-        color={VALUE_COLOR}
-        whiteSpace="nowrap"
-        css={{ fontVariantNumeric: "tabular-nums" }}
-      >
-        {signed.format(row.value)}
-      </Text>
-    </Flex>
-  );
-}
-
 /**
- * Hover tooltip for the net-flux time series, as the design draws it: the
- * year, every series the active Measure/Detail actually draws — swatch, label
- * and value — then the total, bold, below a rule. Under the net measure the
- * single bar *is* the total, so it is the only line: labelled "Net source" or
- * "Net sink" and swatched by sign like the legend.
+ * Hover tooltip for the net-flux time series: the year, every series the
+ * active Measure/Detail actually draws, then the net total (see
+ * `netFluxTooltipRows` for the rules). Rendered through the shared
+ * `FluxTooltip` panel so it matches the annual-average tree's tooltip.
  *
  * It replaces `ChartWidget`'s generic `Chart.Tooltip` (wired through its
  * `tooltipContent` prop) for two reasons: that one can't render the hatched
  * agriculture swatches, and it prints a unit on every line, which is what made
- * it outgrow the plot at Full detail. Values here carry no unit — the y-axis
- * title already states it. Each bar segment gets its own row, so the tooltip
- * lists exactly what the stack draws and the legend names.
+ * it outgrow the plot at Full detail.
  */
 export function NetFluxTooltip({
   active,
@@ -78,62 +35,5 @@ export function NetFluxTooltip({
   if (!active || !payload?.length) return null;
 
   const { rows, total } = netFluxTooltipRows(payload, seriesOrder);
-  if (rows.length === 0 && !total) return null;
-
-  return (
-    <Box
-      bg={PANEL_BG}
-      borderRadius="6px"
-      boxShadow="md"
-      px="10px"
-      py="8px"
-      w={`${PANEL_WIDTH}px`}
-      fontFamily="mono"
-      fontSize="9.5px"
-      fontWeight="normal"
-    >
-      <Text color={VALUE_COLOR} fontWeight="medium" fontSize="11px" mb="6px">
-        {label}
-      </Text>
-      {rows.length > 0 && (
-        <Flex direction="column" gap="3px">
-          {rows.map((row) => (
-            <Row key={row.key} row={row} />
-          ))}
-        </Flex>
-      )}
-      {total && (
-        <Flex
-          align="center"
-          gap="6px"
-          // The rule separates the total from the rows above it; with no rows
-          // — the net measure's single bar, or a year where every series drew
-          // nothing — there is nothing to separate, so it would read as a
-          // heading underline.
-          {...(rows.length > 0
-            ? {
-                mt: "6px",
-                pt: "5px",
-                borderTop: "1px solid",
-                borderColor: PANEL_RULE,
-              }
-            : {})}
-          color={VALUE_COLOR}
-          fontWeight="bold"
-          lineHeight="1.35"
-        >
-          {total.color && <Swatch color={total.color} width={9} height={9} />}
-          <Text flex="1" minW={0}>
-            {total.label}
-          </Text>
-          <Text
-            whiteSpace="nowrap"
-            css={{ fontVariantNumeric: "tabular-nums" }}
-          >
-            {signed.format(total.value)}
-          </Text>
-        </Flex>
-      )}
-    </Box>
-  );
+  return <FluxTooltip title={label} rows={rows} total={total} />;
 }

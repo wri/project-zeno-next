@@ -56,12 +56,10 @@ export function nodeNet(node: FluxNode): number | null {
 export function singleSidedLabel(
   node: FluxNode
 ): "emissions only" | "removals only" | null {
-  if (node.avgEmissions != null && node.avgRemovals == null) {
-    return "emissions only";
-  }
-  if (node.avgRemovals != null && node.avgEmissions == null) {
-    return "removals only";
-  }
+  const hasEmissions = node.avgEmissions != null && node.avgEmissions !== 0;
+  const hasRemovals = node.avgRemovals != null && node.avgRemovals !== 0;
+  if (hasEmissions && !hasRemovals) return "emissions only";
+  if (hasRemovals && !hasEmissions) return "removals only";
   return null;
 }
 
@@ -131,15 +129,19 @@ export function rootNodes(nodes: FluxNode[]): FluxNode[] {
  * Table display config for this chart's raw (untransformed) `chart_data`:
  * the backend's own `id`/`parent_id` columns are implementation detail, not
  * something a reader can act on, and the root ("All land") row reads as a
- * total — both were review feedback on the generic table rendering.
+ * total — both were review feedback on the generic table rendering. The
+ * tree (13 nodes) is shown on a single page: split across pages, children
+ * lose sight of their parents.
  */
 export function fluxTreeTableProps(): {
   hiddenColumns: string[];
   boldRowWhen: (row: Record<string, string | number | boolean>) => boolean;
+  pageSize: number;
 } {
   return {
     hiddenColumns: ["id", "parent_id"],
     boldRowWhen: (row) => !row.parent_id,
+    pageSize: Infinity,
   };
 }
 

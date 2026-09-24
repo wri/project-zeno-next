@@ -3,6 +3,7 @@ import { Button, Text } from "@chakra-ui/react";
 import { CheckIcon, ChartLineIcon } from "@phosphor-icons/react";
 
 import useChatStore from "@/app/store/chatStore";
+import { trackEvent } from "@/app/lib/track-event";
 import type { ViewAnalysisSuggestion } from "@/app/types/chat";
 
 import { useAnalysis } from "./use-analysis";
@@ -30,6 +31,13 @@ export default function ViewAnalysisNudge({
 
   const handleViewAnalysis = () => {
     if (accepted) return;
+    trackEvent({
+      event: "nudge_click",
+      nudge_type: "view_analysis",
+      dataset_name: suggestion.datasetName,
+      dataset_id: suggestion.datasetId,
+      area_name: suggestion.area.name,
+    });
     useChatStore.getState().acceptViewAnalysisNudge(messageId);
     run({
       area: suggestion.area,

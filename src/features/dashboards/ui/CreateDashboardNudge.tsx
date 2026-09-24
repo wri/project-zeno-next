@@ -4,6 +4,7 @@ import { useRouter } from "@/app/lib/router";
 import { SquaresFourIcon } from "@phosphor-icons/react";
 
 import type { CreateDashboardSuggestion } from "@/app/types/chat";
+import { trackEvent } from "@/app/lib/track-event";
 
 import { useCreateDashboardForArea } from "./useCreateDashboardForArea";
 
@@ -31,6 +32,11 @@ export default function CreateDashboardNudge({
     : `Create Dashboard for ${suggestion.areaName}`;
 
   const handleClick = () => {
+    trackEvent({
+      event: "nudge_click",
+      nudge_type: existing ? "open_dashboard" : "create_dashboard",
+      area_name: suggestion.areaName,
+    });
     if (existing) {
       router.push(`/dashboards/${existing.id}`);
       return;

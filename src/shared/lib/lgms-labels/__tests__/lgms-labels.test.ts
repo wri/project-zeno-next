@@ -11,6 +11,12 @@ describe("lgmsClassLabel", () => {
     ).toBe("Non-tree vegetation");
   });
 
+  it("renames the cropland node to match the time series' wording", () => {
+    expect(lgmsClassLabel("cropland", "Crop management")).toBe(
+      "Cropland management"
+    );
+  });
+
   it("passes any other class's label through untouched", () => {
     expect(lgmsClassLabel("mineral_soil", "Mineral soil")).toBe("Mineral soil");
     expect(lgmsClassLabel("peat_burning", "peat burning")).toBe("peat burning");
@@ -19,6 +25,7 @@ describe("lgmsClassLabel", () => {
   it("keys renames by the backend's raw class id", () => {
     expect(Object.keys(LGMS_CLASS_RENAMES)).toEqual([
       "non_trees_remaining_non_trees",
+      "cropland",
     ]);
   });
 });

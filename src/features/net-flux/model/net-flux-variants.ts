@@ -2,6 +2,12 @@ import type { InsightWidget } from "@/app/types/chat";
 import { niceTicks } from "@/src/shared/lib/chart-ticks";
 import { lgmsClassLabel } from "@/src/shared/lib/lgms-labels";
 import { mgToMt, FLUX_UNIT_COLUMN_SUFFIX } from "@/src/shared/lib/units";
+import {
+  NET_FLUX_TOTAL_LABEL,
+  type FluxTooltipModel,
+  type FluxTooltipRow,
+  type FluxTooltipTotal,
+} from "@/src/shared/lib/flux-tooltip";
 
 export type NetFluxMeasure = "gross" | "net";
 export type NetFluxGroup = "emissions" | "removals";
@@ -18,11 +24,6 @@ export const HATCH_CROPLAND = "url(#net-flux-hatch-cropland)";
  * folds cropland+livestock together, and the design draws it in livestock's
  * colors, so this reuses that pattern rather than declaring an identical one. */
 export const HATCH_AGRICULTURE = HATCH_LIVESTOCK;
-
-/** True for a colour that is an SVG paint reference rather than a CSS colour. */
-export function isPaintReference(color: string): boolean {
-  return color.startsWith("url(");
-}
 
 /**
  * This slice renders the time-series LGMS charts, so the chart type doubles as
@@ -56,9 +57,10 @@ export const NET_FLUX_DIVERGENT_COLORS = {
 /**
  * Display label per LGMS class. The six leaf classes mirror the backend's own
  * `LGMS_CLASS_LABELS` (`src/api/services/charts/lgms.py`); the aggregate levels
- * and the two agriculture classes it doesn't name are supplied here. Product
- * renames are not written into this table: `seriesLabel` applies them from the
- * shared `lgms-labels` module, which the tree chart reads too.
+ * and livestock, which it doesn't name, are supplied here. Product renames are
+ * not written into this table: `seriesLabel` applies them from the shared
+ * `lgms-labels` module, which the tree chart reads too — cropland has no entry
+ * here because that module names it.
  */
 const CLASS_LABELS: Record<string, string> = {
   tree_loss: "Tree loss",
@@ -68,11 +70,7 @@ const CLASS_LABELS: Record<string, string> = {
   non_trees_remaining_non_trees: "Non-trees remaining non-trees",
   mineral_soil: "Mineral soil",
   organic_soil: "Organic soil",
-  // The agriculture classes are a fixed 2020 figure repeated across every year
-  // (the same caveat the chart header's subtitle spells out), which the design
-  // surfaces in the legend itself.
-  cropland_management: "Cropland management (2020, static)",
-  livestock: "Livestock (2020, static)",
+  livestock: "Livestock",
   vegetation: "Vegetation",
   soil: "Soil",
   land_use: "Land use",
@@ -80,12 +78,15 @@ const CLASS_LABELS: Record<string, string> = {
 };
 
 /**
- * Shorter labels for the removals column. Previously this shortened
- * "Trees remaining trees" to "Trees remaining", but the legend should show
- * the full class name on both sides — the tooltip handles abbreviation
- * separately via `TOOLTIP_LABELS`.
+ * The agriculture classes are a fixed 2020 figure repeated across every year
+ * (the same caveat the chart header's subtitle spells out), which the design
+ * surfaces in the legend itself. `seriesLabel` appends the caveat *after* the
+ * shared renames, so a product rename of one of these classes can't drop it.
  */
-const REMOVALS_LABELS: Record<string, string> = {};
+const STATIC_2020_CLASSES: ReadonlySet<string> = new Set([
+  "cropland",
+  "livestock",
+]);
 
 /**
  * Colour per series field, keyed by the backend's own field names. The backend
@@ -120,6 +121,8 @@ const SERIES_COLORS: Record<string, string> = {
 export interface NetFluxLegendItem {
   label: string;
   color: string;
+  /** The LGMS class the entry stands for; absent on the net measure's sign entries. */
+  classId?: string;
 }
 
 export interface NetFluxLegend {
@@ -187,34 +190,28 @@ export function seriesGroup(field: string): NetFluxGroup | null {
 }
 
 /**
- * Human label for a series field, derived from its class prefix and side:
- * the removals short form where there is one, else the class label with the
- * product's renames applied.
+ * Human label for a series field: its class label with the product's renames
+ * applied and, for the fixed-2020 agriculture classes, the static caveat.
  */
 export function seriesLabel(field: string): string {
-  const group = seriesGroup(field);
-  if (!group) return field;
-  const className = field.slice(0, -(group.length + 1));
-  if (group === "removals") {
-    const short = REMOVALS_LABELS[className];
-    if (short) return short;
-  }
-  return lgmsClassLabel(
+  if (!seriesGroup(field)) return field;
+  const className = seriesClass(field);
+  const base = lgmsClassLabel(
     className,
     CLASS_LABELS[className] ?? className.replace(/_/g, " ")
   );
+  return STATIC_2020_CLASSES.has(className) ? `${base} (2020, static)` : base;
 }
 
 /**
  * Shorter still for the hover tooltip, which is about half the legend's width
  * and puts the value in its own right-hand column. The longest emissions label
  * needs it, and so do the two agriculture classes, which keep the "static"
- * caveat but drop the year — the chart header already dates it. The removals
- * column already has `REMOVALS_LABELS`.
+ * caveat but drop the year — the chart header already dates it.
  */
 const TOOLTIP_LABELS: Record<string, string> = {
   trees_remaining_trees: "Trees rem. trees",
-  cropland_management: "Cropland mgmt (static)",
+  cropland: "Cropland mgmt (static)",
   livestock: "Livestock (static)",
 };
 
@@ -238,36 +235,6 @@ export function csvColumnName(field: string): string {
   }
   if (seriesGroup(field)) return `${field}_${FLUX_UNIT_COLUMN_SUFFIX}`;
   return field; // x-axis field, or anything else — no known unit
-}
-
-/** One rendered line of the hover tooltip: swatch, label, value. */
-export interface NetFluxTooltipRow {
-  /** The series field the row was read from. */
-  key: string;
-  label: string;
-  value: number;
-  color: string;
-}
-
-/**
- * The tooltip's closing line: the sum of the rows above it, printed bold so
- * it reads as a total and not as one more series.
- */
-export interface NetFluxTooltipTotal {
-  label: string;
-  value: number;
-  /** Swatch colour — the net measure tints its total by sign like its bar. */
-  color?: string;
-}
-
-export interface NetFluxTooltipModel {
-  rows: NetFluxTooltipRow[];
-  /**
-   * The net-flux line's own value, which the design prints below a rule; under
-   * the net measure it is the only line, labelled by sign. Null only when the
-   * payload carried no line.
-   */
-  total: NetFluxTooltipTotal | null;
 }
 
 /** What recharts hands a tooltip content renderer, narrowed to what's used. */
@@ -307,7 +274,7 @@ function inStackOrder(
  * hover ties back to the legend rather than to a "Net flux" total the
  * measure has no breakdown for. Zero counts as a source, as the header does.
  */
-function netMeasureTotal(value: number): NetFluxTooltipTotal {
+function netMeasureTotal(value: number): FluxTooltipTotal {
   const sink = value < 0;
   return {
     label: sink ? NET_SINK_LABEL : NET_SOURCE_LABEL,
@@ -334,9 +301,9 @@ function netMeasureTotal(value: number): NetFluxTooltipTotal {
 export function netFluxTooltipRows(
   payload: NetFluxTooltipEntry[],
   seriesOrder: readonly string[]
-): NetFluxTooltipModel {
-  const emissions: NetFluxTooltipRow[] = [];
-  const removals: NetFluxTooltipRow[] = [];
+): FluxTooltipModel {
+  const emissions: FluxTooltipRow[] = [];
+  const removals: FluxTooltipRow[] = [];
   let net: number | null = null;
   let netMeasure: number | null = null;
 
@@ -354,7 +321,7 @@ export function netFluxTooltipRows(
     const group = seriesGroup(field);
     if (!group || typeof value !== "number") continue;
 
-    const row: NetFluxTooltipRow = {
+    const row: FluxTooltipRow = {
       key: field,
       label: tooltipSeriesLabel(field),
       value,
@@ -373,7 +340,7 @@ export function netFluxTooltipRows(
     rows: [...emissions.reverse(), ...removals].filter(
       (row) => row.value !== 0
     ),
-    total: net == null ? null : { label: NET_FLUX_LINE_FIELD, value: net },
+    total: net == null ? null : { label: NET_FLUX_TOTAL_LABEL, value: net },
   };
 }
 
@@ -395,7 +362,7 @@ const COLUMN_GROUP: Record<string, number> = {
   mineral_soil: 1,
   organic_soil: 1,
   soil: 1,
-  cropland_management: 2,
+  cropland: 2,
   livestock: 2,
   agriculture: 2,
 };
@@ -412,9 +379,21 @@ export function tableColumnOrder(fields: string[]): string[] {
     .map(({ field }) => field);
 }
 
+/**
+ * The backend spells one class two ways: `cropland` in the raw rows (so the
+ * full-detail chart and the tree's node id) and `cropland_management` in the
+ * category roll-up. Folded back to the raw id here, the one place a field
+ * yields a class, so every class-keyed table above needs a single key.
+ */
+const CLASS_ALIASES: Record<string, string> = {
+  cropland_management: "cropland",
+};
+
+/** The LGMS class a series field belongs to, in the backend's raw spelling. */
 function seriesClass(field: string): string {
   const group = seriesGroup(field);
-  return group ? field.slice(0, -(group.length + 1)) : field;
+  const className = group ? field.slice(0, -(group.length + 1)) : field;
+  return CLASS_ALIASES[className] ?? className;
 }
 
 /**
@@ -493,6 +472,7 @@ function buildLegend(fields: string[]): NetFluxLegend {
   const item = (field: string, i: number): NetFluxLegendItem => ({
     label: seriesLabel(field),
     color: seriesColor(field, i, fields.length),
+    classId: seriesClass(field),
   });
   const emissions = fields.filter((f) => seriesGroup(f) === "emissions");
   const removals = fields.filter((f) => seriesGroup(f) === "removals");

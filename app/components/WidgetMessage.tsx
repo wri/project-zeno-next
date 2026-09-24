@@ -54,6 +54,7 @@ import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 import { rowsToCsv, csvFilename } from "@/app/utils/csvExport";
+import { FLUX_UNIT_COLUMN_SUFFIX } from "@/src/shared/lib/units";
 import {
   NetFluxChartBody,
   NetFluxChartInfo,
@@ -203,7 +204,15 @@ export default function WidgetMessage({
     if (!Array.isArray(data) || data.length === 0) return;
     const rows = data as Record<string, unknown>[];
     const rowKeys = Object.keys(rows[0]);
-    const headers = isNetFlux ? rowKeys.map(csvColumnName) : rowKeys;
+    const isFluxTree = isFluxTreeWidget(widget);
+    const FLUX_TREE_VALUE_COLS = new Set(["avg_emissions", "avg_removals"]);
+    const headers = isNetFlux
+      ? rowKeys.map(csvColumnName)
+      : isFluxTree
+        ? rowKeys.map((k) =>
+            FLUX_TREE_VALUE_COLS.has(k) ? `${k}_${FLUX_UNIT_COLUMN_SUFFIX}` : k
+          )
+        : rowKeys;
     const csv = rowsToCsv(rows, headers, rowKeys);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -251,6 +260,7 @@ export default function WidgetMessage({
   const hasData =
     Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
+  const isCurated = widget.curated ?? !widget.generation;
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
   const fullscreenChips = widget.analysisParams
     ? buildChips(widget.analysisParams)
@@ -291,9 +301,7 @@ export default function WidgetMessage({
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">
         {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
-        {inWorkspace && (
-          <InsightCaption curated={widget.curated ?? !widget.generation} />
-        )}
+        {inWorkspace && <InsightCaption curated={isCurated} />}
         {/* Every surface with a shell of its own puts these pills above the
             card (see InsightChartPills); inline is the fallback for a host
             that has none, today only /chart-debug. */}
@@ -538,7 +546,9 @@ export default function WidgetMessage({
             )}
           </Flex>
         )}
-        {showDisclaimer && !inWorkspace && <VisualizationDisclaimer />}
+        {showDisclaimer && !inWorkspace && !isCurated && (
+          <VisualizationDisclaimer />
+        )}
       </Flex>
       <InsightProvenanceDrawer
         isOpen={open}
@@ -635,9 +645,11 @@ export default function WidgetMessage({
                           </Text>
                         </Box>
                       )}
-                      <Box mt="auto">
-                        <VisualizationDisclaimer />
-                      </Box>
+                      {!isCurated && (
+                        <Box mt="auto">
+                          <VisualizationDisclaimer />
+                        </Box>
+                      )}
                     </Flex>
                   )}
                 </Dialog.Body>
