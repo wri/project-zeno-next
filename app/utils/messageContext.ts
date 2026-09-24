@@ -170,7 +170,7 @@ export function deriveContext(
       const primaryDatasetLayers = ds.filter(
         (l) => l.datasetId === primaryDatasetId
       );
-      // Only report/key active_layers for a genuinely multi-layer dataset —
+      // Only name a selected_layer for a genuinely multi-layer dataset —
       // gated on what the dataset *declares*, not how many are currently
       // active, so switching down to one visible sublayer still names it
       // instead of going silent.
@@ -178,10 +178,14 @@ export function deriveContext(
       const activeLayerNames = primaryDatasetLayers
         .filter(isLayerActive)
         .map((l) => l.name);
-      const activeLayers = isMultiLayer ? activeLayerNames : [];
+      // buildDatasetLayers puts only one of a multi-layer dataset's layers on
+      // the map at a time, so at most one is active — the same selected_layer
+      // pick_dataset sets.
+      const selectedLayer = isMultiLayer ? activeLayerNames[0] : undefined;
       uiContext.dataset_selected = {
-        dataset: info,
-        ...(activeLayers.length > 0 ? { active_layers: activeLayers } : {}),
+        dataset: selectedLayer
+          ? { ...info, selected_layer: selectedLayer }
+          : info,
       };
       keys.dataset = datasetContextKey(
         primaryDatasetId,

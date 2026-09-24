@@ -56,7 +56,8 @@ export type AssignableDatasetCategoryId = Exclude<
 >;
 
 /**
- * One of a dataset card's primary, independently-toggleable data layers.
+ * One of a dataset card's primary data layers — only one is on the map at a
+ * time.
  * `layers[0]` is a card's own default layer, shown by the card's top-level
  * toggle; `layers[1:]` are "supporting layers" the Data Catalog panel lists
  * in a per-card disclosure section, each with its own info modal — so they
@@ -96,8 +97,8 @@ export type DatasetCardConfig = {
   tile_url?: string;
   /**
    * The dataset's primary layer(s). Most cards omit this and rely on the
-   * single `tile_url` above; LGMS declares two (agriculture, lulucf) that can
-   * be toggled independently. When present, this is authoritative and
+   * single `tile_url` above; LGMS declares several, switched between one at
+   * a time. When present, this is authoritative and
    * `tile_url` is ignored by layer-building code.
    */
   layers?: DatasetCardLayer[];
