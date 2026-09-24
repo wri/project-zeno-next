@@ -93,6 +93,10 @@ export const createUploadAreaSlice: StateCreator<
 
   toggleUploadAreaDialog: () =>
     set((state) => {
+      // Closing mid-upload would reset the dialog while the request still
+      // completes on the backend: a re-upload duplicates the batch, and a late
+      // failure writes errors into a closed dialog.
+      if (state.dialogVisible && state.isUploading) return {};
       get().clearValidationError?.();
       if (state.dialogVisible) {
         get().clearFileState();

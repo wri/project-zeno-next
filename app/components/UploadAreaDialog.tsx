@@ -146,7 +146,11 @@ function UploadAreaDialog() {
             </Dialog.Body>
             <Dialog.Footer>
               <Dialog.ActionTrigger asChild>
-                <Button variant="outline" colorPalette="gray">
+                <Button
+                  variant="outline"
+                  colorPalette="gray"
+                  disabled={isUploading}
+                >
                   Cancel
                 </Button>
               </Dialog.ActionTrigger>
@@ -161,7 +165,7 @@ function UploadAreaDialog() {
               </Button>
             </Dialog.Footer>
             <Dialog.CloseTrigger asChild>
-              <CloseButton size="sm" />
+              <CloseButton size="sm" disabled={isUploading} />
             </Dialog.CloseTrigger>
           </Dialog.Content>
         </Dialog.Positioner>

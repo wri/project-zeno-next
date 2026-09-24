@@ -144,6 +144,41 @@ describe("uploadAreaSlice", () => {
     expect(state.dialogVisible).toBe(true);
   });
 
+  it("keeps the dialog open while a batch upload is in flight", async () => {
+    let respond!: (response: Response) => void;
+    mockedFetch.mockReturnValue(
+      new Promise<Response>((resolve) => {
+        respond = resolve;
+      })
+    );
+    await useMapStore.getState().handleFile(fileOfSize("areas.csv", 10));
+
+    const pending = useMapStore.getState().uploadBatchFile();
+    useMapStore.getState().toggleUploadAreaDialog();
+
+    let state = useMapStore.getState();
+    expect(state.dialogVisible).toBe(true);
+    expect(state.isUploading).toBe(true);
+    expect(state.filename).toBe("areas.csv");
+
+    respond(
+      new Response(
+        JSON.stringify({ detail: { errors: ["row 2: geom is empty"] } }),
+        { status: 422 }
+      )
+    );
+    await pending;
+
+    state = useMapStore.getState();
+    expect(state.isUploading).toBe(false);
+    expect(state.errorDetails).toEqual(["row 2: geom is empty"]);
+
+    useMapStore.getState().toggleUploadAreaDialog();
+    state = useMapStore.getState();
+    expect(state.dialogVisible).toBe(false);
+    expect(state.errorDetails).toEqual([]);
+  });
+
   it("clearFileState drops backend error details", async () => {
     useMapStore.getState().setError("failed-to-send", "bad", ["row 1: x"]);
     useMapStore.getState().clearFileState();
