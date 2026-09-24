@@ -18,9 +18,10 @@ vi.mock("@/app/lib/analysis/runAnalysis", () => ({
 }));
 
 const runDirectAnalysis = vi.fn();
+let analysisStatus: "idle" | "running" | "done" | "error" = "idle";
 vi.mock("@/src/features/analysis", async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  useAnalysis: () => ({ run: runDirectAnalysis }),
+  useAnalysis: () => ({ run: runDirectAnalysis, status: analysisStatus }),
 }));
 
 const createAreaAsync = vi.fn().mockResolvedValue({});
@@ -35,11 +36,16 @@ let dashboardHookState: {
   isCreating: boolean;
   create: () => void;
 };
+let lastDashboardInput: unknown;
 vi.mock("@/src/features/dashboards", () => ({
-  useCreateDashboardForArea: () => dashboardHookState,
+  useCreateDashboardForArea: (input: unknown) => {
+    lastDashboardInput = input;
+    return dashboardHookState;
+  },
 }));
 
 import { toaster } from "@/app/components/ui/toaster";
+import { isViewOnlyDataset } from "@/app/constants/datasets";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
@@ -89,6 +95,7 @@ const render = (override: Partial<typeof target> | null = {}) =>
 describe("useAoiActions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    analysisStatus = "idle";
     dashboardHookState = {
       existing: null,
       isResolving: false,
@@ -190,7 +197,9 @@ describe("useAoiActions", () => {
     expect(runDirectAnalysis).toHaveBeenCalledWith({
       area: {
         name: "Paraná, Brazil",
-        source: "GADM",
+        // Lowercased: the target carries the map layer id ("GADM"), the
+        // backend's canonical source is "gadm".
+        source: "gadm",
         srcId: "BRA.16_1",
         subtype: "state-province",
       },
@@ -252,6 +261,84 @@ describe("useAoiActions", () => {
       expect.objectContaining({
         startDate: "2018-01-01",
         endDate: "2020-12-31",
+      })
+    );
+  });
+
+  it("addresses the dashboard by the canonical lowercase source", () => {
+    render({ source: "WDPA" });
+    expect(lastDashboardInput).toEqual(
+      expect.objectContaining({ source: "wdpa" })
+    );
+  });
+
+  it("withholds View Analysis where the dataset's analysis doesn't cover the source", () => {
+    useMapStore.setState({
+      layers: [
+        {
+          id: "dataset-5",
+          name: "Tree cover gain",
+          type: "raster",
+          visible: true,
+          datasetId: 5,
+        },
+      ],
+    });
+    const wdpa = render({ source: "WDPA", srcId: "33922" }).result;
+    expect(wdpa.current!.canViewAnalysis).toBe(false);
+    act(() => wdpa.current!.viewAnalysis());
+    expect(runDirectAnalysis).not.toHaveBeenCalled();
+
+    expect(render().result.current!.canViewAnalysis).toBe(true);
+  });
+
+  it("withholds View Analysis for a view-only dataset", () => {
+    expect(isViewOnlyDataset(13)).toBe(true);
+    useMapStore.setState({
+      layers: [
+        {
+          id: "dataset-13",
+          name: "View-only layer",
+          type: "raster",
+          visible: true,
+          datasetId: 13,
+        },
+      ],
+    });
+    const { result } = render();
+    expect(result.current!.hasDataset).toBe(true);
+    expect(result.current!.canViewAnalysis).toBe(false);
+    act(() => result.current!.viewAnalysis());
+    expect(runDirectAnalysis).not.toHaveBeenCalled();
+  });
+
+  it("offers View Analysis for a protected area on a dataset that covers it", () => {
+    const { result } = render({ source: "WDPA", srcId: "33922" });
+    expect(result.current!.canViewAnalysis).toBe(true);
+  });
+
+  it("explains rather than runs View Analysis for an area without a backend id", () => {
+    const { result } = render({ srcId: undefined });
+
+    act(() => result.current!.viewAnalysis());
+
+    expect(runDirectAnalysis).not.toHaveBeenCalled();
+    expect(toaster.create).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "error" })
+    );
+  });
+
+  it("surfaces a failed direct analysis as an error toast", () => {
+    const { rerender } = render();
+    expect(toaster.create).not.toHaveBeenCalled();
+
+    analysisStatus = "error";
+    rerender();
+
+    expect(toaster.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Couldn't run this analysis",
+        type: "error",
       })
     );
   });

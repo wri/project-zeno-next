@@ -78,13 +78,15 @@ export default function AoiActionsMenu({
                   <SparkleIcon size={16} color={ITEM_ICON_COLOR} />
                   Generate Insights
                 </Menu.Item>
-                <Menu.Item
-                  value="view analysis"
-                  onSelect={actions.viewAnalysis}
-                >
-                  <ChartLineIcon size={16} color={ITEM_ICON_COLOR} />
-                  View Analysis
-                </Menu.Item>
+                {actions.canViewAnalysis && (
+                  <Menu.Item
+                    value="view analysis"
+                    onSelect={actions.viewAnalysis}
+                  >
+                    <ChartLineIcon size={16} color={ITEM_ICON_COLOR} />
+                    View Analysis
+                  </Menu.Item>
+                )}
               </Menu.ItemGroup>
             )}
             <Menu.ItemGroup>
