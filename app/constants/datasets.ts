@@ -55,6 +55,33 @@ export type AssignableDatasetCategoryId = Exclude<
   "all" | "in-conversation"
 >;
 
+/**
+ * One of a dataset card's primary data layers — only one is on the map at a
+ * time.
+ * `layers[0]` is a card's own default layer, shown by the card's top-level
+ * toggle; `layers[1:]` are "supporting layers" the Data Catalog panel lists
+ * in a per-card disclosure section, each with its own info modal — so they
+ * carry the same descriptive fields as a standalone `DatasetCardConfig`
+ * rather than just a name/tile_url pair.
+ */
+export type DatasetCardLayer = {
+  name: string;
+  /** Display title for the supporting-layer row and its info modal. Falls back to `name`. */
+  title?: string;
+  tile_url: string;
+  img?: string;
+  cadence?: string;
+  resolution?: string;
+  geographic_coverage?: string;
+  provider?: string;
+  summary?: string;
+  description?: string;
+  cautions?: string;
+  citation?: string;
+  /** Falls back to the card's top-level `legend` when omitted. */
+  legend?: DatasetLegendConfig;
+};
+
 export type DatasetCardConfig = {
   dataset_id: number;
   dataset_name: string;
@@ -68,6 +95,13 @@ export type DatasetCardConfig = {
   description: string;
   img?: string;
   tile_url?: string;
+  /**
+   * The dataset's primary layer(s). Most cards omit this and rely on the
+   * single `tile_url` above; LGMS declares several, switched between one at
+   * a time. When present, this is authoritative and
+   * `tile_url` is ignored by layer-building code.
+   */
+  layers?: DatasetCardLayer[];
   data_layer?: string;
   context_layer?: string | null;
   threshold?: number | null;
@@ -708,20 +742,18 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       unit: "tCO2e/ha",
     },
   },
-  // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
-  // that one scopes the "View Analysis" flow to a GADM admin area, these paint
-  // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
-  // is per-admin-area and knows nothing about the individual sector layers —
-  // and share the LGMS review flag so the family is revealed together.
-  //
-  // NOTE: ids 13-17 are claimed client-side. The backend catalogue currently
-  // stops at 8; if it ever grows into this range these need renumbering.
+  // Land GHG Monitoring System (LGMS) — one real dataset (backend
+  // land_ghg_inventory.yml, dataset_id 12), matching project-zeno PR #830's
+  // five declared layers: `lgms` (this card's own default, total net flux),
+  // `lulucf`, `agriculture`, `cropland`, and `livestock`. The approved Figma
+  // catalog design (PZB-1346) mocks only the first two as "supporting
+  // layers", but all five sector layers exist and are surfaced here.
   {
     dataset_id: 12,
-    dataset_name: "LGMS total net GHG flux",
+    dataset_name: "Land GHG Monitoring System (LGMS)",
     shortName: "LGMS net flux",
     featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS total net GHG flux",
+    data_layer: "Land GHG Monitoring System (LGMS)",
     context_layer: null,
     img: "/dataset_card_lgms_net_flux.webp",
     cadence: "annual",
@@ -736,130 +768,107 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     cautions: LGMS_NET_FLUX_METADATA.cautions,
     citation: LGMS_NET_FLUX_METADATA.citation,
     tile_url: lgmsTileUrl("lgms", "net"),
+    // Layer names match the backend catalog yml (land_ghg_inventory.yml)
+    // exactly — the legend and the Data Catalog panel resolve entries by
+    // `layer.name`, so a mismatch here silently falls back to the card's
+    // dataset-level legend/metadata. `layers[0]` ("lgms") is this card's own
+    // default layer, shown by the card's own toggle; `layers[1:]` are the
+    // "supporting layers" the Data Catalog panel discloses underneath it.
+    layers: [
+      {
+        name: "lgms",
+        tile_url: lgmsTileUrl("lgms", "net"),
+        legend: lgmsNetFluxLegend(
+          "LGMS total net GHG flux",
+          "The balance of emissions and removals across every LGMS sector, so a single layer shows whether land is a net source or a net sink.",
+          "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+        ),
+      },
+      {
+        name: "lulucf",
+        title: "LGMS LULUCF net GHG flux",
+        img: "/dataset_card_lgms_lulucf.webp",
+        // The LGMS tile endpoint caps at z12 and 422s above it.
+        cadence: "annual",
+        resolution: "30 m",
+        geographic_coverage: "global",
+        provider: "WRI",
+        summary: LGMS_LULUCF_METADATA.summary,
+        description: LGMS_LULUCF_METADATA.description,
+        cautions: LGMS_LULUCF_METADATA.cautions,
+        citation: LGMS_LULUCF_METADATA.citation,
+        tile_url: lgmsTileUrl("lulucf", "net"),
+        legend: lgmsNetFluxLegend(
+          "LGMS LULUCF net GHG flux (2016-2024)",
+          "This layer maps the average annual net GHG flux from land use and land-use change. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, and organic soil. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
+          "Average annual net GHG flux from vegetation and soil due to land use and land-use change. Net flux is the difference between gross emissions and gross removals."
+        ),
+      },
+      {
+        name: "agriculture",
+        title: "LGMS agriculture emissions",
+        img: "/dataset_card_lgms_agriculture.webp",
+        cadence: "annual",
+        resolution: "30 m",
+        geographic_coverage: "global",
+        provider: "WRI",
+        summary: LGMS_AGRICULTURE_METADATA.summary,
+        description: LGMS_AGRICULTURE_METADATA.description,
+        cautions: LGMS_AGRICULTURE_METADATA.cautions,
+        citation: LGMS_AGRICULTURE_METADATA.citation,
+        tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS agriculture emissions (2020)",
+          "This layer maps the GHG emissions (CH4, N2O) from agriculture, including cropland management and livestock. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+          "Gross GHG emissions from agriculture, including cropland management and livestock.",
+          26
+        ),
+      },
+      {
+        name: "cropland",
+        title: "LGMS cropland management emissions",
+        img: "/dataset_card_lgms_cropland.webp",
+        cadence: "annual",
+        resolution: "30 m",
+        geographic_coverage: "global",
+        provider: "WRI",
+        summary: LGMS_CROPLAND_METADATA.summary,
+        description: LGMS_CROPLAND_METADATA.description,
+        cautions: LGMS_CROPLAND_METADATA.cautions,
+        citation: LGMS_CROPLAND_METADATA.citation,
+        tile_url: lgmsTileUrl("cropland", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS cropland management emissions (2020)",
+          "This layer maps the GHG emissions (CH4, N2O) from cropland management, including manure application, fertilizer application, rice cultivation, and crop residue decomposition. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+          "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation.",
+          23
+        ),
+      },
+      {
+        name: "livestock",
+        title: "LGMS livestock emissions",
+        img: "/dataset_card_lgms_livestock.webp",
+        cadence: "annual",
+        resolution: "30 m",
+        geographic_coverage: "global",
+        provider: "WRI",
+        summary: LGMS_LIVESTOCK_METADATA.summary,
+        description: LGMS_LIVESTOCK_METADATA.description,
+        cautions: LGMS_LIVESTOCK_METADATA.cautions,
+        citation: LGMS_LIVESTOCK_METADATA.citation,
+        tile_url: lgmsTileUrl("livestock", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS livestock emissions (2020)",
+          "This layer maps the GHG emissions (CH4, N2O) from livestock, including monogastrics and ruminants. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+          "Gross GHG emissions from livestock, including monogastrics and ruminants.",
+          14
+        ),
+      },
+    ],
     legend: lgmsNetFluxLegend(
       "LGMS total net GHG flux (2016-2024)",
       "This layer maps the average annual net GHG flux from land use, land-use change, and agriculture. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, organic soil, cropland management, and livestock. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
       "Average annual net GHG flux from land use, land-use change, and agriculture. Net flux is the difference between gross emissions and gross removals."
-    ),
-  },
-  // LGMS sector map layers. Siblings of the analytics-only LGMS card above:
-  // that one scopes the "View Analysis" flow to a GADM admin area, these paint
-  // the underlying v1.0.3 raster. They are view-only — the analytics endpoint
-  // is per-admin-area and knows nothing about the individual sector layers —
-  // and share the LGMS review flag so the family is revealed together.
-  //
-  // NOTE: ids 13-16 are claimed client-side. The backend catalogue currently
-  // stops at 8; if it ever grows into this range these need renumbering.
-  {
-    dataset_id: 13,
-    dataset_name: "LGMS LULUCF net GHG flux",
-    shortName: "LULUCF net flux",
-    featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS LULUCF net GHG flux",
-    context_layer: null,
-    img: "/dataset_card_lgms_lulucf.webp",
-    viewOnly: true,
-    // The LGMS tile endpoint caps at z12 and 422s above it.
-    cadence: "annual",
-    resolution: "30 m",
-    geographic_coverage: "global",
-    provider: "WRI",
-    defaultStartYear: 2016,
-    defaultEndYear: 2024,
-    categories: ["ghg-fluxes"],
-    summary: LGMS_LULUCF_METADATA.summary,
-    description: LGMS_LULUCF_METADATA.description,
-    cautions: LGMS_LULUCF_METADATA.cautions,
-    citation: LGMS_LULUCF_METADATA.citation,
-    tile_url: lgmsTileUrl("lulucf", "net"),
-    legend: lgmsNetFluxLegend(
-      "LGMS LULUCF net GHG flux (2016-2024)",
-      "This layer maps the average annual net GHG flux from land use and land-use change. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, and organic soil. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
-      "Average annual net GHG flux from vegetation and soil due to land use and land-use change. Net flux is the difference between gross emissions and gross removals."
-    ),
-  },
-  {
-    dataset_id: 14,
-    dataset_name: "LGMS agriculture emissions",
-    shortName: "Agriculture emissions",
-    featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS agriculture emissions",
-    context_layer: null,
-    img: "/dataset_card_lgms_agriculture.webp",
-    viewOnly: true,
-    cadence: "annual",
-    resolution: "30 m",
-    geographic_coverage: "global",
-    provider: "WRI",
-    defaultStartYear: 2020,
-    defaultEndYear: 2020,
-    categories: ["ghg-fluxes"],
-    summary: LGMS_AGRICULTURE_METADATA.summary,
-    description: LGMS_AGRICULTURE_METADATA.description,
-    cautions: LGMS_AGRICULTURE_METADATA.cautions,
-    citation: LGMS_AGRICULTURE_METADATA.citation,
-    tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
-    legend: lgmsEmissionsLegend(
-      "LGMS agriculture emissions (2020)",
-      "This layer maps the GHG emissions (CH4, N2O) from agriculture, including cropland management and livestock. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
-      "Gross GHG emissions from agriculture, including cropland management and livestock.",
-      26
-    ),
-  },
-  {
-    dataset_id: 15,
-    dataset_name: "LGMS cropland management emissions",
-    shortName: "Cropland emissions",
-    featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS cropland management emissions",
-    context_layer: null,
-    img: "/dataset_card_lgms_cropland.webp",
-    viewOnly: true,
-    cadence: "annual",
-    resolution: "30 m",
-    geographic_coverage: "global",
-    provider: "WRI",
-    defaultStartYear: 2020,
-    defaultEndYear: 2020,
-    categories: ["ghg-fluxes"],
-    summary: LGMS_CROPLAND_METADATA.summary,
-    description: LGMS_CROPLAND_METADATA.description,
-    cautions: LGMS_CROPLAND_METADATA.cautions,
-    citation: LGMS_CROPLAND_METADATA.citation,
-    tile_url: lgmsTileUrl("cropland", "gross_emissions"),
-    legend: lgmsEmissionsLegend(
-      "LGMS cropland management emissions (2020)",
-      "This layer maps the GHG emissions (CH4, N2O) from cropland management, including manure application, fertilizer application, rice cultivation, and crop residue decomposition. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
-      "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation.",
-      23
-    ),
-  },
-  {
-    dataset_id: 16,
-    dataset_name: "LGMS livestock emissions",
-    shortName: "Livestock emissions",
-    featureFlag: NET_FLUX_FEATURE_FLAG,
-    data_layer: "LGMS livestock emissions",
-    context_layer: null,
-    img: "/dataset_card_lgms_livestock.webp",
-    viewOnly: true,
-    cadence: "annual",
-    resolution: "30 m",
-    geographic_coverage: "global",
-    provider: "WRI",
-    defaultStartYear: 2020,
-    defaultEndYear: 2020,
-    categories: ["ghg-fluxes"],
-    summary: LGMS_LIVESTOCK_METADATA.summary,
-    description: LGMS_LIVESTOCK_METADATA.description,
-    cautions: LGMS_LIVESTOCK_METADATA.cautions,
-    citation: LGMS_LIVESTOCK_METADATA.citation,
-    tile_url: lgmsTileUrl("livestock", "gross_emissions"),
-    legend: lgmsEmissionsLegend(
-      "LGMS livestock emissions (2020)",
-      "This layer maps the GHG emissions (CH4, N2O) from livestock, including monogastrics and ruminants. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
-      "Gross GHG emissions from livestock, including monogastrics and ruminants.",
-      14
     ),
   },
 ];
@@ -885,10 +894,6 @@ const DATASET_CARD_DISPLAY_ORDER: number[] = [
   7, // Tree cover
   10, // TCL from fires
   12, // LGMS
-  13, // LGMS LULUCF
-  14, // LGMS agriculture
-  15, // LGMS cropland
-  16, // LGMS livestock
   6, // Forest GHG net flux
 ];
 
@@ -918,6 +923,7 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     context_layer,
     description,
     tile_url,
+    layers,
     data_layer,
     threshold,
   }) => ({
@@ -927,7 +933,15 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     description,
     reason: description, // for compatibility with LayerCardItem
     data_layer: (data_layer ?? DEFAULT_DATASET_FIELDS.data_layer) as string,
-    tile_url: (tile_url ?? DEFAULT_DATASET_FIELDS.tile_url) as string,
+    // tile_url mirrors layers[0] when the card declares multiple layers, so
+    // legacy single-tile_url readers still see a sensible default.
+    tile_url: (layers?.[0]?.tile_url ??
+      tile_url ??
+      DEFAULT_DATASET_FIELDS.tile_url) as string,
+    layers: layers?.map(({ name, tile_url: url }) => ({
+      name,
+      tile_url: url,
+    })),
     context_layer: (context_layer ?? DEFAULT_DATASET_FIELDS.context_layer) as
       | string
       | null,

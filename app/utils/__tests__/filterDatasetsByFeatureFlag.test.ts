@@ -87,12 +87,12 @@ describe("Intact Forest Landscapes catalogue card", () => {
   });
 });
 
-describe("the LGMS net-flux card", () => {
+describe("the LGMS dataset card", () => {
   const lgms = DATASET_CARDS.find((c) => c.dataset_id === LGMS_DATASET_ID);
 
   it("is registered in the catalogue", () => {
     expect(lgms).toBeDefined();
-    expect(lgms!.dataset_name).toBe("LGMS total net GHG flux");
+    expect(lgms!.dataset_name).toBe("Land GHG Monitoring System (LGMS)");
   });
 
   it("is hidden from the catalogue until ?ff=net-flux is set", () => {
@@ -116,58 +116,42 @@ describe("the LGMS net-flux card", () => {
   });
 });
 
-describe("the LGMS sector map layers", () => {
-  const LGMS_SECTOR_IDS = [13, 14, 15, 16];
-  const cards = LGMS_SECTOR_IDS.map(
-    (id) => DATASET_CARDS.find((c) => c.dataset_id === id)!
-  );
+describe("the LGMS supporting layers", () => {
+  const lgms = DATASET_CARDS.find((c) => c.dataset_id === LGMS_DATASET_ID)!;
+  // layers[0] ("lgms") is the card's own default layer; layers[1:] are the
+  // "supporting layers" the Data Catalog panel discloses underneath it —
+  // no more standalone sibling dataset cards (backend PR #830, PZB-1346).
+  const supportingLayers = lgms.layers!.slice(1);
 
-  it("registers one card per sector layer", () => {
-    expect(cards.every(Boolean)).toBe(true);
-    expect(cards.map((c) => c.dataset_name)).toEqual([
+  it("declares one layer per sector, no standalone cards", () => {
+    expect(supportingLayers.map((l) => l.title)).toEqual([
       "LGMS LULUCF net GHG flux",
       "LGMS agriculture emissions",
       "LGMS cropland management emissions",
       "LGMS livestock emissions",
     ]);
-  });
-
-  it("hides them behind the same flag as the LGMS analysis card", () => {
-    const withoutFlag = filterDatasetsByFeatureFlag(DATASET_CARDS, new Set());
-    const withFlag = filterDatasetsByFeatureFlag(
-      DATASET_CARDS,
-      new Set([NET_FLUX_FEATURE_FLAG])
-    );
-
-    for (const id of LGMS_SECTOR_IDS) {
-      expect(withoutFlag.some((c) => c.dataset_id === id)).toBe(false);
-      expect(withFlag.some((c) => c.dataset_id === id)).toBe(true);
-    }
-  });
-
-  it("marks them view-only — the analytics endpoint is per-admin-area", () => {
-    for (const id of LGMS_SECTOR_IDS) {
-      expect(isViewOnlyDataset(id)).toBe(true);
-    }
+    expect(
+      DATASET_CARDS.some((c) => [13, 14, 15, 16].includes(c.dataset_id))
+    ).toBe(false);
   });
 
   // The tile server rejects any other `flux_type` with a 422 and the layer
   // then silently never paints, so the exact spelling is worth pinning.
   it("requests each sector with the flux_type the tile server accepts", () => {
-    expect(cards.map((c) => c.tile_url)).toEqual([
+    expect(supportingLayers.map((l) => l.tile_url)).toEqual([
       expect.stringContaining("?layer=lulucf&flux_type=net"),
       expect.stringContaining("?layer=agriculture&flux_type=gross_emissions"),
       expect.stringContaining("?layer=cropland&flux_type=gross_emissions"),
       expect.stringContaining("?layer=livestock&flux_type=gross_emissions"),
     ]);
-    for (const card of cards) {
-      expect(card.tile_url).not.toContain("flux_type=net_flux");
+    for (const layer of supportingLayers) {
+      expect(layer.tile_url).not.toContain("flux_type=net_flux");
     }
   });
 
-  it("gives every card a legend the map legend can render", () => {
-    for (const card of cards) {
-      const legend = card.legend!;
+  it("gives every layer a legend the map legend can render", () => {
+    for (const layer of lgms.layers!) {
+      const legend = layer.legend!;
       expect(legend).toBeDefined();
       expect(["divergent", "sequential"]).toContain(legend.type);
       // The ramp legends label only their two end stops.
