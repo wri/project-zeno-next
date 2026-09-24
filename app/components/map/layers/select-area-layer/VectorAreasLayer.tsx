@@ -18,6 +18,7 @@ import { isAreaLayer } from "@/app/store/layerManagerSlice";
 import { getAoiName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
 
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
+import { getBoundaryFeatureDetails } from "@/app/utils/boundaryFeatureDetails";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
 import { publishAreaSelection } from "./publishAreaSelection";
@@ -33,7 +34,7 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { addToRegistry, addLayer, setSelectAreaLayer } = useMapStore();
+  const { addToRegistry, addLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -71,10 +72,12 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           const feature = e.features.at(-1);
           const { lat, lng } = e.lngLat;
           const aoiName = getAoiName(nameKeys, feature!.properties);
+          map.getCanvas().style.cursor = "pointer";
           setHoverInfo({
             lat,
             lng,
             name: aoiName,
+            details: getBoundaryFeatureDetails(layerId, feature!.properties),
           });
 
           if (hoverId !== undefined) {
@@ -92,6 +95,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
       };
 
       const onMouseLeave = () => {
+        map.getCanvas().style.cursor = "";
         setHoverInfo(undefined);
         if (hoverId !== undefined) {
           map.setFeatureState(
@@ -196,22 +200,15 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         }
       };
 
-      const onKeyUp = (event: KeyboardEvent) => {
-        if (event.key === "Escape") {
-          setSelectAreaLayer(null);
-        }
-      };
-
       map.on("mousemove", fillLayerName, onMouseMove);
       map.on("mouseleave", fillLayerName, onMouseLeave);
       map.on("click", fillLayerName, onClick);
-      document.addEventListener("keyup", onKeyUp);
 
       return () => {
         map.off("mousemove", fillLayerName, onMouseMove);
         map.off("mouseleave", fillLayerName, onMouseLeave);
         map.off("click", fillLayerName, onClick);
-        document.removeEventListener("keyup", onKeyUp);
+        map.getCanvas().style.cursor = "";
       };
     }
   }, [
@@ -220,7 +217,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     sourceId,
     sourceLayer,
     nameKeys,
-    setSelectAreaLayer,
     metadata,
     addToRegistry,
     addLayer,

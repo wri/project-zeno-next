@@ -2,6 +2,7 @@
 
 import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 
 import { MAX_AREA_KM2, MIN_AREA_KM2 } from "@/app/constants/custom-areas";
 import { getMapFeedbackLeftPx } from "@/app/explorationLayout";
@@ -16,7 +17,7 @@ import { Tooltip } from "./ui/tooltip";
  * exploration layout above the catalog/areas column so toasts are not clipped.
  */
 export default function MapAreaFeedback() {
-  const selectionMode = useMapStore((s) => s.selectionMode);
+  const banner = useFeedbackBanner();
   const validationError = useMapStore((s) => s.validationError);
   const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
   const dataCatalogOpen = useSidebarStore((s) => s.dataCatalogOpen);
@@ -25,7 +26,7 @@ export default function MapAreaFeedback() {
   const catalogColumnOpen =
     dataCatalogOpen || areasPanelOpen || insightsPanelOpen;
 
-  if (!selectionMode && !validationError) return null;
+  if (!banner && !validationError) return null;
 
   const left = `${getMapFeedbackLeftPx(isChatFullSize, catalogColumnOpen)}px`;
 
@@ -39,20 +40,7 @@ export default function MapAreaFeedback() {
       pointerEvents="none"
       alignItems="flex-start"
     >
-      {selectionMode && (
-        <Box
-          px={3}
-          py={1}
-          bg="bg"
-          borderRadius="md"
-          boxShadow="sm"
-          color="blackAlpha.700"
-          pointerEvents="auto"
-        >
-          {selectionMode.type}{" "}
-          {selectionMode.type === "Selecting" ? selectionMode.name : "AOI"}
-        </Box>
-      )}
+      {banner && <Banner>{banner}</Banner>}
       {validationError && (
         <ValidationErrorDisplay validationError={validationError} />
       )}
@@ -62,10 +50,10 @@ export default function MapAreaFeedback() {
 
 /** Mobile map overlay — same content, positioned inside `MapAreaControls`. */
 export function MapAreaFeedbackMobile() {
-  const selectionMode = useMapStore((s) => s.selectionMode);
+  const banner = useFeedbackBanner();
   const validationError = useMapStore((s) => s.validationError);
 
-  if (!selectionMode && !validationError) return null;
+  if (!banner && !validationError) return null;
 
   return (
     <Flex
@@ -75,24 +63,34 @@ export function MapAreaFeedbackMobile() {
       alignItems="flex-start"
       order={-1}
     >
-      {selectionMode && (
-        <Box
-          px={3}
-          py={1}
-          bg="bg"
-          borderRadius="md"
-          boxShadow="sm"
-          color="blackAlpha.700"
-          pointerEvents="auto"
-        >
-          {selectionMode.type}{" "}
-          {selectionMode.type === "Selecting" ? selectionMode.name : "AOI"}
-        </Box>
-      )}
+      {banner && <Banner>{banner}</Banner>}
       {validationError && (
         <ValidationErrorDisplay validationError={validationError} />
       )}
     </Flex>
+  );
+}
+
+/** Banner text for the active draw/upload mode, if any. */
+function useFeedbackBanner(): string | null {
+  const selectionMode = useMapStore((s) => s.selectionMode);
+  return selectionMode?.type ? `${selectionMode.type} AOI` : null;
+}
+
+function Banner({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      px={3}
+      py={1}
+      bg="bg"
+      borderRadius="md"
+      boxShadow="sm"
+      color="blackAlpha.700"
+      fontSize="sm"
+      pointerEvents="auto"
+    >
+      {children}
+    </Box>
   );
 }
 
