@@ -286,6 +286,16 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
       .filter(Boolean)
       .join(" · ") || undefined;
 
+  // layers[0] is the card's own default layer, shown above by the card's
+  // own toggle; layers[1:] are "supporting layers" (e.g. LGMS's LULUCF/
+  // agriculture) disclosed below as their own selectable rows, each with
+  // its own info modal — PZB-1346 / project-zeno PR #830.
+  const supportingLayers = (card.layers ?? []).slice(1).map((layer, i) => ({
+    layer,
+    ref: layerRefs[i + 1],
+  }));
+  const [supportingOpen, setSupportingOpen] = useState(true);
+
   return (
     <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
       <DatasetInfoModal
@@ -335,83 +345,55 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
             label={layerRefs.length > 1 ? ref.name : card.dataset_name}
           />
         ))}
-      {/* layers[0] is the card's own default layer, shown above by the
-          card's own toggle; layers[1:] are "supporting layers" (e.g. LGMS's
-          LULUCF/agriculture) disclosed here as their own selectable rows,
-          each with its own info modal — PZB-1346 / project-zeno PR #830. */}
-      {card.layers && card.layers.length > 1 && (
-        <SupportingLayersDisclosure
-          card={card}
-          layers={card.layers.slice(1)}
-          layerRefs={layerRefs.slice(1)}
-          activeLayerIds={activeLayerIds}
-        />
-      )}
-    </Box>
-  );
-}
-
-/** Collapsible "N supporting layers — view only" section under a multi-layer
- * card, listing each non-default layer as its own selectable row. */
-function SupportingLayersDisclosure({
-  card,
-  layers,
-  layerRefs,
-  activeLayerIds,
-}: {
-  card: DatasetCardConfig;
-  layers: DatasetCardLayer[];
-  layerRefs: { name: string; id: string }[];
-  activeLayerIds: string[];
-}) {
-  const [open, setOpen] = useState(true);
-
-  return (
-    <Box
-      mt={1}
-      borderRadius="4px"
-      overflow="hidden"
-      border="1px solid"
-      borderColor="rgba(19, 22, 25, 0.1)"
-    >
-      <Flex
-        as="button"
-        onClick={() => setOpen((o) => !o)}
-        align="center"
-        gap={2}
-        w="100%"
-        px={4}
-        py="10px"
-        bg="#FAFBFC"
-      >
+      {supportingLayers.length > 0 && (
         <Box
-          transform={open ? "rotate(180deg)" : undefined}
-          transition="transform 0.15s ease"
-          display="flex"
+          mt={1}
+          borderRadius="4px"
+          overflow="hidden"
+          border="1px solid"
+          borderColor="rgba(19, 22, 25, 0.1)"
         >
-          <CaretDownIcon size={12} color="#3A4048" />
+          <Flex
+            as="button"
+            onClick={() => setSupportingOpen((o) => !o)}
+            align="center"
+            gap={2}
+            w="100%"
+            px={4}
+            py="10px"
+            bg="#FAFBFC"
+          >
+            <Box
+              transform={supportingOpen ? "rotate(180deg)" : undefined}
+              transition="transform 0.15s ease"
+              display="flex"
+            >
+              <CaretDownIcon size={12} color="#3A4048" />
+            </Box>
+            <Text
+              fontFamily="body"
+              fontWeight="medium"
+              fontSize="12px"
+              color="#3A4048"
+            >
+              {supportingLayers.length} supporting layer
+              {supportingLayers.length === 1 ? "" : "s"}
+            </Text>
+            <Text fontFamily="mono" fontSize="10px" color="#656E7B">
+              — view only
+            </Text>
+          </Flex>
+          {supportingOpen &&
+            supportingLayers.map(({ layer, ref }) => (
+              <SupportingLayerRow
+                key={layer.name}
+                card={card}
+                layer={layer}
+                isSelected={activeLayerIds.includes(ref.id)}
+              />
+            ))}
         </Box>
-        <Text
-          fontFamily="body"
-          fontWeight="medium"
-          fontSize="12px"
-          color="#3A4048"
-        >
-          {layers.length} supporting layer{layers.length === 1 ? "" : "s"}
-        </Text>
-        <Text fontFamily="mono" fontSize="10px" color="#656E7B">
-          — view only
-        </Text>
-      </Flex>
-      {open &&
-        layers.map((layer, i) => (
-          <SupportingLayerRow
-            key={layer.name}
-            card={card}
-            layer={layer}
-            isSelected={activeLayerIds.includes(layerRefs[i].id)}
-          />
-        ))}
+      )}
     </Box>
   );
 }
@@ -443,6 +425,12 @@ function SupportingLayerRow({
   }
 
   const title = layer.title ?? layer.name;
+  const resolved = {
+    cadence: layer.cadence ?? card.cadence,
+    resolution: layer.resolution ?? card.resolution,
+    geographic_coverage: layer.geographic_coverage ?? card.geographic_coverage,
+    provider: layer.provider ?? card.provider,
+  };
   const layerDataset = {
     dataset_id: card.dataset_id,
     dataset_name: title,
@@ -451,17 +439,10 @@ function SupportingLayerRow({
     description: layer.description,
     cautions: layer.cautions,
     citation: layer.citation,
-    cadence: layer.cadence ?? card.cadence,
-    resolution: layer.resolution ?? card.resolution,
-    geographic_coverage: layer.geographic_coverage ?? card.geographic_coverage,
-    provider: layer.provider ?? card.provider,
+    ...resolved,
   } as unknown as DatasetInfo;
   const layerText =
-    [
-      layer.cadence ?? card.cadence,
-      layer.geographic_coverage ?? card.geographic_coverage,
-      layer.provider ?? card.provider,
-    ]
+    [resolved.cadence, resolved.geographic_coverage, resolved.provider]
       .filter(Boolean)
       .join(" · ") || undefined;
 
