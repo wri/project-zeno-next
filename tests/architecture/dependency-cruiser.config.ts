@@ -21,7 +21,7 @@
 // Frameworks the pure core (model/lib) must not touch. `zustand` is
 // intentionally NOT listed — a state library is acceptable in `model` (stores).
 const FORBIDDEN_PKGS_CORE =
-  "node_modules/(react|react-dom|next|maplibre-gl|react-map-gl|terra-draw|" +
+  "node_modules/(react|react-dom|react-router|maplibre-gl|react-map-gl|terra-draw|" +
   "@chakra-ui|@ark-ui|@tanstack|framer-motion|motion)(/|$)";
 
 // Higher FSD layers an entity (a low layer) must never import "up" into.
@@ -34,13 +34,14 @@ export function forbiddenFor(featureDir: string) {
     {
       name: "model-is-core",
       comment:
-        "FSD: model is the pure core — no ui/api/lib, no React/Next/map, no app store.",
+        "FSD: model is the pure core — no ui/api/lib, no React/router/map, no app store.",
       severity: "error",
       from: { path: `${feature}/model` },
       to: {
         path: [
           `${feature}/(ui|api|lib)`,
           FORBIDDEN_PKGS_CORE,
+          "^src/shared/lib/router",
           "^app/store",
           "^app/config/api",
         ],
@@ -56,6 +57,7 @@ export function forbiddenFor(featureDir: string) {
         path: [
           `${feature}/(ui|api)`,
           FORBIDDEN_PKGS_CORE,
+          "^src/shared/lib/router",
           "^app/store",
           "^app/config/api",
         ],
