@@ -12,7 +12,7 @@ let registered = false;
 // This protocol rewrites pure-black pixels to alpha=0 so the layer
 // composites cleanly over the basemap.
 export function registerPrimaryForestProtocol(): void {
-  if (registered || typeof window === "undefined") return;
+  if (registered) return;
   registered = true;
 
   maplibregl.addProtocol(

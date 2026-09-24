@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, Suspense } from "react";
-import { Loader } from "@chakra-ui/react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "@/src/shared/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
@@ -14,7 +13,7 @@ import { useFeatureFlag } from "@/src/shared/lib/feature-flags/use-feature-flag"
 const TCL_DATASET_ID = 4;
 const LGMS_NET_FLUX_DATASET_ID = 12;
 
-function NewThread() {
+export default function NewThread() {
   const {
     reset: resetChatStore,
     sendMessage,
@@ -77,12 +76,4 @@ function NewThread() {
   }, [hasMounted, submitPrompt, searchParams, currentThreadId]);
 
   return null;
-}
-
-export default function AppPage() {
-  return (
-    <Suspense fallback={<Loader />}>
-      <NewThread />
-    </Suspense>
-  );
 }

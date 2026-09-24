@@ -161,7 +161,7 @@ export default function DashboardMapWidget({
             buildBasemapTileUrl(
               BASEMAP_STYLE,
               MAPBOX_ACCESS_TOKEN,
-              typeof window === "undefined" ? 1 : window.devicePixelRatio
+              window.devicePixelRatio
             ),
           ]}
         >

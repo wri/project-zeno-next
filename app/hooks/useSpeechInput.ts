@@ -46,7 +46,6 @@ export interface SpeechInput {
 }
 
 function getCtor(): SpeechRecognitionConstructor | undefined {
-  if (typeof window === "undefined") return undefined;
   return window.SpeechRecognition ?? window.webkitSpeechRecognition;
 }
 
