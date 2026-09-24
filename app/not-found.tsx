@@ -1,10 +1,31 @@
-"use client";
+import type { ReactNode } from "react";
 import { Box, Container, Heading, Text, Flex } from "@chakra-ui/react";
 import { WarningIcon } from "@phosphor-icons/react";
 import { Link } from "@/src/shared/lib/router";
 import LclLogo from "./components/LclLogo";
 
-export default function NotFound() {
+const NOT_FOUND_MESSAGE = (
+  <>
+    The link you entered does not exist. Please check the link or visit our{" "}
+    <Link href="/">
+      <Text as="span" textDecoration="underline" color="primary.solid">
+        home page
+      </Text>
+    </Link>
+    .
+  </>
+);
+
+export default function NotFound({
+  title = "Page not found",
+  message = NOT_FOUND_MESSAGE,
+  code = "404",
+}: {
+  title?: string;
+  message?: ReactNode;
+  // Status shown in the red box; null hides the box.
+  code?: string | null;
+}) {
   return (
     <Box>
       <Box
@@ -22,94 +43,89 @@ export default function NotFound() {
         </Flex>
         <Container maxW="2xl" textAlign="center" alignContent="center">
           <Heading size={{ base: "4xl", md: "6xl" }} color="primary.800">
-            Page not found
+            {title}
           </Heading>
           <Heading as="p" size="2xl" fontWeight="normal">
-            The link you entered does not exist. Please check the link or visit
-            our{" "}
-            <Link href="/">
-              <Text as="span" textDecoration="underline" color="primary.solid">
-                home page
-              </Text>
-            </Link>
-            .
+            {message}
           </Heading>
         </Container>
-        <Container
-          maxW="md"
-          bg="red.100"
-          rounded="2xl"
-          p={5}
-          mb={10}
-          animationName="slide-from-bottom-full, fade-in"
-          animationDuration="0.4s, 0.6s"
-          animationTimingFunction="ease-out, ease-out"
-          animationFillMode="forwards, forwards"
-          animationIterationCount="1, 1"
-        >
-          <Flex gap={2}>
-            <Box
-              bg="red.200"
-              h={4}
-              w={4}
-              rounded="full"
+        {code && (
+          <Container
+            maxW="md"
+            bg="red.100"
+            rounded="2xl"
+            p={5}
+            mb={10}
+            animationName="slide-from-bottom-full, fade-in"
+            animationDuration="0.4s, 0.6s"
+            animationTimingFunction="ease-out, ease-out"
+            animationFillMode="forwards, forwards"
+            animationIterationCount="1, 1"
+          >
+            <Flex gap={2}>
+              <Box
+                bg="red.200"
+                h={4}
+                w={4}
+                rounded="full"
+                opacity={0}
+                animationName="fade-in"
+                animationDuration="0.2s"
+                animationDelay="0.4s"
+                animationTimingFunction="ease-out"
+                animationFillMode="forwards"
+                animationIterationCount="1"
+              />
+              <Box
+                bg="red.200"
+                h={4}
+                w={4}
+                rounded="full"
+                opacity={0}
+                animationName="fade-in"
+                animationDuration="0.2s"
+                animationDelay="0.5s"
+                animationTimingFunction="ease-out"
+                animationFillMode="forwards"
+                animationIterationCount="1"
+              />
+              <Box
+                bg="red.200"
+                h={4}
+                w={4}
+                rounded="full"
+                opacity={0}
+                animationName="fade-in"
+                animationDuration="0.2s"
+                animationDelay="0.6s"
+                animationTimingFunction="ease-out"
+                animationFillMode="forwards"
+                animationIterationCount="1"
+              />
+            </Flex>
+            <Flex
+              gap={4}
+              alignItems="center"
+              justifyContent="center"
+              color="red.700"
+              marginInline={"auto"}
+              p={20}
+              px={16}
               opacity={0}
               animationName="fade-in"
-              animationDuration="0.2s"
+              animationDuration="1s"
               animationDelay="0.4s"
               animationTimingFunction="ease-out"
               animationFillMode="forwards"
               animationIterationCount="1"
-            />
-            <Box
-              bg="red.200"
-              h={4}
-              w={4}
-              rounded="full"
-              opacity={0}
-              animationName="fade-in"
-              animationDuration="0.2s"
-              animationDelay="0.5s"
-              animationTimingFunction="ease-out"
-              animationFillMode="forwards"
-              animationIterationCount="1"
-            />
-            <Box
-              bg="red.200"
-              h={4}
-              w={4}
-              rounded="full"
-              opacity={0}
-              animationName="fade-in"
-              animationDuration="0.2s"
-              animationDelay="0.6s"
-              animationTimingFunction="ease-out"
-              animationFillMode="forwards"
-              animationIterationCount="1"
-            />
-          </Flex>
-          <Flex
-            gap={4}
-            alignItems="center"
-            justifyContent="center"
-            color="red.700"
-            marginInline={"auto"}
-            p={20}
-            px={16}
-            opacity={0}
-            animationName="fade-in"
-            animationDuration="1s"
-            animationDelay="0.4s"
-            animationTimingFunction="ease-out"
-            animationFillMode="forwards"
-            animationIterationCount="1"
-          >
-            <WarningIcon size={64} weight="fill" />
-            <Heading m={0} size="7xl" fontWeight="normal" color="current">
-              404
-            </Heading>
-          </Flex>
-        </Container>
+            >
+              <WarningIcon size={64} weight="fill" />
+              <Heading m={0} size="7xl" fontWeight="normal" color="current">
+                {code}
+              </Heading>
+            </Flex>
+          </Container>
+        )}
       </Box>
       <Box
         as="footer"

@@ -1,5 +1,3 @@
-"use client";
-
 import { Drawer, Portal } from "@chakra-ui/react";
 
 import { Sidebar } from "@/app/sidebar";

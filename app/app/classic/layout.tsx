@@ -1,5 +1,3 @@
-"use client";
-
 import { StackPlusIcon } from "@phosphor-icons/react";
 import {
   Box,

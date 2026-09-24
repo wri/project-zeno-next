@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Rates across the run history, one line per comparability group (env, ff,
  * trial count) — profile changes never masquerade as rate changes. The run

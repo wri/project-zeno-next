@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Spinner, Center } from "@chakra-ui/react";
 import OnboardingForm from "./form";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";

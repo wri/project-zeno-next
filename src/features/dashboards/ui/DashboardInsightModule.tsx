@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import { Flex, IconButton, Text } from "@chakra-ui/react";
 import { ArrowArcLeftIcon, ArrowArcRightIcon } from "@phosphor-icons/react";

@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Unmet demand: the asks the agent didn't serve, grouped so repeated requests
  * read as feature gaps, plus friction shares (unserved / defer / retry rate).

@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Conversation Browser — one row per thread from GET /api/traces/sessions,
  * with search, sorting, pagination and drill-through into the Trace Explorer.

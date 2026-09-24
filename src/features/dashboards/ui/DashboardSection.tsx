@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Box, Flex, Heading, IconButton, Text } from "@chakra-ui/react";
 import { CaretDownIcon, DotsSixVerticalIcon } from "@phosphor-icons/react";

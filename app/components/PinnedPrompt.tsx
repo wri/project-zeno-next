@@ -1,4 +1,3 @@
-"use client";
 import { Box, Text, chakra } from "@chakra-ui/react";
 import { ChatMessage } from "@/app/types/chat";
 import { PIN_TOP_OFFSET_PX } from "@/app/utils/pinnedPrompt";

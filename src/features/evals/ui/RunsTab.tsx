@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Run drill-down: pick a run, see the client-side rollup and every case
  * row — failing first — with reasons, actuals, per-trial verdicts and

@@ -47,7 +47,9 @@ Env vars keep the `NEXT_PUBLIC_` prefix: Vite only exposes variables matching `e
 
 ### Routing
 
-Vite + React Router v7 (data mode). `src/app/main.tsx` is the entry: it holds the route table, and each page under `app/` is a lazy route. `src/shared/lib/router` is the only routing API (`Link`, `useRouter`, `useSearchParams`, `usePathname`, `useParams`, with Next-style signatures); importing `react-router` directly anywhere else is a lint error.
+Vite + React Router v7 (data mode). `src/app/routes.tsx` holds the route table (each page under `app/` is a lazy route) and `src/app/main.tsx` mounts it. `src/shared/lib/router` is the only routing API (`Link`, `useRouter`, `useSearchParams`, `usePathname`, `useParams`, with Next-style signatures); importing `react-router` directly anywhere else is a lint error.
+
+`/` and `/amazonia` are prerendered to static HTML at build time (`src/app/entry-server.tsx` + `scripts/prerender.mjs`) and hydrated in the browser; every other route gets the empty shell (`dist/_spa.html`). Code on those two pages must not touch `window`, `document` or storage while rendering (use effects); `src/app/__tests__/prerender.test.tsx` fails if it does.
 
 ### Layout
 

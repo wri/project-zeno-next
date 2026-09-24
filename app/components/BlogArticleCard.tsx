@@ -1,4 +1,3 @@
-"use client";
 import { Box, Flex, Image, Text, chakra } from "@chakra-ui/react";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";

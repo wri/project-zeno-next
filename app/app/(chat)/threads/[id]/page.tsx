@@ -1,5 +1,3 @@
-"use client";
-
 import { useParams } from "@/src/shared/lib/router";
 import { useEffect, useMemo } from "react";
 import useChatStore from "@/app/store/chatStore";

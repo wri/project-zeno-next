@@ -1,4 +1,3 @@
-"use client";
 import { RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { ChatMessage } from "@/app/types/chat";
 import { PromptRect, resolvePinnedPromptId } from "@/app/utils/pinnedPrompt";

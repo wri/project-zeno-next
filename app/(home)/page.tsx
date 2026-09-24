@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { usePromptStore } from "@/app/store/promptStore";
 import LandingHero from "./sections/hero/Hero";

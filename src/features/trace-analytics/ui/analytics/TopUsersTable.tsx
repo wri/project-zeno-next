@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import { Link } from "@/src/shared/lib/router";
 import { tabHref } from "../links";

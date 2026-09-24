@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { IconButton, Menu, Portal } from "@chakra-ui/react";
 import { DotsThreeVerticalIcon } from "@phosphor-icons/react";

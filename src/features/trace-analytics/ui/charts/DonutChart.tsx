@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { LabelCount } from "../../lib/analytics/aggregations";

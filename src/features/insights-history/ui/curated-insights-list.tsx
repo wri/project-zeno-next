@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import { Box, Button, Stack, Text } from "@chakra-ui/react";
 import { CaretLeftIcon } from "@phosphor-icons/react";

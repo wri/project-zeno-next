@@ -1,4 +1,3 @@
-"use client";
 import { Box, Flex, Text, chakra } from "@chakra-ui/react";
 import { SparkleIcon } from "@phosphor-icons/react";
 const Sparkle = chakra(SparkleIcon);

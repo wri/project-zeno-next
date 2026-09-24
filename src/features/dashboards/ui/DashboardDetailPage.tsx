@@ -1,5 +1,3 @@
-"use client";
-
 import { useParams } from "@/src/shared/lib/router";
 import { useEffect } from "react";
 import { Box, Container, Flex, Spinner, Text } from "@chakra-ui/react";

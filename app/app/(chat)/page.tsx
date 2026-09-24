@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "@/src/shared/lib/router";
 import useChatStore from "@/app/store/chatStore";
