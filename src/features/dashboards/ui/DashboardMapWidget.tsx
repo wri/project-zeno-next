@@ -30,7 +30,7 @@ import DashboardMapLegend, {
   type MapWidgetOpacity,
 } from "./DashboardMapLegend";
 
-const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 // The explorer's default light basemap style.
 const BASEMAP_STYLE = "devseed/cmazl5ws500bz01scaa27dqi4";
 // The widget basemap is always light, and dashboards are single-area.
@@ -161,7 +161,7 @@ export default function DashboardMapWidget({
             buildBasemapTileUrl(
               BASEMAP_STYLE,
               MAPBOX_ACCESS_TOKEN,
-              typeof window === "undefined" ? 1 : window.devicePixelRatio
+              window.devicePixelRatio
             ),
           ]}
         >

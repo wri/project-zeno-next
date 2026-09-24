@@ -1,11 +1,4 @@
-import { Suspense } from "react";
-import { notFound } from "@/app/lib/router";
 import OnboardingForm, { type ProfileConfig } from "@/app/onboarding/form";
-
-export const metadata = {
-  title: "Onboarding Debug",
-  robots: "noindex, nofollow",
-};
 
 // Representative mock so every control renders populated without the API.
 // Kept here (not fetched) so this page stays fully offline.
@@ -58,13 +51,5 @@ const MOCK_PROFILE_CONFIG: ProfileConfig = {
 // Debug-only mirror of /onboarding that renders the real form with mock data
 // and no API/auth — for visual review of the page, content, and form offline.
 export default function OnboardingDebugPage() {
-  if (process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS !== "true") {
-    notFound();
-  }
-
-  return (
-    <Suspense fallback={null}>
-      <OnboardingForm previewConfig={MOCK_PROFILE_CONFIG} />
-    </Suspense>
-  );
+  return <OnboardingForm previewConfig={MOCK_PROFILE_CONFIG} />;
 }

@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "@/app/lib/router";
+import { useSearchParams } from "@/src/shared/lib/router";
 import {
   Box,
   Button,

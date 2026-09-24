@@ -34,8 +34,8 @@ import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
-import { Link } from "@/app/lib/router";
-import { usePathname } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
+import { usePathname } from "@/src/shared/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
 import {
@@ -44,15 +44,9 @@ import {
 } from "@/app/utils/threadNavigation";
 import useMapStore from "../store/mapStore";
 
-const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
+const isPrototype = import.meta.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 const WHATS_NEW_STORAGE_KEY = "whats-new-v5-dismissed";
-
-// Exploration (uncommitted): measure the toggle before paint so the sliding
-// pill never flashes from a wrong spot. useLayoutEffect on the server warns,
-// so fall back to useEffect there.
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function PageHeader() {
   const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
@@ -139,7 +133,9 @@ function PageHeader() {
     Array<{ x: number; y: number; width: number; height: number }>
   >([]);
 
-  useIsomorphicLayoutEffect(() => {
+  // Measure the toggle before paint so the sliding pill never flashes from a
+  // wrong spot.
+  useLayoutEffect(() => {
     const track = toggleTrackRef.current;
     if (!track) return;
     const measure = () => {

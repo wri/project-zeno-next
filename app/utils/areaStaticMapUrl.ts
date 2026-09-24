@@ -3,7 +3,7 @@ import type { AOISelection } from "@/app/types/chat";
 import { unionAoiBboxes } from "@/app/utils/bboxUtils";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 // Same light style the app uses for its basemap
 const STATIC_STYLE = "devseed/cmazl5ws500bz01scaa27dqi4";
 // Max safe URL length for Mapbox Static API

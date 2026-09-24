@@ -1,18 +1,33 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import tseslint from "typescript-eslint";
+import react from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
+import prettier from "eslint-config-prettier";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
+// Same rule set eslint-config-next's core-web-vitals + typescript presets
+// enabled, minus the @next/* rules.
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),
+  { ignores: [".next/", ".claude/", "dist/", "coverage/", "next-env.d.ts"] },
+  ...tseslint.configs.recommended,
+  react.configs.flat.recommended,
+  reactHooks.configs.flat.recommended,
+  prettier,
   {
+    plugins: { "jsx-a11y": jsxA11y },
+    settings: { react: { version: "detect" } },
     rules: {
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-expressions": "warn",
+      "react/no-unknown-property": "off",
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
+      "react/jsx-no-target-blank": "off",
+      "jsx-a11y/alt-text": ["warn", { elements: ["img"], img: ["Image"] }],
+      "jsx-a11y/aria-props": "warn",
+      "jsx-a11y/aria-proptypes": "warn",
+      "jsx-a11y/aria-unsupported-elements": "warn",
+      "jsx-a11y/role-has-required-aria-props": "warn",
+      "jsx-a11y/role-supports-aria-props": "warn",
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/immutability": "warn",
       "react-hooks/refs": "warn",
@@ -21,12 +36,9 @@ const eslintConfig = [
         {
           paths: [
             {
-              name: "next/link",
-              message: "Import Link from @/app/lib/router instead.",
-            },
-            {
-              name: "next/navigation",
-              message: "Import routing hooks from @/app/lib/router instead.",
+              name: "react-router",
+              message:
+                "Import routing APIs from @/src/shared/lib/router instead.",
             },
           ],
         },
@@ -34,7 +46,7 @@ const eslintConfig = [
     },
   },
   {
-    files: ["app/lib/router.ts"],
+    files: ["src/shared/lib/router/index.tsx", "src/app/main.tsx"],
     rules: {
       "no-restricted-imports": "off",
     },

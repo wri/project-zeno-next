@@ -6,8 +6,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@/app/lib/router";
-import { useRouter, useSearchParams } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
+import { useRouter, useSearchParams } from "@/src/shared/lib/router";
 import {
   Box,
   Button,

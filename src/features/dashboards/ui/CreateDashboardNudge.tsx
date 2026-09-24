@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@chakra-ui/react";
-import { useRouter } from "@/app/lib/router";
+import { useRouter } from "@/src/shared/lib/router";
 import { SquaresFourIcon } from "@phosphor-icons/react";
 
 import type { CreateDashboardSuggestion } from "@/app/types/chat";
