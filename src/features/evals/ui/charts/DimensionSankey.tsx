@@ -1,5 +1,3 @@
-"use client";
-
 import { Box } from "@chakra-ui/react";
 import { PRIMARY_DIMENSIONS } from "../../lib/attribution";
 import type { AccuracyBreakdown } from "../../lib/attribution";

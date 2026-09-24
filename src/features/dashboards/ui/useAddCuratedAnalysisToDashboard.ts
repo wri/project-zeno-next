@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 
 import { generateInsightTitle } from "@/src/entities/insight";

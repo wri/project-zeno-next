@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, type ReactNode } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import {

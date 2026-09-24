@@ -1,4 +1,3 @@
-"use client";
 import { Box, Text } from "@chakra-ui/react";
 
 import { InfoTitle, InfoTooltip } from "@/src/shared/ui/InfoTooltip";

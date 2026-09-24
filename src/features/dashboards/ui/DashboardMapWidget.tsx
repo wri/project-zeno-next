@@ -1,5 +1,3 @@
-"use client";
-
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Tag } from "@chakra-ui/react";

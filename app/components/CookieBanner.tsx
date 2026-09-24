@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { Box, Button, Flex, Icon, Link, Text } from "@chakra-ui/react";
 import { CookieIcon, XIcon } from "@phosphor-icons/react";

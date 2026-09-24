@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Accuracy view (from the Query Accuracy Dashboard mockup, panels 2 + 3):
  * the headline pass rate exactly as the GOLD HTML reports derive it

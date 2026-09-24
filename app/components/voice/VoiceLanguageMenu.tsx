@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import { Button, Popover, Portal } from "@chakra-ui/react";
 import { CaretDownIcon, TranslateIcon } from "@phosphor-icons/react";

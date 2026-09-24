@@ -1,5 +1,3 @@
-"use client";
-
 import { Link } from "@/src/shared/lib/router";
 import { Flex, Link as ChakraLink, Text } from "@chakra-ui/react";
 

@@ -1,5 +1,3 @@
-"use client";
-
 /** Shared date-range / environment filter controls (tracey sidebar port). */
 
 import { ReactNode } from "react";

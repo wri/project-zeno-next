@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Fetched-data stores. Data survives page navigation and refreshes
  * automatically when the fetch signature (date window + environment)

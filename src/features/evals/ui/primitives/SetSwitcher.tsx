@@ -1,5 +1,3 @@
-"use client";
-
 import { Button, ButtonGroup } from "@chakra-ui/react";
 import type { EvalSet } from "../../model/types";
 

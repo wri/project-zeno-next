@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 import { useRouter } from "@/src/shared/lib/router";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";

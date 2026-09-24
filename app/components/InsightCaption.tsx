@@ -1,4 +1,3 @@
-"use client";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { CheckCircleIcon, SparkleIcon } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";

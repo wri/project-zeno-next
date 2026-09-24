@@ -1,4 +1,3 @@
-"use client";
 import { Box } from "@chakra-ui/react";
 
 import { isPaintReference } from "@/src/shared/lib/paint";

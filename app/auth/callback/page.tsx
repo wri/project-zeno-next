@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { Center, Spinner, Text, VStack } from "@chakra-ui/react";
 import { setToken } from "@/app/lib/api-client";

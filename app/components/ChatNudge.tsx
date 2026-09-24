@@ -1,4 +1,3 @@
-"use client";
 import { useState } from "react";
 import { Flex, Text } from "@chakra-ui/react";
 import { CheckIcon } from "@phosphor-icons/react";

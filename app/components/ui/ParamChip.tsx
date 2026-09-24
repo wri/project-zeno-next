@@ -1,4 +1,3 @@
-"use client";
 import { Flex, IconButton, Text } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import { Tooltip } from "@/components/ui/tooltip";

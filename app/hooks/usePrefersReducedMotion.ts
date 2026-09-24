@@ -1,4 +1,3 @@
-"use client";
 import { useSyncExternalStore } from "react";
 
 const QUERY = "(prefers-reduced-motion: reduce)";

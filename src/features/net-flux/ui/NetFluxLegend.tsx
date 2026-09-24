@@ -1,4 +1,3 @@
-"use client";
 import { Box, Flex, Text } from "@chakra-ui/react";
 
 import { LgmsClassInfo } from "@/src/shared/ui/LgmsClassInfo";

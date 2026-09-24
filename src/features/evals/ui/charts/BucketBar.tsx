@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { fmtPct } from "../../lib/format";
 import { BUCKET_BAR_COLOR, BUCKET_BAR_MUTED } from "./palette";

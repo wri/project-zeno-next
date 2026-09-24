@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Trace-analytics screen: Analytics, Trace Explorer and Conversation Browser
  * as URL-synced tabs on a single route (`/trace-analytics?tab=…`), so
