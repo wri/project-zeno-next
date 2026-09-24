@@ -1,4 +1,3 @@
-"use client";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { ArrowRightIcon } from "@phosphor-icons/react";
 import * as React from "react";

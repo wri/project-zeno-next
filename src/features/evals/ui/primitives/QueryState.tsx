@@ -1,5 +1,3 @@
-"use client";
-
 import { Center, Spinner, Text, VStack } from "@chakra-ui/react";
 import { InlineAlert } from "./InlineAlert";
 

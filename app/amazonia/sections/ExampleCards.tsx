@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, SimpleGrid, Text, Flex } from "@chakra-ui/react";
 import {
   BinocularsIcon,

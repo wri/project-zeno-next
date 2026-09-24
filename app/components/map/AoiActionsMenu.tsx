@@ -1,5 +1,3 @@
-"use client";
-
 import { IconButton, Menu, Portal } from "@chakra-ui/react";
 import {
   ChartLineIcon,

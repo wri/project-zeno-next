@@ -1,4 +1,3 @@
-"use client";
 import { Center, Heading, Text, VStack } from "@chakra-ui/react";
 import SettingsShell from "@/app/components/SettingsShell";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";

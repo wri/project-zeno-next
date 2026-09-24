@@ -1,4 +1,3 @@
-"use client";
 import { Box, Container, Heading, Text, Flex } from "@chakra-ui/react";
 import { WarningIcon } from "@phosphor-icons/react";
 import { Link } from "@/src/shared/lib/router";

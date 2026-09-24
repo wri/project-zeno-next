@@ -1,5 +1,3 @@
-"use client";
-
 import useAuthStore from "@/app/store/authStore";
 import useViewContextStore from "@/app/store/viewContextStore";
 import type { Dashboard } from "../api/schemas";

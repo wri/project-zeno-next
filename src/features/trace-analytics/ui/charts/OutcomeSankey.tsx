@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Outcome flow Sankey: all queries → "user sees a response" junction →
  * outcome terminals, with count · share and Δpp-vs-previous-window chips

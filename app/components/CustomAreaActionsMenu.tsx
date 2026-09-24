@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef, useState } from "react";
 import { Button, Dialog, Input, Menu, Portal } from "@chakra-ui/react";
 import { PencilSimpleIcon, TrashIcon } from "@phosphor-icons/react";

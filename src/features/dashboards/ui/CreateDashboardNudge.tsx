@@ -1,4 +1,3 @@
-"use client";
 import { Button } from "@chakra-ui/react";
 import { useRouter } from "@/src/shared/lib/router";
 import { SquaresFourIcon } from "@phosphor-icons/react";
