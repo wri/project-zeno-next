@@ -45,6 +45,7 @@ vi.mock("@/src/features/dashboards", () => ({
 }));
 
 import { toaster } from "@/app/components/ui/toaster";
+import { isViewOnlyDataset } from "@/app/constants/datasets";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
@@ -289,6 +290,26 @@ describe("useAoiActions", () => {
     expect(runDirectAnalysis).not.toHaveBeenCalled();
 
     expect(render().result.current!.canViewAnalysis).toBe(true);
+  });
+
+  it("withholds View Analysis for a view-only dataset", () => {
+    expect(isViewOnlyDataset(13)).toBe(true);
+    useMapStore.setState({
+      layers: [
+        {
+          id: "dataset-13",
+          name: "View-only layer",
+          type: "raster",
+          visible: true,
+          datasetId: 13,
+        },
+      ],
+    });
+    const { result } = render();
+    expect(result.current!.hasDataset).toBe(true);
+    expect(result.current!.canViewAnalysis).toBe(false);
+    act(() => result.current!.viewAnalysis());
+    expect(runDirectAnalysis).not.toHaveBeenCalled();
   });
 
   it("offers View Analysis for a protected area on a dataset that covers it", () => {

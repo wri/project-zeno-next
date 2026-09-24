@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "@/app/lib/router";
 
 import { toaster } from "@/app/components/ui/toaster";
-import { DATASET_BY_ID } from "@/app/constants/datasets";
+import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
 import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 import useChatStore from "@/app/store/chatStore";
@@ -127,8 +127,12 @@ export function useAoiActions(
 
   if (!target?.areaName) return null;
   const { areaName, source, layerId } = target;
+  // Same gate as the View Analysis nudge: view-only datasets have no analytics
+  // endpoint, and the catalogue withholds analyses a source can't run.
   const canViewAnalysis =
-    activeDataset !== null && isAnalysableForSource(activeDataset.id, source);
+    activeDataset !== null &&
+    !isViewOnlyDataset(activeDataset.id) &&
+    isAnalysableForSource(activeDataset.id, source);
 
   /**
    * The registry entry for this area, matched case-insensitively on source.

@@ -112,8 +112,14 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
           if (feature) {
             const featureProps = feature.properties;
-            const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
-            const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
+            // A click can land before /api/metadata resolves; the area still
+            // draws, just without an id (publishAreaSelection then clears).
+            const dynamicSrcId = metadata
+              ? getSrcId(layerId, featureProps, metadata)
+              : undefined;
+            const dynamicSubtype = metadata
+              ? getSubtype(layerId, featureProps, metadata)
+              : undefined;
 
             const sourceFeatures = map.querySourceFeatures(sourceId, {
               sourceLayer: sourceLayer,
