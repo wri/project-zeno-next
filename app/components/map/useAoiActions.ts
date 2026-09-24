@@ -12,6 +12,7 @@ import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { toPolygons } from "@/app/utils/selectionPolygons";
 import {
+  isAnalysableForSource,
   useAnalysis,
   useSelectionStore,
   resolveAnalysisWindow,
@@ -40,6 +41,8 @@ export interface AoiActions {
   areaName: string;
   /** True when a dataset is active, so the ANALYSIS group applies. */
   hasDataset: boolean;
+  /** False when the active dataset's analysis doesn't cover this kind of area. */
+  canViewAnalysis: boolean;
   /** False for areas the user already owns — a custom area is already saved. */
   canSaveArea: boolean;
   /** False when the AOI has no resolvable id, or while dashboards resolve. */
@@ -124,6 +127,8 @@ export function useAoiActions(
 
   if (!target?.areaName) return null;
   const { areaName, source, layerId } = target;
+  const canViewAnalysis =
+    activeDataset !== null && isAnalysableForSource(activeDataset.id, source);
 
   /**
    * The registry entry for this area, matched case-insensitively on source.
@@ -190,6 +195,7 @@ export function useAoiActions(
   return {
     areaName,
     hasDataset: activeDataset !== null,
+    canViewAnalysis,
     canSaveArea: source.toLowerCase() !== "custom",
     canUseDashboard: dashboardInput !== null && !isResolvingDashboards,
     dashboardLabel: existingDashboard ? "Open Dashboard" : "Create Dashboard",
@@ -204,7 +210,7 @@ export function useAoiActions(
       });
     },
     viewAnalysis: () => {
-      if (!activeDataset) return;
+      if (!activeDataset || !canViewAnalysis) return;
       // Without a backend id the job cannot be addressed; say so rather than
       // submit one that fails.
       if (!target.srcId) {

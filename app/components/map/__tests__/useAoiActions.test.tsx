@@ -271,6 +271,31 @@ describe("useAoiActions", () => {
     );
   });
 
+  it("withholds View Analysis where the dataset's analysis doesn't cover the source", () => {
+    useMapStore.setState({
+      layers: [
+        {
+          id: "dataset-5",
+          name: "Tree cover gain",
+          type: "raster",
+          visible: true,
+          datasetId: 5,
+        },
+      ],
+    });
+    const wdpa = render({ source: "WDPA", srcId: "33922" }).result;
+    expect(wdpa.current!.canViewAnalysis).toBe(false);
+    act(() => wdpa.current!.viewAnalysis());
+    expect(runDirectAnalysis).not.toHaveBeenCalled();
+
+    expect(render().result.current!.canViewAnalysis).toBe(true);
+  });
+
+  it("offers View Analysis for a protected area on a dataset that covers it", () => {
+    const { result } = render({ source: "WDPA", srcId: "33922" });
+    expect(result.current!.canViewAnalysis).toBe(true);
+  });
+
   it("explains rather than runs View Analysis for an area without a backend id", () => {
     const { result } = render({ srcId: undefined });
 

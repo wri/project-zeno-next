@@ -23,6 +23,7 @@ const target: AoiActionsTarget = {
 const baseActions = (): AoiActions => ({
   areaName: "Paraná, Brazil",
   hasDataset: true,
+  canViewAnalysis: true,
   canSaveArea: true,
   canUseDashboard: true,
   dashboardLabel: "Create Dashboard",
@@ -96,6 +97,15 @@ describe("AoiActionsMenu", () => {
     expect(screen.queryByText("Generate Insights")).toBeNull();
     expect(screen.queryByText("View Analysis")).toBeNull();
     expect(screen.getByText("Create Dashboard")).toBeTruthy();
+  });
+
+  it("hides View Analysis where the analysis can't run for this area", async () => {
+    actions = { ...baseActions(), canViewAnalysis: false };
+    renderMenu();
+    await openMenu();
+
+    expect(screen.queryByText("View Analysis")).toBeNull();
+    expect(screen.getByText("Generate Insights")).toBeTruthy();
   });
 
   it("hides the dashboard item when it isn't available", async () => {
