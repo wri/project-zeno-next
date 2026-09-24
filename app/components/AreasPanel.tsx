@@ -33,7 +33,7 @@ import {
 } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
-import { customAreaToFeature } from "@/app/utils/customAreaFeature";
+import { customAreaToFeature } from "@/src/entities/custom-area";
 
 import { CatalogCard } from "./CatalogCard";
 import { AREA_LABEL_COLOR, areaActionIconProps } from "./AreaCardMenu";

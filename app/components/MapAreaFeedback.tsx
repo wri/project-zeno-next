@@ -4,7 +4,7 @@ import { Box, Flex, IconButton, Text } from "@chakra-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
-import { MAX_AREA_KM2, MIN_AREA_KM2 } from "@/app/constants/custom-areas";
+import { MAX_AREA_KM2, MIN_AREA_KM2 } from "@/src/entities/custom-area";
 import { getMapFeedbackLeftPx } from "@/app/explorationLayout";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";

@@ -1,6 +1,6 @@
 import type { Feature, MultiPolygon } from "geojson";
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
-import { toPolygons } from "./selectionPolygons";
+import { toPolygons } from "@/app/utils/selectionPolygons";
 
 /** Merges a saved custom area's Polygon/MultiPolygon parts into one feature. */
 export function customAreaToFeature(

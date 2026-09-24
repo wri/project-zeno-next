@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { MultiPolygon, Polygon } from "geojson";
-import { customAreaToFeature } from "../customAreaFeature";
+import { customAreaToFeature } from "../custom-area-feature";
 
 const ring = (x: number) => [
   [

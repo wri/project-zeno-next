@@ -1,27 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "@/app/lib/router";
 import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
 import { MagnifyingGlassIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 
-import { useCustomAreasCreate } from "@/app/hooks/useCustomAreasCreate";
 import {
   useCustomAreasDelete,
   useCustomAreasUpdate,
 } from "@/app/hooks/useCustomAreasMutations";
-import { ACCEPTED_FILE_TYPES } from "@/app/constants/custom-areas";
-import { generateRandomName } from "@/app/utils/generateRandomName";
 import { toaster } from "@/app/components/ui/toaster";
+import {
+  AreaUploadDialog,
+  uploadedAreaRefs,
+  type UploadedAreas,
+} from "@/src/features/area-upload";
 
 import { useAreaPickerRows } from "../hooks/useAreaPickerRows";
 import { useCreateDashboard } from "../hooks/useCreateDashboard";
-import { validateAreaUploadFile } from "../lib/validate-area-upload";
 import {
   AREA_PICKER_SECTIONS,
   type AreaPickerSectionId,
 } from "../model/dashboard-area";
-import type { AreaPickerRow } from "../model/area-picker-rows";
+import { customAreaToRow, type AreaPickerRow } from "../model/area-picker-rows";
 import { areaRowKey, buildAreaPickerTree } from "../model/area-tree";
 import { AreaPickerTable } from "./AreaPickerTable";
 
@@ -55,7 +56,7 @@ export function NewDashboardScreen() {
   const [creatingRowKey, setCreatingRowKey] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(
@@ -79,7 +80,6 @@ export function NewDashboardScreen() {
     fetchNextPage,
   } = useAreaPickerRows(activeCategory, effectiveSearch);
   const { createDashboardAsync } = useCreateDashboard();
-  const { createAreaAsync, isCreating: isUploading } = useCustomAreasCreate();
   const { renameAreaAsync, isRenaming } = useCustomAreasUpdate();
   const { deleteAreaAsync, isDeleting } = useCustomAreasDelete();
 
@@ -121,37 +121,21 @@ export function NewDashboardScreen() {
     }
   };
 
-  const handleUploadFile = async (file: File) => {
-    const validation = await validateAreaUploadFile(file);
-    if (!validation.ok || !validation.polygons) {
-      toaster.create({
-        title: "Upload failed",
-        description: validation.errorMessage,
-        type: "error",
-        duration: 4000,
-      });
+  // One uploaded area is picked for the user, exactly as if its row had been
+  // clicked. Several are left in the picker (the upload dialog has already
+  // refreshed the custom-areas list) for the user to choose from.
+  const handleAreasUploaded = (result: UploadedAreas) => {
+    const areas = uploadedAreaRefs(result);
+    if (areas.length === 1) {
+      void handleRowSelect(customAreaToRow(areas[0], new Map()));
       return;
     }
-    try {
-      const result = await createAreaAsync({
-        name: generateRandomName(),
-        geometries: validation.polygons,
-      });
-      toaster.create({
-        title: "Area uploaded",
-        description: `"${result.name}" is ready to use.`,
-        type: "success",
-        duration: 3000,
-      });
-    } catch (err) {
-      toaster.create({
-        title: "Upload failed",
-        description:
-          (err as Error).message || "Failed to upload area. Please try again.",
-        type: "error",
-        duration: 4000,
-      });
-    }
+    toaster.create({
+      title: `${areas.length} areas created`,
+      description: "Pick one below to create a dashboard.",
+      type: "success",
+      duration: 5000,
+    });
   };
 
   const handleRename = async (areaId: string) => {
@@ -228,17 +212,6 @@ export function NewDashboardScreen() {
             }}
           />
         </Box>
-        <input
-          ref={uploadInputRef}
-          type="file"
-          accept={ACCEPTED_FILE_TYPES.join(",")}
-          hidden
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void handleUploadFile(file);
-            e.target.value = "";
-          }}
-        />
         <Button
           variant="outline"
           h="40px"
@@ -249,13 +222,17 @@ export function NewDashboardScreen() {
           fontWeight="500"
           lineHeight="24px"
           letterSpacing="0%"
-          onClick={() => uploadInputRef.current?.click()}
-          loading={isUploading}
+          onClick={() => setUploadOpen(true)}
         >
           <UploadSimpleIcon size={16} weight="bold" color="#0049AA" />
-          Upload shapefile
+          Upload area
         </Button>
       </Flex>
+      <AreaUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onUploaded={handleAreasUploaded}
+      />
       {showMinSearchHint && (
         <Text fontSize="xs" color="fg.muted" mt={-2} mb={4}>
           Type at least {MIN_SEARCH_CHARS} characters to search.

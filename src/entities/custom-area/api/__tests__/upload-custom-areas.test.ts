@@ -5,7 +5,7 @@ vi.mock("@/app/lib/api-client", () => ({
 }));
 
 import { apiFetch } from "@/app/lib/api-client";
-import { AreaUploadError, uploadCustomAreasFile } from "../custom-areas-upload";
+import { AreaUploadError, uploadCustomAreasFile } from "../upload-custom-areas";
 
 const mockedFetch = vi.mocked(apiFetch);
 
