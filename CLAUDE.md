@@ -22,7 +22,7 @@ Run a single test file:
 pnpm test app/utils/__tests__/formatText.test.ts
 ```
 
-CI runs `format:check → lint → typecheck → build` in that order. All four must pass before merge.
+CI runs `format:check → lint → test:arch`, `typecheck` in parallel, then `build`. All must pass before merge. `pnpm test` is not run in CI, so run it locally.
 
 The pre-commit hook (Husky + lint-staged) runs ESLint and Prettier automatically on staged files. The pre-push hook runs `pnpm format:check` on the full repo (same as CI). **Do not bypass hooks with `--no-verify`.**
 
@@ -37,13 +37,17 @@ NEXT_PUBLIC_LANDING_PAGE_VERSION=    # "closed" | "limited" | "public"
 NEXT_PUBLIC_ENABLE_DEBUG_TOOLS=      # Set to true to enable /chart-debug
 ```
 
-`NEXT_PUBLIC_API_HOST` is not in `.env.example` but can be set to override the backend URL (defaults to `https://api.staging.globalnaturewatch.org` in `app/config/api.ts`). Useful when running the backend locally.
+Env vars keep the `NEXT_PUBLIC_` prefix: Vite only exposes variables matching `envPrefix` in `vite.config.ts`, and reads them via `import.meta.env`. `.env.example` also lists optional overrides, e.g. `NEXT_PUBLIC_API_HOST` for the backend URL (defaults to `https://api.staging.globalnaturewatch.org` in `app/config/api.ts`), useful when running the backend locally.
 
 ## Chart Debug Page
 
 `/chart-debug` renders all chart/table widget fixtures with fake data. Use it to QA chart rendering, axis labels, tooltips, export, fullscreen, and the provenance drawer without needing the AI backend. Requires `NEXT_PUBLIC_ENABLE_DEBUG_TOOLS=true`.
 
 ## Architecture
+
+### Routing
+
+Vite + React Router v7 (data mode). `src/app/main.tsx` is the entry: it holds the route table, and each page under `app/` is a lazy route. `src/shared/lib/router` is the only routing API (`Link`, `useRouter`, `useSearchParams`, `usePathname`, `useParams`, with Next-style signatures); importing `react-router` directly anywhere else is a lint error.
 
 ### Layout
 
