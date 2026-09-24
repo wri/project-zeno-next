@@ -18,12 +18,11 @@ import {
 
 import { useAreaPickerRows } from "../hooks/useAreaPickerRows";
 import { useCreateDashboard } from "../hooks/useCreateDashboard";
-import { uploadedAreasToast } from "../lib/uploaded-areas-toast";
 import {
   AREA_PICKER_SECTIONS,
   type AreaPickerSectionId,
 } from "../model/dashboard-area";
-import type { AreaPickerRow } from "../model/area-picker-rows";
+import { customAreaToRow, type AreaPickerRow } from "../model/area-picker-rows";
 import { areaRowKey, buildAreaPickerTree } from "../model/area-tree";
 import { AreaPickerTable } from "./AreaPickerTable";
 
@@ -122,11 +121,18 @@ export function NewDashboardScreen() {
     }
   };
 
-  // The upload dialog has already refreshed the custom-areas list, so the
-  // new areas show up in the picker below.
+  // One uploaded area is picked for the user, exactly as if its row had been
+  // clicked. Several are left in the picker (the upload dialog has already
+  // refreshed the custom-areas list) for the user to choose from.
   const handleAreasUploaded = (result: UploadedAreas) => {
+    const areas = uploadedAreaRefs(result);
+    if (areas.length === 1) {
+      void handleRowSelect(customAreaToRow(areas[0], new Map()));
+      return;
+    }
     toaster.create({
-      ...uploadedAreasToast(uploadedAreaRefs(result)),
+      title: `${areas.length} areas created`,
+      description: "Pick one below to create a dashboard.",
       type: "success",
       duration: 5000,
     });

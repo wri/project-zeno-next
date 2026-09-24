@@ -249,7 +249,7 @@ describe("NewDashboardScreen", () => {
       ).toBeTruthy();
     });
 
-    it("toasts a single GeoJSON area without creating a dashboard", async () => {
+    it("creates a dashboard for a single uploaded area and routes in", async () => {
       createAreaAsync.mockResolvedValue({
         id: "a1",
         name: "Hidden Valley",
@@ -257,20 +257,49 @@ describe("NewDashboardScreen", () => {
         created_at: "",
         updated_at: "",
       });
+      createDashboardAsync.mockResolvedValue({
+        id: "dash-9",
+        name: "Hidden Valley",
+      });
       renderScreen();
 
       await uploadFile(new File([JSON.stringify(SQUARE)], "area.geojson"));
 
       await waitFor(() =>
-        expect(toaster.create).toHaveBeenCalledWith(
-          expect.objectContaining({
-            title: "Area uploaded",
-            description: '"Hidden Valley" is ready to use.',
-          })
+        expect(createDashboardAsync).toHaveBeenCalledWith({
+          aois: [
+            {
+              source: "custom",
+              src_id: "a1",
+              subtype: "custom-area",
+              name: "Hidden Valley",
+            },
+          ],
+        })
+      );
+      await waitFor(() =>
+        expect(pushSpy).toHaveBeenCalledWith("/dashboards/dash-9")
+      );
+    });
+
+    it("also picks a CSV upload that created exactly one area", async () => {
+      vi.mocked(apiFetch).mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            upload_batch_id: "b1",
+            areas: [{ id: "a7", name: "North" }],
+          }),
+          { status: 200 }
         )
       );
-      expect(createDashboardAsync).not.toHaveBeenCalled();
-      expect(pushSpy).not.toHaveBeenCalled();
+      createDashboardAsync.mockResolvedValue({ id: "dash-7", name: "North" });
+      renderScreen();
+
+      await uploadFile(new File(["name,geom\n"], "areas.csv"));
+
+      await waitFor(() =>
+        expect(pushSpy).toHaveBeenCalledWith("/dashboards/dash-7")
+      );
     });
 
     it("toasts a batch count and leaves the pick to the user", async () => {
@@ -292,7 +321,10 @@ describe("NewDashboardScreen", () => {
 
       await waitFor(() =>
         expect(toaster.create).toHaveBeenCalledWith(
-          expect.objectContaining({ title: "2 areas created" })
+          expect.objectContaining({
+            title: "2 areas created",
+            description: "Pick one below to create a dashboard.",
+          })
         )
       );
       expect(createDashboardAsync).not.toHaveBeenCalled();
