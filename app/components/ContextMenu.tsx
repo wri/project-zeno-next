@@ -40,7 +40,7 @@ import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
 import { datasetCardLayers } from "../utils/datasetCardLayerContext";
-import { customAreaToFeature } from "../utils/customAreaFeature";
+import { customAreaToFeature } from "@/src/entities/custom-area";
 
 const LAYER_CARDS = ORDERED_DATASET_CARDS;
 

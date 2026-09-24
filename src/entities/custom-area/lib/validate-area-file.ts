@@ -1,28 +1,35 @@
 import type { MultiPolygon, Polygon } from "geojson";
 import {
-  ACCEPTED_FILE_TYPES,
+  BATCH_UPLOAD_MAX_FILE_SIZE,
+  BATCH_UPLOAD_MAX_FILE_SIZE_MB,
+  isBatchUploadFile,
   MAX_AREA_KM2,
   MAX_FILE_SIZE,
   MAX_FILE_SIZE_MB,
   MIN_AREA_KM2,
-} from "@/app/constants/custom-areas";
+  UPLOAD_FILE_TYPES,
+} from "../model/upload-limits";
 import { calculateAreaKm2 } from "@/app/utils/calculateAreaKm2";
 import { formatAreaWithUnits } from "@/app/utils/formatArea";
 
-export type AreaUploadErrorType =
-  | "none"
+export type AreaFileErrorType =
   | "file-too-large"
   | "file-empty"
   | "file-format-invalid"
   | "file-area-too-small"
   | "file-area-too-large";
 
-export interface AreaUploadValidationResult {
-  ok: boolean;
-  errorType: AreaUploadErrorType;
-  errorMessage: string;
-  polygons?: Polygon[];
-}
+export type AreaFileValidation =
+  /** GeoJSON checked in full; `polygons` is the POST /api/custom_areas body. */
+  | { ok: true; kind: "geojson"; polygons: Polygon[] }
+  /** CSV / zipped shapefile: only type and size are checked here, the
+   * backend validates the contents on upload. */
+  | { ok: true; kind: "batch" }
+  | {
+      ok: false;
+      errorType: AreaFileErrorType;
+      errorMessage: string;
+    };
 
 function extractPolygonFeatures(
   geoJsonData: GeoJSON.GeoJSON
@@ -79,15 +86,33 @@ function geometriesToPolygons(
   return polygons;
 }
 
-/** Validates a GeoJSON boundary upload for custom-area creation (map-free). */
-export async function validateAreaUploadFile(
+/**
+ * Validates a custom-area upload before it is sent (map-free). The single
+ * source of truth for what the map and dashboard upload dialogs accept.
+ */
+export async function validateAreaFile(
   file: File
-): Promise<AreaUploadValidationResult> {
-  if (file.size > MAX_FILE_SIZE) {
+): Promise<AreaFileValidation> {
+  if (
+    !UPLOAD_FILE_TYPES.some((type) => file.name.toLowerCase().endsWith(type))
+  ) {
+    return {
+      ok: false,
+      errorType: "file-format-invalid",
+      errorMessage: `Only ${UPLOAD_FILE_TYPES.join(", ")} files are supported`,
+    };
+  }
+
+  const isBatch = isBatchUploadFile(file.name);
+  const [maxSize, maxSizeMb] = isBatch
+    ? [BATCH_UPLOAD_MAX_FILE_SIZE, BATCH_UPLOAD_MAX_FILE_SIZE_MB]
+    : [MAX_FILE_SIZE, MAX_FILE_SIZE_MB];
+
+  if (file.size > maxSize) {
     return {
       ok: false,
       errorType: "file-too-large",
-      errorMessage: `File size exceeds ${MAX_FILE_SIZE_MB}MB limit`,
+      errorMessage: `File size exceeds ${maxSizeMb}MB limit`,
     };
   }
 
@@ -99,15 +124,7 @@ export async function validateAreaUploadFile(
     };
   }
 
-  if (
-    !ACCEPTED_FILE_TYPES.some((type) => file.name.toLowerCase().endsWith(type))
-  ) {
-    return {
-      ok: false,
-      errorType: "file-format-invalid",
-      errorMessage: `Only ${ACCEPTED_FILE_TYPES.join(", ")} files are supported`,
-    };
-  }
+  if (isBatch) return { ok: true, kind: "batch" };
 
   let geoJsonData: GeoJSON.GeoJSON;
   try {
@@ -162,6 +179,8 @@ export async function validateAreaUploadFile(
     };
   }
 
+  // MultiPolygons are split rather than dropped: filtering to plain Polygons
+  // here is what rejected MultiPolygon-only files on the map.
   const polygons = geometriesToPolygons(
     features.map((feature) => feature.geometry as Polygon | MultiPolygon | null)
   );
@@ -174,10 +193,5 @@ export async function validateAreaUploadFile(
     };
   }
 
-  return {
-    ok: true,
-    errorType: "none",
-    errorMessage: "",
-    polygons,
-  };
+  return { ok: true, kind: "geojson", polygons };
 }

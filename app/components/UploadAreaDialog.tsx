@@ -13,12 +13,10 @@ import { useRef, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BATCH_UPLOAD_MAX_FILE_SIZE_MB,
-  MAX_FILE_SIZE_MB,
-} from "../constants/custom-areas";
-import {
   isBatchUploadFile,
-  UPLOAD_DIALOG_FILE_TYPES,
-} from "../store/uploadAreaSlice";
+  MAX_FILE_SIZE_MB,
+  UPLOAD_FILE_TYPES,
+} from "@/src/entities/custom-area";
 import { UploadSimpleIcon } from "@phosphor-icons/react";
 import { useCustomAreasCreate } from "../hooks/useCustomAreasCreate";
 import { toaster } from "./ui/toaster";
@@ -257,7 +255,7 @@ function DropFileZone() {
             const file = e.target.files?.[0];
             if (file) handleFile(file);
           }}
-          accept={UPLOAD_DIALOG_FILE_TYPES.join(",")}
+          accept={UPLOAD_FILE_TYPES.join(",")}
         />
       </VisuallyHidden>
     </Box>

@@ -10,13 +10,15 @@ import {
   useCustomAreasDelete,
   useCustomAreasUpdate,
 } from "@/app/hooks/useCustomAreasMutations";
-import { ACCEPTED_FILE_TYPES } from "@/app/constants/custom-areas";
 import { generateRandomName } from "@/app/utils/generateRandomName";
 import { toaster } from "@/app/components/ui/toaster";
+import {
+  ACCEPTED_FILE_TYPES,
+  validateAreaFile,
+} from "@/src/entities/custom-area";
 
 import { useAreaPickerRows } from "../hooks/useAreaPickerRows";
 import { useCreateDashboard } from "../hooks/useCreateDashboard";
-import { validateAreaUploadFile } from "../lib/validate-area-upload";
 import {
   AREA_PICKER_SECTIONS,
   type AreaPickerSectionId,
@@ -122,11 +124,13 @@ export function NewDashboardScreen() {
   };
 
   const handleUploadFile = async (file: File) => {
-    const validation = await validateAreaUploadFile(file);
-    if (!validation.ok || !validation.polygons) {
+    const validation = await validateAreaFile(file);
+    if (!validation.ok || validation.kind !== "geojson") {
       toaster.create({
         title: "Upload failed",
-        description: validation.errorMessage,
+        description: validation.ok
+          ? `Only ${ACCEPTED_FILE_TYPES.join(", ")} files are supported`
+          : validation.errorMessage,
         type: "error",
         duration: 4000,
       });

@@ -94,6 +94,36 @@ describe("uploadAreaSlice", () => {
     expect(state.validatedGeoJson).toHaveLength(1);
   });
 
+  it("accepts MultiPolygon-only GeoJSON by splitting it into polygons", async () => {
+    const multi = {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "MultiPolygon",
+        coordinates: [
+          SQUARE.geometry.coordinates,
+          [
+            [
+              [31, 10],
+              [31, 10.5],
+              [31.5, 10.5],
+              [31.5, 10],
+              [31, 10],
+            ],
+          ],
+        ],
+      },
+    };
+    await useMapStore
+      .getState()
+      .handleFile(new File([JSON.stringify(multi)], "area.geojson"));
+
+    const state = useMapStore.getState();
+    expect(state.errorType).toBe("none");
+    expect(state.isFileSelected).toBe(true);
+    expect(state.validatedGeoJson).toHaveLength(2);
+  });
+
   it("rejects unsupported extensions", async () => {
     await useMapStore.getState().handleFile(fileOfSize("areas.kml", 10));
 
