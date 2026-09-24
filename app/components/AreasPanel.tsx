@@ -13,7 +13,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { CrosshairIcon, PolygonIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
-import type { Feature, MultiPolygon } from "geojson";
+import type { Feature } from "geojson";
 
 import {
   getCatalogColumnMotionStyle,
@@ -33,6 +33,7 @@ import {
 } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { customAreaToFeature } from "@/app/utils/customAreaFeature";
 
 import { CatalogCard } from "./CatalogCard";
 import { AREA_LABEL_COLOR, areaActionIconProps } from "./AreaCardMenu";
@@ -426,19 +427,10 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
   const isVisible = layer?.visible ?? false;
 
   function buildFeature(): Feature {
-    const multi: MultiPolygon = {
-      type: "MultiPolygon",
-      coordinates: area.geometries.map((poly) => poly.coordinates),
-    };
-    return {
-      type: "Feature",
-      id: area.id,
-      geometry: multi,
-      properties: { id: area.id, name: area.name },
-    };
+    return customAreaToFeature(area);
   }
 
-  const feature = useMemo(() => buildFeature(), [area]);
+  const feature = useMemo(() => customAreaToFeature(area), [area]);
   const aoiSelection = useMemo(
     (): AOISelection => ({
       name: area.name,
