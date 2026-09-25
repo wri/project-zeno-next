@@ -1,6 +1,7 @@
 import type { Chart } from "../model/chart";
 import type { AnalysisParams, InsightWidget } from "@/app/types/chat";
 import { pickChartColors } from "@/app/utils/pickChartColors";
+import { pivotByColorField } from "./pivot-color-field";
 
 const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
   "line",
@@ -28,23 +29,29 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
  *
  * The registry color fields are carried through — they drive ChartWidget's
  * backend-color precedence (see formatCharts.tsx).
+ *
+ * A long-format line/area chart (categories in `colorField`) is pivoted to
+ * one series per category here, so ChartWidget only ever sees wide rows.
  */
 export function chartsToWidgets(
   charts: Chart[],
   analysisParams?: AnalysisParams
 ): InsightWidget[] {
-  return charts.map((chart) => ({
-    id: chart.id,
-    type: ALLOWED_TYPES.has(chart.type as InsightWidget["type"])
-      ? (chart.type as InsightWidget["type"])
-      : "bar",
-    title: chart.title,
-    description: "",
-    data: chart.data,
-    xAxis: chart.xAxis,
-    yAxis: chart.yAxis,
-    seriesFields: chart.seriesFields,
-    analysisParams,
-    ...pickChartColors(chart),
-  }));
+  return charts.map((chart) => {
+    const pivoted = pivotByColorField(chart);
+    return {
+      id: chart.id,
+      type: ALLOWED_TYPES.has(chart.type as InsightWidget["type"])
+        ? (chart.type as InsightWidget["type"])
+        : "bar",
+      title: chart.title,
+      description: "",
+      data: pivoted?.data ?? chart.data,
+      xAxis: chart.xAxis,
+      yAxis: chart.yAxis,
+      seriesFields: pivoted?.seriesFields ?? chart.seriesFields,
+      analysisParams,
+      ...pickChartColors(chart),
+    };
+  });
 }

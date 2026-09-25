@@ -21,6 +21,7 @@ import CHART_COLOR_MAPPING, {
   DATASET_DIVERGENT_COLORS,
 } from "@/app/config/chartColorMappings";
 import getChartColors from "@/app/utils/ChartColors";
+import { pivotByColorField } from "@/src/entities/insight";
 
 // ---------------------------------------------------------------------------
 // Fake provenance data for "View how this was generated" drawer
@@ -610,6 +611,62 @@ const LARGE_TABLE_DATA = Array.from({ length: 50 }, (_, i) => ({
 }));
 
 // Multi-series line for dash-pattern testing
+// ---------------------------------------------------------------------------
+// Daily integrated alerts (project-zeno#840): long-format rows, one per day
+// per confidence, run through the same pivot the insight mappers apply.
+// ---------------------------------------------------------------------------
+
+const CONFIDENCES = ["high", "highest", "low"] as const;
+
+/**
+ * `days` of alerts ending on `end`. `sparsity` is the share of (day,
+ * confidence) pairs left out, as the backend omits a day with no alerts.
+ */
+function dailyAlerts(end: string, days: number, sparsity = 0.3, salt = 1) {
+  const last = new Date(`${end}T00:00:00Z`);
+  const rows: Record<string, unknown>[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date(last.getTime() - i * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    CONFIDENCES.forEach((confidence, c) => {
+      if (pseudoRandom(i, salt + c) < sparsity) return;
+      const scale =
+        confidence === "high" ? 20_000 : confidence === "low" ? 2_000 : 400;
+      rows.push({
+        alert_date: day,
+        alert_confidence: confidence,
+        area_ha: Math.round(pseudoRandom(i, salt + 10 + c) ** 3 * scale),
+      });
+    });
+  }
+  const pivoted = pivotByColorField({
+    type: "line",
+    data: rows,
+    xAxis: "alert_date",
+    yAxis: "area_ha",
+    colorField: "alert_confidence",
+  });
+  return { data: pivoted?.data ?? rows, seriesFields: pivoted?.seriesFields };
+}
+
+function dailyAlertsWidget(
+  title: string,
+  end: string,
+  days: number,
+  sparsity?: number
+): InsightWidget {
+  return {
+    type: "line",
+    title,
+    description: "Daily integrated disturbance alerts by confidence.",
+    xAxis: "alert_date",
+    yAxis: "area_ha",
+    datasetName: "Integrated alerts",
+    ...dailyAlerts(end, days, sparsity, days),
+  };
+}
+
 const MULTI_LINE_DATA = [
   { year: 2015, Brazil: 4200, Indonesia: 2400, "DR Congo": 800, Bolivia: 420 },
   { year: 2016, Brazil: 4500, Indonesia: 2300, "DR Congo": 850, Bolivia: 450 },
@@ -779,6 +836,73 @@ const RAW_FIXTURES: { label: string; notes: string; widget: InsightWidget }[] =
         xAxis: "year",
         yAxis: "carbon_emissions_mt",
       },
+    },
+    {
+      label: "Daily alerts — 7 days",
+      notes:
+        "Shortest template period. Every day should be labelled when the card has room.",
+      widget: dailyAlertsWidget(
+        "Integrated alerts, last 7 days",
+        "2026-09-25",
+        7
+      ),
+    },
+    {
+      label: "Daily alerts — 14 days (template default)",
+      notes:
+        "nrt-monitoring's default. Single-width card should thin to every other day or weekly; full width labels each day or every other day.",
+      widget: dailyAlertsWidget(
+        "Integrated alerts, last 14 days",
+        "2026-09-25",
+        14
+      ),
+    },
+    {
+      label: "Daily alerts — 14 days, very sparse",
+      notes:
+        "70% of (day, confidence) pairs missing. Lines should bridge the empty days and the axis keep every day's slot.",
+      widget: dailyAlertsWidget(
+        "Integrated alerts, sparse fortnight",
+        "2026-09-25",
+        14,
+        0.7
+      ),
+    },
+    {
+      label: "Daily alerts — 60 days across a year boundary",
+      notes:
+        "1 Dec to 29 Jan. Weekly or fortnightly day ticks; the first tick in January carries the year.",
+      widget: dailyAlertsWidget("Integrated alerts, winter", "2026-01-29", 60),
+    },
+    {
+      label: "Daily alerts — 90 days",
+      notes:
+        "A quarter. Expect weekly/fortnightly ticks, or month-starts in a narrow card.",
+      widget: dailyAlertsWidget(
+        "Integrated alerts, last 90 days",
+        "2026-09-25",
+        90
+      ),
+    },
+    {
+      label: "Daily alerts — 365 days (template maximum)",
+      notes:
+        "The case from the dashboard screenshot. Month-starts ('Oct 2025', 'Nov', … 'Jan 2026') at full width; two-monthly or quarterly in a single card. No overlap.",
+      widget: dailyAlertsWidget(
+        "Integrated alerts, last year",
+        "2026-09-25",
+        365
+      ),
+    },
+    {
+      label: "Daily alerts — 730 days (~2,000 rows)",
+      notes:
+        "The PR's 'about 2,000 points' readability case: two years × three confidences. Quarterly or half-yearly ticks; dots off.",
+      widget: dailyAlertsWidget(
+        "Integrated alerts, last two years",
+        "2026-09-25",
+        730
+      ),
     },
     {
       label: "Line chart — long year span (2001–2025)",

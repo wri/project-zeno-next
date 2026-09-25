@@ -34,6 +34,27 @@ describe("chartsToWidgets", () => {
     });
   });
 
+  it("pivots a long-format line chart into one series per color-field value", () => {
+    const [widget] = chartsToWidgets([
+      {
+        ...baseChart,
+        type: "line",
+        xAxis: "alert_date",
+        yAxis: "area_ha",
+        colorField: "alert_confidence",
+        seriesFields: [],
+        data: [
+          { alert_date: "2026-09-11", alert_confidence: "high", area_ha: 3 },
+          { alert_date: "2026-09-11", alert_confidence: "low", area_ha: 1 },
+        ],
+      },
+    ]);
+    expect(widget.seriesFields).toEqual(["high", "low"]);
+    expect(widget.data).toEqual([
+      { alert_date: "2026-09-11", high: 3, low: 1 },
+    ]);
+  });
+
   it("falls back to 'bar' for an unknown chart type", () => {
     const widgets = chartsToWidgets([{ ...baseChart, type: "nonsense" }]);
     expect(widgets[0].type).toBe("bar");

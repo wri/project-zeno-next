@@ -2,6 +2,7 @@ import {
   codeActParts,
   firstChartTitle,
   isCuratedInsight,
+  pivotByColorField,
 } from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
 import type { DashboardWidget } from "../api/schemas";
@@ -412,7 +413,17 @@ export function dashboardWidgetToInsightWidgets(
   return sorted
     .filter((chart) => shown.has(chart.id))
     .map((chart, index) => {
-      const seriesFields = chart.series_fields ?? undefined;
+      // Long-format line/area rows become one series per category here, so
+      // the chart widget only ever sees wide rows.
+      const pivoted = pivotByColorField({
+        type: chart.chart_type,
+        data: chart.chart_data,
+        xAxis: chart.x_axis,
+        yAxis: chart.y_axis,
+        colorField: chart.color_field,
+      });
+      const seriesFields =
+        pivoted?.seriesFields ?? chart.series_fields ?? undefined;
       return {
         id: chart.id,
         type: CHART_TYPES.has(chart.chart_type)
@@ -424,7 +435,7 @@ export function dashboardWidgetToInsightWidgets(
           chartTitleOverride(widget.config, chart.id) ??
           ((index === 0 && titleOverride) || chart.title),
         description: index === 0 ? (insight.insight_text ?? "") : "",
-        data: chart.chart_data,
+        data: pivoted?.data ?? chart.chart_data,
         xAxis: chart.x_axis,
         yAxis: chart.y_axis,
         ...(seriesFields?.length ? { seriesFields } : {}),
