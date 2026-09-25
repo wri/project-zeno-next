@@ -10,6 +10,7 @@ export const EVALS_PATH = "/evals";
 
 export const EVALS_TABS = [
   "overview",
+  "report",
   "trends",
   "runs",
   "coverage",

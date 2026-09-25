@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Evals screen: Overview, Trends, Runs, Coverage and Methodology as
- * URL-synced tabs on one route (`/evals?tab=…&set=…&run=…`), so deep links
- * survive sharing. The CHALLENGE Overview is the North Star narrative.
+ * Evals screen: Overview, Report, Trends, Runs, Coverage and Methodology
+ * as URL-synced tabs on one route (`/evals?tab=…&set=…&run=…`), so deep
+ * links survive sharing. Report is the North Star narrative over
+ * CHALLENGE (and, once frozen, BENCHMARK); it has no set switcher.
  *
  * The superuser gate lives in the route page and is UX-only — the data is
  * the public gnw-gold-evals repo, fetched straight from GitHub raw.
@@ -14,6 +15,7 @@ import {
   BookOpenTextIcon,
   ChartLineUpIcon,
   ExamIcon,
+  StarIcon,
   ListChecksIcon,
   TargetIcon,
 } from "@phosphor-icons/react";
@@ -22,6 +24,7 @@ import type { EvalSet } from "../model/types";
 import { EVALS_DATA_BRANCH } from "../api/github";
 import { CoverageTab } from "./CoverageTab";
 import { MethodologyTab } from "./MethodologyTab";
+import { NorthStarView } from "./north-star/NorthStarView";
 import { OverviewTab } from "./OverviewTab";
 import { RunsTab } from "./RunsTab";
 import { TrendsTab } from "./TrendsTab";
@@ -72,6 +75,10 @@ export function EvalsScreen() {
             <ExamIcon size={16} />
             Overview
           </Tabs.Trigger>
+          <Tabs.Trigger value="report">
+            <StarIcon size={16} />
+            Report
+          </Tabs.Trigger>
           <Tabs.Trigger value="trends">
             <ChartLineUpIcon size={16} />
             Trends
@@ -94,6 +101,10 @@ export function EvalsScreen() {
           <OverviewTab
             set={activeSet}
             onSetChange={(nextSet) => navigate("overview", { set: nextSet })}
+          />
+        </Tabs.Content>
+        <Tabs.Content value="report">
+          <NorthStarView
             onOpenMethodology={() =>
               navigate("methodology", { set: setParam ?? undefined })
             }
@@ -126,7 +137,7 @@ export function EvalsScreen() {
         </Tabs.Content>
         <Tabs.Content value="methodology">
           <MethodologyTab
-            onBack={() => navigate("overview", { set: setParam ?? undefined })}
+            onBack={() => navigate("report", { set: setParam ?? undefined })}
           />
         </Tabs.Content>
       </Tabs.Root>

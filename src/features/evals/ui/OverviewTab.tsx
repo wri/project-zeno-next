@@ -41,7 +41,6 @@ import { ChartCard } from "./primitives/ChartCard";
 import { DefinitionsList } from "./primitives/DefinitionsList";
 import { InlineAlert } from "./primitives/InlineAlert";
 import { KpiCard } from "./primitives/KpiCard";
-import { NorthStarView } from "./north-star/NorthStarView";
 import { QueryState } from "./primitives/QueryState";
 import { SetSwitcher } from "./primitives/SetSwitcher";
 import { RunTierBadge } from "./primitives/badges";
@@ -53,31 +52,9 @@ const COMPOSE_RUN_LIMIT = 8;
 interface OverviewTabProps {
   readonly set: EvalSet;
   readonly onSetChange: (set: EvalSet) => void;
-  readonly onOpenMethodology: () => void;
 }
 
-/** CHALLENGE reads as the North Star narrative; GOLD keeps the
- * regression-oriented accuracy view below. */
-export function OverviewTab({
-  set,
-  onSetChange,
-  onOpenMethodology,
-}: OverviewTabProps) {
-  if (set === "challenge") {
-    return (
-      <Flex direction="column" gap={2}>
-        <SetSwitcher value={set} onChange={onSetChange} />
-        <NorthStarView onOpenMethodology={onOpenMethodology} />
-      </Flex>
-    );
-  }
-  return <GoldOverview set={set} onSetChange={onSetChange} />;
-}
-
-function GoldOverview({
-  set,
-  onSetChange,
-}: Pick<OverviewTabProps, "set" | "onSetChange">) {
+export function OverviewTab({ set, onSetChange }: OverviewTabProps) {
   const index = useRunIndex();
   const headlineRun = pickHeadlineRun(index.data?.[set] ?? []);
   const run = useRun(headlineRun?.path ?? null);

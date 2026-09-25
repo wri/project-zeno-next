@@ -44,7 +44,7 @@ export function MethodologyTab({ onBack }: { readonly onBack: () => void }) {
           {METHODOLOGY.lead}
         </Text>
         <Link as="button" color="primary.fg" mt={3} onClick={onBack}>
-          ← Back to the overview
+          ← Back to the report
         </Link>
       </Box>
 
@@ -106,7 +106,7 @@ export function MethodologyTab({ onBack }: { readonly onBack: () => void }) {
           {METHODOLOGY.gapsBody}
         </Text>
         <Link as="button" color="primary.fg" mt={3} onClick={onBack}>
-          ← Back to the overview
+          ← Back to the report
         </Link>
       </Box>
     </Box>
