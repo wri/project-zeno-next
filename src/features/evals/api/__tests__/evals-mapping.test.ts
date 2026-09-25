@@ -202,6 +202,38 @@ describe("mapCaseIndexEntry", () => {
     })!;
     expect("set" in entry).toBe(false);
     expect("difficulty" in entry).toBe(false);
+    expect("intent" in entry).toBe(false);
+    expect("datasetIds" in entry).toBe(false);
+  });
+
+  it("maps the stamped facets (gnw-gold-evals PR #45)", () => {
+    const entry = mapCaseIndexEntry({
+      id: "ch-quant-044",
+      uid: "ed6811b2c3ff8cca",
+      set: "quantification",
+      group: "ghg-flux",
+      status: "ready",
+      query: "What is the total net greenhouse gas flux from Brazil's forests?",
+      expected_fields: ["aoi_ids", "data_pull", "dataset_id"],
+      implied_checks: ["aoi_id_match", "dataset_id_match"],
+      intent: "quantification",
+      dataset_ids: ["6"],
+      subtype: "net_flux",
+    })!;
+    expect(entry).toMatchObject({
+      intent: "quantification",
+      datasetIds: ["6"],
+      subtype: "net_flux",
+    });
+  });
+
+  it("keeps an empty stamped dataset list (dataset-agnostic case)", () => {
+    const entry = mapCaseIndexEntry({
+      ...WIRE_CASE_ENTRY,
+      intent: "spatial",
+      dataset_ids: [],
+    })!;
+    expect(entry.datasetIds).toEqual([]);
   });
 });
 

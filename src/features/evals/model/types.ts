@@ -121,6 +121,11 @@ export interface CaseIndexEntry {
   /** Implied gating checks (base names, info-only stripped) — the
    * harness's own coverage recipe, stamped by coverage_doc.py. */
   impliedChecks: string[];
+  /** Stamped facets (gnw-gold-evals PR #45). Absent on older artefacts —
+   * read them through lib/case-facets.ts, which falls back to set/group. */
+  intent?: string;
+  datasetIds?: string[];
+  subtype?: string;
 }
 
 export interface TargetsBlock {

@@ -146,6 +146,9 @@ const RawCaseIndexEntry = z.looseObject({
   turns: z.array(z.string()).optional(),
   expected_fields: z.array(z.string()).default([]),
   implied_checks: z.array(z.string()).default([]),
+  intent: z.string().optional(),
+  dataset_ids: z.array(z.coerce.string()).optional(),
+  subtype: z.string().optional(),
 });
 
 const RawCasesIndex = z.looseObject({
@@ -392,6 +395,9 @@ export function mapCaseIndexEntry(raw: unknown): CaseIndexEntry | null {
     ...(entry.turns ? { turns: entry.turns } : {}),
     expectedFields: entry.expected_fields,
     impliedChecks: entry.implied_checks,
+    ...(entry.intent ? { intent: entry.intent } : {}),
+    ...(entry.dataset_ids ? { datasetIds: entry.dataset_ids } : {}),
+    ...(entry.subtype ? { subtype: entry.subtype } : {}),
   };
 }
 
