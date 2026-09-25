@@ -14,6 +14,7 @@ import {
   deleteDashboard,
   deleteWidget,
   getDashboard,
+  listAnalysisTemplates,
   renameDashboard,
   updateWidget,
   updateSection,
@@ -33,6 +34,18 @@ export function useDashboard(id: string) {
     queryFn: () => getDashboard(id),
     enabled: id.length > 0,
     staleTime: 10_000,
+  });
+}
+
+/**
+ * The template registry, labels in the user's language. It only changes on a
+ * backend deploy, so one fetch per session is enough.
+ */
+export function useAnalysisTemplates() {
+  return useQuery({
+    queryKey: dashboardKeys.analysisTemplates,
+    queryFn: listAnalysisTemplates,
+    staleTime: Infinity,
   });
 }
 

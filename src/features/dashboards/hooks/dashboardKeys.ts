@@ -3,4 +3,5 @@ export const dashboardKeys = {
   detail: (id: string) => ["dashboards", id] as const,
   aois: (query: string, source: string | null) =>
     ["dashboard-aois", query, source] as const,
+  analysisTemplates: ["analysis-templates"] as const,
 };

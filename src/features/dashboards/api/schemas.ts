@@ -61,6 +61,16 @@ export const DashboardWidgetResponseSchema = z.object({
   insight: DashboardInsightSchema.nullable().optional().catch(null),
 });
 
+// How an analysis template built a section. Provenance only: the section
+// stays editable, so this says how it started, not what it holds now.
+export const DashboardSectionTemplateSchema = z.object({
+  name: z.string(),
+  args: z.record(z.string(), z.unknown()).default({}),
+  start_date: z.string(),
+  end_date: z.string(),
+  built_at: z.string(),
+});
+
 // One flat level of grouping. Widgets carry the back-reference
 // (`section_id`); a section never nests inside another.
 export const DashboardSectionResponseSchema = z.object({
@@ -68,8 +78,21 @@ export const DashboardSectionResponseSchema = z.object({
   title: z.string(),
   description: z.string().nullable().optional(),
   position: z.number(),
+  // The BE emits null for a hand-composed section; a pre-templates backend
+  // omits the key. Both settle to null here.
+  template: DashboardSectionTemplateSchema.nullable().default(null),
   created_at: z.string(),
 });
+
+export const AnalysisTemplateSchema = z.object({
+  name: z.string(),
+  // Already in the user's language.
+  label: z.string(),
+  args_schema: z.record(z.string(), z.unknown()).default({}),
+  widgets: z.array(z.string()).default([]),
+});
+
+export const AnalysisTemplateListSchema = z.array(AnalysisTemplateSchema);
 
 export const DashboardResponseSchema = z.object({
   id: z.string(),
@@ -100,6 +123,10 @@ export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;
 export type DashboardSection = z.infer<typeof DashboardSectionResponseSchema>;
+export type DashboardSectionTemplate = z.infer<
+  typeof DashboardSectionTemplateSchema
+>;
+export type AnalysisTemplate = z.infer<typeof AnalysisTemplateSchema>;
 export type DashboardInsight = z.infer<typeof DashboardInsightSchema>;
 export type DashboardCreateRequest = z.infer<
   typeof DashboardCreateRequestSchema

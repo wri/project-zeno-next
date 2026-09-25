@@ -1,7 +1,9 @@
 import {
+  AnalysisTemplateListSchema,
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
   DashboardResponseSchema,
+  type AnalysisTemplate,
   type AoiSearchResult,
   type Dashboard,
   type DashboardCreateRequest,
@@ -24,6 +26,14 @@ export async function getDashboard(id: string): Promise<Dashboard> {
     headers: { "Content-Type": "application/json" },
   });
   return DashboardResponseSchema.parse(data);
+}
+
+export async function listAnalysisTemplates(): Promise<AnalysisTemplate[]> {
+  const data = await readJson<unknown>("/api/analysis-templates", {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  return AnalysisTemplateListSchema.parse(data);
 }
 
 export async function createDashboard(
