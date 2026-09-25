@@ -87,6 +87,21 @@ describe("intentMatrix (challenge)", () => {
     expect(cell(matrix, "quantification", "6").rate).toBeNull();
   });
 
+  it("lists the dimensions whose dedicated checks actually ran", () => {
+    const rows = [
+      caseRow({
+        uid: "quantification-ghg-flux-0",
+        id: "g",
+        checks: { dataset_id_match: 1, chart_integrity: 0, scope_match: null },
+      }),
+    ];
+    const matrix = intentMatrix({ cases: store, rows, mode: "challenge" });
+    expect(cell(matrix, "quantification", "6").evaluated).toEqual([
+      "retrieval",
+      "analysis",
+    ]);
+  });
+
   it("counts dataset-bound cases it cannot place as unmapped", () => {
     const matrix = intentMatrix({
       cases: cases(2, "trend", "mystery", ALL5),

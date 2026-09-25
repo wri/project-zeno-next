@@ -8,7 +8,13 @@ import type { EvalSet } from "../model/types";
 
 export const EVALS_PATH = "/evals";
 
-export const EVALS_TABS = ["overview", "trends", "runs", "coverage"] as const;
+export const EVALS_TABS = [
+  "overview",
+  "trends",
+  "runs",
+  "coverage",
+  "methodology",
+] as const;
 
 export type EvalsTab = (typeof EVALS_TABS)[number];
 

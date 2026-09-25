@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Evals screen: Overview, Trends, Runs and Coverage as URL-synced tabs on
- * one route (`/evals?tab=…&set=…&run=…`), so deep links survive sharing.
+ * Evals screen: Overview, Trends, Runs, Coverage and Methodology as
+ * URL-synced tabs on one route (`/evals?tab=…&set=…&run=…`), so deep links
+ * survive sharing. The CHALLENGE Overview is the North Star narrative.
  *
  * The superuser gate lives in the route page and is UX-only — the data is
  * the public gnw-gold-evals repo, fetched straight from GitHub raw.
@@ -10,6 +11,7 @@
 
 import { Box, Tabs } from "@chakra-ui/react";
 import {
+  BookOpenTextIcon,
   ChartLineUpIcon,
   ExamIcon,
   ListChecksIcon,
@@ -19,6 +21,7 @@ import { useRouter, useSearchParams } from "@/app/lib/router";
 import type { EvalSet } from "../model/types";
 import { EVALS_DATA_BRANCH } from "../api/github";
 import { CoverageTab } from "./CoverageTab";
+import { MethodologyTab } from "./MethodologyTab";
 import { OverviewTab } from "./OverviewTab";
 import { RunsTab } from "./RunsTab";
 import { TrendsTab } from "./TrendsTab";
@@ -81,12 +84,19 @@ export function EvalsScreen() {
             <TargetIcon size={16} />
             Coverage
           </Tabs.Trigger>
+          <Tabs.Trigger value="methodology">
+            <BookOpenTextIcon size={16} />
+            Methodology
+          </Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Content value="overview">
           <OverviewTab
             set={activeSet}
             onSetChange={(nextSet) => navigate("overview", { set: nextSet })}
+            onOpenMethodology={() =>
+              navigate("methodology", { set: setParam ?? undefined })
+            }
           />
         </Tabs.Content>
         <Tabs.Content value="trends">
@@ -112,6 +122,11 @@ export function EvalsScreen() {
           <CoverageTab
             set={activeSet}
             onSetChange={(set) => navigate("coverage", { set })}
+          />
+        </Tabs.Content>
+        <Tabs.Content value="methodology">
+          <MethodologyTab
+            onBack={() => navigate("overview", { set: setParam ?? undefined })}
           />
         </Tabs.Content>
       </Tabs.Root>

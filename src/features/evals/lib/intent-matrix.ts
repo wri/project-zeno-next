@@ -11,6 +11,7 @@
  */
 
 import {
+  ATTRIBUTION_ORDER,
   CHALLENGE_CELL_FLOOR,
   DATASET_COLUMNS,
   DEDICATED,
@@ -19,6 +20,7 @@ import {
 import type { BucketName, QueryTypeDef } from "../model/config";
 import type { CaseIndexEntry, CaseRow } from "../model/types";
 import { caseDatasetIds, caseIntentKey } from "./case-facets";
+import { baseCheckName } from "./checks";
 import { wilson } from "./stats";
 import { rowVerdict } from "./verdict";
 
@@ -39,6 +41,9 @@ export interface IntentCell {
   coverage: CellCoverage;
   /** Required dimensions no case in the cell can fail in. */
   missing: BucketName[];
+  /** Dimensions whose dedicated checks were evaluated in the scored rows
+   * (can exceed the implied coverage when a run produced the artefact). */
+  evaluated: BucketName[];
   /** A real prompt from the cell, for the plain-language read. */
   example?: string;
 }
@@ -87,6 +92,7 @@ function buildCell(
 ): IntentCell {
   let measured = 0;
   let passed = 0;
+  const ran = new Set<BucketName>();
   for (const entry of cellCases) {
     const row = rowsByUid.get(entry.uid);
     if (!row || row.staleCase) continue;
@@ -94,6 +100,10 @@ function buildCell(
     if (verdict !== "pass" && verdict !== "fail") continue;
     measured += 1;
     if (verdict === "pass") passed += 1;
+    for (const [name, value] of Object.entries(row.checks)) {
+      const bucket = DEDICATED[baseCheckName(name)];
+      if (bucket && value !== null) ran.add(bucket);
+    }
   }
   const { low, high } = wilson(passed, measured);
   const example = cellCases.map(caseQuery).find(Boolean);
@@ -106,6 +116,7 @@ function buildCell(
     ciLow: low,
     ciHigh: high,
     ...coverageOf(cellCases, def, mode),
+    evaluated: ATTRIBUTION_ORDER.filter((bucket) => ran.has(bucket)),
     ...(example ? { example } : {}),
   };
 }
