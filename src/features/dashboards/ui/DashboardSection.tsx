@@ -16,7 +16,10 @@ import type {
 import { useAnalysisTemplates } from "./dashboardQueries";
 import { DROP_ZONE_ATTR } from "./useDrag";
 
-const TEMPLATE_OUTLINE = "secondary.400";
+// The design's lime pair. The theme's secondary scale has no exact match
+// (secondary.200 is #F0F4B4, secondary.400 #CAD470), so these stay literal.
+const TEMPLATE_FILL = "#F0F9B9";
+const TEMPLATE_OUTLINE = "#C3D16F";
 
 /**
  * The lime strip that names the template a section was built from. Its own
@@ -35,7 +38,7 @@ function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
       gap="1px"
       px="24px"
       py="4px"
-      bg="secondary.200"
+      bg={TEMPLATE_FILL}
       borderBottom="1px solid"
       borderColor={TEMPLATE_OUTLINE}
       // 1px inside the panel's 8px corner, so the fill meets the outline.
