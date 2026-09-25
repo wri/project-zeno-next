@@ -1,4 +1,10 @@
-import { createElement, useMemo } from "react";
+import {
+  createElement,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Chart, useChart } from "@chakra-ui/charts";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import {
@@ -33,10 +39,9 @@ import { InsightWidget } from "@/app/types/chat";
 import { STROKE_DASH_PATTERNS } from "@/app/utils/ChartColors";
 import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
 import {
-  dailySpan,
   fillMissingDays,
-  formatDayTick,
   isDailyAxis,
+  pickDailyTicks,
 } from "@/app/utils/dateAxis";
 
 type ChartType =
@@ -57,6 +62,31 @@ const TICK_ANGLE_RAD = (35 * Math.PI) / 180;
 const MAX_X_TICKS = 12; // density target before we thin tick labels
 const ANIMATION_MS = 650; // entry animation; disabled under reduced motion
 const MAX_LINE_DOTS = 14; // beyond this, per-point dots become noise
+// Assumed chart width until the first measurement lands: a single-column
+// dashboard card, so the first paint of a daily axis is already sensible.
+const DEFAULT_CHART_WIDTH_PX = 560;
+// Room kept right of the plot for the last tick's overhang (the axis pads by
+// half the widest label) so the fit test does not overcount.
+const DAILY_AXIS_RIGHT_RESERVE_PX = 30;
+
+/**
+ * The element's content width, tracked across resizes. Null until measured,
+ * and in environments without ResizeObserver.
+ */
+function useElementWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) =>
+      setWidth(Math.round(entry.contentRect.width))
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
 // A donut can't use extra horizontal room (fixed radius, side legend), so in
 // a full-width dashboard card its content caps at the single-column content
 // width (~592px column minus card/shell padding) and centers. Without the cap
@@ -489,6 +519,7 @@ export default function ChartWidget({
   );
 
   const chart = useChart({ data: formattedData, series: labelledSeries });
+  const [rootRef, measuredWidth] = useElementWidth<HTMLDivElement>();
   const prefersReducedMotion = usePrefersReducedMotion();
   const animate = !prefersReducedMotion;
 
@@ -523,13 +554,14 @@ export default function ChartWidget({
     );
   }
 
-  // A daily axis gets short "11 Sep" ticks, which fit flat.
-  const daySpan = dailyAxis ? dailySpan(formattedData, xAxis) : 0;
+  // A daily axis's labels are chosen with its ticks, further down, once the
+  // plot width is known.
+  let dailyTickLabels: Map<string, string> | undefined;
   const xTickLabel = (value: string | number) =>
     xTickFormatter
       ? xTickFormatter(value, xAxis)
       : dailyAxis
-        ? formatDayTick(value, daySpan)
+        ? (dailyTickLabels?.get(String(value)) ?? String(value))
         : formatXAxisLabel(value, xAxis);
 
   // Determine if the x-axis has long categorical labels that need angling
@@ -613,6 +645,27 @@ export default function ChartWidget({
 
   const yAxisTitle = yAxisLabel ?? toAxisLabel(yAxis);
   const yAxisWidth = computeYAxisWidth(longestYTickChars, Boolean(yAxisTitle));
+
+  // A daily axis takes as many calendar-aligned ticks as fit the plot's
+  // actual width (a narrow card gets months, a wide one weeks), replacing the
+  // fixed-count thinning above, whose ISO labels overlap once squeezed.
+  if (dailyAxis && !xTickFormatter) {
+    const plotWidth =
+      (measuredWidth ?? DEFAULT_CHART_WIDTH_PX) -
+      yAxisWidth -
+      DAILY_AXIS_RIGHT_RESERVE_PX;
+    const picked = pickDailyTicks(
+      String(formattedData[0][xAxis]),
+      String(formattedData[formattedData.length - 1][xAxis]),
+      plotWidth,
+      CHAR_PX
+    );
+    xTicks = picked.ticks;
+    dailyTickLabels = picked.labels;
+    longestXTickChars = Math.max(
+      ...[...picked.labels.values()].map((label) => label.length)
+    );
+  }
 
   const animationProps = {
     isAnimationActive: animate,
@@ -800,6 +853,7 @@ export default function ChartWidget({
 
   return (
     <Box
+      ref={rootRef}
       role="img"
       aria-label={chartLabel}
       tabIndex={0}
