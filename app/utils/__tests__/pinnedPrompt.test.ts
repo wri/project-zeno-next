@@ -77,3 +77,42 @@ describe("resolvePinnedPromptId", () => {
     expect(resolvePinnedPromptId(prompts, 0)).toBeNull();
   });
 });
+
+describe.each([
+  ["one-line", 44],
+  ["very long", 420],
+])("scrolling past a %s prompt", (_, bubbleHeight) => {
+  // The prompt bubble sits 16px into the scroll content, followed by a long
+  // answer. Scrolling by `scrollTop` moves the bubble up by the same amount.
+  const PROMPT_OFFSET = 16;
+  const promptAt = (scrollTop: number) => {
+    const top = CONTAINER_TOP + PROMPT_OFFSET - scrollTop;
+    return [rect("a", top, top + bubbleHeight)];
+  };
+  const fullyScrolledOut = PROMPT_OFFSET + bubbleHeight;
+
+  it("is not pinned while the original prompt is in view", () => {
+    expect(resolvePinnedPromptId(promptAt(0), CONTAINER_TOP)).toBeNull();
+  });
+
+  it("is not pinned while the prompt is only partly scrolled out", () => {
+    const partly = fullyScrolledOut - 1;
+    expect(resolvePinnedPromptId(promptAt(partly), CONTAINER_TOP)).toBeNull();
+  });
+
+  it("pins once the prompt has scrolled fully out of view", () => {
+    expect(
+      resolvePinnedPromptId(promptAt(fullyScrolledOut), CONTAINER_TOP)
+    ).toBe("a");
+    expect(resolvePinnedPromptId(promptAt(5000), CONTAINER_TOP)).toBe("a");
+  });
+
+  it("unpins when scrolling back brings the original prompt into view", () => {
+    const sequence = [0, fullyScrolledOut + 200, fullyScrolledOut - 10, 0];
+    expect(
+      sequence.map((scrollTop) =>
+        resolvePinnedPromptId(promptAt(scrollTop), CONTAINER_TOP)
+      )
+    ).toEqual([null, "a", null, null]);
+  });
+});

@@ -354,7 +354,7 @@ function MessageBubble({
               : isWarning
                 ? "white"
                 : isUser
-                  ? "gray.100"
+                  ? "primary.100"
                   : "transparent"
         }
         color={isError ? "red.800" : isStopped || isWarning ? "fg.muted" : "fg"}
