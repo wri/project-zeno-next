@@ -9,6 +9,7 @@ import { addTextWidget } from "../api/dashboards";
 import {
   AoiSearchResponseSchema,
   DashboardListResponseSchema,
+  DashboardSectionResponseSchema,
   type AoiSearchResult,
 } from "../api/schemas";
 import {
@@ -19,6 +20,31 @@ import {
 import { updatedLabel, wasJustCreated } from "../lib/dates";
 
 describe("dashboard schemas", () => {
+  it("settles a section's template to null whether the BE sends null or omits it", () => {
+    const base = {
+      id: "s1",
+      title: "Fires",
+      position: 0,
+      created_at: "2026-09-01T00:00:00Z",
+    };
+    expect(DashboardSectionResponseSchema.parse(base).template).toBeNull();
+    expect(
+      DashboardSectionResponseSchema.parse({ ...base, template: null }).template
+    ).toBeNull();
+    expect(
+      DashboardSectionResponseSchema.parse({
+        ...base,
+        template: {
+          name: "nrt-monitoring",
+          args: { days: 14 },
+          start_date: "2026-09-11",
+          end_date: "2026-09-25",
+          built_at: "2026-09-25T10:00:00Z",
+        },
+      }).template?.name
+    ).toBe("nrt-monitoring");
+  });
+
   it("parses AOI search results returned by the staging API", () => {
     const results = AoiSearchResponseSchema.parse([
       {

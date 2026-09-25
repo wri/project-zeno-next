@@ -16,6 +16,7 @@ const section = (
   title: `Section ${id}`,
   description: null,
   position,
+  template: null,
   created_at: "2026-09-01T00:00:00Z",
   ...overrides,
 });
