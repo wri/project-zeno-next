@@ -32,6 +32,12 @@ import formatChartData, {
 import { InsightWidget } from "@/app/types/chat";
 import { STROKE_DASH_PATTERNS } from "@/app/utils/ChartColors";
 import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
+import {
+  dailySpan,
+  fillMissingDays,
+  formatDayTick,
+  isDailyAxis,
+} from "@/app/utils/dateAxis";
 
 type ChartType =
   | "bar"
@@ -427,33 +433,46 @@ export default function ChartWidget({
   // Depends on the individual fields rather than `widget`: callers rebuild the
   // widget object on render (see chartsToWidgets), but these values come
   // straight off the fetched chart and keep a stable identity.
-  const { data: formattedData, series } = useMemo(
-    () =>
-      xAxis
-        ? formatChartData(
-            data,
-            type,
-            xAxis,
-            yAxis,
-            datasetName,
-            seriesFields,
-            { colorMap, seriesColor, divergentColors },
-            lineField
-          )
-        : { data: [], series: [] },
-    [
+  const {
+    data: formattedData,
+    series,
+    dailyAxis,
+  } = useMemo(() => {
+    if (!xAxis) return { data: [], series: [], dailyAxis: false };
+    const formatted = formatChartData(
       data,
       type,
       xAxis,
       yAxis,
       datasetName,
       seriesFields,
-      lineField,
-      colorMap,
-      seriesColor,
-      divergentColors,
-    ]
-  );
+      { colorMap, seriesColor, divergentColors },
+      lineField
+    );
+    // A day-by-day line or area reads as a timeline only if every day holds
+    // a slot, so the days the data omits are filled with empty rows.
+    const daily =
+      (type === "line" || type === "area") &&
+      isDailyAxis(formatted.data, xAxis);
+    return daily
+      ? {
+          ...formatted,
+          data: fillMissingDays(formatted.data, xAxis),
+          dailyAxis: true,
+        }
+      : { ...formatted, dailyAxis: false };
+  }, [
+    data,
+    type,
+    xAxis,
+    yAxis,
+    datasetName,
+    seriesFields,
+    lineField,
+    colorMap,
+    seriesColor,
+    divergentColors,
+  ]);
 
   // Humanize series labels that are raw column keys (snake_case or the
   // y-axis key) — tooltip and legend then show "Tree cover loss (ha)"
@@ -504,14 +523,24 @@ export default function ChartWidget({
     );
   }
 
+  // A daily axis gets short "11 Sep" ticks, which fit flat.
+  const daySpan = dailyAxis ? dailySpan(formattedData, xAxis) : 0;
+  const xTickLabel = (value: string | number) =>
+    xTickFormatter
+      ? xTickFormatter(value, xAxis)
+      : dailyAxis
+        ? formatDayTick(value, daySpan)
+        : formatXAxisLabel(value, xAxis);
+
   // Determine if the x-axis has long categorical labels that need angling
   const isNumericXAxis =
     type === "scatter" ||
     xAxis?.toLowerCase() === "year" ||
     (formattedData.length > 0 && typeof formattedData[0][xAxis] === "number");
   const needsAngledTicks =
-    (!isNumericXAxis && formattedData.length > 4) ||
-    (isNumericXAxis && formattedData.length > 10);
+    !dailyAxis &&
+    ((!isNumericXAxis && formattedData.length > 4) ||
+      (isNumericXAxis && formattedData.length > 10));
 
   // preserveStartEnd silently drops a mid-axis tick when (N-1) doesn't
   // divide evenly; build explicit ticks so the last data point is labeled.
@@ -548,10 +577,7 @@ export default function ChartWidget({
     const xFormatted =
       type === "scatter"
         ? formatYAxisLabel(Number(row[xAxis]), xAxis)
-        : (xTickFormatter ?? formatXAxisLabel)(
-            row[xAxis] as string | number,
-            xAxis
-          );
+        : xTickLabel(row[xAxis] as string | number);
     longestXTickChars = Math.max(longestXTickChars, String(xFormatted).length);
 
     for (const k of yKeys) {
@@ -651,6 +677,9 @@ export default function ChartWidget({
               STROKE_DASH_PATTERNS[idx % STROKE_DASH_PATTERNS.length]
             }
             dot={showDots ? { r: 2.5, strokeWidth: 1 } : false}
+            // Filled days hold no value; bridge them rather than break the
+            // line, or a lone day's alerts would vanish once dots are off.
+            connectNulls={dailyAxis}
             activeDot={{
               r: 4.5,
               strokeWidth: 2,
@@ -670,6 +699,7 @@ export default function ChartWidget({
             stackId="a"
             fill={chart.color(item.color)}
             fillOpacity={0.2}
+            connectNulls={dailyAxis}
             stroke={chart.color(item.color)}
             strokeWidth={2}
             strokeDasharray={
@@ -862,12 +892,7 @@ export default function ChartWidget({
                 tickFormatter={(value: number) =>
                   type === "scatter"
                     ? String(formatYAxisLabel(value, chart.key(xAxis)))
-                    : String(
-                        (xTickFormatter ?? formatXAxisLabel)(
-                          value,
-                          chart.key(xAxis)
-                        )
-                      )
+                    : String(xTickLabel(value))
                 }
                 domain={type === "scatter" ? ["auto", "auto"] : undefined}
                 angle={needsAngledTicks ? -35 : 0}
@@ -878,7 +903,14 @@ export default function ChartWidget({
                 padding={
                   isNumericXAxis
                     ? { left: 10, right: needsAngledTicks ? 14 : 18 }
-                    : undefined
+                    : dailyAxis
+                      ? // Flat day ticks centre on the last point, so half the
+                        // widest label must fit past it or it clips.
+                        {
+                          left: 0,
+                          right: Math.ceil((longestXTickChars * CHAR_PX) / 2),
+                        }
+                      : undefined
                 }
                 fontSize={TICK_FONT_PX}
               >
