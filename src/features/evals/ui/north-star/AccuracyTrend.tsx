@@ -64,11 +64,16 @@ export function AccuracyTrend({
     if (cx === undefined || cy === undefined || !payload) return <g />;
     const point = points.find((p) => p.runId === payload.runId);
     const marker = point?.marker;
-    if (!marker) return <circle cx={cx} cy={cy} r={2.5} fill={ACCENT} />;
+    if (!marker) {
+      return (
+        <circle key={payload.runId} cx={cx} cy={cy} r={2.5} fill={ACCENT} />
+      );
+    }
     const dip = marker.kinds.includes("dip");
     const isActive = selected === payload.runId;
     return (
       <g
+        key={payload.runId}
         style={{ cursor: "pointer" }}
         onClick={() => setSelected(payload.runId)}
       >
@@ -125,7 +130,7 @@ export function AccuracyTrend({
               tickFormatter={(value: number) => fmtPct(value, 0)}
               axisLine={false}
               tickLine={false}
-              width={44}
+              width={52}
               tick={{
                 fontSize: CHART_CHROME.tickFontSize,
                 fill: CHART_CHROME.axisTick,

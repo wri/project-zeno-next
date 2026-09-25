@@ -146,7 +146,10 @@ describe("describeCell", () => {
         cell: cell({ datasetId: null, passed: 68, measured: 100, rate: 0.68 }),
       })
     );
-    expect(read).toContain("place-finding requests, whatever the dataset,");
+    expect(read).toContain(
+      "place-finding requests, whatever the dataset, the answer"
+    );
+    expect(read).not.toContain(",,");
     expect(read).toContain("68%");
   });
 });

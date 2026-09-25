@@ -284,7 +284,7 @@ export function describeCell({
   return [
     { text: "When users ask " },
     ...subject,
-    { text: ", the answer is completely accurate " },
+    { text: `${pause}the answer is completely accurate ` },
     { text: `${Math.round(cell.rate * 100)}% of the time`, strong: true },
     { text: `: a user here is ${misledVerdict(cell.rate)}.` },
   ];
