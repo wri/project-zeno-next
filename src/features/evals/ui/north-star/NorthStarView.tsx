@@ -29,20 +29,28 @@ import { SurvivalFunnel } from "./SurvivalFunnel";
 import { useNorthStar } from "./use-north-star";
 import { WorkedExample } from "./WorkedExample";
 
+/** Show likely ranges (Wilson intervals) everywhere: `?range=1`. */
 const RANGE_PARAM = "range";
+/** Expand the matrix to per-dataset columns: `?by=dataset`. */
+const BY_PARAM = "by";
+const BY_DATASET = "dataset";
 
-function useRangeToggle(): [boolean, (show: boolean) => void] {
+/** A URL-synced view toggle, so shared links keep the reader's view. */
+function useParamToggle(
+  name: string,
+  onValue: string
+): [boolean, (on: boolean) => void] {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const show = searchParams?.get(RANGE_PARAM) === "1";
-  function setShow(next: boolean) {
+  const on = searchParams?.get(name) === onValue;
+  function setOn(next: boolean) {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
-    if (next) params.set(RANGE_PARAM, "1");
-    else params.delete(RANGE_PARAM);
+    if (next) params.set(name, onValue);
+    else params.delete(name);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
-  return [show, setShow];
+  return [on, setOn];
 }
 
 export function NorthStarView({
@@ -54,7 +62,8 @@ export function NorthStarView({
 }) {
   const { model, headlineRun, hasRuns, isLoading, error } =
     useNorthStar(source);
-  const [showRange, setShowRange] = useRangeToggle();
+  const [showRange, setShowRange] = useParamToggle(RANGE_PARAM, "1");
+  const [byDataset, setByDataset] = useParamToggle(BY_PARAM, BY_DATASET);
 
   if (isLoading || error) {
     return (
@@ -129,11 +138,14 @@ export function NorthStarView({
         id="matrix"
         eyebrow={MATRIX_SECTION.eyebrow}
         title={MATRIX_SECTION.title}
-        sub={MATRIX_SECTION.sub}
+        sub={byDataset ? MATRIX_SECTION.sub : MATRIX_SECTION.subPooled}
       >
         <AccuracyMatrix
           matrix={model.matrix}
           showRange={showRange}
+          byDataset={byDataset}
+          onByDatasetChange={setByDataset}
+          showWeightingNote={source.kind === "challenge"}
           footnote={footnote}
         />
       </Section>

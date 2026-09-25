@@ -209,6 +209,14 @@ export const MATRIX_SECTION = {
   eyebrow: "The deepest layer",
   title: "What people ask, about which data",
   sub: "Columns: datasets. Rows: what users are trying to do. Select a cell for the plain-language read.",
+  subPooled:
+    "Rows: what users are trying to do, pooled across every dataset. Select a row for the plain-language read, or show it by dataset to see where each intent breaks.",
+  byDatasetToggle: "Show by dataset",
+  pooledColumn: "All datasets",
+  /** Subject used in the cell read for a pooled, dataset-bound row. */
+  anyDataset: "any dataset",
+  pooledWeighting:
+    "Pooled figures count every eval equally, so on CHALLENGE a dataset with more evals weighs more. The annual BENCHMARK samples each dataset equally, where pooling and a per-dataset average agree.",
   question:
     "If a user asks a question shaped like this about this dataset, how likely is it they'll be misled?",
   legendPerf: "Performance, low to high",

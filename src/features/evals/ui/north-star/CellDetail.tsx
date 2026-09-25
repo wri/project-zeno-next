@@ -27,11 +27,14 @@ export function CellDetail({
   row,
   cell,
   datasetLabel,
+  pooledAcross,
   showRange,
 }: {
   readonly row: IntentRow;
   readonly cell: IntentCell;
   readonly datasetLabel: string | null;
+  /** Set on a pooled row: how many datasets its evals span. */
+  readonly pooledAcross?: number;
   readonly showRange: boolean;
 }) {
   const dims = dimensionFact(row, cell);
@@ -110,6 +113,14 @@ export function CellDetail({
             {coverageFact(row, cell)}
           </Text>
         </span>
+        {pooledAcross !== undefined && cell.coverage !== "none" ? (
+          <span>
+            Pooled across{" "}
+            <Text as="b" color="fg">
+              {pooledAcross} {pooledAcross === 1 ? "dataset" : "datasets"}
+            </Text>
+          </span>
+        ) : null}
         {dims ? <span>{dims}</span> : null}
         {cell.evaluated.length ? (
           <span>

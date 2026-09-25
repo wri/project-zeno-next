@@ -7,7 +7,8 @@
  * - BENCHMARK: sampled, so ROBUST needs the dimensions only;
  * - THIN otherwise; NONE with no cases (we don't know — no score claimed).
  * Cross-cutting intents (Spatial, Refusal, Conceptual) get one spanning
- * cell measured across every dataset.
+ * cell measured across every dataset; every row also carries a pooled
+ * `total` for the collapsed, intent-only read.
  */
 
 import {
@@ -51,6 +52,12 @@ export interface IntentCell {
 export interface IntentRow {
   def: QueryTypeDef;
   cells: IntentCell[];
+  /** The intent across every dataset: all its evals pooled into one cell.
+   * On a BENCHMARK sampled evenly per dataset, pooling equals the plain
+   * per-dataset average. */
+  total: IntentCell;
+  /** Dataset columns holding at least one case of this intent. */
+  datasetsCovered: number;
   /** Dataset-bound cases whose dataset could not be resolved. */
   unmapped: number;
 }
@@ -145,10 +152,13 @@ export function intentMatrix({
       const intentCases = active.filter(
         (entry) => caseIntentKey(entry) === def.key
       );
+      const total = buildCell(null, intentCases, rowsByUid, def, mode);
       if (def.crossCutting) {
         return {
           def,
-          cells: [buildCell(null, intentCases, rowsByUid, def, mode)],
+          cells: [total],
+          total,
+          datasetsCovered: 0,
           unmapped: 0,
         };
       }
@@ -167,7 +177,13 @@ export function intentMatrix({
       const unmapped = intentCases.filter(
         (entry) => !caseDatasetIds(entry).some((id) => known.has(id))
       ).length;
-      return { def, cells, unmapped };
+      return {
+        def,
+        cells,
+        total,
+        datasetsCovered: cells.filter((cell) => cell.cases > 0).length,
+        unmapped,
+      };
     }),
   };
 }

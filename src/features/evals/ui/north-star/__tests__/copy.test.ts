@@ -154,6 +154,21 @@ describe("describeCell", () => {
   });
 });
 
+describe("describeCell (pooled row)", () => {
+  it("reads a dataset-bound intent across any dataset", () => {
+    const read = text(
+      describeCell({
+        intent: quant,
+        datasetLabel: "any dataset",
+        cell: cell({ datasetId: null, passed: 87, measured: 100, rate: 0.87 }),
+      })
+    );
+    expect(read).toBe(
+      "When users ask direct questions quantifying any dataset, the answer is completely accurate 87% of the time: a user here is occasionally misled."
+    );
+  });
+});
+
 describe("perfBand", () => {
   it("maps rates onto the five-step ramp", () => {
     expect([0.33, 0.61, 0.72, 0.85, 0.97].map(perfBand)).toEqual([

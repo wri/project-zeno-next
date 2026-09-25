@@ -112,6 +112,56 @@ describe("intentMatrix (challenge)", () => {
   });
 });
 
+describe("intentMatrix row totals", () => {
+  const store = [
+    ...cases(12, "quantification", "tcl", ALL5),
+    ...cases(4, "quantification", "grasslands", ALL5),
+    ...cases(3, "aoi", "acronyms", ["aoi_id_match"]),
+  ];
+  const rows = [
+    caseRow({
+      uid: "quantification-tcl-0",
+      id: "a",
+      checks: { scope_match: 1 },
+    }),
+    caseRow({
+      uid: "quantification-tcl-1",
+      id: "b",
+      checks: { scope_match: 1 },
+    }),
+    caseRow({
+      uid: "quantification-grasslands-0",
+      id: "c",
+      checks: { scope_match: 0 },
+    }),
+  ];
+  const matrix = intentMatrix({ cases: store, rows, mode: "challenge" });
+
+  it("pools every eval of the intent across datasets", () => {
+    const quant = matrix.rows.find((r) => r.def.key === "quantification")!;
+    expect(quant.total).toMatchObject({
+      datasetId: null,
+      cases: 16,
+      measured: 3,
+      passed: 2,
+      coverage: "robust",
+    });
+    expect(quant.total.rate).toBeCloseTo(2 / 3);
+    expect(quant.datasetsCovered).toBe(2);
+  });
+
+  it("uses the spanning cell as the total for cross-cutting intents", () => {
+    const spatial = matrix.rows.find((r) => r.def.key === "spatial")!;
+    expect(spatial.total).toEqual(spatial.cells[0]);
+  });
+
+  it("reports none for intents with no cases", () => {
+    const risk = matrix.rows.find((r) => r.def.key === "risk")!;
+    expect(risk.total.coverage).toBe("none");
+    expect(risk.datasetsCovered).toBe(0);
+  });
+});
+
 describe("intentMatrix (benchmark)", () => {
   it("gates on dimensions only, over the frozen sample", () => {
     const store = [

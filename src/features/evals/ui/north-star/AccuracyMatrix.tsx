@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, chakra, Flex, Text } from "@chakra-ui/react";
+import { Box, chakra, Flex, Switch, Text } from "@chakra-ui/react";
 import { DATASET_COLUMNS } from "../../model/config";
 import type {
   IntentCell,
@@ -30,11 +30,26 @@ function cellKey(row: IntentRow, cell: IntentCell): string {
   return `${row.def.key}:${cell.datasetId ?? "*"}`;
 }
 
-/** Best-measured cell: the wireframe opens on it. */
-function initialSelection(matrix: IntentMatrix): Selection | null {
+/** The cells a row shows: per dataset, or its pooled total. */
+function cellsFor(row: IntentRow, byDataset: boolean): IntentCell[] {
+  return byDataset ? row.cells : [row.total];
+}
+
+/** Subject for the cell read: the dataset, "any dataset" for a pooled
+ * dataset-bound row, nothing for cross-cutting intents. */
+function datasetLabelFor(row: IntentRow, cell: IntentCell): string | null {
+  if (cell.datasetId) return LABEL_BY_ID.get(cell.datasetId) ?? null;
+  return row.def.crossCutting ? null : MATRIX_SECTION.anyDataset;
+}
+
+/** Best-measured cell of the current view: the wireframe opens on it. */
+function initialSelection(
+  matrix: IntentMatrix,
+  byDataset: boolean
+): Selection | null {
   let best: { sel: Selection; score: number } | null = null;
   for (const row of matrix.rows) {
-    for (const cell of row.cells) {
+    for (const cell of cellsFor(row, byDataset)) {
       if (cell.rate === null) continue;
       const score = cell.measured * 10 + cell.rate;
       if (!best || score > best.score) {
@@ -48,42 +63,49 @@ function initialSelection(matrix: IntentMatrix): Selection | null {
   return best?.sel ?? null;
 }
 
-function cellText(row: IntentRow, cell: IntentCell): string {
-  if (cell.coverage === "none") {
-    return row.def.crossCutting ? `· ${row.def.blurb} · evals planned` : "·";
+function cellText(row: IntentRow, cell: IntentCell, spanning: boolean): string {
+  if (!spanning) {
+    if (cell.coverage === "none") return "·";
+    return cell.rate === null ? "—" : String(Math.round(cell.rate * 100));
   }
-  if (cell.rate === null) return "—";
-  const value = String(Math.round(cell.rate * 100));
-  return row.def.crossCutting
-    ? `${value} · ${row.def.blurb}, measured across all datasets`
-    : value;
+  if (row.def.crossCutting) {
+    if (cell.coverage === "none") return `· ${row.def.blurb} · evals planned`;
+    if (cell.rate === null) return `— · ${cell.cases} evals, none scored yet`;
+    return `${Math.round(cell.rate * 100)} · ${row.def.blurb}, measured across all datasets`;
+  }
+  if (cell.coverage === "none") return "· no evals yet";
+  const across = `across ${row.datasetsCovered} ${row.datasetsCovered === 1 ? "dataset" : "datasets"} · ${cell.cases} evals`;
+  if (cell.rate === null) return `— · ${across}, none scored yet`;
+  return `${Math.round(cell.rate * 100)} · ${across}`;
 }
 
 function MatrixCell({
   row,
   cell,
+  colSpan,
   selected,
   onSelect,
 }: {
   readonly row: IntentRow;
   readonly cell: IntentCell;
+  /** Columns the cell spans; > 1 renders the wide, left-aligned form. */
+  readonly colSpan: number;
   readonly selected: boolean;
   readonly onSelect: () => void;
 }) {
+  const spanning = colSpan > 1 || cell.datasetId === null;
   const band = cell.rate === null ? null : perfBand(cell.rate);
   const none = cell.coverage === "none";
   const label = describeCell({
     intent: row.def,
-    datasetLabel: cell.datasetId
-      ? (LABEL_BY_ID.get(cell.datasetId) ?? null)
-      : null,
+    datasetLabel: datasetLabelFor(row, cell),
     cell,
   })
     .map((s) => s.text)
     .join("");
   return (
     <Td
-      colSpan={row.def.crossCutting ? DATASET_COLUMNS.length : undefined}
+      colSpan={colSpan > 1 ? colSpan : undefined}
       tabIndex={0}
       role="button"
       aria-pressed={selected}
@@ -96,12 +118,12 @@ function MatrixCell({
           onSelect();
         }
       }}
-      w={row.def.crossCutting ? "auto" : "66px"}
-      minW={row.def.crossCutting ? undefined : "56px"}
+      w={spanning ? "auto" : "66px"}
+      minW={spanning ? undefined : "56px"}
       h="44px"
-      px={row.def.crossCutting ? 3 : 1}
+      px={spanning ? 3 : 1}
       borderRadius="md"
-      textAlign={row.def.crossCutting ? "start" : "center"}
+      textAlign={spanning ? "start" : "center"}
       verticalAlign="middle"
       fontFamily="mono"
       fontSize="xs"
@@ -130,40 +152,74 @@ function MatrixCell({
         outlineOffset: "1px",
       }}
     >
-      {cellText(row, cell)}
+      {cellText(row, cell, spanning)}
     </Td>
   );
 }
 
-/** Layer 3: intent x dataset heatmap with a plain-language cell read. */
+/**
+ * Layer 3: what people ask, about which data. Collapsed by default to one
+ * pooled figure per intent (the Report's headline read); "Show by dataset"
+ * expands it into the intent x dataset heatmap.
+ */
 export function AccuracyMatrix({
   matrix,
   showRange,
+  byDataset,
+  onByDatasetChange,
+  showWeightingNote,
   footnote,
 }: {
   readonly matrix: IntentMatrix;
   readonly showRange: boolean;
+  readonly byDataset: boolean;
+  readonly onByDatasetChange: (byDataset: boolean) => void;
+  /** Explain pooling weights (CHALLENGE is not evenly sampled). */
+  readonly showWeightingNote: boolean;
   readonly footnote?: string;
 }) {
-  const [selection, setSelection] = useState<Selection | null>(() =>
-    initialSelection(matrix)
+  // One selection per view, so toggling never lands on a missing cell.
+  const [pooledSel, setPooledSel] = useState<Selection | null>(() =>
+    initialSelection(matrix, false)
   );
+  const [datasetSel, setDatasetSel] = useState<Selection | null>(() =>
+    initialSelection(matrix, true)
+  );
+  const selection = byDataset ? datasetSel : pooledSel;
+  const setSelection = byDataset ? setDatasetSel : setPooledSel;
   const selectedRow = matrix.rows.find((r) => r.def.key === selection?.intent);
-  const selectedCell = selectedRow?.cells.find(
-    (c) => c.datasetId === selection?.datasetId
-  );
+  const selectedCell = selectedRow
+    ? cellsFor(selectedRow, byDataset).find(
+        (c) => c.datasetId === selection?.datasetId
+      )
+    : undefined;
   const unmapped = matrix.rows.filter((r) => r.unmapped > 0);
 
   return (
     <Box>
+      <Flex justify="flex-end" mb={3}>
+        <Switch.Root
+          size="sm"
+          checked={byDataset}
+          onCheckedChange={(details) => onByDatasetChange(details.checked)}
+        >
+          <Switch.HiddenInput />
+          <Switch.Control />
+          <Switch.Label fontSize="xs">
+            {MATRIX_SECTION.byDatasetToggle}
+          </Switch.Label>
+        </Switch.Root>
+      </Flex>
+
       {selectedRow && selectedCell ? (
         <CellDetail
           row={selectedRow}
           cell={selectedCell}
-          datasetLabel={
-            selectedCell.datasetId
-              ? (LABEL_BY_ID.get(selectedCell.datasetId) ?? null)
-              : null
+          datasetLabel={datasetLabelFor(selectedRow, selectedCell)}
+          pooledAcross={
+            !byDataset && !selectedRow.def.crossCutting
+              ? selectedRow.datasetsCovered
+              : undefined
           }
           showRange={showRange}
         />
@@ -171,13 +227,31 @@ export function AccuracyMatrix({
 
       <Box overflowX="auto" pb={1.5}>
         <Tbl
-          minW="900px"
+          minW={byDataset ? "900px" : undefined}
+          w={byDataset ? undefined : "full"}
           style={{ borderCollapse: "separate", borderSpacing: "2px" }}
         >
           <THead>
             <Tr>
-              <Th scope="col" aria-label="Prompt intent" />
-              {DATASET_COLUMNS.map((column) => (
+              <Th
+                scope="col"
+                aria-label="Prompt intent"
+                w={byDataset ? undefined : "1%"}
+              />
+              {!byDataset ? (
+                <Th
+                  scope="col"
+                  fontSize="2xs"
+                  fontWeight="semibold"
+                  color="fg.muted"
+                  textAlign="start"
+                  px={3}
+                  pb={2}
+                >
+                  {MATRIX_SECTION.pooledColumn}
+                </Th>
+              ) : null}
+              {(byDataset ? DATASET_COLUMNS : []).map((column) => (
                 <Th
                   scope="col"
                   key={column.datasetId}
@@ -221,11 +295,16 @@ export function AccuracyMatrix({
                       : row.def.blurb}
                   </Text>
                 </Th>
-                {row.cells.map((cell) => (
+                {cellsFor(row, byDataset).map((cell) => (
                   <MatrixCell
                     key={cellKey(row, cell)}
                     row={row}
                     cell={cell}
+                    colSpan={
+                      byDataset && row.def.crossCutting
+                        ? DATASET_COLUMNS.length
+                        : 1
+                    }
                     selected={
                       selection?.intent === row.def.key &&
                       selection.datasetId === cell.datasetId
@@ -291,6 +370,9 @@ export function AccuracyMatrix({
       </Flex>
       <Text fontSize="xs" color="fg.subtle" mt={3} maxW="78ch">
         Each cell carries performance and coverage.{" "}
+        {!byDataset && showWeightingNote
+          ? `${MATRIX_SECTION.pooledWeighting} `
+          : ""}
         {unmapped.length
           ? `${unmapped.map((r) => `${r.unmapped} ${r.def.label.toLowerCase()}`).join(", ")} cases could not be placed on a dataset column. `
           : ""}
