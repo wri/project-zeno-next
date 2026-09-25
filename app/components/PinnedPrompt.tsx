@@ -31,7 +31,7 @@ function PinnedPrompt({ message, onJump }: PinnedPromptProps) {
           w="100%"
           textAlign="left"
           cursor="pointer"
-          bg="primary.50"
+          bg="primary.100"
           color="fg"
           px={3}
           py={3}
@@ -41,9 +41,9 @@ function PinnedPrompt({ message, onJump }: PinnedPromptProps) {
           animationDuration="0.2s"
           animationTimingFunction="ease-out"
           transition="background 0.2s ease"
-          _hover={{ bg: "primary.100" }}
+          _hover={{ bg: "primary.200" }}
         >
-          <Text fontSize="xs" lineHeight="1.5" lineClamp={2}>
+          <Text fontSize="13px" lineHeight="1.5" lineClamp={2}>
             {message.message}
           </Text>
         </chakra.button>
