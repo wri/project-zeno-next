@@ -57,7 +57,9 @@ export function CellDetail({
         color="fg.subtle"
         mb={1.5}
       >
-        {MATRIX_SECTION.question}
+        {pooledAcross !== undefined
+          ? MATRIX_SECTION.questionPooled
+          : MATRIX_SECTION.question}
       </Text>
       <Text
         fontFamily={SERIF_STACK}

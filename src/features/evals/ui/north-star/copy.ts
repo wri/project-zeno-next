@@ -219,6 +219,8 @@ export const MATRIX_SECTION = {
     "Pooled figures count every eval equally, so on CHALLENGE a dataset with more evals weighs more. The annual BENCHMARK samples each dataset equally, where pooling and a per-dataset average agree.",
   question:
     "If a user asks a question shaped like this about this dataset, how likely is it they'll be misled?",
+  questionPooled:
+    "If a user asks a question shaped like this, about any dataset, how likely is it they'll be misled?",
   legendPerf: "Performance, low to high",
   legendThin: "Faded = thin coverage, an early signal",
   legendNone: "Hatched = no evals yet, we don't know",
