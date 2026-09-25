@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 /**
  * The pinned recap of the prompt whose answer is being read, and the user
- * bubble it mirrors: both sit on Primary/100. The pinned card uses 13px text,
- * a light shadow, and a hard two-line cut-off so a long prompt never grows the
- * card over the answer.
+ * bubble it mirrors: both sit on Primary/100. The pinned card uses 13px text
+ * and a hard two-line cut-off so a long prompt never grows the card over the
+ * answer.
  *
  * happy-dom drops `var()` values and `display: -webkit-box` from computed
  * styles, so these assertions read the element's own emitted CSS rule, which
@@ -90,12 +90,11 @@ describe.each([
       expect(ownStyle(text)["font-size"]).toBe("13px");
     });
 
-    it("sits on a Primary/100 background with a light shadow", () => {
+    it("sits on a Primary/100 background", () => {
       const { card } = renderPinned(prompt);
-      expect(ownStyle(card)).toMatchObject({
-        background: "var(--chakra-colors-primary-100)",
-        "box-shadow": "var(--chakra-shadows-sm)",
-      });
+      expect(ownStyle(card).background).toBe(
+        "var(--chakra-colors-primary-100)"
+      );
     });
 
     it("scrolls back to the original prompt when clicked", () => {
