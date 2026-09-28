@@ -44,11 +44,9 @@ import {
 } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
-import {
-  canUseFeatureFlags,
-  effectiveAgentProfile,
-  EXPERIMENTAL_PROFILE,
-} from "@/app/config/feature-flags";
+import { chatFeatureFlag } from "@/app/config/feature-flags";
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
+import { NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
 import useAgentProfileStore from "./agentProfileStore";
 import useViewContextStore from "./viewContextStore";
 
@@ -694,18 +692,19 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // turn. Agent picks arriving during the stream fold their slots on top.
     set({ lastSentContext: keys });
 
-    // Send an agent profile as `ff` only for user types the backend accepts
-    // feature flags from (else it 403s).
+    // `?ff=` carries over to the thread URL (`threadHref`), so reading it now
+    // matches what the catalog and map show.
     const userType = useAuthStore.getState().userType;
     const viewContext = useViewContextStore.getState().viewContext;
-    // The dashboard agent tools live in the backend's experimental profile —
-    // now the default for every feature-flag-eligible user, since the
-    // dashboards feature itself is on unconditionally.
-    const ff =
-      effectiveAgentProfile(
-        useAgentProfileStore.getState().agentProfile,
-        userType
-      ) ?? (canUseFeatureFlags(userType) ? EXPERIMENTAL_PROFILE : null);
+    const ff = chatFeatureFlag(
+      useAgentProfileStore.getState().agentProfile,
+      userType,
+      typeof window !== "undefined" &&
+        isFeatureEnabled(
+          new URLSearchParams(window.location.search),
+          NET_FLUX_FEATURE_FLAG
+        )
+    );
     const prompt: ChatPrompt = {
       query: message,
       query_type: queryType,
