@@ -102,6 +102,23 @@ function resolveValueKeys(
   return candidateValueKeys;
 }
 
+/**
+ * Every column that appears in any row, in first-seen order. Not just the
+ * first row's: a long-format chart pivoted to one column per category (see
+ * `pivotByColorField`) leaves a category out of the rows where it has no
+ * value, so a category absent on the first day would otherwise vanish from
+ * the whole chart.
+ */
+function columnsOf(rows: InputData[]): string[] {
+  const columns = new Set<string>();
+  for (const row of rows) {
+    if (row && typeof row === "object") {
+      for (const key of Object.keys(row)) columns.add(key);
+    }
+  }
+  return [...columns];
+}
+
 function filterChartDataColumns(
   data: InputData[],
   columns: string[]
@@ -174,7 +191,7 @@ export default function formatChartData(
     return empty;
   }
 
-  const keys = Object.keys(firstRow);
+  const keys = columnsOf(data as InputData[]);
   if (keys.length === 0) {
     console.error("formatChartData: data[0] has no keys");
     return empty;
@@ -209,7 +226,7 @@ export default function formatChartData(
   ) {
     return empty;
   }
-  const scopedKeys = Object.keys(scopedFirstRow);
+  const scopedKeys = columnsOf(scopedData as InputData[]);
   const chartRows = scopedData as InputData[];
 
   const defaultColors = getChartColors();

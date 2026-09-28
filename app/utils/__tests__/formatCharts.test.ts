@@ -126,6 +126,37 @@ describe("formatTooltipValue", () => {
 });
 
 describe("formatChartData", () => {
+  it("keeps a series whose column first appears after the first row", () => {
+    // A pivoted daily chart: no `low` alerts on the first day (PR #721 review).
+    const { data, series } = formatChartData(
+      [
+        { alert_date: "2026-09-11", high: 1 },
+        { alert_date: "2026-09-12", high: 3, low: 2 },
+      ],
+      "line",
+      "alert_date",
+      "area_ha",
+      undefined,
+      ["high", "low"]
+    );
+    expect(series.map((s) => s.name)).toEqual(["high", "low"]);
+    expect(data[1]).toMatchObject({ low: 2 });
+    // Absent stays absent: the missing day is not zero-filled.
+    expect(data[0]).not.toHaveProperty("low");
+  });
+
+  it("finds late columns without seriesFields too", () => {
+    const { series } = formatChartData(
+      [
+        { year: 2020, a: 1 },
+        { year: 2021, a: 2, b: 5 },
+      ],
+      "stacked-bar",
+      "year"
+    );
+    expect(series.map((s) => s.name)).toEqual(["a", "b"]);
+  });
+
   it("returns empty result for empty or invalid data", () => {
     expect(formatChartData([], "bar", "x", "y")).toEqual({
       data: [],

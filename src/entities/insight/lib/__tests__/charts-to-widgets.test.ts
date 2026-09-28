@@ -55,6 +55,34 @@ describe("chartsToWidgets", () => {
     ]);
   });
 
+  it("keeps a category that is absent on the first day through formatting", async () => {
+    const { default: formatChartData } =
+      await import("@/app/utils/formatCharts");
+    const [widget] = chartsToWidgets([
+      {
+        ...baseChart,
+        type: "line",
+        xAxis: "alert_date",
+        yAxis: "area_ha",
+        colorField: "alert_confidence",
+        seriesFields: [],
+        data: [
+          { alert_date: "2026-09-11", alert_confidence: "high", area_ha: 1 },
+          { alert_date: "2026-09-12", alert_confidence: "low", area_ha: 2 },
+        ],
+      },
+    ]);
+    const { series } = formatChartData(
+      widget.data,
+      widget.type,
+      widget.xAxis,
+      widget.yAxis,
+      undefined,
+      widget.seriesFields
+    );
+    expect(series.map((s) => s.name)).toEqual(["high", "low"]);
+  });
+
   it("falls back to 'bar' for an unknown chart type", () => {
     const widgets = chartsToWidgets([{ ...baseChart, type: "nonsense" }]);
     expect(widgets[0].type).toBe("bar");
