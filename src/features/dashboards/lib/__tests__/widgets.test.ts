@@ -124,6 +124,48 @@ describe("withWidgetTitle", () => {
 });
 
 describe("dashboardWidgetToInsightWidgets", () => {
+  it("pivots a long-format daily alerts chart into one series per confidence", () => {
+    const [card] = dashboardWidgetToInsightWidgets(
+      widget({
+        insight: {
+          id: "ins-1",
+          insight_text: null,
+          codeact_parts: null,
+          charts: [
+            chart({
+              chart_type: "line",
+              x_axis: "alert_date",
+              y_axis: "area_ha",
+              color_field: "alert_confidence",
+              chart_data: [
+                {
+                  alert_date: "2026-09-11",
+                  alert_confidence: "high",
+                  area_ha: 3,
+                },
+                {
+                  alert_date: "2026-09-11",
+                  alert_confidence: "low",
+                  area_ha: 1,
+                },
+                {
+                  alert_date: "2026-09-12",
+                  alert_confidence: "low",
+                  area_ha: 2,
+                },
+              ],
+            }),
+          ],
+        },
+      })
+    );
+    expect(card.seriesFields).toEqual(["high", "low"]);
+    expect(card.data).toEqual([
+      { alert_date: "2026-09-11", high: 3, low: 1 },
+      { alert_date: "2026-09-12", low: 2 },
+    ]);
+  });
+
   it("returns [] for a hidden insight or no charts", () => {
     expect(dashboardWidgetToInsightWidgets(widget({ insight: null }))).toEqual(
       []
