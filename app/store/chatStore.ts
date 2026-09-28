@@ -45,7 +45,8 @@ import {
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
 import { chatFeatureFlag } from "@/app/config/feature-flags";
-import { enabledFlags } from "@/src/shared/lib/feature-flags/feature-flags";
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags/feature-flags";
+import { NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
 import useAgentProfileStore from "./agentProfileStore";
 import useViewContextStore from "./viewContextStore";
 
@@ -692,17 +693,18 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     set({ lastSentContext: keys });
 
     // Send an agent profile as `ff` only when the backend accepts it from this
-    // user type (else it 403s). See `chatFeatureFlag` for the order of choice.
-    // The URL flags carry over to the thread URL (`threadHref`), so reading
-    // them now matches what the catalog and map show.
+    // user type (else it 403s). `?ff=` carries over to the thread URL
+    // (`threadHref`), so reading it now matches what the catalog and map show.
     const userType = useAuthStore.getState().userType;
     const viewContext = useViewContextStore.getState().viewContext;
     const ff = chatFeatureFlag(
       useAgentProfileStore.getState().agentProfile,
       userType,
-      typeof window === "undefined"
-        ? new Set()
-        : enabledFlags(new URLSearchParams(window.location.search))
+      typeof window !== "undefined" &&
+        isFeatureEnabled(
+          new URLSearchParams(window.location.search),
+          NET_FLUX_FEATURE_FLAG
+        )
     );
     const prompt: ChatPrompt = {
       query: message,

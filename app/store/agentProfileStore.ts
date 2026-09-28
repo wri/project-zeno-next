@@ -10,8 +10,7 @@ import { create } from "zustand";
  *
  * Whether the flag is actually sent is gated by user type at the call sites
  * (see `effectiveAgentProfile` in config/feature-flags), since the backend only
- * honours `ff` for admin/superuser/machine users, except for public profiles
- * such as `lgms`.
+ * honours `ff` for admin/superuser/machine users.
  */
 
 const STORAGE_KEY = "agent_profile";

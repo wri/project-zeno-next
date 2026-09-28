@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
 import {
   EXPERIMENTAL_PROFILE,
   LGMS_PROFILE,
@@ -45,48 +44,22 @@ describe("effectiveAgentProfile", () => {
   it("passes through non-experimental profiles for privileged users", () => {
     expect(effectiveAgentProfile("beta", "admin")).toBe("beta");
   });
-
-  it("returns a public profile for every user type", () => {
-    expect(effectiveAgentProfile(LGMS_PROFILE, "regular")).toBe(LGMS_PROFILE);
-    expect(effectiveAgentProfile(LGMS_PROFILE, "pro")).toBe(LGMS_PROFILE);
-    expect(effectiveAgentProfile(LGMS_PROFILE, null)).toBe(LGMS_PROFILE);
-    expect(effectiveAgentProfile(LGMS_PROFILE, "admin")).toBe(LGMS_PROFILE);
-  });
 });
 
 describe("chatFeatureFlag", () => {
-  const noFlags = new Set<string>();
-  const netFlux = new Set([NET_FLUX_FEATURE_FLAG]);
-
-  it("sends the experimental profile to privileged users by default", () => {
-    expect(chatFeatureFlag(null, "admin", noFlags)).toBe(EXPERIMENTAL_PROFILE);
-    expect(chatFeatureFlag(null, "admin", netFlux)).toBe(EXPERIMENTAL_PROFILE);
+  it("sends privileged users their profile, defaulting to experimental", () => {
+    expect(chatFeatureFlag(null, "admin", false)).toBe(EXPERIMENTAL_PROFILE);
+    expect(chatFeatureFlag(null, "machine", true)).toBe(EXPERIMENTAL_PROFILE);
+    expect(chatFeatureFlag("beta", "superuser", true)).toBe("beta");
   });
 
-  it("sends the lgms profile to other users when net-flux is on", () => {
-    expect(chatFeatureFlag(null, "regular", netFlux)).toBe(LGMS_PROFILE);
-    expect(chatFeatureFlag(null, "pro", netFlux)).toBe(LGMS_PROFILE);
-  });
-
-  it("sends nothing for other users without net-flux", () => {
-    expect(chatFeatureFlag(null, "regular", noFlags)).toBeNull();
-    expect(chatFeatureFlag(null, null, new Set(["ifl"]))).toBeNull();
-  });
-
-  it("prefers an explicit profile the backend accepts", () => {
-    expect(chatFeatureFlag("beta", "admin", noFlags)).toBe("beta");
-    expect(chatFeatureFlag(LGMS_PROFILE, "regular", noFlags)).toBe(
+  it("sends other users the lgms profile only when net-flux is on", () => {
+    expect(chatFeatureFlag(null, "regular", true)).toBe(LGMS_PROFILE);
+    expect(chatFeatureFlag(EXPERIMENTAL_PROFILE, "pro", true)).toBe(
       LGMS_PROFILE
     );
-  });
-
-  it("ignores an explicit admin-only profile for other users", () => {
-    expect(
-      chatFeatureFlag(EXPERIMENTAL_PROFILE, "regular", noFlags)
-    ).toBeNull();
-    expect(chatFeatureFlag(EXPERIMENTAL_PROFILE, "regular", netFlux)).toBe(
-      LGMS_PROFILE
-    );
+    expect(chatFeatureFlag(null, null, true)).toBe(LGMS_PROFILE);
+    expect(chatFeatureFlag(EXPERIMENTAL_PROFILE, "regular", false)).toBeNull();
   });
 });
 
