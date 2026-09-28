@@ -1,4 +1,10 @@
-import { createElement, useMemo } from "react";
+import {
+  createElement,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Chart, useChart } from "@chakra-ui/charts";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import {
@@ -32,6 +38,11 @@ import formatChartData, {
 import { InsightWidget } from "@/app/types/chat";
 import { STROKE_DASH_PATTERNS } from "@/app/utils/ChartColors";
 import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
+import {
+  fillMissingDays,
+  isDailyAxis,
+  pickDailyTicks,
+} from "@/app/utils/dateAxis";
 
 type ChartType =
   | "bar"
@@ -51,6 +62,31 @@ const TICK_ANGLE_RAD = (35 * Math.PI) / 180;
 const MAX_X_TICKS = 12; // density target before we thin tick labels
 const ANIMATION_MS = 650; // entry animation; disabled under reduced motion
 const MAX_LINE_DOTS = 14; // beyond this, per-point dots become noise
+// Assumed chart width until the first measurement lands: a single-column
+// dashboard card, so the first paint of a daily axis is already sensible.
+const DEFAULT_CHART_WIDTH_PX = 560;
+// Room kept right of the plot for the last tick's overhang (the axis pads by
+// half the widest label) so the fit test does not overcount.
+const DAILY_AXIS_RIGHT_RESERVE_PX = 30;
+
+/**
+ * The element's content width, tracked across resizes. Null until measured,
+ * and in environments without ResizeObserver.
+ */
+function useElementWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) =>
+      setWidth(Math.round(entry.contentRect.width))
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
 // A donut can't use extra horizontal room (fixed radius, side legend), so in
 // a full-width dashboard card its content caps at the single-column content
 // width (~592px column minus card/shell padding) and centers. Without the cap
@@ -427,33 +463,46 @@ export default function ChartWidget({
   // Depends on the individual fields rather than `widget`: callers rebuild the
   // widget object on render (see chartsToWidgets), but these values come
   // straight off the fetched chart and keep a stable identity.
-  const { data: formattedData, series } = useMemo(
-    () =>
-      xAxis
-        ? formatChartData(
-            data,
-            type,
-            xAxis,
-            yAxis,
-            datasetName,
-            seriesFields,
-            { colorMap, seriesColor, divergentColors },
-            lineField
-          )
-        : { data: [], series: [] },
-    [
+  const {
+    data: formattedData,
+    series,
+    dailyAxis,
+  } = useMemo(() => {
+    if (!xAxis) return { data: [], series: [], dailyAxis: false };
+    const formatted = formatChartData(
       data,
       type,
       xAxis,
       yAxis,
       datasetName,
       seriesFields,
-      lineField,
-      colorMap,
-      seriesColor,
-      divergentColors,
-    ]
-  );
+      { colorMap, seriesColor, divergentColors },
+      lineField
+    );
+    // A day-by-day line or area reads as a timeline only if every day holds
+    // a slot, so the days the data omits are filled with empty rows.
+    const daily =
+      (type === "line" || type === "area") &&
+      isDailyAxis(formatted.data, xAxis);
+    return daily
+      ? {
+          ...formatted,
+          data: fillMissingDays(formatted.data, xAxis),
+          dailyAxis: true,
+        }
+      : { ...formatted, dailyAxis: false };
+  }, [
+    data,
+    type,
+    xAxis,
+    yAxis,
+    datasetName,
+    seriesFields,
+    lineField,
+    colorMap,
+    seriesColor,
+    divergentColors,
+  ]);
 
   // Humanize series labels that are raw column keys (snake_case or the
   // y-axis key) — tooltip and legend then show "Tree cover loss (ha)"
@@ -470,6 +519,7 @@ export default function ChartWidget({
   );
 
   const chart = useChart({ data: formattedData, series: labelledSeries });
+  const [rootRef, measuredWidth] = useElementWidth<HTMLDivElement>();
   const prefersReducedMotion = usePrefersReducedMotion();
   const animate = !prefersReducedMotion;
 
@@ -504,14 +554,25 @@ export default function ChartWidget({
     );
   }
 
+  // A daily axis's labels are chosen with its ticks, further down, once the
+  // plot width is known.
+  let dailyTickLabels: Map<string, string> | undefined;
+  const xTickLabel = (value: string | number) =>
+    xTickFormatter
+      ? xTickFormatter(value, xAxis)
+      : dailyAxis
+        ? (dailyTickLabels?.get(String(value)) ?? String(value))
+        : formatXAxisLabel(value, xAxis);
+
   // Determine if the x-axis has long categorical labels that need angling
   const isNumericXAxis =
     type === "scatter" ||
     xAxis?.toLowerCase() === "year" ||
     (formattedData.length > 0 && typeof formattedData[0][xAxis] === "number");
   const needsAngledTicks =
-    (!isNumericXAxis && formattedData.length > 4) ||
-    (isNumericXAxis && formattedData.length > 10);
+    !dailyAxis &&
+    ((!isNumericXAxis && formattedData.length > 4) ||
+      (isNumericXAxis && formattedData.length > 10));
 
   // preserveStartEnd silently drops a mid-axis tick when (N-1) doesn't
   // divide evenly; build explicit ticks so the last data point is labeled.
@@ -548,10 +609,7 @@ export default function ChartWidget({
     const xFormatted =
       type === "scatter"
         ? formatYAxisLabel(Number(row[xAxis]), xAxis)
-        : (xTickFormatter ?? formatXAxisLabel)(
-            row[xAxis] as string | number,
-            xAxis
-          );
+        : xTickLabel(row[xAxis] as string | number);
     longestXTickChars = Math.max(longestXTickChars, String(xFormatted).length);
 
     for (const k of yKeys) {
@@ -587,6 +645,27 @@ export default function ChartWidget({
 
   const yAxisTitle = yAxisLabel ?? toAxisLabel(yAxis);
   const yAxisWidth = computeYAxisWidth(longestYTickChars, Boolean(yAxisTitle));
+
+  // A daily axis takes as many calendar-aligned ticks as fit the plot's
+  // actual width (a narrow card gets months, a wide one weeks), replacing the
+  // fixed-count thinning above, whose ISO labels overlap once squeezed.
+  if (dailyAxis && !xTickFormatter) {
+    const plotWidth =
+      (measuredWidth ?? DEFAULT_CHART_WIDTH_PX) -
+      yAxisWidth -
+      DAILY_AXIS_RIGHT_RESERVE_PX;
+    const picked = pickDailyTicks(
+      String(formattedData[0][xAxis]),
+      String(formattedData[formattedData.length - 1][xAxis]),
+      plotWidth,
+      CHAR_PX
+    );
+    xTicks = picked.ticks;
+    dailyTickLabels = picked.labels;
+    longestXTickChars = Math.max(
+      ...[...picked.labels.values()].map((label) => label.length)
+    );
+  }
 
   const animationProps = {
     isAnimationActive: animate,
@@ -651,6 +730,9 @@ export default function ChartWidget({
               STROKE_DASH_PATTERNS[idx % STROKE_DASH_PATTERNS.length]
             }
             dot={showDots ? { r: 2.5, strokeWidth: 1 } : false}
+            // Filled days hold no value; bridge them rather than break the
+            // line, or a lone day's alerts would vanish once dots are off.
+            connectNulls={dailyAxis}
             activeDot={{
               r: 4.5,
               strokeWidth: 2,
@@ -670,6 +752,7 @@ export default function ChartWidget({
             stackId="a"
             fill={chart.color(item.color)}
             fillOpacity={0.2}
+            connectNulls={dailyAxis}
             stroke={chart.color(item.color)}
             strokeWidth={2}
             strokeDasharray={
@@ -770,6 +853,7 @@ export default function ChartWidget({
 
   return (
     <Box
+      ref={rootRef}
       role="img"
       aria-label={chartLabel}
       tabIndex={0}
@@ -862,12 +946,7 @@ export default function ChartWidget({
                 tickFormatter={(value: number) =>
                   type === "scatter"
                     ? String(formatYAxisLabel(value, chart.key(xAxis)))
-                    : String(
-                        (xTickFormatter ?? formatXAxisLabel)(
-                          value,
-                          chart.key(xAxis)
-                        )
-                      )
+                    : String(xTickLabel(value))
                 }
                 domain={type === "scatter" ? ["auto", "auto"] : undefined}
                 angle={needsAngledTicks ? -35 : 0}
@@ -878,7 +957,14 @@ export default function ChartWidget({
                 padding={
                   isNumericXAxis
                     ? { left: 10, right: needsAngledTicks ? 14 : 18 }
-                    : undefined
+                    : dailyAxis
+                      ? // Flat day ticks centre on the last point, so half the
+                        // widest label must fit past it or it clips.
+                        {
+                          left: 0,
+                          right: Math.ceil((longestXTickChars * CHAR_PX) / 2),
+                        }
+                      : undefined
                 }
                 fontSize={TICK_FONT_PX}
               >

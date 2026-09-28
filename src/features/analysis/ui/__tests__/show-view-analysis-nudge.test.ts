@@ -26,6 +26,15 @@ const IFL_ID = 101;
 // Land GHG Monitoring System — the one card whose declared coverage
 // (2016–2024) is narrower than the catalogue-wide default.
 const LGMS_ID = 12;
+// Tree cover gain — its analysis covers administrative areas only.
+const GAIN_ID = 5;
+
+const protectedArea: AreaSelection = {
+  name: "Waimiri-Atroari",
+  source: "wdpa",
+  srcId: "33922",
+  subtype: "protected-area",
+};
 
 const seedLayer = (datasetId: number, name: string) =>
   useMapStore.setState({
@@ -214,6 +223,22 @@ describe("showViewAnalysisNudge", () => {
       startDate: "2020-03-01",
       endDate: "2021-04-02",
     });
+  });
+
+  it("nudges for a protected area when its dataset covers that source", () => {
+    seedLayer(TCL_ID, "Tree cover loss");
+
+    expect(showViewAnalysisNudge(protectedArea)).toBe(true);
+    expect(viewNudges()).toHaveLength(1);
+  });
+
+  it("does not nudge for an area whose source the dataset's analysis doesn't cover", () => {
+    seedLayer(GAIN_ID, "Tree cover gain");
+
+    expect(showViewAnalysisNudge(protectedArea)).toBe(false);
+    expect(viewNudges()).toHaveLength(0);
+    // ...while an administrative area still gets it.
+    expect(showViewAnalysisNudge(selection)).toBe(true);
   });
 
   it("does nothing when no dataset is active (analysis stays gated)", () => {

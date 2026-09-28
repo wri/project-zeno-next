@@ -23,6 +23,7 @@ export type { AnalysisSelection } from "./model/analysis-selection";
 export {
   CURATED_ANALYSES,
   curatedCatalogue,
+  isAnalysableForSource,
   stripYearRangeSuffix,
   type CuratedAnalysisEntry,
   type CuratedAnalysisSpec,

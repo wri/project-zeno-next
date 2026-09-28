@@ -281,14 +281,16 @@ describe("CuratedInsightsList", () => {
         }
       );
       expect(screen.queryByText(LGMS_TITLE)).toBeNull();
-      // The ungated cards are unaffected by the area.
-      expect(screen.getAllByText("CURATED")).toHaveLength(10);
+      // Tree cover gain is withheld from a KBA too; the other nine stay.
+      expect(screen.queryByText(/^Tree cover gain in /)).toBeNull();
+      expect(screen.getAllByText("CURATED")).toHaveLength(9);
     });
 
     it("appears for an administrative area once the flag is set", () => {
       setFlags("net-flux");
       renderList(fakeService(() => Promise.resolve(RESULT)));
       expect(screen.getByText(LGMS_TITLE)).toBeTruthy();
+      expect(screen.getByText(/^Tree cover gain in /)).toBeTruthy();
       expect(screen.getAllByText("CURATED")).toHaveLength(11);
     });
 

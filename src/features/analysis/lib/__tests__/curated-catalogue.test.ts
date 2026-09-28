@@ -4,6 +4,7 @@ import { DATASET_BY_ID, NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
 import {
   CURATED_ANALYSES,
   curatedCatalogue,
+  isAnalysableForSource,
   stripYearRangeSuffix,
 } from "../curated-catalogue";
 
@@ -27,9 +28,17 @@ describe("CURATED_ANALYSES", () => {
     expect(lgms?.aoiSources).toEqual(["gadm"]);
   });
 
+  it("restricts tree cover gain to administrative areas", () => {
+    // The analytics API fails the job for protected areas and KBAs (verified
+    // 2026-09-24, PZB-1450); lift once upstream supports them.
+    const gain = CURATED_ANALYSES.find((e) => e.datasetId === 5);
+    expect(gain?.featureFlag).toBeUndefined();
+    expect(gain?.aoiSources).toEqual(["gadm"]);
+  });
+
   it("leaves every other entry ungated", () => {
     for (const entry of CURATED_ANALYSES) {
-      if (entry.datasetId === 12) continue;
+      if (entry.datasetId === 12 || entry.datasetId === 5) continue;
       expect(entry.featureFlag).toBeUndefined();
       expect(entry.aoiSources).toBeUndefined();
     }
@@ -130,11 +139,20 @@ describe("curatedCatalogue", () => {
       }
     });
 
-    it("leaves the ungated entries alone whatever the area", () => {
-      const ungated = UNGATED.map((e) => e.datasetId);
-      expect(ids({ aoiSource: "kba" })).toEqual(ungated);
+    it("offers tree cover gain for an administrative area only", () => {
+      expect(ids({ aoiSource: "gadm" })).toContain(5);
+      for (const source of ["kba", "wdpa", "landmark", "custom"]) {
+        expect(ids({ aoiSource: source })).not.toContain(5);
+      }
+    });
+
+    it("leaves the unrestricted entries alone whatever the area", () => {
+      const unrestricted = UNGATED.filter((e) => !e.aoiSources).map(
+        (e) => e.datasetId
+      );
+      expect(ids({ aoiSource: "kba" })).toEqual(unrestricted);
       expect(ids({ enabledFlags: netFlux, aoiSource: "wdpa" })).toEqual(
-        ungated
+        unrestricted
       );
     });
 
@@ -144,5 +162,32 @@ describe("curatedCatalogue", () => {
         12,
       ]);
     });
+  });
+});
+
+describe("isAnalysableForSource", () => {
+  it("allows a source-restricted analysis only for its sources", () => {
+    expect(isAnalysableForSource(5, "gadm")).toBe(true);
+    expect(isAnalysableForSource(5, "wdpa")).toBe(false);
+    expect(isAnalysableForSource(5, "kba")).toBe(false);
+    expect(isAnalysableForSource(12, "landmark")).toBe(false);
+  });
+
+  it("matches the source case-insensitively", () => {
+    expect(isAnalysableForSource(5, "GADM")).toBe(true);
+    expect(isAnalysableForSource(5, "WDPA")).toBe(false);
+  });
+
+  it("allows an unrestricted analysis for every source", () => {
+    expect(isAnalysableForSource(4, "wdpa")).toBe(true);
+    expect(isAnalysableForSource(11, "landmark")).toBe(true);
+  });
+
+  it("does not restrict datasets outside the curated suite", () => {
+    expect(isAnalysableForSource(9999, "wdpa")).toBe(true);
+  });
+
+  it("ignores feature flags: it answers whether the area is covered", () => {
+    expect(isAnalysableForSource(12, "gadm")).toBe(true);
   });
 });

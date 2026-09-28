@@ -236,9 +236,14 @@ describe("DashboardSuggestedModules", () => {
       setFlags("net-flux");
       renderModules(true, { seed: kbaDashboard });
       expect(screen.queryByRole("button", { name: LABEL })).toBeNull();
-      // The ungated tiles are unaffected by the area.
+      // The tiles offered for a KBA are unaffected by the flag (tree cover
+      // gain is withheld by area, like LGMS).
       expect(screen.getAllByText("CURATED")).toHaveLength(
-        OFFERED_CURATED_MODULES.length
+        CURATED_SUGGESTED_MODULES.filter((m) =>
+          curatedCatalogue({ aoiSource: "kba" }).some(
+            (spec) => spec.datasetId === m.datasetId
+          )
+        ).length
       );
     });
 

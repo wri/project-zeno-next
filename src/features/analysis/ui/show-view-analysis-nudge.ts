@@ -4,6 +4,7 @@ import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
 
 import type { AreaSelection } from "../model/area-selection";
 
+import { isAnalysableForSource } from "../lib/curated-catalogue";
 import { resolveAnalysisWindow } from "../lib/default-analysis-window";
 
 /**
@@ -36,6 +37,9 @@ export function showViewAnalysisNudge(selection: AreaSelection): boolean {
   if (!datasetLayer) return false;
 
   const datasetId = datasetLayer.datasetId!;
+  // Don't offer an analysis the backend can't compute for this kind of area
+  // (e.g. tree cover gain for a protected area); the catalogue owns the rule.
+  if (!isAnalysableForSource(datasetId, selection.source)) return false;
   // Prefer the canonical catalogue name — it matches what sendMessage puts in
   // ui_context.dataset_selected — and fall back to the layer's display name.
   const datasetName =

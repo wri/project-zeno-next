@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
   fireEvent,
@@ -14,6 +15,8 @@ vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
   Toaster: () => null,
 }));
+
+vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
 
 // The static-map thumbnail reads the map store (maplibre); stub it out so the
 // picker renders without the map stack.
@@ -74,8 +77,9 @@ vi.mock("../../hooks/useCreateDashboard", () => ({
   }),
 }));
 
+const createAreaAsync = vi.hoisted(() => vi.fn());
 vi.mock("@/app/hooks/useCustomAreasCreate", () => ({
-  useCustomAreasCreate: () => ({ createAreaAsync: vi.fn(), isCreating: false }),
+  useCustomAreasCreate: () => ({ createAreaAsync, isCreating: false }),
 }));
 
 const renameAreaAsync = vi.fn();
@@ -85,13 +89,17 @@ vi.mock("@/app/hooks/useCustomAreasMutations", () => ({
   useCustomAreasDelete: () => ({ deleteAreaAsync, isDeleting: false }),
 }));
 
+import { toaster } from "@/app/components/ui/toaster";
+import { apiFetch } from "@/app/lib/api-client";
 import { NewDashboardScreen } from "../NewDashboardScreen";
 
 function renderScreen(): RenderResult {
   return render(
-    <ChakraProvider value={defaultSystem}>
-      <NewDashboardScreen />
-    </ChakraProvider>
+    <QueryClientProvider client={new QueryClient()}>
+      <ChakraProvider value={defaultSystem}>
+        <NewDashboardScreen />
+      </ChakraProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -194,6 +202,149 @@ describe("NewDashboardScreen", () => {
   it("shows a rename/delete menu only for custom-area rows", () => {
     renderScreen();
     expect(screen.getAllByLabelText("Area actions")).toHaveLength(1);
+  });
+
+  describe("area upload", () => {
+    const SQUARE = {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [30, 10],
+            [30, 10.5],
+            [30.5, 10.5],
+            [30.5, 10],
+            [30, 10],
+          ],
+        ],
+      },
+    };
+
+    async function uploadFile(file: File) {
+      fireEvent.click(screen.getByRole("button", { name: "Upload area" }));
+      fireEvent.change(await screen.findByLabelText("Area file"), {
+        target: { files: [file] },
+      });
+      await screen.findByText(new RegExp(file.name));
+      fireEvent.click(screen.getByRole("button", { name: /^upload$/i }));
+    }
+
+    beforeEach(() => {
+      vi.mocked(toaster.create).mockClear();
+      vi.mocked(apiFetch).mockReset();
+      createAreaAsync.mockReset();
+    });
+
+    it("opens the shared upload dialog, which accepts CSV and zip", async () => {
+      renderScreen();
+      fireEvent.click(screen.getByRole("button", { name: "Upload area" }));
+      const input = (await screen.findByLabelText(
+        "Area file"
+      )) as HTMLInputElement;
+      expect(input.accept).toBe(".geojson,.csv,.zip");
+      expect(
+        screen.getByText(/\.geojson up to 1 MB, or \.csv \/ zipped shapefile/)
+      ).toBeTruthy();
+    });
+
+    it("creates a dashboard for a single uploaded area and routes in", async () => {
+      createAreaAsync.mockResolvedValue({
+        id: "a1",
+        name: "Hidden Valley",
+        geometries: [],
+        created_at: "",
+        updated_at: "",
+      });
+      createDashboardAsync.mockResolvedValue({
+        id: "dash-9",
+        name: "Hidden Valley",
+      });
+      renderScreen();
+
+      await uploadFile(new File([JSON.stringify(SQUARE)], "area.geojson"));
+
+      await waitFor(() =>
+        expect(createDashboardAsync).toHaveBeenCalledWith({
+          aois: [
+            {
+              source: "custom",
+              src_id: "a1",
+              subtype: "custom-area",
+              name: "Hidden Valley",
+            },
+          ],
+        })
+      );
+      await waitFor(() =>
+        expect(pushSpy).toHaveBeenCalledWith("/dashboards/dash-9")
+      );
+    });
+
+    it("also picks a CSV upload that created exactly one area", async () => {
+      vi.mocked(apiFetch).mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            upload_batch_id: "b1",
+            areas: [{ id: "a7", name: "North" }],
+          }),
+          { status: 200 }
+        )
+      );
+      createDashboardAsync.mockResolvedValue({ id: "dash-7", name: "North" });
+      renderScreen();
+
+      await uploadFile(new File(["name,geom\n"], "areas.csv"));
+
+      await waitFor(() =>
+        expect(pushSpy).toHaveBeenCalledWith("/dashboards/dash-7")
+      );
+    });
+
+    it("toasts a batch count and leaves the pick to the user", async () => {
+      vi.mocked(apiFetch).mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            upload_batch_id: "b1",
+            areas: [
+              { id: "a1", name: "North" },
+              { id: "a2", name: "South" },
+            ],
+          }),
+          { status: 200 }
+        )
+      );
+      renderScreen();
+
+      await uploadFile(new File(["name,geom\n"], "areas.csv"));
+
+      await waitFor(() =>
+        expect(toaster.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "2 areas created",
+            description: "Pick one below to create a dashboard.",
+          })
+        )
+      );
+      expect(createDashboardAsync).not.toHaveBeenCalled();
+      expect(pushSpy).not.toHaveBeenCalled();
+    });
+
+    it("shows backend row errors inline", async () => {
+      vi.mocked(apiFetch).mockResolvedValue(
+        new Response(
+          JSON.stringify({ detail: { errors: ["row 3: invalid WKT"] } }),
+          { status: 422 }
+        )
+      );
+      renderScreen();
+
+      await uploadFile(new File(["name,geom\n"], "areas.csv"));
+
+      expect(await screen.findByText("row 3: invalid WKT")).toBeTruthy();
+      expect(toaster.create).not.toHaveBeenCalled();
+    });
   });
 
   describe("loading skeletons", () => {

@@ -21,3 +21,11 @@
 .select-area-popup * {
   pointer-events: none !important;
 }
+
+/* Boundary hover card: the card draws its own surface, so strip MapLibre's. */
+.area-tooltip-popup .maplibregl-popup-content {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}

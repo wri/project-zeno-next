@@ -78,6 +78,10 @@ export const CURATED_ANALYSES: readonly CuratedAnalysisEntry[] = [
     datasetId: 5,
     description: "Tree cover gain per reporting period",
     chartCountHint: 1,
+    // The analytics API fails the job for protected areas and KBAs ("Analysis
+    // failed. Result is not available.", verified 2026-09-24, PZB-1450). Lift
+    // once upstream supports them.
+    aoiSources: ["gadm"],
   },
   {
     datasetId: 6,
@@ -147,6 +151,13 @@ export interface CuratedCatalogueOptions {
   byId?: DatasetLookup;
 }
 
+/** Whether `entry` covers areas from `aoiSource` (any casing; "GADM" is a map layer id). */
+function coversSource(entry: CuratedAnalysisEntry, aoiSource: string): boolean {
+  return (
+    !entry.aoiSources || entry.aoiSources.includes(aoiSource.toLowerCase())
+  );
+}
+
 /** Whether this entry is offered at all, given the flags and the area. */
 function isOffered(
   entry: CuratedAnalysisEntry,
@@ -155,10 +166,21 @@ function isOffered(
   if (entry.featureFlag && !enabledFlags?.has(entry.featureFlag)) return false;
   // Without a known area nothing is filtered by source: the caller is asking
   // what the suite holds, not what it can run here.
-  if (entry.aoiSources && aoiSource !== undefined) {
-    return entry.aoiSources.includes(aoiSource);
-  }
-  return true;
+  return aoiSource === undefined || coversSource(entry, aoiSource);
+}
+
+/**
+ * Whether a dataset's analysis can run for an area from `aoiSource` — false
+ * only when its curated entry restricts sources and excludes this one. Feature
+ * flags are not considered: this answers "is the area covered?", for surfaces
+ * that pick the dataset some other way (the map's active layer).
+ */
+export function isAnalysableForSource(
+  datasetId: number,
+  aoiSource: string
+): boolean {
+  const entry = CURATED_ANALYSES.find((e) => e.datasetId === datasetId);
+  return !entry || coversSource(entry, aoiSource);
 }
 
 /**

@@ -33,6 +33,8 @@ export const DashboardInsightChartSchema = z.object({
   x_axis: z.string().default(""),
   y_axis: z.string().default(""),
   series_fields: z.array(z.string()).nullable().optional(),
+  // Names the category column of a long-format chart; empty or absent when wide.
+  color_field: z.string().nullable().optional(),
   chart_data: z.unknown(),
   // The catalogue dataset a curated chart was computed from; absent on older
   // rows and on AI-generated charts.

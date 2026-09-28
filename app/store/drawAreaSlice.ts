@@ -6,7 +6,7 @@ import { generateRandomName } from "../utils/generateRandomName";
 import bbox from "@turf/bbox";
 import type { MapState } from "./mapStore";
 import { calculateAreaKm2 } from "../utils/calculateAreaKm2";
-import { MIN_AREA_KM2, MAX_AREA_KM2 } from "../constants/custom-areas";
+import { MIN_AREA_KM2, MAX_AREA_KM2 } from "@/src/entities/custom-area";
 import type {
   CreateCustomAreaRequest,
   CreateCustomAreaResponse,

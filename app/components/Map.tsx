@@ -55,7 +55,14 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   useEffect(() => {
     registerPrimaryForestProtocol();
   }, []);
-  const { layers, handleLayerAction, aois, handleRemoveAoi } = useLegendHook();
+  const {
+    layers,
+    handleLayerAction,
+    aois,
+    handleRemoveAoi,
+    boundary,
+    handleRemoveBoundary,
+  } = useLegendHook();
   const basemapTheme =
     basemapOptions.find((o) => o.tileUrl === basemapTiles)?.theme ?? "light";
   const hasInsights = useInsightStore((s) => s.insights.length > 0);
@@ -170,7 +177,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <Layer id="background-tiles" type="raster" />
         </Source>
-        {(layers.length > 0 || aois.length > 0) && (
+        {(layers.length > 0 || aois.length > 0 || !!boundary) && (
           <Button
             variant="subtle"
             position="absolute"
@@ -253,6 +260,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
               onLayerAction={handleLayerAction}
               aois={aois}
               onRemoveAoi={handleRemoveAoi}
+              boundary={boundary}
+              onRemoveBoundary={handleRemoveBoundary}
             />
           </Box>
         </Flex>

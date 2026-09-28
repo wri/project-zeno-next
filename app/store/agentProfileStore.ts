@@ -8,9 +8,9 @@ import { create } from "zustand";
  * the URL with `/app/threads/:id` after the first message (dropping the query
  * param) — reading the live URL would silently disable the profile mid-thread.
  *
- * Whether the flag is actually sent is gated by user type at the call sites
- * (see `effectiveAgentProfile` in config/feature-flags), since the backend only
- * honours `ff` for admin/superuser/machine users.
+ * Whether the flag is actually sent is gated by user type (see
+ * `chatFeatureFlag` in config/feature-flags), since the backend only honours
+ * `ff` for admin/superuser/machine users.
  */
 
 const STORAGE_KEY = "agent_profile";

@@ -10,6 +10,7 @@ export type {
   InsightVerification,
 } from "./model/insight-record";
 export { chartsToWidgets } from "./lib/charts-to-widgets";
+export { pivotByColorField } from "./lib/pivot-color-field";
 export { chartBatchKey } from "./lib/chart-batch-key";
 export { orderInsightsForPager } from "./lib/order-insights";
 export { codeActParts, isCuratedInsight } from "./lib/is-curated-insight";
