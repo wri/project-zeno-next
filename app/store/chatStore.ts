@@ -45,7 +45,7 @@ import {
 import useAuthStore from "./authStore";
 import useInsightStore from "./insightStore";
 import { chatFeatureFlag } from "@/app/config/feature-flags";
-import { isFeatureEnabled } from "@/src/shared/lib/feature-flags/feature-flags";
+import { isFeatureEnabled } from "@/src/shared/lib/feature-flags";
 import { NET_FLUX_FEATURE_FLAG } from "@/app/constants/datasets";
 import useAgentProfileStore from "./agentProfileStore";
 import useViewContextStore from "./viewContextStore";
@@ -692,9 +692,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // turn. Agent picks arriving during the stream fold their slots on top.
     set({ lastSentContext: keys });
 
-    // Send an agent profile as `ff` only when the backend accepts it from this
-    // user type (else it 403s). `?ff=` carries over to the thread URL
-    // (`threadHref`), so reading it now matches what the catalog and map show.
+    // `?ff=` carries over to the thread URL (`threadHref`), so reading it now
+    // matches what the catalog and map show.
     const userType = useAuthStore.getState().userType;
     const viewContext = useViewContextStore.getState().viewContext;
     const ff = chatFeatureFlag(

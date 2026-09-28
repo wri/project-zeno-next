@@ -7,10 +7,8 @@ import type { UserType } from "@/app/schemas/api/admin/users/get";
  * `?agent_profile=<slug>`) is sent as `ff` on POST /api/chat and selects the
  * backend agent tool profile (see project-zeno `EXPERIMENTAL_PROFILE`).
  *
- * The backend rejects `ff` from non-privileged users (403), so the flag is only
- * applied for admin/superuser/machine accounts. These helpers are pure so both
- * the request builder (chatStore) and the render gate (MessageBubble) derive
- * the same effective value from a single place.
+ * The backend rejects `ff` from non-privileged users (403), except for the
+ * public `lgms` profile. `chatFeatureFlag` picks the value chatStore sends.
  *
  * Distinct from `src/shared/lib/feature-flags`, which gates FE-only hidden
  * features via the `?ff=` URL param.
@@ -38,17 +36,6 @@ export function canUseFeatureFlags(userType: UserType | null): boolean {
 }
 
 /**
- * The agent profile to send as `ff`, or null when it must be omitted (no
- * profile selected, or the user type isn't allowed to use feature flags).
- */
-export function effectiveAgentProfile(
-  agentProfile: string | null,
-  userType: UserType | null
-): string | null {
-  return agentProfile && canUseFeatureFlags(userType) ? agentProfile : null;
-}
-
-/**
  * The `ff` to send on POST /api/chat, or null to omit it. Privileged users get
  * their selected profile, defaulting to experimental (which holds the dashboard
  * tools and already reveals LGMS). Everyone else gets the public LGMS profile
@@ -60,14 +47,6 @@ export function chatFeatureFlag(
   userType: UserType | null,
   netFluxEnabled: boolean
 ): string | null {
-  if (canUseFeatureFlags(userType)) return agentProfile ?? EXPERIMENTAL_PROFILE;
+  if (canUseFeatureFlags(userType)) return agentProfile || EXPERIMENTAL_PROFILE;
   return netFluxEnabled ? LGMS_PROFILE : null;
-}
-
-/** Whether the experimental agent profile is active for this user. */
-export function isExperimentalProfileEnabled(
-  agentProfile: string | null,
-  userType: UserType | null
-): boolean {
-  return effectiveAgentProfile(agentProfile, userType) === EXPERIMENTAL_PROFILE;
 }
