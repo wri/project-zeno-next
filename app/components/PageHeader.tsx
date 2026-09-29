@@ -6,7 +6,6 @@ import {
   Heading,
   Button,
   IconButton,
-  Progress,
   Badge,
   Menu,
   Portal,
@@ -29,6 +28,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { motion, type Transition } from "framer-motion";
 import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
 import PreviewInfoPanel from "./PreviewInfoPanel";
+import PromptQuotaMeter from "./PromptQuotaMeter";
 
 import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
@@ -55,8 +55,7 @@ const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function PageHeader() {
-  const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
-    useAuthStore();
+  const { userEmail, isAuthenticated } = useAuthStore();
   const { toggleSidebar } = useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
@@ -459,6 +458,7 @@ function PageHeader() {
         ))}
       </Flex>
       <Flex gap="6" alignItems="center" hideBelow="md">
+        <PromptQuotaMeter />
         <Button
           variant="ghost"
           size="xs"
@@ -505,51 +505,6 @@ function PageHeader() {
           Help
         </ChakraLink>
 
-        <Progress.Root
-          size="xs"
-          min={0}
-          max={100}
-          value={totalPrompts > 0 ? (usedPrompts / totalPrompts) * 100 : 0}
-          minW="100px"
-          mt="1"
-          mb="2"
-          textAlign="center"
-          rounded="full"
-          colorPalette="primary"
-        >
-          <Progress.Label
-            mb="0.5"
-            fontSize="xs"
-            lineHeight="1.5"
-            fontWeight="normal"
-            whiteSpace="nowrap"
-            color={isPrototype ? "#6b7280" : "#656E7B"}
-          >
-            {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} daily
-            prompts
-            <Tooltip
-              content={
-                totalPrompts > 5000
-                  ? "You have unlimited prompts!"
-                  : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
-              }
-              showArrow
-            >
-              <Text
-                as="span"
-                display="inline-block"
-                ml="1"
-                verticalAlign="text-bottom"
-                cursor="help"
-              >
-                <InfoIcon size={12} />
-              </Text>
-            </Tooltip>
-          </Progress.Label>
-          <Progress.Track bg={isPrototype ? "#6b7280" : "#E0E2E5"} maxH="4px">
-            <Progress.Range bg={isPrototype ? "#1f2937" : "#0049AA"} />
-          </Progress.Track>
-        </Progress.Root>
         {isAuthenticated ? (
           <Menu.Root positioning={{ placement: "bottom-end" }}>
             <Menu.Trigger asChild>
