@@ -74,7 +74,7 @@ function PromptQuotaMeter() {
         aria-label="Daily prompts used"
         aria-valuemin={0}
         aria-valuemax={totalPrompts}
-        aria-valuenow={usedPrompts}
+        aria-valuenow={Math.min(usedPrompts, totalPrompts)}
         h="4px"
         bg={METER_TRACK}
         rounded="full"
