@@ -1,8 +1,5 @@
-"use client";
-
 import { useEffect } from "react";
-
-import { useRouter } from "@/app/lib/router";
+import { useRouter } from "@/src/shared/lib/router";
 
 import { toaster } from "@/app/components/ui/toaster";
 import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";

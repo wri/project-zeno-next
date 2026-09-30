@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
-  // Next's tsconfig sets `jsx: "preserve"`; the React plugin transforms JSX for
+  // tsconfig sets `jsx: "preserve"`; the React plugin transforms JSX for
   // component/hook tests (esbuild alone honors tsconfig and leaves it untouched).
   plugins: [react()],
   resolve: {

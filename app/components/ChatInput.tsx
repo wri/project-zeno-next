@@ -31,7 +31,7 @@ import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
-import { useRouter, usePathname } from "@/app/lib/router";
+import { useRouter, usePathname } from "@/src/shared/lib/router";
 import {
   firstMessageRedirectPath,
   isAppRoute,
@@ -119,10 +119,7 @@ export default function ChatInput({
   const prefersReducedMotion = usePrefersReducedMotion();
   const dictationBaseRef = useRef("");
   const speech = useSpeechInput({
-    initialLang: resolveSpeechLang(
-      preferredLanguageCode,
-      typeof navigator !== "undefined" ? navigator.language : null
-    ),
+    initialLang: resolveSpeechLang(preferredLanguageCode, navigator.language),
     onStart: () => {
       dictationBaseRef.current = inputValue.trim()
         ? `${inputValue.trim()} `

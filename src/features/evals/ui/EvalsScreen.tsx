@@ -15,7 +15,7 @@ import {
   ListChecksIcon,
   TargetIcon,
 } from "@phosphor-icons/react";
-import { useRouter, useSearchParams } from "@/app/lib/router";
+import { useRouter, useSearchParams } from "@/src/shared/lib/router";
 import type { EvalSet } from "../model/types";
 import { EVALS_DATA_BRANCH } from "../api/github";
 import { CoverageTab } from "./CoverageTab";

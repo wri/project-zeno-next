@@ -1,3 +1,3 @@
 # src/app
 
-FSD **app** layer (placeholder). No slices yet — created so the FSD structure is in place. Populate as features migrate.
+FSD **app** layer: the application entry. `main.tsx` mounts the app and defines the route table (React Router, data mode); pages under `app/` are loaded as lazy routes.
