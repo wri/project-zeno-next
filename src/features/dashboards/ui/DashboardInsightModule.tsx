@@ -41,7 +41,9 @@ import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
  * widget has shown charts: its three time-series roll-ups fold into the one
  * the DETAIL pill selects, so the module reads as two charts rather than
  * four, as it does on the map. The Customize menu still lists all four —
- * which charts a widget holds stays the owner's business.
+ * which charts a widget holds stays the owner's business. An insight with a
+ * single piece (one chart, no summary, like a template's alerts chart) has
+ * nothing to customize, so it has no menu.
  *
  * Mutation-agnostic on purpose: every config edit flows through
  * `onUpdateConfig` with a full config built by the `with*` helpers (the
@@ -132,21 +134,23 @@ export default function DashboardInsightModule({
         onRequestRemove={() => setConfirmOpen(true)}
         onRemove={onRemove}
         headerActions={
-          <DashboardModuleCustomizeMenu
-            summaryAvailable={vm.summaryText.length > 0}
-            summaryShown={vm.summaryShown}
-            charts={vm.allCharts}
-            onToggleSummary={(shown) =>
-              onUpdateConfig(withSummaryShown(widget.config, shown))
-            }
-            onToggleChart={(chartId, shown) =>
-              onUpdateConfig(
-                shown
-                  ? withChartShown(widget.config, chartId, allChartIds)
-                  : withChartHidden(widget.config, chartId, allChartIds)
-              )
-            }
-          />
+          vm.customizable && (
+            <DashboardModuleCustomizeMenu
+              summaryAvailable={vm.summaryText.length > 0}
+              summaryShown={vm.summaryShown}
+              charts={vm.allCharts}
+              onToggleSummary={(shown) =>
+                onUpdateConfig(withSummaryShown(widget.config, shown))
+              }
+              onToggleChart={(chartId, shown) =>
+                onUpdateConfig(
+                  shown
+                    ? withChartShown(widget.config, chartId, allChartIds)
+                    : withChartHidden(widget.config, chartId, allChartIds)
+                )
+              }
+            />
+          )
         }
         intro={
           showSummary || (card && hasChartPills(card)) ? (

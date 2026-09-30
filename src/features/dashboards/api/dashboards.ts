@@ -3,10 +3,12 @@ import {
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
   DashboardResponseSchema,
+  SectionFromTemplateResponseSchema,
   type AnalysisTemplate,
   type AoiSearchResult,
   type Dashboard,
   type DashboardCreateRequest,
+  type SectionFromTemplateResponse,
 } from "./schemas";
 import { readJson } from "./http";
 import { apiFetch } from "@/app/lib/api-client";
@@ -114,12 +116,54 @@ export async function updateWidget(
   );
 }
 
-// Reorders a section. The backend accepts title/description too, but only
-// position has a caller yet (the section drag).
+// Adds an empty section, appended after the last one (the "Create new
+// section" suggested module). The response is the dashboard without insight
+// expansion, so it is returned for its section list only — callers refetch
+// the detail to render.
+export async function addSection(
+  dashboardId: string,
+  title: string
+): Promise<Dashboard> {
+  const data = await readJson<unknown>(
+    `/api/dashboards/${dashboardId}/sections`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    }
+  );
+  return DashboardResponseSchema.parse(data);
+}
+
+// Builds a new section from an analysis template, for the dashboard's first
+// area. Synchronous and slow (tens of seconds: an analytics pull, an imagery
+// search and a model call). `args` the caller leaves out get the template's
+// defaults. 422 is bad args or a dashboard with no area, 502 a required
+// widget that failed (nothing is written).
+export async function applyAnalysisTemplate(
+  dashboardId: string,
+  template: string,
+  args: Record<string, unknown> = {}
+): Promise<SectionFromTemplateResponse> {
+  const data = await readJson<unknown>(
+    `/api/dashboards/${dashboardId}/sections/from-template`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ template, args }),
+    }
+  );
+  return SectionFromTemplateResponseSchema.parse(data);
+}
+
+// Reorders (the section drag) or retitles a section. The backend accepts a
+// description too, which has no caller yet. The response is the dashboard
+// without insight expansion, so it is ignored — callers update the cache
+// optimistically and refetch.
 export async function updateSection(
   dashboardId: string,
   sectionId: string,
-  patch: { position: number }
+  patch: { position?: number; title?: string }
 ): Promise<void> {
   await readJson<unknown>(
     `/api/dashboards/${dashboardId}/sections/${sectionId}`,
@@ -166,6 +210,26 @@ export async function addTextWidget(dashboardId: string): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
   });
+}
+
+// Deletes a section. With `deleteWidgets` its widgets go too; without, they
+// fall back to the ungrouped top level. Either way the insights the widgets
+// referenced are left intact.
+export async function deleteSection(
+  dashboardId: string,
+  sectionId: string,
+  deleteWidgets: boolean
+): Promise<void> {
+  // 204 No Content — bypass readJson, which would choke on the empty body.
+  const res = await apiFetch(
+    `/api/dashboards/${dashboardId}/sections/${sectionId}?delete_widgets=${deleteWidgets}`,
+    { method: "DELETE" }
+  );
+  if (!res.ok) {
+    const error = new Error(`Failed to delete section: ${res.statusText}`);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
+  }
 }
 
 export async function deleteWidget(

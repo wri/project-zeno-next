@@ -5,7 +5,11 @@ vi.mock("@/app/lib/api-client", () => ({
 }));
 
 import { apiFetch } from "@/app/lib/api-client";
-import { addTextWidget } from "../api/dashboards";
+import {
+  addSection,
+  addTextWidget,
+  applyAnalysisTemplate,
+} from "../api/dashboards";
 import {
   AoiSearchResponseSchema,
   DashboardListResponseSchema,
@@ -173,5 +177,88 @@ describe("addTextWidget", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
     });
+  });
+});
+
+const DASHBOARD_BODY = {
+  id: "d1",
+  user_id: "u1",
+  name: "Paraná",
+  is_public: false,
+  created_at: "2026-09-01T00:00:00Z",
+  updated_at: "2026-09-01T00:00:00Z",
+};
+
+describe("addSection", () => {
+  it("posts the title and returns the dashboard's sections", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ...DASHBOARD_BODY,
+          sections: [
+            {
+              id: "s1",
+              title: "New section",
+              position: 0,
+              created_at: "2026-09-01T00:00:00Z",
+            },
+          ],
+        }),
+        { status: 201 }
+      )
+    );
+
+    const dashboard = await addSection("d1", "New section");
+
+    expect(apiFetch).toHaveBeenCalledWith("/api/dashboards/d1/sections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "New section" }),
+    });
+    expect(dashboard.sections.map((s) => s.id)).toEqual(["s1"]);
+  });
+});
+
+describe("applyAnalysisTemplate", () => {
+  it("posts the template with empty args by default, so the backend fills in the defaults", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          section_id: "s1",
+          widget_ids: ["w1", "w2"],
+          warnings: ["No cloud-free imagery in the period."],
+          dashboard: DASHBOARD_BODY,
+        }),
+        { status: 201 }
+      )
+    );
+
+    const result = await applyAnalysisTemplate("d1", "nrt-monitoring");
+
+    expect(apiFetch).toHaveBeenCalledWith(
+      "/api/dashboards/d1/sections/from-template",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template: "nrt-monitoring", args: {} }),
+      }
+    );
+    expect(result.section_id).toBe("s1");
+    expect(result.warnings).toEqual(["No cloud-free imagery in the period."]);
+    expect(result.dashboard.id).toBe("d1");
+  });
+
+  it("carries the status of a failed request, so the caller can name the cause", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(JSON.stringify({ detail: "analytics pull failed" }), {
+        status: 502,
+      })
+    );
+
+    const error = await applyAnalysisTemplate("d1", "nrt-monitoring").catch(
+      (e: unknown) => e
+    );
+
+    expect((error as { status?: number }).status).toBe(502);
   });
 });

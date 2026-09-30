@@ -6,6 +6,7 @@ import {
   curatedTileStatus,
   SUGGESTED_MODULES,
   SUGGESTED_PROMPT_MODULES,
+  SUMMARISE_DASHBOARD_MODULE,
 } from "../suggested-modules";
 
 describe("SUGGESTED_MODULES", () => {
@@ -54,7 +55,6 @@ describe("SUGGESTED_PROMPT_MODULES", () => {
     expect(SUGGESTED_PROMPT_MODULES.map((m) => m.id)).toEqual([
       "compare-regions",
       "recent-satellite-imagery",
-      "summarise-dashboard",
     ]);
     for (const card of SUGGESTED_PROMPT_MODULES) {
       expect(card.prompt.trim()).not.toBe("");
@@ -82,11 +82,15 @@ describe("SUGGESTED_PROMPT_MODULES", () => {
   });
 
   it("has the dashboard-summary card ask for a text block, but not a fresh analysis", () => {
-    const summary = SUGGESTED_PROMPT_MODULES.find(
-      (m) => m.id === "summarise-dashboard"
+    const summary = SUMMARISE_DASHBOARD_MODULE;
+    expect(summary.promptKind).toBe("action");
+    expect(summary.prompt.toLowerCase()).toContain("text block");
+  });
+
+  it("keeps the dashboard-summary card out of the lime modules", () => {
+    expect(SUGGESTED_MODULES.map((m) => m.id)).not.toContain(
+      SUMMARISE_DASHBOARD_MODULE.id
     );
-    expect(summary?.promptKind).toBe("action");
-    expect(summary?.prompt.toLowerCase()).toContain("text block");
   });
 });
 

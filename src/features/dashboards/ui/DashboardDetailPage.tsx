@@ -16,9 +16,9 @@ import { useDashboard } from "./dashboardQueries";
 import { usePendingInsightWidgets } from "./usePendingInsightWidget";
 import DashboardBreadcrumb from "./DashboardBreadcrumb";
 import DashboardEmptyStateHero from "./DashboardEmptyStateHero";
+import DashboardFooter from "./DashboardFooter";
 import DashboardHeader from "./DashboardHeader";
 import DashboardPinnedHeader from "./DashboardPinnedHeader";
-import DashboardSuggestedModules from "./DashboardSuggestedModules";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 import { HERO_BAND_PROPS } from "./heroGrid";
 
@@ -35,6 +35,15 @@ export default function DashboardDetailPage() {
   // from the empty-state hero as soon as its loading module has something to
   // show, not once the whole run-then-add chain has landed.
   const pendingWidgets = usePendingInsightWidgets(dashboardId);
+  const hasContent =
+    !!dashboard &&
+    hasDashboardContent(dashboard, {
+      isOwner,
+      pendingCount: pendingWidgets.length,
+    });
+  // The footer's white band runs under a populated dashboard; an empty one
+  // carries the footer inside its hero instead, and a viewer gets none.
+  const showFooterBand = hasContent && isOwner;
 
   useEffect(() => {
     // The dashboard agent tools are gated behind ?agent_profile=…; capture it
@@ -63,9 +72,11 @@ export default function DashboardDetailPage() {
     <Box
       bg="#F4F5F6"
       minH="calc(100vh - 40px)"
-      // 24px nav-to-breadcrumb per the Figma page shell; roomier bottom.
+      // A column so the footer band can stretch to the bottom of the page.
+      display="flex"
+      flexDir="column"
+      // 24px nav-to-breadcrumb per the Figma page shell.
       pt={6}
-      pb={{ base: 8, md: 10 }}
       pl={{
         base: 0,
         md: `${contentLeftPx}px`,
@@ -98,7 +109,7 @@ export default function DashboardDetailPage() {
           contentLeftPx={contentLeftPx}
         />
       )}
-      <Container maxW="1232px">
+      <Container maxW="1232px" pb={{ base: 8, md: 10 }}>
         <Flex direction="column" gap="12px">
           {/* While the condensed header is pinned it carries live copies of
               these controls, so the scrolled-away originals leave the tab
@@ -141,17 +152,8 @@ export default function DashboardDetailPage() {
                 </Box>
               </Box>
 
-              {hasDashboardContent(
-                dashboard.widgets.length,
-                pendingWidgets.length
-              ) ? (
-                <>
-                  <DashboardWidgetsGrid dashboard={dashboard} />
-                  <DashboardSuggestedModules
-                    dashboard={dashboard}
-                    isOwner={isOwner}
-                  />
-                </>
+              {hasContent ? (
+                <DashboardWidgetsGrid dashboard={dashboard} />
               ) : (
                 <DashboardEmptyStateHero
                   dashboard={dashboard}
@@ -162,6 +164,21 @@ export default function DashboardDetailPage() {
           )}
         </Flex>
       </Container>
+      {showFooterBand && dashboard && (
+        // Full width, per the design: the footer reads as the page's own
+        // ground, where the grey above is the gutter between panels.
+        <Box
+          flex="1"
+          bg="white"
+          mt={{ base: 0, md: "64px" }}
+          pt={{ base: 8, md: "72px" }}
+          pb={{ base: 8, md: "96px" }}
+        >
+          <Container maxW="1232px">
+            <DashboardFooter dashboard={dashboard} />
+          </Container>
+        </Box>
+      )}
     </Box>
   );
 }

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Flex, Heading, IconButton, Text } from "@chakra-ui/react";
+import { Box, Flex, Heading, IconButton, Input, Text } from "@chakra-ui/react";
 import {
   CaretDownIcon,
   DotsSixVerticalIcon,
+  PencilSimpleIcon,
   ShapesIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 
 import InsightCaption from "@/app/components/InsightCaption";
@@ -14,12 +16,9 @@ import type {
   DashboardSection as Section,
 } from "../api/schemas";
 import { useAnalysisTemplates } from "./dashboardQueries";
+import DeleteSectionDialog from "./DeleteSectionDialog";
+import { TEMPLATE_FILL, TEMPLATE_OUTLINE } from "./templateColors";
 import { DROP_ZONE_ATTR } from "./useDrag";
-
-// The design's lime pair. The theme's secondary scale has no exact match
-// (secondary.200 is #F0F4B4, secondary.400 #CAD470), so these stay literal.
-const TEMPLATE_FILL = "#F0F9B9";
-const TEMPLATE_OUTLINE = "#C3D16F";
 
 /**
  * The lime strip that names the template a section was built from. Its own
@@ -78,6 +77,10 @@ function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
  * Collapsing is view-only state, never persisted, so it can't race the agent's
  * own edits to the section.
  *
+ * The owner can rename a section (the pencil, inline like a widget title)
+ * and delete it (the X). Deleting a section that holds modules asks whether
+ * they go with it or stay on the dashboard; an empty one goes at once.
+ *
  * A section an analysis template built wears a lime outline and a banner
  * naming the template. The banner is its provenance, so it replaces the
  * agent's caption on the title row.
@@ -96,6 +99,10 @@ export default function DashboardSection({
    * the same reorder the drag performs. At either end it is a no-op.
    */
   onMove,
+  /** How many modules the section holds; decides whether a delete asks. */
+  moduleCount = 0,
+  onRename,
+  onDelete,
   children,
 }: {
   section: Section | null;
@@ -104,10 +111,25 @@ export default function DashboardSection({
   isOwner?: boolean;
   onArmDrag?: (event: React.PointerEvent) => void;
   onMove?: (delta: -1 | 1) => void;
+  moduleCount?: number;
+  onRename?: (title: string) => void;
+  /** `deleteWidgets`: the section's modules go with it. */
+  onDelete?: (deleteWidgets: boolean) => void;
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  // null = not editing; a string is the in-progress title draft.
+  const [draft, setDraft] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const template = section?.template ?? null;
+
+  const commitRename = () => {
+    const title = draft?.trim();
+    setDraft(null);
+    // The backend requires a title, so a blank draft keeps the old one.
+    if (!title || title === section?.title) return;
+    onRename?.(title);
+  };
 
   return (
     <Flex
@@ -190,21 +212,43 @@ export default function DashboardSection({
                   }}
                 />
               </IconButton>
-              <Heading
-                as="h2"
-                flex="1"
-                minW={0}
-                fontSize="20px"
-                lineHeight="28px"
-                fontWeight="normal"
-                color="fg"
-                // The theme's globalCss gives every h2 a 16px margin-bottom,
-                // which would double the gap this block already sets.
-                mb="0"
-                wordBreak="break-word"
-              >
-                {section.title}
-              </Heading>
+              {draft !== null ? (
+                <Input
+                  flex="1"
+                  minW={0}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename();
+                    if (e.key === "Escape") setDraft(null);
+                  }}
+                  autoFocus
+                  aria-label="Section title"
+                  // The backend caps a section title at 100 characters.
+                  maxLength={100}
+                  variant="flushed"
+                  fontSize="20px"
+                  lineHeight="28px"
+                  h="28px"
+                />
+              ) : (
+                <Heading
+                  as="h2"
+                  flex="1"
+                  minW={0}
+                  fontSize="20px"
+                  lineHeight="28px"
+                  fontWeight="normal"
+                  color="fg"
+                  // The theme's globalCss gives every h2 a 16px margin-bottom,
+                  // which would double the gap this block already sets.
+                  mb="0"
+                  wordBreak="break-word"
+                >
+                  {section.title}
+                </Heading>
+              )}
               {/* The section is the agent's, so it carries the same provenance
                 caption an analysis does — parked at the end of the title row
                 so it labels the block without interrupting the reading order
@@ -213,6 +257,36 @@ export default function DashboardSection({
                 <Box flexShrink={0}>
                   <InsightCaption />
                 </Box>
+              )}
+              {isOwner && (onRename || onDelete) && (
+                <Flex align="center" gap="4px" flexShrink={0} ml="8px">
+                  {onRename && draft === null && (
+                    <IconButton
+                      aria-label="Rename section"
+                      title="Rename section"
+                      size="2xs"
+                      variant="ghost"
+                      color="fg.muted"
+                      onClick={() => setDraft(section.title)}
+                    >
+                      <PencilSimpleIcon size={16} />
+                    </IconButton>
+                  )}
+                  {onDelete && (
+                    <IconButton
+                      aria-label="Delete section"
+                      title="Delete section"
+                      size="2xs"
+                      variant="ghost"
+                      color="fg.muted"
+                      onClick={() =>
+                        moduleCount > 0 ? setConfirmOpen(true) : onDelete(false)
+                      }
+                    >
+                      <XIcon size={16} />
+                    </IconButton>
+                  )}
+                </Flex>
               )}
             </Flex>
             {section.description?.trim() && (
@@ -233,6 +307,15 @@ export default function DashboardSection({
           section's title reads as "into this section". */}
         <Box hidden={collapsed}>{children}</Box>
       </Flex>
+      {section && onDelete && (
+        <DeleteSectionDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          title={section.title}
+          moduleCount={moduleCount}
+          onConfirm={onDelete}
+        />
+      )}
     </Flex>
   );
 }

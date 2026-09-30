@@ -4,14 +4,15 @@ import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 
 import type { Dashboard } from "../api/schemas";
-import DashboardSuggestedModules from "./DashboardSuggestedModules";
+import DashboardFooter from "./DashboardFooter";
 
 /**
  * The dashboard's zero-widget state (Figma "Dashboard Empty state_No active
  * dataset", node 1472:4106) — a dashed hero panel inviting the owner to fill
- * the dashboard in, wrapping the same `DashboardSuggestedModules` row shown
- * once the dashboard has content. `DashboardDetailPage` swaps between this
- * and the widget grid on widget count, never both at once.
+ * the dashboard in, wrapping the same `DashboardFooter` (analysis templates,
+ * suggested modules) shown once the dashboard has content.
+ * `DashboardDetailPage` swaps between this and the widget grid on
+ * `hasDashboardContent`, never both at once.
  */
 export default function DashboardEmptyStateHero({
   dashboard,
@@ -52,13 +53,11 @@ export default function DashboardEmptyStateHero({
           </Text>
         </Flex>
       </Flex>
-      <Box w="full">
-        <DashboardSuggestedModules
-          dashboard={dashboard}
-          isOwner={isOwner}
-          mt={0}
-        />
-      </Box>
+      {isOwner && (
+        <Box w="full">
+          <DashboardFooter dashboard={dashboard} gap="48px" />
+        </Box>
+      )}
     </Flex>
   );
 }

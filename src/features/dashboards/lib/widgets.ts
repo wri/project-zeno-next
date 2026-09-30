@@ -5,7 +5,8 @@ import {
   pivotByColorField,
 } from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
-import type { DashboardWidget } from "../api/schemas";
+import type { Dashboard, DashboardWidget } from "../api/schemas";
+import { widgetContainers } from "../model/dashboard-sections";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 
 // Chart types the chart widget can render (InsightWidget["type"] minus
@@ -283,6 +284,13 @@ export interface InsightModuleView {
   curated: boolean;
   cards: InsightWidget[];
   allCharts: { id: string; title: string; shown: boolean }[];
+  /**
+   * Whether the Customize menu has a choice to offer. Its rows toggle the
+   * pieces the insight holds — the summary and each chart — so with a single
+   * piece the only toggle blanks the card (removing it is the X's job). A
+   * piece already hidden keeps the menu, so it can be shown again.
+   */
+  customizable: boolean;
 }
 
 export function insightModule(
@@ -298,12 +306,17 @@ export function insightModule(
       charts.map((c) => c.id)
     )
   );
+  const summaryText = widget.insight?.insight_text?.trim()
+    ? widget.insight.insight_text
+    : "";
+  const summaryShown = isSummaryShown(widget.config);
+  const pieces = charts.length + (summaryText ? 1 : 0);
+  const anyHidden =
+    charts.some((c) => !shown.has(c.id)) || (!!summaryText && !summaryShown);
   return {
     title: moduleTitle(widget),
-    summaryText: widget.insight?.insight_text?.trim()
-      ? widget.insight.insight_text
-      : "",
-    summaryShown: isSummaryShown(widget.config),
+    summaryText,
+    summaryShown,
     curated: isCuratedInsight(widget.insight?.codeact_parts),
     cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
     allCharts: charts.map((chart) => ({
@@ -311,6 +324,7 @@ export function insightModule(
       title: chartTitleOverride(widget.config, chart.id) ?? chart.title,
       shown: shown.has(chart.id),
     })),
+    customizable: pieces > 1 || anyHidden,
   };
 }
 
@@ -338,15 +352,21 @@ export function findCuratedWidgetForDataset(
 
 /**
  * Whether the dashboard page shows the widget grid rather than the empty-state
- * hero. A curated analysis on its way onto the dashboard counts as content:
- * its loading module must appear the moment the user toggles the card, even
- * on a dashboard that has no widgets yet.
+ * hero: whether the grid has anything to render. That is asked of the grid's
+ * own grouping, so the two cannot disagree — an owner's empty section counts
+ * (the grid keeps it, so "Create new section" on an empty dashboard leaves a
+ * section on screen), a viewer's does not. A curated analysis on its way onto
+ * the dashboard counts too: its loading module must appear the moment the
+ * user toggles the card, even on a dashboard that has no widgets yet.
  */
 export function hasDashboardContent(
-  widgetCount: number,
-  pendingCount: number
+  dashboard: Dashboard,
+  { isOwner, pendingCount }: { isOwner: boolean; pendingCount: number }
 ): boolean {
-  return widgetCount > 0 || pendingCount > 0;
+  return (
+    pendingCount > 0 ||
+    widgetContainers(dashboard, { keepEmptySections: isOwner }).length > 0
+  );
 }
 
 /**
