@@ -20,6 +20,14 @@ const updateWidget = vi
     (dashboardId: string, widgetId: string, patch: unknown) => Promise<void>
   >()
   .mockResolvedValue(undefined);
+const listAnalysisTemplates = vi.fn().mockResolvedValue([
+  {
+    name: "nrt-monitoring",
+    label: "Near-real-time monitoring",
+    args_schema: {},
+    widgets: ["chart", "layer", "imagery"],
+  },
+]);
 const updateSection = vi
   .fn<
     (dashboardId: string, sectionId: string, patch: unknown) => Promise<void>
@@ -31,6 +39,7 @@ vi.mock("../../api/dashboards", async (importOriginal) => ({
     updateWidget(dashboardId, widgetId, patch),
   updateSection: (dashboardId: string, sectionId: string, patch: unknown) =>
     updateSection(dashboardId, sectionId, patch),
+  listAnalysisTemplates: () => listAnalysisTemplates(),
 }));
 
 import DashboardWidgetsGrid from "../DashboardWidgetsGrid";
@@ -67,6 +76,7 @@ const section = (
   title,
   description,
   position,
+  template: null,
   created_at: "2026-09-01T00:00:00Z",
 });
 
@@ -108,6 +118,39 @@ describe("DashboardWidgetsGrid sections", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("bands a template-built section with a banner naming the template", async () => {
+    renderGrid(
+      dashboard(
+        [
+          {
+            ...section("s1", "Recent disturbance alerts", 0),
+            template: {
+              name: "nrt-monitoring",
+              args: { days: 14 },
+              start_date: "2026-09-11",
+              end_date: "2026-09-25",
+              built_at: "2026-09-25T10:00:00Z",
+            },
+          },
+          section("s2", "Hand-made", 1),
+        ],
+        []
+      )
+    );
+
+    // The registry's label replaces the raw name once it arrives.
+    expect(await screen.findByText("Near-real-time monitoring")).toBeTruthy();
+    expect(screen.getAllByText(/Analysis template:/)).toHaveLength(1);
+    expect(listAnalysisTemplates).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not fetch the template registry when no section is templated", () => {
+    listAnalysisTemplates.mockClear();
+    renderGrid(dashboard([section("s1", "Hand-made", 0)], []));
+    expect(screen.queryByText(/Analysis template:/)).toBeNull();
+    expect(listAnalysisTemplates).not.toHaveBeenCalled();
   });
 
   it("groups widgets under their section headings, ungrouped content first", () => {
