@@ -1,0 +1,42 @@
+/**
+ * Public API of the `front-door` feature (FSD slice).
+ *
+ * The lower-friction way into GNW: after the Resource Watch sign-in, one
+ * consent screen, then the first answer; the profile is asked for later, in
+ * the chat, and prefilled from MyGFW when possible. Currently wired only into
+ * the /onboarding-debug/front-door preview. Consumers import ONLY from this barrel.
+ */
+export { WelcomeConsent, type WelcomeConsentProps } from "./ui/WelcomeConsent";
+export {
+  ProfilePromptCard,
+  type ProfilePromptCardProps,
+} from "./ui/ProfilePromptCard";
+export {
+  ProfileNudgeBanner,
+  type ProfileNudgeBannerProps,
+} from "./ui/ProfileNudgeBanner";
+export {
+  CompleteProfileMenuItem,
+  type CompleteProfileMenuItemProps,
+} from "./ui/CompleteProfileMenuItem";
+export {
+  INITIAL_PROFILE_ASK_STATE,
+  MAX_PROFILE_DISMISSALS,
+  NTH_QUESTION_ASK,
+  askMomentAfterAnswer,
+  recordProfileAsked,
+  recordProfileCompleted,
+  recordProfileDismissed,
+  shouldAskForProfile,
+  showProfileMenuReminder,
+  startNewSession,
+  type ProfileAskMoment,
+  type ProfileAskState,
+} from "./model/profile-ask";
+export {
+  profileCardMode,
+  type ProfileCardOptions,
+  type ProfileCardPatch,
+  type ProfileSuggestion,
+} from "./model/profile-card";
+export { continueUrl, pendingPrompt } from "./lib/continue-url";
