@@ -130,7 +130,10 @@ export function withSectionRemoved(
   sectionId: string,
   deleteWidgets: boolean
 ): Dashboard {
-  const sections = dashboard.sections.filter((s) => s.id !== sectionId);
+  const sections = dashboard.sections
+    .filter((s) => s.id !== sectionId)
+    .sort(byPosition)
+    .map((s, position) => ({ ...s, position }));
   const inSection = (w: DashboardWidget) => w.section_id === sectionId;
   if (deleteWidgets) {
     return {
