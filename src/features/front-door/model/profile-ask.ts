@@ -26,7 +26,7 @@ export interface ProfileAskState {
 /** After this many "Not now"s, only the account-menu reminder remains. */
 export const MAX_PROFILE_DISMISSALS = 3;
 
-/** The question count that earns a second, lighter ask (banner). */
+/** The answer in a session that earns a later, lighter ask (banner). */
 export const NTH_QUESTION_ASK = 5;
 
 export const INITIAL_PROFILE_ASK_STATE: ProfileAskState = {
@@ -46,15 +46,24 @@ export function shouldAskForProfile(
   return state.dismissals < MAX_PROFILE_DISMISSALS;
 }
 
+export interface AnswerCounts {
+  /** Answers the person has ever received, including this one. */
+  lifetime: number;
+  /** Answers in the current browser session, including this one. */
+  session: number;
+}
+
 /**
- * The moment reached after the `answerCount`-th completed answer in a session,
- * or null when that answer isn't one we ask after.
+ * The moment reached after an answer, or null when it isn't one we ask after.
+ * "First answer" means the person's first ever, not the first of each session:
+ * otherwise it would use up every session's single ask and the later, lighter
+ * asks would never be reached.
  */
 export function askMomentAfterAnswer(
-  answerCount: number
+  counts: AnswerCounts
 ): ProfileAskMoment | null {
-  if (answerCount === 1) return "first_answer";
-  if (answerCount === NTH_QUESTION_ASK) return "nth_question";
+  if (counts.lifetime === 1) return "first_answer";
+  if (counts.session === NTH_QUESTION_ASK) return "nth_question";
   return null;
 }
 

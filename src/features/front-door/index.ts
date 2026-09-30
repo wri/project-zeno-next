@@ -30,6 +30,7 @@ export {
   shouldAskForProfile,
   showProfileMenuReminder,
   startNewSession,
+  type AnswerCounts,
   type ProfileAskMoment,
   type ProfileAskState,
 } from "./model/profile-ask";

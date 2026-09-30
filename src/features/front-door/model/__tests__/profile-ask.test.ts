@@ -54,14 +54,27 @@ describe("shouldAskForProfile", () => {
 });
 
 describe("askMomentAfterAnswer", () => {
-  it("maps the first and nth answers to ask moments", () => {
-    expect(askMomentAfterAnswer(1)).toBe("first_answer");
-    expect(askMomentAfterAnswer(NTH_QUESTION_ASK)).toBe("nth_question");
+  it("asks after the person's first ever answer", () => {
+    expect(askMomentAfterAnswer({ lifetime: 1, session: 1 })).toBe(
+      "first_answer"
+    );
+  });
+
+  it("doesn't treat the first answer of a later session as the first answer", () => {
+    expect(askMomentAfterAnswer({ lifetime: 8, session: 1 })).toBeNull();
+  });
+
+  it("asks at the nth answer of a session", () => {
+    expect(
+      askMomentAfterAnswer({ lifetime: 12, session: NTH_QUESTION_ASK })
+    ).toBe("nth_question");
   });
 
   it("returns null for answers in between", () => {
-    expect(askMomentAfterAnswer(2)).toBeNull();
-    expect(askMomentAfterAnswer(NTH_QUESTION_ASK + 1)).toBeNull();
+    expect(askMomentAfterAnswer({ lifetime: 2, session: 2 })).toBeNull();
+    expect(
+      askMomentAfterAnswer({ lifetime: 20, session: NTH_QUESTION_ASK + 1 })
+    ).toBeNull();
   });
 });
 
