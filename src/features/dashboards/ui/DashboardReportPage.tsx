@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -20,6 +20,7 @@ import {
   DASHBOARD_ACTION_PROPS,
   DASHBOARD_TITLE_PROPS,
 } from "./DashboardHeader";
+import { PRINT_READY_ATTR } from "./DashboardMapWidget";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 
 /** The printout's page margin; the paper column is sized against it. */
@@ -37,20 +38,84 @@ const PAGE_MARGIN = "12mm";
  */
 const PAPER_WIDTH = "960px";
 
+/** How long Save as PDF waits for the maps before printing regardless. */
+const MAP_WAIT_MS = 20_000;
+
+const mapsStillDrawing = () =>
+  document.querySelector(`[${PRINT_READY_ATTR}="false"]`) !== null;
+
+/** A CSS string literal, for the dashboard name in the page footer. */
+const cssString = (value: string) => `"${value.replace(/[\\"]/g, "\\$&")}"`;
+
+/**
+ * The printed page. Defining the margin boxes replaces the browser's own
+ * header and footer (date, title, URL) with the dashboard's name and page
+ * numbers; the empty top boxes are what switch the browser's header off.
+ */
+const pageCss = (name: string | undefined) => `@page {
+  size: landscape;
+  margin: ${PAGE_MARGIN};
+  @top-left { content: ""; }
+  @top-center { content: ""; }
+  @top-right { content: ""; }
+  @bottom-left {
+    content: ${cssString(name ?? "")};
+    font-size: 9px;
+    color: rgba(19, 22, 25, 0.6);
+  }
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 9px;
+    color: rgba(19, 22, 25, 0.6);
+  }
+}`;
+
 /**
  * The dashboard's export: a standalone page at `/dashboards/[id]/report` that
  * renders the widgets as a read-only document, on screen as it will print.
  * "Save as PDF" is the browser's print dialog, and the action bar leaves
  * itself off the printout.
  *
- * It never prints on its own: map tiles load asynchronously, and racing them
- * would save a half-drawn map. The user saves once the page looks right.
+ * It never prints on its own, and Save as PDF waits for the maps: their
+ * areas and tiles load asynchronously, and printing sooner saves the world
+ * view or blank tiles.
  */
 export default function DashboardReportPage() {
   const params = useParams<{ id: string }>();
   const dashboardId = params?.id ?? "";
   const { data: dashboard, isLoading, isError } = useDashboard(dashboardId);
   const name = dashboard?.name;
+  const [waitingForMaps, setWaitingForMaps] = useState(false);
+
+  const saveAsPdf = () => {
+    if (mapsStillDrawing()) setWaitingForMaps(true);
+    else window.print();
+  };
+
+  useEffect(() => {
+    if (!waitingForMaps) return;
+    let printed = false;
+    const printOnce = () => {
+      if (printed) return;
+      printed = true;
+      setWaitingForMaps(false);
+      window.print();
+    };
+    const observer = new MutationObserver(() => {
+      if (!mapsStillDrawing()) printOnce();
+    });
+    observer.observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: [PRINT_READY_ATTR],
+    });
+    // A tile server that never answers must not hold the PDF hostage.
+    const timer = setTimeout(printOnce, MAP_WAIT_MS);
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+  }, [waitingForMaps]);
 
   useEffect(() => {
     // The print dialog offers the document title as the PDF's file name.
@@ -71,7 +136,7 @@ export default function DashboardReportPage() {
       // chips and pills are backgrounds, which browsers drop by default.
       css={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}
     >
-      <style>{`@page { size: landscape; margin: ${PAGE_MARGIN}; }`}</style>
+      <style>{pageCss(name)}</style>
 
       <Flex
         justify="space-between"
@@ -95,7 +160,9 @@ export default function DashboardReportPage() {
         <Button
           {...DASHBOARD_ACTION_PROPS}
           disabled={!dashboard}
-          onClick={() => window.print()}
+          loading={waitingForMaps}
+          loadingText="Loading maps…"
+          onClick={saveAsPdf}
         >
           <PrinterIcon size={16} />
           Save as PDF
@@ -111,7 +178,8 @@ export default function DashboardReportPage() {
         p={PAGE_MARGIN}
         bg="white"
         boxShadow="0 1px 3px rgba(19,22,25,0.12)"
-        _print={{ m: 0, p: 0, boxShadow: "none" }}
+        // Still centred on the paper, which is wider than the column on A4.
+        _print={{ my: 0, p: 0, boxShadow: "none" }}
       >
         <Box w={PAPER_WIDTH}>
           {isLoading ? (

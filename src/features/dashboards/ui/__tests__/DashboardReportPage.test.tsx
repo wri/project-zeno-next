@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 // The grid's print rendering is covered by the grid's own tests; here it only
@@ -109,6 +109,34 @@ describe("DashboardReportPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /save as pdf/i }));
 
     expect(print).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits for the maps to finish drawing before printing", async () => {
+    const print = vi.fn();
+    vi.stubGlobal("print", print);
+    // Stands in for a map widget still loading (see PRINT_READY_ATTR).
+    const map = document.createElement("div");
+    map.setAttribute("data-print-ready", "false");
+    document.body.appendChild(map);
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: /save as pdf/i }));
+
+    expect(print).not.toHaveBeenCalled();
+    expect(screen.getByText("Loading maps…")).toBeTruthy();
+    map.setAttribute("data-print-ready", "true");
+    await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
+    map.remove();
+  });
+
+  it("footers each printed page with the dashboard name and page numbers", () => {
+    renderPage({ ...dashboard, name: 'Ucayali "North"' });
+
+    const css = [...document.querySelectorAll("style")]
+      .map((style) => style.textContent ?? "")
+      .find((text) => text.includes("@page"));
+    expect(css).toContain('content: "Ucayali \\"North\\""');
+    expect(css).toContain('counter(page) " of " counter(pages)');
   });
 
   it("links back to the interactive dashboard", () => {

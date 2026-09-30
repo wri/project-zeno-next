@@ -58,7 +58,8 @@ export default function DashboardWidgetDocument({
       </Text>
       {chips.length > 0 && (
         <Box pb="8px">
-          <AnalysisParamsChips chips={chips} />
+          {/* Full values: paper has no tooltip to reveal a truncated one. */}
+          <AnalysisParamsChips chips={chips} maxValueWidth="none" />
         </Box>
       )}
       {intro}

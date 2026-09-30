@@ -23,6 +23,15 @@ import { DROP_ZONE_ATTR } from "./useDrag";
 // The export's outline for every other panel: on white paper there is no grey
 // gutter to set one section apart from the next.
 const PRINT_OUTLINE = "#E0E2E5";
+// A section that fits on the rest of the page stays whole; one that doesn't
+// starts on the next page rather than leaving an empty strip of outline
+// behind, and one taller than a page closes its outline on each page.
+const PRINT_PANEL_CSS = {
+  breakInside: "avoid",
+  boxDecorationBreak: "clone",
+} as const;
+// Never the last thing on a page, parted from its widgets.
+const PRINT_HEADING_CSS = { breakAfter: "avoid" } as const;
 
 /**
  * The lime strip that names the template a section was built from. Its own
@@ -155,8 +164,7 @@ export default function DashboardSection({
       border={outline && "1px solid"}
       borderColor={outline}
       transition="background 0.12s ease"
-      // A section that runs onto the next page closes its outline on each.
-      css={print ? { boxDecorationBreak: "clone" } : undefined}
+      css={print ? PRINT_PANEL_CSS : undefined}
       {...{ [DROP_ZONE_ATTR]: dropZoneKey }}
     >
       {template && <TemplateBanner template={template} />}
@@ -176,8 +184,7 @@ export default function DashboardSection({
             borderBottom={collapsed ? "none" : "1px solid"}
             borderColor="#E0E2E5"
             pb={collapsed ? 0 : "12px"}
-            // Never the last thing on a page, parted from its widgets.
-            css={print ? { breakAfter: "avoid" } : undefined}
+            css={print ? PRINT_HEADING_CSS : undefined}
           >
             <Flex align="center" gap="4px" minW={0}>
               {isOwner && onArmDrag && (
