@@ -11,6 +11,10 @@ export interface AnalysisTemplateCard {
   image: string;
 }
 
+/** The line above the template cards, in the footer and the Analyses pane. */
+export const ANALYSIS_TEMPLATES_BLURB =
+  "These templates are built from real data and curated by WRI to help you get started with common analysis workflows.";
+
 /**
  * The template cards, in display order. Only the templates the backend
  * registers belong here; the design's other cards (tree cover loss, land

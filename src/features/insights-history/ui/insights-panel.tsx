@@ -34,6 +34,7 @@ import {
 // the dashboards pages into its bundle, and so mounting the pane on a dashboard
 // can't create a feature import cycle — matching how the app already reaches
 // dashboards/ui (e.g. WidgetMessage → AddToDashboardToggle).
+import CurrentDashboardAnalysisTemplates from "@/src/features/dashboards/ui/CurrentDashboardAnalysisTemplates";
 import RemoveAnalysisDialog from "@/src/features/dashboards/ui/RemoveAnalysisDialog";
 import { useAddInsightToDashboard } from "@/src/features/dashboards/ui/useAddInsightToDashboard";
 import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrentDashboardArea";
@@ -76,12 +77,20 @@ const insightsListScrollStyle = {
   "&::-webkit-scrollbar": { display: "none" },
 } as const;
 
-type InsightFilter = "conversation" | "verified" | "ai";
+type InsightFilter = "conversation" | "verified" | "ai" | "templates";
+/** The tabs that list analyses; Templates renders its own cards. */
+type ListFilter = Exclude<InsightFilter, "templates">;
 
-const INSIGHT_FILTERS: { id: InsightFilter; label: string }[] = [
-  { id: "conversation", label: "In this conversation" },
-  { id: "ai", label: "AI generated" },
+const INSIGHT_FILTERS: {
+  id: InsightFilter;
+  label: string;
+  /** Offered only on a dashboard: a template builds a dashboard section. */
+  dashboardOnly?: boolean;
+}[] = [
+  { id: "templates", label: "Templates", dashboardOnly: true },
   { id: "verified", label: "Curated" },
+  { id: "ai", label: "AI generated" },
+  { id: "conversation", label: "In this conversation" },
 ];
 
 /**
@@ -171,7 +180,10 @@ function groupDescription(group: InsightGroupItem): string {
  * `InsightWorkspace` overlay.
  */
 export function InsightsPanel() {
-  const [filter, setFilter] = useState<InsightFilter>("conversation");
+  // Null until the viewer picks a tab, and the pane shows the first tab this
+  // surface offers. Derived rather than seeded: the view context that decides
+  // whether Templates is offered is set after the pane mounts.
+  const [picked, setPicked] = useState<InsightFilter | null>(null);
   // On a dashboard the AI list scopes to the dashboard's area by default; the
   // "This area" toggle broadens it to every AI analysis the user owns.
   const [areaScoped, setAreaScoped] = useState(true);
@@ -180,6 +192,10 @@ export function InsightsPanel() {
   const isDashboard = useViewContextStore(
     (s) => s.viewContext?.page === "dashboard"
   );
+  const filters = INSIGHT_FILTERS.filter(
+    (f) => isDashboard || !f.dashboardOnly
+  );
+  const filter = filters.find((f) => f.id === picked)?.id ?? filters[0].id;
   // The AI list can only actually scope once the dashboard's AOI is known
   // (detail query resolved). Until then the switch is disabled and reads
   // unchecked so its "This area only" label never overstates a scope the list
@@ -217,7 +233,7 @@ export function InsightsPanel() {
               overflow="hidden"
             >
               <Wrap gap={1} flexShrink={0} overflow="hidden">
-                {INSIGHT_FILTERS.map((f) => {
+                {filters.map((f) => {
                   const isActive = filter === f.id;
                   return (
                     <Button
@@ -235,7 +251,7 @@ export function InsightsPanel() {
                       border="1px solid"
                       borderColor={isActive ? "fg.link" : "neutral.300"}
                       _hover={{ bg: isActive ? "fg.link" : "neutral.400" }}
-                      onClick={() => setFilter(f.id)}
+                      onClick={() => setPicked(f.id)}
                     >
                       {f.label}
                     </Button>
@@ -278,7 +294,13 @@ export function InsightsPanel() {
                 pb={2}
                 css={insightsListScrollStyle}
               >
-                <InsightsList filter={filter} areaScoped={areaScoped} />
+                {/* Templates is not a list of analyses, so it skips the
+                    insight queries InsightsList makes. */}
+                {filter === "templates" ? (
+                  <CurrentDashboardAnalysisTemplates />
+                ) : (
+                  <InsightsList filter={filter} areaScoped={areaScoped} />
+                )}
               </Stack>
             </Flex>
           </Flex>
@@ -340,7 +362,7 @@ function InsightsList({
   filter,
   areaScoped,
 }: {
-  filter: InsightFilter;
+  filter: ListFilter;
   areaScoped: boolean;
 }) {
   const currentThreadId = useChatStore((s) => s.currentThreadId);
@@ -476,7 +498,7 @@ function InsightsList({
   );
 }
 
-function EmptyState({ filter }: { filter: InsightFilter }) {
+function EmptyState({ filter }: { filter: ListFilter }) {
   const message =
     filter === "verified"
       ? "No curated analyses yet. Open a dashboard to run one for its area."

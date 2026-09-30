@@ -6,6 +6,7 @@ import { ShapesIcon } from "@phosphor-icons/react";
 import type { Dashboard } from "../api/schemas";
 import {
   ANALYSIS_TEMPLATE_CARDS,
+  ANALYSIS_TEMPLATES_BLURB,
   type AnalysisTemplateCard,
 } from "../lib/analysis-templates";
 import DashboardFooterHeading from "./DashboardFooterHeading";
@@ -29,10 +30,13 @@ type TemplateCardStatus = "idle" | "building" | "disabled";
 function TemplateCard({
   card,
   status,
+  compact,
   onClick,
 }: {
   card: AnalysisTemplateCard;
   status: TemplateCardStatus;
+  /** The Analyses pane's shorter card (Figma node 3938:12065). */
+  compact: boolean;
   onClick: () => void;
 }) {
   const building = status === "building";
@@ -52,13 +56,13 @@ function TemplateCard({
       onClick={idle ? onClick : undefined}
       align="center"
       gap="20px"
-      h="120px"
-      px="16px"
-      py="20px"
+      h={compact ? "80px" : "120px"}
+      px={compact ? "12px" : "16px"}
+      py={compact ? "8px" : "20px"}
       bg={TEMPLATE_FILL}
       borderWidth="1px"
       borderColor={CARD_OUTLINE}
-      borderRadius="12px"
+      borderRadius={compact ? "8px" : "12px"}
       textAlign="left"
       opacity={status === "disabled" ? 0.5 : 1}
       cursor={idle ? "pointer" : building ? "progress" : "not-allowed"}
@@ -79,7 +83,7 @@ function TemplateCard({
         src={card.image}
         alt=""
         w="80px"
-        h="80px"
+        h={compact ? "full" : "80px"}
         flexShrink={0}
         objectFit="cover"
         borderRadius="8px"
@@ -104,7 +108,7 @@ function TemplateCard({
           </Text>
         </Flex>
         <Text
-          fontSize="18px"
+          fontSize={compact ? "16px" : "18px"}
           lineHeight="1.25"
           color="#393E29"
           wordBreak="break-word"
@@ -144,10 +148,12 @@ export function useTemplateCards(enabled = true): AnalysisTemplateCard[] {
 export function AnalysisTemplateCards({
   dashboard,
   cards,
+  compact = false,
   ...gridProps
 }: {
   dashboard: Dashboard;
   cards: readonly AnalysisTemplateCard[];
+  compact?: boolean;
 } & GridProps) {
   const apply = useApplyAnalysisTemplate(dashboard.id);
   const pending = usePendingAnalysisTemplates(dashboard.id);
@@ -161,6 +167,7 @@ export function AnalysisTemplateCards({
         <TemplateCard
           key={card.name}
           card={card}
+          compact={compact}
           status={
             pending.includes(card.name)
               ? "building"
@@ -193,8 +200,7 @@ export default function DashboardAnalysisTemplates({
     <Flex direction="column" gap="16px">
       <DashboardFooterHeading>Add an analysis template</DashboardFooterHeading>
       <Text fontSize="14px" lineHeight="1.5" color="#565E7B">
-        These templates are built from real data and curated by WRI to help you
-        get started with common analysis workflows.
+        {ANALYSIS_TEMPLATES_BLURB}
       </Text>
       <AnalysisTemplateCards
         dashboard={dashboard}
