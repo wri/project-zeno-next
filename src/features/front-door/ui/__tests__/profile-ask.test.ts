@@ -26,9 +26,12 @@ import {
   type ProfileAskStorages,
 } from "../../lib/profile-ask-storage";
 import type { ProfileAskRecord } from "../../model/profile-ask";
+import useProfileNudgeStore from "../../model/profile-nudge-store";
 import {
   dismissProfileAsk,
+  dismissProfileBanner,
   handleAnswerCompleted,
+  openProfileCardFromBanner,
   saveProfileFromCard,
   showProfilePrompt,
   watchAnswerCompletions,
@@ -213,6 +216,7 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   queryClient.clear();
   useChatStore.getState().reset();
+  useProfileNudgeStore.getState().closeBanner();
   useAuthStore.getState().clearAuth();
   signIn();
   storages = { local: new MemoryStorage(), session: new MemoryStorage() };
@@ -454,5 +458,74 @@ describe("Save", () => {
     await useChatStore.getState().sendMessage("How much has Pará lost?");
     await settle();
     expect(cards()).toHaveLength(0);
+  });
+});
+
+// ── The later banner ──────────────────────────────────────────────────────
+
+describe("the banner at the session's fifth answer", () => {
+  const bannerOpen = () => useProfileNudgeStore.getState().bannerOpen;
+  // A later session: the first-answer card was dismissed long ago.
+  const laterSession = {
+    dismissals: 1,
+    lifetimeAnswers: 12,
+    sessionAnswers: 4,
+  };
+
+  it("opens after the fifth answer of a session and records the ask", async () => {
+    seed(laterSession);
+    backend();
+    await useChatStore.getState().sendMessage("Fifth question");
+    await vi.waitFor(() => expect(bannerOpen()).toBe(true));
+    expect(cards()).toHaveLength(0);
+    expect(record()).toMatchObject({
+      sessionAnswers: 5,
+      askedThisSession: true,
+    });
+  });
+
+  it("stays closed before the fifth answer", async () => {
+    seed({ ...laterSession, sessionAnswers: 2 });
+    backend();
+    await useChatStore.getState().sendMessage("Third question");
+    await settle();
+    expect(bannerOpen()).toBe(false);
+  });
+
+  it("stays closed if the session already asked (the first-answer card)", async () => {
+    seed({ ...laterSession, askedThisSession: true });
+    backend();
+    await useChatStore.getState().sendMessage("Fifth question");
+    await settle();
+    expect(bannerOpen()).toBe(false);
+  });
+
+  it("Add details adds the card and closes the banner", async () => {
+    backend();
+    useProfileNudgeStore.getState().openBanner();
+    await openProfileCardFromBanner();
+    expect(cards()).toHaveLength(1);
+    expect(bannerOpen()).toBe(false);
+  });
+
+  it("closing it counts as a Not now", () => {
+    useProfileNudgeStore.getState().openBanner();
+    dismissProfileBanner(deps);
+    expect(bannerOpen()).toBe(false);
+    expect(record().dismissals).toBe(1);
+  });
+
+  it("closes when the profile is saved from the card", async () => {
+    backend();
+    await showProfilePrompt();
+    useProfileNudgeStore.getState().openBanner();
+    const card = cards()[0];
+    await saveProfileFromCard(card.id, card.profilePrompt!, {
+      sector_code: "ngo",
+      role_code: null,
+      country_code: "KE",
+      has_profile: true,
+    });
+    expect(bannerOpen()).toBe(false);
   });
 });

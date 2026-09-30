@@ -9,6 +9,7 @@
  */
 export { WelcomePage } from "./ui/WelcomePage";
 export { ProfileAskTrigger } from "./ui/ProfileAskTrigger";
+export { ProfileNudgeSlot } from "./ui/ProfileNudgeSlot";
 export {
   ProfilePromptMessage,
   type ProfilePromptMessageProps,

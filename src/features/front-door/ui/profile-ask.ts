@@ -1,5 +1,6 @@
 import { toaster } from "@/app/components/ui/toaster";
 import { isFrontDoorEnabled } from "@/app/config/front-door";
+import { showApiError } from "@/app/hooks/useErrorHandler";
 import { submitOrttoProfile } from "@/app/lib/ortto";
 import { queryClient } from "@/app/lib/query-client";
 import useAuthStore from "@/app/store/authStore";
@@ -23,11 +24,12 @@ import type {
   ProfileCardPatch,
   ProfilePromptData,
 } from "../model/profile-card";
+import useProfileNudgeStore from "../model/profile-nudge-store";
 
 /**
  * The front door's "ask for the profile later" flow, outside React (like
  * show-create-dashboard-nudge): react to finished answers, add the in-chat
- * card, and handle its Save / Not now. Everything no-ops unless
+ * card or the later banner, and handle Save / Not now. Everything no-ops unless
  * NEXT_PUBLIC_FRONT_DOOR is on and the signed-in person has no profile.
  */
 
@@ -119,6 +121,7 @@ export async function showProfilePrompt(
     .filter((m) => m.type === "profile-prompt")
     .forEach((m) => chat.removeMessage(m.id));
   chat.addMessage({ type: "profile-prompt", message: "", profilePrompt: data });
+  useProfileNudgeStore.getState().closeBanner();
   return true;
 }
 
@@ -144,6 +147,9 @@ export async function handleAnswerCompleted(
     if (await showProfilePrompt({ threadId })) {
       updateRecord(deps, recordAskShown);
     }
+  } else if (ask === "nth_question") {
+    useProfileNudgeStore.getState().openBanner();
+    updateRecord(deps, recordAskShown);
   }
 }
 
@@ -167,6 +173,22 @@ export function dismissProfileAsk(
   useChatStore.getState().removeMessage(messageId);
 }
 
+/** The banner's close button: also a "Not now". */
+export function dismissProfileBanner(deps: ProfileAskDeps = BROWSER): void {
+  updateRecord(deps, recordAskDismissed);
+  useProfileNudgeStore.getState().closeBanner();
+}
+
+/** The banner's "Add details": the card, at the end of the conversation. */
+export async function openProfileCardFromBanner(): Promise<void> {
+  if (!(await showProfilePrompt())) {
+    showApiError("The profile form couldn't load.", {
+      title: "Couldn't open your profile",
+      description: "Please try again, or use Settings.",
+    });
+  }
+}
+
 /**
  * Save on the card: PATCH the partial profile (throws on failure, and the
  * card stays), then mark the profile complete, remove the card and tell
@@ -182,6 +204,7 @@ export async function saveProfileFromCard(
   const auth = useAuthStore.getState();
   auth.markProfileComplete();
   useChatStore.getState().removeMessage(messageId);
+  useProfileNudgeStore.getState().closeBanner();
   toaster.create({
     title: "Profile saved",
     description: "Thanks. You can change these details in Settings.",
