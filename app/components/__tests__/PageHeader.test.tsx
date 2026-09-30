@@ -4,8 +4,8 @@
  * when it does it leads, ahead of What's new and the user avatar.
  */
 import { ChakraProvider } from "@chakra-ui/react";
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
@@ -70,5 +70,67 @@ describe("PageHeader prompt meter", () => {
     expect(whatsNew.querySelector("div")).toBeTruthy();
     expect(precedes(meter, whatsNew)).toBe(true);
     expect(precedes(whatsNew, avatar)).toBe(true);
+  });
+});
+
+describe("PageHeader profile reminder (front door)", () => {
+  function signIn(hasProfile: boolean) {
+    useAuthStore.getState().setAuthStatus({
+      email: "user@example.com",
+      id: "u1",
+      hasProfile,
+      userType: null,
+    });
+  }
+
+  /** Opens the account menu; resolves once its Settings item is showing. */
+  async function openAccountMenu() {
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /user@example.com/ }));
+    });
+    return screen.findByRole("menuitem", { name: /settings/i });
+  }
+  const menuItem = () =>
+    screen.queryByRole("menuitem", { name: /complete your profile/i });
+  const dot = () => screen.queryByRole("img", { name: "Profile not complete" });
+
+  beforeEach(() => {
+    localStorage.clear();
+    useAuthStore.getState().setPromptUsage(0, 20);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("links to the settings page and marks the account button while the profile is incomplete", async () => {
+    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
+    signIn(false);
+    renderHeader();
+    expect(dot()).not.toBeNull();
+
+    const settings = await openAccountMenu();
+    const item = menuItem();
+    expect(item).not.toBeNull();
+    expect(item!.getAttribute("href")).toBe("/dashboard");
+    expect(precedes(item!, settings)).toBe(true);
+  });
+
+  it("goes away once the profile is complete", async () => {
+    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
+    signIn(true);
+    renderHeader();
+    expect(dot()).toBeNull();
+    await openAccountMenu();
+    expect(menuItem()).toBeNull();
+  });
+
+  it("never shows with the flag off, even without a profile", async () => {
+    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "false");
+    signIn(false);
+    renderHeader();
+    expect(dot()).toBeNull();
+    await openAccountMenu();
+    expect(menuItem()).toBeNull();
   });
 });

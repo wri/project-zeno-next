@@ -43,6 +43,8 @@ import {
   newConversationTarget,
 } from "@/app/utils/threadNavigation";
 import useMapStore from "../store/mapStore";
+import { isFrontDoorEnabled } from "@/app/config/front-door";
+import { CompleteProfileMenuItem } from "@/src/features/front-door";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -55,7 +57,10 @@ const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function PageHeader() {
-  const { userEmail, isAuthenticated } = useAuthStore();
+  const { userEmail, isAuthenticated, hasProfile } = useAuthStore();
+  // Front door: the profile is optional, so a reminder stays in the account
+  // menu until it's complete.
+  const showProfileReminder = isFrontDoorEnabled() && !hasProfile;
   const { toggleSidebar } = useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
@@ -526,11 +531,26 @@ function PageHeader() {
                 <Text truncate maxW="180px">
                   {userEmail || "User name"}
                 </Text>
+                {showProfileReminder && (
+                  <Box
+                    as="span"
+                    role="img"
+                    aria-label="Profile not complete"
+                    w="2"
+                    h="2"
+                    rounded="full"
+                    bg="primary.500"
+                    flexShrink={0}
+                  />
+                )}
               </Button>
             </Menu.Trigger>
             <Portal>
               <Menu.Positioner>
                 <Menu.Content css={{ "& a": { cursor: "pointer" } }}>
+                  {showProfileReminder && (
+                    <CompleteProfileMenuItem href="/dashboard" />
+                  )}
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />
