@@ -388,6 +388,23 @@ describe("DashboardInsightModule", () => {
     );
   });
 
+  it("has no Customize menu for a single chart with no summary", () => {
+    renderModule({
+      widget: widget({
+        insight: {
+          id: "ins-1",
+          insight_text: null,
+          codeact_parts: [],
+          charts: [chart({ title: "Integrated alerts" })],
+        },
+      }),
+    });
+    expect(shownChart()).toBe("Integrated alerts");
+    expect(screen.queryByRole("button", { name: "Customize" })).toBe(null);
+    // Removing the widget is still the X.
+    expect(screen.getByLabelText("Remove from dashboard")).toBeTruthy();
+  });
+
   it("names the lost arrangement when removing a customised module", async () => {
     renderModule({
       widget: widget({ config: { titles: { "c-1": "Renamed" } } }),

@@ -495,6 +495,43 @@ describe("insightModule", () => {
     expect(vm.allCharts).toEqual([]);
   });
 
+  it("offers Customize only when there is more than one piece to toggle", () => {
+    const withPieces = (
+      insight_text: string | null,
+      charts: ReturnType<typeof chart>[],
+      config: Record<string, unknown> = {}
+    ) =>
+      insightModule(
+        widget({
+          config,
+          insight: { id: "ins-1", insight_text, codeact_parts: null, charts },
+        })
+      ).customizable;
+
+    // A template's alerts chart: one chart, no summary — nothing to choose.
+    expect(withPieces(null, [chart()])).toBe(false);
+    expect(withPieces("   ", [chart()])).toBe(false);
+    expect(withPieces("Narrative.", [chart()])).toBe(true);
+    expect(withPieces(null, [chart(), chart({ id: "c-2", position: 1 })])).toBe(
+      true
+    );
+  });
+
+  it("keeps Customize when the only piece is hidden, so it can come back", () => {
+    const vm = insightModule(
+      widget({
+        config: { chartIds: [] },
+        insight: {
+          id: "ins-1",
+          insight_text: null,
+          codeact_parts: null,
+          charts: [chart()],
+        },
+      })
+    );
+    expect(vm.customizable).toBe(true);
+  });
+
   it("derives curated from the generation provenance, like the cards do", () => {
     // The default fixture has no codeact parts.
     expect(insightModule(widget()).curated).toBe(true);

@@ -284,6 +284,13 @@ export interface InsightModuleView {
   curated: boolean;
   cards: InsightWidget[];
   allCharts: { id: string; title: string; shown: boolean }[];
+  /**
+   * Whether the Customize menu has a choice to offer. Its rows toggle the
+   * pieces the insight holds — the summary and each chart — so with a single
+   * piece the only toggle blanks the card (removing it is the X's job). A
+   * piece already hidden keeps the menu, so it can be shown again.
+   */
+  customizable: boolean;
 }
 
 export function insightModule(
@@ -299,12 +306,17 @@ export function insightModule(
       charts.map((c) => c.id)
     )
   );
+  const summaryText = widget.insight?.insight_text?.trim()
+    ? widget.insight.insight_text
+    : "";
+  const summaryShown = isSummaryShown(widget.config);
+  const pieces = charts.length + (summaryText ? 1 : 0);
+  const anyHidden =
+    charts.some((c) => !shown.has(c.id)) || (!!summaryText && !summaryShown);
   return {
     title: moduleTitle(widget),
-    summaryText: widget.insight?.insight_text?.trim()
-      ? widget.insight.insight_text
-      : "",
-    summaryShown: isSummaryShown(widget.config),
+    summaryText,
+    summaryShown,
     curated: isCuratedInsight(widget.insight?.codeact_parts),
     cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
     allCharts: charts.map((chart) => ({
@@ -312,6 +324,7 @@ export function insightModule(
       title: chartTitleOverride(widget.config, chart.id) ?? chart.title,
       shown: shown.has(chart.id),
     })),
+    customizable: pieces > 1 || anyHidden,
   };
 }
 
