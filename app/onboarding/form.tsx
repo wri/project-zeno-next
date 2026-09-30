@@ -28,6 +28,7 @@ import RequirementHint from "@/app/onboarding/RequirementHint";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { apiFetch } from "@/app/lib/api-client";
+import { submitOrttoProfile } from "@/app/lib/ortto";
 import { toaster } from "@/app/components/ui/toaster";
 
 export type ProfileConfig = {
@@ -246,33 +247,17 @@ export default function OnboardingForm({
         (code) => config?.topics?.[code] || code
       );
 
-      try {
-        const orttoRes = await fetch(
-          "https://ortto.wri.org/custom-forms/gnw/",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: form.email,
-              firstName: form.firstName,
-              lastName: form.lastName,
-              sector: form.sector,
-              jobTitle: form.jobTitle,
-              companyOrganization: form.company,
-              countryCode: form.country,
-              Topics: topicLabels,
-              receiveNewsEmails: form.receiveNewsEmails,
-            }),
-          }
-        );
-        console.log(
-          "[Client] Ortto submission status:",
-          orttoRes.status,
-          orttoRes.ok ? "OK" : "FAILED"
-        );
-      } catch (e) {
-        console.error("[Client] Ortto submission error:", e);
-      }
+      await submitOrttoProfile({
+        email: form.email,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        sector: form.sector,
+        jobTitle: form.jobTitle,
+        companyOrganization: form.company,
+        countryCode: form.country,
+        Topics: topicLabels,
+        receiveNewsEmails: form.receiveNewsEmails,
+      });
 
       // Poll for hasProfile to avoid middleware redirect race
       const waitForProfileCompletion = async (
