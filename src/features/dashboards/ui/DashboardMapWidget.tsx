@@ -49,6 +49,7 @@ export default function DashboardMapWidget({
   bboxOverride,
   tall,
   fill,
+  print = false,
 }: {
   layer: MapWidgetLayer;
   /** The dashboard's (single) area — outline, label + default viewport fit. */
@@ -58,6 +59,8 @@ export default function DashboardMapWidget({
   tall?: boolean;
   /** Fills its container (the full-screen dialog) and allows scroll-zoom. */
   fill?: boolean;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
 
@@ -149,10 +152,18 @@ export default function DashboardMapWidget({
         scrollZoom={!!fill}
         dragRotate={false}
         attributionControl={false}
+        // Printing snapshots the WebGL canvas, which is blank without a
+        // preserved drawing buffer. Only the export's maps pay its GPU cost;
+        // the option is read once, when the map is created.
+        canvasContextAttributes={
+          print ? { preserveDrawingBuffer: true } : undefined
+        }
       >
         {/* Bottom-left so the legend can occupy the design's bottom-right
             slot; the attribution stacks beneath the zoom buttons. */}
-        <NavigationControl position="bottom-left" showCompass={false} />
+        {!print && (
+          <NavigationControl position="bottom-left" showCompass={false} />
+        )}
         <AttributionControl compact position="bottom-left" />
         <Source
           id="widget-basemap"

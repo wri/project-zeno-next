@@ -201,6 +201,7 @@ function ContainerGrid({
   liftedRef,
   onDragStart,
   onSettle,
+  print,
 }: {
   dashboard: Dashboard;
   container: WidgetContainer;
@@ -221,6 +222,8 @@ function ContainerGrid({
   pending: PendingInsightWidget[];
   onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
   onSettle: () => void;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print: boolean;
 }) {
   const updateWidget = useUpdateWidget(dashboard.id);
   const deleteWidget = useDeleteWidget(dashboard.id);
@@ -283,6 +286,7 @@ function ContainerGrid({
               areaAoi={areaAoi}
               isOwner={isOwner}
               isDouble={size === "double"}
+              print={print}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onUpdateConfig={(config) =>
@@ -296,6 +300,7 @@ function ContainerGrid({
               placeholder={body?.placeholder ?? null}
               isOwner={isOwner}
               isDouble={size === "double"}
+              print={print}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onSaveText={(next) =>
@@ -319,6 +324,7 @@ function ContainerGrid({
               removeMode="widget"
               isOwner={isOwner}
               isDouble={size === "double"}
+              print={print}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onRename={
@@ -393,14 +399,21 @@ function ContainerGrid({
  * in a section is a `section_id` PATCH alongside the renumbering of both
  * containers (`computeWidgetMove`). A section drag reorders the panels
  * themselves (`computeSectionMove`); the top-level panel always stays first.
+ *
+ * `print` is the export rendering (the report route): a read-only document,
+ * even for the owner, with no curated analyses mid-add and no empty sections.
+ * Widgets drop their boxes and sections draw an outline instead, so on white
+ * paper the sections are still what groups the page.
  */
 export default function DashboardWidgetsGrid({
   dashboard,
+  print = false,
 }: {
   dashboard: Dashboard;
+  print?: boolean;
 }) {
   const userId = useAuthStore((s) => s.userId);
-  const isOwner = !!userId && userId === dashboard.user_id;
+  const isOwner = !print && !!userId && userId === dashboard.user_id;
   const moveWidgets = useMoveWidgets(dashboard.id);
   const moveSections = useMoveSections(dashboard.id);
   const renameSection = useRenameSection(dashboard.id);
@@ -469,8 +482,11 @@ export default function DashboardWidgetsGrid({
   // here rather than shown twice.
   const pendingEntries = usePendingInsightWidgets(dashboard.id);
   const pendingCards = useMemo(
-    () => unresolvedPendingInsightWidgets(pendingEntries, dashboard.widgets),
-    [pendingEntries, dashboard.widgets]
+    () =>
+      print
+        ? []
+        : unresolvedPendingInsightWidgets(pendingEntries, dashboard.widgets),
+    [print, pendingEntries, dashboard.widgets]
   );
 
   // A drag keeps every container on screen, the empty ones included: the panel
@@ -546,6 +562,7 @@ export default function DashboardWidgetsGrid({
                 <DashboardSection
                   section={section}
                   isOwner={isOwner}
+                  print={print}
                   isDropTarget={!!dragState && dragState.key === container.key}
                   dropZoneKey={container.key}
                   onMove={
@@ -598,6 +615,7 @@ export default function DashboardWidgetsGrid({
                     landed={drag.landed}
                     liftedRef={drag.liftedRef}
                     pending={container.section ? [] : pendingCards}
+                    print={print}
                     onSettle={drag.settle}
                     onDragStart={(event, widget) => {
                       const next =

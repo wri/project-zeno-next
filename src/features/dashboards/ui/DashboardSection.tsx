@@ -20,6 +20,10 @@ import DeleteSectionDialog from "./DeleteSectionDialog";
 import { TEMPLATE_FILL, TEMPLATE_OUTLINE } from "./templateColors";
 import { DROP_ZONE_ATTR } from "./useDrag";
 
+// The export's outline for every other panel: on white paper there is no grey
+// gutter to set one section apart from the next.
+const PRINT_OUTLINE = "#E0E2E5";
+
 /**
  * The lime strip that names the template a section was built from. Its own
  * component so the template registry is only fetched on a dashboard that
@@ -84,6 +88,10 @@ function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
  * A section an analysis template built wears a lime outline and a banner
  * naming the template. The banner is its provenance, so it replaces the
  * agent's caption on the title row.
+ *
+ * In the export (`print`) every panel is outlined, since the gutter that
+ * separates them on screen is white on paper, and a section is always
+ * expanded: collapsing it would drop content from the document.
  */
 export default function DashboardSection({
   section,
@@ -103,6 +111,7 @@ export default function DashboardSection({
   moduleCount = 0,
   onRename,
   onDelete,
+  print = false,
   children,
 }: {
   section: Section | null;
@@ -115,6 +124,8 @@ export default function DashboardSection({
   onRename?: (title: string) => void;
   /** `deleteWidgets`: the section's modules go with it. */
   onDelete?: (deleteWidgets: boolean) => void;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print?: boolean;
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -136,9 +147,13 @@ export default function DashboardSection({
       flexDir="column"
       bg={isDropTarget ? "#F0F4FF" : "white"}
       borderRadius="8px"
-      border={template ? "1px solid" : undefined}
-      borderColor={template ? TEMPLATE_OUTLINE : undefined}
+      border={template || print ? "1px solid" : undefined}
+      borderColor={
+        template ? TEMPLATE_OUTLINE : print ? PRINT_OUTLINE : undefined
+      }
       transition="background 0.12s ease"
+      // A section that runs onto the next page closes its outline on each.
+      css={print ? { boxDecorationBreak: "clone" } : undefined}
       {...{ [DROP_ZONE_ATTR]: dropZoneKey }}
     >
       {template && <TemplateBanner template={template} />}
@@ -158,6 +173,8 @@ export default function DashboardSection({
             borderBottom={collapsed ? "none" : "1px solid"}
             borderColor="#E0E2E5"
             pb={collapsed ? 0 : "12px"}
+            // Never the last thing on a page, parted from its widgets.
+            css={print ? { breakAfter: "avoid" } : undefined}
           >
             <Flex align="center" gap="4px" minW={0}>
               {isOwner && onArmDrag && (
@@ -192,26 +209,28 @@ export default function DashboardSection({
                   <DotsSixVerticalIcon size={16} />
                 </IconButton>
               )}
-              <IconButton
-                aria-label={collapsed ? "Expand section" : "Collapse section"}
-                title={collapsed ? "Expand section" : "Collapse section"}
-                aria-expanded={!collapsed}
-                size="2xs"
-                minW="20px"
-                h="20px"
-                variant="ghost"
-                color="fg.muted"
-                flexShrink={0}
-                onClick={() => setCollapsed((value) => !value)}
-              >
-                <CaretDownIcon
-                  size={12}
-                  style={{
-                    transform: collapsed ? "rotate(-90deg)" : undefined,
-                    transition: "transform 0.15s",
-                  }}
-                />
-              </IconButton>
+              {!print && (
+                <IconButton
+                  aria-label={collapsed ? "Expand section" : "Collapse section"}
+                  title={collapsed ? "Expand section" : "Collapse section"}
+                  aria-expanded={!collapsed}
+                  size="2xs"
+                  minW="20px"
+                  h="20px"
+                  variant="ghost"
+                  color="fg.muted"
+                  flexShrink={0}
+                  onClick={() => setCollapsed((value) => !value)}
+                >
+                  <CaretDownIcon
+                    size={12}
+                    style={{
+                      transform: collapsed ? "rotate(-90deg)" : undefined,
+                      transition: "transform 0.15s",
+                    }}
+                  />
+                </IconButton>
+              )}
               {draft !== null ? (
                 <Input
                   flex="1"

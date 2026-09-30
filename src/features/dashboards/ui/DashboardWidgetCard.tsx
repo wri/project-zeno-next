@@ -46,6 +46,11 @@ import DashboardMapWidget from "./DashboardMapWidget";
  * the pager and passes the chart on show). The `intro`, `footer` and
  * `headerActions` slots are what it hangs off the shell; `onRequestRemove`
  * lets it confirm removal with its own copy.
+ *
+ * In the export (`print`) the shell draws nothing — no fill, no edge, no
+ * inset — so the widget reads as part of the section it sits in, and it is
+ * never split across pages. Its params show outright, since paper has no
+ * "Show params" to click.
  */
 export default function DashboardWidgetCard({
   title,
@@ -57,6 +62,7 @@ export default function DashboardWidgetCard({
   removeMode,
   isOwner,
   isDouble,
+  print = false,
   headerActions,
   intro,
   footer,
@@ -85,6 +91,8 @@ export default function DashboardWidgetCard({
   removeMode: "widget" | "chart";
   isOwner: boolean;
   isDouble: boolean;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print?: boolean;
   /** Owner actions rendered before the built-in ones (the analysis Customize menu). */
   headerActions?: React.ReactNode;
   /**
@@ -125,6 +133,8 @@ export default function DashboardWidgetCard({
   if (pending !== null && title.trim() === pending) setPending(null);
   const displayTitle = pending ?? title;
   const chips = card?.analysisParams ? buildChips(card.analysisParams) : [];
+  // Without the shell, content lines up with the section's own edge.
+  const inset = print ? "0" : "8px";
 
   const commitRename = () => {
     const next = (draft ?? "").trim();
@@ -153,14 +163,22 @@ export default function DashboardWidgetCard({
       flexDir="column"
       // Content height on purpose: the packed grid stacks cards tightly, so
       // a card must never stretch to a taller neighbour's height.
-      bg="#F7F9FF"
-      borderWidth="1px"
+      bg={print ? undefined : "#F7F9FF"}
+      borderWidth={print ? 0 : "1px"}
       borderColor="#DDE2F5"
       borderRadius="sm"
       overflow="hidden"
+      css={print ? { breakInside: "avoid" } : undefined}
     >
       {/* Header — drag handle · title · actions (per the Figma LegendItemHeader) */}
-      <Flex align="center" gap="4px" pl="4px" pr="12px" pt="12px" pb="8px">
+      <Flex
+        align="center"
+        gap="4px"
+        pl={print ? 0 : "4px"}
+        pr={print ? 0 : "12px"}
+        pt={print ? 0 : "12px"}
+        pb="8px"
+      >
         {isOwner && (
           <Icon
             as={DotsSixVerticalIcon}
@@ -190,7 +208,7 @@ export default function DashboardWidgetCard({
             fontSize="14px"
             fontWeight="medium"
             color="#172B7A"
-            pl={isOwner ? 0 : "8px"}
+            pl={isOwner || print ? 0 : "8px"}
           />
         ) : (
           <Text
@@ -201,13 +219,13 @@ export default function DashboardWidgetCard({
             lineHeight="16px"
             color="#172B7A"
             wordBreak="break-word"
-            pl={isOwner ? 0 : "8px"}
+            pl={isOwner || print ? 0 : "8px"}
           >
             {displayTitle}
           </Text>
         )}
         {/* Viewers get full screen too, so it sits outside the owner cluster. */}
-        {map && (
+        {map && !print && (
           <IconButton
             aria-label="View map full screen"
             title="View map full screen"
@@ -274,26 +292,31 @@ export default function DashboardWidgetCard({
       </Flex>
 
       {/* Params row — "Show params" toggle over the analysis param chips */}
-      {chips.length > 0 && (
-        <Box px="8px" pb="8px">
-          <Flex
-            borderTopWidth="1px"
-            borderColor="rgba(19,22,25,0.05)"
-            pt="4px"
-            align="center"
-          >
-            <AnalysisParametersToggle
-              expanded={paramsExpanded}
-              onToggle={() => setParamsExpanded((v) => !v)}
-            />
-          </Flex>
-          {paramsExpanded && (
-            <Box pt="8px">
-              <AnalysisParamsChips chips={chips} />
-            </Box>
-          )}
-        </Box>
-      )}
+      {chips.length > 0 &&
+        (print ? (
+          <Box pb="8px">
+            <AnalysisParamsChips chips={chips} />
+          </Box>
+        ) : (
+          <Box px="8px" pb="8px">
+            <Flex
+              borderTopWidth="1px"
+              borderColor="rgba(19,22,25,0.05)"
+              pt="4px"
+              align="center"
+            >
+              <AnalysisParametersToggle
+                expanded={paramsExpanded}
+                onToggle={() => setParamsExpanded((v) => !v)}
+              />
+            </Flex>
+            {paramsExpanded && (
+              <Box pt="8px">
+                <AnalysisParamsChips chips={chips} />
+              </Box>
+            )}
+          </Box>
+        ))}
 
       {intro}
 
@@ -313,18 +336,24 @@ export default function DashboardWidgetCard({
           <Text fontSize="sm">{placeholder}</Text>
         </Flex>
       ) : map ? (
-        <Box px="8px" pb="8px" flex="1" minW={0}>
+        <Box px={inset} pb={inset} flex="1" minW={0}>
           <DashboardMapWidget
             layer={map}
             aoi={aoi}
             bboxOverride={viewportBbox ?? null}
             tall={isDouble}
+            print={print}
           />
         </Box>
       ) : (
         card && (
-          <Box px="8px" pb="8px" flex="1" minW={0}>
-            <WidgetMessage widget={card} inWorkspace fullWidth={isDouble} />
+          <Box px={inset} pb={inset} flex="1" minW={0}>
+            <WidgetMessage
+              widget={card}
+              inWorkspace
+              fullWidth={isDouble}
+              print={print}
+            />
           </Box>
         )
       )}

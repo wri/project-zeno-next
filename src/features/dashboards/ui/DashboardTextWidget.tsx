@@ -12,10 +12,18 @@ import remarkBreaks from "remark-breaks";
  * matches the chat's markdown handling, since notes are typically
  * agent-authored.
  */
-export default function DashboardTextWidget({ text }: { text: string }) {
+export default function DashboardTextWidget({
+  text,
+  print = false,
+}: {
+  text: string;
+  /** The export rendering: flush with the section, like every other widget. */
+  print?: boolean;
+}) {
   return (
     <Box
-      p="20px"
+      px={print ? 0 : "20px"}
+      py={print ? "12px" : "20px"}
       fontSize="14px"
       lineHeight="1.5"
       color="#131619"

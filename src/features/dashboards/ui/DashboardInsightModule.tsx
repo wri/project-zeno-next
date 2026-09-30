@@ -13,6 +13,7 @@ import {
   netFluxRollups,
   useNetFluxDetail,
 } from "@/src/features/net-flux";
+import type { InsightWidget } from "@/app/types/chat";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import {
   hasWidgetCustomization,
@@ -45,6 +46,9 @@ import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
  * single piece (one chart, no summary, like a template's alerts chart) has
  * nothing to customize, so it has no menu.
  *
+ * In the export (`print`) there is no pager to page, so every shown chart
+ * prints, one after another, with the narrative above the first.
+ *
  * Mutation-agnostic on purpose: every config edit flows through
  * `onUpdateConfig` with a full config built by the `with*` helpers (the
  * backend replaces config whole), and `onRemove` deletes the widget. The
@@ -55,6 +59,7 @@ export default function DashboardInsightModule({
   areaAoi,
   isOwner,
   isDouble,
+  print = false,
   onArmDrag,
   onToggleSize,
   onUpdateConfig,
@@ -66,6 +71,8 @@ export default function DashboardInsightModule({
   isOwner: boolean;
   /** The card's persisted column span. */
   isDouble: boolean;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print?: boolean;
   /** Pointer down on the header drag handle — starts the grid's drag gesture. */
   onArmDrag: (event: React.PointerEvent) => void;
   onToggleSize: () => void;
@@ -104,6 +111,57 @@ export default function DashboardInsightModule({
       : total === 0 && !showSummary && isOwner
         ? "All content in this analysis is hidden — use Customize to show it."
         : null;
+
+  // The narrative and the chart's pills ride above the chart body. On paper
+  // the narrative leads the first chart only.
+  const introFor = (chart: InsightWidget | null, withSummary: boolean) =>
+    (withSummary && showSummary) || (chart && hasChartPills(chart)) ? (
+      <Flex direction="column" gap="8px" px={print ? 0 : "12px"} pb="12px">
+        {withSummary && showSummary && (
+          <>
+            {/* Same provenance rule as the chart card below, so the
+                narrative never contradicts it. */}
+            <InsightCaption curated={vm.curated} />
+            <Text fontSize="14px" lineHeight="20px" color="fg">
+              {vm.summaryText}
+            </Text>
+          </>
+        )}
+        {/* The design puts these above the card, and the shell that
+            hosts it is this module (DashboardWidgetCard mounts
+            WidgetMessage `inWorkspace`, which suppresses them inline). */}
+        {chart && (
+          <InsightChartPills
+            widget={chart}
+            siblings={rollups}
+            groupKey={widget.id}
+          />
+        )}
+      </Flex>
+    ) : null;
+
+  if (print) {
+    return (
+      <Flex direction="column" gap="24px">
+        {(cards.length > 0 ? cards : [null]).map((chart, i) => (
+          <DashboardWidgetCard
+            key={chart?.id ?? "no-chart"}
+            title={chart?.title ?? vm.title}
+            card={chart}
+            placeholder={placeholder}
+            removeMode="widget"
+            isOwner={false}
+            isDouble={isDouble}
+            print
+            onArmDrag={onArmDrag}
+            onToggleSize={onToggleSize}
+            onRemove={onRemove}
+            intro={introFor(chart, i === 0)}
+          />
+        ))}
+      </Flex>
+    );
+  }
 
   return (
     <>
@@ -152,32 +210,7 @@ export default function DashboardInsightModule({
             />
           )
         }
-        intro={
-          showSummary || (card && hasChartPills(card)) ? (
-            <Flex direction="column" gap="8px" px="12px" pb="12px">
-              {showSummary && (
-                <>
-                  {/* Same provenance rule as the chart card below, so the
-                      narrative never contradicts it. */}
-                  <InsightCaption curated={vm.curated} />
-                  <Text fontSize="14px" lineHeight="20px" color="fg">
-                    {vm.summaryText}
-                  </Text>
-                </>
-              )}
-              {/* The design puts these above the card, and the shell that
-                  hosts it is this module (DashboardWidgetCard mounts
-                  WidgetMessage `inWorkspace`, which suppresses them inline). */}
-              {card && (
-                <InsightChartPills
-                  widget={card}
-                  siblings={rollups}
-                  groupKey={widget.id}
-                />
-              )}
-            </Flex>
-          ) : null
-        }
+        intro={introFor(card, true)}
         footer={
           total > 1 ? (
             <Flex

@@ -56,12 +56,16 @@ const NOTE_BODY_MIN_H = "80px";
  * syntax toolbar, and a Done button) rather than a title rename; Done persists
  * `config.text` via `onSaveText`. Mutations are owned by the grid and passed as
  * callbacks, matching `DashboardWidgetCard`.
+ *
+ * In the export (`print`) the card loses its edge and inset, as the analysis
+ * card does, and the note prints whole: no height cap, no internal scroll.
  */
 export default function DashboardTextWidgetCard({
   text,
   placeholder,
   isOwner,
   isDouble,
+  print = false,
   onArmDrag,
   onToggleSize,
   onSaveText,
@@ -73,6 +77,8 @@ export default function DashboardTextWidgetCard({
   placeholder: string | null;
   isOwner: boolean;
   isDouble: boolean;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print?: boolean;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
   onArmDrag: (event: React.PointerEvent) => void;
   onToggleSize: () => void;
@@ -218,18 +224,19 @@ export default function DashboardTextWidgetCard({
       // Content height on purpose: the packed grid stacks cards tightly, so
       // a card must never stretch to a taller neighbour's height.
       bg="white"
-      borderWidth="1px"
+      borderWidth={print ? 0 : "1px"}
       borderColor={editing ? "#0049AA" : "#DDE2F5"}
       borderRadius="sm"
       overflow="hidden"
+      css={print ? { breakInside: "avoid" } : undefined}
     >
       {/* Header — grey toolbar row while editing, else the AI caption + actions */}
       <Flex
         align="center"
         justify="space-between"
         gap="8px"
-        pl={editing || !isOwner ? "12px" : "4px"}
-        pr="12px"
+        pl={print ? 0 : editing || !isOwner ? "12px" : "4px"}
+        pr={print ? 0 : "12px"}
         py="8px"
         minH="36px"
         bg={editing ? "#F4F5F6" : "white"}
@@ -353,7 +360,11 @@ export default function DashboardTextWidgetCard({
       {/* Divider inset from the card edges, matching the analysis card. In
           edit mode the filled grey header carries its own full-width border. */}
       {!editing && (
-        <Box mx="8px" borderBottomWidth="1px" borderColor="#E0E2E5" />
+        <Box
+          mx={print ? 0 : "8px"}
+          borderBottomWidth="1px"
+          borderColor="#E0E2E5"
+        />
       )}
 
       {/* Body — the raw-markdown editor, the rendered note, or the empty state.
@@ -366,8 +377,8 @@ export default function DashboardTextWidgetCard({
         flex={editing ? "0 0 auto" : "1"}
         h={editing && lockedHeight !== null ? `${lockedHeight}px` : undefined}
         minH={NOTE_BODY_MIN_H}
-        maxH={editing ? undefined : NOTE_BODY_MAX_H}
-        overflow={editing ? "hidden" : "auto"}
+        maxH={editing || print ? undefined : NOTE_BODY_MAX_H}
+        overflow={editing ? "hidden" : print ? "visible" : "auto"}
       >
         {editing ? (
           <Textarea
@@ -395,7 +406,7 @@ export default function DashboardTextWidgetCard({
             _focusVisible={{ outline: "none", boxShadow: "none" }}
           />
         ) : text ? (
-          <DashboardTextWidget text={text} />
+          <DashboardTextWidget text={text} print={print} />
         ) : (
           <Flex
             minH="160px"
