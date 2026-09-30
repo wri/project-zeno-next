@@ -1,0 +1,157 @@
+// @vitest-environment happy-dom
+import { ChakraProvider } from "@chakra-ui/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/app/lib/api-client", () => ({
+  apiFetch: vi.fn(),
+  getToken: () => "token",
+}));
+vi.mock("@/app/hooks/useErrorHandler", () => ({
+  showApiError: vi.fn(),
+  showError: vi.fn(),
+  showServiceUnavailableError: vi.fn(),
+}));
+vi.mock("@/app/components/ui/toaster", () => ({
+  toaster: { create: vi.fn() },
+  Toaster: () => null,
+}));
+vi.mock("@/app/lib/ortto", () => ({ submitOrttoProfile: vi.fn() }));
+
+import system from "@/app/theme";
+import MessageBubble from "@/app/components/MessageBubble";
+import { apiFetch } from "@/app/lib/api-client";
+import { showApiError } from "@/app/hooks/useErrorHandler";
+import useAuthStore from "@/app/store/authStore";
+import useChatStore from "@/app/store/chatStore";
+import type { ProfilePromptData } from "../../model/profile-card";
+
+const PROMPT: ProfilePromptData = {
+  options: {
+    sectors: { government: "Government" },
+    sector_roles: { government: { analyst: "Analyst" } },
+    countries: { BR: "Brazil" },
+    languages: { pt: "Português" },
+  },
+  suggestion: {
+    source: "gfw",
+    sector: "government",
+    role: "analyst",
+    country: "BR",
+  },
+};
+
+function addCard(prompt: ProfilePromptData = PROMPT) {
+  useChatStore
+    .getState()
+    .addMessage({ type: "profile-prompt", message: "", profilePrompt: prompt });
+  return useChatStore.getState().messages.at(-1)!;
+}
+
+function renderBubble(id: string) {
+  const message = useChatStore.getState().messages.find((m) => m.id === id)!;
+  return render(
+    <ChakraProvider value={system}>
+      <MessageBubble message={message} isLast />
+    </ChakraProvider>
+  );
+}
+
+describe("a profile-prompt message in the chat", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
+    vi.mocked(apiFetch).mockReset();
+    vi.mocked(showApiError).mockReset();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    localStorage.clear();
+    useChatStore.getState().reset();
+    useAuthStore.getState().clearAuth();
+    useAuthStore.getState().setAuthStatus({
+      email: "maria@example.org",
+      id: "u-1",
+      hasProfile: false,
+      userType: null,
+      termsAcceptedAt: "2026-09-30T09:00:00Z",
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("renders the profile card, prefilled from GFW", () => {
+    renderBubble(addCard().id);
+    expect(
+      screen.getByText("We found your Global Forest Watch profile")
+    ).toBeDefined();
+    expect(screen.getByRole("button", { name: "Looks right" })).toBeDefined();
+  });
+
+  it("renders the empty card when there's no suggestion", () => {
+    renderBubble(addCard({ options: PROMPT.options }).id);
+    expect(
+      screen.getByText("Help us tailor Global Nature Watch")
+    ).toBeDefined();
+  });
+
+  it("Not now removes the card and counts a dismissal", () => {
+    const card = addCard();
+    renderBubble(card.id);
+    fireEvent.click(screen.getByRole("button", { name: "Not now" }));
+
+    expect(useChatStore.getState().messages.some((m) => m.id === card.id)).toBe(
+      false
+    );
+    expect(
+      JSON.parse(localStorage.getItem("gnw_profile_ask_v1:u-1")!)
+    ).toMatchObject({ dismissals: 1 });
+  });
+
+  it("Looks right saves and removes the card", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(new Response("{}", { status: 200 }));
+    const card = addCard();
+    renderBubble(card.id);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Looks right" }));
+    });
+
+    await waitFor(() => expect(useAuthStore.getState().hasProfile).toBe(true));
+    expect(useChatStore.getState().messages.some((m) => m.id === card.id)).toBe(
+      false
+    );
+    expect(
+      JSON.parse(vi.mocked(apiFetch).mock.calls[0][1]!.body as string)
+    ).toEqual({
+      sector_code: "government",
+      role_code: "analyst",
+      country_code: "BR",
+      has_profile: true,
+    });
+  });
+
+  it("keeps the card and says so when saving fails", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(new Response("", { status: 500 }));
+    const card = addCard();
+    renderBubble(card.id);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Looks right" }));
+    });
+
+    await waitFor(() => expect(showApiError).toHaveBeenCalledOnce());
+    expect(useChatStore.getState().messages.some((m) => m.id === card.id)).toBe(
+      true
+    );
+    expect(useAuthStore.getState().hasProfile).toBe(false);
+    const button = screen.getByRole("button", {
+      name: "Looks right",
+    }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+  });
+});

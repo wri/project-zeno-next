@@ -8,6 +8,11 @@
  * /onboarding-debug/front-door. Consumers import ONLY from this barrel.
  */
 export { WelcomePage } from "./ui/WelcomePage";
+export { ProfileAskTrigger } from "./ui/ProfileAskTrigger";
+export {
+  ProfilePromptMessage,
+  type ProfilePromptMessageProps,
+} from "./ui/ProfilePromptMessage";
 export { WelcomeConsent, type WelcomeConsentProps } from "./ui/WelcomeConsent";
 export {
   ProfilePromptCard,

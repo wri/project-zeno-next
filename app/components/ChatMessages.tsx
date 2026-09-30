@@ -5,6 +5,7 @@ import useChatStore from "@/app/store/chatStore";
 import useViewContextStore from "@/app/store/viewContextStore";
 import { usePinnedPrompt } from "@/app/hooks/usePinnedPrompt";
 import DashboardChatNudges from "@/src/features/dashboards/ui/DashboardChatNudges";
+import { lastConversationIndex } from "@/app/utils/lastConversationIndex";
 import MessageBubble from "./MessageBubble";
 import PinnedPrompt from "./PinnedPrompt";
 import Reasoning from "./Reasoning";
@@ -108,6 +109,7 @@ function ChatMessages({ pt }: ChatMessagesProps) {
   const lastUserMessageIndex = messages.findLastIndex(
     (msg) => msg.type === "user"
   );
+  const lastIndex = lastConversationIndex(messages);
 
   return (
     <Box ref={containerRef} fontSize="sm" pt={pt}>
@@ -119,7 +121,7 @@ function ChatMessages({ pt }: ChatMessagesProps) {
         const previousMessage = index > 0 ? messages[index - 1] : null;
         const isConsecutive = previousMessage?.type === message.type;
         const isFirst = index === 0;
-        const isLast = index === messages.length - 1;
+        const isLast = index === lastIndex;
         const isLastUserMessage =
           index === lastUserMessageIndex && message.type === "user";
         const isSeededGreeting = isFirst && message.type === "system";
