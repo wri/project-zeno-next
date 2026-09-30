@@ -117,3 +117,16 @@ export function toProfilePatch(
   if (language !== "") patch.preferred_language_code = language;
   return patch;
 }
+
+/**
+ * What a `profile-prompt` chat message carries: everything the card needs,
+ * settled before the message is added, so the card mounts once with final
+ * props (it seeds its form state from them).
+ */
+export interface ProfilePromptData {
+  options: ProfileCardOptions;
+  suggestion?: ProfileSuggestion;
+  /** From the GFW profile, for the Ortto submission only. */
+  firstName?: string;
+  lastName?: string;
+}

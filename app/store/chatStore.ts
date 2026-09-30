@@ -81,6 +81,12 @@ interface ChatState {
   // Layer ids the user dismissed from the chat-input context chips. Map layers
   // stay visible; only the next message's ui_context / chip snapshot omits them.
   excludedContextLayerIds: string[];
+  // Answers completed live on this thread: bumped by sendMessage when a turn
+  // ends in an assistant reply (not a clarification nudge, error or stop).
+  // fetchThread never touches it, so a replayed thread doesn't count. A
+  // signal for UI that reacts to a finished answer (the front door's profile
+  // ask); reset() zeroes it, so watch for increases.
+  completedAnswers: number;
 }
 
 interface ChatActions {
@@ -88,6 +94,7 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
+  removeMessage: (messageId: string) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   acceptAnalyseNudge: (messageId: string) => void;
   upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
@@ -145,6 +152,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   dateRange: null,
   lastSentContext: emptyContextKeys(),
   excludedContextLayerIds: [],
+  completedAnswers: 0,
 };
 
 /**
@@ -223,6 +231,16 @@ function dashboardCardExistsThisTurn(dashboardId: string): boolean {
     }
   }
   return false;
+}
+
+// Whether the messages a turn added amount to an answer. A turn that ends by
+// asking the user to choose (a nudge) is a clarification, and an error turn
+// didn't answer; neither counts.
+function isAnsweredTurn(turnMessages: ChatMessage[]): boolean {
+  return (
+    turnMessages.some((m) => m.type === "assistant") &&
+    !turnMessages.some((m) => m.type === "nudge" || m.type === "error")
+  );
 }
 
 // Helper function to process stream messages and add them to chat
@@ -539,6 +557,12 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }));
   },
 
+  removeMessage: (messageId) => {
+    set((state) => ({
+      messages: state.messages.filter((m) => m.id !== messageId),
+    }));
+  },
+
   // The analyse nudge is client-side only (never replayed from thread
   // history): at most one is pending at a time, so a new selection replaces
   // any pending nudge instead of stacking. Accepted nudges persist in the
@@ -695,12 +719,24 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       excludedLayerIds
     );
 
+    // An unanswered profile card (front door) goes away once the
+    // conversation moves on; that isn't a "Not now".
+    if (get().messages.some((m) => m.type === "profile-prompt")) {
+      set((state) => ({
+        messages: state.messages.filter((m) => m.type !== "profile-prompt"),
+      }));
+    }
+
     // Add user message with a read-only snapshot of the context it was sent with
     addMessage({
       type: "user",
       message,
       context: snapshot,
     });
+    // Identifies this turn's messages at the end, even if other messages were
+    // removed meanwhile or the thread was reset.
+    const userMessageId = get().messages.at(-1)?.id;
+    let streamCompleted = false;
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
@@ -851,6 +887,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       } else if (abortController.signal.aborted) {
         console.log("FRONTEND: Stream ended due to abort signal");
       }
+      // readDataStream stops quietly (no throw) when aborted between reads.
+      streamCompleted = !abortController.signal.aborted;
     } catch (error) {
       console.error("Error sending message:", error);
 
@@ -939,6 +977,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       // timeout).
       setGeneratingInsight(false);
       get().setImageryUpdating(false);
+
+      if (streamCompleted) {
+        const messages = get().messages;
+        const userIndex = messages.findIndex((m) => m.id === userMessageId);
+        if (userIndex !== -1 && isAnsweredTurn(messages.slice(userIndex + 1))) {
+          set((state) => ({ completedAnswers: state.completedAnswers + 1 }));
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };

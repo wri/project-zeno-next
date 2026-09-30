@@ -1112,3 +1112,182 @@ describe("nudge stream state → nudge chat message", () => {
     expect(nudgeMessages()[0].nudge).toEqual(aoiNudge);
   });
 });
+
+// --- completedAnswers: the "a live answer finished" signal ---------------
+
+describe("chatStore.completedAnswers", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const completed = () => useChatStore.getState().completedAnswers;
+
+  it("starts at 0 and is zeroed by reset()", () => {
+    expect(completed()).toBe(0);
+    useChatStore.setState({ completedAnswers: 3 });
+    useChatStore.getState().reset();
+    expect(completed()).toBe(0);
+  });
+
+  it("counts a turn that ends in an assistant reply", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([agentTextLine("Pará lost 1.2 Mha.")])
+    );
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
+    expect(completed()).toBe(1);
+    // Signalled after the turn has fully settled.
+    expect(useChatStore.getState().isLoading).toBe(false);
+  });
+
+  it("counts a narrated answer (two assistant messages) once", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        agentTextLine("Let me look that up."),
+        agentTextLine("Pará lost 1.2 Mha."),
+      ])
+    );
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
+    expect(completed()).toBe(1);
+  });
+
+  it("counts each answered turn", async () => {
+    vi.mocked(apiFetch).mockImplementation(() =>
+      Promise.resolve(ndjsonResponse([agentTextLine("An answer.")]))
+    );
+    await useChatStore.getState().sendMessage("one");
+    await useChatStore.getState().sendMessage("two");
+    expect(completed()).toBe(2);
+  });
+
+  it("doesn't count a clarification (the turn ends in a nudge)", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        toolNudgeLine("pick_aoi", aoiNudge),
+        agentTextLine("Which Puri did you mean?"),
+      ])
+    );
+    await useChatStore.getState().sendMessage("search for areas named puri");
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a turn with a server-side timeout error", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        agentTextLine("Working on it."),
+        errorToolLine("timeout", "Request timed out."),
+      ])
+    );
+    await useChatStore.getState().sendMessage("hello");
+    expect(
+      useChatStore.getState().messages.some((m) => m.type === "error")
+    ).toBe(true);
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a turn with no assistant reply", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(ndjsonResponse([]));
+    await useChatStore.getState().sendMessage("hello");
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a turn the user stopped", async () => {
+    vi.mocked(apiFetch).mockImplementation((_path, init) =>
+      Promise.resolve(makeAbortableResponse(init!.signal as AbortSignal))
+    );
+    const promise = useChatStore.getState().sendMessage("hello");
+    useChatStore.getState().cancelRequest();
+    await promise;
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a rejected request (e.g. quota exhausted)", async () => {
+    vi.mocked(apiFetch).mockResolvedValue({
+      ok: false,
+      status: 429,
+    } as Response);
+    await useChatStore.getState().sendMessage("hello");
+    expect(completed()).toBe(0);
+  });
+
+  it("doesn't count a turn whose thread was reset mid-stream", async () => {
+    let finish: (value: Response) => void = () => {};
+    vi.mocked(apiFetch).mockReturnValue(
+      new Promise<Response>((resolve) => {
+        finish = resolve;
+      })
+    );
+    const promise = useChatStore.getState().sendMessage("hello");
+    useChatStore.getState().reset();
+    finish(ndjsonResponse([agentTextLine("An answer.")]));
+    await promise;
+    expect(completed()).toBe(0);
+  });
+
+  it("is never touched by fetchThread, however many answers the thread holds", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        humanLine("How much has Pará lost?"),
+        agentTextLine("Pará lost 1.2 Mha."),
+        humanLine("And Amazonas?"),
+        agentTextLine("Amazonas lost 0.8 Mha."),
+      ])
+    );
+    await useChatStore.getState().fetchThread("thread-1");
+    expect(
+      useChatStore.getState().messages.filter((m) => m.type === "assistant")
+    ).toHaveLength(2);
+    expect(completed()).toBe(0);
+  });
+});
+
+describe("chatStore.removeMessage and the unanswered profile card", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const card = {
+    type: "profile-prompt" as const,
+    message: "",
+    profilePrompt: {
+      options: { sectors: {}, sector_roles: {}, countries: {}, languages: {} },
+    },
+  };
+
+  it("removes one message by id and leaves the rest", () => {
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().addMessage(card);
+    const before = useChatStore.getState().messages;
+    const cardId = before.at(-1)!.id;
+
+    useChatStore.getState().removeMessage(cardId);
+
+    const after = useChatStore.getState().messages;
+    expect(after).toHaveLength(before.length - 1);
+    expect(after.some((m) => m.id === cardId)).toBe(false);
+    expect(after.at(-1)?.message).toBe("A");
+  });
+
+  it("drops an unanswered profile card when the next question is sent", async () => {
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().addMessage(card);
+    vi.mocked(apiFetch).mockResolvedValue(ndjsonResponse([agentTextLine("B")]));
+
+    await useChatStore.getState().sendMessage("next question");
+
+    const messages = useChatStore.getState().messages;
+    expect(messages.some((m) => m.type === "profile-prompt")).toBe(false);
+    expect(messages.map((m) => m.message)).toEqual(
+      expect.arrayContaining(["A", "next question", "B"])
+    );
+  });
+});

@@ -40,6 +40,7 @@ export {
   profileCardMode,
   type ProfileCardOptions,
   type ProfileCardPatch,
+  type ProfilePromptData,
   type ProfileSuggestion,
 } from "./model/profile-card";
 export { continueUrl, pendingPrompt } from "./lib/continue-url";

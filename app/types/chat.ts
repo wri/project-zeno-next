@@ -1,6 +1,7 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
 import type { ChartColorFields } from "@/app/types/chartColors";
+import type { ProfilePromptData } from "@/src/features/front-door";
 
 export type { BlogArticle };
 
@@ -46,6 +47,7 @@ export interface ChatMessage {
     | "analyse-nudge"
     | "view-analysis-nudge"
     | "create-dashboard-nudge"
+    | "profile-prompt"
     | "stopped";
   message: string;
   timestamp: string;
@@ -58,6 +60,7 @@ export interface ChatMessage {
   context?: MessageContext; // Read-only context snapshot for user messages
   viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
   createDashboardSuggestion?: CreateDashboardSuggestion; // For create-dashboard-nudge messages
+  profilePrompt?: ProfilePromptData; // For profile-prompt messages (front door; client-only, never replayed)
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
