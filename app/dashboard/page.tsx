@@ -22,6 +22,8 @@ import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import { submitOrttoProfile } from "@/app/lib/ortto";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
+import useAuthStore from "@/app/store/authStore";
+import { isFrontDoorEnabled } from "@/app/config/front-door";
 import SettingsShell from "@/app/components/SettingsShell";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getSettingsFormSchema } from "@/app/dashboard/schema";
@@ -209,6 +211,11 @@ export default function UserSettingsPage() {
       });
       if (!res.ok) {
         throw new Error("Failed to save profile");
+      }
+      // Front door: this page is where "Complete your profile" leads, so the
+      // reminder (menu item, in-chat asks) must stop without a reload.
+      if (isFrontDoorEnabled()) {
+        useAuthStore.getState().markProfileComplete();
       }
 
       // Submit to Ortto directly from client (no secrets needed)
