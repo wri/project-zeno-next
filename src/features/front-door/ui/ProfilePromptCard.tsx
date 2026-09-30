@@ -240,7 +240,10 @@ export function ProfilePromptCard({
               ))}
           </Grid>
         ) : (
-          <Grid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={3}>
+          // Sized by the card's own width, not the viewport: in the chat
+          // panel (~300px) the fields stack, so each select and its option
+          // list is wide enough to read; wider hosts fit them side by side.
+          <Grid templateColumns="repeat(auto-fit, minmax(14rem, 1fr))" gap={3}>
             <OptionSelect
               id="profile-card-sector"
               label="Sector"
