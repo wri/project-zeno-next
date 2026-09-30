@@ -1,4 +1,3 @@
-"use client";
 import { Button } from "@chakra-ui/react";
 import { CheckIcon, SparkleIcon } from "@phosphor-icons/react";
 import { AnalyseSuggestion } from "@/app/types/chat";

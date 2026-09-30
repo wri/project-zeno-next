@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { useSearchParams } from "@/src/shared/lib/router";
 import { Link as NextLink } from "@/src/shared/lib/router";

@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Evals screen: Overview, Trends, Runs and Coverage as URL-synced tabs on
  * one route (`/evals?tab=…&set=…&run=…`), so deep links survive sharing.

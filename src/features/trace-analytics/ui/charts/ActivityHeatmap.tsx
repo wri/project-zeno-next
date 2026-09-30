@@ -1,5 +1,3 @@
-"use client";
-
 /** Weekday × hour-of-day heat grid showing when traffic arrives (UTC). */
 
 import { Box, Flex, Grid, Text } from "@chakra-ui/react";

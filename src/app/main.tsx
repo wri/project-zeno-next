@@ -1,15 +1,7 @@
-import { StrictMode, type ComponentType } from "react";
-import { createRoot } from "react-dom/client";
-import {
-  createBrowserRouter,
-  Outlet,
-  RouterProvider,
-  ScrollRestoration,
-} from "react-router";
-import Providers from "@/app/components/providers";
-import HotjarTrigger from "@/app/components/HotjarTrigger";
-import CookieBanner from "@/app/components/CookieBanner";
-import CookiePreferencesDrawer from "@/app/components/CookiePreferencesDrawer";
+import { StrictMode } from "react";
+import { createRoot, hydrateRoot } from "react-dom/client";
+import { createBrowserRouter, matchRoutes, RouterProvider } from "react-router";
+import { routes } from "./routes";
 import "@fontsource/ibm-plex-sans/400.css";
 import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/ibm-plex-sans/600.css";
@@ -17,102 +9,34 @@ import "@fontsource/ibm-plex-sans/700.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/700.css";
 
-// Each page is its own chunk, so the landing page doesn't ship the map stack.
-const page = (load: () => Promise<{ default: ComponentType }>) => ({
-  lazy: async () => ({ Component: (await load()).default }),
-});
+const container = document.getElementById("root")!;
+// Set by scripts/prerender.mjs on the pages it renders at build time.
+const prerenderedPath = container.dataset.prerendered;
+const path = window.location.pathname.replace(/(.)\/$/, "$1");
 
-function Root() {
-  return (
-    <Providers>
-      <ScrollRestoration />
-      <Outlet />
-      <HotjarTrigger />
-      <CookieBanner />
-      <CookiePreferencesDrawer />
-    </Providers>
-  );
-}
-
-const router = createBrowserRouter([
-  {
-    element: <Root />,
-    // Blank while the first page's chunk loads.
-    HydrateFallback: () => null,
-    children: [
-      { index: true, ...page(() => import("@/app/(home)/page")) },
-      { path: "amazonia", ...page(() => import("@/app/amazonia/page")) },
-      {
-        // The chat layout owns the map; child pages render nothing, so the
-        // map stays mounted between /app and /app/threads/:id.
-        path: "app",
-        lazy: async () => {
-          const { default: ChatLayout } =
-            await import("@/app/app/(chat)/layout");
-          return {
-            Component: () => (
-              <ChatLayout>
-                <Outlet />
-              </ChatLayout>
-            ),
-          };
-        },
-        children: [
-          { index: true, ...page(() => import("@/app/app/(chat)/page")) },
-          {
-            path: "threads/:id",
-            ...page(() => import("@/app/app/(chat)/threads/[id]/page")),
-          },
-        ],
-      },
-      {
-        path: "app/classic",
-        ...page(() => import("@/app/app/classic/layout")),
-      },
-      {
-        path: "auth/callback",
-        ...page(() => import("@/app/auth/callback/page")),
-      },
-      { path: "dashboard", ...page(() => import("@/app/dashboard/page")) },
-      { path: "dashboards", ...page(() => import("@/app/dashboards/page")) },
-      {
-        path: "dashboards/:id",
-        ...page(() => import("@/app/dashboards/[id]/page")),
-      },
-      { path: "evals", ...page(() => import("@/app/evals/page")) },
-      { path: "maintenance", ...page(() => import("@/app/maintenance/page")) },
-      {
-        path: "manage-users",
-        ...page(() => import("@/app/manage-users/page")),
-      },
-      { path: "onboarding", ...page(() => import("@/app/onboarding/page")) },
-      {
-        path: "trace-analytics",
-        ...page(() => import("@/app/trace-analytics/page")),
-      },
-      {
-        path: "unauthorized",
-        ...page(() => import("@/app/unauthorized/page")),
-      },
-      ...(import.meta.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true"
-        ? [
-            {
-              path: "chart-debug",
-              ...page(() => import("@/app/chart-debug/page")),
-            },
-            {
-              path: "onboarding-debug",
-              ...page(() => import("@/app/onboarding-debug/page")),
-            },
-          ]
-        : []),
-      { path: "*", ...page(() => import("@/app/not-found")) },
-    ],
-  },
-]);
-
-createRoot(document.getElementById("root")!).render(
+const app = () => (
   <StrictMode>
-    <RouterProvider router={router} />
+    <RouterProvider router={createBrowserRouter(routes)} />
   </StrictMode>
 );
+
+async function hydrate() {
+  // Load the page's code first: with a lazy route still pending, the router
+  // starts on its blank HydrateFallback and discards the prerendered HTML.
+  await Promise.all(
+    (matchRoutes(routes, window.location) ?? []).map(async ({ route }) => {
+      if (typeof route.lazy === "function") {
+        Object.assign(route, await route.lazy(), { lazy: undefined });
+      }
+    })
+  );
+  hydrateRoot(container, app());
+}
+
+if (prerenderedPath === path) {
+  hydrate();
+} else {
+  // Any other route, including a host fallback that served a prerendered
+  // page's HTML for a different URL: render from scratch.
+  createRoot(container).render(app());
+}

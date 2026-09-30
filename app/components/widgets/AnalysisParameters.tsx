@@ -1,4 +1,3 @@
-"use client";
 import { Flex, Text } from "@chakra-ui/react";
 import { ParamChip } from "@/app/components/ui/ParamChip";
 import { ParamChipData } from "./analysis-params-utils";

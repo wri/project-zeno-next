@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { usePathname } from "@/src/shared/lib/router";
 import { getToken } from "@/app/lib/api-client";

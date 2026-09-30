@@ -1,5 +1,3 @@
-"use client";
-
 import { Flex, Box } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 

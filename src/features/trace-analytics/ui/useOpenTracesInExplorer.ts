@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Drill-down from an analytics aggregate to the Trace Explorer.
  *

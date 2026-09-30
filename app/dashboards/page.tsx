@@ -1,5 +1,3 @@
-"use client";
-
 import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawer";
 import PageHeader from "@/app/components/PageHeader";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";

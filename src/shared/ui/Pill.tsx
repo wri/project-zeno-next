@@ -1,4 +1,3 @@
-"use client";
 import { Button, Flex, Menu, Portal, Text } from "@chakra-ui/react";
 import { CaretDownIcon } from "@phosphor-icons/react";
 

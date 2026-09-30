@@ -1,5 +1,3 @@
-"use client";
-
 import { Link } from "@/src/shared/lib/router";
 import { Box, Flex, Heading, Link as ChakraLink, Text } from "@chakra-ui/react";
 import { LockIcon, PolygonIcon } from "@phosphor-icons/react";
