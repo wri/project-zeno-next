@@ -156,12 +156,14 @@ export async function applyAnalysisTemplate(
   return SectionFromTemplateResponseSchema.parse(data);
 }
 
-// Reorders a section. The backend accepts title/description too, but only
-// position has a caller yet (the section drag).
+// Reorders (the section drag) or retitles a section. The backend accepts a
+// description too, which has no caller yet. The response is the dashboard
+// without insight expansion, so it is ignored — callers update the cache
+// optimistically and refetch.
 export async function updateSection(
   dashboardId: string,
   sectionId: string,
-  patch: { position: number }
+  patch: { position?: number; title?: string }
 ): Promise<void> {
   await readJson<unknown>(
     `/api/dashboards/${dashboardId}/sections/${sectionId}`,
@@ -208,6 +210,26 @@ export async function addTextWidget(dashboardId: string): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ widget_type: "text", config: { text: "" } }),
   });
+}
+
+// Deletes a section. With `deleteWidgets` its widgets go too; without, they
+// fall back to the ungrouped top level. Either way the insights the widgets
+// referenced are left intact.
+export async function deleteSection(
+  dashboardId: string,
+  sectionId: string,
+  deleteWidgets: boolean
+): Promise<void> {
+  // 204 No Content — bypass readJson, which would choke on the empty body.
+  const res = await apiFetch(
+    `/api/dashboards/${dashboardId}/sections/${sectionId}?delete_widgets=${deleteWidgets}`,
+    { method: "DELETE" }
+  );
+  if (!res.ok) {
+    const error = new Error(`Failed to delete section: ${res.statusText}`);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
+  }
 }
 
 export async function deleteWidget(

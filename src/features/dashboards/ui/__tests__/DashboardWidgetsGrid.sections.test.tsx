@@ -33,8 +33,22 @@ const updateSection = vi
     (dashboardId: string, sectionId: string, patch: unknown) => Promise<void>
   >()
   .mockResolvedValue(undefined);
+const deleteSection = vi
+  .fn<
+    (
+      dashboardId: string,
+      sectionId: string,
+      deleteWidgets: boolean
+    ) => Promise<void>
+  >()
+  .mockResolvedValue(undefined);
 vi.mock("../../api/dashboards", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../api/dashboards")>()),
+  deleteSection: (
+    dashboardId: string,
+    sectionId: string,
+    deleteWidgets: boolean
+  ) => deleteSection(dashboardId, sectionId, deleteWidgets),
   updateWidget: (dashboardId: string, widgetId: string, patch: unknown) =>
     updateWidget(dashboardId, widgetId, patch),
   updateSection: (dashboardId: string, sectionId: string, patch: unknown) =>
@@ -42,6 +56,7 @@ vi.mock("../../api/dashboards", async (importOriginal) => ({
   listAnalysisTemplates: () => listAnalysisTemplates(),
 }));
 
+import { toaster } from "@/app/components/ui/toaster";
 import DashboardWidgetsGrid from "../DashboardWidgetsGrid";
 import type {
   Dashboard,
@@ -113,6 +128,8 @@ describe("DashboardWidgetsGrid sections", () => {
   beforeEach(() => {
     updateWidget.mockClear();
     updateSection.mockClear();
+    deleteSection.mockClear();
+    vi.mocked(toaster.create).mockClear();
     useAuthStore.setState({ userId: "u1" });
   });
 
@@ -545,5 +562,130 @@ describe("DashboardWidgetsGrid sections", () => {
 
     expect(screen.queryByRole("heading")).toBeNull();
     expect(screen.getByText("Top note")).toBeTruthy();
+  });
+
+  describe("rename and delete", () => {
+    const withSections = () =>
+      dashboard(
+        [section("s1", "Fires", 0), section("s2", "Empty", 1)],
+        [note("t1", "Top note", 0), note("f1", "In fires", 0, "s1")]
+      );
+    const inSection = (title: string) =>
+      within(
+        screen
+          .getByRole("heading", { name: title })
+          .closest("[data-section-id]") as HTMLElement
+      );
+
+    it("renames a section inline on Enter", async () => {
+      renderGrid(withSections());
+
+      fireEvent.click(
+        inSection("Fires").getByRole("button", { name: "Rename section" })
+      );
+      const input = screen.getByRole("textbox", { name: "Section title" });
+      fireEvent.change(input, { target: { value: "  Wildfires " } });
+      fireEvent.keyDown(input, { key: "Enter" });
+
+      await waitFor(() =>
+        expect(updateSection).toHaveBeenCalledWith("d1", "s1", {
+          title: "Wildfires",
+        })
+      );
+    });
+
+    it("writes nothing on Escape, a blank title or an unchanged one", () => {
+      renderGrid(withSections());
+      const rename = () =>
+        fireEvent.click(
+          inSection("Fires").getByRole("button", { name: "Rename section" })
+        );
+      const input = () =>
+        screen.getByRole("textbox", { name: "Section title" });
+
+      rename();
+      fireEvent.change(input(), { target: { value: "Wildfires" } });
+      fireEvent.keyDown(input(), { key: "Escape" });
+      rename();
+      fireEvent.change(input(), { target: { value: "   " } });
+      fireEvent.keyDown(input(), { key: "Enter" });
+      rename();
+      fireEvent.keyDown(input(), { key: "Enter" });
+
+      expect(updateSection).not.toHaveBeenCalled();
+      expect(screen.getByRole("heading", { name: "Fires" })).toBeTruthy();
+    });
+
+    it("deletes an empty section without asking", async () => {
+      renderGrid(withSections());
+
+      fireEvent.click(
+        inSection("Empty").getByRole("button", { name: "Delete section" })
+      );
+
+      await waitFor(() =>
+        expect(deleteSection).toHaveBeenCalledWith("d1", "s2", false)
+      );
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+    });
+
+    it("asks whether a section's modules go with it", async () => {
+      renderGrid(withSections());
+      const openDialog = () =>
+        fireEvent.click(
+          inSection("Fires").getByRole("button", { name: "Delete section" })
+        );
+
+      openDialog();
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog.textContent).toContain("holds 1 module");
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Keep modules" })
+      );
+      await waitFor(() =>
+        expect(deleteSection).toHaveBeenLastCalledWith("d1", "s1", false)
+      );
+
+      openDialog();
+      fireEvent.click(
+        within(await screen.findByRole("alertdialog")).getByRole("button", {
+          name: "Delete section and modules",
+        })
+      );
+      await waitFor(() =>
+        expect(deleteSection).toHaveBeenLastCalledWith("d1", "s1", true)
+      );
+    });
+
+    it("toasts when the delete fails", async () => {
+      deleteSection.mockRejectedValueOnce(new Error("Section not found"));
+      renderGrid(withSections());
+
+      fireEvent.click(
+        inSection("Empty").getByRole("button", { name: "Delete section" })
+      );
+
+      await waitFor(() =>
+        expect(toaster.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "Couldn't delete the section",
+            description: "Section not found",
+            type: "error",
+          })
+        )
+      );
+    });
+
+    it("offers neither to someone else's dashboard", () => {
+      useAuthStore.setState({ userId: "someone-else" });
+      renderGrid(withSections());
+
+      expect(
+        screen.queryByRole("button", { name: "Rename section" })
+      ).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "Delete section" })
+      ).toBeNull();
+    });
   });
 });

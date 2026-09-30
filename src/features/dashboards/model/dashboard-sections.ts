@@ -119,3 +119,44 @@ export function computeSectionMove(
     positions.get(id) === position ? [] : [{ id, position }]
   );
 }
+
+/**
+ * The dashboard once `sectionId` is deleted, as the backend leaves it: with
+ * `deleteWidgets` the section's widgets go too; without, they drop to the
+ * ungrouped top level, in their order, after the widgets already there.
+ */
+export function withSectionRemoved(
+  dashboard: Dashboard,
+  sectionId: string,
+  deleteWidgets: boolean
+): Dashboard {
+  const sections = dashboard.sections.filter((s) => s.id !== sectionId);
+  const inSection = (w: DashboardWidget) => w.section_id === sectionId;
+  if (deleteWidgets) {
+    return {
+      ...dashboard,
+      sections,
+      widgets: dashboard.widgets.filter((w) => !inSection(w)),
+    };
+  }
+  const known = new Set(sections.map((s) => s.id));
+  const topLevel = dashboard.widgets.filter(
+    (w) => !inSection(w) && !(w.section_id && known.has(w.section_id))
+  );
+  const after = topLevel.reduce((max, w) => Math.max(max, w.position), -1) + 1;
+  const moved = new Map(
+    dashboard.widgets
+      .filter(inSection)
+      .sort(byPosition)
+      .map((w, i) => [w.id, after + i])
+  );
+  return {
+    ...dashboard,
+    sections,
+    widgets: dashboard.widgets.map((w) =>
+      moved.has(w.id)
+        ? { ...w, section_id: null, position: moved.get(w.id)! }
+        : w
+    ),
+  };
+}

@@ -140,13 +140,16 @@ export function useDeleteDashboard() {
   });
 }
 
-// Shared optimistic-update plumbing for the widget mutations: snapshot the
-// cached dashboard, apply `apply` to its widgets, roll back on error and
-// refetch on settle (the server is the position/config authority).
-function useOptimisticDashboardMutation<TVars>(
+// Shared optimistic-update plumbing for the widget and section mutations:
+// snapshot the cached dashboard, apply `apply` to it, roll back on error and
+// refetch on settle (the server is the position/config authority). `onError`
+// runs after the rollback, on the mutation rather than the caller's
+// component, so it still runs when the change unmounted that component.
+export function useOptimisticDashboardMutation<TVars>(
   dashboardId: string,
   mutationFn: (vars: TVars) => Promise<unknown>,
-  apply: (dashboard: Dashboard, vars: TVars) => Dashboard
+  apply: (dashboard: Dashboard, vars: TVars) => Dashboard,
+  onError?: (error: Error) => void
 ) {
   const queryClient = useQueryClient();
   const key = dashboardKeys.detail(dashboardId);
@@ -161,8 +164,9 @@ function useOptimisticDashboardMutation<TVars>(
       }
       return { previous };
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) queryClient.setQueryData(key, context.previous);
+      onError?.(err);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: key });
