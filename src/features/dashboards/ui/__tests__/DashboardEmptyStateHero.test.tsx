@@ -68,7 +68,7 @@ describe("DashboardEmptyStateHero", () => {
 
     expect(screen.getByText("Add an analysis template")).toBeTruthy();
     expect(
-      await screen.findByRole("button", { name: "Near-real-time monitoring" })
+      await screen.findByRole("button", { name: "Near real-time monitoring" })
     ).toBeTruthy();
     expect(screen.getByText("More suggested modules")).toBeTruthy();
     expect(

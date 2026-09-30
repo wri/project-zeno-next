@@ -1,6 +1,7 @@
 "use client";
 
-import { Flex, Grid, Image, Text, type GridProps } from "@chakra-ui/react";
+import { Fragment } from "react";
+import { Box, Flex, Grid, Image, Text, type GridProps } from "@chakra-ui/react";
 import { ShapesIcon } from "@phosphor-icons/react";
 
 import type { Dashboard } from "../api/schemas";
@@ -26,6 +27,26 @@ const CAPTION_COLOR = "rgba(19, 22, 25, 0.7)";
 
 /** `building`: this card's request is in flight; `disabled`: it can't run. */
 type TemplateCardStatus = "idle" | "building" | "disabled";
+
+// The footer grid's narrowest card: the thumbnail and gutters take 132px, and
+// the rest has to hold a label's first words ("Near real-time") on one line.
+// Four still fit across the design's 1180px row.
+const MIN_CARD_WIDTH_PX = 270;
+
+/**
+ * A label that wraps only between words, never at a hyphen inside one:
+ * "real-time" stays whole.
+ */
+function WordWrapped({ text }: { text: string }) {
+  return text.split(" ").map((word, i) => (
+    <Fragment key={i}>
+      {i > 0 && " "}
+      <Box as="span" whiteSpace="nowrap">
+        {word}
+      </Box>
+    </Fragment>
+  ));
+}
 
 function TemplateCard({
   card,
@@ -91,7 +112,7 @@ function TemplateCard({
         loading="lazy"
       />
       <Flex direction="column" gap="4px" flex={1} minW={0} align="flex-start">
-        <Flex align="center" gap="4px" color={CAPTION_COLOR}>
+        <Flex align="center" gap="4px" color={CAPTION_COLOR} maxW="full">
           {building ? (
             <RunningIcon size={16} />
           ) : (
@@ -102,18 +123,17 @@ function TemplateCard({
             fontSize="10px"
             lineHeight="16px"
             textTransform="uppercase"
-            whiteSpace="nowrap"
+            truncate
           >
-            {building ? "Building section..." : "Analysis template"}
+            {building ? "Building..." : "Analysis template"}
           </Text>
         </Flex>
         <Text
           fontSize={compact ? "16px" : "18px"}
           lineHeight="1.25"
           color="#393E29"
-          wordBreak="break-word"
         >
-          {card.label}
+          <WordWrapped text={card.label} />
         </Text>
       </Flex>
     </Flex>
@@ -121,19 +141,19 @@ function TemplateCard({
 }
 
 /**
- * The cards to show. A card shows once the registry lists its template, with
- * the registry's label (already in the user's language); while the registry
- * loads, or if it fails, every card shows with the design's copy, since the
- * apply call does not need the registry. `enabled: false` skips the registry
- * fetch for a viewer who will not see the cards.
+ * The cards to show: those whose template the registry lists. While the
+ * registry loads, or if it fails, every card shows, since the apply call does
+ * not need the registry. The label is the design's copy, like the rest of the
+ * dashboard's card copy, not the registry's ("Near-real-time monitoring").
+ * `enabled: false` skips the registry fetch for a viewer who will not see the
+ * cards.
  */
 export function useTemplateCards(enabled = true): AnalysisTemplateCard[] {
   const { data: registry } = useAnalysisTemplates(enabled);
-  return ANALYSIS_TEMPLATE_CARDS.flatMap((card) => {
-    if (!registry) return [card];
-    const entry = registry.find((t) => t.name === card.name);
-    return entry ? [{ ...card, label: entry.label }] : [];
-  });
+  if (!registry) return [...ANALYSIS_TEMPLATE_CARDS];
+  return ANALYSIS_TEMPLATE_CARDS.filter((card) =>
+    registry.some((t) => t.name === card.name)
+  );
 }
 
 /**
@@ -206,11 +226,7 @@ export default function DashboardAnalysisTemplates({
         dashboard={dashboard}
         cards={cards}
         mt="28px"
-        templateColumns={{
-          base: "1fr",
-          sm: "repeat(2, minmax(0, 1fr))",
-          lg: "repeat(4, minmax(0, 1fr))",
-        }}
+        templateColumns={`repeat(auto-fill, minmax(min(100%, ${MIN_CARD_WIDTH_PX}px), 1fr))`}
         columnGap="22px"
         rowGap="30px"
       />

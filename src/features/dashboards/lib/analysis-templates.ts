@@ -1,8 +1,7 @@
 /**
  * A card in the "Add an analysis template" row (Figma node 3938:12209).
  * `name` is the backend registry name (`GET /api/analysis-templates`), which
- * is what the card applies. `label` is the design's copy, shown until the
- * registry's label (already in the user's language) arrives.
+ * is what the card applies. `label` is the design's copy.
  */
 export interface AnalysisTemplateCard {
   name: string;

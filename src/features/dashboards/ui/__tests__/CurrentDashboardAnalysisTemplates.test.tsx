@@ -50,7 +50,8 @@ const dashboard: Dashboard = {
   widgets: [],
 };
 
-const LABEL = "Near-real-time monitoring";
+// The card shows the design's copy; the registry's own label differs.
+const LABEL = "Near real-time monitoring";
 
 const renderPane = ({
   seed = true,
@@ -76,7 +77,7 @@ describe("CurrentDashboardAnalysisTemplates", () => {
     vi.mocked(listAnalysisTemplates).mockResolvedValue([
       {
         name: "nrt-monitoring",
-        label: LABEL,
+        label: "Near-real-time monitoring",
         args_schema: {},
         widgets: ["chart", "layer", "imagery"],
       },

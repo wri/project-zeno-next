@@ -108,7 +108,7 @@ const renderTemplates = ({ seed = dashboard }: { seed?: Dashboard } = {}) => {
 };
 
 const nrtCard = () =>
-  screen.findByRole("button", { name: "Near-real-time monitoring" });
+  screen.findByRole("button", { name: "Near real-time monitoring" });
 
 describe("DashboardAnalysisTemplates", () => {
   beforeEach(() => {
@@ -116,16 +116,27 @@ describe("DashboardAnalysisTemplates", () => {
     vi.mocked(listAnalysisTemplates).mockResolvedValue([NRT]);
   });
 
-  it("offers the near-real-time monitoring template, labelled by the registry", async () => {
+  it("offers the near-real-time monitoring template with the design's label", async () => {
     renderTemplates();
 
     expect(screen.getByText("Add an analysis template")).toBeTruthy();
     const card = await nrtCard();
+    // The design's copy, not the registry's "Near-real-time monitoring".
+    expect(card.textContent).toContain("Near real-time monitoring");
     expect(card.textContent).toContain("Analysis template");
     expect(card.getAttribute("aria-disabled")).toBe("false");
   });
 
-  it("shows the design's label while the registry loads", () => {
+  it("wraps the label only between words, keeping real-time whole", async () => {
+    renderTemplates();
+
+    const words = Array.from((await nrtCard()).querySelectorAll("span")).map(
+      (span) => span.textContent
+    );
+    expect(words).toEqual(expect.arrayContaining(["Near", "real-time"]));
+  });
+
+  it("shows the card while the registry loads", () => {
     vi.mocked(listAnalysisTemplates).mockReturnValue(new Promise(() => {}));
     renderTemplates();
 
@@ -165,16 +176,14 @@ describe("DashboardAnalysisTemplates", () => {
     renderTemplates();
 
     fireEvent.click(await nrtCard());
-    await screen.findByText("Building section...");
+    await screen.findByText("Building...");
     const card = await nrtCard();
     expect(card.getAttribute("aria-busy")).toBe("true");
     fireEvent.click(card);
     expect(applyAnalysisTemplate).toHaveBeenCalledTimes(1);
 
     request.resolve(built);
-    await waitFor(() =>
-      expect(screen.queryByText("Building section...")).toBeNull()
-    );
+    await waitFor(() => expect(screen.queryByText("Building...")).toBeNull());
   });
 
   it("toasts each warning for a widget the backend left out", async () => {
