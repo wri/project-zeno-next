@@ -24,8 +24,9 @@ import { useRenameDashboard } from "./dashboardQueries";
 /**
  * Dashboard page header per the Figma "Dashboard default" frame: editable
  * 30px title with a pencil affordance (owner only, revealed on hover or
- * focus), and Export / Share actions top-right. Export and Share are false
- * doors — measure interest before building the real flows.
+ * focus), and Export / Share actions top-right. Export opens the printable
+ * report (`/dashboards/[id]/report`); Share is a false door — measure
+ * interest before building the real flow.
  */
 export default function DashboardHeader({
   dashboard,
@@ -64,6 +65,10 @@ export default function DashboardHeader({
       type: "info",
       duration: 3000,
     });
+
+  // A new tab, so the dashboard stays where the user left it.
+  const openReport = () =>
+    window.open(`/dashboards/${dashboard.id}/report`, "_blank", "noopener");
 
   const actionStyle = {
     h: "24px",
@@ -164,13 +169,7 @@ export default function DashboardHeader({
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>
-        <Button
-          variant="outline"
-          {...actionStyle}
-          onClick={falseDoor(
-            "Exporting dashboards to PDF isn't available yet."
-          )}
-        >
+        <Button variant="outline" {...actionStyle} onClick={openReport}>
           <FilePdfIcon size={16} />
           Export
         </Button>

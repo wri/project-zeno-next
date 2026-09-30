@@ -21,7 +21,7 @@ import {
   sourceLabel,
   subtypeLabel,
 } from "../lib/aoi";
-import { updatedLabel, wasJustCreated } from "../lib/dates";
+import { updatedLabel, updatedOnLabel, wasJustCreated } from "../lib/dates";
 
 describe("dashboard schemas", () => {
   it("settles a section's template to null whether the BE sends null or omits it", () => {
@@ -144,6 +144,12 @@ describe("dashboard date helpers", () => {
   it("uses a neutral updated label for invalid or future timestamps", () => {
     expect(updatedLabel("not-a-date")).toBe("Updated recently");
     expect(updatedLabel("2999-01-01T00:00:00Z")).toBe("Updated recently");
+  });
+
+  it("dates the export with a calendar date", () => {
+    // Midday UTC, so the calendar day is the same in any test runner's zone.
+    expect(updatedOnLabel("2026-07-01T12:00:00Z")).toBe("Updated 1 July 2026");
+    expect(updatedOnLabel("not-a-date")).toBe("Updated recently");
   });
 
   it("treats a dashboard as just created within the 10-minute window", () => {
