@@ -3,9 +3,11 @@
  *
  * The lower-friction way into GNW: after the Resource Watch sign-in, one
  * consent screen, then the first answer; the profile is asked for later, in
- * the chat, and prefilled from MyGFW when possible. Currently wired only into
- * the /onboarding-debug/front-door preview. Consumers import ONLY from this barrel.
+ * the chat, and prefilled from MyGFW when possible. Wired into the app behind
+ * NEXT_PUBLIC_FRONT_DOOR (see app/config/front-door.ts) and composed offline in
+ * /onboarding-debug/front-door. Consumers import ONLY from this barrel.
  */
+export { WelcomePage } from "./ui/WelcomePage";
 export { WelcomeConsent, type WelcomeConsentProps } from "./ui/WelcomeConsent";
 export {
   ProfilePromptCard,

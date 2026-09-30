@@ -6,7 +6,9 @@ import { getToken } from "@/app/lib/api-client";
 import useAuthStore from "@/app/store/authStore";
 import { API_CONFIG } from "@/app/config/api";
 import { isFrontDoorEnabled } from "@/app/config/front-door";
-import { continueUrl } from "@/src/features/front-door";
+// Not the slice barrel: it exports WelcomePage, which uses this hook, and
+// the cycle would be fragile. continue-url has no imports of its own.
+import { continueUrl } from "@/src/features/front-door/lib/continue-url";
 
 function getLoginUrl(redirectTo: string): string {
   const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
