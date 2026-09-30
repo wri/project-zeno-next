@@ -72,7 +72,7 @@ const renderPage = (data: Dashboard = dashboard) => {
 
 describe("DashboardReportPage", () => {
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("heads the document with the name, a calendar date and the area", () => {
@@ -103,7 +103,7 @@ describe("DashboardReportPage", () => {
   it("saves as PDF through the browser's print dialog", () => {
     // happy-dom has no print dialog to spy on.
     const print = vi.fn();
-    window.print = print;
+    vi.stubGlobal("print", print);
     renderPage();
 
     fireEvent.click(screen.getByRole("button", { name: /save as pdf/i }));

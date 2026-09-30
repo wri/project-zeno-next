@@ -14,7 +14,12 @@ import { ArrowLeftIcon, PrinterIcon } from "@phosphor-icons/react";
 
 import { Link, useParams } from "@/app/lib/router";
 import { updatedOnLabel } from "../lib/dates";
+import { hasDashboardContent } from "../lib/widgets";
 import { useDashboard } from "./dashboardQueries";
+import {
+  DASHBOARD_ACTION_PROPS,
+  DASHBOARD_TITLE_PROPS,
+} from "./DashboardHeader";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
 
 /** The printout's page margin; the paper column is sized against it. */
@@ -27,11 +32,10 @@ const PAGE_MARGIN = "12mm";
  * across the row, as on screen. The page lays out at this width on screen
  * too, so printing never reflows it. Charts and maps size themselves in JS,
  * which doesn't run for the print layout, so a wider screen layout would
- * print at its screen width and run off the page.
+ * print at its screen width and run off the page. For the same reason it
+ * never narrows to a small viewport; the page scrolls instead.
  */
 const PAPER_WIDTH = "960px";
-
-const SCREEN_ONLY = { "@media print": { display: "none" } };
 
 /**
  * The dashboard's export: a standalone page at `/dashboards/[id]/report` that
@@ -62,13 +66,10 @@ export default function DashboardReportPage() {
     <Box
       bg="#F4F5F6"
       minH="100vh"
-      css={{
-        // Print the page as it looks on screen: the template banner's fill,
-        // chips and pills are backgrounds, which browsers drop by default.
-        printColorAdjust: "exact",
-        WebkitPrintColorAdjust: "exact",
-        "@media print": { background: "white", minHeight: 0 },
-      }}
+      _print={{ bg: "white", minH: 0 }}
+      // Print the page as it looks on screen: the template banner's fill,
+      // chips and pills are backgrounds, which browsers drop by default.
+      css={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}
     >
       <style>{`@page { size: landscape; margin: ${PAGE_MARGIN}; }`}</style>
 
@@ -83,7 +84,7 @@ export default function DashboardReportPage() {
         position="sticky"
         top={0}
         zIndex={10}
-        css={SCREEN_ONLY}
+        _print={{ display: "none" }}
       >
         <ChakraLink asChild color="#565E7B" fontSize="14px">
           <Link href={`/dashboards/${dashboardId}`}>
@@ -92,15 +93,7 @@ export default function DashboardReportPage() {
           </Link>
         </ChakraLink>
         <Button
-          variant="outline"
-          h="24px"
-          px="8px"
-          gap="4px"
-          borderColor="rgba(19,22,25,0.2)"
-          rounded="sm"
-          fontSize="12px"
-          fontWeight="medium"
-          color="rgba(19,22,25,0.7)"
+          {...DASHBOARD_ACTION_PROPS}
           disabled={!dashboard}
           onClick={() => window.print()}
         >
@@ -113,15 +106,14 @@ export default function DashboardReportPage() {
           browser supplies both. */}
       <Box
         w="fit-content"
-        maxW="100%"
         mx="auto"
         my={{ base: 0, md: 8 }}
         p={PAGE_MARGIN}
         bg="white"
         boxShadow="0 1px 3px rgba(19,22,25,0.12)"
-        css={{ "@media print": { margin: 0, padding: 0, boxShadow: "none" } }}
+        _print={{ m: 0, p: 0, boxShadow: "none" }}
       >
-        <Box w={PAPER_WIDTH} maxW="100%">
+        <Box w={PAPER_WIDTH}>
           {isLoading ? (
             <Flex align="center" gap={2} color="fg.muted" py={12}>
               <Spinner size="sm" /> Loading dashboard...
@@ -135,11 +127,7 @@ export default function DashboardReportPage() {
               <Box mb="32px">
                 <Heading
                   as="h1"
-                  fontSize="30px"
-                  lineHeight="36px"
-                  fontWeight="normal"
-                  color="#131619"
-                  mb="0"
+                  {...DASHBOARD_TITLE_PROPS}
                   wordBreak="break-word"
                 >
                   {dashboard.name}
@@ -160,7 +148,10 @@ export default function DashboardReportPage() {
                 )}
               </Box>
 
-              {dashboard.widgets.length > 0 ? (
+              {hasDashboardContent(dashboard, {
+                isOwner: false,
+                pendingCount: 0,
+              }) ? (
                 <DashboardWidgetsGrid dashboard={dashboard} print />
               ) : (
                 <Text color="fg.muted" py={12}>

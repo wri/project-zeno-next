@@ -41,6 +41,9 @@ import DashboardSection from "./DashboardSection";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
+import DashboardWidgetDocument, {
+  DashboardNoteDocument,
+} from "./DashboardWidgetDocument";
 import { usePendingInsightWidgets } from "./usePendingInsightWidget";
 import { useDeleteSection, useRenameSection } from "./useSectionEdits";
 import {
@@ -294,13 +297,31 @@ function ContainerGrid({
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />
+          ) : print ? (
+            widget.widget_type === "text" ? (
+              <DashboardNoteDocument
+                text={body?.text ?? null}
+                placeholder={body?.placeholder ?? null}
+              />
+            ) : (
+              <DashboardWidgetDocument
+                title={title}
+                card={null}
+                map={body?.map}
+                aoi={areaAoi}
+                viewportBbox={
+                  body?.map ? mapWidgetViewportBbox(widget.config) : null
+                }
+                placeholder={body?.placeholder ?? null}
+                isDouble={size === "double"}
+              />
+            )
           ) : widget.widget_type === "text" ? (
             <DashboardTextWidgetCard
               text={body?.text ?? null}
               placeholder={body?.placeholder ?? null}
               isOwner={isOwner}
               isDouble={size === "double"}
-              print={print}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onSaveText={(next) =>
@@ -324,7 +345,6 @@ function ContainerGrid({
               removeMode="widget"
               isOwner={isOwner}
               isDouble={size === "double"}
-              print={print}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onRename={

@@ -25,6 +25,7 @@ import {
 } from "../lib/widgets";
 import DashboardModuleCustomizeMenu from "./DashboardModuleCustomizeMenu";
 import DashboardWidgetCard from "./DashboardWidgetCard";
+import DashboardWidgetDocument from "./DashboardWidgetDocument";
 import RemoveAnalysisDialog from "./RemoveAnalysisDialog";
 
 /**
@@ -114,10 +115,11 @@ export default function DashboardInsightModule({
 
   // The narrative and the chart's pills ride above the chart body. On paper
   // the narrative leads the first chart only.
-  const introFor = (chart: InsightWidget | null, withSummary: boolean) =>
-    (withSummary && showSummary) || (chart && hasChartPills(chart)) ? (
+  const introFor = (chart: InsightWidget | null, withSummary: boolean) => {
+    const summary = withSummary && showSummary;
+    return summary || (chart && hasChartPills(chart)) ? (
       <Flex direction="column" gap="8px" px={print ? 0 : "12px"} pb="12px">
-        {withSummary && showSummary && (
+        {summary && (
           <>
             {/* Same provenance rule as the chart card below, so the
                 narrative never contradicts it. */}
@@ -139,23 +141,18 @@ export default function DashboardInsightModule({
         )}
       </Flex>
     ) : null;
+  };
 
   if (print) {
     return (
       <Flex direction="column" gap="24px">
         {(cards.length > 0 ? cards : [null]).map((chart, i) => (
-          <DashboardWidgetCard
+          <DashboardWidgetDocument
             key={chart?.id ?? "no-chart"}
             title={chart?.title ?? vm.title}
             card={chart}
             placeholder={placeholder}
-            removeMode="widget"
-            isOwner={false}
             isDouble={isDouble}
-            print
-            onArmDrag={onArmDrag}
-            onToggleSize={onToggleSize}
-            onRemove={onRemove}
             intro={introFor(chart, i === 0)}
           />
         ))}

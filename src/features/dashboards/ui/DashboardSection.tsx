@@ -133,6 +133,11 @@ export default function DashboardSection({
   const [draft, setDraft] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const template = section?.template ?? null;
+  const outline = template
+    ? TEMPLATE_OUTLINE
+    : print
+      ? PRINT_OUTLINE
+      : undefined;
 
   const commitRename = () => {
     const title = draft?.trim();
@@ -147,10 +152,8 @@ export default function DashboardSection({
       flexDir="column"
       bg={isDropTarget ? "#F0F4FF" : "white"}
       borderRadius="8px"
-      border={template || print ? "1px solid" : undefined}
-      borderColor={
-        template ? TEMPLATE_OUTLINE : print ? PRINT_OUTLINE : undefined
-      }
+      border={outline && "1px solid"}
+      borderColor={outline}
       transition="background 0.12s ease"
       // A section that runs onto the next page closes its outline on each.
       css={print ? { boxDecorationBreak: "clone" } : undefined}

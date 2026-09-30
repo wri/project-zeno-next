@@ -414,7 +414,6 @@ export default function WidgetMessage({
                 }
                 caption={widget.title}
                 {...tableProps}
-                {...(print && { pageSize: Infinity })}
               />
             </ScrollableTableWrapper>
           </WidgetErrorBoundary>
@@ -428,7 +427,7 @@ export default function WidgetMessage({
                   widget.data as Record<string, string | number | boolean>[]
                 }
                 caption={widget.title}
-                {...(print && { pageSize: Infinity })}
+                pageSize={print ? Infinity : undefined}
               />
             </ScrollableTableWrapper>
           </WidgetErrorBoundary>
