@@ -92,3 +92,68 @@ export function recordProfileCompleted(
 export function startNewSession(state: ProfileAskState): ProfileAskState {
   return { ...state, askedThisSession: false };
 }
+
+/**
+ * What GNW remembers about asking one person. Dismissals and lifetime
+ * answers persist across sessions; the session fields reset with the
+ * browser session. Whether the profile is complete comes from the account,
+ * not from here.
+ */
+export interface ProfileAskRecord {
+  dismissals: number;
+  lifetimeAnswers: number;
+  askedThisSession: boolean;
+  sessionAnswers: number;
+}
+
+export const EMPTY_PROFILE_ASK_RECORD: ProfileAskRecord = {
+  dismissals: 0,
+  lifetimeAnswers: 0,
+  askedThisSession: false,
+  sessionAnswers: 0,
+};
+
+export function profileAskState(
+  record: ProfileAskRecord,
+  profileComplete: boolean
+): ProfileAskState {
+  return {
+    profileComplete,
+    dismissals: record.dismissals,
+    askedThisSession: record.askedThisSession,
+  };
+}
+
+/**
+ * An answer just finished: count it, and return the moment to ask at, if
+ * the policy allows one now. The ask itself is recorded separately
+ * (`recordAskShown`), once something is actually shown.
+ */
+export function recordAnswer(
+  record: ProfileAskRecord,
+  profileComplete: boolean
+): { record: ProfileAskRecord; ask: ProfileAskMoment | null } {
+  const counted: ProfileAskRecord = {
+    ...record,
+    lifetimeAnswers: record.lifetimeAnswers + 1,
+    sessionAnswers: record.sessionAnswers + 1,
+  };
+  const moment = askMomentAfterAnswer({
+    lifetime: counted.lifetimeAnswers,
+    session: counted.sessionAnswers,
+  });
+  const ask =
+    moment &&
+    shouldAskForProfile(profileAskState(record, profileComplete), moment)
+      ? moment
+      : null;
+  return { record: counted, ask };
+}
+
+export function recordAskShown(record: ProfileAskRecord): ProfileAskRecord {
+  return { ...record, askedThisSession: true };
+}
+
+export function recordAskDismissed(record: ProfileAskRecord): ProfileAskRecord {
+  return { ...record, dismissals: record.dismissals + 1 };
+}
