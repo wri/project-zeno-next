@@ -14,9 +14,11 @@ vi.mock("@/app/components/ui/toaster", () => ({
   Toaster: () => null,
 }));
 vi.mock("@/app/lib/ortto", () => ({ submitOrttoProfile: vi.fn() }));
+vi.mock("@/app/lib/track-event", () => ({ trackEvent: vi.fn() }));
 
 import { apiFetch } from "@/app/lib/api-client";
 import { submitOrttoProfile } from "@/app/lib/ortto";
+import { trackEvent } from "@/app/lib/track-event";
 import { queryClient } from "@/app/lib/query-client";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
@@ -212,6 +214,7 @@ beforeEach(() => {
   vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
   vi.mocked(apiFetch).mockReset();
   vi.mocked(submitOrttoProfile).mockReset();
+  vi.mocked(trackEvent).mockReset();
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
   queryClient.clear();
@@ -527,5 +530,63 @@ describe("the banner at the session's fifth answer", () => {
       has_profile: true,
     });
     expect(bannerOpen()).toBe(false);
+  });
+});
+
+// ── Analytics ─────────────────────────────────────────────────────────────
+
+describe("analytics events", () => {
+  const events = () => vi.mocked(trackEvent).mock.calls.map(([e]) => e);
+
+  it("reports the card shown after the first answer, and whether it was prefilled", async () => {
+    backend({ prefill: json(GFW_PREFILL) });
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
+    await vi.waitFor(() => expect(cards()).toHaveLength(1));
+    expect(events()).toEqual([
+      { event: "profile_card_shown", trigger: "first_answer", prefilled: true },
+    ]);
+  });
+
+  it("reports the card shown from the banner", async () => {
+    backend();
+    await openProfileCardFromBanner();
+    expect(events()).toEqual([
+      { event: "profile_card_shown", trigger: "banner", prefilled: false },
+    ]);
+  });
+
+  it("reports dismissals by surface", async () => {
+    backend();
+    await showProfilePrompt();
+    vi.mocked(trackEvent).mockReset();
+    dismissProfileAsk(cards()[0].id, deps);
+    dismissProfileBanner(deps);
+    expect(events()).toEqual([
+      { event: "profile_card_dismissed", surface: "card" },
+      { event: "profile_card_dismissed", surface: "banner" },
+    ]);
+  });
+
+  it("reports a save, not a failed one", async () => {
+    backend({ patchStatus: 500 });
+    await showProfilePrompt();
+    vi.mocked(trackEvent).mockReset();
+    const card = cards()[0];
+    const patch = {
+      sector_code: "ngo",
+      role_code: null,
+      country_code: "KE",
+      has_profile: true as const,
+    };
+    await expect(
+      saveProfileFromCard(card.id, card.profilePrompt!, patch)
+    ).rejects.toThrow();
+    expect(events()).toEqual([]);
+
+    backend();
+    await saveProfileFromCard(card.id, card.profilePrompt!, patch);
+    expect(events()).toEqual([
+      { event: "profile_card_saved", prefilled: false },
+    ]);
   });
 });

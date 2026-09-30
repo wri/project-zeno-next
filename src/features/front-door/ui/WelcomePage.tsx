@@ -18,6 +18,7 @@ import { useRouter, useSearchParams } from "@/app/lib/router";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import { TERMS_VERSION } from "@/app/config/terms";
+import { trackEvent } from "@/app/lib/track-event";
 import useAuthStore from "@/app/store/authStore";
 import { patchProfile } from "../api/profile";
 import { profilePrefillQuery } from "../api/queries";
@@ -52,6 +53,12 @@ function WelcomeContent() {
     setIsSubmitting(true);
     try {
       await patchProfile({ terms_version: TERMS_VERSION });
+      trackEvent({
+        event: "welcome_terms_accepted",
+        terms_version: TERMS_VERSION,
+        has_prompt: pendingPrompt(search) !== null,
+        gfw_account: prefill?.found === true,
+      });
       // useAuthGuard sees the accepted terms and continues to /app with this
       // page's query string, so the waiting question runs on arrival.
       useAuthStore.getState().acceptTerms(TERMS_VERSION);

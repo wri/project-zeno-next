@@ -121,6 +121,7 @@ describe("WelcomePage", () => {
 
   it("stores the terms version, then continues to /app with the same query string", async () => {
     respond();
+    window.dataLayer = [];
     renderPage();
     await acceptAndContinue();
 
@@ -137,16 +138,26 @@ describe("WelcomePage", () => {
     await waitFor(() => expect(router.replace).toHaveBeenCalledOnce());
     expect(router.replace).toHaveBeenCalledWith(`/app?${QUERY}`);
     expect(router.push).not.toHaveBeenCalled();
+    expect(window.dataLayer).toEqual([
+      {
+        event: "welcome_terms_accepted",
+        terms_version: TERMS_VERSION,
+        has_prompt: true,
+        gfw_account: false,
+      },
+    ]);
   });
 
   it("stays on the page and says so when saving the consent fails", async () => {
     respond({ patchStatus: 500 });
+    window.dataLayer = [];
     renderPage();
     await acceptAndContinue();
 
     await waitFor(() => expect(showApiError).toHaveBeenCalledOnce());
     expect(useAuthStore.getState().termsAccepted).toBe(false);
     expect(router.replace).not.toHaveBeenCalled();
+    expect(window.dataLayer).toEqual([]);
     const button = screen.getByRole("button", {
       name: /continue to your answer/i,
     }) as HTMLButtonElement;

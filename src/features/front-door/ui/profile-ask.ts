@@ -2,6 +2,7 @@ import { toaster } from "@/app/components/ui/toaster";
 import { isFrontDoorEnabled } from "@/app/config/front-door";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import { submitOrttoProfile } from "@/app/lib/ortto";
+import { trackEvent } from "@/app/lib/track-event";
 import { queryClient } from "@/app/lib/query-client";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
@@ -105,7 +106,10 @@ async function loadPromptData(): Promise<ProfilePromptData | null> {
  * or in the middle of the next answer. Returns whether the card was added.
  */
 export async function showProfilePrompt(
-  options: { threadId?: string | null } = {}
+  options: {
+    threadId?: string | null;
+    trigger?: "first_answer" | "banner";
+  } = {}
 ): Promise<boolean> {
   const data = await loadPromptData();
   if (!data || useAuthStore.getState().hasProfile) return false;
@@ -122,6 +126,11 @@ export async function showProfilePrompt(
     .forEach((m) => chat.removeMessage(m.id));
   chat.addMessage({ type: "profile-prompt", message: "", profilePrompt: data });
   useProfileNudgeStore.getState().closeBanner();
+  trackEvent({
+    event: "profile_card_shown",
+    trigger: options.trigger ?? "banner",
+    prefilled: data.suggestion !== undefined,
+  });
   return true;
 }
 
@@ -144,7 +153,7 @@ export async function handleAnswerCompleted(
 
   if (ask === "first_answer") {
     const threadId = useChatStore.getState().currentThreadId;
-    if (await showProfilePrompt({ threadId })) {
+    if (await showProfilePrompt({ threadId, trigger: "first_answer" })) {
       updateRecord(deps, recordAskShown);
     }
   } else if (ask === "nth_question") {
@@ -171,17 +180,19 @@ export function dismissProfileAsk(
 ): void {
   updateRecord(deps, recordAskDismissed);
   useChatStore.getState().removeMessage(messageId);
+  trackEvent({ event: "profile_card_dismissed", surface: "card" });
 }
 
 /** The banner's close button: also a "Not now". */
 export function dismissProfileBanner(deps: ProfileAskDeps = BROWSER): void {
   updateRecord(deps, recordAskDismissed);
   useProfileNudgeStore.getState().closeBanner();
+  trackEvent({ event: "profile_card_dismissed", surface: "banner" });
 }
 
 /** The banner's "Add details": the card, at the end of the conversation. */
 export async function openProfileCardFromBanner(): Promise<void> {
-  if (!(await showProfilePrompt())) {
+  if (!(await showProfilePrompt({ trigger: "banner" }))) {
     showApiError("The profile form couldn't load.", {
       title: "Couldn't open your profile",
       description: "Please try again, or use Settings.",
@@ -205,6 +216,10 @@ export async function saveProfileFromCard(
   auth.markProfileComplete();
   useChatStore.getState().removeMessage(messageId);
   useProfileNudgeStore.getState().closeBanner();
+  trackEvent({
+    event: "profile_card_saved",
+    prefilled: prompt.suggestion !== undefined,
+  });
   toaster.create({
     title: "Profile saved",
     description: "Thanks. You can change these details in Settings.",
