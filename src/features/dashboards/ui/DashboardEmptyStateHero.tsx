@@ -53,9 +53,11 @@ export default function DashboardEmptyStateHero({
           </Text>
         </Flex>
       </Flex>
-      <Box w="full">
-        <DashboardFooter dashboard={dashboard} isOwner={isOwner} gap="48px" />
-      </Box>
+      {isOwner && (
+        <Box w="full">
+          <DashboardFooter dashboard={dashboard} gap="48px" />
+        </Box>
+      )}
     </Flex>
   );
 }

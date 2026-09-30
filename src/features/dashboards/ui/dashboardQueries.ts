@@ -1,7 +1,6 @@
 import {
   keepPreviousData,
   useMutation,
-  useMutationState,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -9,9 +8,7 @@ import {
 import { searchAois } from "../api/aois";
 import {
   addInsightWidget,
-  addSection,
   addTextWidget,
-  applyAnalysisTemplate,
   createDashboard,
   createDashboardPayloadFromAoi,
   deleteDashboard,
@@ -44,11 +41,12 @@ export function useDashboard(id: string) {
  * The template registry, labels in the user's language. It only changes on a
  * backend deploy, so one fetch per session is enough.
  */
-export function useAnalysisTemplates() {
+export function useAnalysisTemplates(enabled = true) {
   return useQuery({
     queryKey: dashboardKeys.analysisTemplates,
     queryFn: listAnalysisTemplates,
     staleTime: Infinity,
+    enabled,
   });
 }
 
@@ -258,69 +256,6 @@ export function useAddTextWidget(dashboardId: string) {
       queryClient.invalidateQueries({
         queryKey: dashboardKeys.detail(dashboardId),
       }),
-  });
-}
-
-// "Create new section" suggested module. Not optimistic, for the same reason
-// as useAddTextWidget: the server assigns the id and position. Resolves to the
-// new section's id (the one the response lists and the cache did not) only
-// once the refetch has landed, so the caller can scroll to a panel that is
-// already on screen.
-export function useAddSection(dashboardId: string) {
-  const queryClient = useQueryClient();
-  const key = dashboardKeys.detail(dashboardId);
-
-  return useMutation({
-    mutationFn: async (title: string) => {
-      const before = new Set(
-        queryClient.getQueryData<Dashboard>(key)?.sections.map((s) => s.id)
-      );
-      const dashboard = await addSection(dashboardId, title);
-      await queryClient.invalidateQueries({ queryKey: key });
-      return dashboard.sections.find((s) => !before.has(s.id))?.id ?? null;
-    },
-  });
-}
-
-export interface ApplyAnalysisTemplateVars {
-  template: string;
-  args?: Record<string, unknown>;
-}
-
-// An analysis template card. The response carries the expanded dashboard, so
-// it replaces the cached detail directly — no refetch after a request that
-// already took tens of seconds. Keyed so `usePendingAnalysisTemplates` can
-// see the request from any card, including one mounted after it started.
-export function useApplyAnalysisTemplate(dashboardId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationKey: dashboardKeys.applyTemplate(dashboardId),
-    mutationFn: ({ template, args }: ApplyAnalysisTemplateVars) =>
-      applyAnalysisTemplate(dashboardId, template, args),
-    onSuccess: (result) => {
-      queryClient.setQueryData(
-        dashboardKeys.detail(dashboardId),
-        result.dashboard
-      );
-    },
-  });
-}
-
-/**
- * The templates being applied to this dashboard right now. Read from the
- * mutation cache rather than one hook instance's state: the footer remounts
- * when an empty dashboard's hero gives way to the grid, and a request started
- * before that must still hold the cards inert.
- */
-export function usePendingAnalysisTemplates(dashboardId: string): string[] {
-  return useMutationState({
-    filters: {
-      mutationKey: dashboardKeys.applyTemplate(dashboardId),
-      status: "pending",
-    },
-    select: (mutation) =>
-      (mutation.state.variables as ApplyAnalysisTemplateVars).template,
   });
 }
 

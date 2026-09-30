@@ -35,15 +35,12 @@ export default function DashboardDetailPage() {
   // from the empty-state hero as soon as its loading module has something to
   // show, not once the whole run-then-add chain has landed.
   const pendingWidgets = usePendingInsightWidgets(dashboardId);
-  // The owner sees empty sections (the grid keeps them), so one counts as
-  // content for them; a viewer sees only sections that hold something.
   const hasContent =
     !!dashboard &&
-    hasDashboardContent(
-      dashboard.widgets.length,
-      pendingWidgets.length,
-      isOwner ? dashboard.sections.length : 0
-    );
+    hasDashboardContent(dashboard, {
+      isOwner,
+      pendingCount: pendingWidgets.length,
+    });
   // The footer's white band runs under a populated dashboard; an empty one
   // carries the footer inside its hero instead, and a viewer gets none.
   const showFooterBand = hasContent && isOwner;
@@ -178,7 +175,7 @@ export default function DashboardDetailPage() {
           pb={{ base: 8, md: "96px" }}
         >
           <Container maxW="1232px">
-            <DashboardFooter dashboard={dashboard} isOwner={isOwner} />
+            <DashboardFooter dashboard={dashboard} />
           </Container>
         </Box>
       )}

@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Flex, Text } from "@chakra-ui/react";
 import {
   CheckCircleIcon,
   RowsPlusBottomIcon,
-  SpinnerGapIcon,
   TextTIcon,
   type Icon,
 } from "@phosphor-icons/react";
@@ -29,8 +28,9 @@ import {
   type CuratedSuggestedModule,
 } from "../lib/suggested-modules";
 import DashboardFooterHeading from "./DashboardFooterHeading";
-import { useAddSection, useAddTextWidget } from "./dashboardQueries";
-import { scrollToSectionWhenRendered } from "./scrollToSection";
+import { useAddTextWidget } from "./dashboardQueries";
+import RunningIcon from "./RunningIcon";
+import { useAddSection } from "./useAddSection";
 import {
   useAddCuratedAnalysisToDashboard,
   type AddCuratedAnalysisOutcome,
@@ -45,10 +45,11 @@ import type { CurrentDashboardArea } from "./useCurrentDashboardArea";
 // caption line the curated cards carry.
 const CARD_WIDTH_PX = 168;
 const CARD_HEIGHT_PX = 112;
-const ANALYSIS_CARD_BG = "#F7FBD9";
-const ANALYSIS_CARD_BORDER = "#C3D16F";
-const NEUTRAL_CARD_BG = "#F4F5F6";
-const NEUTRAL_CARD_BORDER = "#C2C7D0";
+// Lime for the analyses, grey for the direct dashboard edits.
+const CARD_TONES = {
+  analysis: { bg: "#F7FBD9", border: "#C3D16F" },
+  neutral: { bg: "#F4F5F6", border: "#C2C7D0" },
+} as const;
 const CARD_LABEL_COLOR = "#0049AA";
 // The heading the backend requires (1–100 characters) for a section the owner
 // has not named yet.
@@ -84,8 +85,7 @@ function ModuleCard({
   iconNode,
   label,
   caption,
-  bg,
-  borderColor,
+  tone,
   disabled,
   title,
   onClick,
@@ -96,8 +96,7 @@ function ModuleCard({
   label: string;
   /** Small line under the label: the CURATED badge, or a status. */
   caption?: ReactNode;
-  bg: string;
-  borderColor: string;
+  tone: keyof typeof CARD_TONES;
   disabled?: boolean;
   title?: string;
   onClick: () => void;
@@ -119,10 +118,10 @@ function ModuleCard({
       flexShrink={0}
       h={`${CARD_HEIGHT_PX}px`}
       px={5}
-      bg={bg}
+      bg={CARD_TONES[tone].bg}
       borderWidth="1px"
       borderStyle="dashed"
-      borderColor={borderColor}
+      borderColor={CARD_TONES[tone].border}
       borderRadius="sm"
       color={CARD_LABEL_COLOR}
       opacity={disabled ? 0.5 : 1}
@@ -136,20 +135,6 @@ function ModuleCard({
       </Text>
       {caption}
     </Flex>
-  );
-}
-
-function RunningIcon() {
-  return (
-    <Box
-      display="flex"
-      alignItems="center"
-      animation="spin 1s infinite"
-      animationTimingFunction="steps(8, end)"
-      aria-hidden
-    >
-      <SpinnerGapIcon size={24} />
-    </Box>
   );
 }
 
@@ -201,7 +186,7 @@ function CuratedModuleTile({
       icon={module.icon}
       iconNode={
         status === "pending" ? (
-          <RunningIcon />
+          <RunningIcon size={24} />
         ) : status === "on-dashboard" ? (
           <CheckCircleIcon size={24} />
         ) : undefined
@@ -216,8 +201,7 @@ function CuratedModuleTile({
           <InsightCaption curated showLearnMore={false} />
         )
       }
-      bg={ANALYSIS_CARD_BG}
-      borderColor={ANALYSIS_CARD_BORDER}
+      tone="analysis"
       disabled={status !== "idle"}
       title={
         status === "on-dashboard" ? "Already on this dashboard" : undefined
@@ -238,17 +222,15 @@ function CuratedModuleTile({
  * widget, no chat round-trip) and "Create new section" (an empty section,
  * likewise direct).
  *
- * Every card here writes to the dashboard, so the whole block is owner-only,
- * and the cards that go through the chat honour the same gates ChatInput's
- * submitPrompt does. `service` is injectable for tests.
+ * Every card here writes to the dashboard, so the footer renders this for the
+ * owner only, and the cards that go through the chat honour the same gates
+ * ChatInput's submitPrompt does. `service` is injectable for tests.
  */
 export default function DashboardSuggestedModules({
   dashboard,
-  isOwner,
   service,
 }: {
   dashboard: Dashboard;
-  isOwner: boolean;
   service?: AnalysisService;
 }) {
   const sendMessage = useChatStore((s) => s.sendMessage);
@@ -267,24 +249,6 @@ export default function DashboardSuggestedModules({
   // "Add a text block" and "Create new section" are direct REST calls and
   // ignore these gates.
   const chatDisabled = isStreaming || promptsExhausted;
-
-  // mutateAsync rather than mutate's callbacks: on an empty dashboard the new
-  // section swaps the hero for the grid, unmounting this row before
-  // mutate-level callbacks would run.
-  const createSection = async () => {
-    try {
-      const sectionId = await addSection.mutateAsync(NEW_SECTION_TITLE);
-      if (sectionId) scrollToSectionWhenRendered(sectionId);
-    } catch (error) {
-      toaster.create({
-        title: "Couldn't create a section",
-        description:
-          error instanceof Error ? error.message : "Please try again.",
-        type: "error",
-        duration: 4000,
-      });
-    }
-  };
 
   // A dashboard is scoped to exactly one AOI; without it (never in practice)
   // the curated tiles have nothing to analyse and render inert.
@@ -311,8 +275,6 @@ export default function DashboardSuggestedModules({
       ),
     [enabledFlags, area?.aoiSource]
   );
-
-  if (!isOwner) return null;
 
   return (
     // The chat panel these cards drive is desktop-only for now (see the
@@ -343,8 +305,7 @@ export default function DashboardSuggestedModules({
                 icon={module.icon}
                 label={module.label}
                 caption={<InsightCaption curated showLearnMore={false} />}
-                bg={ANALYSIS_CARD_BG}
-                borderColor={ANALYSIS_CARD_BORDER}
+                tone="analysis"
                 disabled
                 onClick={() => {}}
               />
@@ -355,8 +316,7 @@ export default function DashboardSuggestedModules({
               key={card.id}
               icon={card.icon}
               label={card.label}
-              bg={ANALYSIS_CARD_BG}
-              borderColor={ANALYSIS_CARD_BORDER}
+              tone="analysis"
               disabled={chatDisabled}
               onClick={() => void sendMessage(card.prompt)}
             />
@@ -366,16 +326,14 @@ export default function DashboardSuggestedModules({
           <ModuleCard
             icon={SUMMARISE_DASHBOARD_MODULE.icon}
             label={SUMMARISE_DASHBOARD_MODULE.label}
-            bg={NEUTRAL_CARD_BG}
-            borderColor={NEUTRAL_CARD_BORDER}
+            tone="neutral"
             disabled={chatDisabled}
             onClick={() => void sendMessage(SUMMARISE_DASHBOARD_MODULE.prompt)}
           />
           <ModuleCard
             icon={TextTIcon}
             label="Add a text block"
-            bg={NEUTRAL_CARD_BG}
-            borderColor={NEUTRAL_CARD_BORDER}
+            tone="neutral"
             disabled={addTextWidget.isPending}
             onClick={() =>
               addTextWidget.mutate(undefined, {
@@ -395,10 +353,9 @@ export default function DashboardSuggestedModules({
           <ModuleCard
             icon={RowsPlusBottomIcon}
             label="Create new section"
-            bg={NEUTRAL_CARD_BG}
-            borderColor={NEUTRAL_CARD_BORDER}
+            tone="neutral"
             disabled={addSection.isPending}
-            onClick={() => void createSection()}
+            onClick={() => addSection.mutate(NEW_SECTION_TITLE)}
           />
         </Flex>
       </Flex>

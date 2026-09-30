@@ -5,7 +5,8 @@ import {
   pivotByColorField,
 } from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
-import type { DashboardWidget } from "../api/schemas";
+import type { Dashboard, DashboardWidget } from "../api/schemas";
+import { widgetContainers } from "../model/dashboard-sections";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 
 // Chart types the chart widget can render (InsightWidget["type"] minus
@@ -338,19 +339,21 @@ export function findCuratedWidgetForDataset(
 
 /**
  * Whether the dashboard page shows the widget grid rather than the empty-state
- * hero. A curated analysis on its way onto the dashboard counts as content:
- * its loading module must appear the moment the user toggles the card, even
- * on a dashboard that has no widgets yet. So does an empty section the grid
- * would render (`sectionCount` — the caller passes 0 for a viewer, who is not
- * shown empty sections): "Create new section" on an empty dashboard has to
- * leave a section on screen.
+ * hero: whether the grid has anything to render. That is asked of the grid's
+ * own grouping, so the two cannot disagree — an owner's empty section counts
+ * (the grid keeps it, so "Create new section" on an empty dashboard leaves a
+ * section on screen), a viewer's does not. A curated analysis on its way onto
+ * the dashboard counts too: its loading module must appear the moment the
+ * user toggles the card, even on a dashboard that has no widgets yet.
  */
 export function hasDashboardContent(
-  widgetCount: number,
-  pendingCount: number,
-  sectionCount = 0
+  dashboard: Dashboard,
+  { isOwner, pendingCount }: { isOwner: boolean; pendingCount: number }
 ): boolean {
-  return widgetCount > 0 || pendingCount > 0 || sectionCount > 0;
+  return (
+    pendingCount > 0 ||
+    widgetContainers(dashboard, { keepEmptySections: isOwner }).length > 0
+  );
 }
 
 /**

@@ -132,28 +132,24 @@ function fakeService(impl: AnalysisService["run"]): AnalysisService {
 
 const idleService = () => fakeService(() => Promise.resolve(RESULT));
 
-const renderModules = (
-  isOwner: boolean,
-  {
-    seed = dashboard,
-    service = idleService(),
-  }: { seed?: Dashboard; service?: AnalysisService } = {}
-) => {
+const renderModules = ({
+  seed = dashboard,
+  service = idleService(),
+}: { seed?: Dashboard; service?: AnalysisService } = {}) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   queryClient.setQueryData(dashboardKeys.detail(seed.id), seed);
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <ChakraProvider value={defaultSystem}>
-        <DashboardSuggestedModules
-          dashboard={seed}
-          isOwner={isOwner}
-          service={service}
-        />
-      </ChakraProvider>
-    </QueryClientProvider>
-  );
+  return {
+    queryClient,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardSuggestedModules dashboard={seed} service={service} />
+        </ChakraProvider>
+      </QueryClientProvider>
+    ),
+  };
 };
 
 /**
@@ -189,7 +185,7 @@ describe("DashboardSuggestedModules", () => {
   });
 
   it("lists the curated tiles first, in suite order, then the prompt tiles, then the neutral cards", () => {
-    renderModules(true);
+    renderModules();
 
     const names = screen.getAllByRole("button").map((b) => b.textContent ?? "");
     const expectedStart = [
@@ -208,7 +204,7 @@ describe("DashboardSuggestedModules", () => {
   });
 
   it("puts the neutral cards on their own row under the lime ones", () => {
-    renderModules(true);
+    renderModules();
 
     const neutralRow = tile("Add a text block").parentElement!;
     expect(
@@ -240,19 +236,19 @@ describe("DashboardSuggestedModules", () => {
     };
 
     it("is hidden until ?ff=net-flux is set", () => {
-      renderModules(true);
+      renderModules();
       expect(screen.queryByRole("button", { name: LABEL })).toBeNull();
     });
 
     it("appears for an administrative area once the flag is set", () => {
       setFlags("net-flux");
-      renderModules(true);
+      renderModules();
       expect(tile(LABEL)).toBeTruthy();
     });
 
     it("stays hidden for an area LGMS does not cover, flag or not", () => {
       setFlags("net-flux");
-      renderModules(true, { seed: kbaDashboard });
+      renderModules({ seed: kbaDashboard });
       expect(screen.queryByRole("button", { name: LABEL })).toBeNull();
       // The tiles offered for a KBA are unaffected by the flag (tree cover
       // gain is withheld by area, like LGMS).
@@ -270,7 +266,7 @@ describe("DashboardSuggestedModules", () => {
       const service = fakeService(() =>
         Promise.resolve({ ...RESULT, id: "ins-lgms" })
       );
-      renderModules(true, { service });
+      renderModules({ service });
 
       fireEvent.click(tile(LABEL));
 
@@ -285,7 +281,7 @@ describe("DashboardSuggestedModules", () => {
   });
 
   it("sends each prompt card's canned prompt as a chat message", () => {
-    renderModules(true);
+    renderModules();
 
     for (const card of SUGGESTED_PROMPT_MODULES) {
       fireEvent.click(tile(card.label));
@@ -301,7 +297,7 @@ describe("DashboardSuggestedModules", () => {
     const d = deferred<AnalysisResult>();
     const service = fakeService(() => d.promise);
     vi.mocked(getDashboard).mockResolvedValueOnce(dashboard);
-    renderModules(true, { service });
+    renderModules({ service });
 
     fireEvent.click(tile(TCL_LABEL));
 
@@ -339,7 +335,7 @@ describe("DashboardSuggestedModules", () => {
 
   it("shows a curated analysis already on the dashboard as inert 'On dashboard'", () => {
     const service = idleService();
-    renderModules(true, {
+    renderModules({
       seed: { ...dashboard, widgets: [curatedTclWidget] },
       service,
     });
@@ -360,7 +356,7 @@ describe("DashboardSuggestedModules", () => {
     const service = fakeService(() =>
       Promise.reject(new AnalysisJobFailedError("job-1"))
     );
-    renderModules(true, { service });
+    renderModules({ service });
 
     fireEvent.click(tile(TCL_LABEL));
 
@@ -380,7 +376,7 @@ describe("DashboardSuggestedModules", () => {
   it("runs a curated tile even while a chat turn streams (no chat round-trip)", async () => {
     useChatStore.setState({ isLoading: true });
     const service = idleService();
-    renderModules(true, { service });
+    renderModules({ service });
 
     fireEvent.click(tile(TCL_LABEL));
 
@@ -390,7 +386,7 @@ describe("DashboardSuggestedModules", () => {
 
   it("renders curated tiles inert when the dashboard has no area", () => {
     const service = idleService();
-    renderModules(true, { seed: { ...dashboard, aois: [] }, service });
+    renderModules({ seed: { ...dashboard, aois: [] }, service });
 
     const tcl = tile(TCL_LABEL);
     expect(tcl.getAttribute("aria-disabled")).toBe("true");
@@ -399,7 +395,7 @@ describe("DashboardSuggestedModules", () => {
   });
 
   it("adds a blank text widget on 'Add a text block' for the owner", async () => {
-    renderModules(true);
+    renderModules();
 
     fireEvent.click(tile("Add a text block"));
 
@@ -414,7 +410,7 @@ describe("DashboardSuggestedModules", () => {
     // landed, and the curated tiles keep a detail observer alive, so let the
     // (otherwise hanging) refetch resolve.
     vi.mocked(getDashboard).mockResolvedValueOnce(dashboard);
-    renderModules(true);
+    renderModules();
 
     fireEvent.click(tile("Add a text block"));
 
@@ -429,27 +425,9 @@ describe("DashboardSuggestedModules", () => {
     );
   });
 
-  it("renders nothing for a viewer who doesn't own the dashboard", () => {
-    useAuthStore.setState({ userId: "visitor" });
-    renderModules(false);
-
-    // Every card writes to the dashboard, so a viewer gets no row at all.
-    expect(screen.queryByText("More suggested modules")).toBeNull();
-    for (const name of ["Add a text block", "Create new section"]) {
-      expect(screen.queryByRole("button", { name })).toBeNull();
-    }
-    for (const card of [
-      ...CURATED_SUGGESTED_MODULES,
-      ...SUGGESTED_PROMPT_MODULES,
-      SUMMARISE_DASHBOARD_MODULE,
-    ]) {
-      expect(screen.queryByRole("button", { name: card.label })).toBeNull();
-    }
-  });
-
   it("won't send a prompt while a chat turn is still streaming", () => {
     useChatStore.setState({ isLoading: true });
-    renderModules(true);
+    renderModules();
 
     for (const card of [
       ...SUGGESTED_PROMPT_MODULES,
@@ -468,7 +446,7 @@ describe("DashboardSuggestedModules", () => {
 
   it("won't send a prompt once the prompt quota is spent", () => {
     useAuthStore.setState({ usedPrompts: 10, totalPrompts: 10 });
-    renderModules(true);
+    renderModules();
 
     fireEvent.click(tile(SUGGESTED_PROMPT_MODULES[0].label));
     fireEvent.click(tile(SUMMARISE_DASHBOARD_MODULE.label));
@@ -480,7 +458,7 @@ describe("DashboardSuggestedModules", () => {
     // The note is a direct POST, not a chat round-trip, so the chat gates
     // don't apply to it.
     useChatStore.setState({ isLoading: true });
-    renderModules(true);
+    renderModules();
 
     fireEvent.click(tile("Add a text block"));
 
@@ -488,7 +466,7 @@ describe("DashboardSuggestedModules", () => {
   });
 
   it("sends the summary prompt on 'Summarize this dashboard'", () => {
-    renderModules(true);
+    renderModules();
 
     fireEvent.click(tile("Summarize this dashboard"));
 
@@ -510,23 +488,26 @@ describe("DashboardSuggestedModules", () => {
       ],
     };
 
-    it("creates an empty 'New section' and refetches the dashboard", async () => {
+    it("creates an empty 'New section' and puts it in the cache without a refetch", async () => {
       vi.mocked(addSection).mockResolvedValueOnce(withSection);
-      vi.mocked(getDashboard).mockResolvedValueOnce(withSection);
-      renderModules(true);
+      const { queryClient } = renderModules();
 
       fireEvent.click(tile("Create new section"));
 
       await waitFor(() =>
-        expect(addSection).toHaveBeenCalledWith("d1", "New section")
+        expect(
+          queryClient.getQueryData<Dashboard>(dashboardKeys.detail("d1"))
+            ?.sections
+        ).toEqual(withSection.sections)
       );
-      await waitFor(() => expect(getDashboard).toHaveBeenCalledWith("d1"));
+      expect(addSection).toHaveBeenCalledWith("d1", "New section");
+      expect(getDashboard).not.toHaveBeenCalled();
       expect(toaster.create).not.toHaveBeenCalled();
     });
 
     it("is inert while the section is being created", async () => {
       vi.mocked(addSection).mockReturnValueOnce(new Promise(() => {}));
-      renderModules(true);
+      renderModules();
 
       fireEvent.click(tile("Create new section"));
       await waitFor(() =>
@@ -543,7 +524,7 @@ describe("DashboardSuggestedModules", () => {
       vi.mocked(addSection).mockRejectedValueOnce(
         new Error("Dashboard not found")
       );
-      renderModules(true);
+      renderModules();
 
       fireEvent.click(tile("Create new section"));
 
@@ -561,7 +542,7 @@ describe("DashboardSuggestedModules", () => {
     it("works while a chat turn streams (no chat round-trip)", async () => {
       useChatStore.setState({ isLoading: true });
       vi.mocked(addSection).mockResolvedValueOnce(withSection);
-      renderModules(true);
+      renderModules();
 
       fireEvent.click(tile("Create new section"));
 

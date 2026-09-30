@@ -14,12 +14,8 @@ import type {
   DashboardSection as Section,
 } from "../api/schemas";
 import { useAnalysisTemplates } from "./dashboardQueries";
+import { TEMPLATE_FILL, TEMPLATE_OUTLINE } from "./templateColors";
 import { DROP_ZONE_ATTR } from "./useDrag";
-
-// The design's lime pair. The theme's secondary scale has no exact match
-// (secondary.200 is #F0F4B4, secondary.400 #CAD470), so these stay literal.
-const TEMPLATE_FILL = "#F0F9B9";
-const TEMPLATE_OUTLINE = "#C3D16F";
 
 /**
  * The lime strip that names the template a section was built from. Its own

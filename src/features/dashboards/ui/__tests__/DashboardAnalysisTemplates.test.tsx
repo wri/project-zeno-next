@@ -92,10 +92,7 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-const renderTemplates = ({
-  isOwner = true,
-  seed = dashboard,
-}: { isOwner?: boolean; seed?: Dashboard } = {}) => {
+const renderTemplates = ({ seed = dashboard }: { seed?: Dashboard } = {}) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -103,7 +100,7 @@ const renderTemplates = ({
   render(
     <QueryClientProvider client={queryClient}>
       <ChakraProvider value={defaultSystem}>
-        <DashboardAnalysisTemplates dashboard={seed} isOwner={isOwner} />
+        <DashboardAnalysisTemplates dashboard={seed} />
       </ChakraProvider>
     </QueryClientProvider>
   );
@@ -158,11 +155,7 @@ describe("DashboardAnalysisTemplates", () => {
           ?.sections
       ).toHaveLength(1)
     );
-    expect(applyAnalysisTemplate).toHaveBeenCalledWith(
-      "d1",
-      "nrt-monitoring",
-      undefined
-    );
+    expect(applyAnalysisTemplate).toHaveBeenCalledWith("d1", "nrt-monitoring");
     expect(toaster.create).not.toHaveBeenCalled();
   });
 
@@ -229,11 +222,5 @@ describe("DashboardAnalysisTemplates", () => {
     expect(card.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(card);
     expect(applyAnalysisTemplate).not.toHaveBeenCalled();
-  });
-
-  it("renders nothing for a viewer", () => {
-    renderTemplates({ isOwner: false });
-
-    expect(screen.queryByText("Add an analysis template")).toBeNull();
   });
 });
