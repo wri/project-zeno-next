@@ -11,6 +11,14 @@ interface AuthState {
   preferredLanguageCode: string | null;
   isAuthenticated: boolean;
   hasProfile: boolean;
+  // Resource Watch display name from /api/auth/me; the /welcome greeting.
+  userName: string | null;
+  // Stored terms acceptance (front door, /welcome). Null until accepted.
+  termsAcceptedAt: string | null;
+  termsVersion: string | null;
+  // Whether /app may open (front door). People who completed the old
+  // onboarding form accepted the terms there, so a profile counts too.
+  termsAccepted: boolean;
   authLoaded: boolean;
   usedPrompts: number;
   totalPrompts: number;
@@ -24,7 +32,14 @@ interface AuthState {
     hasProfile: boolean;
     userType: UserType | null;
     preferredLanguageCode?: string | null;
+    name?: string | null;
+    termsAcceptedAt?: string | null;
+    termsVersion?: string | null;
   }) => void;
+  // The person accepted `version` of the terms on /welcome just now.
+  acceptTerms: (version: string) => void;
+  // The profile was saved (in-chat card or settings); implies accepted terms.
+  markProfileComplete: () => void;
   setAuthLoaded: () => void;
   clearAuth: () => void;
   fetchMetadata: () => Promise<void>;
@@ -37,6 +52,10 @@ const useAuthStore = create<AuthState>()((set) => ({
   preferredLanguageCode: null,
   isAuthenticated: false,
   hasProfile: false,
+  userName: null,
+  termsAcceptedAt: null,
+  termsVersion: null,
+  termsAccepted: false,
   authLoaded: false,
   usedPrompts: 0,
   totalPrompts: 10,
@@ -87,6 +106,9 @@ const useAuthStore = create<AuthState>()((set) => ({
     hasProfile,
     userType,
     preferredLanguageCode = null,
+    name = null,
+    termsAcceptedAt = null,
+    termsVersion = null,
   }) => {
     set({
       userId: id,
@@ -95,8 +117,23 @@ const useAuthStore = create<AuthState>()((set) => ({
       preferredLanguageCode,
       isAuthenticated: true,
       hasProfile,
+      userName: name,
+      termsAcceptedAt,
+      termsVersion,
+      termsAccepted: termsAcceptedAt !== null || hasProfile,
       authLoaded: true,
     });
+  },
+  acceptTerms: (version: string) => {
+    set({
+      // Client clock until the next /api/auth/me reports the stored time.
+      termsAcceptedAt: new Date().toISOString(),
+      termsVersion: version,
+      termsAccepted: true,
+    });
+  },
+  markProfileComplete: () => {
+    set({ hasProfile: true, termsAccepted: true });
   },
   setAuthLoaded: () => {
     set({ authLoaded: true });
@@ -109,6 +146,10 @@ const useAuthStore = create<AuthState>()((set) => ({
       preferredLanguageCode: null,
       isAuthenticated: false,
       hasProfile: false,
+      userName: null,
+      termsAcceptedAt: null,
+      termsVersion: null,
+      termsAccepted: false,
       authLoaded: true,
     });
   },
