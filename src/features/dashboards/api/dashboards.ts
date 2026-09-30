@@ -3,10 +3,12 @@ import {
   DashboardCreateRequestSchema,
   DashboardListResponseSchema,
   DashboardResponseSchema,
+  SectionFromTemplateResponseSchema,
   type AnalysisTemplate,
   type AoiSearchResult,
   type Dashboard,
   type DashboardCreateRequest,
+  type SectionFromTemplateResponse,
 } from "./schemas";
 import { readJson } from "./http";
 import { apiFetch } from "@/app/lib/api-client";
@@ -112,6 +114,46 @@ export async function updateWidget(
       body: JSON.stringify(patch),
     }
   );
+}
+
+// Adds an empty section, appended after the last one (the "Create new
+// section" suggested module). The response is the dashboard without insight
+// expansion, so it is returned for its section list only — callers refetch
+// the detail to render.
+export async function addSection(
+  dashboardId: string,
+  title: string
+): Promise<Dashboard> {
+  const data = await readJson<unknown>(
+    `/api/dashboards/${dashboardId}/sections`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    }
+  );
+  return DashboardResponseSchema.parse(data);
+}
+
+// Builds a new section from an analysis template, for the dashboard's first
+// area. Synchronous and slow (tens of seconds: an analytics pull, an imagery
+// search and a model call). `args` the caller leaves out get the template's
+// defaults. 422 is bad args or a dashboard with no area, 502 a required
+// widget that failed (nothing is written).
+export async function applyAnalysisTemplate(
+  dashboardId: string,
+  template: string,
+  args: Record<string, unknown> = {}
+): Promise<SectionFromTemplateResponse> {
+  const data = await readJson<unknown>(
+    `/api/dashboards/${dashboardId}/sections/from-template`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ template, args }),
+    }
+  );
+  return SectionFromTemplateResponseSchema.parse(data);
 }
 
 // Reorders a section. The backend accepts title/description too, but only

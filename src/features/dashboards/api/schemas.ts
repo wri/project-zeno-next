@@ -114,6 +114,17 @@ export const DashboardResponseSchema = z.object({
 
 export const DashboardListResponseSchema = z.array(DashboardResponseSchema);
 
+// POST /sections/from-template. `dashboard` carries the insight expansion
+// (the same body as GET /api/dashboards/{id}), so it can go straight into the
+// detail cache.
+export const SectionFromTemplateResponseSchema = z.object({
+  section_id: z.string(),
+  widget_ids: z.array(z.string()).default([]),
+  // Optional widgets the backend left out, e.g. no cloud-free imagery.
+  warnings: z.array(z.string()).default([]),
+  dashboard: DashboardResponseSchema,
+});
+
 export const DashboardCreateRequestSchema = z.object({
   name: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
@@ -129,6 +140,9 @@ export type DashboardSectionTemplate = z.infer<
   typeof DashboardSectionTemplateSchema
 >;
 export type AnalysisTemplate = z.infer<typeof AnalysisTemplateSchema>;
+export type SectionFromTemplateResponse = z.infer<
+  typeof SectionFromTemplateResponseSchema
+>;
 export type DashboardInsight = z.infer<typeof DashboardInsightSchema>;
 export type DashboardCreateRequest = z.infer<
   typeof DashboardCreateRequestSchema
