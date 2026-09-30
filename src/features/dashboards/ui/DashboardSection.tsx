@@ -20,15 +20,12 @@ import DeleteSectionDialog from "./DeleteSectionDialog";
 import { TEMPLATE_FILL, TEMPLATE_OUTLINE } from "./templateColors";
 import { DROP_ZONE_ATTR } from "./useDrag";
 
-// The export's outline for every other panel: on white paper there is no grey
-// gutter to set one section apart from the next.
-const PRINT_OUTLINE = "#E0E2E5";
-// A section that fits on the rest of the page stays whole; one that doesn't
-// starts on the next page rather than leaving an empty strip of outline
-// behind, and one taller than a page closes its outline on each page.
-const PRINT_PANEL_CSS = {
-  breakInside: "avoid",
-  boxDecorationBreak: "clone",
+// The rule a printed section opens with, drawn on its first element (the
+// template banner, else the heading block) so it always travels with the
+// heading and can never be stranded at the foot of a page.
+const PRINT_RULE = {
+  borderTop: "1px solid",
+  borderTopColor: "#131619",
 } as const;
 // Never the last thing on a page, parted from its widgets.
 const PRINT_HEADING_CSS = { breakAfter: "avoid" } as const;
@@ -39,7 +36,13 @@ const PRINT_HEADING_CSS = { breakAfter: "avoid" } as const;
  * holds a templated section. Until the labels arrive, or for a template the
  * registry no longer lists, the raw template name stands in.
  */
-function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
+function TemplateBanner({
+  template,
+  print,
+}: {
+  template: DashboardSectionTemplate;
+  print: boolean;
+}) {
   const { data: templates } = useAnalysisTemplates();
   const label =
     templates?.find((t) => t.name === template.name)?.label ?? template.name;
@@ -54,7 +57,9 @@ function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
       borderBottom="1px solid"
       borderColor={TEMPLATE_OUTLINE}
       // 1px inside the panel's 8px corner, so the fill meets the outline.
-      borderTopRadius="7px"
+      borderTopRadius={print ? 0 : "7px"}
+      {...(print && PRINT_RULE)}
+      css={print ? PRINT_HEADING_CSS : undefined}
     >
       <ShapesIcon size={16} color="rgba(19, 22, 25, 0.8)" aria-hidden />
       <Text
@@ -98,9 +103,11 @@ function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
  * naming the template. The banner is its provenance, so it replaces the
  * agent's caption on the title row.
  *
- * In the export (`print`) every panel is outlined, since the gutter that
- * separates them on screen is white on paper, and a section is always
- * expanded: collapsing it would drop content from the document.
+ * In the export (`print`) there is no panel: the grey gutter that bands the
+ * page on screen is white on paper, and a box is cut open wherever a page
+ * breaks. A section opens with a rule above its heading (above its banner,
+ * for a template) instead, its content flush with the document, and it is
+ * always expanded: collapsing it would drop content from the document.
  */
 export default function DashboardSection({
   section,
@@ -142,11 +149,7 @@ export default function DashboardSection({
   const [draft, setDraft] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const template = section?.template ?? null;
-  const outline = template
-    ? TEMPLATE_OUTLINE
-    : print
-      ? PRINT_OUTLINE
-      : undefined;
+  const outline = template && !print ? TEMPLATE_OUTLINE : undefined;
 
   const commitRename = () => {
     const title = draft?.trim();
@@ -164,16 +167,16 @@ export default function DashboardSection({
       border={outline && "1px solid"}
       borderColor={outline}
       transition="background 0.12s ease"
-      css={print ? PRINT_PANEL_CSS : undefined}
       {...{ [DROP_ZONE_ATTR]: dropZoneKey }}
     >
-      {template && <TemplateBanner template={template} />}
+      {template && <TemplateBanner template={template} print={print} />}
       <Flex
         flexDir="column"
         px="24px"
         pt={section ? "16px" : "24px"}
         pb="24px"
         gap="16px"
+        {...(print && { px: 0, pt: 0, pb: 0 })}
       >
         {section && (
           <Flex
@@ -184,6 +187,8 @@ export default function DashboardSection({
             borderBottom={collapsed ? "none" : "1px solid"}
             borderColor="#E0E2E5"
             pb={collapsed ? 0 : "12px"}
+            {...(print &&
+              (template ? { pt: "12px" } : { ...PRINT_RULE, pt: "16px" }))}
             css={print ? PRINT_HEADING_CSS : undefined}
           >
             <Flex align="center" gap="4px" minW={0}>

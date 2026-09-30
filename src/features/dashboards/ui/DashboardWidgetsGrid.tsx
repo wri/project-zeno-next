@@ -422,8 +422,8 @@ function ContainerGrid({
  *
  * `print` is the export rendering (the report route): a read-only document,
  * even for the owner, with no curated analyses mid-add and no empty sections.
- * Widgets drop their boxes and sections draw an outline instead, so on white
- * paper the sections are still what groups the page.
+ * Widgets drop their boxes, and sections their panels: each opens with a rule
+ * above its heading instead, which paginates where a box would be cut open.
  */
 export default function DashboardWidgetsGrid({
   dashboard,
@@ -551,7 +551,8 @@ export default function DashboardWidgetsGrid({
           only grey a widget ever sits next to. */}
       <Flex
         direction="column"
-        gap="12px"
+        // On paper the sections' rules part them, so they need air instead.
+        gap={print ? "40px" : "12px"}
         align="stretch"
         {...{ [SECTION_ZONE_ATTR]: "sections" }}
       >
