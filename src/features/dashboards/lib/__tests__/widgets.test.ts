@@ -576,6 +576,11 @@ describe("hasDashboardContent", () => {
     expect(hasDashboardContent(0, 1)).toBe(true);
     expect(hasDashboardContent(2, 3)).toBe(true);
   });
+
+  it("shows the grid for a section with no widgets yet", () => {
+    expect(hasDashboardContent(0, 0, 0)).toBe(false);
+    expect(hasDashboardContent(0, 0, 1)).toBe(true);
+  });
 });
 
 describe("unresolvedPendingInsightWidgets", () => {

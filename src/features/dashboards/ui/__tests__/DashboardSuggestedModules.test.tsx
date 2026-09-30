@@ -18,10 +18,12 @@ vi.mock("../../api/dashboards", async (importOriginal) => ({
   getDashboard: vi.fn(() => new Promise(() => {})),
   addTextWidget: vi.fn().mockResolvedValue(undefined),
   addInsightWidget: vi.fn().mockResolvedValue(undefined),
+  addSection: vi.fn(),
 }));
 
 import {
   addInsightWidget,
+  addSection,
   addTextWidget,
   getDashboard,
 } from "../../api/dashboards";
@@ -29,6 +31,7 @@ import { toaster } from "@/app/components/ui/toaster";
 import {
   CURATED_SUGGESTED_MODULES,
   SUGGESTED_PROMPT_MODULES,
+  SUMMARISE_DASHBOARD_MODULE,
 } from "../../lib/suggested-modules";
 import { usePendingInsightWidgetsStore } from "../../model/pending-insight-widgets-store";
 import { dashboardKeys } from "../dashboardQueries";
@@ -43,7 +46,6 @@ import {
 import type { Chart } from "@/src/entities/insight";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
-import useSidebarStore from "@/app/store/sidebarStore";
 import useViewContextStore from "@/app/store/viewContextStore";
 
 const sendSpy = vi.fn().mockResolvedValue({ isNew: false, id: "t1" });
@@ -179,7 +181,6 @@ describe("DashboardSuggestedModules", () => {
     vi.clearAllMocks();
     usePendingInsightWidgetsStore.getState().reset();
     useChatStore.setState({ sendMessage: sendSpy, isLoading: false });
-    useSidebarStore.setState({ chatInputFocusToken: 0 });
     useAuthStore.setState({ usedPrompts: 0, totalPrompts: 10, userId: "u1" });
     useViewContextStore
       .getState()
@@ -194,14 +195,31 @@ describe("DashboardSuggestedModules", () => {
     const expectedStart = [
       ...OFFERED_CURATED_MODULES.map((m) => m.label),
       ...SUGGESTED_PROMPT_MODULES.map((m) => m.label),
-      "Text block",
-      "Describe your own via the chat",
+      "Summarize this dashboard",
+      "Add a text block",
+      "Create new section",
     ];
     expect(names).toHaveLength(expectedStart.length);
     expectedStart.forEach((label, i) => expect(names[i]).toContain(label));
     // Every curated tile carries the CURATED badge.
     expect(screen.getAllByText("CURATED")).toHaveLength(
       OFFERED_CURATED_MODULES.length
+    );
+  });
+
+  it("puts the neutral cards on their own row under the lime ones", () => {
+    renderModules(true);
+
+    const neutralRow = tile("Add a text block").parentElement!;
+    expect(
+      Array.from(neutralRow.children).map((c) => c.getAttribute("aria-label"))
+    ).toEqual([
+      "Summarize this dashboard",
+      "Add a text block",
+      "Create new section",
+    ]);
+    expect(neutralRow).not.toBe(
+      tile(SUGGESTED_PROMPT_MODULES[0].label).parentElement
     );
   });
 
@@ -380,10 +398,10 @@ describe("DashboardSuggestedModules", () => {
     expect(service.run).not.toHaveBeenCalled();
   });
 
-  it("adds a blank text widget on 'Text block' for the owner", async () => {
+  it("adds a blank text widget on 'Add a text block' for the owner", async () => {
     renderModules(true);
 
-    fireEvent.click(tile("Text block"));
+    fireEvent.click(tile("Add a text block"));
 
     await waitFor(() => expect(addTextWidget).toHaveBeenCalledWith("d1"));
   });
@@ -398,7 +416,7 @@ describe("DashboardSuggestedModules", () => {
     vi.mocked(getDashboard).mockResolvedValueOnce(dashboard);
     renderModules(true);
 
-    fireEvent.click(tile("Text block"));
+    fireEvent.click(tile("Add a text block"));
 
     await waitFor(() =>
       expect(toaster.create).toHaveBeenCalledWith(
@@ -416,11 +434,14 @@ describe("DashboardSuggestedModules", () => {
     renderModules(false);
 
     // Every card writes to the dashboard, so a viewer gets no row at all.
-    expect(screen.queryByText("Suggested modules")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Text block" })).toBeNull();
+    expect(screen.queryByText("More suggested modules")).toBeNull();
+    for (const name of ["Add a text block", "Create new section"]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
     for (const card of [
       ...CURATED_SUGGESTED_MODULES,
       ...SUGGESTED_PROMPT_MODULES,
+      SUMMARISE_DASHBOARD_MODULE,
     ]) {
       expect(screen.queryByRole("button", { name: card.label })).toBeNull();
     }
@@ -430,15 +451,16 @@ describe("DashboardSuggestedModules", () => {
     useChatStore.setState({ isLoading: true });
     renderModules(true);
 
-    for (const card of SUGGESTED_PROMPT_MODULES) {
+    for (const card of [
+      ...SUGGESTED_PROMPT_MODULES,
+      SUMMARISE_DASHBOARD_MODULE,
+    ]) {
       fireEvent.click(tile(card.label));
     }
-    fireEvent.click(tile("Describe your own via the chat"));
 
     // A concurrent send clears the in-flight turn's tool steps and overwrites
     // its abort controller, orphaning the running request.
     expect(sendSpy).not.toHaveBeenCalled();
-    expect(useSidebarStore.getState().chatInputFocusToken).toBe(0);
     expect(
       tile(SUGGESTED_PROMPT_MODULES[0].label).getAttribute("aria-disabled")
     ).toBe("true");
@@ -449,10 +471,9 @@ describe("DashboardSuggestedModules", () => {
     renderModules(true);
 
     fireEvent.click(tile(SUGGESTED_PROMPT_MODULES[0].label));
-    fireEvent.click(tile("Describe your own via the chat"));
+    fireEvent.click(tile(SUMMARISE_DASHBOARD_MODULE.label));
 
     expect(sendSpy).not.toHaveBeenCalled();
-    expect(useSidebarStore.getState().chatInputFocusToken).toBe(0);
   });
 
   it("still allows adding a text block while a chat turn streams", () => {
@@ -461,16 +482,90 @@ describe("DashboardSuggestedModules", () => {
     useChatStore.setState({ isLoading: true });
     renderModules(true);
 
-    fireEvent.click(tile("Text block"));
+    fireEvent.click(tile("Add a text block"));
 
     return waitFor(() => expect(addTextWidget).toHaveBeenCalledWith("d1"));
   });
 
-  it("requests chat input focus on 'Describe your own via the chat'", () => {
+  it("sends the summary prompt on 'Summarize this dashboard'", () => {
     renderModules(true);
 
-    fireEvent.click(tile("Describe your own via the chat"));
+    fireEvent.click(tile("Summarize this dashboard"));
 
-    expect(useSidebarStore.getState().chatInputFocusToken).toBe(1);
+    expect(sendSpy).toHaveBeenCalledWith(SUMMARISE_DASHBOARD_MODULE.prompt);
+  });
+
+  describe("'Create new section'", () => {
+    const withSection: Dashboard = {
+      ...dashboard,
+      sections: [
+        {
+          id: "s-new",
+          title: "New section",
+          description: null,
+          position: 0,
+          template: null,
+          created_at: "2026-07-01T00:00:00Z",
+        },
+      ],
+    };
+
+    it("creates an empty 'New section' and refetches the dashboard", async () => {
+      vi.mocked(addSection).mockResolvedValueOnce(withSection);
+      vi.mocked(getDashboard).mockResolvedValueOnce(withSection);
+      renderModules(true);
+
+      fireEvent.click(tile("Create new section"));
+
+      await waitFor(() =>
+        expect(addSection).toHaveBeenCalledWith("d1", "New section")
+      );
+      await waitFor(() => expect(getDashboard).toHaveBeenCalledWith("d1"));
+      expect(toaster.create).not.toHaveBeenCalled();
+    });
+
+    it("is inert while the section is being created", async () => {
+      vi.mocked(addSection).mockReturnValueOnce(new Promise(() => {}));
+      renderModules(true);
+
+      fireEvent.click(tile("Create new section"));
+      await waitFor(() =>
+        expect(tile("Create new section").getAttribute("aria-disabled")).toBe(
+          "true"
+        )
+      );
+      fireEvent.click(tile("Create new section"));
+
+      expect(addSection).toHaveBeenCalledTimes(1);
+    });
+
+    it("toasts the backend's reason when the create fails", async () => {
+      vi.mocked(addSection).mockRejectedValueOnce(
+        new Error("Dashboard not found")
+      );
+      renderModules(true);
+
+      fireEvent.click(tile("Create new section"));
+
+      await waitFor(() =>
+        expect(toaster.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "Couldn't create a section",
+            description: "Dashboard not found",
+            type: "error",
+          })
+        )
+      );
+    });
+
+    it("works while a chat turn streams (no chat round-trip)", async () => {
+      useChatStore.setState({ isLoading: true });
+      vi.mocked(addSection).mockResolvedValueOnce(withSection);
+      renderModules(true);
+
+      fireEvent.click(tile("Create new section"));
+
+      await waitFor(() => expect(addSection).toHaveBeenCalled());
+    });
   });
 });

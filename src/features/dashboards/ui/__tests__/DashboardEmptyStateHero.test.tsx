@@ -11,6 +11,19 @@ vi.mock("@/app/components/ui/toaster", () => ({
   Toaster: () => null,
 }));
 
+// Keep the template registry off the network.
+vi.mock("../../api/dashboards", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  listAnalysisTemplates: vi.fn().mockResolvedValue([
+    {
+      name: "nrt-monitoring",
+      label: "Near-real-time monitoring",
+      args_schema: {},
+      widgets: ["chart", "layer", "imagery"],
+    },
+  ]),
+}));
+
 import DashboardEmptyStateHero from "../DashboardEmptyStateHero";
 import type { Dashboard } from "../../api/schemas";
 
@@ -50,19 +63,28 @@ describe("DashboardEmptyStateHero", () => {
     ).toBeTruthy();
   });
 
-  it("reuses the same suggested-modules row shown on a populated dashboard", () => {
+  it("reuses the same footer shown on a populated dashboard", async () => {
     renderHero(true);
 
-    expect(screen.getByText("Suggested modules")).toBeTruthy();
+    expect(screen.getByText("Add an analysis template")).toBeTruthy();
+    expect(
+      await screen.findByRole("button", { name: "Near-real-time monitoring" })
+    ).toBeTruthy();
+    expect(screen.getByText("More suggested modules")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Tree cover loss analysis" })
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Text block" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Add a text block" })
+    ).toBeTruthy();
   });
 
-  it("hides the owner-only 'Text block' card for a viewer", () => {
+  it("hides the owner-only footer for a viewer", () => {
     renderHero(false);
 
-    expect(screen.queryByRole("button", { name: "Text block" })).toBeNull();
+    expect(screen.queryByText("Add an analysis template")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Add a text block" })
+    ).toBeNull();
   });
 });

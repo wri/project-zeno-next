@@ -4,7 +4,7 @@ import { useMemo, type ReactNode } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import {
   CheckCircleIcon,
-  SparkleIcon,
+  RowsPlusBottomIcon,
   SpinnerGapIcon,
   TextTIcon,
   type Icon,
@@ -14,7 +14,6 @@ import InsightCaption from "@/app/components/InsightCaption";
 import { toaster } from "@/app/components/ui/toaster";
 import { usePromptQuota } from "@/app/hooks/usePromptQuota";
 import useChatStore from "@/app/store/chatStore";
-import useSidebarStore from "@/app/store/sidebarStore";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import {
   curatedCatalogue,
@@ -26,9 +25,12 @@ import {
   CURATED_SUGGESTED_MODULES,
   curatedTileStatus,
   SUGGESTED_PROMPT_MODULES,
+  SUMMARISE_DASHBOARD_MODULE,
   type CuratedSuggestedModule,
 } from "../lib/suggested-modules";
-import { useAddTextWidget } from "./dashboardQueries";
+import DashboardFooterHeading from "./DashboardFooterHeading";
+import { useAddSection, useAddTextWidget } from "./dashboardQueries";
+import { scrollToSectionWhenRendered } from "./scrollToSection";
 import {
   useAddCuratedAnalysisToDashboard,
   type AddCuratedAnalysisOutcome,
@@ -48,6 +50,9 @@ const ANALYSIS_CARD_BORDER = "#C3D16F";
 const NEUTRAL_CARD_BG = "#F4F5F6";
 const NEUTRAL_CARD_BORDER = "#C2C7D0";
 const CARD_LABEL_COLOR = "#0049AA";
+// The heading the backend requires (1–100 characters) for a section the owner
+// has not named yet.
+const NEW_SECTION_TITLE = "New section";
 
 /** Toast per run-then-add outcome; the tile itself has no room for state copy. */
 const OUTCOME_TOASTS: Partial<
@@ -223,50 +228,63 @@ function CuratedModuleTile({
 }
 
 /**
- * The "Suggested modules" row (Figma node 1475:4879), rendered below the
- * widget grid on every dashboard and inside the empty-state hero. The lime
- * cards are `SUGGESTED_MODULES`: the curated ones run a deterministic analysis
- * for the dashboard's area and add it directly; the prompt ones inject a
- * canned prompt into the chat pipeline (same MVP approach as `runAnalysis` /
- * `DashboardChatNudges`). "Text block" adds an empty note widget directly, no
- * chat round-trip. "Describe your own" just focuses the chat textarea, whose
- * placeholder already reads "Or describe what you want to explore…" once the
- * thread is empty.
+ * The "More suggested modules" block of the dashboard footer (Figma node
+ * 3938:11934), under the analysis templates. The lime row is
+ * `SUGGESTED_MODULES`: the curated cards run a deterministic analysis for the
+ * dashboard's area and add it directly; the prompt ones inject a canned prompt
+ * into the chat pipeline (same MVP approach as `runAnalysis` /
+ * `DashboardChatNudges`). The grey row under it holds the non-analysis cards:
+ * "Summarize this dashboard" (a prompt too), "Add a text block" (an empty note
+ * widget, no chat round-trip) and "Create new section" (an empty section,
+ * likewise direct).
  *
- * Every card here writes to the dashboard, so the whole row is owner-only,
+ * Every card here writes to the dashboard, so the whole block is owner-only,
  * and the cards that go through the chat honour the same gates ChatInput's
  * submitPrompt does. `service` is injectable for tests.
  */
 export default function DashboardSuggestedModules({
   dashboard,
   isOwner,
-  // Space above the divider. Callers that already provide their own gap
-  // above this row (e.g. DashboardEmptyStateHero's hero copy) pass 0.
-  mt = 8,
   service,
 }: {
   dashboard: Dashboard;
   isOwner: boolean;
-  mt?: number;
   service?: AnalysisService;
 }) {
   const sendMessage = useChatStore((s) => s.sendMessage);
   const isStreaming = useChatStore((s) => s.isLoading);
   const { promptsExhausted } = usePromptQuota();
-  const requestChatInputFocus = useSidebarStore((s) => s.requestChatInputFocus);
   const enabledFlags = useEnabledFlags();
   const addTextWidget = useAddTextWidget(dashboard.id);
+  const addSection = useAddSection(dashboard.id);
 
   // The prompt cards are a second entry point into sendMessage, so they need
   // the guards submitPrompt applies to the textarea (ChatInput's `disabled` is
   // the same two conditions). Sending while a turn streams would clear the
   // live turn's tool steps and overwrite its abort controller in the store,
   // leaving the first request running but uncancellable; sending with no
-  // prompts left just earns a generic "service unavailable". "Describe your
-  // own" is gated too — under either condition the textarea it focuses is
-  // itself disabled. Curated tiles and "Text block" are direct REST calls and
+  // prompts left just earns a generic "service unavailable". Curated tiles,
+  // "Add a text block" and "Create new section" are direct REST calls and
   // ignore these gates.
   const chatDisabled = isStreaming || promptsExhausted;
+
+  // mutateAsync rather than mutate's callbacks: on an empty dashboard the new
+  // section swaps the hero for the grid, unmounting this row before
+  // mutate-level callbacks would run.
+  const createSection = async () => {
+    try {
+      const sectionId = await addSection.mutateAsync(NEW_SECTION_TITLE);
+      if (sectionId) scrollToSectionWhenRendered(sectionId);
+    } catch (error) {
+      toaster.create({
+        title: "Couldn't create a section",
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+        type: "error",
+        duration: 4000,
+      });
+    }
+  };
 
   // A dashboard is scoped to exactly one AOI; without it (never in practice)
   // the curated tiles have nothing to analyse and render inert.
@@ -297,91 +315,92 @@ export default function DashboardSuggestedModules({
   if (!isOwner) return null;
 
   return (
-    // The chat panel this row drives is desktop-only for now (see the
+    // The chat panel these cards drive is desktop-only for now (see the
     // ChatPanel mount in DashboardDetailPage), so on mobile every card but
-    // "Text block" would post into a panel the user cannot see. Drop the row
-    // until the mobile bottom sheet lands.
-    <Flex
-      direction="column"
-      gap={5}
-      mt={mt}
-      display={{ base: "none", md: "flex" }}
-    >
-      <Flex align="center" gap={3}>
-        <Box flex={1} h="1px" bg="#E0E2E5" />
-        <Text fontSize="xs" fontStyle="italic" color="#656E7B" flexShrink={0}>
-          Suggested modules
-        </Text>
-        <Box flex={1} h="1px" bg="#E0E2E5" />
-      </Flex>
-      <Flex wrap="wrap" gap="20px">
-        {CURATED_SUGGESTED_MODULES.map((module) => {
-          // No spec means the catalogue does not offer this analysis here (a
-          // feature flag that is off, an area its dataset does not cover), so
-          // the tile is not rendered at all.
-          const spec = specById.get(module.datasetId);
-          if (!spec) return null;
-          return area ? (
-            <CuratedModuleTile
-              key={module.id}
-              module={module}
-              spec={spec}
-              area={area}
-              service={service}
-            />
-          ) : (
+    // "Add a text block" and "Create new section" would post into a panel the
+    // user cannot see. Drop the block until the mobile bottom sheet lands.
+    <Flex direction="column" gap="40px" display={{ base: "none", md: "flex" }}>
+      <DashboardFooterHeading>More suggested modules</DashboardFooterHeading>
+      <Flex direction="column" gap="20px">
+        <Flex wrap="wrap" gap="20px">
+          {CURATED_SUGGESTED_MODULES.map((module) => {
+            // No spec means the catalogue does not offer this analysis here (a
+            // feature flag that is off, an area its dataset does not cover), so
+            // the tile is not rendered at all.
+            const spec = specById.get(module.datasetId);
+            if (!spec) return null;
+            return area ? (
+              <CuratedModuleTile
+                key={module.id}
+                module={module}
+                spec={spec}
+                area={area}
+                service={service}
+              />
+            ) : (
+              <ModuleCard
+                key={module.id}
+                icon={module.icon}
+                label={module.label}
+                caption={<InsightCaption curated showLearnMore={false} />}
+                bg={ANALYSIS_CARD_BG}
+                borderColor={ANALYSIS_CARD_BORDER}
+                disabled
+                onClick={() => {}}
+              />
+            );
+          })}
+          {SUGGESTED_PROMPT_MODULES.map((card) => (
             <ModuleCard
-              key={module.id}
-              icon={module.icon}
-              label={module.label}
-              caption={<InsightCaption curated showLearnMore={false} />}
+              key={card.id}
+              icon={card.icon}
+              label={card.label}
               bg={ANALYSIS_CARD_BG}
               borderColor={ANALYSIS_CARD_BORDER}
-              disabled
-              onClick={() => {}}
+              disabled={chatDisabled}
+              onClick={() => void sendMessage(card.prompt)}
             />
-          );
-        })}
-        {SUGGESTED_PROMPT_MODULES.map((card) => (
+          ))}
+        </Flex>
+        <Flex wrap="wrap" gap="20px">
           <ModuleCard
-            key={card.id}
-            icon={card.icon}
-            label={card.label}
-            bg={ANALYSIS_CARD_BG}
-            borderColor={ANALYSIS_CARD_BORDER}
+            icon={SUMMARISE_DASHBOARD_MODULE.icon}
+            label={SUMMARISE_DASHBOARD_MODULE.label}
+            bg={NEUTRAL_CARD_BG}
+            borderColor={NEUTRAL_CARD_BORDER}
             disabled={chatDisabled}
-            onClick={() => void sendMessage(card.prompt)}
+            onClick={() => void sendMessage(SUMMARISE_DASHBOARD_MODULE.prompt)}
           />
-        ))}
-        <ModuleCard
-          icon={TextTIcon}
-          label="Text block"
-          bg={NEUTRAL_CARD_BG}
-          borderColor={NEUTRAL_CARD_BORDER}
-          disabled={addTextWidget.isPending}
-          onClick={() =>
-            addTextWidget.mutate(undefined, {
-              onError: (error) =>
-                toaster.create({
-                  title: "Couldn't add text block",
-                  description:
-                    error instanceof Error
-                      ? error.message
-                      : "Please try again.",
-                  type: "error",
-                  duration: 4000,
-                }),
-            })
-          }
-        />
-        <ModuleCard
-          icon={SparkleIcon}
-          label="Describe your own via the chat"
-          bg={NEUTRAL_CARD_BG}
-          borderColor={NEUTRAL_CARD_BORDER}
-          disabled={chatDisabled}
-          onClick={requestChatInputFocus}
-        />
+          <ModuleCard
+            icon={TextTIcon}
+            label="Add a text block"
+            bg={NEUTRAL_CARD_BG}
+            borderColor={NEUTRAL_CARD_BORDER}
+            disabled={addTextWidget.isPending}
+            onClick={() =>
+              addTextWidget.mutate(undefined, {
+                onError: (error) =>
+                  toaster.create({
+                    title: "Couldn't add text block",
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : "Please try again.",
+                    type: "error",
+                    duration: 4000,
+                  }),
+              })
+            }
+          />
+          <ModuleCard
+            icon={RowsPlusBottomIcon}
+            label="Create new section"
+            bg={NEUTRAL_CARD_BG}
+            borderColor={NEUTRAL_CARD_BORDER}
+            disabled={addSection.isPending}
+            onClick={() => void createSection()}
+          />
+        </Flex>
       </Flex>
     </Flex>
   );

@@ -340,13 +340,17 @@ export function findCuratedWidgetForDataset(
  * Whether the dashboard page shows the widget grid rather than the empty-state
  * hero. A curated analysis on its way onto the dashboard counts as content:
  * its loading module must appear the moment the user toggles the card, even
- * on a dashboard that has no widgets yet.
+ * on a dashboard that has no widgets yet. So does an empty section the grid
+ * would render (`sectionCount` — the caller passes 0 for a viewer, who is not
+ * shown empty sections): "Create new section" on an empty dashboard has to
+ * leave a section on screen.
  */
 export function hasDashboardContent(
   widgetCount: number,
-  pendingCount: number
+  pendingCount: number,
+  sectionCount = 0
 ): boolean {
-  return widgetCount > 0 || pendingCount > 0;
+  return widgetCount > 0 || pendingCount > 0 || sectionCount > 0;
 }
 
 /**
