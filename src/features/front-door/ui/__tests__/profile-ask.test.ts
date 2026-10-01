@@ -283,10 +283,9 @@ describe("the profile card after the first answer", () => {
 
     expect(cachedPrefill()).toMatchObject({
       suggestion: {
-        source: "gfw",
-        sector: "government",
-        role: "analyst",
-        country: "BR",
+        sector_code: "government",
+        role_code: "analyst",
+        country_code: "BR",
       },
       firstName: "Maria",
       lastName: "Silva",

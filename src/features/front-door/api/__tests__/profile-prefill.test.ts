@@ -37,13 +37,13 @@ describe("toProfilePrefill", () => {
   it("maps a full GFW profile to the card's suggestion, plus names for Ortto", () => {
     expect(toProfilePrefill(FULL)).toEqual({
       found: true,
+      // The PATCH field names, as on the wire; no `source`.
       suggestion: {
-        source: "gfw",
-        organisation: "State environment agency",
-        sector: "government",
-        role: "analyst",
-        country: "BR",
-        language: "pt",
+        company_organization: "State environment agency",
+        sector_code: "government",
+        role_code: "analyst",
+        country_code: "BR",
+        preferred_language_code: "pt",
       },
       firstName: "Maria",
       lastName: "Silva",
@@ -98,7 +98,7 @@ describe("toProfilePrefill", () => {
           first_name: "",
         },
       })
-    ).toEqual({ found: true, suggestion: { source: "gfw", sector: "ngo" } });
+    ).toEqual({ found: true, suggestion: { sector_code: "ngo" } });
   });
 
   it("treats a null value as absent, with a warning", () => {
@@ -108,7 +108,7 @@ describe("toProfilePrefill", () => {
         source: "gfw",
         suggestion: { sector_code: "ngo", country_code: null },
       })
-    ).toEqual({ found: true, suggestion: { source: "gfw", sector: "ngo" } });
+    ).toEqual({ found: true, suggestion: { sector_code: "ngo" } });
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining("country_code")
     );
@@ -121,7 +121,7 @@ describe("toProfilePrefill", () => {
         source: "gfw",
         suggestion: { sector_code: 3, country_code: "KE" },
       })
-    ).toEqual({ found: true, suggestion: { source: "gfw", country: "KE" } });
+    ).toEqual({ found: true, suggestion: { country_code: "KE" } });
     expect(console.warn).toHaveBeenCalledOnce();
   });
 
@@ -156,7 +156,7 @@ describe("fetchProfilePrefill", () => {
     );
     const prefill = await fetchProfilePrefill();
     expect(prefill.found).toBe(true);
-    expect(prefill.suggestion?.sector).toBe("government");
+    expect(prefill.suggestion?.sector_code).toBe("government");
     expect(vi.mocked(apiFetch).mock.calls[0][0]).toBe(
       "/api/auth/profile/prefill"
     );

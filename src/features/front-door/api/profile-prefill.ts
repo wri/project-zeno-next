@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { apiFetch } from "@/app/lib/api-client";
 import type { ProfileSuggestion } from "../model/profile-card";
 
@@ -41,70 +42,69 @@ export interface ProfilePrefill {
 
 export const PREFILL_NOT_FOUND: ProfilePrefill = { found: false };
 
-type SuggestionKey = keyof ProfilePrefillSuggestionWire;
+/**
+ * One suggestion field: a non-blank string, else absent. A null or wrongly
+ * typed value (the contract says neither happens) is dropped with a warning
+ * rather than failing the whole prefill.
+ */
+function optionalText(key: string) {
+  return z
+    .string()
+    .trim()
+    .min(1)
+    .optional()
+    .catch(({ input }) => {
+      if (typeof input !== "string") {
+        console.warn(
+          `Profile prefill: ignoring ${key} (expected a string, got ${
+            input === null ? "null" : typeof input
+          })`
+        );
+      }
+      return undefined;
+    });
+}
+
+// What the slice reads from the wire. Other keys (job_title, topics, and any
+// consent flag the backend might ever send) are stripped by z.object.
+const PrefillResponseSchema = z.object({
+  found: z.boolean(),
+  suggestion: z
+    .object({
+      first_name: optionalText("first_name"),
+      last_name: optionalText("last_name"),
+      company_organization: optionalText("company_organization"),
+      sector_code: optionalText("sector_code"),
+      role_code: optionalText("role_code"),
+      country_code: optionalText("country_code"),
+      preferred_language_code: optionalText("preferred_language_code"),
+    })
+    .nullable(),
+});
 
 /**
  * Parses the prefill response. Throws only when the payload's structure is
  * wrong (`found` not a boolean, `suggestion` neither an object nor null).
- * Inside the suggestion, a null or wrongly typed value is treated as absent
- * with a warning, and blank strings as absent.
  */
 export function toProfilePrefill(raw: unknown): ProfilePrefill {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
-    throw new Error("Profile prefill: response is not an object");
-  }
-  const body = raw as Record<string, unknown>;
-  if (typeof body.found !== "boolean") {
-    throw new Error("Profile prefill: `found` is not a boolean");
-  }
-  const rawSuggestion = body.suggestion;
-  if (
-    rawSuggestion !== null &&
-    (typeof rawSuggestion !== "object" || Array.isArray(rawSuggestion))
-  ) {
+  const parsed = PrefillResponseSchema.safeParse(raw);
+  if (!parsed.success) {
     throw new Error(
-      "Profile prefill: `suggestion` is neither an object nor null"
+      `Profile prefill: malformed response (${parsed.error.message})`
     );
   }
-  if (!body.found || rawSuggestion === null) {
-    return body.found ? { found: true } : PREFILL_NOT_FOUND;
-  }
+  const { found, suggestion: wire } = parsed.data;
+  if (!found) return PREFILL_NOT_FOUND;
+  if (!wire) return { found: true };
 
-  const fields = rawSuggestion as Record<string, unknown>;
-  const text = (key: SuggestionKey): string | undefined => {
-    const value = fields[key];
-    if (value === undefined) return undefined;
-    if (typeof value !== "string") {
-      console.warn(
-        `Profile prefill: ignoring ${key} (expected a string, got ${
-          value === null ? "null" : typeof value
-        })`
-      );
-      return undefined;
-    }
-    const trimmed = value.trim();
-    return trimmed === "" ? undefined : trimmed;
-  };
-
-  const suggestion: ProfileSuggestion = { source: "gfw" };
-  const organisation = text("company_organization");
-  const sector = text("sector_code");
-  const role = text("role_code");
-  const country = text("country_code");
-  const language = text("preferred_language_code");
-  if (organisation) suggestion.organisation = organisation;
-  if (sector) suggestion.sector = sector;
-  if (role) suggestion.role = role;
-  if (country) suggestion.country = country;
-  if (language) suggestion.language = language;
-  const hasCardField = Object.keys(suggestion).length > 1;
-
+  const { first_name, last_name, ...fields } = wire;
   const prefill: ProfilePrefill = { found: true };
-  if (hasCardField) prefill.suggestion = suggestion;
-  const firstName = text("first_name");
-  const lastName = text("last_name");
-  if (firstName) prefill.firstName = firstName;
-  if (lastName) prefill.lastName = lastName;
+  const suggestion = Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  ) as ProfileSuggestion;
+  if (Object.keys(suggestion).length > 0) prefill.suggestion = suggestion;
+  if (first_name) prefill.firstName = first_name;
+  if (last_name) prefill.lastName = last_name;
   return prefill;
 }
 

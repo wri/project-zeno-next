@@ -22,12 +22,11 @@ const options: ProfileCardOptions = {
 };
 
 const fullGfw: ProfileSuggestion = {
-  source: "gfw",
-  organisation: "State environment agency",
-  sector: "government",
-  role: "analyst",
-  country: "BRA",
-  language: "pt",
+  company_organization: "State environment agency",
+  sector_code: "government",
+  role_code: "analyst",
+  country_code: "BRA",
+  preferred_language_code: "pt",
 };
 
 function draft(fields: Partial<ProfileDraft>): ProfileDraft {
@@ -95,11 +94,10 @@ describe("draftFromSuggestion", () => {
     expect(
       draftFromSuggestion(
         {
-          source: "gfw",
-          sector: "retired_code",
-          role: "x",
-          country: "ZZZ",
-          language: "xx",
+          sector_code: "retired_code",
+          role_code: "x",
+          country_code: "ZZZ",
+          preferred_language_code: "xx",
         },
         options
       )
@@ -109,16 +107,16 @@ describe("draftFromSuggestion", () => {
   it("drops a role from another sector", () => {
     expect(
       draftFromSuggestion(
-        { source: "gfw", sector: "ngo", role: "analyst", country: "KEN" },
+        { sector_code: "ngo", role_code: "analyst", country_code: "KEN" },
         options
       ).role
     ).toBe("");
   });
 
   it("leaves language empty when the suggestion has none", () => {
-    expect(
-      draftFromSuggestion({ source: "gfw", country: "KEN" }, options).language
-    ).toBe("");
+    expect(draftFromSuggestion({ country_code: "KEN" }, options).language).toBe(
+      ""
+    );
   });
 
   it("returns an empty draft with no suggestion", () => {
@@ -134,15 +132,15 @@ describe("profileCardMode", () => {
   });
 
   it("doesn't need a language to offer confirmation", () => {
-    const { language, ...noLanguage } = fullGfw;
-    void language;
+    const { preferred_language_code, ...noLanguage } = fullGfw;
+    void preferred_language_code;
     expect(profileCardMode(noLanguage, options)).toBe("confirm");
   });
 
   it("falls back to fields for a thin GFW profile", () => {
-    expect(
-      profileCardMode({ source: "gfw", sector: "government" }, options)
-    ).toBe("fields");
+    expect(profileCardMode({ sector_code: "government" }, options)).toBe(
+      "fields"
+    );
   });
 
   it("uses fields for a new person", () => {

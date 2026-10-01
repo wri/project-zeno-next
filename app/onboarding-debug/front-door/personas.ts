@@ -54,12 +54,11 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     entry: "gfw",
     search: query(GFW_REFERRAL),
     suggestion: {
-      source: "gfw",
-      organisation: "State environment agency",
-      sector: "government",
-      role: "analyst",
-      country: "BRA",
-      language: "pt",
+      company_organization: "State environment agency",
+      sector_code: "government",
+      role_code: "analyst",
+      country_code: "BRA",
+      preferred_language_code: "pt",
     },
   },
   "gfw-thin": {
@@ -71,6 +70,6 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     email: "tomas@example.org",
     entry: "gfw",
     search: query(GFW_REFERRAL),
-    suggestion: { source: "gfw", sector: "government" },
+    suggestion: { sector_code: "government" },
   },
 };

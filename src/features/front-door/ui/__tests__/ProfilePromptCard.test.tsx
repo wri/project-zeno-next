@@ -22,12 +22,11 @@ const options: ProfileCardOptions = {
 };
 
 const fullGfw: ProfileSuggestion = {
-  source: "gfw",
-  organisation: "State environment agency",
-  sector: "government",
-  role: "analyst",
-  country: "BRA",
-  language: "pt",
+  company_organization: "State environment agency",
+  sector_code: "government",
+  role_code: "analyst",
+  country_code: "BRA",
+  preferred_language_code: "pt",
 };
 
 function renderCard(props: Partial<ProfilePromptCardProps> = {}) {
@@ -88,10 +87,15 @@ describe("ProfilePromptCard", () => {
   });
 
   it("leaves out confirm rows GFW had no value for", () => {
-    const { language, organisation, role, ...rest } = fullGfw;
-    void language;
-    void organisation;
-    void role;
+    const {
+      preferred_language_code,
+      company_organization,
+      role_code,
+      ...rest
+    } = fullGfw;
+    void preferred_language_code;
+    void company_organization;
+    void role_code;
     const { container } = renderCard({ suggestion: rest });
     expect(confirmRows(container)).toEqual([
       ["Country", "Brazil"],
@@ -135,7 +139,7 @@ describe("ProfilePromptCard", () => {
   });
 
   it("asks a thin GFW profile to fill in the rest", () => {
-    renderCard({ suggestion: { source: "gfw", sector: "government" } });
+    renderCard({ suggestion: { sector_code: "government" } });
     expect(
       screen.getByText("We found part of your Global Forest Watch profile")
     ).toBeTruthy();

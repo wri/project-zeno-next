@@ -2,6 +2,7 @@
  * The in-chat profile card: what it asks for, how a profile found elsewhere
  * (today: MyGFW) seeds it, and what saving it would send.
  */
+import type { PatchProfilePartialRequest } from "@/app/schemas/api/auth/profile/patch";
 
 /** The dropdown options the card needs; a structural subset of GET /api/profile/config. */
 export interface ProfileCardOptions {
@@ -29,32 +30,40 @@ export const EMPTY_PROFILE_DRAFT: ProfileDraft = {
   role: "",
 };
 
+type SuggestedField =
+  | "country_code"
+  | "preferred_language_code"
+  | "sector_code"
+  | "role_code"
+  | "company_organization";
+
 /**
  * A profile found on the shared Resource Watch user, already mapped to GNW
- * codes (the backend owns the MyGFW label→code and ISO3→ISO2 mapping).
+ * codes (the backend owns the MyGFW label→code and ISO3→ISO2 mapping). Keyed
+ * by the PATCH /api/auth/profile field names, so nothing renames it on the
+ * way to the form or back; never null (the prefill parser drops absences).
  */
-export interface ProfileSuggestion {
-  source: "gfw";
-  organisation?: string;
-  sector?: string;
-  role?: string;
-  country?: string;
-  language?: string;
-}
+export type ProfileSuggestion = {
+  [K in SuggestedField]?: NonNullable<PatchProfilePartialRequest[K]>;
+};
 
 /** `confirm`: one-click "Looks right". `fields`: pick country, language, sector, role. */
 export type ProfileCardMode = "confirm" | "fields";
 
-/** Partial update for PATCH /api/auth/profile (backend `UserProfileUpdateRequest`). */
-export interface ProfileCardPatch {
-  sector_code: string;
-  role_code: string | null;
-  country_code: string;
-  company_organization?: string;
-  preferred_language_code?: string;
-  /** Once terms are stored separately, `has_profile` only means "profile complete". */
-  has_profile: true;
-}
+/**
+ * The card's partial update for PATCH /api/auth/profile. Once terms are
+ * stored separately, `has_profile` only means "profile complete".
+ */
+export type ProfileCardPatch = Required<
+  Pick<
+    PatchProfilePartialRequest,
+    "sector_code" | "role_code" | "country_code" | "has_profile"
+  >
+> &
+  Pick<
+    PatchProfilePartialRequest,
+    "company_organization" | "preferred_language_code"
+  >;
 
 export function isProfileDraftComplete(draft: ProfileDraft): boolean {
   return draft.sector !== "" && draft.country !== "";
@@ -83,12 +92,12 @@ export function draftFromSuggestion(
   options: ProfileCardOptions
 ): ProfileDraft {
   if (!suggestion) return EMPTY_PROFILE_DRAFT;
-  const sector = known(suggestion.sector, options.sectors);
+  const sector = known(suggestion.sector_code, options.sectors);
   return {
-    country: known(suggestion.country, options.countries),
-    language: known(suggestion.language, options.languages),
+    country: known(suggestion.country_code, options.countries),
+    language: known(suggestion.preferred_language_code, options.languages),
     sector,
-    role: known(suggestion.role, options.sector_roles[sector] ?? {}),
+    role: known(suggestion.role_code, options.sector_roles[sector] ?? {}),
   };
 }
 
@@ -122,8 +131,8 @@ export function toProfilePatch(
     has_profile: true,
   };
   if (draft.language !== "") patch.preferred_language_code = draft.language;
-  if (suggestion?.organisation) {
-    patch.company_organization = suggestion.organisation;
+  if (suggestion?.company_organization) {
+    patch.company_organization = suggestion.company_organization;
   }
   return patch;
 }

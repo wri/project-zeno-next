@@ -45,10 +45,9 @@ const OPTIONS = {
 const GFW: ProfilePrefill = {
   found: true,
   suggestion: {
-    source: "gfw",
-    sector: "government",
-    role: "analyst",
-    country: "BR",
+    sector_code: "government",
+    role_code: "analyst",
+    country_code: "BR",
   },
 };
 

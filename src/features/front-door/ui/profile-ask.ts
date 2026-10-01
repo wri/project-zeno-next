@@ -229,9 +229,9 @@ export async function saveProfileFromCard(
     void submitOrttoProfile({
       email: auth.userEmail,
       ...personNames(prefill, auth.userName),
-      sector: patch.sector_code,
-      companyOrganization: patch.company_organization,
-      countryCode: patch.country_code,
+      sector: patch.sector_code ?? undefined,
+      companyOrganization: patch.company_organization ?? undefined,
+      countryCode: patch.country_code ?? undefined,
     });
   }
 }

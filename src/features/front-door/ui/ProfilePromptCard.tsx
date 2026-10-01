@@ -200,7 +200,7 @@ export function ProfilePromptCard({
     ["Language", options.languages[draft.language]],
     ["Sector", options.sectors[draft.sector]],
     ["Role", options.sector_roles[draft.sector]?.[draft.role]],
-    ["Organisation", suggestion?.organisation],
+    ["Organisation", suggestion?.company_organization],
   ];
 
   return (
