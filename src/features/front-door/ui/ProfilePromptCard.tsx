@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, type RefObject } from "react";
 import {
   Box,
   Button,
+  Combobox,
   Field,
   Flex,
   Grid,
@@ -12,6 +13,7 @@ import {
   Stack,
   Text,
   createListCollection,
+  useFilter,
 } from "@chakra-ui/react";
 import {
   draftFromSuggestion,
@@ -39,6 +41,32 @@ export interface ProfilePromptCardProps {
 
 /** The role options before a sector is chosen; one object, so memos hold. */
 const NO_ROLES: Record<string, string> = {};
+
+interface OptionFieldProps {
+  id: string;
+  label: string;
+  optional?: boolean;
+  placeholder: string;
+  options: Record<string, string>;
+  value: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}
+
+interface OptionItem {
+  value: string;
+  label: string;
+}
+
+function useSortedItems(options: Record<string, string>): OptionItem[] {
+  return useMemo(
+    () =>
+      Object.entries(options)
+        .map(([code, text]) => ({ value: code, label: text }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [options]
+  );
+}
 
 /** The nearest scrolling ancestor: in the app, the chat thread. */
 function scrollParent(el: HTMLElement | null): HTMLElement | undefined {
@@ -68,17 +96,35 @@ function useListPositioning(field: RefObject<HTMLElement | null>) {
 /** ~6 options; never taller than the room the list has. */
 const LIST_MAX_H = "min(15rem, var(--available-height))";
 
-interface OptionSelectProps {
-  id: string;
+/** Contains, ignoring case and accents: "portu" and "Portugues" find "Português". */
+const FILTER_OPTIONS = { sensitivity: "base" } as const;
+
+function FieldLabelText({
+  label,
+  optional,
+}: {
   label: string;
-  optional?: boolean;
-  placeholder: string;
-  options: Record<string, string>;
-  value: string;
-  disabled?: boolean;
-  onChange: (value: string) => void;
+  optional: boolean;
+}) {
+  return (
+    <>
+      {label}
+      {optional && (
+        <Text
+          as="span"
+          color="fg.muted"
+          fontSize="xs"
+          fontStyle="italic"
+          ml={1}
+        >
+          (Optional)
+        </Text>
+      )}
+    </>
+  );
 }
 
+/** A short list (sector, role): pick one. */
 function OptionSelect({
   id,
   label,
@@ -88,25 +134,17 @@ function OptionSelect({
   value,
   disabled = false,
   onChange,
-}: OptionSelectProps) {
+}: OptionFieldProps) {
   const field = useRef<HTMLDivElement>(null);
   const positioning = useListPositioning(field);
-  const collection = useMemo(
-    () =>
-      createListCollection({
-        items: Object.entries(options)
-          .map(([code, text]) => ({ value: code, label: text }))
-          .sort((a, b) => a.label.localeCompare(b.label)),
-      }),
-    [options]
-  );
+  const items = useSortedItems(options);
+  const collection = useMemo(() => createListCollection({ items }), [items]);
 
   return (
     <Field.Root id={id} ref={field} required={!optional}>
       <Select.Root
         collection={collection}
         size="sm"
-        // Long lists (≈250 countries): render the options only while open.
         lazyMount
         unmountOnExit
         positioning={positioning}
@@ -116,18 +154,7 @@ function OptionSelect({
       >
         <Select.HiddenSelect />
         <Select.Label>
-          {label}
-          {optional && (
-            <Text
-              as="span"
-              color="fg.muted"
-              fontSize="xs"
-              fontStyle="italic"
-              ml={1}
-            >
-              (Optional)
-            </Text>
-          )}
+          <FieldLabelText label={label} optional={optional} />
         </Select.Label>
         <Select.Control _disabled={{ bg: "bg.subtle" }} bg="bg">
           <Select.Trigger>
@@ -150,6 +177,100 @@ function OptionSelect({
           </Select.Positioner>
         </Portal>
       </Select.Root>
+    </Field.Root>
+  );
+}
+
+/**
+ * A long list (≈250 countries, the languages): type to narrow it, then pick.
+ * The draft only changes when an option is picked (or cleared with the ×);
+ * text typed and abandoned goes back to the picked option's label when the
+ * field loses focus, so the field never shows something other than what
+ * Save would send.
+ */
+function OptionCombobox({
+  id,
+  label,
+  optional = false,
+  placeholder,
+  options,
+  value,
+  onChange,
+}: Omit<OptionFieldProps, "disabled">) {
+  const field = useRef<HTMLDivElement>(null);
+  const positioning = useListPositioning(field);
+  const items = useSortedItems(options);
+  const { contains } = useFilter(FILTER_OPTIONS);
+  const picked = value ? (options[value] ?? "") : "";
+  const [text, setText] = useState(picked);
+  const [query, setQuery] = useState("");
+  const collection = useMemo(
+    () =>
+      createListCollection({
+        items: query
+          ? items.filter((item) => contains(item.label, query))
+          : items,
+      }),
+    [items, query, contains]
+  );
+
+  return (
+    <Field.Root id={id} ref={field} required={!optional}>
+      <Combobox.Root
+        collection={collection}
+        size="sm"
+        // Render the options only while open.
+        lazyMount
+        unmountOnExit
+        openOnClick
+        // Enter picks the first match.
+        inputBehavior="autohighlight"
+        positioning={positioning}
+        value={value ? [value] : []}
+        onValueChange={(d: { value: string[] }) => onChange(d.value[0] ?? "")}
+        inputValue={text}
+        onInputValueChange={(d) => {
+          setText(d.inputValue);
+          // Filter by what the person types only: after a pick or a clear,
+          // the input holds a label, not a search.
+          setQuery(d.reason === "input-change" ? d.inputValue : "");
+        }}
+        onOpenChange={(d) => {
+          if (!d.open) setQuery("");
+        }}
+      >
+        <Combobox.Label>
+          <FieldLabelText label={label} optional={optional} />
+        </Combobox.Label>
+        <Combobox.Control>
+          <Combobox.Input
+            placeholder={placeholder}
+            bg="bg"
+            // Typing replaces the picked label rather than appending to it.
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={() => setText(picked)}
+          />
+          <Combobox.IndicatorGroup>
+            {optional && (
+              <Combobox.ClearTrigger aria-label={`Clear ${label}`} />
+            )}
+            <Combobox.Trigger />
+          </Combobox.IndicatorGroup>
+        </Combobox.Control>
+        <Portal>
+          <Combobox.Positioner>
+            <Combobox.Content maxH={LIST_MAX_H}>
+              <Combobox.Empty>No matches</Combobox.Empty>
+              {collection.items.map((item) => (
+                <Combobox.Item key={item.value} item={item}>
+                  {item.label}
+                  <Combobox.ItemIndicator />
+                </Combobox.Item>
+              ))}
+            </Combobox.Content>
+          </Combobox.Positioner>
+        </Portal>
+      </Combobox.Root>
     </Field.Root>
   );
 }
@@ -277,7 +398,7 @@ export function ProfilePromptCard({
           </Grid>
         ) : (
           // Sized by the card's own width, not the viewport: in the chat
-          // panels (grid ~330–370px) the fields stack, so each select and
+          // panels (grid ~330–370px) the fields stack, so each field and
           // its option list is wide enough to read; where the card has room
           // (the offline preview) they form a 2×2 grid. Each column is at
           // least half the width, so there are never three.
@@ -285,7 +406,7 @@ export function ProfilePromptCard({
             templateColumns="repeat(auto-fit, minmax(max(13rem, calc(50% - 0.375rem)), 1fr))"
             gap={3}
           >
-            <OptionSelect
+            <OptionCombobox
               id="profile-card-country"
               label="Country"
               placeholder="Select country"
@@ -293,7 +414,7 @@ export function ProfilePromptCard({
               value={draft.country}
               onChange={(country) => setDraft((d) => ({ ...d, country }))}
             />
-            <OptionSelect
+            <OptionCombobox
               id="profile-card-language"
               label="Preferred language"
               optional
