@@ -5,7 +5,8 @@
  * consent screen, then the first answer; the profile is asked for later, in
  * the chat, and prefilled from MyGFW when possible. Wired into the app behind
  * NEXT_PUBLIC_FRONT_DOOR (see app/config/front-door.ts) and composed offline in
- * /onboarding-debug/front-door. Consumers import ONLY from this barrel.
+ * /onboarding-debug/front-door. Consumers import ONLY from this barrel, which
+ * exports only what the app and the preview use.
  */
 export { WelcomePage } from "./ui/WelcomePage";
 export { ProfileAskTrigger } from "./ui/ProfileAskTrigger";
@@ -16,20 +17,11 @@ export {
   ProfileReminderMenuItem,
 } from "./ui/ProfileReminder";
 export { ProfilePromptMessage } from "./ui/ProfilePromptMessage";
-export { WelcomeConsent, type WelcomeConsentProps } from "./ui/WelcomeConsent";
+export { WelcomeConsent } from "./ui/WelcomeConsent";
 export { TermsConsentLabel } from "./ui/TermsConsentLabel";
-export {
-  ProfilePromptCard,
-  type ProfilePromptCardProps,
-} from "./ui/ProfilePromptCard";
-export {
-  ProfileNudgeBanner,
-  type ProfileNudgeBannerProps,
-} from "./ui/ProfileNudgeBanner";
-export {
-  CompleteProfileMenuItem,
-  type CompleteProfileMenuItemProps,
-} from "./ui/CompleteProfileMenuItem";
+export { ProfilePromptCard } from "./ui/ProfilePromptCard";
+export { ProfileNudgeBanner } from "./ui/ProfileNudgeBanner";
+export { CompleteProfileMenuItem } from "./ui/CompleteProfileMenuItem";
 export {
   EMPTY_PROFILE_ASK_RECORD,
   MAX_PROFILE_DISMISSALS,
@@ -38,14 +30,8 @@ export {
   recordAskDismissed,
   recordAskShown,
   startNewSession,
-  type ProfileAskMoment,
   type ProfileAskRecord,
 } from "./model/profile-ask";
-export {
-  profileCardMode,
-  type ProfileCardOptions,
-  type ProfileCardPatch,
-  type ProfileSuggestion,
-} from "./model/profile-card";
+export type { ProfileCardPatch, ProfileSuggestion } from "./model/profile-card";
 export { pendingPrompt } from "./lib/pending-prompt";
 export { personNames } from "./lib/person-names";
