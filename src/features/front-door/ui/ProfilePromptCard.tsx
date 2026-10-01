@@ -14,7 +14,6 @@ import {
   createListCollection,
 } from "@chakra-ui/react";
 import {
-  EMPTY_PROFILE_DRAFT,
   draftFromSuggestion,
   isProfileDraftComplete,
   profileCardMode,
@@ -37,6 +36,9 @@ export interface ProfilePromptCardProps {
   onSave: (patch: ProfileCardPatch) => void;
   onDismiss: () => void;
 }
+
+/** The role options before a sector is chosen; one object, so memos hold. */
+const NO_ROLES: Record<string, string> = {};
 
 interface OptionSelectProps {
   id: string;
@@ -74,6 +76,9 @@ function OptionSelect({
       <Select.Root
         collection={collection}
         size="sm"
+        // Long lists (≈250 countries): render the options only while open.
+        lazyMount
+        unmountOnExit
         disabled={disabled}
         value={value ? [value] : []}
         onValueChange={(d: { value: string[] }) => onChange(d.value[0] ?? "")}
@@ -123,9 +128,7 @@ function initialDraft(
   options: ProfileCardOptions,
   defaultCountry: string | undefined
 ): ProfileDraft {
-  const draft = suggestion
-    ? draftFromSuggestion(suggestion, options)
-    : EMPTY_PROFILE_DRAFT;
+  const draft = draftFromSuggestion(suggestion, options);
   if (
     draft.country === "" &&
     defaultCountry &&
@@ -139,7 +142,7 @@ function initialDraft(
 function headingFor(
   mode: ProfileCardMode,
   suggestion: ProfileSuggestion | undefined,
-  edited: boolean
+  editing: boolean
 ): { title: string; body: string } {
   if (mode === "confirm") {
     return {
@@ -147,7 +150,7 @@ function headingFor(
       body: "Use these details in Global Nature Watch? Nothing is saved until you confirm.",
     };
   }
-  if (edited) {
+  if (editing) {
     return {
       title: "Check your details",
       body: "We filled these in from your Global Forest Watch profile.",
@@ -179,14 +182,15 @@ export function ProfilePromptCard({
   onSave,
   onDismiss,
 }: ProfilePromptCardProps) {
-  const [mode, setMode] = useState<ProfileCardMode>(() =>
-    profileCardMode(suggestion, options)
-  );
-  const [edited, setEdited] = useState(false);
+  // "Edit" on the one-click confirmation switches to the fields for good.
+  const [editing, setEditing] = useState(false);
+  const mode: ProfileCardMode = editing
+    ? "fields"
+    : profileCardMode(suggestion, options);
   const [draft, setDraft] = useState<ProfileDraft>(() =>
     initialDraft(suggestion, options, defaultCountry)
   );
-  const { title, body } = headingFor(mode, suggestion, edited);
+  const { title, body } = headingFor(mode, suggestion, editing);
   const canSave = isProfileDraftComplete(draft) && !isSaving;
   const save = () => onSave(toProfilePatch(draft, suggestion));
 
@@ -280,7 +284,7 @@ export function ProfilePromptCard({
               label="Role"
               optional
               placeholder="Select role"
-              options={options.sector_roles[draft.sector] ?? {}}
+              options={options.sector_roles[draft.sector] ?? NO_ROLES}
               value={draft.role}
               disabled={draft.sector === ""}
               onChange={(role) => setDraft((d) => ({ ...d, role }))}
@@ -302,10 +306,7 @@ export function ProfilePromptCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setMode("fields");
-                setEdited(true);
-              }}
+              onClick={() => setEditing(true)}
             >
               Edit
             </Button>
