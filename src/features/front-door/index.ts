@@ -46,4 +46,4 @@ export {
   type ProfileCardPatch,
   type ProfileSuggestion,
 } from "./model/profile-card";
-export { continueUrl, pendingPrompt } from "./lib/continue-url";
+export { pendingPrompt } from "./lib/pending-prompt";

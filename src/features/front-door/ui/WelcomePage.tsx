@@ -22,7 +22,7 @@ import { trackEvent } from "@/app/lib/track-event";
 import useAuthStore from "@/app/store/authStore";
 import { patchProfile } from "../api/profile";
 import { profilePrefillQuery } from "../api/queries";
-import { pendingPrompt } from "../lib/continue-url";
+import { pendingPrompt } from "../lib/pending-prompt";
 import { WelcomeConsent } from "./WelcomeConsent";
 import { selectProfileUserKey } from "./profile-ask-gate";
 

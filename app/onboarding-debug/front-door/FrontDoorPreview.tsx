@@ -26,7 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import MessageBubble from "@/app/components/MessageBubble";
 import { toaster } from "@/app/components/ui/toaster";
-import { API_CONFIG } from "@/app/config/api";
+import { getLoginUrl } from "@/app/hooks/useAuthGuard";
 import type { ChatMessage } from "@/app/types/chat";
 import {
   CompleteProfileMenuItem,
@@ -37,7 +37,6 @@ import {
   ProfileNudgeBanner,
   ProfilePromptCard,
   WelcomeConsent,
-  continueUrl,
   pendingPrompt,
   recordAnswer,
   recordAskDismissed,
@@ -69,14 +68,7 @@ function followUpAnswer(n: number): string {
 }
 
 function rwLoginUrl(search: string): string {
-  const callback = `${DISPLAY_ORIGIN}/auth/callback?redirect=${encodeURIComponent(
-    `${DISPLAY_ORIGIN}/app${search}`
-  )}`;
-  const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/login`);
-  url.searchParams.set("origin", "gnw");
-  url.searchParams.set("callbackUrl", callback);
-  url.searchParams.set("token", "true");
-  return url.toString();
+  return getLoginUrl(`${DISPLAY_ORIGIN}/app${search}`, DISPLAY_ORIGIN);
 }
 
 function simulatedUrl(step: Step, persona: Persona): string {
@@ -90,7 +82,7 @@ function simulatedUrl(step: Step, persona: Persona): string {
     case "welcome":
       return `${DISPLAY_ORIGIN}/welcome${persona.search}`;
     case "app":
-      return `${DISPLAY_ORIGIN}${continueUrl(persona.search)}`;
+      return `${DISPLAY_ORIGIN}/app${persona.search}`;
   }
 }
 

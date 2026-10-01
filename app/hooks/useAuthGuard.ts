@@ -6,12 +6,16 @@ import { getToken } from "@/app/lib/api-client";
 import useAuthStore from "@/app/store/authStore";
 import { API_CONFIG } from "@/app/config/api";
 import { isFrontDoorEnabled } from "@/app/config/front-door";
-// Not the slice barrel: it exports WelcomePage, which uses this hook, and
-// the cycle would be fragile. continue-url has no imports of its own.
-import { continueUrl } from "@/src/features/front-door/lib/continue-url";
 
-function getLoginUrl(redirectTo: string): string {
-  const callbackUrl = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
+/**
+ * The Resource Watch login URL that returns to `redirectTo` through
+ * /auth/callback on `origin` (this site by default).
+ */
+export function getLoginUrl(
+  redirectTo: string,
+  origin: string = window.location.origin
+): string {
+  const callbackUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
   const url = new URL(`${API_CONFIG.RW_API_HOST}/auth/login`);
   url.searchParams.set("origin", "gnw");
   url.searchParams.set("callbackUrl", callbackUrl);
@@ -29,34 +33,29 @@ export interface AuthGuardInput {
   frontDoor: boolean;
 }
 
-export interface AuthGuardDecision {
-  /** Whether a signed-in person may see this route now. */
-  allow: boolean;
-  /**
-   * Where to send them instead. `hard` is a full page load (every redirect
-   * the guard has always made); `client` is a router navigation, used only
-   * for /welcome → /app so accepting the terms never races a full reload.
-   */
-  redirect: { href: string; mode: "hard" | "client" } | null;
-}
-
-const ALLOW: AuthGuardDecision = { allow: true, redirect: null };
-
-function hard(href: string): AuthGuardDecision {
-  return { allow: false, redirect: { href, mode: "hard" } };
+/**
+ * Where to send a signed-in person instead of this route. `hard` is a full
+ * page load (every redirect the guard has always made); `client` is a router
+ * navigation, used only for /welcome → /app so accepting the terms never
+ * races a full reload.
+ */
+export interface AuthGuardRedirect {
+  href: string;
+  mode: "hard" | "client";
 }
 
 /**
  * The route rules for a signed-in person, as a pure function so both
- * branches can be pinned by tests.
+ * branches can be pinned by tests. Returns null when the route may render.
+ *
+ * Always: /onboarding with a profile goes to /app.
  *
  * Flag off (unchanged): /app* needs a profile, else /onboarding with the
- * query string (so ?prompt= survives); /onboarding with a profile goes to
- * /app.
+ * query string (so ?prompt= survives).
  *
  * Flag on (front door): /app* needs accepted terms, else /welcome with the
  * query string; /welcome with the terms accepted continues to /app with the
- * query string; /onboarding with a profile still goes to /app.
+ * query string.
  */
 export function authGuardDecision({
   pathname,
@@ -64,26 +63,25 @@ export function authGuardDecision({
   hasProfile,
   termsAccepted,
   frontDoor,
-}: AuthGuardInput): AuthGuardDecision {
+}: AuthGuardInput): AuthGuardRedirect | null {
   const isApp = pathname.startsWith("/app");
-  const isOnboarding = pathname.startsWith("/onboarding");
+  // The paths are disjoint, so this rule's place before the split is free.
+  if (pathname.startsWith("/onboarding") && hasProfile) {
+    return { href: "/app", mode: "hard" };
+  }
 
   if (!frontDoor) {
-    if (isApp && !hasProfile) return hard(`/onboarding${search}`);
-    if (isOnboarding && hasProfile) return hard("/app");
-    return ALLOW;
+    return isApp && !hasProfile
+      ? { href: `/onboarding${search}`, mode: "hard" }
+      : null;
   }
 
   const isWelcome = pathname === "/welcome" || pathname.startsWith("/welcome/");
-  if (isApp && !termsAccepted) return hard(`/welcome${search}`);
-  if (isWelcome && termsAccepted) {
-    return {
-      allow: false,
-      redirect: { href: continueUrl(search), mode: "client" },
-    };
-  }
-  if (isOnboarding && hasProfile) return hard("/app");
-  return ALLOW;
+  if (isApp && !termsAccepted)
+    return { href: `/welcome${search}`, mode: "hard" };
+  if (isWelcome && termsAccepted)
+    return { href: `/app${search}`, mode: "client" };
+  return null;
 }
 
 /**
@@ -109,7 +107,7 @@ export function useAuthGuard(): boolean {
       return;
     }
 
-    const { redirect } = authGuardDecision({
+    const redirect = authGuardDecision({
       pathname,
       search: window.location.search,
       hasProfile,
@@ -134,12 +132,14 @@ export function useAuthGuard(): boolean {
 
   if (!authLoaded || !isAuthenticated) return false;
 
-  // `allow` never depends on the query string.
-  return authGuardDecision({
-    pathname,
-    search: "",
-    hasProfile,
-    termsAccepted,
-    frontDoor,
-  }).allow;
+  // Whether to render never depends on the query string.
+  return (
+    authGuardDecision({
+      pathname,
+      search: "",
+      hasProfile,
+      termsAccepted,
+      frontDoor,
+    }) === null
+  );
 }

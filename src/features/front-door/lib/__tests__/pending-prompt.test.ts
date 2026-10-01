@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { continueUrl, pendingPrompt } from "../continue-url";
+import { pendingPrompt } from "../pending-prompt";
 
 describe("pendingPrompt", () => {
   it("reads the question from the query string", () => {
@@ -14,18 +14,5 @@ describe("pendingPrompt", () => {
     expect(pendingPrompt("")).toBeNull();
     expect(pendingPrompt("?utm_source=gfw")).toBeNull();
     expect(pendingPrompt("?prompt=%20%20")).toBeNull();
-  });
-});
-
-describe("continueUrl", () => {
-  it("keeps the whole query string, including UTM tags", () => {
-    expect(continueUrl("?prompt=Forest+loss+in+Kenya&utm_source=gfw")).toBe(
-      "/app?prompt=Forest+loss+in+Kenya&utm_source=gfw"
-    );
-  });
-
-  it("goes to plain /app with no query string", () => {
-    expect(continueUrl("")).toBe("/app");
-    expect(continueUrl("?")).toBe("/app");
   });
 });
