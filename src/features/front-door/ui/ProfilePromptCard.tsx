@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type RefObject } from "react";
 import {
   Box,
   Button,
@@ -40,6 +40,34 @@ export interface ProfilePromptCardProps {
 /** The role options before a sector is chosen; one object, so memos hold. */
 const NO_ROLES: Record<string, string> = {};
 
+/** The nearest scrolling ancestor: in the app, the chat thread. */
+function scrollParent(el: HTMLElement | null): HTMLElement | undefined {
+  for (let node = el?.parentElement; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node);
+    if (overflowY === "auto" || overflowY === "scroll") return node;
+  }
+  return undefined;
+}
+
+/**
+ * Where an open list goes. The lists are portalled, so nothing in the card
+ * contains them: they take the field's width, and flip above the field when
+ * the chat thread has no room below, instead of hanging out of the card
+ * over the chat input.
+ */
+function useListPositioning(field: RefObject<HTMLElement | null>) {
+  return useMemo(
+    () => ({
+      sameWidth: true,
+      boundary: () => scrollParent(field.current) ?? "clippingAncestors",
+    }),
+    [field]
+  );
+}
+
+/** ~6 options; never taller than the room the list has. */
+const LIST_MAX_H = "min(15rem, var(--available-height))";
+
 interface OptionSelectProps {
   id: string;
   label: string;
@@ -61,6 +89,8 @@ function OptionSelect({
   disabled = false,
   onChange,
 }: OptionSelectProps) {
+  const field = useRef<HTMLDivElement>(null);
+  const positioning = useListPositioning(field);
   const collection = useMemo(
     () =>
       createListCollection({
@@ -72,13 +102,14 @@ function OptionSelect({
   );
 
   return (
-    <Field.Root id={id} required={!optional}>
+    <Field.Root id={id} ref={field} required={!optional}>
       <Select.Root
         collection={collection}
         size="sm"
         // Long lists (≈250 countries): render the options only while open.
         lazyMount
         unmountOnExit
+        positioning={positioning}
         disabled={disabled}
         value={value ? [value] : []}
         onValueChange={(d: { value: string[] }) => onChange(d.value[0] ?? "")}
@@ -108,7 +139,7 @@ function OptionSelect({
         </Select.Control>
         <Portal>
           <Select.Positioner>
-            <Select.Content>
+            <Select.Content maxH={LIST_MAX_H}>
               {collection.items.map((item) => (
                 <Select.Item key={item.value} item={item}>
                   {item.label}
@@ -224,7 +255,9 @@ export function ProfilePromptCard({
         {mode === "confirm" ? (
           <Grid
             as="dl"
-            templateColumns="max-content 1fr"
+            // minmax(0, …): a long unbroken value (an organisation name,
+            // say) wraps instead of widening the grid past the card.
+            templateColumns="max-content minmax(0, 1fr)"
             columnGap={6}
             rowGap={1.5}
             fontSize="sm"
@@ -236,7 +269,7 @@ export function ProfilePromptCard({
                   <Text as="dt" color="fg.muted">
                     {label}
                   </Text>
-                  <Text as="dd" fontWeight="medium">
+                  <Text as="dd" fontWeight="medium" overflowWrap="anywhere">
                     {value}
                   </Text>
                 </Box>
