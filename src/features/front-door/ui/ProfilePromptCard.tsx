@@ -167,8 +167,9 @@ function headingFor(
 
 /**
  * Asks for the profile after an answer instead of before it. Shows a one-click
- * confirmation when a GFW profile covers the required fields, otherwise two
- * required fields (sector, country) and an optional role.
+ * confirmation when a GFW profile covers the required fields, otherwise the
+ * fields in this order: country, preferred language (optional), sector, role
+ * (optional). Country and sector are the required pair.
  */
 export function ProfilePromptCard({
   options,
@@ -187,17 +188,15 @@ export function ProfilePromptCard({
   );
   const { title, body } = headingFor(mode, suggestion, edited);
   const canSave = isProfileDraftComplete(draft) && !isSaving;
-  const save = () => onSave(toProfilePatch(draft, options, suggestion));
+  const save = () => onSave(toProfilePatch(draft, suggestion));
 
+  // Same order as the fields; the organisation (shown, not asked for) last.
   const confirmRows: Array<[string, string | undefined]> = [
-    ["Organisation", suggestion?.organisation],
+    ["Country", options.countries[draft.country]],
+    ["Language", options.languages[draft.language]],
     ["Sector", options.sectors[draft.sector]],
     ["Role", options.sector_roles[draft.sector]?.[draft.role]],
-    ["Country", options.countries[draft.country]],
-    [
-      "Language",
-      suggestion?.language ? options.languages[suggestion.language] : undefined,
-    ],
+    ["Organisation", suggestion?.organisation],
   ];
 
   return (
@@ -241,9 +240,31 @@ export function ProfilePromptCard({
           </Grid>
         ) : (
           // Sized by the card's own width, not the viewport: in the chat
-          // panel (~300px) the fields stack, so each select and its option
-          // list is wide enough to read; wider hosts fit them side by side.
-          <Grid templateColumns="repeat(auto-fit, minmax(14rem, 1fr))" gap={3}>
+          // panels (grid ~330–370px) the fields stack, so each select and
+          // its option list is wide enough to read; where the card has room
+          // (the offline preview) they form a 2×2 grid. Each column is at
+          // least half the width, so there are never three.
+          <Grid
+            templateColumns="repeat(auto-fit, minmax(max(13rem, calc(50% - 0.375rem)), 1fr))"
+            gap={3}
+          >
+            <OptionSelect
+              id="profile-card-country"
+              label="Country"
+              placeholder="Select country"
+              options={options.countries}
+              value={draft.country}
+              onChange={(country) => setDraft((d) => ({ ...d, country }))}
+            />
+            <OptionSelect
+              id="profile-card-language"
+              label="Preferred language"
+              optional
+              placeholder="Select language"
+              options={options.languages}
+              value={draft.language}
+              onChange={(language) => setDraft((d) => ({ ...d, language }))}
+            />
             <OptionSelect
               id="profile-card-sector"
               label="Sector"
@@ -253,14 +274,6 @@ export function ProfilePromptCard({
               onChange={(sector) =>
                 setDraft((d) => withSector(d, sector, options))
               }
-            />
-            <OptionSelect
-              id="profile-card-country"
-              label="Country"
-              placeholder="Select country"
-              options={options.countries}
-              value={draft.country}
-              onChange={(country) => setDraft((d) => ({ ...d, country }))}
             />
             <OptionSelect
               id="profile-card-role"

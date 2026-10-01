@@ -11,17 +11,22 @@ export interface ProfileCardOptions {
   languages: Record<string, string>;
 }
 
-/** Card form state. An empty string means "not chosen". */
+/**
+ * Card form state, in the order the card asks for it. An empty string means
+ * "not chosen". Country and sector are required; language and role are not.
+ */
 export interface ProfileDraft {
+  country: string;
+  language: string;
   sector: string;
   role: string;
-  country: string;
 }
 
 export const EMPTY_PROFILE_DRAFT: ProfileDraft = {
+  country: "",
+  language: "",
   sector: "",
   role: "",
-  country: "",
 };
 
 /**
@@ -37,7 +42,7 @@ export interface ProfileSuggestion {
   language?: string;
 }
 
-/** `confirm`: one-click "Looks right". `fields`: pick sector/country/role. */
+/** `confirm`: one-click "Looks right". `fields`: pick country, language, sector, role. */
 export type ProfileCardMode = "confirm" | "fields";
 
 /** Partial update for PATCH /api/auth/profile (backend `UserProfileUpdateRequest`). */
@@ -80,9 +85,10 @@ export function draftFromSuggestion(
   if (!suggestion) return EMPTY_PROFILE_DRAFT;
   const sector = known(suggestion.sector, options.sectors);
   return {
+    country: known(suggestion.country, options.countries),
+    language: known(suggestion.language, options.languages),
     sector,
     role: known(suggestion.role, options.sector_roles[sector] ?? {}),
-    country: known(suggestion.country, options.countries),
   };
 }
 
@@ -96,9 +102,14 @@ export function profileCardMode(
     : "fields";
 }
 
+/**
+ * The PATCH the card sends. Every field it shows comes from the draft (so a
+ * language the person changed or cleared is what gets saved); only the
+ * organisation, which the card shows but doesn't ask for, comes from the
+ * suggestion.
+ */
 export function toProfilePatch(
   draft: ProfileDraft,
-  options: ProfileCardOptions,
   suggestion?: ProfileSuggestion
 ): ProfileCardPatch {
   if (!isProfileDraftComplete(draft)) {
@@ -110,11 +121,10 @@ export function toProfilePatch(
     country_code: draft.country,
     has_profile: true,
   };
+  if (draft.language !== "") patch.preferred_language_code = draft.language;
   if (suggestion?.organisation) {
     patch.company_organization = suggestion.organisation;
   }
-  const language = known(suggestion?.language, options.languages);
-  if (language !== "") patch.preferred_language_code = language;
   return patch;
 }
 

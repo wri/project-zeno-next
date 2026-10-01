@@ -33,7 +33,7 @@ const fullGfw: ProfileSuggestion = {
 function renderCard(props: Partial<ProfilePromptCardProps> = {}) {
   const onSave = vi.fn();
   const onDismiss = vi.fn();
-  render(
+  const { container } = render(
     <ChakraProvider value={defaultSystem}>
       <ProfilePromptCard
         options={options}
@@ -43,17 +43,38 @@ function renderCard(props: Partial<ProfilePromptCardProps> = {}) {
       />
     </ChakraProvider>
   );
-  return { onSave, onDismiss };
+  return { onSave, onDismiss, container };
+}
+
+/** The confirm-mode rows as [label, value] pairs, top to bottom. */
+function confirmRows(container: HTMLElement): Array<[string, string]> {
+  const terms = [...container.querySelectorAll("dt")];
+  return terms.map((dt) => [
+    dt.textContent ?? "",
+    dt.nextElementSibling?.textContent ?? "",
+  ]);
+}
+
+/** The fields-mode labels, top to bottom ("(Optional)" included). */
+function fieldLabels(container: HTMLElement): string[] {
+  return [...container.querySelectorAll("label")].map(
+    (l) => l.textContent ?? ""
+  );
 }
 
 describe("ProfilePromptCard", () => {
   it("confirms a full GFW profile in one click", () => {
-    const { onSave } = renderCard({ suggestion: fullGfw });
+    const { onSave, container } = renderCard({ suggestion: fullGfw });
     expect(
       screen.getByText("We found your Global Forest Watch profile")
     ).toBeTruthy();
-    expect(screen.getByText("State environment agency")).toBeTruthy();
-    expect(screen.getByText("Português")).toBeTruthy();
+    expect(confirmRows(container)).toEqual([
+      ["Country", "Brazil"],
+      ["Language", "Português"],
+      ["Sector", "Government"],
+      ["Role", "Analyst"],
+      ["Organisation", "State environment agency"],
+    ]);
 
     fireEvent.click(screen.getByRole("button", { name: "Looks right" }));
     expect(onSave).toHaveBeenCalledWith({
@@ -66,13 +87,51 @@ describe("ProfilePromptCard", () => {
     });
   });
 
-  it("switches to prefilled fields on Edit", () => {
-    const { onSave } = renderCard({ suggestion: fullGfw });
+  it("leaves out confirm rows GFW had no value for", () => {
+    const { language, organisation, role, ...rest } = fullGfw;
+    void language;
+    void organisation;
+    void role;
+    const { container } = renderCard({ suggestion: rest });
+    expect(confirmRows(container)).toEqual([
+      ["Country", "Brazil"],
+      ["Sector", "Government"],
+    ]);
+  });
+
+  it("switches to the four fields on Edit, all prefilled including language", () => {
+    const { onSave, container } = renderCard({ suggestion: fullGfw });
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(screen.getByText("Check your details")).toBeTruthy();
+    expect(fieldLabels(container)).toEqual([
+      "Country",
+      "Preferred language(Optional)",
+      "Sector",
+      "Role(Optional)",
+    ]);
+    for (const value of ["Brazil", "Português", "Government", "Analyst"]) {
+      expect(screen.getByText(value, { selector: "span" })).toBeTruthy();
+    }
 
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave).toHaveBeenCalledOnce();
+    expect(onSave).toHaveBeenCalledWith({
+      sector_code: "government",
+      role_code: "analyst",
+      country_code: "BRA",
+      company_organization: "State environment agency",
+      preferred_language_code: "pt",
+      has_profile: true,
+    });
+  });
+
+  it("asks for country, language, sector and role in that order", () => {
+    const { container } = renderCard();
+    expect(fieldLabels(container)).toEqual([
+      "Country",
+      "Preferred language(Optional)",
+      "Sector",
+      "Role(Optional)",
+    ]);
   });
 
   it("asks a thin GFW profile to fill in the rest", () => {
