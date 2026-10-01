@@ -30,23 +30,19 @@ import { API_CONFIG } from "@/app/config/api";
 import type { ChatMessage } from "@/app/types/chat";
 import {
   CompleteProfileMenuItem,
-  INITIAL_PROFILE_ASK_STATE,
+  EMPTY_PROFILE_ASK_RECORD,
   MAX_PROFILE_DISMISSALS,
   NTH_QUESTION_ASK,
   ProfileNudgeBanner,
   ProfilePromptCard,
   WelcomeConsent,
-  askMomentAfterAnswer,
   continueUrl,
   pendingPrompt,
-  recordProfileAsked,
-  recordProfileCompleted,
-  recordProfileDismissed,
-  shouldAskForProfile,
-  showProfileMenuReminder,
+  recordAnswer,
+  recordAskDismissed,
+  recordAskShown,
   startNewSession,
-  type AnswerCounts,
-  type ProfileAskState,
+  type ProfileAskRecord,
   type ProfileCardPatch,
 } from "@/src/features/front-door";
 import { MOCK_PROFILE_CONFIG } from "../mock-profile-config";
@@ -107,15 +103,18 @@ const REAL_APP_NOTES: Record<Step, string> = {
   app: "/app no longer requires a complete profile. The question sends automatically; the profile is asked for after the answer.",
 };
 
-function nextAskLabel(state: ProfileAskState, counts: AnswerCounts): string {
-  if (state.profileComplete) return "Never: profile complete";
-  if (state.dismissals >= MAX_PROFILE_DISMISSALS) {
+function nextAskLabel(
+  record: ProfileAskRecord,
+  profileComplete: boolean
+): string {
+  if (profileComplete) return "Never: profile complete";
+  if (record.dismissals >= MAX_PROFILE_DISMISSALS) {
     return "Never in chat: 3 “Not now”s (menu item stays)";
   }
-  if (counts.lifetime < 1) return "After the first answer";
+  if (record.lifetimeAnswers < 1) return "After the first answer";
   const later = `Answer ${NTH_QUESTION_ASK} of a later session`;
-  if (state.askedThisSession) return later;
-  if (counts.session < NTH_QUESTION_ASK) {
+  if (record.askedThisSession) return later;
+  if (record.sessionAnswers < NTH_QUESTION_ASK) {
     return `After answer ${NTH_QUESTION_ASK} this session`;
   }
   return later;
@@ -300,12 +299,12 @@ export default function FrontDoorPreview() {
   const prompt = pendingPrompt(persona.search);
 
   const [step, setStep] = useState<Step>("entry");
-  const [askState, setAskState] = useState<ProfileAskState>(
-    INITIAL_PROFILE_ASK_STATE
+  // The same record and policy functions the app uses, held in memory.
+  const [record, setRecord] = useState<ProfileAskRecord>(
+    EMPTY_PROFILE_ASK_RECORD
   );
+  const [profileComplete, setProfileComplete] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [answers, setAnswers] = useState(0);
-  const [lifetimeAnswers, setLifetimeAnswers] = useState(0);
   const [thinking, setThinking] = useState(false);
   const [draftQuestion, setDraftQuestion] = useState("");
   const [cardOpen, setCardOpen] = useState(false);
@@ -318,10 +317,12 @@ export default function FrontDoorPreview() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // The simulated answer lands after a delay; it must see the ask state at
   // that moment (the person may click "Not now" while it's thinking).
-  const askStateRef = useRef(askState);
+  const recordRef = useRef(record);
+  const profileCompleteRef = useRef(profileComplete);
   useEffect(() => {
-    askStateRef.current = askState;
-  }, [askState]);
+    recordRef.current = record;
+    profileCompleteRef.current = profileComplete;
+  }, [record, profileComplete]);
 
   useEffect(() => {
     return () => {
@@ -349,32 +350,32 @@ export default function FrontDoorPreview() {
     setBannerOpen(false);
   };
 
-  const ask = (question: string, counts: AnswerCounts) => {
+  const ask = (question: string) => {
     const userMessage = message("user", question);
     setMessages((m) => [...m, userMessage]);
     setThinking(true);
     timerRef.current = setTimeout(() => {
+      const { record: counted, ask: moment } = recordAnswer(
+        recordRef.current,
+        profileCompleteRef.current
+      );
       const answer = message(
         "assistant",
-        counts.lifetime === 1 ? FIRST_ANSWER : followUpAnswer(counts.session)
+        counted.lifetimeAnswers === 1
+          ? FIRST_ANSWER
+          : followUpAnswer(counted.sessionAnswers)
       );
       setThinking(false);
       setMessages((m) => [...m, answer]);
-      setAnswers(counts.session);
-      setLifetimeAnswers(counts.lifetime);
-      const moment = askMomentAfterAnswer(counts);
-      if (moment && shouldAskForProfile(askStateRef.current, moment)) {
-        setAskState((s) => recordProfileAsked(s));
-        if (moment === "first_answer") openCard();
-        else setBannerOpen(true);
-      }
+      setRecord(moment ? recordAskShown(counted) : counted);
+      if (moment === "first_answer") openCard();
+      else if (moment === "nth_question") setBannerOpen(true);
     }, ANSWER_DELAY_MS);
   };
 
   const resetChat = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setMessages([]);
-    setAnswers(0);
     setThinking(false);
     setCardOpen(false);
     setBannerOpen(false);
@@ -383,8 +384,8 @@ export default function FrontDoorPreview() {
 
   const resetAll = () => {
     resetChat();
-    setAskState(INITIAL_PROFILE_ASK_STATE);
-    setLifetimeAnswers(0);
+    setRecord(EMPTY_PROFILE_ASK_RECORD);
+    setProfileComplete(false);
     setLastPatch(null);
     setStep("entry");
   };
@@ -399,7 +400,7 @@ export default function FrontDoorPreview() {
       resetChat();
       setStep("app");
       // The real /app sends ?prompt= on arrival.
-      if (prompt) ask(prompt, { session: 1, lifetime: lifetimeAnswers + 1 });
+      if (prompt) ask(prompt);
       return;
     }
     if (step === "app") resetChat();
@@ -408,7 +409,7 @@ export default function FrontDoorPreview() {
 
   const newSession = () => {
     resetChat();
-    setAskState((s) => startNewSession(s));
+    setRecord((r) => startNewSession(r));
     setStep("app");
   };
 
@@ -417,12 +418,12 @@ export default function FrontDoorPreview() {
     if (!question || thinking) return;
     setDraftQuestion("");
     setCardOpen(false);
-    ask(question, { session: answers + 1, lifetime: lifetimeAnswers + 1 });
+    ask(question);
   };
 
   const saveProfile = (patch: ProfileCardPatch) => {
     setLastPatch(patch);
-    setAskState((s) => recordProfileCompleted(s));
+    setProfileComplete(true);
     setCardOpen(false);
     setBannerOpen(false);
     toaster.create({
@@ -434,7 +435,7 @@ export default function FrontDoorPreview() {
   };
 
   const dismiss = () => {
-    setAskState((s) => recordProfileDismissed(s));
+    setRecord((r) => recordAskDismissed(r));
     setCardOpen(false);
     setBannerOpen(false);
   };
@@ -583,7 +584,7 @@ export default function FrontDoorPreview() {
                       <Text truncate maxW="180px" fontSize="xs">
                         {persona.email}
                       </Text>
-                      {showProfileMenuReminder(askState) && (
+                      {!profileComplete && (
                         <Box
                           w="2"
                           h="2"
@@ -597,7 +598,7 @@ export default function FrontDoorPreview() {
                   <Portal>
                     <Menu.Positioner>
                       <Menu.Content>
-                        {showProfileMenuReminder(askState) && (
+                        {!profileComplete && (
                           <CompleteProfileMenuItem onSelect={openCard} />
                         )}
                         <Menu.Item value="settings" disabled>
@@ -760,27 +761,27 @@ export default function FrontDoorPreview() {
           <PanelSection title="When to ask for the profile">
             <StateRow
               label="Profile complete"
-              value={askState.profileComplete ? "Yes" : "No"}
+              value={profileComplete ? "Yes" : "No"}
             />
             <StateRow
               label="“Not now” clicks"
-              value={`${askState.dismissals} of ${MAX_PROFILE_DISMISSALS}`}
+              value={`${record.dismissals} of ${MAX_PROFILE_DISMISSALS}`}
             />
             <StateRow
               label="Asked this session"
-              value={askState.askedThisSession ? "Yes" : "No"}
+              value={record.askedThisSession ? "Yes" : "No"}
             />
             <StateRow
               label="Answers, all time"
-              value={String(lifetimeAnswers)}
+              value={String(record.lifetimeAnswers)}
             />
-            <StateRow label="Answers this session" value={String(answers)} />
+            <StateRow
+              label="Answers this session"
+              value={String(record.sessionAnswers)}
+            />
             <StateRow
               label="Next ask"
-              value={nextAskLabel(askState, {
-                lifetime: lifetimeAnswers,
-                session: answers,
-              })}
+              value={nextAskLabel(record, profileComplete)}
             />
             <Button
               size="xs"

@@ -1,7 +1,4 @@
-import {
-  EMPTY_PROFILE_ASK_RECORD,
-  type ProfileAskRecord,
-} from "../model/profile-ask";
+import type { ProfileAskRecord } from "../model/profile-ask";
 
 /**
  * Where the ask record lives, injected so this module stays free of browser
@@ -67,7 +64,6 @@ export function loadProfileAskRecord(
   const local = readObject(storages.local, keyFor(LOCAL_KEY, userKey));
   const session = readObject(storages.session, keyFor(SESSION_KEY, userKey));
   return {
-    ...EMPTY_PROFILE_ASK_RECORD,
     dismissals: count(local.dismissals),
     lifetimeAnswers: count(local.lifetimeAnswers),
     askedThisSession: session.askedThisSession === true,

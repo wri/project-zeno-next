@@ -10,6 +10,7 @@ import { patchProfile } from "../api/profile";
 import { PREFILL_NOT_FOUND } from "../api/profile-prefill";
 import { profileOptionsQuery, profilePrefillQuery } from "../api/queries";
 import { personNames } from "../lib/person-names";
+import { selectProfileUserKey } from "./profile-ask-gate";
 import {
   loadProfileAskRecord,
   saveProfileAskRecord,
@@ -34,10 +35,6 @@ import useProfileNudgeStore from "../model/profile-nudge-store";
  * NEXT_PUBLIC_FRONT_DOOR is on and the signed-in person has no profile.
  */
 
-export interface ProfileAskDeps {
-  storages: () => ProfileAskStorages;
-}
-
 function safeStorage(get: () => Storage): Storage | null {
   try {
     return get();
@@ -55,21 +52,16 @@ export function browserStorages(): ProfileAskStorages {
   };
 }
 
-const BROWSER: ProfileAskDeps = { storages: browserStorages };
-
-/** Keys the ask record and the prefill cache; "" when nobody is signed in. */
 function userKey(): string {
-  const { userId, userEmail } = useAuthStore.getState();
-  return userId || userEmail || "";
+  return selectProfileUserKey(useAuthStore.getState());
 }
 
 function updateRecord(
-  deps: ProfileAskDeps,
+  storages: ProfileAskStorages,
   change: (record: ProfileAskRecord) => ProfileAskRecord
 ): void {
   const key = userKey();
   if (!key) return;
-  const storages = deps.storages();
   saveProfileAskRecord(
     storages,
     key,
@@ -136,7 +128,7 @@ export async function showProfilePrompt(
 
 /** An answer finished live on the current thread (chatStore.completedAnswers). */
 export async function handleAnswerCompleted(
-  deps: ProfileAskDeps = BROWSER
+  storages: ProfileAskStorages = browserStorages()
 ): Promise<void> {
   if (!isFrontDoorEnabled()) return;
   const auth = useAuthStore.getState();
@@ -144,7 +136,6 @@ export async function handleAnswerCompleted(
   const key = userKey();
   if (!key) return;
 
-  const storages = deps.storages();
   const { record, ask } = recordAnswer(
     loadProfileAskRecord(storages, key),
     false
@@ -154,21 +145,21 @@ export async function handleAnswerCompleted(
   if (ask === "first_answer") {
     const threadId = useChatStore.getState().currentThreadId;
     if (await showProfilePrompt({ threadId, trigger: "first_answer" })) {
-      updateRecord(deps, recordAskShown);
+      updateRecord(storages, recordAskShown);
     }
   } else if (ask === "nth_question") {
     useProfileNudgeStore.getState().openBanner();
-    updateRecord(deps, recordAskShown);
+    updateRecord(storages, recordAskShown);
   }
 }
 
 /** Subscribes to finished answers; returns the unsubscribe. */
 export function watchAnswerCompletions(
-  deps: ProfileAskDeps = BROWSER
+  storages: ProfileAskStorages = browserStorages()
 ): () => void {
   return useChatStore.subscribe((state, prev) => {
     if (state.completedAnswers > prev.completedAnswers) {
-      void handleAnswerCompleted(deps);
+      void handleAnswerCompleted(storages);
     }
   });
 }
@@ -176,16 +167,18 @@ export function watchAnswerCompletions(
 /** "Not now" on the card. */
 export function dismissProfileAsk(
   messageId: string,
-  deps: ProfileAskDeps = BROWSER
+  storages: ProfileAskStorages = browserStorages()
 ): void {
-  updateRecord(deps, recordAskDismissed);
+  updateRecord(storages, recordAskDismissed);
   useChatStore.getState().removeMessage(messageId);
   trackEvent({ event: "profile_card_dismissed", surface: "card" });
 }
 
 /** The banner's close button: also a "Not now". */
-export function dismissProfileBanner(deps: ProfileAskDeps = BROWSER): void {
-  updateRecord(deps, recordAskDismissed);
+export function dismissProfileBanner(
+  storages: ProfileAskStorages = browserStorages()
+): void {
+  updateRecord(storages, recordAskDismissed);
   useProfileNudgeStore.getState().closeBanner();
   trackEvent({ event: "profile_card_dismissed", surface: "banner" });
 }

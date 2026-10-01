@@ -24,6 +24,7 @@ import { patchProfile } from "../api/profile";
 import { profilePrefillQuery } from "../api/queries";
 import { pendingPrompt } from "../lib/continue-url";
 import { WelcomeConsent } from "./WelcomeConsent";
+import { selectProfileUserKey } from "./profile-ask-gate";
 
 function Loading() {
   return (
@@ -39,7 +40,7 @@ function WelcomeContent() {
   const router = useRouter();
   const search = useSearchParams()?.toString() ?? "";
   const name = useAuthStore((s) => s.userName);
-  const userKey = useAuthStore((s) => s.userId || s.userEmail || "");
+  const userKey = useAuthStore(selectProfileUserKey);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Only decides the "Signed in with your GFW account" line; Continue never

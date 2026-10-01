@@ -37,7 +37,6 @@ import {
   saveProfileFromCard,
   showProfilePrompt,
   watchAnswerCompletions,
-  type ProfileAskDeps,
 } from "../profile-ask";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
@@ -196,7 +195,6 @@ function backend({
 }
 
 let storages: { local: MemoryStorage; session: MemoryStorage };
-let deps: ProfileAskDeps;
 let unwatch: () => void = () => {};
 
 const cards = () =>
@@ -233,8 +231,7 @@ beforeEach(() => {
   useAuthStore.getState().clearAuth();
   signIn();
   storages = { local: new MemoryStorage(), session: new MemoryStorage() };
-  deps = { storages: () => storages };
-  unwatch = watchAnswerCompletions(deps);
+  unwatch = watchAnswerCompletions(storages);
 });
 
 afterEach(() => {
@@ -358,7 +355,7 @@ describe("the profile card after the first answer", () => {
   it("stays out of a conversation that moved on while the card loaded", async () => {
     backend();
     useChatStore.setState({ currentThreadId: "t-1" });
-    const promise = handleAnswerCompleted(deps);
+    const promise = handleAnswerCompleted(storages);
     // "New conversation" while the card's data is loading.
     useChatStore.getState().reset();
     await promise;
@@ -394,7 +391,7 @@ describe("Not now", () => {
   it("records a dismissal and removes the card", async () => {
     backend();
     await showProfilePrompt();
-    dismissProfileAsk(cards()[0].id, deps);
+    dismissProfileAsk(cards()[0].id, storages);
     expect(cards()).toHaveLength(0);
     expect(record().dismissals).toBe(1);
   });
@@ -523,7 +520,7 @@ describe("the banner at the session's fifth answer", () => {
 
   it("closing it counts as a Not now", () => {
     useProfileNudgeStore.getState().openBanner();
-    dismissProfileBanner(deps);
+    dismissProfileBanner(storages);
     expect(bannerOpen()).toBe(false);
     expect(record().dismissals).toBe(1);
   });
@@ -569,8 +566,8 @@ describe("analytics events", () => {
     backend();
     await showProfilePrompt();
     vi.mocked(trackEvent).mockReset();
-    dismissProfileAsk(cards()[0].id, deps);
-    dismissProfileBanner(deps);
+    dismissProfileAsk(cards()[0].id, storages);
+    dismissProfileBanner(storages);
     expect(events()).toEqual([
       { event: "profile_card_dismissed", surface: "card" },
       { event: "profile_card_dismissed", surface: "banner" },

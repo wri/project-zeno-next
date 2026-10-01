@@ -1,107 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_PROFILE_ASK_RECORD,
-  INITIAL_PROFILE_ASK_STATE,
   MAX_PROFILE_DISMISSALS,
   NTH_QUESTION_ASK,
-  askMomentAfterAnswer,
-  profileAskState,
   recordAnswer,
   recordAskDismissed,
   recordAskShown,
-  recordProfileAsked,
-  recordProfileCompleted,
-  recordProfileDismissed,
-  shouldAskForProfile,
-  showProfileMenuReminder,
   startNewSession,
   type ProfileAskRecord,
-  type ProfileAskState,
 } from "../profile-ask";
 
-const fresh: ProfileAskState = INITIAL_PROFILE_ASK_STATE;
+const answer = (record: ProfileAskRecord, profileComplete = false) =>
+  recordAnswer(record, profileComplete);
 
-describe("shouldAskForProfile", () => {
-  it("never asks on entry, even for a brand-new person", () => {
-    expect(shouldAskForProfile(fresh, "entry")).toBe(false);
-  });
-
-  it("asks after the first answer when nothing has been asked yet", () => {
-    expect(shouldAskForProfile(fresh, "first_answer")).toBe(true);
-  });
-
-  it("asks at most once per session", () => {
-    const asked = recordProfileAsked(fresh);
-    expect(shouldAskForProfile(asked, "nth_question")).toBe(false);
-    expect(shouldAskForProfile(asked, "quota_low")).toBe(false);
-  });
-
-  it("asks again in a new session after a dismissal", () => {
-    const dismissed = recordProfileDismissed(recordProfileAsked(fresh));
-    expect(
-      shouldAskForProfile(startNewSession(dismissed), "nth_question")
-    ).toBe(true);
-  });
-
-  it(`stops asking after ${MAX_PROFILE_DISMISSALS} dismissals`, () => {
-    let state = fresh;
-    for (let i = 0; i < MAX_PROFILE_DISMISSALS; i++) {
-      state = recordProfileDismissed(state);
-    }
-    expect(shouldAskForProfile(state, "saved_item")).toBe(false);
-    expect(showProfileMenuReminder(state)).toBe(true);
-  });
-
-  it("never asks once the profile is complete", () => {
-    const done = recordProfileCompleted(fresh);
-    expect(shouldAskForProfile(done, "first_answer")).toBe(false);
-    expect(showProfileMenuReminder(done)).toBe(false);
-  });
+/** A later session: past answers, nothing asked yet this session. */
+const laterSession = (fields: Partial<ProfileAskRecord> = {}) => ({
+  ...EMPTY_PROFILE_ASK_RECORD,
+  lifetimeAnswers: 7,
+  ...fields,
 });
 
-describe("askMomentAfterAnswer", () => {
-  it("asks after the person's first ever answer", () => {
-    expect(askMomentAfterAnswer({ lifetime: 1, session: 1 })).toBe(
-      "first_answer"
-    );
-  });
-
-  it("doesn't treat the first answer of a later session as the first answer", () => {
-    expect(askMomentAfterAnswer({ lifetime: 8, session: 1 })).toBeNull();
-  });
-
-  it("asks at the nth answer of a session", () => {
-    expect(
-      askMomentAfterAnswer({ lifetime: 12, session: NTH_QUESTION_ASK })
-    ).toBe("nth_question");
-  });
-
-  it("returns null for answers in between", () => {
-    expect(askMomentAfterAnswer({ lifetime: 2, session: 2 })).toBeNull();
-    expect(
-      askMomentAfterAnswer({ lifetime: 20, session: NTH_QUESTION_ASK + 1 })
-    ).toBeNull();
-  });
-});
-
-describe("startNewSession", () => {
-  it("keeps lifetime counts and resets the session flag", () => {
-    const state = startNewSession(
-      recordProfileDismissed(recordProfileAsked(fresh))
-    );
-    expect(state).toEqual({
-      profileComplete: false,
-      dismissals: 1,
-      askedThisSession: false,
-    });
-  });
-});
-
-describe("recordAnswer (the per-person record)", () => {
-  const answer = (record: ProfileAskRecord, profileComplete = false) =>
-    recordAnswer(record, profileComplete);
-
-  it("asks with the card after the first answer ever", () => {
+describe("recordAnswer: when to ask", () => {
+  it("asks with the card after the person's first answer ever", () => {
     const { record, ask } = answer(EMPTY_PROFILE_ASK_RECORD);
     expect(ask).toBe("first_answer");
     expect(record).toEqual({
@@ -112,55 +32,52 @@ describe("recordAnswer (the per-person record)", () => {
     });
   });
 
-  it("doesn't record the ask itself; that waits until something is shown", () => {
-    expect(answer(EMPTY_PROFILE_ASK_RECORD).record.askedThisSession).toBe(
-      false
-    );
-    expect(recordAskShown(EMPTY_PROFILE_ASK_RECORD).askedThisSession).toBe(
-      true
-    );
+  it("doesn't treat the first answer of a later session as the first answer", () => {
+    expect(answer(laterSession()).ask).toBeNull();
   });
 
-  it("doesn't ask after the second answer", () => {
+  it("asks with the banner at the nth answer of a session", () => {
+    const fourth = laterSession({ sessionAnswers: NTH_QUESTION_ASK - 1 });
+    expect(answer(fourth).ask).toBe("nth_question");
+  });
+
+  it("doesn't ask between the moments", () => {
     const first = recordAskShown(answer(EMPTY_PROFILE_ASK_RECORD).record);
     expect(answer(first).ask).toBeNull();
-  });
-
-  it("asks with the banner at the fifth answer of a later session", () => {
-    const later: ProfileAskRecord = {
-      dismissals: 1,
-      lifetimeAnswers: 7,
-      askedThisSession: false,
-      sessionAnswers: NTH_QUESTION_ASK - 1,
-    };
-    expect(answer(later).ask).toBe("nth_question");
-    expect(answer({ ...later, sessionAnswers: 0 }).ask).toBeNull();
-    expect(answer({ ...later, sessionAnswers: NTH_QUESTION_ASK }).ask).toBe(
-      null
-    );
-  });
-
-  it("asks at most once per session", () => {
-    const asked: ProfileAskRecord = {
-      dismissals: 0,
-      lifetimeAnswers: 0,
-      askedThisSession: true,
-      sessionAnswers: 0,
-    };
-    expect(answer(asked).ask).toBeNull();
     expect(
-      answer({ ...asked, lifetimeAnswers: 3, sessionAnswers: 4 }).ask
+      answer(laterSession({ sessionAnswers: NTH_QUESTION_ASK })).ask
     ).toBeNull();
   });
 
-  it("stops asking after the maximum number of dismissals", () => {
+  it("asks at most once per session", () => {
+    const asked = recordAskShown(
+      laterSession({ sessionAnswers: NTH_QUESTION_ASK - 1 })
+    );
+    expect(answer(asked).ask).toBeNull();
+    expect(
+      answer({ ...EMPTY_PROFILE_ASK_RECORD, askedThisSession: true }).ask
+    ).toBeNull();
+  });
+
+  it("asks again in a new session after a dismissal", () => {
+    const dismissed = recordAskDismissed(
+      recordAskShown(laterSession({ sessionAnswers: 3 }))
+    );
+    const nextSession = startNewSession(dismissed);
+    const fourth = { ...nextSession, sessionAnswers: NTH_QUESTION_ASK - 1 };
+    expect(answer(fourth).ask).toBe("nth_question");
+  });
+
+  it(`stops asking after ${MAX_PROFILE_DISMISSALS} dismissals`, () => {
     let record = EMPTY_PROFILE_ASK_RECORD;
     for (let i = 0; i < MAX_PROFILE_DISMISSALS; i++) {
       record = recordAskDismissed(record);
     }
     expect(record.dismissals).toBe(MAX_PROFILE_DISMISSALS);
     expect(answer(record).ask).toBeNull();
-    expect(answer({ ...record, sessionAnswers: 4 }).ask).toBeNull();
+    expect(
+      answer({ ...record, sessionAnswers: NTH_QUESTION_ASK - 1 }).ask
+    ).toBeNull();
   });
 
   it("never asks once the profile is complete, but still counts", () => {
@@ -169,21 +86,30 @@ describe("recordAnswer (the per-person record)", () => {
     expect(record.lifetimeAnswers).toBe(1);
   });
 
-  it("maps a record onto the policy's state", () => {
+  it("doesn't record the ask itself; that waits until something is shown", () => {
+    expect(answer(EMPTY_PROFILE_ASK_RECORD).record.askedThisSession).toBe(
+      false
+    );
+    expect(recordAskShown(EMPTY_PROFILE_ASK_RECORD).askedThisSession).toBe(
+      true
+    );
+  });
+});
+
+describe("startNewSession", () => {
+  it("keeps lifetime counts and resets the session state", () => {
     expect(
-      profileAskState(
-        {
-          dismissals: 2,
-          lifetimeAnswers: 9,
-          askedThisSession: true,
-          sessionAnswers: 3,
-        },
-        false
-      )
+      startNewSession({
+        dismissals: 1,
+        lifetimeAnswers: 9,
+        askedThisSession: true,
+        sessionAnswers: 4,
+      })
     ).toEqual({
-      profileComplete: false,
-      dismissals: 2,
-      askedThisSession: true,
+      dismissals: 1,
+      lifetimeAnswers: 9,
+      askedThisSession: false,
+      sessionAnswers: 0,
     });
   });
 });

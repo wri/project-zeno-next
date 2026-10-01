@@ -28,19 +28,15 @@ export {
   type CompleteProfileMenuItemProps,
 } from "./ui/CompleteProfileMenuItem";
 export {
-  INITIAL_PROFILE_ASK_STATE,
+  EMPTY_PROFILE_ASK_RECORD,
   MAX_PROFILE_DISMISSALS,
   NTH_QUESTION_ASK,
-  askMomentAfterAnswer,
-  recordProfileAsked,
-  recordProfileCompleted,
-  recordProfileDismissed,
-  shouldAskForProfile,
-  showProfileMenuReminder,
+  recordAnswer,
+  recordAskDismissed,
+  recordAskShown,
   startNewSession,
-  type AnswerCounts,
   type ProfileAskMoment,
-  type ProfileAskState,
+  type ProfileAskRecord,
 } from "./model/profile-ask";
 export {
   profileCardMode,

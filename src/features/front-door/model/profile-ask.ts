@@ -4,94 +4,17 @@
  * The profile moves out of the way in: people reach their first answer first,
  * and GNW asks for details at a few natural moments afterwards. The rules live
  * here, framework-free, so they can be unit-tested and so every surface that
- * asks (in-chat card, banner, save dialog) obeys the same limits.
+ * asks (in-chat card, banner) obeys the same limits.
  */
 
-/** Moments at which GNW may ask. `entry` exists so callers can't forget the rule. */
-export type ProfileAskMoment =
-  | "entry"
-  | "first_answer"
-  | "nth_question"
-  | "saved_item"
-  | "quota_low";
-
-export interface ProfileAskState {
-  profileComplete: boolean;
-  /** Lifetime count of "Not now" clicks. */
-  dismissals: number;
-  /** Whether any surface has already asked in this browser session. */
-  askedThisSession: boolean;
-}
+/** The moments GNW asks at: the in-chat card, then the lighter banner. */
+export type ProfileAskMoment = "first_answer" | "nth_question";
 
 /** After this many "Not now"s, only the account-menu reminder remains. */
 export const MAX_PROFILE_DISMISSALS = 3;
 
 /** The answer in a session that earns a later, lighter ask (banner). */
 export const NTH_QUESTION_ASK = 5;
-
-export const INITIAL_PROFILE_ASK_STATE: ProfileAskState = {
-  profileComplete: false,
-  dismissals: 0,
-  askedThisSession: false,
-};
-
-export function shouldAskForProfile(
-  state: ProfileAskState,
-  moment: ProfileAskMoment
-): boolean {
-  if (state.profileComplete) return false;
-  // Never on the way in: the whole point is to answer the question first.
-  if (moment === "entry") return false;
-  if (state.askedThisSession) return false;
-  return state.dismissals < MAX_PROFILE_DISMISSALS;
-}
-
-export interface AnswerCounts {
-  /** Answers the person has ever received, including this one. */
-  lifetime: number;
-  /** Answers in the current browser session, including this one. */
-  session: number;
-}
-
-/**
- * The moment reached after an answer, or null when it isn't one we ask after.
- * "First answer" means the person's first ever, not the first of each session:
- * otherwise it would use up every session's single ask and the later, lighter
- * asks would never be reached.
- */
-export function askMomentAfterAnswer(
-  counts: AnswerCounts
-): ProfileAskMoment | null {
-  if (counts.lifetime === 1) return "first_answer";
-  if (counts.session === NTH_QUESTION_ASK) return "nth_question";
-  return null;
-}
-
-/** The account-menu reminder stays until the profile is complete. */
-export function showProfileMenuReminder(state: ProfileAskState): boolean {
-  return !state.profileComplete;
-}
-
-export function recordProfileAsked(state: ProfileAskState): ProfileAskState {
-  return { ...state, askedThisSession: true };
-}
-
-export function recordProfileDismissed(
-  state: ProfileAskState
-): ProfileAskState {
-  return { ...state, dismissals: state.dismissals + 1 };
-}
-
-export function recordProfileCompleted(
-  state: ProfileAskState
-): ProfileAskState {
-  return { ...state, profileComplete: true };
-}
-
-/** A new browser session: lifetime counts carry over, the session flag resets. */
-export function startNewSession(state: ProfileAskState): ProfileAskState {
-  return { ...state, askedThisSession: false };
-}
 
 /**
  * What GNW remembers about asking one person. Dismissals and lifetime
@@ -100,9 +23,13 @@ export function startNewSession(state: ProfileAskState): ProfileAskState {
  * not from here.
  */
 export interface ProfileAskRecord {
+  /** Lifetime count of "Not now" clicks. */
   dismissals: number;
+  /** Answers the person has ever received. */
   lifetimeAnswers: number;
+  /** Whether any surface has already asked in this browser session. */
   askedThisSession: boolean;
+  /** Answers in this browser session. */
   sessionAnswers: number;
 }
 
@@ -113,15 +40,28 @@ export const EMPTY_PROFILE_ASK_RECORD: ProfileAskRecord = {
   sessionAnswers: 0,
 };
 
-export function profileAskState(
-  record: ProfileAskRecord,
-  profileComplete: boolean
-): ProfileAskState {
-  return {
-    profileComplete,
-    dismissals: record.dismissals,
-    askedThisSession: record.askedThisSession,
-  };
+/** At most one ask per session, none once complete or dismissed enough. */
+function mayAsk(record: ProfileAskRecord, profileComplete: boolean): boolean {
+  return (
+    !profileComplete &&
+    !record.askedThisSession &&
+    record.dismissals < MAX_PROFILE_DISMISSALS
+  );
+}
+
+/**
+ * The moment reached by an answer, given the counts including it. "First
+ * answer" means the person's first ever, not the first of each session:
+ * otherwise it would use up every session's single ask and the later,
+ * lighter asks would never be reached.
+ */
+function momentAt(
+  lifetimeAnswers: number,
+  sessionAnswers: number
+): ProfileAskMoment | null {
+  if (lifetimeAnswers === 1) return "first_answer";
+  if (sessionAnswers === NTH_QUESTION_ASK) return "nth_question";
+  return null;
 }
 
 /**
@@ -138,16 +78,11 @@ export function recordAnswer(
     lifetimeAnswers: record.lifetimeAnswers + 1,
     sessionAnswers: record.sessionAnswers + 1,
   };
-  const moment = askMomentAfterAnswer({
-    lifetime: counted.lifetimeAnswers,
-    session: counted.sessionAnswers,
-  });
-  const ask =
-    moment &&
-    shouldAskForProfile(profileAskState(record, profileComplete), moment)
-      ? moment
-      : null;
-  return { record: counted, ask };
+  const moment = momentAt(counted.lifetimeAnswers, counted.sessionAnswers);
+  return {
+    record: counted,
+    ask: moment && mayAsk(record, profileComplete) ? moment : null,
+  };
 }
 
 export function recordAskShown(record: ProfileAskRecord): ProfileAskRecord {
@@ -156,4 +91,9 @@ export function recordAskShown(record: ProfileAskRecord): ProfileAskRecord {
 
 export function recordAskDismissed(record: ProfileAskRecord): ProfileAskRecord {
   return { ...record, dismissals: record.dismissals + 1 };
+}
+
+/** A new browser session: lifetime counts carry over, session state resets. */
+export function startNewSession(record: ProfileAskRecord): ProfileAskRecord {
+  return { ...record, askedThisSession: false, sessionAnswers: 0 };
 }
