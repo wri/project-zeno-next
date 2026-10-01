@@ -6,7 +6,7 @@ import { queryClient } from "@/app/lib/query-client";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
 import { patchProfile } from "../api/profile";
-import { PREFILL_NOT_FOUND } from "../api/profile-prefill";
+import { PREFILL_NOT_FOUND, type ProfilePrefill } from "../api/profile-prefill";
 import { profileOptionsQuery, profilePrefillQuery } from "../api/queries";
 import { personNames } from "../lib/person-names";
 import { isProfileAskActive, selectProfileUserKey } from "./profile-ask-gate";
@@ -21,10 +21,7 @@ import {
   recordAskShown,
   type ProfileAskRecord,
 } from "../model/profile-ask";
-import type {
-  ProfileCardPatch,
-  ProfilePromptData,
-} from "../model/profile-card";
+import type { ProfileCardPatch } from "../model/profile-card";
 import useProfileNudgeStore from "../model/profile-nudge-store";
 
 /**
@@ -68,22 +65,29 @@ function updateRecord(
   );
 }
 
-async function loadPromptData(): Promise<ProfilePromptData | null> {
-  const key = userKey();
+/** Starts loading what the card needs, so it's ready when an ask comes. */
+export function prefetchProfilePrompt(): void {
+  void queryClient.prefetchQuery(profileOptionsQuery);
+  void queryClient.prefetchQuery(profilePrefillQuery(userKey()));
+}
+
+/**
+ * Settles the card's options and GFW prefill in the query cache, where the
+ * card reads them. A failed GFW lookup is cached as "not found" (an empty
+ * card); failing to load the options means no card. Returns the prefill.
+ */
+async function settlePromptData(): Promise<ProfilePrefill | null> {
+  const prefillQuery = profilePrefillQuery(userKey());
   try {
-    const [options, prefill] = await Promise.all([
+    const [, prefill] = await Promise.all([
       queryClient.fetchQuery(profileOptionsQuery),
-      // A failed GFW lookup only means an empty card.
-      queryClient.fetchQuery(profilePrefillQuery(key)).catch((err) => {
+      queryClient.fetchQuery(prefillQuery).catch((err) => {
         console.error("Profile card: GFW prefill lookup failed", err);
+        queryClient.setQueryData(prefillQuery.queryKey, PREFILL_NOT_FOUND);
         return PREFILL_NOT_FOUND;
       }),
     ]);
-    const data: ProfilePromptData = { options };
-    if (prefill.suggestion) data.suggestion = prefill.suggestion;
-    if (prefill.firstName) data.firstName = prefill.firstName;
-    if (prefill.lastName) data.lastName = prefill.lastName;
-    return data;
+    return prefill;
   } catch (err) {
     console.error("Profile card: couldn't load the profile options", err);
     return null;
@@ -102,8 +106,8 @@ export async function showProfilePrompt(
     trigger?: "first_answer" | "banner";
   } = {}
 ): Promise<boolean> {
-  const data = await loadPromptData();
-  if (!data || useAuthStore.getState().hasProfile) return false;
+  const prefill = await settlePromptData();
+  if (!prefill || useAuthStore.getState().hasProfile) return false;
 
   const chat = useChatStore.getState();
   if (
@@ -112,15 +116,12 @@ export async function showProfilePrompt(
   ) {
     return false;
   }
-  chat.messages
-    .filter((m) => m.type === "profile-prompt")
-    .forEach((m) => chat.removeMessage(m.id));
-  chat.addMessage({ type: "profile-prompt", message: "", profilePrompt: data });
+  chat.upsertProfilePrompt();
   useProfileNudgeStore.getState().closeBanner();
   trackEvent({
     event: "profile_card_shown",
     trigger: options.trigger ?? "banner",
-    prefilled: data.suggestion !== undefined,
+    prefilled: prefill.suggestion !== undefined,
   });
   return true;
 }
@@ -145,7 +146,7 @@ export async function handleAnswerCompleted(
       updateRecord(storages, recordAskShown);
     }
   } else if (ask === "nth_question") {
-    useProfileNudgeStore.getState().openBanner();
+    openProfileBanner();
     updateRecord(storages, recordAskShown);
   }
 }
@@ -169,6 +170,12 @@ export function dismissProfileAsk(
   updateRecord(storages, recordAskDismissed);
   useChatStore.getState().removeMessage(messageId);
   trackEvent({ event: "profile_card_dismissed", surface: "card" });
+}
+
+/** Opens the lighter banner, loading the card it leads to meanwhile. */
+export function openProfileBanner(): void {
+  prefetchProfilePrompt();
+  useProfileNudgeStore.getState().openBanner();
 }
 
 /** The banner's close button: also a "Not now". */
@@ -197,8 +204,8 @@ export async function openProfileCardFromBanner(): Promise<void> {
  */
 export async function saveProfileFromCard(
   messageId: string,
-  prompt: ProfilePromptData,
-  patch: ProfileCardPatch
+  patch: ProfileCardPatch,
+  prefill: ProfilePrefill = PREFILL_NOT_FOUND
 ): Promise<void> {
   const { status } = await patchProfile(patch);
   if (status) useAuthStore.getState().setAuthStatus(status);
@@ -208,7 +215,7 @@ export async function saveProfileFromCard(
   useProfileNudgeStore.getState().closeBanner();
   trackEvent({
     event: "profile_card_saved",
-    prefilled: prompt.suggestion !== undefined,
+    prefilled: prefill.suggestion !== undefined,
   });
   toaster.create({
     title: "Profile saved",
@@ -221,7 +228,7 @@ export async function saveProfileFromCard(
     // Never sends receiveNewsEmails: the card asks for no consent.
     void submitOrttoProfile({
       email: auth.userEmail,
-      ...personNames(prompt, auth.userName),
+      ...personNames(prefill, auth.userName),
       sector: patch.sector_code,
       companyOrganization: patch.company_organization,
       countryCode: patch.country_code,

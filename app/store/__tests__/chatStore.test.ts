@@ -1245,7 +1245,7 @@ describe("chatStore.completedAnswers", () => {
   });
 });
 
-describe("chatStore.removeMessage and the unanswered profile card", () => {
+describe("chatStore transient messages and the profile card", () => {
   beforeEach(() => {
     useChatStore.getState().reset();
     vi.mocked(apiFetch).mockReset();
@@ -1255,17 +1255,40 @@ describe("chatStore.removeMessage and the unanswered profile card", () => {
     vi.clearAllMocks();
   });
 
-  const card = {
-    type: "profile-prompt" as const,
-    message: "",
-    profilePrompt: {
-      options: { sectors: {}, sector_roles: {}, countries: {}, languages: {} },
-    },
-  };
+  const cards = () =>
+    useChatStore.getState().messages.filter((m) => m.type === "profile-prompt");
+
+  it("upsertProfilePrompt appends one transient card that carries no data", () => {
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().upsertProfilePrompt();
+
+    const last = useChatStore.getState().messages.at(-1)!;
+    expect(last).toMatchObject({
+      type: "profile-prompt",
+      message: "",
+      transient: true,
+    });
+    expect(Object.keys(last).sort()).toEqual(
+      ["id", "message", "timestamp", "transient", "type"].sort()
+    );
+  });
+
+  it("keeps a single card: a new ask replaces the one still showing", () => {
+    useChatStore.getState().upsertProfilePrompt();
+    const first = cards()[0].id;
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().upsertProfilePrompt();
+
+    expect(cards()).toHaveLength(1);
+    expect(cards()[0].id).not.toBe(first);
+    expect(useChatStore.getState().messages.at(-1)?.type).toBe(
+      "profile-prompt"
+    );
+  });
 
   it("removes one message by id and leaves the rest", () => {
     useChatStore.getState().addMessage({ type: "assistant", message: "A" });
-    useChatStore.getState().addMessage(card);
+    useChatStore.getState().upsertProfilePrompt();
     const before = useChatStore.getState().messages;
     const cardId = before.at(-1)!.id;
 
@@ -1277,15 +1300,18 @@ describe("chatStore.removeMessage and the unanswered profile card", () => {
     expect(after.at(-1)?.message).toBe("A");
   });
 
-  it("drops an unanswered profile card when the next question is sent", async () => {
+  it("drops transient messages, the unanswered card among them, when the next question is sent", async () => {
     useChatStore.getState().addMessage({ type: "assistant", message: "A" });
-    useChatStore.getState().addMessage(card);
+    useChatStore.getState().upsertProfilePrompt();
+    useChatStore
+      .getState()
+      .addMessage({ type: "warning", message: "W", transient: true });
     vi.mocked(apiFetch).mockResolvedValue(ndjsonResponse([agentTextLine("B")]));
 
     await useChatStore.getState().sendMessage("next question");
 
     const messages = useChatStore.getState().messages;
-    expect(messages.some((m) => m.type === "profile-prompt")).toBe(false);
+    expect(messages.some((m) => m.transient)).toBe(false);
     expect(messages.map((m) => m.message)).toEqual(
       expect.arrayContaining(["A", "next question", "B"])
     );

@@ -15,10 +15,7 @@ export {
   ProfileReminderDot,
   ProfileReminderMenuItem,
 } from "./ui/ProfileReminder";
-export {
-  ProfilePromptMessage,
-  type ProfilePromptMessageProps,
-} from "./ui/ProfilePromptMessage";
+export { ProfilePromptMessage } from "./ui/ProfilePromptMessage";
 export { WelcomeConsent, type WelcomeConsentProps } from "./ui/WelcomeConsent";
 export {
   ProfilePromptCard,
@@ -47,7 +44,6 @@ export {
   profileCardMode,
   type ProfileCardOptions,
   type ProfileCardPatch,
-  type ProfilePromptData,
   type ProfileSuggestion,
 } from "./model/profile-card";
 export { continueUrl, pendingPrompt } from "./lib/continue-url";

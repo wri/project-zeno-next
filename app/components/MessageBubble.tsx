@@ -317,13 +317,10 @@ function MessageBubble({
   }
 
   // Front door: the in-chat profile card (client-only, never replayed).
-  if (message.type === "profile-prompt" && message.profilePrompt) {
+  if (message.type === "profile-prompt") {
     return (
       <Box my={2}>
-        <ProfilePromptMessage
-          messageId={message.id}
-          prompt={message.profilePrompt}
-        />
+        <ProfilePromptMessage messageId={message.id} />
       </Box>
     );
   }

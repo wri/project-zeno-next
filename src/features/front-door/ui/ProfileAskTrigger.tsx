@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { watchAnswerCompletions } from "./profile-ask";
+import { prefetchProfilePrompt, watchAnswerCompletions } from "./profile-ask";
 import { useProfileAskActive } from "./profile-ask-gate";
 
 /**
@@ -16,6 +16,8 @@ export function ProfileAskTrigger() {
   const active = useProfileAskActive();
   useEffect(() => {
     if (!active) return;
+    // Ready before the first answer lands, so the card appears with it.
+    prefetchProfilePrompt();
     return watchAnswerCompletions();
   }, [active]);
   return null;

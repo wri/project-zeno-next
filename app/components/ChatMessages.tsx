@@ -5,7 +5,6 @@ import useChatStore from "@/app/store/chatStore";
 import useViewContextStore from "@/app/store/viewContextStore";
 import { usePinnedPrompt } from "@/app/hooks/usePinnedPrompt";
 import DashboardChatNudges from "@/src/features/dashboards/ui/DashboardChatNudges";
-import { lastConversationIndex } from "@/app/utils/lastConversationIndex";
 import MessageBubble from "./MessageBubble";
 import PinnedPrompt from "./PinnedPrompt";
 import Reasoning from "./Reasoning";
@@ -109,7 +108,10 @@ function ChatMessages({ pt }: ChatMessagesProps) {
   const lastUserMessageIndex = messages.findLastIndex(
     (msg) => msg.type === "user"
   );
-  const lastIndex = lastConversationIndex(messages);
+  // "Last" for MessageBubble's footer: a trailing transient message (the
+  // profile card) mustn't take it from the answer above, whose copy/rating
+  // footer depends on being last. Without one this is the last index.
+  const lastIndex = messages.findLastIndex((msg) => !msg.transient);
 
   return (
     <Box ref={containerRef} fontSize="sm" pt={pt}>

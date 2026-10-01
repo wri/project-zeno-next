@@ -28,6 +28,7 @@ import {
   type ProfileAskStorages,
 } from "../../lib/profile-ask-storage";
 import type { ProfileAskRecord } from "../../model/profile-ask";
+import { profileOptionsQuery, profilePrefillQuery } from "../../api/queries";
 import useProfileNudgeStore from "../../model/profile-nudge-store";
 import {
   dismissProfileAsk,
@@ -197,6 +198,11 @@ function backend({
 let storages: { local: MemoryStorage; session: MemoryStorage };
 let unwatch: () => void = () => {};
 
+const cachedOptions = () =>
+  queryClient.getQueryData(profileOptionsQuery.queryKey);
+const cachedPrefill = () =>
+  queryClient.getQueryData(profilePrefillQuery("u-1").queryKey);
+
 const cards = () =>
   useChatStore.getState().messages.filter((m) => m.type === "profile-prompt");
 const record = () =>
@@ -250,15 +256,18 @@ describe("the profile card after the first answer", () => {
 
     const messages = useChatStore.getState().messages;
     expect(messages.at(-2)?.type).toBe("assistant");
-    expect(messages.at(-1)?.type).toBe("profile-prompt");
-    expect(messages.at(-1)?.profilePrompt).toEqual({
-      options: {
-        sectors: CONFIG.sectors,
-        sector_roles: CONFIG.sector_roles,
-        countries: CONFIG.countries,
-        languages: CONFIG.languages,
-      },
+    expect(messages.at(-1)).toMatchObject({
+      type: "profile-prompt",
+      transient: true,
     });
+    // The card carries no data: what it shows is settled in the query cache.
+    expect(cachedOptions()).toEqual({
+      sectors: CONFIG.sectors,
+      sector_roles: CONFIG.sector_roles,
+      countries: CONFIG.countries,
+      languages: CONFIG.languages,
+    });
+    expect(cachedPrefill()).toEqual({ found: false });
     expect(record()).toEqual({
       dismissals: 0,
       lifetimeAnswers: 1,
@@ -272,7 +281,7 @@ describe("the profile card after the first answer", () => {
     await useChatStore.getState().sendMessage("How much has Pará lost?");
     await vi.waitFor(() => expect(cards()).toHaveLength(1));
 
-    expect(cards()[0].profilePrompt).toMatchObject({
+    expect(cachedPrefill()).toMatchObject({
       suggestion: {
         source: "gfw",
         sector: "government",
@@ -292,7 +301,8 @@ describe("the profile card after the first answer", () => {
     });
     await useChatStore.getState().sendMessage("How much has Pará lost?");
     await vi.waitFor(() => expect(cards()).toHaveLength(1));
-    expect(cards()[0].profilePrompt?.suggestion).toBeUndefined();
+    // Cached as "not found", so the card reads an empty prefill at once.
+    expect(cachedPrefill()).toEqual({ found: false });
   });
 
   it("doesn't come back after the second answer (and the first card went on send)", async () => {
@@ -410,11 +420,10 @@ describe("Save", () => {
     await showProfilePrompt();
     const card = cards()[0];
 
-    await saveProfileFromCard(
-      card.id,
-      { ...card.profilePrompt!, lastName: "Silva" },
-      patch
-    );
+    await saveProfileFromCard(card.id, patch, {
+      found: true,
+      lastName: "Silva",
+    });
 
     const patchCall = vi
       .mocked(apiFetch)
@@ -440,7 +449,7 @@ describe("Save", () => {
     backend();
     await showProfilePrompt();
     const card = cards()[0];
-    await saveProfileFromCard(card.id, card.profilePrompt!, patch);
+    await saveProfileFromCard(card.id, patch);
     expect(submitOrttoProfile).toHaveBeenCalledWith(
       expect.objectContaining({ firstName: "Maria", lastName: "da Silva" })
     );
@@ -450,9 +459,9 @@ describe("Save", () => {
     backend({ patchStatus: 422 });
     await showProfilePrompt();
     const card = cards()[0];
-    await expect(
-      saveProfileFromCard(card.id, card.profilePrompt!, patch)
-    ).rejects.toThrow("Failed to save profile (422)");
+    await expect(saveProfileFromCard(card.id, patch)).rejects.toThrow(
+      "Failed to save profile (422)"
+    );
     expect(cards()).toHaveLength(1);
     expect(useAuthStore.getState().hasProfile).toBe(false);
     expect(submitOrttoProfile).not.toHaveBeenCalled();
@@ -462,7 +471,7 @@ describe("Save", () => {
     backend();
     await showProfilePrompt();
     const card = cards()[0];
-    await saveProfileFromCard(card.id, card.profilePrompt!, patch);
+    await saveProfileFromCard(card.id, patch);
 
     seed({ lifetimeAnswers: 0 });
     await useChatStore.getState().sendMessage("How much has Pará lost?");
@@ -530,7 +539,7 @@ describe("the banner at the session's fifth answer", () => {
     await showProfilePrompt();
     useProfileNudgeStore.getState().openBanner();
     const card = cards()[0];
-    await saveProfileFromCard(card.id, card.profilePrompt!, {
+    await saveProfileFromCard(card.id, {
       sector_code: "ngo",
       role_code: null,
       country_code: "KE",
@@ -585,13 +594,11 @@ describe("analytics events", () => {
       country_code: "KE",
       has_profile: true as const,
     };
-    await expect(
-      saveProfileFromCard(card.id, card.profilePrompt!, patch)
-    ).rejects.toThrow();
+    await expect(saveProfileFromCard(card.id, patch)).rejects.toThrow();
     expect(events()).toEqual([]);
 
     backend();
-    await saveProfileFromCard(card.id, card.profilePrompt!, patch);
+    await saveProfileFromCard(card.id, patch);
     expect(events()).toEqual([
       { event: "profile_card_saved", prefilled: false },
     ]);

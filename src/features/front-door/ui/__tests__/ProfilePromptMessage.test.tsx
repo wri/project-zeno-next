@@ -30,15 +30,20 @@ import { apiFetch } from "@/app/lib/api-client";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "@/app/store/authStore";
 import useChatStore from "@/app/store/chatStore";
-import type { ProfilePromptData } from "../../model/profile-card";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/app/lib/query-client";
+import { profileOptionsQuery, profilePrefillQuery } from "../../api/queries";
+import type { ProfilePrefill } from "../../api/profile-prefill";
 
-const PROMPT: ProfilePromptData = {
-  options: {
-    sectors: { government: "Government" },
-    sector_roles: { government: { analyst: "Analyst" } },
-    countries: { BR: "Brazil" },
-    languages: { pt: "Português" },
-  },
+const OPTIONS = {
+  sectors: { government: "Government" },
+  sector_roles: { government: { analyst: "Analyst" } },
+  countries: { BR: "Brazil" },
+  languages: { pt: "Português" },
+};
+
+const GFW: ProfilePrefill = {
+  found: true,
   suggestion: {
     source: "gfw",
     sector: "government",
@@ -47,19 +52,22 @@ const PROMPT: ProfilePromptData = {
   },
 };
 
-function addCard(prompt: ProfilePromptData = PROMPT) {
-  useChatStore
-    .getState()
-    .addMessage({ type: "profile-prompt", message: "", profilePrompt: prompt });
+/** Adds the card the way showProfilePrompt does: data in the cache first. */
+function addCard(prefill: ProfilePrefill = GFW) {
+  queryClient.setQueryData(profileOptionsQuery.queryKey, OPTIONS);
+  queryClient.setQueryData(profilePrefillQuery("u-1").queryKey, prefill);
+  useChatStore.getState().upsertProfilePrompt();
   return useChatStore.getState().messages.at(-1)!;
 }
 
 function renderBubble(id: string) {
   const message = useChatStore.getState().messages.find((m) => m.id === id)!;
   return render(
-    <ChakraProvider value={system}>
-      <MessageBubble message={message} isLast />
-    </ChakraProvider>
+    <QueryClientProvider client={queryClient}>
+      <ChakraProvider value={system}>
+        <MessageBubble message={message} isLast />
+      </ChakraProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -70,6 +78,7 @@ describe("a profile-prompt message in the chat", () => {
     vi.mocked(showApiError).mockReset();
     vi.spyOn(console, "error").mockImplementation(() => {});
     localStorage.clear();
+    queryClient.clear();
     useChatStore.getState().reset();
     useAuthStore.getState().clearAuth();
     useAuthStore.getState().setAuthStatus({
@@ -95,7 +104,7 @@ describe("a profile-prompt message in the chat", () => {
   });
 
   it("renders the empty card when there's no suggestion", () => {
-    renderBubble(addCard({ options: PROMPT.options }).id);
+    renderBubble(addCard({ found: false }).id);
     expect(
       screen.getByText("Help us tailor Global Nature Watch")
     ).toBeDefined();

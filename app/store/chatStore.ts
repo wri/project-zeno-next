@@ -95,6 +95,7 @@ interface ChatActions {
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
   removeMessage: (messageId: string) => void;
+  upsertProfilePrompt: () => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   acceptAnalyseNudge: (messageId: string) => void;
   upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
@@ -231,6 +232,10 @@ function dashboardCardExistsThisTurn(dashboardId: string): boolean {
     }
   }
   return false;
+}
+
+function withoutTransient(messages: ChatMessage[]): ChatMessage[] {
+  return messages.filter((m) => !m.transient);
 }
 
 // Whether the messages a turn added amount to an answer. A turn that ends by
@@ -563,6 +568,25 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }));
   },
 
+  // Front door: the in-chat profile card. Transient and at most one at a
+  // time, so a new ask replaces any card still showing. It carries no data;
+  // the card reads its options and GFW prefill from the query cache.
+  upsertProfilePrompt: () => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type: "profile-prompt",
+      message: "",
+      transient: true,
+      timestamp: new Date().toISOString(),
+    };
+    set((state) => ({
+      messages: [
+        ...state.messages.filter((m) => m.type !== "profile-prompt"),
+        newMessage,
+      ],
+    }));
+  },
+
   // The analyse nudge is client-side only (never replayed from thread
   // history): at most one is pending at a time, so a new selection replaces
   // any pending nudge instead of stacking. Accepted nudges persist in the
@@ -719,12 +743,10 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       excludedLayerIds
     );
 
-    // An unanswered profile card (front door) goes away once the
-    // conversation moves on; that isn't a "Not now".
-    if (get().messages.some((m) => m.type === "profile-prompt")) {
-      set((state) => ({
-        messages: state.messages.filter((m) => m.type !== "profile-prompt"),
-      }));
+    // Transient UI messages (e.g. an unanswered profile card) go away once
+    // the conversation moves on; for the card that isn't a "Not now".
+    if (get().messages.some((m) => m.transient)) {
+      set((state) => ({ messages: withoutTransient(state.messages) }));
     }
 
     // Add user message with a read-only snapshot of the context it was sent with
