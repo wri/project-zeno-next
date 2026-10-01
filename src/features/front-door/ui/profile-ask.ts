@@ -210,10 +210,10 @@ export async function saveProfileFromCard(
   prompt: ProfilePromptData,
   patch: ProfileCardPatch
 ): Promise<void> {
-  await patchProfile(patch);
+  const { status } = await patchProfile(patch);
+  if (status) useAuthStore.getState().setAuthStatus(status);
 
   const auth = useAuthStore.getState();
-  auth.markProfileComplete();
   useChatStore.getState().removeMessage(messageId);
   useProfileNudgeStore.getState().closeBanner();
   trackEvent({

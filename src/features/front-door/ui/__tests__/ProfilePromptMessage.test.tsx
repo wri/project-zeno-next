@@ -77,7 +77,7 @@ describe("a profile-prompt message in the chat", () => {
       id: "u-1",
       hasProfile: false,
       userType: null,
-      termsAcceptedAt: "2026-09-30T09:00:00Z",
+      termsAccepted: true,
     });
   });
 
@@ -115,7 +115,17 @@ describe("a profile-prompt message in the chat", () => {
   });
 
   it("Looks right saves and removes the card", async () => {
-    vi.mocked(apiFetch).mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "u-1",
+          email: "maria@example.org",
+          hasProfile: true,
+          termsAccepted: true,
+        }),
+        { status: 200 }
+      )
+    );
     const card = addCard();
     renderBubble(card.id);
     await act(async () => {

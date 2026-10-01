@@ -19,9 +19,27 @@ describe("patchProfile", () => {
     vi.mocked(apiFetch).mockReset();
   });
 
-  it("PATCHes the snake_case partial body", async () => {
-    vi.mocked(apiFetch).mockResolvedValue(new Response("{}", { status: 200 }));
-    await patchProfile({ terms_version: "2026-09-30" });
+  it("PATCHes the snake_case partial body and returns the parsed user", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "u-1",
+          email: "maria@example.org",
+          hasProfile: false,
+          termsAccepted: true,
+        }),
+        { status: 200 }
+      )
+    );
+    const { status, usage } = await patchProfile({
+      terms_version: "2026-09-30",
+    });
+    expect(status).toMatchObject({
+      id: "u-1",
+      hasProfile: false,
+      termsAccepted: true,
+    });
+    expect(usage).toBeNull();
 
     const [path, init] = vi.mocked(apiFetch).mock.calls[0];
     expect(path).toBe("/api/auth/profile");
@@ -30,11 +48,11 @@ describe("patchProfile", () => {
     expect(init?.body).toBe('{"terms_version":"2026-09-30"}');
   });
 
-  it("throws with the status on a non-2xx", async () => {
+  it("throws on a non-2xx, naming the status", async () => {
     vi.mocked(apiFetch).mockResolvedValue(new Response("", { status: 422 }));
     await expect(
       patchProfile({ sector_code: "government", has_profile: true })
-    ).rejects.toMatchObject({ status: 422 });
+    ).rejects.toThrow("Failed to save profile (422)");
   });
 
   it("refuses an invalid body before calling the API", async () => {

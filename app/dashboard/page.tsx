@@ -21,6 +21,7 @@ import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch"
 import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import { submitOrttoProfile } from "@/app/lib/ortto";
+import { parseAuthMe } from "@/app/lib/auth-me";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import useAuthStore from "@/app/store/authStore";
 import { isFrontDoorEnabled } from "@/app/config/front-door";
@@ -215,7 +216,8 @@ export default function UserSettingsPage() {
       // Front door: this page is where "Complete your profile" leads, so the
       // reminder (menu item, in-chat asks) must stop without a reload.
       if (isFrontDoorEnabled()) {
-        useAuthStore.getState().markProfileComplete();
+        const { status } = parseAuthMe(await res.json());
+        if (status) useAuthStore.getState().setAuthStatus(status);
       }
 
       // Submit to Ortto directly from client (no secrets needed)

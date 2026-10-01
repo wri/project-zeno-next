@@ -52,7 +52,10 @@ function WelcomeContent() {
   const accept = async () => {
     setIsSubmitting(true);
     try {
-      await patchProfile({ terms_version: TERMS_VERSION });
+      const { status } = await patchProfile({ terms_version: TERMS_VERSION });
+      if (!status?.termsAccepted) {
+        throw new Error("The server didn't confirm the accepted terms");
+      }
       trackEvent({
         event: "welcome_terms_accepted",
         terms_version: TERMS_VERSION,
@@ -61,7 +64,7 @@ function WelcomeContent() {
       });
       // useAuthGuard sees the accepted terms and continues to /app with this
       // page's query string, so the waiting question runs on arrival.
-      useAuthStore.getState().acceptTerms(TERMS_VERSION);
+      useAuthStore.getState().setAuthStatus(status);
     } catch (err) {
       console.error(err);
       showApiError(err as Error, {

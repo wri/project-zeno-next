@@ -49,7 +49,12 @@ describe("ProfileNudgeSlot", () => {
 
   it("hides it once the profile is complete", () => {
     useProfileNudgeStore.getState().openBanner();
-    useAuthStore.getState().markProfileComplete();
+    useAuthStore.getState().setAuthStatus({
+      email: "maria@example.org",
+      id: "u-1",
+      hasProfile: true,
+      userType: null,
+    });
     const { container } = renderSlot();
     expect(container.textContent).toBe("");
   });

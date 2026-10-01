@@ -11,8 +11,7 @@ const ME = {
   preferredLanguageCode: "pt",
   promptsUsed: 3,
   promptQuota: 25,
-  termsAcceptedAt: "2026-09-30T10:00:00Z",
-  termsVersion: "2026-09-30",
+  termsAccepted: true,
 };
 
 describe("parseAuthMe: fields that predate the front door", () => {
@@ -25,8 +24,7 @@ describe("parseAuthMe: fields that predate the front door", () => {
         userType: "regular",
         preferredLanguageCode: "pt",
         name: "Maria Silva",
-        termsAcceptedAt: "2026-09-30T10:00:00Z",
-        termsVersion: "2026-09-30",
+        termsAccepted: true,
       },
       usage: { used: 3, quota: 25 },
     });
@@ -78,34 +76,42 @@ describe("parseAuthMe: fields that predate the front door", () => {
 });
 
 describe("parseAuthMe: terms and name (front door)", () => {
-  it("reads null terms for someone who hasn't accepted yet", () => {
-    const { status } = parseAuthMe({
-      ...ME,
-      termsAcceptedAt: null,
-      termsVersion: null,
-    });
-    expect(status?.termsAcceptedAt).toBeNull();
-    expect(status?.termsVersion).toBeNull();
+  it("reads the server's termsAccepted", () => {
+    expect(parseAuthMe(ME).status?.termsAccepted).toBe(true);
+    expect(
+      parseAuthMe({ ...ME, termsAccepted: false }).status?.termsAccepted
+    ).toBe(false);
   });
 
-  it("reads absent terms fields (a backend that predates them) as null", () => {
-    const { termsAcceptedAt, termsVersion, ...legacy } = ME;
-    void termsAcceptedAt;
-    void termsVersion;
-    const { status } = parseAuthMe(legacy);
-    expect(status?.termsAcceptedAt).toBeNull();
-    expect(status?.termsVersion).toBeNull();
+  it("reads an absent termsAccepted (a backend that predates it) as false", () => {
+    const { termsAccepted, ...legacy } = ME;
+    void termsAccepted;
+    expect(parseAuthMe(legacy).status?.termsAccepted).toBe(false);
   });
 
-  it("ignores wrongly typed terms and name values", () => {
-    const { status } = parseAuthMe({
-      ...ME,
-      termsAcceptedAt: 1727690400,
-      termsVersion: true,
-      name: { first: "Maria" },
+  it("accepts only a literal true", () => {
+    for (const value of ["true", 1, null, "2026-09-30T10:00:00Z"]) {
+      expect(
+        parseAuthMe({ ...ME, termsAccepted: value }).status?.termsAccepted
+      ).toBe(false);
+    }
+  });
+
+  it("ignores a wrongly typed name", () => {
+    expect(
+      parseAuthMe({ ...ME, name: { first: "Maria" } }).status?.name
+    ).toBeNull();
+  });
+
+  it("parses the PATCH /api/auth/profile response (a user, no quota)", () => {
+    const { promptsUsed, promptQuota, ...patched } = ME;
+    void promptsUsed;
+    void promptQuota;
+    const parsed = parseAuthMe({ ...patched, hasProfile: true });
+    expect(parsed.status).toMatchObject({
+      hasProfile: true,
+      termsAccepted: true,
     });
-    expect(status?.termsAcceptedAt).toBeNull();
-    expect(status?.termsVersion).toBeNull();
-    expect(status?.name).toBeNull();
+    expect(parsed.usage).toBeNull();
   });
 });

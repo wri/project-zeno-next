@@ -148,6 +148,13 @@ function ndjson(lines: string[]): Response {
   } as unknown as Response;
 }
 
+const SAVED_USER = {
+  id: "u-1",
+  email: "maria@example.org",
+  name: "Maria da Silva",
+  termsAccepted: true,
+};
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status });
 }
@@ -179,7 +186,10 @@ function backend({
       return prefill ?? json({}, 404);
     }
     if (path === "/api/auth/profile" && init?.method === "PATCH") {
-      return json({}, patchStatus);
+      // The backend answers with the updated user, profile now complete.
+      return patchStatus === 200
+        ? json({ ...SAVED_USER, hasProfile: true })
+        : json({}, patchStatus);
     }
     throw new Error(`Unexpected request ${path}`);
   });
@@ -206,7 +216,7 @@ function signIn(hasProfile = false) {
     hasProfile,
     userType: null,
     name: "Maria da Silva",
-    termsAcceptedAt: "2026-09-30T09:00:00Z",
+    termsAccepted: true,
   });
 }
 
@@ -445,7 +455,7 @@ describe("Save", () => {
     const card = cards()[0];
     await expect(
       saveProfileFromCard(card.id, card.profilePrompt!, patch)
-    ).rejects.toMatchObject({ status: 422 });
+    ).rejects.toThrow("Failed to save profile (422)");
     expect(cards()).toHaveLength(1);
     expect(useAuthStore.getState().hasProfile).toBe(false);
     expect(submitOrttoProfile).not.toHaveBeenCalled();

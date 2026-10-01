@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiFetch } from "@/app/lib/api-client";
+import { parseAuthMe, type AuthMe } from "@/app/lib/auth-me";
 import {
   PatchProfilePartialRequestSchema,
   type PatchProfilePartialRequest,
@@ -8,11 +9,12 @@ import type { ProfileCardOptions } from "../model/profile-card";
 
 /**
  * PATCH /api/auth/profile with a partial update (the /welcome consent or the
- * profile card). Throws with the HTTP status on a non-2xx response.
+ * profile card). Returns the updated user, parsed like /api/auth/me, for the
+ * caller to put in authStore. Throws on a non-2xx response.
  */
 export async function patchProfile(
   patch: PatchProfilePartialRequest
-): Promise<void> {
+): Promise<AuthMe> {
   const body = PatchProfilePartialRequestSchema.parse(patch);
   const res = await apiFetch("/api/auth/profile", {
     method: "PATCH",
@@ -20,10 +22,9 @@ export async function patchProfile(
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const error = new Error("Failed to save profile");
-    (error as Error & { status?: number }).status = res.status;
-    throw error;
+    throw new Error(`Failed to save profile (${res.status})`);
   }
+  return parseAuthMe(await res.json());
 }
 
 const labels = z.record(z.string(), z.string());

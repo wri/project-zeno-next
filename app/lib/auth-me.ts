@@ -9,9 +9,12 @@ export interface AuthMeStatus {
   preferredLanguageCode: string | null;
   /** The Resource Watch display name, e.g. "Maria Silva". */
   name: string | null;
-  /** When the person accepted the terms on /welcome; null if never. */
-  termsAcceptedAt: string | null;
-  termsVersion: string | null;
+  /**
+   * Whether /app may open (front door). The server decides: the terms were
+   * accepted on /welcome, or the person completed the old onboarding form,
+   * which carried the same checkbox.
+   */
+  termsAccepted: boolean;
 }
 
 export interface AuthMe {
@@ -30,7 +33,8 @@ function numberOrNull(value: unknown): number | null {
 }
 
 /**
- * The one place the camelCase /api/auth/me payload is interpreted. The
+ * The one place the camelCase user payload is interpreted (GET
+ * /api/auth/me, and the PATCH /api/auth/profile response). The
  * coercions for the fields that predate the front door (email truthiness,
  * `id ?? ""`, `Boolean(hasProfile)`, user type, language, quota) are kept
  * exactly as AuthBootstrapper applied them inline.
@@ -50,8 +54,7 @@ export function parseAuthMe(data: unknown): AuthMe {
         userType: UserTypeEnum.safeParse(raw.userType).data ?? null,
         preferredLanguageCode: stringOrNull(raw.preferredLanguageCode),
         name: stringOrNull(raw.name),
-        termsAcceptedAt: stringOrNull(raw.termsAcceptedAt),
-        termsVersion: stringOrNull(raw.termsVersion),
+        termsAccepted: raw.termsAccepted === true,
       }
     : null;
 

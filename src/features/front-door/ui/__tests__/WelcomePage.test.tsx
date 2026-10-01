@@ -39,6 +39,17 @@ import { TERMS_VERSION } from "@/app/config/terms";
 import useAuthStore from "@/app/store/authStore";
 import { WelcomePage } from "../WelcomePage";
 
+/** The PATCH response: the updated user, terms now accepted. */
+function acceptedUser(termsAccepted = true) {
+  return {
+    id: "u-1",
+    email: "maria@example.org",
+    name: "Maria Silva",
+    hasProfile: false,
+    termsAccepted,
+  };
+}
+
 function respond({
   patchStatus = 200,
   prefill = { found: false, source: null, suggestion: null } as unknown,
@@ -46,7 +57,9 @@ function respond({
 } = {}) {
   vi.mocked(apiFetch).mockImplementation(async (path, init) => {
     if (path === "/api/auth/profile" && init?.method === "PATCH") {
-      return new Response("{}", { status: patchStatus });
+      return patchStatus === 200
+        ? new Response(JSON.stringify(acceptedUser()), { status: 200 })
+        : new Response("", { status: patchStatus });
     }
     if (path === "/api/auth/profile/prefill") {
       return new Response(JSON.stringify(prefill), { status: prefillStatus });
@@ -132,7 +145,6 @@ describe("WelcomePage", () => {
     expect(patchCalls()[0][1]?.body).toBe(
       JSON.stringify({ terms_version: TERMS_VERSION })
     );
-    expect(useAuthStore.getState().termsVersion).toBe(TERMS_VERSION);
     expect(useAuthStore.getState().hasProfile).toBe(false);
     // The guard does the navigation, client-side, with the query intact.
     await waitFor(() => expect(router.replace).toHaveBeenCalledOnce());
@@ -162,6 +174,25 @@ describe("WelcomePage", () => {
       name: /continue to your answer/i,
     }) as HTMLButtonElement;
     expect(button.disabled).toBe(false);
+  });
+
+  it("stays on the page if the server doesn't confirm the acceptance", async () => {
+    vi.mocked(apiFetch).mockImplementation(async (path, init) => {
+      if (init?.method === "PATCH") {
+        return new Response(JSON.stringify(acceptedUser(false)), {
+          status: 200,
+        });
+      }
+      return new Response(
+        JSON.stringify({ found: false, source: null, suggestion: null })
+      );
+    });
+    renderPage();
+    await acceptAndContinue();
+
+    await waitFor(() => expect(showApiError).toHaveBeenCalledOnce());
+    expect(useAuthStore.getState().termsAccepted).toBe(false);
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
   it("reassures GFW users when the backend finds their profile", async () => {
@@ -196,7 +227,9 @@ describe("WelcomePage", () => {
   it("lets Continue proceed while the GFW lookup is still pending", async () => {
     vi.mocked(apiFetch).mockImplementation(async (path, init) => {
       if (path === "/api/auth/profile/prefill") return new Promise(() => {});
-      if (init?.method === "PATCH") return new Response("{}", { status: 200 });
+      if (init?.method === "PATCH") {
+        return new Response(JSON.stringify(acceptedUser()), { status: 200 });
+      }
       throw new Error(`Unexpected request ${path}`);
     });
     renderPage();
