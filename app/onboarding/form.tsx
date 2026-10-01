@@ -17,28 +17,19 @@ import {
   Text,
   Checkbox,
   createListCollection,
-  Link,
-  Badge,
 } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "@/app/lib/router";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import RequirementHint from "@/app/onboarding/RequirementHint";
+import { OnboardingHeader } from "@/app/onboarding/OnboardingHeader";
+import { TermsConsentLabel } from "@/src/features/front-door";
 import { showApiError } from "@/app/hooks/useErrorHandler";
-import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { apiFetch } from "@/app/lib/api-client";
 import { submitOrttoProfile } from "@/app/lib/ortto";
 import { toaster } from "@/app/components/ui/toaster";
-
-export type ProfileConfig = {
-  sectors: Record<string, string>;
-  sector_roles: Record<string, Record<string, string>>;
-  countries: Record<string, string>;
-  languages: Record<string, string>;
-  gis_expertise_levels: Record<string, string>;
-  topics?: Record<string, string>;
-};
+import type { ProfileConfig } from "@/app/schemas/api/profile/config";
 
 type ProfileFormState = {
   firstName: string;
@@ -309,33 +300,7 @@ export default function OnboardingForm({
   return (
     <Box minH="100vh" bg="bg" py={24}>
       <Container maxW="3xl">
-        <Flex justifyContent="space-between" mb={12}>
-          <Flex gap="2" alignItems="center">
-            <Heading m={0} as="h1" size="md" color="primary.fg">
-              Global Nature Watch{" "}
-              <Text as="span" fontWeight="normal">
-                Horizon
-              </Text>
-            </Heading>
-            <Badge
-              colorPalette="primary"
-              bg="primary.800"
-              letterSpacing="wider"
-              variant="solid"
-              size="xs"
-            >
-              PREVIEW
-            </Badge>
-          </Flex>
-          <Button
-            colorPalette="primary"
-            variant="ghost"
-            onClick={() => router.push("/")}
-          >
-            <ArrowLeftIcon />
-            Go back
-          </Button>
-        </Flex>
+        <OnboardingHeader />
         <Heading as="h1" size="2xl" mb={2} fontWeight="normal">
           Complete your{" "}
           <Text as="span" fontWeight="bold">
@@ -736,44 +701,7 @@ export default function OnboardingForm({
               <Checkbox.HiddenInput />
               <Checkbox.Control />
               <Checkbox.Label fontWeight="normal">
-                I accept the{" "}
-                <Link
-                  href="https://www.wri.org/about/legal/general-terms-use"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  textDecoration="underline"
-                >
-                  Terms of Use
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="https://help.horizon.globalnaturewatch.org/global-nature-watch-ai-terms-of-use"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  textDecoration="underline"
-                >
-                  Global Nature Watch AI Terms of Use
-                </Link>
-                {", "}
-                and I acknowledge the privacy practices described in the{" "}
-                <Link
-                  href="https://www.wri.org/about/privacy-policy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  textDecoration="underline"
-                >
-                  Privacy Policy
-                </Link>{" "}
-                and the{" "}
-                <Link
-                  href="https://help.horizon.globalnaturewatch.org/legal-notices/global-nature-watch-ai-privacy-notice"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  textDecoration="underline"
-                >
-                  Global Nature Watch AI Privacy Policy
-                </Link>
-                .
+                <TermsConsentLabel />
                 <RequirementHint field="termsAccepted" />
               </Checkbox.Label>
             </Checkbox.Root>

@@ -1,22 +1,12 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import {
-  Badge,
-  Box,
-  Button,
-  Center,
-  Container,
-  Flex,
-  Heading,
-  Spinner,
-  Text,
-} from "@chakra-ui/react";
-import { ArrowLeftIcon } from "@phosphor-icons/react";
+import { useState } from "react";
+import { Box, Container } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter, useSearchParams } from "@/app/lib/router";
-import { useAuthGuard } from "@/app/hooks/useAuthGuard";
+import { useSearchParams } from "@/app/lib/router";
 import { showApiError } from "@/app/hooks/useErrorHandler";
+import { OnboardingHeader } from "@/app/onboarding/OnboardingHeader";
+import { OnboardingPageShell } from "@/app/onboarding/OnboardingPageShell";
 import { TERMS_VERSION } from "@/app/config/terms";
 import { trackEvent } from "@/app/lib/track-event";
 import useAuthStore from "@/app/store/authStore";
@@ -26,18 +16,7 @@ import { pendingPrompt } from "../lib/pending-prompt";
 import { WelcomeConsent } from "./WelcomeConsent";
 import { selectProfileUserKey } from "./profile-ask-gate";
 
-function Loading() {
-  return (
-    <Box minH="100vh" bg="bg" py={24}>
-      <Center>
-        <Spinner size="xl" />
-      </Center>
-    </Box>
-  );
-}
-
 function WelcomeContent() {
-  const router = useRouter();
   const search = useSearchParams()?.toString() ?? "";
   const name = useAuthStore((s) => s.userName);
   const userKey = useAuthStore(selectProfileUserKey);
@@ -79,33 +58,7 @@ function WelcomeContent() {
   return (
     <Box minH="100vh" bg="bg" py={24}>
       <Container maxW="3xl">
-        <Flex justifyContent="space-between" mb={12}>
-          <Flex gap="2" alignItems="center">
-            <Heading m={0} as="h2" size="md" color="primary.fg">
-              Global Nature Watch{" "}
-              <Text as="span" fontWeight="normal">
-                Horizon
-              </Text>
-            </Heading>
-            <Badge
-              colorPalette="primary"
-              bg="primary.800"
-              letterSpacing="wider"
-              variant="solid"
-              size="xs"
-            >
-              PREVIEW
-            </Badge>
-          </Flex>
-          <Button
-            colorPalette="primary"
-            variant="ghost"
-            onClick={() => router.push("/")}
-          >
-            <ArrowLeftIcon />
-            Go back
-          </Button>
-        </Flex>
+        <OnboardingHeader headingAs="h2" />
         <WelcomeConsent
           name={name}
           pendingPrompt={pendingPrompt(search)}
@@ -124,12 +77,9 @@ function WelcomeContent() {
  * asked for later, in the chat.
  */
 export function WelcomePage() {
-  const isReady = useAuthGuard();
-  if (!isReady) return <Loading />;
-
   return (
-    <Suspense fallback={<Loading />}>
+    <OnboardingPageShell>
       <WelcomeContent />
-    </Suspense>
+    </OnboardingPageShell>
   );
 }

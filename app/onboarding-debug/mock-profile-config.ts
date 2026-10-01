@@ -1,4 +1,4 @@
-import type { ProfileConfig } from "@/app/onboarding/form";
+import type { ProfileConfig } from "@/app/schemas/api/profile/config";
 
 // Representative mock so every control renders populated without the API.
 // Kept here (not fetched) so the debug pages stay fully offline.

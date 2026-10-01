@@ -22,6 +22,7 @@ import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
 import { submitOrttoProfile } from "@/app/lib/ortto";
 import { parseAuthMe } from "@/app/lib/auth-me";
+import type { ProfileConfig } from "@/app/schemas/api/profile/config";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import useAuthStore from "@/app/store/authStore";
 import { isFrontDoorEnabled } from "@/app/config/front-door";
@@ -29,15 +30,6 @@ import SettingsShell from "@/app/components/SettingsShell";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getSettingsFormSchema } from "@/app/dashboard/schema";
 import RequirementHint from "@/app/onboarding/RequirementHint";
-
-type ProfileConfig = {
-  sectors: Record<string, string>;
-  sector_roles: Record<string, Record<string, string>>;
-  countries: Record<string, string>;
-  languages: Record<string, string>;
-  gis_expertise_levels: Record<string, string>;
-  topics?: Record<string, string>;
-};
 
 type ProfileFormState = {
   firstName: string;

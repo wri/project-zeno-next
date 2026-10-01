@@ -1,10 +1,10 @@
-import { z } from "zod";
 import { apiFetch } from "@/app/lib/api-client";
 import { parseAuthMe, type AuthMe } from "@/app/lib/auth-me";
 import {
   PatchProfilePartialRequestSchema,
   type PatchProfilePartialRequest,
 } from "@/app/schemas/api/auth/profile/patch";
+import { ProfileConfigSchema } from "@/app/schemas/api/profile/config";
 import type { ProfileCardOptions } from "../model/profile-card";
 
 /**
@@ -27,14 +27,12 @@ export async function patchProfile(
   return parseAuthMe(await res.json());
 }
 
-const labels = z.record(z.string(), z.string());
-
 // The subset of GET /api/profile/config the card uses; other keys are dropped.
-const ProfileCardOptionsSchema = z.object({
-  sectors: labels,
-  sector_roles: z.record(z.string(), labels),
-  countries: labels,
-  languages: labels,
+const ProfileCardOptionsSchema = ProfileConfigSchema.pick({
+  sectors: true,
+  sector_roles: true,
+  countries: true,
+  languages: true,
 });
 
 /** GET /api/profile/config (public), narrowed to what the profile card needs. */

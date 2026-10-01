@@ -7,18 +7,12 @@ import {
   Checkbox,
   Flex,
   Heading,
-  Link,
   Stack,
   Text,
 } from "@chakra-ui/react";
 import { ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react";
-import {
-  GNW_AI_PRIVACY_POLICY,
-  GNW_AI_TERMS_OF_USE,
-  WRI_PRIVACY_POLICY,
-  WRI_TERMS_OF_USE,
-  type TermsLink,
-} from "../model/terms";
+import { personNames } from "../lib/person-names";
+import { TermsConsentLabel } from "./TermsConsentLabel";
 
 export interface WelcomeConsentProps {
   /** Display name from the Resource Watch account; only the first word is shown. */
@@ -29,19 +23,6 @@ export interface WelcomeConsentProps {
   signedInWithGfw?: boolean;
   isSubmitting?: boolean;
   onContinue: () => void;
-}
-
-function TermsAnchor({ link }: { link: TermsLink }) {
-  return (
-    <Link
-      href={link.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      textDecoration="underline"
-    >
-      {link.label}
-    </Link>
-  );
 }
 
 /**
@@ -56,7 +37,7 @@ export function WelcomeConsent({
   onContinue,
 }: WelcomeConsentProps) {
   const [accepted, setAccepted] = useState(false);
-  const firstName = name?.trim().split(/\s+/)[0];
+  const { firstName } = personNames({}, name);
 
   return (
     <Box
@@ -130,11 +111,7 @@ export function WelcomeConsent({
           <Checkbox.HiddenInput />
           <Checkbox.Control mt="0.5" />
           <Checkbox.Label fontWeight="normal" fontSize="sm">
-            I accept the <TermsAnchor link={WRI_TERMS_OF_USE} /> and{" "}
-            <TermsAnchor link={GNW_AI_TERMS_OF_USE} />, and I acknowledge the
-            privacy practices described in the{" "}
-            <TermsAnchor link={WRI_PRIVACY_POLICY} /> and the{" "}
-            <TermsAnchor link={GNW_AI_PRIVACY_POLICY} />.
+            <TermsConsentLabel />
           </Checkbox.Label>
         </Checkbox.Root>
 

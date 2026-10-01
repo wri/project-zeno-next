@@ -17,6 +17,7 @@ export {
 } from "./ui/ProfileReminder";
 export { ProfilePromptMessage } from "./ui/ProfilePromptMessage";
 export { WelcomeConsent, type WelcomeConsentProps } from "./ui/WelcomeConsent";
+export { TermsConsentLabel } from "./ui/TermsConsentLabel";
 export {
   ProfilePromptCard,
   type ProfilePromptCardProps,

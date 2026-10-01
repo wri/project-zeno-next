@@ -3,14 +3,13 @@
  * (today: MyGFW) seeds it, and what saving it would send.
  */
 import type { PatchProfilePartialRequest } from "@/app/schemas/api/auth/profile/patch";
+import type { ProfileConfig } from "@/app/schemas/api/profile/config";
 
-/** The dropdown options the card needs; a structural subset of GET /api/profile/config. */
-export interface ProfileCardOptions {
-  sectors: Record<string, string>;
-  sector_roles: Record<string, Record<string, string>>;
-  countries: Record<string, string>;
-  languages: Record<string, string>;
-}
+/** The dropdown options the card needs, from GET /api/profile/config. */
+export type ProfileCardOptions = Pick<
+  ProfileConfig,
+  "sectors" | "sector_roles" | "countries" | "languages"
+>;
 
 /**
  * Card form state, in the order the card asks for it. An empty string means
