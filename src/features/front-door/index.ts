@@ -48,3 +48,4 @@ export {
   type ProfileSuggestion,
 } from "./model/profile-card";
 export { pendingPrompt } from "./lib/pending-prompt";
+export { personNames } from "./lib/person-names";

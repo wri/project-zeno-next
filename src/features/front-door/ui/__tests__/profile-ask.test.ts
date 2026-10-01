@@ -17,6 +17,12 @@ vi.mock("@/app/lib/ortto", () => ({ submitOrttoProfile: vi.fn() }));
 vi.mock("@/app/lib/track-event", () => ({ trackEvent: vi.fn() }));
 
 import { apiFetch } from "@/app/lib/api-client";
+import {
+  agentTextLine,
+  humanLine,
+  ndjsonResponse,
+} from "@/app/store/__tests__/stream-fixtures";
+import { MemoryStorage } from "../../lib/__tests__/memory-storage";
 import { submitOrttoProfile } from "@/app/lib/ortto";
 import { trackEvent } from "@/app/lib/track-event";
 import { queryClient } from "@/app/lib/query-client";
@@ -42,28 +48,6 @@ import {
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
 
-class MemoryStorage implements Storage {
-  private items = new Map<string, string>();
-  get length() {
-    return this.items.size;
-  }
-  clear() {
-    this.items.clear();
-  }
-  getItem(key: string) {
-    return this.items.get(key) ?? null;
-  }
-  key(index: number) {
-    return [...this.items.keys()][index] ?? null;
-  }
-  removeItem(key: string) {
-    this.items.delete(key);
-  }
-  setItem(key: string, value: string) {
-    this.items.set(key, value);
-  }
-}
-
 const CONFIG = {
   sectors: { government: "Government", ngo: "NGO" },
   sector_roles: { government: { analyst: "Analyst" }, ngo: {} },
@@ -84,69 +68,6 @@ const GFW_PREFILL = {
     country_code: "BR",
   },
 };
-
-function aiLine(text: string): string {
-  return JSON.stringify({
-    node: "agent",
-    timestamp: "2026-09-30T10:00:01.000Z",
-    update: JSON.stringify({
-      messages: [
-        {
-          lc: 1,
-          type: "constructor",
-          id: ["x"],
-          kwargs: {
-            content: text,
-            type: "ai",
-            id: "m-ai",
-            response_metadata: {},
-            tool_calls: [],
-            invalid_tool_calls: [],
-          },
-        },
-      ],
-    }),
-  });
-}
-
-function humanLine(text: string): string {
-  return JSON.stringify({
-    node: "agent",
-    timestamp: "2026-09-30T10:00:00.000Z",
-    update: JSON.stringify({
-      messages: [
-        {
-          lc: 1,
-          type: "constructor",
-          id: ["x"],
-          kwargs: { content: text, type: "human", id: "m-human" },
-        },
-      ],
-    }),
-  });
-}
-
-function ndjson(lines: string[]): Response {
-  const encoder = new TextEncoder();
-  let delivered = false;
-  const reader = {
-    read: () => {
-      if (delivered) return Promise.resolve({ done: true, value: undefined });
-      delivered = true;
-      return Promise.resolve({
-        done: false,
-        value: encoder.encode(lines.join("\n") + "\n"),
-      });
-    },
-    releaseLock: () => {},
-    cancel: () => Promise.resolve(),
-  };
-  return {
-    ok: true,
-    headers: new Headers(),
-    body: { getReader: () => reader },
-  } as unknown as Response;
-}
 
 const SAVED_USER = {
   id: "u-1",
@@ -171,11 +92,12 @@ function backend({
   patchStatus = 200,
 }: Backend = {}) {
   vi.mocked(apiFetch).mockImplementation(async (path, init) => {
-    if (path === "/api/chat") return ndjson([aiLine("Pará lost 1.2 Mha.")]);
+    if (path === "/api/chat")
+      return ndjsonResponse([agentTextLine("Pará lost 1.2 Mha.")]);
     if (path.startsWith("/api/threads/")) {
-      return ndjson([
+      return ndjsonResponse([
         humanLine("How much has Pará lost?"),
-        aiLine("Pará lost 1.2 Mha."),
+        agentTextLine("Pará lost 1.2 Mha."),
       ]);
     }
     if (path === "/api/profile/config") {

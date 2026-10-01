@@ -38,6 +38,7 @@ import {
   ProfilePromptCard,
   WelcomeConsent,
   pendingPrompt,
+  personNames,
   recordAnswer,
   recordAskDismissed,
   recordAskShown,
@@ -266,14 +267,14 @@ function SignInPlaceholder({
       </Text>
       {persona.entry === "gfw" ? (
         <Text fontSize="sm">
-          {persona.name.split(" ")[0]} already has a Resource Watch account from
-          GFW. If Resource Watch still has a session for them, they come
-          straight back without seeing a login form (unverified).
+          {personNames({}, persona.name).firstName} already has a Resource Watch
+          account from GFW. If Resource Watch still has a session for them, they
+          come straight back without seeing a login form (unverified).
         </Text>
       ) : (
         <Text fontSize="sm">
-          {persona.name.split(" ")[0]} picks Continue with Google. No email
-          round trip.
+          {personNames({}, persona.name).firstName} picks Continue with Google.
+          No email round trip.
         </Text>
       )}
       <Button colorPalette="primary" onClick={onSignedIn}>

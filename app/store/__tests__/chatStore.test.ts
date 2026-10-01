@@ -25,6 +25,7 @@ import useAuthStore from "../authStore";
 import useAgentProfileStore from "../agentProfileStore";
 import useMapStore from "../mapStore";
 import { apiFetch } from "@/app/lib/api-client";
+import { agentTextLine, humanLine, ndjsonResponse } from "./stream-fixtures";
 import { deriveContext } from "@/app/utils/messageContext";
 import type {
   AnalyseSuggestion,
@@ -707,31 +708,6 @@ function dashboardWriteLine(
   });
 }
 
-/** A Response-like object that streams the given NDJSON lines, then ends. */
-function ndjsonResponse(lines: string[]): Response {
-  const encoder = new TextEncoder();
-  let delivered = false;
-  const reader = {
-    read: () => {
-      if (delivered) {
-        return Promise.resolve({ done: true, value: undefined });
-      }
-      delivered = true;
-      return Promise.resolve({
-        done: false,
-        value: encoder.encode(lines.join("\n") + "\n"),
-      });
-    },
-    releaseLock: () => {},
-    cancel: () => Promise.resolve(),
-  };
-  return {
-    ok: true,
-    headers: new Headers(),
-    body: { getReader: () => reader },
-  } as unknown as Response;
-}
-
 function dashboardCards() {
   return useChatStore
     .getState()
@@ -935,54 +911,6 @@ function toolNudgeLine(tool: string, nudge: Nudge): string {
             type: "tool",
             name: tool,
             id: `m-${tool}`,
-            response_metadata: {},
-          },
-        },
-      ],
-    }),
-  });
-}
-
-/** One NDJSON line for a plain assistant text turn. */
-function agentTextLine(text: string): string {
-  return JSON.stringify({
-    node: "agent",
-    timestamp: "2026-07-30T00:00:01.000Z",
-    update: JSON.stringify({
-      messages: [
-        {
-          lc: 1,
-          type: "constructor",
-          id: ["x"],
-          kwargs: {
-            content: text,
-            type: "ai",
-            id: "m-ai",
-            response_metadata: {},
-            tool_calls: [],
-            invalid_tool_calls: [],
-          },
-        },
-      ],
-    }),
-  });
-}
-
-/** One NDJSON line for a replayed human turn (fetchThread only). */
-function humanLine(text: string): string {
-  return JSON.stringify({
-    node: "agent",
-    timestamp: "2026-07-30T00:00:00.000Z",
-    update: JSON.stringify({
-      messages: [
-        {
-          lc: 1,
-          type: "constructor",
-          id: ["x"],
-          kwargs: {
-            content: text,
-            type: "human",
-            id: "m-human",
             response_metadata: {},
           },
         },
