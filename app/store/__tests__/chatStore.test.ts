@@ -1041,6 +1041,49 @@ describe("nudge stream state → nudge chat message", () => {
   });
 });
 
+/** One NDJSON line for a pick_aoi result that names an area but carries no geometry. */
+function pickAoiLine(aoi: {
+  name: string;
+  source: string;
+  src_id: string;
+  subtype: string;
+}): string {
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-30T00:00:00.500Z",
+    update: JSON.stringify({
+      aoi_selection: { name: aoi.name, aois: [aoi] },
+      messages: [
+        {
+          lc: 1,
+          type: "constructor",
+          id: ["x"],
+          kwargs: {
+            content: `Selected ${aoi.name}`,
+            type: "tool",
+            name: "pick_aoi",
+            id: "m-pick-aoi",
+            response_metadata: {},
+          },
+        },
+      ],
+    }),
+  });
+}
+
+/** The line the backend emits when a stream update fails (src/api/services/chat.py). */
+function errorNodeLine(): string {
+  return JSON.stringify({
+    node: "error",
+    update: JSON.stringify({
+      error: true,
+      message: "boom",
+      error_type: "ValueError",
+      type: "stream_processing_error",
+    }),
+  });
+}
+
 // --- completedAnswers: the "a live answer finished" signal ---------------
 
 describe("chatStore.completedAnswers", () => {
@@ -1114,6 +1157,47 @@ describe("chatStore.completedAnswers", () => {
     expect(
       useChatStore.getState().messages.some((m) => m.type === "error")
     ).toBe(true);
+    expect(completed()).toBe(0);
+  });
+
+  it("counts an answer whose map display failed (a client-side tool error)", async () => {
+    // pick_aoi's geometry fetch fails, so the handler adds an error message,
+    // but the agent's answer is complete.
+    vi.mocked(apiFetch).mockImplementation((path) =>
+      Promise.resolve(
+        String(path).startsWith("/api/geometry/")
+          ? ({ ok: false, status: 404, statusText: "Not Found" } as Response)
+          : ndjsonResponse([
+              pickAoiLine({
+                name: "Pará, Brazil",
+                source: "gadm",
+                src_id: "BRA.14_1",
+                subtype: "state-province",
+              }),
+              agentTextLine("Pará lost 1.2 Mha."),
+            ])
+      )
+    );
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
+    await vi.waitFor(() =>
+      expect(
+        useChatStore
+          .getState()
+          .messages.some(
+            (m) =>
+              m.type === "error" &&
+              m.message.startsWith("AOI tool executed but failed")
+          )
+      ).toBe(true)
+    );
+    expect(completed()).toBe(1);
+  });
+
+  it("doesn't count a turn the backend's error node interrupted", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([agentTextLine("Pará lost 1.2 Mha."), errorNodeLine()])
+    );
+    await useChatStore.getState().sendMessage("How much has Pará lost?");
     expect(completed()).toBe(0);
   });
 

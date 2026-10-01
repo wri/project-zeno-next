@@ -239,13 +239,22 @@ function withoutTransient(messages: ChatMessage[]): ChatMessage[] {
 }
 
 // Whether the messages a turn added amount to an answer. A turn that ends by
-// asking the user to choose (a nudge) is a clarification, and an error turn
-// didn't answer; neither counts.
+// asking the user to choose (a nudge) is a clarification and doesn't count.
+// Error messages aren't judged here: tool handlers add client-side ones (a
+// geometry fetch that failed, say) to turns whose answer still arrived. Only
+// a stream-level failure stops a turn counting; sendMessage tracks that.
 function isAnsweredTurn(turnMessages: ChatMessage[]): boolean {
   return (
     turnMessages.some((m) => m.type === "assistant") &&
-    !turnMessages.some((m) => m.type === "nudge" || m.type === "error")
+    !turnMessages.some((m) => m.type === "nudge")
   );
+}
+
+// The backend's `error` node: a stream update it couldn't process, or a
+// stream that failed to start. The chat doesn't render it (it carries no
+// messages), but the turn it interrupted isn't an answer.
+function isErrorNodeLine(rawLine: string): boolean {
+  return (JSON.parse(rawLine) as LangChainResponse).node === "error";
 }
 
 // Helper function to process stream messages and add them to chat
@@ -759,6 +768,9 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // removed meanwhile or the thread was reset.
     const userMessageId = get().messages.at(-1)?.id;
     let streamCompleted = false;
+    // A stream-level failure: the backend's error node or its timeout. A
+    // thrown or aborted stream leaves streamCompleted false instead.
+    let streamFailed = false;
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
@@ -842,10 +854,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         onData: async (data, isFinal) => {
           console.log("API Stream message:", data);
           try {
+            if (isErrorNodeLine(data)) streamFailed = true;
             const streamMessage = parseLangChainLine(data);
             if (!streamMessage) {
               console.log("Unhandled LangChain message:", data);
               return;
+            }
+            if (
+              streamMessage.type === "error" &&
+              streamMessage.name === "timeout"
+            ) {
+              streamFailed = true;
             }
             await processStreamMessage(
               streamMessage,
@@ -1000,7 +1019,7 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       setGeneratingInsight(false);
       get().setImageryUpdating(false);
 
-      if (streamCompleted) {
+      if (streamCompleted && !streamFailed) {
         const messages = get().messages;
         const userIndex = messages.findIndex((m) => m.id === userMessageId);
         if (userIndex !== -1 && isAnsweredTurn(messages.slice(userIndex + 1))) {
