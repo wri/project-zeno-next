@@ -18,9 +18,21 @@ import useChatStore from "./store/chatStore";
 import useSidebarStore from "./store/sidebarStore";
 import { isAppRoute, isDashboardDetailRoute } from "./utils/threadNavigation";
 import { usePathname } from "@/app/lib/router";
+import { ZapPanel, useZapStore } from "@/src/features/zap";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // Intentionally narrower than the full-size panel (see FULLSIZE_CHAT_PANEL_WIDTH_PX).
+
+// Zap mode is a bit wider: its plan rows and examples read better on one line.
+const ZAP_PANEL_WIDTH_PX = COMPACT_CHAT_PANEL_WIDTH_PX + 80;
+
+// The conversation and the zap panel slide in from the left as they swap.
+const swapMotion = {
+  initial: { opacity: 0, x: -24 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -24 },
+  transition: { duration: 0.2, ease: "easeInOut" },
+} as const;
 
 // Cap the scrollable message list at ~50vh per design (~440px on a 900px-tall
 // viewport). The compact panel is bottom-anchored and grows upward, so when the
@@ -31,7 +43,7 @@ const MESSAGES_MAX_VH = 0.5;
 const DISCLAIMER_CLEARANCE = 12; // px of breathing room below the disclaimer
 
 const cardStyle = {
-  w: { base: "full", md: `${COMPACT_CHAT_PANEL_WIDTH_PX}px` } as const,
+  w: "full",
   ...chatPanelCardStyle,
 };
 
@@ -58,6 +70,10 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
     (m) => m.type === "user" || m.type === "assistant"
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const zapMode = useZapStore((s) => s.mode === "zap") && isAppRoute(pathname);
+  const panelWidthPx = zapMode
+    ? ZAP_PANEL_WIDTH_PX
+    : COMPACT_CHAT_PANEL_WIDTH_PX;
 
   const topCardRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -122,59 +138,76 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
       <Flex
         flexDir="column"
         gap="0.5"
-        w={{ base: "full", md: `${COMPACT_CHAT_PANEL_WIDTH_PX}px` }}
+        w={{ base: "full", md: `${panelWidthPx}px` }}
+        transition="width 0.2s ease-in-out"
         minH={0}
         pointerEvents="auto"
       >
-        {/* Top card: header + content. Base (bottom sheet): shrinkable so the
+        <AnimatePresence mode="wait" initial={false}>
+          {zapMode ? (
+            <motion.div key="zap" {...swapMotion}>
+              <Flex flexDir="column" {...cardStyle}>
+                <ZapPanel />
+              </Flex>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="chat"
+              {...swapMotion}
+              style={{ display: "flex", flexDirection: "column", minHeight: 0 }}
+            >
+              {/* Top card: header + content. Base (bottom sheet): shrinkable so the
             message list scrolls within the sheet instead of clipping past its
             top edge. Desktop keeps the fixed 50vh-capped height. */}
-        <Flex
-          ref={topCardRef}
-          flexDir="column"
-          flex={{ base: "0 1 auto", md: "0 0 auto" }}
-          minH={0}
-          {...cardStyle}
-        >
-          <ChatPanelHeader
-            isFullSize={false}
-            hasConversation={hasConversation}
-            onToggleSize={onToggleSize}
-            isCollapsed={isCollapsed}
-            onToggleCollapse={() => setIsCollapsed((v) => !v)}
-          />
-          {/* Animated collapse/expand of message content */}
-          <AnimatePresence initial={false}>
-            {!isCollapsed && (
-              <motion.div
-                key="messages"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
-                style={{
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
-                  minHeight: 0,
-                }}
+              <Flex
+                ref={topCardRef}
+                flexDir="column"
+                flex={{ base: "0 1 auto", md: "0 0 auto" }}
+                minH={0}
+                {...cardStyle}
               >
-                {/* Top padding is passed to ChatMessages instead of set on
+                <ChatPanelHeader
+                  isFullSize={false}
+                  hasConversation={hasConversation}
+                  onToggleSize={onToggleSize}
+                  isCollapsed={isCollapsed}
+                  onToggleCollapse={() => setIsCollapsed((v) => !v)}
+                />
+                {/* Animated collapse/expand of message content */}
+                <AnimatePresence initial={false}>
+                  {!isCollapsed && (
+                    <motion.div
+                      key="messages"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.22, ease: "easeInOut" }}
+                      style={{
+                        overflow: "hidden",
+                        display: "flex",
+                        flexDirection: "column",
+                        minHeight: 0,
+                      }}
+                    >
+                      {/* Top padding is passed to ChatMessages instead of set on
                     this scroller — see ChatMessagesProps.pt. */}
-                <Box
-                  ref={messagesRef}
-                  overflowY="auto"
-                  px={4}
-                  pb={4}
-                  minH={0}
-                  maxH={{ base: "none", md: messagesMaxH }}
-                >
-                  <ChatMessages pt={4} />
-                </Box>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Flex>
+                      <Box
+                        ref={messagesRef}
+                        overflowY="auto"
+                        px={4}
+                        pb={4}
+                        minH={0}
+                        maxH={{ base: "none", md: messagesMaxH }}
+                      >
+                        <ChatMessages pt={4} />
+                      </Box>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Flex>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Bottom card: input — always visible, never squeezed by the list */}
         <Flex

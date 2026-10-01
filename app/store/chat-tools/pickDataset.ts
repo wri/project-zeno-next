@@ -11,6 +11,27 @@ import {
   toLayerEntries,
 } from "@/app/utils/datasetLayerContext";
 
+/**
+ * Show a dataset on the map. The visible layer IS the scope: replaces any
+ * existing dataset layers and adds this dataset's main + context sub-layers.
+ * Shared by pick_dataset and zap mode.
+ */
+export function addDatasetToMap(dataset: DatasetInfo) {
+  const layerContextProps = getDatasetLayerContextProps(dataset);
+  const { addLayer, removeLayer, layers } = useMapStore.getState();
+  layers
+    .filter((l) => typeof l.datasetId === "number")
+    .forEach((l) => removeLayer(l.id));
+  buildDatasetLayers({
+    datasetId: dataset.dataset_id,
+    layerName: dataset.dataset_name,
+    tileUrl: dataset.tile_url,
+    layers: toLayerEntries(dataset.layers, dataset.dataset_id),
+    selectedLayerName: dataset.selected_layer,
+    ...layerContextProps, // contextLayer / parameters / start+end dates
+  }).forEach(addLayer);
+}
+
 export function pickDatasetTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void
@@ -32,22 +53,7 @@ export function pickDatasetTool(
         yAxis: "",
       };
 
-      const layerContextProps = getDatasetLayerContextProps(dataset);
-
-      // The visible layer IS the scope. Replace any existing dataset layers
-      // and add this dataset's main + context sub-layers.
-      const { addLayer, removeLayer, layers } = useMapStore.getState();
-      layers
-        .filter((l) => typeof l.datasetId === "number")
-        .forEach((l) => removeLayer(l.id));
-      buildDatasetLayers({
-        datasetId: dataset.dataset_id,
-        layerName: dataset.dataset_name,
-        tileUrl: dataset.tile_url,
-        layers: toLayerEntries(dataset.layers, dataset.dataset_id),
-        selectedLayerName: dataset.selected_layer,
-        ...layerContextProps, // contextLayer / parameters / start+end dates
-      }).forEach(addLayer);
+      addDatasetToMap(dataset);
 
       addMessage({
         type: "widget",

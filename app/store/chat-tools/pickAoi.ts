@@ -65,6 +65,94 @@ async function fetchAndRegisterAoi(
   return geoJsonData;
 }
 
+/**
+ * Fetch the geometry of each AOI, add one map layer for the selection and fly
+ * to it. Shared by pick_aoi and zap mode. Returns the AOIs that rendered and
+ * the names of those that failed.
+ */
+export async function showAoisOnMap(
+  aois: AOI[],
+  selectionName: string
+): Promise<{ successfulAois: AOI[]; failures: string[] }> {
+  const { flyToGeoJsonWithRetry, flyToBounds, addToRegistry, addLayer } =
+    useMapStore.getState();
+
+  // Fetch geometry for all AOIs in parallel
+  const results = await Promise.allSettled(
+    aois.map((aoi) => fetchAndRegisterAoi(aoi, addToRegistry))
+  );
+
+  // Collect all raw geometry data for combined bounds, track failures
+  const allGeoData: (FeatureCollection | Feature)[] = [];
+  const failures: string[] = [];
+
+  results.forEach((result, idx) => {
+    if (result.status === "fulfilled") {
+      allGeoData.push(result.value);
+    } else {
+      const aoiName = aois[idx]?.name ?? `AOI ${idx}`;
+      console.error(
+        `Failed to fetch geometry for "${aoiName}":`,
+        result.reason
+      );
+      failures.push(aoiName);
+    }
+  });
+
+  // Only add the layer if at least one AOI succeeded, with only successful refs
+  const successfulAois = aois.filter(
+    (_, idx) => results[idx].status === "fulfilled"
+  );
+  const successfulRefs = successfulAois.map((aoi) => ({
+    name: aoi.name,
+    source: aoi.source,
+  }));
+
+  // The visible layer IS the scope — no separate context item. The layer id
+  // is the selection name, so re-picking the same selection replaces it
+  // rather than stacking a duplicate; differently-named selections stack.
+  if (successfulRefs.length > 0) {
+    addLayer({
+      id: selectionName,
+      name: selectionName,
+      type: "geojson",
+      visible: true,
+      featureRefs: successfulRefs,
+      selectionName,
+      aoiSelection: { name: selectionName, aois: successfulAois },
+    });
+  }
+
+  console.log(
+    "[pickAoi] successfulAois bbox check:",
+    successfulAois.map((a) => ({ name: a.name, bbox: a.bbox }))
+  );
+
+  // Fly to the combined bounds using backend-provided bbox values.
+  // Using aoi.bbox directly preserves dateline-crossing extents (west > east),
+  // which fitBounds handles natively. Turf bbox would wrap around the world instead.
+  const unionBbox = unionAoiBboxes(successfulAois);
+  if (unionBbox) {
+    const [west, south, north] = [unionBbox[0], unionBbox[1], unionBbox[3]];
+    let east = unionBbox[2];
+    // flyToBounds (and mapStore's fitBounds wrapper) expects east <= 180;
+    // subtract 360 to re-wrap when the union crossed the antimeridian.
+    if (east > 180) east -= 360;
+    console.log("[pickAoi] calling flyToBounds:", typeof flyToBounds, [
+      [west, south],
+      [east, north],
+    ]);
+    flyToBounds([
+      [west, south],
+      [east, north],
+    ]);
+  } else if (allGeoData.length > 0) {
+    flyToGeoJsonWithRetry(allGeoData[0]);
+  }
+
+  return { successfulAois, failures };
+}
+
 export async function pickAoiTool(
   streamMessage: StreamMessage,
   addMessage: (message: Omit<ChatMessage, "id">) => void
@@ -78,8 +166,7 @@ export async function pickAoiTool(
     )
   );
   try {
-    const { flyToGeoJsonWithRetry, flyToBounds, addToRegistry, addLayer } =
-      useMapStore.getState();
+    const { flyToGeoJsonWithRetry, addLayer } = useMapStore.getState();
 
     // Prefer the new multi-AOI aoi_selection, fall back to single aoi
     const aoiSelection: AOISelection | undefined = streamMessage.aoi_selection;
@@ -141,78 +228,10 @@ export async function pickAoiTool(
       throw new Error("No AOI data found in stream message");
     }
 
-    // Fetch geometry for all AOIs in parallel
-    const results = await Promise.allSettled(
-      aois.map((aoi) => fetchAndRegisterAoi(aoi, addToRegistry))
+    const { successfulAois, failures } = await showAoisOnMap(
+      aois,
+      selectionName
     );
-
-    // Collect all raw geometry data for combined bounds, track failures
-    const allGeoData: (FeatureCollection | Feature)[] = [];
-    const failures: string[] = [];
-
-    results.forEach((result, idx) => {
-      if (result.status === "fulfilled") {
-        allGeoData.push(result.value);
-      } else {
-        const aoiName = aois[idx]?.name ?? `AOI ${idx}`;
-        console.error(
-          `Failed to fetch geometry for "${aoiName}":`,
-          result.reason
-        );
-        failures.push(aoiName);
-      }
-    });
-
-    // Only add the layer if at least one AOI succeeded, with only successful refs
-    const successfulAois = aois.filter(
-      (_, idx) => results[idx].status === "fulfilled"
-    );
-    const successfulRefs = successfulAois.map((aoi) => ({
-      name: aoi.name,
-      source: aoi.source,
-    }));
-
-    // The visible layer IS the scope — no separate context item. The layer id
-    // is the selection name, so re-picking the same selection replaces it
-    // rather than stacking a duplicate; differently-named selections stack.
-    if (successfulRefs.length > 0) {
-      addLayer({
-        id: selectionName,
-        name: selectionName,
-        type: "geojson",
-        visible: true,
-        featureRefs: successfulRefs,
-        selectionName,
-        aoiSelection: { name: selectionName, aois: successfulAois },
-      });
-    }
-
-    console.log(
-      "[pickAoi] successfulAois bbox check:",
-      successfulAois.map((a) => ({ name: a.name, bbox: a.bbox }))
-    );
-
-    // Fly to the combined bounds using backend-provided bbox values.
-    // Using aoi.bbox directly preserves dateline-crossing extents (west > east),
-    // which fitBounds handles natively. Turf bbox would wrap around the world instead.
-    const unionBbox = unionAoiBboxes(successfulAois);
-    if (unionBbox) {
-      const [west, south, north] = [unionBbox[0], unionBbox[1], unionBbox[3]];
-      let east = unionBbox[2];
-      // flyToBounds (and mapStore's fitBounds wrapper) expects east <= 180;
-      // subtract 360 to re-wrap when the union crossed the antimeridian.
-      if (east > 180) east -= 360;
-      console.log("[pickAoi] calling flyToBounds:", typeof flyToBounds, [
-        [west, south],
-        [east, north],
-      ]);
-      flyToBounds([
-        [west, south],
-        [east, north],
-      ]);
-    } else if (allGeoData.length > 0) {
-      flyToGeoJsonWithRetry(allGeoData[0]);
-    }
 
     // Only show the area card if at least one AOI rendered successfully,
     // and only include the successful AOIs in the card.

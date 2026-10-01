@@ -34,6 +34,7 @@ import {
   MAP_FEEDBACK_Z_INDEX,
 } from "@/app/explorationLayout";
 import { ViewAnalysisTrigger } from "@/src/features/analysis";
+import { ZapRunner } from "@/src/features/zap";
 import { CreateDashboardTrigger } from "@/src/features/dashboards";
 
 export default function DashboardLayout({
@@ -190,6 +191,7 @@ export default function DashboardLayout({
       <WhatsNewModal />
       <AnalysisCtaTrigger />
       <ViewAnalysisTrigger />
+      <ZapRunner />
       <CreateDashboardTrigger />
 
       {!isMobile && (
