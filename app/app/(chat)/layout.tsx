@@ -36,7 +36,6 @@ import {
 import { ViewAnalysisTrigger } from "@/src/features/analysis";
 import { CreateDashboardTrigger } from "@/src/features/dashboards";
 import { ProfileAskTrigger } from "@/src/features/front-door";
-import { isFrontDoorEnabled } from "@/app/config/front-door";
 
 export default function DashboardLayout({
   children,
@@ -193,7 +192,7 @@ export default function DashboardLayout({
       <AnalysisCtaTrigger />
       <ViewAnalysisTrigger />
       <CreateDashboardTrigger />
-      {isFrontDoorEnabled() && <ProfileAskTrigger />}
+      <ProfileAskTrigger />
 
       {!isMobile && (
         <Box>

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({
   apiFetch: vi.fn(),
@@ -26,6 +26,7 @@ function renderSlot() {
 
 describe("ProfileNudgeSlot", () => {
   beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     localStorage.clear();
     useProfileNudgeStore.getState().closeBanner();
     useAuthStore.getState().setAuthStatus({
@@ -34,6 +35,17 @@ describe("ProfileNudgeSlot", () => {
       hasProfile: false,
       userType: null,
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("renders nothing with the flag off, even if opened", () => {
+    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "false");
+    useProfileNudgeStore.getState().openBanner();
+    const { container } = renderSlot();
+    expect(container.textContent).toBe("");
   });
 
   it("renders nothing until the ask policy opens the banner", () => {

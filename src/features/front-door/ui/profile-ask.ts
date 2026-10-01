@@ -1,5 +1,4 @@
 import { toaster } from "@/app/components/ui/toaster";
-import { isFrontDoorEnabled } from "@/app/config/front-door";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import { submitOrttoProfile } from "@/app/lib/ortto";
 import { trackEvent } from "@/app/lib/track-event";
@@ -10,7 +9,7 @@ import { patchProfile } from "../api/profile";
 import { PREFILL_NOT_FOUND } from "../api/profile-prefill";
 import { profileOptionsQuery, profilePrefillQuery } from "../api/queries";
 import { personNames } from "../lib/person-names";
-import { selectProfileUserKey } from "./profile-ask-gate";
+import { isProfileAskActive, selectProfileUserKey } from "./profile-ask-gate";
 import {
   loadProfileAskRecord,
   saveProfileAskRecord,
@@ -130,9 +129,7 @@ export async function showProfilePrompt(
 export async function handleAnswerCompleted(
   storages: ProfileAskStorages = browserStorages()
 ): Promise<void> {
-  if (!isFrontDoorEnabled()) return;
-  const auth = useAuthStore.getState();
-  if (!auth.isAuthenticated || auth.hasProfile) return;
+  if (!isProfileAskActive()) return;
   const key = userKey();
   if (!key) return;
 

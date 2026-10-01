@@ -33,6 +33,7 @@ import {
   EMPTY_PROFILE_ASK_RECORD,
   MAX_PROFILE_DISMISSALS,
   NTH_QUESTION_ASK,
+  ProfileIncompleteDot,
   ProfileNudgeBanner,
   ProfilePromptCard,
   WelcomeConsent,
@@ -584,15 +585,7 @@ export default function FrontDoorPreview() {
                       <Text truncate maxW="180px" fontSize="xs">
                         {persona.email}
                       </Text>
-                      {!profileComplete && (
-                        <Box
-                          w="2"
-                          h="2"
-                          rounded="full"
-                          bg="primary.500"
-                          aria-label="Profile not complete"
-                        />
-                      )}
+                      {!profileComplete && <ProfileIncompleteDot />}
                     </Button>
                   </Menu.Trigger>
                   <Portal>

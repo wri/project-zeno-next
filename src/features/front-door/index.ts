@@ -10,6 +10,11 @@
 export { WelcomePage } from "./ui/WelcomePage";
 export { ProfileAskTrigger } from "./ui/ProfileAskTrigger";
 export { ProfileNudgeSlot } from "./ui/ProfileNudgeSlot";
+export { ProfileIncompleteDot } from "./ui/ProfileIncompleteDot";
+export {
+  ProfileReminderDot,
+  ProfileReminderMenuItem,
+} from "./ui/ProfileReminder";
 export {
   ProfilePromptMessage,
   type ProfilePromptMessageProps,

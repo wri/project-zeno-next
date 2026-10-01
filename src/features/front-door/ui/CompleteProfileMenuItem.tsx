@@ -3,6 +3,7 @@
 import { Box, Menu } from "@chakra-ui/react";
 import { UserCircleIcon } from "@phosphor-icons/react";
 import { Link } from "@/app/lib/router";
+import { ProfileIncompleteDot } from "./ProfileIncompleteDot";
 
 export type CompleteProfileMenuItemProps =
   /** Where the profile is completed (the app: the /dashboard settings page). */
@@ -15,13 +16,7 @@ function Content() {
     <>
       <UserCircleIcon />
       <Box flex="1">Complete your profile</Box>
-      <Box
-        w="2"
-        h="2"
-        rounded="full"
-        bg="primary.500"
-        aria-label="Not complete yet"
-      />
+      <ProfileIncompleteDot />
     </>
   );
 }
