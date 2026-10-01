@@ -43,6 +43,7 @@ next-env.d.ts
 
 .prompts/*
 .claude/*
+!.claude/skills/
 
 PRD.md
 PLAN.md
