@@ -32,7 +32,7 @@ import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
-import { runZap, useZapStore } from "@/src/features/zap";
+import { runZap, useZapMode, useZapStore } from "@/src/features/zap";
 import { useRouter, usePathname } from "@/app/lib/router";
 import {
   firstMessageRedirectPath,
@@ -90,8 +90,7 @@ export default function ChatInput({
   } = useSidebarStore();
 
   // Zap mode: the prompt goes to the jev planner, not the agent. Map only.
-  const zapAvailable = isAppRoute(pathname);
-  const zapMode = useZapStore((s) => s.mode === "zap") && zapAvailable;
+  const { available: zapAvailable, active: zapMode } = useZapMode();
   const zapBusy = useZapStore(
     (s) => s.status === "planning" || s.status === "running"
   );

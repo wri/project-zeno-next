@@ -18,7 +18,7 @@ import useChatStore from "./store/chatStore";
 import useSidebarStore from "./store/sidebarStore";
 import { isAppRoute, isDashboardDetailRoute } from "./utils/threadNavigation";
 import { usePathname } from "@/app/lib/router";
-import { ZapPanel, useZapStore } from "@/src/features/zap";
+import { ZapPanel, useZapMode } from "@/src/features/zap";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // Intentionally narrower than the full-size panel (see FULLSIZE_CHAT_PANEL_WIDTH_PX).
@@ -70,7 +70,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
     (m) => m.type === "user" || m.type === "assistant"
   );
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const zapMode = useZapStore((s) => s.mode === "zap") && isAppRoute(pathname);
+  const { active: zapMode } = useZapMode();
   const panelWidthPx = zapMode
     ? ZAP_PANEL_WIDTH_PX
     : COMPACT_CHAT_PANEL_WIDTH_PX;
