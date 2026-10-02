@@ -14,7 +14,6 @@ const baseGroup: ImageryLegendGroup = {
   opacity: 100,
   params: [
     { label: "DATES", value: "Jun 12 – Jun 16, 2026", maxValueWidth: "26ch" },
-    { label: "WINDOW", value: "±30 days" },
     { label: "CLOUD", value: "< 50%" },
     { label: "AREA", value: "Paracas National Reserve" },
   ],
@@ -24,7 +23,7 @@ const baseGroup: ImageryLegendGroup = {
     {
       layerId: "imagery-new",
       areaLabel: "Paracas National Reserve",
-      dateLabel: "15 Jun 2026",
+      dateLabel: "16 Jun 2026",
       metaLabel: "cloud <50% · 9 scenes",
       visible: true,
       live: true,
@@ -40,7 +39,7 @@ const baseGroup: ImageryLegendGroup = {
     {
       layerId: "imagery-other",
       areaLabel: "Pacaya-Samiria",
-      dateLabel: "02 Jun 2026",
+      dateLabel: "2 Jun 2026",
       metaLabel: "cloud <30% · 6 scenes",
       visible: false,
       live: false,
@@ -76,7 +75,7 @@ describe("ImageryLegendEntry", () => {
     expect(screen.getByText("Satellite Imagery")).toBeDefined();
     expect(screen.getByText("Imagery")).toBeDefined();
     expect(screen.getByText("Sentinel-2 · True-colour")).toBeDefined();
-    for (const label of ["DATES", "WINDOW", "CLOUD", "AREA"]) {
+    for (const label of ["DATES", "CLOUD", "AREA"]) {
       expect(screen.getByText(label)).toBeDefined();
     }
   });
@@ -93,7 +92,7 @@ describe("ImageryLegendEntry", () => {
     // captures-list area header revealed by the toggle.
     expect(screen.getAllByText("Paracas National Reserve")).toHaveLength(2);
     expect(screen.getByText("Pacaya-Samiria")).toBeDefined();
-    expect(screen.getByText("15 Jun 2026")).toBeDefined();
+    expect(screen.getByText("16 Jun 2026")).toBeDefined();
     expect(screen.getByText("LIVE")).toBeDefined();
   });
 
