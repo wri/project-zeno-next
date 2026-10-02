@@ -111,7 +111,7 @@ const dashboard = (
   widgets,
 });
 
-const renderGrid = (d: Dashboard) =>
+const renderGrid = (d: Dashboard, { print = false } = {}) =>
   render(
     <QueryClientProvider
       client={
@@ -119,7 +119,7 @@ const renderGrid = (d: Dashboard) =>
       }
     >
       <ChakraProvider value={defaultSystem}>
-        <DashboardWidgetsGrid dashboard={d} />
+        <DashboardWidgetsGrid dashboard={d} print={print} />
       </ChakraProvider>
     </QueryClientProvider>
   );
@@ -198,6 +198,25 @@ describe("DashboardWidgetsGrid sections", () => {
       order[1].compareDocumentPosition(order[2]) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
+  });
+
+  it("prints each section expanded and leaves an owner's empty ones out", () => {
+    renderGrid(
+      dashboard(
+        [section("s1", "Deforestation", 0), section("s2", "Fires", 1)],
+        [note("w1", "Grouped note", 0, "s1")]
+      ),
+      { print: true }
+    );
+
+    expect(screen.getByRole("heading", { name: "Deforestation" })).toBeTruthy();
+    expect(screen.getByText("Grouped note")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Fires" })).toBeNull();
+    expect(screen.queryByLabelText(/collapse section/i)).toBeNull();
+    expect(screen.queryByLabelText(/reposition section/i)).toBeNull();
+    expect(screen.queryByLabelText("Rename section")).toBeNull();
+    expect(screen.queryByLabelText("Delete section")).toBeNull();
+    expect(screen.queryByLabelText("Edit note")).toBeNull();
   });
 
   it("shows an owner the section the agent just created and has not filled", () => {

@@ -41,6 +41,9 @@ import DashboardSection from "./DashboardSection";
 import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
+import DashboardWidgetDocument, {
+  DashboardNoteDocument,
+} from "./DashboardWidgetDocument";
 import { usePendingInsightWidgets } from "./usePendingInsightWidget";
 import { useDeleteSection, useRenameSection } from "./useSectionEdits";
 import {
@@ -201,6 +204,7 @@ function ContainerGrid({
   liftedRef,
   onDragStart,
   onSettle,
+  print,
 }: {
   dashboard: Dashboard;
   container: WidgetContainer;
@@ -221,6 +225,8 @@ function ContainerGrid({
   pending: PendingInsightWidget[];
   onDragStart: (event: React.PointerEvent, widget: DashboardWidget) => void;
   onSettle: () => void;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print: boolean;
 }) {
   const updateWidget = useUpdateWidget(dashboard.id);
   const deleteWidget = useDeleteWidget(dashboard.id);
@@ -283,6 +289,7 @@ function ContainerGrid({
               areaAoi={areaAoi}
               isOwner={isOwner}
               isDouble={size === "double"}
+              print={print}
               onArmDrag={armDrag}
               onToggleSize={() => toggleSize(widget)}
               onUpdateConfig={(config) =>
@@ -290,6 +297,25 @@ function ContainerGrid({
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />
+          ) : print ? (
+            widget.widget_type === "text" ? (
+              <DashboardNoteDocument
+                text={body?.text ?? null}
+                placeholder={body?.placeholder ?? null}
+              />
+            ) : (
+              <DashboardWidgetDocument
+                title={title}
+                card={null}
+                map={body?.map}
+                aoi={areaAoi}
+                viewportBbox={
+                  body?.map ? mapWidgetViewportBbox(widget.config) : null
+                }
+                placeholder={body?.placeholder ?? null}
+                isDouble={size === "double"}
+              />
+            )
           ) : widget.widget_type === "text" ? (
             <DashboardTextWidgetCard
               text={body?.text ?? null}
@@ -393,14 +419,21 @@ function ContainerGrid({
  * in a section is a `section_id` PATCH alongside the renumbering of both
  * containers (`computeWidgetMove`). A section drag reorders the panels
  * themselves (`computeSectionMove`); the top-level panel always stays first.
+ *
+ * `print` is the export rendering (the report route): a read-only document,
+ * even for the owner, with no curated analyses mid-add and no empty sections.
+ * Widgets drop their boxes, and sections their panels: each opens with a rule
+ * above its heading instead, which paginates where a box would be cut open.
  */
 export default function DashboardWidgetsGrid({
   dashboard,
+  print = false,
 }: {
   dashboard: Dashboard;
+  print?: boolean;
 }) {
   const userId = useAuthStore((s) => s.userId);
-  const isOwner = !!userId && userId === dashboard.user_id;
+  const isOwner = !print && !!userId && userId === dashboard.user_id;
   const moveWidgets = useMoveWidgets(dashboard.id);
   const moveSections = useMoveSections(dashboard.id);
   const renameSection = useRenameSection(dashboard.id);
@@ -469,8 +502,11 @@ export default function DashboardWidgetsGrid({
   // here rather than shown twice.
   const pendingEntries = usePendingInsightWidgets(dashboard.id);
   const pendingCards = useMemo(
-    () => unresolvedPendingInsightWidgets(pendingEntries, dashboard.widgets),
-    [pendingEntries, dashboard.widgets]
+    () =>
+      print
+        ? []
+        : unresolvedPendingInsightWidgets(pendingEntries, dashboard.widgets),
+    [print, pendingEntries, dashboard.widgets]
   );
 
   // A drag keeps every container on screen, the empty ones included: the panel
@@ -515,7 +551,8 @@ export default function DashboardWidgetsGrid({
           only grey a widget ever sits next to. */}
       <Flex
         direction="column"
-        gap="12px"
+        // On paper the sections' rules part them, so they need air instead.
+        gap={print ? "40px" : "12px"}
         align="stretch"
         {...{ [SECTION_ZONE_ATTR]: "sections" }}
       >
@@ -546,6 +583,7 @@ export default function DashboardWidgetsGrid({
                 <DashboardSection
                   section={section}
                   isOwner={isOwner}
+                  print={print}
                   isDropTarget={!!dragState && dragState.key === container.key}
                   dropZoneKey={container.key}
                   onMove={
@@ -598,6 +636,7 @@ export default function DashboardWidgetsGrid({
                     landed={drag.landed}
                     liftedRef={drag.liftedRef}
                     pending={container.section ? [] : pendingCards}
+                    print={print}
                     onSettle={drag.settle}
                     onDragStart={(event, widget) => {
                       const next =

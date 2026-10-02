@@ -20,13 +20,29 @@ import DeleteSectionDialog from "./DeleteSectionDialog";
 import { TEMPLATE_FILL, TEMPLATE_OUTLINE } from "./templateColors";
 import { DROP_ZONE_ATTR } from "./useDrag";
 
+// The rule a printed section opens with, drawn on its first element (the
+// template banner, else the heading block) so it always travels with the
+// heading and can never be stranded at the foot of a page.
+const PRINT_RULE = {
+  borderTop: "1px solid",
+  borderTopColor: "#131619",
+} as const;
+// Never the last thing on a page, parted from its widgets.
+const PRINT_HEADING_CSS = { breakAfter: "avoid" } as const;
+
 /**
  * The lime strip that names the template a section was built from. Its own
  * component so the template registry is only fetched on a dashboard that
  * holds a templated section. Until the labels arrive, or for a template the
  * registry no longer lists, the raw template name stands in.
  */
-function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
+function TemplateBanner({
+  template,
+  print,
+}: {
+  template: DashboardSectionTemplate;
+  print: boolean;
+}) {
   const { data: templates } = useAnalysisTemplates();
   const label =
     templates?.find((t) => t.name === template.name)?.label ?? template.name;
@@ -41,7 +57,9 @@ function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
       borderBottom="1px solid"
       borderColor={TEMPLATE_OUTLINE}
       // 1px inside the panel's 8px corner, so the fill meets the outline.
-      borderTopRadius="7px"
+      borderTopRadius={print ? 0 : "7px"}
+      {...(print && PRINT_RULE)}
+      css={print ? PRINT_HEADING_CSS : undefined}
     >
       <ShapesIcon size={16} color="rgba(19, 22, 25, 0.8)" aria-hidden />
       <Text
@@ -84,6 +102,12 @@ function TemplateBanner({ template }: { template: DashboardSectionTemplate }) {
  * A section an analysis template built wears a lime outline and a banner
  * naming the template. The banner is its provenance, so it replaces the
  * agent's caption on the title row.
+ *
+ * In the export (`print`) there is no panel: the grey gutter that bands the
+ * page on screen is white on paper, and a box is cut open wherever a page
+ * breaks. A section opens with a rule above its heading (above its banner,
+ * for a template) instead, its content flush with the document, and it is
+ * always expanded: collapsing it would drop content from the document.
  */
 export default function DashboardSection({
   section,
@@ -103,6 +127,7 @@ export default function DashboardSection({
   moduleCount = 0,
   onRename,
   onDelete,
+  print = false,
   children,
 }: {
   section: Section | null;
@@ -115,6 +140,8 @@ export default function DashboardSection({
   onRename?: (title: string) => void;
   /** `deleteWidgets`: the section's modules go with it. */
   onDelete?: (deleteWidgets: boolean) => void;
+  /** The export rendering (see `DashboardWidgetsGrid`). */
+  print?: boolean;
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -122,6 +149,7 @@ export default function DashboardSection({
   const [draft, setDraft] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const template = section?.template ?? null;
+  const outline = template && !print ? TEMPLATE_OUTLINE : undefined;
 
   const commitRename = () => {
     const title = draft?.trim();
@@ -136,18 +164,19 @@ export default function DashboardSection({
       flexDir="column"
       bg={isDropTarget ? "#F0F4FF" : "white"}
       borderRadius="8px"
-      border={template ? "1px solid" : undefined}
-      borderColor={template ? TEMPLATE_OUTLINE : undefined}
+      border={outline && "1px solid"}
+      borderColor={outline}
       transition="background 0.12s ease"
       {...{ [DROP_ZONE_ATTR]: dropZoneKey }}
     >
-      {template && <TemplateBanner template={template} />}
+      {template && <TemplateBanner template={template} print={print} />}
       <Flex
         flexDir="column"
         px="24px"
         pt={section ? "16px" : "24px"}
         pb="24px"
         gap="16px"
+        {...(print && { px: 0, pt: 0, pb: 0 })}
       >
         {section && (
           <Flex
@@ -158,6 +187,9 @@ export default function DashboardSection({
             borderBottom={collapsed ? "none" : "1px solid"}
             borderColor="#E0E2E5"
             pb={collapsed ? 0 : "12px"}
+            {...(print &&
+              (template ? { pt: "12px" } : { ...PRINT_RULE, pt: "16px" }))}
+            css={print ? PRINT_HEADING_CSS : undefined}
           >
             <Flex align="center" gap="4px" minW={0}>
               {isOwner && onArmDrag && (
@@ -192,26 +224,28 @@ export default function DashboardSection({
                   <DotsSixVerticalIcon size={16} />
                 </IconButton>
               )}
-              <IconButton
-                aria-label={collapsed ? "Expand section" : "Collapse section"}
-                title={collapsed ? "Expand section" : "Collapse section"}
-                aria-expanded={!collapsed}
-                size="2xs"
-                minW="20px"
-                h="20px"
-                variant="ghost"
-                color="fg.muted"
-                flexShrink={0}
-                onClick={() => setCollapsed((value) => !value)}
-              >
-                <CaretDownIcon
-                  size={12}
-                  style={{
-                    transform: collapsed ? "rotate(-90deg)" : undefined,
-                    transition: "transform 0.15s",
-                  }}
-                />
-              </IconButton>
+              {!print && (
+                <IconButton
+                  aria-label={collapsed ? "Expand section" : "Collapse section"}
+                  title={collapsed ? "Expand section" : "Collapse section"}
+                  aria-expanded={!collapsed}
+                  size="2xs"
+                  minW="20px"
+                  h="20px"
+                  variant="ghost"
+                  color="fg.muted"
+                  flexShrink={0}
+                  onClick={() => setCollapsed((value) => !value)}
+                >
+                  <CaretDownIcon
+                    size={12}
+                    style={{
+                      transform: collapsed ? "rotate(-90deg)" : undefined,
+                      transition: "transform 0.15s",
+                    }}
+                  />
+                </IconButton>
+              )}
               {draft !== null ? (
                 <Input
                   flex="1"
