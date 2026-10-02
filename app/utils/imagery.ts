@@ -126,14 +126,16 @@ export const IMAGERY_LAYER_NAME = "Satellite Imagery";
  * the info-popover sentence, and the imagery attribution. */
 const PROVIDER_DISPLAY: Record<
   ImageryProvider,
-  { subtitle: string; mosaicNoun: string; attribution: string }
+  { name: string; subtitle: string; mosaicNoun: string; attribution: string }
 > = {
   "sentinel-2": {
+    name: "Sentinel-2",
     subtitle: "Sentinel-2 · True-colour",
     mosaicNoun: "Sentinel-2 true-colour mosaic",
     attribution: "Contains modified Copernicus Sentinel data",
   },
   planet: {
+    name: "Planet",
     subtitle: "Planet · Monthly mosaic",
     mosaicNoun: "Planet monthly true-colour mosaic",
     attribution: "Imagery © Planet Labs PBC",
@@ -234,24 +236,41 @@ function captureDateLabel(meta: ImageryMeta): string {
 }
 
 /**
- * Legend/layer title: a Planet basemap by its month ("Satellite Imagery
- * (Aug 2026)"), Sentinel-2 by the dates its scenes were captured ("Satellite
- * Imagery (May 5 – May 14, 2026)"); without capture dates, by the v1 search
- * period, else by the target date of old payloads.
+ * When the imagery is from, for titles: a Planet basemap's month ("Aug
+ * 2026"), Sentinel-2's capture range ("May 5 – May 14, 2026"); without capture
+ * dates, the v1 search period, else the target date of old payloads.
  */
-export function imageryLayerTitle(meta: ImageryMeta): string {
-  const titled = (when: string) => `${IMAGERY_LAYER_NAME} (${when})`;
+function imageryWhen(meta: ImageryMeta): string | undefined {
   const month = planetMonth(meta);
-  if (month) return titled(month);
+  if (month) return month;
   if (meta.startDate && meta.endDate) {
-    return titled(formatImageryDateRange(meta.startDate, meta.endDate));
+    return formatImageryDateRange(meta.startDate, meta.endDate);
   }
   if (meta.searchPeriod) {
     const { start, end } = meta.searchPeriod;
-    return titled(formatImageryDateRange(start, end));
+    return formatImageryDateRange(start, end);
   }
-  if (!meta.targetDate) return IMAGERY_LAYER_NAME;
-  return titled(formatImageryDate(meta.targetDate));
+  return meta.targetDate ? formatImageryDate(meta.targetDate) : undefined;
+}
+
+const withWhen = (name: string, when: string | undefined) =>
+  when ? `${name} (${when})` : name;
+
+/** Explorer layer title, e.g. "Satellite Imagery (May 5 – May 14, 2026)". */
+export function imageryLayerTitle(meta: ImageryMeta): string {
+  return withWhen(IMAGERY_LAYER_NAME, imageryWhen(meta));
+}
+
+/**
+ * Dashboard widget title, naming the imagery specialist, e.g. "Sentinel-2
+ * imagery (May 5 – May 14, 2026)" or "Planet imagery (Aug 2026)". A widget
+ * card has no legend subtitle to name the provider.
+ */
+export function imageryWidgetTitle(meta: ImageryMeta): string {
+  return withWhen(
+    `${providerDisplay(meta.provider).name} imagery`,
+    imageryWhen(meta)
+  );
 }
 
 /**

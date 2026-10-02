@@ -1,3 +1,5 @@
+import type { ImageryPayload } from "@/app/types/chat";
+import { imageryWidgetTitle, toImageryMeta } from "@/app/utils/imagery";
 import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 
 /**
@@ -119,14 +121,11 @@ export function mapWidgetLayer(
     const im = imagery as Record<string, unknown>;
     const tileUrl = imageryTileUrl(im);
     if (!tileUrl) return null;
-    const targetDate = str(im.target_date);
     return {
       kind: "imagery",
       title:
         titleOverride ??
-        (targetDate
-          ? `Sentinel-2 imagery, ${targetDate}`
-          : "Sentinel-2 imagery"),
+        imageryWidgetTitle(toImageryMeta(im as unknown as ImageryPayload)),
       tileUrl,
     };
   }

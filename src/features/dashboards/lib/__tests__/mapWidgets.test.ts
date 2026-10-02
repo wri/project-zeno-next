@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sentinel2ImageryV1 } from "@/tests/helpers/imagery";
+import { planetImageryV1, sentinel2ImageryV1 } from "@/tests/helpers/imagery";
 import { mapWidgetLayer, mapWidgetViewportBbox } from "../mapWidgets";
 
 const datasetConfig = (overrides: Record<string, unknown> = {}) => ({
@@ -113,7 +113,7 @@ describe("mapWidgetLayer — imagery configs", () => {
     });
     expect(layer).toEqual({
       kind: "imagery",
-      title: "Sentinel-2 imagery, 2024-06-01",
+      title: "Sentinel-2 imagery (Jun 1, 2024)",
       tileUrl: "https://tiles.example.org/mosaic/{z}/{x}/{y}.png?url=abc",
     });
   });
@@ -140,6 +140,31 @@ describe("mapWidgetLayer — imagery configs", () => {
       kind: "imagery",
       tileUrl: "https://tiles.example.org/v1/{z}/{x}/{y}.png?url=widget",
     });
+  });
+
+  it("titles a v1 widget by its imagery specialist and capture range", () => {
+    const layer = mapWidgetLayer({
+      imagery: sentinel2ImageryV1({
+        scenes: {
+          item_count: 4,
+          start_date: "2026-05-05",
+          end_date: "2026-05-14",
+          mean_cloud_cover: 11.5,
+          min_cloud_cover: 3,
+          max_cloud_cover: 30,
+        },
+      }),
+    });
+    expect(layer?.title).toBe("Sentinel-2 imagery (May 5 – May 14, 2026)");
+  });
+
+  it("titles a Planet widget by its specialist and month", () => {
+    const layer = mapWidgetLayer({
+      imagery: planetImageryV1({
+        period: { start: "2026-03-01", end: "2026-03-31" },
+      }),
+    });
+    expect(layer?.title).toBe("Planet imagery (Mar 2026)");
   });
 
   it("returns null when neither dataset nor imagery is present", () => {
