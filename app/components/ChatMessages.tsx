@@ -108,6 +108,10 @@ function ChatMessages({ pt }: ChatMessagesProps) {
   const lastUserMessageIndex = messages.findLastIndex(
     (msg) => msg.type === "user"
   );
+  // "Last" for MessageBubble's footer: a trailing transient message (the
+  // profile card) mustn't take it from the answer above, whose copy/rating
+  // footer depends on being last. Without one this is the last index.
+  const lastIndex = messages.findLastIndex((msg) => !msg.transient);
 
   return (
     <Box ref={containerRef} fontSize="sm" pt={pt}>
@@ -119,7 +123,7 @@ function ChatMessages({ pt }: ChatMessagesProps) {
         const previousMessage = index > 0 ? messages[index - 1] : null;
         const isConsecutive = previousMessage?.type === message.type;
         const isFirst = index === 0;
-        const isLast = index === messages.length - 1;
+        const isLast = index === lastIndex;
         const isLastUserMessage =
           index === lastUserMessageIndex && message.type === "user";
         const isSeededGreeting = isFirst && message.type === "system";

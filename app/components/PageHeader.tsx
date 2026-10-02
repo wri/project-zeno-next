@@ -43,6 +43,10 @@ import {
   newConversationTarget,
 } from "@/app/utils/threadNavigation";
 import useMapStore from "../store/mapStore";
+import {
+  ProfileReminderDot,
+  ProfileReminderMenuItem,
+} from "@/src/features/front-door";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -526,11 +530,14 @@ function PageHeader() {
                 <Text truncate maxW="180px">
                   {userEmail || "User name"}
                 </Text>
+                {/* Front door: renders only while the profile is incomplete. */}
+                <ProfileReminderDot />
               </Button>
             </Menu.Trigger>
             <Portal>
               <Menu.Positioner>
                 <Menu.Content css={{ "& a": { cursor: "pointer" } }}>
+                  <ProfileReminderMenuItem />
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />

@@ -8,6 +8,7 @@ import ChatMessages from "./components/ChatMessages";
 import ChatPanelHeader from "./ChatPanelHeader";
 import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
 import PromptQuotaNotice from "./PromptQuotaNotice";
+import { ProfileNudgeSlot } from "@/src/features/front-door";
 import { chatPanelCardStyle } from "./chatPanelShared";
 import {
   COMPACT_CHAT_PANEL_WIDTH_PX,
@@ -186,6 +187,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
           overflow="hidden"
         >
           <PromptQuotaNotice px={3} pt={3} />
+          <ProfileNudgeSlot px={3} pt={3} />
           <ChatInput
             isChatDisabled={promptsExhausted}
             onAfterSend={isCollapsed ? () => setIsCollapsed(false) : undefined}

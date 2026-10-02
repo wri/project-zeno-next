@@ -20,20 +20,16 @@ import { FloppyDiskIcon, GearIcon } from "@phosphor-icons/react";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
+import { submitOrttoProfile } from "@/app/lib/ortto";
+import { parseAuthMe } from "@/app/lib/auth-me";
+import type { ProfileConfig } from "@/app/schemas/api/profile/config";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
+import useAuthStore from "@/app/store/authStore";
+import { isFrontDoorEnabled } from "@/app/config/front-door";
 import SettingsShell from "@/app/components/SettingsShell";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getSettingsFormSchema } from "@/app/dashboard/schema";
 import RequirementHint from "@/app/onboarding/RequirementHint";
-
-type ProfileConfig = {
-  sectors: Record<string, string>;
-  sector_roles: Record<string, Record<string, string>>;
-  countries: Record<string, string>;
-  languages: Record<string, string>;
-  gis_expertise_levels: Record<string, string>;
-  topics?: Record<string, string>;
-};
 
 type ProfileFormState = {
   firstName: string;
@@ -209,38 +205,28 @@ export default function UserSettingsPage() {
       if (!res.ok) {
         throw new Error("Failed to save profile");
       }
+      // Front door: this page is where "Complete your profile" leads, so the
+      // reminder (menu item, in-chat asks) must stop without a reload.
+      if (isFrontDoorEnabled()) {
+        const { status } = parseAuthMe(await res.json());
+        if (status) useAuthStore.getState().setAuthStatus(status);
+      }
 
       // Submit to Ortto directly from client (no secrets needed)
       const topicLabels = form.topics.map(
         (code) => config?.topics?.[code] || code
       );
-      try {
-        const orttoRes = await fetch(
-          "https://ortto.wri.org/custom-forms/gnw/",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: form.email,
-              firstName: form.firstName,
-              lastName: form.lastName,
-              sector: form.sector,
-              jobTitle: form.jobTitle,
-              companyOrganization: form.company,
-              countryCode: form.country,
-              Topics: topicLabels,
-              receiveNewsEmails: form.receiveNewsEmails,
-            }),
-          }
-        );
-        console.log(
-          "[Client] Ortto submission status:",
-          orttoRes.status,
-          orttoRes.ok ? "OK" : "FAILED"
-        );
-      } catch (e) {
-        console.error("[Client] Ortto submission error:", e);
-      }
+      await submitOrttoProfile({
+        email: form.email,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        sector: form.sector,
+        jobTitle: form.jobTitle,
+        companyOrganization: form.company,
+        countryCode: form.country,
+        Topics: topicLabels,
+        receiveNewsEmails: form.receiveNewsEmails,
+      });
 
       toaster.create({
         title: "Profile saved",

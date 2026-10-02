@@ -7,6 +7,7 @@ import ChatMessages from "./components/ChatMessages";
 import ChatPanelHeader from "./ChatPanelHeader";
 import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
 import PromptQuotaNotice from "./PromptQuotaNotice";
+import { ProfileNudgeSlot } from "@/src/features/front-door";
 import { chatPanelCardStyle } from "./chatPanelShared";
 import { FULLSIZE_CHAT_PANEL_WIDTH_PX } from "./explorationLayout";
 import { usePromptQuota } from "./hooks/usePromptQuota";
@@ -47,6 +48,7 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
           input box bottom lines up across compact/full-size. */}
       <Flex flexDir="column" flexShrink={0} px={3} pb={1}>
         <PromptQuotaNotice pb={2} />
+        <ProfileNudgeSlot pb={2} />
         <ChatInput isChatDisabled={promptsExhausted} bordered />
       </Flex>
 
