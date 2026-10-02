@@ -217,6 +217,22 @@ export function formatCaptureDate(isoDate: string): string {
   }
 }
 
+/** A Planet basemap's month, e.g. "Aug 2026"; undefined for other providers. */
+function planetMonth(meta: ImageryMeta): string | undefined {
+  if (meta.provider === "planet" && meta.startDate) {
+    return formatImageryMonth(meta.startDate);
+  }
+  return undefined;
+}
+
+/** The capture row's date: a Planet basemap's month, else the target date. */
+function captureDateLabel(meta: ImageryMeta): string {
+  return (
+    planetMonth(meta) ??
+    (meta.targetDate ? formatCaptureDate(meta.targetDate) : "")
+  );
+}
+
 /**
  * Legend/layer title: a Planet basemap by its month ("Satellite Imagery
  * (Aug 2026)"), Sentinel-2 by the dates its scenes were captured ("Satellite
@@ -225,9 +241,8 @@ export function formatCaptureDate(isoDate: string): string {
  */
 export function imageryLayerTitle(meta: ImageryMeta): string {
   const titled = (when: string) => `${IMAGERY_LAYER_NAME} (${when})`;
-  if (meta.provider === "planet" && meta.startDate) {
-    return titled(formatImageryMonth(meta.startDate));
-  }
+  const month = planetMonth(meta);
+  if (month) return titled(month);
   if (meta.startDate && meta.endDate) {
     return titled(formatImageryDateRange(meta.startDate, meta.endDate));
   }
@@ -330,7 +345,7 @@ export function buildImageryGroup(
     return {
       layerId: layer.id,
       areaLabel: meta.aoiNames.join(", ") || layer.name,
-      dateLabel: meta.targetDate ? formatCaptureDate(meta.targetDate) : "",
+      dateLabel: captureDateLabel(meta),
       metaLabel: captureMetaLabel(meta),
       visible: layer.visible,
       live: index === 0,

@@ -470,6 +470,14 @@ describe("buildImageryGroup", () => {
     expect(group?.captures[0].thumbnailUrl).toContain("/8/128/128");
   });
 
+  it("dates a Planet capture by its month", () => {
+    const group = buildImageryGroup(
+      [imageryLayer("imagery-planet", {}, planetMeta)],
+      false
+    );
+    expect(group?.captures[0].dateLabel).toBe("Jul 2026");
+  });
+
   it("labels the group after the live capture's provider", () => {
     const group = buildImageryGroup(
       [imageryLayer("imagery-planet:2026-07", {}, planetMeta)],
