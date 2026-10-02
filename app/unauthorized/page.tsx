@@ -13,7 +13,7 @@ import { useEffect } from "react";
 import useAuthStore from "../store/authStore";
 import { useErrorHandler } from "../hooks/useErrorHandler";
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+const LANDING_PAGE_VERSION = import.meta.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 const commonStyles = {
   textShadow: "2px 2px 5px hsla(225, 52%, 11%, 0.75)",

@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from "react";
 import { Box, Spinner, Center } from "@chakra-ui/react";
 import OnboardingForm from "./form";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
@@ -20,9 +19,5 @@ export default function OnboardingPage() {
 
   if (!isReady) return <Loading />;
 
-  return (
-    <Suspense fallback={<Loading />}>
-      <OnboardingForm />
-    </Suspense>
-  );
+  return <OnboardingForm />;
 }
