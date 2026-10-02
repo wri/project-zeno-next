@@ -120,7 +120,7 @@ describe("showImageryTool", () => {
     const layer = mapState.addLayer.mock.calls[0][0];
     expect(layer).toMatchObject({
       id: "imagery-abc123",
-      name: "Satellite Imagery (Jun 15, 2026)",
+      name: "Satellite Imagery (Jun 12 – Jun 16, 2026)",
       type: "raster",
       visible: true,
       tileUrl: imagery.tile_url,

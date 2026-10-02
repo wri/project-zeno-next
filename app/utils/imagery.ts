@@ -215,15 +215,20 @@ export function formatCaptureDate(isoDate: string): string {
 
 /**
  * Legend/layer title: a Planet basemap by its month ("Satellite Imagery
- * (Aug 2026)"), otherwise by the target date ("Satellite Imagery (Jun 15,
- * 2026)").
+ * (Aug 2026)"), Sentinel-2 by the dates its scenes were captured ("Satellite
+ * Imagery (May 5 – May 14, 2026)"), else by the target date of old payloads
+ * without capture dates.
  */
 export function imageryLayerTitle(meta: ImageryMeta): string {
+  const titled = (when: string) => `${IMAGERY_LAYER_NAME} (${when})`;
   if (meta.provider === "planet" && meta.startDate) {
-    return `${IMAGERY_LAYER_NAME} (${formatImageryMonth(meta.startDate)})`;
+    return titled(formatImageryMonth(meta.startDate));
+  }
+  if (meta.startDate && meta.endDate) {
+    return titled(formatImageryDateRange(meta.startDate, meta.endDate));
   }
   if (!meta.targetDate) return IMAGERY_LAYER_NAME;
-  return `${IMAGERY_LAYER_NAME} (${formatImageryDate(meta.targetDate)})`;
+  return titled(formatImageryDate(meta.targetDate));
 }
 
 /**

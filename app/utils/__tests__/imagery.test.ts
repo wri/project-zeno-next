@@ -336,6 +336,18 @@ describe("titles and ids", () => {
     ).toBe("Satellite Imagery (garbage)");
   });
 
+  it("titles a Sentinel-2 layer by its capture range", () => {
+    expect(
+      imageryLayerTitle({
+        provider: "sentinel-2",
+        startDate: "2026-05-05",
+        endDate: "2026-05-14",
+        targetDate: "2026-05-09",
+        aoiNames: [],
+      })
+    ).toBe("Satellite Imagery (May 5 – May 14, 2026)");
+  });
+
   it("formats the layer title with the target date", () => {
     const sentinel2 = (targetDate?: string) => ({
       provider: "sentinel-2" as const,
