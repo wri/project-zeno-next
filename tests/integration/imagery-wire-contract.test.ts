@@ -17,34 +17,11 @@ vi.mock("@/app/components/ui/toaster", () => ({
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { apiFetch } from "@/app/lib/api-client";
+import { sentinel2ImageryV1 } from "@/tests/helpers/imagery";
 import { ndjsonResponse } from "@/tests/helpers/ndjson";
 
-// The Sentinel-2 example from the backend's wire-contract-schema.md
-// (wri/project-zeno#844).
-const sentinel2V1 = {
-  provider: "sentinel-2",
-  period: { start: "2026-09-18", end: "2026-09-29" },
-  aoi_names: ["Vaud"],
-  layer_id: "eyJhIjpbWyJnYWRtIiwiQ0hFLjI2XzEiXV0",
-  source: {
-    tiles: [
-      "https://tiles.globalforestwatch.org/cog/mosaic/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=s3",
-    ],
-    bounds: [6.0, 46.2, 7.2, 46.9],
-    minzoom: 8,
-    maxzoom: 14,
-  },
-  mosaic_id: "eyJhIjpbWyJnYWRtIiwiQ0hFLjI2XzEiXV0",
-  max_cloud_cover: 20,
-  scenes: {
-    item_count: 6,
-    start_date: "2026-09-19",
-    end_date: "2026-09-28",
-    mean_cloud_cover: 7.35,
-    min_cloud_cover: 2.1,
-    max_cloud_cover: 14.8,
-  },
-};
+// The Sentinel-2 example from the backend's wire-contract-schema.md.
+const sentinel2V1 = sentinel2ImageryV1();
 
 function imageryToolLine(imagery: object): string {
   const update = {

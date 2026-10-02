@@ -18,7 +18,7 @@ import {
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
-import type { PlanetImageryV1, Sentinel2ImageryV1 } from "@/app/types/chat";
+import { planetImageryV1, sentinel2ImageryV1 } from "@/tests/helpers/imagery";
 
 describe("toImageryMeta", () => {
   it("resolves an explicit provider", () => {
@@ -98,71 +98,54 @@ describe("toImageryMeta", () => {
   });
 });
 
-// Contract v1 (wri/project-zeno#844). The period and the scenes deliberately
-// disagree, so a reader that takes dates from the wrong one is caught.
-const sentinel2V1: Sentinel2ImageryV1 = {
-  provider: "sentinel-2",
-  period: { start: "2026-09-18", end: "2026-09-29" },
-  aoi_names: ["Vaud"],
-  layer_id: "s2-layer",
-  source: {
-    tiles: ["https://tiles.example.com/v1/{z}/{x}/{y}.png"],
-    bounds: [6.0, 46.2, 7.2, 46.9],
-    minzoom: 8,
-    maxzoom: 14,
-  },
-  mosaic_id: "s2-mosaic",
-  max_cloud_cover: 20,
+// The period and the scenes deliberately disagree, so a reader that takes
+// dates from the wrong one is caught.
+const sentinel2V1 = sentinel2ImageryV1({
+  period: { start: "2026-05-02", end: "2026-05-16" },
+  aoi_names: ["Paracas National Reserve"],
+  max_cloud_cover: 35,
   scenes: {
-    item_count: 6,
-    start_date: "2026-09-19",
-    end_date: "2026-09-28",
-    mean_cloud_cover: 7.35,
-    min_cloud_cover: 2.1,
-    max_cloud_cover: 14.8,
+    item_count: 4,
+    start_date: "2026-05-05",
+    end_date: "2026-05-14",
+    mean_cloud_cover: 11.5,
+    min_cloud_cover: 3,
+    max_cloud_cover: 30,
   },
-};
+});
 
-const planetV1: PlanetImageryV1 = {
-  provider: "planet",
-  period: { start: "2026-08-01", end: "2026-08-31" },
-  aoi_names: ["Novo Progresso"],
-  layer_id: "planet-layer",
-  source: {
-    tiles: ["https://tiles.example.com/planet/{z}/{x}/{y}.png?month=2026-08"],
-    bounds: [-56.0, -8.0, -54.0, -6.0],
-    minzoom: 10,
-    maxzoom: 18,
-  },
-};
+const planetV1 = planetImageryV1({
+  period: { start: "2026-03-01", end: "2026-03-31" },
+  aoi_names: ["Tabatinga, Amazonas, Brazil"],
+});
 
 describe("toImageryMeta — contract v1", () => {
   it("reads Planet's month from period", () => {
     expect(toImageryMeta(planetV1)).toEqual({
       provider: "planet",
-      startDate: "2026-08-01",
-      endDate: "2026-08-31",
-      aoiNames: ["Novo Progresso"],
+      startDate: "2026-03-01",
+      endDate: "2026-03-31",
+      aoiNames: ["Tabatinga, Amazonas, Brazil"],
     });
   });
 
   it("reads Sentinel-2 capture dates and scene stats from scenes, not period", () => {
     expect(toImageryMeta(sentinel2V1)).toEqual({
       provider: "sentinel-2",
-      itemCount: 6,
-      startDate: "2026-09-19",
-      endDate: "2026-09-28",
-      meanCloudCover: 7.35,
-      maxCloudCover: 20,
-      aoiNames: ["Vaud"],
+      itemCount: 4,
+      startDate: "2026-05-05",
+      endDate: "2026-05-14",
+      meanCloudCover: 11.5,
+      maxCloudCover: 35,
+      aoiNames: ["Paracas National Reserve"],
     });
   });
 
   it("hides scene stats when an old cached mosaic has no scenes", () => {
     expect(toImageryMeta({ ...sentinel2V1, scenes: null })).toEqual({
       provider: "sentinel-2",
-      maxCloudCover: 20,
-      aoiNames: ["Vaud"],
+      maxCloudCover: 35,
+      aoiNames: ["Paracas National Reserve"],
     });
   });
 });

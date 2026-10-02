@@ -44,9 +44,9 @@ import { API_CONFIG } from "@/app/config/api";
 import type {
   ImageryInfo,
   ImageryPayload,
-  Sentinel2ImageryV1,
   StreamMessage,
 } from "@/app/types/chat";
+import { sentinel2ImageryV1 } from "@/tests/helpers/imagery";
 
 const timestamp = new Date().toISOString();
 
@@ -70,22 +70,17 @@ const tileJson = {
 };
 
 // Contract v1 (wri/project-zeno#844): the layer is drawn from `source`, with
-// no TileJSON to fetch.
-const sentinel2V1: Sentinel2ImageryV1 = {
-  provider: "sentinel-2",
-  period: { start: "2026-09-18", end: "2026-09-29" },
-  aoi_names: ["Vaud"],
+// no TileJSON to fetch. The zooms differ from tileJson's, so a fetched TileJSON
+// would show.
+const sentinel2V1 = sentinel2ImageryV1({
   layer_id: "s2-layer",
   source: {
     tiles: ["https://tiles.example.com/v1/{z}/{x}/{y}.png?url=s3"],
-    bounds: [6.0, 46.2, 7.2, 46.9],
+    bounds: [6.5, 46.0, 7.0, 46.5],
     minzoom: 9,
     maxzoom: 13,
   },
-  mosaic_id: "s2-mosaic",
-  max_cloud_cover: 20,
-  scenes: null,
-};
+});
 
 const baseMsg = (overrides: Partial<StreamMessage> = {}): StreamMessage => ({
   type: "tool",
