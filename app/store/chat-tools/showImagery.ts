@@ -159,7 +159,7 @@ export async function showImageryTool(streamMessage: StreamMessage) {
 
   addLayer({
     id,
-    name: imageryLayerTitle(meta.targetDate),
+    name: imageryLayerTitle(meta),
     type: "raster",
     visible: true,
     tileUrl,

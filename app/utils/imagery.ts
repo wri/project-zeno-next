@@ -205,10 +205,17 @@ export function formatCaptureDate(isoDate: string): string {
   }
 }
 
-/** Legend/layer title, e.g. "Satellite Imagery (Jun 15, 2026)". */
-export function imageryLayerTitle(targetDate?: string): string {
-  if (!targetDate) return IMAGERY_LAYER_NAME;
-  return `${IMAGERY_LAYER_NAME} (${formatImageryDate(targetDate)})`;
+/**
+ * Legend/layer title: a Planet basemap by its month ("Satellite Imagery
+ * (Aug 2026)"), otherwise by the target date ("Satellite Imagery (Jun 15,
+ * 2026)").
+ */
+export function imageryLayerTitle(meta: ImageryMeta): string {
+  if (meta.provider === "planet" && meta.startDate) {
+    return `${IMAGERY_LAYER_NAME} (${format(parseISO(meta.startDate), "MMM yyyy")})`;
+  }
+  if (!meta.targetDate) return IMAGERY_LAYER_NAME;
+  return `${IMAGERY_LAYER_NAME} (${formatImageryDate(meta.targetDate)})`;
 }
 
 /**

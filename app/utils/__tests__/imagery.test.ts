@@ -315,12 +315,30 @@ describe("captureMetaLabel", () => {
 });
 
 describe("titles and ids", () => {
+  it("titles a Planet layer by its month", () => {
+    expect(
+      imageryLayerTitle({
+        provider: "planet",
+        startDate: "2026-03-01",
+        endDate: "2026-03-31",
+        aoiNames: [],
+      })
+    ).toBe("Satellite Imagery (Mar 2026)");
+  });
+
   it("formats the layer title with the target date", () => {
-    expect(imageryLayerTitle("2026-06-15")).toBe(
+    const sentinel2 = (targetDate?: string) => ({
+      provider: "sentinel-2" as const,
+      targetDate,
+      aoiNames: [],
+    });
+    expect(imageryLayerTitle(sentinel2("2026-06-15"))).toBe(
       "Satellite Imagery (Jun 15, 2026)"
     );
-    expect(imageryLayerTitle()).toBe("Satellite Imagery");
-    expect(imageryLayerTitle("garbage")).toBe("Satellite Imagery (garbage)");
+    expect(imageryLayerTitle(sentinel2())).toBe("Satellite Imagery");
+    expect(imageryLayerTitle(sentinel2("garbage"))).toBe(
+      "Satellite Imagery (garbage)"
+    );
   });
 
   it("formats capture dates per the design", () => {
