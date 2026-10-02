@@ -8,6 +8,7 @@ import {
   imageryLayerId,
   imageryLayerTitle,
   isImageryLayerId,
+  isKnownImageryProvider,
   toImageryMeta,
 } from "@/app/utils/imagery";
 
@@ -128,6 +129,12 @@ export async function showImageryTool(streamMessage: StreamMessage) {
   // Normalize once at the boundary (ImageryLegendMeta's raw nulls/legacy
   // field names never leak past this call) — see toImageryMeta.
   const meta = toImageryMeta(imagery);
+  if (!isKnownImageryProvider(meta.provider)) {
+    console.warn(
+      `Unknown imagery provider "${meta.provider}"; not showing layer`
+    );
+    return;
+  }
 
   const source =
     "period" in imagery

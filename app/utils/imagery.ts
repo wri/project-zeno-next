@@ -115,6 +115,13 @@ const PROVIDER_DISPLAY: Record<
   },
 };
 
+/** False for providers added to the wire contract after this release. */
+export function isKnownImageryProvider(
+  provider: string
+): provider is ImageryProvider {
+  return Object.hasOwn(PROVIDER_DISPLAY, provider);
+}
+
 function providerDisplay(provider: ImageryProvider) {
   return PROVIDER_DISPLAY[provider];
 }

@@ -43,6 +43,7 @@ import { showImageryTool } from "../showImagery";
 import { API_CONFIG } from "@/app/config/api";
 import type {
   ImageryInfo,
+  ImageryPayload,
   Sentinel2ImageryV1,
   StreamMessage,
 } from "@/app/types/chat";
@@ -153,6 +154,23 @@ describe("showImageryTool", () => {
       imagery: sentinel2V1,
     });
   });
+
+  it.each([
+    ["v1", { ...sentinel2V1, provider: "landsat" }],
+    ["legacy", { ...imagery, provider: "landsat" }],
+  ])(
+    "skips %s imagery from a provider it doesn't know",
+    async (_shape, payload) => {
+      mockFetch({});
+
+      await expect(
+        showImageryTool(
+          baseMsg({ imagery: payload as unknown as ImageryPayload })
+        )
+      ).resolves.toBeUndefined();
+      expect(mapState.addLayer).not.toHaveBeenCalled();
+    }
+  );
 
   it("requests the TileJSON without auth headers for non-API hosts", async () => {
     const fetchMock = mockFetch({});
