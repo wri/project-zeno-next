@@ -74,6 +74,14 @@ export function toImageryMeta(
   meta: ImageryLegendMeta | ImageryV1
 ): ImageryMeta {
   if ("period" in meta) {
+    if (meta.provider === "planet") {
+      return {
+        provider: meta.provider,
+        startDate: meta.period.start,
+        endDate: meta.period.end,
+        aoiNames: meta.aoi_names,
+      };
+    }
     return {
       provider: meta.provider,
       itemCount: meta.scenes?.item_count,

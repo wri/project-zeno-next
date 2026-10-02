@@ -289,6 +289,10 @@ interface ImageryBaseV1 {
   source: RasterSourceV1;
 }
 
+export interface PlanetImageryV1 extends ImageryBaseV1 {
+  provider: "planet";
+}
+
 export interface SceneSummaryV1 {
   item_count: number;
   start_date: string;
@@ -305,7 +309,7 @@ export interface Sentinel2ImageryV1 extends ImageryBaseV1 {
   scenes: SceneSummaryV1 | null;
 }
 
-export type ImageryV1 = Sentinel2ImageryV1;
+export type ImageryV1 = PlanetImageryV1 | Sentinel2ImageryV1;
 
 // Until rollout phase 4, `imagery` is v1 for new imagery and legacy for
 // replayed threads and older dashboard widgets.

@@ -18,7 +18,7 @@ import {
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
-import type { Sentinel2ImageryV1 } from "@/app/types/chat";
+import type { PlanetImageryV1, Sentinel2ImageryV1 } from "@/app/types/chat";
 
 describe("toImageryMeta", () => {
   it("resolves an explicit provider", () => {
@@ -123,7 +123,29 @@ const sentinel2V1: Sentinel2ImageryV1 = {
   },
 };
 
+const planetV1: PlanetImageryV1 = {
+  provider: "planet",
+  period: { start: "2026-08-01", end: "2026-08-31" },
+  aoi_names: ["Novo Progresso"],
+  layer_id: "planet-layer",
+  source: {
+    tiles: ["https://tiles.example.com/planet/{z}/{x}/{y}.png?month=2026-08"],
+    bounds: [-56.0, -8.0, -54.0, -6.0],
+    minzoom: 10,
+    maxzoom: 18,
+  },
+};
+
 describe("toImageryMeta — contract v1", () => {
+  it("reads Planet's month from period", () => {
+    expect(toImageryMeta(planetV1)).toEqual({
+      provider: "planet",
+      startDate: "2026-08-01",
+      endDate: "2026-08-31",
+      aoiNames: ["Novo Progresso"],
+    });
+  });
+
   it("reads Sentinel-2 capture dates and scene stats from scenes, not period", () => {
     expect(toImageryMeta(sentinel2V1)).toEqual({
       provider: "sentinel-2",
