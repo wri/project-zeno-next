@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { sentinel2ImageryV1 } from "@/tests/helpers/imagery";
 import { mapWidgetLayer, mapWidgetViewportBbox } from "../mapWidgets";
 
 const datasetConfig = (overrides: Record<string, unknown> = {}) => ({
@@ -122,6 +123,23 @@ describe("mapWidgetLayer — imagery configs", () => {
       imagery: { tile_url: "https://tiles.example.org/mosaic" },
     });
     expect(layer?.title).toBe("Sentinel-2 imagery");
+  });
+
+  it("renders a v1 imagery widget from its raster source", () => {
+    const layer = mapWidgetLayer({
+      imagery: sentinel2ImageryV1({
+        source: {
+          tiles: ["https://tiles.example.org/v1/{z}/{x}/{y}.png?url=widget"],
+          bounds: [6.5, 46.0, 7.0, 46.5],
+          minzoom: 9,
+          maxzoom: 13,
+        },
+      }),
+    });
+    expect(layer).toMatchObject({
+      kind: "imagery",
+      tileUrl: "https://tiles.example.org/v1/{z}/{x}/{y}.png?url=widget",
+    });
   });
 
   it("returns null when neither dataset nor imagery is present", () => {

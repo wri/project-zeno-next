@@ -54,6 +54,14 @@ function patchPrimaryForest(url: string): string {
     : url;
 }
 
+// Imagery configs keep the shape they were saved in: legacy ones carry
+// `tile_url`; wire contract v1 ones (wri/project-zeno#844) a MapLibre raster
+// `source` whose `tiles` hold the template.
+function imageryTileUrl(im: Record<string, unknown>): string | undefined {
+  const tiles = (im.source as { tiles?: unknown } | null | undefined)?.tiles;
+  return str(im.tile_url) ?? (Array.isArray(tiles) ? str(tiles[0]) : undefined);
+}
+
 /**
  * Parses a map widget's config into a renderable layer, or null when there is
  * nothing to render (no dataset/imagery sub-object, or no tile_url — the
@@ -109,7 +117,7 @@ export function mapWidgetLayer(
   const imagery = config.imagery;
   if (imagery && typeof imagery === "object") {
     const im = imagery as Record<string, unknown>;
-    const tileUrl = str(im.tile_url);
+    const tileUrl = imageryTileUrl(im);
     if (!tileUrl) return null;
     const targetDate = str(im.target_date);
     return {
