@@ -138,6 +138,7 @@ describe("toImageryMeta — contract v1", () => {
       meanCloudCover: 11.5,
       maxCloudCover: 35,
       aoiNames: ["Paracas National Reserve"],
+      searchPeriod: { start: "2026-05-02", end: "2026-05-16" },
     });
   });
 
@@ -146,6 +147,7 @@ describe("toImageryMeta — contract v1", () => {
       provider: "sentinel-2",
       maxCloudCover: 35,
       aoiNames: ["Paracas National Reserve"],
+      searchPeriod: { start: "2026-05-02", end: "2026-05-16" },
     });
   });
 });
@@ -346,6 +348,18 @@ describe("titles and ids", () => {
         aoiNames: [],
       })
     ).toBe("Satellite Imagery (May 5 – May 14, 2026)");
+  });
+
+  it("titles a v1 Sentinel-2 layer without scene stats by its search period", () => {
+    const meta = toImageryMeta(
+      sentinel2ImageryV1({
+        period: { start: "2026-05-02", end: "2026-05-16" },
+        scenes: null,
+      })
+    );
+    expect(imageryLayerTitle(meta)).toBe(
+      "Satellite Imagery (May 2 – May 16, 2026)"
+    );
   });
 
   it("formats the layer title with the target date", () => {

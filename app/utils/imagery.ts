@@ -58,6 +58,9 @@ export interface ImageryMeta {
   windowDays?: number;
   maxCloudCover?: number;
   aoiNames: string[];
+  // The Sentinel-2 search window (v1 `period`): describes the layer when no
+  // capture dates exist.
+  searchPeriod?: { start: string; end: string };
 }
 
 /**
@@ -90,6 +93,7 @@ export function toImageryMeta(
       meanCloudCover: meta.scenes?.mean_cloud_cover,
       maxCloudCover: meta.max_cloud_cover,
       aoiNames: meta.aoi_names,
+      searchPeriod: meta.period,
     };
   }
   return {
@@ -216,8 +220,8 @@ export function formatCaptureDate(isoDate: string): string {
 /**
  * Legend/layer title: a Planet basemap by its month ("Satellite Imagery
  * (Aug 2026)"), Sentinel-2 by the dates its scenes were captured ("Satellite
- * Imagery (May 5 – May 14, 2026)"), else by the target date of old payloads
- * without capture dates.
+ * Imagery (May 5 – May 14, 2026)"); without capture dates, by the v1 search
+ * period, else by the target date of old payloads.
  */
 export function imageryLayerTitle(meta: ImageryMeta): string {
   const titled = (when: string) => `${IMAGERY_LAYER_NAME} (${when})`;
@@ -226,6 +230,10 @@ export function imageryLayerTitle(meta: ImageryMeta): string {
   }
   if (meta.startDate && meta.endDate) {
     return titled(formatImageryDateRange(meta.startDate, meta.endDate));
+  }
+  if (meta.searchPeriod) {
+    const { start, end } = meta.searchPeriod;
+    return titled(formatImageryDateRange(start, end));
   }
   if (!meta.targetDate) return IMAGERY_LAYER_NAME;
   return titled(formatImageryDate(meta.targetDate));
