@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 
-import type { ImageryInfo, ImageryProvider } from "@/app/types/chat";
+import type { ImageryInfo, ImageryProvider, ImageryV1 } from "@/app/types/chat";
 import type {
   ImageryLegendGroup,
   LegendParam,
@@ -61,14 +61,29 @@ export interface ImageryMeta {
 }
 
 /**
- * Normalizes the wire-shaped `ImageryLegendMeta` to `ImageryMeta` — the one
- * place that treats null as absent, coalesces start_date/date_start (and
+ * Normalizes either wire shape to `ImageryMeta`. A v1 payload (it has
+ * `period`) takes its capture dates and scene stats from `scenes`, which old
+ * cached mosaics send as null. For the legacy `ImageryLegendMeta` this is the
+ * one place that treats null as absent, coalesces start_date/date_start (and
  * end_date/date_end), and defaults a missing provider to "sentinel-2". Call
  * this once where an imagery payload enters the app (showImageryTool,
  * buildImageryGroup); every other imagery function takes the result, never
  * the raw meta.
  */
-export function toImageryMeta(meta: ImageryLegendMeta): ImageryMeta {
+export function toImageryMeta(
+  meta: ImageryLegendMeta | ImageryV1
+): ImageryMeta {
+  if ("period" in meta) {
+    return {
+      provider: meta.provider,
+      itemCount: meta.scenes?.item_count,
+      startDate: meta.scenes?.start_date,
+      endDate: meta.scenes?.end_date,
+      meanCloudCover: meta.scenes?.mean_cloud_cover,
+      maxCloudCover: meta.max_cloud_cover,
+      aoiNames: meta.aoi_names,
+    };
+  }
   return {
     // Absent on payloads written before wri/project-zeno#800, which were all
     // Sentinel-2.

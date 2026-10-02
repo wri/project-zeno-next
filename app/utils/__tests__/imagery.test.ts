@@ -18,6 +18,7 @@ import {
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import type { Sentinel2ImageryV1 } from "@/app/types/chat";
 
 describe("toImageryMeta", () => {
   it("resolves an explicit provider", () => {
@@ -94,6 +95,53 @@ describe("toImageryMeta", () => {
 
   it("defaults aoiNames to an empty array when absent", () => {
     expect(toImageryMeta({}).aoiNames).toEqual([]);
+  });
+});
+
+// Contract v1 (wri/project-zeno#844). The period and the scenes deliberately
+// disagree, so a reader that takes dates from the wrong one is caught.
+const sentinel2V1: Sentinel2ImageryV1 = {
+  provider: "sentinel-2",
+  period: { start: "2026-09-18", end: "2026-09-29" },
+  aoi_names: ["Vaud"],
+  layer_id: "s2-layer",
+  source: {
+    tiles: ["https://tiles.example.com/v1/{z}/{x}/{y}.png"],
+    bounds: [6.0, 46.2, 7.2, 46.9],
+    minzoom: 8,
+    maxzoom: 14,
+  },
+  mosaic_id: "s2-mosaic",
+  max_cloud_cover: 20,
+  scenes: {
+    item_count: 6,
+    start_date: "2026-09-19",
+    end_date: "2026-09-28",
+    mean_cloud_cover: 7.35,
+    min_cloud_cover: 2.1,
+    max_cloud_cover: 14.8,
+  },
+};
+
+describe("toImageryMeta — contract v1", () => {
+  it("reads Sentinel-2 capture dates and scene stats from scenes, not period", () => {
+    expect(toImageryMeta(sentinel2V1)).toEqual({
+      provider: "sentinel-2",
+      itemCount: 6,
+      startDate: "2026-09-19",
+      endDate: "2026-09-28",
+      meanCloudCover: 7.35,
+      maxCloudCover: 20,
+      aoiNames: ["Vaud"],
+    });
+  });
+
+  it("hides scene stats when an old cached mosaic has no scenes", () => {
+    expect(toImageryMeta({ ...sentinel2V1, scenes: null })).toEqual({
+      provider: "sentinel-2",
+      maxCloudCover: 20,
+      aoiNames: ["Vaud"],
+    });
   });
 });
 
