@@ -179,6 +179,14 @@ function formatImageryDate(isoDate: string): string {
   }
 }
 
+function formatImageryMonth(isoDate: string): string {
+  try {
+    return format(parseISO(isoDate), "MMM yyyy");
+  } catch {
+    return isoDate;
+  }
+}
+
 // Compact acquired-date range, e.g. "May 28 – Jun 3, 2026": the start date's
 // year is elided within a single year so the chip survives the dashboard
 // legend's 300px width without truncating away the end date.
@@ -212,7 +220,7 @@ export function formatCaptureDate(isoDate: string): string {
  */
 export function imageryLayerTitle(meta: ImageryMeta): string {
   if (meta.provider === "planet" && meta.startDate) {
-    return `${IMAGERY_LAYER_NAME} (${format(parseISO(meta.startDate), "MMM yyyy")})`;
+    return `${IMAGERY_LAYER_NAME} (${formatImageryMonth(meta.startDate)})`;
   }
   if (!meta.targetDate) return IMAGERY_LAYER_NAME;
   return `${IMAGERY_LAYER_NAME} (${formatImageryDate(meta.targetDate)})`;

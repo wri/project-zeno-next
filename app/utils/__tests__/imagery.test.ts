@@ -326,6 +326,16 @@ describe("titles and ids", () => {
     ).toBe("Satellite Imagery (Mar 2026)");
   });
 
+  it("keeps a Planet title readable when its month can't be parsed", () => {
+    expect(
+      imageryLayerTitle({
+        provider: "planet",
+        startDate: "garbage",
+        aoiNames: [],
+      })
+    ).toBe("Satellite Imagery (garbage)");
+  });
+
   it("formats the layer title with the target date", () => {
     const sentinel2 = (targetDate?: string) => ({
       provider: "sentinel-2" as const,
