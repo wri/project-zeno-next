@@ -55,7 +55,6 @@ export interface ImageryMeta {
   endDate?: string;
   meanCloudCover?: number;
   targetDate?: string;
-  windowDays?: number;
   maxCloudCover?: number;
   aoiNames: string[];
   // The Sentinel-2 search window (v1 `period`): describes the layer when no
@@ -105,7 +104,6 @@ export function toImageryMeta(
     endDate: meta.end_date ?? meta.date_end ?? undefined,
     meanCloudCover: meta.mean_cloud_cover ?? undefined,
     targetDate: meta.target_date ?? undefined,
-    windowDays: meta.window_days ?? undefined,
     maxCloudCover: meta.max_cloud_cover ?? undefined,
     aoiNames: meta.aoi_names ?? [],
   };
@@ -270,9 +268,6 @@ export function imageryLegendParams(meta: ImageryMeta): LegendParam[] {
       // the default 15ch would hide the end date behind an ellipsis.
       maxValueWidth: "26ch",
     });
-  }
-  if (meta.windowDays !== undefined) {
-    params.push({ label: "WINDOW", value: `±${meta.windowDays} days` });
   }
   if (meta.maxCloudCover !== undefined) {
     params.push({ label: "CLOUD", value: `< ${meta.maxCloudCover}%` });

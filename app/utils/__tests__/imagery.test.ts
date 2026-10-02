@@ -69,7 +69,6 @@ describe("toImageryMeta", () => {
       startDate: undefined,
       endDate: undefined,
       targetDate: "2026-06-15",
-      windowDays: 30,
       maxCloudCover: 50,
       meanCloudCover: 12.4,
       aoiNames: ["Paracas National Reserve"],
@@ -87,7 +86,6 @@ describe("toImageryMeta", () => {
     expect(meta).toMatchObject({
       itemCount: undefined,
       targetDate: undefined,
-      windowDays: undefined,
       maxCloudCover: undefined,
       meanCloudCover: undefined,
     });
@@ -180,7 +178,7 @@ const planetMeta: ImageryLegendMeta = {
 };
 
 describe("imageryLegendParams", () => {
-  it("builds DATES, WINDOW, CLOUD and AREA chips from full metadata", () => {
+  it("builds DATES, CLOUD and AREA chips from full metadata", () => {
     const params = imageryLegendParams(toImageryMeta(fullMeta));
     expect(params).toEqual([
       {
@@ -188,7 +186,6 @@ describe("imageryLegendParams", () => {
         value: "Jun 12 – Jun 16, 2026",
         maxValueWidth: "26ch",
       },
-      { label: "WINDOW", value: "±30 days" },
       { label: "CLOUD", value: "< 50%" },
       { label: "AREA", value: "Paracas National Reserve" },
     ]);
@@ -449,7 +446,6 @@ describe("buildImageryGroup", () => {
     });
     expect(group?.params.map((p) => p.label)).toEqual([
       "DATES",
-      "WINDOW",
       "CLOUD",
       "AREA",
     ]);
