@@ -233,9 +233,9 @@ describe("imageryLegendParams", () => {
 });
 
 describe("imageryLegendInfo", () => {
-  it("mentions scene count, target date and attribution", () => {
+  it("mentions scene count and attribution, not the target date", () => {
     expect(imageryLegendInfo(toImageryMeta(fullMeta))).toBe(
-      "Sentinel-2 true-colour mosaic built from 9 scenes closest to Jun 15, 2026. Contains modified Copernicus Sentinel data."
+      "Sentinel-2 true-colour mosaic built from 9 scenes. Contains modified Copernicus Sentinel data."
     );
   });
 
@@ -256,7 +256,7 @@ describe("imageryLegendInfo", () => {
 
   it("describes and attributes Planet mosaics, skipping null stats", () => {
     expect(imageryLegendInfo(toImageryMeta(planetMeta))).toBe(
-      "Planet monthly true-colour mosaic closest to Jul 1, 2026. Imagery © Planet Labs PBC."
+      "Planet monthly true-colour mosaic. Imagery © Planet Labs PBC."
     );
   });
 });

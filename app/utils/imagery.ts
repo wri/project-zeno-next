@@ -285,14 +285,11 @@ export function imageryLegendInfo(meta: ImageryMeta): string {
     meta.itemCount !== undefined
       ? ` built from ${meta.itemCount} scene${meta.itemCount === 1 ? "" : "s"}`
       : "";
-  const closest = meta.targetDate
-    ? ` closest to ${formatImageryDate(meta.targetDate)}`
-    : "";
   const observed =
     meta.meanCloudCover !== undefined
       ? ` Mean observed cloud cover ${Math.round(meta.meanCloudCover)}%.`
       : "";
-  return `${mosaicNoun}${scenes}${closest}.${observed} ${attribution}.`;
+  return `${mosaicNoun}${scenes}.${observed} ${attribution}.`;
 }
 
 /**
