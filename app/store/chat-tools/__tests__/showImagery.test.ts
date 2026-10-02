@@ -41,7 +41,11 @@ vi.mock("@/app/lib/api-client", () => ({
 
 import { showImageryTool } from "../showImagery";
 import { API_CONFIG } from "@/app/config/api";
-import type { ImageryInfo, StreamMessage } from "@/app/types/chat";
+import type {
+  ImageryInfo,
+  Sentinel2ImageryV1,
+  StreamMessage,
+} from "@/app/types/chat";
 
 const timestamp = new Date().toISOString();
 
@@ -62,6 +66,24 @@ const tileJson = {
   bounds: [-77, -14.5, -76, -13.5] as [number, number, number, number],
   minzoom: 8,
   maxzoom: 14,
+};
+
+// Contract v1 (wri/project-zeno#844): the layer is drawn from `source`, with
+// no TileJSON to fetch.
+const sentinel2V1: Sentinel2ImageryV1 = {
+  provider: "sentinel-2",
+  period: { start: "2026-09-18", end: "2026-09-29" },
+  aoi_names: ["Vaud"],
+  layer_id: "s2-layer",
+  source: {
+    tiles: ["https://tiles.example.com/v1/{z}/{x}/{y}.png?url=s3"],
+    bounds: [6.0, 46.2, 7.2, 46.9],
+    minzoom: 9,
+    maxzoom: 13,
+  },
+  mosaic_id: "s2-mosaic",
+  max_cloud_cover: 20,
+  scenes: null,
 };
 
 const baseMsg = (overrides: Partial<StreamMessage> = {}): StreamMessage => ({
@@ -110,6 +132,25 @@ describe("showImageryTool", () => {
       maxzoom: 14,
       bounds: tileJson.bounds,
       imagery,
+    });
+  });
+
+  it("draws a v1 layer from layer_id and source without fetching TileJSON", async () => {
+    const fetchMock = mockFetch({});
+
+    await showImageryTool(baseMsg({ imagery: sentinel2V1 }));
+
+    expect(mapState.addLayer).toHaveBeenCalledOnce();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mapState.addLayer.mock.calls[0][0]).toMatchObject({
+      id: "imagery-s2-layer",
+      type: "raster",
+      visible: true,
+      tileUrl: sentinel2V1.source.tiles[0],
+      bounds: sentinel2V1.source.bounds,
+      minzoom: 9,
+      maxzoom: 13,
+      imagery: sentinel2V1,
     });
   });
 
