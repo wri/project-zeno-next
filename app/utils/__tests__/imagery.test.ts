@@ -458,7 +458,7 @@ describe("buildImageryGroup", () => {
       layerId: "imagery-new",
       live: true,
       visible: true,
-      dateLabel: "15 Jun 2026",
+      dateLabel: "16 Jun 2026",
       metaLabel: "cloud <50% · 9 scenes",
     });
     expect(group?.captures[1]).toMatchObject({
@@ -468,6 +468,42 @@ describe("buildImageryGroup", () => {
       areaLabel: "Pacaya-Samiria",
     });
     expect(group?.captures[0].thumbnailUrl).toContain("/8/128/128");
+  });
+
+  it("dates a Sentinel-2 capture by its latest scene", () => {
+    const group = buildImageryGroup(
+      [
+        imageryLayer(
+          "imagery-s2",
+          {},
+          {
+            start_date: "2026-04-02",
+            end_date: "2026-04-09",
+            target_date: "2026-04-05",
+          }
+        ),
+      ],
+      false
+    );
+    expect(group?.captures[0].dateLabel).toBe("9 Apr 2026");
+  });
+
+  it("dates an old capture without capture dates by its target date", () => {
+    const group = buildImageryGroup(
+      [
+        imageryLayer(
+          "imagery-old-s2",
+          {},
+          {
+            start_date: null,
+            end_date: null,
+            target_date: "2026-04-05",
+          }
+        ),
+      ],
+      false
+    );
+    expect(group?.captures[0].dateLabel).toBe("5 Apr 2026");
   });
 
   it("dates a Planet capture by its month", () => {

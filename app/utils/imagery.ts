@@ -225,12 +225,13 @@ function planetMonth(meta: ImageryMeta): string | undefined {
   return undefined;
 }
 
-/** The capture row's date: a Planet basemap's month, else the target date. */
+/**
+ * The capture row's date: a Planet basemap's month, else the latest scene's
+ * capture date, else the target date of old payloads without capture dates.
+ */
 function captureDateLabel(meta: ImageryMeta): string {
-  return (
-    planetMonth(meta) ??
-    (meta.targetDate ? formatCaptureDate(meta.targetDate) : "")
-  );
+  const latest = meta.endDate ?? meta.targetDate;
+  return planetMonth(meta) ?? (latest ? formatCaptureDate(latest) : "");
 }
 
 /**
