@@ -3,6 +3,7 @@
 import { toaster } from "@/app/components/ui/toaster";
 import useAuthStore from "@/app/store/authStore";
 import useViewContextStore from "@/app/store/viewContextStore";
+import { hasWidgetCustomization } from "../lib/widgets";
 import {
   useAddInsightWidget,
   useDashboard,
@@ -13,17 +14,35 @@ export interface AddInsightToDashboard {
   /** True while the viewer is on a dashboard page (add/remove semantics apply). */
   active: boolean;
   /**
-   * True when this insight can actually be added: a dashboard the viewer owns,
-   * with a real persisted insight id. False for other people's dashboards and
-   * for insights that have no backend id (verified fixtures, unsaved in-session
-   * analyses).
+   * True when the viewer may add insights here at all: a dashboard they own.
+   * Independent of any particular insight, so a control can be enabled before
+   * the insight it will add exists (a curated card that runs, then adds).
+   */
+  canAdd: boolean;
+  /**
+   * True when this insight can actually be added: `canAdd` plus a real
+   * persisted insight id. False for insights that have no backend id yet
+   * (unsaved in-session analyses).
    */
   addable: boolean;
   /** True when the insight is already a widget on the current dashboard. */
   added: boolean;
+  /**
+   * True when removing would discard config the owner arranged by hand (chart
+   * sizes, renames, hidden charts, summary toggle). Callers confirm first —
+   * `toggle` itself never asks, and none of it survives a re-add.
+   */
+  removeNeedsConfirm: boolean;
   pending: boolean;
   /** Adds the insight if absent, removes it if present. No-op unless `addable`. */
   toggle: () => void;
+  /**
+   * Adds an explicit insight id, for callers that only learn the id after an
+   * asynchronous step (run an analysis, then add its result). No-op unless
+   * `canAdd`. A 409 from the backend means the insight is already on the
+   * dashboard and is treated as success; the detail refetch then reflects it.
+   */
+  add: (insightId: string) => Promise<void>;
 }
 
 /**
@@ -49,11 +68,31 @@ export function useAddInsightToDashboard(
 
   const active = dashboardId.length > 0;
   const isOwner = !!userId && !!dashboard && userId === dashboard.user_id;
-  const addable = active && isOwner && !!insightId;
+  const canAdd = active && isOwner;
+  const addable = canAdd && !!insightId;
   const existing = insightId
     ? dashboard?.widgets.find((w) => w.insight_id === insightId)
     : undefined;
   const pending = addWidget.isPending || deleteWidget.isPending;
+
+  const add = async (id: string) => {
+    if (!canAdd || pending) return;
+    try {
+      await addWidget.mutateAsync({ insightId: id });
+    } catch (err) {
+      // 409: the insight is already a widget here (added from another tab, or
+      // a race). That is the state the caller wanted, so stay quiet; the
+      // mutation's onSettled has already queued the detail refetch that will
+      // flip `added`.
+      if ((err as { status?: number }).status === 409) return;
+      toaster.create({
+        title: "Couldn't add to dashboard",
+        description: "The analysis wasn't added. Please try again.",
+        type: "error",
+        duration: 4000,
+      });
+    }
+  };
 
   const toggle = () => {
     if (!addable || pending || !insightId) return;
@@ -68,20 +107,18 @@ export function useAddInsightToDashboard(
           }),
       });
     } else {
-      addWidget.mutate(
-        { insightId },
-        {
-          onError: () =>
-            toaster.create({
-              title: "Couldn't add to dashboard",
-              description: "The analysis wasn't added. Please try again.",
-              type: "error",
-              duration: 4000,
-            }),
-        }
-      );
+      void add(insightId);
     }
   };
 
-  return { active, addable, added: !!existing, pending, toggle };
+  return {
+    active,
+    canAdd,
+    addable,
+    added: !!existing,
+    removeNeedsConfirm: !!existing && hasWidgetCustomization(existing.config),
+    pending,
+    toggle,
+    add,
+  };
 }

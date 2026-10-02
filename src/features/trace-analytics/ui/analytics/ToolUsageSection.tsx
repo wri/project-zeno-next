@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/app/lib/router";
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import type { TraceRow } from "../../model/types";
 import { computeToolUsage } from "../../lib/analytics/aggregations";

@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import {
   Box,
   Heading,
@@ -26,6 +26,7 @@ import {
 } from "@phosphor-icons/react";
 import { InsightWidget, DatasetInfo } from "@/app/types/chat";
 import InsightCaption from "./InsightCaption";
+import InsightChartPills from "./InsightChartPills";
 import {
   exportToAI,
   AI_PROVIDERS,
@@ -37,6 +38,12 @@ import { Tooltip } from "@/app/components/ui/tooltip";
 import TableWidget from "./widgets/TableWidget";
 import DatasetCardWidget from "./widgets/DatasetCardWidget";
 import ChartWidget, { AXIS_FIT_TYPES } from "./widgets/ChartWidget";
+import {
+  fluxTreeTableProps,
+  GhgFluxTreeBody,
+  GhgFluxTreeChartInfo,
+  isFluxTreeWidget,
+} from "@/src/features/ghg-flux-tree";
 import { WidgetIcons } from "../utils/widgetIcons";
 import AddToDashboardToggle from "@/src/features/dashboards/ui/AddToDashboardToggle";
 import InsightProvenanceDrawer from "./InsightProvenanceDrawer";
@@ -46,10 +53,26 @@ import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
+import { rowsToCsv, csvFilename } from "@/app/utils/csvExport";
+import { FLUX_UNIT_COLUMN_SUFFIX } from "@/src/shared/lib/units";
+import {
+  NetFluxChartBody,
+  NetFluxChartInfo,
+  csvColumnName,
+  deriveNetFluxVariant,
+  isNetFluxWidget,
+  netFluxCsvRows,
+  netFluxTableProps,
+  netFluxViewKey,
+  useNetFluxView,
+  type NetFluxVariant,
+} from "@/src/features/net-flux";
 
 interface WidgetMessageProps {
   widget: InsightWidget;
   inWorkspace?: boolean;
+  /** The host dashboard card spans both columns — chart content adapts. */
+  fullWidth?: boolean;
 }
 
 /** Y-axis with the classic break squiggle — icon for the fit-axis toggle. */
@@ -73,9 +96,51 @@ function AxisBreakIcon({ size = 14 }: { size?: number }) {
   );
 }
 
+interface ChartBodyProps {
+  netFluxVariant: NetFluxVariant | null | undefined;
+  isFluxTree: boolean;
+  displayWidget: InsightWidget;
+  fitYAxis: boolean;
+  expanded?: boolean;
+  fullWidth?: boolean;
+}
+
+function ChartBody({
+  netFluxVariant,
+  isFluxTree,
+  displayWidget,
+  fitYAxis,
+  expanded,
+  fullWidth,
+}: ChartBodyProps) {
+  if (netFluxVariant) {
+    return (
+      <NetFluxChartBody
+        widget={displayWidget}
+        variant={netFluxVariant}
+        fitYAxis={fitYAxis}
+        expanded={expanded}
+        fullWidth={fullWidth}
+      />
+    );
+  }
+  if (isFluxTree) {
+    return <GhgFluxTreeBody widget={displayWidget} />;
+  }
+  return (
+    <ChartWidget
+      widget={displayWidget}
+      fitYAxis={fitYAxis}
+      expanded={expanded}
+      fullWidth={fullWidth}
+    />
+  );
+}
+
 export default function WidgetMessage({
   widget,
   inWorkspace,
+  fullWidth,
 }: WidgetMessageProps) {
   const [showAsTable, setShowAsTable] = useState(false);
   const [fitYAxis, setFitYAxis] = useState(false);
@@ -87,6 +152,21 @@ export default function WidgetMessage({
     onOpen: onExpand,
     onClose: onCollapse,
   } = useDisclosure();
+  // Shared with the shell toolbar, which renders the DETAIL/MEASURE pills
+  // outside this card (see InsightChartPills). Hooks must run unconditionally,
+  // so these sit above the dataset-card early return.
+  const netFluxView = useNetFluxView(netFluxViewKey(widget));
+  const isNetFlux = isNetFluxWidget(widget);
+  const netFluxVariant = isNetFlux
+    ? deriveNetFluxVariant(widget, netFluxView.measure)
+    : null;
+  // Memoize the spread operation to preserve object identity, so formatChartData's
+  // stable-data assumption holds and recharts doesn't re-render on every parent render.
+  const displayWidget: InsightWidget = useMemo(
+    () => (netFluxVariant ? { ...widget, ...netFluxVariant } : widget),
+    [widget, netFluxVariant]
+  );
+
   if (widget.type === "dataset-card") {
     return <DatasetCardWidget dataset={widget.data as DatasetInfo} />;
   }
@@ -115,37 +195,36 @@ export default function WidgetMessage({
   };
 
   const handleDownloadCsv = () => {
-    const data = widget.data;
+    // The chart's own data is scaled to Mt for display; the download must
+    // always report the backend's raw Mg values, so net-flux widgets read
+    // their own unscaled rows rather than `displayWidget.data`.
+    const data = isNetFlux
+      ? netFluxCsvRows(widget, netFluxView.measure)
+      : displayWidget.data;
     if (!Array.isArray(data) || data.length === 0) return;
     const rows = data as Record<string, unknown>[];
-    const headers = Object.keys(rows[0]);
-    const csvLines = [
-      headers.join(","),
-      ...rows.map((row) =>
-        headers
-          .map((h) => {
-            const val = row[h];
-            const str = val === null || val === undefined ? "" : String(val);
-            return str.includes(",") || str.includes('"') || str.includes("\n")
-              ? `"${str.replace(/"/g, '""')}"`
-              : str;
-          })
-          .join(",")
-      ),
-    ];
-    const blob = new Blob([csvLines.join("\n")], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const rowKeys = Object.keys(rows[0]);
+    const isFluxTree = isFluxTreeWidget(widget);
+    const FLUX_TREE_VALUE_COLS = new Set(["avg_emissions", "avg_removals"]);
+    const headers = isNetFlux
+      ? rowKeys.map(csvColumnName)
+      : isFluxTree
+        ? rowKeys.map((k) =>
+            FLUX_TREE_VALUE_COLS.has(k) ? `${k}_${FLUX_UNIT_COLUMN_SUFFIX}` : k
+          )
+        : rowKeys;
+    const csv = rowsToCsv(rows, headers, rowKeys);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${(widget.title || "data").replace(/[^a-z0-9]/gi, "_")}.csv`;
+    a.download = csvFilename(widget.title);
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const handleExportToAI = (provider: AIProvider) => {
-    const method = exportToAI(widget, provider);
+    const method = exportToAI(displayWidget, provider);
     if (method === "clipboard") {
       toaster.create({
         title: "Prompt copied to clipboard",
@@ -164,10 +243,24 @@ export default function WidgetMessage({
     "area",
     "pie",
     "scatter",
+    "stacked-bar-with-line",
+    "hierarchical-bar",
   ];
   const isChartType = chartTypes.includes(widget.type);
-  const hasData = Array.isArray(widget.data) && widget.data.length > 0;
+  // This chart renders its own tree + plot + legend composition rather than
+  // going through ChartWidget, whose axis block assumes vertical bars.
+  const isFluxTree = isFluxTreeWidget(widget);
+  // Per-chart-type table display config — every other chart type keeps
+  // TableWidget's fully generic default (no props).
+  const tableProps = netFluxVariant
+    ? netFluxTableProps(netFluxVariant, widget.xAxis, netFluxView.measure)
+    : isFluxTree
+      ? fluxTreeTableProps()
+      : undefined;
+  const hasData =
+    Array.isArray(displayWidget.data) && displayWidget.data.length > 0;
   const showDisclaimer = (isChartType || widget.type === "table") && hasData;
+  const isCurated = widget.curated ?? !widget.generation;
   const supportsAxisFit = AXIS_FIT_TYPES.has(widget.type);
   const fullscreenChips = widget.analysisParams
     ? buildChips(widget.analysisParams)
@@ -191,16 +284,28 @@ export default function WidgetMessage({
           align="center"
         >
           {WidgetIcons[widget.type]}
-          <Heading size="xs" fontWeight="medium" color="primary.fg" m={0}>
+          <Heading
+            size="xs"
+            fontWeight="medium"
+            color="primary.fg"
+            m={0}
+            minW={0}
+            truncate
+            title={widget.title}
+          >
             {widget.title}
           </Heading>
+          {isNetFlux && <NetFluxChartInfo />}
+          {isFluxTree && <GhgFluxTreeChartInfo />}
         </Flex>
       )}
       <Flex gap={3} px={4} py={2} flexDir="column">
         {/* AI-assisted caption — sits above the chart toolbar in the workspace */}
-        {inWorkspace && (
-          <InsightCaption curated={widget.curated ?? !widget.generation} />
-        )}
+        {inWorkspace && <InsightCaption curated={isCurated} />}
+        {/* Every surface with a shell of its own puts these pills above the
+            card (see InsightChartPills); inline is the fallback for a host
+            that has none, today only /chart-debug. */}
+        {!inWorkspace && <InsightChartPills widget={widget} />}
         {/* Toolbar row — segmented toggle + full-screen */}
         <Flex justify="flex-start" gap={2} flexWrap="wrap" align="center">
           {/* Segmented Chart / Table toggle */}
@@ -278,18 +383,28 @@ export default function WidgetMessage({
         {isChartType && !showAsTable && (
           <WidgetErrorBoundary fallbackTitle="Unable to render chart">
             <Box ref={chartRef}>
-              <ChartWidget widget={widget} fitYAxis={fitYAxis} />
+              <ChartBody
+                netFluxVariant={netFluxVariant}
+                isFluxTree={isFluxTree}
+                displayWidget={displayWidget}
+                fitYAxis={fitYAxis}
+                fullWidth={fullWidth}
+              />
             </Box>
           </WidgetErrorBoundary>
         )}
-        {isChartType && showAsTable && Array.isArray(widget.data) && (
+        {isChartType && showAsTable && Array.isArray(displayWidget.data) && (
           <WidgetErrorBoundary fallbackTitle="Unable to render table">
             <ScrollableTableWrapper>
               <TableWidget
                 data={
-                  widget.data as Record<string, string | number | boolean>[]
+                  displayWidget.data as Record<
+                    string,
+                    string | number | boolean
+                  >[]
                 }
                 caption={widget.title}
+                {...tableProps}
               />
             </ScrollableTableWrapper>
           </WidgetErrorBoundary>
@@ -431,7 +546,9 @@ export default function WidgetMessage({
             )}
           </Flex>
         )}
-        {showDisclaimer && !inWorkspace && <VisualizationDisclaimer />}
+        {showDisclaimer && !inWorkspace && !isCurated && (
+          <VisualizationDisclaimer />
+        )}
       </Flex>
       <InsightProvenanceDrawer
         isOpen={open}
@@ -476,10 +593,12 @@ export default function WidgetMessage({
                 >
                   <Box flex="1" minW={0}>
                     <WidgetErrorBoundary fallbackTitle="Unable to render chart">
-                      <ChartWidget
-                        widget={widget}
-                        expanded
+                      <ChartBody
+                        netFluxVariant={netFluxVariant}
+                        isFluxTree={isFluxTree}
+                        displayWidget={displayWidget}
                         fitYAxis={fitYAxis}
+                        expanded
                       />
                     </WidgetErrorBoundary>
                   </Box>
@@ -526,9 +645,11 @@ export default function WidgetMessage({
                           </Text>
                         </Box>
                       )}
-                      <Box mt="auto">
-                        <VisualizationDisclaimer />
-                      </Box>
+                      {!isCurated && (
+                        <Box mt="auto">
+                          <VisualizationDisclaimer />
+                        </Box>
+                      )}
                     </Flex>
                   )}
                 </Dialog.Body>

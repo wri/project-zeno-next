@@ -16,7 +16,7 @@ import {
 import { Reorder, useDragControls } from "motion/react";
 
 import { isImageryGroup, LayerActionHandler, LegendEntry } from "./types";
-import type { LegendAoi } from "./useLegendHook";
+import type { LegendAoi, LegendBoundary } from "./useLegendHook";
 import { LayerEntry } from "./LayerEntry";
 import { ImageryLegendEntry } from "./ImageryLegendEntry";
 import { ParamChip } from "@/app/components/ui/ParamChip";
@@ -32,6 +32,9 @@ interface LegendProps {
   onLayerAction?: LayerActionHandler;
   aois?: LegendAoi[];
   onRemoveAoi?: (layerId: string) => void;
+  /** Visible boundary layer — rendered as the first AREA pill. */
+  boundary?: LegendBoundary | null;
+  onRemoveBoundary?: () => void;
   /** Tighter type and spacing for small hosts (dashboard map widgets). */
   compact?: boolean;
 }
@@ -43,7 +46,15 @@ interface LegendProps {
  * @param props.layers - Array of LegendLayer objects to display.
  */
 export function Legend(props: LegendProps) {
-  const { layers, onLayerAction, aois, onRemoveAoi, compact } = props;
+  const {
+    layers,
+    onLayerAction,
+    aois,
+    onRemoveAoi,
+    boundary,
+    onRemoveBoundary,
+    compact,
+  } = props;
 
   // Controls whether the whole legend body is collapsed to just the header.
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -99,7 +110,8 @@ export function Legend(props: LegendProps) {
   }, [layers]);
 
   const hasAois = !!aois && aois.length > 0;
-  if (!layers.length && !hasAois) return null;
+  const hasAreaChips = hasAois || !!boundary;
+  if (!layers.length && !hasAreaChips) return null;
 
   return (
     <Flex
@@ -200,7 +212,7 @@ export function Legend(props: LegendProps) {
               ))}
             </ChReorderGroup>
           )}
-          {hasAois && (
+          {hasAreaChips && (
             <>
               {layers.length > 0 && <Box h="1px" bg="#DDE2F5" />}
               <Flex
@@ -212,7 +224,18 @@ export function Legend(props: LegendProps) {
                 pb="8px"
                 pl="24px"
               >
-                {aois.map((aoi) => (
+                {boundary && (
+                  <ParamChip
+                    label="AREA"
+                    value={boundary.name}
+                    colorScheme="blue"
+                    bg="white"
+                    maxValueWidth="22ch"
+                    onRemove={onRemoveBoundary}
+                    removeLabel={`Hide ${boundary.name}`}
+                  />
+                )}
+                {aois?.map((aoi) => (
                   <ParamChip
                     key={`${aoi.layerId}-${aoi.name}`}
                     label="AREA"

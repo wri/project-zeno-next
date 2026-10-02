@@ -33,6 +33,11 @@ export const config = defineConfig({
         from: { opacity: 0, transform: "translateY(4px)" },
         to: { opacity: 1, transform: "translateY(0)" },
       },
+      // A dashboard card being picked up: from flat in the grid to the lifted
+      // transform the drag writes inline (the implicit "to").
+      dragLift: {
+        from: { transform: "none", boxShadow: "none" },
+      },
       // Blink for the voice "listening" indicator dot.
       vpDotBlink: {
         "0%, 100%": { opacity: 1 },
@@ -53,9 +58,9 @@ export const config = defineConfig({
     },
     tokens: {
       fonts: {
-        body: { value: "var(--font-IBMPlexSans)" },
-        mono: { value: "var(--font-IBMPlexMono)" },
-        heading: { value: "var(--font-IBMPlexSans)" },
+        body: { value: "'IBM Plex Sans', sans-serif" },
+        mono: { value: "'IBM Plex Mono', monospace" },
+        heading: { value: "'IBM Plex Sans', sans-serif" },
       },
       colors: {
         primary: {

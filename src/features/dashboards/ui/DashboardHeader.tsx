@@ -18,21 +18,24 @@ import {
 
 import { toaster } from "@/app/components/ui/toaster";
 import type { Dashboard } from "../api/schemas";
-import { updatedLabel } from "../lib/dates";
+import { wasJustCreated } from "../lib/dates";
 import { useRenameDashboard } from "./dashboardQueries";
 
 /**
  * Dashboard page header per the Figma "Dashboard default" frame: editable
- * 30px title with a pencil affordance (owner only), the mono "Updated…"
- * label, and Export / Share actions top-right. Export and Share are false
+ * 30px title with a pencil affordance (owner only, revealed on hover or
+ * focus), and Export / Share actions top-right. Export and Share are false
  * doors — measure interest before building the real flows.
  */
 export default function DashboardHeader({
   dashboard,
   isOwner,
+  condensed = false,
 }: {
   dashboard: Dashboard;
   isOwner: boolean;
+  /** Pinned-bar variant: the title truncates with an ellipsis instead of wrapping. */
+  condensed?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const renameDashboard = useRenameDashboard(dashboard.id);
@@ -76,7 +79,15 @@ export default function DashboardHeader({
   return (
     <Flex justify="space-between" align="flex-start" gap={6}>
       <Box minW={0} flex="1">
-        <Flex align="center" gap="12px">
+        <Flex
+          align="center"
+          gap="12px"
+          minW={0}
+          // The pencil shows on hover or keyboard focus; on touch (no hover)
+          // it stays visible.
+          _hover={{ "& [data-rename]": { opacity: 1 } }}
+          _focusWithin={{ "& [data-rename]": { opacity: 1 } }}
+        >
           {editing ? (
             <Input
               value={draft}
@@ -96,38 +107,60 @@ export default function DashboardHeader({
             />
           ) : (
             <Heading
-              as="h1"
+              // The pinned bar duplicates the page title — keep one h1 per page.
+              as={condensed ? "h2" : "h1"}
               fontSize="30px"
               lineHeight="36px"
               fontWeight="normal"
               color="#131619"
-              wordBreak="break-word"
+              // The theme's globalCss gives every h2 a 16px margin-bottom,
+              // which would stretch the title row in the condensed variant.
+              mb="0"
+              {...(condensed
+                ? { truncate: true, minW: 0 }
+                : { wordBreak: "break-word" as const })}
             >
               {dashboard.name}
             </Heading>
           )}
           {isOwner && !editing && (
             <IconButton
+              data-rename
               aria-label="Rename dashboard"
               title="Rename dashboard"
               size="xs"
               variant="ghost"
               color="fg.muted"
+              opacity={0}
+              // Hover is the reveal, so a device that has no hover keeps the
+              // pencil visible. A viewport breakpoint is the wrong test: a
+              // touch-only tablet is wide and would get an invisible control.
+              css={{ "@media (hover: none)": { opacity: 1 } }}
+              transition="opacity 0.12s"
               onClick={() => setDraft(dashboard.name)}
             >
               <PencilSimpleIcon size={20} />
             </IconButton>
           )}
         </Flex>
-        <Text
-          mt="7px"
-          fontFamily="mono"
-          fontSize="10px"
-          lineHeight="16px"
-          color="rgba(19,22,25,0.7)"
-        >
-          {updatedLabel(dashboard.updated_at)}
-        </Text>
+        {wasJustCreated(dashboard.created_at) && (
+          <Box
+            mt="8px"
+            display="inline-flex"
+            bg="#F0F4B4"
+            px="4px"
+            rounded="sm"
+          >
+            <Text
+              fontFamily="mono"
+              fontSize="10px"
+              lineHeight="16px"
+              color="#5B5F3A"
+            >
+              Created just now
+            </Text>
+          </Box>
+        )}
       </Box>
 
       <Flex gap="12px" align="center" flexShrink={0}>

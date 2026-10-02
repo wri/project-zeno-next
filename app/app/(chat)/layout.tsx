@@ -34,6 +34,7 @@ import {
   MAP_FEEDBACK_Z_INDEX,
 } from "@/app/explorationLayout";
 import { ViewAnalysisTrigger } from "@/src/features/analysis";
+import { CreateDashboardTrigger } from "@/src/features/dashboards";
 
 export default function DashboardLayout({
   children,
@@ -189,6 +190,7 @@ export default function DashboardLayout({
       <WhatsNewModal />
       <AnalysisCtaTrigger />
       <ViewAnalysisTrigger />
+      <CreateDashboardTrigger />
 
       {!isMobile && (
         <Box>

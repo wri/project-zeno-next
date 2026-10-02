@@ -120,6 +120,40 @@ describe("generateInsightsTool", () => {
     ]);
   });
 
+  it("marks widgets as curated when codeact_parts is empty", () => {
+    generateInsightsTool(
+      baseMessage({ charts_data: [chartData()], codeact_parts: [] }),
+      addMessage
+    );
+    const widget = useInsightStore.getState().insights[0];
+    expect(widget.curated).toBe(true);
+    expect(widget.generation).toBeUndefined();
+  });
+
+  it("marks widgets as AI-generated when codeact_parts has entries", () => {
+    generateInsightsTool(
+      baseMessage({
+        charts_data: [chartData()],
+        codeact_parts: [{ type: "code_block", content: "df.plot()" }],
+      }),
+      addMessage
+    );
+    const widget = useInsightStore.getState().insights[0];
+    expect(widget.curated).toBe(false);
+    expect(widget.generation).toBeDefined();
+    expect(widget.generation!.codeact_parts).toHaveLength(1);
+  });
+
+  it("marks widgets as curated when codeact_parts is absent", () => {
+    generateInsightsTool(
+      baseMessage({ charts_data: [chartData()] }),
+      addMessage
+    );
+    const widget = useInsightStore.getState().insights[0];
+    expect(widget.curated).toBe(true);
+    expect(widget.generation).toBeUndefined();
+  });
+
   it("adds an error message and does not throw when chart items are malformed", () => {
     generateInsightsTool(
       baseMessage({ charts_data: [null as unknown as object] }),

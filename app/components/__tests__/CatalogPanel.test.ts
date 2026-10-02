@@ -40,6 +40,7 @@ describe("filterDatasetsByCategory", () => {
       []
     );
     expect(disturbance.some((c) => c.dataset_id === 10)).toBe(true);
+    expect(DATASET_CARDS.some((c) => c.dataset_id === 0)).toBe(false);
   });
 
   it('returns only cards whose ids appear in `activeDatasetIds` for "in-conversation"', () => {

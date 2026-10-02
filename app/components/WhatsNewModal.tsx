@@ -6,11 +6,11 @@ import {
   Flex,
   HStack,
   Icon,
+  Image,
   Link,
   Portal,
   Text,
 } from "@chakra-ui/react";
-import Image from "next/image";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import {
   ArrowSquareOutIcon,
@@ -28,6 +28,7 @@ const LEGACY_STORAGE_KEYS = [
   "whats-new-v1-dismissed",
   "whats-new-v2-dismissed",
   "whats-new-v3-dismissed",
+  "whats-new-v4-dismissed",
 ];
 
 const ANNOUNCEMENT = {
@@ -39,11 +40,10 @@ const ANNOUNCEMENT = {
 };
 
 const FEATURE_IMAGES: Record<number, string> = {
-  1: "/whats_new/multi_area.png",
-  2: "/whats_new/reasoning.png",
-  3: "/whats_new/provenance.png",
-  4: "/whats_new/charts.png",
-  5: "/whats_new/smarter_agent.png",
+  1: "/whats_new/dashboards.png",
+  2: "/whats_new/organise_dashboards.png",
+  3: "/whats_new/satellite.png",
+  4: "/whats_new/wri_sources.png",
 };
 
 interface Feature {
@@ -55,33 +55,27 @@ interface Feature {
 const FEATURES: Feature[] = [
   {
     step: 1,
-    title: "Compare multiple areas",
+    title: "Introducing dashboards",
     description:
-      'Select multiple areas at once and ask questions like "Which Brazilian state has the most cropland?" The assistant and the charts handle the rest.',
+      "Turn your analyses into dashboards. Ask the assistant to create one for the area you are exploring, or start one straight from the map, and every insight you save is there to revisit.",
   },
   {
     step: 2,
-    title: "See the AI's reasoning",
+    title: "Make a dashboard your own",
     description:
-      "Expand the reasoning panel to see the agent's chain of thought and tool calls as they happen, step by step. More transparency, more trust.",
+      "Group charts into sections, drag sections to reorder them, and customise any chart using the section menu. Ask the assistant to create a new section for you.",
   },
   {
     step: 3,
-    title: "Fully reproducible analysis results",
+    title: "Satellite imagery in chat",
     description:
-      "Every insight comes with a full provenance trail. See exactly what data was used and how it was processed, so your results are fully reproducible.",
+      "Ask to see recent satellite imagery of your area and the assistant brings Sentinel-2 imagery straight onto the map.",
   },
   {
     step: 4,
-    title: "Improved charts",
+    title: "Answers with sources",
     description:
-      "Switch between chart and table views, export data to share with your team, and enjoy improved accessibility across all visualisations.",
-  },
-  {
-    step: 5,
-    title: "Faster and smarter",
-    description:
-      "Behind the scenes the assistant now runs on a faster, more capable model — quicker responses and sharper analysis across the board.",
+      "When the assistant draws on WRI research, it cites its sources with cards linking to the original blog posts and insights.",
   },
 ];
 
@@ -335,9 +329,11 @@ const WhatsNewModal = () => {
                         <Image
                           src={image}
                           alt={feature.title}
-                          fill
-                          sizes="480px"
-                          style={{ objectFit: "cover" }}
+                          position="absolute"
+                          inset="0"
+                          w="full"
+                          h="full"
+                          objectFit="cover"
                         />
                       </Box>
                     )}

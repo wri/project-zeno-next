@@ -1,0 +1,121 @@
+"use client";
+import { useMemo } from "react";
+import { Box, Flex, Text } from "@chakra-ui/react";
+
+import type { InsightWidget } from "@/app/types/chat";
+import { signed } from "@/src/shared/lib/number-format";
+import { FLUX_UNITS } from "@/src/shared/lib/units";
+import { Swatch } from "@/src/shared/ui/Swatch";
+
+import {
+  nodeNet,
+  parseFluxNodes,
+  rootNodes,
+  type FluxMeasure,
+} from "../model/hierarchy";
+import {
+  EMISSIONS_COLOR,
+  LEGEND_BG,
+  NET_TICK_COLOR,
+  REMOVALS_COLOR,
+  netFluxColor,
+} from "../model/palette";
+import { treeViewKey } from "../model/tree-view-store";
+import { GhgFluxTreeChart } from "./GhgFluxTreeChart";
+import { useTreeView } from "./use-tree-view";
+
+function LegendEntry({ color, label }: { color: string; label: string }) {
+  return (
+    <Flex align="center" gap="6px">
+      <Swatch color={color} width={12} height={12} />
+      <Text fontFamily="body" fontSize="11px" color="#3A4048">
+        {label}
+      </Text>
+    </Flex>
+  );
+}
+
+/** Emissions/removals key, plus the net marker when the gross view shows one. */
+function TreeLegend({ measure }: { measure: FluxMeasure }) {
+  return (
+    <Flex bg={LEGEND_BG} rounded="4px" p="10px" gap="20px" wrap="wrap" w="full">
+      <LegendEntry color={REMOVALS_COLOR} label="Sink/gross removals (−)" />
+      <LegendEntry color={EMISSIONS_COLOR} label="Source/gross emissions (+)" />
+      {measure === "gross" && (
+        <Flex align="center" gap="6px">
+          <Box w="3px" h="12px" bg={NET_TICK_COLOR} flexShrink={0} />
+          <Text fontFamily="body" fontSize="11px" color="#3A4048">
+            Net
+          </Text>
+        </Flex>
+      )}
+    </Flex>
+  );
+}
+
+/**
+ * Curated "Net GHG flux (annual average)" body: the headline figure, the
+ * hierarchical plot, and the legend. Swapped in by `WidgetMessage` for this
+ * chart type in place of the generic `ChartWidget`, whose axis handling assumes
+ * vertical bars and a fixed height.
+ */
+export function GhgFluxTreeBody({ widget }: { widget: InsightWidget }) {
+  // `parseFluxNodes` builds a fresh array every call; memoize on the source
+  // data so `useTreeView`'s expansion-seeding effect (keyed on this array's
+  // identity) doesn't refire on every unrelated re-render.
+  const nodes = useMemo(() => parseFluxNodes(widget.data), [widget.data]);
+  const { measure, rows, toggleNode } = useTreeView(treeViewKey(widget), nodes);
+
+  const root = rootNodes(nodes)[0];
+  const rootNet = root ? nodeNet(root) : null;
+  const headlineColor = netFluxColor(rootNet);
+
+  if (nodes.length === 0) {
+    return (
+      <Flex
+        align="center"
+        justify="center"
+        minH="120px"
+        border="1px dashed"
+        borderColor="border"
+        rounded="md"
+        p={4}
+      >
+        <Text fontSize="sm" color="fg.muted">
+          No hierarchy data available for this chart.
+        </Text>
+      </Flex>
+    );
+  }
+
+  return (
+    <Flex direction="column" gap="16px" w="full">
+      <Box>
+        <Text
+          fontFamily="body"
+          fontWeight="normal"
+          color="#172B7A"
+          fontSize="15px"
+          lineHeight="normal"
+        >
+          Net land flux:{" "}
+          <Text as="span" color={headlineColor}>
+            {rootNet == null ? "—" : signed.format(rootNet)}
+          </Text>{" "}
+          <Text as="span" fontSize="14px" color="#565E7B">
+            {FLUX_UNITS}
+          </Text>
+        </Text>
+        <Text fontFamily="body" fontSize="13px" color="neutral.700" mt="2px">
+          Land use: 2016–24 annual average · Agriculture: fixed 2020 value
+        </Text>
+      </Box>
+
+      <Box overflowX="auto">
+        <GhgFluxTreeChart rows={rows} measure={measure} onToggle={toggleNode} />
+      </Box>
+
+      <TreeLegend measure={measure} />
+    </Flex>
+  );
+}

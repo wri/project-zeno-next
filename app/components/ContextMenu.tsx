@@ -29,15 +29,20 @@ const CONTEXT_NAV = (Object.keys(ChatContextOptions) as ChatContextType[])
     icon: ChatContextOptions[type].icon,
   }));
 
-import { DATASET_CARDS, DatasetCardConfig } from "../constants/datasets";
+import {
+  ORDERED_DATASET_CARDS,
+  DatasetCardConfig,
+} from "../constants/datasets";
+import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
+import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import { useCustomAreasListSuspense } from "../hooks/useCustomAreasList";
 import type { CustomArea } from "../schemas/api/custom_areas/get";
 import useMapStore from "../store/mapStore";
 import { isAreaLayer } from "../store/layerManagerSlice";
-import type { Feature, MultiPolygon } from "geojson";
 import { datasetCardLayers } from "../utils/datasetCardLayerContext";
+import { customAreaToFeature } from "@/src/entities/custom-area";
 
-const LAYER_CARDS = DATASET_CARDS;
+const LAYER_CARDS = ORDERED_DATASET_CARDS;
 
 function ContextNav({
   selected,
@@ -87,6 +92,11 @@ function LayerCardList({
   cards: (DatasetCardConfig & { img?: string })[];
 }) {
   const { layers, addLayer, removeDatasetLayers } = useMapStore();
+  // Same gate as the Data Catalog — a flagged dataset is browsable in neither
+  // surface until its flag is on. The menu is a dialog, so this only renders
+  // after the user opens it (no SSR/hydration branch).
+  const enabledFlags = useEnabledFlags();
+  const visibleCards = filterDatasetsByFeatureFlag(cards, enabledFlags);
 
   function handleToggle(card: DatasetCardConfig & { img?: string }) {
     const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
@@ -101,7 +111,7 @@ function LayerCardList({
 
   return (
     <Stack minH={0} overflowY="auto">
-      {cards.map((card) => {
+      {visibleCards.map((card) => {
         const isSelected = layers.some((l) => l.datasetId === card.dataset_id);
         return (
           // flexShrink={0} pins the card height in the scrollable list so the
@@ -286,21 +296,11 @@ function AreaMenu() {
     // is keyed by the area id, so re-selecting replaces in place (the `cards`
     // lookup already disables the card once selected). No separate context item.
 
-    // Build a single MultiPolygon Feature from the selected custom area's geometries
     const selected = (customAreas as unknown as CustomArea[] | undefined)?.find(
       (a) => a.id === area.id
     );
     if (selected) {
-      const multi: MultiPolygon = {
-        type: "MultiPolygon",
-        coordinates: selected.geometries.map((poly) => poly.coordinates),
-      };
-      const feature: Feature = {
-        type: "Feature",
-        id: selected.id,
-        geometry: multi,
-        properties: { id: selected.id, name: selected.name },
-      };
+      const feature = customAreaToFeature(selected);
       addToRegistry({
         ref: { name: selected.name, source: "custom" },
         data: feature,

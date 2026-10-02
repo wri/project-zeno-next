@@ -12,6 +12,7 @@ import {
 } from "@chakra-ui/react";
 import {
   ChartBarIcon,
+  ExamIcon,
   GearIcon,
   LifebuoyIcon,
   MapTrifoldIcon,
@@ -19,11 +20,15 @@ import {
   UserIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react";
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 import useAuthStore from "@/app/store/authStore";
 import { useLogout } from "@/app/hooks/useLogout";
 
-type SettingsPath = "/dashboard" | "/manage-users" | "/trace-analytics";
+type SettingsPath =
+  | "/dashboard"
+  | "/manage-users"
+  | "/trace-analytics"
+  | "/evals";
 
 interface SettingsShellProps {
   activePath: SettingsPath;
@@ -103,8 +108,22 @@ export default function SettingsShell({
               </Link>
             </Button>
           )}
+          {userType === "superuser" && (
+            <Button
+              asChild
+              bg={activePath === "/evals" ? "bg.muted" : undefined}
+            >
+              <Link href="/evals">
+                <ExamIcon />
+                Evals
+              </Link>
+            </Button>
+          )}
           <Button asChild>
-            <Link href="https://help.globalnaturewatch.org/" target="_blank">
+            <Link
+              href="https://help.horizon.globalnaturewatch.org/"
+              target="_blank"
+            >
               <LifebuoyIcon />
               Help
             </Link>

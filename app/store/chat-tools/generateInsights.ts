@@ -9,11 +9,17 @@ import useMapStore from "../mapStore";
 import { isAreaLayer } from "../layerManagerSlice";
 import useInsightStore from "../insightStore";
 import useChatStore from "../chatStore";
+import type { ChartColorFields } from "@/app/types/chartColors";
+import { pickChartColors } from "@/app/utils/pickChartColors";
+import {
+  isCuratedInsight,
+  codeActParts,
+} from "@/src/entities/insight/lib/is-curated-insight";
 
-interface ChartData {
+interface ChartData extends ChartColorFields {
   id: string;
   title: string;
-  type: "line" | "bar" | "table";
+  type: InsightWidget["type"];
   insight: string;
   data: unknown;
   xAxis: string;
@@ -103,6 +109,8 @@ export function generateInsightsTool(
         streamMessage.charts_data as ChartData[]
       ).map((chart: ChartData) => {
         const seriesFields = getSeriesFields(chart);
+        const curated = isCuratedInsight(streamMessage.codeact_parts);
+        const parts = codeActParts(streamMessage.codeact_parts);
         return {
           id: chart.id,
           type: chart.type,
@@ -113,10 +121,16 @@ export function generateInsightsTool(
           yAxis: chart.yAxis,
           ...(seriesFields ? { seriesFields } : {}),
           ...(datasetName ? { datasetName } : {}),
-          generation: {
-            codeact_parts: streamMessage.codeact_parts,
-            source_urls: streamMessage.source_urls,
-          },
+          ...pickChartColors(chart),
+          curated,
+          ...(parts.length > 0
+            ? {
+                generation: {
+                  codeact_parts: parts,
+                  source_urls: streamMessage.source_urls,
+                },
+              }
+            : {}),
           ...(hasParams ? { analysisParams } : {}),
           // Shared by all charts of the analysis — the handle for the
           // "Add to dashboard" toggle (REST widget add, no chat round trip).

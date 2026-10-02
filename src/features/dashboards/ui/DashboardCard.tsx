@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/app/lib/router";
 import { Box, Flex, Heading, Link as ChakraLink, Text } from "@chakra-ui/react";
 import { LockIcon, PolygonIcon } from "@phosphor-icons/react";
 
@@ -44,7 +44,7 @@ export default function DashboardCard({ dashboard }: { dashboard: Dashboard }) {
           outlineOffset: "2px",
         }}
       >
-        <Link href={`/dashboards/${dashboard.id}?ff=dashboard`}>
+        <Link href={`/dashboards/${dashboard.id}`}>
           <Flex
             flex="1"
             direction="column"

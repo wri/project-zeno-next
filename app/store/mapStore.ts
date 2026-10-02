@@ -17,12 +17,13 @@ import {
 } from "./layerManagerSlice";
 
 interface SelectionMode {
-  type: "Selecting" | "Drawing" | "Uploading" | undefined;
+  type: "Drawing" | "Uploading" | undefined;
   name?: string;
 }
 
 interface MapSlice {
   mapRef: MapRef | null;
+  /** The one boundary layer shown on the map (null = none). See `selectLayerOptions`. */
   selectAreaLayer: LayerId | null;
   reset: () => void;
   setMapRef: (mapRef: MapRef) => void;

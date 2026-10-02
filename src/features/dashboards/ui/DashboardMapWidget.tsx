@@ -48,6 +48,7 @@ export default function DashboardMapWidget({
   aoi,
   bboxOverride,
   tall,
+  fill,
 }: {
   layer: MapWidgetLayer;
   /** The dashboard's (single) area — outline, label + default viewport fit. */
@@ -55,6 +56,8 @@ export default function DashboardMapWidget({
   bboxOverride: [number, number, number, number] | null;
   /** Full-width cards get a taller map. */
   tall?: boolean;
+  /** Fills its container (the full-screen dialog) and allows scroll-zoom. */
+  fill?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
 
@@ -130,7 +133,7 @@ export default function DashboardMapWidget({
   return (
     <Box
       ref={containerRef}
-      h={{ base: "280px", md: tall ? "520px" : "360px" }}
+      h={fill ? "100%" : { base: "280px", md: tall ? "520px" : "360px" }}
       rounded="md"
       overflow="hidden"
       borderWidth="1px"
@@ -141,9 +144,9 @@ export default function DashboardMapWidget({
         style={{ width: "100%", height: "100%" }}
         initialViewState={{ longitude: 0, latitude: 0, zoom: 1 }}
         onLoad={fitToBounds}
-        // No scroll-zoom: the widget sits in a scrolling page and must not
-        // trap the wheel. Pan/double-click zoom remain available.
-        scrollZoom={false}
+        // No scroll-zoom in the page: the widget must not trap the wheel.
+        // Pan/double-click zoom remain available; full screen allows it.
+        scrollZoom={!!fill}
         dragRotate={false}
         attributionControl={false}
       >

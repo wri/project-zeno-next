@@ -69,8 +69,21 @@ function drawTitle(
   );
 }
 
+/** Shared sanitizer for export filenames: strips anything but letters/digits. */
+export function sanitizeFilenameBase(
+  title: string | undefined,
+  fallback: string
+): string {
+  return (title || fallback).replace(/[^a-z0-9]/gi, "_");
+}
+
+/** YYYYMMDD for today, shared by every dated export filename. */
+export function todayStamp(): string {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, "");
+}
+
 export function chartImageFilename(title: string | undefined): string {
-  return `${(title || "chart").replace(/[^a-z0-9]/gi, "_")}.png`;
+  return `${sanitizeFilenameBase(title, "chart")}_${todayStamp()}.png`;
 }
 
 export async function exportChartImage(

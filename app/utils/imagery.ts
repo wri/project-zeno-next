@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 
-import type { ImageryInfo } from "@/app/types/chat";
+import type { ImageryInfo, ImageryProvider } from "@/app/types/chat";
 import type {
   ImageryLegendGroup,
   LegendParam,
@@ -15,14 +15,21 @@ import type { Layer } from "@/app/store/layerManagerSlice";
  * payloads through unmapped.
  *
  * Everything is optional: payloads created before a field existed simply lack
- * it (item_count / date_start / date_end were omitted on mosaic cache hits
- * before wri/project-zeno#758). Builders below omit whatever is missing
- * rather than failing.
+ * it (item_count / acquired dates were omitted on mosaic cache hits before
+ * wri/project-zeno#758), and since wri/project-zeno#800 fields a provider has
+ * no value for arrive as explicit JSON null (Planet's monthly basemap has no
+ * scene count, cloud stats or search constraints). This raw shape never
+ * reaches the legend-string builders directly — `toImageryMeta` is the only
+ * function that reads it, collapsing the nulls and legacy field names into
+ * `ImageryMeta`.
  */
 export type ImageryLegendMeta = Partial<
   Pick<
     ImageryInfo,
+    | "provider"
     | "item_count"
+    | "start_date"
+    | "end_date"
     | "date_start"
     | "date_end"
     | "mean_cloud_cover"
@@ -35,11 +42,92 @@ export type ImageryLegendMeta = Partial<
   >
 >;
 
+/**
+ * Fully-normalized imagery metadata used everywhere past the boundary: no
+ * wire nulls, no legacy field-name duplication, provider always resolved.
+ * `toImageryMeta` is the only function that reads `ImageryLegendMeta`'s raw
+ * shape — everything below this line takes `ImageryMeta`.
+ */
+export interface ImageryMeta {
+  provider: ImageryProvider;
+  itemCount?: number;
+  startDate?: string;
+  endDate?: string;
+  meanCloudCover?: number;
+  targetDate?: string;
+  windowDays?: number;
+  maxCloudCover?: number;
+  aoiNames: string[];
+}
+
+/**
+ * Normalizes the wire-shaped `ImageryLegendMeta` to `ImageryMeta` — the one
+ * place that treats null as absent, coalesces start_date/date_start (and
+ * end_date/date_end), and defaults a missing provider to "sentinel-2". Call
+ * this once where an imagery payload enters the app (showImageryTool,
+ * buildImageryGroup); every other imagery function takes the result, never
+ * the raw meta.
+ */
+export function toImageryMeta(meta: ImageryLegendMeta): ImageryMeta {
+  return {
+    // Absent on payloads written before wri/project-zeno#800, which were all
+    // Sentinel-2.
+    provider: meta.provider ?? "sentinel-2",
+    itemCount: meta.item_count ?? undefined,
+    startDate: meta.start_date ?? meta.date_start ?? undefined,
+    endDate: meta.end_date ?? meta.date_end ?? undefined,
+    meanCloudCover: meta.mean_cloud_cover ?? undefined,
+    targetDate: meta.target_date ?? undefined,
+    windowDays: meta.window_days ?? undefined,
+    maxCloudCover: meta.max_cloud_cover ?? undefined,
+    aoiNames: meta.aoi_names ?? [],
+  };
+}
+
+const IMAGERY_TOOL_NAMES: readonly string[] = [
+  "show_imagery",
+  "show_planet_imagery",
+];
+
+export function isImageryTool(toolName?: string): boolean {
+  return toolName !== undefined && IMAGERY_TOOL_NAMES.includes(toolName);
+}
+
 export const IMAGERY_LAYER_ID_PREFIX = "imagery-";
 export const IMAGERY_LEGEND_GROUP_ID = "imagery-group";
 export const IMAGERY_LAYER_NAME = "Satellite Imagery";
-export const IMAGERY_SUBTITLE = "Sentinel-2 · True-colour";
-export const IMAGERY_ATTRIBUTION = "Contains modified Copernicus Sentinel data";
+
+/** Per-provider display strings: legend subtitle, the mosaic noun that opens
+ * the info-popover sentence, and the imagery attribution. */
+const PROVIDER_DISPLAY: Record<
+  ImageryProvider,
+  { subtitle: string; mosaicNoun: string; attribution: string }
+> = {
+  "sentinel-2": {
+    subtitle: "Sentinel-2 · True-colour",
+    mosaicNoun: "Sentinel-2 true-colour mosaic",
+    attribution: "Contains modified Copernicus Sentinel data",
+  },
+  planet: {
+    subtitle: "Planet · Monthly mosaic",
+    mosaicNoun: "Planet monthly true-colour mosaic",
+    attribution: "Imagery © Planet Labs PBC",
+  },
+};
+
+function providerDisplay(provider: ImageryProvider) {
+  return PROVIDER_DISPLAY[provider];
+}
+
+/** Legend subtitle for a provider, e.g. "Sentinel-2 · True-colour". */
+export function imagerySubtitle(provider: ImageryProvider): string {
+  return providerDisplay(provider).subtitle;
+}
+
+/** Map-attribution line for a provider's imagery. */
+export function imageryAttribution(provider: ImageryProvider): string {
+  return providerDisplay(provider).attribution;
+}
 
 // Backend default for show_imagery's max_cloud_cover; anything above it
 // means the agent loosened the search and clouds are expected.
@@ -97,43 +185,44 @@ export function imageryLayerTitle(targetDate?: string): string {
  * The read-only chips under an imagery legend title. Each chip is omitted
  * when its metadata is missing (pre-#758 cache hits, old payloads).
  */
-export function imageryLegendParams(meta: ImageryLegendMeta): LegendParam[] {
+export function imageryLegendParams(meta: ImageryMeta): LegendParam[] {
   const params: LegendParam[] = [];
-  if (meta.date_start && meta.date_end) {
+  if (meta.startDate && meta.endDate) {
     params.push({
       label: "DATES",
-      value: formatImageryDateRange(meta.date_start, meta.date_end),
+      value: formatImageryDateRange(meta.startDate, meta.endDate),
       // Wide enough for a cross-year range ("Dec 28, 2025 – Jan 4, 2026");
       // the default 15ch would hide the end date behind an ellipsis.
       maxValueWidth: "26ch",
     });
   }
-  if (meta.window_days !== undefined) {
-    params.push({ label: "WINDOW", value: `±${meta.window_days} days` });
+  if (meta.windowDays !== undefined) {
+    params.push({ label: "WINDOW", value: `±${meta.windowDays} days` });
   }
-  if (meta.max_cloud_cover !== undefined) {
-    params.push({ label: "CLOUD", value: `< ${meta.max_cloud_cover}%` });
+  if (meta.maxCloudCover !== undefined) {
+    params.push({ label: "CLOUD", value: `< ${meta.maxCloudCover}%` });
   }
-  if (meta.aoi_names && meta.aoi_names.length > 0) {
-    params.push({ label: "AREA", value: meta.aoi_names.join(", ") });
+  if (meta.aoiNames.length > 0) {
+    params.push({ label: "AREA", value: meta.aoiNames.join(", ") });
   }
   return params;
 }
 
 /** The info-popover sentence for an imagery legend entry. */
-export function imageryLegendInfo(meta: ImageryLegendMeta): string {
+export function imageryLegendInfo(meta: ImageryMeta): string {
+  const { mosaicNoun, attribution } = providerDisplay(meta.provider);
   const scenes =
-    meta.item_count !== undefined
-      ? ` built from ${meta.item_count} scene${meta.item_count === 1 ? "" : "s"}`
+    meta.itemCount !== undefined
+      ? ` built from ${meta.itemCount} scene${meta.itemCount === 1 ? "" : "s"}`
       : "";
-  const closest = meta.target_date
-    ? ` closest to ${formatImageryDate(meta.target_date)}`
+  const closest = meta.targetDate
+    ? ` closest to ${formatImageryDate(meta.targetDate)}`
     : "";
   const observed =
-    meta.mean_cloud_cover !== undefined
-      ? ` Mean observed cloud cover ${Math.round(meta.mean_cloud_cover)}%.`
+    meta.meanCloudCover !== undefined
+      ? ` Mean observed cloud cover ${Math.round(meta.meanCloudCover)}%.`
       : "";
-  return `Sentinel-2 true-colour mosaic${scenes}${closest}.${observed} ${IMAGERY_ATTRIBUTION}.`;
+  return `${mosaicNoun}${scenes}${closest}.${observed} ${attribution}.`;
 }
 
 /**
@@ -141,24 +230,24 @@ export function imageryLegendInfo(meta: ImageryLegendMeta): string {
  * limit — partly obscured imagery is then expected and shouldn't read as a
  * rendering bug. Undefined when the default (or a stricter) limit applied.
  */
-export function imageryCloudNote(meta: ImageryLegendMeta): string | undefined {
+export function imageryCloudNote(meta: ImageryMeta): string | undefined {
   if (
-    meta.max_cloud_cover === undefined ||
-    meta.max_cloud_cover <= IMAGERY_DEFAULT_MAX_CLOUD_COVER
+    meta.maxCloudCover === undefined ||
+    meta.maxCloudCover <= IMAGERY_DEFAULT_MAX_CLOUD_COVER
   ) {
     return undefined;
   }
-  return `Searched with a loosened cloud-cover limit (${meta.max_cloud_cover}%) — imagery may contain clouds.`;
+  return `Searched with a loosened cloud-cover limit (${meta.maxCloudCover}%) — imagery may contain clouds.`;
 }
 
 /** Capture-row meta line, e.g. "cloud <50% · 9 scenes". */
-export function captureMetaLabel(meta: ImageryLegendMeta): string {
+export function captureMetaLabel(meta: ImageryMeta): string {
   const parts: string[] = [];
-  if (meta.max_cloud_cover !== undefined) {
-    parts.push(`cloud <${meta.max_cloud_cover}%`);
+  if (meta.maxCloudCover !== undefined) {
+    parts.push(`cloud <${meta.maxCloudCover}%`);
   }
-  if (meta.item_count !== undefined) {
-    parts.push(`${meta.item_count} scene${meta.item_count === 1 ? "" : "s"}`);
+  if (meta.itemCount !== undefined) {
+    parts.push(`${meta.itemCount} scene${meta.itemCount === 1 ? "" : "s"}`);
   }
   return parts.join(" · ");
 }
@@ -177,13 +266,14 @@ export function buildImageryGroup(
   if (imageryLayers.length === 0 && !updating) return null;
 
   const live = imageryLayers[0];
+  const liveMeta = live?.imagery ? toImageryMeta(live.imagery) : undefined;
   const captures = imageryLayers.map((layer, index) => {
-    const imagery = layer.imagery!;
+    const meta = toImageryMeta(layer.imagery!);
     return {
       layerId: layer.id,
-      areaLabel: imagery.aoi_names?.join(", ") || layer.name,
-      dateLabel: formatCaptureDate(imagery.target_date),
-      metaLabel: captureMetaLabel(imagery),
+      areaLabel: meta.aoiNames.join(", ") || layer.name,
+      dateLabel: meta.targetDate ? formatCaptureDate(meta.targetDate) : "",
+      metaLabel: captureMetaLabel(meta),
       visible: layer.visible,
       live: index === 0,
       thumbnailUrl: layer.tileUrl
@@ -201,11 +291,11 @@ export function buildImageryGroup(
     kind: "imagery",
     id: IMAGERY_LEGEND_GROUP_ID,
     title: IMAGERY_LAYER_NAME,
-    subtitle: IMAGERY_SUBTITLE,
+    subtitle: imagerySubtitle(liveMeta?.provider ?? "sentinel-2"),
     opacity: (live?.opacity ?? 1) * 100,
-    params: live?.imagery ? imageryLegendParams(live.imagery) : [],
-    info: live?.imagery ? imageryLegendInfo(live.imagery) : undefined,
-    note: live?.imagery ? imageryCloudNote(live.imagery) : undefined,
+    params: liveMeta ? imageryLegendParams(liveMeta) : [],
+    info: liveMeta ? imageryLegendInfo(liveMeta) : undefined,
+    note: liveMeta ? imageryCloudNote(liveMeta) : undefined,
     captures,
     areaCount: new Set(captures.map((c) => c.areaLabel)).size,
     updating,

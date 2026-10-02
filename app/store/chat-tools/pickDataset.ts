@@ -3,12 +3,12 @@ import {
   StreamMessage,
   DatasetInfo,
   InsightWidget,
-  SuggestedDataset,
 } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import {
   getDatasetLayerContextProps,
   buildDatasetLayers,
+  toLayerEntries,
 } from "@/app/utils/datasetLayerContext";
 
 export function pickDatasetTool(
@@ -16,24 +16,12 @@ export function pickDatasetTool(
   addMessage: (message: Omit<ChatMessage, "id">) => void
 ) {
   try {
-    // Check if we have dataset information with a tile_url
+    // Check if we have dataset information with a tile_url. A pick_dataset
+    // turn that instead asks the user to choose carries a `nudge`, which is
+    // buffered generically in processStreamMessage — not handled here.
     const dataset = streamMessage.dataset as DatasetInfo | undefined;
 
-    const suggestedDatasets = streamMessage.suggested_datasets as
-      | SuggestedDataset[]
-      | undefined;
-
-    if (suggestedDatasets && suggestedDatasets.length > 0 && !dataset) {
-      addMessage({
-        type: "dataset-nudge",
-        message: "",
-        suggestedDatasets,
-        timestamp: streamMessage.timestamp,
-      });
-      return;
-    }
-
-    if (dataset && dataset.tile_url) {
+    if (dataset && (dataset.tile_url || dataset.layers?.length)) {
       // Create a dataset card widget for interactive tile layer adding
       const datasetWidget: InsightWidget = {
         type: "dataset-card",
@@ -56,6 +44,8 @@ export function pickDatasetTool(
         datasetId: dataset.dataset_id,
         layerName: dataset.dataset_name,
         tileUrl: dataset.tile_url,
+        layers: toLayerEntries(dataset.layers, dataset.dataset_id),
+        selectedLayerName: dataset.selected_layer,
         ...layerContextProps, // contextLayer / parameters / start+end dates
       }).forEach(addLayer);
 

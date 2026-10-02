@@ -1,4 +1,5 @@
 import { ChatMessage, InsightWidget } from "@/app/types/chat";
+import { collapseNetFluxRollups } from "@/src/features/net-flux";
 
 // Matches the `[Chart <id>]` markers the backend is meant to inject into the
 // assistant reply so cards can be placed positionally. `<id>` is hex/digits/
@@ -33,14 +34,16 @@ export function buildInsightChatMessages(
   timestamp: string,
   traceToUse?: string
 ): AssistantChatMessage[] {
+  const collapsed = collapseNetFluxRollups(pendingWidgets);
+
   // Fresh regex instances: the `g` flag carries `lastIndex` across calls.
   const hasMarkers = new RegExp(CHART_MARKER_RE).test(text);
 
   if (hasMarkers) {
-    return buildPositionalMessages(text, pendingWidgets, timestamp, traceToUse);
+    return buildPositionalMessages(text, collapsed, timestamp, traceToUse);
   }
 
-  return buildFallbackMessages(text, pendingWidgets, timestamp, traceToUse);
+  return buildFallbackMessages(text, collapsed, timestamp, traceToUse);
 }
 
 // Marker path: split the text on `[Chart N]` markers and interleave cards.

@@ -1,16 +1,8 @@
 import type { Chart } from "../model/chart";
 import type { AnalysisParams, InsightWidget } from "@/app/types/chat";
+import { pickChartColors } from "@/app/utils/pickChartColors";
+import { pivotByColorField } from "./pivot-color-field";
 
-/**
- * Presentation ACL: maps insight charts to the shared `InsightWidget` view model.
- *
- * The single convergence point for every insight acquisition path — the direct
- * analysis LRO and the browse/history list both map through here, never at the
- * transport (ADR 0008). `analysisParams`, when supplied, is attached to every
- * widget in the batch.
- *
- * Unknown chart types fall back to "bar" so a bad type never blanks the widget.
- */
 const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
   "line",
   "bar",
@@ -21,23 +13,45 @@ const ALLOWED_TYPES = new Set<InsightWidget["type"]>([
   "grouped-bar",
   "area",
   "scatter",
+  "stacked-bar-with-line",
+  "hierarchical-bar",
 ]);
 
+/**
+ * Presentation ACL: maps insight charts to the shared `InsightWidget` view model.
+ *
+ * The single convergence point for every insight acquisition path — the direct
+ * analysis LRO and the browse/history list both map through here, never at the
+ * transport (ADR 0008). `analysisParams`, when supplied, is attached to every
+ * widget in the batch.
+ *
+ * Unknown chart types fall back to "bar" so a bad type never blanks the widget.
+ *
+ * The registry color fields are carried through — they drive ChartWidget's
+ * backend-color precedence (see formatCharts.tsx).
+ *
+ * A long-format line/area chart (categories in `colorField`) is pivoted to
+ * one series per category here, so ChartWidget only ever sees wide rows.
+ */
 export function chartsToWidgets(
   charts: Chart[],
   analysisParams?: AnalysisParams
 ): InsightWidget[] {
-  return charts.map((chart) => ({
-    id: chart.id,
-    type: ALLOWED_TYPES.has(chart.type as InsightWidget["type"])
-      ? (chart.type as InsightWidget["type"])
-      : "bar",
-    title: chart.title,
-    description: "",
-    data: chart.data,
-    xAxis: chart.xAxis,
-    yAxis: chart.yAxis,
-    seriesFields: chart.seriesFields,
-    analysisParams,
-  }));
+  return charts.map((chart) => {
+    const pivoted = pivotByColorField(chart);
+    return {
+      id: chart.id,
+      type: ALLOWED_TYPES.has(chart.type as InsightWidget["type"])
+        ? (chart.type as InsightWidget["type"])
+        : "bar",
+      title: chart.title,
+      description: "",
+      data: pivoted?.data ?? chart.data,
+      xAxis: chart.xAxis,
+      yAxis: chart.yAxis,
+      seriesFields: pivoted?.seriesFields ?? chart.seriesFields,
+      analysisParams,
+      ...pickChartColors(chart),
+    };
+  });
 }

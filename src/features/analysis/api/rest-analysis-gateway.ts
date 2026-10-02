@@ -8,6 +8,7 @@ import type {
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
 import type { Chart } from "@/src/entities/insight";
+import type { DivergentColors } from "@/app/types/chartColors";
 import { AnalysisError } from "../model/analysis-error";
 
 // ── Raw API shapes (anti-corruption layer — never leave this file) ─────────────
@@ -20,11 +21,13 @@ interface RawJobResource {
 
 interface RawJobResponse {
   id: string;
-  status: "pending" | "running" | "completed";
+  status: "pending" | "running" | "completed" | "failed";
   resources: RawJobResource[];
 }
 
 interface RawChart {
+  /** Backend chart UUID; older payloads may omit it. */
+  id?: string;
   title: string;
   chart_type: string;
   x_axis: string;
@@ -34,6 +37,9 @@ interface RawChart {
   group_field?: string;
   series_fields?: string[];
   chart_data: Record<string, unknown>[];
+  color_map?: Record<string, string>;
+  series_color?: string | null;
+  divergent_colors?: DivergentColors | null;
 }
 
 interface RawInsightResponse {
@@ -153,6 +159,11 @@ export class RestAnalysisGateway implements AnalysisGateway {
       };
     }
 
+    // Terminal failure: no Retry-After is sent and `resources` stays empty.
+    if (body.status === "failed") {
+      return { status: "failed" };
+    }
+
     const retryAfterRaw = response.headers.get("Retry-After");
     const parsed = retryAfterRaw
       ? parseInt(retryAfterRaw, 10)
@@ -199,17 +210,24 @@ export class RestAnalysisGateway implements AnalysisGateway {
       id: body.id,
       charts: body.charts.map(
         (c, i): Chart => ({
+          // Deliberately not `c.id`: the insight-scoped `{id}-chart-{n}`
+          // form is what `netFluxGroupKey` and `orderInsightsForPager` parse
+          // to group an analysis's charts. Changing it needs both consumers.
           id: `${body.id}-chart-${i}`,
           position: i,
           title: c.title,
           type: c.chart_type,
           xAxis: c.x_axis,
-          yAxis: c.y_axis,
+          // Omitted entirely on some charts (the LGMS roll-ups), not just "".
+          yAxis: c.y_axis ?? "",
           colorField: c.color_field ?? "",
           stackField: c.stack_field ?? "",
           groupField: c.group_field ?? "",
           seriesFields: c.series_fields ?? [],
           data: c.chart_data,
+          colorMap: c.color_map,
+          seriesColor: c.series_color,
+          divergentColors: c.divergent_colors,
         })
       ),
     };

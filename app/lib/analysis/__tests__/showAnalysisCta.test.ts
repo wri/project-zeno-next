@@ -22,6 +22,8 @@ const selection: AnalysisSelection = {
 
 // Tree cover loss in the dataset catalogue (DATASET_BY_ID)
 const TCL_ID = 4;
+// Intact Forest Landscapes — contextual, view-only, never analysable.
+const IFL_ID = 101;
 
 const datasetLayer = (overrides: Partial<Layer> = {}): Layer => ({
   id: `dataset-${TCL_ID}`,
@@ -56,6 +58,33 @@ describe("showAnalysisCta", () => {
       datasetId: TCL_ID,
       datasetName: "Tree cover loss",
     });
+  });
+
+  it("does not nudge when the only active dataset is view-only", () => {
+    seedLayers([
+      datasetLayer({
+        id: `dataset-${IFL_ID}`,
+        name: "Intact Forest Landscapes",
+        datasetId: IFL_ID,
+      }),
+    ]);
+
+    expect(showAnalysisCta(selection)).toBe(false);
+    expect(analyseNudges()).toHaveLength(0);
+  });
+
+  it("skips a view-only dataset and nudges for a co-active analysable one", () => {
+    seedLayers([
+      datasetLayer({
+        id: `dataset-${IFL_ID}`,
+        name: "Intact Forest Landscapes",
+        datasetId: IFL_ID,
+      }),
+      datasetLayer(),
+    ]);
+
+    expect(showAnalysisCta(selection)).toBe(true);
+    expect(analyseNudges()[0].analyseSuggestion?.datasetId).toBe(TCL_ID);
   });
 
   it("appends the nudge as the last message", () => {

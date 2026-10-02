@@ -1,26 +1,19 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Box,
   Button,
   Flex,
   IconButton,
-  Menu,
-  Portal,
   Stack,
   Text,
   Wrap,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  CrosshairIcon,
-  DotsThreeVerticalIcon,
-  PolygonIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { CrosshairIcon, PolygonIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
-import type { Feature, MultiPolygon } from "geojson";
+import type { Feature } from "geojson";
 
 import {
   getCatalogColumnMotionStyle,
@@ -40,9 +33,14 @@ import {
 } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
+import { customAreaToFeature } from "@/src/entities/custom-area";
 
 import { CatalogCard } from "./CatalogCard";
+import { AREA_LABEL_COLOR, areaActionIconProps } from "./AreaCardMenu";
+import ConversationAreaActionsMenu from "./ConversationAreaActionsMenu";
+import CustomAreaActionsMenu from "./CustomAreaActionsMenu";
 import { AreaToolbarButtons } from "./AreaToolbarButtons";
+import { BoundariesList } from "./BoundariesList";
 import { AreaCatalogThumbnail } from "./AreaCatalogThumbnail";
 import { Tooltip } from "./ui/tooltip";
 import type { AOISelection } from "@/app/types/chat";
@@ -69,14 +67,14 @@ const AREA_TYPE_LABELS: Record<string, string> = {
   custom: "User uploaded areas",
 };
 
-const AREA_LABEL_COLOR = "#2D6BE4";
 const AREA_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
 
-type AreaFilter = "conversation" | "monitored";
+type AreaFilter = "boundaries" | "conversation" | "mine";
 
 const AREA_FILTERS: { id: AreaFilter; label: string }[] = [
+  { id: "boundaries", label: "Boundaries" },
   { id: "conversation", label: "In this conversation" },
-  { id: "monitored", label: "Monitored areas" },
+  { id: "mine", label: "My areas" },
 ];
 
 /**
@@ -85,17 +83,19 @@ const AREA_FILTERS: { id: AreaFilter; label: string }[] = [
  * mutually exclusive with it via `sidebarStore`.
  *
  * Wiring:
+ *  - "Boundaries" (default) — `BoundariesList`: one card per boundary layer;
+ *    the toggle sets `mapStore.selectAreaLayer` (one at a time). Clicking a
+ *    feature on the visible boundary layer picks it as an area.
  *  - "In this conversation" — read from `mapStore.layers` (filtered via
  *    `isAreaLayer`); the visible area layer IS the scope. Show-on-map toggle
  *    controls the layer's `visible` flag via `mapStore.setLayerVisibility`.
- *  - "Monitored areas" — `useCustomAreasListSuspense().customAreas`. Toggling
+ *  - "My areas" — `useCustomAreasListSuspense().customAreas`. Toggling
  *    show-on-map registers the geometry and adds an area layer (or removes it).
- *  - Header actions delegate to existing `mapStore` actions:
- *    select-on-map (`setSelectAreaLayer` / `setSelectionMode`), upload
+ *  - Header actions delegate to existing `mapStore` actions: upload
  *    (`toggleUploadAreaDialog`), draw (`startDrawing`).
  */
 export default function AreasPanel() {
-  const [filter, setFilter] = useState<AreaFilter>("conversation");
+  const [filter, setFilter] = useState<AreaFilter>("boundaries");
   const { areasPanelOpen, setAreasPanelOpen, isChatFullSize } =
     useSidebarStore();
   const setCreateAreaFn = useMapStore((s) => s.setCreateAreaFn);
@@ -169,13 +169,15 @@ export default function AreasPanel() {
                 pb={2}
                 css={areasListScrollStyle}
               >
-                {filter === "conversation" ? (
+                {filter === "boundaries" ? (
+                  <BoundariesList />
+                ) : filter === "conversation" ? (
                   <ConversationAreasList />
                 ) : (
                   <Suspense
                     fallback={
                       <Text fontSize="sm" color="fg.muted" mt={4}>
-                        Loading monitored areas…
+                        Loading your areas…
                       </Text>
                     }
                   >
@@ -299,8 +301,8 @@ function ConversationAreasList() {
   if (areaLayers.length === 0) {
     return (
       <Text fontSize="sm" color="fg.muted" mt={4}>
-        No areas selected yet. Use the tools above to pick, upload, or draw an
-        area — or ask the assistant to find one for you.
+        No areas selected yet. Pick one from Boundaries, upload or draw an area,
+        or ask the assistant to find one for you.
       </Text>
     );
   }
@@ -316,8 +318,6 @@ function ConversationAreasList() {
 
 function ConversationAreaCard({ layer }: { layer: Layer }) {
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
-  const removeLayer = useMapStore((s) => s.removeLayer);
-  const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
   const flyToGeoJson = useMapStore((s) => s.flyToGeoJson);
   const flyToBounds = useMapStore((s) => s.flyToBounds);
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
@@ -331,11 +331,6 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
 
   function handleToggle(checked: boolean) {
     setLayerVisibility(layer.id, checked);
-  }
-
-  function handleRemove() {
-    (layer.featureRefs ?? []).forEach((ref) => removeFromRegistry(ref));
-    removeLayer(layer.id);
   }
 
   function handleLocate() {
@@ -380,8 +375,12 @@ function ConversationAreaCard({ layer }: { layer: Layer }) {
         selectedBg={AREA_SELECTED_BG}
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
+        dataPanel="areas"
         titleActions={
-          <AreaCardActions onLocate={handleLocate} onRemove={handleRemove} />
+          <AreaCardActions
+            onLocate={handleLocate}
+            menu={<ConversationAreaActionsMenu layer={layer} />}
+          />
         }
       />
     </Box>
@@ -400,7 +399,7 @@ function MonitoredAreasList() {
   if (sorted.length === 0) {
     return (
       <Text fontSize="sm" color="fg.muted" mt={4}>
-        No monitored areas yet. Upload or draw an area to save it here.
+        No saved areas yet. Upload or draw an area to save it here.
       </Text>
     );
   }
@@ -428,19 +427,10 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
   const isVisible = layer?.visible ?? false;
 
   function buildFeature(): Feature {
-    const multi: MultiPolygon = {
-      type: "MultiPolygon",
-      coordinates: area.geometries.map((poly) => poly.coordinates),
-    };
-    return {
-      type: "Feature",
-      id: area.id,
-      geometry: multi,
-      properties: { id: area.id, name: area.name },
-    };
+    return customAreaToFeature(area);
   }
 
-  const feature = useMemo(() => buildFeature(), [area]);
+  const feature = useMemo(() => customAreaToFeature(area), [area]);
   const aoiSelection = useMemo(
     (): AOISelection => ({
       name: area.name,
@@ -515,20 +505,14 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
         selectedBg={AREA_SELECTED_BG}
         showOnMap={isVisible}
         onShowOnMapChange={handleToggle}
+        dataPanel="areas"
         titleActions={
-          isVisible ? (
-            <AreaCardActions
-              onLocate={handleLocate}
-              onRemove={
-                layer
-                  ? () => {
-                      removeFromRegistry({ name: area.name, source: "custom" });
-                      removeLayer(area.id);
-                    }
-                  : undefined
-              }
-            />
-          ) : undefined
+          // Rename/delete act on the saved area, so the kebab must show even
+          // when the area isn't on the map; the locate button stays on-map only.
+          <AreaCardActions
+            onLocate={isVisible ? handleLocate : undefined}
+            menu={<CustomAreaActionsMenu area={area} />}
+          />
         }
       />
     </Box>
@@ -537,69 +521,35 @@ function MonitoredAreaCard({ area }: { area: CustomArea }) {
 
 function AreaCardActions({
   onLocate,
-  onRemove,
+  menu,
 }: {
-  onLocate: () => void;
-  onRemove?: () => void;
+  /** Omit to hide the locate button (e.g. when the area isn't on the map). */
+  onLocate?: () => void;
+  /** Kebab actions node for the card (per-tab: conversation vs. monitored). */
+  menu: ReactNode;
 }) {
-  const compactIconProps = {
-    variant: "ghost" as const,
-    color: AREA_LABEL_COLOR,
-    boxSize: "16px",
-    minW: "16px",
-    maxW: "16px",
-    minH: "16px",
-    maxH: "16px",
-    p: 0,
-    css: {
-      "& svg": {
-        width: "16px",
-        height: "16px",
-      },
-    },
-  };
-
   return (
     <Flex align="center" gap="16px" flexShrink={0} h="16px">
-      <Tooltip
-        content="Center on map"
-        positioning={{ placement: "top" }}
-        showArrow
-        variant="dark"
-      >
-        <IconButton
-          aria-label="Center on map"
-          {...compactIconProps}
-          onClick={(e) => {
-            e.stopPropagation();
-            onLocate();
-          }}
+      {onLocate && (
+        <Tooltip
+          content="Center on map"
+          positioning={{ placement: "top" }}
+          showArrow
+          variant="dark"
         >
-          <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
-        </IconButton>
-      </Tooltip>
-      {onRemove && (
-        <Menu.Root positioning={{ placement: "bottom-end" }}>
-          <Menu.Trigger asChild>
-            <IconButton
-              aria-label="More area actions"
-              {...compactIconProps}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DotsThreeVerticalIcon size={16} color={AREA_LABEL_COLOR} />
-            </IconButton>
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content>
-                <Menu.Item value="remove" onClick={onRemove}>
-                  Remove from conversation
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
+          <IconButton
+            aria-label="Center on map"
+            {...areaActionIconProps}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLocate();
+            }}
+          >
+            <CrosshairIcon size={16} color={AREA_LABEL_COLOR} />
+          </IconButton>
+        </Tooltip>
       )}
+      {menu}
     </Flex>
   );
 }

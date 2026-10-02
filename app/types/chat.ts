@@ -1,5 +1,6 @@
 import { FeatureCollection } from "geojson";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
+import type { ChartColorFields } from "@/app/types/chartColors";
 
 export type { BlogArticle };
 
@@ -38,29 +39,49 @@ export interface ChatMessage {
     | "system"
     | "widget"
     | "area-card"
+    | "dashboard-card"
     | "error"
     | "warning"
-    | "dataset-nudge"
+    | "nudge"
     | "analyse-nudge"
     | "view-analysis-nudge"
+    | "create-dashboard-nudge"
     | "stopped";
   message: string;
   timestamp: string;
   widgets?: InsightWidget[]; // For widget messages
   aoiSelection?: AOISelection; // For area-card messages
-  suggestedDatasets?: SuggestedDataset[]; // For dataset-nudge messages
+  dashboardId?: string; // For dashboard-card messages
+  dashboardName?: string; // For dashboard-card messages; absent on threads that predate the backend streaming it
+  nudge?: Nudge; // For nudge messages
   analyseSuggestion?: AnalyseSuggestion; // For analyse-nudge messages
   context?: MessageContext; // Read-only context snapshot for user messages
   viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
+  createDashboardSuggestion?: CreateDashboardSuggestion; // For create-dashboard-nudge messages
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete
   suppressFooter?: boolean; // Non-terminal segment of a [Chart uuid] split — no footer, tight spacing
 }
 
-// Widget types for insights
-export interface InsightWidget {
-  id?: string; // backend chart UUID, used to resolve [Chart <id>] references in text
+// Widget types for insights. Extends ChartColorFields with the backend color
+// registry's resolution for this chart (absent for pre-migration insights).
+export interface InsightWidget extends ChartColorFields {
+  /**
+   * Stable widget identity: React keys, view-store keys (net-flux/tree),
+   * sibling grouping (net-flux/order-insights), dashboard widget CRUD. NOT
+   * used to resolve `[Chart <id>]` chat markers — those are matched
+   * positionally by array index (see `insight-chat-messages.ts`); the
+   * marker's own id text is discarded.
+   */
+  id?: string;
+  /**
+   * The chart's own title as the backend sent it, preserved when `title` is
+   * overwritten with a "{dataset} in {location}" display title. Charts of one
+   * analysis all share that display title, so anything naming an individual
+   * chart (the net-flux DETAIL pill, its header subtitle) reads this instead.
+   */
+  backendTitle?: string;
   type:
     | "line"
     | "bar"
@@ -70,13 +91,19 @@ export interface InsightWidget {
     | "stacked-bar"
     | "grouped-bar"
     | "area"
-    | "scatter";
+    | "scatter"
+    | "stacked-bar-with-line"
+    | "hierarchical-bar";
   title: string;
   description: string;
   data: unknown;
   xAxis: string;
   yAxis: string;
   seriesFields?: string[];
+  // Column rendered as a Line overlay on top of the stacked bars — only
+  // meaningful for type "stacked-bar-with-line" (e.g. a net-flux line over
+  // emissions/removals stacks). Excluded from the stack itself.
+  lineField?: string;
   datasetName?: string;
   generation?: InsightGeneration; // Optional provenance for how the widget was generated
   // Whether this insight is curated/verified rather than AI-generated. Set from
@@ -139,7 +166,11 @@ export interface UiContext {
     aoi_name: string;
     subtype?: string;
   };
-  dataset_selected?: { dataset: DatasetInfo };
+  dataset_selected?: {
+    // For a multi-layer dataset, `dataset.selected_layer` names the layer
+    // visible on the map (e.g. LGMS's agriculture), so the agent narrates it.
+    dataset: DatasetInfo;
+  };
   daterange_selected?: {
     start_date: string;
     end_date: string;
@@ -162,7 +193,7 @@ export interface StreamMessage {
   name?: string;
   content?: string;
   dataset?: object;
-  suggested_datasets?: SuggestedDataset[];
+  nudge?: Nudge;
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;
@@ -188,32 +219,56 @@ export interface StreamMessage {
   // tells the client to refetch the named resource.
   msg_type?: string;
   dashboard_id?: string;
+  dashboard_name?: string;
 }
 
-// Sentinel-2 mosaic payload written to agent state by the show_imagery tool.
-// tile_url / tilejson_url are absolute URLs to the tiler the backend is
-// configured to use (currently the public GFW tiles service). mosaic_id is an
-// opaque recipe token, stable across reruns of the same request.
+export type ImageryProvider = "sentinel-2" | "planet";
+
+// Imagery payload written to agent state by the show_imagery /
+// show_planet_imagery tools. tile_url / tilejson_url are absolute URLs to the
+// tiler the backend is configured to use. When TileJSON is unavailable,
+// bounds and zoom limits may be supplied directly. mosaic_id is an opaque
+// recipe token, stable across reruns of the same request.
+//
+// Since wri/project-zeno#800 the backend serialises every optional field it
+// has no value for as an explicit JSON null (e.g. Planet's monthly basemap
+// has no scene count or cloud stats), so consumers must treat null and
+// undefined alike (`== null`, never `=== undefined`).
+//
+// This is the raw wire shape. Legend/display code should use `ImageryMeta`
+// via `toImageryMeta` (app/utils/imagery.ts) instead of reading these fields
+// directly.
 export interface ImageryInfo {
+  // Absent on payloads written before wri/project-zeno#800, which were all
+  // Sentinel-2.
+  provider?: ImageryProvider | null;
   tile_url: string;
-  tilejson_url: string;
+  tilejson_url?: string | null;
+  bounds?: [number, number, number, number] | null;
+  min_zoom?: number | null;
+  max_zoom?: number | null;
   mosaic_id: string;
-  // Scene count and acquired date range; optional because payloads written
-  // before wri/project-zeno#758 omitted them on mosaic cache hits.
-  item_count?: number;
-  date_start?: string;
-  date_end?: string;
+  // Scene count; null/absent when the provider has no per-scene data
+  // (Planet) or on pre-#758 mosaic cache hits.
+  item_count?: number | null;
+  // Acquired date range. Renamed from date_start/date_end by
+  // wri/project-zeno#800; the old names survive on replayed old threads.
+  start_date?: string | null;
+  end_date?: string | null;
+  date_start?: string | null;
+  date_end?: string | null;
   // Observed cloud-cover stats across the mosaic's scenes (%), added by
-  // wri/project-zeno#758 — absent on older payloads.
-  mean_cloud_cover?: number;
-  min_cloud_cover?: number;
-  max_cloud_cover_observed?: number;
-  target_date: string;
+  // wri/project-zeno#758 — absent on older payloads, null for Planet.
+  mean_cloud_cover?: number | null;
+  min_cloud_cover?: number | null;
+  max_cloud_cover_observed?: number | null;
+  target_date?: string | null;
   aoi_names: string[];
   // Search constraints used to build the mosaic. Absent on payloads created
-  // before these fields existed (replayed old threads).
-  window_days?: number;
-  max_cloud_cover?: number;
+  // before these fields existed (replayed old threads), null for Planet
+  // where they don't apply.
+  window_days?: number | null;
+  max_cloud_cover?: number | null;
 }
 
 export interface AOI {
@@ -235,6 +290,17 @@ export interface DatasetContextLayer {
   tile_url: string | null;
   source_layer?: string | null; // present => render as MVT vector
   type?: "raster" | "vector"; // optional explicit override from backend
+}
+
+// One of a dataset's primary data layers (e.g. LGMS's "agriculture" and
+// "lulucf" layers). Siblings are mutually exclusive — only one is on the map
+// at a time (see buildDatasetLayers). Distinct from DatasetContextLayer, a
+// masking/reference overlay rendered beneath the primary layer.
+export interface DatasetLayer {
+  name: string;
+  tile_url: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface DatasetParameter {
@@ -277,6 +343,51 @@ export interface ViewAnalysisSuggestion {
   accepted?: boolean;
 }
 
+// Payload of a create-dashboard-nudge message: the AOI identity snapshotted at
+// injection time, plus the analysis inputs used to seed the new dashboard.
+//
+// No `accepted` flag, unlike its analyse/view-analysis siblings: once the
+// dashboard exists the card relabels itself to "Open …" off the dashboards
+// query, so acceptance is derivable rather than stored.
+export interface CreateDashboardSuggestion {
+  areaName: string;
+  // POST /api/dashboards requires all three, so the nudge is only surfaced
+  // when the clicked feature resolved an id and a subtype.
+  source: string;
+  srcId: string;
+  subtype: string;
+  // The active dataset and window, used to attach a first insight to the new
+  // dashboard. Optional because the AOI menu can create without a dataset —
+  // that dashboard opens as an empty grid (PZB-1119).
+  datasetId?: number;
+  datasetName?: string;
+  /** ISO date string "yyyy-MM-dd" */
+  startDate?: string;
+  /** ISO date string "yyyy-MM-dd" */
+  endDate?: string;
+}
+
+// A question the agent asks the user, rendered as a row of clickable options
+// under the accompanying assistant message. Clicking an option submits that
+// exact string as the user's next chat message ("human_input") — there is no
+// separate resolve endpoint.
+export interface Nudge {
+  // Free-form label, not an enum. Known values: "dataset_choice",
+  // "aoi_choice", "dashboard_choice", "insight_choice" — plus arbitrary
+  // ad-hoc values from send_nudge ("confirm", "clarify", …). Unknown types
+  // render as plain option buttons.
+  type: string;
+  // Each string is BOTH the button label AND the exact text resubmitted as
+  // the user's next chat message on click.
+  options: string[];
+  // Optional structured payloads, same order/length as options. Only present
+  // for dataset_choice (SuggestedDataset entries) and aoi_choice (resolved
+  // AOI entries). Never assume alignment with options — validate per entry.
+  data?: Array<Record<string, unknown>>;
+}
+
+// Shape of a dataset_choice nudge `data` entry. Options arrive ranked;
+// treat index 0 as recommended.
 export interface SuggestedDataset {
   dataset_id: number;
   dataset_name: string;
@@ -285,7 +396,6 @@ export interface SuggestedDataset {
   start_date?: string;
   end_date?: string;
   reason?: string;
-  recommended?: boolean;
 }
 
 export interface DatasetInfo {
@@ -294,13 +404,24 @@ export interface DatasetInfo {
   source?: string;
   reason?: string;
   data_layer?: string;
+  // Deprecated: mirrors layers[0].tile_url. Kept for callers that haven't
+  // migrated to `layers` yet — new code should read `layers` instead.
   tile_url: string;
+  // The dataset's primary data layer(s). Always at least one entry. Most
+  // datasets have exactly one; LGMS has several, of which one is shown at a
+  // time.
+  layers?: DatasetLayer[];
+  // Name of the one layer (from `layers`) on the map when a dataset has more
+  // than one; the rest aren't added to the map at all. Set by pick_dataset,
+  // and by deriveContext from the live map when sent back as ui_context.
+  selected_layer?: string;
   context_layer?: string | null;
   context_layers?: DatasetContextLayer[];
   parameters?: DatasetParameter[] | null;
   start_date?: string;
   end_date?: string;
   threshold?: number | null;
+  summary?: string;
   description?: string;
   methodology?: string;
   cautions?: string;
@@ -327,7 +448,12 @@ export interface LangChainResponse {
 // LangChain-based API response structure (for internal API use)
 export interface LangChainUpdate {
   dataset: object;
-  suggested_datasets?: SuggestedDataset[];
+  nudge?: Nudge;
+  // Legacy state field replaced by `nudge` (wri/project-zeno#770). Kept
+  // because threads created before the migration permanently contain
+  // suggested_datasets in their stored stream lines, which fetchThread
+  // replays — see the parser fallback in parse-stream-message.ts.
+  suggested_datasets?: (SuggestedDataset & { recommended?: boolean })[];
   aoi?: object;
   aoi_selection?: AOISelection;
   imagery?: ImageryInfo;

@@ -8,17 +8,21 @@ import {
 import { searchAois } from "../api/aois";
 import {
   addInsightWidget,
+  addTextWidget,
   createDashboard,
   createDashboardPayloadFromAoi,
   deleteDashboard,
   deleteWidget,
   getDashboard,
+  listAnalysisTemplates,
   renameDashboard,
   updateWidget,
+  updateSection,
   type WidgetUpdate,
 } from "../api/dashboards";
 import type { AoiSearchResult, Dashboard } from "../api/schemas";
-import type { WidgetPositionPatch } from "../lib/widgets";
+import type { SectionMovePatch } from "../model/dashboard-sections";
+import type { WidgetMovePatch } from "../model/widget-move";
 import { dashboardKeys } from "../hooks/dashboardKeys";
 
 export { dashboardKeys } from "../hooks/dashboardKeys";
@@ -30,6 +34,19 @@ export function useDashboard(id: string) {
     queryFn: () => getDashboard(id),
     enabled: id.length > 0,
     staleTime: 10_000,
+  });
+}
+
+/**
+ * The template registry, labels in the user's language. It only changes on a
+ * backend deploy, so one fetch per session is enough.
+ */
+export function useAnalysisTemplates(enabled = true) {
+  return useQuery({
+    queryKey: dashboardKeys.analysisTemplates,
+    queryFn: listAnalysisTemplates,
+    staleTime: Infinity,
+    enabled,
   });
 }
 
@@ -123,13 +140,16 @@ export function useDeleteDashboard() {
   });
 }
 
-// Shared optimistic-update plumbing for the widget mutations: snapshot the
-// cached dashboard, apply `apply` to its widgets, roll back on error and
-// refetch on settle (the server is the position/config authority).
-function useOptimisticWidgetMutation<TVars>(
+// Shared optimistic-update plumbing for the widget and section mutations:
+// snapshot the cached dashboard, apply `apply` to it, roll back on error and
+// refetch on settle (the server is the position/config authority). `onError`
+// runs after the rollback, on the mutation rather than the caller's
+// component, so it still runs when the change unmounted that component.
+export function useOptimisticDashboardMutation<TVars>(
   dashboardId: string,
   mutationFn: (vars: TVars) => Promise<unknown>,
-  apply: (widgets: Dashboard["widgets"], vars: TVars) => Dashboard["widgets"]
+  apply: (dashboard: Dashboard, vars: TVars) => Dashboard,
+  onError?: (error: Error) => void
 ) {
   const queryClient = useQueryClient();
   const key = dashboardKeys.detail(dashboardId);
@@ -140,20 +160,42 @@ function useOptimisticWidgetMutation<TVars>(
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<Dashboard>(key);
       if (previous) {
-        queryClient.setQueryData<Dashboard>(key, {
-          ...previous,
-          widgets: apply(previous.widgets, vars),
-        });
+        queryClient.setQueryData<Dashboard>(key, apply(previous, vars));
       }
       return { previous };
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) queryClient.setQueryData(key, context.previous);
+      onError?.(err);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: key });
     },
   });
+}
+
+function useOptimisticWidgetMutation<TVars>(
+  dashboardId: string,
+  mutationFn: (vars: TVars) => Promise<unknown>,
+  apply: (widgets: Dashboard["widgets"], vars: TVars) => Dashboard["widgets"]
+) {
+  return useOptimisticDashboardMutation(dashboardId, mutationFn, (d, vars) => ({
+    ...d,
+    widgets: apply(d.widgets, vars),
+  }));
+}
+
+// Mirrors the PATCH's three-valued grouping: a string moves the widget into
+// that section and an explicit null moves it to the top level, while
+// `undefined` leaves the grouping alone — `JSON.stringify` drops that key, so
+// the server never sees it, and the cache must not act on it either.
+function withSectionId<T extends { section_id?: string | null }>(
+  widget: T,
+  patch: { section_id?: string | null }
+): T {
+  return patch.section_id !== undefined
+    ? { ...widget, section_id: patch.section_id }
+    : widget;
 }
 
 export function useUpdateWidget(dashboardId: string) {
@@ -164,13 +206,16 @@ export function useUpdateWidget(dashboardId: string) {
     (widgets, { widgetId, patch }) =>
       widgets.map((w) =>
         w.id === widgetId
-          ? {
-              ...w,
-              ...(patch.position !== undefined
-                ? { position: patch.position }
-                : {}),
-              ...(patch.config ? { config: patch.config } : {}),
-            }
+          ? withSectionId(
+              {
+                ...w,
+                ...(patch.position !== undefined
+                  ? { position: patch.position }
+                  : {}),
+                ...(patch.config ? { config: patch.config } : {}),
+              },
+              patch
+            )
           : w
       )
   );
@@ -202,6 +247,22 @@ export function useAddInsightWidget(dashboardId: string) {
   });
 }
 
+// "Text block" suggested module — adds a blank note widget directly, no chat
+// round-trip. Not optimistic for the same reason as useAddInsightWidget: the
+// server assigns the widget id/position, so the button stays disabled-safe
+// only once the refetch actually reflects the new card.
+export function useAddTextWidget(dashboardId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => addTextWidget(dashboardId),
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: dashboardKeys.detail(dashboardId),
+      }),
+  });
+}
+
 export function useDeleteWidget(dashboardId: string) {
   return useOptimisticWidgetMutation(
     dashboardId,
@@ -210,16 +271,44 @@ export function useDeleteWidget(dashboardId: string) {
   );
 }
 
-export function useReorderWidgets(dashboardId: string) {
+// A drag's whole write: the new position of every widget the move renumbered,
+// plus `section_id` on the one that changed container. Optimistic, so the card
+// lands in its new panel on drop rather than after the refetch.
+export function useMoveWidgets(dashboardId: string) {
   return useOptimisticWidgetMutation(
     dashboardId,
-    (patches: WidgetPositionPatch[]) =>
+    (patches: WidgetMovePatch[]) =>
       Promise.all(patches.map((p) => updateWidget(dashboardId, p.id, p))),
     (widgets, patches) => {
+      const byId = new Map(patches.map((p) => [p.id, p]));
+      return widgets.map((w) => {
+        const patch = byId.get(w.id);
+        if (!patch) return w;
+        return withSectionId({ ...w, position: patch.position }, patch);
+      });
+    }
+  );
+}
+
+// A section drag's write: the new position of every section the move
+// renumbered. Optimistic, like widget moves.
+export function useMoveSections(dashboardId: string) {
+  return useOptimisticDashboardMutation(
+    dashboardId,
+    (patches: SectionMovePatch[]) =>
+      Promise.all(
+        patches.map((p) =>
+          updateSection(dashboardId, p.id, { position: p.position })
+        )
+      ),
+    (dashboard, patches) => {
       const positions = new Map(patches.map((p) => [p.id, p.position]));
-      return widgets.map((w) =>
-        positions.has(w.id) ? { ...w, position: positions.get(w.id)! } : w
-      );
+      return {
+        ...dashboard,
+        sections: dashboard.sections.map((s) =>
+          positions.has(s.id) ? { ...s, position: positions.get(s.id)! } : s
+        ),
+      };
     }
   );
 }

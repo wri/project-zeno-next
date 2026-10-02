@@ -80,7 +80,7 @@ describe("ViewAnalysisNudge", () => {
 
     expect(runSpy).toHaveBeenCalledWith({
       area: suggestion.area,
-      dataset: { id: 4 },
+      dataset: { id: 4, name: "Tree cover loss" },
       startDate: "2001-01-01",
       endDate: "2025-12-31",
     });

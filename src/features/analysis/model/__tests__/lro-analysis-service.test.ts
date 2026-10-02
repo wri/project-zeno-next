@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { LROAnalysisService } from "../lro-analysis-service";
+import { AnalysisJobFailedError } from "../analysis-error";
 import type { AnalysisGateway, JobResource } from "../analysis-gateway";
 import type { Clock } from "../clock";
 import type { AnalysisSelection } from "../analysis-selection";
@@ -160,6 +161,38 @@ describe("LROAnalysisService", () => {
     const service = new LROAnalysisService(gateway, new NoopClock());
 
     await expect(service.run(SELECTION)).rejects.toThrow(/no resources/);
+  });
+
+  it("rejects with AnalysisJobFailedError as soon as the job fails", async () => {
+    const gateway = makeGateway({
+      poll: vi.fn().mockResolvedValue({ status: "failed" }),
+    });
+    const clock: Clock = { wait: vi.fn().mockResolvedValue(undefined) };
+    const service = new LROAnalysisService(gateway, clock);
+
+    const run = service.run(SELECTION);
+    await expect(run).rejects.toBeInstanceOf(AnalysisJobFailedError);
+    await expect(run).rejects.toMatchObject({ jobId: JOB_ID });
+    // A failure is terminal: no waiting for a retry, nothing to fetch.
+    expect(clock.wait).not.toHaveBeenCalled();
+    expect(gateway.fetchResult).not.toHaveBeenCalled();
+  });
+
+  it("stops waiting the moment a pending job turns failed", async () => {
+    const gateway = makeGateway({
+      poll: vi
+        .fn()
+        .mockResolvedValueOnce({ status: "pending", retryAfterSecs: 5 })
+        .mockResolvedValueOnce({ status: "failed" }),
+    });
+    const clock: Clock = { wait: vi.fn().mockResolvedValue(undefined) };
+    const service = new LROAnalysisService(gateway, clock);
+
+    await expect(service.run(SELECTION)).rejects.toBeInstanceOf(
+      AnalysisJobFailedError
+    );
+    expect(clock.wait).toHaveBeenCalledTimes(1);
+    expect(gateway.poll).toHaveBeenCalledTimes(2);
   });
 
   it("throws when fetchResult fails", async () => {

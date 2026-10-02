@@ -12,13 +12,7 @@ import {
   Wrap,
 } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowArcLeftIcon,
-  ArrowArcRightIcon,
-  CaretLeftIcon,
-  ChartLineIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { ChartLineIcon, XIcon } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import { useShallow } from "zustand/react/shallow";
 
@@ -32,6 +26,7 @@ import {
 } from "@/app/explorationLayout";
 import {
   chartsToWidgets,
+  resolveInsightTitle,
   type InsightRecord,
   type InsightVerification,
 } from "@/src/entities/insight";
@@ -39,10 +34,27 @@ import {
 // the dashboards pages into its bundle, and so mounting the pane on a dashboard
 // can't create a feature import cycle — matching how the app already reaches
 // dashboards/ui (e.g. WidgetMessage → AddToDashboardToggle).
-import { useAddChartToDashboard } from "@/src/features/dashboards/ui/useAddChartToDashboard";
+import CurrentDashboardAnalysisTemplates from "@/src/features/dashboards/ui/CurrentDashboardAnalysisTemplates";
+import RemoveAnalysisDialog from "@/src/features/dashboards/ui/RemoveAnalysisDialog";
+import { useAddInsightToDashboard } from "@/src/features/dashboards/ui/useAddInsightToDashboard";
 import { useCurrentDashboardArea } from "@/src/features/dashboards/ui/useCurrentDashboardArea";
 import { useUserInsights } from "./use-user-insights";
-import { verifiedInsights } from "../lib/verified-fixtures";
+import { CuratedInsightsList } from "./curated-insights-list";
+import {
+  INSIGHT_LABEL_COLOR,
+  INSIGHT_SELECTED_BG,
+  InsightDetail,
+  InsightGroupDetail,
+  InsightThumbnail,
+  VerificationBadge,
+} from "./insight-card-parts";
+import {
+  liveWidgetsToGroups,
+  mergeGroupsById,
+  partitionByVerification,
+  recordToGroup,
+  type InsightGroupItem,
+} from "../lib/insight-groups";
 import useChatStore from "@/app/store/chatStore";
 import useInsightStore from "@/app/store/insightStore";
 import useSidebarStore from "@/app/store/sidebarStore";
@@ -50,10 +62,6 @@ import useViewContextStore from "@/app/store/viewContextStore";
 import type { InsightWidget } from "@/app/types/chat";
 
 import { CatalogCard } from "@/app/components/CatalogCard";
-import InsightCaption from "@/app/components/InsightCaption";
-import WidgetMessage from "@/app/components/WidgetMessage";
-import { Tooltip } from "@/app/components/ui/tooltip";
-import { WidgetIconComponent } from "@/app/utils/widgetIcons";
 
 /** Matches the other exploration panels' enter & exit (slide from the left). */
 const insightsPanelSlideTransition = {
@@ -69,51 +77,47 @@ const insightsListScrollStyle = {
   "&::-webkit-scrollbar": { display: "none" },
 } as const;
 
-const INSIGHT_LABEL_COLOR = "#0049AA";
-const INSIGHT_SELECTED_BG = "rgba(0, 73, 170, 0.06)";
+type InsightFilter = "conversation" | "verified" | "ai" | "templates";
+/** The tabs that list analyses; Templates renders its own cards. */
+type ListFilter = Exclude<InsightFilter, "templates">;
 
-type InsightFilter = "conversation" | "verified" | "ai";
-
-// The "Curated" (verified) filter is hidden for now: product is rearchitecting
-// curated analyses, so the hand-written fixtures shouldn't be surfaced. The
-// filter branch and `verifiedInsights` are left in place so putting the chip
-// back is a one-line change once the real source exists.
-const INSIGHT_FILTERS: { id: InsightFilter; label: string }[] = [
-  { id: "conversation", label: "In this conversation" },
+const INSIGHT_FILTERS: {
+  id: InsightFilter;
+  label: string;
+  /** Offered only on a dashboard: a template builds a dashboard section. */
+  dashboardOnly?: boolean;
+}[] = [
+  { id: "templates", label: "Templates", dashboardOnly: true },
+  { id: "verified", label: "Curated" },
   { id: "ai", label: "AI generated" },
+  { id: "conversation", label: "In this conversation" },
 ];
 
 /**
  * One card in the panel = one chart, enriched with its insight's card-level
- * metadata (source, timestamp, verification). Mirrors how the on-map
- * `InsightWorkspace` treats each widget as one "analysis".
+ * metadata (source, timestamp, verification). The map surface's shape —
+ * mirrors how the on-map `InsightWorkspace` treats each widget as one
+ * "analysis". The dashboard surface groups per insight instead
+ * (`InsightGroupItem`).
  */
 interface InsightCardItem {
   widget: InsightWidget;
   source: string;
   createdAt: string;
   verification: InsightVerification;
-  /**
-   * The parent insight's backend id — the analysis a chart belongs to, used to
-   * find (or create) that analysis's dashboard widget when adding this chart.
-   * Present only for real, persisted AI insights; undefined for verified
-   * fixtures and unsaved in-session analyses, which can't be added by id.
-   */
-  addableInsightId?: string;
 }
 
 function recordToItems(record: InsightRecord): InsightCardItem[] {
   const curated = record.verification === "verified";
-  // Only real backend (ai-generated) insights have an id the dashboards API
-  // knows; verified fixtures are client-side stubs.
-  const addableInsightId =
-    record.verification === "ai-generated" ? record.id : undefined;
   return chartsToWidgets(record.charts).map((widget) => ({
-    widget: { ...widget, curated },
+    widget: {
+      ...widget,
+      title: resolveInsightTitle(record, widget.title),
+      curated,
+    },
     source: record.source ?? "",
     createdAt: record.createdAt,
     verification: record.verification,
-    addableInsightId,
   }));
 }
 
@@ -157,6 +161,17 @@ function cardDescription(item: InsightCardItem): string {
   return parts.length > 0 ? parts.join(" · ") : "Analysis";
 }
 
+function groupDescription(group: InsightGroupItem): string {
+  const chartCount =
+    group.widgets.length > 1 ? `${group.widgets.length} charts` : "";
+  const parts = [
+    group.source,
+    formatGeneratedAt(group.createdAt),
+    chartCount,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "Analysis";
+}
+
 /**
  * Left-column exploration panel listing the user's recent analyses as cards —
  * a sibling of `CatalogPanel` (datasets) and `AreasPanel` (areas), mutually
@@ -165,7 +180,10 @@ function cardDescription(item: InsightCardItem): string {
  * `InsightWorkspace` overlay.
  */
 export function InsightsPanel() {
-  const [filter, setFilter] = useState<InsightFilter>("conversation");
+  // Null until the viewer picks a tab, and the pane shows the first tab this
+  // surface offers. Derived rather than seeded: the view context that decides
+  // whether Templates is offered is set after the pane mounts.
+  const [picked, setPicked] = useState<InsightFilter | null>(null);
   // On a dashboard the AI list scopes to the dashboard's area by default; the
   // "This area" toggle broadens it to every AI analysis the user owns.
   const [areaScoped, setAreaScoped] = useState(true);
@@ -174,6 +192,10 @@ export function InsightsPanel() {
   const isDashboard = useViewContextStore(
     (s) => s.viewContext?.page === "dashboard"
   );
+  const filters = INSIGHT_FILTERS.filter(
+    (f) => isDashboard || !f.dashboardOnly
+  );
+  const filter = filters.find((f) => f.id === picked)?.id ?? filters[0].id;
   // The AI list can only actually scope once the dashboard's AOI is known
   // (detail query resolved). Until then the switch is disabled and reads
   // unchecked so its "This area only" label never overstates a scope the list
@@ -211,7 +233,7 @@ export function InsightsPanel() {
               overflow="hidden"
             >
               <Wrap gap={1} flexShrink={0} overflow="hidden">
-                {INSIGHT_FILTERS.map((f) => {
+                {filters.map((f) => {
                   const isActive = filter === f.id;
                   return (
                     <Button
@@ -229,7 +251,7 @@ export function InsightsPanel() {
                       border="1px solid"
                       borderColor={isActive ? "fg.link" : "neutral.300"}
                       _hover={{ bg: isActive ? "fg.link" : "neutral.400" }}
-                      onClick={() => setFilter(f.id)}
+                      onClick={() => setPicked(f.id)}
                     >
                       {f.label}
                     </Button>
@@ -249,6 +271,7 @@ export function InsightsPanel() {
                   display="flex"
                   alignItems="center"
                   gap="8px"
+                  data-panel="analyses"
                 >
                   <Switch.HiddenInput />
                   <Switch.Control>
@@ -271,7 +294,13 @@ export function InsightsPanel() {
                 pb={2}
                 css={insightsListScrollStyle}
               >
-                <InsightsList filter={filter} areaScoped={areaScoped} />
+                {/* Templates is not a list of analyses, so it skips the
+                    insight queries InsightsList makes. */}
+                {filter === "templates" ? (
+                  <CurrentDashboardAnalysisTemplates />
+                ) : (
+                  <InsightsList filter={filter} areaScoped={areaScoped} />
+                )}
               </Stack>
             </Flex>
           </Flex>
@@ -333,11 +362,14 @@ function InsightsList({
   filter,
   areaScoped,
 }: {
-  filter: InsightFilter;
+  filter: ListFilter;
   areaScoped: boolean;
 }) {
   const currentThreadId = useChatStore((s) => s.currentThreadId);
   const liveWidgets = useInsightStore(useShallow((s) => s.insights));
+  const isDashboard = useViewContextStore(
+    (s) => s.viewContext?.page === "dashboard"
+  );
   const dashboardArea = useCurrentDashboardArea();
   // On a dashboard, scope the AI list to its area (both aoi params travel
   // together). Off a dashboard, or when the "This area" toggle is off, the query
@@ -349,20 +381,92 @@ function InsightsList({
     threadId: currentThreadId,
   });
   const { insights: allInsights } = useUserInsights(aiScope);
+  // Stored insights split by how they were produced, so the Curated and AI
+  // generated filters never list the same record.
+  const { curated: curatedInsights, aiGenerated: aiInsights } = useMemo(
+    () => partitionByVerification(allInsights),
+    [allInsights]
+  );
 
-  // One card per chart on every surface: the map shows each chart on the map,
-  // and the dashboard adds each chart to the grid independently (its widget's
-  // config.chartIds tracks which are shown).
+  // Dashboard surface: one card per analysis, added/removed whole — per-chart
+  // visibility lives in the module's Customize menu on the grid. The Curated
+  // filter is not a list of records here but the run-on-demand catalogue
+  // (`CuratedInsightsList`), rendered below.
+  const groups = useMemo<InsightGroupItem[]>(() => {
+    if (!isDashboard || filter === "verified") return [];
+    if (filter === "ai") return aiInsights.map(recordToGroup);
+    return mergeGroupsById(
+      currentThreadId ? threadInsights.map(recordToGroup) : [],
+      liveWidgetsToGroups(liveWidgets)
+    );
+  }, [
+    isDashboard,
+    filter,
+    aiInsights,
+    threadInsights,
+    liveWidgets,
+    currentThreadId,
+  ]);
+
+  // Map surface: one card per chart — each chart toggles onto the map
+  // independently via the InsightWorkspace overlay. Curated here means the
+  // user's persisted curated insights (run from a dashboard or the View
+  // Analysis nudge); the map has no single AOI to run a catalogue against.
   const items = useMemo<InsightCardItem[]>(() => {
-    if (filter === "verified") return verifiedInsights.flatMap(recordToItems);
-    if (filter === "ai") return allInsights.flatMap(recordToItems);
+    if (isDashboard) return [];
+    if (filter === "verified") return curatedInsights.flatMap(recordToItems);
+    if (filter === "ai") return aiInsights.flatMap(recordToItems);
     return mergeById(
       currentThreadId ? threadInsights.flatMap(recordToItems) : [],
       liveWidgets.map(liveWidgetToItem)
     );
-  }, [filter, allInsights, threadInsights, liveWidgets, currentThreadId]);
+  }, [
+    isDashboard,
+    filter,
+    curatedInsights,
+    aiInsights,
+    threadInsights,
+    liveWidgets,
+    currentThreadId,
+  ]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  if (isDashboard) {
+    if (filter === "verified") {
+      // The catalogue needs the dashboard's AOI; until the detail query
+      // resolves there is nothing to scope the cards to.
+      return dashboardArea ? (
+        <CuratedInsightsList area={dashboardArea} />
+      ) : (
+        <Text fontSize="sm" color="fg.muted" mt={4}>
+          Loading this dashboard&apos;s area...
+        </Text>
+      );
+    }
+    if (groups.length === 0) return <EmptyState filter={filter} />;
+    const selectedGroup = groups.find((g) => g.id === selectedId);
+    if (selectedGroup) {
+      return (
+        <InsightGroupDetail
+          group={selectedGroup}
+          onBack={() => setSelectedId(null)}
+        />
+      );
+    }
+    return (
+      <>
+        {groups.map((group) => (
+          <InsightGroupCard
+            key={group.id}
+            group={group}
+            onOpen={() => setSelectedId(group.id)}
+          />
+        ))}
+      </>
+    );
+  }
+
   const selectedIndex = selectedId
     ? items.findIndex((i) => itemId(i) === selectedId)
     : -1;
@@ -372,10 +476,11 @@ function InsightsList({
   if (selectedIndex >= 0) {
     return (
       <InsightDetail
-        items={items}
+        widgets={items.map((i) => i.widget)}
         index={selectedIndex}
         onIndexChange={(i) => setSelectedId(itemId(items[i]))}
         onBack={() => setSelectedId(null)}
+        unit="analysis"
       />
     );
   }
@@ -393,10 +498,10 @@ function InsightsList({
   );
 }
 
-function EmptyState({ filter }: { filter: InsightFilter }) {
+function EmptyState({ filter }: { filter: ListFilter }) {
   const message =
     filter === "verified"
-      ? "No curated analyses yet."
+      ? "No curated analyses yet. Open a dashboard to run one for its area."
       : filter === "ai"
         ? "No analyses generated yet. Ask the assistant to analyse an area."
         : "No analyses in this conversation yet. Ask the assistant to analyse an area, or generate one from a dataset and area.";
@@ -407,6 +512,61 @@ function EmptyState({ filter }: { filter: InsightFilter }) {
   );
 }
 
+/**
+ * Dashboard-surface card: one analysis, added to / removed from the dashboard
+ * whole. Per-chart visibility is the grid module's Customize menu, not the
+ * panel's job.
+ */
+function InsightGroupCard({
+  group,
+  onOpen,
+}: {
+  group: InsightGroupItem;
+  onOpen: () => void;
+}) {
+  const insight = useAddInsightToDashboard(group.addableInsightId);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const title = group.title;
+
+  return (
+    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
+      <CatalogCard
+        thumbnail={<InsightThumbnail type={group.widgets[0]?.type ?? "bar"} />}
+        typeLabel="ANALYSIS"
+        typeLabelColor={INSIGHT_LABEL_COLOR}
+        title={title}
+        description={groupDescription(group)}
+        selected={insight.added}
+        selectedBg={INSIGHT_SELECTED_BG}
+        showOnMap={insight.added}
+        // Removing discards the module's arrangement, so confirm first when
+        // there is any — adding, and undoing a plain add, stay one click.
+        onShowOnMapChange={() =>
+          insight.removeNeedsConfirm ? setConfirmOpen(true) : insight.toggle()
+        }
+        toggleLabel={insight.added ? "On dashboard" : "Add to dashboard"}
+        toggleAriaLabel={
+          insight.added
+            ? `Remove ${title} from dashboard`
+            : `Add ${title} to dashboard`
+        }
+        toggleDisabled={!insight.addable || insight.pending}
+        dataPanel="analyses"
+        onInfoClick={onOpen}
+        infoTooltip="View analysis"
+        badge={<VerificationBadge verification={group.verification} />}
+      />
+      <RemoveAnalysisDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        customized
+        onConfirm={insight.toggle}
+      />
+    </Box>
+  );
+}
+
+/** Map-surface card: one chart, toggled onto the map workspace. */
 function InsightCard({
   item,
   onOpen,
@@ -420,39 +580,7 @@ function InsightCard({
   );
   const addInsight = useInsightStore((s) => s.addInsight);
   const removeInsight = useInsightStore((s) => s.removeInsight);
-  const chart = useAddChartToDashboard(item.addableInsightId, item.widget.id);
   const title = item.widget.title;
-
-  // On a dashboard the card's footer toggle adds/removes this chart to the grid
-  // (show-on-map has no target there); elsewhere it drives the on-map
-  // InsightWorkspace overlay.
-  if (chart.active) {
-    return (
-      <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
-        <CatalogCard
-          thumbnail={<InsightThumbnail type={item.widget.type} />}
-          typeLabel="ANALYSIS"
-          typeLabelColor={INSIGHT_LABEL_COLOR}
-          title={title}
-          description={cardDescription(item)}
-          selected={chart.shown}
-          selectedBg={INSIGHT_SELECTED_BG}
-          showOnMap={chart.shown}
-          onShowOnMapChange={() => chart.toggle()}
-          toggleLabel={chart.shown ? "On dashboard" : "Add to dashboard"}
-          toggleAriaLabel={
-            chart.shown
-              ? `Remove ${title} from dashboard`
-              : `Add ${title} to dashboard`
-          }
-          toggleDisabled={!chart.addable || chart.pending}
-          onInfoClick={onOpen}
-          infoTooltip="View analysis"
-          badge={<VerificationBadge verification={item.verification} />}
-        />
-      </Box>
-    );
-  }
 
   const handleToggle = (checked: boolean) => {
     if (!widgetId) return;
@@ -472,107 +600,11 @@ function InsightCard({
         selectedBg={INSIGHT_SELECTED_BG}
         showOnMap={shown}
         onShowOnMapChange={handleToggle}
+        dataPanel="analyses"
         onInfoClick={onOpen}
         infoTooltip="View analysis"
         badge={<VerificationBadge verification={item.verification} />}
       />
-    </Box>
-  );
-}
-
-function InsightThumbnail({ type }: { type: InsightWidget["type"] }) {
-  const Icon = WidgetIconComponent[type];
-  return (
-    <Flex w="100%" h="100%" align="center" justify="center" bg="primary.25">
-      <Icon size={28} color={INSIGHT_LABEL_COLOR} weight="thin" />
-    </Flex>
-  );
-}
-
-function VerificationBadge({
-  verification,
-}: {
-  verification: InsightVerification;
-}) {
-  // Panel-card badges reuse the workspace insight caption's styling (icon +
-  // label) minus its "Learn more" link, so curated and AI-assisted analyses
-  // read identically on the card and in the workspace.
-  return (
-    <InsightCaption
-      curated={verification === "verified"}
-      showLearnMore={false}
-    />
-  );
-}
-
-function InsightDetail({
-  items,
-  index,
-  onIndexChange,
-  onBack,
-}: {
-  items: InsightCardItem[];
-  index: number;
-  onIndexChange: (index: number) => void;
-  onBack: () => void;
-}) {
-  const item = items[index];
-  const total = items.length;
-
-  return (
-    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
-      <Button
-        variant="ghost"
-        size="xs"
-        px={1}
-        mb={2}
-        color="#656E7B"
-        onClick={onBack}
-      >
-        <CaretLeftIcon size={14} />
-        Back to analyses
-      </Button>
-
-      <WidgetMessage widget={item.widget} inWorkspace />
-
-      {total > 1 && (
-        <Flex mt={3} justify="space-between" align="center">
-          <Tooltip content="Previous analysis" openDelay={400}>
-            <IconButton
-              size="xs"
-              variant="ghost"
-              border="1px solid"
-              borderColor="border.emphasized"
-              aria-label="Previous analysis"
-              disabled={index === 0}
-              onClick={() => onIndexChange(index - 1)}
-            >
-              <ArrowArcLeftIcon size={14} />
-            </IconButton>
-          </Tooltip>
-          <Text
-            fontSize="xs"
-            color="neutral.500"
-            aria-live="polite"
-            css={{ fontVariantNumeric: "tabular-nums" }}
-          >
-            {index + 1} of {total} available analyses
-          </Text>
-          <Tooltip content="Next analysis" openDelay={400}>
-            <IconButton
-              size="xs"
-              variant="ghost"
-              border="1px solid"
-              borderColor="border.emphasized"
-              aria-label="Next analysis"
-              disabled={index === total - 1}
-              onClick={() => onIndexChange(index + 1)}
-            >
-              <ArrowArcRightIcon size={14} />
-            </IconButton>
-          </Tooltip>
-        </Flex>
-      )}
     </Box>
   );
 }

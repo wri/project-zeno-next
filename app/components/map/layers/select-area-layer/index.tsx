@@ -1,6 +1,5 @@
 import useMapStore from "@/app/store/mapStore";
 import VectorAreasLayer from "./VectorAreasLayer";
-import CustomAreasLayer from "./CustomAreasLayer";
 
 function SelectAreaLayer() {
   const { selectAreaLayer, isDrawingMode } = useMapStore();
@@ -11,8 +10,6 @@ function SelectAreaLayer() {
   // drawing; it re-mounts (with the previously selected layer intact) once
   // drawing ends.
   if (!selectAreaLayer || isDrawingMode) return null;
-
-  if (selectAreaLayer === "Custom") return <CustomAreasLayer />;
 
   return <VectorAreasLayer layerId={selectAreaLayer} />;
 }

@@ -16,6 +16,16 @@ export interface GeoJsonEntry {
   subtype?: string;
 }
 
+/**
+ * Look up a registry entry by its feature ref (exact name + source match —
+ * refs and entries are created from the same objects at registration time).
+ */
+export const findRegistryEntry = (
+  registry: GeoJsonEntry[],
+  ref: FeatureRef
+): GeoJsonEntry | undefined =>
+  registry.find((e) => e.ref.name === ref.name && e.ref.source === ref.source);
+
 export type LayerType = "raster" | "geojson" | "vector";
 
 export interface Layer {

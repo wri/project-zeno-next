@@ -1,3 +1,5 @@
+import type { DivergentColors } from "@/app/types/chartColors";
+
 /** A single chart produced by an analysis. Mirrors the API's InsightChartResponse. */
 export interface Chart {
   id: string;
@@ -19,4 +21,16 @@ export interface Chart {
   seriesFields: string[];
   /** Maps to InsightChartResponse.chart_data */
   data: Record<string, unknown>[];
+  /**
+   * Maps to InsightChartResponse.dataset_id — the catalogue dataset the chart
+   * was computed from. Populated for curated (deterministic) charts; absent
+   * on older rows and on AI-generated charts.
+   */
+  datasetId?: number;
+  /** Maps to InsightChartResponse.color_map */
+  colorMap?: Record<string, string>;
+  /** Maps to InsightChartResponse.series_color */
+  seriesColor?: string | null;
+  /** Maps to InsightChartResponse.divergent_colors */
+  divergentColors?: DivergentColors | null;
 }

@@ -5,7 +5,7 @@ import { Box, CloseButton, Flex, Icon, Link, Text } from "@chakra-ui/react";
 import { InfoIcon } from "@phosphor-icons/react";
 import {
   PREVIEW_BODY,
-  PREVIEW_FEEDBACK_EMAIL,
+  PREVIEW_FEEDBACK_FORM,
   PREVIEW_HELP_CENTER_URL,
   PREVIEW_LINKS,
 } from "@/app/constants/preview-content";
@@ -79,14 +79,17 @@ export default function DisclaimerPanel() {
         <Box flex="1" pr={5}>
           <Text mb={1}>{PREVIEW_BODY}</Text>
           <Text>
-            Feedback is welcome at{" "}
+            Feedback and queries for support can be submitted{" "}
             <Link
               color="fg.link"
               textDecoration="underline"
-              href={`mailto:${PREVIEW_FEEDBACK_EMAIL}`}
+              href={PREVIEW_FEEDBACK_FORM}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              {PREVIEW_FEEDBACK_EMAIL}.
-            </Link>{" "}
+              here
+            </Link>
+            {". "}
             <br />
             Visit the{" "}
             <Link

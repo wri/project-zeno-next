@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import formatChartData, {
+  abbreviateYear,
   toAxisLabel,
   formatYAxisLabel,
   formatXAxisLabel,
@@ -92,6 +93,18 @@ describe("formatXAxisLabel", () => {
   });
 });
 
+describe("abbreviateYear", () => {
+  it("shortens a 4-digit year to a leading apostrophe + last two digits", () => {
+    expect(abbreviateYear(2017)).toBe("'17");
+    expect(abbreviateYear("2024")).toBe("'24");
+  });
+
+  it("leaves a non-4-digit value unchanged", () => {
+    expect(abbreviateYear("Brazil")).toBe("Brazil");
+    expect(abbreviateYear(99)).toBe("99");
+  });
+});
+
 describe("formatTooltipValue", () => {
   it("formats numbers with locale separators and 2dp max", () => {
     expect(formatTooltipValue(4812000)).toBe("4,812,000");
@@ -113,6 +126,37 @@ describe("formatTooltipValue", () => {
 });
 
 describe("formatChartData", () => {
+  it("keeps a series whose column first appears after the first row", () => {
+    // A pivoted daily chart: no `low` alerts on the first day (PR #721 review).
+    const { data, series } = formatChartData(
+      [
+        { alert_date: "2026-09-11", high: 1 },
+        { alert_date: "2026-09-12", high: 3, low: 2 },
+      ],
+      "line",
+      "alert_date",
+      "area_ha",
+      undefined,
+      ["high", "low"]
+    );
+    expect(series.map((s) => s.name)).toEqual(["high", "low"]);
+    expect(data[1]).toMatchObject({ low: 2 });
+    // Absent stays absent: the missing day is not zero-filled.
+    expect(data[0]).not.toHaveProperty("low");
+  });
+
+  it("finds late columns without seriesFields too", () => {
+    const { series } = formatChartData(
+      [
+        { year: 2020, a: 1 },
+        { year: 2021, a: 2, b: 5 },
+      ],
+      "stacked-bar",
+      "year"
+    );
+    expect(series.map((s) => s.name)).toEqual(["a", "b"]);
+  });
+
   it("returns empty result for empty or invalid data", () => {
     expect(formatChartData([], "bar", "x", "y")).toEqual({
       data: [],
@@ -174,6 +218,84 @@ describe("formatChartData", () => {
     expect(result.data[0]).toMatchObject({ region: "A", 2020: 10, 2021: 12 });
   });
 
+  describe("stacked-bar-with-line", () => {
+    it("stacks the series fields and renders the line field on top, unstacked", () => {
+      // The line's value is precomputed by the caller (net-flux-variants), not
+      // by formatChartData — this only decides how to render an existing column.
+      const data = [
+        { year: 2020, Emissions: 100, Removals: -40, "Net flux": 60 },
+        { year: 2021, Emissions: 90, Removals: -50, "Net flux": 40 },
+      ];
+      const result = formatChartData(
+        data,
+        "stacked-bar-with-line",
+        "year",
+        undefined,
+        undefined,
+        ["Emissions", "Removals"],
+        undefined,
+        "Net flux"
+      );
+      expect(result.series.map((s) => s.name)).toEqual([
+        "Emissions",
+        "Removals",
+        "Net flux",
+      ]);
+      expect(result.series[0].stackId).toBe("a");
+      expect(result.series[1].stackId).toBe("a");
+      expect(result.series[2].stackId).toBeUndefined();
+      expect(result.data[0]["Net flux"]).toBe(60);
+      expect(result.data[1]["Net flux"]).toBe(40);
+    });
+
+    it("takes per-series colors from the backend colorMap, falling back to the rotation", () => {
+      const data = [{ year: 2020, Emissions: 100, Removals: -40, Other: 5 }];
+      const result = formatChartData(
+        data,
+        "stacked-bar-with-line",
+        "year",
+        undefined,
+        undefined,
+        ["Emissions", "Removals", "Other"],
+        { colorMap: { Emissions: "#8c510a", Removals: "url(#hatch)" } }
+      );
+      const byName = Object.fromEntries(
+        result.series.map((s) => [s.name, s.color])
+      );
+      expect(byName.Emissions).toBe("#8c510a");
+      // SVG paint references pass through untouched, so a series can be hatched.
+      expect(byName.Removals).toBe("url(#hatch)");
+      // No registry entry → default rotation, so it still renders.
+      expect(byName.Other).toBeTruthy();
+      expect(byName.Other).not.toBe("#8c510a");
+    });
+
+    it("tints a single divergent series by sign, mirroring the plain bar branch", () => {
+      const data = [
+        { year: 2020, "Net source": 850, "Net flux": 850 },
+        { year: 2021, "Net source": -120, "Net flux": -120 },
+      ];
+      const result = formatChartData(
+        data,
+        "stacked-bar-with-line",
+        "year",
+        undefined,
+        undefined,
+        ["Net source"],
+        {
+          divergentColors: { positive: "#8c510a", negative: "#01665e" },
+        },
+        "Net flux"
+      );
+      expect(result.series.map((s) => s.name)).toEqual([
+        "Net source",
+        "Net flux",
+      ]);
+      expect(result.data[0]._barColor).toBe("#8c510a");
+      expect(result.data[1]._barColor).toBe("#01665e");
+    });
+  });
+
   it("keeps the name column for scatter charts (regression)", () => {
     const data = [
       { country: "Brazil", gdp_per_capita: 8900, deforestation_ha: 4812000 },
@@ -197,5 +319,102 @@ describe("formatChartData", () => {
     const result = formatChartData(data, "pie", "driver", "area_ha");
     const logging = result.series.find((s) => s.name === "Logging");
     expect(logging?.color).toBe("#52A44E");
+  });
+
+  describe("backend color overrides (phase 2)", () => {
+    it("prefers the backend colorMap over the local mapping for pie charts, keyed by slug", () => {
+      const data = [
+        { driver: "Tala", driver__slug: "logging", area_ha: 100 },
+        { driver: "Incendio", driver__slug: "wildfire", area_ha: 50 },
+      ];
+      const result = formatChartData(
+        data,
+        "pie",
+        "driver",
+        "area_ha",
+        undefined,
+        undefined,
+        {
+          colorMap: { logging: "#111111", wildfire: "#222222" },
+        }
+      );
+      const logging = result.series.find((s) => s.name === "Tala");
+      const wildfire = result.series.find((s) => s.name === "Incendio");
+      expect(logging?.color).toBe("#111111");
+      expect(wildfire?.color).toBe("#222222");
+    });
+
+    it("falls back to the row value as the slug when no __slug column is present", () => {
+      const data = [{ category: "agriculture", value: 10 }];
+      const result = formatChartData(
+        data,
+        "pie",
+        "category",
+        "value",
+        undefined,
+        undefined,
+        {
+          colorMap: { agriculture: "#333333" },
+        }
+      );
+      expect(result.data[0].color).toBe("#333333");
+    });
+
+    it("builds pie colors from the backend colorMap when there is no local palette for the field", () => {
+      const data = [
+        { class: "Natural", class__slug: "natural", value: 10 },
+        { class: "Non-natural", class__slug: "non_natural", value: 5 },
+      ];
+      const result = formatChartData(
+        data,
+        "pie",
+        "class",
+        "value",
+        undefined,
+        undefined,
+        {
+          colorMap: { natural: "#4CAF50", non_natural: "#9E9E9E" },
+        }
+      );
+      expect(result.series).toEqual([
+        { name: "Natural", color: "#4CAF50" },
+        { name: "Non-natural", color: "#9E9E9E" },
+      ]);
+    });
+
+    it("prefers backend seriesColor over the local DATASET_SERIES_COLORS map", () => {
+      const data = [
+        { country: "Brazil", area_ha: 100 },
+        { country: "Peru", area_ha: 50 },
+      ];
+      const result = formatChartData(
+        data,
+        "bar",
+        "country",
+        "area_ha",
+        "Tree cover loss",
+        undefined,
+        { seriesColor: "#ABCDEF" }
+      );
+      expect(result.series[0].color).toBe("#ABCDEF");
+    });
+
+    it("prefers backend divergentColors over the local DATASET_DIVERGENT_COLORS map", () => {
+      const data = [
+        { country: "Brazil", net_flux_tCO2e: -450 },
+        { country: "Indonesia", net_flux_tCO2e: 320 },
+      ];
+      const result = formatChartData(
+        data,
+        "bar",
+        "country",
+        "net_flux_tCO2e",
+        "Forest greenhouse gas net flux (2001-2024)",
+        undefined,
+        { divergentColors: { positive: "#00FF00", negative: "#FF0000" } }
+      );
+      expect(result.data[0]._barColor).toBe("#FF0000");
+      expect(result.data[1]._barColor).toBe("#00FF00");
+    });
   });
 });

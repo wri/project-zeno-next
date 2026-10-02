@@ -15,20 +15,13 @@ import { API_CONFIG } from "@/app/config/api";
 import useMapStore from "@/app/store/mapStore";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 
-import {
-  getAoiName,
-  getSrcId,
-  getSubtype,
-  toAreaSelection,
-} from "@/app/utils/areaHelpers";
+import { getAoiName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
 
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
+import { getBoundaryFeatureDetails } from "@/app/utils/boundaryFeatureDetails";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
-// Direct-analysis "View Analysis" nudge alongside the live analyse nudge.
-// toAreaSelection (areaHelpers) returns the same shape both consumers need,
-// so it's reused for both.
-import { useSelectionStore } from "@/src/features/analysis";
+import { publishAreaSelection } from "./publishAreaSelection";
 
 interface SourceLayerProps {
   layerId: LayerId;
@@ -41,9 +34,7 @@ interface Metadata {
 }
 
 function VectorAreasLayer({ layerId }: SourceLayerProps) {
-  const { addToRegistry, addLayer, setSelectAreaLayer, setAnalysis } =
-    useMapStore();
-  const selectArea = useSelectionStore((state) => state.select);
+  const { addToRegistry, addLayer } = useMapStore();
   const { current: map } = useMap();
   const [hoverInfo, setHoverInfo] = useState<HoverInfo>();
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -81,10 +72,12 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           const feature = e.features.at(-1);
           const { lat, lng } = e.lngLat;
           const aoiName = getAoiName(nameKeys, feature!.properties);
+          map.getCanvas().style.cursor = "pointer";
           setHoverInfo({
             lat,
             lng,
             name: aoiName,
+            details: getBoundaryFeatureDetails(layerId, feature!.properties),
           });
 
           if (hoverId !== undefined) {
@@ -102,6 +95,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
       };
 
       const onMouseLeave = () => {
+        map.getCanvas().style.cursor = "";
         setHoverInfo(undefined);
         if (hoverId !== undefined) {
           map.setFeatureState(
@@ -122,8 +116,14 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
           if (feature) {
             const featureProps = feature.properties;
-            const dynamicSrcId = getSrcId(layerId, featureProps, metadata!);
-            const dynamicSubtype = getSubtype(layerId, featureProps, metadata!);
+            // A click can land before /api/metadata resolves; the area still
+            // draws, just without an id (publishAreaSelection then clears).
+            const dynamicSrcId = metadata
+              ? getSrcId(layerId, featureProps, metadata)
+              : undefined;
+            const dynamicSubtype = metadata
+              ? getSubtype(layerId, featureProps, metadata)
+              : undefined;
 
             const sourceFeatures = map.querySourceFeatures(sourceId, {
               sourceLayer: sourceLayer,
@@ -193,43 +193,22 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
                 .forEach((l) => removeLayer(l.id));
             }
 
-            // GADM-only analysis selection. Both paths consume the same
-            // normalized selection:
-            //  - live: AnalysisCtaTrigger reacts to setAnalysis and surfaces
-            //    the analyse nudge once a dataset is also active.
-            //  - direct-analysis "View Analysis" nudge: the selection store.
-            if (layerId === "GADM" && metadata) {
-              const areaSelection = toAreaSelection(
-                layerId,
-                (featureProps ?? {}) as Record<string, unknown>,
-                metadata
-              );
-              setAnalysis(areaSelection);
-              selectArea(areaSelection);
-            } else {
-              useMapStore.getState().clearAnalysis();
-              useSelectionStore.getState().clear();
-            }
+            // Publish the clicked area as the analysis selection both nudges
+            // consume (any source with a backend id; see publishAreaSelection).
+            publishAreaSelection({ layerId, featureProps, metadata });
           }
-        }
-      };
-
-      const onKeyUp = (event: KeyboardEvent) => {
-        if (event.key === "Escape") {
-          setSelectAreaLayer(null);
         }
       };
 
       map.on("mousemove", fillLayerName, onMouseMove);
       map.on("mouseleave", fillLayerName, onMouseLeave);
       map.on("click", fillLayerName, onClick);
-      document.addEventListener("keyup", onKeyUp);
 
       return () => {
         map.off("mousemove", fillLayerName, onMouseMove);
         map.off("mouseleave", fillLayerName, onMouseLeave);
         map.off("click", fillLayerName, onClick);
-        document.removeEventListener("keyup", onKeyUp);
+        map.getCanvas().style.cursor = "";
       };
     }
   }, [
@@ -238,14 +217,11 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     sourceId,
     sourceLayer,
     nameKeys,
-    setSelectAreaLayer,
     metadata,
     addToRegistry,
     addLayer,
     layerId,
     url,
-    setAnalysis,
-    selectArea,
   ]);
 
   return (

@@ -2,10 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnalysisService } from "../model/analysis-service";
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
-import { LROAnalysisService } from "../model/lro-analysis-service";
-import { RestAnalysisGateway } from "../api/rest-analysis-gateway";
-import { SystemClock } from "../lib/system-clock";
-import { chartsToWidgets } from "@/src/entities/insight";
+import { analysisService } from "./analysis-service";
+import { chartsToWidgets, generateInsightTitle } from "@/src/entities/insight";
 import type { InsightSink } from "../model/insight-sink";
 import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
@@ -14,10 +12,7 @@ import useChatStore from "@/app/store/chatStore";
 // Wire the real application service and the real insight sink with their driven
 // adapters. Tests inject their own fakes via the hook parameters.
 
-const defaultService: AnalysisService = new LROAnalysisService(
-  new RestAnalysisGateway(),
-  new SystemClock()
-);
+const defaultService: AnalysisService = analysisService;
 
 const defaultSink: InsightSink = {
   // Guard against empty arrays so the store isn't notified with nothing to add.
@@ -29,6 +24,45 @@ const defaultSink: InsightSink = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The dataset name to use in a chart's "{dataset} in {location}" title. Every
+ * dataset uses its own name, with one exception: a tree cover loss analysis
+ * also returns a GHG-emissions chart (see project-zeno `charts.py:
+ * TCLChartGenerator`), identified by its y-axis, which is titled as
+ * "GHG Emissions from Tree Cover Loss" instead.
+ */
+/** Year from a "yyyy-MM-dd" selection bound, for the YEARS parameter chip. */
+function isoYear(date: string | undefined): number | undefined {
+  const year = Number(date?.slice(0, 4));
+  return Number.isInteger(year) ? year : undefined;
+}
+
+function chartDatasetName(
+  widget: { yAxis?: string },
+  datasetName: string
+): string {
+  return widget.yAxis === "carbon_emissions_MgCO2e"
+    ? "GHG Emissions from Tree Cover Loss"
+    : datasetName;
+}
+
+/**
+ * The curated LGMS charts carry the title the design gives them rather than the
+ * generic "{dataset} in {location}" one.
+ *
+ * Keyed on chart type, deliberately: the three `stacked-bar-with-line` roll-ups
+ * must resolve to the SAME string. `collapseNetFluxSiblings` surfaces whichever
+ * sibling the DETAIL pill has selected and the workspace renders that widget's
+ * own title, so per-sibling titles would make the card heading flip as the user
+ * changes DETAIL.
+ */
+const CURATED_CHART_TITLES: Record<string, string> = {
+  // Gross is the default measure, and its bars are gross emissions/removals,
+  // not a net figure — "Net flux" as the title read as wrong in that view.
+  "stacked-bar-with-line": "Land GHG flux over time",
+  "hierarchical-bar": "Net GHG flux (annual average)",
+};
 
 export type AnalysisStatus = "idle" | "running" | "done" | "error";
 
@@ -92,12 +126,51 @@ export function useAnalysis(
         (analysisResult) => {
           setResult(analysisResult);
           setStatus("done");
-          const widgets = chartsToWidgets(
+          // Carry the dataset and date range through as well as the area, so
+          // the workspace renders the full AREA / DATA / YEARS chip row rather
+          // than an area-only one.
+          const rawWidgets = chartsToWidgets(
             analysisResult.charts,
             analysisResult.params
-              ? { areas: [analysisResult.params.name] }
+              ? {
+                  areas: [analysisResult.params.name],
+                  dataset: selection.dataset.name,
+                  startYear: isoYear(selection.startDate),
+                  endYear: isoYear(selection.endDate),
+                }
               : undefined
           );
+          // A curated chart takes the title the design names it. Everything
+          // else gets "{dataset} in {location}", when the dataset's name is
+          // known (it always is for this flow's real callers — only test
+          // fixtures may omit it). That name is resolved per chart, not per
+          // analysis: a TCL analysis returns a loss chart AND a GHG-emissions
+          // chart, which must not share one title.
+          //
+          // Either way `backendTitle` keeps the backend's own title — the LGMS
+          // time-series charts all collapse to a single display title, so the
+          // DETAIL pill needs the original to tell them apart.
+          const datasetName = selection.dataset.name;
+          const widgets = rawWidgets.map((widget) => {
+            const curatedTitle = CURATED_CHART_TITLES[widget.type];
+            if (curatedTitle) {
+              return {
+                ...widget,
+                backendTitle: widget.title,
+                title: curatedTitle,
+              };
+            }
+            if (!datasetName) return widget;
+            return {
+              ...widget,
+              backendTitle: widget.title,
+              title: generateInsightTitle({
+                datasetName: chartDatasetName(widget, datasetName),
+                locationName: selection.area.name,
+                areaLabel: selection.area.name,
+              }),
+            };
+          });
           // Add the chart and drop the skeleton flag together so the workspace
           // swaps skeleton → chart in one render (no empty flash).
           sink.add(widgets);

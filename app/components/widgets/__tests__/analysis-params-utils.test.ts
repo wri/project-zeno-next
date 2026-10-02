@@ -35,4 +35,21 @@ describe("buildChips", () => {
     expect(chips.find((c) => c.label === "CANOPY")?.value).toBe("> 30%");
     expect(chips.find((c) => c.label === "YEARS")?.value).toBe("2020–23");
   });
+
+  it("renders an LGMS analysis over the years its data covers", () => {
+    // PZB-1355: the row read "YEARS 2001–25" over a chart of 2016–2024
+    // figures, because the analysis ran on the catalogue-wide default window
+    // rather than on LGMS's own coverage.
+    const chips = buildChips({
+      areas: ["Pará, Brazil"],
+      dataset: "Land GHG Monitoring System (LGMS)",
+      startYear: 2016,
+      endYear: 2024,
+    });
+    expect(chips.map((c) => `${c.label} ${c.value}`)).toEqual([
+      "AREA Pará, Brazil",
+      "DATA LGMS net flux",
+      "YEARS 2016–24",
+    ]);
+  });
 });

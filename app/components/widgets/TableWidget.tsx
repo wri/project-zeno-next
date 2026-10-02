@@ -16,16 +16,84 @@ import {
   CaretUpDownIcon,
 } from "@phosphor-icons/react";
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
+
+/**
+ * Slice for the current page. `pageSize: Infinity` disables paging, for
+ * fixed-size tables (e.g. a hierarchy) that must read as one unit.
+ */
+export function paginateRows<T>(
+  rows: T[],
+  page: number,
+  pageSize: number = DEFAULT_PAGE_SIZE
+): {
+  pageRows: T[];
+  /** Index of the first page row within `rows` (0 when not paginating). */
+  startIndex: number;
+  totalPages: number;
+  needsPagination: boolean;
+} {
+  const needsPagination = rows.length > pageSize;
+  // Only multiply by pageSize when paging: `0 * Infinity` is NaN.
+  const startIndex = needsPagination ? page * pageSize : 0;
+  return {
+    pageRows: needsPagination
+      ? rows.slice(startIndex, startIndex + pageSize)
+      : rows,
+    startIndex,
+    totalPages: needsPagination ? Math.ceil(rows.length / pageSize) : 1,
+    needsPagination,
+  };
+}
+
+/** Column list after applying an optional preferred order and hidden set. */
+export function resolveTableColumns(
+  allHeaders: string[],
+  columnOrder?: string[],
+  hiddenColumns?: string[]
+): string[] {
+  const hidden = new Set(hiddenColumns);
+  return (
+    columnOrder
+      ? [
+          ...columnOrder.filter((key) => allHeaders.includes(key)),
+          ...allHeaders.filter((key) => !columnOrder.includes(key)),
+        ]
+      : allHeaders
+  ).filter((key) => !hidden.has(key));
+}
 
 interface TableWidgetProps {
   data: Record<string, string | number | boolean>[];
   caption?: string;
+  /**
+   * Preferred column order (exact key match). Columns not listed keep their
+   * original relative order, appended after the ones named here. Generic
+   * default (no prop) is `Object.keys(data[0])`, unchanged for every other
+   * table.
+   */
+  columnOrder?: string[];
+  /** Columns to omit entirely (exact key match), e.g. internal id fields. */
+  hiddenColumns?: string[];
+  /** Row predicate for emphasis, e.g. a hierarchy's root/total row. */
+  boldRowWhen?: (row: Record<string, string | number | boolean>) => boolean;
+  /** Columns to render bold (exact key match), e.g. a derived net/total column. */
+  boldColumns?: string[];
+  /** Rows per page (default 10). `Infinity` renders every row, no paging. */
+  pageSize?: number;
 }
 
 type SortDir = "asc" | "desc" | null;
 
-export default function TableWidget({ data, caption }: TableWidgetProps) {
+export default function TableWidget({
+  data,
+  caption,
+  columnOrder,
+  hiddenColumns,
+  boldRowWhen,
+  boldColumns,
+  pageSize = DEFAULT_PAGE_SIZE,
+}: TableWidgetProps) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
   const [page, setPage] = useState(0);
@@ -49,7 +117,8 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
 
   if (!data || data.length === 0) return null;
 
-  const headers = Object.keys(data[0]);
+  const allHeaders = Object.keys(data[0]);
+  const headers = resolveTableColumns(allHeaders, columnOrder, hiddenColumns);
 
   // Right-align a column when every non-null value in it is numeric, so
   // magnitudes line up digit-for-digit (paired with tabular-nums below).
@@ -59,10 +128,13 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
     )
   );
 
-  // Helper function to format numeric values
+  // Helper function to format numeric values. Years are ordinary data, not
+  // magnitudes — a thousands separator ("2,017") would misread as a value.
   const formatValue = (
-    value: string | number | boolean
+    value: string | number | boolean,
+    key?: string
   ): string | number | boolean => {
+    if (key?.toLowerCase() === "year") return value;
     return typeof value === "number"
       ? new Intl.NumberFormat("en-US").format(value)
       : value;
@@ -83,11 +155,12 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
     setPage(0);
   };
 
-  const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
-  const needsPagination = sortedData.length > PAGE_SIZE;
-  const pageData = needsPagination
-    ? sortedData.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-    : sortedData;
+  const {
+    pageRows: pageData,
+    startIndex,
+    totalPages,
+    needsPagination,
+  } = paginateRows(sortedData, page, pageSize);
 
   return (
     <Box>
@@ -167,56 +240,66 @@ export default function TableWidget({ data, caption }: TableWidgetProps) {
             (
               row: Record<string, string | number | boolean>,
               rowIndex: number
-            ) => (
-              <Table.Row key={page * PAGE_SIZE + rowIndex} bg="transparent">
-                {headers.map((key: string, cellIndex: number) => {
-                  const value = row[key];
+            ) => {
+              const isBoldRow = boldRowWhen?.(row) ?? false;
+              return (
+                <Table.Row key={startIndex + rowIndex} bg="transparent">
+                  {headers.map((key: string, cellIndex: number) => {
+                    const value = row[key];
 
-                  const isRankKey = key.toLowerCase() === "rank";
-                  // Years are ordinary data, not ranks — don't badge them.
-                  const isFirstNumericColumn =
-                    cellIndex === 0 &&
-                    typeof value === "number" &&
-                    key.toLowerCase() !== "year";
+                    const isRankKey = key.toLowerCase() === "rank";
+                    // Years are ordinary data, not ranks — don't badge them.
+                    const isFirstNumericColumn =
+                      cellIndex === 0 &&
+                      typeof value === "number" &&
+                      key.toLowerCase() !== "year";
 
-                  if (isRankKey || isFirstNumericColumn) {
+                    if (isRankKey || isFirstNumericColumn) {
+                      return (
+                        <Table.Cell key={key} textAlign="center">
+                          <Badge
+                            colorPalette="primary"
+                            px={2}
+                            py={1}
+                            borderRadius="full"
+                            variant="solid"
+                          >
+                            {formatValue(value, key)}
+                          </Badge>
+                        </Table.Cell>
+                      );
+                    }
                     return (
-                      <Table.Cell key={key} textAlign="center">
-                        <Badge
-                          colorPalette="primary"
-                          px={2}
-                          py={1}
-                          borderRadius="full"
-                          variant="solid"
-                        >
-                          {formatValue(value)}
-                        </Badge>
+                      <Table.Cell
+                        key={key}
+                        textAlign={numericColumns.has(key) ? "end" : undefined}
+                        css={{
+                          "&:nth-child(2)": { fontWeight: "medium" },
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                        fontWeight={
+                          isBoldRow
+                            ? "bold"
+                            : boldColumns?.includes(key)
+                              ? "medium"
+                              : undefined
+                        }
+                      >
+                        {formatValue(value, key)}
                       </Table.Cell>
                     );
-                  }
-                  return (
-                    <Table.Cell
-                      key={key}
-                      textAlign={numericColumns.has(key) ? "end" : undefined}
-                      css={{
-                        "&:nth-child(2)": { fontWeight: "medium" },
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {formatValue(value)}
-                    </Table.Cell>
-                  );
-                })}
-              </Table.Row>
-            )
+                  })}
+                </Table.Row>
+              );
+            }
           )}
         </Table.Body>
       </Table.Root>
       {needsPagination && (
         <Flex align="center" justify="space-between" mt={2} px={1}>
           <Text fontSize="xs" color="fg.muted">
-            Showing {page * PAGE_SIZE + 1}–
-            {Math.min((page + 1) * PAGE_SIZE, sortedData.length)} of{" "}
+            Showing {startIndex + 1}–
+            {Math.min(startIndex + pageSize, sortedData.length)} of{" "}
             {sortedData.length}
           </Text>
           <Flex gap={1}>

@@ -62,7 +62,12 @@ describe.each(SLICE_CASES)(
         violations,
         `Dependency-direction violations:\n${report}`
       ).toHaveLength(0);
-    });
+      // dependency-cruiser resolves the TypeScript graph per slice, which takes
+      // several seconds on a cold run and longer with the whole suite competing
+      // for CPU — comfortably past vitest's 5s default once the slice count
+      // grew. Generous explicit budget so this reports real violations, not
+      // scheduling noise.
+    }, 30_000);
 
     it("the pure core (model + lib) makes no global network calls", () => {
       const offenders: string[] = [];

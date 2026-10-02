@@ -21,11 +21,14 @@ import {
 import { buildYearParam, YearParam } from "@/app/utils/formatYearRange";
 import { formatCanopyThreshold } from "@/app/utils/formatCanopyThreshold";
 import type { DatasetLegendConfig } from "@/app/constants/datasets";
+import { selectLayerOptions } from "@/app/types/map";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 import {
   buildImageryGroup,
   IMAGERY_LEGEND_GROUP_ID,
 } from "@/app/utils/imagery";
+import { useDatasetsCatalog } from "@/app/hooks/useDatasetsCatalog";
+import { applyPaletteOverride } from "@/app/components/legend/applyPaletteOverride";
 
 // Maps internal parameter keys to the badge label shown in the legend.
 const PARAMETER_LABELS: Record<string, string> = {
@@ -73,6 +76,7 @@ export function renderLegendSymbology(legend: DatasetLegendConfig) {
     />
   ) : type === "sequential" ? (
     <LegendSequential
+      unit={unit ?? undefined}
       minLabel={items?.[0]?.label ?? ""}
       maxLabel={items?.[items.length - 1]?.label ?? ""}
       color={
@@ -104,8 +108,14 @@ export interface LegendAoi {
   name: string;
 }
 
+/** The visible boundary layer, shown as an AREA pill named after the dataset. */
+export interface LegendBoundary {
+  name: string;
+}
+
 export function useLegendHook() {
   const [layers, setLayers] = useState<LegendEntry[]>([]);
+  const { palettesByDatasetId } = useDatasetsCatalog();
 
   const {
     layers: managedLayers,
@@ -113,6 +123,8 @@ export function useLegendHook() {
     setLayerVisibility,
     removeLayer,
     reorderLayers,
+    selectAreaLayer,
+    setSelectAreaLayer,
   } = useMapStore();
   const isImageryUpdating = useChatStore((s) => s.isImageryUpdating);
 
@@ -134,6 +146,13 @@ export function useLegendHook() {
           color,
           opacity: (layer.opacity ?? 1) * 100,
           info: legend?.info,
+          // The swatch beside the title already stands for a single-class
+          // layer. Multi-class ones (IFL's reduction epochs) need the full
+          // symbol list, or every class but the first goes unexplained.
+          symbology:
+            legend && (legend.items?.length ?? 0) > 1
+              ? renderLegendSymbology(legend)
+              : undefined,
         });
       }
 
@@ -161,11 +180,23 @@ export function useLegendHook() {
         }
 
         const relatedDataset = DATASET_CARDS.find(
-          (d) => `dataset-${d.dataset_id}` === layer.id
+          (d) => d.dataset_id === layer.datasetId
         );
-        if (!relatedDataset?.legend) continue;
+        if (!relatedDataset) continue;
 
-        const { title, info, note } = relatedDataset.legend;
+        // Multi-layer datasets (e.g. LGMS) carry a legend per sibling layer;
+        // single-layer datasets fall back to the card's top-level legend.
+        const sublayerLegend = relatedDataset.layers?.find(
+          (l) => l.name === layer.name
+        )?.legend;
+        const baseLegend = sublayerLegend ?? relatedDataset.legend;
+        if (!baseLegend) continue;
+
+        const legend = applyPaletteOverride(
+          baseLegend,
+          palettesByDatasetId[relatedDataset.dataset_id]
+        );
+        const { title, info, note } = legend;
 
         const yearParam = buildYearParam(layer.startDate, layer.endDate);
         const params = buildParams(layer.parameters ?? {}, yearParam);
@@ -177,7 +208,7 @@ export function useLegendHook() {
           info,
           params: params.length > 0 ? params : undefined,
           contextLayer: contextLayerByParentId.get(layer.id),
-          symbology: renderLegendSymbology(relatedDataset.legend),
+          symbology: renderLegendSymbology(legend),
           children: note ? <Text fontSize="xs">{note}</Text> : undefined,
         });
       }
@@ -192,7 +223,7 @@ export function useLegendHook() {
     };
 
     setLayers(buildEntries());
-  }, [managedLayers, isImageryUpdating]);
+  }, [managedLayers, isImageryUpdating, palettesByDatasetId]);
 
   // One chip per visible area layer, using the selection name as the label.
   // The visible layer IS the scope — removing the chip removes the layer.
@@ -200,6 +231,19 @@ export function useLegendHook() {
     layerId: l.id,
     name: l.selectionName ?? l.name,
   }));
+
+  const boundaryName = selectLayerOptions.find(
+    (o) => o.id === selectAreaLayer
+  )?.name;
+  const boundary: LegendBoundary | null = boundaryName
+    ? { name: boundaryName }
+    : null;
+
+  // Closing the boundary pill turns the layer off (and its Boundaries card).
+  const handleRemoveBoundary = useCallback(
+    () => setSelectAreaLayer(null),
+    [setSelectAreaLayer]
+  );
 
   const handleRemoveAoi = useCallback(
     (layerId: string) => removeLayer(layerId),
@@ -271,5 +315,12 @@ export function useLegendHook() {
     ]
   );
 
-  return { layers, handleLayerAction, aois, handleRemoveAoi };
+  return {
+    layers,
+    handleLayerAction,
+    aois,
+    handleRemoveAoi,
+    boundary,
+    handleRemoveBoundary,
+  };
 }

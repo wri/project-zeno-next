@@ -1,8 +1,8 @@
-import NextImage from "next/image";
 import {
   Box,
   Container,
   Flex,
+  Image,
   Link as ChakraLink,
   Text,
   Heading,
@@ -50,36 +50,21 @@ export default function TeamSection() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <NextImage
-              src="/WRI-Logo.svg"
-              alt="WRI Logo"
-              width={128}
-              height={64}
-            />
+            <Image src="/WRI-Logo.svg" alt="WRI Logo" w="128px" h="64px" />
           </ChakraLink>
           <ChakraLink
             href="https://landcarbonlab.org/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <NextImage
-              src="/LCL-logo.svg"
-              alt="LCL Logo"
-              width={128}
-              height={64}
-            />
+            <Image src="/LCL-logo.svg" alt="LCL Logo" w="128px" h="64px" />
           </ChakraLink>
           <ChakraLink
             href="https://www.bezosearthfund.org/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <NextImage
-              src="/BEF-logo.png"
-              alt="BEF Logo"
-              width={128}
-              height={64}
-            />
+            <Image src="/BEF-logo.png" alt="BEF Logo" w="128px" h="64px" />
           </ChakraLink>
           <ChakraLink
             href="https://www.globalnaturewatch.org/"
@@ -92,12 +77,12 @@ export default function TeamSection() {
               alignItems="center"
               justifyContent="center"
             >
-              <NextImage
+              <Image
                 src="/GNW_logo_4c.png"
                 alt="GNW Logo"
-                width={80}
-                height={40}
-                style={{ objectFit: "contain" }}
+                w="80px"
+                h="40px"
+                objectFit="contain"
               />
             </Flex>
           </ChakraLink>
@@ -106,11 +91,11 @@ export default function TeamSection() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <NextImage
+            <Image
               src="/developmentseed-logo.svg"
               alt="DevSeed Logo"
-              width={128}
-              height={64}
+              w="128px"
+              h="64px"
             />
           </ChakraLink>
           <ChakraLink
@@ -118,23 +103,18 @@ export default function TeamSection() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <NextImage
-              src="/nicfi-logo.png"
-              alt="NICFI Logo"
-              width={128}
-              height={64}
-            />
+            <Image src="/nicfi-logo.png" alt="NICFI Logo" w="128px" h="64px" />
           </ChakraLink>
           <ChakraLink
             href="https://www.google.org/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <NextImage
+            <Image
               src="/google-org-logo.png"
               alt="Google.org Logo"
-              width={128}
-              height={64}
+              w="128px"
+              h="64px"
             />
           </ChakraLink>
         </Flex>

@@ -1,17 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Turbopack configuration (stable in Next.js 15)
-  turbopack: {
-    rules: {
-      // Additional optimizations for SVG handling
-      "*.svg": {
-        loaders: ["@svgr/webpack"],
-        as: "*.js",
-      },
-    },
-  },
-
   images: {
     remotePatterns: [
       {

@@ -123,6 +123,50 @@ describe("showImageryTool", () => {
     });
   });
 
+  it("uses inline bounds and zoom limits when TileJSON is absent", async () => {
+    const fetchMock = mockFetch({});
+    const inlineBounds: [number, number, number, number] = [-78, -15, -75, -12];
+
+    await showImageryTool(
+      baseMsg({
+        imagery: {
+          ...imagery,
+          tilejson_url: undefined,
+          bounds: inlineBounds,
+          min_zoom: 6,
+          max_zoom: 17,
+        },
+      })
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mapState.addLayer).toHaveBeenCalledOnce();
+    expect(mapState.addLayer.mock.calls[0][0]).toMatchObject({
+      bounds: inlineBounds,
+      minzoom: 6,
+      maxzoom: 17,
+    });
+  });
+
+  it("adds no layer when TileJSON and inline zoom limits are absent", async () => {
+    const fetchMock = mockFetch({});
+
+    await showImageryTool(
+      baseMsg({ imagery: { ...imagery, tilejson_url: undefined } })
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mapState.addLayer).not.toHaveBeenCalled();
+  });
+
+  it("adds no layer when TileJSON omits zoom limits", async () => {
+    mockFetch({ json: async () => ({ bounds: tileJson.bounds }) } as Response);
+
+    await showImageryTool(baseMsg());
+
+    expect(mapState.addLayer).not.toHaveBeenCalled();
+  });
+
   it("attaches auth when the tiler is the Zeno API itself", async () => {
     const fetchMock = mockFetch({});
     const url = `${API_CONFIG.API_HOST}/api/tiles/tilejson.json`;

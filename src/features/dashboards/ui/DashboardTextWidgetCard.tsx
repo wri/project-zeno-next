@@ -41,6 +41,13 @@ import {
 } from "../lib/markdown-toolbar";
 import DashboardTextWidget from "./DashboardTextWidget";
 
+// Notes are the only dashboard content with unbounded height (tables
+// paginate, maps and charts are fixed) — cap the body at the tall-map
+// height and scroll internally so one long note can't dominate the page.
+const NOTE_BODY_MAX_H = "520px";
+// Floor so a one-line note still reads as a card, not a sliver.
+const NOTE_BODY_MIN_H = "80px";
+
 /**
  * A `widget_type: "text"` dashboard card — a white note per the Figma
  * "text widget" frames. Unlike the analysis/map card it has no title: the
@@ -56,7 +63,6 @@ export default function DashboardTextWidgetCard({
   isOwner,
   isDouble,
   onArmDrag,
-  onDisarmDrag,
   onToggleSize,
   onSaveText,
   onRemove,
@@ -68,8 +74,7 @@ export default function DashboardTextWidgetCard({
   isOwner: boolean;
   isDouble: boolean;
   /** Pointer down on the drag handle — arms the grid item's HTML5 drag. */
-  onArmDrag: () => void;
-  onDisarmDrag: () => void;
+  onArmDrag: (event: React.PointerEvent) => void;
   onToggleSize: () => void;
   /** Persist the edited markdown (blank clears the note). */
   onSaveText: (text: string) => void;
@@ -210,7 +215,8 @@ export default function DashboardTextWidgetCard({
   return (
     <Flex
       flexDir="column"
-      h="100%"
+      // Content height on purpose: the packed grid stacks cards tightly, so
+      // a card must never stretch to a taller neighbour's height.
       bg="white"
       borderWidth="1px"
       borderColor={editing ? "#0049AA" : "#DDE2F5"}
@@ -288,7 +294,6 @@ export default function DashboardTextWidgetCard({
                   flexShrink={0}
                   aria-label="Drag to reposition"
                   onPointerDown={onArmDrag}
-                  onPointerUp={onDisarmDrag}
                 />
               )}
               <InsightCaption />
@@ -360,7 +365,9 @@ export default function DashboardTextWidgetCard({
         bg="white"
         flex={editing ? "0 0 auto" : "1"}
         h={editing && lockedHeight !== null ? `${lockedHeight}px` : undefined}
-        overflow={editing ? "hidden" : undefined}
+        minH={NOTE_BODY_MIN_H}
+        maxH={editing ? undefined : NOTE_BODY_MAX_H}
+        overflow={editing ? "hidden" : "auto"}
       >
         {editing ? (
           <Textarea

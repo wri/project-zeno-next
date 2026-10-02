@@ -109,6 +109,7 @@ const useSidebarStore = create<SidebarState>(() => ({
           }
         : { areasPanelOpen: false };
     }),
+
   insightsPanelOpen: false,
   setInsightsPanelOpen: (open) =>
     useSidebarStore.setState(

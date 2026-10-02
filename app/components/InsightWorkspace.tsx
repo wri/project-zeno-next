@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -19,13 +19,30 @@ import {
   ChartLineIcon,
 } from "@phosphor-icons/react";
 import useInsightStore from "@/app/store/insightStore";
+import { orderInsightsForPager } from "@/src/entities/insight";
 import useChatStore from "@/app/store/chatStore";
 import WidgetMessage from "./WidgetMessage";
+import {
+  ChartCardSkeleton,
+  skeletonToneCss,
+} from "./widgets/ChartCardSkeleton";
 import { Tooltip } from "./ui/tooltip";
 import AnalysisParametersToggle, {
   AnalysisParamsChips,
 } from "./widgets/AnalysisParameters";
 import { buildChips } from "./widgets/analysis-params-utils";
+import {
+  NetFluxChartInfo,
+  collapseNetFluxSiblings,
+  isNetFluxWidget,
+  useNetFluxDetailSelection,
+} from "@/src/features/net-flux";
+import {
+  FLUX_TREE_CARD_WIDTH,
+  GhgFluxTreeChartInfo,
+  isFluxTreeWidget,
+} from "@/src/features/ghg-flux-tree";
+import InsightChartPills, { hasChartPills } from "./InsightChartPills";
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -48,14 +65,7 @@ function WorkspaceSkeleton() {
       display="flex"
       flexDirection="column"
       overflow="hidden"
-      // Lighten the skeleton tiling to the neutral palette (the default
-      // bg.muted→bg.emphasized gradient reads too dark against the white card).
-      css={{
-        "& .chakra-skeleton": {
-          "--start-color": "colors.neutral.200",
-          "--end-color": "colors.neutral.300",
-        },
-      }}
+      css={skeletonToneCss}
     >
       {/* Indeterminate loading bar pinned to the top edge */}
       <Progress.Root value={null} size="xs" colorPalette="primary">
@@ -74,21 +84,8 @@ function WorkspaceSkeleton() {
         <SkeletonText noOfLines={2} gap="3" />
       </Box>
 
-      {/* Toolbar placeholder — segmented toggle + full-screen button */}
-      <Flex px={4} pb={3} gap={3} align="center">
-        <Flex gap={0}>
-          <Skeleton h="24px" w="64px" roundedLeft="md" />
-          <Skeleton h="24px" w="64px" roundedRight="md" />
-        </Flex>
-        <Skeleton h="24px" w="150px" rounded="md" />
-      </Flex>
-
-      <Box borderTop="1px solid" borderColor="#DDE2F5" />
-
-      {/* Chart body placeholder */}
-      <Box px={4} py={3}>
-        <Skeleton h="320px" w="100%" rounded="md" />
-      </Box>
+      {/* Toolbar + chart body placeholder, shared with the dashboard grid */}
+      <ChartCardSkeleton />
 
       {/* Nav footer placeholder */}
       <Flex px={4} py={2} justify="space-between" align="center">
@@ -100,7 +97,22 @@ function WorkspaceSkeleton() {
 }
 
 export default function InsightWorkspace() {
-  const { insights } = useInsightStore();
+  const allInsights = useInsightStore((state) => state.insights);
+  const netFluxDetail = useNetFluxDetailSelection();
+  // Two passes to get the pager list. First: the three LGMS time-series
+  // roll-ups are one analysis shown three ways, so they collapse to a single
+  // entry whose DETAIL pill switches between them — otherwise the pager and
+  // the pill would be two ways to do the same thing. Every other insight
+  // passes through untouched. Then: newest analysis first, but the charts
+  // within one analysis left in the order the backend sent them, since they
+  // are all the same age and `position` is the intended reading order.
+  const insights = useMemo(
+    () =>
+      orderInsightsForPager(
+        collapseNetFluxSiblings(allInsights, netFluxDetail)
+      ),
+    [allInsights, netFluxDetail]
+  );
   // Drive the loading affordances off the insight-specific flag, not the
   // request-wide isLoading: the skeleton/spinner should appear only while an
   // insight is actually being generated, not for every prompt.
@@ -127,9 +139,10 @@ export default function InsightWorkspace() {
     return <WorkspaceSkeleton />;
   }
 
-  // currentIndex 0 = newest, total-1 = oldest
-  const widgetIndex = total - 1 - currentIndex;
-  const widget = insights[widgetIndex];
+  // `insights` is already in pager order, so index 0 is the lead entry.
+  const widget = insights[currentIndex];
+  const isNetFlux = isNetFluxWidget(widget);
+  const isFluxTree = isFluxTreeWidget(widget);
   const chips = widget.analysisParams ? buildChips(widget.analysisParams) : [];
   const hasChips = chips.length > 0;
   // currentIndex 0 = newest (shown as "1 of N"). The Left/Prev arrow
@@ -157,7 +170,22 @@ export default function InsightWorkspace() {
       flex="0 1 auto"
       minH="0"
       overflowY="auto"
-      w="100%"
+      /* The flux tree carries three columns — labels, plot, values — and needs
+         more room than the 420px overlay column gives (`Map.tsx`), which
+         otherwise leaves its label column too narrow to read. It is the only
+         insight that asks for this, so the card widens just for it and every
+         other insight keeps the column width.
+
+         Growing leftward, not rightward: the overlay column is right-anchored,
+         so `alignSelf` pins this to its right edge and the extra width extends
+         back over the map. Below `md` the column already spans the viewport. */
+      w={{
+        base: "100%",
+        md: isFluxTree ? `${FLUX_TREE_CARD_WIDTH}px` : "100%",
+      }}
+      maxW={{ base: "100%", md: "calc(100vw - 2rem)" }}
+      alignSelf={{ base: "stretch", md: "flex-end" }}
+      transition="width 150ms ease-out"
       bg="primary.25"
       border="1px solid"
       borderColor="#DDE2F5"
@@ -251,7 +279,7 @@ export default function InsightWorkspace() {
           {/* Keyed on the active insight so switching re-runs the entry
               animation; the media query keeps it off under reduced motion. */}
           <Box
-            key={widget.id ?? widgetIndex}
+            key={widget.id ?? currentIndex}
             css={{
               "@media (prefers-reduced-motion: no-preference)": {
                 animationName: "fadeSlideIn",
@@ -262,16 +290,21 @@ export default function InsightWorkspace() {
           >
             {/* Title row */}
             <Flex px={4} py={1} justify="space-between" align="flex-start">
-              <Heading
-                size="sm"
-                fontWeight="semibold"
-                color="primary.fg"
-                flex={1}
-                mr={2}
-                mb={0}
-              >
-                {widget.title}
-              </Heading>
+              <Flex align="center" gap="6px" flex={1} minW={0} mr={2}>
+                <Heading
+                  size="sm"
+                  fontWeight="semibold"
+                  color="primary.fg"
+                  minW={0}
+                  truncate
+                  title={widget.title}
+                  mb={0}
+                >
+                  {widget.title}
+                </Heading>
+                {isNetFlux && <NetFluxChartInfo />}
+                {isFluxTree && <GhgFluxTreeChartInfo />}
+              </Flex>
               {hasChips && (
                 <AnalysisParametersToggle
                   expanded={paramsExpanded}
@@ -284,6 +317,14 @@ export default function InsightWorkspace() {
             {hasChips && paramsExpanded && (
               <Box px={4} py={2}>
                 <AnalysisParamsChips chips={chips} />
+              </Box>
+            )}
+
+            {/* Per-widget-type controls, rendered on the shell above the card
+                (the design calls this frame the "widget toolbar"). */}
+            {hasChartPills(widget) && (
+              <Box px={2} pb={2}>
+                <InsightChartPills widget={widget} showDivider />
               </Box>
             )}
 

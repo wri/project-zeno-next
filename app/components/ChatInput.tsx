@@ -31,7 +31,7 @@ import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "@/app/lib/router";
 import {
   firstMessageRedirectPath,
   isAppRoute,
@@ -199,7 +199,7 @@ export default function ChatInput({
   // isLoading, which is an overloaded flag also set during thread loading (not
   // cancellable) and whose meaning could drift in the future.
   const canCancelRequest = abortController !== null;
-  const hasNudge = messages.at(-1)?.type === "dataset-nudge";
+  const hasNudge = messages.at(-1)?.type === "nudge";
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
   );

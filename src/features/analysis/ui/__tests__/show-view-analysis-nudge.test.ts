@@ -21,6 +21,20 @@ const selection: AreaSelection = {
 
 // Tree cover loss in the dataset catalogue (DATASET_BY_ID)
 const TCL_ID = 4;
+// Intact Forest Landscapes — contextual, view-only, never analysable.
+const IFL_ID = 101;
+// Land GHG Monitoring System — the one card whose declared coverage
+// (2016–2024) is narrower than the catalogue-wide default.
+const LGMS_ID = 12;
+// Tree cover gain — its analysis covers administrative areas only.
+const GAIN_ID = 5;
+
+const protectedArea: AreaSelection = {
+  name: "Waimiri-Atroari",
+  source: "wdpa",
+  srcId: "33922",
+  subtype: "protected-area",
+};
 
 const seedLayer = (datasetId: number, name: string) =>
   useMapStore.setState({
@@ -39,6 +53,68 @@ describe("showViewAnalysisNudge", () => {
   beforeEach(() => {
     useChatStore.getState().reset();
     useMapStore.setState({ layers: [] });
+  });
+
+  it("does not nudge when the only active dataset is view-only", () => {
+    seedLayer(IFL_ID, "Intact Forest Landscapes");
+
+    expect(showViewAnalysisNudge(selection)).toBe(false);
+    expect(viewNudges()).toHaveLength(0);
+  });
+
+  it("skips a view-only dataset and nudges for a co-active analysable one", () => {
+    useMapStore.setState({
+      layers: [
+        {
+          id: `dataset-${IFL_ID}`,
+          name: "Intact Forest Landscapes",
+          type: "raster",
+          visible: true,
+          datasetId: IFL_ID,
+        },
+        {
+          id: `dataset-${TCL_ID}`,
+          name: "Tree cover loss",
+          type: "raster",
+          visible: true,
+          datasetId: TCL_ID,
+        },
+      ],
+    });
+
+    expect(showViewAnalysisNudge(selection)).toBe(true);
+    expect(viewNudges()[0].viewAnalysisSuggestion?.datasetId).toBe(TCL_ID);
+  });
+
+  it("ignores a context sub-layer when picking the active dataset", () => {
+    // A backend-picked dataset absent from DATASET_BY_ID, so datasetName falls
+    // back to the layer's own `name` — the only path where picking the
+    // sub-layer is observable (it would surface "intact_forest" instead).
+    const UNCATALOGUED_ID = 9999;
+    useMapStore.setState({
+      layers: [
+        {
+          id: `dataset-${UNCATALOGUED_ID}-ctx-intact_forest`,
+          name: "intact_forest",
+          type: "raster",
+          visible: true,
+          datasetId: UNCATALOGUED_ID,
+          parentLayerId: `dataset-${UNCATALOGUED_ID}`,
+        },
+        {
+          id: `dataset-${UNCATALOGUED_ID}`,
+          name: "Some backend dataset",
+          type: "raster",
+          visible: true,
+          datasetId: UNCATALOGUED_ID,
+        },
+      ],
+    });
+
+    expect(showViewAnalysisNudge(selection)).toBe(true);
+    expect(viewNudges()[0].viewAnalysisSuggestion?.datasetName).toBe(
+      "Some backend dataset"
+    );
   });
 
   it("injects a view-analysis-nudge when a dataset is active", () => {
@@ -63,6 +139,19 @@ describe("showViewAnalysisNudge", () => {
     expect(viewNudges()[0].viewAnalysisSuggestion).toMatchObject({
       startDate: "2001-01-01",
       endDate: "2025-12-31",
+    });
+  });
+
+  it("falls back to the dataset's own coverage when it declares one", () => {
+    // PZB-1355: LGMS covers 2016–2024. Seeding the catalogue-wide window made
+    // the YEARS chip read 2001–25 over a chart of 2016–2024 figures.
+    seedLayer(LGMS_ID, "LGMS total net GHG flux");
+
+    showViewAnalysisNudge(selection);
+
+    expect(viewNudges()[0].viewAnalysisSuggestion).toMatchObject({
+      startDate: "2016-01-01",
+      endDate: "2024-12-31",
     });
   });
 
@@ -115,6 +204,41 @@ describe("showViewAnalysisNudge", () => {
     const nudges = viewNudges();
     expect(nudges).toHaveLength(1);
     expect(nudges[0].id).toBe(firstId);
+  });
+
+  it("re-offers when the pinned date range changes under the same area", () => {
+    seedLayer(TCL_ID, "Tree cover loss");
+    showViewAnalysisNudge(selection);
+    const firstId = viewNudges()[0].id;
+
+    seedDateRange(new Date(2020, 2, 1), new Date(2021, 3, 2));
+    showViewAnalysisNudge(selection);
+
+    // Accepting runs the suggestion's own dates, so a stale payload here would
+    // analyse (and label the YEARS chip with) the previous window.
+    const nudges = viewNudges();
+    expect(nudges).toHaveLength(1);
+    expect(nudges[0].id).not.toBe(firstId);
+    expect(nudges[0].viewAnalysisSuggestion).toMatchObject({
+      startDate: "2020-03-01",
+      endDate: "2021-04-02",
+    });
+  });
+
+  it("nudges for a protected area when its dataset covers that source", () => {
+    seedLayer(TCL_ID, "Tree cover loss");
+
+    expect(showViewAnalysisNudge(protectedArea)).toBe(true);
+    expect(viewNudges()).toHaveLength(1);
+  });
+
+  it("does not nudge for an area whose source the dataset's analysis doesn't cover", () => {
+    seedLayer(GAIN_ID, "Tree cover gain");
+
+    expect(showViewAnalysisNudge(protectedArea)).toBe(false);
+    expect(viewNudges()).toHaveLength(0);
+    // ...while an administrative area still gets it.
+    expect(showViewAnalysisNudge(selection)).toBe(true);
   });
 
   it("does nothing when no dataset is active (analysis stays gated)", () => {

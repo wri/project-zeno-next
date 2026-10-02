@@ -60,11 +60,12 @@ function toolUpdate(
 }
 
 describe("parseStreamMessage — tool response_metadata write signals", () => {
-  it("carries msg_type and dashboard_id through on tool messages", () => {
+  it("carries msg_type, dashboard_id and dashboard_name through on tool messages", () => {
     const msg = parseStreamMessage(
       toolUpdate("add_to_dashboard", {
         msg_type: "dashboard_updated",
         dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+        dashboard_name: "Paraná",
       }),
       "tools",
       TS
@@ -74,6 +75,7 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
       name: "add_to_dashboard",
       msg_type: "dashboard_updated",
       dashboard_id: "5c9f7dd8-0000-0000-0000-000000000000",
+      dashboard_name: "Paraná",
     });
   });
 
@@ -112,6 +114,7 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     const signalBearing = toolUpdate("add_to_dashboard", {
       msg_type: "dashboard_updated",
       dashboard_id: "dash-1",
+      dashboard_name: "Paraná",
     }).messages[0];
     const narration = agentUpdate("Added it to your dashboard.").messages[0];
     const update = {
@@ -124,6 +127,7 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
       text: "Added it to your dashboard.",
       msg_type: "dashboard_updated",
       dashboard_id: "dash-1",
+      dashboard_name: "Paraná",
     });
   });
 
@@ -166,6 +170,109 @@ describe("parseStreamMessage — tool response_metadata write signals", () => {
     expect(msg?.type).toBe("error");
     expect(msg?.msg_type).toBe("dashboard_updated");
     expect(msg?.dashboard_id).toBe("dash-1");
+  });
+});
+
+describe("parseStreamMessage — nudge state", () => {
+  const nudge = {
+    type: "aoi_choice",
+    options: ["Puri, Odisha, India - (district-county) [IND]"],
+    data: [
+      {
+        source: "gadm",
+        src_id: "IND.26.26_1",
+        name: "Puri, Odisha, India",
+        subtype: "district-county",
+        bbox: [85.0865, 19.4617, 86.3727, 20.1884],
+      },
+    ],
+  };
+
+  const legacySuggested = [
+    {
+      dataset_id: 11,
+      dataset_name: "Integrated alerts",
+      reason: "Default dataset.",
+      recommended: true,
+    },
+    {
+      dataset_id: 4,
+      dataset_name: "Tree cover loss",
+      reason: "Historical annual loss.",
+    },
+  ];
+
+  it("passes a nudge through on tool messages", () => {
+    const update = {
+      ...toolUpdate("pick_aoi"),
+      nudge,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.type).toBe("tool");
+    expect(msg?.nudge).toEqual(nudge);
+  });
+
+  it("leaves nudge undefined for ordinary tool messages", () => {
+    const msg = parseStreamMessage(toolUpdate("pull_data"), "tools", TS);
+    expect(msg?.type).toBe("tool");
+    expect(msg?.nudge).toBeUndefined();
+  });
+
+  it("synthesizes a dataset_choice nudge from legacy suggested_datasets", () => {
+    // Threads stored before wri/project-zeno#770 permanently carry
+    // suggested_datasets; replay must still surface the dataset nudge.
+    const update = {
+      ...toolUpdate("pick_dataset"),
+      suggested_datasets: legacySuggested,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.nudge).toEqual({
+      type: "dataset_choice",
+      options: ["Integrated alerts", "Tree cover loss"],
+      data: legacySuggested,
+    });
+  });
+
+  it("prefers a real nudge over legacy suggested_datasets when both present", () => {
+    const update = {
+      ...toolUpdate("pick_aoi"),
+      nudge,
+      suggested_datasets: legacySuggested,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.nudge).toEqual(nudge);
+  });
+
+  it("does not synthesize a nudge when the update also carries a resolved dataset", () => {
+    // Old threads can carry both on one update; the resolved dataset always
+    // won (the dataset card renders, no nudge) and replay must keep that.
+    const update = {
+      ...toolUpdate("pick_dataset"),
+      dataset: {
+        dataset_id: 4,
+        dataset_name: "Tree cover loss",
+        tile_url: "https://example.com/tiles",
+      },
+      suggested_datasets: legacySuggested,
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.type).toBe("tool");
+    expect(msg?.dataset).toBeDefined();
+    expect(msg?.nudge).toBeUndefined();
+  });
+
+  it("does not synthesize a nudge from an empty suggested_datasets array", () => {
+    const update = {
+      ...toolUpdate("pick_dataset"),
+      suggested_datasets: [],
+    } as unknown as LangChainUpdate;
+
+    const msg = parseStreamMessage(update, "tools", TS);
+    expect(msg?.nudge).toBeUndefined();
   });
 });
 

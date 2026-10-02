@@ -1,0 +1,172 @@
+"use client";
+import { Box, Flex, Text } from "@chakra-ui/react";
+
+import { LgmsClassInfo } from "@/src/shared/ui/LgmsClassInfo";
+import { Swatch } from "@/src/shared/ui/Swatch";
+
+import type {
+  NetFluxLegend as NetFluxLegendSpec,
+  NetFluxLegendItem,
+} from "../model/net-flux-variants";
+
+const NET_FLUX_LINE_COLOR = "#172b7a";
+
+/**
+ * Per-entry info icon: the largest glyph that stays inside the 9.5px label's
+ * ~14px line box, so adding it doesn't open up the 4px row gap.
+ */
+const LEGEND_INFO_ICON_SIZE = 12;
+
+/**
+ * Hatch patterns for the fixed-2020 agriculture series. Rendered once per
+ * chart into a zero-size SVG; `url(#…)` paint references resolve document-wide,
+ * so both the Recharts bars and the legend swatches below can use them.
+ *
+ * Only two patterns: the summary roll-up's "agriculture" bucket reuses the
+ * livestock pattern (see `HATCH_AGRICULTURE` in net-flux-variants.ts) rather
+ * than getting an identical one of its own.
+ */
+export function NetFluxHatchDefs() {
+  return (
+    <svg
+      width={0}
+      height={0}
+      aria-hidden
+      focusable="false"
+      style={{ position: "absolute" }}
+    >
+      <defs>
+        <pattern
+          id="net-flux-hatch-livestock"
+          width="6"
+          height="6"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <rect width="6" height="6" fill="#d8bd9d" />
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="6"
+            stroke="#b9925f"
+            strokeWidth="2.5"
+          />
+        </pattern>
+        <pattern
+          id="net-flux-hatch-cropland"
+          width="6"
+          height="6"
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <rect width="6" height="6" fill="#e8d5bb" />
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="6"
+            stroke="#cbab7d"
+            strokeWidth="2.5"
+          />
+        </pattern>
+      </defs>
+    </svg>
+  );
+}
+
+function LegendEntry({ item }: { item: NetFluxLegendItem }) {
+  return (
+    <Flex align="center" gap="5px">
+      <Swatch color={item.color} />
+      <Text
+        fontFamily="body"
+        fontSize="9.5px"
+        fontWeight="normal"
+        color="#3A4048"
+      >
+        {item.label}
+      </Text>
+      <LgmsClassInfo
+        classId={item.classId}
+        label={item.label}
+        size={LEGEND_INFO_ICON_SIZE}
+      />
+    </Flex>
+  );
+}
+
+/** The "Net flux" line entry — a 16×2 rule rather than a filled swatch. */
+function NetFluxLineEntry() {
+  return (
+    <Flex align="center" gap="5px">
+      <Box w="16px" h="2px" bg={NET_FLUX_LINE_COLOR} flexShrink={0} />
+      <Text
+        fontFamily="body"
+        fontSize="9.5px"
+        fontWeight="normal"
+        color="#3A4048"
+      >
+        Net flux
+      </Text>
+    </Flex>
+  );
+}
+
+function GroupHeading({ children }: { children: string }) {
+  return (
+    <Text
+      fontFamily="mono"
+      fontSize="8px"
+      fontWeight="normal"
+      lineHeight="16px"
+      textTransform="capitalize"
+      color="#737C94"
+    >
+      {children}
+    </Text>
+  );
+}
+
+/**
+ * The design's own legend: emissions and removals as labelled columns with the
+ * net-flux line pinned to the bottom of the removals column, replacing
+ * ChartWidget's generic top-aligned legend. Collapses to a single wrapped row
+ * for the "net" measure, which has no emissions/removals split.
+ */
+export function NetFluxLegend({ legend }: { legend: NetFluxLegendSpec }) {
+  return (
+    <Box bg="#F6F6F6" rounded="4px" p="8px" w="full">
+      {legend.layout === "flat" ? (
+        <Flex wrap="wrap" gap="6px 10px">
+          {legend.emissions.map((item) => (
+            <LegendEntry key={item.label} item={item} />
+          ))}
+          <NetFluxLineEntry />
+        </Flex>
+      ) : (
+        <Flex gap="20px" align="stretch" wrap="wrap">
+          <Flex direction="column" gap="4px">
+            <GroupHeading>Emissions</GroupHeading>
+            <Flex direction="column" gap="4px">
+              {legend.emissions.map((item) => (
+                <LegendEntry key={item.label} item={item} />
+              ))}
+            </Flex>
+          </Flex>
+          <Flex direction="column" justify="space-between" gap="20px">
+            <Flex direction="column" gap="4px">
+              <GroupHeading>Removals</GroupHeading>
+              <Flex direction="column" gap="4px">
+                {legend.removals.map((item) => (
+                  <LegendEntry key={item.label} item={item} />
+                ))}
+              </Flex>
+            </Flex>
+            <NetFluxLineEntry />
+          </Flex>
+        </Flex>
+      )}
+    </Box>
+  );
+}

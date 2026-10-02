@@ -1,5 +1,13 @@
 import type { DatasetInfo } from "@/app/types/chat";
 
+import {
+  LGMS_AGRICULTURE_METADATA,
+  LGMS_CROPLAND_METADATA,
+  LGMS_LIVESTOCK_METADATA,
+  LGMS_LULUCF_METADATA,
+  LGMS_NET_FLUX_METADATA,
+} from "./lgms-metadata";
+
 const EOAPI_HOST =
   process.env.NEXT_PUBLIC_EOAPI_HOST ||
   "https://eoapi-cache.globalnaturewatch.org/";
@@ -28,15 +36,17 @@ export type DatasetCategoryId =
   | "land-use"
   | "disturbance"
   | "wildfires"
-  | "near-real-time";
+  | "ghg-fluxes"
+  | "forests";
 
 export const DATASET_CATEGORIES: { id: DatasetCategoryId; label: string }[] = [
   { id: "all", label: "All datasets" },
   { id: "in-conversation", label: "In this conversation" },
+  { id: "forests", label: "Forests" },
   { id: "land-use", label: "Land use" },
   { id: "disturbance", label: "Disturbance" },
   { id: "wildfires", label: "Wildfires" },
-  { id: "near-real-time", label: "Near-real time" },
+  { id: "ghg-fluxes", label: "GHG fluxes" },
 ];
 
 /** Categories assigned to dataset cards (excludes virtual ones above). */
@@ -44,6 +54,33 @@ export type AssignableDatasetCategoryId = Exclude<
   DatasetCategoryId,
   "all" | "in-conversation"
 >;
+
+/**
+ * One of a dataset card's primary data layers — only one is on the map at a
+ * time.
+ * `layers[0]` is a card's own default layer, shown by the card's top-level
+ * toggle; `layers[1:]` are "supporting layers" the Data Catalog panel lists
+ * in a per-card disclosure section, each with its own info modal — so they
+ * carry the same descriptive fields as a standalone `DatasetCardConfig`
+ * rather than just a name/tile_url pair.
+ */
+export type DatasetCardLayer = {
+  name: string;
+  /** Display title for the supporting-layer row and its info modal. Falls back to `name`. */
+  title?: string;
+  tile_url: string;
+  img?: string;
+  cadence?: string;
+  resolution?: string;
+  geographic_coverage?: string;
+  provider?: string;
+  summary?: string;
+  description?: string;
+  cautions?: string;
+  citation?: string;
+  /** Falls back to the card's top-level `legend` when omitted. */
+  legend?: DatasetLegendConfig;
+};
 
 export type DatasetCardConfig = {
   dataset_id: number;
@@ -53,9 +90,18 @@ export type DatasetCardConfig = {
    * full dataset_name is too long. Omit when the full name is already short.
    */
   shortName?: string;
+  /** One-line lede shown above the description in the info modal. */
+  summary?: string;
   description: string;
   img?: string;
   tile_url?: string;
+  /**
+   * The dataset's primary layer(s). Most cards omit this and rely on the
+   * single `tile_url` above; LGMS declares several, switched between one at
+   * a time. When present, this is authoritative and
+   * `tile_url` is ignored by layer-building code.
+   */
+  layers?: DatasetCardLayer[];
   data_layer?: string;
   context_layer?: string | null;
   threshold?: number | null;
@@ -65,8 +111,16 @@ export type DatasetCardConfig = {
   geographic_coverage?: string;
   provider?: string;
   methodology?: string;
+  cautions?: string;
   citation?: string;
   viewOnly?: boolean;
+  /**
+   * Gates the card behind a URL feature flag (`?ff=<flag>`): browse surfaces
+   * (Data Catalog, layer menu) only list it while the flag is on. The card
+   * stays in `DATASET_CARDS` either way, so a layer that is already on the map
+   * keeps resolving its legend.
+   */
+  featureFlag?: string;
   defaultStartYear?: number;
   defaultEndYear?: number;
   /**
@@ -94,6 +148,47 @@ export type ContextLayerMetadata = {
   vectorStyle?: VectorStyleSpec;
 };
 
+/**
+ * Intact Forest Landscapes symbology, mirrored from the flagship map's own
+ * legend (globalnaturewatch.org) and verified against the published tiles.
+ * Researchers review the two side by side, so the swatches have to agree.
+ *
+ * The dataset is published in epochs — 2000 / 2013 / 2016 / 2020 / 2025 — and
+ * each epoch after the first is an area that stopped being intact during it.
+ */
+const IFL_EXTENT_COLOR = "#5C8C50";
+const IFL_REDUCTION_COLORS = {
+  "2000-2013": "#8B8B2A",
+  "2013-2016": "#6B6B2A",
+  "2016-2020": "#4A4A2A",
+  "2020-2025": "#2D2D2D",
+} as const;
+
+const IFL_DESCRIPTION =
+  "The Intact Forest Landscapes (IFL) data set identifies unbroken expanses of natural ecosystems within the zone of forest extent that show no signs of significant human activity and are large enough that all native biodiversity, including viable populations of wide-ranging species, could be maintained.";
+
+/**
+ * Shared by the standalone card and the context sub-layer: the backend serves
+ * both from the same v2025 raster, so one drifting from the other would show
+ * the same pixels under two different keys.
+ */
+const IFL_LEGEND: DatasetLegendConfig = {
+  title: "Intact Forest Landscapes (2000-2025)",
+  color: IFL_EXTENT_COLOR,
+  items: [
+    { label: "Intact Forest Landscapes", color: IFL_EXTENT_COLOR },
+    ...(
+      Object.keys(IFL_REDUCTION_COLORS) as (keyof typeof IFL_REDUCTION_COLORS)[]
+    ).map((epoch) => ({
+      label: `Reduction in extent ${epoch}`,
+      color: IFL_REDUCTION_COLORS[epoch],
+    })),
+  ],
+  type: "symbol",
+  info: "Identifies the world's last remaining unfragmented forest landscapes, large enough to retain all native biodiversity and showing no signs of human alteration.",
+  note: "Extent of Intact Forest Landscapes (IFL) in 2000-2025. Global coverage, IFL Mapping Team.",
+};
+
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
     dataset_id: 100,
@@ -110,60 +205,163 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
       note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
     },
   },
+  // Sub-layer rendered beneath Tree Cover Loss. The backend hands this back as
+  // the same v2025 raster the standalone card uses, so both share one legend.
   intact_forest: {
     dataset_id: 101,
     dataset_name: "Intact Forest Landscapes",
     context_layer: null as string | null,
-    description:
-      "The Intact Forest Landscapes (IFL) data set identifies unbroken expanses of natural ecosystems within the zone of forest extent that show no signs of significant human activity and are large enough that all native biodiversity, including viable populations of wide-ranging species, could be maintained.",
-    legend: {
-      title: "Intact Forest Landscapes (2000-2025)",
-      color: "#5C8C50",
-      items: [
-        { label: "Intact Forest Landscapes", color: "#5C8C50" },
-        { label: "Reduction in extent 2000-2013", color: "#91896F" },
-        { label: "Reduction in extent 2013-2016", color: "#969904" },
-        { label: "Reduction in extent 2016-2020", color: "#635731" },
-      ],
-      type: "symbol",
-      info: "Identifies the world's last remaining unfragmented forest landscapes, large enough to retain all native biodiversity and showing no signs of human alteration.",
-      note: "Extent of Intact Forest Landscapes (IFL) in 2000-2025. Global coverage, IFL Mapping Team.",
-    },
+    description: IFL_DESCRIPTION,
+    legend: IFL_LEGEND,
+    // Styling for the v2021 *vector* build of the same layer. The backend
+    // stopped sending it (project-zeno "remove IFL vector tile for now as it
+    // is not supported"), so today only the debug panel's MVT mock exercises
+    // this path — it is kept because that build may come back, and because a
+    // wrong mapping here is invisible until it does.
+    //
+    // Each polygon carries the *start* year of the epoch it belongs to, and
+    // the surviving extent is stamped with the tileset vintage:
+    //
+    //   year 2020 -> ifl_2020_buff             (still intact)
+    //   year 2000 -> ifl_2013_reduction_buffer (lost 2000-2013)
+    //   year 2013 -> ifl_2016_reduction_buffer (lost 2013-2016)
+    //   year 2016 -> ifl_2020_reduction_buffer (lost 2016-2020)
+    //
+    // Reading 2000 as "the 2000 extent" paints the first loss epoch as intact
+    // forest and hides the extent altogether, so the mapping is spelled out.
+    // v2021 has no 2020-2025 epoch; that class simply never matches here.
     vectorStyle: {
       property: "year",
-      coerceToString: true, // tiles may encode 2000 as number or string
-      colorMap: [{ value: 2000, color: "#5C8C50" }],
+      coerceToString: true, // tiles may encode the year as number or string
+      colorMap: [
+        { value: 2020, color: IFL_EXTENT_COLOR },
+        { value: 2000, color: IFL_REDUCTION_COLORS["2000-2013"] },
+        { value: 2013, color: IFL_REDUCTION_COLORS["2013-2016"] },
+        { value: 2016, color: IFL_REDUCTION_COLORS["2016-2020"] },
+      ],
       fallbackColor: "transparent", // every other year stays unstyled
     },
   },
 };
 
+/**
+ * Feature flag gating the standalone Intact Forest Landscapes card while
+ * researchers review it (PZB-1231). Opt in with `?ff=ifl`.
+ */
+export const IFL_FEATURE_FLAG = "ifl";
+
+/**
+ * Feature flag gating the curated LGMS net-flux insights while they are
+ * reviewed (PZB-1247/1248). Opt in with `?ff=net-flux`.
+ */
+export const NET_FLUX_FEATURE_FLAG = "net-flux";
+
+/**
+ * Standalone IFL raster tiles. Same endpoint the backend hands back as the
+ * `intact_forest` context layer, so the card and the context sub-layer render
+ * from one source.
+ */
+const INTACT_FOREST_TILE_URL =
+  "https://tiles.globalforestwatch.org/ifl_intact_forest_landscapes/v2025/default/{z}/{x}/{y}.png";
+
+/**
+ * LGMS raster tiles (v1.0.3). One endpoint serves the whole system: `layer`
+ * picks the sector and `flux_type` the measure, so the cards below differ only
+ * in those two query params.
+ *
+ * `flux_type` is a strict enum — `net` | `gross_emissions` | `gross_removals`.
+ * Anything else (`net_flux`, notably) is rejected with a 422, and the tile
+ * simply never paints.
+ */
+const LGMS_TILE_BASE =
+  "https://tiles.globalforestwatch.org/wri_land_ghg_monitoring_system/v1.0.3/dynamic/{z}/{x}/{y}.png";
+
+type LgmsLayer = "lgms" | "lulucf" | "agriculture" | "cropland" | "livestock";
+type LgmsFluxType = "net" | "gross_emissions" | "gross_removals";
+
+const lgmsTileUrl = (layer: LgmsLayer, fluxType: LgmsFluxType): string =>
+  `${LGMS_TILE_BASE}?layer=${layer}&flux_type=${fluxType}`;
+
+/**
+ * BrBG ramp the LGMS tiles render net flux with, sink (teal) → source (brown),
+ * sampled from the published v1.0.3 tiles. These are the same browns and teals
+ * the net-flux charts use (`src/features/net-flux`), so the map layer and the
+ * analysis read as one dataset. The pale middle class straddles zero — the
+ * divergent legend labels that midpoint itself.
+ */
+const LGMS_NET_FLUX_RAMP = [
+  "#003c30",
+  "#01665e",
+  "#35978f",
+  "#80cdc1",
+  "#c7eae5",
+  "#d9e7d5",
+  "#f6e8c3",
+  "#dfc27d",
+  "#bf812d",
+  "#8c510a",
+  "#543005",
+];
+
+/**
+ * Brown ramp the LGMS tiles render gross agricultural emissions with, sampled
+ * from the published v1.0.3 AgricultureEmissions colormap. These must stay in
+ * sync with the tile-cache algorithm — the earlier YlOrBr ramp was replaced
+ * because it read as orange/red on screen while the tiles are brown (PZB-1426).
+ */
+const LGMS_EMISSIONS_RAMP = [
+  "#fef6e4",
+  "#f6e8c3",
+  "#dfc27d",
+  "#bf812d",
+  "#8c510a",
+  "#54300d",
+];
+
+/**
+ * Units come from the data-lake asset path (`.../Mg_CO2e_yr-1/...`):
+ * per-pixel megagrams CO2e per year.
+ */
+const LGMS_UNIT = "Mg CO2e/yr";
+
+// Only the two end stops carry a label: the divergent/sequential legends read
+// `items[0]` and `items[at(-1)]` and render the rest as a continuous bar.
+const lgmsRampItems = (ramp: string[], minLabel: string, maxLabel: string) =>
+  ramp.map((color, i) => ({
+    color,
+    label: i === 0 ? minLabel : i === ramp.length - 1 ? maxLabel : "",
+  }));
+
+const lgmsNetFluxLegend = (
+  title: string,
+  info: string,
+  note: string
+): DatasetLegendConfig => ({
+  title,
+  type: "divergent",
+  color: "#543005",
+  unit: LGMS_UNIT,
+  items: lgmsRampItems(LGMS_NET_FLUX_RAMP, "<−30", ">90"),
+  info,
+  note,
+});
+
+const lgmsEmissionsLegend = (
+  title: string,
+  info: string,
+  note: string,
+  maxValue: number
+): DatasetLegendConfig => ({
+  title,
+  type: "sequential",
+  color: "#54300d",
+  unit: LGMS_UNIT,
+  items: lgmsRampItems(LGMS_EMISSIONS_RAMP, "0", `>${maxValue}`),
+  info,
+  note,
+});
+
 export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
-  {
-    dataset_id: 0,
-    dataset_name: "Global all ecosystem disturbance alerts (DIST-ALERT)",
-    shortName: "DIST-ALERT",
-    data_layer: "Global all ecosystem disturbance alerts (DIST-ALERT)",
-    context_layer: null as string | null,
-    img: "/dataset_card_dist_alerts.webp",
-    cadence: "weekly",
-    resolution: "30 m",
-    geographic_coverage: "global",
-    provider: "UMD",
-    categories: ["disturbance", "near-real-time"],
-    description:
-      "This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present.",
-    tile_url:
-      "https://tiles.globalforestwatch.org/umd_glad_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color",
-    legend: {
-      title: "Global all ecosystem disturbance alerts",
-      color: "#f69",
-      items: [{ label: "DIST alert", color: "#f69" }],
-      type: "symbol",
-      info: 'This dataset provides near-real-time alerts of vegetation disturbance at 30-meter resolution from December 2023 to present, which covers both 2023 and 2024 timeframes needed to compare alert frequencies. It\'s specifically designed to track disturbance events that would generate "alerts" as mentioned in the query.',
-      note: "Near-real-time vegetation disturbance alerts across all ecosystems, updated weekly (2023-present).",
-    },
-  },
   {
     dataset_id: 11,
     dataset_name: "Integrated alerts",
@@ -287,6 +485,26 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       info: 'The Natural lands dataset is the best match because it provides a 2020 baseline map of natural vs non-natural land covers at 30m resolution, which can be used to identify intact/natural landscapes. This dataset specifically defines "natural" ecosystems as those that substantially resemble what would be found without major human impacts, making it ideal for assessing landscape intactness across Canadian provinces.',
       note: "Baseline map separating natural from non-natural lands for conversion assessments. This map may overestimate the extent of natural lands.",
     },
+  },
+  {
+    // Contextual-only layer: IFL has no analytics endpoint, so the card is
+    // flagged `viewOnly` and the catalogue badges it VIEW ONLY. Name, colors
+    // and description are reused from the context-layer metadata above so the
+    // standalone layer and the sub-layer under Tree Cover Loss stay identical.
+    dataset_id: CONTEXT_LAYER_METADATA.intact_forest.dataset_id,
+    dataset_name: CONTEXT_LAYER_METADATA.intact_forest.dataset_name,
+    shortName: "Intact forests",
+    context_layer: null,
+    cadence: "2000-2025",
+    resolution: "30 m",
+    geographic_coverage: "global",
+    provider: "IFL Mapping Team",
+    categories: ["land-use"],
+    viewOnly: true,
+    featureFlag: IFL_FEATURE_FLAG,
+    description: IFL_DESCRIPTION,
+    tile_url: INTACT_FOREST_TILE_URL,
+    legend: IFL_LEGEND,
   },
   {
     dataset_id: 4,
@@ -447,7 +665,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "WRI",
-    categories: ["disturbance"],
+    categories: ["disturbance", "ghg-fluxes", "forests"],
     description:
       "Maps the balance between emissions from forest disturbances and carbon removals from forest growth between 2001 and 2025, using a globally consistent model. This dataset supports climate reporting, forest-based mitigation strategies, and greenhouse gas inventories by identifying where forests are contributing to or helping mitigate climate change.",
     tile_url:
@@ -524,7 +742,163 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
       unit: "tCO2e/ha",
     },
   },
+  // Land GHG Monitoring System (LGMS) — one real dataset (backend
+  // land_ghg_inventory.yml, dataset_id 12), matching project-zeno PR #830's
+  // five declared layers: `lgms` (this card's own default, total net flux),
+  // `lulucf`, `agriculture`, `cropland`, and `livestock`. The approved Figma
+  // catalog design (PZB-1346) mocks only the first two as "supporting
+  // layers", but all five sector layers exist and are surfaced here.
+  {
+    dataset_id: 12,
+    dataset_name: "Land GHG Monitoring System (LGMS)",
+    shortName: "LGMS net flux",
+    featureFlag: NET_FLUX_FEATURE_FLAG,
+    data_layer: "Land GHG Monitoring System (LGMS)",
+    context_layer: null,
+    img: "/dataset_card_lgms_net_flux.webp",
+    cadence: "annual",
+    resolution: "reported per admin area",
+    geographic_coverage: "global",
+    provider: "WRI",
+    defaultStartYear: 2016,
+    defaultEndYear: 2024,
+    categories: ["ghg-fluxes"],
+    summary: LGMS_NET_FLUX_METADATA.summary,
+    description: LGMS_NET_FLUX_METADATA.description,
+    cautions: LGMS_NET_FLUX_METADATA.cautions,
+    citation: LGMS_NET_FLUX_METADATA.citation,
+    tile_url: lgmsTileUrl("lgms", "net"),
+    // Layer names match the backend catalog yml (land_ghg_inventory.yml)
+    // exactly — the legend and the Data Catalog panel resolve entries by
+    // `layer.name`, so a mismatch here silently falls back to the card's
+    // dataset-level legend/metadata. `layers[0]` ("lgms") is this card's own
+    // default layer, shown by the card's own toggle; `layers[1:]` are the
+    // "supporting layers" the Data Catalog panel discloses underneath it.
+    layers: [
+      {
+        name: "lgms",
+        tile_url: lgmsTileUrl("lgms", "net"),
+        legend: lgmsNetFluxLegend(
+          "LGMS total net GHG flux",
+          "The balance of emissions and removals across every LGMS sector, so a single layer shows whether land is a net source or a net sink.",
+          "Per-pixel annual net GHG flux in Mg CO2e/yr. Brown is a net source, teal a net sink."
+        ),
+      },
+      {
+        name: "lulucf",
+        title: "LGMS LULUCF net GHG flux",
+        img: "/dataset_card_lgms_lulucf.webp",
+        // The LGMS tile endpoint caps at z12 and 422s above it.
+        cadence: "annual",
+        resolution: "30 m",
+        geographic_coverage: "global",
+        provider: "WRI",
+        summary: LGMS_LULUCF_METADATA.summary,
+        description: LGMS_LULUCF_METADATA.description,
+        cautions: LGMS_LULUCF_METADATA.cautions,
+        citation: LGMS_LULUCF_METADATA.citation,
+        tile_url: lgmsTileUrl("lulucf", "net"),
+        legend: lgmsNetFluxLegend(
+          "LGMS LULUCF net GHG flux (2016-2024)",
+          "This layer maps the average annual net GHG flux from land use and land-use change. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, and organic soil. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
+          "Average annual net GHG flux from vegetation and soil due to land use and land-use change. Net flux is the difference between gross emissions and gross removals."
+        ),
+      },
+      {
+        name: "agriculture",
+        title: "LGMS agriculture emissions",
+        img: "/dataset_card_lgms_agriculture.webp",
+        cadence: "annual",
+        resolution: "30 m",
+        geographic_coverage: "global",
+        provider: "WRI",
+        summary: LGMS_AGRICULTURE_METADATA.summary,
+        description: LGMS_AGRICULTURE_METADATA.description,
+        cautions: LGMS_AGRICULTURE_METADATA.cautions,
+        citation: LGMS_AGRICULTURE_METADATA.citation,
+        tile_url: lgmsTileUrl("agriculture", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS agriculture emissions (2020)",
+          "This layer maps the GHG emissions (CH4, N2O) from agriculture, including cropland management and livestock. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+          "Gross GHG emissions from agriculture, including cropland management and livestock.",
+          26
+        ),
+      },
+      {
+        name: "cropland",
+        title: "LGMS cropland management emissions",
+        img: "/dataset_card_lgms_cropland.webp",
+        cadence: "annual",
+        resolution: "30 m",
+        geographic_coverage: "global",
+        provider: "WRI",
+        summary: LGMS_CROPLAND_METADATA.summary,
+        description: LGMS_CROPLAND_METADATA.description,
+        cautions: LGMS_CROPLAND_METADATA.cautions,
+        citation: LGMS_CROPLAND_METADATA.citation,
+        tile_url: lgmsTileUrl("cropland", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS cropland management emissions (2020)",
+          "This layer maps the GHG emissions (CH4, N2O) from cropland management, including manure application, fertilizer application, rice cultivation, and crop residue decomposition. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+          "Gross GHG emissions from cropland management, including manure application, fertilizer application, crop residue decomposition, and rice cultivation.",
+          23
+        ),
+      },
+      {
+        name: "livestock",
+        title: "LGMS livestock emissions",
+        img: "/dataset_card_lgms_livestock.webp",
+        cadence: "annual",
+        resolution: "30 m",
+        geographic_coverage: "global",
+        provider: "WRI",
+        summary: LGMS_LIVESTOCK_METADATA.summary,
+        description: LGMS_LIVESTOCK_METADATA.description,
+        cautions: LGMS_LIVESTOCK_METADATA.cautions,
+        citation: LGMS_LIVESTOCK_METADATA.citation,
+        tile_url: lgmsTileUrl("livestock", "gross_emissions"),
+        legend: lgmsEmissionsLegend(
+          "LGMS livestock emissions (2020)",
+          "This layer maps the GHG emissions (CH4, N2O) from livestock, including monogastrics and ruminants. The maximum value on the legend represents the 99.99 percentile of emissions pixels; the true maximum value may be substantially higher.",
+          "Gross GHG emissions from livestock, including monogastrics and ruminants.",
+          14
+        ),
+      },
+    ],
+    legend: lgmsNetFluxLegend(
+      "LGMS total net GHG flux (2016-2024)",
+      "This layer maps the average annual net GHG flux from land use, land-use change, and agriculture. It includes gross emissions (positive) and removals (negative) by vegetation, mineral soil, organic soil, cropland management, and livestock. Minimum (removals) and maximum (emissions) values on the legend represent 0.01 and 99.99 percentiles of flux pixels, respectively; true minimum and maximum values may be substantially higher.",
+      "Average annual net GHG flux from land use, land-use change, and agriculture. Net flux is the difference between gross emissions and gross removals."
+    ),
+  },
 ];
+
+/**
+ * The catalogue cards keyed by id. Distinct from `DATASET_BY_ID`, which holds
+ * the `DatasetInfo` the agent exchanges — that projection drops the card-only
+ * fields, so anything reading a card's own configuration (its declared
+ * coverage, its categories) has to come through here.
+ */
+export const DATASET_CARD_BY_ID: Record<number, DatasetCardConfig> =
+  Object.fromEntries(DATASET_CARDS.map((c) => [c.dataset_id, c]));
+
+const DATASET_CARD_DISPLAY_ORDER: number[] = [
+  11, // Integrated alerts
+  1, // Global land cover
+  2, // Grasslands
+  3, // SBTN Natural lands
+  101, // Intact Forest Landscapes
+  4, // Tree cover loss
+  8, // TCL by driver
+  5, // Tree cover gain
+  7, // Tree cover
+  10, // TCL from fires
+  12, // LGMS
+  6, // Forest GHG net flux
+];
+
+export const ORDERED_DATASET_CARDS: (DatasetCardConfig & { img?: string })[] =
+  DATASET_CARD_DISPLAY_ORDER.map((id) => DATASET_CARD_BY_ID[id]);
 
 // Defaults applied to DatasetInfo when not provided by cards
 const DEFAULT_DATASET_FIELDS: Omit<
@@ -549,6 +923,7 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     context_layer,
     description,
     tile_url,
+    layers,
     data_layer,
     threshold,
   }) => ({
@@ -558,7 +933,15 @@ export const DATASETS: DatasetInfo[] = DATASET_CARDS.map(
     description,
     reason: description, // for compatibility with LayerCardItem
     data_layer: (data_layer ?? DEFAULT_DATASET_FIELDS.data_layer) as string,
-    tile_url: (tile_url ?? DEFAULT_DATASET_FIELDS.tile_url) as string,
+    // tile_url mirrors layers[0] when the card declares multiple layers, so
+    // legacy single-tile_url readers still see a sensible default.
+    tile_url: (layers?.[0]?.tile_url ??
+      tile_url ??
+      DEFAULT_DATASET_FIELDS.tile_url) as string,
+    layers: layers?.map(({ name, tile_url: url }) => ({
+      name,
+      tile_url: url,
+    })),
     context_layer: (context_layer ?? DEFAULT_DATASET_FIELDS.context_layer) as
       | string
       | null,
@@ -586,4 +969,15 @@ const DATASET_SHORTNAME_BY_NAME: Record<string, string> = Object.fromEntries(
  */
 export function shortDatasetName(name: string): string {
   return DATASET_SHORTNAME_BY_NAME[name] ?? name;
+}
+
+// Datasets with no analytics endpoint — they can be shown on the map but never
+// analysed, so the analysis CTAs must skip them.
+const VIEW_ONLY_DATASET_IDS: ReadonlySet<number> = new Set(
+  DATASET_CARDS.filter((c) => c.viewOnly).map((c) => c.dataset_id)
+);
+
+/** Whether a dataset is contextual-only (badged VIEW ONLY, not analysable). */
+export function isViewOnlyDataset(datasetId: number): boolean {
+  return VIEW_ONLY_DATASET_IDS.has(datasetId);
 }

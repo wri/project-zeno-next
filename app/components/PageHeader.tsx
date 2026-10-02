@@ -6,7 +6,6 @@ import {
   Heading,
   Button,
   IconButton,
-  Progress,
   Badge,
   Menu,
   Portal,
@@ -29,16 +28,16 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { motion, type Transition } from "framer-motion";
 import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
 import PreviewInfoPanel from "./PreviewInfoPanel";
+import PromptQuotaMeter from "./PromptQuotaMeter";
 
 import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link } from "@/app/lib/router";
+import { usePathname } from "@/app/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
 import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
-import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
 import {
   mapTabHref,
   newConversationTarget,
@@ -47,7 +46,7 @@ import useMapStore from "../store/mapStore";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
-const WHATS_NEW_STORAGE_KEY = "whats-new-v4-dismissed";
+const WHATS_NEW_STORAGE_KEY = "whats-new-v5-dismissed";
 
 // Exploration (uncommitted): measure the toggle before paint so the sliding
 // pill never flashes from a wrong spot. useLayoutEffect on the server warns,
@@ -56,8 +55,7 @@ const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function PageHeader() {
-  const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
-    useAuthStore();
+  const { userEmail, isAuthenticated } = useAuthStore();
   const { toggleSidebar } = useSidebarStore();
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
@@ -65,9 +63,8 @@ function PageHeader() {
   const pathname = usePathname() ?? "";
   const onMap = pathname.startsWith("/app");
   const onDashboards = pathname.startsWith("/dashboards");
-  const dashboardFeatureEnabled = useFeatureFlag("dashboard");
 
-  const newConvo = newConversationTarget(pathname, dashboardFeatureEnabled);
+  const newConvo = newConversationTarget(pathname);
   // Mirrors the /app NewThread mount reset. In place because the dashboard
   // page hosts its own chat panel and its URL doesn't carry the conversation
   // (ADR-003) — navigating would leave the page the user is working on.
@@ -143,7 +140,7 @@ function PageHeader() {
 
   useIsomorphicLayoutEffect(() => {
     const track = toggleTrackRef.current;
-    if (!dashboardFeatureEnabled || !track) return;
+    if (!track) return;
     const measure = () => {
       const tabs = Array.from(
         track.querySelectorAll<HTMLElement>("[data-toggle-tab]")
@@ -160,7 +157,7 @@ function PageHeader() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [dashboardFeatureEnabled, activeToggleIndex]);
+  }, [activeToggleIndex]);
 
   const pillTransition: Transition = prefersReducedMotion
     ? { duration: 0 }
@@ -352,117 +349,116 @@ function PageHeader() {
           </Tooltip>
         </Flex>
       </Flex>
-      {dashboardFeatureEnabled && (
-        <Flex
-          // Segmented control (Figma node 897-4655): a Primary/100 track that
-          // holds a single solid Primary/500 pill marking the active view. The
-          // design's same-coloured 1px border is omitted (invisible against the
-          // track). Vertical padding is trimmed to 2px (from the design's 4px)
-          // so the 28px pill clears the header's 4px lime top border with room
-          // to breathe (32px total) instead of filling the 40px bar flush.
-          ref={toggleTrackRef}
-          gap="1"
-          px="1"
-          py="0.5"
-          bg="#F0F4FF"
-          borderRadius="8px"
-          alignItems="center"
-          hideBelow="md"
-          position="absolute"
-          left="50%"
-          transform="translateX(-50%)"
-        >
-          {pillFrom && pillTo && (
-            <motion.div
-              aria-hidden
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                borderRadius: 4,
-                background: "#0049AA",
-                boxShadow: "0px 1px 2px 0px rgba(0, 0, 0, 0.05)",
-                zIndex: 0,
-                pointerEvents: "none",
-              }}
-              initial={{
-                x: pillFrom.x,
-                y: pillFrom.y,
-                width: pillFrom.width,
-                height: pillFrom.height,
-              }}
-              animate={{
-                x: pillTo.x,
-                y: pillTo.y,
-                width: pillTo.width,
-                height: pillTo.height,
-              }}
-              transition={pillTransition}
-            />
-          )}
-          {[
-            {
-              // Thread-aware: with a live conversation, land on its thread
-              // URL (which preserves state) instead of the resetting /app.
-              href: mapTabHref(currentThreadId),
-              label: "Map",
-              active: onMap,
-            },
-            {
-              href: "/dashboards?ff=dashboard",
-              label: "Dashboards",
-              active: onDashboards,
-            },
-          ].map(({ href, label, active }) => (
-            <Button
-              key={href}
-              asChild
-              size="xs"
-              variant="ghost"
-              position="relative"
-              zIndex={1}
-              h="28px"
-              minW={0}
-              px="2.5"
-              py="1"
-              borderRadius="4px"
-              fontSize="sm"
-              lineHeight="20px"
-              fontWeight="semibold"
-              bg="transparent"
-              _hover={{ bg: active ? "transparent" : "primary.50" }}
-              _focusVisible={focusRing}
+      <Flex
+        // Segmented control (Figma node 897-4655): a Primary/100 track that
+        // holds a single solid Primary/500 pill marking the active view. The
+        // design's same-coloured 1px border is omitted (invisible against the
+        // track). Vertical padding is trimmed to 2px (from the design's 4px)
+        // so the 28px pill clears the header's 4px lime top border with room
+        // to breathe (32px total) instead of filling the 40px bar flush.
+        ref={toggleTrackRef}
+        gap="1"
+        px="1"
+        py="0.5"
+        bg="#F0F4FF"
+        borderRadius="8px"
+        alignItems="center"
+        hideBelow="md"
+        position="absolute"
+        left="50%"
+        transform="translateX(-50%)"
+      >
+        {pillFrom && pillTo && (
+          <motion.div
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              borderRadius: 4,
+              background: "#0049AA",
+              boxShadow: "0px 1px 2px 0px rgba(0, 0, 0, 0.05)",
+              zIndex: 0,
+              pointerEvents: "none",
+            }}
+            initial={{
+              x: pillFrom.x,
+              y: pillFrom.y,
+              width: pillFrom.width,
+              height: pillFrom.height,
+            }}
+            animate={{
+              x: pillTo.x,
+              y: pillTo.y,
+              width: pillTo.width,
+              height: pillTo.height,
+            }}
+            transition={pillTransition}
+          />
+        )}
+        {[
+          {
+            // Thread-aware: with a live conversation, land on its thread
+            // URL (which preserves state) instead of the resetting /app.
+            href: mapTabHref(currentThreadId),
+            label: "Map",
+            active: onMap,
+          },
+          {
+            href: "/dashboards",
+            label: "Dashboards",
+            active: onDashboards,
+          },
+        ].map(({ href, label, active }) => (
+          <Button
+            key={href}
+            asChild
+            size="xs"
+            variant="ghost"
+            position="relative"
+            zIndex={1}
+            h="28px"
+            minW={0}
+            px="2.5"
+            py="1"
+            borderRadius="4px"
+            fontSize="sm"
+            lineHeight="20px"
+            fontWeight="semibold"
+            bg="transparent"
+            _hover={{ bg: active ? "transparent" : "primary.50" }}
+            _focusVisible={focusRing}
+          >
+            <Link
+              href={href}
+              data-toggle-tab
+              aria-current={active ? "page" : undefined}
             >
-              <Link
-                href={href}
-                data-toggle-tab
-                aria-current={active ? "page" : undefined}
+              <motion.span
+                initial={{
+                  color: prefersReducedMotion
+                    ? active
+                      ? "#ffffff"
+                      : "#4A64CB"
+                    : active
+                      ? "#4A64CB"
+                      : "#ffffff",
+                }}
+                animate={{ color: active ? "#ffffff" : "#4A64CB" }}
+                transition={{
+                  duration: prefersReducedMotion ? 0 : 0.24,
+                  ease: "easeOut",
+                }}
+                style={{ display: "inline-block" }}
               >
-                <motion.span
-                  initial={{
-                    color: prefersReducedMotion
-                      ? active
-                        ? "#ffffff"
-                        : "#4A64CB"
-                      : active
-                        ? "#4A64CB"
-                        : "#ffffff",
-                  }}
-                  animate={{ color: active ? "#ffffff" : "#4A64CB" }}
-                  transition={{
-                    duration: prefersReducedMotion ? 0 : 0.24,
-                    ease: "easeOut",
-                  }}
-                  style={{ display: "inline-block" }}
-                >
-                  {label}
-                </motion.span>
-              </Link>
-            </Button>
-          ))}
-        </Flex>
-      )}
+                {label}
+              </motion.span>
+            </Link>
+          </Button>
+        ))}
+      </Flex>
       <Flex gap="6" alignItems="center" hideBelow="md">
+        <PromptQuotaMeter />
         <Button
           variant="ghost"
           size="xs"
@@ -493,7 +489,7 @@ function PageHeader() {
         </Button>
         <ChakraLink
           as={Link}
-          href="https://help.globalnaturewatch.org/"
+          href="https://help.horizon.globalnaturewatch.org/"
           target="_blank"
           display="flex"
           alignItems="center"
@@ -509,51 +505,6 @@ function PageHeader() {
           Help
         </ChakraLink>
 
-        <Progress.Root
-          size="xs"
-          min={0}
-          max={100}
-          value={totalPrompts > 0 ? (usedPrompts / totalPrompts) * 100 : 0}
-          minW="100px"
-          mt="1"
-          mb="2"
-          textAlign="center"
-          rounded="full"
-          colorPalette="primary"
-        >
-          <Progress.Label
-            mb="0.5"
-            fontSize="xs"
-            lineHeight="1.5"
-            fontWeight="normal"
-            whiteSpace="nowrap"
-            color={isPrototype ? "#6b7280" : "#656E7B"}
-          >
-            {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} daily
-            prompts
-            <Tooltip
-              content={
-                totalPrompts > 5000
-                  ? "You have unlimited prompts!"
-                  : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
-              }
-              showArrow
-            >
-              <Text
-                as="span"
-                display="inline-block"
-                ml="1"
-                verticalAlign="text-bottom"
-                cursor="help"
-              >
-                <InfoIcon size={12} />
-              </Text>
-            </Tooltip>
-          </Progress.Label>
-          <Progress.Track bg={isPrototype ? "#6b7280" : "#E0E2E5"} maxH="4px">
-            <Progress.Range bg={isPrototype ? "#1f2937" : "#0049AA"} />
-          </Progress.Track>
-        </Progress.Root>
         {isAuthenticated ? (
           <Menu.Root positioning={{ placement: "bottom-end" }}>
             <Menu.Trigger asChild>

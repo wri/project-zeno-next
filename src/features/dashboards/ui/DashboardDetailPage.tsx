@@ -1,18 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams } from "@/app/lib/router";
 import { useEffect } from "react";
-import {
-  Box,
-  Container,
-  Flex,
-  Heading,
-  Spinner,
-  Text,
-  Link as ChakraLink,
-} from "@chakra-ui/react";
-import { SquaresFourIcon } from "@phosphor-icons/react";
+import { Box, Container, Flex, Spinner, Text } from "@chakra-ui/react";
 
 import ChatPanel from "@/app/ChatPanel";
 import { getDashboardContentLeftPx } from "@/app/explorationLayout";
@@ -20,10 +10,17 @@ import useAgentProfileStore from "@/app/store/agentProfileStore";
 import useAuthStore from "@/app/store/authStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 import useViewContextStore from "@/app/store/viewContextStore";
+import usePinnedHeader from "../hooks/usePinnedHeader";
+import { hasDashboardContent } from "../lib/widgets";
 import { useDashboard } from "./dashboardQueries";
+import { usePendingInsightWidgets } from "./usePendingInsightWidget";
+import DashboardBreadcrumb from "./DashboardBreadcrumb";
+import DashboardEmptyStateHero from "./DashboardEmptyStateHero";
+import DashboardFooter from "./DashboardFooter";
 import DashboardHeader from "./DashboardHeader";
+import DashboardPinnedHeader from "./DashboardPinnedHeader";
 import DashboardWidgetsGrid from "./DashboardWidgetsGrid";
-import { HERO_GRID_IMAGE } from "./heroGrid";
+import { HERO_BAND_PROPS } from "./heroGrid";
 
 export default function DashboardDetailPage() {
   const params = useParams<{ id: string }>();
@@ -32,6 +29,21 @@ export default function DashboardDetailPage() {
   const isChatFullSize = useSidebarStore((s) => s.isChatFullSize);
   const userId = useAuthStore((s) => s.userId);
   const isOwner = !!userId && userId === dashboard?.user_id;
+  const contentLeftPx = getDashboardContentLeftPx(isChatFullSize);
+  const { sentinelRef, pinned } = usePinnedHeader();
+  // A curated analysis being added counts as content: the grid must take over
+  // from the empty-state hero as soon as its loading module has something to
+  // show, not once the whole run-then-add chain has landed.
+  const pendingWidgets = usePendingInsightWidgets(dashboardId);
+  const hasContent =
+    !!dashboard &&
+    hasDashboardContent(dashboard, {
+      isOwner,
+      pendingCount: pendingWidgets.length,
+    });
+  // The footer's white band runs under a populated dashboard; an empty one
+  // carries the footer inside its hero instead, and a viewer gets none.
+  const showFooterBand = hasContent && isOwner;
 
   useEffect(() => {
     // The dashboard agent tools are gated behind ?agent_profile=…; capture it
@@ -60,12 +72,14 @@ export default function DashboardDetailPage() {
     <Box
       bg="#F4F5F6"
       minH="calc(100vh - 40px)"
-      // 24px nav-to-breadcrumb per the Figma page shell; roomier bottom.
+      // A column so the footer band can stretch to the bottom of the page.
+      display="flex"
+      flexDir="column"
+      // 24px nav-to-breadcrumb per the Figma page shell.
       pt={6}
-      pb={{ base: 8, md: 10 }}
       pl={{
         base: 0,
-        md: `${getDashboardContentLeftPx(isChatFullSize)}px`,
+        md: `${contentLeftPx}px`,
       }}
       transition="padding-left 0.2s ease-in-out"
     >
@@ -85,15 +99,24 @@ export default function DashboardDetailPage() {
       >
         <ChatPanel />
       </Box>
-      <Container maxW="1232px">
+      {/* Adaptive header: a fixed condensed bar takes over once the in-page
+          header (the sentinel below) scrolls behind the global nav. */}
+      {dashboard && (
+        <DashboardPinnedHeader
+          dashboard={dashboard}
+          isOwner={isOwner}
+          pinned={pinned}
+          contentLeftPx={contentLeftPx}
+        />
+      )}
+      <Container maxW="1232px" pb={{ base: 8, md: 10 }}>
         <Flex direction="column" gap="12px">
-          <Flex align="center" gap="8px" fontSize="14px" lineHeight="16px">
-            <ChakraLink asChild color="#565E7B">
-              <Link href="/dashboards?ff=dashboard">Dashboards</Link>
-            </ChakraLink>
-            <Text color="#C2C7D0">/</Text>
-            <Text color="#565E7B">{dashboard?.name ?? "Dashboard"}</Text>
-          </Flex>
+          {/* While the condensed header is pinned it carries live copies of
+              these controls, so the scrolled-away originals leave the tab
+              order and accessibility tree — one live copy at a time. */}
+          <Box aria-hidden={pinned} inert={pinned}>
+            <DashboardBreadcrumb name={dashboard?.name} />
+          </Box>
 
           {isLoading ? (
             <Flex align="center" gap={2} color="fg.muted" py={12}>
@@ -104,59 +127,58 @@ export default function DashboardDetailPage() {
               Could not load this dashboard.
             </Text>
           ) : (
-            // The Figma page shell: white card with a 2px blue accent and a
-            // 200px graph-paper hero band across the top.
-            <Box
-              bgColor="white"
-              minH="70vh"
-              backgroundImage={HERO_GRID_IMAGE}
-              backgroundRepeat="no-repeat"
-              backgroundSize="100% 200px"
-              borderWidth="1px"
-              borderTopWidth="2px"
-              borderTopColor="#0049AA"
-              borderColor="rgba(19,22,25,0.1)"
-              borderRadius="8px"
-              px={{ base: 6, md: "46px" }}
-              pt={{ base: 6, md: "38px" }}
-              pb={{ base: 6, md: "46px" }}
-            >
-              {/* 75px puts the widgets at the mock's 174px card offset. */}
-              <Box mb={{ base: 8, md: "75px" }}>
-                <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
+            <>
+              {/* The Figma page shell: a white header card with a 2px blue
+                  accent and the graph-paper hero band, sized to its content
+                  rather than the Figma frame's 200px so the page starts with
+                  less dead space. Widgets float below it as their own cards
+                  on the page's gray background
+                  (per the grouped-insights design), so the shell wraps only
+                  the header. */}
+              <Box
+                bgColor="white"
+                {...HERO_BAND_PROPS}
+                borderWidth="1px"
+                borderTopWidth="2px"
+                borderTopColor="#0049AA"
+                borderColor="rgba(19,22,25,0.1)"
+                borderRadius="8px"
+                px={{ base: 6, md: "46px" }}
+                pt={{ base: 5, md: "24px" }}
+                pb={{ base: 5, md: "24px" }}
+              >
+                <Box ref={sentinelRef} aria-hidden={pinned} inert={pinned}>
+                  <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
+                </Box>
               </Box>
 
-              {dashboard.widgets.length > 0 ? (
+              {hasContent ? (
                 <DashboardWidgetsGrid dashboard={dashboard} />
               ) : (
-                <Flex
-                  minH="320px"
-                  align="center"
-                  justify="center"
-                  borderWidth="1px"
-                  borderStyle="dashed"
-                  borderColor="border"
-                  borderRadius="sm"
-                  bg="white"
-                  px={6}
-                  textAlign="center"
-                >
-                  <Box maxW="md">
-                    <SquaresFourIcon size={32} color="#656E7B" />
-                    <Heading as="h2" size="md" mt={4} mb={2}>
-                      This dashboard is empty
-                    </Heading>
-                    <Text color="fg.muted">
-                      Ask the AI assistant to analyse this area — insights it
-                      adds to the dashboard will appear here.
-                    </Text>
-                  </Box>
-                </Flex>
+                <DashboardEmptyStateHero
+                  dashboard={dashboard}
+                  isOwner={isOwner}
+                />
               )}
-            </Box>
+            </>
           )}
         </Flex>
       </Container>
+      {showFooterBand && dashboard && (
+        // Full width, per the design: the footer reads as the page's own
+        // ground, where the grey above is the gutter between panels.
+        <Box
+          flex="1"
+          bg="white"
+          mt={{ base: 0, md: "64px" }}
+          pt={{ base: 8, md: "72px" }}
+          pb={{ base: 8, md: "96px" }}
+        >
+          <Container maxW="1232px">
+            <DashboardFooter dashboard={dashboard} />
+          </Container>
+        </Box>
+      )}
     </Box>
   );
 }

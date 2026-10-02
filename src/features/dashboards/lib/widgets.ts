@@ -1,5 +1,13 @@
-import type { CodeActPart, InsightWidget } from "@/app/types/chat";
-import type { DashboardWidget } from "../api/schemas";
+import {
+  codeActParts,
+  firstChartTitle,
+  isCuratedInsight,
+  pivotByColorField,
+} from "@/src/entities/insight";
+import type { InsightWidget } from "@/app/types/chat";
+import type { Dashboard, DashboardWidget } from "../api/schemas";
+import { widgetContainers } from "../model/dashboard-sections";
+import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 
 // Chart types the chart widget can render (InsightWidget["type"] minus
 // "dataset-card", which never comes from the dashboards API). Unknown types
@@ -13,6 +21,8 @@ const CHART_TYPES = new Set([
   "grouped-bar",
   "area",
   "scatter",
+  "stacked-bar-with-line",
+  "hierarchical-bar",
 ]);
 
 export type WidgetSize = "single" | "double";
@@ -20,6 +30,13 @@ export type WidgetSize = "single" | "double";
 /** The widget's persisted column span; anything but "double" is single. */
 export function widgetSize(config: Record<string, unknown>): WidgetSize {
   return config.size === "double" ? "double" : "single";
+}
+
+/**
+ * Map widgets default to full width: a map spans both columns.
+ */
+export function mapWidgetSize(config: Record<string, unknown>): WidgetSize {
+  return config.size === "single" ? "single" : "double";
 }
 
 /**
@@ -35,33 +52,11 @@ export function withSize(
 }
 
 /**
- * Per-chart column span. A widget's charts render as individual grid cards,
- * so each chart carries its own span under `config.sizes[chartId]`; the
- * widget-level `size` is the pre-split fallback for older configs.
+ * Insight widgets default to full width: the analysis card holds a chart and
+ * its pager, so it spans both columns until the owner shrinks it.
  */
-export function chartSize(
-  config: Record<string, unknown>,
-  chartId: string
-): WidgetSize {
-  const sizes = config.sizes;
-  if (sizes && typeof sizes === "object") {
-    const own = (sizes as Record<string, unknown>)[chartId];
-    if (own === "double" || own === "single") return own;
-  }
-  return widgetSize(config);
-}
-
-/** The full config to PATCH for a per-chart size change (config is replaced whole). */
-export function withChartSize(
-  config: Record<string, unknown>,
-  chartId: string,
-  size: WidgetSize
-): Record<string, unknown> {
-  const sizes =
-    config.sizes && typeof config.sizes === "object"
-      ? (config.sizes as Record<string, unknown>)
-      : {};
-  return { ...config, sizes: { ...sizes, [chartId]: size } };
+export function insightWidgetSize(config: Record<string, unknown>): WidgetSize {
+  return config.size === "single" ? "single" : "double";
 }
 
 /**
@@ -185,20 +180,216 @@ export function withChartShown(
 }
 
 /**
- * The full config to PATCH to hide a chart (config is replaced whole). Returns
- * `null` when it was the last shown chart — the caller should delete the widget
- * rather than persist an empty one.
+ * The full config to PATCH to hide a chart (config is replaced whole). Hiding
+ * the last shown chart keeps an explicit empty subset (`chartIds: []`) — the
+ * widget survives so its summary can still render and the Customize menu can
+ * re-show charts; absent `chartIds` still means "all charts".
  */
 export function withChartHidden(
   config: Record<string, unknown>,
   chartId: string,
   allChartIds: string[]
-): Record<string, unknown> | null {
+): Record<string, unknown> {
   const next = shownChartIds(config, allChartIds).filter(
     (id) => id !== chartId
   );
-  if (next.length === 0) return null;
   return { ...config, chartIds: next };
+}
+
+/**
+ * Whether the widget shows its insight narrative. Hidden only by an explicit
+ * `summaryHidden: true`, so older configs keep showing the summary.
+ */
+export function isSummaryShown(config: Record<string, unknown>): boolean {
+  return config.summaryHidden !== true;
+}
+
+/**
+ * The full config to PATCH for a summary visibility change (config is
+ * replaced whole). The key is dropped when shown to keep configs tidy.
+ */
+export function withSummaryShown(
+  config: Record<string, unknown>,
+  shown: boolean
+): Record<string, unknown> {
+  const out = { ...config };
+  if (shown) delete out.summaryHidden;
+  else out.summaryHidden = true;
+  return out;
+}
+
+/**
+ * Whether a widget's config holds anything the owner arranged by hand — the
+ * per-chart spans and renames, the shown-chart subset, the summary toggle and
+ * the title override written by the `with*` helpers above.
+ *
+ * Deleting a widget discards all of it with no undo (the config lives only on
+ * the widget), so removal paths that would otherwise be a single click ask for
+ * confirmation when this is true. A widget added whole and left alone has an
+ * empty config, and stays a one-click remove.
+ */
+export function hasWidgetCustomization(
+  config: Record<string, unknown>
+): boolean {
+  if (config.summaryHidden === true) return true;
+  // An explicit `chartIds` is a customisation at any length: absent means "all
+  // charts", so even the empty array is a deliberate "hide everything".
+  if (Array.isArray(config.chartIds)) return true;
+  // `sizes` is the per-chart span written while an insight's charts each had
+  // their own grid card. Nothing writes it now, but a config that carries one
+  // was still arranged by hand.
+  return ["sizes", "titles", "title", "size"].some((key) => {
+    const value = config[key];
+    if (typeof value === "string") return value.trim().length > 0;
+    if (value && typeof value === "object")
+      return Object.keys(value).length > 0;
+    return false;
+  });
+}
+
+/**
+ * The insight module's display title: the widget's `config.title` override,
+ * else the shared `firstChartTitle` fallback over all charts (not just shown
+ * ones, so the title doesn't jump when charts are hidden), else "Analysis".
+ *
+ * The Analyses panel resolves a curated insight's own `record.title` ahead of
+ * that fallback; there is deliberately no equivalent here, because the
+ * dashboards API's insight expansion carries no title field. Add one here only
+ * once it does — mirroring the panel's rule against a title we don't have would
+ * just reintroduce the divergence the shared fallback removes.
+ */
+export function moduleTitle(widget: DashboardWidget): string {
+  const override =
+    typeof widget.config.title === "string" ? widget.config.title.trim() : "";
+  if (override) return override;
+  return firstChartTitle(widget.insight?.charts ?? []) || "Analysis";
+}
+
+/**
+ * Everything the dashboard's insight module renders, in one node-testable
+ * shape: header title, narrative visibility, the shown chart cards
+ * (`dashboardWidgetToInsightWidgets`) and the full chart roster for the
+ * Customize menu (position order, with per-chart rename overrides applied).
+ */
+export interface InsightModuleView {
+  title: string;
+  /** The narrative to render; "" when absent or blank. */
+  summaryText: string;
+  summaryShown: boolean;
+  /**
+   * No generation provenance ⇒ curated — the same rule `WidgetMessage`
+   * applies to each card, so the module caption never contradicts the cards
+   * beneath it.
+   */
+  curated: boolean;
+  cards: InsightWidget[];
+  allCharts: { id: string; title: string; shown: boolean }[];
+  /**
+   * Whether the Customize menu has a choice to offer. Its rows toggle the
+   * pieces the insight holds — the summary and each chart — so with a single
+   * piece the only toggle blanks the card (removing it is the X's job). A
+   * piece already hidden keeps the menu, so it can be shown again.
+   */
+  customizable: boolean;
+}
+
+export function insightModule(
+  widget: DashboardWidget,
+  { areaName }: { areaName?: string } = {}
+): InsightModuleView {
+  const charts = [...(widget.insight?.charts ?? [])].sort(
+    (a, b) => a.position - b.position
+  );
+  const shown = new Set(
+    shownChartIds(
+      widget.config,
+      charts.map((c) => c.id)
+    )
+  );
+  const summaryText = widget.insight?.insight_text?.trim()
+    ? widget.insight.insight_text
+    : "";
+  const summaryShown = isSummaryShown(widget.config);
+  const pieces = charts.length + (summaryText ? 1 : 0);
+  const anyHidden =
+    charts.some((c) => !shown.has(c.id)) || (!!summaryText && !summaryShown);
+  return {
+    title: moduleTitle(widget),
+    summaryText,
+    summaryShown,
+    curated: isCuratedInsight(widget.insight?.codeact_parts),
+    cards: dashboardWidgetToInsightWidgets(widget, { areaName }),
+    allCharts: charts.map((chart) => ({
+      id: chart.id,
+      title: chartTitleOverride(widget.config, chart.id) ?? chart.title,
+      shown: shown.has(chart.id),
+    })),
+    customizable: pieces > 1 || anyHidden,
+  };
+}
+
+/**
+ * The dashboard widget already showing the curated analysis of `datasetId`,
+ * if any. A curated insight's charts are all computed from one dataset, so a
+ * match is an insight widget with no generation provenance whose every chart
+ * carries that `dataset_id`. Rows persisted before `dataset_id` existed never
+ * match, so this is a best-effort "On dashboard" signal, not a guarantee.
+ */
+export function findCuratedWidgetForDataset(
+  widgets: readonly DashboardWidget[],
+  datasetId: number
+): DashboardWidget | undefined {
+  return widgets.find((widget) => {
+    const insight = widget.insight;
+    if (widget.widget_type !== "insight" || !insight) return false;
+    if (!isCuratedInsight(insight.codeact_parts)) return false;
+    return (
+      insight.charts.length > 0 &&
+      insight.charts.every((chart) => chart.dataset_id === datasetId)
+    );
+  });
+}
+
+/**
+ * Whether the dashboard page shows the widget grid rather than the empty-state
+ * hero: whether the grid has anything to render. That is asked of the grid's
+ * own grouping, so the two cannot disagree — an owner's empty section counts
+ * (the grid keeps it, so "Create new section" on an empty dashboard leaves a
+ * section on screen), a viewer's does not. A curated analysis on its way onto
+ * the dashboard counts too: its loading module must appear the moment the
+ * user toggles the card, even on a dashboard that has no widgets yet.
+ */
+export function hasDashboardContent(
+  dashboard: Dashboard,
+  { isOwner, pendingCount }: { isOwner: boolean; pendingCount: number }
+): boolean {
+  return (
+    pendingCount > 0 ||
+    widgetContainers(dashboard, { keepEmptySections: isOwner }).length > 0
+  );
+}
+
+/**
+ * The pending entries the grid should still render as loading modules: those
+ * not yet superseded by a real widget. A completed run is matched by its
+ * persisted insight id once the entry carries one, else by the curated widget
+ * for its dataset. Covers the moment between the dashboard refetch landing
+ * and the owner of the entry clearing it, so the grid never shows a module
+ * twice.
+ */
+export function unresolvedPendingInsightWidgets(
+  pending: readonly PendingInsightWidget[],
+  widgets: readonly DashboardWidget[]
+): PendingInsightWidget[] {
+  return pending.filter((entry) => {
+    if (
+      entry.insightId &&
+      widgets.some((w) => w.insight_id === entry.insightId)
+    ) {
+      return false;
+    }
+    return !findCuratedWidgetForDataset(widgets, entry.datasetId);
+  });
 }
 
 /**
@@ -223,15 +414,7 @@ export function dashboardWidgetToInsightWidgets(
   const insight = widget.insight;
   if (!insight?.charts?.length) return [];
 
-  const codeactParts = Array.isArray(insight.codeact_parts)
-    ? insight.codeact_parts.filter(
-        (p): p is CodeActPart =>
-          typeof p === "object" &&
-          p !== null &&
-          typeof (p as CodeActPart).type === "string" &&
-          typeof (p as CodeActPart).content === "string"
-      )
-    : [];
+  const codeactParts = codeActParts(insight.codeact_parts);
   const generation = codeactParts.length
     ? { codeact_parts: codeactParts }
     : undefined;
@@ -250,7 +433,17 @@ export function dashboardWidgetToInsightWidgets(
   return sorted
     .filter((chart) => shown.has(chart.id))
     .map((chart, index) => {
-      const seriesFields = chart.series_fields ?? undefined;
+      // Long-format line/area rows become one series per category here, so
+      // the chart widget only ever sees wide rows.
+      const pivoted = pivotByColorField({
+        type: chart.chart_type,
+        data: chart.chart_data,
+        xAxis: chart.x_axis,
+        yAxis: chart.y_axis,
+        colorField: chart.color_field,
+      });
+      const seriesFields =
+        pivoted?.seriesFields ?? chart.series_fields ?? undefined;
       return {
         id: chart.id,
         type: CHART_TYPES.has(chart.chart_type)
@@ -262,7 +455,7 @@ export function dashboardWidgetToInsightWidgets(
           chartTitleOverride(widget.config, chart.id) ??
           ((index === 0 && titleOverride) || chart.title),
         description: index === 0 ? (insight.insight_text ?? "") : "",
-        data: chart.chart_data,
+        data: pivoted?.data ?? chart.chart_data,
         xAxis: chart.x_axis,
         yAxis: chart.y_axis,
         ...(seriesFields?.length ? { seriesFields } : {}),
@@ -281,38 +474,4 @@ export function widgetText(config: Record<string, unknown>): string | null {
   return typeof config.text === "string" && config.text.trim()
     ? config.text
     : null;
-}
-
-export interface WidgetPositionPatch {
-  id: string;
-  position: number;
-}
-
-/**
- * Moves a widget within the given render order and computes the widget
- * `position` PATCHes needed to persist it. The backend PATCH sets only the
- * targeted widget's position (no sibling renumbering), so every widget whose
- * stored position differs from its new index gets a patch — this also
- * normalises non-contiguous server positions (e.g. after deletions).
- */
-export function computeReorder(
-  widgets: DashboardWidget[],
-  fromIndex: number,
-  toIndex: number
-): { order: DashboardWidget[]; patches: WidgetPositionPatch[] } {
-  const order = [...widgets];
-  if (
-    fromIndex !== toIndex &&
-    fromIndex >= 0 &&
-    fromIndex < order.length &&
-    toIndex >= 0 &&
-    toIndex < order.length
-  ) {
-    const [moved] = order.splice(fromIndex, 1);
-    order.splice(toIndex, 0, moved);
-  }
-  const patches = order.flatMap((widget, index) =>
-    widget.position === index ? [] : [{ id: widget.id, position: index }]
-  );
-  return { order, patches };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/app/lib/router";
 import { getToken } from "@/app/lib/api-client";
 import useAuthStore from "@/app/store/authStore";
 import { API_CONFIG } from "@/app/config/api";

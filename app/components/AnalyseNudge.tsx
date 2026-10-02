@@ -3,6 +3,7 @@ import { Button } from "@chakra-ui/react";
 import { CheckIcon, SparkleIcon } from "@phosphor-icons/react";
 import { AnalyseSuggestion } from "@/app/types/chat";
 import useChatStore from "@/app/store/chatStore";
+import { trackEvent } from "@/app/lib/track-event";
 import { runAnalysis } from "@/app/lib/analysis/runAnalysis";
 
 export default function AnalyseNudge({
@@ -18,6 +19,12 @@ export default function AnalyseNudge({
 
   const handleAnalyse = () => {
     if (accepted) return;
+    trackEvent({
+      event: "nudge_click",
+      nudge_type: "generate_insight",
+      dataset_name: suggestion.datasetName,
+      area_name: suggestion.areaName,
+    });
     useChatStore.getState().acceptAnalyseNudge(messageId);
     runAnalysis(suggestion);
   };

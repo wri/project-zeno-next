@@ -17,6 +17,14 @@ function widget(id: string, title: string): InsightWidget {
   };
 }
 
+function netFluxWidget(id: string, title: string): InsightWidget {
+  return {
+    ...widget(id, title),
+    type: "stacked-bar-with-line",
+    seriesFields: ["tree_loss_emissions", "tree_gain_removals"],
+  };
+}
+
 describe("buildInsightChatMessages", () => {
   describe("fallback path (no [Chart N] markers — current staging)", () => {
     it("renders pending cards before the assistant text", () => {
@@ -142,6 +150,43 @@ describe("buildInsightChatMessages", () => {
       // only the surrounding text survives; the unmatched marker is dropped
       expect(msgs.map((m) => m.message)).toEqual(["Intro ", " outro"]);
       expect(msgs.every((m) => !m.widgets)).toBe(true);
+    });
+  });
+
+  describe("net-flux rollup collapsing", () => {
+    it("collapses 3 stacked-bar-with-line siblings into 1 card (fallback path)", () => {
+      const insightId = "abc-123";
+      const hierarchy = widget(
+        `${insightId}-chart-0`,
+        "Net GHG flux (annual average)"
+      );
+      hierarchy.type = "hierarchical-bar";
+      const widgets = [
+        hierarchy,
+        netFluxWidget(`${insightId}-chart-1`, "Net GHG Flux — Summary"),
+        netFluxWidget(`${insightId}-chart-2`, "Net GHG Flux — by Category"),
+        netFluxWidget(`${insightId}-chart-3`, "Net GHG Flux — Full Detail"),
+      ];
+
+      const msgs = buildInsightChatMessages(
+        "Here is your analysis.",
+        widgets,
+        TS,
+        TRACE
+      );
+
+      const cardMsgs = msgs.filter((m) => m.widgets?.length);
+      expect(cardMsgs).toHaveLength(2);
+      expect(cardMsgs[0].widgets![0].type).toBe("hierarchical-bar");
+      expect(cardMsgs[1].widgets![0].type).toBe("stacked-bar-with-line");
+    });
+
+    it("passes through non-net-flux widgets unchanged", () => {
+      const widgets = [widget("a", "Chart A"), widget("b", "Chart B")];
+      const msgs = buildInsightChatMessages("Text.", widgets, TS);
+
+      const cardMsgs = msgs.filter((m) => m.widgets?.length);
+      expect(cardMsgs).toHaveLength(2);
     });
   });
 });
