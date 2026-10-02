@@ -23,7 +23,7 @@ import {
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import PreviewInfoPanel from "./PreviewInfoPanel";
 import PromptQuotaMeter from "./PromptQuotaMeter";
 import WhatsNewModal from "./WhatsNewModal";
@@ -52,6 +52,8 @@ function PageHeader() {
   const { logout } = useLogout();
   const whatsNewUnread = useWhatsNewUnread();
   const pathname = usePathname() ?? "";
+  // Shared by the avatar's tooltip and menu so both attach to one button.
+  const accountTriggerId = useId();
   const onMap = pathname.startsWith("/app");
   const onDashboards = pathname.startsWith("/dashboards");
 
@@ -296,43 +298,38 @@ function PageHeader() {
           </Tooltip>
         )}
         {isAuthenticated ? (
-          <Menu.Root positioning={{ placement: "bottom-end" }}>
-            <Menu.Trigger asChild>
-              <IconButton
-                w="32px"
-                h="32px"
-                minW="32px"
-                borderRadius="full"
-                bg="#F4F5F6"
-                color="#394048"
-                _hover={{ bg: "#E0E2E5" }}
-                _focusVisible={focusRing}
-                aria-label={`Account menu (${userEmail || "signed in"})`}
-              >
-                <UserIcon size={16} />
-              </IconButton>
-            </Menu.Trigger>
+          <Menu.Root
+            ids={{ trigger: accountTriggerId }}
+            positioning={{ placement: "bottom-end" }}
+          >
+            <Tooltip
+              ids={{ trigger: accountTriggerId }}
+              content={userEmail}
+              disabled={!userEmail}
+              showArrow
+            >
+              <Menu.Trigger asChild>
+                <IconButton
+                  w="32px"
+                  h="32px"
+                  minW="32px"
+                  borderRadius="full"
+                  bg="#F4F5F6"
+                  color="#394048"
+                  _hover={{ bg: "#E0E2E5" }}
+                  _focusVisible={focusRing}
+                  aria-label={`Account menu (${userEmail || "signed in"})`}
+                >
+                  <UserIcon size={16} />
+                </IconButton>
+              </Menu.Trigger>
+            </Tooltip>
             <Portal>
               <Menu.Positioner>
                 <Menu.Content
                   minW="220px"
                   css={{ "& a": { cursor: "pointer" } }}
                 >
-                  {userEmail && (
-                    <>
-                      <Menu.ItemGroup>
-                        <Menu.ItemGroupLabel
-                          fontWeight="normal"
-                          color="#656E7B"
-                          truncate
-                          maxW="260px"
-                        >
-                          {userEmail}
-                        </Menu.ItemGroupLabel>
-                      </Menu.ItemGroup>
-                      <Menu.Separator />
-                    </>
-                  )}
                   <Menu.Item
                     value="whats-new"
                     cursor="pointer"

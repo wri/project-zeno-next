@@ -95,6 +95,42 @@ describe("PageHeader", () => {
   });
 });
 
+describe("PageHeader account menu", () => {
+  const avatar = () => screen.getByRole("button", { name: /account menu/i });
+
+  beforeEach(() => {
+    localStorage.clear();
+    useAuthStore.getState().setAuthStatus({
+      email: "user@example.com",
+      id: "u1",
+      hasProfile: true,
+      userType: null,
+    });
+  });
+
+  it("shows the user's email in a tooltip on hover over the avatar", async () => {
+    renderHeader("/app");
+
+    fireEvent.pointerMove(avatar(), { pointerType: "mouse" });
+
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip.textContent).toBe("user@example.com");
+  });
+
+  it("lists Settings and Logout without repeating the email", async () => {
+    renderHeader("/app");
+
+    await act(async () => {
+      fireEvent.click(avatar());
+    });
+
+    const menu = screen.getByRole("menu");
+    expect(screen.getByRole("menuitem", { name: /settings/i })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: /logout/i })).toBeTruthy();
+    expect(menu.textContent).not.toContain("user@example.com");
+  });
+});
+
 describe("PageHeader What's new signal", () => {
   const headerIcon = () =>
     screen.queryByRole("button", { name: /what's new \(unread updates\)/i });
