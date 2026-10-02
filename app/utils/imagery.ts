@@ -227,10 +227,11 @@ function planetMonth(meta: ImageryMeta): string | undefined {
 
 /**
  * The capture row's date: a Planet basemap's month, else the latest scene's
- * capture date, else the target date of old payloads without capture dates.
+ * capture date, else the end of the v1 search period (no scene stats), else
+ * the target date of old payloads.
  */
 function captureDateLabel(meta: ImageryMeta): string {
-  const latest = meta.endDate ?? meta.targetDate;
+  const latest = meta.endDate ?? meta.searchPeriod?.end ?? meta.targetDate;
   return planetMonth(meta) ?? (latest ? formatCaptureDate(latest) : "");
 }
 

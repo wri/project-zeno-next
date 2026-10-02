@@ -506,6 +506,25 @@ describe("buildImageryGroup", () => {
     expect(group?.captures[0].dateLabel).toBe("5 Apr 2026");
   });
 
+  it("dates a v1 Sentinel-2 capture without scenes by its search period's end", () => {
+    const group = buildImageryGroup(
+      [
+        {
+          id: "imagery-cached",
+          name: "Satellite Imagery",
+          type: "raster",
+          visible: true,
+          imagery: sentinel2ImageryV1({
+            period: { start: "2026-04-02", end: "2026-04-16" },
+            scenes: null,
+          }),
+        } as Layer,
+      ],
+      false
+    );
+    expect(group?.captures[0].dateLabel).toBe("16 Apr 2026");
+  });
+
   it("dates a Planet capture by its month", () => {
     const group = buildImageryGroup(
       [imageryLayer("imagery-planet", {}, planetMeta)],
