@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { Link } from "@/app/lib/router";
 
+import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawer";
 import PageHeader from "@/app/components/PageHeader";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import Map from "@/app/components/Map";
@@ -38,6 +39,7 @@ export default function ClassicLayout() {
       bg="bg"
     >
       <PageHeader />
+      <ConversationHistoryDrawer />
       <Box h="calc(100vh - 3rem)" overflow="hidden" position="relative">
         <Flex
           position="absolute"

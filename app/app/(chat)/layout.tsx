@@ -20,7 +20,6 @@ import { InsightsPanel } from "@/src/features/insights-history";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import SystemBanner from "@/app/components/SystemBanner";
-import WhatsNewModal from "@/app/components/WhatsNewModal";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
@@ -187,7 +186,6 @@ export default function DashboardLayout({
       bg="bg"
     >
       <UploadAreaDialog />
-      <WhatsNewModal />
       <AnalysisCtaTrigger />
       <ViewAnalysisTrigger />
       <CreateDashboardTrigger />
