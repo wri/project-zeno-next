@@ -83,6 +83,8 @@ export class RestAnalysisGateway implements AnalysisGateway {
         dataset_id: selection.dataset.id,
         start_date: selection.startDate,
         end_date: selection.endDate,
+        context_layer: selection.contextLayer,
+        canopy_cover: selection.canopyCover,
       }),
       signal,
     });

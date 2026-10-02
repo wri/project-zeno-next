@@ -41,6 +41,8 @@ export function curatedAnalysisQueryOptions(
       selection.dataset.id,
       selection.startDate,
       selection.endDate,
+      selection.contextLayer ?? null,
+      selection.canopyCover ?? null,
     ] as const,
     queryFn: () => service.run(selection),
     staleTime: Infinity,

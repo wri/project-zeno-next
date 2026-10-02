@@ -13,6 +13,7 @@ import {
 import {
   ArrowBendRightUpIcon,
   ChartLineIcon,
+  LightningIcon,
   MicrophoneIcon,
   StopIcon,
 } from "@phosphor-icons/react";
@@ -31,6 +32,7 @@ import useSpeechInput from "../hooks/useSpeechInput";
 import usePrefersReducedMotion from "../hooks/usePrefersReducedMotion";
 import { resolveSpeechLang } from "../utils/speechLang";
 import { useFeatureFlag } from "@/src/shared/lib/feature-flags";
+import { runZap, useZapMode, useZapStore } from "@/src/features/zap";
 import { useRouter, usePathname } from "@/app/lib/router";
 import {
   firstMessageRedirectPath,
@@ -86,6 +88,17 @@ export default function ChatInput({
     insightsPanelOpen,
     toggleInsightsPanel,
   } = useSidebarStore();
+
+  // Zap mode: the prompt goes to the jev planner, not the agent. Map only.
+  const { available: zapAvailable, active: zapMode } = useZapMode();
+  const zapBusy = useZapStore(
+    (s) => s.status === "planning" || s.status === "running"
+  );
+  const toggleZap = () => {
+    useZapStore.getState().setMode(zapMode ? "chat" : "zap");
+    // The zap panel lives in the compact chat panel.
+    if (!zapMode) useSidebarStore.getState().setChatFullSize(false);
+  };
 
   const excludedLayerIds = useChatStore((s) => s.excludedContextLayerIds);
   const excludedSet = new Set(excludedLayerIds);
@@ -158,6 +171,13 @@ export default function ChatInput({
   };
 
   const submitPrompt = async () => {
+    if (zapMode) {
+      if (!inputValue.trim() || zapBusy) return;
+      const prompt = inputValue.trim();
+      setInputValue("");
+      await runZap(prompt);
+      return;
+    }
     if (!inputValue.trim() || isLoading) return;
 
     const message = inputValue.trim();
@@ -192,28 +212,77 @@ export default function ChatInput({
     // If Shift+Enter, do nothing: allow newline
   };
 
-  const disabled = isLoading || isChatDisabled;
+  const disabled = zapMode ? zapBusy : isLoading || isChatDisabled;
   // The abortController is the authoritative signal that a cancellable chat
   // request is in flight: sendMessage sets it before fetching and nulls it in
   // its finally, and nothing else touches it. We deliberately do NOT gate on
   // isLoading, which is an overloaded flag also set during thread loading (not
   // cancellable) and whose meaning could drift in the future.
-  const canCancelRequest = abortController !== null;
+  const canCancelRequest = abortController !== null && !zapMode;
   const hasNudge = messages.at(-1)?.type === "nudge";
   const hasConversation = messages.some(
     (m) => m.type === "user" || m.type === "assistant"
   );
-  const message = isLoading
-    ? "Sending..."
-    : hasNudge
-      ? "Or ask a different question..."
-      : hasConversation
-        ? "Ask a follow-up question…"
-        : "Or describe what you want to explore…";
+  // The zap panel above shows example prompts, so no example here.
+  const message = zapMode
+    ? "Ask for data on the map…"
+    : isLoading
+      ? "Sending..."
+      : hasNudge
+        ? "Or ask a different question..."
+        : hasConversation
+          ? "Ask a follow-up question…"
+          : "Or describe what you want to explore…";
 
   const isButtonDisabled = disabled || !inputValue?.trim();
+  // Zap mode reads the map itself, so the context chips are hidden.
   const hasPills =
-    datasetPillLayers.length > 0 || areaPillLayers.length > 0 || !!dateRange;
+    !zapMode &&
+    (datasetPillLayers.length > 0 || areaPillLayers.length > 0 || !!dateRange);
+
+  const zapToggle = zapAvailable && !bordered && (
+    <Button
+      p="0"
+      size="xs"
+      w="8"
+      h="8"
+      flexShrink={0}
+      variant={zapMode ? "solid" : "outline"}
+      colorPalette={zapMode ? "primary" : undefined}
+      borderRadius="sm"
+      borderWidth="1px"
+      borderColor={zapMode ? "primary.solid" : "#E0E2E5"}
+      onClick={toggleZap}
+      aria-pressed={zapMode}
+      aria-label="Zap mode"
+      title={
+        zapMode
+          ? "Back to the conversation"
+          : "Zap: straight to the map, no conversation"
+      }
+    >
+      <LightningIcon weight={zapMode ? "fill" : "regular"} />
+    </Button>
+  );
+
+  const sendButton = (
+    <Button
+      p="0"
+      borderRadius="full"
+      variant="solid"
+      colorPalette="primary"
+      _disabled={{
+        opacity: 0.36,
+      }}
+      type="button"
+      size="xs"
+      aria-label="Send prompt"
+      onClick={submitPrompt}
+      disabled={isButtonDisabled}
+    >
+      <ArrowBendRightUpIcon weight="bold" />
+    </Button>
+  );
 
   // The core UI of the chat input is defined here so it can be reused
   // for both the desktop view and within the mobile modal.
@@ -268,7 +337,34 @@ export default function ChatInput({
           )}
         </Flex>
       )}
-      {voiceInputEnabled && speech && speech.phase === "listening" ? (
+      {zapMode ? (
+        // Zap mode: one row — toggle, one-line prompt, send.
+        <Flex align="center" gap="2">
+          {zapToggle}
+          <Textarea
+            ref={setFocusEl}
+            aria-label="Zap prompt"
+            placeholder={message}
+            fontSize={{ base: "md", md: "sm" }}
+            rows={1}
+            minH="20px"
+            h="20px"
+            resize="none"
+            whiteSpace="nowrap"
+            overflow="hidden"
+            border="none"
+            p={0}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            _disabled={{ opacity: 1 }}
+            _focus={{ outline: "none", boxShadow: "none" }}
+            _placeholder={{ color: disabled ? "gray.400" : "gray.600" }}
+          />
+          {sendButton}
+        </Flex>
+      ) : voiceInputEnabled && speech && speech.phase === "listening" ? (
         <VoiceListeningPanel
           seconds={speech.seconds}
           committed={speech.committed}
@@ -311,6 +407,7 @@ export default function ChatInput({
           />
           <Flex justifyContent="space-between" alignItems="center" w="full">
             <Flex gap="2">
+              {zapToggle}
               {/* The pickers these open (catalog / areas panels) only exist in
                   the map layout — hide them on other surfaces (dashboards). */}
               {isAppRoute(pathname) && (
@@ -396,22 +493,7 @@ export default function ChatInput({
                   <StopIcon weight="fill" />
                 </Button>
               ) : (
-                <Button
-                  p="0"
-                  borderRadius="full"
-                  variant="solid"
-                  colorPalette="primary"
-                  _disabled={{
-                    opacity: 0.36,
-                  }}
-                  type="button"
-                  size="xs"
-                  aria-label="Send prompt"
-                  onClick={submitPrompt}
-                  disabled={isButtonDisabled}
-                >
-                  <ArrowBendRightUpIcon weight="bold" />
-                </Button>
+                sendButton
               )}
             </Flex>
           </Flex>

@@ -15,4 +15,8 @@ export interface AnalysisSelection {
   startDate: string;
   /** ISO date string "yyyy-MM-dd" */
   endDate: string;
+  /** Context layer of the dataset, e.g. "primary_forest". */
+  contextLayer?: string;
+  /** Minimum canopy cover in percent; the backend default is 30. */
+  canopyCover?: number;
 }
