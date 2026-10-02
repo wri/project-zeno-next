@@ -137,6 +137,7 @@ describe("chatStore cancellation", () => {
 
 describe("chatStore view_context", () => {
   beforeEach(() => {
+    // reset() also clears insightStore.
     useChatStore.getState().reset();
     useViewContextStore.setState({ viewContext: null });
     vi.mocked(apiFetch).mockReset();
@@ -151,6 +152,9 @@ describe("chatStore view_context", () => {
 
   afterEach(() => {
     useViewContextStore.setState({ viewContext: null });
+    // Runs even when an assertion fails, so a fake map never leaks into later
+    // describes (mapStore.reset() would call flyTo on it).
+    useMapStore.setState({ mapRef: null });
     vi.clearAllMocks();
   });
 
@@ -215,9 +219,6 @@ describe("chatStore view_context", () => {
       viewport: { bbox: [-73.9876, 40.7661, -73.9397, 40.8002], zoom: 5 },
       visible_insights: ["i1"],
     });
-
-    useMapStore.setState({ mapRef: null });
-    useInsightStore.getState().clearInsights();
   });
 });
 

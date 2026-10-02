@@ -1,4 +1,4 @@
-import { MapRef } from "react-map-gl/maplibre";
+import type { MapRef } from "react-map-gl/maplibre";
 
 import type { InsightWidget } from "@/app/types/chat";
 import type { ViewContext } from "@/app/store/viewContextStore";
@@ -10,21 +10,51 @@ const round = (n: number, decimals: number): number => {
   return Math.round(n * factor) / factor;
 };
 
-type Viewport = NonNullable<Extract<ViewContext, { page: "map" }>["viewport"]>;
+// MapLibre's bounds aren't wrapped: past the antimeridian or zoomed out on a
+// wide screen they run outside ±180 (e.g. 190, -337). Wrap into [-180, 180).
+const wrapLng = (lng: number): number =>
+  ((((lng + 180) % 360) + 360) % 360) - 180;
+
+type Viewport = { bbox: [number, number, number, number]; zoom: number };
+
+/**
+ * The `view_context` sent with a chat request: the surface registered in
+ * viewContextStore plus, on the map, fields computed fresh at send time. These
+ * extra fields are never stored, so they can't go stale.
+ */
+export type ViewContextPayload =
+  | Exclude<ViewContext, { page: "map" }>
+  | { page: "map"; viewport?: Viewport; visible_insights?: string[] };
 
 function buildViewport(mapRef: MapRef | null): Viewport | undefined {
-  const map = mapRef?.getMap();
-  if (!map) return undefined;
-  const bounds = map.getBounds();
-  return {
-    bbox: [
-      round(bounds.getWest(), 4),
-      round(bounds.getSouth(), 4),
-      round(bounds.getEast(), 4),
-      round(bounds.getNorth(), 4),
-    ],
-    zoom: round(map.getZoom(), 2),
-  };
+  // The ref can outlive its map (e.g. across a desktop/mobile layout swap);
+  // a viewport is optional context, so never let reading it break a send.
+  try {
+    const map = mapRef?.getMap();
+    if (!map) return undefined;
+    const bounds = map.getBounds();
+    const rawWest = bounds.getWest();
+    const rawEast = bounds.getEast();
+    let west = -180;
+    let east = 180;
+    if (rawEast - rawWest < 360) {
+      west = wrapLng(rawWest);
+      // Keep a box that ends on the antimeridian at 180, not -180.
+      east = wrapLng(rawEast) === -180 ? 180 : wrapLng(rawEast);
+    }
+    // A box crossing the antimeridian keeps west > east (RFC 7946 §5.2).
+    return {
+      bbox: [
+        round(west, 4),
+        round(bounds.getSouth(), 4),
+        round(east, 4),
+        round(bounds.getNorth(), 4),
+      ],
+      zoom: round(map.getZoom(), 2),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function buildVisibleInsights(insights: InsightWidget[]): string[] | undefined {
@@ -47,14 +77,15 @@ export function enrichMapViewContext(
   base: ViewContext | null,
   mapRef: MapRef | null,
   insights: InsightWidget[]
-): ViewContext | null {
+): ViewContextPayload | null {
   if (!base || base.page !== "map") return base;
 
   const viewport = buildViewport(mapRef);
   const visible_insights = buildVisibleInsights(insights);
 
+  // Built from `page` alone so only the live values (or their absence) are sent.
   return {
-    ...base,
+    page: "map",
     ...(viewport && { viewport }),
     ...(visible_insights && { visible_insights }),
   };

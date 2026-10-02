@@ -75,6 +75,98 @@ describe("enrichMapViewContext", () => {
     });
   });
 
+  it("wraps longitudes past the antimeridian into [-180, 180]", () => {
+    const mapRef = fakeMapRef({
+      west: 170,
+      south: -20,
+      east: 190,
+      north: -10,
+      zoom: 4,
+    });
+
+    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
+
+    // Crossing boxes keep west > east (RFC 7946 §5.2).
+    expect(result).toEqual({
+      page: "map",
+      viewport: { bbox: [170, -20, -170, -10], zoom: 4 },
+    });
+  });
+
+  it("wraps a box panned a whole world away", () => {
+    const mapRef = fakeMapRef({
+      west: -400,
+      south: 0,
+      east: -380,
+      north: 10,
+      zoom: 4,
+    });
+
+    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
+
+    expect(result).toEqual({
+      page: "map",
+      viewport: { bbox: [-40, 0, -20, 10], zoom: 4 },
+    });
+  });
+
+  it("keeps a box ending on the antimeridian at 180", () => {
+    const mapRef = fakeMapRef({
+      west: 160,
+      south: 0,
+      east: 180,
+      north: 10,
+      zoom: 4,
+    });
+
+    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
+
+    expect(result).toEqual({
+      page: "map",
+      viewport: { bbox: [160, 0, 180, 10], zoom: 4 },
+    });
+  });
+
+  it("sends the whole world when the view spans 360° or more", () => {
+    const mapRef = fakeMapRef({
+      west: -337.5,
+      south: -85,
+      east: 337.5,
+      north: 85,
+      zoom: 0.5,
+    });
+
+    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
+
+    expect(result).toEqual({
+      page: "map",
+      viewport: { bbox: [-180, -85, 180, 85], zoom: 0.5 },
+    });
+  });
+
+  it("omits the viewport when reading the map throws", () => {
+    const mapRef = {
+      getMap: () => ({
+        getBounds: () => {
+          throw new Error("map removed");
+        },
+      }),
+    } as unknown as MapRef;
+
+    expect(
+      enrichMapViewContext({ page: "map" }, mapRef, [insight("i1")])
+    ).toEqual({ page: "map", visible_insights: ["i1"] });
+  });
+
+  it("never forwards stale fields from the stored context", () => {
+    const stored = {
+      page: "map" as const,
+      visible_insights: ["old"],
+    };
+
+    expect(enrichMapViewContext(stored, null, [])).toEqual({ page: "map" });
+  });
+
   it("adds deduplicated visible_insights from on-map insight widgets", () => {
     const result = enrichMapViewContext({ page: "map" }, null, [
       insight("i1"),
