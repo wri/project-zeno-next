@@ -307,7 +307,9 @@ describe("CuratedInsightsList", () => {
         "Net GHG Flux — Annual Average"
       );
       // The tree card's own control, rendered on the pane's shell.
-      expect(screen.getByRole("button", { name: "MEASURE: Net" })).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: "MEASURE: Gross" })
+      ).toBeTruthy();
 
       fireEvent.click(screen.getByLabelText("Next chart"));
       // Category leads the roll-ups, so it is what the fold shows.
