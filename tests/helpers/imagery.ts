@@ -1,14 +1,14 @@
-import type { PlanetImageryV1, Sentinel2ImageryV1 } from "@/app/types/chat";
+import type { PlanetImagery, Sentinel2Imagery } from "@/app/types/chat";
 
 /**
- * Imagery wire contract v1 payloads (wri/project-zeno#844). The defaults are
+ * Imagery wire contract payloads (wri/project-zeno#844). The defaults are
  * the examples in the backend's docs/imagery/wire-contract-schema.md. A test
  * overrides every field it asserts, with a value that differs from the
  * default, so a reader that ignores the payload can't pass by accident.
  */
-export function sentinel2ImageryV1(
-  overrides: Partial<Sentinel2ImageryV1> = {}
-): Sentinel2ImageryV1 {
+export function sentinel2Imagery(
+  overrides: Partial<Sentinel2Imagery> = {}
+): Sentinel2Imagery {
   return {
     provider: "sentinel-2",
     period: { start: "2026-09-18", end: "2026-09-29" },
@@ -36,9 +36,9 @@ export function sentinel2ImageryV1(
   };
 }
 
-export function planetImageryV1(
-  overrides: Partial<PlanetImageryV1> = {}
-): PlanetImageryV1 {
+export function planetImagery(
+  overrides: Partial<PlanetImagery> = {}
+): PlanetImagery {
   return {
     provider: "planet",
     period: { start: "2026-08-01", end: "2026-08-31" },

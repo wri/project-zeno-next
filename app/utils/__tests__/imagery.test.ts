@@ -18,7 +18,7 @@ import {
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
-import { planetImageryV1, sentinel2ImageryV1 } from "@/tests/helpers/imagery";
+import { planetImagery, sentinel2Imagery } from "@/tests/helpers/imagery";
 
 describe("toImageryMeta", () => {
   it("resolves an explicit provider", () => {
@@ -98,7 +98,7 @@ describe("toImageryMeta", () => {
 
 // The period and the scenes deliberately disagree, so a reader that takes
 // dates from the wrong one is caught.
-const sentinel2V1 = sentinel2ImageryV1({
+const sentinel2Payload = sentinel2Imagery({
   period: { start: "2026-05-02", end: "2026-05-16" },
   aoi_names: ["Paracas National Reserve"],
   max_cloud_cover: 35,
@@ -112,14 +112,14 @@ const sentinel2V1 = sentinel2ImageryV1({
   },
 });
 
-const planetV1 = planetImageryV1({
+const planetPayload = planetImagery({
   period: { start: "2026-03-01", end: "2026-03-31" },
   aoi_names: ["Tabatinga, Amazonas, Brazil"],
 });
 
-describe("toImageryMeta — contract v1", () => {
+describe("toImageryMeta — wire contract", () => {
   it("reads Planet's month from period", () => {
-    expect(toImageryMeta(planetV1)).toEqual({
+    expect(toImageryMeta(planetPayload)).toEqual({
       provider: "planet",
       startDate: "2026-03-01",
       endDate: "2026-03-31",
@@ -128,7 +128,7 @@ describe("toImageryMeta — contract v1", () => {
   });
 
   it("reads Sentinel-2 capture dates and scene stats from scenes, not period", () => {
-    expect(toImageryMeta(sentinel2V1)).toEqual({
+    expect(toImageryMeta(sentinel2Payload)).toEqual({
       provider: "sentinel-2",
       itemCount: 4,
       startDate: "2026-05-05",
@@ -141,7 +141,7 @@ describe("toImageryMeta — contract v1", () => {
   });
 
   it("hides scene stats when an old cached mosaic has no scenes", () => {
-    expect(toImageryMeta({ ...sentinel2V1, scenes: null })).toEqual({
+    expect(toImageryMeta({ ...sentinel2Payload, scenes: null })).toEqual({
       provider: "sentinel-2",
       maxCloudCover: 35,
       aoiNames: ["Paracas National Reserve"],
@@ -347,9 +347,9 @@ describe("titles and ids", () => {
     ).toBe("Satellite Imagery (May 5 – May 14, 2026)");
   });
 
-  it("titles a v1 Sentinel-2 layer without scene stats by its search period", () => {
+  it("titles a Sentinel-2 layer without scene stats by its search period", () => {
     const meta = toImageryMeta(
-      sentinel2ImageryV1({
+      sentinel2Imagery({
         period: { start: "2026-05-02", end: "2026-05-16" },
         scenes: null,
       })
@@ -502,7 +502,7 @@ describe("buildImageryGroup", () => {
     expect(group?.captures[0].dateLabel).toBe("5 Apr 2026");
   });
 
-  it("dates a v1 Sentinel-2 capture without scenes by its search period's end", () => {
+  it("dates a Sentinel-2 capture without scenes by its search period's end", () => {
     const group = buildImageryGroup(
       [
         {
@@ -510,7 +510,7 @@ describe("buildImageryGroup", () => {
           name: "Satellite Imagery",
           type: "raster",
           visible: true,
-          imagery: sentinel2ImageryV1({
+          imagery: sentinel2Imagery({
             period: { start: "2026-04-02", end: "2026-04-16" },
             scenes: null,
           }),

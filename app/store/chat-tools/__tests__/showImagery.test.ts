@@ -46,7 +46,7 @@ import type {
   ImageryPayload,
   StreamMessage,
 } from "@/app/types/chat";
-import { sentinel2ImageryV1 } from "@/tests/helpers/imagery";
+import { sentinel2Imagery } from "@/tests/helpers/imagery";
 
 const timestamp = new Date().toISOString();
 
@@ -69,13 +69,13 @@ const tileJson = {
   maxzoom: 14,
 };
 
-// Contract v1 (wri/project-zeno#844): the layer is drawn from `source`, with
+// Wire contract (wri/project-zeno#844): the layer is drawn from `source`, with
 // no TileJSON to fetch. The zooms differ from tileJson's, so a fetched TileJSON
 // would show.
-const sentinel2V1 = sentinel2ImageryV1({
+const sentinel2Payload = sentinel2Imagery({
   layer_id: "s2-layer",
   source: {
-    tiles: ["https://tiles.example.com/v1/{z}/{x}/{y}.png?url=s3"],
+    tiles: ["https://tiles.example.com/imagery/{z}/{x}/{y}.png?url=s3"],
     bounds: [6.5, 46.0, 7.0, 46.5],
     minzoom: 9,
     maxzoom: 13,
@@ -131,10 +131,10 @@ describe("showImageryTool", () => {
     });
   });
 
-  it("draws a v1 layer from layer_id and source without fetching TileJSON", async () => {
+  it("draws a contract layer from layer_id and source without fetching TileJSON", async () => {
     const fetchMock = mockFetch({});
 
-    await showImageryTool(baseMsg({ imagery: sentinel2V1 }));
+    await showImageryTool(baseMsg({ imagery: sentinel2Payload }));
 
     expect(mapState.addLayer).toHaveBeenCalledOnce();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -142,16 +142,16 @@ describe("showImageryTool", () => {
       id: "imagery-s2-layer",
       type: "raster",
       visible: true,
-      tileUrl: sentinel2V1.source.tiles[0],
-      bounds: sentinel2V1.source.bounds,
+      tileUrl: sentinel2Payload.source.tiles[0],
+      bounds: sentinel2Payload.source.bounds,
       minzoom: 9,
       maxzoom: 13,
-      imagery: sentinel2V1,
+      imagery: sentinel2Payload,
     });
   });
 
   it.each([
-    ["v1", { ...sentinel2V1, provider: "landsat" }],
+    ["contract", { ...sentinel2Payload, provider: "landsat" }],
     ["legacy", { ...imagery, provider: "landsat" }],
   ])(
     "skips %s imagery from a provider it doesn't know",

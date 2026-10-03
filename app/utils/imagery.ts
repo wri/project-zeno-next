@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 
-import type { ImageryInfo, ImageryProvider, ImageryV1 } from "@/app/types/chat";
+import type { ImageryInfo, ImageryProvider, Imagery } from "@/app/types/chat";
 import type {
   ImageryLegendGroup,
   LegendParam,
@@ -57,13 +57,13 @@ export interface ImageryMeta {
   targetDate?: string;
   maxCloudCover?: number;
   aoiNames: string[];
-  // The Sentinel-2 search window (v1 `period`): describes the layer when no
+  // The Sentinel-2 search window (the contract's `period`): describes the layer when no
   // capture dates exist.
   searchPeriod?: { start: string; end: string };
 }
 
 /**
- * Normalizes either wire shape to `ImageryMeta`. A v1 payload (it has
+ * Normalizes either wire shape to `ImageryMeta`. A contract payload (it has
  * `period`) takes its capture dates and scene stats from `scenes`, which old
  * cached mosaics send as null. For the legacy `ImageryLegendMeta` this is the
  * one place that treats null as absent, coalesces start_date/date_start (and
@@ -72,9 +72,7 @@ export interface ImageryMeta {
  * buildImageryGroup); every other imagery function takes the result, never
  * the raw meta.
  */
-export function toImageryMeta(
-  meta: ImageryLegendMeta | ImageryV1
-): ImageryMeta {
+export function toImageryMeta(meta: ImageryLegendMeta | Imagery): ImageryMeta {
   if ("period" in meta) {
     if (meta.provider === "planet") {
       return {
@@ -227,7 +225,7 @@ function planetMonth(meta: ImageryMeta): string | undefined {
 
 /**
  * The capture row's date: a Planet basemap's month, else the latest scene's
- * capture date, else the end of the v1 search period (no scene stats), else
+ * capture date, else the end of the search period (no scene stats), else
  * the target date of old payloads.
  */
 function captureDateLabel(meta: ImageryMeta): string {
@@ -238,7 +236,7 @@ function captureDateLabel(meta: ImageryMeta): string {
 /**
  * When the imagery is from, for titles: a Planet basemap's month ("Aug
  * 2026"), Sentinel-2's capture range ("May 5 – May 14, 2026"); without capture
- * dates, the v1 search period, else the target date of old payloads.
+ * dates, the search period, else the target date of old payloads.
  */
 function imageryWhen(meta: ImageryMeta): string | undefined {
   const month = planetMonth(meta);

@@ -271,29 +271,29 @@ export interface ImageryInfo {
   max_cloud_cover?: number | null;
 }
 
-// Imagery wire contract v1 (wri/project-zeno#844,
+// Imagery wire contract (wri/project-zeno#844,
 // docs/imagery/wire-contract-schema.md), told apart from the legacy
 // ImageryInfo by `period`.
-export interface RasterSourceV1 {
+export interface RasterSource {
   tiles: string[];
   bounds: [number, number, number, number];
   minzoom: number;
   maxzoom: number;
 }
 
-interface ImageryBaseV1 {
+interface ImageryBase {
   provider: string;
   period: { start: string; end: string };
   aoi_names: string[];
   layer_id: string;
-  source: RasterSourceV1;
+  source: RasterSource;
 }
 
-export interface PlanetImageryV1 extends ImageryBaseV1 {
+export interface PlanetImagery extends ImageryBase {
   provider: "planet";
 }
 
-export interface SceneSummaryV1 {
+export interface SceneSummary {
   item_count: number;
   start_date: string;
   end_date: string;
@@ -302,18 +302,18 @@ export interface SceneSummaryV1 {
   max_cloud_cover: number;
 }
 
-export interface Sentinel2ImageryV1 extends ImageryBaseV1 {
+export interface Sentinel2Imagery extends ImageryBase {
   provider: "sentinel-2";
   mosaic_id: string;
   max_cloud_cover: number;
-  scenes: SceneSummaryV1 | null;
+  scenes: SceneSummary | null;
 }
 
-export type ImageryV1 = PlanetImageryV1 | Sentinel2ImageryV1;
+export type Imagery = PlanetImagery | Sentinel2Imagery;
 
-// Until rollout phase 4, `imagery` is v1 for new imagery and legacy for
+// Until rollout phase 4, `imagery` follows the contract for new imagery and is legacy for
 // replayed threads and older dashboard widgets.
-export type ImageryPayload = ImageryInfo | ImageryV1;
+export type ImageryPayload = ImageryInfo | Imagery;
 
 export interface AOI {
   name: string;

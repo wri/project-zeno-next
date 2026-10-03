@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { planetImageryV1, sentinel2ImageryV1 } from "@/tests/helpers/imagery";
+import { planetImagery, sentinel2Imagery } from "@/tests/helpers/imagery";
 import { mapWidgetLayer, mapWidgetViewportBbox } from "../mapWidgets";
 
 const datasetConfig = (overrides: Record<string, unknown> = {}) => ({
@@ -125,11 +125,13 @@ describe("mapWidgetLayer — imagery configs", () => {
     expect(layer?.title).toBe("Sentinel-2 imagery");
   });
 
-  it("renders a v1 imagery widget from its raster source", () => {
+  it("renders a contract imagery widget from its raster source", () => {
     const layer = mapWidgetLayer({
-      imagery: sentinel2ImageryV1({
+      imagery: sentinel2Imagery({
         source: {
-          tiles: ["https://tiles.example.org/v1/{z}/{x}/{y}.png?url=widget"],
+          tiles: [
+            "https://tiles.example.org/imagery/{z}/{x}/{y}.png?url=widget",
+          ],
           bounds: [6.5, 46.0, 7.0, 46.5],
           minzoom: 9,
           maxzoom: 13,
@@ -138,13 +140,13 @@ describe("mapWidgetLayer — imagery configs", () => {
     });
     expect(layer).toMatchObject({
       kind: "imagery",
-      tileUrl: "https://tiles.example.org/v1/{z}/{x}/{y}.png?url=widget",
+      tileUrl: "https://tiles.example.org/imagery/{z}/{x}/{y}.png?url=widget",
     });
   });
 
-  it("titles a v1 widget by its imagery specialist and capture range", () => {
+  it("titles a contract widget by its imagery specialist and capture range", () => {
     const layer = mapWidgetLayer({
-      imagery: sentinel2ImageryV1({
+      imagery: sentinel2Imagery({
         scenes: {
           item_count: 4,
           start_date: "2026-05-05",
@@ -160,7 +162,7 @@ describe("mapWidgetLayer — imagery configs", () => {
 
   it("titles a Planet widget by its specialist and month", () => {
     const layer = mapWidgetLayer({
-      imagery: planetImageryV1({
+      imagery: planetImagery({
         period: { start: "2026-03-01", end: "2026-03-31" },
       }),
     });
@@ -168,7 +170,7 @@ describe("mapWidgetLayer — imagery configs", () => {
   });
 
   it.each([
-    ["v1", { ...sentinel2ImageryV1(), provider: "landsat" }],
+    ["contract", { ...sentinel2Imagery(), provider: "landsat" }],
     [
       "legacy",
       { provider: "landsat", tile_url: "https://tiles.example.org/legacy" },

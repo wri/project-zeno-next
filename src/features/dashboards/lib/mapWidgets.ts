@@ -61,7 +61,7 @@ function patchPrimaryForest(url: string): string {
 }
 
 // Imagery configs keep the shape they were saved in: legacy ones carry
-// `tile_url`; wire contract v1 ones (wri/project-zeno#844) a MapLibre raster
+// `tile_url`; wire contract ones (wri/project-zeno#844) a MapLibre raster
 // `source` whose `tiles` hold the template.
 function imageryTileUrl(im: Record<string, unknown>): string | undefined {
   const tiles = (im.source as { tiles?: unknown } | null | undefined)?.tiles;

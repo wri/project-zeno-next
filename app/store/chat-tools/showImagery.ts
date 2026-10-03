@@ -1,4 +1,4 @@
-import type { ImageryInfo, ImageryV1, StreamMessage } from "@/app/types/chat";
+import type { ImageryInfo, Imagery, StreamMessage } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { API_CONFIG } from "@/app/config/api";
 import { getAuthHeaders } from "@/app/lib/api-client";
@@ -50,7 +50,7 @@ interface LayerSource {
   tileMetadata: TileJson;
 }
 
-function v1LayerSource(imagery: ImageryV1): LayerSource {
+function layerSource(imagery: Imagery): LayerSource {
   return {
     id: imageryLayerId(imagery.layer_id),
     tileUrl: imagery.source.tiles[0],
@@ -115,7 +115,7 @@ async function legacyLayerSource(
  * yields the same layer id and simply upserts the existing layer, which
  * also makes thread replay idempotent.
  *
- * Reads both wire shapes until rollout phase 4: a v1 payload (wri/project-zeno#844)
+ * Reads both wire shapes until rollout phase 4: a contract payload (wri/project-zeno#844)
  * is drawn from its `layer_id` and `source`; a legacy one as described at
  * legacyLayerSource.
  */
@@ -138,7 +138,7 @@ export async function showImageryTool(streamMessage: StreamMessage) {
 
   const source =
     "period" in imagery
-      ? v1LayerSource(imagery)
+      ? layerSource(imagery)
       : await legacyLayerSource(imagery);
   if (!source) return;
   const { id, tileUrl, tileMetadata } = source;

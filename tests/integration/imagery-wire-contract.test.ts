@@ -17,11 +17,11 @@ vi.mock("@/app/components/ui/toaster", () => ({
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { apiFetch } from "@/app/lib/api-client";
-import { sentinel2ImageryV1 } from "@/tests/helpers/imagery";
+import { sentinel2Imagery } from "@/tests/helpers/imagery";
 import { ndjsonResponse } from "@/tests/helpers/ndjson";
 
 // The Sentinel-2 example from the backend's wire-contract-schema.md.
-const sentinel2V1 = sentinel2ImageryV1();
+const sentinel2Payload = sentinel2Imagery();
 
 function imageryToolLine(imagery: object): string {
   const update = {
@@ -48,7 +48,7 @@ function imageryToolLine(imagery: object): string {
   });
 }
 
-describe("imagery wire contract v1 over /api/chat", () => {
+describe("imagery wire contract over /api/chat", () => {
   const tileJsonFetch = vi.fn();
 
   beforeEach(() => {
@@ -63,9 +63,9 @@ describe("imagery wire contract v1 over /api/chat", () => {
     vi.clearAllMocks();
   });
 
-  it("draws a streamed v1 layer from layer_id and source, without TileJSON", async () => {
+  it("draws a streamed contract layer from layer_id and source, without TileJSON", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
-      ndjsonResponse([imageryToolLine(sentinel2V1)])
+      ndjsonResponse([imageryToolLine(sentinel2Payload)])
     );
 
     await useChatStore.getState().sendMessage("show me recent imagery");
@@ -74,12 +74,12 @@ describe("imagery wire contract v1 over /api/chat", () => {
       expect(
         useMapStore
           .getState()
-          .layers.find((l) => l.id === `imagery-${sentinel2V1.layer_id}`)
+          .layers.find((l) => l.id === `imagery-${sentinel2Payload.layer_id}`)
       ).toMatchObject({
         type: "raster",
         visible: true,
-        tileUrl: sentinel2V1.source.tiles[0],
-        bounds: sentinel2V1.source.bounds,
+        tileUrl: sentinel2Payload.source.tiles[0],
+        bounds: sentinel2Payload.source.bounds,
         minzoom: 8,
         maxzoom: 14,
       })
