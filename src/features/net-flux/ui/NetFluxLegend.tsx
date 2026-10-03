@@ -1,5 +1,5 @@
 "use client";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Flex, Grid, Text } from "@chakra-ui/react";
 
 import { LgmsClassInfo } from "@/src/shared/ui/LgmsClassInfo";
 import { Swatch } from "@/src/shared/ui/Swatch";
@@ -16,6 +16,15 @@ const NET_FLUX_LINE_COLOR = "#172b7a";
  * ~14px line box, so adding it doesn't open up the 4px row gap.
  */
 const LEGEND_INFO_ICON_SIZE = 12;
+
+/**
+ * Both groups stay side by side at every width: each column sizes to its
+ * content when there's room and shrinks evenly when there isn't, so a long
+ * label (e.g. "Cropland management (2020, static)") wraps in place instead of
+ * pushing the removals column below emissions — which made the narrow "Full"
+ * view a long single-column scroll.
+ */
+const GROUP_COLUMNS = "repeat(2, minmax(0, max-content))";
 
 /**
  * Hatch patterns for the fixed-2020 agriculture series. Rendered once per
@@ -84,6 +93,7 @@ function LegendEntry({ item }: { item: NetFluxLegendItem }) {
         fontSize="9.5px"
         fontWeight="normal"
         color="#3A4048"
+        minW={0}
       >
         {item.label}
       </Text>
@@ -131,7 +141,8 @@ function GroupHeading({ children }: { children: string }) {
 /**
  * The design's own legend: emissions and removals as labelled columns with the
  * net-flux line pinned to the bottom of the removals column, replacing
- * ChartWidget's generic top-aligned legend. Collapses to a single wrapped row
+ * ChartWidget's generic top-aligned legend. Long labels wrap within their
+ * column rather than stacking the columns. Collapses to a single wrapped row
  * for the "net" measure, which has no emissions/removals split.
  */
 export function NetFluxLegend({ legend }: { legend: NetFluxLegendSpec }) {
@@ -145,7 +156,7 @@ export function NetFluxLegend({ legend }: { legend: NetFluxLegendSpec }) {
           <NetFluxLineEntry />
         </Flex>
       ) : (
-        <Flex gap="20px" align="stretch" wrap="wrap">
+        <Grid templateColumns={GROUP_COLUMNS} columnGap="20px">
           <Flex direction="column" gap="4px">
             <GroupHeading>Emissions</GroupHeading>
             <Flex direction="column" gap="4px">
@@ -165,7 +176,7 @@ export function NetFluxLegend({ legend }: { legend: NetFluxLegendSpec }) {
             </Flex>
             <NetFluxLineEntry />
           </Flex>
-        </Flex>
+        </Grid>
       )}
     </Box>
   );
