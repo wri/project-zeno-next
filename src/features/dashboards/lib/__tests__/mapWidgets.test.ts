@@ -167,6 +167,19 @@ describe("mapWidgetLayer — imagery configs", () => {
     expect(layer?.title).toBe("Planet imagery (Mar 2026)");
   });
 
+  it.each([
+    ["v1", { ...sentinel2ImageryV1(), provider: "landsat" }],
+    [
+      "legacy",
+      { provider: "landsat", tile_url: "https://tiles.example.org/legacy" },
+    ],
+  ])(
+    "shows the placeholder for %s imagery from a provider it doesn't know",
+    (_shape, imagery) => {
+      expect(mapWidgetLayer({ imagery })).toBeNull();
+    }
+  );
+
   it("returns null when neither dataset nor imagery is present", () => {
     expect(mapWidgetLayer({ default_view: "map" })).toBeNull();
   });

@@ -1,5 +1,9 @@
 import type { ImageryPayload } from "@/app/types/chat";
-import { imageryWidgetTitle, toImageryMeta } from "@/app/utils/imagery";
+import {
+  imageryWidgetTitle,
+  isKnownImageryProvider,
+  toImageryMeta,
+} from "@/app/utils/imagery";
 import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 
 /**
@@ -121,11 +125,12 @@ export function mapWidgetLayer(
     const im = imagery as Record<string, unknown>;
     const tileUrl = imageryTileUrl(im);
     if (!tileUrl) return null;
+    const meta = toImageryMeta(im as unknown as ImageryPayload);
+    // A provider added to the contract after this release: show the placeholder.
+    if (!isKnownImageryProvider(meta.provider)) return null;
     return {
       kind: "imagery",
-      title:
-        titleOverride ??
-        imageryWidgetTitle(toImageryMeta(im as unknown as ImageryPayload)),
+      title: titleOverride ?? imageryWidgetTitle(meta),
       tileUrl,
     };
   }
