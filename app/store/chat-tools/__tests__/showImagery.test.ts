@@ -41,11 +41,16 @@ vi.mock("@/app/lib/api-client", () => ({
 
 import { showImageryTool } from "../showImagery";
 import { API_CONFIG } from "@/app/config/api";
-import type { ImageryInfo, StreamMessage } from "@/app/types/chat";
+import type {
+  LegacyImagery,
+  ImageryPayload,
+  StreamMessage,
+} from "@/app/types/chat";
+import { sentinel2Imagery } from "@/tests/helpers/imagery";
 
 const timestamp = new Date().toISOString();
 
-const imagery: ImageryInfo = {
+const imagery: LegacyImagery = {
   tile_url: "https://tiles.example.com/{z}/{x}/{y}.png?url=s3",
   tilejson_url: "https://tiles.example.com/tilejson.json?url=s3",
   mosaic_id: "abc123",
@@ -63,6 +68,19 @@ const tileJson = {
   minzoom: 8,
   maxzoom: 14,
 };
+
+// Wire contract (wri/project-zeno#844): the layer is drawn from `source`, with
+// no TileJSON to fetch. The zooms differ from tileJson's, so a fetched TileJSON
+// would show.
+const sentinel2Payload = sentinel2Imagery({
+  layer_id: "s2-layer",
+  source: {
+    tiles: ["https://tiles.example.com/imagery/{z}/{x}/{y}.png?url=s3"],
+    bounds: [6.5, 46.0, 7.0, 46.5],
+    minzoom: 9,
+    maxzoom: 13,
+  },
+});
 
 const baseMsg = (overrides: Partial<StreamMessage> = {}): StreamMessage => ({
   type: "tool",
@@ -102,7 +120,7 @@ describe("showImageryTool", () => {
     const layer = mapState.addLayer.mock.calls[0][0];
     expect(layer).toMatchObject({
       id: "imagery-abc123",
-      name: "Satellite Imagery (Jun 15, 2026)",
+      name: "Satellite Imagery (Jun 12 – Jun 16, 2026)",
       type: "raster",
       visible: true,
       tileUrl: imagery.tile_url,
@@ -112,6 +130,42 @@ describe("showImageryTool", () => {
       imagery,
     });
   });
+
+  it("draws a contract layer from layer_id and source without fetching TileJSON", async () => {
+    const fetchMock = mockFetch({});
+
+    await showImageryTool(baseMsg({ imagery: sentinel2Payload }));
+
+    expect(mapState.addLayer).toHaveBeenCalledOnce();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mapState.addLayer.mock.calls[0][0]).toMatchObject({
+      id: "imagery-s2-layer",
+      type: "raster",
+      visible: true,
+      tileUrl: sentinel2Payload.source.tiles[0],
+      bounds: sentinel2Payload.source.bounds,
+      minzoom: 9,
+      maxzoom: 13,
+      imagery: sentinel2Payload,
+    });
+  });
+
+  it.each([
+    ["contract", { ...sentinel2Payload, provider: "landsat" }],
+    ["legacy", { ...imagery, provider: "landsat" }],
+  ])(
+    "skips %s imagery from a provider it doesn't know",
+    async (_shape, payload) => {
+      mockFetch({});
+
+      await expect(
+        showImageryTool(
+          baseMsg({ imagery: payload as unknown as ImageryPayload })
+        )
+      ).resolves.toBeUndefined();
+      expect(mapState.addLayer).not.toHaveBeenCalled();
+    }
+  );
 
   it("requests the TileJSON without auth headers for non-API hosts", async () => {
     const fetchMock = mockFetch({});

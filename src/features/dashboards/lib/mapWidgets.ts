@@ -1,3 +1,9 @@
+import type { ImageryPayload } from "@/app/types/chat";
+import {
+  imageryWidgetTitle,
+  isKnownImageryProvider,
+  toImageryMeta,
+} from "@/app/utils/imagery";
 import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 
 /**
@@ -52,6 +58,14 @@ function patchPrimaryForest(url: string): string {
   return url.includes("umd_regional_primary_forest")
     ? wrapPrimaryForestTileUrl(url)
     : url;
+}
+
+// Imagery configs keep the shape they were saved in: legacy ones carry
+// `tile_url`; wire contract ones (wri/project-zeno#844) a MapLibre raster
+// `source` whose `tiles` hold the template.
+function imageryTileUrl(im: Record<string, unknown>): string | undefined {
+  const tiles = (im.source as { tiles?: unknown } | null | undefined)?.tiles;
+  return str(im.tile_url) ?? (Array.isArray(tiles) ? str(tiles[0]) : undefined);
 }
 
 /**
@@ -109,16 +123,14 @@ export function mapWidgetLayer(
   const imagery = config.imagery;
   if (imagery && typeof imagery === "object") {
     const im = imagery as Record<string, unknown>;
-    const tileUrl = str(im.tile_url);
+    const tileUrl = imageryTileUrl(im);
     if (!tileUrl) return null;
-    const targetDate = str(im.target_date);
+    const meta = toImageryMeta(im as unknown as ImageryPayload);
+    // A provider added to the contract after this release: show the placeholder.
+    if (!isKnownImageryProvider(meta.provider)) return null;
     return {
       kind: "imagery",
-      title:
-        titleOverride ??
-        (targetDate
-          ? `Sentinel-2 imagery, ${targetDate}`
-          : "Sentinel-2 imagery"),
+      title: titleOverride ?? imageryWidgetTitle(meta),
       tileUrl,
     };
   }

@@ -25,6 +25,7 @@ import useAuthStore from "../authStore";
 import useAgentProfileStore from "../agentProfileStore";
 import useMapStore from "../mapStore";
 import { apiFetch } from "@/app/lib/api-client";
+import { ndjsonResponse } from "@/tests/helpers/ndjson";
 import { deriveContext } from "@/app/utils/messageContext";
 import type {
   AnalyseSuggestion,
@@ -235,33 +236,6 @@ describe("chatStore ff (agent profile default)", () => {
   });
 });
 
-// A Response-like object that streams the given NDJSON lines in one chunk,
-// then reports the stream as done — the happy-path counterpart of
-// makeAbortableResponse.
-function makeNdjsonResponse(lines: string[]): Response {
-  const encoder = new TextEncoder();
-  let sent = false;
-  const reader = {
-    read: () => {
-      if (sent) {
-        return Promise.resolve({ value: undefined, done: true });
-      }
-      sent = true;
-      return Promise.resolve({
-        value: encoder.encode(lines.join("\n") + "\n"),
-        done: false,
-      });
-    },
-    releaseLock: () => {},
-    cancel: () => Promise.resolve(),
-  };
-  return {
-    ok: true,
-    headers: new Headers(),
-    body: { getReader: () => reader },
-  } as unknown as Response;
-}
-
 // One NDJSON line as the backend packs it: an error-status ToolMessage from
 // the tools node. `name === null` mimics the backend's generic tool-error
 // funnel, which builds ToolMessages without a name.
@@ -305,7 +279,7 @@ describe("chatStore recoverable tool errors", () => {
 
   it("renders a warning for an error from a known pipeline tool", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
-      makeNdjsonResponse([
+      ndjsonResponse([
         errorToolLine("generate_insights", "Failed to generate chart data."),
       ])
     );
@@ -322,7 +296,7 @@ describe("chatStore recoverable tool errors", () => {
     // create_dashboard returns status=error as instructions to the agent
     // ("ask the user which area") — not a user-facing failure.
     vi.mocked(apiFetch).mockResolvedValue(
-      makeNdjsonResponse([
+      ndjsonResponse([
         errorToolLine(
           "create_dashboard",
           "The current selection spans 2 areas. Ask the user which one."
@@ -337,7 +311,7 @@ describe("chatStore recoverable tool errors", () => {
 
   it("keeps the failed step in the reasoning timeline, marked as an error", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
-      makeNdjsonResponse([
+      ndjsonResponse([
         errorToolLine(
           "create_dashboard",
           "The current selection spans 2 areas. Ask the user which one."
@@ -356,7 +330,7 @@ describe("chatStore recoverable tool errors", () => {
 
   it("stays silent for a nameless error from the backend's generic tool-error funnel", async () => {
     vi.mocked(apiFetch).mockResolvedValue(
-      makeNdjsonResponse([
+      ndjsonResponse([
         errorToolLine(null, "Tool 'x' failed unexpectedly (KeyError)."),
       ])
     );
@@ -705,31 +679,6 @@ function dashboardWriteLine(
     timestamp: "2026-07-21T00:00:00.000Z",
     update: JSON.stringify(update),
   });
-}
-
-/** A Response-like object that streams the given NDJSON lines, then ends. */
-function ndjsonResponse(lines: string[]): Response {
-  const encoder = new TextEncoder();
-  let delivered = false;
-  const reader = {
-    read: () => {
-      if (delivered) {
-        return Promise.resolve({ done: true, value: undefined });
-      }
-      delivered = true;
-      return Promise.resolve({
-        done: false,
-        value: encoder.encode(lines.join("\n") + "\n"),
-      });
-    },
-    releaseLock: () => {},
-    cancel: () => Promise.resolve(),
-  };
-  return {
-    ok: true,
-    headers: new Headers(),
-    body: { getReader: () => reader },
-  } as unknown as Response;
 }
 
 function dashboardCards() {

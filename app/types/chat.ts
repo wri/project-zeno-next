@@ -196,7 +196,7 @@ export interface StreamMessage {
   nudge?: Nudge;
   aoi?: object;
   aoi_selection?: AOISelection;
-  imagery?: ImageryInfo;
+  imagery?: ImageryPayload;
   insights?: object[];
   charts_data?: object[];
   codeact_parts?: CodeActPart[];
@@ -224,8 +224,9 @@ export interface StreamMessage {
 
 export type ImageryProvider = "sentinel-2" | "planet";
 
-// Imagery payload written to agent state by the show_imagery /
-// show_planet_imagery tools. tile_url / tilejson_url are absolute URLs to the
+// The legacy imagery payload, from before the wire contract: replayed
+// threads and older dashboard widgets still send it. Rollout phase 4 deletes
+// it. Written to agent state by the show_imagery / show_planet_imagery tools. tile_url / tilejson_url are absolute URLs to the
 // tiler the backend is configured to use. When TileJSON is unavailable,
 // bounds and zoom limits may be supplied directly. mosaic_id is an opaque
 // recipe token, stable across reruns of the same request.
@@ -238,7 +239,7 @@ export type ImageryProvider = "sentinel-2" | "planet";
 // This is the raw wire shape. Legend/display code should use `ImageryMeta`
 // via `toImageryMeta` (app/utils/imagery.ts) instead of reading these fields
 // directly.
-export interface ImageryInfo {
+export interface LegacyImagery {
   // Absent on payloads written before wri/project-zeno#800, which were all
   // Sentinel-2.
   provider?: ImageryProvider | null;
@@ -270,6 +271,50 @@ export interface ImageryInfo {
   window_days?: number | null;
   max_cloud_cover?: number | null;
 }
+
+// Imagery wire contract (wri/project-zeno#844,
+// docs/imagery/wire-contract-schema.md), told apart from the legacy
+// LegacyImagery by `period`.
+export interface RasterSource {
+  tiles: string[];
+  bounds: [number, number, number, number];
+  minzoom: number;
+  maxzoom: number;
+}
+
+interface ImageryBase {
+  provider: string;
+  period: { start: string; end: string };
+  aoi_names: string[];
+  layer_id: string;
+  source: RasterSource;
+}
+
+export interface PlanetImagery extends ImageryBase {
+  provider: "planet";
+}
+
+export interface SceneSummary {
+  item_count: number;
+  start_date: string;
+  end_date: string;
+  mean_cloud_cover: number;
+  min_cloud_cover: number;
+  max_cloud_cover: number;
+}
+
+export interface Sentinel2Imagery extends ImageryBase {
+  provider: "sentinel-2";
+  mosaic_id: string;
+  max_cloud_cover: number;
+  scenes: SceneSummary | null;
+}
+
+export type Imagery = PlanetImagery | Sentinel2Imagery;
+
+// Until rollout phase 4, `imagery` follows the contract for new imagery and is legacy for
+// replayed threads and older dashboard widgets.
+export type ImageryPayload = LegacyImagery | Imagery;
 
 export interface AOI {
   name: string;
@@ -456,7 +501,7 @@ export interface LangChainUpdate {
   suggested_datasets?: (SuggestedDataset & { recommended?: boolean })[];
   aoi?: object;
   aoi_selection?: AOISelection;
-  imagery?: ImageryInfo;
+  imagery?: ImageryPayload;
   start_date?: string;
   end_date?: string;
   insights: object[];

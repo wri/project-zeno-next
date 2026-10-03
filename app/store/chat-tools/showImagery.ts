@@ -1,4 +1,4 @@
-import { StreamMessage } from "@/app/types/chat";
+import type { LegacyImagery, Imagery, StreamMessage } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { API_CONFIG } from "@/app/config/api";
 import { getAuthHeaders } from "@/app/lib/api-client";
@@ -8,6 +8,7 @@ import {
   imageryLayerId,
   imageryLayerTitle,
   isImageryLayerId,
+  isKnownImageryProvider,
   toImageryMeta,
 } from "@/app/utils/imagery";
 
@@ -43,33 +44,30 @@ async function fetchTileJson(
   return { res, sameOrigin };
 }
 
+interface LayerSource {
+  id: string;
+  tileUrl: string;
+  tileMetadata: TileJson;
+}
+
+function layerSource(imagery: Imagery): LayerSource {
+  return {
+    id: imageryLayerId(imagery.layer_id),
+    tileUrl: imagery.source.tiles[0],
+    tileMetadata: imagery.source,
+  };
+}
+
 /**
- * Handles the show_imagery and show_planet_imagery tools: renders the mosaic
- * from the `imagery` agent-state entry as a raster layer.
- *
- * Each run adds a capture to the imagery legend group. The newest capture is
- * shown and earlier ones are hidden (not removed) — the legend's per-capture
- * toggles bring them back for comparison. Re-running an identical request
- * yields the same mosaic_id and simply upserts the existing layer, which
- * also makes thread replay idempotent.
- *
- * When TileJSON is provided, it is fetched first for the mosaic's bounds and
- * zoom range. Providers without TileJSON may supply bounds / min_zoom /
- * max_zoom directly in the imagery payload instead.
+ * Legacy payloads carry a TileJSON URL (Sentinel-2), fetched for the mosaic's
+ * bounds and zoom range, or inline bounds / min_zoom / max_zoom (Planet).
+ * Null when the TileJSON can't be loaded; the reason is already reported.
  */
-export async function showImageryTool(streamMessage: StreamMessage) {
-  const imagery = streamMessage.imagery;
-  if (!imagery) return;
-
-  const { addLayer, setLayerVisibility, reorderLayers } =
-    useMapStore.getState();
-
-  // Normalize once at the boundary (ImageryLegendMeta's raw nulls/legacy
-  // field names never leak past this call) — see toImageryMeta.
-  const meta = toImageryMeta(imagery);
-
+async function legacyLayerSource(
+  imagery: LegacyImagery
+): Promise<LayerSource | null> {
   // The backend serialises fields it has no value for as explicit JSON null
-  // (see ImageryInfo); normalise to undefined so the checks below hold.
+  // (see LegacyImagery); normalise to undefined so the checks below hold.
   let tileMetadata: TileJson = {
     bounds: imagery.bounds ?? undefined,
     minzoom: imagery.min_zoom ?? undefined,
@@ -86,20 +84,64 @@ export async function showImageryTool(streamMessage: StreamMessage) {
           "Your session has expired. Please sign in again to view satellite imagery.",
           { title: "Session Expired" }
         );
-        return;
+        return null;
       }
       if (!res.ok) {
         console.warn(
           `Imagery mosaic unavailable (HTTP ${res.status}); not showing layer`
         );
-        return;
+        return null;
       }
       tileMetadata = (await res.json()) as TileJson;
     } catch (error) {
       console.error("Failed to load imagery TileJSON:", error);
-      return;
+      return null;
     }
   }
+  return {
+    id: imageryLayerId(imagery.mosaic_id),
+    tileUrl: imagery.tile_url,
+    tileMetadata,
+  };
+}
+
+/**
+ * Handles the show_imagery and show_planet_imagery tools: renders the mosaic
+ * from the `imagery` agent-state entry as a raster layer.
+ *
+ * Each run adds a capture to the imagery legend group. The newest capture is
+ * shown and earlier ones are hidden (not removed) — the legend's per-capture
+ * toggles bring them back for comparison. Re-running an identical request
+ * yields the same layer id and simply upserts the existing layer, which
+ * also makes thread replay idempotent.
+ *
+ * Reads both wire shapes until rollout phase 4: a contract payload (wri/project-zeno#844)
+ * is drawn from its `layer_id` and `source`; a legacy one as described at
+ * legacyLayerSource.
+ */
+export async function showImageryTool(streamMessage: StreamMessage) {
+  const imagery = streamMessage.imagery;
+  if (!imagery) return;
+
+  const { addLayer, setLayerVisibility, reorderLayers } =
+    useMapStore.getState();
+
+  // Normalize once at the boundary (ImageryLegendMeta's raw nulls/legacy
+  // field names never leak past this call) — see toImageryMeta.
+  const meta = toImageryMeta(imagery);
+  if (!isKnownImageryProvider(meta.provider)) {
+    console.warn(
+      `Unknown imagery provider "${meta.provider}"; not showing layer`
+    );
+    return;
+  }
+
+  const source =
+    "period" in imagery
+      ? layerSource(imagery)
+      : await legacyLayerSource(imagery);
+  if (!source) return;
+  const { id, tileUrl, tileMetadata } = source;
 
   if (tileMetadata.minzoom == null || tileMetadata.maxzoom == null) {
     console.warn(
@@ -107,8 +149,6 @@ export async function showImageryTool(streamMessage: StreamMessage) {
     );
     return;
   }
-
-  const id = imageryLayerId(imagery.mosaic_id);
 
   // Newest capture wins: hide earlier captures so the map shows the mosaic
   // the agent just produced. They stay in the legend for toggling back.
@@ -119,10 +159,10 @@ export async function showImageryTool(streamMessage: StreamMessage) {
 
   addLayer({
     id,
-    name: imageryLayerTitle(meta.targetDate),
+    name: imageryLayerTitle(meta),
     type: "raster",
     visible: true,
-    tileUrl: imagery.tile_url,
+    tileUrl,
     minzoom: tileMetadata.minzoom,
     maxzoom: tileMetadata.maxzoom,
     bounds: tileMetadata.bounds,

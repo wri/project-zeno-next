@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 
-import type { ImageryInfo, ImageryProvider } from "@/app/types/chat";
+import type { LegacyImagery, ImageryProvider, Imagery } from "@/app/types/chat";
 import type {
   ImageryLegendGroup,
   LegendParam,
@@ -25,7 +25,7 @@ import type { Layer } from "@/app/store/layerManagerSlice";
  */
 export type ImageryLegendMeta = Partial<
   Pick<
-    ImageryInfo,
+    LegacyImagery,
     | "provider"
     | "item_count"
     | "start_date"
@@ -55,20 +55,44 @@ export interface ImageryMeta {
   endDate?: string;
   meanCloudCover?: number;
   targetDate?: string;
-  windowDays?: number;
   maxCloudCover?: number;
   aoiNames: string[];
+  // The Sentinel-2 search window (the contract's `period`): describes the layer when no
+  // capture dates exist.
+  searchPeriod?: { start: string; end: string };
 }
 
 /**
- * Normalizes the wire-shaped `ImageryLegendMeta` to `ImageryMeta` — the one
- * place that treats null as absent, coalesces start_date/date_start (and
+ * Normalizes either wire shape to `ImageryMeta`. A contract payload (it has
+ * `period`) takes its capture dates and scene stats from `scenes`, which old
+ * cached mosaics send as null. For the legacy `ImageryLegendMeta` this is the
+ * one place that treats null as absent, coalesces start_date/date_start (and
  * end_date/date_end), and defaults a missing provider to "sentinel-2". Call
  * this once where an imagery payload enters the app (showImageryTool,
  * buildImageryGroup); every other imagery function takes the result, never
  * the raw meta.
  */
-export function toImageryMeta(meta: ImageryLegendMeta): ImageryMeta {
+export function toImageryMeta(meta: ImageryLegendMeta | Imagery): ImageryMeta {
+  if ("period" in meta) {
+    if (meta.provider === "planet") {
+      return {
+        provider: meta.provider,
+        startDate: meta.period.start,
+        endDate: meta.period.end,
+        aoiNames: meta.aoi_names,
+      };
+    }
+    return {
+      provider: meta.provider,
+      itemCount: meta.scenes?.item_count,
+      startDate: meta.scenes?.start_date,
+      endDate: meta.scenes?.end_date,
+      meanCloudCover: meta.scenes?.mean_cloud_cover,
+      maxCloudCover: meta.max_cloud_cover,
+      aoiNames: meta.aoi_names,
+      searchPeriod: meta.period,
+    };
+  }
   return {
     // Absent on payloads written before wri/project-zeno#800, which were all
     // Sentinel-2.
@@ -78,7 +102,6 @@ export function toImageryMeta(meta: ImageryLegendMeta): ImageryMeta {
     endDate: meta.end_date ?? meta.date_end ?? undefined,
     meanCloudCover: meta.mean_cloud_cover ?? undefined,
     targetDate: meta.target_date ?? undefined,
-    windowDays: meta.window_days ?? undefined,
     maxCloudCover: meta.max_cloud_cover ?? undefined,
     aoiNames: meta.aoi_names ?? [],
   };
@@ -101,19 +124,28 @@ export const IMAGERY_LAYER_NAME = "Satellite Imagery";
  * the info-popover sentence, and the imagery attribution. */
 const PROVIDER_DISPLAY: Record<
   ImageryProvider,
-  { subtitle: string; mosaicNoun: string; attribution: string }
+  { name: string; subtitle: string; mosaicNoun: string; attribution: string }
 > = {
   "sentinel-2": {
+    name: "Sentinel-2",
     subtitle: "Sentinel-2 · True-colour",
     mosaicNoun: "Sentinel-2 true-colour mosaic",
     attribution: "Contains modified Copernicus Sentinel data",
   },
   planet: {
+    name: "Planet",
     subtitle: "Planet · Monthly mosaic",
     mosaicNoun: "Planet monthly true-colour mosaic",
     attribution: "Imagery © Planet Labs PBC",
   },
 };
+
+/** False for providers added to the wire contract after this release. */
+export function isKnownImageryProvider(
+  provider: string
+): provider is ImageryProvider {
+  return Object.hasOwn(PROVIDER_DISPLAY, provider);
+}
 
 function providerDisplay(provider: ImageryProvider) {
   return PROVIDER_DISPLAY[provider];
@@ -149,6 +181,14 @@ function formatImageryDate(isoDate: string): string {
   }
 }
 
+function formatImageryMonth(isoDate: string): string {
+  try {
+    return format(parseISO(isoDate), "MMM yyyy");
+  } catch {
+    return isoDate;
+  }
+}
+
 // Compact acquired-date range, e.g. "May 28 – Jun 3, 2026": the start date's
 // year is elided within a single year so the chip survives the dashboard
 // legend's 300px width without truncating away the end date.
@@ -175,10 +215,60 @@ export function formatCaptureDate(isoDate: string): string {
   }
 }
 
-/** Legend/layer title, e.g. "Satellite Imagery (Jun 15, 2026)". */
-export function imageryLayerTitle(targetDate?: string): string {
-  if (!targetDate) return IMAGERY_LAYER_NAME;
-  return `${IMAGERY_LAYER_NAME} (${formatImageryDate(targetDate)})`;
+/** A Planet basemap's month, e.g. "Aug 2026"; undefined for other providers. */
+function planetMonth(meta: ImageryMeta): string | undefined {
+  if (meta.provider === "planet" && meta.startDate) {
+    return formatImageryMonth(meta.startDate);
+  }
+  return undefined;
+}
+
+/**
+ * The capture row's date: a Planet basemap's month, else the latest scene's
+ * capture date, else the end of the search period (no scene stats), else
+ * the target date of old payloads.
+ */
+function captureDateLabel(meta: ImageryMeta): string {
+  const latest = meta.endDate ?? meta.searchPeriod?.end ?? meta.targetDate;
+  return planetMonth(meta) ?? (latest ? formatCaptureDate(latest) : "");
+}
+
+/**
+ * When the imagery is from, for titles: a Planet basemap's month ("Aug
+ * 2026"), Sentinel-2's capture range ("May 5 – May 14, 2026"); without capture
+ * dates, the search period, else the target date of old payloads.
+ */
+function imageryWhen(meta: ImageryMeta): string | undefined {
+  const month = planetMonth(meta);
+  if (month) return month;
+  if (meta.startDate && meta.endDate) {
+    return formatImageryDateRange(meta.startDate, meta.endDate);
+  }
+  if (meta.searchPeriod) {
+    const { start, end } = meta.searchPeriod;
+    return formatImageryDateRange(start, end);
+  }
+  return meta.targetDate ? formatImageryDate(meta.targetDate) : undefined;
+}
+
+const withWhen = (name: string, when: string | undefined) =>
+  when ? `${name} (${when})` : name;
+
+/** Explorer layer title, e.g. "Satellite Imagery (May 5 – May 14, 2026)". */
+export function imageryLayerTitle(meta: ImageryMeta): string {
+  return withWhen(IMAGERY_LAYER_NAME, imageryWhen(meta));
+}
+
+/**
+ * Dashboard widget title, naming the imagery specialist, e.g. "Sentinel-2
+ * imagery (May 5 – May 14, 2026)" or "Planet imagery (Aug 2026)". A widget
+ * card has no legend subtitle to name the provider.
+ */
+export function imageryWidgetTitle(meta: ImageryMeta): string {
+  return withWhen(
+    `${providerDisplay(meta.provider).name} imagery`,
+    imageryWhen(meta)
+  );
 }
 
 /**
@@ -196,9 +286,6 @@ export function imageryLegendParams(meta: ImageryMeta): LegendParam[] {
       maxValueWidth: "26ch",
     });
   }
-  if (meta.windowDays !== undefined) {
-    params.push({ label: "WINDOW", value: `±${meta.windowDays} days` });
-  }
   if (meta.maxCloudCover !== undefined) {
     params.push({ label: "CLOUD", value: `< ${meta.maxCloudCover}%` });
   }
@@ -215,14 +302,11 @@ export function imageryLegendInfo(meta: ImageryMeta): string {
     meta.itemCount !== undefined
       ? ` built from ${meta.itemCount} scene${meta.itemCount === 1 ? "" : "s"}`
       : "";
-  const closest = meta.targetDate
-    ? ` closest to ${formatImageryDate(meta.targetDate)}`
-    : "";
   const observed =
     meta.meanCloudCover !== undefined
       ? ` Mean observed cloud cover ${Math.round(meta.meanCloudCover)}%.`
       : "";
-  return `${mosaicNoun}${scenes}${closest}.${observed} ${attribution}.`;
+  return `${mosaicNoun}${scenes}.${observed} ${attribution}.`;
 }
 
 /**
@@ -272,7 +356,7 @@ export function buildImageryGroup(
     return {
       layerId: layer.id,
       areaLabel: meta.aoiNames.join(", ") || layer.name,
-      dateLabel: meta.targetDate ? formatCaptureDate(meta.targetDate) : "",
+      dateLabel: captureDateLabel(meta),
       metaLabel: captureMetaLabel(meta),
       visible: layer.visible,
       live: index === 0,

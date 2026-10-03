@@ -1,6 +1,6 @@
 import { StateCreator } from "zustand";
 import { FeatureCollection, Feature } from "geojson";
-import type { AOISelection, ImageryInfo } from "@/app/types/chat";
+import type { AOISelection, ImageryPayload } from "@/app/types/chat";
 import type { VectorStyleSpec } from "@/app/constants/datasets";
 import type { MapState } from "./mapStore";
 
@@ -56,7 +56,7 @@ export interface Layer {
   bounds?: [number, number, number, number];
   attribution?: string;
   // Set when added from show_imagery (Sentinel-2 mosaic legend metadata)
-  imagery?: ImageryInfo;
+  imagery?: ImageryPayload;
 }
 
 // The two MVT renderers partition vector layers by whether they carry a

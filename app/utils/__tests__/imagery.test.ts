@@ -18,6 +18,7 @@ import {
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import { planetImagery, sentinel2Imagery } from "@/tests/helpers/imagery";
 
 describe("toImageryMeta", () => {
   it("resolves an explicit provider", () => {
@@ -68,7 +69,6 @@ describe("toImageryMeta", () => {
       startDate: undefined,
       endDate: undefined,
       targetDate: "2026-06-15",
-      windowDays: 30,
       maxCloudCover: 50,
       meanCloudCover: 12.4,
       aoiNames: ["Paracas National Reserve"],
@@ -86,7 +86,6 @@ describe("toImageryMeta", () => {
     expect(meta).toMatchObject({
       itemCount: undefined,
       targetDate: undefined,
-      windowDays: undefined,
       maxCloudCover: undefined,
       meanCloudCover: undefined,
     });
@@ -94,6 +93,60 @@ describe("toImageryMeta", () => {
 
   it("defaults aoiNames to an empty array when absent", () => {
     expect(toImageryMeta({}).aoiNames).toEqual([]);
+  });
+});
+
+// The period and the scenes deliberately disagree, so a reader that takes
+// dates from the wrong one is caught.
+const sentinel2Payload = sentinel2Imagery({
+  period: { start: "2026-05-02", end: "2026-05-16" },
+  aoi_names: ["Paracas National Reserve"],
+  max_cloud_cover: 35,
+  scenes: {
+    item_count: 4,
+    start_date: "2026-05-05",
+    end_date: "2026-05-14",
+    mean_cloud_cover: 11.5,
+    min_cloud_cover: 3,
+    max_cloud_cover: 30,
+  },
+});
+
+const planetPayload = planetImagery({
+  period: { start: "2026-03-01", end: "2026-03-31" },
+  aoi_names: ["Tabatinga, Amazonas, Brazil"],
+});
+
+describe("toImageryMeta — wire contract", () => {
+  it("reads Planet's month from period", () => {
+    expect(toImageryMeta(planetPayload)).toEqual({
+      provider: "planet",
+      startDate: "2026-03-01",
+      endDate: "2026-03-31",
+      aoiNames: ["Tabatinga, Amazonas, Brazil"],
+    });
+  });
+
+  it("reads Sentinel-2 capture dates and scene stats from scenes, not period", () => {
+    expect(toImageryMeta(sentinel2Payload)).toEqual({
+      provider: "sentinel-2",
+      itemCount: 4,
+      startDate: "2026-05-05",
+      endDate: "2026-05-14",
+      meanCloudCover: 11.5,
+      maxCloudCover: 35,
+      aoiNames: ["Paracas National Reserve"],
+      searchPeriod: { start: "2026-05-02", end: "2026-05-16" },
+    });
+  });
+
+  it("hides scene stats when an old cached mosaic has no scenes", () => {
+    expect(toImageryMeta({ ...sentinel2Payload, scenes: null })).toEqual({
+      provider: "sentinel-2",
+      maxCloudCover: 35,
+      aoiNames: ["Paracas National Reserve"],
+      searchPeriod: { start: "2026-05-02", end: "2026-05-16" },
+    });
   });
 });
 
@@ -125,7 +178,7 @@ const planetMeta: ImageryLegendMeta = {
 };
 
 describe("imageryLegendParams", () => {
-  it("builds DATES, WINDOW, CLOUD and AREA chips from full metadata", () => {
+  it("builds DATES, CLOUD and AREA chips from full metadata", () => {
     const params = imageryLegendParams(toImageryMeta(fullMeta));
     expect(params).toEqual([
       {
@@ -133,7 +186,6 @@ describe("imageryLegendParams", () => {
         value: "Jun 12 – Jun 16, 2026",
         maxValueWidth: "26ch",
       },
-      { label: "WINDOW", value: "±30 days" },
       { label: "CLOUD", value: "< 50%" },
       { label: "AREA", value: "Paracas National Reserve" },
     ]);
@@ -181,9 +233,9 @@ describe("imageryLegendParams", () => {
 });
 
 describe("imageryLegendInfo", () => {
-  it("mentions scene count, target date and attribution", () => {
+  it("mentions scene count and attribution, not the target date", () => {
     expect(imageryLegendInfo(toImageryMeta(fullMeta))).toBe(
-      "Sentinel-2 true-colour mosaic built from 9 scenes closest to Jun 15, 2026. Contains modified Copernicus Sentinel data."
+      "Sentinel-2 true-colour mosaic built from 9 scenes. Contains modified Copernicus Sentinel data."
     );
   });
 
@@ -204,7 +256,7 @@ describe("imageryLegendInfo", () => {
 
   it("describes and attributes Planet mosaics, skipping null stats", () => {
     expect(imageryLegendInfo(toImageryMeta(planetMeta))).toBe(
-      "Planet monthly true-colour mosaic closest to Jul 1, 2026. Imagery © Planet Labs PBC."
+      "Planet monthly true-colour mosaic. Imagery © Planet Labs PBC."
     );
   });
 });
@@ -262,12 +314,64 @@ describe("captureMetaLabel", () => {
 });
 
 describe("titles and ids", () => {
+  it("titles a Planet layer by its month", () => {
+    expect(
+      imageryLayerTitle({
+        provider: "planet",
+        startDate: "2026-03-01",
+        endDate: "2026-03-31",
+        aoiNames: [],
+      })
+    ).toBe("Satellite Imagery (Mar 2026)");
+  });
+
+  it("keeps a Planet title readable when its month can't be parsed", () => {
+    expect(
+      imageryLayerTitle({
+        provider: "planet",
+        startDate: "garbage",
+        aoiNames: [],
+      })
+    ).toBe("Satellite Imagery (garbage)");
+  });
+
+  it("titles a Sentinel-2 layer by its capture range", () => {
+    expect(
+      imageryLayerTitle({
+        provider: "sentinel-2",
+        startDate: "2026-05-05",
+        endDate: "2026-05-14",
+        targetDate: "2026-05-09",
+        aoiNames: [],
+      })
+    ).toBe("Satellite Imagery (May 5 – May 14, 2026)");
+  });
+
+  it("titles a Sentinel-2 layer without scene stats by its search period", () => {
+    const meta = toImageryMeta(
+      sentinel2Imagery({
+        period: { start: "2026-05-02", end: "2026-05-16" },
+        scenes: null,
+      })
+    );
+    expect(imageryLayerTitle(meta)).toBe(
+      "Satellite Imagery (May 2 – May 16, 2026)"
+    );
+  });
+
   it("formats the layer title with the target date", () => {
-    expect(imageryLayerTitle("2026-06-15")).toBe(
+    const sentinel2 = (targetDate?: string) => ({
+      provider: "sentinel-2" as const,
+      targetDate,
+      aoiNames: [],
+    });
+    expect(imageryLayerTitle(sentinel2("2026-06-15"))).toBe(
       "Satellite Imagery (Jun 15, 2026)"
     );
-    expect(imageryLayerTitle()).toBe("Satellite Imagery");
-    expect(imageryLayerTitle("garbage")).toBe("Satellite Imagery (garbage)");
+    expect(imageryLayerTitle(sentinel2())).toBe("Satellite Imagery");
+    expect(imageryLayerTitle(sentinel2("garbage"))).toBe(
+      "Satellite Imagery (garbage)"
+    );
   });
 
   it("formats capture dates per the design", () => {
@@ -342,7 +446,6 @@ describe("buildImageryGroup", () => {
     });
     expect(group?.params.map((p) => p.label)).toEqual([
       "DATES",
-      "WINDOW",
       "CLOUD",
       "AREA",
     ]);
@@ -351,7 +454,7 @@ describe("buildImageryGroup", () => {
       layerId: "imagery-new",
       live: true,
       visible: true,
-      dateLabel: "15 Jun 2026",
+      dateLabel: "16 Jun 2026",
       metaLabel: "cloud <50% · 9 scenes",
     });
     expect(group?.captures[1]).toMatchObject({
@@ -361,6 +464,69 @@ describe("buildImageryGroup", () => {
       areaLabel: "Pacaya-Samiria",
     });
     expect(group?.captures[0].thumbnailUrl).toContain("/8/128/128");
+  });
+
+  it("dates a Sentinel-2 capture by its latest scene", () => {
+    const group = buildImageryGroup(
+      [
+        imageryLayer(
+          "imagery-s2",
+          {},
+          {
+            start_date: "2026-04-02",
+            end_date: "2026-04-09",
+            target_date: "2026-04-05",
+          }
+        ),
+      ],
+      false
+    );
+    expect(group?.captures[0].dateLabel).toBe("9 Apr 2026");
+  });
+
+  it("dates an old capture without capture dates by its target date", () => {
+    const group = buildImageryGroup(
+      [
+        imageryLayer(
+          "imagery-old-s2",
+          {},
+          {
+            start_date: null,
+            end_date: null,
+            target_date: "2026-04-05",
+          }
+        ),
+      ],
+      false
+    );
+    expect(group?.captures[0].dateLabel).toBe("5 Apr 2026");
+  });
+
+  it("dates a Sentinel-2 capture without scenes by its search period's end", () => {
+    const group = buildImageryGroup(
+      [
+        {
+          id: "imagery-cached",
+          name: "Satellite Imagery",
+          type: "raster",
+          visible: true,
+          imagery: sentinel2Imagery({
+            period: { start: "2026-04-02", end: "2026-04-16" },
+            scenes: null,
+          }),
+        } as Layer,
+      ],
+      false
+    );
+    expect(group?.captures[0].dateLabel).toBe("16 Apr 2026");
+  });
+
+  it("dates a Planet capture by its month", () => {
+    const group = buildImageryGroup(
+      [imageryLayer("imagery-planet", {}, planetMeta)],
+      false
+    );
+    expect(group?.captures[0].dateLabel).toBe("Jul 2026");
   });
 
   it("labels the group after the live capture's provider", () => {

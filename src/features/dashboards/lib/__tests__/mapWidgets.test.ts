@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { planetImagery, sentinel2Imagery } from "@/tests/helpers/imagery";
 import { mapWidgetLayer, mapWidgetViewportBbox } from "../mapWidgets";
 
 const datasetConfig = (overrides: Record<string, unknown> = {}) => ({
@@ -112,7 +113,7 @@ describe("mapWidgetLayer — imagery configs", () => {
     });
     expect(layer).toEqual({
       kind: "imagery",
-      title: "Sentinel-2 imagery, 2024-06-01",
+      title: "Sentinel-2 imagery (Jun 1, 2024)",
       tileUrl: "https://tiles.example.org/mosaic/{z}/{x}/{y}.png?url=abc",
     });
   });
@@ -123,6 +124,63 @@ describe("mapWidgetLayer — imagery configs", () => {
     });
     expect(layer?.title).toBe("Sentinel-2 imagery");
   });
+
+  it("renders a contract imagery widget from its raster source", () => {
+    const layer = mapWidgetLayer({
+      imagery: sentinel2Imagery({
+        source: {
+          tiles: [
+            "https://tiles.example.org/imagery/{z}/{x}/{y}.png?url=widget",
+          ],
+          bounds: [6.5, 46.0, 7.0, 46.5],
+          minzoom: 9,
+          maxzoom: 13,
+        },
+      }),
+    });
+    expect(layer).toMatchObject({
+      kind: "imagery",
+      tileUrl: "https://tiles.example.org/imagery/{z}/{x}/{y}.png?url=widget",
+    });
+  });
+
+  it("titles a contract widget by its imagery specialist and capture range", () => {
+    const layer = mapWidgetLayer({
+      imagery: sentinel2Imagery({
+        scenes: {
+          item_count: 4,
+          start_date: "2026-05-05",
+          end_date: "2026-05-14",
+          mean_cloud_cover: 11.5,
+          min_cloud_cover: 3,
+          max_cloud_cover: 30,
+        },
+      }),
+    });
+    expect(layer?.title).toBe("Sentinel-2 imagery (May 5 – May 14, 2026)");
+  });
+
+  it("titles a Planet widget by its specialist and month", () => {
+    const layer = mapWidgetLayer({
+      imagery: planetImagery({
+        period: { start: "2026-03-01", end: "2026-03-31" },
+      }),
+    });
+    expect(layer?.title).toBe("Planet imagery (Mar 2026)");
+  });
+
+  it.each([
+    ["contract", { ...sentinel2Imagery(), provider: "landsat" }],
+    [
+      "legacy",
+      { provider: "landsat", tile_url: "https://tiles.example.org/legacy" },
+    ],
+  ])(
+    "shows the placeholder for %s imagery from a provider it doesn't know",
+    (_shape, imagery) => {
+      expect(mapWidgetLayer({ imagery })).toBeNull();
+    }
+  );
 
   it("returns null when neither dataset nor imagery is present", () => {
     expect(mapWidgetLayer({ default_view: "map" })).toBeNull();
