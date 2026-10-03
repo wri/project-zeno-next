@@ -1,4 +1,4 @@
-import type { ImageryInfo, Imagery, StreamMessage } from "@/app/types/chat";
+import type { LegacyImagery, Imagery, StreamMessage } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { API_CONFIG } from "@/app/config/api";
 import { getAuthHeaders } from "@/app/lib/api-client";
@@ -64,10 +64,10 @@ function layerSource(imagery: Imagery): LayerSource {
  * Null when the TileJSON can't be loaded; the reason is already reported.
  */
 async function legacyLayerSource(
-  imagery: ImageryInfo
+  imagery: LegacyImagery
 ): Promise<LayerSource | null> {
   // The backend serialises fields it has no value for as explicit JSON null
-  // (see ImageryInfo); normalise to undefined so the checks below hold.
+  // (see LegacyImagery); normalise to undefined so the checks below hold.
   let tileMetadata: TileJson = {
     bounds: imagery.bounds ?? undefined,
     minzoom: imagery.min_zoom ?? undefined,

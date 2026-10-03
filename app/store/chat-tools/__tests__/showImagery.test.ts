@@ -42,7 +42,7 @@ vi.mock("@/app/lib/api-client", () => ({
 import { showImageryTool } from "../showImagery";
 import { API_CONFIG } from "@/app/config/api";
 import type {
-  ImageryInfo,
+  LegacyImagery,
   ImageryPayload,
   StreamMessage,
 } from "@/app/types/chat";
@@ -50,7 +50,7 @@ import { sentinel2Imagery } from "@/tests/helpers/imagery";
 
 const timestamp = new Date().toISOString();
 
-const imagery: ImageryInfo = {
+const imagery: LegacyImagery = {
   tile_url: "https://tiles.example.com/{z}/{x}/{y}.png?url=s3",
   tilejson_url: "https://tiles.example.com/tilejson.json?url=s3",
   mosaic_id: "abc123",

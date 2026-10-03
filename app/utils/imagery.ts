@@ -1,6 +1,6 @@
 import { format, parseISO } from "date-fns";
 
-import type { ImageryInfo, ImageryProvider, Imagery } from "@/app/types/chat";
+import type { LegacyImagery, ImageryProvider, Imagery } from "@/app/types/chat";
 import type {
   ImageryLegendGroup,
   LegendParam,
@@ -25,7 +25,7 @@ import type { Layer } from "@/app/store/layerManagerSlice";
  */
 export type ImageryLegendMeta = Partial<
   Pick<
-    ImageryInfo,
+    LegacyImagery,
     | "provider"
     | "item_count"
     | "start_date"
