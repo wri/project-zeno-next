@@ -44,7 +44,7 @@ type MenuItemProps = {
   active?: boolean;
   badge?: string;
 } & (
-  | { href: string; external?: boolean; onClick?: never }
+  | { href: string; external?: boolean; onClick?: () => void }
   | { onClick: () => void; href?: never; external?: never }
 );
 
@@ -109,7 +109,10 @@ function MenuItem({
       <chakra.a asChild {...styles} aria-current={active ? "page" : undefined}>
         <Link
           href={href}
-          onClick={() => useSidebarStore.getState().setMenuOpen(false)}
+          onClick={() => {
+            useSidebarStore.getState().setMenuOpen(false);
+            onClick?.();
+          }}
           {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
         >
           {content}
@@ -217,6 +220,14 @@ export default function MenuSideBar() {
                   label="Map"
                   icon={MapTrifoldIcon}
                   href={mapTabHref(currentThreadId)}
+                  // On My areas the link points at the current page, so leave
+                  // the tab by closing the Areas panel.
+                  onClick={
+                    myAreasActive
+                      ? () =>
+                          useSidebarStore.getState().setAreasPanelOpen(false)
+                      : undefined
+                  }
                   active={onMap && !myAreasActive}
                 />
                 <MenuItem

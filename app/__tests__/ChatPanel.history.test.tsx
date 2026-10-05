@@ -3,7 +3,8 @@
  * The chat panel's views: the history view swaps the messages for past
  * conversations and the prompt box for the "Available prompts" card, in both
  * panel sizes; picking a conversation returns to the chat; collapsing and
- * reopening the compact panel keeps the chat.
+ * reopening the compact panel keeps the chat; on mobile, where the header with
+ * those controls is hidden, the panel always shows the chat.
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import {
@@ -13,7 +14,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import system from "@/app/theme";
 import useSidebarStore from "@/app/store/sidebarStore";
@@ -118,5 +119,47 @@ describe("ChatPanel collapse", () => {
 
     await click(screen.getByTestId("chat-panel-header"));
     expect(await screen.findByTestId("chat-messages")).toBeTruthy();
+  });
+});
+
+// happy-dom's viewport control, which drives the breakpoint media queries.
+const setViewportWidth = (width: number) =>
+  (
+    window as unknown as {
+      happyDOM: { setViewport: (v: { width: number }) => void };
+    }
+  ).happyDOM.setViewport({ width });
+
+describe("ChatPanel on mobile", () => {
+  const desktopWidth = window.innerWidth;
+
+  beforeEach(() => {
+    useSidebarStore.setState({
+      isChatFullSize: false,
+      isChatCollapsed: true,
+      chatHistoryOpen: true,
+    });
+  });
+
+  afterEach(() => {
+    setViewportWidth(desktopWidth);
+  });
+
+  it("drops a history view or collapse left open on desktop", async () => {
+    setViewportWidth(375);
+    renderPanel();
+
+    await waitFor(() =>
+      expect(useSidebarStore.getState().chatHistoryOpen).toBe(false)
+    );
+    expect(useSidebarStore.getState().isChatCollapsed).toBe(false);
+    expect(await screen.findByTestId("chat-messages")).toBeTruthy();
+    expect(screen.getByTestId("chat-input")).toBeTruthy();
+  });
+
+  it("keeps them on desktop", () => {
+    renderPanel();
+    expect(useSidebarStore.getState().chatHistoryOpen).toBe(true);
+    expect(useSidebarStore.getState().isChatCollapsed).toBe(true);
   });
 });

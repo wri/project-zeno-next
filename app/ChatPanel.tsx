@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useBreakpointValue } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import ChatPanelCompact from "./ChatPanelCompact";
 import ChatPanelFullSize from "./ChatPanelFullSize";
@@ -14,6 +16,19 @@ function ChatPanel() {
   const setChatFullSize = useSidebarStore((s) => s.setChatFullSize);
 
   const toggleSize = () => setChatFullSize(!isFullSize);
+
+  // The header that toggles the history view and collapse is desktop-only, so
+  // a view left open on desktop would strand the mobile bottom sheet (no input,
+  // no way back) after a resize or rotation. Return to the chat on mobile.
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  useEffect(() => {
+    if (isMobile) {
+      useSidebarStore.setState({
+        chatHistoryOpen: false,
+        isChatCollapsed: false,
+      });
+    }
+  }, [isMobile]);
 
   return (
     <AnimatePresence mode="wait">

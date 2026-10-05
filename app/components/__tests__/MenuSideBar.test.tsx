@@ -171,6 +171,31 @@ describe("MenuSideBar", () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  it("leaves My areas for the map by closing the Areas panel", async () => {
+    useSidebarStore.setState({
+      areasPanelOpen: true,
+      areasPanelFilter: "mine",
+    });
+    renderMenu("/app/threads/t1");
+
+    await click(item("Map"));
+
+    expect(useSidebarStore.getState().areasPanelOpen).toBe(false);
+    expect(useSidebarStore.getState().menuOpen).toBe(false);
+  });
+
+  it("leaves other Areas tabs open when Map is picked", async () => {
+    useSidebarStore.setState({
+      areasPanelOpen: true,
+      areasPanelFilter: "boundaries",
+    });
+    renderMenu("/app/threads/t1");
+
+    await click(item("Map"));
+
+    expect(useSidebarStore.getState().areasPanelOpen).toBe(true);
+  });
+
   it("goes to the map for My areas from elsewhere, keeping the thread", async () => {
     useChatStore.setState({ currentThreadId: "t1" });
     renderMenu("/dashboards/d1");
