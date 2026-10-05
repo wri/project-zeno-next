@@ -11,7 +11,6 @@ import {
 import { useEffect, useState } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
-import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawer";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import CatalogPanel from "@/app/components/CatalogPanel";
@@ -114,7 +113,6 @@ export default function DashboardLayout({
           <ChatPanel />
         </Box>
       </Box>
-      <ConversationHistoryDrawer />
     </Box>
   );
 

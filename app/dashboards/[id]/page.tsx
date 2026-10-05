@@ -2,7 +2,6 @@
 
 import { Box } from "@chakra-ui/react";
 
-import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawer";
 import PageHeader from "@/app/components/PageHeader";
 import { CATALOG_COLUMN_Z_INDEX } from "@/app/explorationLayout";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
@@ -16,7 +15,6 @@ export default function DashboardDetailRoute() {
   return (
     <>
       <PageHeader />
-      <ConversationHistoryDrawer />
       <DashboardDetailPage />
       {/* Analyses pane overlay — opened from the chat input's "Analyses"
           button (sidebarStore). Mounted here (app layer) so the dashboards

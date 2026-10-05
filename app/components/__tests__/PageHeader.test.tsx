@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 /**
- * The slim header: menu button, logo with the PREVIEW badge, the Map and
- * Dashboards tabs, and the avatar. The active tab follows the route; state
- * items (prompt meter, What's new) sit left of the avatar.
+ * The slim header: menu button (opens the menu side bar), logo with the
+ * PREVIEW badge, the Map and Dashboards tabs, and the avatar (Settings and
+ * Logout, email on hover). The active tab follows the route; state items
+ * (prompt meter, What's new) sit left of the avatar.
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
@@ -10,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
+import useSidebarStore from "@/app/store/sidebarStore";
 import {
   WHATS_NEW_OPEN_EVENT,
   WHATS_NEW_STORAGE_KEY,
@@ -25,6 +27,7 @@ const router = vi.hoisted(() => ({ pathname: "/app" }));
 vi.mock("@/app/lib/router", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   usePathname: () => router.pathname,
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 // The panel itself is out of scope; the header only asks for it to open.
@@ -56,6 +59,7 @@ function activeTab() {
 describe("PageHeader", () => {
   beforeEach(() => {
     localStorage.clear();
+    useSidebarStore.setState({ menuOpen: false });
     useAuthStore.getState().setAuthStatus({
       email: "user@example.com",
       id: "u1",
@@ -93,6 +97,19 @@ describe("PageHeader", () => {
     renderHeader("/dashboard");
     expect(activeTab()).toBeNull();
   });
+
+  it("opens the menu side bar from the menu button", async () => {
+    renderHeader("/app");
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    });
+
+    expect(useSidebarStore.getState().menuOpen).toBe(true);
+    expect(
+      screen.getByRole("navigation", { name: "Destinations" })
+    ).toBeTruthy();
+  });
 });
 
 describe("PageHeader account menu", () => {
@@ -100,6 +117,7 @@ describe("PageHeader account menu", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    useSidebarStore.setState({ menuOpen: false });
     useAuthStore.getState().setAuthStatus({
       email: "user@example.com",
       id: "u1",
@@ -117,33 +135,39 @@ describe("PageHeader account menu", () => {
     expect(tooltip.textContent).toBe("user@example.com");
   });
 
-  it("lists Settings and Logout without repeating the email", async () => {
+  it("lists only Settings and Logout, without repeating the email", async () => {
     renderHeader("/app");
 
     await act(async () => {
       fireEvent.click(avatar());
     });
 
-    const menu = screen.getByRole("menu");
-    expect(screen.getByRole("menuitem", { name: /settings/i })).toBeTruthy();
-    expect(screen.getByRole("menuitem", { name: /logout/i })).toBeTruthy();
-    expect(menu.textContent).not.toContain("user@example.com");
+    const items = screen
+      .getAllByRole("menuitem")
+      .map((el) => el.textContent?.trim());
+    expect(items).toEqual(["Settings", "Logout"]);
+    expect(screen.getByRole("menu").textContent).not.toContain(
+      "user@example.com"
+    );
   });
 });
 
 describe("PageHeader What's new signal", () => {
   const headerIcon = () =>
     screen.queryByRole("button", { name: /what's new \(unread updates\)/i });
-  const menuBadge = () => screen.queryByTestId("whats-new-menu-badge");
+  // The menu side bar's What's new item carries the unread count badge.
+  const sideBarItem = () =>
+    screen.getByRole("button", { name: /^what's new/i });
 
-  async function openAccountMenu() {
+  async function openMenu() {
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /account menu/i }));
+      fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
     });
   }
 
   beforeEach(() => {
     localStorage.clear();
+    useSidebarStore.setState({ menuOpen: false });
     useAuthStore.getState().setAuthStatus({
       email: "user@example.com",
       id: "u1",
@@ -161,8 +185,8 @@ describe("PageHeader What's new signal", () => {
     const avatar = screen.getByRole("button", { name: /account menu/i });
     expect(precedes(icon!, avatar)).toBe(true);
 
-    await openAccountMenu();
-    expect(menuBadge()).toBeTruthy();
+    await openMenu();
+    expect(sideBarItem().textContent).toMatch(/\d+ items/);
   });
 
   it("opens What's new and clears both signals when the icon is clicked", async () => {
@@ -177,25 +201,25 @@ describe("PageHeader What's new signal", () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem(WHATS_NEW_STORAGE_KEY)).toBe("true");
     expect(headerIcon()).toBeNull();
-    await openAccountMenu();
-    expect(menuBadge()).toBeNull();
+    await openMenu();
+    expect(sideBarItem().textContent).toBe("What's new");
     window.removeEventListener(WHATS_NEW_OPEN_EVENT, onOpen);
   });
 
-  it("hides the icon and the menu badge once everything is read", async () => {
+  it("hides the icon and the side bar badge once everything is read", async () => {
     localStorage.setItem(WHATS_NEW_STORAGE_KEY, "true");
     renderHeader("/app");
 
     expect(headerIcon()).toBeNull();
-    await openAccountMenu();
-    expect(screen.getByRole("menuitem", { name: /what's new/i })).toBeTruthy();
-    expect(menuBadge()).toBeNull();
+    await openMenu();
+    expect(sideBarItem().textContent).toBe("What's new");
   });
 });
 
 describe("PageHeader prompt meter", () => {
   beforeEach(() => {
     localStorage.clear();
+    useSidebarStore.setState({ menuOpen: false });
     useAuthStore.getState().setAuthStatus({
       email: "user@example.com",
       id: "u1",
