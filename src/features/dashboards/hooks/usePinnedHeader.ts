@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 
 /** Height of the sticky global nav (`PageHeader`) the header pins beneath. */

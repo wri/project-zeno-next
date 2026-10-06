@@ -1,5 +1,3 @@
-"use client";
-
 import PageHeader from "@/app/components/PageHeader";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import { DashboardsPage } from "@/src/features/dashboards";

@@ -1,8 +1,6 @@
-"use client";
-
 import { useCallback } from "react";
 
-import { usePathname, useRouter } from "@/app/lib/router";
+import { usePathname, useRouter } from "@/src/shared/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { newConversationTarget } from "@/app/utils/threadNavigation";

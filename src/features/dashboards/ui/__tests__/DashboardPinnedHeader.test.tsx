@@ -13,7 +13,7 @@ vi.mock("@/app/components/ui/toaster", () => ({
 }));
 
 // The breadcrumb renders a router Link; outside a router it needs a stand-in.
-vi.mock("@/app/lib/router", async (importOriginal) => ({
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
     <a href={href}>{children}</a>

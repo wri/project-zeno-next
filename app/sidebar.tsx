@@ -11,7 +11,7 @@ import {
   Badge,
   Progress,
 } from "@chakra-ui/react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {

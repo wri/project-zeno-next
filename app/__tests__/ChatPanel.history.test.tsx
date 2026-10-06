@@ -24,7 +24,7 @@ vi.mock("@/app/components/ui/toaster", () => ({
   Toaster: () => null,
 }));
 
-vi.mock("@/app/lib/router", async (importOriginal) => ({
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   usePathname: () => "/app/threads/t1",
   useRouter: () => ({ push: vi.fn() }),

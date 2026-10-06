@@ -9,7 +9,7 @@ import {
 } from "./lgms-metadata";
 
 const EOAPI_HOST =
-  process.env.NEXT_PUBLIC_EOAPI_HOST ||
+  import.meta.env.NEXT_PUBLIC_EOAPI_HOST ||
   "https://eoapi-cache.globalnaturewatch.org/";
 
 // UI card config that may omit some DatasetInfo fields; we'll fill defaults

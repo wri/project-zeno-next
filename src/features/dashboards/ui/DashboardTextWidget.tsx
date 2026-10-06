@@ -1,5 +1,3 @@
-"use client";
-
 import { Box } from "@chakra-ui/react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";

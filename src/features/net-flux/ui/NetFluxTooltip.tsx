@@ -1,4 +1,3 @@
-"use client";
 import { FluxTooltip } from "@/src/shared/ui/FluxTooltip";
 
 import {

@@ -1,5 +1,3 @@
-"use client";
-
 import { Text } from "@chakra-ui/react";
 
 import { Legend } from "@/app/components/legend/Legend";

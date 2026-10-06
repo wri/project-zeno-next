@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Analytics — per-turn rows from the Zeno API, organised into product-focused
  * tabs. Data auto-fetches when filters change; the previous window of equal

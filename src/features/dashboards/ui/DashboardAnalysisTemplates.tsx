@@ -1,5 +1,3 @@
-"use client";
-
 import { Fragment } from "react";
 import { Box, Flex, Grid, Image, Text, type GridProps } from "@chakra-ui/react";
 import { ShapesIcon } from "@phosphor-icons/react";

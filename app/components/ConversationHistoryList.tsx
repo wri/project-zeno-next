@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useRef, useState } from "react";
 import {
   Accordion,
@@ -11,7 +9,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 
-import { Link, usePathname } from "@/app/lib/router";
+import { Link, usePathname } from "@/src/shared/lib/router";
 import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import ThreadActionsMenu from "./ThreadActionsMenu";
@@ -21,14 +19,11 @@ import { threadClickTarget } from "@/app/utils/threadNavigation";
 
 /**
  * The current `location.search`, captured once on mount (mirroring
- * `useFeatureFlag`): the URL only exists client-side, and the first-message
- * thread rewrite can drop query params mid-session — the mount-time value is
- * the trustworthy one.
+ * `useFeatureFlag`): the first-message thread rewrite can drop query params
+ * mid-session — the mount-time value is the trustworthy one.
  */
-function useMountSearch(): string | null {
-  const [search] = useState(() =>
-    typeof window === "undefined" ? null : window.location.search
-  );
+function useMountSearch(): string {
+  const [search] = useState(() => window.location.search);
   return search;
 }
 

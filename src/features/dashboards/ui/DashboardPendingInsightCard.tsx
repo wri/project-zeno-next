@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Flex, Skeleton, Text } from "@chakra-ui/react";
 import { SpinnerGapIcon } from "@phosphor-icons/react";
 

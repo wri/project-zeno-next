@@ -1,4 +1,3 @@
-"use client";
 import "maplibre-gl/dist/maplibre-gl.css";
 import MapGl, {
   AttributionControl,
@@ -6,7 +5,7 @@ import MapGl, {
   Source,
   MapRef,
 } from "react-map-gl/maplibre";
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
@@ -44,7 +43,7 @@ import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { MAP_LEGEND_ATTR } from "@/app/explorationLayout";
 import { ImageryZoomHint } from "./map/ImageryZoomHint";
 
-const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
@@ -173,7 +172,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             buildBasemapTileUrl(
               basemapTiles,
               MAPBOX_ACCESS_TOKEN,
-              typeof window === "undefined" ? 1 : window.devicePixelRatio
+              window.devicePixelRatio
             ),
           ]}
         >
@@ -257,9 +256,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
               pointerEvents="all"
               hideBelow="md"
             >
-              <Suspense fallback={null}>
-                <DebugToastsPanel />
-              </Suspense>
+              <DebugToastsPanel />
             </Box>
             <Legend
               layers={layers}

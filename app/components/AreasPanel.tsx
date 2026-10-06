@@ -1,5 +1,3 @@
-"use client";
-
 import { Suspense, useEffect, useMemo, type ReactNode } from "react";
 import {
   Box,

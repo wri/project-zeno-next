@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Box,
   Flex,
@@ -31,13 +29,13 @@ import MenuSideBar from "./MenuSideBar";
 import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
-import { Link } from "@/app/lib/router";
-import { usePathname } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
+import { usePathname } from "@/src/shared/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
 import { openWhatsNew, useWhatsNewUnread } from "@/app/hooks/useWhatsNew";
 import { mapTabHref } from "@/app/utils/threadNavigation";
 
-const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
+const isPrototype = import.meta.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
 
 /**
