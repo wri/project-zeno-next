@@ -5,14 +5,16 @@ import useCookieStore from "@/app/store/cookieStore";
 import { URLS } from "@/app/constants/urls";
 
 export default function CookieBanner() {
-  const { consentStatus, hydrate, acceptAll, rejectNonEssential } =
+  const { consentStatus, hydrated, hydrate, acceptAll, rejectNonEssential } =
     useCookieStore();
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
 
-  if (consentStatus !== "pending") return null;
+  // Wait for the stored choice: prerendered pages and the first render must
+  // not show the banner to visitors who already chose.
+  if (!hydrated || consentStatus !== "pending") return null;
 
   return (
     <Box

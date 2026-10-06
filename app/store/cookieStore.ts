@@ -17,6 +17,8 @@ interface CookieStoredValue extends CookiePreferences {
 
 interface CookieState extends CookiePreferences {
   consentStatus: ConsentStatus;
+  // False until hydrate() has read the stored choice (browser only).
+  hydrated: boolean;
   preferencesOpen: boolean;
   hydrate: () => void;
   acceptAll: () => void;
@@ -45,6 +47,7 @@ const ALL_OFF: CookiePreferences = {
 
 const useCookieStore = create<CookieState>((set) => ({
   consentStatus: "pending",
+  hydrated: false,
   analytics: false,
   targetedAdvertising: false,
   personalization: false,
@@ -69,6 +72,8 @@ const useCookieStore = create<CookieState>((set) => ({
       });
     } catch {
       // corrupt storage — leave as pending
+    } finally {
+      set({ hydrated: true });
     }
   },
 

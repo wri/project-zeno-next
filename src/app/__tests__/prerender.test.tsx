@@ -11,5 +11,8 @@ describe("prerender", () => {
     const html = await render(`http://localhost${path}`);
     expect(html).toContain(text);
     expect(html).toContain("data-emotion");
+    // The consent choice lives in localStorage, so the banner must wait for
+    // the browser rather than ship in the static HTML.
+    expect(html).not.toContain("We use cookies");
   });
 });
