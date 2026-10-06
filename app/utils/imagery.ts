@@ -240,6 +240,23 @@ export function imageryCloudNote(meta: ImageryMeta): string | undefined {
   return `Searched with a loosened cloud-cover limit (${meta.maxCloudCover}%) — imagery may contain clouds.`;
 }
 
+/**
+ * Capture-row date, e.g. "15 Jun 2026". A Planet capture is a whole-month
+ * mosaic, so it is labelled by its month ("Aug 2026") from the start date:
+ * its target date is only the day the agent asked for, and is null when the
+ * agent asked for the latest mosaic.
+ */
+export function captureDateLabel(meta: ImageryMeta): string {
+  if (meta.provider === "planet" && meta.startDate) {
+    try {
+      return format(parseISO(meta.startDate), "MMM yyyy");
+    } catch {
+      return meta.startDate;
+    }
+  }
+  return meta.targetDate ? formatCaptureDate(meta.targetDate) : "";
+}
+
 export interface ImageryZoomTarget {
   zoom: number;
   /** Centre of the newest visible capture's AOI bounds, [lng, lat]. */
@@ -307,7 +324,7 @@ export function buildImageryGroup(
     return {
       layerId: layer.id,
       areaLabel: meta.aoiNames.join(", ") || layer.name,
-      dateLabel: meta.targetDate ? formatCaptureDate(meta.targetDate) : "",
+      dateLabel: captureDateLabel(meta),
       metaLabel: captureMetaLabel(meta),
       visible: layer.visible,
       live: index === 0,

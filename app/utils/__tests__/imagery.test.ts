@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildImageryGroup,
+  captureDateLabel,
   captureMetaLabel,
   formatCaptureDate,
   imageryAttribution,
@@ -245,6 +246,30 @@ describe("imageryCloudNote", () => {
   });
 });
 
+describe("captureDateLabel", () => {
+  it("labels a Sentinel-2 capture by its target date", () => {
+    expect(captureDateLabel(toImageryMeta(fullMeta))).toBe("15 Jun 2026");
+  });
+
+  it("labels a Planet capture by its mosaic month", () => {
+    expect(
+      captureDateLabel(
+        toImageryMeta({ ...planetMeta, target_date: "2026-07-20" })
+      )
+    ).toBe("Jul 2026");
+  });
+
+  it("labels the latest Planet mosaic, which has no target date", () => {
+    expect(
+      captureDateLabel(toImageryMeta({ ...planetMeta, target_date: null }))
+    ).toBe("Jul 2026");
+  });
+
+  it("is empty when there is no date to show", () => {
+    expect(captureDateLabel(toImageryMeta({}))).toBe("");
+  });
+});
+
 describe("captureMetaLabel", () => {
   it("combines cloud limit and scene count", () => {
     expect(captureMetaLabel(toImageryMeta(fullMeta))).toBe(
@@ -371,6 +396,38 @@ describe("buildImageryGroup", () => {
     );
     expect(group?.subtitle).toBe("Planet · Monthly mosaic");
     expect(group?.captures[0].metaLabel).toBe("");
+  });
+
+  it("dates every Planet capture, including the undated latest mosaic", () => {
+    const group = buildImageryGroup(
+      [
+        imageryLayer(
+          "imagery-planet:2025-08",
+          {},
+          {
+            ...planetMeta,
+            start_date: "2025-08-01",
+            end_date: "2025-08-31",
+            target_date: "2025-08-01",
+          }
+        ),
+        imageryLayer(
+          "imagery-planet:2026-08",
+          {},
+          {
+            ...planetMeta,
+            start_date: "2026-08-01",
+            end_date: "2026-08-31",
+            target_date: null,
+          }
+        ),
+      ],
+      false
+    );
+    expect(group?.captures.map((c) => c.dateLabel)).toEqual([
+      "Aug 2025",
+      "Aug 2026",
+    ]);
   });
 
   it("returns an updating stub when no capture has landed yet", () => {
