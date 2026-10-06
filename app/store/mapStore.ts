@@ -11,6 +11,8 @@ import {
 } from "./selectAnalysisSlice";
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
+import useSidebarStore from "@/app/store/sidebarStore";
+import { getMapCoveredLeftPx, getMapFitPadding } from "@/app/explorationLayout";
 import {
   LayerManagerSlice,
   createLayerManagerSlice,
@@ -49,6 +51,30 @@ export type MapState = MapSlice &
   UploadAreaSlice &
   LayerManagerSlice &
   SelectAnalysisSlice;
+
+/**
+ * fitBounds padding that keeps framed areas clear of the chat and catalog
+ * panels floating over the map's left edge. Desktop only (Chakra's md
+ * breakpoint): on mobile the chat is a bottom sheet.
+ */
+function fitPadding(map: ReturnType<MapRef["getMap"]>) {
+  const {
+    isChatFullSize,
+    isChatCollapsed,
+    dataCatalogOpen,
+    areasPanelOpen,
+    insightsPanelOpen,
+  } = useSidebarStore.getState();
+  const isDesktop = window.matchMedia("(min-width: 48rem)").matches;
+  const coveredLeftPx = isDesktop
+    ? getMapCoveredLeftPx(
+        isChatFullSize,
+        isChatCollapsed,
+        dataCatalogOpen || areasPanelOpen || insightsPanelOpen
+      )
+    : 0;
+  return getMapFitPadding(coveredLeftPx, map.getContainer().clientWidth);
+}
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
   set,
@@ -117,7 +143,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
       // Fit the map to the bounds with some padding
       map.fitBounds(bounds, {
         linear: true,
-        padding: { top: 50, bottom: 50, left: 50, right: 50 },
+        padding: fitPadding(map),
         maxZoom: 16, // Prevent zooming in too much for very small areas
       });
     } catch (error) {
@@ -139,14 +165,15 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     let eastUpdated = east;
     // MapLibre doesn't handle west > east wrapping — normalise by adding 360 to east.
     if (west > east) eastUpdated += 360;
-    mapRef.getMap().fitBounds(
+    const map = mapRef.getMap();
+    map.fitBounds(
       [
         [west, south],
         [eastUpdated, north],
       ],
       {
         linear: true,
-        padding: { top: 50, bottom: 50, left: 50, right: 50 },
+        padding: fitPadding(map),
         maxZoom: 16,
       }
     );

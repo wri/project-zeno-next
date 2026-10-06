@@ -6,7 +6,9 @@ import {
   getDashboardContentLeftPx,
   getMapAreaToolsLeftPx,
   getMapControlsLeftPx,
+  getMapCoveredLeftPx,
   getMapFeedbackLeftPx,
+  getMapFitPadding,
 } from "@/app/explorationLayout";
 
 describe("explorationLayout", () => {
@@ -72,5 +74,32 @@ describe("explorationLayout", () => {
 
   it("keeps dashboard content unshifted when the chat is compact", () => {
     expect(getDashboardContentLeftPx(false)).toBe(0);
+  });
+
+  it("covers the map up to the map controls while the chat is open", () => {
+    expect(getMapCoveredLeftPx(false, false, false)).toBe(420);
+    expect(getMapCoveredLeftPx(true, false, false)).toBe(436);
+    expect(getMapCoveredLeftPx(false, false, true)).toBe(816);
+  });
+
+  it("leaves the map uncovered when the compact chat is collapsed", () => {
+    expect(getMapCoveredLeftPx(false, true, false)).toBe(0);
+  });
+
+  it("covers only the catalog column when the chat is collapsed beside it", () => {
+    expect(getMapCoveredLeftPx(false, true, true)).toBe(408);
+  });
+
+  it("pads the fit past the covered strip", () => {
+    expect(getMapFitPadding(420, 1920)).toEqual({
+      top: 50,
+      bottom: 50,
+      right: 50,
+      left: 470,
+    });
+  });
+
+  it("falls back to even padding when the visible strip is too narrow", () => {
+    expect(getMapFitPadding(816, 1000).left).toBe(50);
   });
 });

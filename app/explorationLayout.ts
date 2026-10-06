@@ -102,3 +102,44 @@ export function getMapFeedbackLeftPx(
     ? getMapControlsLeftPx(true, false)
     : COMPACT_CHAT_INSET_PX;
 }
+
+/**
+ * Width of the map's left edge hidden under the floating exploration panels,
+ * for camera framing. A compact chat collapsed to its header bar leaves the
+ * map's height clear, so only an open catalog column then covers it.
+ */
+export function getMapCoveredLeftPx(
+  isChatFullSize: boolean,
+  isChatCollapsed: boolean,
+  isCatalogColumnOpen: boolean
+): number {
+  if (isChatCollapsed) {
+    return isCatalogColumnOpen
+      ? CATALOG_PANEL_WIDTH_PX + EXPLORATION_PANEL_GAP_PX
+      : 0;
+  }
+  return getMapControlsLeftPx(isChatFullSize, isCatalogColumnOpen);
+}
+
+export const MAP_FIT_PADDING_PX = 50;
+/** Narrowest visible strip still worth framing into. */
+const MIN_FRAMED_WIDTH_PX = 240;
+
+/**
+ * fitBounds padding that frames bounds in the part of the map the floating
+ * panels leave visible. Falls back to even padding when that strip is too
+ * narrow, since MapLibre refuses to fit and leaves the camera where it was.
+ */
+export function getMapFitPadding(
+  coveredLeftPx: number,
+  mapWidthPx: number
+): { top: number; bottom: number; left: number; right: number } {
+  const left = coveredLeftPx + MAP_FIT_PADDING_PX;
+  const visibleWidth = mapWidthPx - left - MAP_FIT_PADDING_PX;
+  return {
+    top: MAP_FIT_PADDING_PX,
+    bottom: MAP_FIT_PADDING_PX,
+    right: MAP_FIT_PADDING_PX,
+    left: visibleWidth >= MIN_FRAMED_WIDTH_PX ? left : MAP_FIT_PADDING_PX,
+  };
+}
