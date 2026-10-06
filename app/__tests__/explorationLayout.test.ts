@@ -90,16 +90,66 @@ describe("explorationLayout", () => {
     expect(getMapCoveredLeftPx(false, true, true)).toBe(408);
   });
 
-  it("pads the fit past the covered strip", () => {
-    expect(getMapFitPadding(420, 1920)).toEqual({
-      top: 50,
-      bottom: 50,
-      right: 50,
-      left: 470,
-    });
-  });
+  describe("getMapFitPadding", () => {
+    const desktopMap = { mapWidthPx: 1920, mapHeightPx: 1000 };
+    // A 420px legend 150px tall, inset 12px from the right and 28px from the bottom.
+    const legend = { fromRightPx: 432, fromBottomPx: 178 };
 
-  it("falls back to even padding when the visible strip is too narrow", () => {
-    expect(getMapFitPadding(816, 1000).left).toBe(50);
+    it("pads the fit past the covered strip", () => {
+      expect(
+        getMapFitPadding({
+          ...desktopMap,
+          coveredLeftPx: 420,
+          legend: null,
+          boundsPx: { width: 100, height: 100 },
+        })
+      ).toEqual({ top: 50, bottom: 50, right: 50, left: 470 });
+    });
+
+    it("falls back to even padding when the visible strip is too narrow", () => {
+      expect(
+        getMapFitPadding({
+          mapWidthPx: 1000,
+          mapHeightPx: 800,
+          coveredLeftPx: 816,
+          legend: null,
+          boundsPx: { width: 100, height: 100 },
+        })
+      ).toEqual({ top: 50, bottom: 50, right: 50, left: 50 });
+    });
+
+    it("frames a wide area above the legend", () => {
+      expect(
+        getMapFitPadding({
+          ...desktopMap,
+          coveredLeftPx: 420,
+          legend,
+          boundsPx: { width: 200, height: 100 },
+        })
+      ).toEqual({ top: 50, bottom: 228, right: 50, left: 470 });
+    });
+
+    it("frames a tall area beside the legend", () => {
+      expect(
+        getMapFitPadding({
+          ...desktopMap,
+          coveredLeftPx: 420,
+          legend,
+          boundsPx: { width: 100, height: 200 },
+        })
+      ).toEqual({ top: 50, bottom: 50, right: 482, left: 470 });
+    });
+
+    it("drops the legend clearance when no box fits above or beside it", () => {
+      expect(
+        getMapFitPadding({
+          mapWidthPx: 1100,
+          mapHeightPx: 500,
+          coveredLeftPx: 420,
+          legend: { fromRightPx: 432, fromBottomPx: 300 },
+          boundsPx: { width: 100, height: 100 },
+        })
+      ).toEqual({ top: 50, bottom: 50, right: 50, left: 470 });
+    });
   });
 });

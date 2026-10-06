@@ -12,7 +12,12 @@ import {
 import { StateCreator } from "zustand";
 import { showError } from "@/app/hooks/useErrorHandler";
 import useSidebarStore from "@/app/store/sidebarStore";
-import { getMapCoveredLeftPx, getMapFitPadding } from "@/app/explorationLayout";
+import {
+  CornerFootprint,
+  MAP_LEGEND_ATTR,
+  getMapCoveredLeftPx,
+  getMapFitPadding,
+} from "@/app/explorationLayout";
 import {
   LayerManagerSlice,
   createLayerManagerSlice,
@@ -52,12 +57,29 @@ export type MapState = MapSlice &
   LayerManagerSlice &
   SelectAnalysisSlice;
 
+type MapInstance = ReturnType<MapRef["getMap"]>;
+type Bounds = [[number, number], [number, number]];
+
+/** How far the legend reaches into the map from its corner, if it's showing. */
+function measureLegend(container: HTMLElement): CornerFootprint | null {
+  const legend = container
+    .querySelector(`[${MAP_LEGEND_ATTR}]`)
+    ?.getBoundingClientRect();
+  if (!legend?.width || !legend.height) return null;
+  const map = container.getBoundingClientRect();
+  return {
+    fromRightPx: map.right - legend.left,
+    fromBottomPx: map.bottom - legend.top,
+  };
+}
+
 /**
- * fitBounds padding that keeps framed areas clear of the chat and catalog
- * panels floating over the map's left edge. Desktop only (Chakra's md
- * breakpoint): on mobile the chat is a bottom sheet.
+ * fitBounds padding that keeps framed areas clear of the map's floating
+ * chrome: the chat and catalog panels over its left edge (desktop only,
+ * Chakra's md breakpoint: on mobile the chat is a bottom sheet) and the
+ * legend in its bottom-right corner.
  */
-function fitPadding(map: ReturnType<MapRef["getMap"]>) {
+function fitPadding(map: MapInstance, [sw, ne]: Bounds) {
   const {
     isChatFullSize,
     isChatCollapsed,
@@ -73,7 +95,46 @@ function fitPadding(map: ReturnType<MapRef["getMap"]>) {
         dataCatalogOpen || areasPanelOpen || insightsPanelOpen
       )
     : 0;
-  return getMapFitPadding(coveredLeftPx, map.getContainer().clientWidth);
+  const container = map.getContainer();
+  const swPx = map.project(sw);
+  const nePx = map.project(ne);
+  return getMapFitPadding({
+    mapWidthPx: container.clientWidth,
+    mapHeightPx: container.clientHeight,
+    coveredLeftPx,
+    legend: measureLegend(container),
+    boundsPx: {
+      width: Math.abs(nePx.x - swPx.x),
+      height: Math.abs(swPx.y - nePx.y),
+    },
+  });
+}
+
+function showNavigationError(error: unknown) {
+  console.error("Error framing the map on an area:", error);
+  showError("Unable to navigate to the selected area on the map.", {
+    title: "Map Navigation Error",
+    duration: 5000,
+  });
+}
+
+/**
+ * Fit the map to bounds clear of its floating chrome. Waits a frame so the
+ * legend has rendered any area just added: pick_aoi, uploads and the area
+ * tools add the layer (and its legend chip) right before framing it.
+ */
+function fitBoundsClear(map: MapInstance, bounds: Bounds) {
+  requestAnimationFrame(() => {
+    try {
+      map.fitBounds(bounds, {
+        linear: true,
+        padding: fitPadding(map, bounds),
+        maxZoom: 16, // Prevent zooming in too much for very small areas
+      });
+    } catch (error) {
+      showNavigationError(error);
+    }
+  });
 }
 
 const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
@@ -138,20 +199,9 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
         [bboxArray[2], bboxArray[3]], // northeast
       ];
 
-      const map = mapRef.getMap();
-
-      // Fit the map to the bounds with some padding
-      map.fitBounds(bounds, {
-        linear: true,
-        padding: fitPadding(map),
-        maxZoom: 16, // Prevent zooming in too much for very small areas
-      });
+      fitBoundsClear(mapRef.getMap(), bounds);
     } catch (error) {
-      console.error("Error flying to GeoJSON bounds:", error);
-      showError("Unable to navigate to the selected area on the map.", {
-        title: "Map Navigation Error",
-        duration: 5000,
-      });
+      showNavigationError(error);
     }
   },
 
@@ -165,18 +215,10 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     let eastUpdated = east;
     // MapLibre doesn't handle west > east wrapping — normalise by adding 360 to east.
     if (west > east) eastUpdated += 360;
-    const map = mapRef.getMap();
-    map.fitBounds(
-      [
-        [west, south],
-        [eastUpdated, north],
-      ],
-      {
-        linear: true,
-        padding: fitPadding(map),
-        maxZoom: 16,
-      }
-    );
+    fitBoundsClear(mapRef.getMap(), [
+      [west, south],
+      [eastUpdated, north],
+    ]);
   },
 
   flyToGeoJsonWithRetry: (geoJson, maxRetries = 5) => {
