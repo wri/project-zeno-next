@@ -507,6 +507,15 @@ describe("imageryZoomTarget", () => {
     expect(target?.center).toEqual([11, 11]);
   });
 
+  it("centres antimeridian-crossing bounds on the antimeridian", () => {
+    expect(
+      imageryZoomTarget([layer({ bounds: [170, -10, -170, 10] })], 5)?.center
+    ).toEqual([180, 0]);
+    expect(
+      imageryZoomTarget([layer({ bounds: [175, -10, -165, 10] })], 5)?.center
+    ).toEqual([-175, 0]);
+  });
+
   it("leaves the centre unset when the imagery has no bounds", () => {
     expect(
       imageryZoomTarget([layer({ bounds: undefined })], 5)?.center

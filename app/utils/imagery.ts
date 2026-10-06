@@ -297,10 +297,25 @@ export function imageryZoomTarget(
   const bounds = visible.find((l) => l.bounds)?.bounds;
   return {
     zoom: target,
-    center: bounds
-      ? [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2]
-      : undefined,
+    center: bounds ? boundsExtent(bounds).center : undefined,
   };
+}
+
+/**
+ * Longitude span and [lng, lat] centre of [west, south, east, north] bounds.
+ * Bounds crossing the antimeridian have west > east, so the span wraps
+ * through 180 rather than running the other way round the globe.
+ */
+function boundsExtent([west, south, east, north]: [
+  number,
+  number,
+  number,
+  number,
+]): { lonSpan: number; center: [number, number] } {
+  const lonSpan = west > east ? 360 - west + east : east - west;
+  let lonCenter = west + lonSpan / 2;
+  if (lonCenter > 180) lonCenter -= 360;
+  return { lonSpan, center: [lonCenter, (south + north) / 2] };
 }
 
 /**
@@ -404,9 +419,11 @@ export function imageryThumbnailUrl(
   maxzoom = 22
 ): string | undefined {
   if (!bounds) return undefined;
-  const [west, south, east, north] = bounds;
-  const crossesDateline = west > east;
-  const lonSpan = crossesDateline ? 360 - west + east : east - west;
+  const [, south, , north] = bounds;
+  const {
+    lonSpan,
+    center: [lonCenter, latCenter],
+  } = boundsExtent(bounds);
   const latSpan = north - south;
   const maxSpan = Math.max(lonSpan, latSpan);
   if (!(maxSpan > 0)) return undefined;
@@ -415,10 +432,6 @@ export function imageryThumbnailUrl(
     Math.max(Math.ceil(Math.log2(360 / maxSpan)), minzoom),
     maxzoom
   );
-
-  let lonCenter = west + lonSpan / 2;
-  if (lonCenter > 180) lonCenter -= 360;
-  const latCenter = (south + north) / 2;
 
   const n = 2 ** zoom;
   const x = Math.min(Math.floor(((lonCenter + 180) / 360) * n), n - 1);
