@@ -46,6 +46,7 @@ import { BoundariesList } from "./BoundariesList";
 import { AreaCatalogThumbnail } from "./AreaCatalogThumbnail";
 import { Tooltip } from "./ui/tooltip";
 import type { AOISelection } from "@/app/types/chat";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 /** Matches CatalogPanel compact/full-size enter & exit (slide from the left). */
 const areasPanelSlideTransition = {
@@ -124,7 +125,10 @@ export default function AreasPanel() {
           transition={areasPanelSlideTransition}
           style={getCatalogColumnMotionStyle(leftPx)}
         >
-          <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
+          <Flex
+            {...getCatalogColumnPanelFlexProps(isChatFullSize)}
+            {...tourAnchor(TOUR_ANCHORS.areasPanel)}
+          >
             <AreasPanelHeader onClose={() => setAreasPanelOpen(false)} />
             <Flex
               flex={1}
@@ -228,7 +232,11 @@ function AreasPanelHeader({ onClose }: { onClose: () => void }) {
           Areas
         </Text>
       </Flex>
-      <Flex alignItems="center" gap="12px">
+      <Flex
+        alignItems="center"
+        gap="12px"
+        {...tourAnchor(TOUR_ANCHORS.areaTools)}
+      >
         <AreaToolbarButtons />
 
         <Box w="1px" h="16px" bg="#E0E2E5" flexShrink={0} />

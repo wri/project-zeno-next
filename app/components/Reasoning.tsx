@@ -21,6 +21,7 @@ import remarkBreaks from "remark-breaks";
 import { formatToolName } from "@/app/lib/tool-display";
 import useMapStore from "@/app/store/mapStore";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 // Strip leading whitespace from each line so indented template literals
 // in the API response don't get treated as Markdown code blocks (4+ spaces)
@@ -62,6 +63,7 @@ function Reasoning({
   if (isLoading) {
     return (
       <Flex
+        {...tourAnchor(TOUR_ANCHORS.reasoning)}
         justifyContent="flex-start"
         alignItems="center"
         gap="2"
@@ -104,6 +106,7 @@ function Reasoning({
   if (!isLoading && toolSteps.length > 0) {
     return (
       <Collapsible.Root
+        {...tourAnchor(TOUR_ANCHORS.reasoning)}
         open={isOpen}
         onOpenChange={(e) => setIsOpen(e.open)}
         mb={4}

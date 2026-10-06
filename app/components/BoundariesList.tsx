@@ -15,6 +15,7 @@ import { type LayerId, selectLayerOptions } from "@/app/types/map";
 
 import { CatalogCard } from "./CatalogCard";
 import { AREA_LABEL_COLOR } from "./AreaCardMenu";
+import { boundaryCardAnchor, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 const BOUNDARY_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
 
@@ -66,7 +67,12 @@ function BoundaryCard({
   const setSelectAreaLayer = useMapStore((s) => s.setSelectAreaLayer);
 
   return (
-    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
+    <Box
+      w={`${CATALOG_CARD_WIDTH_PX}px`}
+      maxW="100%"
+      flexShrink={0}
+      {...tourAnchor(boundaryCardAnchor(id))}
+    >
       <CatalogCard
         thumbnail={<BoundaryThumbnail id={id} />}
         typeLabel="BOUNDARIES"

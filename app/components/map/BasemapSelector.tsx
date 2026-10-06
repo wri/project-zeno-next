@@ -8,6 +8,7 @@ import {
   Heading,
 } from "@chakra-ui/react";
 import { CheckIcon, MapTrifoldIcon } from "@phosphor-icons/react";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 export type BasemapTheme = "light" | "dark";
 
@@ -77,6 +78,7 @@ export function BasemapSelector({
     <Popover.Root positioning={{ placement: "top-start", strategy: "fixed" }}>
       <Popover.Trigger asChild>
         <IconButton
+          {...tourAnchor(TOUR_ANCHORS.basemapButton)}
           display={display}
           variant="subtle"
           size="lg"
