@@ -25,22 +25,31 @@ const treeCoverLoss: Layer = {
   datasetId: 4,
 };
 
-const contextSubLayer = (name: string): Layer => ({
-  id: `dataset-4-ctx-${name}`,
+const integratedAlerts: Layer = {
+  id: "dataset-11",
+  name: "Integrated alerts",
+  type: "raster",
+  visible: true,
+  tileUrl: "https://example.test/alerts/{z}/{x}/{y}.png",
+  datasetId: 11,
+};
+
+const contextSubLayer = (name: string, parent: Layer): Layer => ({
+  id: `${parent.id}-ctx-${name}`,
   name,
   type: "vector",
   visible: true,
   tileUrl: "https://example.test/ctx/{z}/{x}/{y}.pbf",
   sourceLayer: name,
-  datasetId: 4,
-  parentLayerId: "dataset-4",
+  datasetId: parent.datasetId,
+  parentLayerId: parent.id,
 });
 
-function contextLayerFor(name: string) {
-  useMapStore.setState({ layers: [treeCoverLoss, contextSubLayer(name)] });
+function contextLayerFor(name: string, parent: Layer = treeCoverLoss) {
+  useMapStore.setState({ layers: [parent, contextSubLayer(name, parent)] });
   const { result } = renderHook(() => useLegendHook());
-  const parent = result.current.layers.find((l) => l.id === "dataset-4");
-  return parent && "contextLayer" in parent ? parent.contextLayer : undefined;
+  const entry = result.current.layers.find((l) => l.id === parent.id);
+  return entry && "contextLayer" in entry ? entry.contextLayer : undefined;
 }
 
 describe("useLegendHook context sub-layers", () => {
@@ -63,5 +72,14 @@ describe("useLegendHook context sub-layers", () => {
 
     expect(contextLayer?.title).toBe("Primary Forests (2001)");
     expect(contextLayer?.symbology).toBeUndefined();
+  });
+
+  it("names the natural lands filter under Integrated alerts", () => {
+    // Without metadata the row falls back to the raw backend key
+    // ("natural_lands") and a grey swatch.
+    const contextLayer = contextLayerFor("natural_lands", integratedAlerts);
+
+    expect(contextLayer?.title).toBe("SBTN Natural lands (2020)");
+    expect(contextLayer?.symbology).toBeTruthy();
   });
 });
