@@ -42,6 +42,7 @@ import useChatStore from "@/app/store/chatStore";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
 import { MAP_LEGEND_ATTR } from "@/app/explorationLayout";
+import { ImageryZoomHint } from "./map/ImageryZoomHint";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -218,7 +219,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <DisclaimerPanel />
         </Box>
-        {/* Right overlay column: insight panel (top, scrollable) + legend (bottom).
+        {/* Right overlay column: insight panel (top, scrollable) + imagery zoom
+            hint + legend (bottom). The hint's width math assumes this
+            column's 420px width and right={3} (ImageryZoomHint.tsx).
             Base: spans the viewport (a fixed 420px would overhang narrow phones)
             and starts below the floating hamburger + header pill. */}
         <Flex
@@ -238,6 +241,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           )}
           {/* Spacer: pushes legend to the bottom */}
           <Box flex="1 1 0" minH="0" />
+          <ImageryZoomHint />
           <Box
             flexShrink={0}
             display={{ base: showLegend ? "block" : "none", md: "block" }}
