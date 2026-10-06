@@ -213,6 +213,18 @@ const SBTN_NATURAL_CLASSES = [
   { label: "bare", color: "#FEFECC" },
 ];
 
+/**
+ * What the `natural_lands` and `natural_forest` sub-layers draw. Each adds its
+ * own `info` saying what it restricts the parent dataset to.
+ */
+const SBTN_NATURAL_CONTEXT_LEGEND = {
+  title: SBTN_NATURAL_LANDS_TITLE,
+  color: SBTN_NATURAL_CLASSES[0].color,
+  items: SBTN_NATURAL_CLASSES,
+  type: "symbol",
+  note: "Natural classes of the SBTN Natural Lands Map (2020 baseline). This map may overestimate the extent of natural lands.",
+} satisfies Omit<DatasetLegendConfig, "info">;
+
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
     dataset_id: 100,
@@ -274,12 +286,22 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     context_layer: null as string | null,
     description: SBTN_NATURAL_LANDS_DESCRIPTION,
     legend: {
-      title: SBTN_NATURAL_LANDS_TITLE,
-      color: SBTN_NATURAL_CLASSES[0].color,
-      items: SBTN_NATURAL_CLASSES,
-      type: "symbol",
+      ...SBTN_NATURAL_CONTEXT_LEGEND,
       info: 'Alerts are restricted to natural lands in the SBTN Natural Lands Map (2020 baseline). "Natural" means an ecosystem that substantially resembles what would be found without major human impact, including regenerated and secondary ones; plantations, cropland and built areas are excluded.',
-      note: "Natural classes of the SBTN Natural Lands Map (2020 baseline). This map may overestimate the extent of natural lands.",
+    },
+  },
+  // Sub-layer rendered beneath Tree cover loss when the agent restricts it to
+  // natural forest (project-zeno#853). The backend draws it from the same
+  // raster as `natural_lands`, so the legend lists every class drawn and the
+  // info names the four the analysis counts.
+  natural_forest: {
+    dataset_id: 3,
+    dataset_name: "SBTN Natural Lands Map",
+    context_layer: null as string | null,
+    description: SBTN_NATURAL_LANDS_DESCRIPTION,
+    legend: {
+      ...SBTN_NATURAL_CONTEXT_LEGEND,
+      info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Other natural classes are shown for context but not counted. Covers loss from 2021 onward; no canopy cover threshold applies.",
     },
   },
 };

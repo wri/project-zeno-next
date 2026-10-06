@@ -82,4 +82,12 @@ describe("useLegendHook context sub-layers", () => {
     expect(contextLayer?.title).toBe("SBTN Natural lands (2020)");
     expect(contextLayer?.symbology).toBeTruthy();
   });
+
+  it("names the natural forest filter under Tree cover loss", () => {
+    const contextLayer = contextLayerFor("natural_forest");
+
+    expect(contextLayer?.title).toBe("SBTN Natural lands (2020)");
+    expect(contextLayer?.info).toMatch(/natural forest/);
+    expect(contextLayer?.symbology).toBeTruthy();
+  });
 });

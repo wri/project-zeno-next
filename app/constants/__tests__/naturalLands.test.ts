@@ -44,4 +44,13 @@ describe("SBTN Natural Lands context sub-layer legend", () => {
       { label: "non-natural", color: "#D3D3D3" },
     ]).toEqual(sbtnCard?.legend?.items);
   });
+
+  it("draws the same classes beneath Tree cover loss", () => {
+    // The backend serves `natural_forest` from the same tile URL as
+    // `natural_lands`; only what the parent dataset counts differs.
+    const naturalForest = CONTEXT_LAYER_METADATA.natural_forest;
+
+    expect(naturalForest.legend.items).toEqual(naturalLands.legend.items);
+    expect(naturalForest.legend.info).not.toBe(naturalLands.legend.info);
+  });
 });
