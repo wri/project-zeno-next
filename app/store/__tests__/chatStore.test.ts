@@ -23,7 +23,9 @@ import useChatStore from "../chatStore";
 import useViewContextStore from "../viewContextStore";
 import useAuthStore from "../authStore";
 import useAgentProfileStore from "../agentProfileStore";
+import useMapStore from "../mapStore";
 import { apiFetch } from "@/app/lib/api-client";
+import { deriveContext } from "@/app/utils/messageContext";
 import type {
   AnalyseSuggestion,
   Nudge,
@@ -841,6 +843,73 @@ describe("dashboard_updated stream signal → dashboard-card message", () => {
 
     expect(dashboardCards()).toHaveLength(1);
     expect(dashboardCards()[0].dashboardName).toBeUndefined();
+  });
+});
+
+// --- pick_dataset stream signal → lastSentContext.dataset fold ------------
+
+/**
+ * One NDJSON line as the backend streams it for a resolved pick_dataset
+ * turn: a tools node whose update carries the resolved `dataset` (a
+ * DatasetSelectionResult, snake_case as the backend emits it).
+ */
+function pickDatasetLine(dataset: Record<string, unknown>): string {
+  const update = {
+    dataset,
+    messages: [
+      {
+        lc: 1,
+        type: "constructor",
+        id: ["x"],
+        kwargs: {
+          content: "ok",
+          type: "tool",
+          name: "pick_dataset",
+          id: "m-pick-dataset",
+          response_metadata: {},
+        },
+      },
+    ],
+  };
+  return JSON.stringify({
+    node: "tools",
+    timestamp: "2026-07-30T00:00:00.000Z",
+    update: JSON.stringify(update),
+  });
+}
+
+describe("pick_dataset stream signal → lastSentContext.dataset fold", () => {
+  beforeEach(() => {
+    useChatStore.getState().reset();
+    useMapStore.getState().reset();
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  it("folds a multi-layer dataset pick to the same key deriveContext would compute from the resulting map layers", async () => {
+    vi.mocked(apiFetch).mockResolvedValue(
+      ndjsonResponse([
+        pickDatasetLine({
+          dataset_id: 12,
+          dataset_name: "Land GHG Monitoring System (LGMS)",
+          tile_url: "https://example.com/lulucf",
+          layers: [
+            { name: "lulucf", tile_url: "https://example.com/lulucf" },
+            {
+              name: "agriculture",
+              tile_url: "https://example.com/agriculture",
+            },
+          ],
+          reason: "test",
+        }),
+      ])
+    );
+
+    await useChatStore.getState().sendMessage("show LGMS");
+
+    const foldedKey = useChatStore.getState().lastSentContext.dataset;
+    const { keys } = deriveContext(useMapStore.getState().layers, [], null);
+
+    expect(foldedKey).toBe(keys.dataset);
   });
 });
 

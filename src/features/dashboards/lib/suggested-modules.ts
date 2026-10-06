@@ -6,8 +6,8 @@ import {
   GrainsIcon,
   LeafIcon,
   LogIcon,
-  NotepadIcon,
   PlantIcon,
+  ReadCvLogoIcon,
   ScalesIcon,
   SirenIcon,
   SplitHorizontalIcon,
@@ -54,9 +54,9 @@ export type SuggestedModule = CuratedSuggestedModule | PromptSuggestedModule;
  * The lime cards in the "Suggested modules" row (Figma node 1475:4879), in
  * display order: every curated analysis first, in the suite's order (the
  * datasets of `CURATED_ANALYSES` in the analysis slice; the lib test pins the
- * two lists to each other), then the chat-driven tiles. The row's two neutral
- * cards ("Text block", "Describe your own via the chat") are not modules and
- * live in the component.
+ * two lists to each other), then the chat-driven tiles. The grey row under
+ * them is `SUMMARISE_DASHBOARD_MODULE` plus two cards that are not modules
+ * ("Add a text block", "Create new section") and live in the component.
  *
  * A curated tile is only as available as its catalogue entry: the component
  * resolves each `datasetId` against the gated `curatedCatalogue()` and drops
@@ -158,16 +158,23 @@ export const SUGGESTED_MODULES: readonly SuggestedModule[] = [
     prompt: "Add a recent satellite imagery map of this area to the dashboard.",
     promptKind: "action",
   },
-  {
-    kind: "prompt",
-    id: "summarise-dashboard",
-    label: "Summarise the dashboard",
-    icon: NotepadIcon,
-    prompt:
-      "Summarize what this dashboard currently shows and add the summary to the dashboard as a text block.",
-    promptKind: "action",
-  },
 ];
+
+/**
+ * "Summarize this dashboard" — a prompt card, but a neutral one: it sits in
+ * the grey row with the direct dashboard edits ("Add a text block", "Create
+ * new section") rather than among the lime analyses, per the footer design
+ * (Figma node 3938:11909).
+ */
+export const SUMMARISE_DASHBOARD_MODULE: PromptSuggestedModule = {
+  kind: "prompt",
+  id: "summarise-dashboard",
+  label: "Summarize this dashboard",
+  icon: ReadCvLogoIcon,
+  prompt:
+    "Summarize what this dashboard currently shows and add the summary to the dashboard as a text block.",
+  promptKind: "action",
+};
 
 export const CURATED_SUGGESTED_MODULES: readonly CuratedSuggestedModule[] =
   SUGGESTED_MODULES.filter(

@@ -29,6 +29,7 @@ const containers = (): WidgetContainer[] => [
       title: "Fires",
       description: null,
       position: 0,
+      template: null,
       created_at: "2026-09-01T00:00:00Z",
     },
     widgets: [widget("x", 0, "s1"), widget("y", 1, "s1")],

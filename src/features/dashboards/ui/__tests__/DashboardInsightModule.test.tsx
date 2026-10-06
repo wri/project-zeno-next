@@ -304,7 +304,9 @@ describe("DashboardInsightModule", () => {
 
     it("shows the tree card's MEASURE pill, which has no DETAIL of its own", () => {
       renderModule({ widget: lgmsWidget() });
-      expect(screen.getByRole("button", { name: "MEASURE: Net" })).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: "MEASURE: Gross" })
+      ).toBeTruthy();
       expect(screen.queryByRole("button", { name: /^DETAIL/ })).toBeNull();
     });
 
@@ -386,6 +388,23 @@ describe("DashboardInsightModule", () => {
         withSummaryShown(config, false)
       )
     );
+  });
+
+  it("has no Customize menu for a single chart with no summary", () => {
+    renderModule({
+      widget: widget({
+        insight: {
+          id: "ins-1",
+          insight_text: null,
+          codeact_parts: [],
+          charts: [chart({ title: "Integrated alerts" })],
+        },
+      }),
+    });
+    expect(shownChart()).toBe("Integrated alerts");
+    expect(screen.queryByRole("button", { name: "Customize" })).toBe(null);
+    // Removing the widget is still the X.
+    expect(screen.getByLabelText("Remove from dashboard")).toBeTruthy();
   });
 
   it("names the lost arrangement when removing a customised module", async () => {

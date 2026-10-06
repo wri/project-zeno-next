@@ -14,6 +14,7 @@ import {
   deleteDashboard,
   deleteWidget,
   getDashboard,
+  listAnalysisTemplates,
   renameDashboard,
   updateWidget,
   updateSection,
@@ -33,6 +34,19 @@ export function useDashboard(id: string) {
     queryFn: () => getDashboard(id),
     enabled: id.length > 0,
     staleTime: 10_000,
+  });
+}
+
+/**
+ * The template registry, labels in the user's language. It only changes on a
+ * backend deploy, so one fetch per session is enough.
+ */
+export function useAnalysisTemplates(enabled = true) {
+  return useQuery({
+    queryKey: dashboardKeys.analysisTemplates,
+    queryFn: listAnalysisTemplates,
+    staleTime: Infinity,
+    enabled,
   });
 }
 
@@ -126,13 +140,16 @@ export function useDeleteDashboard() {
   });
 }
 
-// Shared optimistic-update plumbing for the widget mutations: snapshot the
-// cached dashboard, apply `apply` to its widgets, roll back on error and
-// refetch on settle (the server is the position/config authority).
-function useOptimisticDashboardMutation<TVars>(
+// Shared optimistic-update plumbing for the widget and section mutations:
+// snapshot the cached dashboard, apply `apply` to it, roll back on error and
+// refetch on settle (the server is the position/config authority). `onError`
+// runs after the rollback, on the mutation rather than the caller's
+// component, so it still runs when the change unmounted that component.
+export function useOptimisticDashboardMutation<TVars>(
   dashboardId: string,
   mutationFn: (vars: TVars) => Promise<unknown>,
-  apply: (dashboard: Dashboard, vars: TVars) => Dashboard
+  apply: (dashboard: Dashboard, vars: TVars) => Dashboard,
+  onError?: (error: Error) => void
 ) {
   const queryClient = useQueryClient();
   const key = dashboardKeys.detail(dashboardId);
@@ -147,8 +164,9 @@ function useOptimisticDashboardMutation<TVars>(
       }
       return { previous };
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) queryClient.setQueryData(key, context.previous);
+      onError?.(err);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: key });

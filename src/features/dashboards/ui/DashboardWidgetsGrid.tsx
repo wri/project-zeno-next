@@ -42,6 +42,7 @@ import DashboardWidgetCard from "./DashboardWidgetCard";
 import DashboardTextWidgetCard from "./DashboardTextWidgetCard";
 import DashboardWidgetBoundary from "./DashboardWidgetBoundary";
 import { usePendingInsightWidgets } from "./usePendingInsightWidget";
+import { useDeleteSection, useRenameSection } from "./useSectionEdits";
 import {
   DRAG_ITEM_ATTR,
   SECTION_ITEM_ATTR,
@@ -402,6 +403,8 @@ export default function DashboardWidgetsGrid({
   const isOwner = !!userId && userId === dashboard.user_id;
   const moveWidgets = useMoveWidgets(dashboard.id);
   const moveSections = useMoveSections(dashboard.id);
+  const renameSection = useRenameSection(dashboard.id);
+  const deleteSection = useDeleteSection(dashboard.id);
 
   // Read by the drop callbacks, which outlive the render that created them.
   const containersRef = useRef<WidgetContainer[]>([]);
@@ -548,6 +551,22 @@ export default function DashboardWidgetsGrid({
                   onMove={
                     section
                       ? (delta) => moveSection(sections.indexOf(section), delta)
+                      : undefined
+                  }
+                  moduleCount={container.widgets.length}
+                  onRename={
+                    section
+                      ? (title) =>
+                          renameSection.mutate({ sectionId: section.id, title })
+                      : undefined
+                  }
+                  onDelete={
+                    section
+                      ? (deleteWidgets) =>
+                          deleteSection.mutate({
+                            sectionId: section.id,
+                            deleteWidgets,
+                          })
                       : undefined
                   }
                   onArmDrag={

@@ -5,7 +5,11 @@ import type {
   DashboardSection,
   DashboardWidget,
 } from "../../api/schemas";
-import { computeSectionMove, widgetContainers } from "../dashboard-sections";
+import {
+  computeSectionMove,
+  widgetContainers,
+  withSectionRemoved,
+} from "../dashboard-sections";
 
 const section = (
   id: string,
@@ -16,6 +20,7 @@ const section = (
   title: `Section ${id}`,
   description: null,
   position,
+  template: null,
   created_at: "2026-09-01T00:00:00Z",
   ...overrides,
 });
@@ -185,5 +190,52 @@ describe("computeSectionMove", () => {
 
   it("ignores a section the dashboard does not have", () => {
     expect(computeSectionMove(sections, "zzz", 0)).toEqual([]);
+  });
+});
+
+describe("withSectionRemoved", () => {
+  const before = dashboard(
+    [section("a", 0), section("b", 1)],
+    [
+      widget("top0", 0),
+      widget("top1", 1),
+      widget("a1", 1, "a"),
+      widget("a0", 0, "a"),
+      widget("b0", 0, "b"),
+    ]
+  );
+
+  it("drops the section and its widgets when asked to", () => {
+    const after = withSectionRemoved(before, "a", true);
+
+    expect(after.sections.map((s) => s.id)).toEqual(["b"]);
+    expect(ids(after.widgets)).toEqual(["top0", "top1", "b0"]);
+  });
+
+  it("otherwise moves the widgets to the top level, in order, after the widgets there", () => {
+    const after = withSectionRemoved(before, "a", false);
+    const [topLevel, b] = widgetContainers(after);
+
+    expect(after.sections.map((s) => s.id)).toEqual(["b"]);
+    expect(topLevel.section).toBeNull();
+    expect(ids(topLevel.widgets)).toEqual(["top0", "top1", "a0", "a1"]);
+    expect(topLevel.widgets.map((w) => w.position)).toEqual([0, 1, 2, 3]);
+    expect(ids(b.widgets)).toEqual(["b0"]);
+  });
+
+  it("starts the moved widgets at 0 when the top level is empty", () => {
+    const after = withSectionRemoved(
+      dashboard(
+        [section("a", 0)],
+        [widget("a0", 4, "a"), widget("a1", 7, "a")]
+      ),
+      "a",
+      false
+    );
+
+    expect(after.widgets.map((w) => [w.id, w.position])).toEqual([
+      ["a0", 0],
+      ["a1", 1],
+    ]);
   });
 });

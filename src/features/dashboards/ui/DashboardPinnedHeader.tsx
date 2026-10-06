@@ -8,6 +8,9 @@ import DashboardBreadcrumb from "./DashboardBreadcrumb";
 import DashboardHeader from "./DashboardHeader";
 import { HERO_BAND_PROPS } from "./heroGrid";
 
+/** Marks the condensed header, so a scroll can land a panel below it. */
+export const PINNED_HEADER_ATTR = "data-dashboard-pinned-header";
+
 /**
  * Condensed header per the Figma "Dashboard default_Adaptative header banner"
  * frame: once the in-page header scrolls behind the global nav, a fixed strip
@@ -49,6 +52,7 @@ export default function DashboardPinnedHeader({
       transition="opacity 0.2s ease, transform 0.2s ease, visibility 0.2s, padding-left 0.2s ease-in-out"
       _motionReduce={{ transition: "none" }}
       aria-hidden={!pinned}
+      {...{ [PINNED_HEADER_ATTR]: "" }}
     >
       <Container maxW="1232px">
         <Flex direction="column" gap="12px">

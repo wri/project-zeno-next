@@ -23,7 +23,7 @@ import {
   withText,
   withWidgetTitle,
 } from "../widgets";
-import type { DashboardWidget } from "../../api/schemas";
+import type { Dashboard, DashboardWidget } from "../../api/schemas";
 
 function chart(overrides: Record<string, unknown> = {}) {
   return {
@@ -495,6 +495,43 @@ describe("insightModule", () => {
     expect(vm.allCharts).toEqual([]);
   });
 
+  it("offers Customize only when there is more than one piece to toggle", () => {
+    const withPieces = (
+      insight_text: string | null,
+      charts: ReturnType<typeof chart>[],
+      config: Record<string, unknown> = {}
+    ) =>
+      insightModule(
+        widget({
+          config,
+          insight: { id: "ins-1", insight_text, codeact_parts: null, charts },
+        })
+      ).customizable;
+
+    // A template's alerts chart: one chart, no summary — nothing to choose.
+    expect(withPieces(null, [chart()])).toBe(false);
+    expect(withPieces("   ", [chart()])).toBe(false);
+    expect(withPieces("Narrative.", [chart()])).toBe(true);
+    expect(withPieces(null, [chart(), chart({ id: "c-2", position: 1 })])).toBe(
+      true
+    );
+  });
+
+  it("keeps Customize when the only piece is hidden, so it can come back", () => {
+    const vm = insightModule(
+      widget({
+        config: { chartIds: [] },
+        insight: {
+          id: "ins-1",
+          insight_text: null,
+          codeact_parts: null,
+          charts: [chart()],
+        },
+      })
+    );
+    expect(vm.customizable).toBe(true);
+  });
+
   it("derives curated from the generation provenance, like the cards do", () => {
     // The default fixture has no codeact parts.
     expect(insightModule(widget()).curated).toBe(true);
@@ -570,11 +607,57 @@ describe("findCuratedWidgetForDataset", () => {
 });
 
 describe("hasDashboardContent", () => {
+  const empty: Dashboard = {
+    id: "d1",
+    user_id: "u1",
+    name: "Pará",
+    description: null,
+    is_public: false,
+    created_at: "2026-07-01T00:00:00Z",
+    updated_at: "2026-07-01T00:00:00Z",
+    aois: [],
+    sections: [],
+    widgets: [],
+  };
+  const withWidget: Dashboard = {
+    ...empty,
+    widgets: [
+      {
+        id: "w1",
+        position: 0,
+        widget_type: "text",
+        config: { text: "" },
+        created_at: "2026-07-01T00:00:00Z",
+      },
+    ],
+  };
+  const withEmptySection: Dashboard = {
+    ...empty,
+    sections: [
+      {
+        id: "s1",
+        title: "New section",
+        description: null,
+        position: 0,
+        template: null,
+        created_at: "2026-07-01T00:00:00Z",
+      },
+    ],
+  };
+  const owner = (pendingCount = 0) => ({ isOwner: true, pendingCount });
+
   it("shows the grid for real widgets, pending analyses, or both", () => {
-    expect(hasDashboardContent(0, 0)).toBe(false);
-    expect(hasDashboardContent(1, 0)).toBe(true);
-    expect(hasDashboardContent(0, 1)).toBe(true);
-    expect(hasDashboardContent(2, 3)).toBe(true);
+    expect(hasDashboardContent(empty, owner())).toBe(false);
+    expect(hasDashboardContent(withWidget, owner())).toBe(true);
+    expect(hasDashboardContent(empty, owner(1))).toBe(true);
+    expect(hasDashboardContent(withWidget, owner(3))).toBe(true);
+  });
+
+  it("shows the grid for an owner's empty section, as the grid keeps it", () => {
+    expect(hasDashboardContent(withEmptySection, owner())).toBe(true);
+    expect(
+      hasDashboardContent(withEmptySection, { isOwner: false, pendingCount: 0 })
+    ).toBe(false);
   });
 });
 

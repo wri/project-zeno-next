@@ -111,7 +111,7 @@ describe("deriveContext", () => {
     expect(uiContext.dataset_selected).toEqual({
       dataset: DATASET_BY_ID[datasetId],
     });
-    expect(keys.dataset).toBe(datasetId);
+    expect(keys.dataset).toBe(`${datasetId}:`);
     expect(uiContext.daterange_selected).toEqual({
       start_date: "2020-01-01",
       end_date: "2023-12-31",
@@ -122,6 +122,66 @@ describe("deriveContext", () => {
       start_date: "2020-01-01",
       end_date: "2023-12-31",
     });
+  });
+
+  it("names the one layer on the map and re-keys when it's switched", () => {
+    // Multi-layer siblings are mutually exclusive: switching layers in the
+    // catalog replaces the dataset's single map layer (buildDatasetLayers).
+    const lgmsLayer: Layer = {
+      id: "dataset-12",
+      name: "lgms",
+      type: "raster",
+      visible: true,
+      datasetId: 12,
+    };
+    const before = deriveContext([lgmsLayer], [], null);
+    const after = deriveContext(
+      [{ ...lgmsLayer, name: "agriculture" }],
+      [],
+      null
+    );
+
+    expect(before.uiContext.dataset_selected?.dataset.selected_layer).toBe(
+      "lgms"
+    );
+    expect(after.uiContext.dataset_selected?.dataset.selected_layer).toBe(
+      "agriculture"
+    );
+    expect(before.keys.dataset).not.toBe(after.keys.dataset);
+  });
+
+  it("still names the layer when only one sibling of a multi-layer dataset is active", () => {
+    const lulucfLayer: Layer = {
+      id: "dataset-12",
+      name: "lulucf",
+      type: "raster",
+      visible: true,
+      datasetId: 12,
+    };
+    const { uiContext, keys } = deriveContext([lulucfLayer], [], null);
+
+    expect(uiContext.dataset_selected?.dataset.selected_layer).toBe("lulucf");
+    // Distinguishable from both "12:" (single-layer dataset) and
+    // "12:agriculture" (the other sibling active instead).
+    expect(keys.dataset).toBe("12:lulucf");
+  });
+
+  it.each([
+    ["hidden via the eye toggle", { visible: false }],
+    ["faded out to opacity 0", { opacity: 0 }],
+  ])("names no selected_layer when the layer is %s", (_, hidden) => {
+    const agricultureLayer: Layer = {
+      id: "dataset-12",
+      name: "agriculture",
+      type: "raster",
+      visible: true,
+      datasetId: 12,
+      ...hidden,
+    };
+    const { uiContext, keys } = deriveContext([agricultureLayer], [], null);
+
+    expect(uiContext.dataset_selected?.dataset.selected_layer).toBeUndefined();
+    expect(keys.dataset).toBe("12:");
   });
 
   it("ignores hidden area layers and context sub-layers", () => {

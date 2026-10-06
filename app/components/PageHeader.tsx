@@ -4,9 +4,7 @@ import {
   Box,
   Flex,
   Heading,
-  Button,
   IconButton,
-  Progress,
   Badge,
   Menu,
   Portal,
@@ -14,85 +12,60 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
-  CaretDownIcon,
-  ClockCounterClockwiseIcon,
+  ChartLineIcon,
   GearSixIcon,
-  LifebuoyIcon,
-  PlusIcon,
+  ListIcon,
+  MapTrifoldIcon,
   ShootingStarIcon,
   SignOutIcon,
   UserIcon,
   InfoIcon,
 } from "@phosphor-icons/react";
 import { Tooltip } from "./ui/tooltip";
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
-import { motion, type Transition } from "framer-motion";
-import usePrefersReducedMotion from "@/app/hooks/usePrefersReducedMotion";
+import { useState, useEffect, useId, useRef } from "react";
 import PreviewInfoPanel from "./PreviewInfoPanel";
+import PromptQuotaMeter from "./PromptQuotaMeter";
+import WhatsNewModal from "./WhatsNewModal";
+import MenuSideBar from "./MenuSideBar";
 
 import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
 import useSidebarStore from "../store/sidebarStore";
-import ThreadActionsMenu from "./ThreadActionsMenu";
 import { Link } from "@/app/lib/router";
 import { usePathname } from "@/app/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
-import { useThreadsInfinite } from "@/app/hooks/useThreadsInfinite";
-import {
-  mapTabHref,
-  newConversationTarget,
-} from "@/app/utils/threadNavigation";
-import useMapStore from "../store/mapStore";
+import { openWhatsNew, useWhatsNewUnread } from "@/app/hooks/useWhatsNew";
+import { mapTabHref } from "@/app/utils/threadNavigation";
 
 const isPrototype = process.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
-const WHATS_NEW_STORAGE_KEY = "whats-new-v5-dismissed";
 
-// Exploration (uncommitted): measure the toggle before paint so the sliding
-// pill never flashes from a wrong spot. useLayoutEffect on the server warns,
-// so fall back to useEffect there.
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
-
+/**
+ * The app's slim header (Figma "Header states, Phase 5"): menu button, logo
+ * with the PREVIEW badge and the Map / Dashboards tabs on the left; state
+ * items (quota meter, What's new) and the avatar on the right.
+ */
 function PageHeader() {
-  const { userEmail, usedPrompts, totalPrompts, isAuthenticated } =
-    useAuthStore();
-  const { toggleSidebar } = useSidebarStore();
+  const { userEmail, isAuthenticated } = useAuthStore();
+  const setMenuOpen = useSidebarStore((s) => s.setMenuOpen);
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
-  const { threads } = useThreadsInfinite();
+  const whatsNewUnread = useWhatsNewUnread();
   const pathname = usePathname() ?? "";
+  // Shared by the avatar's tooltip and menu so both attach to one button.
+  const accountTriggerId = useId();
   const onMap = pathname.startsWith("/app");
   const onDashboards = pathname.startsWith("/dashboards");
 
-  const newConvo = newConversationTarget(pathname);
-  // Mirrors the /app NewThread mount reset. In place because the dashboard
-  // page hosts its own chat panel and its URL doesn't carry the conversation
-  // (ADR-003) — navigating would leave the page the user is working on.
-  const startNewConversationInPlace = () => {
-    useChatStore.getState().reset();
-    useMapStore.getState().reset();
-  };
-
-  const currentThread = currentThreadId
-    ? threads.find((t) => t.id === currentThreadId)
-    : undefined;
-  const currentThreadName = currentThread
-    ? currentThread.name
-    : "New Conversation";
-
-  const inverseColor = isPrototype ? "#1f2937" : "neutral.600";
-  const inverseHoverBg = isPrototype ? "#6b7280" : "neutral.200";
   const focusRing = {
     outline: "2px solid",
-    outlineColor: inverseColor,
+    outlineColor: isPrototype ? "#1f2937" : "neutral.600",
     outlineOffset: "2px",
     borderRadius: "sm",
   };
 
   const [disclaimerDismissed, setDisclaimerDismissed] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [showWhatsNewDot, setShowWhatsNewDot] = useState(false);
   const badgeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,14 +79,6 @@ function PageHeader() {
   }, []);
 
   useEffect(() => {
-    setShowWhatsNewDot(localStorage.getItem(WHATS_NEW_STORAGE_KEY) !== "true");
-    const handleDismissed = () => setShowWhatsNewDot(false);
-    window.addEventListener("gnw-whats-new-dismissed", handleDismissed);
-    return () =>
-      window.removeEventListener("gnw-whats-new-dismissed", handleDismissed);
-  }, []);
-
-  useEffect(() => {
     if (!panelOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (badgeRef.current && !badgeRef.current.contains(e.target as Node)) {
@@ -124,55 +89,29 @@ function PageHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [panelOpen]);
 
-  // --- Exploration (uncommitted): sliding active-indicator for the toggle ---
-  // PageHeader remounts on the /app <-> /dashboards route change, so there's no
-  // shared element to hand off. Both tabs are always rendered though, so on the
-  // new route the pill can spring in from the *now-inactive* tab — which is
-  // exactly where it sat on the previous route — giving a continuous slide with
-  // zero cross-mount state. Labels crossfade in step so the arriving label
-  // never flashes white-on-light mid-slide.
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const activeToggleIndex = onDashboards ? 1 : 0;
-  const fromToggleIndex = activeToggleIndex === 0 ? 1 : 0;
-  const toggleTrackRef = useRef<HTMLDivElement | null>(null);
-  const [toggleTabRects, setToggleTabRects] = useState<
-    Array<{ x: number; y: number; width: number; height: number }>
-  >([]);
-
-  useIsomorphicLayoutEffect(() => {
-    const track = toggleTrackRef.current;
-    if (!track) return;
-    const measure = () => {
-      const tabs = Array.from(
-        track.querySelectorAll<HTMLElement>("[data-toggle-tab]")
-      );
-      setToggleTabRects(
-        tabs.map((el) => ({
-          x: el.offsetLeft,
-          y: el.offsetTop,
-          width: el.offsetWidth,
-          height: el.offsetHeight,
-        }))
-      );
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [activeToggleIndex]);
-
-  const pillTransition: Transition = prefersReducedMotion
-    ? { duration: 0 }
-    : { type: "spring", stiffness: 520, damping: 42, mass: 0.9 };
-  const pillFrom =
-    toggleTabRects[prefersReducedMotion ? activeToggleIndex : fromToggleIndex];
-  const pillTo = toggleTabRects[activeToggleIndex];
+  const tabs = [
+    {
+      // Thread-aware: with a live conversation, land on its thread URL
+      // (which preserves state) instead of the resetting /app.
+      href: mapTabHref(currentThreadId),
+      label: "Map",
+      icon: MapTrifoldIcon,
+      active: onMap,
+    },
+    {
+      href: "/dashboards",
+      label: "Dashboards",
+      icon: ChartLineIcon,
+      active: onDashboards,
+    },
+  ];
 
   return (
     <Flex
       alignItems="center"
       justifyContent="space-between"
       gap="4"
-      px="3"
+      px="4"
       h="40px"
       bg={isPrototype ? "#d1d5db" : "white"}
       color={isPrototype ? "#1f2937" : "#131E47"}
@@ -183,399 +122,215 @@ function PageHeader() {
       position="sticky"
       top={0}
     >
-      <Flex gap="5" alignItems="center" minW={0}>
-        <Flex gap="2" alignItems="center">
-          <ChakraLink
-            as={Link}
-            href="/"
-            transition="opacity 0.24s ease"
-            _hover={{ opacity: 0.8 }}
-            _focusVisible={focusRing}
-          >
-            <Heading
-              as="h1"
-              size="sm"
-              color={isPrototype ? "#1f2937" : "#131E47"}
-            >
-              Global Nature Watch{" "}
-              <Text
-                as="span"
-                fontWeight="normal"
-                color={isPrototype ? "#1f2937" : "neutral.600"}
-              >
-                Horizon
-              </Text>
-            </Heading>
-          </ChakraLink>
-          {isPrototype ? (
-            <Badge
-              colorPalette="gray"
-              bg="#1f2937"
-              color="#f3f4f6"
-              letterSpacing="wider"
-              variant="solid"
-              size="xs"
-            >
-              PROTOTYPE
-            </Badge>
-          ) : (
-            <Box position="relative" ref={badgeRef}>
-              <Flex
-                as={disclaimerDismissed ? "button" : "span"}
-                align="center"
-                gap="4px"
-                h="20px"
-                px="4px"
-                py="2px"
-                borderRadius="4px"
-                bg="#E0E2E5"
-                border="none"
-                cursor={disclaimerDismissed ? "pointer" : "default"}
-                onClick={
-                  disclaimerDismissed
-                    ? () => setPanelOpen(!panelOpen)
-                    : undefined
-                }
-                aria-label={
-                  disclaimerDismissed ? "Open preview info" : undefined
-                }
-              >
-                <Text
-                  fontFamily="'IBM Plex Sans', sans-serif"
-                  fontStyle="normal"
-                  fontWeight="500"
-                  fontSize="10px"
-                  lineHeight="16px"
-                  color="#3A4048"
-                  flexShrink={0}
-                >
-                  PREVIEW
-                </Text>
-                {disclaimerDismissed && (
-                  <InfoIcon size={13} color="#3A4048" weight="fill" />
-                )}
-              </Flex>
-              {panelOpen && (
-                <PreviewInfoPanel onClose={() => setPanelOpen(false)} />
-              )}
-            </Box>
-          )}
-        </Flex>
-        <Flex gap="1" alignItems="center" hideBelow="md" minW={0}>
-          <Tooltip content="Conversation history" showArrow>
+      {/* Mounted with the header so What's new and the menu open on every
+          surface that shows the header (map and dashboards alike). */}
+      <WhatsNewModal />
+      <MenuSideBar />
+      <Flex gap="10" alignItems="center" alignSelf="stretch" minW={0}>
+        <Flex gap="3" alignItems="center">
+          <Tooltip content="Menu" showArrow>
             <IconButton
-              size="xs"
-              variant="ghost"
-              color={inverseColor}
-              _hover={{ bg: inverseHoverBg }}
+              hideBelow="md"
+              w="32px"
+              h="32px"
+              minW="32px"
+              borderRadius="4px"
+              bg="#F4F5F6"
+              color="#565E7B"
+              _hover={{ bg: "#E0E2E5" }}
               _focusVisible={focusRing}
-              onClick={toggleSidebar}
-              aria-label="Toggle conversation history"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
             >
-              <ClockCounterClockwiseIcon size={16} />
+              <ListIcon size={16} />
             </IconButton>
           </Tooltip>
-          {currentThread ? (
-            <ThreadActionsMenu thread={currentThread}>
-              <Button
-                variant="ghost"
-                size="xs"
-                color={inverseColor}
-                _hover={{ bg: inverseHoverBg }}
-                _focusVisible={focusRing}
-                px={0}
-                minW={0}
-                maxW="280px"
-                justifyContent="flex-start"
-                fontWeight="normal"
-                fontSize="xs"
-                gap="1"
-              >
-                <Tooltip content={currentThreadName} showArrow>
-                  <Text
-                    as="span"
-                    flex="1"
-                    minW={0}
-                    whiteSpace="nowrap"
-                    overflow="hidden"
-                    textOverflow="ellipsis"
-                  >
-                    {currentThreadName}
-                  </Text>
-                </Tooltip>
-                <CaretDownIcon size={12} />
-              </Button>
-            </ThreadActionsMenu>
-          ) : (
-            <Text
-              fontSize="xs"
-              color={inverseColor}
-              opacity={0.8}
-              px={0}
-              maxW="240px"
-              whiteSpace="nowrap"
-              overflow="hidden"
-              textOverflow="ellipsis"
+          <Flex gap="2" alignItems="center">
+            <ChakraLink
+              as={Link}
+              href="/"
+              transition="opacity 0.24s ease"
+              _hover={{ opacity: 0.8 }}
+              _focusVisible={focusRing}
             >
-              {currentThreadName}
-            </Text>
-          )}
-          <Tooltip content="New conversation" showArrow>
-            {newConvo.kind === "reset-in-place" ? (
-              <IconButton
-                size="xs"
-                variant="ghost"
-                color={inverseColor}
-                _hover={{ bg: inverseHoverBg }}
-                _focusVisible={focusRing}
-                aria-label="New conversation"
-                onClick={startNewConversationInPlace}
+              <Heading
+                as="h1"
+                size="sm"
+                color={isPrototype ? "#1f2937" : "#131E47"}
               >
-                <PlusIcon size={16} />
-              </IconButton>
+                Global Nature Watch{" "}
+                <Text
+                  as="span"
+                  fontWeight="normal"
+                  color={isPrototype ? "#1f2937" : "neutral.600"}
+                >
+                  Horizon
+                </Text>
+              </Heading>
+            </ChakraLink>
+            {isPrototype ? (
+              <Badge
+                colorPalette="gray"
+                bg="#1f2937"
+                color="#f3f4f6"
+                letterSpacing="wider"
+                variant="solid"
+                size="xs"
+              >
+                PROTOTYPE
+              </Badge>
             ) : (
-              <IconButton
-                asChild
-                size="xs"
-                variant="ghost"
-                color={inverseColor}
-                _hover={{ bg: inverseHoverBg }}
-                _focusVisible={focusRing}
-              >
-                <Link href={newConvo.href} aria-label="New conversation">
-                  <PlusIcon size={16} />
-                </Link>
-              </IconButton>
+              <Box position="relative" ref={badgeRef}>
+                <Flex
+                  as={disclaimerDismissed ? "button" : "span"}
+                  align="center"
+                  gap="4px"
+                  h="20px"
+                  px="4px"
+                  py="2px"
+                  borderRadius="4px"
+                  bg="#E0E2E5"
+                  border="none"
+                  cursor={disclaimerDismissed ? "pointer" : "default"}
+                  onClick={
+                    disclaimerDismissed
+                      ? () => setPanelOpen(!panelOpen)
+                      : undefined
+                  }
+                  aria-label={
+                    disclaimerDismissed ? "Open preview info" : undefined
+                  }
+                >
+                  <Text
+                    fontFamily="'IBM Plex Sans', sans-serif"
+                    fontStyle="normal"
+                    fontWeight="500"
+                    fontSize="10px"
+                    lineHeight="16px"
+                    color="#3A4048"
+                    flexShrink={0}
+                  >
+                    PREVIEW
+                  </Text>
+                  {disclaimerDismissed && (
+                    <InfoIcon size={13} color="#3A4048" weight="fill" />
+                  )}
+                </Flex>
+                {panelOpen && (
+                  <PreviewInfoPanel onClose={() => setPanelOpen(false)} />
+                )}
+              </Box>
             )}
-          </Tooltip>
+          </Flex>
+        </Flex>
+        <Flex
+          as="nav"
+          aria-label="Main"
+          gap="1"
+          alignSelf="stretch"
+          hideBelow="md"
+        >
+          {tabs.map(({ href, label, icon: TabIcon, active }) => (
+            <ChakraLink
+              key={label}
+              as={Link}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              display="flex"
+              alignItems="center"
+              gap="2"
+              px="3"
+              h="full"
+              borderBottom="2px solid"
+              borderColor={active ? "#0049AA" : "transparent"}
+              bg={active ? "#F0F4FF" : "transparent"}
+              color={active ? "#0049AA" : "#565E7B"}
+              fontSize="sm"
+              fontWeight="medium"
+              lineHeight="1.4"
+              letterSpacing="0.0076em"
+              textDecoration="none"
+              transition="background 0.16s ease, color 0.16s ease"
+              _hover={{
+                textDecoration: "none",
+                bg: active ? "#F0F4FF" : "#F4F5F6",
+                color: active ? "#0049AA" : "#3A4048",
+              }}
+              _focusVisible={focusRing}
+            >
+              <TabIcon size={16} />
+              {label}
+            </ChakraLink>
+          ))}
         </Flex>
       </Flex>
-      <Flex
-        // Segmented control (Figma node 897-4655): a Primary/100 track that
-        // holds a single solid Primary/500 pill marking the active view. The
-        // design's same-coloured 1px border is omitted (invisible against the
-        // track). Vertical padding is trimmed to 2px (from the design's 4px)
-        // so the 28px pill clears the header's 4px lime top border with room
-        // to breathe (32px total) instead of filling the 40px bar flush.
-        ref={toggleTrackRef}
-        gap="1"
-        px="1"
-        py="0.5"
-        bg="#F0F4FF"
-        borderRadius="8px"
-        alignItems="center"
-        hideBelow="md"
-        position="absolute"
-        left="50%"
-        transform="translateX(-50%)"
-      >
-        {pillFrom && pillTo && (
-          <motion.div
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              borderRadius: 4,
-              background: "#0049AA",
-              boxShadow: "0px 1px 2px 0px rgba(0, 0, 0, 0.05)",
-              zIndex: 0,
-              pointerEvents: "none",
-            }}
-            initial={{
-              x: pillFrom.x,
-              y: pillFrom.y,
-              width: pillFrom.width,
-              height: pillFrom.height,
-            }}
-            animate={{
-              x: pillTo.x,
-              y: pillTo.y,
-              width: pillTo.width,
-              height: pillTo.height,
-            }}
-            transition={pillTransition}
-          />
-        )}
-        {[
-          {
-            // Thread-aware: with a live conversation, land on its thread
-            // URL (which preserves state) instead of the resetting /app.
-            href: mapTabHref(currentThreadId),
-            label: "Map",
-            active: onMap,
-          },
-          {
-            href: "/dashboards",
-            label: "Dashboards",
-            active: onDashboards,
-          },
-        ].map(({ href, label, active }) => (
-          <Button
-            key={href}
-            asChild
-            size="xs"
-            variant="ghost"
-            position="relative"
-            zIndex={1}
-            h="28px"
-            minW={0}
-            px="2.5"
-            py="1"
-            borderRadius="4px"
-            fontSize="sm"
-            lineHeight="20px"
-            fontWeight="semibold"
-            bg="transparent"
-            _hover={{ bg: active ? "transparent" : "primary.50" }}
-            _focusVisible={focusRing}
-          >
-            <Link
-              href={href}
-              data-toggle-tab
-              aria-current={active ? "page" : undefined}
+      <Flex gap="4" alignItems="center" hideBelow="md">
+        {/* State items (quota meter, What's new) sit left of the avatar. */}
+        <PromptQuotaMeter />
+        {whatsNewUnread && (
+          <Tooltip content="What's new" showArrow>
+            <IconButton
+              position="relative"
+              overflow="visible"
+              w="32px"
+              h="32px"
+              minW="32px"
+              borderRadius="4px"
+              bg="#F4F5F6"
+              color="#565E7B"
+              _hover={{ bg: "#E0E2E5" }}
+              _focusVisible={focusRing}
+              onClick={openWhatsNew}
+              aria-label="What's new (unread updates)"
             >
-              <motion.span
-                initial={{
-                  color: prefersReducedMotion
-                    ? active
-                      ? "#ffffff"
-                      : "#4A64CB"
-                    : active
-                      ? "#4A64CB"
-                      : "#ffffff",
-                }}
-                animate={{ color: active ? "#ffffff" : "#4A64CB" }}
-                transition={{
-                  duration: prefersReducedMotion ? 0 : 0.24,
-                  ease: "easeOut",
-                }}
-                style={{ display: "inline-block" }}
-              >
-                {label}
-              </motion.span>
-            </Link>
-          </Button>
-        ))}
-      </Flex>
-      <Flex gap="6" alignItems="center" hideBelow="md">
-        <Button
-          variant="ghost"
-          size="xs"
-          color={isPrototype ? "#1f2937" : "#656E7B"}
-          fill={isPrototype ? "#1f2937" : "#F4F5F6"}
-          _hover={{ bg: inverseHoverBg }}
-          _focusVisible={focusRing}
-          gap="2"
-          fontWeight="medium"
-          fontSize="xs"
-          onClick={() => {
-            localStorage.setItem(WHATS_NEW_STORAGE_KEY, "true");
-            window.dispatchEvent(new CustomEvent("gnw-whats-new-dismissed"));
-            window.dispatchEvent(new CustomEvent("gnw-whats-new-open"));
-          }}
-        >
-          <ShootingStarIcon size={16} />
-          {"What's new"}
-          {showWhatsNewDot && (
-            <Box
-              w="8px"
-              h="8px"
-              borderRadius="8px"
-              bg="#C3D16F"
-              flexShrink={0}
-            />
-          )}
-        </Button>
-        <ChakraLink
-          as={Link}
-          href="https://help.horizon.globalnaturewatch.org/"
-          target="_blank"
-          display="flex"
-          alignItems="center"
-          gap="2"
-          color={isPrototype ? "#1f2937" : "#656E7B"}
-          fontSize="xs"
-          fontWeight="medium"
-          transition="opacity 0.24s ease"
-          _hover={{ opacity: 0.8 }}
-          _focusVisible={focusRing}
-        >
-          <LifebuoyIcon size={16} />
-          Help
-        </ChakraLink>
-
-        <Progress.Root
-          size="xs"
-          min={0}
-          max={100}
-          value={totalPrompts > 0 ? (usedPrompts / totalPrompts) * 100 : 0}
-          minW="100px"
-          mt="1"
-          mb="2"
-          textAlign="center"
-          rounded="full"
-          colorPalette="primary"
-        >
-          <Progress.Label
-            mb="0.5"
-            fontSize="xs"
-            lineHeight="1.5"
-            fontWeight="normal"
-            whiteSpace="nowrap"
-            color={isPrototype ? "#6b7280" : "#656E7B"}
+              <ShootingStarIcon size={16} />
+              <Box
+                data-testid="whats-new-header-dot"
+                position="absolute"
+                top="-4px"
+                right="-4px"
+                w="12px"
+                h="12px"
+                borderRadius="full"
+                bg="#2495E0"
+                border="2px solid white"
+              />
+            </IconButton>
+          </Tooltip>
+        )}
+        {isAuthenticated ? (
+          <Menu.Root
+            ids={{ trigger: accountTriggerId }}
+            positioning={{ placement: "bottom-end" }}
           >
-            {usedPrompts} / {totalPrompts > 5000 ? "∞" : totalPrompts} daily
-            prompts
             <Tooltip
-              content={
-                totalPrompts > 5000
-                  ? "You have unlimited prompts!"
-                  : `${usedPrompts} of ${totalPrompts} prompts used. Prompts refresh every 24 hours.`
-              }
+              ids={{ trigger: accountTriggerId }}
+              content={userEmail}
+              disabled={!userEmail}
               showArrow
             >
-              <Text
-                as="span"
-                display="inline-block"
-                ml="1"
-                verticalAlign="text-bottom"
-                cursor="help"
-              >
-                <InfoIcon size={12} />
-              </Text>
+              <Menu.Trigger asChild>
+                <IconButton
+                  w="32px"
+                  h="32px"
+                  minW="32px"
+                  borderRadius="full"
+                  bg="#F4F5F6"
+                  color="#394048"
+                  _hover={{ bg: "#E0E2E5" }}
+                  _focusVisible={focusRing}
+                  aria-label={`Account menu (${userEmail || "signed in"})`}
+                >
+                  <UserIcon size={16} />
+                </IconButton>
+              </Menu.Trigger>
             </Tooltip>
-          </Progress.Label>
-          <Progress.Track bg={isPrototype ? "#6b7280" : "#E0E2E5"} maxH="4px">
-            <Progress.Range bg={isPrototype ? "#1f2937" : "#0049AA"} />
-          </Progress.Track>
-        </Progress.Root>
-        {isAuthenticated ? (
-          <Menu.Root positioning={{ placement: "bottom-end" }}>
-            <Menu.Trigger asChild>
-              <Button
-                variant={isPrototype ? "solid" : "ghost"}
-                colorPalette={isPrototype ? "gray" : undefined}
-                bg={isPrototype ? "#9ca3af" : undefined}
-                color={isPrototype ? "#1f2937" : "#656E7B"}
-                _hover={{ bg: isPrototype ? "#6b7280" : "#F0F1F2" }}
-                _focusVisible={focusRing}
-                h="40px"
-                px="2"
-                gap="2"
-                fontSize="xs"
-                fontWeight="medium"
-                rounded="sm"
-              >
-                <UserIcon size={16} />
-                <Text truncate maxW="180px">
-                  {userEmail || "User name"}
-                </Text>
-              </Button>
-            </Menu.Trigger>
             <Portal>
               <Menu.Positioner>
-                <Menu.Content css={{ "& a": { cursor: "pointer" } }}>
+                <Menu.Content
+                  minW="220px"
+                  css={{ "& a": { cursor: "pointer" } }}
+                >
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />
