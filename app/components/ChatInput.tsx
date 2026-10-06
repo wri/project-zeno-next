@@ -19,6 +19,8 @@ import {
 import { format } from "date-fns";
 import useChatStore from "@/app/store/chatStore";
 import ContextButton, { ChatContextType } from "./ContextButton";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
+import { useOnboardingDraft } from "@/src/features/onboarding";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import VoiceListeningPanel from "./voice/VoiceListeningPanel";
@@ -50,6 +52,8 @@ export default function ChatInput({
   onAfterSend?: () => void;
 }) {
   const [inputValue, setInputValue] = useState("");
+  // The onboarding tour can hand us a ready-made question to send.
+  useOnboardingDraft(setInputValue);
   const [contextModalOpen, setContextModalOpen] = useState(false);
   const [selectedContextType, setSelectedContextType] =
     useState<ChatContextType | null>(null);
@@ -228,6 +232,7 @@ export default function ChatInput({
       borderColor={bordered ? "#E0E2E5" : undefined}
       borderRadius={bordered ? "sm" : undefined}
       className="group"
+      {...tourAnchor(TOUR_ANCHORS.chatInput)}
       transition="all 0.32s ease-in-out"
       _focusWithin={
         bordered
@@ -317,6 +322,7 @@ export default function ChatInput({
                 <>
                   <ContextButton
                     contextType="layer"
+                    {...tourAnchor(TOUR_ANCHORS.datasetsButton)}
                     onClick={openLayerPicker}
                     disabled={disabled}
                     borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
@@ -325,6 +331,7 @@ export default function ChatInput({
                   />
                   <ContextButton
                     contextType="area"
+                    {...tourAnchor(TOUR_ANCHORS.areasButton)}
                     onClick={openAreaPicker}
                     disabled={disabled}
                     borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
@@ -348,6 +355,7 @@ export default function ChatInput({
                     gap="1"
                     fontSize="xs"
                     fontWeight="normal"
+                    {...tourAnchor(TOUR_ANCHORS.analysesButton)}
                     onClick={openInsightsPanel}
                     disabled={disabled}
                     borderColor={

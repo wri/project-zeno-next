@@ -33,6 +33,7 @@ import {
 } from "@/app/explorationLayout";
 import { ViewAnalysisTrigger } from "@/src/features/analysis";
 import { CreateDashboardTrigger } from "@/src/features/dashboards";
+import { OnboardingChecklist, OnboardingTour } from "@/src/features/onboarding";
 
 export default function DashboardLayout({
   children,
@@ -113,6 +114,7 @@ export default function DashboardLayout({
           <ChatPanel />
         </Box>
       </Box>
+      <OnboardingChecklist />
     </Box>
   );
 
@@ -200,6 +202,9 @@ export default function DashboardLayout({
         </Box>
       )}
       {isMobile ? MobileLayout : DesktopLayout}
+      {/* The guided tour is desktop-only: its steps target the side-by-side
+          chat, catalog and map layout. */}
+      {!isMobile && <OnboardingTour />}
 
       {children}
     </Grid>

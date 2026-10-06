@@ -55,6 +55,11 @@ import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import { CatalogCard } from "./CatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
 import { Tooltip } from "./ui/tooltip";
+import {
+  TOUR_ANCHORS,
+  catalogCardAnchor,
+  tourAnchor,
+} from "@/src/shared/lib/tour-anchors";
 
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
 const catalogPanelSlideTransition = {
@@ -131,7 +136,10 @@ export default function DataCatalogPanel() {
           transition={catalogPanelSlideTransition}
           style={getCatalogColumnMotionStyle(leftPx)}
         >
-          <Flex {...getCatalogColumnPanelFlexProps(isChatFullSize)}>
+          <Flex
+            {...getCatalogColumnPanelFlexProps(isChatFullSize)}
+            {...tourAnchor(TOUR_ANCHORS.catalogPanel)}
+          >
             <Flex
               flexShrink={0}
               h="40px"
@@ -297,7 +305,12 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
   const [supportingOpen, setSupportingOpen] = useState(true);
 
   return (
-    <Box w={`${CATALOG_CARD_WIDTH_PX}px`} maxW="100%" flexShrink={0}>
+    <Box
+      w={`${CATALOG_CARD_WIDTH_PX}px`}
+      maxW="100%"
+      flexShrink={0}
+      {...tourAnchor(catalogCardAnchor(card.dataset_id))}
+    >
       <DatasetInfoModal
         isOpen={infoOpen}
         onClose={onInfoClose}

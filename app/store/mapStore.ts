@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { FitBoundsOptions } from "maplibre-gl";
 import { MapRef } from "react-map-gl/maplibre";
 import bbox from "@turf/bbox";
 import center from "@turf/center";
@@ -37,7 +38,11 @@ interface MapSlice {
     geoJson: GeoJSON.FeatureCollection | GeoJSON.Feature,
     maxRetries?: number
   ) => void;
-  flyToBounds: (bounds: [[number, number], [number, number]]) => void;
+  /** `options` override the default 50px padding / linear move (e.g. to frame clear of panels). */
+  flyToBounds: (
+    bounds: [[number, number], [number, number]],
+    options?: FitBoundsOptions
+  ) => void;
 
   selectionMode: SelectionMode | undefined;
   setSelectionMode: (mode: SelectionMode | undefined) => void;
@@ -129,7 +134,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
     }
   },
 
-  flyToBounds: (bounds) => {
+  flyToBounds: (bounds, options) => {
     const { mapRef } = get();
     if (!mapRef) {
       console.warn("Map ref not available for flyToBounds");
@@ -148,6 +153,7 @@ const createMapSlice: StateCreator<MapState, [], [], MapSlice> = (
         linear: true,
         padding: { top: 50, bottom: 50, left: 50, right: 50 },
         maxZoom: 16,
+        ...options,
       }
     );
   },

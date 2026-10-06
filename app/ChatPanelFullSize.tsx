@@ -13,6 +13,7 @@ import { chatPanelCardStyle } from "./chatPanelShared";
 import { FULLSIZE_CHAT_PANEL_WIDTH_PX } from "./explorationLayout";
 import { usePromptQuota } from "./hooks/usePromptQuota";
 import useSidebarStore from "./store/sidebarStore";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 interface ChatPanelFullSizeProps {
   onToggleSize: () => void;
@@ -24,6 +25,7 @@ function ChatPanelFullSize({ onToggleSize }: ChatPanelFullSizeProps) {
 
   return (
     <Flex
+      {...tourAnchor(TOUR_ANCHORS.chatPanel)}
       flexDir="column"
       flex="1 1 auto"
       flexShrink={0}

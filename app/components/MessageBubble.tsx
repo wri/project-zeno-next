@@ -45,6 +45,7 @@ import {
   isBlogCitation,
   resolveCitedArticle,
 } from "@/app/lib/blog-citations";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 function nodeToText(children: ReactNode): string {
   if (typeof children === "string" || typeof children === "number") {
@@ -252,7 +253,7 @@ function MessageBubble({
 
   if (isAreaCard && message.aoiSelection) {
     return (
-      <Box my={2} width="100%">
+      <Box my={2} width="100%" {...tourAnchor(TOUR_ANCHORS.chatAreaCard)}>
         <AreaCard aoiSelection={message.aoiSelection} />
       </Box>
     );
@@ -295,7 +296,11 @@ function MessageBubble({
     message.viewAnalysisSuggestion
   ) {
     return (
-      <Box mt={2} mb={message.viewAnalysisSuggestion.accepted ? 6 : 2}>
+      <Box
+        mt={2}
+        mb={message.viewAnalysisSuggestion.accepted ? 6 : 2}
+        {...tourAnchor(TOUR_ANCHORS.viewAnalysisNudge)}
+      >
         <ViewAnalysisNudge
           messageId={message.id}
           suggestion={message.viewAnalysisSuggestion}
@@ -323,6 +328,8 @@ function MessageBubble({
         key={`${widget.title} ${message.id}`}
         id={`widget-${message.id}-${idx}`}
         scrollMarginTop="32px"
+        {...(widget.type === "dataset-card" &&
+          tourAnchor(TOUR_ANCHORS.chatDatasetCard))}
       >
         <WidgetMessage widget={widget} />
       </Box>
@@ -459,7 +466,13 @@ function MessageBubble({
           </Box>
         )}
         {analysisWidgets.length > 0 && (
-          <Flex direction="column" gap="2" mt="2" w="100%">
+          <Flex
+            direction="column"
+            gap="2"
+            mt="2"
+            w="100%"
+            {...tourAnchor(TOUR_ANCHORS.chatAnalysisCard)}
+          >
             {analysisWidgets.map((widget, idx) => (
               <AnalysisCard
                 key={`${message.id}-analysis-${idx}`}

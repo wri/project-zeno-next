@@ -43,6 +43,7 @@ import {
   isFluxTreeWidget,
 } from "@/src/features/ghg-flux-tree";
 import InsightChartPills, { hasChartPills } from "./InsightChartPills";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 /**
  * Placeholder shown while the very first analysis is generating (no chart in
@@ -167,6 +168,7 @@ export default function InsightWorkspace() {
   return (
     /* Card is the scroll container: grows to content, scrolls when flex-shrunk */
     <Box
+      {...tourAnchor(TOUR_ANCHORS.insightWorkspace)}
       flex="0 1 auto"
       minH="0"
       overflowY="auto"

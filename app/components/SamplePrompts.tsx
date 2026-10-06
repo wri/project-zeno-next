@@ -4,6 +4,7 @@ import { usePromptStore } from "../store/promptStore";
 import useChatStore from "../store/chatStore";
 import { useRouter, usePathname } from "@/app/lib/router";
 import { firstMessageRedirectPath } from "../utils/threadNavigation";
+import { TOUR_ANCHORS, tourAnchor } from "@/src/shared/lib/tour-anchors";
 
 export default function SamplePrompts() {
   const { prompts } = usePromptStore();
@@ -43,7 +44,14 @@ export default function SamplePrompts() {
     return randomItems;
   }
   return (
-    <Box display="flex" flexDir="column" gap={2} mt={4} mb={2}>
+    <Box
+      display="flex"
+      flexDir="column"
+      gap={2}
+      mt={4}
+      mb={2}
+      {...tourAnchor(TOUR_ANCHORS.samplePrompts)}
+    >
       {samplePrompts.map((prompt, i) => (
         <Box
           key={i}
