@@ -6,6 +6,10 @@ import type {
   LegendParam,
 } from "@/app/components/legend/types";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import {
+  PLANET_METADATA,
+  type ImageryMetadata,
+} from "@/app/constants/planet-metadata";
 
 /**
  * Metadata driving an imagery legend entry — the ImageryState payload the
@@ -98,10 +102,16 @@ export const IMAGERY_LEGEND_GROUP_ID = "imagery-group";
 export const IMAGERY_LAYER_NAME = "Satellite Imagery";
 
 /** Per-provider display strings: legend subtitle, the mosaic noun that opens
- * the info-popover sentence, and the imagery attribution. */
+ * the info-popover sentence, and the imagery attribution. A provider with
+ * `metadata` gets the full info dialog instead of the popover. */
 const PROVIDER_DISPLAY: Record<
   ImageryProvider,
-  { subtitle: string; mosaicNoun: string; attribution: string }
+  {
+    subtitle: string;
+    mosaicNoun: string;
+    attribution: string;
+    metadata?: ImageryMetadata;
+  }
 > = {
   "sentinel-2": {
     subtitle: "Sentinel-2 · True-colour",
@@ -112,6 +122,7 @@ const PROVIDER_DISPLAY: Record<
     subtitle: "Planet · Monthly mosaic",
     mosaicNoun: "Planet monthly true-colour mosaic",
     attribution: "Imagery © Planet Labs PBC",
+    metadata: PLANET_METADATA,
   },
 };
 
@@ -292,6 +303,27 @@ export function imageryZoomTarget(
   };
 }
 
+/**
+ * Fills a metadata citation's "[year of image]" (from the capture's date) and
+ * "[DATE]" (the access date) placeholders. A placeholder with no value to fill
+ * is left for the reader.
+ */
+export function imageryCitation(
+  template: string,
+  imageDate: string | undefined,
+  accessedOn: Date
+): string {
+  let year: string | undefined;
+  try {
+    year = imageDate ? format(parseISO(imageDate), "yyyy") : undefined;
+  } catch {
+    year = undefined;
+  }
+  return template
+    .replace("[year of image]", year ?? "[year of image]")
+    .replace("[DATE]", format(accessedOn, "d MMMM yyyy"));
+}
+
 /** Capture-row meta line, e.g. "cloud <50% · 9 scenes". */
 export function captureMetaLabel(meta: ImageryMeta): string {
   const parts: string[] = [];
@@ -348,6 +380,10 @@ export function buildImageryGroup(
     params: liveMeta ? imageryLegendParams(liveMeta) : [],
     info: liveMeta ? imageryLegendInfo(liveMeta) : undefined,
     note: liveMeta ? imageryCloudNote(liveMeta) : undefined,
+    metadata: liveMeta
+      ? providerDisplay(liveMeta.provider).metadata
+      : undefined,
+    imageDate: liveMeta?.startDate,
     captures,
     areaCount: new Set(captures.map((c) => c.areaLabel)).size,
     updating,

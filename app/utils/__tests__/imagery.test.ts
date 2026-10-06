@@ -6,6 +6,7 @@ import {
   captureMetaLabel,
   formatCaptureDate,
   imageryAttribution,
+  imageryCitation,
   imageryCloudNote,
   imageryLayerId,
   imageryLayerTitle,
@@ -20,6 +21,7 @@ import {
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import { PLANET_METADATA } from "@/app/constants/planet-metadata";
 
 describe("toImageryMeta", () => {
   it("resolves an explicit provider", () => {
@@ -398,6 +400,18 @@ describe("buildImageryGroup", () => {
     expect(group?.captures[0].metaLabel).toBe("");
   });
 
+  it("carries Planet's full metadata and the live capture's date", () => {
+    const planet = buildImageryGroup(
+      [imageryLayer("imagery-planet:2026-07", {}, planetMeta)],
+      false
+    );
+    expect(planet?.metadata).toBe(PLANET_METADATA);
+    expect(planet?.imageDate).toBe("2026-07-01");
+
+    const sentinel = buildImageryGroup([imageryLayer("imagery-new")], false);
+    expect(sentinel?.metadata).toBeUndefined();
+  });
+
   it("dates every Planet capture, including the undated latest mosaic", () => {
     const group = buildImageryGroup(
       [
@@ -440,6 +454,24 @@ describe("buildImageryGroup", () => {
       areaCount: 0,
     });
     expect(group?.info).toBeUndefined();
+  });
+});
+
+describe("imageryCitation", () => {
+  const accessedOn = new Date(2026, 9, 6);
+
+  it("fills the image year and access date", () => {
+    expect(
+      imageryCitation(PLANET_METADATA.citation, "2025-08-01", accessedOn)
+    ).toBe(
+      "Image © 2025 Planet Labs Inc. Accessed through Global Nature Watch Horizon on 6 October 2026. www.horizon.globalnaturewatch.org"
+    );
+  });
+
+  it("leaves the year placeholder when the capture has no date", () => {
+    expect(
+      imageryCitation(PLANET_METADATA.citation, undefined, accessedOn)
+    ).toContain("Image © [year of image] Planet Labs Inc.");
   });
 });
 
