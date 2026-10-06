@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, type ReactNode } from "react";
 import {
   Box,
   Button,
@@ -32,7 +32,9 @@ import {
   type GeoJsonEntry,
 } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
-import useSidebarStore from "@/app/store/sidebarStore";
+import useSidebarStore, {
+  type AreasPanelFilter,
+} from "@/app/store/sidebarStore";
 import { customAreaToFeature } from "@/src/entities/custom-area";
 
 import { CatalogCard } from "./CatalogCard";
@@ -69,9 +71,7 @@ const AREA_TYPE_LABELS: Record<string, string> = {
 
 const AREA_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
 
-type AreaFilter = "boundaries" | "conversation" | "mine";
-
-const AREA_FILTERS: { id: AreaFilter; label: string }[] = [
+const AREA_FILTERS: { id: AreasPanelFilter; label: string }[] = [
   { id: "boundaries", label: "Boundaries" },
   { id: "conversation", label: "In this conversation" },
   { id: "mine", label: "My areas" },
@@ -95,9 +95,13 @@ const AREA_FILTERS: { id: AreaFilter; label: string }[] = [
  *    (`toggleUploadAreaDialog`), draw (`startDrawing`).
  */
 export default function AreasPanel() {
-  const [filter, setFilter] = useState<AreaFilter>("boundaries");
-  const { areasPanelOpen, setAreasPanelOpen, isChatFullSize } =
-    useSidebarStore();
+  const {
+    areasPanelOpen,
+    setAreasPanelOpen,
+    isChatFullSize,
+    areasPanelFilter: filter,
+    setAreasPanelFilter: setFilter,
+  } = useSidebarStore();
   const setCreateAreaFn = useMapStore((s) => s.setCreateAreaFn);
   const { createAreaAsync } = useCustomAreasCreate();
 

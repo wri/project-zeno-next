@@ -10,7 +10,6 @@ import {
   Portal,
   Link as ChakraLink,
   Text,
-  VisuallyHidden,
 } from "@chakra-ui/react";
 import {
   ChartLineIcon,
@@ -27,6 +26,7 @@ import { useState, useEffect, useId, useRef } from "react";
 import PreviewInfoPanel from "./PreviewInfoPanel";
 import PromptQuotaMeter from "./PromptQuotaMeter";
 import WhatsNewModal from "./WhatsNewModal";
+import MenuSideBar from "./MenuSideBar";
 
 import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
@@ -47,7 +47,7 @@ const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
  */
 function PageHeader() {
   const { userEmail, isAuthenticated } = useAuthStore();
-  const { toggleSidebar } = useSidebarStore();
+  const setMenuOpen = useSidebarStore((s) => s.setMenuOpen);
   const { currentThreadId } = useChatStore();
   const { logout } = useLogout();
   const whatsNewUnread = useWhatsNewUnread();
@@ -122,9 +122,10 @@ function PageHeader() {
       position="sticky"
       top={0}
     >
-      {/* Mounted with the header so What's new opens on every surface that
-          shows the header (map and dashboards alike). */}
+      {/* Mounted with the header so What's new and the menu open on every
+          surface that shows the header (map and dashboards alike). */}
       <WhatsNewModal />
+      <MenuSideBar />
       <Flex gap="10" alignItems="center" alignSelf="stretch" minW={0}>
         <Flex gap="3" alignItems="center">
           <Tooltip content="Menu" showArrow>
@@ -138,7 +139,7 @@ function PageHeader() {
               color="#565E7B"
               _hover={{ bg: "#E0E2E5" }}
               _focusVisible={focusRing}
-              onClick={toggleSidebar}
+              onClick={() => setMenuOpen(true)}
               aria-label="Open menu"
             >
               <ListIcon size={16} />
@@ -330,26 +331,6 @@ function PageHeader() {
                   minW="220px"
                   css={{ "& a": { cursor: "pointer" } }}
                 >
-                  <Menu.Item
-                    value="whats-new"
-                    cursor="pointer"
-                    onClick={openWhatsNew}
-                  >
-                    <ShootingStarIcon />
-                    <Box flex="1">{"What's new"}</Box>
-                    {whatsNewUnread && (
-                      <Box
-                        data-testid="whats-new-menu-badge"
-                        w="8px"
-                        h="8px"
-                        borderRadius="full"
-                        bg="#2495E0"
-                        flexShrink={0}
-                      >
-                        <VisuallyHidden>Unread updates</VisuallyHidden>
-                      </Box>
-                    )}
-                  </Menu.Item>
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />

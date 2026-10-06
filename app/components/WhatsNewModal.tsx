@@ -22,6 +22,7 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { WHATS_NEW_OPEN_EVENT } from "@/app/hooks/useWhatsNew";
+import { WHATS_NEW_FEATURES as FEATURES } from "./whatsNewFeatures";
 
 // Older keys cleaned up on mount. The active key lives in useWhatsNew; bump both
 // in lockstep to re-surface "What's new" for everyone (see WHATS_NEW_STORAGE_KEY).
@@ -46,39 +47,6 @@ const FEATURE_IMAGES: Record<number, string> = {
   3: "/whats_new/satellite.png",
   4: "/whats_new/wri_sources.png",
 };
-
-interface Feature {
-  step: number;
-  title: string;
-  description: string;
-}
-
-const FEATURES: Feature[] = [
-  {
-    step: 1,
-    title: "Introducing dashboards",
-    description:
-      "Turn your analyses into dashboards. Ask the assistant to create one for the area you are exploring, or start one straight from the map, and every insight you save is there to revisit.",
-  },
-  {
-    step: 2,
-    title: "Make a dashboard your own",
-    description:
-      "Group charts into sections, drag sections to reorder them, and customise any chart using the section menu. Ask the assistant to create a new section for you.",
-  },
-  {
-    step: 3,
-    title: "Satellite imagery in chat",
-    description:
-      "Ask to see recent satellite imagery of your area and the assistant brings Sentinel-2 imagery straight onto the map.",
-  },
-  {
-    step: 4,
-    title: "Answers with sources",
-    description:
-      "When the assistant draws on WRI research, it cites its sources with cards linking to the original blog posts and insights.",
-  },
-];
 
 const WhatsNewModal = () => {
   const [isOpen, setIsOpen] = useState(false);
