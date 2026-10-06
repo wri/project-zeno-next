@@ -41,6 +41,7 @@ import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
+import { ImageryZoomHint } from "./map/ImageryZoomHint";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -288,6 +289,8 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             setBasemapTiles={setBasemapTiles}
           />
         )}
+
+        <ImageryZoomHint />
 
         <AbsoluteCenter fontSize="sm" opacity={0.375} hideBelow="md">
           <PlusIcon />

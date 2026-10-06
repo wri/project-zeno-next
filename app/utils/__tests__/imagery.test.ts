@@ -12,6 +12,7 @@ import {
   imageryLegendParams,
   imagerySubtitle,
   imageryThumbnailUrl,
+  imageryZoomTarget,
   isImageryLayerId,
   isImageryTool,
   toImageryMeta,
@@ -382,6 +383,68 @@ describe("buildImageryGroup", () => {
       areaCount: 0,
     });
     expect(group?.info).toBeUndefined();
+  });
+});
+
+describe("imageryZoomTarget", () => {
+  const layer = (overrides: Partial<Layer>): Layer =>
+    ({
+      id: "imagery-planet:2026-07",
+      name: "Satellite Imagery",
+      type: "raster",
+      visible: true,
+      minzoom: 10,
+      bounds: [-56, -12, -55, -11],
+      imagery: planetMeta,
+      ...overrides,
+    }) as Layer;
+
+  it("targets the minzoom over the middle of the AOI while zoomed out", () => {
+    expect(imageryZoomTarget([layer({})], 8.5)).toEqual({
+      zoom: 10,
+      center: [-55.5, -11.5],
+    });
+  });
+
+  it("centres on the newest visible capture's AOI", () => {
+    const target = imageryZoomTarget(
+      [
+        layer({ visible: false, bounds: [0, 0, 2, 2] }),
+        layer({ bounds: [10, 10, 12, 12] }),
+        layer({ bounds: [20, 20, 22, 22] }),
+      ],
+      5
+    );
+    expect(target?.center).toEqual([11, 11]);
+  });
+
+  it("leaves the centre unset when the imagery has no bounds", () => {
+    expect(
+      imageryZoomTarget([layer({ bounds: undefined })], 5)?.center
+    ).toBeUndefined();
+  });
+
+  it("is undefined once the map reaches the minzoom", () => {
+    expect(imageryZoomTarget([layer({})], 10)).toBeUndefined();
+    expect(imageryZoomTarget([layer({})], 12)).toBeUndefined();
+  });
+
+  it("ignores hidden captures and non-imagery layers", () => {
+    expect(imageryZoomTarget([layer({ visible: false })], 5)).toBeUndefined();
+    expect(
+      imageryZoomTarget([layer({ imagery: undefined })], 5)
+    ).toBeUndefined();
+  });
+
+  it("targets the highest floor so every visible capture renders", () => {
+    expect(
+      imageryZoomTarget([layer({ minzoom: 8 }), layer({ minzoom: 10 })], 9)
+        ?.zoom
+    ).toBe(10);
+  });
+
+  it("is undefined before the map has a zoom", () => {
+    expect(imageryZoomTarget([layer({})], undefined)).toBeUndefined();
   });
 });
 

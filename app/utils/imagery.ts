@@ -240,6 +240,41 @@ export function imageryCloudNote(meta: ImageryMeta): string | undefined {
   return `Searched with a loosened cloud-cover limit (${meta.maxCloudCover}%) — imagery may contain clouds.`;
 }
 
+export interface ImageryZoomTarget {
+  zoom: number;
+  /** Centre of the newest visible capture's AOI bounds, [lng, lat]. */
+  center?: [number, number];
+}
+
+/**
+ * Where to zoom so the visible imagery renders, while the map is zoomed out
+ * past it. MapLibre draws nothing for a raster below its minzoom (Planet's is
+ * 10), so the capture otherwise looks like it never loaded. Takes the highest
+ * floor so every visible capture renders, centred on the newest capture's
+ * bounds: the AOI the imagery was requested for. Undefined when all visible
+ * imagery already renders, or before the map has a zoom.
+ */
+export function imageryZoomTarget(
+  layers: Layer[],
+  zoom: number | undefined
+): ImageryZoomTarget | undefined {
+  if (zoom === undefined) return undefined;
+  // Newest first: showImageryTool orders the latest capture to the top.
+  const visible = layers.filter(
+    (l) => l.imagery && l.visible && l.minzoom !== undefined
+  );
+  if (visible.length === 0) return undefined;
+  const target = Math.max(...visible.map((l) => l.minzoom as number));
+  if (zoom >= target) return undefined;
+  const bounds = visible.find((l) => l.bounds)?.bounds;
+  return {
+    zoom: target,
+    center: bounds
+      ? [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2]
+      : undefined,
+  };
+}
+
 /** Capture-row meta line, e.g. "cloud <50% · 9 scenes". */
 export function captureMetaLabel(meta: ImageryMeta): string {
   const parts: string[] = [];
