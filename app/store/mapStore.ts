@@ -129,6 +129,7 @@ function fitBoundsClear(map: MapInstance, bounds: Bounds) {
       map.fitBounds(bounds, {
         linear: true,
         padding: fitPadding(map, bounds),
+        retainPadding: false,
         maxZoom: 16, // Prevent zooming in too much for very small areas
       });
     } catch (error) {
