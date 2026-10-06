@@ -41,6 +41,7 @@ import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
+import { MAP_LEGEND_ATTR } from "@/app/explorationLayout";
 import { ImageryZoomHint } from "./map/ImageryZoomHint";
 
 const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
@@ -241,6 +242,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           <Box
             flexShrink={0}
             display={{ base: showLegend ? "block" : "none", md: "block" }}
+            {...{ [MAP_LEGEND_ATTR]: "" }}
           >
             {/* Debug panel floats just left of this column, bottom-aligned.
                 Desktop-only: on mobile the column spans the viewport, so
