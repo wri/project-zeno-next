@@ -21,8 +21,9 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { WHATS_NEW_OPEN_EVENT } from "@/app/hooks/useWhatsNew";
 
-// Older keys cleaned up on mount. The active key lives in PageHeader; bump both
+// Older keys cleaned up on mount. The active key lives in useWhatsNew; bump both
 // in lockstep to re-surface "What's new" for everyone (see WHATS_NEW_STORAGE_KEY).
 const LEGACY_STORAGE_KEYS = [
   "whats-new-v1-dismissed",
@@ -90,8 +91,8 @@ const WhatsNewModal = () => {
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
-    window.addEventListener("gnw-whats-new-open", handleOpen);
-    return () => window.removeEventListener("gnw-whats-new-open", handleOpen);
+    window.addEventListener(WHATS_NEW_OPEN_EVENT, handleOpen);
+    return () => window.removeEventListener(WHATS_NEW_OPEN_EVENT, handleOpen);
   }, []);
 
   const dismiss = () => setIsOpen(false);

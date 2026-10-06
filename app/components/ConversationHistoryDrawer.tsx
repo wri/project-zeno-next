@@ -7,7 +7,7 @@ import useSidebarStore from "@/app/store/sidebarStore";
 
 /**
  * The conversation-history sidebar in a left drawer, driven by
- * `sidebarStore.sideBarVisible` (the PageHeader clock icon toggles it).
+ * `sidebarStore.sideBarVisible` (the PageHeader menu button toggles it).
  * The header renders that button on every surface, so every surface must
  * mount this drawer — otherwise the click silently flips an invisible flag.
  * Extracted from the map layout so the dashboard pages can mount it too.
