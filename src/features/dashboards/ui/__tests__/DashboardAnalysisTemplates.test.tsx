@@ -145,6 +145,39 @@ describe("DashboardAnalysisTemplates", () => {
     ).toBeTruthy();
   });
 
+  it("offers the post-2020 forest loss template once the registry lists it", async () => {
+    vi.mocked(listAnalysisTemplates).mockResolvedValue([
+      NRT,
+      {
+        name: "post-2020-forest-loss",
+        label: "Post-2020 forest loss",
+        args_schema: {},
+        widgets: ["chart", "layer", "imagery"],
+      },
+    ]);
+    vi.mocked(applyAnalysisTemplate).mockResolvedValue(built);
+    renderTemplates();
+
+    const card = await screen.findByRole("button", {
+      name: "Post-2020 forest loss",
+    });
+    // "Post-2020" is one word to the wrapper, never broken at its hyphen.
+    expect(
+      Array.from(card.querySelectorAll("span")).map((s) => s.textContent)
+    ).toEqual(expect.arrayContaining(["Post-2020", "forest", "loss"]));
+    expect(card.querySelector("img")?.getAttribute("src")).toBe(
+      "/analysis_template_post_2020_forest_loss.jpg"
+    );
+
+    fireEvent.click(card);
+    await waitFor(() =>
+      expect(applyAnalysisTemplate).toHaveBeenCalledWith(
+        "d1",
+        "post-2020-forest-loss"
+      )
+    );
+  });
+
   it("drops a card the registry does not list", async () => {
     vi.mocked(listAnalysisTemplates).mockResolvedValue([]);
     renderTemplates();
