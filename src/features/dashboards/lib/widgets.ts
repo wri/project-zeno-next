@@ -5,6 +5,7 @@ import {
   pivotByColorField,
 } from "@/src/entities/insight";
 import type { InsightWidget } from "@/app/types/chat";
+import { pickChartColors } from "@/app/utils/pickChartColors";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { widgetContainers } from "../model/dashboard-sections";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
@@ -406,6 +407,9 @@ export function unresolvedPendingInsightWidgets(
  * "view how this was generated" drawer. The API insight carries no analysis
  * parameters, but a dashboard is scoped to exactly one area — pass its name
  * as `areaName` so every card gets an AREA param chip.
+ *
+ * The chart's registry colours go through `pickChartColors`, as on the chat
+ * and Analyses paths, so a chart looks the same on all three.
  */
 export function dashboardWidgetToInsightWidgets(
   widget: DashboardWidget,
@@ -459,6 +463,11 @@ export function dashboardWidgetToInsightWidgets(
         xAxis: chart.x_axis,
         yAxis: chart.y_axis,
         ...(seriesFields?.length ? { seriesFields } : {}),
+        ...pickChartColors({
+          colorMap: chart.color_map,
+          seriesColor: chart.series_color,
+          divergentColors: chart.divergent_colors,
+        }),
         ...(generation ? { generation } : {}),
         ...(analysisParams ? { analysisParams } : {}),
       };
