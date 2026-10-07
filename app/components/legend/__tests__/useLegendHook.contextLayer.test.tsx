@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLegendHook } from "../useLegendHook";
 import useMapStore from "@/app/store/mapStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import { pickDatasetTool } from "@/app/store/chat-tools/pickDataset";
+import type { DatasetInfo } from "@/app/types/chat";
 
 // The catalog hook fetches the backend palette registry; the legend falls back
 // to the static config when it is absent, which is what these cases exercise.
@@ -89,5 +91,70 @@ describe("useLegendHook context sub-layers", () => {
     expect(contextLayer?.title).toBe("SBTN Natural lands (2020)");
     expect(contextLayer?.info).toMatch(/natural forest/);
     expect(contextLayer?.symbology).toBeTruthy();
+  });
+});
+
+describe("useLegendHook canopy chip from a pick_dataset turn", () => {
+  // Shaped like the backend's pick_dataset result for Tree cover loss
+  // (project-zeno#856): the tile is drawn at a 0% canopy threshold, no
+  // canopy_cover overlay sits in context_layers, and any canopy_cover the
+  // agent picked is still echoed in `parameters` but ignored.
+  const tclTile =
+    "https://tiles.example.test/umd_tree_cover_loss/dynamic/{z}/{x}/{y}.png?tree_cover_density_threshold=0&render_type=true_color&start_year=2021&end_year=2025";
+  const naturalForestPick: DatasetInfo = {
+    dataset_id: 4,
+    dataset_name: "Tree cover loss",
+    tile_url: tclTile,
+    layers: [{ name: "Tree cover loss", tile_url: tclTile }],
+    context_layer: "natural_forest",
+    context_layers: [
+      {
+        name: "natural_forest",
+        tile_url: "https://tiles.example.test/natural_lands/{z}/{x}/{y}.png",
+      },
+    ],
+    parameters: [{ name: "canopy_cover", values: [50] }],
+    start_date: "2021-01-01",
+    end_date: "2025-12-31",
+  };
+
+  function legendEntryAfterPick(dataset: DatasetInfo) {
+    pickDatasetTool(
+      {
+        type: "tool",
+        name: "pick_dataset",
+        timestamp: new Date().toISOString(),
+        dataset,
+      },
+      vi.fn()
+    );
+    const { result } = renderHook(() => useLegendHook());
+    return result.current.layers.find((l) => l.id === "dataset-4");
+  }
+
+  beforeEach(() => {
+    useMapStore.setState({ layers: [] });
+  });
+
+  it("shows no CANOPY chip under natural forest", () => {
+    const entry = legendEntryAfterPick(naturalForestPick);
+
+    expect(entry).toBeDefined();
+    expect(entry?.params?.map((p) => p.label)).not.toContain("CANOPY");
+    expect(
+      entry && "contextLayer" in entry ? entry.contextLayer?.title : undefined
+    ).toBe("SBTN Natural lands (2020)");
+  });
+
+  it("keeps the CANOPY chip without a context layer", () => {
+    const entry = legendEntryAfterPick({
+      ...naturalForestPick,
+      context_layer: null,
+      context_layers: [],
+    });
+
+    expect(entry?.params).toContainEqual(
+      expect.objectContaining({ label: "CANOPY" })
+    );
   });
 });
