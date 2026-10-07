@@ -189,6 +189,42 @@ const IFL_LEGEND: DatasetLegendConfig = {
   note: "Extent of Intact Forest Landscapes (IFL) in 2000-2025. Global coverage, IFL Mapping Team.",
 };
 
+const SBTN_NATURAL_LANDS_TITLE = "SBTN Natural lands (2020)";
+
+const SBTN_NATURAL_LANDS_DESCRIPTION =
+  "The SBTN Natural Lands Map v1.1 is a 2020 baseline map of natural and non-natural land covers intended for use by companies setting science-based targets for nature, specifically the SBTN Land target #1: no conversion of natural ecosystems. This map is global with 30m resolution and was made by compiling existing global and regional data including the GLAD Global Land Cover and Change data, ESA WorldCover, and many other land cover and use datasets.";
+
+/**
+ * The natural classes (raster values 2-11) of the SBTN Natural Lands Map.
+ * Shared by the standalone card and the `natural_lands` context sub-layer:
+ * the backend serves the sub-layer from the same raster masked to these
+ * classes, so only the card adds a non-natural row.
+ */
+const SBTN_NATURAL_CLASSES = [
+  { label: "natural forests", color: "#246E24" },
+  { label: "natural peat forests", color: "#093D09" },
+  { label: "mangroves", color: "#06A285" },
+  { label: "wet natural forests", color: "#589558" },
+  { label: "natural peat short vegetation", color: "#99991A" },
+  { label: "natural short vegetation", color: "#B9B91E" },
+  { label: "wet natural short vegetation", color: "#DBDB7B" },
+  { label: "natural water", color: "#6BAED6" },
+  { label: "snow", color: "#ACD1E8" },
+  { label: "bare", color: "#FEFECC" },
+];
+
+/**
+ * What the `natural_lands` and `natural_forest` sub-layers draw. Each adds its
+ * own `info` saying what it restricts the parent dataset to.
+ */
+const SBTN_NATURAL_CONTEXT_LEGEND = {
+  title: SBTN_NATURAL_LANDS_TITLE,
+  color: SBTN_NATURAL_CLASSES[0].color,
+  items: SBTN_NATURAL_CLASSES,
+  type: "symbol",
+  note: "Natural classes of the SBTN Natural Lands Map (2020 baseline). This map may overestimate the extent of natural lands.",
+} satisfies Omit<DatasetLegendConfig, "info">;
+
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
     dataset_id: 100,
@@ -240,6 +276,32 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
         { value: 2016, color: IFL_REDUCTION_COLORS["2016-2020"] },
       ],
       fallbackColor: "transparent", // every other year stays unstyled
+    },
+  },
+  // Sub-layer rendered beneath Integrated alerts when the agent restricts
+  // them to natural lands (project-zeno#853).
+  natural_lands: {
+    dataset_id: 3,
+    dataset_name: "SBTN Natural Lands Map",
+    context_layer: null as string | null,
+    description: SBTN_NATURAL_LANDS_DESCRIPTION,
+    legend: {
+      ...SBTN_NATURAL_CONTEXT_LEGEND,
+      info: 'Alerts are restricted to natural lands in the SBTN Natural Lands Map (2020 baseline). "Natural" means an ecosystem that substantially resembles what would be found without major human impact, including regenerated and secondary ones; plantations, cropland and built areas are excluded.',
+    },
+  },
+  // Sub-layer rendered beneath Tree cover loss when the agent restricts it to
+  // natural forest (project-zeno#853). The backend draws it from the same
+  // raster as `natural_lands`, so the legend lists every class drawn and the
+  // info names the four the analysis counts.
+  natural_forest: {
+    dataset_id: 3,
+    dataset_name: "SBTN Natural Lands Map",
+    context_layer: null as string | null,
+    description: SBTN_NATURAL_LANDS_DESCRIPTION,
+    legend: {
+      ...SBTN_NATURAL_CONTEXT_LEGEND,
+      info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Other natural classes are shown for context but not counted. Covers loss from 2021 onward; no canopy cover threshold applies.",
     },
   },
 };
@@ -462,23 +524,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     geographic_coverage: "global",
     provider: "SBTN, WRI",
     categories: ["land-use"],
-    description:
-      "The SBTN Natural Lands Map v1.1 is a 2020 baseline map of natural and non-natural land covers intended for use by companies setting science-based targets for nature, specifically the SBTN Land target #1: no conversion of natural ecosystems. This map is global with 30m resolution and was made by compiling existing global and regional data including the GLAD Global Land Cover and Change data, ESA WorldCover, and many other land cover and use datasets.",
+    description: SBTN_NATURAL_LANDS_DESCRIPTION,
     tile_url: `${EOAPI_HOST}/raster/collections/natural-lands-v-1-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?colormap=%7B%222%22%3A%20%5B36%2C%20110%2C%2036%2C%20255%5D%2C%20%223%22%3A%20%5B185%2C%20185%2C%2030%2C%20255%5D%2C%20%224%22%3A%20%5B107%2C%20174%2C%20214%2C%20255%5D%2C%20%225%22%3A%20%5B6%2C%20162%2C%20133%2C%20255%5D%2C%20%226%22%3A%20%5B254%2C%20254%2C%20204%2C%20255%5D%2C%20%227%22%3A%20%5B172%2C%20209%2C%20232%2C%20255%5D%2C%20%228%22%3A%20%5B88%2C%20149%2C%2088%2C%20255%5D%2C%20%229%22%3A%20%5B9%2C%2061%2C%209%2C%20255%5D%2C%20%2210%22%3A%20%5B219%2C%20219%2C%20123%2C%20255%5D%2C%20%2211%22%3A%20%5B153%2C%20153%2C%2026%2C%20255%5D%2C%20%2212%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2213%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2214%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2215%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2216%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2217%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2218%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2219%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2220%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%2C%20%2221%22%3A%20%5B211%2C%20211%2C%20211%2C%20255%5D%7D&assets=asset&expression=asset%2A%28asset%3C22%29%2A%28asset%3E1%29&asset_as_band=True`,
     legend: {
-      title: "SBTN Natural lands (2020)",
+      title: SBTN_NATURAL_LANDS_TITLE,
       color: "#A8DCB5",
       items: [
-        { label: "natural forests", color: "#246E24" },
-        { label: "natural peat forests", color: "#093D09" },
-        { label: "mangroves", color: "#06A285" },
-        { label: "wet natural forests", color: "#589558" },
-        { label: "natural peat short vegetation", color: "#99991A" },
-        { label: "natural short vegetation", color: "#B9B91E" },
-        { label: "wet natural short vegetation", color: "#DBDB7B" },
-        { label: "natural water", color: "#6BAED6" },
-        { label: "snow", color: "#ACD1E8" },
-        { label: "bare", color: "#FEFECC" },
+        ...SBTN_NATURAL_CLASSES,
         { label: "non-natural", color: "#D3D3D3" },
       ],
       type: "symbol",
