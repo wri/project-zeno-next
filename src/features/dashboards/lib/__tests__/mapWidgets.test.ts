@@ -24,6 +24,7 @@ describe("mapWidgetLayer — dataset configs", () => {
       title: "Tree cover loss",
       tileUrl: "https://tiles.example.org/tcl/{z}/{x}/{y}.png?tcd=30",
       datasetId: 4,
+      parameters: { canopy_cover: 30 },
     });
   });
 
@@ -63,6 +64,21 @@ describe("mapWidgetLayer — dataset configs", () => {
     );
   });
 
+  it("draws natural forest from the frontend's single-class tiles", () => {
+    const layer = mapWidgetLayer(
+      datasetConfig({
+        context_layer: "natural_forest",
+        context_layers: [
+          { name: "natural_forest", tile_url: "/raster/natural-lands.png" },
+        ],
+      })
+    );
+    expect(layer?.contextTileUrl).toBe(
+      CONTEXT_LAYER_METADATA.natural_forest.tile_url
+    );
+    expect(layer?.contextLayerName).toBe("natural_forest");
+  });
+
   it("omits the context layer when the active name has no entry", () => {
     const layer = mapWidgetLayer(
       datasetConfig({ context_layer: "driver", context_layers: [] })
@@ -85,14 +101,47 @@ describe("mapWidgetLayer — dataset configs", () => {
     expect(layer?.parameters).toEqual({ canopy_cover: 30 });
   });
 
-  it("omits parameters when the config has none worth showing", () => {
-    expect(mapWidgetLayer(datasetConfig())?.parameters).toBeUndefined();
+  it("falls back to the card's default canopy threshold when the config has none", () => {
+    for (const parameters of [undefined, [], null]) {
+      expect(mapWidgetLayer(datasetConfig({ parameters }))?.parameters).toEqual(
+        { canopy_cover: 30 }
+      );
+    }
+  });
+
+  it("omits parameters for a dataset with no default threshold", () => {
     expect(
-      mapWidgetLayer(datasetConfig({ parameters: [] }))?.parameters
+      mapWidgetLayer(datasetConfig({ dataset_id: 999 }))?.parameters
     ).toBeUndefined();
+  });
+
+  it("shows no canopy under natural forest, whose analysis ignores it", () => {
+    const natural = (overrides: Record<string, unknown>) =>
+      mapWidgetLayer(
+        datasetConfig({
+          context_layer: "natural_forest",
+          context_layers: [
+            { name: "natural_forest", tile_url: "/raster/natural-lands.png" },
+          ],
+          ...overrides,
+        })
+      )?.parameters;
+    // Neither the card's default nor the config's own threshold.
+    expect(natural({})).toBeUndefined();
     expect(
-      mapWidgetLayer(datasetConfig({ parameters: null }))?.parameters
+      natural({ parameters: [{ name: "canopy_cover", values: [30] }] })
     ).toBeUndefined();
+    // Other parameters still show.
+    expect(
+      natural({
+        parameters: [
+          { name: "canopy_cover", values: [30] },
+          { name: "other", values: ["x"] },
+        ],
+      })
+    ).toEqual({ other: "x" });
+    // The rule follows the selection, even when the sub-layer can't be drawn.
+    expect(natural({ context_layers: [] })).toBeUndefined();
   });
 
   it("carries the config's date range for the legend chip", () => {

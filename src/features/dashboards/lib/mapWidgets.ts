@@ -1,4 +1,8 @@
-import { resolveContextTileUrl } from "@/app/utils/datasetLayerContext";
+import { DATASET_CARDS } from "@/app/constants/datasets";
+import {
+  contextLayerIgnoresCanopy,
+  resolveContextTileUrl,
+} from "@/app/utils/datasetLayerContext";
 import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 
 /**
@@ -18,7 +22,10 @@ export interface MapWidgetLayer {
   contextLayerName?: string;
   // Dataset-kind fields that drive the widget's legend (DashboardMapLegend).
   datasetId?: number;
-  /** Display parameters as a record, e.g. `{ canopy_cover: 30 }`. */
+  /**
+   * The legend's parameter chips as a record, e.g. `{ canopy_cover: 30 }`,
+   * settled by `legendParameters`.
+   */
   parameters?: Record<string, unknown>;
   startDate?: string;
   endDate?: string;
@@ -28,13 +35,20 @@ const str = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value : undefined;
 
 // Config parameters are `[{ name, values }]` (per the handoff); the legend
-// wants a `{ name: firstValue }` record — same reduction the explorer's
-// getDatasetLayerContextProps applies to DatasetInfo.parameters.
-function parametersRecord(
-  parameters: unknown
+// wants a `{ name: firstValue }` record. Settled the way the explorer's
+// getDatasetLayerContextProps settles DatasetInfo.parameters: a config with
+// none rendered at the card's default canopy threshold, and a context layer
+// whose analysis ignores canopy cover (natural forest, whose tile is drawn at
+// threshold 0) gets no canopy chip at all. Keyed off the snapshot's context
+// layer, not whether its tiles resolved: the main tile ignores canopy either
+// way.
+function legendParameters(
+  parameters: unknown,
+  datasetId: unknown,
+  contextLayer: string | undefined
 ): Record<string, unknown> | undefined {
-  if (!Array.isArray(parameters)) return undefined;
-  const entries = parameters
+  const ignoresCanopy = contextLayerIgnoresCanopy(contextLayer);
+  const entries = (Array.isArray(parameters) ? parameters : [])
     .filter(
       (p): p is { name: string; values: unknown[] } =>
         !!p &&
@@ -43,8 +57,16 @@ function parametersRecord(
         Array.isArray((p as { values?: unknown }).values) &&
         (p as { values: unknown[] }).values.length > 0
     )
+    .filter((p) => !(ignoresCanopy && p.name === "canopy_cover"))
     .map((p) => [p.name, p.values[0]] as const);
-  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+  if (entries.length > 0) return Object.fromEntries(entries);
+  if (ignoresCanopy) return undefined;
+  const threshold = DATASET_CARDS.find(
+    (card) => card.dataset_id === datasetId
+  )?.threshold;
+  return typeof threshold === "number"
+    ? { canopy_cover: threshold }
+    : undefined;
 }
 
 // Primary forest tiles ship black-background PNGs; the pf:// protocol
@@ -93,7 +115,7 @@ export function mapWidgetLayer(
       }
     }
 
-    const parameters = parametersRecord(d.parameters);
+    const parameters = legendParameters(d.parameters, d.dataset_id, activeName);
     const startDate = str(d.start_date);
     const endDate = str(d.end_date);
 
