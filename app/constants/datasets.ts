@@ -143,6 +143,10 @@ export type ContextLayerMetadata = {
   dataset_name: string;
   context_layer: string | null;
   description: string;
+  /**
+   * Replaces the backend's tile URL for this sub-layer, when the frontend
+   * styles it differently (see resolveContextTileUrl).
+   */
   tile_url?: string;
   legend: DatasetLegendConfig;
   vectorStyle?: VectorStyleSpec;
@@ -195,10 +199,8 @@ const SBTN_NATURAL_LANDS_DESCRIPTION =
   "The SBTN Natural Lands Map v1.1 is a 2020 baseline map of natural and non-natural land covers intended for use by companies setting science-based targets for nature, specifically the SBTN Land target #1: no conversion of natural ecosystems. This map is global with 30m resolution and was made by compiling existing global and regional data including the GLAD Global Land Cover and Change data, ESA WorldCover, and many other land cover and use datasets.";
 
 /**
- * The natural classes (raster values 2-11) of the SBTN Natural Lands Map.
- * Shared by the standalone card and the `natural_lands` context sub-layer:
- * the backend serves the sub-layer from the same raster masked to these
- * classes, so only the card adds a non-natural row.
+ * The natural classes (raster values 2-11) of the SBTN Natural Lands Map, as
+ * the standalone card's legend lists them (it adds a non-natural row).
  */
 const SBTN_NATURAL_CLASSES = [
   { label: "natural forests", color: "#246E24" },
@@ -213,17 +215,37 @@ const SBTN_NATURAL_CLASSES = [
   { label: "bare", color: "#FEFECC" },
 ];
 
+// Raster values of the natural classes (2-11), and the four of them Tree cover
+// loss counts as natural forest: natural forests, mangroves, wet natural
+// forests and natural peat forests.
+const SBTN_NATURAL_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+const SBTN_NATURAL_FOREST_VALUES = [2, 5, 8, 9];
+
+const SBTN_NATURAL_LANDS_COLOR = "#A8DDB5";
+const SBTN_NATURAL_FOREST_COLOR = SBTN_NATURAL_CLASSES[0].color;
+
 /**
- * What the `natural_lands` and `natural_forest` sub-layers draw. Each adds its
- * own `info` saying what it restricts the parent dataset to.
+ * SBTN raster tiles painting `values` in a single `color`. The tile server
+ * leaves values missing from the colormap transparent, so everything else
+ * drops out. Replaces the backend's tile URL for the `natural_lands` and
+ * `natural_forest` sub-layers, which paints all ten natural classes.
  */
-const SBTN_NATURAL_CONTEXT_LEGEND = {
-  title: SBTN_NATURAL_LANDS_TITLE,
-  color: SBTN_NATURAL_CLASSES[0].color,
-  items: SBTN_NATURAL_CLASSES,
-  type: "symbol",
-  note: "Natural classes of the SBTN Natural Lands Map (2020 baseline). This map may overestimate the extent of natural lands.",
-} satisfies Omit<DatasetLegendConfig, "info">;
+function sbtnSingleClassTileUrl(values: number[], color: string): string {
+  const rgba = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16));
+  const colormap = Object.fromEntries(
+    values.map((value) => [value, [...rgba, 255]])
+  );
+  const query = [
+    `colormap=${encodeURIComponent(JSON.stringify(colormap))}`,
+    "assets=asset",
+    `expression=${encodeURIComponent("asset*(asset<12)*(asset>1)")}`,
+    "asset_as_band=True",
+  ].join("&");
+  return `${EOAPI_HOST}/raster/collections/natural-lands-v-1-1/tiles/WebMercatorQuad/{z}/{x}/{y}.png?${query}`;
+}
+
+const SBTN_CONTEXT_NOTE =
+  "From the SBTN Natural Lands Map (2020 baseline). This map may overestimate the extent of natural lands.";
 
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
@@ -279,29 +301,45 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     },
   },
   // Sub-layer rendered beneath Integrated alerts when the agent restricts
-  // them to natural lands (project-zeno#853).
+  // them to natural lands (project-zeno#853): every natural class as one
+  // swatch, since the analysis doesn't break them down.
   natural_lands: {
     dataset_id: 3,
     dataset_name: "SBTN Natural Lands Map",
     context_layer: null as string | null,
     description: SBTN_NATURAL_LANDS_DESCRIPTION,
+    tile_url: sbtnSingleClassTileUrl(
+      SBTN_NATURAL_VALUES,
+      SBTN_NATURAL_LANDS_COLOR
+    ),
     legend: {
-      ...SBTN_NATURAL_CONTEXT_LEGEND,
+      title: SBTN_NATURAL_LANDS_TITLE,
+      color: SBTN_NATURAL_LANDS_COLOR,
+      items: [{ label: "Natural lands", color: SBTN_NATURAL_LANDS_COLOR }],
+      type: "symbol",
+      note: SBTN_CONTEXT_NOTE,
       info: 'Alerts are restricted to natural lands in the SBTN Natural Lands Map (2020 baseline). "Natural" means an ecosystem that substantially resembles what would be found without major human impact, including regenerated and secondary ones; plantations, cropland and built areas are excluded.',
     },
   },
   // Sub-layer rendered beneath Tree cover loss when the agent restricts it to
-  // natural forest (project-zeno#853). The backend draws it from the same
-  // raster as `natural_lands`, so the legend lists every class drawn and the
-  // info names the four the analysis counts.
+  // natural forest (project-zeno#853): only the four classes the analysis
+  // counts, as one swatch.
   natural_forest: {
     dataset_id: 3,
     dataset_name: "SBTN Natural Lands Map",
     context_layer: null as string | null,
     description: SBTN_NATURAL_LANDS_DESCRIPTION,
+    tile_url: sbtnSingleClassTileUrl(
+      SBTN_NATURAL_FOREST_VALUES,
+      SBTN_NATURAL_FOREST_COLOR
+    ),
     legend: {
-      ...SBTN_NATURAL_CONTEXT_LEGEND,
-      info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Other natural classes are shown for context but not counted. Covers loss from 2021 onward; no canopy cover threshold applies.",
+      title: "SBTN Natural forest (2020)",
+      color: SBTN_NATURAL_FOREST_COLOR,
+      items: [{ label: "Natural forest", color: SBTN_NATURAL_FOREST_COLOR }],
+      type: "symbol",
+      note: SBTN_CONTEXT_NOTE,
+      info: "Tree cover loss is restricted to natural forest in the SBTN Natural Lands Map (2020 baseline): natural forests, natural peat forests, mangroves and wet natural forests. Covers loss from 2021 onward; no canopy cover threshold applies.",
     },
   },
 };

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
+
 import { mapWidgetLayer, mapWidgetViewportBbox } from "../mapWidgets";
 
 const datasetConfig = (overrides: Record<string, unknown> = {}) => ({
@@ -45,6 +47,20 @@ describe("mapWidgetLayer — dataset configs", () => {
     );
     expect(layer?.contextTileUrl).toBe("https://tiles.example.org/driver");
     expect(layer?.contextLayerName).toBe("driver");
+  });
+
+  it("uses the frontend's styling for SBTN natural sub-layers", () => {
+    const layer = mapWidgetLayer(
+      datasetConfig({
+        context_layer: "natural_lands",
+        context_layers: [
+          { name: "natural_lands", tile_url: "/raster/natural-lands.png" },
+        ],
+      })
+    );
+    expect(layer?.contextTileUrl).toBe(
+      CONTEXT_LAYER_METADATA.natural_lands.tile_url
+    );
   });
 
   it("omits the context layer when the active name has no entry", () => {

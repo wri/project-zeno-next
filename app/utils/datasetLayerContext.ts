@@ -191,6 +191,16 @@ export function contextLayerIgnoresCanopy(
   return contextLayer === "natural_forest";
 }
 
+/**
+ * The tile URL to draw a context sub-layer from: the frontend's own
+ * (`CONTEXT_LAYER_METADATA[name].tile_url`) when it restyles that layer,
+ * otherwise the backend's. Applied on thread replay too, so older threads
+ * pick up the restyle.
+ */
+export function resolveContextTileUrl(name: string, tileUrl: string): string {
+  return CONTEXT_LAYER_METADATA[name]?.tile_url ?? tileUrl;
+}
+
 // Route primary forest tiles through the `pf://` protocol so the
 // black-background PNGs render with alpha — see primaryForestTileProtocol.
 function patchPrimaryForestTileUrl(url: string): string {
@@ -263,7 +273,9 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
           // from the backend. Until then, only raster URLs go through this patch.
           tileUrl: isVector
             ? ctxMeta.tile_url
-            : patchPrimaryForestTileUrl(ctxMeta.tile_url),
+            : patchPrimaryForestTileUrl(
+                resolveContextTileUrl(ctxMeta.name, ctxMeta.tile_url)
+              ),
           sourceLayer: isVector
             ? (ctxMeta.source_layer ?? undefined)
             : undefined,
