@@ -396,9 +396,15 @@ export default function formatChartData(
       yAxis,
       seriesFields
     );
+    // Per-series colors from the backend registry (`colorMap`, keyed by
+    // series name), as in the stacked-bar-with-line branch below, so a
+    // curated chart's segments keep their designed colors. Segments with no
+    // entry fall back to the default rotation.
+    const stackColorMap = colorOverrides?.colorMap;
     const series: ChartSeries[] = seriesKeys.map((key, index) => ({
       name: key,
-      color: defaultColors[index % defaultColors.length],
+      color:
+        stackColorMap?.[key] ?? defaultColors[index % defaultColors.length],
       stackId: "a", // All items in a stacked chart share a stackId
     }));
     // The data format is already correct for stacked charts.
