@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge, Table } from "@chakra-ui/react";
 import { BUCKETS } from "../../model/config";
 import { matrixCategory, ROBUST_FLOOR } from "../../lib/matrix";

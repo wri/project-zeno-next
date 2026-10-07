@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Flex, Link, Text } from "@chakra-ui/react";
 import { ArrowSquareOutIcon, InfoIcon, XIcon } from "@phosphor-icons/react";
 import {

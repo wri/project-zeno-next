@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { useBreakpointValue } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";

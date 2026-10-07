@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import { Box, Button, Flex, Heading, SimpleGrid, Text } from "@chakra-ui/react";
 import type { TraceRow } from "../../model/types";

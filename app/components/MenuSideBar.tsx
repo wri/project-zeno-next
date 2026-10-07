@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Badge,
   Box,
@@ -27,7 +25,7 @@ import {
 import { Tooltip } from "./ui/tooltip";
 import AvailablePromptsCard from "./AvailablePromptsCard";
 import { WHATS_NEW_FEATURES } from "./whatsNewFeatures";
-import { Link, usePathname, useRouter } from "@/app/lib/router";
+import { Link, usePathname, useRouter } from "@/src/shared/lib/router";
 import { PREVIEW_HELP_CENTER_URL } from "@/app/constants/preview-content";
 import { useLogout } from "@/app/hooks/useLogout";
 import { openWhatsNew, useWhatsNewUnread } from "@/app/hooks/useWhatsNew";

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { ImageryLegendEntry } from "../ImageryLegendEntry";
 import type { ImageryLegendGroup, LayerActionArgs } from "../types";
+import { PLANET_METADATA } from "@/app/constants/planet-metadata";
 
 const baseGroup: ImageryLegendGroup = {
   kind: "imagery",
@@ -129,6 +130,18 @@ describe("ImageryLegendEntry", () => {
     expect(screen.getByText("Updating mosaic…")).toBeDefined();
     expect(screen.queryByText("DATES")).toBeNull();
     expect(screen.queryByText(/captures ·/)).toBeNull();
+  });
+
+  it("opens the full metadata dialog from the info button", async () => {
+    renderEntry({ metadata: PLANET_METADATA, imageDate: "2025-08-01" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "About Planet Satellite Imagery" })
+    );
+
+    expect(await screen.findByText("Planet Satellite Imagery")).toBeDefined();
+    expect(screen.getByText("Frequency of updates")).toBeDefined();
+    expect(screen.getByText(/Image © 2025 Planet Labs Inc\./)).toBeDefined();
   });
 
   it("pluralises the captures summary correctly for a single capture", () => {

@@ -1,5 +1,3 @@
-"use client";
-
 import { StackPlusIcon } from "@phosphor-icons/react";
 import {
   Box,
@@ -12,7 +10,7 @@ import {
   Badge,
   Flex,
 } from "@chakra-ui/react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 
 import PageHeader from "@/app/components/PageHeader";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";

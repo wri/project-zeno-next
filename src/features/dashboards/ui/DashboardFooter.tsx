@@ -1,5 +1,3 @@
-"use client";
-
 import { Flex } from "@chakra-ui/react";
 
 import type { Dashboard } from "../api/schemas";

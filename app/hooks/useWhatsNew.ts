@@ -1,4 +1,3 @@
-"use client";
 import { useSyncExternalStore } from "react";
 
 // Bump the version (and add the old key to WhatsNewModal's LEGACY_STORAGE_KEYS)

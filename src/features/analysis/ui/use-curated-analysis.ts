@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useMemo } from "react";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 

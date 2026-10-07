@@ -181,6 +181,16 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
   return layers;
 }
 
+// Whether a context layer's analysis ignores the canopy cover threshold. The
+// natural forest filter is a 2020 map independent of canopy density, so the
+// analytics API rejects a threshold alongside it — a CANOPY chip would
+// describe a filter the numbers never had.
+export function contextLayerIgnoresCanopy(
+  contextLayer: string | null | undefined
+): boolean {
+  return contextLayer === "natural_forest";
+}
+
 // Route primary forest tiles through the `pf://` protocol so the
 // black-background PNGs render with alpha — see primaryForestTileProtocol.
 function patchPrimaryForestTileUrl(url: string): string {
@@ -199,6 +209,8 @@ function patchPrimaryForestTileUrl(url: string): string {
  *    chips (e.g. `{ canopy_cover: 30 }`). Backend-supplied values take
  *    priority; falls back to `dataset.threshold` then the card default in
  *    `DATASET_CARDS`. Will be `undefined` if the dataset has no threshold.
+ *    Never carries `canopy_cover` under a context layer that ignores it
+ *    (see contextLayerIgnoresCanopy).
  *  - `startDate` / `endDate` — ISO date strings forwarded from the backend,
  *    shown as the YEAR/YEARS chip in the legend.
  */
@@ -212,9 +224,12 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
 
   // Parameters from the backend are authoritative; otherwise use the dataset's
   // default canopy threshold so the legend can still describe the rendered tile.
+  // Neither applies under a context layer whose analysis ignores canopy cover.
+  const ignoresCanopy = contextLayerIgnoresCanopy(ctxName);
   const explicitParameters = Object.fromEntries(
     (dataset.parameters ?? [])
       .filter((p) => Array.isArray(p.values) && p.values.length > 0)
+      .filter((p) => !(ignoresCanopy && p.name === "canopy_cover"))
       .map((p) => [p.name, p.values[0]])
   );
   const datasetDefaults = DATASET_CARDS.find(
@@ -222,7 +237,9 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
       d.dataset_id === dataset.dataset_id ||
       d.dataset_name === dataset.dataset_name
   );
-  const defaultCanopyCover = dataset.threshold ?? datasetDefaults?.threshold;
+  const defaultCanopyCover = ignoresCanopy
+    ? undefined
+    : (dataset.threshold ?? datasetDefaults?.threshold);
   const parameters =
     Object.keys(explicitParameters).length > 0
       ? explicitParameters

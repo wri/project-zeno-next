@@ -1,4 +1,3 @@
-"use client";
 import { Image } from "@chakra-ui/react";
 import { CrosshairIcon, PolygonIcon } from "@phosphor-icons/react";
 import { AOISelection } from "@/app/types/chat";

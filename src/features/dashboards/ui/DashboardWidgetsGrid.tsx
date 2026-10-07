@@ -1,5 +1,3 @@
-"use client";
-
 import { Fragment, useEffect, useMemo, useRef } from "react";
 import { Box, type BoxProps, Flex, Text } from "@chakra-ui/react";
 

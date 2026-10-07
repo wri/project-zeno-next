@@ -21,7 +21,7 @@ vi.mock("@/app/components/ui/toaster", () => ({
 
 const router = vi.hoisted(() => ({ pathname: "/app", push: vi.fn() }));
 
-vi.mock("@/app/lib/router", async (importOriginal) => ({
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   usePathname: () => router.pathname,
   useRouter: () => ({ push: router.push }),

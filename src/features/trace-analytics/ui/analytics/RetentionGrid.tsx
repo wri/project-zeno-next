@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Flex, Table, Text } from "@chakra-ui/react";
 import type { RetentionResult } from "../../lib/analytics/retention";
 import { ChartCard } from "../charts/ChartCard";
