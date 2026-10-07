@@ -50,21 +50,39 @@ export default function TeamSection() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Image src="/WRI-Logo.svg" alt="WRI Logo" w="128px" h="64px" />
+            <Image
+              src="/WRI-Logo.svg"
+              alt="WRI Logo"
+              w="128px"
+              h="64px"
+              fit="contain"
+            />
           </ChakraLink>
           <ChakraLink
             href="https://landcarbonlab.org/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Image src="/LCL-logo.svg" alt="LCL Logo" w="128px" h="64px" />
+            <Image
+              src="/LCL-logo.svg"
+              alt="LCL Logo"
+              w="128px"
+              h="64px"
+              fit="contain"
+            />
           </ChakraLink>
           <ChakraLink
             href="https://www.bezosearthfund.org/"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Image src="/BEF-logo.png" alt="BEF Logo" w="128px" h="64px" />
+            <Image
+              src="/BEF-logo.png"
+              alt="BEF Logo"
+              w="128px"
+              h="64px"
+              fit="contain"
+            />
           </ChakraLink>
           <ChakraLink
             href="https://www.globalnaturewatch.org/"
@@ -96,6 +114,7 @@ export default function TeamSection() {
               alt="DevSeed Logo"
               w="128px"
               h="64px"
+              fit="contain"
             />
           </ChakraLink>
           <ChakraLink
@@ -103,7 +122,13 @@ export default function TeamSection() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Image src="/nicfi-logo.png" alt="NICFI Logo" w="128px" h="64px" />
+            <Image
+              src="/nicfi-logo.png"
+              alt="NICFI Logo"
+              w="128px"
+              h="64px"
+              fit="contain"
+            />
           </ChakraLink>
           <ChakraLink
             href="https://www.google.org/"
@@ -115,6 +140,7 @@ export default function TeamSection() {
               alt="Google.org Logo"
               w="128px"
               h="64px"
+              fit="contain"
             />
           </ChakraLink>
         </Flex>
