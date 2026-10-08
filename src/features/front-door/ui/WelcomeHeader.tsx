@@ -5,20 +5,15 @@ import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useRouter } from "@/app/lib/router";
 
 /**
- * The header row of the sign-up pages (/onboarding, /welcome): the Horizon
- * name, the PREVIEW badge, and "Go back" to the landing page.
+ * The header row of /welcome: the Horizon name (an h2: the page's h1 is the
+ * greeting below), the PREVIEW badge, and "Go back" to the landing page.
  */
-export function OnboardingHeader({
-  headingAs = "h1",
-}: {
-  /** /welcome has its own h1 below, so it passes "h2". */
-  headingAs?: "h1" | "h2";
-}) {
+export function WelcomeHeader() {
   const router = useRouter();
   return (
     <Flex justifyContent="space-between" mb={12}>
       <Flex gap="2" alignItems="center">
-        <Heading m={0} as={headingAs} size="md" color="primary.fg">
+        <Heading m={0} as="h2" size="md" color="primary.fg">
           Global Nature Watch{" "}
           <Text as="span" fontWeight="normal">
             Horizon

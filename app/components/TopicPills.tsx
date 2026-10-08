@@ -17,7 +17,7 @@ interface TopicPillsProps extends Omit<FlexProps, "onToggle"> {
 }
 
 /**
- * The profile's topics as toggle pills, shared by onboarding, User Profile
+ * The profile's topics as toggle pills, shared by User Profile
  * and the in-chat profile card. Flex props go on the wrapper.
  */
 export function TopicPills({

@@ -1,8 +1,8 @@
 import { Text } from "@chakra-ui/react";
 import {
-  isOnboardingFieldRequired,
-  type OnboardingFieldKey,
-} from "@/app/config/onboarding";
+  isProfileFieldRequired,
+  type ProfileFieldKey,
+} from "@/app/config/profile-fields";
 
 /**
  * The requirement marker shown beside a field's label: a red asterisk when the
@@ -11,14 +11,10 @@ import {
  * Both states are spelled out because nothing on the page explains what the
  * asterisk means on its own. Always derive the marker from the field key rather
  * than hand-writing it, so a label can never disagree with the validation in
- * `REQUIRED_ONBOARDING_FIELDS`.
+ * `REQUIRED_PROFILE_FIELDS`.
  */
-export default function RequirementHint({
-  field,
-}: {
-  field: OnboardingFieldKey;
-}) {
-  if (isOnboardingFieldRequired(field)) {
+export default function RequirementHint({ field }: { field: ProfileFieldKey }) {
+  if (isProfileFieldRequired(field)) {
     return (
       <Text as="span" color="red.500" ml={1}>
         *
@@ -29,7 +25,7 @@ export default function RequirementHint({
   return <OptionalMarker />;
 }
 
-/** The "(Optional)" after a field's label, for fields outside the onboarding set. */
+/** The "(Optional)" after a field's label, for fields outside REQUIRED_PROFILE_FIELDS. */
 export function OptionalMarker() {
   return (
     <Text as="span" color="fg.muted" fontSize="xs" fontStyle="italic" ml={1}>

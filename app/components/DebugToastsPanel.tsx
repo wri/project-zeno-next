@@ -302,10 +302,10 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         mt="2"
         pt="2"
       >
-        {/* Offline mirror: real form with mock config, no API/auth. */}
+        {/* Offline gallery of the front door's components, no API/auth. */}
         <Link
           as={NextLink}
-          href="/onboarding-debug"
+          href="/onboarding-debug/front-door"
           fontSize="2xs"
           color="gray.500"
           _hover={{ color: "gray.800" }}
@@ -314,7 +314,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           gap="1"
         >
           <UserPlusIcon size={10} />
-          Go to Onboarding debugger →
+          Go to Front door components →
         </Link>
         <Link
           as={NextLink}

@@ -26,7 +26,6 @@ export interface AuthGuardInput {
   pathname: string;
   /** `window.location.search`, including the leading "?" (or ""). */
   search: string;
-  hasProfile: boolean;
   termsAccepted: boolean;
 }
 
@@ -45,7 +44,7 @@ export interface AuthGuardRedirect {
  * The route rules for a signed-in person, as a pure function so they can
  * be pinned by tests. Returns null when the route may render.
  *
- * /onboarding with a profile goes to /app. /app* needs accepted terms (not a
+ * /app* needs accepted terms (not a
  * profile: that is asked for later, in the chat), else /welcome with the
  * query string, so ?prompt= survives; /welcome with the terms accepted
  * continues to /app with the query string.
@@ -53,14 +52,9 @@ export interface AuthGuardRedirect {
 export function authGuardDecision({
   pathname,
   search,
-  hasProfile,
   termsAccepted,
 }: AuthGuardInput): AuthGuardRedirect | null {
   const isApp = pathname.startsWith("/app");
-  if (pathname.startsWith("/onboarding") && hasProfile) {
-    return { href: "/app", mode: "hard" };
-  }
-
   const isWelcome = pathname === "/welcome" || pathname.startsWith("/welcome/");
   if (isApp && !termsAccepted)
     return { href: `/welcome${search}`, mode: "hard" };
@@ -75,8 +69,7 @@ export function authGuardDecision({
  * Returns true when the user is authenticated and the page is safe to render.
  */
 export function useAuthGuard(): boolean {
-  const { authLoaded, isAuthenticated, hasProfile, termsAccepted } =
-    useAuthStore();
+  const { authLoaded, isAuthenticated, termsAccepted } = useAuthStore();
   // usePathname() is typed `string | null`; treat null as "" (matches no route).
   const pathname = usePathname() ?? "";
   const router = useRouter();
@@ -94,7 +87,6 @@ export function useAuthGuard(): boolean {
     const redirect = authGuardDecision({
       pathname,
       search: window.location.search,
-      hasProfile,
       termsAccepted,
     });
     if (!redirect) return;
@@ -103,14 +95,7 @@ export function useAuthGuard(): boolean {
     } else {
       window.location.href = redirect.href;
     }
-  }, [
-    authLoaded,
-    isAuthenticated,
-    hasProfile,
-    termsAccepted,
-    pathname,
-    router,
-  ]);
+  }, [authLoaded, isAuthenticated, termsAccepted, pathname, router]);
 
   if (!authLoaded || !isAuthenticated) return false;
 
@@ -119,7 +104,6 @@ export function useAuthGuard(): boolean {
     authGuardDecision({
       pathname,
       search: "",
-      hasProfile,
       termsAccepted,
     }) === null
   );

@@ -5,8 +5,8 @@ import { Box, Container } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "@/app/lib/router";
 import { showApiError } from "@/app/hooks/useErrorHandler";
-import { OnboardingHeader } from "@/app/onboarding/OnboardingHeader";
-import { OnboardingPageShell } from "@/app/onboarding/OnboardingPageShell";
+import { WelcomeHeader } from "./WelcomeHeader";
+import { WelcomePageShell } from "./WelcomePageShell";
 import { TERMS_VERSION } from "@/app/config/terms";
 import { trackEvent } from "@/app/lib/track-event";
 import useAuthStore from "@/app/store/authStore";
@@ -57,7 +57,7 @@ function WelcomeContent() {
   return (
     <Box minH="100vh" bg="bg" py={24}>
       <Container maxW="3xl">
-        <OnboardingHeader headingAs="h2" />
+        <WelcomeHeader />
         <WelcomeConsent
           name={name}
           pendingPrompt={pendingPrompt(search)}
@@ -76,8 +76,8 @@ function WelcomeContent() {
  */
 export function WelcomePage() {
   return (
-    <OnboardingPageShell>
+    <WelcomePageShell>
       <WelcomeContent />
-    </OnboardingPageShell>
+    </WelcomePageShell>
   );
 }
