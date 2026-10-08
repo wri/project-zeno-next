@@ -74,16 +74,21 @@ export function getMapAreaToolsLeftPx(
 }
 
 /**
- * Left inset for dashboard page content beside the fixed chat overlay.
- * Only the full-size panel needs clearance — it spans the full viewport
- * height, so the centered content must re-center in the remaining space.
- * The compact panel is bottom-anchored and intentionally allowed to float
- * over the content, matching its behaviour over the map.
+ * Left inset for dashboard page content beside the fixed chat overlay, so the
+ * centered content re-centers in the space the chat leaves and never sits
+ * under it. The compact panel is inset from the edge, so its clearance
+ * includes that inset; the dashboard therefore sits slightly right of the
+ * viewport's center.
  */
 export function getDashboardContentLeftPx(isChatFullSize: boolean): number {
-  return isChatFullSize
-    ? FULLSIZE_CHAT_PANEL_WIDTH_PX + EXPLORATION_PANEL_GAP_PX
-    : 0;
+  if (isChatFullSize) {
+    return FULLSIZE_CHAT_PANEL_WIDTH_PX + EXPLORATION_PANEL_GAP_PX;
+  }
+  return (
+    COMPACT_CHAT_INSET_PX +
+    COMPACT_CHAT_PANEL_WIDTH_PX +
+    EXPLORATION_PANEL_GAP_PX
+  );
 }
 
 /** Left offset for map feedback toasts (selection mode, draw validation). */

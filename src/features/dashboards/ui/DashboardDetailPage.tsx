@@ -28,6 +28,13 @@ export default function DashboardDetailPage() {
   const userId = useAuthStore((s) => s.userId);
   const isOwner = !!userId && userId === dashboard?.user_id;
   const contentLeftPx = getDashboardContentLeftPx(isChatFullSize);
+  // The chat is a fixed overlay on the left (compact or full-size), so the
+  // page content pads past it and its centered container re-centers in the
+  // remaining space. Duration matches the chat's own resize animation.
+  const contentInsetProps = {
+    pl: { base: 0, md: `${contentLeftPx}px` },
+    transition: "padding-left 0.2s ease-in-out",
+  };
   const { sentinelRef, pinned } = usePinnedHeader();
   // A curated analysis being added counts as content: the grid must take over
   // from the empty-state hero as soon as its loading module has something to
@@ -64,9 +71,6 @@ export default function DashboardDetailPage() {
   }, [dashboardId, dashboard?.name]);
 
   return (
-    // The full-size chat is a fixed, full-height overlay on the left, so the
-    // content pane pads past it and the centered container re-centers in the
-    // remaining space. Duration matches the chat's own resize animation.
     <Box
       bg="#F4F5F6"
       minH="calc(100vh - 40px)"
@@ -75,11 +79,6 @@ export default function DashboardDetailPage() {
       flexDir="column"
       // 24px nav-to-breadcrumb per the Figma page shell.
       pt={6}
-      pl={{
-        base: 0,
-        md: `${contentLeftPx}px`,
-      }}
-      transition="padding-left 0.2s ease-in-out"
     >
       {/* Chat overlay — the same conversation as the map app (chatStore is a
           singleton). Fixed below the 40px header so it stays put while the
@@ -107,70 +106,76 @@ export default function DashboardDetailPage() {
           contentLeftPx={contentLeftPx}
         />
       )}
-      <Container maxW="1232px" pb={{ base: 8, md: 10 }}>
-        <Flex direction="column" gap="12px">
-          {/* While the condensed header is pinned it carries live copies of
+      {/* The inset goes on a wrapper, not the Container: padding inside the
+          Container's max width would narrow the report below the footer's. */}
+      <Box {...contentInsetProps}>
+        <Container maxW="1232px" pb={{ base: 8, md: 10 }}>
+          <Flex direction="column" gap="12px">
+            {/* While the condensed header is pinned it carries live copies of
               these controls, so the scrolled-away originals leave the tab
               order and accessibility tree — one live copy at a time. */}
-          <Box aria-hidden={pinned} inert={pinned}>
-            <DashboardBreadcrumb name={dashboard?.name} />
-          </Box>
+            <Box aria-hidden={pinned} inert={pinned}>
+              <DashboardBreadcrumb name={dashboard?.name} />
+            </Box>
 
-          {isLoading ? (
-            <Flex align="center" gap={2} color="fg.muted" py={12}>
-              <Spinner size="sm" /> Loading dashboard...
-            </Flex>
-          ) : isError || !dashboard ? (
-            <Text color="fg.error" py={12}>
-              Could not load this dashboard.
-            </Text>
-          ) : (
-            <>
-              {/* The Figma page shell: a white header card with a 2px blue
+            {isLoading ? (
+              <Flex align="center" gap={2} color="fg.muted" py={12}>
+                <Spinner size="sm" /> Loading dashboard...
+              </Flex>
+            ) : isError || !dashboard ? (
+              <Text color="fg.error" py={12}>
+                Could not load this dashboard.
+              </Text>
+            ) : (
+              <>
+                {/* The Figma page shell: a white header card with a 2px blue
                   accent and the graph-paper hero band, sized to its content
                   rather than the Figma frame's 200px so the page starts with
                   less dead space. Widgets float below it as their own cards
                   on the page's gray background
                   (per the grouped-insights design), so the shell wraps only
                   the header. */}
-              <Box
-                bgColor="white"
-                {...HERO_BAND_PROPS}
-                borderWidth="1px"
-                borderTopWidth="2px"
-                borderTopColor="#0049AA"
-                borderColor="rgba(19,22,25,0.1)"
-                borderRadius="8px"
-                px={{ base: 6, md: "46px" }}
-                pt={{ base: 5, md: "24px" }}
-                pb={{ base: 5, md: "24px" }}
-              >
-                <Box ref={sentinelRef} aria-hidden={pinned} inert={pinned}>
-                  <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
+                <Box
+                  bgColor="white"
+                  {...HERO_BAND_PROPS}
+                  borderWidth="1px"
+                  borderTopWidth="2px"
+                  borderTopColor="#0049AA"
+                  borderColor="rgba(19,22,25,0.1)"
+                  borderRadius="8px"
+                  px={{ base: 6, md: "46px" }}
+                  pt={{ base: 5, md: "24px" }}
+                  pb={{ base: 5, md: "24px" }}
+                >
+                  <Box ref={sentinelRef} aria-hidden={pinned} inert={pinned}>
+                    <DashboardHeader dashboard={dashboard} isOwner={isOwner} />
+                  </Box>
                 </Box>
-              </Box>
 
-              {hasContent ? (
-                <DashboardWidgetsGrid dashboard={dashboard} />
-              ) : (
-                <DashboardEmptyStateHero
-                  dashboard={dashboard}
-                  isOwner={isOwner}
-                />
-              )}
-            </>
-          )}
-        </Flex>
-      </Container>
+                {hasContent ? (
+                  <DashboardWidgetsGrid dashboard={dashboard} />
+                ) : (
+                  <DashboardEmptyStateHero
+                    dashboard={dashboard}
+                    isOwner={isOwner}
+                  />
+                )}
+              </>
+            )}
+          </Flex>
+        </Container>
+      </Box>
       {showFooterBand && dashboard && (
         // Full width, per the design: the footer reads as the page's own
-        // ground, where the grey above is the gutter between panels.
+        // ground, where the grey above is the gutter between panels. The band
+        // runs behind the chat; its contents stay centered under the report.
         <Box
           flex="1"
           bg="white"
           mt={{ base: 0, md: "64px" }}
           pt={{ base: 8, md: "72px" }}
           pb={{ base: 8, md: "96px" }}
+          {...contentInsetProps}
         >
           <Container maxW="1232px">
             <DashboardFooter dashboard={dashboard} />
