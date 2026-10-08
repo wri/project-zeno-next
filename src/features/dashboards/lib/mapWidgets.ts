@@ -1,3 +1,4 @@
+import { resolveContextTileUrl } from "@/app/utils/datasetLayerContext";
 import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 
 /**
@@ -85,7 +86,7 @@ export function mapWidgetLayer(
       );
       const entryUrl = str(entry?.tile_url);
       if (entryUrl) {
-        contextTileUrl = patchPrimaryForest(entryUrl);
+        contextTileUrl = resolveContextTileUrl(activeName, entryUrl);
         contextLayerName = activeName;
       }
     }
