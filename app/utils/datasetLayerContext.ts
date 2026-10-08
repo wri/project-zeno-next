@@ -1,4 +1,4 @@
-import type { DatasetInfo } from "@/app/types/chat";
+import type { DatasetInfo, DatasetParameter } from "@/app/types/chat";
 import {
   DATASET_CARDS,
   CONTEXT_LAYER_METADATA,
@@ -192,6 +192,29 @@ export function contextLayerIgnoresCanopy(
 }
 
 /**
+ * The legend's parameter chips as a `{ name: firstValue }` record, e.g.
+ * `{ canopy_cover: 30 }`. Explicit parameters are authoritative; with none,
+ * the default canopy threshold, so the legend can still describe the
+ * rendered tile. Neither applies `canopy_cover` under a context layer whose
+ * analysis ignores it. Undefined when there is nothing to show.
+ */
+export function legendParameters(
+  parameters: readonly DatasetParameter[],
+  contextLayer: string | null | undefined,
+  defaultCanopyCover: number | null | undefined
+): Record<string, unknown> | undefined {
+  const ignoresCanopy = contextLayerIgnoresCanopy(contextLayer);
+  const entries = parameters
+    .filter((p) => Array.isArray(p.values) && p.values.length > 0)
+    .filter((p) => !(ignoresCanopy && p.name === "canopy_cover"))
+    .map((p) => [p.name, p.values[0]] as const);
+  if (entries.length > 0) return Object.fromEntries(entries);
+  return !ignoresCanopy && typeof defaultCanopyCover === "number"
+    ? { canopy_cover: defaultCanopyCover }
+    : undefined;
+}
+
+/**
  * The tile URL to draw a context sub-layer from: the frontend's own
  * (`CONTEXT_LAYER_METADATA[name].tile_url`) when it restyles that layer,
  * otherwise the backend's. Applied on thread replay too, so older threads
@@ -232,30 +255,16 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
     ? dataset.context_layers?.find((c) => c.name === ctxName)
     : undefined;
 
-  // Parameters from the backend are authoritative; otherwise use the dataset's
-  // default canopy threshold so the legend can still describe the rendered tile.
-  // Neither applies under a context layer whose analysis ignores canopy cover.
-  const ignoresCanopy = contextLayerIgnoresCanopy(ctxName);
-  const explicitParameters = Object.fromEntries(
-    (dataset.parameters ?? [])
-      .filter((p) => Array.isArray(p.values) && p.values.length > 0)
-      .filter((p) => !(ignoresCanopy && p.name === "canopy_cover"))
-      .map((p) => [p.name, p.values[0]])
-  );
   const datasetDefaults = DATASET_CARDS.find(
     (d) =>
       d.dataset_id === dataset.dataset_id ||
       d.dataset_name === dataset.dataset_name
   );
-  const defaultCanopyCover = ignoresCanopy
-    ? undefined
-    : (dataset.threshold ?? datasetDefaults?.threshold);
-  const parameters =
-    Object.keys(explicitParameters).length > 0
-      ? explicitParameters
-      : typeof defaultCanopyCover === "number"
-        ? { canopy_cover: defaultCanopyCover }
-        : undefined;
+  const parameters = legendParameters(
+    dataset.parameters ?? [],
+    ctxName,
+    dataset.threshold ?? datasetDefaults?.threshold
+  );
 
   const isVector =
     ctxMeta?.type === "vector" ||
