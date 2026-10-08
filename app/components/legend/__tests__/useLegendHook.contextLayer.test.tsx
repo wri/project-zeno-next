@@ -7,6 +7,7 @@ import useMapStore from "@/app/store/mapStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
 import { pickDatasetTool } from "@/app/store/chat-tools/pickDataset";
 import type { DatasetInfo } from "@/app/types/chat";
+import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
 
 // The catalog hook fetches the backend palette registry; the legend falls back
 // to the static config when it is absent, which is what these cases exercise.
@@ -81,16 +82,20 @@ describe("useLegendHook context sub-layers", () => {
     // ("natural_lands") and a grey swatch.
     const contextLayer = contextLayerFor("natural_lands", integratedAlerts);
 
+    // All natural classes draw as one colour, so the title swatch is the
+    // whole legend.
     expect(contextLayer?.title).toBe("SBTN Natural lands (2020)");
-    expect(contextLayer?.symbology).toBeTruthy();
+    expect(contextLayer?.color).toBe("#A8DDB5");
+    expect(contextLayer?.symbology).toBeUndefined();
   });
 
   it("names the natural forest filter under Tree cover loss", () => {
     const contextLayer = contextLayerFor("natural_forest");
 
-    expect(contextLayer?.title).toBe("SBTN Natural lands (2020)");
+    expect(contextLayer?.title).toBe("SBTN Natural forest (2020)");
+    expect(contextLayer?.color).toBe("#246E24");
     expect(contextLayer?.info).toMatch(/natural forest/);
-    expect(contextLayer?.symbology).toBeTruthy();
+    expect(contextLayer?.symbology).toBeUndefined();
   });
 });
 
@@ -143,7 +148,16 @@ describe("useLegendHook canopy chip from a pick_dataset turn", () => {
     expect(entry?.params?.map((p) => p.label)).not.toContain("CANOPY");
     expect(
       entry && "contextLayer" in entry ? entry.contextLayer?.title : undefined
-    ).toBe("SBTN Natural lands (2020)");
+    ).toBe("SBTN Natural forest (2020)");
+  });
+
+  it("draws the natural forest sub-layer from the frontend's tiles", () => {
+    legendEntryAfterPick(naturalForestPick);
+
+    const ctx = useMapStore
+      .getState()
+      .layers.find((l) => l.name === "natural_forest");
+    expect(ctx?.tileUrl).toBe(CONTEXT_LAYER_METADATA.natural_forest.tile_url);
   });
 
   it("keeps the CANOPY chip without a context layer", () => {
