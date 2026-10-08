@@ -214,21 +214,29 @@ export function legendParameters(
     : undefined;
 }
 
-/**
- * The tile URL to draw a context sub-layer from: the frontend's own
- * (`CONTEXT_LAYER_METADATA[name].tile_url`) when it restyles that layer,
- * otherwise the backend's. Applied on thread replay too, so older threads
- * pick up the restyle.
- */
-export function resolveContextTileUrl(name: string, tileUrl: string): string {
-  return CONTEXT_LAYER_METADATA[name]?.tile_url ?? tileUrl;
-}
-
 // Route primary forest tiles through the `pf://` protocol so the
 // black-background PNGs render with alpha — see primaryForestTileProtocol.
 function patchPrimaryForestTileUrl(url: string): string {
   if (!url.includes("umd_regional_primary_forest")) return url;
   return wrapPrimaryForestTileUrl(url);
+}
+
+/**
+ * The tile URL to draw a raster context sub-layer from: the frontend's own
+ * (`CONTEXT_LAYER_METADATA[name].tile_url`) when it restyles that layer,
+ * otherwise the backend's, patched for primary forest. Applied on thread
+ * replay too, so older threads pick up the restyle.
+ *
+ * TODO: remove the override once the backend sends a styled tile URL per SBTN
+ * filter (`natural_forest`, `natural_lands`) instead of one shared URL. Until
+ * then the backend's URL for those two layers is ignored, so a backend change
+ * (e.g. a new collection version) won't reach the map. Drop the `tile_url`
+ * from `sbtnSingleClassLayer` in datasets.ts at the same time.
+ */
+export function resolveContextTileUrl(name: string, tileUrl: string): string {
+  return patchPrimaryForestTileUrl(
+    CONTEXT_LAYER_METADATA[name]?.tile_url ?? tileUrl
+  );
 }
 
 /**
@@ -282,9 +290,7 @@ export function getDatasetLayerContextProps(dataset: DatasetInfo) {
           // from the backend. Until then, only raster URLs go through this patch.
           tileUrl: isVector
             ? ctxMeta.tile_url
-            : patchPrimaryForestTileUrl(
-                resolveContextTileUrl(ctxMeta.name, ctxMeta.tile_url)
-              ),
+            : resolveContextTileUrl(ctxMeta.name, ctxMeta.tile_url),
           sourceLayer: isVector
             ? (ctxMeta.source_layer ?? undefined)
             : undefined,
