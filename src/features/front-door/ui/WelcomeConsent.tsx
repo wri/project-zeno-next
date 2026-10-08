@@ -1,16 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Box,
-  Button,
-  Checkbox,
-  Flex,
-  Heading,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
-import { ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react";
+import { Box, Button, Checkbox, Heading, Stack, Text } from "@chakra-ui/react";
+import { ArrowRightIcon } from "@phosphor-icons/react";
 import { personNames } from "../lib/person-names";
 import { TermsConsentLabel } from "./TermsConsentLabel";
 
@@ -19,8 +11,6 @@ export interface WelcomeConsentProps {
   name?: string | null;
   /** The question that runs after Continue, if the person arrived with one. */
   pendingPrompt?: string | null;
-  /** Reassures GFW users that this is the account they already have. */
-  signedInWithGfw?: boolean;
   isSubmitting?: boolean;
   onContinue: () => void;
 }
@@ -32,7 +22,6 @@ export interface WelcomeConsentProps {
 export function WelcomeConsent({
   name,
   pendingPrompt,
-  signedInWithGfw = false,
   isSubmitting = false,
   onContinue,
 }: WelcomeConsentProps) {
@@ -51,24 +40,6 @@ export function WelcomeConsent({
       mx="auto"
     >
       <Stack gap={5}>
-        {signedInWithGfw && (
-          <Flex
-            gap={2}
-            align="center"
-            fontSize="sm"
-            color="primary.700"
-            bg="primary.25"
-            borderWidth="1px"
-            borderColor="primary.100"
-            rounded="md"
-            px={3}
-            py={2}
-          >
-            <CheckCircleIcon size={18} weight="fill" aria-hidden />
-            Signed in with your Global Forest Watch account
-          </Flex>
-        )}
-
         <Stack gap={2}>
           <Heading as="h1" size="2xl" fontWeight="normal">
             {firstName ? (
@@ -90,14 +61,17 @@ export function WelcomeConsent({
         </Stack>
 
         {pendingPrompt && (
+          // Styled like the chat's floating recap of an earlier prompt
+          // (PinnedPrompt), so the question looks like it does once it runs.
           <Box
-            borderLeftWidth="3px"
-            borderColor="primary.500"
-            bg="bg.muted"
-            roundedRight="md"
-            px={4}
+            bg="primary.100"
+            color="fg"
+            px={3}
             py={3}
-            fontStyle="italic"
+            rounded="lg"
+            boxShadow="lg"
+            fontSize="sm"
+            lineHeight="1.5"
           >
             {pendingPrompt}
           </Box>
@@ -123,11 +97,23 @@ export function WelcomeConsent({
             loading={isSubmitting}
             onClick={onContinue}
           >
-            {pendingPrompt ? "Continue to your answer" : "Continue"}
+            {pendingPrompt ? "Continue to your answer" : "Continue to Horizon"}
             <ArrowRightIcon />
           </Button>
           <Text fontSize="xs" color="fg.muted" textAlign="center">
             You can tell us about yourself later. It takes about 30 seconds.
+          </Text>
+          <Text
+            fontSize="xs"
+            color="fg.muted"
+            textAlign="center"
+            bg="yellow.50"
+            rounded="sm"
+            px={2}
+            py={1.5}
+          >
+            By creating an account, you agree to receive periodic account and
+            system-related email updates related to Global Nature Watch.
           </Text>
         </Stack>
       </Stack>

@@ -4,96 +4,80 @@
  * The profile moves out of the way in: people reach their first answer first,
  * and GNW asks for details at a few natural moments afterwards. The rules live
  * here, framework-free, so they can be unit-tested and so every surface that
- * asks (in-chat card, banner) obeys the same limits.
+ * asks (in-chat card, banner) obeys the same limits:
+ *
+ * 1. The card, after the person's first answer ever.
+ * 2. If they don't save it ("Not now", or they just carry on), a soft banner
+ *    after the first answer of each of their next NUDGE_CONVERSATIONS new
+ *    conversations. "Add details" on the banner opens the card.
+ * 3. After that, only the account-menu reminder remains.
+ *
+ * Saving the profile ends every ask.
  */
 
 /** The moments GNW asks at: the in-chat card, then the lighter banner. */
-export type ProfileAskMoment = "first_answer" | "nth_question";
+export type ProfileAskMoment = "card" | "banner";
 
-/** After this many "Not now"s, only the account-menu reminder remains. */
-export const MAX_PROFILE_DISMISSALS = 3;
-
-/** The answer in a session that earns a later, lighter ask (banner). */
-export const NTH_QUESTION_ASK = 5;
+/** How many new conversations get the banner after the card wasn't saved. */
+export const NUDGE_CONVERSATIONS = 2;
 
 /**
- * What GNW remembers about asking one person. Dismissals and lifetime
- * answers persist across sessions; the session fields reset with the
- * browser session. Whether the profile is complete comes from the account,
- * not from here.
+ * What GNW remembers about asking one person, across sessions. Whether the
+ * profile is complete comes from the account, not from here.
  */
 export interface ProfileAskRecord {
-  /** Lifetime count of "Not now" clicks. */
-  dismissals: number;
   /** Answers the person has ever received. */
   lifetimeAnswers: number;
-  /** Whether any surface has already asked in this browser session. */
-  askedThisSession: boolean;
-  /** Answers in this browser session. */
-  sessionAnswers: number;
+  /** Whether the card has been shown after an answer. */
+  cardShown: boolean;
+  /** Conversations the banner has been shown in. */
+  bannersShown: number;
 }
 
 export const EMPTY_PROFILE_ASK_RECORD: ProfileAskRecord = {
-  dismissals: 0,
   lifetimeAnswers: 0,
-  askedThisSession: false,
-  sessionAnswers: 0,
+  cardShown: false,
+  bannersShown: 0,
 };
 
-/** At most one ask per session, none once complete or dismissed enough. */
-function mayAsk(record: ProfileAskRecord, profileComplete: boolean): boolean {
-  return (
-    !profileComplete &&
-    !record.askedThisSession &&
-    record.dismissals < MAX_PROFILE_DISMISSALS
-  );
-}
-
 /**
- * The moment reached by an answer, given the counts including it. "First
- * answer" means the person's first ever, not the first of each session:
- * otherwise it would use up every session's single ask and the later,
- * lighter asks would never be reached.
+ * The moment an answer reaches, for someone whose profile is incomplete (the
+ * caller's gate: nobody with a profile is asked). `firstInConversation`: the
+ * answer is to the first question of its conversation.
  */
-function momentAt(
-  lifetimeAnswers: number,
-  sessionAnswers: number
+export function momentFor(
+  record: ProfileAskRecord,
+  firstInConversation: boolean
 ): ProfileAskMoment | null {
-  if (lifetimeAnswers === 1) return "first_answer";
-  if (sessionAnswers === NTH_QUESTION_ASK) return "nth_question";
+  // Until the card has actually been shown (e.g. its options failed to
+  // load), the next answer tries again.
+  if (!record.cardShown) return "card";
+  if (firstInConversation && record.bannersShown < NUDGE_CONVERSATIONS) {
+    return "banner";
+  }
   return null;
 }
 
 /**
  * An answer just finished: count it, and return the moment to ask at, if
- * the policy allows one now. The ask itself is recorded separately
- * (`recordAskShown`), once something is actually shown.
+ * any. The ask itself is recorded separately (`recordAskShown`), once
+ * something is actually shown.
  */
 export function recordAnswer(
   record: ProfileAskRecord,
-  profileComplete: boolean
+  firstInConversation: boolean
 ): { record: ProfileAskRecord; ask: ProfileAskMoment | null } {
-  const counted: ProfileAskRecord = {
-    ...record,
-    lifetimeAnswers: record.lifetimeAnswers + 1,
-    sessionAnswers: record.sessionAnswers + 1,
-  };
-  const moment = momentAt(counted.lifetimeAnswers, counted.sessionAnswers);
   return {
-    record: counted,
-    ask: moment && mayAsk(record, profileComplete) ? moment : null,
+    record: { ...record, lifetimeAnswers: record.lifetimeAnswers + 1 },
+    ask: momentFor(record, firstInConversation),
   };
 }
 
-export function recordAskShown(record: ProfileAskRecord): ProfileAskRecord {
-  return { ...record, askedThisSession: true };
-}
-
-export function recordAskDismissed(record: ProfileAskRecord): ProfileAskRecord {
-  return { ...record, dismissals: record.dismissals + 1 };
-}
-
-/** A new browser session: lifetime counts carry over, session state resets. */
-export function startNewSession(record: ProfileAskRecord): ProfileAskRecord {
-  return { ...record, askedThisSession: false, sessionAnswers: 0 };
+export function recordAskShown(
+  record: ProfileAskRecord,
+  moment: ProfileAskMoment
+): ProfileAskRecord {
+  return moment === "card"
+    ? { ...record, cardShown: true }
+    : { ...record, bannersShown: record.bannersShown + 1 };
 }

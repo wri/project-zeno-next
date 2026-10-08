@@ -4,22 +4,31 @@
  */
 import type { PatchProfilePartialRequest } from "@/app/schemas/api/auth/profile/patch";
 import type { ProfileConfig } from "@/app/schemas/api/profile/config";
+import type { PersonNames } from "../lib/person-names";
 
-/** The dropdown options the card needs, from GET /api/profile/config. */
+/** The option lists the card needs, from GET /api/profile/config. */
 export type ProfileCardOptions = Pick<
   ProfileConfig,
-  "sectors" | "sector_roles" | "countries" | "languages"
+  "sectors" | "sector_roles" | "countries" | "languages" | "topics"
 >;
 
 /**
  * Card form state, in the order the card asks for it. An empty string means
- * "not chosen". Country and sector are required; language and role are not.
+ * "not chosen". Country, sector and organisation are required; language and
+ * role are not. The names and topics are asked for only with the email list
+ * opt-in, and are then required.
  */
 export interface ProfileDraft {
   country: string;
   language: string;
   sector: string;
   role: string;
+  organisation: string;
+  helpTestFeatures: boolean;
+  receiveNewsEmails: boolean;
+  firstName: string;
+  lastName: string;
+  topics: string[];
 }
 
 export const EMPTY_PROFILE_DRAFT: ProfileDraft = {
@@ -27,6 +36,12 @@ export const EMPTY_PROFILE_DRAFT: ProfileDraft = {
   language: "",
   sector: "",
   role: "",
+  organisation: "",
+  helpTestFeatures: false,
+  receiveNewsEmails: false,
+  firstName: "",
+  lastName: "",
+  topics: [],
 };
 
 type SuggestedField =
@@ -34,19 +49,22 @@ type SuggestedField =
   | "preferred_language_code"
   | "sector_code"
   | "role_code"
-  | "company_organization";
+  | "company_organization"
+  | "topics";
 
 /**
  * A profile found on the shared Resource Watch user, already mapped to GNW
  * codes (the backend owns the MyGFW label→code and ISO3→ISO2 mapping). Keyed
  * by the PATCH /api/auth/profile field names, so nothing renames it on the
  * way to the form or back; never null (the prefill parser drops absences).
+ * There are deliberately no consent flags: the card never ticks one for
+ * someone.
  */
 export type ProfileSuggestion = {
   [K in SuggestedField]?: NonNullable<PatchProfilePartialRequest[K]>;
 };
 
-/** `confirm`: one-click "Looks right". `fields`: pick country, language, sector, role. */
+/** `confirm`: one-click "Looks right". `fields`: fill in the form. */
 export type ProfileCardMode = "confirm" | "fields";
 
 /**
@@ -56,16 +74,51 @@ export type ProfileCardMode = "confirm" | "fields";
 export type ProfileCardPatch = Required<
   Pick<
     PatchProfilePartialRequest,
-    "sector_code" | "role_code" | "country_code" | "has_profile"
+    | "sector_code"
+    | "role_code"
+    | "country_code"
+    | "company_organization"
+    | "help_test_features"
+    | "receive_news_emails"
+    | "has_profile"
   >
 > &
   Pick<
     PatchProfilePartialRequest,
-    "company_organization" | "preferred_language_code"
+    "preferred_language_code" | "first_name" | "last_name" | "topics"
   >;
 
-export function isProfileDraftComplete(draft: ProfileDraft): boolean {
-  return draft.sector !== "" && draft.country !== "";
+function hasTopicOptions(options: ProfileCardOptions): boolean {
+  return Object.keys(options.topics ?? {}).length > 0;
+}
+
+/** The email list's fields: required only once the person opts in. */
+function emailFieldsComplete(
+  draft: ProfileDraft,
+  options: ProfileCardOptions
+): boolean {
+  if (!draft.receiveNewsEmails) return true;
+  return (
+    draft.firstName.trim() !== "" &&
+    draft.lastName.trim() !== "" &&
+    (draft.topics.length > 0 || !hasTopicOptions(options))
+  );
+}
+
+/** The fields "Looks right" vouches for: the card's required ones. */
+function requiredFieldsComplete(draft: ProfileDraft): boolean {
+  return (
+    draft.sector !== "" &&
+    draft.country !== "" &&
+    draft.organisation.trim() !== ""
+  );
+}
+
+export function isProfileDraftComplete(
+  draft: ProfileDraft,
+  options: ProfileCardOptions
+): boolean {
+  return requiredFieldsComplete(draft) && emailFieldsComplete(draft, options);
 }
 
 function known(
@@ -85,18 +138,29 @@ export function withSector(
   return { ...draft, sector, role: known(draft.role, roles) };
 }
 
-/** Keeps only codes the options know, so a stale or unmapped value never reaches the form. */
+/**
+ * Seeds the form. Keeps only codes the options know, so a stale or unmapped
+ * value never reaches the form; names (for the email list) come from GFW,
+ * else the Resource Watch account.
+ */
 export function draftFromSuggestion(
   suggestion: ProfileSuggestion | undefined,
-  options: ProfileCardOptions
+  options: ProfileCardOptions,
+  names: PersonNames = {}
 ): ProfileDraft {
-  if (!suggestion) return EMPTY_PROFILE_DRAFT;
-  const sector = known(suggestion.sector_code, options.sectors);
+  const s = suggestion ?? {};
+  const sector = known(s.sector_code, options.sectors);
+  const topics = options.topics ?? {};
   return {
-    country: known(suggestion.country_code, options.countries),
-    language: known(suggestion.preferred_language_code, options.languages),
+    ...EMPTY_PROFILE_DRAFT,
+    country: known(s.country_code, options.countries),
+    language: known(s.preferred_language_code, options.languages),
     sector,
-    role: known(suggestion.role_code, options.sector_roles[sector] ?? {}),
+    role: known(s.role_code, options.sector_roles[sector] ?? {}),
+    organisation: s.company_organization ?? "",
+    firstName: names.firstName ?? "",
+    lastName: names.lastName ?? "",
+    topics: (s.topics ?? []).filter((code) => code in topics),
   };
 }
 
@@ -105,33 +169,37 @@ export function profileCardMode(
   suggestion: ProfileSuggestion | undefined,
   options: ProfileCardOptions
 ): ProfileCardMode {
-  return isProfileDraftComplete(draftFromSuggestion(suggestion, options))
+  return requiredFieldsComplete(draftFromSuggestion(suggestion, options))
     ? "confirm"
     : "fields";
 }
 
 /**
- * The PATCH the card sends. Every field it shows comes from the draft (so a
- * language the person changed or cleared is what gets saved); only the
- * organisation, which the card shows but doesn't ask for, comes from the
- * suggestion.
+ * The PATCH the card sends, all from the draft (so a value the person
+ * changed or cleared is what gets saved). The names and topics go only with
+ * the email list opt-in.
  */
 export function toProfilePatch(
   draft: ProfileDraft,
-  suggestion?: ProfileSuggestion
+  options: ProfileCardOptions
 ): ProfileCardPatch {
-  if (!isProfileDraftComplete(draft)) {
-    throw new Error("Profile card saved without sector and country");
+  if (!isProfileDraftComplete(draft, options)) {
+    throw new Error("Profile card saved without its required fields");
   }
   const patch: ProfileCardPatch = {
     sector_code: draft.sector,
     role_code: draft.role === "" ? null : draft.role,
     country_code: draft.country,
+    company_organization: draft.organisation.trim(),
+    help_test_features: draft.helpTestFeatures,
+    receive_news_emails: draft.receiveNewsEmails,
     has_profile: true,
   };
   if (draft.language !== "") patch.preferred_language_code = draft.language;
-  if (suggestion?.company_organization) {
-    patch.company_organization = suggestion.company_organization;
+  if (draft.receiveNewsEmails) {
+    patch.first_name = draft.firstName.trim();
+    patch.last_name = draft.lastName.trim();
+    if (draft.topics.length > 0) patch.topics = draft.topics;
   }
   return patch;
 }

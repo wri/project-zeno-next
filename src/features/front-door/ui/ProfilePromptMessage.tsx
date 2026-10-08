@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import useAuthStore from "@/app/store/authStore";
 import { profileOptionsQuery, profilePrefillQuery } from "../api/queries";
+import { personNames } from "../lib/person-names";
 import type { ProfileCardPatch } from "../model/profile-card";
 import { ProfilePromptCard } from "./ProfilePromptCard";
 import { dismissProfileAsk, saveProfileFromCard } from "./profile-ask";
@@ -23,6 +24,7 @@ export const ProfilePromptMessage = memo(function ProfilePromptMessage({
   messageId: string;
 }) {
   const userKey = useAuthStore(selectProfileUserKey);
+  const userName = useAuthStore((s) => s.userName);
   const { data: options } = useQuery(profileOptionsQuery);
   const { data: prefill } = useQuery(profilePrefillQuery(userKey));
   const [isSaving, setIsSaving] = useState(false);
@@ -48,6 +50,7 @@ export const ProfilePromptMessage = memo(function ProfilePromptMessage({
     <ProfilePromptCard
       options={options}
       suggestion={prefill.suggestion}
+      names={personNames(prefill, userName)}
       isSaving={isSaving}
       onSave={save}
       onDismiss={() => dismissProfileAsk(messageId)}

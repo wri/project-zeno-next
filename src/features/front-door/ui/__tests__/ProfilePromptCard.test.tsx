@@ -19,6 +19,7 @@ const options: ProfileCardOptions = {
   },
   countries: { BRA: "Brazil", KEN: "Kenya", PER: "Peru", PRT: "Portugal" },
   languages: { en: "English", pt: "Português" },
+  topics: { fires: "Fires", water: "Water" },
 };
 
 const fullGfw: ProfileSuggestion = {
@@ -32,7 +33,7 @@ const fullGfw: ProfileSuggestion = {
 function renderCard(props: Partial<ProfilePromptCardProps> = {}) {
   const onSave = vi.fn();
   const onDismiss = vi.fn();
-  const { container } = render(
+  const { container, unmount } = render(
     <ChakraProvider value={defaultSystem}>
       <ProfilePromptCard
         options={options}
@@ -42,7 +43,7 @@ function renderCard(props: Partial<ProfilePromptCardProps> = {}) {
       />
     </ChakraProvider>
   );
-  return { onSave, onDismiss, container };
+  return { onSave, onDismiss, container, unmount };
 }
 
 /** The confirm-mode rows as [label, value] pairs, top to bottom. */
@@ -56,9 +57,30 @@ function confirmRows(container: HTMLElement): Array<[string, string]> {
 
 /** The fields-mode labels, top to bottom ("(Optional)" included). */
 function fieldLabels(container: HTMLElement): string[] {
-  return [...container.querySelectorAll("label")].map(
-    (l) => l.textContent ?? ""
-  );
+  return [...container.querySelectorAll("label")]
+    .map((l) => l.textContent ?? "")
+    .slice(0, FIELD_LABELS.length);
+}
+
+const FIELD_LABELS = [
+  "Country",
+  "Preferred language(Optional)",
+  "Sector",
+  "Role(Optional)",
+  "Organisation",
+];
+
+/** No email list or testing opt-in: what a Save without opt-ins adds. */
+const NO_OPT_INS = { help_test_features: false, receive_news_emails: false };
+
+function organisationInput(): HTMLInputElement {
+  return screen.getByRole("textbox", {
+    name: /^Organisation/,
+  }) as HTMLInputElement;
+}
+
+function saveButton(name = "Save"): HTMLButtonElement {
+  return screen.getByRole("button", { name }) as HTMLButtonElement;
 }
 
 /** The searchable country or language field's text input. */
@@ -112,6 +134,9 @@ describe("ProfilePromptCard", () => {
       ["Organisation", "State environment agency"],
     ]);
 
+    // No "Not now" on the one-click confirmation.
+    expect(screen.queryByRole("button", { name: "Not now" })).toBeNull();
+
     fireEvent.click(screen.getByRole("button", { name: "Looks right" }));
     expect(onSave).toHaveBeenCalledWith({
       sector_code: "government",
@@ -119,39 +144,31 @@ describe("ProfilePromptCard", () => {
       country_code: "BRA",
       company_organization: "State environment agency",
       preferred_language_code: "pt",
+      ...NO_OPT_INS,
       has_profile: true,
     });
   });
 
   it("leaves out confirm rows GFW had no value for", () => {
-    const {
-      preferred_language_code,
-      company_organization,
-      role_code,
-      ...rest
-    } = fullGfw;
+    const { preferred_language_code, role_code, ...rest } = fullGfw;
     void preferred_language_code;
-    void company_organization;
     void role_code;
     const { container } = renderCard({ suggestion: rest });
     expect(confirmRows(container)).toEqual([
       ["Country", "Brazil"],
       ["Sector", "Government"],
+      ["Organisation", "State environment agency"],
     ]);
   });
 
-  it("switches to the four fields on Edit, all prefilled including language", () => {
+  it("switches to the fields on Edit details, all prefilled", () => {
     const { onSave, container } = renderCard({ suggestion: fullGfw });
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
     expect(screen.getByText("Check your details")).toBeTruthy();
-    expect(fieldLabels(container)).toEqual([
-      "Country",
-      "Preferred language(Optional)",
-      "Sector",
-      "Role(Optional)",
-    ]);
+    expect(fieldLabels(container)).toEqual(FIELD_LABELS);
     expect(comboInput(COUNTRY).value).toBe("Brazil");
     expect(comboInput(LANGUAGE).value).toBe("Português");
+    expect(organisationInput().value).toBe("State environment agency");
     for (const value of ["Government", "Analyst"]) {
       expect(screen.getByText(value, { selector: "span" })).toBeTruthy();
     }
@@ -163,23 +180,22 @@ describe("ProfilePromptCard", () => {
       country_code: "BRA",
       company_organization: "State environment agency",
       preferred_language_code: "pt",
+      ...NO_OPT_INS,
       has_profile: true,
     });
   });
 
-  it("asks for country, language, sector and role in that order", () => {
+  it("asks for country, language, sector, role and organisation in that order", () => {
     const { container } = renderCard();
-    expect(fieldLabels(container)).toEqual([
-      "Country",
-      "Preferred language(Optional)",
-      "Sector",
-      "Role(Optional)",
-    ]);
+    expect(fieldLabels(container)).toEqual(FIELD_LABELS);
   });
 
   it("narrows country and language as you type and saves the picked codes", async () => {
     const { onSave } = renderCard({
-      suggestion: { sector_code: "government" },
+      suggestion: {
+        sector_code: "government",
+        company_organization: "Kenya Forest Service",
+      },
     });
     const country = comboInput(COUNTRY);
 
@@ -203,14 +219,16 @@ describe("ProfilePromptCard", () => {
       sector_code: "government",
       role_code: null,
       country_code: "KEN",
+      company_organization: "Kenya Forest Service",
       preferred_language_code: "pt",
+      ...NO_OPT_INS,
       has_profile: true,
     });
   });
 
   it("picks the first match with Enter", async () => {
     const { onSave } = renderCard({
-      suggestion: { sector_code: "government" },
+      suggestion: { sector_code: "government", company_organization: "SEMAS" },
     });
     const country = comboInput(COUNTRY);
     await typeInto(country, "bra");
@@ -225,7 +243,7 @@ describe("ProfilePromptCard", () => {
 
   it("keeps the picked option when the typed text is cleared or matches nothing", async () => {
     const { onSave } = renderCard({ suggestion: fullGfw });
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
 
     // Emptied, closed with Escape, then left: back to the picked label.
     const language = comboInput(LANGUAGE);
@@ -253,7 +271,7 @@ describe("ProfilePromptCard", () => {
 
   it("clears the optional language with its clear button", async () => {
     const { onSave } = renderCard({ suggestion: fullGfw });
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
     await settle(() =>
       fireEvent.click(
         screen.getByRole("button", { name: "Clear Preferred language" })
@@ -278,13 +296,92 @@ describe("ProfilePromptCard", () => {
     ).toBe(true);
   });
 
-  it("keeps Save disabled for a new person until sector and country are set", () => {
-    renderCard({ defaultCountry: "KEN" });
+  it("keeps Save disabled for a new person until the organisation is set", () => {
+    renderCard({
+      defaultCountry: "KEN",
+      suggestion: { sector_code: "ngo" },
+    });
+    expect(saveButton().disabled).toBe(true);
+    fireEvent.change(organisationInput(), {
+      target: { value: "Kenya Forest Service" },
+    });
+    expect(saveButton().disabled).toBe(false);
+  });
+
+  it("greets a new person", () => {
+    renderCard();
     expect(screen.getByText("Help us tailor Global Nature Watch")).toBeTruthy();
+    expect(saveButton().disabled).toBe(true);
+  });
+
+  it("reveals the email list's fields, prefilled, only once ticked", async () => {
+    const { onSave } = renderCard({
+      suggestion: { ...fullGfw, topics: ["fires"] },
+      names: { firstName: "Maria", lastName: "Silva" },
+    });
+    expect(screen.queryByRole("textbox", { name: /First name/ })).toBeNull();
+
+    await settle(() =>
+      fireEvent.click(screen.getByRole("checkbox", { name: /Send me emails/ }))
+    );
+    const first = screen.getByRole("textbox", {
+      name: /First name/,
+    }) as HTMLInputElement;
+    expect(first.value).toBe("Maria");
     expect(
-      (screen.getByRole("button", { name: "Save" }) as HTMLButtonElement)
-        .disabled
-    ).toBe(true);
+      screen.getByRole("button", { name: "Fires" }).getAttribute("aria-pressed")
+    ).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Water" }));
+    fireEvent.click(saveButton("Looks right"));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        receive_news_emails: true,
+        first_name: "Maria",
+        last_name: "Silva",
+        topics: ["fires", "water"],
+      })
+    );
+  });
+
+  it("needs names and a topic before saving with the email opt-in", async () => {
+    renderCard({ suggestion: fullGfw });
+    await settle(() =>
+      fireEvent.click(screen.getByRole("checkbox", { name: /Send me emails/ }))
+    );
+    expect(saveButton("Looks right").disabled).toBe(true);
+  });
+
+  it("sends the feature-testing opt-in", async () => {
+    const { onSave } = renderCard({ suggestion: fullGfw });
+    await settle(() =>
+      fireEvent.click(
+        screen.getByRole("checkbox", { name: /help test new features/ })
+      )
+    );
+    fireEvent.click(saveButton("Looks right"));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ help_test_features: true })
+    );
+  });
+
+  it("links to the full profile form in both modes", () => {
+    const { unmount } = renderCard();
+    const href = () =>
+      screen.getByRole("link", { name: /full profile/i }).getAttribute("href");
+    expect(href()).toBe("/dashboard");
+    unmount();
+    renderCard({ suggestion: fullGfw });
+    expect(href()).toBe("/dashboard");
+  });
+
+  it("toggles the privacy links from the ?", () => {
+    renderCard();
+    expect(screen.queryByRole("link", { name: "Privacy Policy" })).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "How we use your data" })
+    );
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toBeTruthy();
   });
 
   it("calls onDismiss for Not now", () => {

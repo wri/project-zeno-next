@@ -33,6 +33,7 @@ const ProfileCardOptionsSchema = ProfileConfigSchema.pick({
   sector_roles: true,
   countries: true,
   languages: true,
+  topics: true,
 });
 
 /** GET /api/profile/config (public), narrowed to what the profile card needs. */

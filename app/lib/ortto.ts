@@ -19,6 +19,14 @@ export interface OrttoProfileSubmission {
   receiveNewsEmails?: boolean;
 }
 
+/** Topic codes as the labels Ortto takes, falling back to the code. */
+export function orttoTopicLabels(
+  codes: string[],
+  labels: Record<string, string> | undefined
+): string[] {
+  return codes.map((code) => labels?.[code] || code);
+}
+
 /**
  * Posts the profile to Ortto straight from the browser. Never throws: a
  * failed submission is logged and must not block saving the profile.

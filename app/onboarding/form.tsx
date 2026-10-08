@@ -23,11 +23,12 @@ import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch"
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";
 import RequirementHint from "@/app/onboarding/RequirementHint";
+import { TopicPills, toggleTopic } from "@/app/components/TopicPills";
 import { OnboardingHeader } from "@/app/onboarding/OnboardingHeader";
 import { TermsConsentLabel } from "@/src/features/front-door";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import { apiFetch } from "@/app/lib/api-client";
-import { submitOrttoProfile } from "@/app/lib/ortto";
+import { orttoTopicLabels, submitOrttoProfile } from "@/app/lib/ortto";
 import { toaster } from "@/app/components/ui/toaster";
 import type { ProfileConfig } from "@/app/schemas/api/profile/config";
 
@@ -234,9 +235,6 @@ export default function OnboardingForm({
       }
 
       // Submit to Ortto directly from client (no secrets needed)
-      const topicLabels = form.topics.map(
-        (code) => config?.topics?.[code] || code
-      );
 
       await submitOrttoProfile({
         email: form.email,
@@ -246,7 +244,7 @@ export default function OnboardingForm({
         jobTitle: form.jobTitle,
         companyOrganization: form.company,
         countryCode: form.country,
-        Topics: topicLabels,
+        Topics: orttoTopicLabels(form.topics, config?.topics),
         receiveNewsEmails: form.receiveNewsEmails,
       });
 
@@ -619,31 +617,17 @@ export default function OnboardingForm({
                   What topic(s) are you most interested in?
                   <RequirementHint field="topics" />
                 </Field.Label>
-                <Flex gap={2} flexWrap="wrap" pt={2}>
-                  {Object.entries(config?.topics || {}).map(([code, label]) => {
-                    const selected = form.topics.includes(code);
-                    return (
-                      <Button
-                        key={code}
-                        size="xs"
-                        h={6}
-                        borderRadius="full"
-                        colorPalette={selected ? "primary" : undefined}
-                        variant={selected ? undefined : "outline"}
-                        onClick={() =>
-                          setForm((p) => ({
-                            ...p,
-                            topics: selected
-                              ? p.topics.filter((i) => i !== code)
-                              : [...p.topics, code],
-                          }))
-                        }
-                      >
-                        {label}
-                      </Button>
-                    );
-                  })}
-                </Flex>
+                <TopicPills
+                  pt={2}
+                  topics={config?.topics}
+                  selected={form.topics}
+                  onToggle={(code) =>
+                    setForm((p) => ({
+                      ...p,
+                      topics: toggleTopic(p.topics, code),
+                    }))
+                  }
+                />
               </Field.Root>
             </GridItem>
             <GridItem colSpan={{ base: 1, md: 2 }}>

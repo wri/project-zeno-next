@@ -13,8 +13,7 @@ type NudgeClickEvent = {
   chip_text?: string;
 };
 
-// Front door (NEXT_PUBLIC_FRONT_DOOR): consent on /welcome, then the profile
-// asked for in the chat.
+// Front door: consent on /welcome, then the profile asked for in the chat.
 type FrontDoorEvent =
   | {
       event: "welcome_terms_accepted";
@@ -30,7 +29,12 @@ type FrontDoorEvent =
       /** Prefilled from a GFW profile. */
       prefilled: boolean;
     }
-  | { event: "profile_card_saved"; prefilled: boolean }
+  | {
+      event: "profile_card_saved";
+      prefilled: boolean;
+      /** Ticked the email list opt-in on the card. */
+      news_emails: boolean;
+    }
   | { event: "profile_card_dismissed"; surface: "card" | "banner" };
 
 type TrackableEvent = NudgeClickEvent | FrontDoorEvent;

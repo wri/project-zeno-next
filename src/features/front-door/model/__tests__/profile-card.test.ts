@@ -19,6 +19,7 @@ const options: ProfileCardOptions = {
   },
   countries: { BRA: "Brazil", KEN: "Kenya" },
   languages: { en: "English", pt: "Português" },
+  topics: { fires: "Fires", water: "Water" },
 };
 
 const fullGfw: ProfileSuggestion = {
@@ -27,34 +28,49 @@ const fullGfw: ProfileSuggestion = {
   role_code: "analyst",
   country_code: "BRA",
   preferred_language_code: "pt",
+  topics: ["fires", "retired_topic"],
 };
 
 function draft(fields: Partial<ProfileDraft>): ProfileDraft {
   return { ...EMPTY_PROFILE_DRAFT, ...fields };
 }
 
-describe("EMPTY_PROFILE_DRAFT", () => {
-  it("has the card's four fields in the order it asks for them", () => {
-    expect(Object.keys(EMPTY_PROFILE_DRAFT)).toEqual([
-      "country",
-      "language",
-      "sector",
-      "role",
-    ]);
-    expect(Object.values(EMPTY_PROFILE_DRAFT)).toEqual(["", "", "", ""]);
-  });
-});
+const REQUIRED = {
+  sector: "ngo",
+  country: "KEN",
+  organisation: "Kenya Forest Service",
+};
 
 describe("isProfileDraftComplete", () => {
-  it("requires sector and country, not role or language", () => {
-    expect(isProfileDraftComplete(EMPTY_PROFILE_DRAFT)).toBe(false);
-    expect(isProfileDraftComplete(draft({ sector: "ngo" }))).toBe(false);
+  it("requires sector, country and organisation, not role or language", () => {
+    const complete = (d: Partial<ProfileDraft>) =>
+      isProfileDraftComplete(draft(d), options);
+    expect(complete({})).toBe(false);
+    expect(complete({ sector: "ngo", country: "KEN" })).toBe(false);
+    expect(complete({ ...REQUIRED, organisation: "   " })).toBe(false);
+    expect(complete(REQUIRED)).toBe(true);
+  });
+
+  it("requires names and a topic once the person opts in to emails", () => {
+    const optedIn = draft({ ...REQUIRED, receiveNewsEmails: true });
+    expect(isProfileDraftComplete(optedIn, options)).toBe(false);
+    const named = { ...optedIn, firstName: "Amina", lastName: "Otieno" };
+    expect(isProfileDraftComplete(named, options)).toBe(false);
     expect(
-      isProfileDraftComplete(draft({ language: "pt", country: "KEN" }))
-    ).toBe(false);
-    expect(
-      isProfileDraftComplete(draft({ sector: "ngo", country: "KEN" }))
+      isProfileDraftComplete({ ...named, topics: ["fires"] }, options)
     ).toBe(true);
+  });
+
+  it("doesn't require a topic when there are none to pick", () => {
+    const named = draft({
+      ...REQUIRED,
+      receiveNewsEmails: true,
+      firstName: "Amina",
+      lastName: "Otieno",
+    });
+    expect(isProfileDraftComplete(named, { ...options, topics: {} })).toBe(
+      true
+    );
   });
 });
 
@@ -71,26 +87,40 @@ describe("withSector", () => {
       sector: "government",
       role: "analyst",
     });
-    expect(withSector(current, "ngo", options)).toEqual({
-      country: "BRA",
-      language: "pt",
-      sector: "ngo",
-      role: "",
-    });
+    expect(withSector(current, "ngo", options)).toEqual(
+      draft({ country: "BRA", language: "pt", sector: "ngo", role: "" })
+    );
   });
 });
 
 describe("draftFromSuggestion", () => {
-  it("maps a full GFW profile onto the draft, language included", () => {
-    expect(draftFromSuggestion(fullGfw, options)).toEqual({
-      country: "BRA",
-      language: "pt",
-      sector: "government",
-      role: "analyst",
-    });
+  it("maps a full GFW profile onto the draft, keeping known topics", () => {
+    expect(
+      draftFromSuggestion(fullGfw, options, {
+        firstName: "Maria",
+        lastName: "Silva",
+      })
+    ).toEqual(
+      draft({
+        country: "BRA",
+        language: "pt",
+        sector: "government",
+        role: "analyst",
+        organisation: "State environment agency",
+        firstName: "Maria",
+        lastName: "Silva",
+        topics: ["fires"],
+      })
+    );
   });
 
-  it("drops codes the options don't know, language included", () => {
+  it("never ticks a consent box", () => {
+    const seeded = draftFromSuggestion(fullGfw, options);
+    expect(seeded.receiveNewsEmails).toBe(false);
+    expect(seeded.helpTestFeatures).toBe(false);
+  });
+
+  it("drops codes the options don't know", () => {
     expect(
       draftFromSuggestion(
         {
@@ -113,12 +143,6 @@ describe("draftFromSuggestion", () => {
     ).toBe("");
   });
 
-  it("leaves language empty when the suggestion has none", () => {
-    expect(draftFromSuggestion({ country_code: "KEN" }, options).language).toBe(
-      ""
-    );
-  });
-
   it("returns an empty draft with no suggestion", () => {
     expect(draftFromSuggestion(undefined, options)).toEqual(
       EMPTY_PROFILE_DRAFT
@@ -131,10 +155,14 @@ describe("profileCardMode", () => {
     expect(profileCardMode(fullGfw, options)).toBe("confirm");
   });
 
-  it("doesn't need a language to offer confirmation", () => {
+  it("needs the organisation, not a language, to offer confirmation", () => {
     const { preferred_language_code, ...noLanguage } = fullGfw;
     void preferred_language_code;
     expect(profileCardMode(noLanguage, options)).toBe("confirm");
+
+    const { company_organization, ...noOrganisation } = fullGfw;
+    void company_organization;
+    expect(profileCardMode(noOrganisation, options)).toBe("fields");
   });
 
   it("falls back to fields for a thin GFW profile", () => {
@@ -149,55 +177,64 @@ describe("profileCardMode", () => {
 });
 
 describe("toProfilePatch", () => {
-  it("builds a partial update with no role and no language", () => {
-    expect(toProfilePatch(draft({ sector: "ngo", country: "KEN" }))).toEqual({
+  it("builds a partial update with no role, no language and no emails", () => {
+    expect(toProfilePatch(draft(REQUIRED), options)).toEqual({
       sector_code: "ngo",
       role_code: null,
       country_code: "KEN",
+      company_organization: "Kenya Forest Service",
+      help_test_features: false,
+      receive_news_emails: false,
       has_profile: true,
     });
   });
 
-  it("sends the draft's language", () => {
+  it("sends the language and the testing opt-in", () => {
     expect(
-      toProfilePatch(draft({ sector: "ngo", country: "KEN", language: "en" }))
-    ).toEqual({
-      sector_code: "ngo",
-      role_code: null,
-      country_code: "KEN",
+      toProfilePatch(
+        draft({ ...REQUIRED, language: "en", helpTestFeatures: true }),
+        options
+      )
+    ).toMatchObject({
       preferred_language_code: "en",
-      has_profile: true,
+      help_test_features: true,
     });
   });
 
-  it("carries the organisation from the suggestion and everything else from the draft", () => {
+  it("sends names and topics only with the email opt-in", () => {
+    const named = draft({
+      ...REQUIRED,
+      firstName: " Amina ",
+      lastName: "Otieno",
+      topics: ["water"],
+    });
+    expect(toProfilePatch(named, options)).not.toHaveProperty("first_name");
+    expect(toProfilePatch(named, options)).not.toHaveProperty("topics");
+
     expect(
-      toProfilePatch(draftFromSuggestion(fullGfw, options), fullGfw)
-    ).toEqual({
-      sector_code: "government",
-      role_code: "analyst",
-      country_code: "BRA",
-      company_organization: "State environment agency",
-      preferred_language_code: "pt",
-      has_profile: true,
+      toProfilePatch({ ...named, receiveNewsEmails: true }, options)
+    ).toMatchObject({
+      receive_news_emails: true,
+      first_name: "Amina",
+      last_name: "Otieno",
+      topics: ["water"],
     });
   });
 
-  it("uses the language the person chose over the suggestion's", () => {
-    const edited = { ...draftFromSuggestion(fullGfw, options), language: "en" };
-    expect(toProfilePatch(edited, fullGfw).preferred_language_code).toBe("en");
-  });
-
-  it("omits the language when the person cleared it, even if GFW had one", () => {
-    const cleared = { ...draftFromSuggestion(fullGfw, options), language: "" };
-    expect(toProfilePatch(cleared, fullGfw)).not.toHaveProperty(
-      "preferred_language_code"
-    );
+  it("saves what the person edited, including a cleared language", () => {
+    const seeded = draftFromSuggestion(fullGfw, options);
+    expect(
+      toProfilePatch({ ...seeded, language: "en" }, options)
+        .preferred_language_code
+    ).toBe("en");
+    expect(
+      toProfilePatch({ ...seeded, language: "" }, options)
+    ).not.toHaveProperty("preferred_language_code");
   });
 
   it("refuses an incomplete draft", () => {
-    expect(() => toProfilePatch(EMPTY_PROFILE_DRAFT)).toThrow(
-      /sector and country/
+    expect(() => toProfilePatch(EMPTY_PROFILE_DRAFT, options)).toThrow(
+      /required fields/
     );
   });
 });

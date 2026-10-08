@@ -65,8 +65,19 @@ function optionalText(key: string) {
     });
 }
 
-// What the slice reads from the wire. Other keys (job_title, topics, and any
-// consent flag the backend might ever send) are stripped by z.object.
+/** GFW topic codes; anything but a list of strings is dropped. */
+const optionalTopics = z
+  .array(z.string().trim().min(1))
+  .optional()
+  .catch(({ input }) => {
+    console.warn(
+      `Profile prefill: ignoring topics (expected a list of strings, got ${typeof input})`
+    );
+    return undefined;
+  });
+
+// What the slice reads from the wire. Other keys (job_title, and any consent
+// flag the backend might ever send) are stripped by z.object.
 const PrefillResponseSchema = z.object({
   found: z.boolean(),
   suggestion: z
@@ -78,6 +89,7 @@ const PrefillResponseSchema = z.object({
       role_code: optionalText("role_code"),
       country_code: optionalText("country_code"),
       preferred_language_code: optionalText("preferred_language_code"),
+      topics: optionalTopics,
     })
     .nullable(),
 });
@@ -100,7 +112,10 @@ export function toProfilePrefill(raw: unknown): ProfilePrefill {
   const { first_name, last_name, ...fields } = wire;
   const prefill: ProfilePrefill = { found: true };
   const suggestion = Object.fromEntries(
-    Object.entries(fields).filter(([, value]) => value !== undefined)
+    Object.entries(fields).filter(
+      ([, value]) =>
+        value !== undefined && !(Array.isArray(value) && value.length === 0)
+    )
   ) as ProfileSuggestion;
   if (Object.keys(suggestion).length > 0) prefill.suggestion = suggestion;
   if (first_name) prefill.firstName = first_name;

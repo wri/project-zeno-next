@@ -75,6 +75,7 @@ describe("fetchProfileCardOptions", () => {
       sector_roles: CONFIG.sector_roles,
       countries: CONFIG.countries,
       languages: CONFIG.languages,
+      topics: CONFIG.topics,
     });
     expect(vi.mocked(apiFetch).mock.calls[0][0]).toBe("/api/profile/config");
   });

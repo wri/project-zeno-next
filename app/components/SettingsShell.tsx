@@ -13,10 +13,10 @@ import {
 import {
   ChartBarIcon,
   ExamIcon,
-  GearIcon,
   LifebuoyIcon,
   MapTrifoldIcon,
   SignOutIcon,
+  UserCircleIcon,
   UserIcon,
   UsersThreeIcon,
 } from "@phosphor-icons/react";
@@ -82,8 +82,8 @@ export default function SettingsShell({
             bg={activePath === "/dashboard" ? "bg.muted" : undefined}
           >
             <Link href="/dashboard">
-              <GearIcon />
-              User Settings
+              <UserCircleIcon />
+              User Profile
             </Link>
           </Button>
           {userType === "superuser" && (

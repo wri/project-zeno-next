@@ -1,26 +1,21 @@
 import type { ProfileAskRecord } from "../model/profile-ask";
 
 /**
- * Where the ask record lives, injected so this module stays free of browser
- * globals (and testable in node). Either may be null when the browser
- * doesn't offer it (private windows, blocked site data, SSR).
+ * Where the ask record lives (localStorage in the browser), injected so this
+ * module stays free of browser globals (and testable in node). Null when the
+ * browser doesn't offer it (private windows, blocked site data, SSR).
  */
-export interface ProfileAskStorages {
-  /** Lifetime counts: dismissals, answers. */
-  local: Storage | null;
-  /** This browser session: whether GNW asked, answers so far. */
-  session: Storage | null;
-}
+export type ProfileAskStorage = Storage | null;
 
-const LOCAL_KEY = "gnw_profile_ask_v1";
-const SESSION_KEY = "gnw_profile_ask_session_v1";
+// v2: the record moved from per-session asks to per-conversation banners.
+const KEY = "gnw_profile_ask_v2";
 
-function keyFor(prefix: string, userKey: string): string {
-  return `${prefix}:${userKey}`;
+function keyFor(userKey: string): string {
+  return `${KEY}:${userKey}`;
 }
 
 function readObject(
-  storage: Storage | null,
+  storage: ProfileAskStorage,
   key: string
 ): Record<string, unknown> {
   try {
@@ -35,18 +30,6 @@ function readObject(
   }
 }
 
-function writeObject(
-  storage: Storage | null,
-  key: string,
-  value: Record<string, unknown>
-): void {
-  try {
-    storage?.setItem(key, JSON.stringify(value));
-  } catch {
-    // Full or blocked storage: the ask state is a convenience, not a record.
-  }
-}
-
 function count(value: unknown): number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0
     ? value
@@ -58,31 +41,26 @@ function count(value: unknown): number {
  * unreadable or corrupt. Never throws.
  */
 export function loadProfileAskRecord(
-  storages: ProfileAskStorages,
+  storage: ProfileAskStorage,
   userKey: string
 ): ProfileAskRecord {
-  const local = readObject(storages.local, keyFor(LOCAL_KEY, userKey));
-  const session = readObject(storages.session, keyFor(SESSION_KEY, userKey));
+  const stored = readObject(storage, keyFor(userKey));
   return {
-    dismissals: count(local.dismissals),
-    lifetimeAnswers: count(local.lifetimeAnswers),
-    askedThisSession: session.askedThisSession === true,
-    sessionAnswers: count(session.sessionAnswers),
+    lifetimeAnswers: count(stored.lifetimeAnswers),
+    cardShown: stored.cardShown === true,
+    bannersShown: count(stored.bannersShown),
   };
 }
 
 /** Stores the record for one person. Never throws. */
 export function saveProfileAskRecord(
-  storages: ProfileAskStorages,
+  storage: ProfileAskStorage,
   userKey: string,
   record: ProfileAskRecord
 ): void {
-  writeObject(storages.local, keyFor(LOCAL_KEY, userKey), {
-    dismissals: record.dismissals,
-    lifetimeAnswers: record.lifetimeAnswers,
-  });
-  writeObject(storages.session, keyFor(SESSION_KEY, userKey), {
-    askedThisSession: record.askedThisSession,
-    sessionAnswers: record.sessionAnswers,
-  });
+  try {
+    storage?.setItem(keyFor(userKey), JSON.stringify(record));
+  } catch {
+    // Full or blocked storage: the ask state is a convenience, not a record.
+  }
 }

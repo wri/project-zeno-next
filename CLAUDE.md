@@ -35,7 +35,6 @@ NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=     # Required — map tiles won't load without
 NEXT_PUBLIC_RW_API_URL=              # Defaults to https://api.resourcewatch.org
 NEXT_PUBLIC_LANDING_PAGE_VERSION=    # "closed" | "limited" | "public"
 NEXT_PUBLIC_ENABLE_DEBUG_TOOLS=      # Set to true to enable /chart-debug
-NEXT_PUBLIC_FRONT_DOOR=              # Set to true for /welcome consent + in-chat profile ask instead of /onboarding
 ```
 
 `NEXT_PUBLIC_API_HOST` is not in `.env.example` but can be set to override the backend URL (defaults to `https://api.staging.globalnaturewatch.org` in `app/config/api.ts`). Useful when running the backend locally.

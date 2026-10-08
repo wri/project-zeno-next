@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { render } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({
   apiFetch: vi.fn(),
@@ -63,21 +63,7 @@ describe("ProfileAskTrigger", () => {
     useAuthStore.getState().clearAuth();
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it("does nothing at all with the flag off", async () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "false");
-    signIn(false);
-    render(<ProfileAskTrigger />);
-    await answer();
-    expect(apiFetch).not.toHaveBeenCalled();
-    expect(localStorage.length).toBe(0);
-  });
-
   it("does nothing for someone with a profile", async () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     signIn(true);
     render(<ProfileAskTrigger />);
     await answer();
@@ -86,18 +72,16 @@ describe("ProfileAskTrigger", () => {
   });
 
   it("asks after the first answer while an ask is possible", async () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     signIn(false);
     render(<ProfileAskTrigger />);
     await answer();
     await vi.waitFor(() => expect(fetched("/api/profile/config")).toBe(true));
-    expect(localStorage.getItem("gnw_profile_ask_v1:u-1")).toContain(
+    expect(localStorage.getItem("gnw_profile_ask_v2:u-1")).toContain(
       '"lifetimeAnswers":1'
     );
   });
 
   it("stops watching once the profile is complete", async () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     signIn(false);
     render(<ProfileAskTrigger />);
     act(() => signIn(true));

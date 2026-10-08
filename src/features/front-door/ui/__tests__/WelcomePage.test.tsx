@@ -98,7 +98,6 @@ function patchCalls() {
 
 describe("WelcomePage", () => {
   beforeEach(() => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     // The guard reads window.location.search, as in the browser.
     window.history.replaceState({}, "", `/welcome?${QUERY}`);
     vi.mocked(apiFetch).mockReset();
@@ -117,7 +116,6 @@ describe("WelcomePage", () => {
   });
 
   afterEach(() => {
-    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
@@ -193,35 +191,6 @@ describe("WelcomePage", () => {
     await waitFor(() => expect(showApiError).toHaveBeenCalledOnce());
     expect(useAuthStore.getState().termsAccepted).toBe(false);
     expect(router.replace).not.toHaveBeenCalled();
-  });
-
-  it("reassures GFW users when the backend finds their profile", async () => {
-    respond({
-      prefill: {
-        found: true,
-        source: "gfw",
-        suggestion: { sector_code: "ngo" },
-      },
-    });
-    renderPage();
-    expect(
-      await screen.findByText("Signed in with your Global Forest Watch account")
-    ).toBeDefined();
-  });
-
-  it("doesn't mention GFW when there's no profile, or the lookup fails", async () => {
-    respond({ prefillStatus: 404 });
-    renderPage();
-    await waitFor(() =>
-      expect(
-        vi
-          .mocked(apiFetch)
-          .mock.calls.some(([path]) => path === "/api/auth/profile/prefill")
-      ).toBe(true)
-    );
-    expect(
-      screen.queryByText("Signed in with your Global Forest Watch account")
-    ).toBeNull();
   });
 
   it("lets Continue proceed while the GFW lookup is still pending", async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from "@chakra-ui/react";
+import { Link, type LinkProps } from "@chakra-ui/react";
 import {
   GNW_AI_PRIVACY_POLICY,
   GNW_AI_TERMS_OF_USE,
@@ -9,13 +9,21 @@ import {
   type TermsLink,
 } from "../model/terms";
 
-function TermsAnchor({ link }: { link: TermsLink }) {
+/** One of the policy documents, opened in a new tab. */
+export function TermsAnchor({
+  link,
+  color,
+}: {
+  link: TermsLink;
+  color?: LinkProps["color"];
+}) {
   return (
     <Link
       href={link.href}
       target="_blank"
       rel="noopener noreferrer"
       textDecoration="underline"
+      color={color}
     >
       {link.label}
     </Link>

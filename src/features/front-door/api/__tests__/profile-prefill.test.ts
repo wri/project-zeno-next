@@ -44,16 +44,27 @@ describe("toProfilePrefill", () => {
         role_code: "analyst",
         country_code: "BR",
         preferred_language_code: "pt",
+        topics: ["forests"],
       },
       firstName: "Maria",
       lastName: "Silva",
     });
   });
 
-  it("drops job title and topics, which the card doesn't use yet", () => {
-    const prefill = toProfilePrefill(FULL);
-    expect(JSON.stringify(prefill)).not.toContain("Analyst");
-    expect(JSON.stringify(prefill)).not.toContain("forests");
+  it("drops the job title, which the card doesn't use", () => {
+    expect(JSON.stringify(toProfilePrefill(FULL))).not.toContain("Analyst");
+  });
+
+  it("drops topics that aren't a list of strings, and an empty list", () => {
+    const withTopics = (topics: unknown) =>
+      toProfilePrefill({
+        found: true,
+        source: "gfw",
+        suggestion: { sector_code: "ngo", topics },
+      } as unknown as ProfilePrefillResponseWire).suggestion;
+    expect(withTopics("forests")).toEqual({ sector_code: "ngo" });
+    expect(withTopics([1, 2])).toEqual({ sector_code: "ngo" });
+    expect(withTopics([])).toEqual({ sector_code: "ngo" });
   });
 
   it("never carries a consent flag, even if one appears on the wire", () => {

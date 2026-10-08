@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "@/app/lib/router";
 import { getToken } from "@/app/lib/api-client";
 import useAuthStore from "@/app/store/authStore";
 import { API_CONFIG } from "@/app/config/api";
-import { isFrontDoorEnabled } from "@/app/config/front-door";
 
 /**
  * The Resource Watch login URL that returns to `redirectTo` through
@@ -29,8 +28,6 @@ export interface AuthGuardInput {
   search: string;
   hasProfile: boolean;
   termsAccepted: boolean;
-  /** `isFrontDoorEnabled()`. */
-  frontDoor: boolean;
 }
 
 /**
@@ -45,35 +42,23 @@ export interface AuthGuardRedirect {
 }
 
 /**
- * The route rules for a signed-in person, as a pure function so both
- * branches can be pinned by tests. Returns null when the route may render.
+ * The route rules for a signed-in person, as a pure function so they can
+ * be pinned by tests. Returns null when the route may render.
  *
- * Always: /onboarding with a profile goes to /app.
- *
- * Flag off (unchanged): /app* needs a profile, else /onboarding with the
- * query string (so ?prompt= survives).
- *
- * Flag on (front door): /app* needs accepted terms, else /welcome with the
- * query string; /welcome with the terms accepted continues to /app with the
- * query string.
+ * /onboarding with a profile goes to /app. /app* needs accepted terms (not a
+ * profile: that is asked for later, in the chat), else /welcome with the
+ * query string, so ?prompt= survives; /welcome with the terms accepted
+ * continues to /app with the query string.
  */
 export function authGuardDecision({
   pathname,
   search,
   hasProfile,
   termsAccepted,
-  frontDoor,
 }: AuthGuardInput): AuthGuardRedirect | null {
   const isApp = pathname.startsWith("/app");
-  // The paths are disjoint, so this rule's place before the split is free.
   if (pathname.startsWith("/onboarding") && hasProfile) {
     return { href: "/app", mode: "hard" };
-  }
-
-  if (!frontDoor) {
-    return isApp && !hasProfile
-      ? { href: `/onboarding${search}`, mode: "hard" }
-      : null;
   }
 
   const isWelcome = pathname === "/welcome" || pathname.startsWith("/welcome/");
@@ -95,7 +80,6 @@ export function useAuthGuard(): boolean {
   // usePathname() is typed `string | null`; treat null as "" (matches no route).
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const frontDoor = isFrontDoorEnabled();
 
   useEffect(() => {
     if (!authLoaded) return;
@@ -112,7 +96,6 @@ export function useAuthGuard(): boolean {
       search: window.location.search,
       hasProfile,
       termsAccepted,
-      frontDoor,
     });
     if (!redirect) return;
     if (redirect.mode === "client") {
@@ -127,7 +110,6 @@ export function useAuthGuard(): boolean {
     termsAccepted,
     pathname,
     router,
-    frontDoor,
   ]);
 
   if (!authLoaded || !isAuthenticated) return false;
@@ -139,7 +121,6 @@ export function useAuthGuard(): boolean {
       search: "",
       hasProfile,
       termsAccepted,
-      frontDoor,
     }) === null
   );
 }

@@ -4,7 +4,6 @@ import { EMPTY_PROFILE_ASK_RECORD } from "../../model/profile-ask";
 import {
   loadProfileAskRecord,
   saveProfileAskRecord,
-  type ProfileAskStorages,
 } from "../profile-ask-storage";
 import { MemoryStorage } from "./memory-storage";
 
@@ -18,87 +17,51 @@ class BlockedStorage extends MemoryStorage {
   }
 }
 
-function storages(): ProfileAskStorages & {
-  local: MemoryStorage;
-  session: MemoryStorage;
-} {
-  return { local: new MemoryStorage(), session: new MemoryStorage() };
-}
+const KEY = "gnw_profile_ask_v2:u-1";
 
-const RECORD = {
-  dismissals: 2,
-  lifetimeAnswers: 7,
-  askedThisSession: true,
-  sessionAnswers: 3,
-};
+const RECORD = { lifetimeAnswers: 7, cardShown: true, bannersShown: 1 };
 
 describe("profile ask storage", () => {
   it("round-trips a record", () => {
-    const s = storages();
+    const s = new MemoryStorage();
     saveProfileAskRecord(s, "u-1", RECORD);
     expect(loadProfileAskRecord(s, "u-1")).toEqual(RECORD);
+    expect(JSON.parse(s.getItem(KEY)!)).toEqual(RECORD);
   });
 
   it("returns the empty record for someone never asked", () => {
-    expect(loadProfileAskRecord(storages(), "u-1")).toEqual(
+    expect(loadProfileAskRecord(new MemoryStorage(), "u-1")).toEqual(
       EMPTY_PROFILE_ASK_RECORD
     );
   });
 
-  it("keeps lifetime counts in local storage and session state in session storage", () => {
-    const s = storages();
-    saveProfileAskRecord(s, "u-1", RECORD);
-    expect(JSON.parse(s.local.getItem("gnw_profile_ask_v1:u-1")!)).toEqual({
-      dismissals: 2,
-      lifetimeAnswers: 7,
-    });
-    expect(
-      JSON.parse(s.session.getItem("gnw_profile_ask_session_v1:u-1")!)
-    ).toEqual({ askedThisSession: true, sessionAnswers: 3 });
-  });
-
-  it("starts a new session with the lifetime counts carried over", () => {
-    const s = storages();
-    saveProfileAskRecord(s, "u-1", RECORD);
-    s.session.clear();
-    expect(loadProfileAskRecord(s, "u-1")).toEqual({
-      dismissals: 2,
-      lifetimeAnswers: 7,
-      askedThisSession: false,
-      sessionAnswers: 0,
-    });
-  });
-
   it("keeps each person's record separate", () => {
-    const s = storages();
+    const s = new MemoryStorage();
     saveProfileAskRecord(s, "u-1", RECORD);
     expect(loadProfileAskRecord(s, "u-2")).toEqual(EMPTY_PROFILE_ASK_RECORD);
   });
 
   it("falls back to defaults for corrupt or unexpected values", () => {
-    const s = storages();
-    s.local.setItem("gnw_profile_ask_v1:u-1", "{not json");
-    s.session.setItem(
-      "gnw_profile_ask_session_v1:u-1",
-      JSON.stringify({ askedThisSession: "yes", sessionAnswers: -2 })
+    const s = new MemoryStorage();
+    s.setItem(KEY, "{not json");
+    expect(loadProfileAskRecord(s, "u-1")).toEqual(EMPTY_PROFILE_ASK_RECORD);
+
+    s.setItem(
+      KEY,
+      JSON.stringify({
+        lifetimeAnswers: 1.5,
+        cardShown: "yes",
+        bannersShown: -2,
+      })
     );
     expect(loadProfileAskRecord(s, "u-1")).toEqual(EMPTY_PROFILE_ASK_RECORD);
 
-    s.local.setItem(
-      "gnw_profile_ask_v1:u-1",
-      JSON.stringify({ dismissals: 1.5, lifetimeAnswers: "3" })
-    );
-    expect(loadProfileAskRecord(s, "u-1")).toEqual(EMPTY_PROFILE_ASK_RECORD);
-
-    s.local.setItem("gnw_profile_ask_v1:u-1", JSON.stringify([1, 2]));
+    s.setItem(KEY, JSON.stringify([1, 2]));
     expect(loadProfileAskRecord(s, "u-1")).toEqual(EMPTY_PROFILE_ASK_RECORD);
   });
 
   it("never throws when storage is blocked or full", () => {
-    const blocked = {
-      local: new BlockedStorage(),
-      session: new BlockedStorage(),
-    };
+    const blocked = new BlockedStorage();
     expect(() => saveProfileAskRecord(blocked, "u-1", RECORD)).not.toThrow();
     expect(loadProfileAskRecord(blocked, "u-1")).toEqual(
       EMPTY_PROFILE_ASK_RECORD
@@ -106,8 +69,7 @@ describe("profile ask storage", () => {
   });
 
   it("works without storage at all", () => {
-    const none = { local: null, session: null };
-    expect(() => saveProfileAskRecord(none, "u-1", RECORD)).not.toThrow();
-    expect(loadProfileAskRecord(none, "u-1")).toEqual(EMPTY_PROFILE_ASK_RECORD);
+    expect(() => saveProfileAskRecord(null, "u-1", RECORD)).not.toThrow();
+    expect(loadProfileAskRecord(null, "u-1")).toEqual(EMPTY_PROFILE_ASK_RECORD);
   });
 });

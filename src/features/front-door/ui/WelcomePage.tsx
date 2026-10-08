@@ -22,8 +22,7 @@ function WelcomeContent() {
   const userKey = useAuthStore(selectProfileUserKey);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Only decides the "Signed in with your GFW account" line; Continue never
-  // waits for it.
+  // Only for analytics (gfw_account); Continue never waits for it.
   const { data: prefill } = useQuery({
     ...profilePrefillQuery(userKey),
     enabled: userKey !== "",
@@ -62,7 +61,6 @@ function WelcomeContent() {
         <WelcomeConsent
           name={name}
           pendingPrompt={pendingPrompt(search)}
-          signedInWithGfw={prefill?.found === true}
           isSubmitting={isSubmitting}
           onContinue={accept}
         />

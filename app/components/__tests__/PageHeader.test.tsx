@@ -5,7 +5,7 @@
  */
 import { ChakraProvider } from "@chakra-ui/react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import system from "@/app/theme";
 import useAuthStore from "@/app/store/authStore";
@@ -83,12 +83,12 @@ describe("PageHeader profile reminder (front door)", () => {
     });
   }
 
-  /** Opens the account menu; resolves once its Settings item is showing. */
+  /** Opens the account menu; resolves once its User Profile item is showing. */
   async function openAccountMenu() {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /user@example.com/ }));
     });
-    return screen.findByRole("menuitem", { name: /settings/i });
+    return screen.findByRole("menuitem", { name: /user profile/i });
   }
   const menuItem = () =>
     screen.queryByRole("menuitem", { name: /complete your profile/i });
@@ -99,12 +99,7 @@ describe("PageHeader profile reminder (front door)", () => {
     useAuthStore.getState().setPromptUsage(0, 20);
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it("links to the settings page and marks the account button while the profile is incomplete", async () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     signIn(false);
     renderHeader();
     expect(dot()).not.toBeNull();
@@ -117,17 +112,7 @@ describe("PageHeader profile reminder (front door)", () => {
   });
 
   it("goes away once the profile is complete", async () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     signIn(true);
-    renderHeader();
-    expect(dot()).toBeNull();
-    await openAccountMenu();
-    expect(menuItem()).toBeNull();
-  });
-
-  it("never shows with the flag off, even without a profile", async () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "false");
-    signIn(false);
     renderHeader();
     expect(dot()).toBeNull();
     await openAccountMenu();

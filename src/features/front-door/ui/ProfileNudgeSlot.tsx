@@ -22,7 +22,7 @@ export function ProfileNudgeSlot(props: BoxProps) {
     <Box {...props}>
       <ProfileNudgeBanner
         onOpen={() => void openProfileCardFromBanner()}
-        onDismiss={() => dismissProfileBanner()}
+        onDismiss={dismissProfileBanner}
       />
     </Box>
   );

@@ -44,27 +44,22 @@ describe("WelcomeConsent", () => {
     ).toBeTruthy();
   });
 
-  it("falls back to a generic greeting and plain Continue", () => {
+  it("falls back to a generic greeting and Continue to Horizon", () => {
     renderWelcome();
     expect(screen.getByRole("heading").textContent).toContain(
       "Welcome to Global Nature Watch"
     );
-    expect(screen.getByRole("button", { name: /^continue$/i })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /^continue to horizon$/i })
+    ).toBeTruthy();
   });
 
-  it("shows the GFW reassurance only for GFW users", () => {
-    const { unmount } = render(
-      <ChakraProvider value={defaultSystem}>
-        <WelcomeConsent onContinue={vi.fn()} />
-      </ChakraProvider>
-    );
-    expect(screen.queryByText(/global forest watch account/i)).toBeNull();
-    unmount();
-
-    renderWelcome({ signedInWithGfw: true });
+  it("tells people about account emails, and never mentions GFW", () => {
+    renderWelcome();
     expect(
-      screen.getByText(/signed in with your global forest watch account/i)
+      screen.getByText(/agree to receive periodic account and system-related/i)
     ).toBeTruthy();
+    expect(screen.queryByText(/global forest watch/i)).toBeNull();
   });
 
   it("links every consent document", () => {

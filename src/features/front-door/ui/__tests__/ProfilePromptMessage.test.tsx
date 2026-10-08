@@ -22,7 +22,10 @@ vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
   Toaster: () => null,
 }));
-vi.mock("@/app/lib/ortto", () => ({ submitOrttoProfile: vi.fn() }));
+vi.mock("@/app/lib/ortto", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/app/lib/ortto")>()),
+  submitOrttoProfile: vi.fn(),
+}));
 
 import system from "@/app/theme";
 import MessageBubble from "@/app/components/MessageBubble";
@@ -48,6 +51,7 @@ const GFW: ProfilePrefill = {
     sector_code: "government",
     role_code: "analyst",
     country_code: "BR",
+    company_organization: "SEMAS",
   },
 };
 
@@ -72,7 +76,6 @@ function renderBubble(id: string) {
 
 describe("a profile-prompt message in the chat", () => {
   beforeEach(() => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     vi.mocked(apiFetch).mockReset();
     vi.mocked(showApiError).mockReset();
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -90,7 +93,6 @@ describe("a profile-prompt message in the chat", () => {
   });
 
   afterEach(() => {
-    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
@@ -109,17 +111,14 @@ describe("a profile-prompt message in the chat", () => {
     ).toBeDefined();
   });
 
-  it("Not now removes the card and counts a dismissal", () => {
-    const card = addCard();
+  it("Not now removes the card", () => {
+    const card = addCard({ found: false });
     renderBubble(card.id);
     fireEvent.click(screen.getByRole("button", { name: "Not now" }));
 
     expect(useChatStore.getState().messages.some((m) => m.id === card.id)).toBe(
       false
     );
-    expect(
-      JSON.parse(localStorage.getItem("gnw_profile_ask_v1:u-1")!)
-    ).toMatchObject({ dismissals: 1 });
   });
 
   it("Looks right saves and removes the card", async () => {
@@ -150,6 +149,9 @@ describe("a profile-prompt message in the chat", () => {
       sector_code: "government",
       role_code: "analyst",
       country_code: "BR",
+      company_organization: "SEMAS",
+      help_test_features: false,
+      receive_news_emails: false,
       has_profile: true,
     });
   });

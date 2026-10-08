@@ -13,7 +13,10 @@ vi.mock("@/app/components/ui/toaster", () => ({
   toaster: { create: vi.fn() },
   Toaster: () => null,
 }));
-vi.mock("@/app/lib/ortto", () => ({ submitOrttoProfile: vi.fn() }));
+vi.mock("@/app/lib/ortto", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/app/lib/ortto")>()),
+  submitOrttoProfile: vi.fn(),
+}));
 vi.mock("@/app/lib/track-event", () => ({ trackEvent: vi.fn() }));
 
 import { apiFetch } from "@/app/lib/api-client";
@@ -31,7 +34,6 @@ import useChatStore from "@/app/store/chatStore";
 import {
   loadProfileAskRecord,
   saveProfileAskRecord,
-  type ProfileAskStorages,
 } from "../../lib/profile-ask-storage";
 import type { ProfileAskRecord } from "../../model/profile-ask";
 import { profileOptionsQuery, profilePrefillQuery } from "../../api/queries";
@@ -54,7 +56,7 @@ const CONFIG = {
   countries: { BR: "Brazil", KE: "Kenya" },
   languages: { pt: "Português", en: "English" },
   gis_expertise_levels: {},
-  topics: {},
+  topics: { fires: "Fires" },
 };
 
 const GFW_PREFILL = {
@@ -117,7 +119,7 @@ function backend({
   });
 }
 
-let storages: { local: MemoryStorage; session: MemoryStorage };
+let storage: MemoryStorage;
 let unwatch: () => void = () => {};
 
 const cachedOptions = () =>
@@ -127,10 +129,9 @@ const cachedPrefill = () =>
 
 const cards = () =>
   useChatStore.getState().messages.filter((m) => m.type === "profile-prompt");
-const record = () =>
-  loadProfileAskRecord(storages as ProfileAskStorages, "u-1");
+const record = () => loadProfileAskRecord(storage, "u-1");
 const seed = (r: Partial<ProfileAskRecord>) =>
-  saveProfileAskRecord(storages, "u-1", { ...record(), ...r });
+  saveProfileAskRecord(storage, "u-1", { ...record(), ...r });
 
 /** Lets queued microtasks and fetches settle. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -147,7 +148,6 @@ function signIn(hasProfile = false) {
 }
 
 beforeEach(() => {
-  vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
   vi.mocked(apiFetch).mockReset();
   vi.mocked(submitOrttoProfile).mockReset();
   vi.mocked(trackEvent).mockReset();
@@ -158,13 +158,12 @@ beforeEach(() => {
   useProfileNudgeStore.getState().closeBanner();
   useAuthStore.getState().clearAuth();
   signIn();
-  storages = { local: new MemoryStorage(), session: new MemoryStorage() };
-  unwatch = watchAnswerCompletions(storages);
+  storage = new MemoryStorage();
+  unwatch = watchAnswerCompletions(storage);
 });
 
 afterEach(() => {
   unwatch();
-  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
@@ -188,13 +187,13 @@ describe("the profile card after the first answer", () => {
       sector_roles: CONFIG.sector_roles,
       countries: CONFIG.countries,
       languages: CONFIG.languages,
+      topics: CONFIG.topics,
     });
     expect(cachedPrefill()).toEqual({ found: false });
     expect(record()).toEqual({
-      dismissals: 0,
       lifetimeAnswers: 1,
-      askedThisSession: true,
-      sessionAnswers: 1,
+      cardShown: true,
+      bannersShown: 0,
     });
   });
 
@@ -234,8 +233,8 @@ describe("the profile card after the first answer", () => {
     await useChatStore.getState().sendMessage("two");
     await settle();
     expect(cards()).toHaveLength(0);
+    expect(useProfileNudgeStore.getState().bannerOpen).toBe(false);
     expect(record().lifetimeAnswers).toBe(2);
-    expect(record().dismissals).toBe(0);
   });
 
   it("never appears when a thread is replayed, and replay doesn't count answers", async () => {
@@ -250,48 +249,24 @@ describe("the profile card after the first answer", () => {
     expect(record().lifetimeAnswers).toBe(0);
   });
 
-  it("does nothing with the flag off (no card, nothing stored)", async () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "false");
-    backend();
-    await useChatStore.getState().sendMessage("How much has Pará lost?");
-    await settle();
-
-    expect(cards()).toHaveLength(0);
-    expect(storages.local.length).toBe(0);
-    expect(storages.session.length).toBe(0);
-    expect(
-      vi
-        .mocked(apiFetch)
-        .mock.calls.some(([path]) => path === "/api/profile/config")
-    ).toBe(false);
-  });
-
   it("does nothing for someone who already has a profile", async () => {
     signIn(true);
     backend();
     await useChatStore.getState().sendMessage("How much has Pará lost?");
     await settle();
     expect(cards()).toHaveLength(0);
-    expect(storages.local.length).toBe(0);
-  });
-
-  it("doesn't ask again after three Not nows", async () => {
-    seed({ dismissals: 3 });
-    backend();
-    await useChatStore.getState().sendMessage("How much has Pará lost?");
-    await settle();
-    expect(cards()).toHaveLength(0);
+    expect(storage.length).toBe(0);
   });
 
   it("stays out of a conversation that moved on while the card loaded", async () => {
     backend();
     useChatStore.setState({ currentThreadId: "t-1" });
-    const promise = handleAnswerCompleted(storages);
+    const promise = handleAnswerCompleted(storage);
     // "New conversation" while the card's data is loading.
     useChatStore.getState().reset();
     await promise;
     expect(cards()).toHaveLength(0);
-    expect(record().askedThisSession).toBe(false);
+    expect(record().cardShown).toBe(false);
   });
 
   it("doesn't count the ask when the profile options can't load", async () => {
@@ -300,10 +275,7 @@ describe("the profile card after the first answer", () => {
     await settle();
     await settle();
     expect(cards()).toHaveLength(0);
-    expect(record()).toMatchObject({
-      lifetimeAnswers: 1,
-      askedThisSession: false,
-    });
+    expect(record()).toMatchObject({ lifetimeAnswers: 1, cardShown: false });
   });
 });
 
@@ -319,12 +291,11 @@ describe("showProfilePrompt", () => {
 // ── Not now / Save ────────────────────────────────────────────────────────
 
 describe("Not now", () => {
-  it("records a dismissal and removes the card", async () => {
+  it("removes the card", async () => {
     backend();
     await showProfilePrompt();
-    dismissProfileAsk(cards()[0].id, storages);
+    dismissProfileAsk(cards()[0].id);
     expect(cards()).toHaveLength(0);
-    expect(record().dismissals).toBe(1);
   });
 });
 
@@ -333,6 +304,9 @@ describe("Save", () => {
     sector_code: "government",
     role_code: "analyst",
     country_code: "BR",
+    company_organization: "State environment agency",
+    help_test_features: false,
+    receive_news_emails: false,
     has_profile: true as const,
   };
 
@@ -357,12 +331,30 @@ describe("Save", () => {
       firstName: "Maria",
       lastName: "Silva",
       sector: "government",
-      companyOrganization: undefined,
+      companyOrganization: "State environment agency",
       countryCode: "BR",
+      Topics: undefined,
+      receiveNewsEmails: false,
     });
-    // The card asks for no consent, so it never opts anyone in to news.
-    expect(vi.mocked(submitOrttoProfile).mock.calls[0][0]).not.toHaveProperty(
-      "receiveNewsEmails"
+  });
+
+  it("sends the email opt-in, its names and topic labels to Ortto", async () => {
+    backend();
+    await showProfilePrompt();
+    await saveProfileFromCard(cards()[0].id, {
+      ...patch,
+      receive_news_emails: true,
+      first_name: "Mariana",
+      last_name: "Souza",
+      topics: ["fires"],
+    });
+    expect(submitOrttoProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        firstName: "Mariana",
+        lastName: "Souza",
+        Topics: ["Fires"],
+        receiveNewsEmails: true,
+      })
     );
   });
 
@@ -403,41 +395,59 @@ describe("Save", () => {
 
 // ── The later banner ──────────────────────────────────────────────────────
 
-describe("the banner at the session's fifth answer", () => {
+describe("the banner in the next new conversations", () => {
   const bannerOpen = () => useProfileNudgeStore.getState().bannerOpen;
-  // A later session: the first-answer card was dismissed long ago.
-  const laterSession = {
-    dismissals: 1,
-    lifetimeAnswers: 12,
-    sessionAnswers: 4,
+  /** "New conversation", then a question in it. */
+  const askInNewConversation = async (question: string) => {
+    useChatStore.getState().reset();
+    await useChatStore.getState().sendMessage(question);
   };
 
-  it("opens after the fifth answer of a session and records the ask", async () => {
-    seed(laterSession);
+  beforeEach(() => {
+    // The card was shown after the first answer and not saved.
+    seed({ lifetimeAnswers: 1, cardShown: true });
+  });
+
+  it("opens after the first answer of a new conversation and records it", async () => {
     backend();
-    await useChatStore.getState().sendMessage("Fifth question");
+    await askInNewConversation("Second conversation");
     await vi.waitFor(() => expect(bannerOpen()).toBe(true));
     expect(cards()).toHaveLength(0);
-    expect(record()).toMatchObject({
-      sessionAnswers: 5,
-      askedThisSession: true,
-    });
+    expect(record()).toMatchObject({ lifetimeAnswers: 2, bannersShown: 1 });
   });
 
-  it("stays closed before the fifth answer", async () => {
-    seed({ ...laterSession, sessionAnswers: 2 });
+  it("doesn't open for later answers in the same conversation", async () => {
     backend();
-    await useChatStore.getState().sendMessage("Third question");
+    await askInNewConversation("Second conversation");
+    await vi.waitFor(() => expect(bannerOpen()).toBe(true));
+    dismissProfileBanner();
+
+    await useChatStore.getState().sendMessage("A follow-up");
     await settle();
+    expect(bannerOpen()).toBe(false);
+    expect(record().bannersShown).toBe(1);
+  });
+
+  it("closes when the conversation is left", async () => {
+    backend();
+    await askInNewConversation("Second conversation");
+    await vi.waitFor(() => expect(bannerOpen()).toBe(true));
+    useChatStore.getState().reset();
     expect(bannerOpen()).toBe(false);
   });
 
-  it("stays closed if the session already asked (the first-answer card)", async () => {
-    seed({ ...laterSession, askedThisSession: true });
+  it("stops after two conversations", async () => {
     backend();
-    await useChatStore.getState().sendMessage("Fifth question");
+    await askInNewConversation("Second conversation");
+    await vi.waitFor(() => expect(bannerOpen()).toBe(true));
+    await askInNewConversation("Third conversation");
+    await vi.waitFor(() => expect(record().bannersShown).toBe(2));
+    expect(bannerOpen()).toBe(true);
+
+    await askInNewConversation("Fourth conversation");
     await settle();
     expect(bannerOpen()).toBe(false);
+    expect(record().bannersShown).toBe(2);
   });
 
   it("Add details adds the card and closes the banner", async () => {
@@ -446,13 +456,6 @@ describe("the banner at the session's fifth answer", () => {
     await openProfileCardFromBanner();
     expect(cards()).toHaveLength(1);
     expect(bannerOpen()).toBe(false);
-  });
-
-  it("closing it counts as a Not now", () => {
-    useProfileNudgeStore.getState().openBanner();
-    dismissProfileBanner(storages);
-    expect(bannerOpen()).toBe(false);
-    expect(record().dismissals).toBe(1);
   });
 
   it("closes when the profile is saved from the card", async () => {
@@ -464,6 +467,9 @@ describe("the banner at the session's fifth answer", () => {
       sector_code: "ngo",
       role_code: null,
       country_code: "KE",
+      company_organization: "Kenya Forest Service",
+      help_test_features: false,
+      receive_news_emails: false,
       has_profile: true,
     });
     expect(bannerOpen()).toBe(false);
@@ -496,8 +502,8 @@ describe("analytics events", () => {
     backend();
     await showProfilePrompt();
     vi.mocked(trackEvent).mockReset();
-    dismissProfileAsk(cards()[0].id, storages);
-    dismissProfileBanner(storages);
+    dismissProfileAsk(cards()[0].id);
+    dismissProfileBanner();
     expect(events()).toEqual([
       { event: "profile_card_dismissed", surface: "card" },
       { event: "profile_card_dismissed", surface: "banner" },
@@ -513,6 +519,9 @@ describe("analytics events", () => {
       sector_code: "ngo",
       role_code: null,
       country_code: "KE",
+      company_organization: "Kenya Forest Service",
+      help_test_features: false,
+      receive_news_emails: false,
       has_profile: true as const,
     };
     await expect(saveProfileFromCard(card.id, patch)).rejects.toThrow();
@@ -521,7 +530,7 @@ describe("analytics events", () => {
     backend();
     await saveProfileFromCard(card.id, patch);
     expect(events()).toEqual([
-      { event: "profile_card_saved", prefilled: false },
+      { event: "profile_card_saved", prefilled: false, news_emails: false },
     ]);
   });
 });

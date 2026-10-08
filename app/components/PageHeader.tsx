@@ -541,7 +541,7 @@ function PageHeader() {
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />
-                      Settings
+                      User Profile
                     </Link>
                   </Menu.Item>
                   <Menu.Separator />

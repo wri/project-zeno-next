@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({
   apiFetch: vi.fn(),
@@ -26,7 +26,6 @@ function renderSlot() {
 
 describe("ProfileNudgeSlot", () => {
   beforeEach(() => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "true");
     localStorage.clear();
     useProfileNudgeStore.getState().closeBanner();
     useAuthStore.getState().setAuthStatus({
@@ -35,17 +34,6 @@ describe("ProfileNudgeSlot", () => {
       hasProfile: false,
       userType: null,
     });
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it("renders nothing with the flag off, even if opened", () => {
-    vi.stubEnv("NEXT_PUBLIC_FRONT_DOOR", "false");
-    useProfileNudgeStore.getState().openBanner();
-    const { container } = renderSlot();
-    expect(container.textContent).toBe("");
   });
 
   it("renders nothing until the ask policy opens the banner", () => {
@@ -71,13 +59,10 @@ describe("ProfileNudgeSlot", () => {
     expect(container.textContent).toBe("");
   });
 
-  it("closing it counts a dismissal", () => {
+  it("closes on Not now", () => {
     useProfileNudgeStore.getState().openBanner();
     renderSlot();
     fireEvent.click(screen.getByRole("button", { name: "Not now" }));
     expect(useProfileNudgeStore.getState().bannerOpen).toBe(false);
-    expect(
-      JSON.parse(localStorage.getItem("gnw_profile_ask_v1:u-1")!)
-    ).toMatchObject({ dismissals: 1 });
   });
 });
