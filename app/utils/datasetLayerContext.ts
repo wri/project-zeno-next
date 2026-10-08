@@ -203,6 +203,12 @@ function patchPrimaryForestTileUrl(url: string): string {
  * (`CONTEXT_LAYER_METADATA[name].tile_url`) when it restyles that layer,
  * otherwise the backend's, patched for primary forest. Applied on thread
  * replay too, so older threads pick up the restyle.
+ *
+ * TODO: remove the override once the backend sends a styled tile URL per SBTN
+ * filter (`natural_forest`, `natural_lands`) instead of one shared URL. Until
+ * then the backend's URL for those two layers is ignored, so a backend change
+ * (e.g. a new collection version) won't reach the map. Drop the `tile_url`
+ * from `sbtnSingleClassLayer` in datasets.ts at the same time.
  */
 export function resolveContextTileUrl(name: string, tileUrl: string): string {
   return patchPrimaryForestTileUrl(

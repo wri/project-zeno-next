@@ -220,6 +220,9 @@ const SBTN_NATURAL_CLASSES = [
  * with a one-swatch legend. Its tile URL replaces the backend's, which paints
  * all ten natural classes; the tile server leaves values missing from the
  * colormap transparent, so everything else drops out.
+ *
+ * TODO: a stopgap until the backend styles these tiles itself; see
+ * resolveContextTileUrl in datasetLayerContext.ts.
  */
 function sbtnSingleClassLayer({
   title,
