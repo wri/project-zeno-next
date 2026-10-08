@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { DatasetDivergentColorsSchema } from "@/app/schemas/api/datasets/get";
+
 export const AoiSearchResultSchema = z.object({
   source: z.string(),
   src_id: z.string(),
@@ -39,6 +41,15 @@ export const DashboardInsightChartSchema = z.object({
   // The catalogue dataset a curated chart was computed from; absent on older
   // rows and on AI-generated charts.
   dataset_id: z.number().nullable().optional(),
+  // The backend colour registry's colours for this chart: `{}` and null when
+  // it has none, absent from an older backend. Colours are cosmetic, so a
+  // malformed one drops to the default palette instead of failing the
+  // insight (and blanking the card) below.
+  color_map: z.record(z.string(), z.string()).optional().catch(undefined),
+  series_color: z.string().nullable().optional().catch(undefined),
+  divergent_colors: DatasetDivergentColorsSchema.nullable()
+    .optional()
+    .catch(undefined),
 });
 
 export const DashboardInsightSchema = z.object({
