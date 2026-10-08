@@ -243,7 +243,7 @@ function AccountMenuSection() {
       title="Account menu reminder"
       rules={[
         "Whenever the profile is incomplete, including after the banners stop.",
-        "“Complete your profile” goes to User Profile (/dashboard).",
+        "“Complete your profile” goes to User Profile (/settings).",
       ]}
     >
       <Menu.Root positioning={{ placement: "bottom-start" }}>

@@ -55,7 +55,7 @@ describe("authGuardDecision", () => {
 
   it("leaves every other route open, as today (only /app* is gated)", () => {
     for (const pathname of [
-      "/dashboard",
+      "/settings",
       "/dashboards",
       "/dashboards/d-1",
       "/manage-users",

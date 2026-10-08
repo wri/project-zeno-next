@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
       // The old sign-up form; /app sends anyone without accepted terms to
       // /welcome, keeping the query string.
       { source: "/onboarding", destination: "/app", permanent: false },
+      // User Profile's old address.
+      { source: "/dashboard", destination: "/settings", permanent: true },
     ];
   },
 

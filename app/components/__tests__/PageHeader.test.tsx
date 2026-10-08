@@ -107,7 +107,7 @@ describe("PageHeader profile reminder (front door)", () => {
     const settings = await openAccountMenu();
     const item = menuItem();
     expect(item).not.toBeNull();
-    expect(item!.getAttribute("href")).toBe("/dashboard");
+    expect(item!.getAttribute("href")).toBe("/settings");
     expect(precedes(item!, settings)).toBe(true);
   });
 

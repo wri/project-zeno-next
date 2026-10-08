@@ -12,6 +12,6 @@ export function ProfileReminderDot() {
 /** The account menu's "Complete your profile" link to the settings page. */
 export function ProfileReminderMenuItem() {
   return useProfileAskActive() ? (
-    <CompleteProfileMenuItem href="/dashboard" />
+    <CompleteProfileMenuItem href="/settings" />
   ) : null;
 }

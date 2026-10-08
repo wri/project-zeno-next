@@ -31,13 +31,13 @@ import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import useAuthStore from "@/app/store/authStore";
 import SettingsShell from "@/app/components/SettingsShell";
 import { isProfileFieldRequired } from "@/app/config/profile-fields";
-import { getSettingsFormSchema } from "@/app/dashboard/schema";
+import { getSettingsFormSchema } from "@/app/settings/schema";
 import RequirementHint from "@/app/components/RequirementHint";
 import { TopicPills, toggleTopic } from "@/app/components/TopicPills";
 import {
   ACCOUNT_DELETION_EMAIL,
   accountDeletionMailto,
-} from "@/app/dashboard/account-deletion";
+} from "@/app/settings/account-deletion";
 
 /**
  * Every sector's "Other:" role. Choosing it relabels Job title as "Your role",
@@ -259,7 +259,7 @@ export default function UserProfilePage() {
   if (!isReady) return null;
 
   return (
-    <SettingsShell activePath="/dashboard">
+    <SettingsShell activePath="/settings">
       <Container maxW="4xl" display="flex" flexDirection="column" py={16}>
         {/* Header Section */}
         <Flex
