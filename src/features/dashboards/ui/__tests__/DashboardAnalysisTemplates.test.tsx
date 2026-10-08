@@ -152,7 +152,7 @@ describe("DashboardAnalysisTemplates", () => {
         name: "post-2020-forest-loss",
         label: "Post-2020 forest loss",
         args_schema: {},
-        widgets: ["chart", "layer", "imagery"],
+        widgets: ["natural_forest_loss", "layer", "imagery"],
       },
     ]);
     vi.mocked(applyAnalysisTemplate).mockResolvedValue(built);

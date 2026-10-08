@@ -226,6 +226,21 @@ describe("dashboardWidgetToInsightWidgets", () => {
       });
     });
 
+    it("keeps the colours on a chart the user renamed", () => {
+      // A manual rename is a title override in the widget config; the
+      // insight, and so its colours, is untouched.
+      const colorMap = {
+        "Natural forest": "#246E24",
+        "Other tree cover": "#DC6C9A",
+      };
+      const wire = parsed({ chart_type: "stacked-bar", color_map: colorMap });
+      const [card] = dashboardWidgetToInsightWidgets({
+        ...wire,
+        config: withChartTitle(wire.config, "c-1", "Loss since 2021"),
+      });
+      expect(card).toMatchObject({ title: "Loss since 2021", colorMap });
+    });
+
     it("leaves the colours off when the registry has none, so the local palette applies", () => {
       for (const wire of [
         { color_map: {}, series_color: null, divergent_colors: null },
