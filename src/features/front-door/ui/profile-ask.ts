@@ -198,7 +198,7 @@ export async function openProfileCardFromBanner(): Promise<void> {
   }
 }
 
-/** Topic codes as their labels, for Ortto (as the onboarding form sends them). */
+/** Topic codes as their labels, for Ortto (as User Profile sends them). */
 function topicLabels(codes: string[] | undefined): string[] | undefined {
   if (!codes?.length) return undefined;
   const options = queryClient.getQueryData(profileOptionsQuery.queryKey);
@@ -208,7 +208,7 @@ function topicLabels(codes: string[] | undefined): string[] | undefined {
 /**
  * Save on the card: PATCH the partial profile (throws on failure, and the
  * card stays), then mark the profile complete, remove the card and tell
- * Ortto (fire-and-forget, like the onboarding form).
+ * Ortto (fire-and-forget).
  */
 export async function saveProfileFromCard(
   messageId: string,

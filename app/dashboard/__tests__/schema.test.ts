@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { REQUIRED_ONBOARDING_FIELDS } from "@/app/config/onboarding";
+import {
+  REQUIRED_PROFILE_FIELDS,
+  isProfileFieldRequired,
+} from "@/app/config/profile-fields";
 import { getSettingsFormSchema } from "@/app/dashboard/schema";
 
 /** A profile that satisfies every required field. Settings has no terms checkbox. */
@@ -24,17 +27,29 @@ describe("settings schema", () => {
     expect(getSettingsFormSchema().safeParse(completeForm).success).toBe(true);
   });
 
-  it.each(REQUIRED_ONBOARDING_FIELDS.filter((f) => f !== "termsAccepted"))(
-    "rejects a blank %s, matching the onboarding contract",
+  it.each(REQUIRED_PROFILE_FIELDS)("rejects a blank %s", (field) => {
+    expect(
+      getSettingsFormSchema().safeParse({ ...completeForm, [field]: "" })
+        .success
+    ).toBe(false);
+  });
+
+  it.each(["jobTitle", "expertise", "preferredLanguage"] as const)(
+    "treats %s as optional",
     (field) => {
+      expect(isProfileFieldRequired(field)).toBe(false);
       expect(
         getSettingsFormSchema().safeParse({ ...completeForm, [field]: "" })
           .success
-      ).toBe(false);
+      ).toBe(true);
     }
   );
 
-  it("does not ask for terms acceptance again", () => {
+  it("treats topics as optional", () => {
+    expect(isProfileFieldRequired("topics")).toBe(false);
+  });
+
+  it("does not ask for terms acceptance (that's /welcome)", () => {
     expect("termsAccepted" in getSettingsFormSchema().shape).toBe(false);
     expect(
       getSettingsFormSchema().safeParse({

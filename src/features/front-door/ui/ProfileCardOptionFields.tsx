@@ -9,7 +9,7 @@ import {
   createListCollection,
   useFilter,
 } from "@chakra-ui/react";
-import { OptionalMarker } from "@/app/onboarding/RequirementHint";
+import { OptionalMarker } from "@/app/components/RequirementHint";
 
 /**
  * The profile card's pickers: a Select for short lists (sector, role) and a

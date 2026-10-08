@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  async redirects() {
+    return [
+      // The old sign-up form; /app sends anyone without accepted terms to
+      // /welcome, keeping the query string.
+      { source: "/onboarding", destination: "/app", permanent: false },
+    ];
+  },
+
   // Experimental features - @phosphor-icons/react is optimized by default
   experimental: {
     optimizePackageImports: ["@chakra-ui/react"],

@@ -1,4 +1,4 @@
-export type OnboardingFieldKey =
+export type ProfileFieldKey =
   | "firstName"
   | "lastName"
   | "email"
@@ -11,22 +11,22 @@ export type OnboardingFieldKey =
   | "preferredLanguage"
   | "topics"
   | "receiveNewsEmails"
-  | "helpTestFeatures"
-  | "termsAccepted";
+  | "helpTestFeatures";
 
 /**
- * The fields a user must complete before they can submit the onboarding form.
+ * The fields a user must complete before they can save the profile form
+ * (User Profile, /dashboard).
  *
  * Single source of truth — this list drives all three of:
- *   - Zod validation (`app/onboarding/schema.ts`), which gates the submit button
+ *   - Zod validation (`app/dashboard/schema.ts`), which gates the save button
  *   - `aria-required` on each `Field.Root`
  *   - the visible marker — a red asterisk, or "(Optional)" — rendered by
- *     `RequirementHint` (`app/onboarding/RequirementHint.tsx`)
+ *     `RequirementHint` (`app/components/RequirementHint.tsx`)
  *
  * Any key omitted here is optional. Add or remove a key and the label, the
  * accessibility attribute, and the validation all follow automatically.
  */
-export const REQUIRED_ONBOARDING_FIELDS = [
+export const REQUIRED_PROFILE_FIELDS = [
   "firstName",
   "lastName",
   "email",
@@ -34,13 +34,12 @@ export const REQUIRED_ONBOARDING_FIELDS = [
   "role",
   "company",
   "country",
-  "termsAccepted",
-] as const satisfies readonly OnboardingFieldKey[];
+] as const satisfies readonly ProfileFieldKey[];
 
-const REQUIRED_FIELD_SET: ReadonlySet<OnboardingFieldKey> = new Set(
-  REQUIRED_ONBOARDING_FIELDS
+const REQUIRED_FIELD_SET: ReadonlySet<ProfileFieldKey> = new Set(
+  REQUIRED_PROFILE_FIELDS
 );
 
-export function isOnboardingFieldRequired(key: OnboardingFieldKey): boolean {
+export function isProfileFieldRequired(key: ProfileFieldKey): boolean {
   return REQUIRED_FIELD_SET.has(key);
 }
