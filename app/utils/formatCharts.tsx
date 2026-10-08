@@ -86,6 +86,23 @@ function tintBarsBySign(
   });
 }
 
+/** One series per stack segment, for the "stacked-bar" and
+ *  "stacked-bar-with-line" branches. Colors come from the backend registry
+ *  (`colorMap`, keyed by series name — the same mechanism the pie branch
+ *  uses), so a chart's segments keep their designed colors; a segment with
+ *  no entry falls back to the default rotation. */
+function stackSeries(
+  seriesKeys: string[],
+  colorMap: Record<string, string> | undefined,
+  defaultColors: string[]
+): ChartSeries[] {
+  return seriesKeys.map((key, index) => ({
+    name: key,
+    color: colorMap?.[key] ?? defaultColors[index % defaultColors.length],
+    stackId: "a", // All items in a stacked chart share a stackId
+  }));
+}
+
 function resolveValueKeys(
   keys: string[],
   xAxisKey: string,
@@ -396,17 +413,11 @@ export default function formatChartData(
       yAxis,
       seriesFields
     );
-    // Per-series colors from the backend registry (`colorMap`, keyed by
-    // series name), as in the stacked-bar-with-line branch below, so a
-    // curated chart's segments keep their designed colors. Segments with no
-    // entry fall back to the default rotation.
-    const stackColorMap = colorOverrides?.colorMap;
-    const series: ChartSeries[] = seriesKeys.map((key, index) => ({
-      name: key,
-      color:
-        stackColorMap?.[key] ?? defaultColors[index % defaultColors.length],
-      stackId: "a", // All items in a stacked chart share a stackId
-    }));
+    const series = stackSeries(
+      seriesKeys,
+      colorOverrides?.colorMap,
+      defaultColors
+    );
     // The data format is already correct for stacked charts.
     return { data: chartRows as ChartData[], series };
   }
@@ -419,17 +430,11 @@ export default function formatChartData(
       yAxis,
       seriesFields
     ).filter((key) => key !== lineField);
-    // Per-series colors come from the backend color registry (`colorMap`),
-    // keyed by series name — the same mechanism the pie branch uses — so a
-    // caller can pin each stack segment to its designed color. Segments with
-    // no registry entry fall back to the default rotation.
-    const stackColorMap = colorOverrides?.colorMap;
-    const series: ChartSeries[] = seriesKeys.map((key, index) => ({
-      name: key,
-      color:
-        stackColorMap?.[key] ?? defaultColors[index % defaultColors.length],
-      stackId: "a",
-    }));
+    const series = stackSeries(
+      seriesKeys,
+      colorOverrides?.colorMap,
+      defaultColors
+    );
 
     // A single bar series with divergent colors (e.g. "Net flux" alone, no
     // detail breakdown) is tinted per-row by sign, mirroring the plain "bar"
