@@ -86,9 +86,7 @@ export function mapWidgetLayer(
       );
       const entryUrl = str(entry?.tile_url);
       if (entryUrl) {
-        contextTileUrl = patchPrimaryForest(
-          resolveContextTileUrl(activeName, entryUrl)
-        );
+        contextTileUrl = resolveContextTileUrl(activeName, entryUrl);
         contextLayerName = activeName;
       }
     }
