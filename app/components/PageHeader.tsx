@@ -538,8 +538,8 @@ function PageHeader() {
               <Menu.Positioner>
                 <Menu.Content css={{ "& a": { cursor: "pointer" } }}>
                   <ProfileReminderMenuItem />
-                  <Menu.Item value="dashboard" asChild>
-                    <Link href="/dashboard">
+                  <Menu.Item value="settings" asChild>
+                    <Link href="/settings">
                       <GearSixIcon />
                       User Profile
                     </Link>

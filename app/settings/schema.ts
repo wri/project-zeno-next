@@ -21,7 +21,7 @@ const optionalStringArray = () =>
 const requiredStringArray = () => z.array(z.string()).min(1);
 
 /**
- * Validation for the profile form (User Profile, /dashboard), driven by
+ * Validation for the profile form (User Profile, /settings), driven by
  * `REQUIRED_PROFILE_FIELDS`. Terms are accepted on /welcome, not here.
  */
 export const getSettingsFormSchema = () => {

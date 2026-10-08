@@ -15,10 +15,10 @@ export type ProfileFieldKey =
 
 /**
  * The fields a user must complete before they can save the profile form
- * (User Profile, /dashboard).
+ * (User Profile, /settings).
  *
  * Single source of truth — this list drives all three of:
- *   - Zod validation (`app/dashboard/schema.ts`), which gates the save button
+ *   - Zod validation (`app/settings/schema.ts`), which gates the save button
  *   - `aria-required` on each `Field.Root`
  *   - the visible marker — a red asterisk, or "(Optional)" — rendered by
  *     `RequirementHint` (`app/components/RequirementHint.tsx`)

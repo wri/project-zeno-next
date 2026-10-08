@@ -3,7 +3,7 @@ import {
   REQUIRED_PROFILE_FIELDS,
   isProfileFieldRequired,
 } from "@/app/config/profile-fields";
-import { getSettingsFormSchema } from "@/app/dashboard/schema";
+import { getSettingsFormSchema } from "@/app/settings/schema";
 
 /** A profile that satisfies every required field. Settings has no terms checkbox. */
 const completeForm = {

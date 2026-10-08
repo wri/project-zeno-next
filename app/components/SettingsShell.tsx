@@ -25,7 +25,7 @@ import useAuthStore from "@/app/store/authStore";
 import { useLogout } from "@/app/hooks/useLogout";
 
 type SettingsPath =
-  | "/dashboard"
+  | "/settings"
   | "/manage-users"
   | "/trace-analytics"
   | "/evals";
@@ -79,9 +79,9 @@ export default function SettingsShell({
         >
           <Button
             asChild
-            bg={activePath === "/dashboard" ? "bg.muted" : undefined}
+            bg={activePath === "/settings" ? "bg.muted" : undefined}
           >
-            <Link href="/dashboard">
+            <Link href="/settings">
               <UserCircleIcon />
               User Profile
             </Link>

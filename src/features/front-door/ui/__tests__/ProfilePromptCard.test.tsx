@@ -369,10 +369,10 @@ describe("ProfilePromptCard", () => {
     const { unmount } = renderCard();
     const href = () =>
       screen.getByRole("link", { name: /full profile/i }).getAttribute("href");
-    expect(href()).toBe("/dashboard");
+    expect(href()).toBe("/settings");
     unmount();
     renderCard({ suggestion: fullGfw });
-    expect(href()).toBe("/dashboard");
+    expect(href()).toBe("/settings");
   });
 
   it("toggles the privacy links from the ?", () => {

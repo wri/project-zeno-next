@@ -6,7 +6,7 @@ import { Link } from "@/app/lib/router";
 import { ProfileIncompleteDot } from "./ProfileIncompleteDot";
 
 export type CompleteProfileMenuItemProps =
-  /** Where the profile is completed (the app: the /dashboard settings page). */
+  /** Where the profile is completed (the app: User Profile, /settings). */
   | { href: string; onSelect?: never }
   /** What selecting it does (the offline preview: open the card). */
   | { onSelect: () => void; href?: never };

@@ -45,7 +45,7 @@ export interface ProfilePromptCardProps {
 }
 
 /** Where the full profile form lives (User Profile). */
-const FULL_PROFILE_HREF = "/dashboard";
+const FULL_PROFILE_HREF = "/settings";
 
 /** The role options before a sector is chosen; one object, so memos hold. */
 const NO_ROLES: Record<string, string> = {};
