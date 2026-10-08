@@ -89,20 +89,13 @@ export default function TeamSection() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Flex
+            <Image
+              src="/GNW_logo_4c.png"
+              alt="GNW Logo"
               w="128px"
               h="64px"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Image
-                src="/GNW_logo_4c.png"
-                alt="GNW Logo"
-                w="80px"
-                h="40px"
-                objectFit="contain"
-              />
-            </Flex>
+              fit="contain"
+            />
           </ChakraLink>
           <ChakraLink
             href="https://developmentseed.org/"
