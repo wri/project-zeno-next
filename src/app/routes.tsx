@@ -93,6 +93,10 @@ export const routes: RouteObject[] = [
             path: "dashboards/:id",
             ...page(() => import("@/app/dashboards/[id]/page")),
           },
+          {
+            path: "dashboards/:id/report",
+            ...page(() => import("@/app/dashboards/[id]/report/page")),
+          },
           { path: "evals", ...page(() => import("@/app/evals/page")) },
           {
             path: "maintenance",
