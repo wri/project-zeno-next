@@ -16,7 +16,7 @@ import {
   Container,
 } from "@chakra-ui/react";
 import {
-  EnvelopeSimpleIcon,
+  ArrowSquareOutIcon,
   FloppyDiskIcon,
   UserCircleIcon,
 } from "@phosphor-icons/react";
@@ -33,10 +33,7 @@ import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getSettingsFormSchema } from "@/app/dashboard/schema";
 import RequirementHint from "@/app/onboarding/RequirementHint";
 import { TopicPills, toggleTopic } from "@/app/components/TopicPills";
-import {
-  ACCOUNT_DELETION_EMAIL,
-  accountDeletionMailto,
-} from "@/app/dashboard/account-deletion";
+import { ACCOUNT_DELETION_URL } from "@/app/dashboard/account-deletion";
 
 /**
  * Every sector's "Other:" role. Choosing it relabels Job title as "Your role",
@@ -679,20 +676,24 @@ export default function UserProfilePage() {
 
         <Separator borderColor="border" my={8} />
 
-        {/* Account deletion: a request by email, handled by the team */}
+        {/* Account deletion: a help-centre request, handled by the team */}
         <Flex direction="column" gap={3} alignItems="flex-start">
           <Heading as="h2" size="md">
             Delete your account
           </Heading>
           <Text color="fg.muted" fontSize="sm" maxW="60ch">
             Ask us to remove your Horizon account and all of its data: profile,
-            conversations and dashboards. This opens an email to{" "}
-            {ACCOUNT_DELETION_EMAIL}. We&apos;ll reply to confirm once it&apos;s
-            done.
+            conversations and dashboards. This opens a request form on the
+            Global Nature Watch help centre. We&apos;ll reply to confirm once
+            it&apos;s done.
           </Text>
           <Button asChild size="sm" variant="outline" colorPalette="red">
-            <a href={accountDeletionMailto(form.email)}>
-              <EnvelopeSimpleIcon />
+            <a
+              href={ACCOUNT_DELETION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ArrowSquareOutIcon />
               Request account deletion
             </a>
           </Button>
