@@ -262,6 +262,8 @@ function sbtnSingleClassLayer({
   };
 }
 
+const PRIMARY_FOREST_COLOR = "#668636";
+
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
     dataset_id: 100,
@@ -269,10 +271,12 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     context_layer: null as string | null,
     description:
       "Primary forests are among the most biodiverse forests, providing a multitude of ecosystem services, making them crucial to monitor for national land use planning and carbon accounting. This dataset defines primary forests as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. Researchers classified Landsat images into primary forest data using a separate algorithm for each region. The dataset maps the extent of primary forests in the global pan-tropical regions in 2001 at 30-meter resolution.",
+    // The colour the UMD tiles actually paint (sampled from the published
+    // v201901 PNGs), so the legend matches the map.
     legend: {
       title: "Primary Forests (2001)",
-      color: "#054A29",
-      items: [{ label: "Primary forest", color: "#054A29" }],
+      color: PRIMARY_FOREST_COLOR,
+      items: [{ label: "Primary forest", color: PRIMARY_FOREST_COLOR }],
       type: "symbol",
       info: "Primary forests are defined as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. This layer maps their pan-tropical extent in 2001 and is useful as a baseline for assessing forest integrity and biodiversity value.",
       note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
@@ -343,6 +347,14 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
  * reviewed (PZB-1247/1248). Opt in with `?ff=net-flux`.
  */
 export const NET_FLUX_FEATURE_FLAG = "net-flux";
+
+/**
+ * Standalone Primary Forests raster tiles — the same URL the backend hands
+ * back as the `primary_forest` context layer. The PNGs are opaque black where
+ * there is no forest; buildDatasetLayers routes them through pf:// to fix that.
+ */
+const PRIMARY_FOREST_TILE_URL =
+  "https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png";
 
 /**
  * Standalone IFL raster tiles. Same endpoint the backend hands back as the
@@ -583,6 +595,26 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     description: IFL_DESCRIPTION,
     tile_url: INTACT_FOREST_TILE_URL,
     legend: IFL_LEGEND,
+  },
+  {
+    // Contextual-only layer, like IFL above: no analytics endpoint, so it is
+    // `viewOnly`. Name, legend and description come from the context-layer
+    // metadata so the standalone layer matches the sub-layer under Tree Cover
+    // Loss.
+    dataset_id: CONTEXT_LAYER_METADATA.primary_forest.dataset_id,
+    dataset_name: CONTEXT_LAYER_METADATA.primary_forest.dataset_name,
+    shortName: "Primary forests",
+    context_layer: null,
+    img: "/dataset_card_primary_forest.webp",
+    cadence: "2001",
+    resolution: "30 m",
+    geographic_coverage: "pan-tropical",
+    provider: "UMD/GLAD",
+    categories: ["forests", "land-use"],
+    viewOnly: true,
+    description: CONTEXT_LAYER_METADATA.primary_forest.description,
+    tile_url: PRIMARY_FOREST_TILE_URL,
+    legend: CONTEXT_LAYER_METADATA.primary_forest.legend,
   },
   {
     dataset_id: 4,
@@ -966,6 +998,7 @@ const DATASET_CARD_DISPLAY_ORDER: number[] = [
   2, // Grasslands
   3, // SBTN Natural lands
   101, // Intact Forest Landscapes
+  100, // Primary Forests
   4, // Tree cover loss
   8, // TCL by driver
   5, // Tree cover gain

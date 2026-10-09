@@ -2,8 +2,11 @@ import maplibregl from "maplibre-gl";
 
 const PRIMARY_FOREST_PROTOCOL = "pf";
 
+// Idempotent: a layer's tileUrl can pass through more than one patch (e.g. a
+// map widget built from an explorer layer), and pf://pf:// never resolves.
 export function wrapPrimaryForestTileUrl(url: string): string {
-  return `${PRIMARY_FOREST_PROTOCOL}://${url}`;
+  const prefix = `${PRIMARY_FOREST_PROTOCOL}://`;
+  return url.startsWith(prefix) ? url : `${prefix}${url}`;
 }
 
 let registered = false;

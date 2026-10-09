@@ -65,4 +65,22 @@ describe("datasetCardLayers", () => {
       tileUrl: "https://example.com/lgms.png",
     });
   });
+
+  it("strips the black background from a standalone primary forest card", () => {
+    // The UMD primary forest PNGs are opaque black wherever there is no
+    // forest; without the pf:// protocol the card would black out the map.
+    const card = {
+      dataset_id: 100,
+      dataset_name: "Primary Forests",
+      description: "",
+      tile_url:
+        "https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png",
+    } as DatasetCardConfig;
+
+    const [layer] = datasetCardLayers(card);
+
+    expect(layer.tileUrl).toBe(
+      "pf://https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png"
+    );
+  });
 });

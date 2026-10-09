@@ -18,6 +18,7 @@ vi.mock("@/app/store/chatStore", () => ({
 }));
 
 import DataCatalogPanel from "../CatalogPanel";
+import { DATASET_CARDS } from "@/app/constants/datasets";
 import useMapStore from "@/app/store/mapStore";
 import useSidebarStore from "@/app/store/sidebarStore";
 
@@ -59,8 +60,14 @@ describe("Data Catalog panel — LGMS supporting layers", () => {
     expect(screen.getByText("LGMS agriculture emissions")).toBeTruthy();
     expect(screen.getByText("LGMS cropland management emissions")).toBeTruthy();
     expect(screen.getByText("LGMS livestock emissions")).toBeTruthy();
-    // Four LGMS sector rows plus the (unflagged) Intact Forest Landscapes card.
-    expect(screen.getAllByText("VIEW ONLY")).toHaveLength(5);
+    // Four LGMS sector rows, plus one per standalone view-only card (IFL,
+    // Primary Forests, ...).
+    const standaloneViewOnly = DATASET_CARDS.filter(
+      (c) => c.viewOnly && !c.featureFlag
+    ).length;
+    expect(screen.getAllByText("VIEW ONLY")).toHaveLength(
+      4 + standaloneViewOnly
+    );
   });
 
   it("selecting a supporting layer shows only that one on the map", async () => {
