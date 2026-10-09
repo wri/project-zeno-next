@@ -11,7 +11,7 @@ vi.mock("../DashboardWidgetsGrid", () => ({
     <div data-testid="widgets-grid" data-print={String(!!print)} />
   ),
 }));
-vi.mock("@/app/lib/router", async (importOriginal) => ({
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useParams: () => ({ id: "d1" }),
   Link: ({ href, children }: { href: string; children: React.ReactNode }) => (

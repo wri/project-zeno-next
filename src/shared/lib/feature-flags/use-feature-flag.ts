@@ -1,19 +1,12 @@
 import { useState } from "react";
 import { enabledFlags, isFeatureEnabled } from "./feature-flags";
 
-// Flags are read from the URL, which only exists client-side; during SSR every
-// flag is off. Callers must not branch server-rendered DOM on a flag
-// (hydration mismatch) — render-null or client-only components only.
-const searchParams = () =>
-  typeof window === "undefined"
-    ? null
-    : new URLSearchParams(window.location.search);
+// Flags are read from the URL once, on mount, so they only work in the
+// browser: don't use them on pages that are rendered at build time.
+const searchParams = () => new URLSearchParams(window.location.search);
 
 export function useFeatureFlag(flag: string): boolean {
-  const [enabled] = useState(() => {
-    const params = searchParams();
-    return params ? isFeatureEnabled(params, flag) : false;
-  });
+  const [enabled] = useState(() => isFeatureEnabled(searchParams(), flag));
   return enabled;
 }
 
@@ -26,9 +19,6 @@ export function useFeatureFlag(flag: string): boolean {
  * would neither trigger a re-render nor survive as intended.
  */
 export function useEnabledFlags(): ReadonlySet<string> {
-  const [flags] = useState(() => {
-    const params = searchParams();
-    return params ? enabledFlags(params) : new Set<string>();
-  });
+  const [flags] = useState(() => enabledFlags(searchParams()));
   return flags;
 }

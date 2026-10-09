@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 100% stacked horizontal bars: outcome composition per category (e.g. per
  * dataset). Segments read left → right from best (Success) to worst (Empty).

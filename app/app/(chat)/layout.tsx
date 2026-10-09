@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Box,
   Grid,
@@ -11,7 +9,6 @@ import {
 import { useEffect, useState } from "react";
 
 import ChatPanel from "@/app/ChatPanel";
-import ConversationHistoryDrawer from "@/app/components/ConversationHistoryDrawer";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
 import CatalogPanel from "@/app/components/CatalogPanel";
@@ -20,7 +17,6 @@ import { InsightsPanel } from "@/src/features/insights-history";
 import { Sidebar } from "@/app/sidebar";
 import PageHeader from "@/app/components/PageHeader";
 import SystemBanner from "@/app/components/SystemBanner";
-import WhatsNewModal from "@/app/components/WhatsNewModal";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import DraggableBottomSheet from "@/app/components/BottomSheet";
 import { ListIcon } from "@phosphor-icons/react";
@@ -115,7 +111,6 @@ export default function DashboardLayout({
           <ChatPanel />
         </Box>
       </Box>
-      <ConversationHistoryDrawer />
     </Box>
   );
 
@@ -187,7 +182,6 @@ export default function DashboardLayout({
       bg="bg"
     >
       <UploadAreaDialog />
-      <WhatsNewModal />
       <AnalysisCtaTrigger />
       <ViewAnalysisTrigger />
       <CreateDashboardTrigger />

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -12,7 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { ArrowLeftIcon, PrinterIcon } from "@phosphor-icons/react";
 
-import { Link, useParams } from "@/app/lib/router";
+import { Link, useParams } from "@/src/shared/lib/router";
 import { updatedOnLabel } from "../lib/dates";
 import { hasDashboardContent } from "../lib/widgets";
 import { useDashboard } from "./dashboardQueries";

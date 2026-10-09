@@ -1,5 +1,3 @@
-"use client";
-
 import { IconButton } from "@chakra-ui/react";
 import {
   CheckIcon,

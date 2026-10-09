@@ -1,4 +1,3 @@
-"use client";
 import "maplibre-gl/dist/maplibre-gl.css";
 import MapGl, {
   AttributionControl,
@@ -6,7 +5,7 @@ import MapGl, {
   Source,
   MapRef,
 } from "react-map-gl/maplibre";
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
@@ -41,8 +40,10 @@ import useInsightStore from "@/app/store/insightStore";
 import useChatStore from "@/app/store/chatStore";
 import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import DebugToastsPanel from "@/app/components/DebugToastsPanel";
+import { MAP_LEGEND_ATTR } from "@/app/explorationLayout";
+import { ImageryZoomHint } from "./map/ImageryZoomHint";
 
-const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
   const mapRef = useRef<MapRef>(null);
@@ -171,7 +172,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
             buildBasemapTileUrl(
               basemapTiles,
               MAPBOX_ACCESS_TOKEN,
-              typeof window === "undefined" ? 1 : window.devicePixelRatio
+              window.devicePixelRatio
             ),
           ]}
         >
@@ -217,7 +218,9 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
         >
           <DisclaimerPanel />
         </Box>
-        {/* Right overlay column: insight panel (top, scrollable) + legend (bottom).
+        {/* Right overlay column: insight panel (top, scrollable) + imagery zoom
+            hint + legend (bottom). The hint's width math assumes this
+            column's 420px width and right={3} (ImageryZoomHint.tsx).
             Base: spans the viewport (a fixed 420px would overhang narrow phones)
             and starts below the floating hamburger + header pill. */}
         <Flex
@@ -237,9 +240,11 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
           )}
           {/* Spacer: pushes legend to the bottom */}
           <Box flex="1 1 0" minH="0" />
+          <ImageryZoomHint />
           <Box
             flexShrink={0}
             display={{ base: showLegend ? "block" : "none", md: "block" }}
+            {...{ [MAP_LEGEND_ATTR]: "" }}
           >
             {/* Debug panel floats just left of this column, bottom-aligned.
                 Desktop-only: on mobile the column spans the viewport, so
@@ -251,9 +256,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
               pointerEvents="all"
               hideBelow="md"
             >
-              <Suspense fallback={null}>
-                <DebugToastsPanel />
-              </Suspense>
+              <DebugToastsPanel />
             </Box>
             <Legend
               layers={layers}

@@ -1,5 +1,3 @@
-"use client";
-
 import { Text } from "@chakra-ui/react";
 
 import { Legend } from "@/app/components/legend/Legend";
@@ -47,15 +45,8 @@ export default function DashboardMapLegend({
   if (!card?.legend) return null;
   const legend = card.legend;
 
-  // Same fallback the explorer applies (getDatasetLayerContextProps): configs
-  // without explicit parameters rendered with the card's default threshold.
-  const parameters =
-    layer.parameters ??
-    (typeof card.threshold === "number"
-      ? { canopy_cover: card.threshold }
-      : {});
   const params = buildParams(
-    parameters,
+    layer.parameters ?? {},
     buildYearParam(layer.startDate, layer.endDate)
   );
 

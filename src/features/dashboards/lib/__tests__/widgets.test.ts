@@ -23,7 +23,11 @@ import {
   withText,
   withWidgetTitle,
 } from "../widgets";
-import type { Dashboard, DashboardWidget } from "../../api/schemas";
+import {
+  DashboardWidgetResponseSchema,
+  type Dashboard,
+  type DashboardWidget,
+} from "../../api/schemas";
 
 function chart(overrides: Record<string, unknown> = {}) {
   return {
@@ -191,6 +195,75 @@ describe("dashboardWidgetToInsightWidgets", () => {
       yAxis: "loss_ha",
     });
     expect(card.seriesFields).toBeUndefined();
+  });
+
+  describe("registry colours, from the wire", () => {
+    // What GET /api/dashboards/:id sends, parsed the way the page parses it.
+    const parsed = (chartOverrides: Record<string, unknown>) =>
+      DashboardWidgetResponseSchema.parse({
+        ...widget(),
+        insight: { ...widget().insight, charts: [chart(chartOverrides)] },
+      });
+
+    it("carries a curated chart's colours onto its card", () => {
+      const colorMap = {
+        "Natural forest": "#246E24",
+        "Other tree cover": "#DC6C9A",
+      };
+      const divergentColors = { positive: "#8c510a", negative: "#01665e" };
+      const [card] = dashboardWidgetToInsightWidgets(
+        parsed({
+          chart_type: "stacked-bar",
+          color_map: colorMap,
+          series_color: "#DC6C9A",
+          divergent_colors: divergentColors,
+        })
+      );
+      expect(card).toMatchObject({
+        colorMap,
+        seriesColor: "#DC6C9A",
+        divergentColors,
+      });
+    });
+
+    it("keeps the colours on a chart the user renamed", () => {
+      // A manual rename is a title override in the widget config; the
+      // insight, and so its colours, is untouched.
+      const colorMap = {
+        "Natural forest": "#246E24",
+        "Other tree cover": "#DC6C9A",
+      };
+      const wire = parsed({ chart_type: "stacked-bar", color_map: colorMap });
+      const [card] = dashboardWidgetToInsightWidgets({
+        ...wire,
+        config: withChartTitle(wire.config, "c-1", "Loss since 2021"),
+      });
+      expect(card).toMatchObject({ title: "Loss since 2021", colorMap });
+    });
+
+    it("leaves the colours off when the registry has none, so the local palette applies", () => {
+      for (const wire of [
+        { color_map: {}, series_color: null, divergent_colors: null },
+        {},
+      ]) {
+        const [card] = dashboardWidgetToInsightWidgets(parsed(wire));
+        expect(card).not.toHaveProperty("colorMap");
+        expect(card).not.toHaveProperty("seriesColor");
+        expect(card).not.toHaveProperty("divergentColors");
+      }
+    });
+
+    it("drops a malformed colour rather than the whole insight", () => {
+      const result = parsed({
+        color_map: { "Natural forest": 5 },
+        divergent_colors: { positive: "#8c510a" },
+      });
+      expect(result.insight).not.toBeNull();
+      const [card] = dashboardWidgetToInsightWidgets(result);
+      expect(card.data).toEqual([{ year: 2020, loss_ha: 5 }]);
+      expect(card).not.toHaveProperty("colorMap");
+      expect(card).not.toHaveProperty("divergentColors");
+    });
   });
 
   it("sorts charts by position and applies narrative/title only to the first", () => {

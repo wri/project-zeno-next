@@ -1,5 +1,3 @@
-"use client";
-
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import { DashboardReportPage } from "@/src/features/dashboards";
 

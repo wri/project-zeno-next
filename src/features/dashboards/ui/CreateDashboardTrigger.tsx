@@ -1,4 +1,3 @@
-"use client";
 import { useEffect } from "react";
 
 import useMapStore from "@/app/store/mapStore";

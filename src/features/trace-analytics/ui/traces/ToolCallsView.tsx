@@ -1,5 +1,3 @@
-"use client";
-
 import { Badge, Box, Flex, Text } from "@chakra-ui/react";
 import type { ToolCallView } from "../../lib/parsing";
 import { stripNoise } from "../../lib/parsing";

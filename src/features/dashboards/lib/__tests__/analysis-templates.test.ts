@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -15,7 +17,16 @@ describe("ANALYSIS_TEMPLATE_CARDS", () => {
     for (const card of ANALYSIS_TEMPLATE_CARDS) {
       expect(card.label.trim()).not.toBe("");
       expect(card.image).toMatch(/^\//);
+      // The thumbnail ships under /public, or the card shows a broken image.
+      expect(existsSync(join("public", card.image))).toBe(true);
     }
+  });
+
+  it("offers the post-2020 forest loss template", () => {
+    expect(
+      ANALYSIS_TEMPLATE_CARDS.find((c) => c.name === "post-2020-forest-loss")
+        ?.label
+    ).toBe("Post-2020 forest loss");
   });
 });
 
