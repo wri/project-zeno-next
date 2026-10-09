@@ -583,7 +583,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "IFL Mapping Team",
-    categories: ["land-use"],
+    categories: ["forests"],
     viewOnly: true,
     featureFlag: IFL_FEATURE_FLAG,
     description: IFL_DESCRIPTION,
@@ -603,7 +603,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "UMD",
     defaultStartYear: 2001,
     defaultEndYear: 2025,
-    categories: ["disturbance"],
+    categories: ["forests", "disturbance"],
     description:
       "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2025 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
@@ -630,7 +630,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "1 km",
     geographic_coverage: "global",
     provider: "WRI / Google",
-    categories: ["disturbance"],
+    categories: ["forests", "disturbance"],
     description:
       "Shows the primary driver or cause of tree cover loss over the entire range 2001-2025. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
@@ -663,7 +663,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    categories: ["land-use"],
+    categories: ["forests"],
     description:
       "Tree Cover Gain (Hansen/UMD/GLAD) identifies areas where new tree canopy was established between 2000 and 2012 at 30-meter resolution, using Landsat 7 imagery. It captures both  natural forest regrowth and tree plantation cycles, and is useful for tracking large-scale forest recovery trends. Users should note that it is a cumulative layer and should not be combined directly with loss or tree cover data to calculate net change.",
     tile_url:
@@ -689,7 +689,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    categories: ["land-use"],
+    categories: ["forests"],
     description:
       "Tree Cover provides global percent tree canopy cover at 30-meter resolution for the year 2000 based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
@@ -718,7 +718,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "UMD",
     defaultStartYear: 2001,
     defaultEndYear: 2025,
-    categories: ["disturbance", "wildfires"],
+    categories: ["forests", "disturbance", "wildfires"],
     description:
       "Tree Cover Loss due to Fires (Hansen/UMD/GLAD) maps annual global tree cover loss attributed to fire from 2001 to 2025 at 30-meter resolution. This subset of the broader Tree Cover Loss dataset isolates fire-driven stand-replacement disturbances in vegetation over 5 meters tall, helping users understand where fire is a dominant driver of forest loss.",
     tile_url:
@@ -968,15 +968,15 @@ export const DATASET_CARD_BY_ID: Record<number, DatasetCardConfig> =
 
 const DATASET_CARD_DISPLAY_ORDER: number[] = [
   11, // Integrated alerts
+  4, // Tree cover loss
+  10, // TCL from fires
+  8, // TCL by driver
   1, // Global land cover
   2, // Grasslands
   3, // SBTN Natural lands
-  101, // Intact Forest Landscapes
-  4, // Tree cover loss
-  8, // TCL by driver
   5, // Tree cover gain
   7, // Tree cover
-  10, // TCL from fires
+  101, // Intact Forest Landscapes
   12, // LGMS
   6, // Forest GHG net flux
 ];
