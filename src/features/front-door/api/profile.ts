@@ -30,7 +30,6 @@ export async function patchProfile(
 // The subset of GET /api/profile/config the card uses; other keys are dropped.
 const ProfileCardOptionsSchema = ProfileConfigSchema.pick({
   sectors: true,
-  sector_roles: true,
   countries: true,
   languages: true,
   topics: true,

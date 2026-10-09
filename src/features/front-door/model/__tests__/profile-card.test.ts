@@ -5,7 +5,6 @@ import {
   isProfileDraftComplete,
   profileCardMode,
   toProfilePatch,
-  withSector,
   type ProfileCardOptions,
   type ProfileDraft,
   type ProfileSuggestion,
@@ -13,10 +12,6 @@ import {
 
 const options: ProfileCardOptions = {
   sectors: { government: "Government", ngo: "NGO / Non-profit" },
-  sector_roles: {
-    government: { analyst: "Analyst", policy_maker: "Policy maker" },
-    ngo: { field_officer: "Field officer" },
-  },
   countries: { BRA: "Brazil", KEN: "Kenya" },
   languages: { en: "English", pt: "Português" },
   topics: { fires: "Fires", water: "Water" },
@@ -25,7 +20,6 @@ const options: ProfileCardOptions = {
 const fullGfw: ProfileSuggestion = {
   company_organization: "State environment agency",
   sector_code: "government",
-  role_code: "analyst",
   country_code: "BRA",
   preferred_language_code: "pt",
   topics: ["fires", "retired_topic"],
@@ -42,7 +36,7 @@ const REQUIRED = {
 };
 
 describe("isProfileDraftComplete", () => {
-  it("requires sector, country and organisation, not role or language", () => {
+  it("requires sector, country and organisation, not language", () => {
     const complete = (d: Partial<ProfileDraft>) =>
       isProfileDraftComplete(draft(d), options);
     expect(complete({})).toBe(false);
@@ -74,25 +68,6 @@ describe("isProfileDraftComplete", () => {
   });
 });
 
-describe("withSector", () => {
-  it("keeps a role that belongs to the new sector", () => {
-    const current = draft({ sector: "government", role: "analyst" });
-    expect(withSector(current, "government", options).role).toBe("analyst");
-  });
-
-  it("clears a role that doesn't belong to the new sector, keeping the rest", () => {
-    const current = draft({
-      country: "BRA",
-      language: "pt",
-      sector: "government",
-      role: "analyst",
-    });
-    expect(withSector(current, "ngo", options)).toEqual(
-      draft({ country: "BRA", language: "pt", sector: "ngo", role: "" })
-    );
-  });
-});
-
 describe("draftFromSuggestion", () => {
   it("maps a full GFW profile onto the draft, keeping known topics", () => {
     expect(
@@ -105,7 +80,6 @@ describe("draftFromSuggestion", () => {
         country: "BRA",
         language: "pt",
         sector: "government",
-        role: "analyst",
         organisation: "State environment agency",
         firstName: "Maria",
         lastName: "Silva",
@@ -125,22 +99,12 @@ describe("draftFromSuggestion", () => {
       draftFromSuggestion(
         {
           sector_code: "retired_code",
-          role_code: "x",
           country_code: "ZZZ",
           preferred_language_code: "xx",
         },
         options
       )
     ).toEqual(EMPTY_PROFILE_DRAFT);
-  });
-
-  it("drops a role from another sector", () => {
-    expect(
-      draftFromSuggestion(
-        { sector_code: "ngo", role_code: "analyst", country_code: "KEN" },
-        options
-      ).role
-    ).toBe("");
   });
 
   it("returns an empty draft with no suggestion", () => {
@@ -180,7 +144,6 @@ describe("toProfilePatch", () => {
   it("builds a partial update with no role, no language and no emails", () => {
     expect(toProfilePatch(draft(REQUIRED), options)).toEqual({
       sector_code: "ngo",
-      role_code: null,
       country_code: "KEN",
       company_organization: "Kenya Forest Service",
       help_test_features: false,

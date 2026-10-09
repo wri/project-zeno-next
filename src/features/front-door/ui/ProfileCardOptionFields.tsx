@@ -12,7 +12,7 @@ import {
 import { OptionalMarker } from "@/app/onboarding/RequirementHint";
 
 /**
- * The profile card's pickers: a Select for short lists (sector, role) and a
+ * The profile card's pickers: a Select for short lists (sector) and a
  * type-to-search Combobox for long ones (country, language). Both portal
  * their lists and keep them inside the chat thread.
  */
@@ -89,7 +89,7 @@ function FieldLabelText({
   );
 }
 
-/** A short list (sector, role): pick one. */
+/** A short list (sector): pick one. */
 export function OptionSelect({
   id,
   label,

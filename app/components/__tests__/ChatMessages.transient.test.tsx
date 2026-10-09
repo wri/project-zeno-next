@@ -85,7 +85,6 @@ describe("ChatMessages and transient messages", () => {
     // As showProfilePrompt leaves it: the card's data settled in the cache.
     queryClient.setQueryData(profileOptionsQuery.queryKey, {
       sectors: {},
-      sector_roles: {},
       countries: {},
       languages: {},
     });

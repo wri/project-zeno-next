@@ -21,10 +21,6 @@ vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
 
 const options: ProfileCardOptions = {
   sectors: { government: "Government", ngo: "NGO / Non-profit" },
-  sector_roles: {
-    government: { analyst: "Analyst" },
-    ngo: { field_officer: "Field officer" },
-  },
   countries: { BRA: "Brazil", KEN: "Kenya", PER: "Peru", PRT: "Portugal" },
   languages: { en: "English", pt: "Português" },
   topics: { fires: "Fires", water: "Water" },
@@ -33,7 +29,6 @@ const options: ProfileCardOptions = {
 const fullGfw: ProfileSuggestion = {
   company_organization: "State environment agency",
   sector_code: "government",
-  role_code: "analyst",
   country_code: "BRA",
   preferred_language_code: "pt",
 };
@@ -74,7 +69,6 @@ const FIELD_LABELS = [
   "Country",
   "Preferred language(Optional)",
   "Sector",
-  "Role(Optional)",
   "Organisation",
 ];
 
@@ -138,7 +132,6 @@ describe("ProfilePromptCard", () => {
       ["Country", "Brazil"],
       ["Language", "Português"],
       ["Sector", "Government"],
-      ["Role", "Analyst"],
       ["Organisation", "State environment agency"],
     ]);
 
@@ -148,7 +141,6 @@ describe("ProfilePromptCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Looks right" }));
     expect(onSave).toHaveBeenCalledWith({
       sector_code: "government",
-      role_code: "analyst",
       country_code: "BRA",
       company_organization: "State environment agency",
       preferred_language_code: "pt",
@@ -158,9 +150,8 @@ describe("ProfilePromptCard", () => {
   });
 
   it("leaves out confirm rows GFW had no value for", () => {
-    const { preferred_language_code, role_code, ...rest } = fullGfw;
+    const { preferred_language_code, ...rest } = fullGfw;
     void preferred_language_code;
-    void role_code;
     const { container } = renderCard({ suggestion: rest });
     expect(confirmRows(container)).toEqual([
       ["Country", "Brazil"],
@@ -177,14 +168,11 @@ describe("ProfilePromptCard", () => {
     expect(comboInput(COUNTRY).value).toBe("Brazil");
     expect(comboInput(LANGUAGE).value).toBe("Português");
     expect(organisationInput().value).toBe("State environment agency");
-    for (const value of ["Government", "Analyst"]) {
-      expect(screen.getByText(value, { selector: "span" })).toBeTruthy();
-    }
+    expect(screen.getByText("Government", { selector: "span" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith({
       sector_code: "government",
-      role_code: "analyst",
       country_code: "BRA",
       company_organization: "State environment agency",
       preferred_language_code: "pt",
@@ -193,7 +181,7 @@ describe("ProfilePromptCard", () => {
     });
   });
 
-  it("asks for country, language, sector, role and organisation in that order", () => {
+  it("asks for country, language, sector and organisation in that order", () => {
     const { container } = renderCard();
     expect(fieldLabels(container)).toEqual(FIELD_LABELS);
   });
@@ -225,7 +213,6 @@ describe("ProfilePromptCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(onSave).toHaveBeenCalledWith({
       sector_code: "government",
-      role_code: null,
       country_code: "KEN",
       company_organization: "Kenya Forest Service",
       preferred_language_code: "pt",

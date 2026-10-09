@@ -41,7 +41,6 @@ describe("toProfilePrefill", () => {
       suggestion: {
         company_organization: "State environment agency",
         sector_code: "government",
-        role_code: "analyst",
         country_code: "BR",
         preferred_language_code: "pt",
         topics: ["forests"],
@@ -51,8 +50,10 @@ describe("toProfilePrefill", () => {
     });
   });
 
-  it("drops the job title, which the card doesn't use", () => {
-    expect(JSON.stringify(toProfilePrefill(FULL))).not.toContain("Analyst");
+  it("drops the job title and role, which the card doesn't use", () => {
+    const json = JSON.stringify(toProfilePrefill(FULL));
+    expect(json).not.toContain("Analyst");
+    expect(json).not.toContain("role_code");
   });
 
   it("drops topics that aren't a list of strings, and an empty list", () => {

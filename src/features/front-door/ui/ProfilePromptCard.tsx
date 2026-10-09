@@ -20,7 +20,6 @@ import {
   isProfileDraftComplete,
   profileCardMode,
   toProfilePatch,
-  withSector,
   type ProfileCardMode,
   type ProfileCardOptions,
   type ProfileCardPatch,
@@ -46,9 +45,6 @@ export interface ProfilePromptCardProps {
 
 /** Where the full profile form lives (User Profile). */
 const FULL_PROFILE_HREF = "/dashboard";
-
-/** The role options before a sector is chosen; one object, so memos hold. */
-const NO_ROLES: Record<string, string> = {};
 
 function initialDraft(
   suggestion: ProfileSuggestion | undefined,
@@ -107,7 +103,6 @@ function ConfirmRows({
     ["Country", options.countries[draft.country]],
     ["Language", options.languages[draft.language]],
     ["Sector", options.sectors[draft.sector]],
-    ["Role", options.sector_roles[draft.sector]?.[draft.role]],
     ["Organisation", draft.organisation],
   ];
   return (
@@ -178,17 +173,7 @@ function ProfileFields({
         placeholder="Select sector"
         options={options.sectors}
         value={draft.sector}
-        onChange={(sector) => onChange((d) => withSector(d, sector, options))}
-      />
-      <OptionSelect
-        id="profile-card-role"
-        label="Role"
-        optional
-        placeholder="Select role"
-        options={options.sector_roles[draft.sector] ?? NO_ROLES}
-        value={draft.role}
-        disabled={draft.sector === ""}
-        onChange={(role) => onChange((d) => ({ ...d, role }))}
+        onChange={(sector) => onChange((d) => ({ ...d, sector }))}
       />
       <Field.Root id="profile-card-organisation" required gridColumn="1 / -1">
         <Field.Label>Organisation</Field.Label>
@@ -214,8 +199,7 @@ function ProfileFields({
 /**
  * Asks for the profile after an answer instead of before it. Shows a one-click
  * confirmation when a GFW profile covers the required fields, otherwise the
- * fields: country, preferred language (optional), sector, role (optional),
- * organisation. Both modes end with the testing and email-list opt-ins.
+ * fields: country, preferred language (optional), sector, organisation. Both modes end with the testing and email-list opt-ins.
  */
 export function ProfilePromptCard({
   options,

@@ -76,8 +76,8 @@ const optionalTopics = z
     return undefined;
   });
 
-// What the slice reads from the wire. Other keys (job_title, and any consent
-// flag the backend might ever send) are stripped by z.object.
+// What the slice reads from the wire. Other keys (job_title, role_code, and
+// any consent flag the backend might ever send) are stripped by z.object.
 const PrefillResponseSchema = z.object({
   found: z.boolean(),
   suggestion: z
@@ -86,7 +86,6 @@ const PrefillResponseSchema = z.object({
       last_name: optionalText("last_name"),
       company_organization: optionalText("company_organization"),
       sector_code: optionalText("sector_code"),
-      role_code: optionalText("role_code"),
       country_code: optionalText("country_code"),
       preferred_language_code: optionalText("preferred_language_code"),
       topics: optionalTopics,

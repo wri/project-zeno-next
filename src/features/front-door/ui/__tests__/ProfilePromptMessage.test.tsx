@@ -48,7 +48,6 @@ import type { ProfilePrefill } from "../../api/profile-prefill";
 
 const OPTIONS = {
   sectors: { government: "Government" },
-  sector_roles: { government: { analyst: "Analyst" } },
   countries: { BR: "Brazil" },
   languages: { pt: "Português" },
 };
@@ -57,7 +56,6 @@ const GFW: ProfilePrefill = {
   found: true,
   suggestion: {
     sector_code: "government",
-    role_code: "analyst",
     country_code: "BR",
     company_organization: "SEMAS",
   },
@@ -155,7 +153,6 @@ describe("a profile-prompt message in the chat", () => {
       JSON.parse(vi.mocked(apiFetch).mock.calls[0][1]!.body as string)
     ).toEqual({
       sector_code: "government",
-      role_code: "analyst",
       country_code: "BR",
       company_organization: "SEMAS",
       help_test_features: false,

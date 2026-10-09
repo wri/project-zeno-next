@@ -52,7 +52,6 @@ import {
 
 const CONFIG = {
   sectors: { government: "Government", ngo: "NGO" },
-  sector_roles: { government: { analyst: "Analyst" }, ngo: {} },
   countries: { BR: "Brazil", KE: "Kenya" },
   languages: { pt: "Português", en: "English" },
   gis_expertise_levels: {},
@@ -66,7 +65,6 @@ const GFW_PREFILL = {
     first_name: "Maria",
     last_name: "Silva",
     sector_code: "government",
-    role_code: "analyst",
     country_code: "BR",
   },
 };
@@ -184,7 +182,6 @@ describe("the profile card after the first answer", () => {
     // The card carries no data: what it shows is settled in the query cache.
     expect(cachedOptions()).toEqual({
       sectors: CONFIG.sectors,
-      sector_roles: CONFIG.sector_roles,
       countries: CONFIG.countries,
       languages: CONFIG.languages,
       topics: CONFIG.topics,
@@ -205,7 +202,6 @@ describe("the profile card after the first answer", () => {
     expect(cachedPrefill()).toMatchObject({
       suggestion: {
         sector_code: "government",
-        role_code: "analyst",
         country_code: "BR",
       },
       firstName: "Maria",
@@ -302,7 +298,6 @@ describe("Not now", () => {
 describe("Save", () => {
   const patch = {
     sector_code: "government",
-    role_code: "analyst",
     country_code: "BR",
     company_organization: "State environment agency",
     help_test_features: false,
@@ -465,7 +460,6 @@ describe("the banner in the next new conversations", () => {
     const card = cards()[0];
     await saveProfileFromCard(card.id, {
       sector_code: "ngo",
-      role_code: null,
       country_code: "KE",
       company_organization: "Kenya Forest Service",
       help_test_features: false,
@@ -517,7 +511,6 @@ describe("analytics events", () => {
     const card = cards()[0];
     const patch = {
       sector_code: "ngo",
-      role_code: null,
       country_code: "KE",
       company_organization: "Kenya Forest Service",
       help_test_features: false,
