@@ -152,7 +152,9 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
       name: selected.name,
       type: "raster",
       visible: true,
-      tileUrl: selected.tileUrl,
+      // Standalone Primary Forests card: same black-background PNGs as the
+      // context sub-layer, so it needs the same pf:// patch.
+      tileUrl: patchPrimaryForestTileUrl(selected.tileUrl),
       datasetId: spec.datasetId,
       parameters: spec.parameters,
       startDate: selected.startDate ?? spec.startDate,
