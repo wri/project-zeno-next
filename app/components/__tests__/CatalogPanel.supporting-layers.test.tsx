@@ -59,7 +59,8 @@ describe("Data Catalog panel — LGMS supporting layers", () => {
     expect(screen.getByText("LGMS agriculture emissions")).toBeTruthy();
     expect(screen.getByText("LGMS cropland management emissions")).toBeTruthy();
     expect(screen.getByText("LGMS livestock emissions")).toBeTruthy();
-    expect(screen.getAllByText("VIEW ONLY")).toHaveLength(4);
+    // Four LGMS sector rows plus the (unflagged) Intact Forest Landscapes card.
+    expect(screen.getAllByText("VIEW ONLY")).toHaveLength(5);
   });
 
   it("selecting a supporting layer shows only that one on the map", async () => {

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   CONTEXT_LAYER_METADATA,
   DATASET_CARDS,
-  IFL_FEATURE_FLAG,
 } from "@/app/constants/datasets";
 
 /**
@@ -22,7 +21,7 @@ const FLAGSHIP_COLORS = {
 
 const intactForest = CONTEXT_LAYER_METADATA.intact_forest;
 const iflCard = DATASET_CARDS.find(
-  (card) => card.featureFlag === IFL_FEATURE_FLAG
+  (card) => card.dataset_id === intactForest.dataset_id
 );
 
 describe("Intact Forest Landscapes legend", () => {
