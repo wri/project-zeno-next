@@ -53,6 +53,7 @@ import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 import { CatalogCard } from "./CatalogCard";
 import { DatasetInfoModal } from "./DatasetInfoModal";
 import { Tooltip } from "./ui/tooltip";
+import { ViewOnlyBadge } from "./ViewOnlyBadge";
 
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
 const catalogPanelSlideTransition = {
@@ -323,8 +324,7 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
             </Flex>
           )
         }
-        typeLabel={card.viewOnly ? "VIEW ONLY" : "DATA"}
-        typeLabelColor={card.viewOnly ? "#656E7B" : "#1AA915"}
+        titleActions={card.viewOnly ? <ViewOnlyBadge /> : undefined}
         title={card.dataset_name}
         description={cardText}
         selected={isActive}
@@ -475,24 +475,7 @@ function SupportingLayerRow({
               </Flex>
             )
           }
-          typeLabel="DATA"
-          typeLabelColor="#1AA915"
-          badge={
-            <Box
-              bg={isSelected ? "#C2CCF2" : "#F4F5F6"}
-              borderRadius="4px"
-              px="5px"
-              py="2px"
-            >
-              <Text
-                fontFamily="mono"
-                fontSize="9px"
-                color={isSelected ? "#172B7A" : "#3A4048"}
-              >
-                VIEW ONLY
-              </Text>
-            </Box>
-          }
+          titleActions={<ViewOnlyBadge selected={isSelected} />}
           title={title}
           description={layerText}
           selected={isSelected}
