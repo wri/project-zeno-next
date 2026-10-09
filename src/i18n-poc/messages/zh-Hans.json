@@ -1,0 +1,12 @@
+{
+  "assistant.label": "AI 助手",
+  "assistant.newConversation": "新对话",
+  "assistant.history": "对话历史",
+  "assistant.welcome": "**欢迎使用 Global Nature Watch Horizon！**\n\n你好，我是你的自然监测助手，由人工智能以及 [Global Nature Watch](https://globalnaturewatch.org) 和 [Land & Carbon Lab](https://landcarbonlab.org) 的开放数据驱动。\n\n你可以询问你所关心地区的土地覆盖变化、森林丧失或生物多样性风险。想了解如何开始，请查看[帮助中心](https://help.horizon.globalnaturewatch.org/get-started)。",
+  "assistant.placeholder": "或描述你想探索的内容…",
+  "assistant.prompt.grassland": "显示蒙古草原范围的变化。",
+  "assistant.prompt.forest": "巴西树木丧失的三大原因是什么？",
+  "assistant.prompt.landcover": "显示肯尼亚 2015 年至 2024 年间最大的土地覆盖变化。",
+  "assistant.promptCount": "{count, plural, other {# 条建议提问}}",
+  "assistant.sampleStat": "示例：截至 {when, date, medium}，树木覆盖面积为 {area, number} 公顷。"
+}

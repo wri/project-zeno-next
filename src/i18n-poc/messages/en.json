@@ -1,0 +1,12 @@
+{
+  "assistant.label": "AI Assistant",
+  "assistant.newConversation": "New conversation",
+  "assistant.history": "Conversation history",
+  "assistant.welcome": "**Welcome to Global Nature Watch Horizon!**\n\nHi, I'm your nature monitoring assistant, powered by AI and open data from [Global Nature Watch](https://globalnaturewatch.org) and [Land & Carbon Lab](https://landcarbonlab.org).\n\nYou can ask me about land cover change, forest loss, or biodiversity risks in places you care about. For more details on how to get started, check out the [Help Center](https://help.horizon.globalnaturewatch.org/get-started).",
+  "assistant.placeholder": "Or describe what you want to explore…",
+  "assistant.prompt.grassland": "Show changes in grassland extent in Mongolia.",
+  "assistant.prompt.forest": "What were the top three causes of tree loss in Brazil?",
+  "assistant.prompt.landcover": "Show the biggest changes in land cover in Kenya between 2015 and 2024.",
+  "assistant.promptCount": "{count, plural, =0 {No suggested prompts} one {# suggested prompt} other {# suggested prompts}}",
+  "assistant.sampleStat": "Example: {area, number} hectares of tree cover, as of {when, date, medium}."
+}
