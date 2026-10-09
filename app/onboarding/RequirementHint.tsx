@@ -26,6 +26,11 @@ export default function RequirementHint({
     );
   }
 
+  return <OptionalMarker />;
+}
+
+/** The "(Optional)" after a field's label, for fields outside the onboarding set. */
+export function OptionalMarker() {
   return (
     <Text as="span" color="fg.muted" fontSize="xs" fontStyle="italic" ml={1}>
       (Optional)

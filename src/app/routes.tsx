@@ -114,6 +114,7 @@ export const routes: RouteObject[] = [
             path: "unauthorized",
             ...page(() => import("@/app/unauthorized/page")),
           },
+          { path: "welcome", ...page(() => import("@/app/welcome/page")) },
           ...(import.meta.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true"
             ? [
                 {

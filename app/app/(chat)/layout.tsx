@@ -31,6 +31,7 @@ import {
 } from "@/app/explorationLayout";
 import { ViewAnalysisTrigger } from "@/src/features/analysis";
 import { CreateDashboardTrigger } from "@/src/features/dashboards";
+import { ProfileAskTrigger } from "@/src/features/front-door";
 
 export default function DashboardLayout({
   children,
@@ -185,6 +186,7 @@ export default function DashboardLayout({
       <AnalysisCtaTrigger />
       <ViewAnalysisTrigger />
       <CreateDashboardTrigger />
+      <ProfileAskTrigger />
 
       {!isMobile && (
         <Box>

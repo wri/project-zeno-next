@@ -34,6 +34,10 @@ import { usePathname } from "@/src/shared/lib/router";
 import { useLogout } from "@/app/hooks/useLogout";
 import { openWhatsNew, useWhatsNewUnread } from "@/app/hooks/useWhatsNew";
 import { mapTabHref } from "@/app/utils/threadNavigation";
+import {
+  ProfileReminderDot,
+  ProfileReminderMenuItem,
+} from "@/src/features/front-door";
 
 const isPrototype = import.meta.env.NEXT_PUBLIC_PROTOTYPE_MODE === "true";
 const DISCLAIMER_STORAGE_KEY = "gnw_disclaimer_dismissed_v2";
@@ -320,6 +324,10 @@ function PageHeader() {
                   aria-label={`Account menu (${userEmail || "signed in"})`}
                 >
                   <UserIcon size={16} />
+                  {/* Front door: renders only while the profile is incomplete. */}
+                  <Box position="absolute" top="0" right="0" display="flex">
+                    <ProfileReminderDot />
+                  </Box>
                 </IconButton>
               </Menu.Trigger>
             </Tooltip>
@@ -329,10 +337,11 @@ function PageHeader() {
                   minW="220px"
                   css={{ "& a": { cursor: "pointer" } }}
                 >
+                  <ProfileReminderMenuItem />
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/dashboard">
                       <GearSixIcon />
-                      Settings
+                      User Profile
                     </Link>
                   </Menu.Item>
                   <Menu.Separator />

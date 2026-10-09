@@ -11,6 +11,10 @@ interface AuthState {
   preferredLanguageCode: string | null;
   isAuthenticated: boolean;
   hasProfile: boolean;
+  // Resource Watch display name from /api/auth/me; the /welcome greeting.
+  userName: string | null;
+  // Whether /app may open (front door), as the server reports it.
+  termsAccepted: boolean;
   authLoaded: boolean;
   usedPrompts: number;
   totalPrompts: number;
@@ -24,6 +28,8 @@ interface AuthState {
     hasProfile: boolean;
     userType: UserType | null;
     preferredLanguageCode?: string | null;
+    name?: string | null;
+    termsAccepted?: boolean;
   }) => void;
   setAuthLoaded: () => void;
   clearAuth: () => void;
@@ -37,6 +43,8 @@ const useAuthStore = create<AuthState>()((set) => ({
   preferredLanguageCode: null,
   isAuthenticated: false,
   hasProfile: false,
+  userName: null,
+  termsAccepted: false,
   authLoaded: false,
   usedPrompts: 0,
   totalPrompts: 10,
@@ -87,6 +95,8 @@ const useAuthStore = create<AuthState>()((set) => ({
     hasProfile,
     userType,
     preferredLanguageCode = null,
+    name = null,
+    termsAccepted = false,
   }) => {
     set({
       userId: id,
@@ -95,6 +105,8 @@ const useAuthStore = create<AuthState>()((set) => ({
       preferredLanguageCode,
       isAuthenticated: true,
       hasProfile,
+      userName: name,
+      termsAccepted,
       authLoaded: true,
     });
   },
@@ -109,6 +121,8 @@ const useAuthStore = create<AuthState>()((set) => ({
       preferredLanguageCode: null,
       isAuthenticated: false,
       hasProfile: false,
+      userName: null,
+      termsAccepted: false,
       authLoaded: true,
     });
   },
