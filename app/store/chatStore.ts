@@ -25,6 +25,7 @@ import {
   isLayerActive,
   type ContextKeys,
 } from "@/app/utils/messageContext";
+import { enrichMapViewContext } from "@/app/utils/viewContext";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
@@ -719,7 +720,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // `?ff=` carries over to the thread URL (`threadHref`), so reading it now
     // matches what the catalog and map show.
     const userType = useAuthStore.getState().userType;
-    const viewContext = useViewContextStore.getState().viewContext;
+    const viewContext = enrichMapViewContext(
+      useViewContextStore.getState().viewContext,
+      useMapStore.getState().mapRef,
+      useInsightStore.getState().insights
+    );
     const ff = chatFeatureFlag(
       useAgentProfileStore.getState().agentProfile,
       userType,
