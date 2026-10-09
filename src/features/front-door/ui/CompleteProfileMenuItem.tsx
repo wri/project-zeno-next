@@ -2,7 +2,7 @@
 
 import { Box, Menu } from "@chakra-ui/react";
 import { UserCircleIcon } from "@phosphor-icons/react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 import { ProfileIncompleteDot } from "./ProfileIncompleteDot";
 
 export type CompleteProfileMenuItemProps =

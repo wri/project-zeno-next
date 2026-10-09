@@ -304,7 +304,9 @@ describe("DashboardInsightModule", () => {
 
     it("shows the tree card's MEASURE pill, which has no DETAIL of its own", () => {
       renderModule({ widget: lgmsWidget() });
-      expect(screen.getByRole("button", { name: "MEASURE: Net" })).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: "MEASURE: Gross" })
+      ).toBeTruthy();
       expect(screen.queryByRole("button", { name: /^DETAIL/ })).toBeNull();
     });
 

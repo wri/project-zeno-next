@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -18,7 +16,7 @@ import {
   Checkbox,
   createListCollection,
 } from "@chakra-ui/react";
-import { useRouter, useSearchParams } from "@/app/lib/router";
+import { useRouter, useSearchParams } from "@/src/shared/lib/router";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getOnboardingFormSchema } from "@/app/onboarding/schema";

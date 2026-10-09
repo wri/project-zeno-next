@@ -1,5 +1,3 @@
-"use client";
-
 import { Flex, Image } from "@chakra-ui/react";
 import { PolygonIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";

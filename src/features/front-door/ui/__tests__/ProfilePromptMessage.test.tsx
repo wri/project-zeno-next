@@ -9,6 +9,14 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// React Router's Link needs a router; a plain anchor is enough here.
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  Link: ({ href, ...rest }: { href: string } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest} />
+  ),
+}));
+
 vi.mock("@/app/lib/api-client", () => ({
   apiFetch: vi.fn(),
   getToken: () => "token",

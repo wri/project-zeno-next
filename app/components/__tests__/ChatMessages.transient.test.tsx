@@ -9,6 +9,14 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// React Router's Link needs a router; a plain anchor is enough here.
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  Link: ({ href, ...rest }: { href: string } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest} />
+  ),
+}));
+
 // Nothing here may reach the network.
 vi.mock("@/app/lib/api-client", () => ({
   apiFetch: vi.fn(() => new Promise(() => {})),
@@ -30,9 +38,13 @@ import ChatMessages from "../ChatMessages";
 
 const TIMESTAMP = "2026-09-30T10:00:00.000Z";
 
-/** Footers show the answer's time; count them by that text. */
+/**
+ * Footers show the answer's time ("12:00 PM on …", in the system locale);
+ * count them by that text.
+ */
 function footerCount(container: HTMLElement): number {
-  return (container.textContent?.match(/ on \d{1,2} \w+ \d{4}/g) ?? []).length;
+  return (container.textContent?.match(/\d{1,2}:\d{2}(\s?[AP]M)? on /gi) ?? [])
+    .length;
 }
 
 function renderMessages() {

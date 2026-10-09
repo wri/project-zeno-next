@@ -11,6 +11,14 @@ import {
   type ProfilePromptCardProps,
 } from "../ProfilePromptCard";
 
+// React Router's Link needs a router; a plain anchor is enough here.
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  Link: ({ href, ...rest }: { href: string } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest} />
+  ),
+}));
+
 const options: ProfileCardOptions = {
   sectors: { government: "Government", ngo: "NGO / Non-profit" },
   sector_roles: {

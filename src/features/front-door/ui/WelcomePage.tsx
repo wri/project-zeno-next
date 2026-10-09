@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Box, Container } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "@/app/lib/router";
+import { useSearchParams } from "@/src/shared/lib/router";
 import { showApiError } from "@/app/hooks/useErrorHandler";
 import { OnboardingHeader } from "@/app/onboarding/OnboardingHeader";
 import { OnboardingPageShell } from "@/app/onboarding/OnboardingPageShell";

@@ -1,5 +1,3 @@
-"use client";
-
 import OnboardingForm from "./form";
 import { OnboardingPageShell } from "./OnboardingPageShell";
 

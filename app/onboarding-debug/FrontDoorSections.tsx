@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   Code,
-  Container,
   Flex,
   Grid,
   Heading,
@@ -25,7 +24,8 @@ import {
   personNames,
   type ProfileCardPatch,
 } from "@/src/features/front-door";
-import { MOCK_PROFILE_CONFIG } from "../mock-profile-config";
+import { MOCK_PROFILE_CONFIG } from "./mock-profile-config";
+import { DEBUG_NAV_OFFSET, DEBUG_SECTIONS } from "./sections";
 import { AskRulesSimulator } from "./AskRulesSimulator";
 import { PERSONAS, QUESTION, type PersonaId } from "./personas";
 
@@ -60,18 +60,27 @@ function Segmented<T extends string>({
 
 /** One component: when it shows on the left, the live component on the right. */
 function ComponentSection({
+  id,
   title,
   rules,
   controls,
   children,
 }: {
+  id: string;
   title: string;
   rules: string[];
   controls?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <Box as="section" borderTopWidth="1px" borderColor="border" pt={6}>
+    <Box
+      as="section"
+      id={id}
+      scrollMarginTop={DEBUG_NAV_OFFSET}
+      borderTopWidth="1px"
+      borderColor="border"
+      pt={6}
+    >
       <Grid
         templateColumns={{ base: "1fr", lg: "minmax(0, 320px) minmax(0, 1fr)" }}
         gap={{ base: 4, lg: 10 }}
@@ -114,7 +123,8 @@ function TermsSection() {
   const [withQuestion, setWithQuestion] = useState<"yes" | "no">("yes");
   return (
     <ComponentSection
-      title="Accept the terms"
+      id={DEBUG_SECTIONS.terms.id}
+      title={DEBUG_SECTIONS.terms.label}
       rules={[
         "After the Resource Watch sign-in, when the account hasn't accepted the current terms (replaces the /onboarding form).",
         "With ?prompt= in the URL, the question shows and Continue runs it.",
@@ -153,7 +163,8 @@ function ProfileCardSection() {
 
   return (
     <ComponentSection
-      title="Profile card"
+      id={DEBUG_SECTIONS.profileCard.id}
+      title={DEBUG_SECTIONS.profileCard.label}
       rules={[
         "After the person's first answer ever (live answers only; replaying a thread never counts).",
         "From “Add details” on the banner.",
@@ -213,7 +224,8 @@ function ProfileCardSection() {
 function BannerSection() {
   return (
     <ComponentSection
-      title="Soft nudge banner"
+      id={DEBUG_SECTIONS.banner.id}
+      title={DEBUG_SECTIONS.banner.label}
       rules={[
         "The card was shown and the profile still isn't saved.",
         `After the first answer of a new conversation, in the next ${NUDGE_CONVERSATIONS} new conversations only.`,
@@ -240,7 +252,8 @@ function BannerSection() {
 function AccountMenuSection() {
   return (
     <ComponentSection
-      title="Account menu reminder"
+      id={DEBUG_SECTIONS.accountMenu.id}
+      title={DEBUG_SECTIONS.accountMenu.label}
       rules={[
         "Whenever the profile is incomplete, including after the banners stop.",
         "“Complete your profile” goes to User Profile (/dashboard).",
@@ -279,27 +292,23 @@ function AccountMenuSection() {
  * The front door's interactive pieces, each with the rules for when it
  * appears. Offline: mock options and people, nothing is saved.
  */
-export default function FrontDoorPreview() {
+export default function FrontDoorSections() {
   return (
-    <Box minH="100vh" bg="bg.subtle" py={10}>
-      <Container maxW="6xl">
-        <Stack gap={8}>
-          <Stack gap={2}>
-            <Heading as="h1" size="2xl">
-              Front door components
-            </Heading>
-            <Text color="fg.muted" maxW="70ch">
-              Each piece of the lower-friction sign-up, live, with when it
-              appears. Built from the front-door slice with mock options; no API
-              calls, nothing is saved.
-            </Text>
-          </Stack>
-          <TermsSection />
-          <ProfileCardSection />
-          <BannerSection />
-          <AccountMenuSection />
-        </Stack>
-      </Container>
-    </Box>
+    <Stack gap={8}>
+      <Stack gap={2}>
+        <Heading as="h2" size="2xl">
+          Front door components
+        </Heading>
+        <Text color="fg.muted" maxW="70ch">
+          Each piece of the lower-friction sign-up, live, with when it appears.
+          Built from the front-door slice with mock options; no API calls,
+          nothing is saved.
+        </Text>
+      </Stack>
+      <TermsSection />
+      <ProfileCardSection />
+      <BannerSection />
+      <AccountMenuSection />
+    </Stack>
   );
 }

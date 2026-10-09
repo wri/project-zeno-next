@@ -13,7 +13,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { ArrowUpRightIcon } from "@phosphor-icons/react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 import type { PersonNames } from "../lib/person-names";
 import {
   draftFromSuggestion,

@@ -1,22 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "@/app/lib/router";
+import { useEffect } from "react";
 import {
   Button,
   Flex,
   IconButton,
-  LinkProps,
   Stack,
-  Text,
   Link as ChLink,
   Status,
   Heading,
-  Accordion,
   Box,
   Badge,
   Progress,
-  Spinner,
 } from "@chakra-ui/react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 
 import { Tooltip } from "./components/ui/tooltip";
 import {
@@ -28,214 +23,22 @@ import {
 } from "@phosphor-icons/react";
 import useSidebarStore from "./store/sidebarStore";
 import useAuthStore from "./store/authStore";
-import useChatStore from "./store/chatStore";
-import useMapStore from "./store/mapStore";
 import { useLogout } from "./hooks/useLogout";
-import ThreadActionsMenu from "./components/ThreadActionsMenu";
+import { useStartNewConversation } from "./hooks/useStartNewConversation";
+import ConversationHistoryList from "./components/ConversationHistoryList";
 import LclLogo from "./components/LclLogo";
-import { useThreadsInfinite } from "./hooks/useThreadsInfinite";
-import { useIntersectionObserver } from "./hooks/useIntersectionObserver";
-import {
-  newConversationTarget,
-  threadClickTarget,
-} from "./utils/threadNavigation";
-
-/**
- * The current `location.search`, captured once on mount (mirroring
- * `useFeatureFlag`): the URL only exists client-side, and the first-message
- * thread rewrite can drop query params mid-session — the mount-time value is
- * the trustworthy one.
- */
-function useMountSearch(): string | null {
-  const [search] = useState(() =>
-    typeof window === "undefined" ? null : window.location.search
-  );
-  return search;
-}
-
-function ThreadLink(props: LinkProps & { isActive?: boolean; href?: string }) {
-  const { href, children, isActive, ...rest } = props;
-  return (
-    <ChLink
-      fontSize="sm"
-      textDecor="none"
-      _hover={{ textDecor: "none" }}
-      whiteSpace="nowrap"
-      overflow="hidden"
-      textOverflow="ellipsis"
-      display="block"
-      flex="1"
-      outline="none"
-      cursor="pointer"
-      {...(isActive
-        ? {
-            color: "primary.fg",
-          }
-        : {})}
-      {...rest}
-      asChild
-    >
-      {href ? (
-        <Link href={href} style={{ display: "block", width: "100%" }}>
-          {children}
-        </Link>
-      ) : (
-        <button
-          type="button"
-          style={{ display: "block", width: "100%", textAlign: "left" }}
-        >
-          {children}
-        </button>
-      )}
-    </ChLink>
-  );
-}
-
-function ThreadSection({
-  threads,
-  label,
-  value,
-  currentThreadId,
-  footer,
-}: {
-  threads: {
-    id: string;
-    name: string;
-    updated_at: string;
-    is_public: boolean;
-  }[];
-  label: string;
-  value: string;
-  currentThreadId: string | null;
-  footer?: React.ReactNode;
-}) {
-  const { toggleSidebar } = useSidebarStore();
-  const pathname = usePathname();
-  const search = useMountSearch();
-
-  // On a dashboard detail page the conversation isn't in the URL (ADR-003),
-  // so resuming one loads it into the global chat store in place — the same
-  // reset the map's thread page performs on navigation, minus the navigation.
-  const openThreadInPlace = (threadId: string) => {
-    const chat = useChatStore.getState();
-    if (chat.currentThreadId !== threadId) {
-      chat.reset();
-      useMapStore.getState().reset();
-      chat.fetchThread(threadId);
-    }
-    toggleSidebar();
-  };
-
-  if (!threads.length && !footer) return null;
-  return (
-    <Accordion.Item value={value} border="none">
-      <Accordion.ItemTrigger px="3" py="1" cursor="pointer">
-        <Text
-          fontSize="xs"
-          fontWeight="normal"
-          color="fg.subtle"
-          ml="2"
-          mr="auto"
-        >
-          {label}
-        </Text>
-        <Accordion.ItemIndicator />
-      </Accordion.ItemTrigger>
-      <Accordion.ItemContent px="0" pt="0">
-        <Stack gap="1" mt="1">
-          {threads.map((thread) => {
-            const isActive = currentThreadId === thread.id;
-            const target = threadClickTarget(pathname, thread.id, search);
-            return (
-              <Flex
-                key={thread.id}
-                align="center"
-                justify="space-between"
-                pl="2"
-                pr="0"
-                mx="4"
-                borderRadius="sm"
-                role="group"
-                _hover={{ layerStyle: "fill.muted" }}
-                _focusWithin={{
-                  outline: "2px solid var(--chakra-colors-gray-400)",
-                  outlineOffset: "2px",
-                }}
-                css={{
-                  "&:hover .thread-actions": { opacity: 1 },
-                  "&:focus-within .thread-actions": { opacity: 1 },
-                }}
-                {...(isActive ? { bg: "bg", color: "blue.fg" } : {})}
-              >
-                {target.kind === "navigate" ? (
-                  <ThreadLink
-                    href={target.href}
-                    isActive={isActive}
-                    _hover={{ textDecor: "none" }}
-                    onClick={toggleSidebar}
-                  >
-                    {thread.name}
-                  </ThreadLink>
-                ) : (
-                  <ThreadLink
-                    isActive={isActive}
-                    _hover={{ textDecor: "none" }}
-                    onClick={() => openThreadInPlace(thread.id)}
-                  >
-                    {thread.name}
-                  </ThreadLink>
-                )}
-                <div onClick={(e) => e.stopPropagation()}>
-                  <ThreadActionsMenu thread={thread} />
-                </div>
-              </Flex>
-            );
-          })}
-        </Stack>
-        {footer}
-      </Accordion.ItemContent>
-    </Accordion.Item>
-  );
-}
 
 export function Sidebar() {
   const { sideBarVisible, toggleSidebar, apiStatus, fetchApiStatus } =
     useSidebarStore();
-  const { currentThreadId } = useChatStore();
   const { userEmail, usedPrompts, totalPrompts } = useAuthStore();
-  const { threadGroups, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useThreadsInfinite();
-
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  const handleLoadMore = useCallback(() => {
-    fetchNextPage();
-  }, [fetchNextPage]);
-
-  useIntersectionObserver(sentinelRef, handleLoadMore, {
-    enabled: hasNextPage && !isFetchingNextPage,
-    rootMargin: "200px",
-  });
 
   useEffect(() => {
     fetchApiStatus();
   }, [fetchApiStatus]);
 
   const { logout, isLoggingOut } = useLogout();
-
-  const pathname = usePathname();
-  const newConvo = newConversationTarget(pathname);
-  // Mirrors PageHeader's in-place reset: a dashboard detail page hosts its
-  // own chat panel, so starting a new conversation must not navigate away.
-  const startNewConversationInPlace = () => {
-    useChatStore.getState().reset();
-    useMapStore.getState().reset();
-    toggleSidebar();
-  };
-
-  const hasTodayThreads = threadGroups.today.length > 0;
-  const hasPreviousWeekThreads = threadGroups.previousWeek.length > 0;
-  const hasOlderThreads = threadGroups.older.length > 0;
+  const startNewConversation = useStartNewConversation();
 
   return (
     <Flex
@@ -296,33 +99,20 @@ export function Sidebar() {
         bg="bg.subtle"
         boxShadow="xs"
       >
-        {newConvo.kind === "reset-in-place" ? (
-          <Button
-            variant="outline"
-            colorPalette="primary"
-            size="sm"
-            w={{ base: "full", md: "auto" }}
-            aria-label="New conversation"
-            onClick={startNewConversationInPlace}
-          >
-            New Conversation
-            <NotePencilIcon />
-          </Button>
-        ) : (
-          <Button
-            asChild
-            variant="outline"
-            colorPalette="primary"
-            size="sm"
-            w={{ base: "full", md: "auto" }}
-            onClick={toggleSidebar}
-          >
-            <Link href={newConvo.href} aria-label="New conversation">
-              New Conversation
-              <NotePencilIcon />
-            </Link>
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          colorPalette="primary"
+          size="sm"
+          w={{ base: "full", md: "auto" }}
+          aria-label="New conversation"
+          onClick={() => {
+            startNewConversation();
+            toggleSidebar();
+          }}
+        >
+          New Conversation
+          <NotePencilIcon />
+        </Button>
         <Tooltip
           content="Close sidebar"
           positioning={{ placement: "right" }}
@@ -348,42 +138,7 @@ export function Sidebar() {
           },
         }}
       >
-        <Accordion.Root multiple defaultValue={["today", "previousWeek"]}>
-          {hasTodayThreads && (
-            <ThreadSection
-              threads={threadGroups.today}
-              label="Today"
-              value="today"
-              currentThreadId={currentThreadId}
-            />
-          )}
-          {hasPreviousWeekThreads && (
-            <ThreadSection
-              threads={threadGroups.previousWeek}
-              label="Previous 7 days"
-              value="previousWeek"
-              currentThreadId={currentThreadId}
-            />
-          )}
-          {(hasOlderThreads || hasNextPage) && (
-            <ThreadSection
-              threads={threadGroups.older}
-              label="Older Conversations"
-              value="older"
-              currentThreadId={currentThreadId}
-              footer={
-                <>
-                  <div ref={sentinelRef} />
-                  {isFetchingNextPage && (
-                    <Flex justify="center" py="2">
-                      <Spinner size="sm" color="fg.subtle" />
-                    </Flex>
-                  )}
-                </>
-              }
-            />
-          )}
-        </Accordion.Root>
+        <ConversationHistoryList onThreadOpen={toggleSidebar} />
         <Status.Root
           colorPalette={apiStatus === "OK" ? "green" : "red"}
           m="3"

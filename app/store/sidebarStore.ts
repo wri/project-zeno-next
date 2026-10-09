@@ -10,9 +10,16 @@ interface ThreadsPage {
   nextCursor: string | null;
 }
 
+/** The Areas panel's tabs: Boundaries, In this conversation, My areas. */
+export type AreasPanelFilter = "boundaries" | "conversation" | "mine";
+
 interface SidebarState {
+  /** The mobile drawer (conversation history and account). */
   sideBarVisible: boolean;
   toggleSidebar: () => void;
+  /** The menu side bar the header's menu button opens (desktop). */
+  menuOpen: boolean;
+  setMenuOpen: (open: boolean) => void;
   renameThread: (threadId: string, newName: string) => Promise<void>;
   shareThread: (threadId: string, isPublic: boolean) => Promise<void>;
   deleteThread: (threadId: string) => Promise<void>;
@@ -20,6 +27,16 @@ interface SidebarState {
   apiStatus: "Idle" | "OK" | "Error";
   isChatFullSize: boolean;
   setChatFullSize: (value: boolean) => void;
+  /**
+   * Whether the compact chat panel is collapsed to its header bar. Kept here
+   * rather than in the panel because the full-size panel's Collapse control
+   * lands on the collapsed compact panel. Full-size is never collapsed.
+   */
+  isChatCollapsed: boolean;
+  setChatCollapsed: (collapsed: boolean) => void;
+  /** Whether the chat panel shows the conversation history instead of the chat. */
+  chatHistoryOpen: boolean;
+  setChatHistoryOpen: (open: boolean) => void;
   /**
    * Whether the Data Catalog panel is open. The Data Catalog and Areas panels
    * share the same column slot in the exploration layout and are kept mutually
@@ -35,6 +52,11 @@ interface SidebarState {
   areasPanelOpen: boolean;
   setAreasPanelOpen: (open: boolean) => void;
   toggleAreasPanel: () => void;
+  /** The Areas panel's selected tab. Here so the menu can open "My areas". */
+  areasPanelFilter: AreasPanelFilter;
+  setAreasPanelFilter: (filter: AreasPanelFilter) => void;
+  /** Opens the Areas panel on the given tab (closing its column siblings). */
+  openAreasPanel: (filter: AreasPanelFilter) => void;
   /**
    * Whether the Insights panel is open. Mutually exclusive with the Data Catalog
    * and Areas panels (same column slot).
@@ -61,10 +83,30 @@ function updateThreadInCache(
 
 const useSidebarStore = create<SidebarState>(() => ({
   sideBarVisible: false,
+  menuOpen: false,
+  setMenuOpen: (open) => useSidebarStore.setState({ menuOpen: open }),
   apiStatus: "Idle",
   isChatFullSize: false,
   setChatFullSize: (value) =>
-    useSidebarStore.setState({ isChatFullSize: value }),
+    useSidebarStore.setState(
+      value
+        ? { isChatFullSize: true, isChatCollapsed: false }
+        : { isChatFullSize: false }
+    ),
+  isChatCollapsed: false,
+  setChatCollapsed: (collapsed) =>
+    useSidebarStore.setState(
+      collapsed
+        ? { isChatCollapsed: true, isChatFullSize: false }
+        : { isChatCollapsed: false }
+    ),
+  chatHistoryOpen: false,
+  setChatHistoryOpen: (open) =>
+    useSidebarStore.setState(
+      open
+        ? { chatHistoryOpen: true, isChatCollapsed: false }
+        : { chatHistoryOpen: false }
+    ),
   dataCatalogOpen: false,
   setDataCatalogOpen: (open) =>
     useSidebarStore.setState(
@@ -108,6 +150,16 @@ const useSidebarStore = create<SidebarState>(() => ({
             insightsPanelOpen: false,
           }
         : { areasPanelOpen: false };
+    }),
+  areasPanelFilter: "boundaries",
+  setAreasPanelFilter: (filter) =>
+    useSidebarStore.setState({ areasPanelFilter: filter }),
+  openAreasPanel: (filter) =>
+    useSidebarStore.setState({
+      areasPanelOpen: true,
+      areasPanelFilter: filter,
+      dataCatalogOpen: false,
+      insightsPanelOpen: false,
     }),
 
   insightsPanelOpen: false,

@@ -5,6 +5,7 @@ import {
   toLayerEntries,
 } from "../datasetLayerContext";
 import type { DatasetInfo } from "@/app/types/chat";
+import { CONTEXT_LAYER_METADATA } from "@/app/constants/datasets";
 
 const BASE_DATASET: DatasetInfo = {
   dataset_id: 4,
@@ -113,6 +114,60 @@ describe("getDatasetLayerContextProps — raster branch", () => {
     expect(result.contextLayer).toBeDefined();
     expect(result.contextLayer!.tileUrl).toBe(rawUrl);
     expect(result.contextLayer!.sourceLayer).toBeUndefined();
+  });
+});
+
+describe("getDatasetLayerContextProps — frontend-styled context layers", () => {
+  it.each(["natural_forest", "natural_lands"])(
+    "replaces the backend %s tiles with the frontend's single-class styling",
+    (name) => {
+      const props = getDatasetLayerContextProps({
+        ...BASE_DATASET,
+        context_layer: name,
+        context_layers: [
+          { name, tile_url: "/raster/collections/natural-lands-v-1-1/x.png" },
+        ],
+      });
+      expect(props.contextLayer?.tileUrl).toBe(
+        CONTEXT_LAYER_METADATA[name].tile_url
+      );
+    }
+  );
+});
+
+describe("getDatasetLayerContextProps — canopy parameters", () => {
+  const NATURAL_FOREST: DatasetInfo = {
+    ...BASE_DATASET,
+    context_layer: "natural_forest",
+    context_layers: [
+      {
+        name: "natural_forest",
+        tile_url: "https://example.com/natural_lands/{z}/{x}/{y}.png",
+      },
+    ],
+  };
+
+  it("falls back to the default canopy threshold without explicit parameters", () => {
+    const result = getDatasetLayerContextProps(BASE_DATASET);
+    expect(result.parameters).toEqual({ canopy_cover: 30 });
+  });
+
+  it("drops the default canopy threshold under natural_forest", () => {
+    // The analysis ignores canopy cover for natural forest, so the legend
+    // must not show a CANOPY chip from the card default (threshold: 30).
+    const result = getDatasetLayerContextProps(NATURAL_FOREST);
+    expect(result.parameters).toBeUndefined();
+  });
+
+  it("drops an explicit canopy_cover under natural_forest but keeps other parameters", () => {
+    const result = getDatasetLayerContextProps({
+      ...NATURAL_FOREST,
+      parameters: [
+        { name: "canopy_cover", values: [50] },
+        { name: "driver", values: ["Wildfire"] },
+      ],
+    });
+    expect(result.parameters).toEqual({ driver: "Wildfire" });
   });
 });
 

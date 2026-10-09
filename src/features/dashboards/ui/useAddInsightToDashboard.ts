@@ -1,5 +1,3 @@
-"use client";
-
 import { toaster } from "@/app/components/ui/toaster";
 import useAuthStore from "@/app/store/authStore";
 import useViewContextStore from "@/app/store/viewContextStore";

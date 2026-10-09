@@ -1,5 +1,3 @@
-"use client";
-
 import { Button, Dialog, Portal, Text } from "@chakra-ui/react";
 
 /**

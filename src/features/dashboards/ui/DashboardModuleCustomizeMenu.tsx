@@ -1,5 +1,3 @@
-"use client";
-
 import { Button, Checkbox, Flex, Popover } from "@chakra-ui/react";
 import { GearIcon } from "@phosphor-icons/react";
 
