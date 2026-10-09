@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   DATASET_CARDS,
-  IFL_FEATURE_FLAG,
   NET_FLUX_FEATURE_FLAG,
   isViewOnlyDataset,
   type DatasetCardConfig,
@@ -54,17 +53,14 @@ describe("Intact Forest Landscapes catalogue card", () => {
     expect(ifl!.dataset_name).toBe("Intact Forest Landscapes");
   });
 
-  it("is hidden from the catalogue until ?ff=ifl is set", () => {
-    const withoutFlag = filterDatasetsByFeatureFlag(DATASET_CARDS, new Set());
-    expect(withoutFlag.some((c) => c.dataset_id === IFL_DATASET_ID)).toBe(
-      false
-    );
+  it("is listed in the catalogue without any feature flag", () => {
+    expect(ifl!.featureFlag).toBeUndefined();
+    const visible = filterDatasetsByFeatureFlag(DATASET_CARDS, new Set());
+    expect(visible.some((c) => c.dataset_id === IFL_DATASET_ID)).toBe(true);
+  });
 
-    const withFlag = filterDatasetsByFeatureFlag(
-      DATASET_CARDS,
-      new Set([IFL_FEATURE_FLAG])
-    );
-    expect(withFlag.some((c) => c.dataset_id === IFL_DATASET_ID)).toBe(true);
+  it("has a catalogue thumbnail", () => {
+    expect(ifl!.img).toBe("/dataset_card_intact_forest.webp");
   });
 
   it("is flagged view-only so it renders the VIEW ONLY badge", () => {
@@ -104,7 +100,7 @@ describe("the LGMS dataset card", () => {
     // An unrelated flag must not reveal it either.
     const otherFlag = filterDatasetsByFeatureFlag(
       DATASET_CARDS,
-      new Set([IFL_FEATURE_FLAG])
+      new Set(["unrelated"])
     );
     expect(otherFlag.some((c) => c.dataset_id === LGMS_DATASET_ID)).toBe(false);
 
