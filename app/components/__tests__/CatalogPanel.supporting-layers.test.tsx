@@ -96,3 +96,37 @@ describe("Data Catalog panel — LGMS supporting layers", () => {
     expect(useMapStore.getState().layers).toHaveLength(0);
   });
 });
+
+/** The card root: the nearest ancestor that also holds the show-on-map switch. */
+function cardFor(title: string): HTMLElement {
+  let el: HTMLElement | null = screen.getByText(title);
+  while (el && !el.querySelector('input[type="checkbox"]')) {
+    el = el.parentElement;
+  }
+  if (!el) throw new Error(`No card found for ${title}`);
+  return el;
+}
+
+describe("Data Catalog panel — view-only datasets", () => {
+  beforeEach(() => {
+    useMapStore.getState().reset();
+    useSidebarStore.setState({ dataCatalogOpen: true, isChatFullSize: true });
+    // Intact Forest Landscapes is the standalone view-only card; it is still
+    // behind `?ff=ifl` on this branch.
+    setFlags("ifl");
+  });
+
+  // View-only datasets (no analytics endpoint) are still datasets: the card
+  // keeps the DATA type label, and VIEW ONLY is a separate header badge.
+  it("labels a view-only card DATA and badges it VIEW ONLY; analysable cards get no badge", () => {
+    renderPanel();
+
+    const viewOnly = cardFor("Intact Forest Landscapes");
+    expect(viewOnly.textContent).toContain("DATA");
+    expect(viewOnly.textContent).toContain("VIEW ONLY");
+
+    const analysable = cardFor("Tree cover loss");
+    expect(analysable.textContent).toContain("DATA");
+    expect(analysable.textContent).not.toContain("VIEW ONLY");
+  });
+});
