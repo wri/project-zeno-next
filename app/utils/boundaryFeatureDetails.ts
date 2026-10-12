@@ -134,11 +134,29 @@ function landmarkDetails(p: Props): BoundaryFeatureDetails {
   };
 }
 
+function oilPalmDetails(p: Props): BoundaryFeatureDetails {
+  const company = clean(p.company);
+  const group = clean(p.comp_group);
+  return {
+    kind: clean(p.conc_type) ?? "Oil palm concession",
+    title: clean(p.conc_name) ?? company ?? group ?? "Unnamed concession",
+    status: clean(p.conc_stat),
+    rows: rows([
+      ["Company", company],
+      ["Group", group === "No group" ? undefined : group],
+      ["Country", clean(p.iso3)],
+      ["Area", formatHectares(p.gfw_area__ha)],
+    ]),
+    source: clean(p.source) ?? "GFW oil palm concessions",
+  };
+}
+
 const BUILDERS: Record<LayerId, (p: Props) => BoundaryFeatureDetails> = {
   GADM: gadmDetails,
   KBA: kbaDetails,
   WDPA: wdpaDetails,
   LandMark: landmarkDetails,
+  OIL_PALM: oilPalmDetails,
 };
 
 /** Tooltip details for a feature hovered on the given boundary layer. */

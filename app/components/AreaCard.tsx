@@ -21,6 +21,8 @@ function getAreaTypeLabel(aoiSelection: AOISelection): string {
       return "Protected Areas";
     case "landmark":
       return "Indigenous Territories";
+    case "oil_palm":
+      return "Oil Palm Concessions";
     default:
       return aoi.source
         ? aoi.source.charAt(0).toUpperCase() + aoi.source.slice(1)

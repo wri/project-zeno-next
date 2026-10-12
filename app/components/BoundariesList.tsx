@@ -3,6 +3,7 @@ import {
   BirdIcon,
   MapTrifoldIcon,
   ShieldCheckIcon,
+  TreePalmIcon,
   UsersThreeIcon,
   type Icon,
 } from "@phosphor-icons/react";
@@ -21,6 +22,7 @@ const BOUNDARY_ICONS: Record<LayerId, Icon> = {
   KBA: BirdIcon,
   WDPA: ShieldCheckIcon,
   LandMark: UsersThreeIcon,
+  OIL_PALM: TreePalmIcon,
 };
 
 /**

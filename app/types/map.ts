@@ -1,6 +1,6 @@
 /**
  * Boundary layers: global vector-tile collections of candidate areas (admin
- * units, KBAs, protected areas, indigenous lands). One can be shown at a time
+ * units, KBAs, protected areas, indigenous lands, oil palm concessions). One can be shown at a time
  * (`mapStore.selectAreaLayer`); clicking a feature on it picks that feature as
  * an area. Showing a boundary layer is NOT an area selection and never enters
  * `ui_context` — only the picked feature does.
@@ -45,6 +45,17 @@ export const selectLayerOptions = Object.freeze([
     sourceLayer: "landmark_ip_lc_and_indicative_poly",
     nameKeys: ["name"],
     source: "LandMark · Indigenous & community lands",
+  },
+  {
+    // The id lowercases to the backend source key `oil_palm`, which
+    // /api/metadata maps to `gfw_fid`. Bump together with the backend
+    // ingest (project-zeno `ingest_oil_palm.py`).
+    id: "OIL_PALM",
+    name: "Oil Palm Concessions",
+    url: "https://tiles.globalforestwatch.org/gfw_oil_palm/v2025/default/{z}/{x}/{y}.pbf",
+    sourceLayer: "gfw_oil_palm",
+    nameKeys: ["company", "conc_name"],
+    source: "GFW · Oil palm concessions",
   },
 ] as const);
 
