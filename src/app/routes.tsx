@@ -114,6 +114,11 @@ export const routes: RouteObject[] = [
             path: "unauthorized",
             ...page(() => import("@/app/unauthorized/page")),
           },
+          // PZB-229 throwaway comparison. Not a product route.
+          {
+            path: "i18n-poc",
+            ...page(() => import("@/app/i18n-poc/page")),
+          },
           ...(import.meta.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true"
             ? [
                 {

@@ -1,0 +1,12 @@
+{
+  "assistant.label": "Assistente de IA",
+  "assistant.newConversation": "Nova conversa",
+  "assistant.history": "Histórico de conversas",
+  "assistant.welcome": "**Boas-vindas ao Global Nature Watch Horizon!**\n\nOlá, sou seu assistente de monitoramento da natureza, com tecnologia de IA e dados abertos do [Global Nature Watch](https://globalnaturewatch.org) e do [Land & Carbon Lab](https://landcarbonlab.org).\n\nVocê pode me perguntar sobre mudanças na cobertura do solo, perda florestal ou riscos à biodiversidade nos lugares que são importantes para você. Para saber como começar, confira a [Central de Ajuda](https://help.horizon.globalnaturewatch.org/get-started).",
+  "assistant.placeholder": "Ou descreva o que você quer explorar…",
+  "assistant.prompt.grassland": "Mostre as mudanças na extensão de pastagens naturais na Mongólia.",
+  "assistant.prompt.forest": "Quais foram as três principais causas de perda de cobertura arbórea no Brasil?",
+  "assistant.prompt.landcover": "Mostre as maiores mudanças na cobertura do solo no Quênia entre 2015 e 2024.",
+  "assistant.promptCount": "{count, plural, =0 {Nenhuma sugestão de pergunta} one {# sugestão de pergunta} other {# sugestões de pergunta}}",
+  "assistant.sampleStat": "Exemplo: {area, number} hectares de cobertura arbórea, em {when, date, medium}."
+}
