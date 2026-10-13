@@ -188,9 +188,9 @@ export function dismissProfileBanner(): void {
   trackEvent({ event: "profile_card_dismissed", surface: "banner" });
 }
 
-/** The banner's "Add details": the card, at the end of the conversation. */
 export async function openProfileCardFromBanner(): Promise<void> {
-  if (!(await showProfilePrompt({ trigger: "banner" }))) {
+  const threadId = useChatStore.getState().currentThreadId;
+  if (!(await showProfilePrompt({ threadId, trigger: "banner" }))) {
     showApiError("The profile form couldn't load.", {
       title: "Couldn't open your profile",
       description: "Please try again, or use User Profile.",
