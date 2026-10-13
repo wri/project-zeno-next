@@ -339,12 +339,6 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
 };
 
 /**
- * Feature flag gating the standalone Intact Forest Landscapes card while
- * researchers review it (PZB-1231). Opt in with `?ff=ifl`.
- */
-export const IFL_FEATURE_FLAG = "ifl";
-
-/**
  * Feature flag gating the curated LGMS net-flux insights while they are
  * reviewed (PZB-1247/1248). Opt in with `?ff=net-flux`.
  */
@@ -579,13 +573,13 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     dataset_name: CONTEXT_LAYER_METADATA.intact_forest.dataset_name,
     shortName: "Intact forests",
     context_layer: null,
+    img: "/dataset_card_intact_forest.webp",
     cadence: "2000-2025",
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "IFL Mapping Team",
     categories: ["forests"],
     viewOnly: true,
-    featureFlag: IFL_FEATURE_FLAG,
     description: IFL_DESCRIPTION,
     tile_url: INTACT_FOREST_TILE_URL,
     legend: IFL_LEGEND,
