@@ -6,12 +6,15 @@ import { XIcon } from "@phosphor-icons/react";
 export interface ProfileNudgeBannerProps {
   onOpen: () => void;
   onDismiss: () => void;
+  /** An answer is streaming: the card can't be added until it finishes. */
+  openDisabled?: boolean;
 }
 
 /** The lighter, later ask: one line above the chat input. */
 export function ProfileNudgeBanner({
   onOpen,
   onDismiss,
+  openDisabled = false,
 }: ProfileNudgeBannerProps) {
   return (
     <Flex
@@ -34,6 +37,7 @@ export function ProfileNudgeBanner({
         size="xs"
         colorPalette="primary"
         variant="outline"
+        disabled={openDisabled}
         onClick={onOpen}
       >
         Add details

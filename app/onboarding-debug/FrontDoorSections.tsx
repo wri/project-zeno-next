@@ -230,7 +230,7 @@ function BannerSection() {
         "The card was shown and the profile still isn't saved.",
         `After the first answer of a new conversation, in the next ${NUDGE_CONVERSATIONS} new conversations only.`,
         "Closes when the conversation is left; × closes it.",
-        "“Add details” opens the profile card. No banner for the email list.",
+        "“Add details” opens the profile card, once any answer in progress has finished. No banner for the email list.",
       ]}
     >
       <Stack gap={6} maxW="420px">
