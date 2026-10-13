@@ -20,6 +20,7 @@ vi.mock("@/app/lib/ortto", async (importOriginal) => ({
 vi.mock("@/app/lib/track-event", () => ({ trackEvent: vi.fn() }));
 
 import { apiFetch } from "@/app/lib/api-client";
+import { showApiError } from "@/app/hooks/useErrorHandler";
 import {
   agentTextLine,
   humanLine,
@@ -149,6 +150,7 @@ beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
   vi.mocked(submitOrttoProfile).mockReset();
   vi.mocked(trackEvent).mockReset();
+  vi.mocked(showApiError).mockReset();
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
   queryClient.clear();
@@ -451,6 +453,34 @@ describe("the banner in the next new conversations", () => {
     await openProfileCardFromBanner();
     expect(cards()).toHaveLength(1);
     expect(bannerOpen()).toBe(false);
+  });
+
+  it("Add details waits out an answer in progress, without an error", async () => {
+    backend();
+    useChatStore.setState({ currentThreadId: "t-1", isLoading: true });
+    useProfileNudgeStore.getState().openBanner();
+    await openProfileCardFromBanner();
+    expect(cards()).toHaveLength(0);
+    expect(bannerOpen()).toBe(true);
+    expect(showApiError).not.toHaveBeenCalled();
+  });
+
+  it("Add details stays out of a conversation left while the card loaded", async () => {
+    backend();
+    useChatStore.setState({ currentThreadId: "t-1" });
+    const promise = openProfileCardFromBanner();
+    useChatStore.getState().reset();
+    await promise;
+    expect(cards()).toHaveLength(0);
+    expect(showApiError).not.toHaveBeenCalled();
+  });
+
+  it("Add details reports a card that couldn't load", async () => {
+    backend({ configStatus: 503 });
+    useProfileNudgeStore.getState().openBanner();
+    await openProfileCardFromBanner();
+    expect(cards()).toHaveLength(0);
+    expect(showApiError).toHaveBeenCalledOnce();
   });
 
   it("closes when the profile is saved from the card", async () => {

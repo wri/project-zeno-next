@@ -81,26 +81,33 @@ async function settlePromptData(): Promise<ProfilePrefill | null> {
 }
 
 /**
+ * What came of an ask: the card was added, its data couldn't load, or it
+ * wasn't wanted by then (profile complete, conversation moved on or busy).
+ */
+type ProfilePromptOutcome = "shown" | "unavailable" | "skipped";
+
+/**
  * Adds the profile card at the end of the conversation (one at a time).
  * With `threadId`, only if that thread is still current and idle once the
  * card's data has loaded, so a late card never lands in a new conversation
- * or in the middle of the next answer. Returns whether the card was added.
+ * or in the middle of the next answer.
  */
 export async function showProfilePrompt(
   options: {
     threadId?: string | null;
     trigger?: "first_answer" | "banner";
   } = {}
-): Promise<boolean> {
+): Promise<ProfilePromptOutcome> {
   const prefill = await settlePromptData();
-  if (!prefill || useAuthStore.getState().hasProfile) return false;
+  if (!prefill) return "unavailable";
+  if (useAuthStore.getState().hasProfile) return "skipped";
 
   const chat = useChatStore.getState();
   if (
     options.threadId !== undefined &&
     (chat.currentThreadId !== options.threadId || chat.isLoading)
   ) {
-    return false;
+    return "skipped";
   }
   chat.upsertProfilePrompt();
   useProfileNudgeStore.getState().closeBanner();
@@ -109,7 +116,7 @@ export async function showProfilePrompt(
     trigger: options.trigger ?? "banner",
     prefilled: prefill.suggestion !== undefined,
   });
-  return true;
+  return "shown";
 }
 
 /** The answer just finished is to the conversation's first question. */
@@ -143,7 +150,11 @@ export async function handleAnswerCompleted(
     openProfileBanner();
   } else if (ask === "card") {
     const threadId = useChatStore.getState().currentThreadId;
-    if (await showProfilePrompt({ threadId, trigger: "first_answer" })) {
+    const outcome = await showProfilePrompt({
+      threadId,
+      trigger: "first_answer",
+    });
+    if (outcome === "shown") {
       markCardShown(storage);
     }
   }
@@ -188,9 +199,16 @@ export function dismissProfileBanner(): void {
   trackEvent({ event: "profile_card_dismissed", surface: "banner" });
 }
 
+/**
+ * The banner's "Add details": the card, at the end of the banner's
+ * conversation. Only a load failure is an error; a conversation that is
+ * answering again keeps its banner for a later click, and one that was left
+ * has already closed it.
+ */
 export async function openProfileCardFromBanner(): Promise<void> {
   const threadId = useChatStore.getState().currentThreadId;
-  if (!(await showProfilePrompt({ threadId, trigger: "banner" }))) {
+  const outcome = await showProfilePrompt({ threadId, trigger: "banner" });
+  if (outcome === "unavailable") {
     showApiError("The profile form couldn't load.", {
       title: "Couldn't open your profile",
       description: "Please try again, or use User Profile.",
