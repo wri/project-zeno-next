@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 interface ProfileNudgeState {
-  /** The lighter, later ask above the chat input (the session's 5th answer). */
+/** The lighter, later ask above the chat input. */
   bannerOpen: boolean;
   openBanner: () => void;
   closeBanner: () => void;
