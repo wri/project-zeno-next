@@ -72,8 +72,8 @@ describe("explorationLayout", () => {
     expect(getDashboardContentLeftPx(true)).toBe(436);
   });
 
-  it("keeps dashboard content unshifted when the chat is compact", () => {
-    expect(getDashboardContentLeftPx(false)).toBe(0);
+  it("shifts dashboard content past the compact chat panel and its inset", () => {
+    expect(getDashboardContentLeftPx(false)).toBe(420);
   });
 
   it("covers the map up to the map controls while the chat is open", () => {

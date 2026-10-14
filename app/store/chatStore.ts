@@ -25,6 +25,7 @@ import {
   isLayerActive,
   type ContextKeys,
 } from "@/app/utils/messageContext";
+import { enrichMapViewContext } from "@/app/utils/viewContext";
 import { readDataStream } from "@/app/lib/read-data-stream";
 import { parseStreamMessage } from "@/app/lib/parse-stream-message";
 import { buildInsightChatMessages } from "@/app/lib/insight-chat-messages";
@@ -81,6 +82,12 @@ interface ChatState {
   // Layer ids the user dismissed from the chat-input context chips. Map layers
   // stay visible; only the next message's ui_context / chip snapshot omits them.
   excludedContextLayerIds: string[];
+  // Answers completed live on this thread: bumped by sendMessage when a turn
+  // ends in an assistant reply (not a clarification nudge, error or stop).
+  // fetchThread never touches it, so a replayed thread doesn't count. A
+  // signal for UI that reacts to a finished answer (the front door's profile
+  // ask); reset() zeroes it, so watch for increases.
+  completedAnswers: number;
 }
 
 interface ChatActions {
@@ -88,6 +95,8 @@ interface ChatActions {
   addMessage: (
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
+  removeMessage: (messageId: string) => void;
+  upsertProfileAsk: (type: ProfileAskType) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   acceptAnalyseNudge: (messageId: string) => void;
   upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
@@ -145,6 +154,7 @@ You can ask me about land cover change, forest loss, or biodiversity risks in pl
   dateRange: null,
   lastSentContext: emptyContextKeys(),
   excludedContextLayerIds: [],
+  completedAnswers: 0,
 };
 
 /**
@@ -223,6 +233,53 @@ function dashboardCardExistsThisTurn(dashboardId: string): boolean {
     }
   }
   return false;
+}
+
+function withoutTransient(messages: ChatMessage[]): ChatMessage[] {
+  return messages.filter((m) => !m.transient);
+}
+
+const PROFILE_ASK_TYPES = ["profile-prompt", "profile-nudge"] as const;
+type ProfileAskType = (typeof PROFILE_ASK_TYPES)[number];
+
+function isProfileAsk(message: ChatMessage): boolean {
+  return (PROFILE_ASK_TYPES as readonly string[]).includes(message.type);
+}
+
+/** The messages with `type` as the one profile ask, at the end. */
+function withProfileAsk(
+  messages: ChatMessage[],
+  type: ProfileAskType
+): ChatMessage[] {
+  return [
+    ...messages.filter((m) => !isProfileAsk(m)),
+    {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type,
+      message: "",
+      transient: true,
+      timestamp: new Date().toISOString(),
+    },
+  ];
+}
+
+// Whether the messages a turn added amount to an answer. A turn that ends by
+// asking the user to choose (a nudge) is a clarification and doesn't count.
+// Error messages aren't judged here: tool handlers add client-side ones (a
+// geometry fetch that failed, say) to turns whose answer still arrived. Only
+// a stream-level failure stops a turn counting; sendMessage tracks that.
+function isAnsweredTurn(turnMessages: ChatMessage[]): boolean {
+  return (
+    turnMessages.some((m) => m.type === "assistant") &&
+    !turnMessages.some((m) => m.type === "nudge")
+  );
+}
+
+// The backend's `error` node: a stream update it couldn't process, or a
+// stream that failed to start. The chat doesn't render it (it carries no
+// messages), but the turn it interrupted isn't an answer.
+function isErrorNodeLine(rawLine: string): boolean {
+  return (JSON.parse(rawLine) as LangChainResponse).node === "error";
 }
 
 // Helper function to process stream messages and add them to chat
@@ -539,6 +596,22 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }));
   },
 
+  removeMessage: (messageId) => {
+    set((state) => ({
+      messages: state.messages.filter((m) => m.id !== messageId),
+    }));
+  },
+
+  // Front door: the in-chat profile card ("profile-prompt"), or the lighter
+  // banner that leads to it in later conversations ("profile-nudge").
+  // Transient, and one profile ask at a time: a new ask replaces whichever is
+  // still showing, so the banner's "Add details" swaps it for the card.
+  // Neither carries data; the card reads its options and GFW prefill from the
+  // query cache.
+  upsertProfileAsk: (type) => {
+    set((state) => ({ messages: withProfileAsk(state.messages, type) }));
+  },
+
   // The analyse nudge is client-side only (never replayed from thread
   // history): at most one is pending at a time, so a new selection replaces
   // any pending nudge instead of stacking. Accepted nudges persist in the
@@ -695,12 +768,25 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       excludedLayerIds
     );
 
+    // Transient UI messages (e.g. an unanswered profile card) go away once
+    // the conversation moves on; for the card that isn't a "Not now".
+    if (get().messages.some((m) => m.transient)) {
+      set((state) => ({ messages: withoutTransient(state.messages) }));
+    }
+
     // Add user message with a read-only snapshot of the context it was sent with
     addMessage({
       type: "user",
       message,
       context: snapshot,
     });
+    // Identifies this turn's messages at the end, even if other messages were
+    // removed meanwhile or the thread was reset.
+    const userMessageId = get().messages.at(-1)?.id;
+    let streamCompleted = false;
+    // A stream-level failure: the backend's error node or its timeout. A
+    // thrown or aborted stream leaves streamCompleted false instead.
+    let streamFailed = false;
 
     // Clear any previous tool steps and start loading
     clearToolSteps();
@@ -719,7 +805,11 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     // `?ff=` carries over to the thread URL (`threadHref`), so reading it now
     // matches what the catalog and map show.
     const userType = useAuthStore.getState().userType;
-    const viewContext = useViewContextStore.getState().viewContext;
+    const viewContext = enrichMapViewContext(
+      useViewContextStore.getState().viewContext,
+      useMapStore.getState().mapRef,
+      useInsightStore.getState().insights
+    );
     const ff = chatFeatureFlag(
       useAgentProfileStore.getState().agentProfile,
       userType,
@@ -784,10 +874,17 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
         onData: async (data, isFinal) => {
           console.log("API Stream message:", data);
           try {
+            if (isErrorNodeLine(data)) streamFailed = true;
             const streamMessage = parseLangChainLine(data);
             if (!streamMessage) {
               console.log("Unhandled LangChain message:", data);
               return;
+            }
+            if (
+              streamMessage.type === "error" &&
+              streamMessage.name === "timeout"
+            ) {
+              streamFailed = true;
             }
             await processStreamMessage(
               streamMessage,
@@ -851,6 +948,8 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       } else if (abortController.signal.aborted) {
         console.log("FRONTEND: Stream ended due to abort signal");
       }
+      // readDataStream stops quietly (no throw) when aborted between reads.
+      streamCompleted = !abortController.signal.aborted;
     } catch (error) {
       console.error("Error sending message:", error);
 
@@ -939,6 +1038,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
       // timeout).
       setGeneratingInsight(false);
       get().setImageryUpdating(false);
+
+      if (streamCompleted && !streamFailed) {
+        const messages = get().messages;
+        const userIndex = messages.findIndex((m) => m.id === userMessageId);
+        if (userIndex !== -1 && isAnsweredTurn(messages.slice(userIndex + 1))) {
+          set((state) => ({ completedAnswers: state.completedAnswers + 1 }));
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey: ["threads"] });
       return { isNew: !currentThreadId, id: threadId };

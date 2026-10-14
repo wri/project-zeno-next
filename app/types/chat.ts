@@ -46,6 +46,8 @@ export interface ChatMessage {
     | "analyse-nudge"
     | "view-analysis-nudge"
     | "create-dashboard-nudge"
+    | "profile-prompt"
+    | "profile-nudge"
     | "stopped";
   message: string;
   timestamp: string;
@@ -58,6 +60,10 @@ export interface ChatMessage {
   context?: MessageContext; // Read-only context snapshot for user messages
   viewAnalysisSuggestion?: ViewAnalysisSuggestion; // For view-analysis-nudge messages
   createDashboardSuggestion?: CreateDashboardSuggestion; // For create-dashboard-nudge messages
+  // A client-only UI message (e.g. the front door's profile-prompt card): not
+  // part of the conversation, so it is never "last" for the footer, it is
+  // dropped when the next question is sent, and threads never replay it.
+  transient?: true;
   traceId?: string;
   toolSteps?: ToolStepData[]; // For user messages - reasoning steps taken to respond
   reasoningDuration?: number; // Duration in seconds for reasoning to complete

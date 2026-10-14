@@ -8,6 +8,7 @@ import {
 } from "@/app/explorationLayout";
 
 import { Tooltip } from "./ui/tooltip";
+import { ViewOnlyBadge } from "./ViewOnlyBadge";
 
 export interface CatalogCardProps {
   thumbnail: ReactNode;
@@ -42,6 +43,11 @@ export interface CatalogCardProps {
    * insight cards). Sits left of `titleActions`.
    */
   badge?: ReactNode;
+  /**
+   * Contextual-only dataset (no analytics endpoint): shows a right-aligned
+   * VIEW ONLY badge, tinted to match `selectedBg` when selected.
+   */
+  viewOnly?: boolean;
 }
 
 /**
@@ -67,14 +73,16 @@ export function CatalogCard({
   infoTooltip = "Show dataset info",
   titleActions,
   badge,
+  viewOnly = false,
 }: CatalogCardProps) {
+  const tinted = selected && !!selectedBg;
   return (
     <Flex
       w={`${CATALOG_CARD_WIDTH_PX}px`}
       maxW="100%"
       h={`${CATALOG_CARD_HEIGHT_PX}px`}
       flexShrink={0}
-      bg={selected && selectedBg ? selectedBg : "#FFFFFF"}
+      bg={tinted ? selectedBg : "#FFFFFF"}
       border={selected ? "2px solid" : "1px solid"}
       borderColor={selected ? "primary.solid" : "rgba(19, 22, 25, 0.3)"}
       borderRadius="4px"
@@ -110,6 +118,7 @@ export function CatalogCard({
               </Text>
               {badge}
               <Box flex="1" minW={0} />
+              {viewOnly && <ViewOnlyBadge selected={tinted} />}
               {titleActions}
             </Flex>
           )}

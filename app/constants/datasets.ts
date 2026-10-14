@@ -262,6 +262,10 @@ function sbtnSingleClassLayer({
   };
 }
 
+// The colour the UMD tiles actually paint (sampled from the published v201901
+// PNGs), so the legend matches the map.
+const PRIMARY_FOREST_COLOR = "#668636";
+
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
   primary_forest: {
     dataset_id: 100,
@@ -271,8 +275,8 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
       "Primary forests are among the most biodiverse forests, providing a multitude of ecosystem services, making them crucial to monitor for national land use planning and carbon accounting. This dataset defines primary forests as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. Researchers classified Landsat images into primary forest data using a separate algorithm for each region. The dataset maps the extent of primary forests in the global pan-tropical regions in 2001 at 30-meter resolution.",
     legend: {
       title: "Primary Forests (2001)",
-      color: "#054A29",
-      items: [{ label: "Primary forest", color: "#054A29" }],
+      color: PRIMARY_FOREST_COLOR,
+      items: [{ label: "Primary forest", color: PRIMARY_FOREST_COLOR }],
       type: "symbol",
       info: "Primary forests are defined as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. This layer maps their pan-tropical extent in 2001 and is useful as a baseline for assessing forest integrity and biodiversity value.",
       note: "Extent of primary humid tropical forests in 2001. Pan-tropical coverage at 30m resolution (UMD/GLAD).",
@@ -339,16 +343,14 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
 };
 
 /**
- * Feature flag gating the standalone Intact Forest Landscapes card while
- * researchers review it (PZB-1231). Opt in with `?ff=ifl`.
- */
-export const IFL_FEATURE_FLAG = "ifl";
-
-/**
  * Feature flag gating the curated LGMS net-flux insights while they are
  * reviewed (PZB-1247/1248). Opt in with `?ff=net-flux`.
  */
 export const NET_FLUX_FEATURE_FLAG = "net-flux";
+
+/** Same URL the backend hands back as the `primary_forest` context layer. */
+const PRIMARY_FOREST_TILE_URL =
+  "https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png";
 
 /**
  * Standalone IFL raster tiles. Same endpoint the backend hands back as the
@@ -579,16 +581,33 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     dataset_name: CONTEXT_LAYER_METADATA.intact_forest.dataset_name,
     shortName: "Intact forests",
     context_layer: null,
+    img: "/dataset_card_intact_forest.webp",
     cadence: "2000-2025",
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "IFL Mapping Team",
-    categories: ["land-use"],
+    categories: ["forests"],
     viewOnly: true,
-    featureFlag: IFL_FEATURE_FLAG,
     description: IFL_DESCRIPTION,
     tile_url: INTACT_FOREST_TILE_URL,
     legend: IFL_LEGEND,
+  },
+  {
+    // View-only context layer, same pattern as IFL above.
+    dataset_id: CONTEXT_LAYER_METADATA.primary_forest.dataset_id,
+    dataset_name: CONTEXT_LAYER_METADATA.primary_forest.dataset_name,
+    shortName: "Primary forests",
+    context_layer: null,
+    img: "/dataset_card_primary_forest.webp",
+    cadence: "2001",
+    resolution: "30 m",
+    geographic_coverage: "pan-tropical",
+    provider: "UMD/GLAD",
+    categories: ["forests"],
+    viewOnly: true,
+    description: CONTEXT_LAYER_METADATA.primary_forest.description,
+    tile_url: PRIMARY_FOREST_TILE_URL,
+    legend: CONTEXT_LAYER_METADATA.primary_forest.legend,
   },
   {
     dataset_id: 4,
@@ -603,7 +622,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "UMD",
     defaultStartYear: 2001,
     defaultEndYear: 2025,
-    categories: ["disturbance"],
+    categories: ["forests", "disturbance"],
     description:
       "Tree Cover Loss (Hansen/UMD/GLAD) maps annual global forest loss from 2001 to 2025 at 30-meter resolution using Landsat satellite imagery. It detects stand-replacement disturbances in vegetation over 5 meters tall, including natural forests and plantations. The dataset supports monitoring annual tree cover loss and deforestation trends, fire impacts, and forestry practices, and is widely used for conservation, land-use planning, and environmental policy analysis.",
     tile_url:
@@ -630,7 +649,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "1 km",
     geographic_coverage: "global",
     provider: "WRI / Google",
-    categories: ["disturbance"],
+    categories: ["forests", "disturbance"],
     description:
       "Shows the primary driver or cause of tree cover loss over the entire range 2001-2025. Driver classes are permanent agriculture, hard commodities, shifting cultivation, logging, wildfire, settlements & infrastructure, and other natural disturbances.",
     tile_url:
@@ -663,7 +682,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    categories: ["land-use"],
+    categories: ["forests"],
     description:
       "Tree Cover Gain (Hansen/UMD/GLAD) identifies areas where new tree canopy was established between 2000 and 2012 at 30-meter resolution, using Landsat 7 imagery. It captures both  natural forest regrowth and tree plantation cycles, and is useful for tracking large-scale forest recovery trends. Users should note that it is a cumulative layer and should not be combined directly with loss or tree cover data to calculate net change.",
     tile_url:
@@ -689,7 +708,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "global",
     provider: "UMD",
-    categories: ["land-use"],
+    categories: ["forests"],
     description:
       "Tree Cover provides global percent tree canopy cover at 30-meter resolution for the year 2000 based on Landsat 7 imagery. It represents the density of vegetation over 5 meters tall, including both natural forests and plantations. This dataset is useful for establishing historical baselines and comparing tree cover density across different landscapes.",
     tile_url:
@@ -718,7 +737,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     provider: "UMD",
     defaultStartYear: 2001,
     defaultEndYear: 2025,
-    categories: ["disturbance", "wildfires"],
+    categories: ["forests", "disturbance", "wildfires"],
     description:
       "Tree Cover Loss due to Fires (Hansen/UMD/GLAD) maps annual global tree cover loss attributed to fire from 2001 to 2025 at 30-meter resolution. This subset of the broader Tree Cover Loss dataset isolates fire-driven stand-replacement disturbances in vegetation over 5 meters tall, helping users understand where fire is a dominant driver of forest loss.",
     tile_url:
@@ -968,15 +987,16 @@ export const DATASET_CARD_BY_ID: Record<number, DatasetCardConfig> =
 
 const DATASET_CARD_DISPLAY_ORDER: number[] = [
   11, // Integrated alerts
+  4, // Tree cover loss
+  10, // TCL from fires
+  8, // TCL by driver
   1, // Global land cover
   2, // Grasslands
   3, // SBTN Natural lands
-  101, // Intact Forest Landscapes
-  4, // Tree cover loss
-  8, // TCL by driver
   5, // Tree cover gain
   7, // Tree cover
-  10, // TCL from fires
+  101, // Intact Forest Landscapes
+  100, // Primary Forests
   12, // LGMS
   6, // Forest GHG net flux
 ];

@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import {
   isRouteErrorResponse,
   Outlet,
+  redirect,
   ScrollRestoration,
   useRouteError,
   type RouteObject,
@@ -103,8 +104,11 @@ export const routes: RouteObject[] = [
             ...page(() => import("@/app/manage-users/page")),
           },
           {
+            // The old sign-up form; /app sends anyone without accepted terms
+            // to /welcome, keeping the query string.
             path: "onboarding",
-            ...page(() => import("@/app/onboarding/page")),
+            loader: ({ request }) =>
+              redirect(`/app${new URL(request.url).search}`),
           },
           {
             path: "trace-analytics",
@@ -114,6 +118,7 @@ export const routes: RouteObject[] = [
             path: "unauthorized",
             ...page(() => import("@/app/unauthorized/page")),
           },
+          { path: "welcome", ...page(() => import("@/app/welcome/page")) },
           ...(import.meta.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true"
             ? [
                 {

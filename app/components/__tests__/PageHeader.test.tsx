@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 /**
  * The slim header: menu button (opens the menu side bar), logo with the
- * PREVIEW badge, the Map and Dashboards tabs, and the avatar (Settings and
- * Logout, email on hover). The active tab follows the route; state items
+ * PREVIEW badge, the Map and Dashboards tabs, and the avatar (User Profile
+ * and Logout, email on hover). The active tab follows the route; state items
  * (prompt meter, What's new) sit left of the avatar.
  */
 import { ChakraProvider } from "@chakra-ui/react";
@@ -139,7 +139,7 @@ describe("PageHeader account menu", () => {
     expect(tooltip.textContent).toBe("user@example.com");
   });
 
-  it("lists only Settings and Logout, without repeating the email", async () => {
+  it("lists only User Profile and Logout, without repeating the email", async () => {
     renderHeader("/app");
 
     await act(async () => {
@@ -149,7 +149,7 @@ describe("PageHeader account menu", () => {
     const items = screen
       .getAllByRole("menuitem")
       .map((el) => el.textContent?.trim());
-    expect(items).toEqual(["Settings", "Logout"]);
+    expect(items).toEqual(["User Profile", "Logout"]);
     expect(screen.getByRole("menu").textContent).not.toContain(
       "user@example.com"
     );
@@ -251,5 +251,52 @@ describe("PageHeader prompt meter", () => {
     expect(screen.getByTestId("whats-new-header-dot")).toBeTruthy();
     expect(precedes(meter, whatsNew)).toBe(true);
     expect(precedes(whatsNew, avatar)).toBe(true);
+  });
+});
+
+describe("PageHeader profile reminder (front door)", () => {
+  function signIn(hasProfile: boolean) {
+    useAuthStore.getState().setAuthStatus({
+      email: "user@example.com",
+      id: "u1",
+      hasProfile,
+      userType: null,
+    });
+  }
+
+  /** Opens the account menu; resolves with its items' labels. */
+  async function openAccountMenu() {
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /user@example.com/ }));
+    });
+    const items = await screen.findAllByRole("menuitem");
+    return items.map((el) => el.textContent?.trim());
+  }
+  const menuItem = () =>
+    screen.queryByRole("menuitem", { name: /complete your profile/i });
+  const dot = () => screen.queryByRole("img", { name: "Profile not complete" });
+
+  beforeEach(() => {
+    localStorage.clear();
+    useAuthStore.getState().setPromptUsage(0, 20);
+  });
+
+  it("replaces User Profile, linking to the same page, and marks the account button while the profile is incomplete", async () => {
+    signIn(false);
+    renderHeader("/app");
+    expect(dot()).not.toBeNull();
+
+    expect(await openAccountMenu()).toEqual([
+      "Complete your profile",
+      "Logout",
+    ]);
+    expect(menuItem()!.getAttribute("href")).toBe("/dashboard");
+  });
+
+  it("gives way to User Profile once the profile is complete", async () => {
+    signIn(true);
+    renderHeader("/app");
+    expect(dot()).toBeNull();
+    expect(await openAccountMenu()).toEqual(["User Profile", "Logout"]);
   });
 });
