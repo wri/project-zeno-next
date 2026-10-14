@@ -294,7 +294,7 @@ function PageHeader() {
                 w="12px"
                 h="12px"
                 borderRadius="full"
-                bg="#2495E0"
+                bg="notification"
                 border="2px solid white"
               />
             </IconButton>
