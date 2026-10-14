@@ -4,7 +4,7 @@
  * The lower-friction way into GNW: after the Resource Watch sign-in, one
  * consent screen, then the first answer; the profile is asked for later, in
  * the chat, and prefilled from MyGFW when possible. Composed offline in
- * /onboarding-debug/front-door. Consumers import ONLY from this barrel, which
+ * /onboarding-debug. Consumers import ONLY from this barrel, which
  * exports only what the app and the preview use.
  */
 export { WelcomePage } from "./ui/WelcomePage";

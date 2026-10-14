@@ -1,5 +1,3 @@
-"use client";
-
 import { Text } from "@chakra-ui/react";
 
 import { CATALOG_CARD_WIDTH_PX } from "@/app/explorationLayout";

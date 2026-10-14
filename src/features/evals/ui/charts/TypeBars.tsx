@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { PRIMARY_DIMENSIONS } from "../../lib/attribution";
 import type { TypeBreakdownRow } from "../../lib/matrix";

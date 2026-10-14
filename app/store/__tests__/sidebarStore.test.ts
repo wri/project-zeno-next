@@ -88,6 +88,17 @@ describe("sidebarStore — catalog column panels", () => {
     expect(state.areasPanelOpen).toBe(false);
   });
 
+  it("opens the areas panel on a given tab, closing its siblings", () => {
+    useSidebarStore.getState().setInsightsPanelOpen(true);
+    useSidebarStore.getState().openAreasPanel("mine");
+
+    const state = useSidebarStore.getState();
+    expect(state.areasPanelOpen).toBe(true);
+    expect(state.areasPanelFilter).toBe("mine");
+    expect(state.insightsPanelOpen).toBe(false);
+    expect(state.dataCatalogOpen).toBe(false);
+  });
+
   it("opening a sibling panel closes the insights panel", () => {
     useSidebarStore.getState().setInsightsPanelOpen(true);
     useSidebarStore.getState().toggleAreasPanel();
@@ -95,5 +106,51 @@ describe("sidebarStore — catalog column panels", () => {
     const state = useSidebarStore.getState();
     expect(state.areasPanelOpen).toBe(true);
     expect(state.insightsPanelOpen).toBe(false);
+  });
+});
+
+describe("sidebarStore — chat panel view", () => {
+  beforeEach(() => {
+    useSidebarStore.setState({
+      isChatFullSize: false,
+      isChatCollapsed: false,
+      chatHistoryOpen: false,
+    });
+  });
+
+  it("collapsing from full-size lands on the collapsed compact panel", () => {
+    useSidebarStore.getState().setChatFullSize(true);
+    useSidebarStore.getState().setChatCollapsed(true);
+
+    const state = useSidebarStore.getState();
+    expect(state.isChatFullSize).toBe(false);
+    expect(state.isChatCollapsed).toBe(true);
+  });
+
+  it("switching to full-size expands a collapsed panel", () => {
+    useSidebarStore.getState().setChatCollapsed(true);
+    useSidebarStore.getState().setChatFullSize(true);
+
+    const state = useSidebarStore.getState();
+    expect(state.isChatFullSize).toBe(true);
+    expect(state.isChatCollapsed).toBe(false);
+  });
+
+  it("opening the history expands a collapsed panel", () => {
+    useSidebarStore.getState().setChatCollapsed(true);
+    useSidebarStore.getState().setChatHistoryOpen(true);
+
+    const state = useSidebarStore.getState();
+    expect(state.chatHistoryOpen).toBe(true);
+    expect(state.isChatCollapsed).toBe(false);
+  });
+
+  it("closing the history leaves the panel's size and collapse alone", () => {
+    useSidebarStore.setState({ isChatFullSize: true, chatHistoryOpen: true });
+    useSidebarStore.getState().setChatHistoryOpen(false);
+
+    const state = useSidebarStore.getState();
+    expect(state.chatHistoryOpen).toBe(false);
+    expect(state.isChatFullSize).toBe(true);
   });
 });

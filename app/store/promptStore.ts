@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import promptsData from "@/public/welcome-prompts.json";
+import promptsData from "@/app/constants/welcome-prompts.json";
 
 interface PromptState {
   prompts: string[];

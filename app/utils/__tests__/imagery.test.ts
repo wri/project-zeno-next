@@ -2,9 +2,11 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildImageryGroup,
+  captureDateLabel,
   captureMetaLabel,
   formatCaptureDate,
   imageryAttribution,
+  imageryCitation,
   imageryCloudNote,
   imageryLayerId,
   imageryLayerTitle,
@@ -12,12 +14,14 @@ import {
   imageryLegendParams,
   imagerySubtitle,
   imageryThumbnailUrl,
+  imageryZoomTarget,
   isImageryLayerId,
   isImageryTool,
   toImageryMeta,
 } from "@/app/utils/imagery";
 import type { ImageryLegendMeta } from "@/app/utils/imagery";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import { PLANET_METADATA } from "@/app/constants/planet-metadata";
 
 describe("toImageryMeta", () => {
   it("resolves an explicit provider", () => {
@@ -244,6 +248,30 @@ describe("imageryCloudNote", () => {
   });
 });
 
+describe("captureDateLabel", () => {
+  it("labels a Sentinel-2 capture by its target date", () => {
+    expect(captureDateLabel(toImageryMeta(fullMeta))).toBe("15 Jun 2026");
+  });
+
+  it("labels a Planet capture by its mosaic month", () => {
+    expect(
+      captureDateLabel(
+        toImageryMeta({ ...planetMeta, target_date: "2026-07-20" })
+      )
+    ).toBe("Jul 2026");
+  });
+
+  it("labels the latest Planet mosaic, which has no target date", () => {
+    expect(
+      captureDateLabel(toImageryMeta({ ...planetMeta, target_date: null }))
+    ).toBe("Jul 2026");
+  });
+
+  it("is empty when there is no date to show", () => {
+    expect(captureDateLabel(toImageryMeta({}))).toBe("");
+  });
+});
+
 describe("captureMetaLabel", () => {
   it("combines cloud limit and scene count", () => {
     expect(captureMetaLabel(toImageryMeta(fullMeta))).toBe(
@@ -372,6 +400,50 @@ describe("buildImageryGroup", () => {
     expect(group?.captures[0].metaLabel).toBe("");
   });
 
+  it("carries Planet's full metadata and the live capture's date", () => {
+    const planet = buildImageryGroup(
+      [imageryLayer("imagery-planet:2026-07", {}, planetMeta)],
+      false
+    );
+    expect(planet?.metadata).toBe(PLANET_METADATA);
+    expect(planet?.imageDate).toBe("2026-07-01");
+
+    const sentinel = buildImageryGroup([imageryLayer("imagery-new")], false);
+    expect(sentinel?.metadata).toBeUndefined();
+  });
+
+  it("dates every Planet capture, including the undated latest mosaic", () => {
+    const group = buildImageryGroup(
+      [
+        imageryLayer(
+          "imagery-planet:2025-08",
+          {},
+          {
+            ...planetMeta,
+            start_date: "2025-08-01",
+            end_date: "2025-08-31",
+            target_date: "2025-08-01",
+          }
+        ),
+        imageryLayer(
+          "imagery-planet:2026-08",
+          {},
+          {
+            ...planetMeta,
+            start_date: "2026-08-01",
+            end_date: "2026-08-31",
+            target_date: null,
+          }
+        ),
+      ],
+      false
+    );
+    expect(group?.captures.map((c) => c.dateLabel)).toEqual([
+      "Aug 2025",
+      "Aug 2026",
+    ]);
+  });
+
   it("returns an updating stub when no capture has landed yet", () => {
     const group = buildImageryGroup([], true);
     expect(group).toMatchObject({
@@ -382,6 +454,95 @@ describe("buildImageryGroup", () => {
       areaCount: 0,
     });
     expect(group?.info).toBeUndefined();
+  });
+});
+
+describe("imageryCitation", () => {
+  const accessedOn = new Date(2026, 9, 6);
+
+  it("fills the image year and access date", () => {
+    expect(
+      imageryCitation(PLANET_METADATA.citation, "2025-08-01", accessedOn)
+    ).toBe(
+      "Image © 2025 Planet Labs Inc. Accessed through Global Nature Watch Horizon on 6 October 2026. www.horizon.globalnaturewatch.org"
+    );
+  });
+
+  it("leaves the year placeholder when the capture has no date", () => {
+    expect(
+      imageryCitation(PLANET_METADATA.citation, undefined, accessedOn)
+    ).toContain("Image © [year of image] Planet Labs Inc.");
+  });
+});
+
+describe("imageryZoomTarget", () => {
+  const layer = (overrides: Partial<Layer>): Layer =>
+    ({
+      id: "imagery-planet:2026-07",
+      name: "Satellite Imagery",
+      type: "raster",
+      visible: true,
+      minzoom: 10,
+      bounds: [-56, -12, -55, -11],
+      imagery: planetMeta,
+      ...overrides,
+    }) as Layer;
+
+  it("targets the minzoom over the middle of the AOI while zoomed out", () => {
+    expect(imageryZoomTarget([layer({})], 8.5)).toEqual({
+      zoom: 10,
+      center: [-55.5, -11.5],
+    });
+  });
+
+  it("centres on the newest visible capture's AOI", () => {
+    const target = imageryZoomTarget(
+      [
+        layer({ visible: false, bounds: [0, 0, 2, 2] }),
+        layer({ bounds: [10, 10, 12, 12] }),
+        layer({ bounds: [20, 20, 22, 22] }),
+      ],
+      5
+    );
+    expect(target?.center).toEqual([11, 11]);
+  });
+
+  it("centres antimeridian-crossing bounds on the antimeridian", () => {
+    expect(
+      imageryZoomTarget([layer({ bounds: [170, -10, -170, 10] })], 5)?.center
+    ).toEqual([180, 0]);
+    expect(
+      imageryZoomTarget([layer({ bounds: [175, -10, -165, 10] })], 5)?.center
+    ).toEqual([-175, 0]);
+  });
+
+  it("leaves the centre unset when the imagery has no bounds", () => {
+    expect(
+      imageryZoomTarget([layer({ bounds: undefined })], 5)?.center
+    ).toBeUndefined();
+  });
+
+  it("is undefined once the map reaches the minzoom", () => {
+    expect(imageryZoomTarget([layer({})], 10)).toBeUndefined();
+    expect(imageryZoomTarget([layer({})], 12)).toBeUndefined();
+  });
+
+  it("ignores hidden captures and non-imagery layers", () => {
+    expect(imageryZoomTarget([layer({ visible: false })], 5)).toBeUndefined();
+    expect(
+      imageryZoomTarget([layer({ imagery: undefined })], 5)
+    ).toBeUndefined();
+  });
+
+  it("targets the highest floor so every visible capture renders", () => {
+    expect(
+      imageryZoomTarget([layer({ minzoom: 8 }), layer({ minzoom: 10 })], 9)
+        ?.zoom
+    ).toBe(10);
+  });
+
+  it("is undefined before the map has a zoom", () => {
+    expect(imageryZoomTarget([layer({})], undefined)).toBeUndefined();
   });
 });
 

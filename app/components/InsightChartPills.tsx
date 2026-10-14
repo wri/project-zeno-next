@@ -1,5 +1,3 @@
-"use client";
-
 import {
   GhgFluxMeasurePill,
   isFluxTreeWidget,

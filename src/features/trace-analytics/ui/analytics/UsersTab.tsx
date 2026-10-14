@@ -1,5 +1,3 @@
-"use client";
-
 /** Users tab — acquisition, engagement, retention cohorts and top users. */
 
 import { useMemo } from "react";

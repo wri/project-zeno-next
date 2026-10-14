@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Intent × coarse-topic heat grid with three views of the same matrix:
  *   - Volume:  prompts per cell (count or share of all pairs), GNW blue ramp

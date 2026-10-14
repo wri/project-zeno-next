@@ -20,6 +20,7 @@ vi.mock("@/app/lib/ortto", async (importOriginal) => ({
 vi.mock("@/app/lib/track-event", () => ({ trackEvent: vi.fn() }));
 
 import { apiFetch } from "@/app/lib/api-client";
+import { showApiError } from "@/app/hooks/useErrorHandler";
 import {
   agentTextLine,
   humanLine,
@@ -52,7 +53,6 @@ import {
 
 const CONFIG = {
   sectors: { government: "Government", ngo: "NGO" },
-  sector_roles: { government: { analyst: "Analyst" }, ngo: {} },
   countries: { BR: "Brazil", KE: "Kenya" },
   languages: { pt: "Português", en: "English" },
   gis_expertise_levels: {},
@@ -66,7 +66,6 @@ const GFW_PREFILL = {
     first_name: "Maria",
     last_name: "Silva",
     sector_code: "government",
-    role_code: "analyst",
     country_code: "BR",
   },
 };
@@ -151,6 +150,7 @@ beforeEach(() => {
   vi.mocked(apiFetch).mockReset();
   vi.mocked(submitOrttoProfile).mockReset();
   vi.mocked(trackEvent).mockReset();
+  vi.mocked(showApiError).mockReset();
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
   queryClient.clear();
@@ -184,7 +184,6 @@ describe("the profile card after the first answer", () => {
     // The card carries no data: what it shows is settled in the query cache.
     expect(cachedOptions()).toEqual({
       sectors: CONFIG.sectors,
-      sector_roles: CONFIG.sector_roles,
       countries: CONFIG.countries,
       languages: CONFIG.languages,
       topics: CONFIG.topics,
@@ -205,7 +204,6 @@ describe("the profile card after the first answer", () => {
     expect(cachedPrefill()).toMatchObject({
       suggestion: {
         sector_code: "government",
-        role_code: "analyst",
         country_code: "BR",
       },
       firstName: "Maria",
@@ -302,7 +300,6 @@ describe("Not now", () => {
 describe("Save", () => {
   const patch = {
     sector_code: "government",
-    role_code: "analyst",
     country_code: "BR",
     company_organization: "State environment agency",
     help_test_features: false,
@@ -458,6 +455,34 @@ describe("the banner in the next new conversations", () => {
     expect(bannerOpen()).toBe(false);
   });
 
+  it("Add details waits out an answer in progress, without an error", async () => {
+    backend();
+    useChatStore.setState({ currentThreadId: "t-1", isLoading: true });
+    useProfileNudgeStore.getState().openBanner();
+    await openProfileCardFromBanner();
+    expect(cards()).toHaveLength(0);
+    expect(bannerOpen()).toBe(true);
+    expect(showApiError).not.toHaveBeenCalled();
+  });
+
+  it("Add details stays out of a conversation left while the card loaded", async () => {
+    backend();
+    useChatStore.setState({ currentThreadId: "t-1" });
+    const promise = openProfileCardFromBanner();
+    useChatStore.getState().reset();
+    await promise;
+    expect(cards()).toHaveLength(0);
+    expect(showApiError).not.toHaveBeenCalled();
+  });
+
+  it("Add details reports a card that couldn't load", async () => {
+    backend({ configStatus: 503 });
+    useProfileNudgeStore.getState().openBanner();
+    await openProfileCardFromBanner();
+    expect(cards()).toHaveLength(0);
+    expect(showApiError).toHaveBeenCalledOnce();
+  });
+
   it("closes when the profile is saved from the card", async () => {
     backend();
     await showProfilePrompt();
@@ -465,7 +490,6 @@ describe("the banner in the next new conversations", () => {
     const card = cards()[0];
     await saveProfileFromCard(card.id, {
       sector_code: "ngo",
-      role_code: null,
       country_code: "KE",
       company_organization: "Kenya Forest Service",
       help_test_features: false,
@@ -517,7 +541,6 @@ describe("analytics events", () => {
     const card = cards()[0];
     const patch = {
       sector_code: "ngo",
-      role_code: null,
       country_code: "KE",
       company_organization: "Kenya Forest Service",
       help_test_features: false,

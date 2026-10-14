@@ -1,4 +1,3 @@
-"use client";
 import { Box, Container, Heading, Text, Flex, Image } from "@chakra-ui/react";
 import LclLogo from "../components/LclLogo";
 

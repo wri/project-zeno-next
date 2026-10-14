@@ -9,11 +9,9 @@ export interface TreeView {
 }
 
 /**
- * The design's default state: the MEASURE pill reads "Net" in both annual-average
- * frames. Net draws one signed bar per row and drops the gross-only chrome (the
- * value subtitle, the `n/a` markers, the net tick and its legend entry).
+ * The annual-average chart opens on "Gross".
  */
-export const DEFAULT_MEASURE: FluxMeasure = "net";
+export const DEFAULT_MEASURE: FluxMeasure = "gross";
 
 interface TreeViewState {
   byWidget: Record<string, TreeView>;

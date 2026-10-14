@@ -9,6 +9,14 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// React Router's Link needs a router; a plain anchor is enough here.
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  Link: ({ href, ...rest }: { href: string } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest} />
+  ),
+}));
+
 vi.mock("@/app/lib/api-client", () => ({
   apiFetch: vi.fn(),
   getToken: () => "token",
@@ -40,7 +48,6 @@ import type { ProfilePrefill } from "../../api/profile-prefill";
 
 const OPTIONS = {
   sectors: { government: "Government" },
-  sector_roles: { government: { analyst: "Analyst" } },
   countries: { BR: "Brazil" },
   languages: { pt: "Português" },
 };
@@ -49,7 +56,6 @@ const GFW: ProfilePrefill = {
   found: true,
   suggestion: {
     sector_code: "government",
-    role_code: "analyst",
     country_code: "BR",
     company_organization: "SEMAS",
   },
@@ -147,7 +153,6 @@ describe("a profile-prompt message in the chat", () => {
       JSON.parse(vi.mocked(apiFetch).mock.calls[0][1]!.body as string)
     ).toEqual({
       sector_code: "government",
-      role_code: "analyst",
       country_code: "BR",
       company_organization: "SEMAS",
       help_test_features: false,

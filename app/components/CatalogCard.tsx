@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Flex, IconButton, Switch, Text } from "@chakra-ui/react";
 import { InfoIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";

@@ -6,6 +6,10 @@ import type {
   LegendParam,
 } from "@/app/components/legend/types";
 import type { Layer } from "@/app/store/layerManagerSlice";
+import {
+  PLANET_METADATA,
+  type ImageryMetadata,
+} from "@/app/constants/planet-metadata";
 
 /**
  * Metadata driving an imagery legend entry — the ImageryState payload the
@@ -98,10 +102,16 @@ export const IMAGERY_LEGEND_GROUP_ID = "imagery-group";
 export const IMAGERY_LAYER_NAME = "Satellite Imagery";
 
 /** Per-provider display strings: legend subtitle, the mosaic noun that opens
- * the info-popover sentence, and the imagery attribution. */
+ * the info-popover sentence, and the imagery attribution. A provider with
+ * `metadata` gets the full info dialog instead of the popover. */
 const PROVIDER_DISPLAY: Record<
   ImageryProvider,
-  { subtitle: string; mosaicNoun: string; attribution: string }
+  {
+    subtitle: string;
+    mosaicNoun: string;
+    attribution: string;
+    metadata?: ImageryMetadata;
+  }
 > = {
   "sentinel-2": {
     subtitle: "Sentinel-2 · True-colour",
@@ -112,6 +122,7 @@ const PROVIDER_DISPLAY: Record<
     subtitle: "Planet · Monthly mosaic",
     mosaicNoun: "Planet monthly true-colour mosaic",
     attribution: "Imagery © Planet Labs PBC",
+    metadata: PLANET_METADATA,
   },
 };
 
@@ -240,6 +251,94 @@ export function imageryCloudNote(meta: ImageryMeta): string | undefined {
   return `Searched with a loosened cloud-cover limit (${meta.maxCloudCover}%) — imagery may contain clouds.`;
 }
 
+/**
+ * Capture-row date, e.g. "15 Jun 2026". A Planet capture is a whole-month
+ * mosaic, so it is labelled by its month ("Aug 2026") from the start date:
+ * its target date is only the day the agent asked for, and is null when the
+ * agent asked for the latest mosaic.
+ */
+export function captureDateLabel(meta: ImageryMeta): string {
+  if (meta.provider === "planet" && meta.startDate) {
+    try {
+      return format(parseISO(meta.startDate), "MMM yyyy");
+    } catch {
+      return meta.startDate;
+    }
+  }
+  return meta.targetDate ? formatCaptureDate(meta.targetDate) : "";
+}
+
+export interface ImageryZoomTarget {
+  zoom: number;
+  /** Centre of the newest visible capture's AOI bounds, [lng, lat]. */
+  center?: [number, number];
+}
+
+/**
+ * Where to zoom so the visible imagery renders, while the map is zoomed out
+ * past it. MapLibre draws nothing for a raster below its minzoom (Planet's is
+ * 10), so the capture otherwise looks like it never loaded. Takes the highest
+ * floor so every visible capture renders, centred on the newest capture's
+ * bounds: the AOI the imagery was requested for. Undefined when all visible
+ * imagery already renders, or before the map has a zoom.
+ */
+export function imageryZoomTarget(
+  layers: Layer[],
+  zoom: number | undefined
+): ImageryZoomTarget | undefined {
+  if (zoom === undefined) return undefined;
+  // Newest first: showImageryTool orders the latest capture to the top.
+  const visible = layers.filter(
+    (l) => l.imagery && l.visible && l.minzoom !== undefined
+  );
+  if (visible.length === 0) return undefined;
+  const target = Math.max(...visible.map((l) => l.minzoom as number));
+  if (zoom >= target) return undefined;
+  const bounds = visible.find((l) => l.bounds)?.bounds;
+  return {
+    zoom: target,
+    center: bounds ? boundsExtent(bounds).center : undefined,
+  };
+}
+
+/**
+ * Longitude span and [lng, lat] centre of [west, south, east, north] bounds.
+ * Bounds crossing the antimeridian have west > east, so the span wraps
+ * through 180 rather than running the other way round the globe.
+ */
+function boundsExtent([west, south, east, north]: [
+  number,
+  number,
+  number,
+  number,
+]): { lonSpan: number; center: [number, number] } {
+  const lonSpan = west > east ? 360 - west + east : east - west;
+  let lonCenter = west + lonSpan / 2;
+  if (lonCenter > 180) lonCenter -= 360;
+  return { lonSpan, center: [lonCenter, (south + north) / 2] };
+}
+
+/**
+ * Fills a metadata citation's "[year of image]" (from the capture's date) and
+ * "[DATE]" (the access date) placeholders. A placeholder with no value to fill
+ * is left for the reader.
+ */
+export function imageryCitation(
+  template: string,
+  imageDate: string | undefined,
+  accessedOn: Date
+): string {
+  let year: string | undefined;
+  try {
+    year = imageDate ? format(parseISO(imageDate), "yyyy") : undefined;
+  } catch {
+    year = undefined;
+  }
+  return template
+    .replace("[year of image]", year ?? "[year of image]")
+    .replace("[DATE]", format(accessedOn, "d MMMM yyyy"));
+}
+
 /** Capture-row meta line, e.g. "cloud <50% · 9 scenes". */
 export function captureMetaLabel(meta: ImageryMeta): string {
   const parts: string[] = [];
@@ -272,7 +371,7 @@ export function buildImageryGroup(
     return {
       layerId: layer.id,
       areaLabel: meta.aoiNames.join(", ") || layer.name,
-      dateLabel: meta.targetDate ? formatCaptureDate(meta.targetDate) : "",
+      dateLabel: captureDateLabel(meta),
       metaLabel: captureMetaLabel(meta),
       visible: layer.visible,
       live: index === 0,
@@ -296,6 +395,10 @@ export function buildImageryGroup(
     params: liveMeta ? imageryLegendParams(liveMeta) : [],
     info: liveMeta ? imageryLegendInfo(liveMeta) : undefined,
     note: liveMeta ? imageryCloudNote(liveMeta) : undefined,
+    metadata: liveMeta
+      ? providerDisplay(liveMeta.provider).metadata
+      : undefined,
+    imageDate: liveMeta?.startDate,
     captures,
     areaCount: new Set(captures.map((c) => c.areaLabel)).size,
     updating,
@@ -316,9 +419,11 @@ export function imageryThumbnailUrl(
   maxzoom = 22
 ): string | undefined {
   if (!bounds) return undefined;
-  const [west, south, east, north] = bounds;
-  const crossesDateline = west > east;
-  const lonSpan = crossesDateline ? 360 - west + east : east - west;
+  const [, south, , north] = bounds;
+  const {
+    lonSpan,
+    center: [lonCenter, latCenter],
+  } = boundsExtent(bounds);
   const latSpan = north - south;
   const maxSpan = Math.max(lonSpan, latSpan);
   if (!(maxSpan > 0)) return undefined;
@@ -327,10 +432,6 @@ export function imageryThumbnailUrl(
     Math.max(Math.ceil(Math.log2(360 / maxSpan)), minzoom),
     maxzoom
   );
-
-  let lonCenter = west + lonSpan / 2;
-  if (lonCenter > 180) lonCenter -= 360;
-  const latCenter = (south + north) / 2;
 
   const n = 2 ** zoom;
   const x = Math.min(Math.floor(((lonCenter + 180) / 360) * n), n - 1);

@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import type { ImageryMetadata } from "@/app/constants/planet-metadata";
 
 /**
  * A single read-only parameter chip shown beneath a layer title.
@@ -79,6 +80,11 @@ export interface ImageryLegendGroup {
   params: LegendParam[];
   info?: string;
   note?: string;
+  /** The live provider's full metadata; when set, the info button opens the
+   * metadata dialog instead of the `info` popover. */
+  metadata?: ImageryMetadata;
+  /** The live capture's start date, for the citation's image year. */
+  imageDate?: string;
   captures: ImageryLegendCapture[];
   areaCount: number;
   /** show_imagery announced but its result not yet streamed. */

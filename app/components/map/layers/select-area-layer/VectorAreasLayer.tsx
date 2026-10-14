@@ -23,6 +23,10 @@ import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
 import { publishAreaSelection } from "./publishAreaSelection";
 
+// The hover tooltip only appears once the pointer rests on a boundary, so it
+// doesn't flicker under the cursor while moving across the map.
+const TOOLTIP_DEBOUNCE_MS = 500;
+
 interface SourceLayerProps {
   layerId: LayerId;
 }
@@ -65,20 +69,27 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
   useEffect(() => {
     let hoverId: string | number | undefined;
+    let tooltipTimer: ReturnType<typeof setTimeout> | undefined;
 
     if (map) {
       const onMouseMove = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
           const feature = e.features.at(-1);
           const { lat, lng } = e.lngLat;
-          const aoiName = getAoiName(nameKeys, feature!.properties);
+          const properties = feature!.properties;
           map.getCanvas().style.cursor = "pointer";
-          setHoverInfo({
-            lat,
-            lng,
-            name: aoiName,
-            details: getBoundaryFeatureDetails(layerId, feature!.properties),
-          });
+
+          // Hide while moving; show at the resting point once still.
+          clearTimeout(tooltipTimer);
+          setHoverInfo(undefined);
+          tooltipTimer = setTimeout(() => {
+            setHoverInfo({
+              lat,
+              lng,
+              name: getAoiName(nameKeys, properties),
+              details: getBoundaryFeatureDetails(layerId, properties),
+            });
+          }, TOOLTIP_DEBOUNCE_MS);
 
           if (hoverId !== undefined) {
             map.setFeatureState(
@@ -96,6 +107,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
       const onMouseLeave = () => {
         map.getCanvas().style.cursor = "";
+        clearTimeout(tooltipTimer);
         setHoverInfo(undefined);
         if (hoverId !== undefined) {
           map.setFeatureState(
@@ -209,6 +221,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         map.off("mouseleave", fillLayerName, onMouseLeave);
         map.off("click", fillLayerName, onClick);
         map.getCanvas().style.cursor = "";
+        clearTimeout(tooltipTimer);
       };
     }
   }, [

@@ -17,7 +17,7 @@ Consumers import the slice **only** through its public API barrel
 
 ## The invariant (enforced)
 
-> `model/` and `lib/` import no React, Next, map, app store, or HTTP; `api/` never imports `ui/`;
+> `model/` and `lib/` import no React, router, map, app store, or HTTP; `api/` never imports `ui/`;
 > dependencies only point down. (`model/` may use `zustand` for stores.)
 
 Enforced by [`tests/architecture`](../../../tests/architecture) (dependency-cruiser via vitest), run

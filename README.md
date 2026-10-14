@@ -19,7 +19,7 @@ The project uses environment variables, which are set by default in the [.env](.
 
 - `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`: Your Mapbox access token for map tiles
 
-For more detailed instructions on working with environment variables in Next.js, please consult the [Next.js Environment Variables documentation](https://nextjs.org/docs/basic-features/environment-variables).
+Variables are read by Vite at build time (see [Env Variables and Modes](https://vite.dev/guide/env-and-mode)). They keep the `NEXT_PUBLIC_` prefix on purpose: `vite.config.ts` sets `envPrefix: "NEXT_PUBLIC_"`, so only variables with that prefix reach the browser bundle.
 
 Note: The `.env.local` file is configured to be ignored by Git to prevent accidental exposure of sensitive information.
 
@@ -63,7 +63,7 @@ Restart the dev server, then visit:
 http://localhost:3000/chart-debug
 ```
 
-> **Note:** The page returns a 404 when the env var is missing or set to anything other than `true`. It also has `noindex, nofollow` metadata so it won't be indexed even if accidentally deployed.
+> **Note:** When the env var is missing or set to anything other than `true`, the route isn't registered at all (the page isn't even in the bundle), so `/chart-debug` shows the 404 page.
 
 ### What's included
 

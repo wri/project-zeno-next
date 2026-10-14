@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef, useState } from "react";
 import { Box, Button, Text, VisuallyHidden } from "@chakra-ui/react";
 

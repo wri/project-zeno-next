@@ -1,4 +1,3 @@
-"use client";
 import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { StopIcon } from "@phosphor-icons/react";
 import VoiceLanguageMenu from "./VoiceLanguageMenu";

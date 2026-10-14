@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Unmet demand: the asks the agent didn't serve, grouped so repeated requests
  * read as feature gaps, plus friction shares (unserved / defer / retry rate).
@@ -7,7 +5,7 @@
  */
 
 import { useMemo } from "react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 import { Box, Flex, Table, Text } from "@chakra-ui/react";
 import { ChartCard } from "../charts/ChartCard";
 import { OUTCOME_COLORS, OUTCOME_LABELS } from "../charts/palette";

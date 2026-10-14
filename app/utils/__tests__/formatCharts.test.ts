@@ -218,6 +218,53 @@ describe("formatChartData", () => {
     expect(result.data[0]).toMatchObject({ region: "A", 2020: 10, 2021: 12 });
   });
 
+  describe("stacked-bar", () => {
+    const data = [
+      { year: 2021, "Other tree cover": 40, "Natural forest": 60 },
+      { year: 2022, "Other tree cover": 35, "Natural forest": 55 },
+    ];
+
+    it("takes per-series colors from the backend colorMap, falling back to the rotation", () => {
+      const result = formatChartData(
+        [{ ...data[0], Plantations: 5 }],
+        "stacked-bar",
+        "year",
+        undefined,
+        undefined,
+        ["Other tree cover", "Natural forest", "Plantations"],
+        {
+          colorMap: {
+            "Natural forest": "#246E24",
+            "Other tree cover": "#DC6C9A",
+          },
+        }
+      );
+      // Series order is the stack order (first at the bottom) and the legend's.
+      expect(result.series).toEqual([
+        { name: "Other tree cover", color: "#DC6C9A", stackId: "a" },
+        { name: "Natural forest", color: "#246E24", stackId: "a" },
+        expect.objectContaining({ name: "Plantations", stackId: "a" }),
+      ]);
+      // No registry entry → default rotation, so it still renders.
+      expect(result.series[2].color).toBeTruthy();
+    });
+
+    it("keeps the default rotation when there is no colorMap", () => {
+      const plain = formatChartData(data, "stacked-bar", "year", undefined);
+      const withEmpty = formatChartData(
+        data,
+        "stacked-bar",
+        "year",
+        undefined,
+        undefined,
+        undefined,
+        { colorMap: {} }
+      );
+      expect(withEmpty.series).toEqual(plain.series);
+      expect(plain.series.map((s) => s.color)).not.toContain("#246E24");
+    });
+  });
+
   describe("stacked-bar-with-line", () => {
     it("stacks the series fields and renders the line field on top, unstacked", () => {
       // The line's value is precomputed by the caller (net-flux-variants), not

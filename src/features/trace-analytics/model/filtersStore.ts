@@ -1,5 +1,3 @@
-"use client";
-
 /** Shared fetch filters (date window, environment, internal-user exclusion). */
 
 import { create } from "zustand";

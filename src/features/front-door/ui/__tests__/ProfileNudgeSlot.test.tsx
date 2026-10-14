@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({
@@ -13,6 +13,7 @@ vi.mock("@/app/components/ui/toaster", () => ({
 }));
 
 import useAuthStore from "@/app/store/authStore";
+import useChatStore from "@/app/store/chatStore";
 import useProfileNudgeStore from "../../model/profile-nudge-store";
 import { ProfileNudgeSlot } from "../ProfileNudgeSlot";
 
@@ -27,6 +28,7 @@ function renderSlot() {
 describe("ProfileNudgeSlot", () => {
   beforeEach(() => {
     localStorage.clear();
+    useChatStore.getState().reset();
     useProfileNudgeStore.getState().closeBanner();
     useAuthStore.getState().setAuthStatus({
       email: "maria@example.org",
@@ -57,6 +59,21 @@ describe("ProfileNudgeSlot", () => {
     });
     const { container } = renderSlot();
     expect(container.textContent).toBe("");
+  });
+
+  it("holds Add details while an answer is streaming, but not Not now", () => {
+    useProfileNudgeStore.getState().openBanner();
+    useChatStore.setState({ isLoading: true });
+    renderSlot();
+    const addDetails = screen.getByRole("button", { name: "Add details" });
+    expect((addDetails as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: "Not now" }) as HTMLButtonElement)
+        .disabled
+    ).toBe(false);
+
+    act(() => useChatStore.setState({ isLoading: false }));
+    expect((addDetails as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("closes on Not now", () => {

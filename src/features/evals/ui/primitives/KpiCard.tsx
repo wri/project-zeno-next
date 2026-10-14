@@ -1,5 +1,3 @@
-"use client";
-
 import { Flex, Text } from "@chakra-ui/react";
 
 interface KpiCardProps {

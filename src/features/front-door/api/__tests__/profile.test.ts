@@ -72,7 +72,6 @@ describe("fetchProfileCardOptions", () => {
     );
     await expect(fetchProfileCardOptions()).resolves.toEqual({
       sectors: CONFIG.sectors,
-      sector_roles: CONFIG.sector_roles,
       countries: CONFIG.countries,
       languages: CONFIG.languages,
       topics: CONFIG.topics,

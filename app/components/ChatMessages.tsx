@@ -1,4 +1,3 @@
-"use client";
 import { Fragment, useEffect, useRef } from "react";
 import { Box, BoxProps } from "@chakra-ui/react";
 import useChatStore from "@/app/store/chatStore";

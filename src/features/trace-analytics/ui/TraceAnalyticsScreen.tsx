@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Trace-analytics screen: Analytics, Trace Explorer and Conversation Browser
  * as URL-synced tabs on a single route (`/trace-analytics?tab=…`), so
@@ -15,7 +13,7 @@ import {
   ChatsCircleIcon,
   MagnifyingGlassIcon,
 } from "@phosphor-icons/react";
-import { useRouter, useSearchParams } from "@/app/lib/router";
+import { useRouter, useSearchParams } from "@/src/shared/lib/router";
 import { AnalyticsView } from "./AnalyticsView";
 import { ConversationsView } from "./ConversationsView";
 import { TracesView } from "./TracesView";

@@ -2,7 +2,7 @@
 
 import { Badge, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { useRouter } from "@/app/lib/router";
+import { useRouter } from "@/src/shared/lib/router";
 
 /**
  * The header row of /welcome: the Horizon name (an h2: the page's h1 is the

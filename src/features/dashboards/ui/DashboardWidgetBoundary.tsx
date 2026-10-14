@@ -1,5 +1,3 @@
-"use client";
-
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button, Flex, Text } from "@chakra-ui/react";
 import { WarningCircleIcon } from "@phosphor-icons/react";

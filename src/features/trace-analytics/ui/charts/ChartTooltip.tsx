@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Shared Recharts tooltip: GNW panel styling with monospace tabular values.
  * Pass as <Tooltip content={<ChartTooltip formatValue={…} />} />.

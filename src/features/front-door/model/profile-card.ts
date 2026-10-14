@@ -9,20 +9,20 @@ import type { PersonNames } from "../lib/person-names";
 /** The option lists the card needs, from GET /api/profile/config. */
 export type ProfileCardOptions = Pick<
   ProfileConfig,
-  "sectors" | "sector_roles" | "countries" | "languages" | "topics"
+  "sectors" | "countries" | "languages" | "topics"
 >;
 
 /**
  * Card form state, in the order the card asks for it. An empty string means
- * "not chosen". Country, sector and organisation are required; language and
- * role are not. The names and topics are asked for only with the email list
- * opt-in, and are then required.
+ * "not chosen". Country, sector and organisation are required; language is
+ * not. Role is optional on the full profile form, so the card leaves it out.
+ * The names and topics are asked for only with the email list opt-in, and
+ * are then required.
  */
 export interface ProfileDraft {
   country: string;
   language: string;
   sector: string;
-  role: string;
   organisation: string;
   helpTestFeatures: boolean;
   receiveNewsEmails: boolean;
@@ -35,7 +35,6 @@ export const EMPTY_PROFILE_DRAFT: ProfileDraft = {
   country: "",
   language: "",
   sector: "",
-  role: "",
   organisation: "",
   helpTestFeatures: false,
   receiveNewsEmails: false,
@@ -48,7 +47,6 @@ type SuggestedField =
   | "country_code"
   | "preferred_language_code"
   | "sector_code"
-  | "role_code"
   | "company_organization"
   | "topics";
 
@@ -75,7 +73,6 @@ export type ProfileCardPatch = Required<
   Pick<
     PatchProfilePartialRequest,
     | "sector_code"
-    | "role_code"
     | "country_code"
     | "company_organization"
     | "help_test_features"
@@ -128,16 +125,6 @@ function known(
   return value !== undefined && value in options ? value : "";
 }
 
-/** Changing sector clears a role that doesn't belong to the new sector. */
-export function withSector(
-  draft: ProfileDraft,
-  sector: string,
-  options: ProfileCardOptions
-): ProfileDraft {
-  const roles = options.sector_roles[sector] ?? {};
-  return { ...draft, sector, role: known(draft.role, roles) };
-}
-
 /**
  * Seeds the form. Keeps only codes the options know, so a stale or unmapped
  * value never reaches the form; names (for the email list) come from GFW,
@@ -149,14 +136,12 @@ export function draftFromSuggestion(
   names: PersonNames = {}
 ): ProfileDraft {
   const s = suggestion ?? {};
-  const sector = known(s.sector_code, options.sectors);
   const topics = options.topics ?? {};
   return {
     ...EMPTY_PROFILE_DRAFT,
     country: known(s.country_code, options.countries),
     language: known(s.preferred_language_code, options.languages),
-    sector,
-    role: known(s.role_code, options.sector_roles[sector] ?? {}),
+    sector: known(s.sector_code, options.sectors),
     organisation: s.company_organization ?? "",
     firstName: names.firstName ?? "",
     lastName: names.lastName ?? "",
@@ -176,8 +161,9 @@ export function profileCardMode(
 
 /**
  * The PATCH the card sends, all from the draft (so a value the person
- * changed or cleared is what gets saved). The names and topics go only with
- * the email list opt-in.
+ * changed or cleared is what gets saved). No role_code, so a role set on the
+ * full profile form is left alone. The names and topics go only with the
+ * email list opt-in.
  */
 export function toProfilePatch(
   draft: ProfileDraft,
@@ -188,7 +174,6 @@ export function toProfilePatch(
   }
   const patch: ProfileCardPatch = {
     sector_code: draft.sector,
-    role_code: draft.role === "" ? null : draft.role,
     country_code: draft.country,
     company_organization: draft.organisation.trim(),
     help_test_features: draft.helpTestFeatures,

@@ -1,4 +1,3 @@
-"use client";
 import { useEffect, useState } from "react";
 import { Box } from "@chakra-ui/react";
 import { MapRef } from "react-map-gl/maplibre";

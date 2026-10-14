@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Button,
   ButtonGroup,
@@ -12,9 +10,9 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { Link } from "@/app/lib/router";
+import { Link } from "@/src/shared/lib/router";
 
-const LANDING_PAGE_VERSION = process.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
+const LANDING_PAGE_VERSION = import.meta.env.NEXT_PUBLIC_LANDING_PAGE_VERSION;
 
 const renderNavItems = (
   isMobile: boolean,

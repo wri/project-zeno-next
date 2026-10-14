@@ -29,6 +29,7 @@ describe("cookieStore", () => {
     _storage = {};
     useCookieStore.setState({
       consentStatus: "pending",
+      hydrated: false,
       analytics: false,
       targetedAdvertising: false,
       personalization: false,
@@ -39,6 +40,7 @@ describe("cookieStore", () => {
   it("has correct initial state", () => {
     const state = useCookieStore.getState();
     expect(state.consentStatus).toBe("pending");
+    expect(state.hydrated).toBe(false);
     expect(state.analytics).toBe(false);
     expect(state.targetedAdvertising).toBe(false);
     expect(state.personalization).toBe(false);
@@ -88,6 +90,7 @@ describe("cookieStore", () => {
   it("hydrate with no stored value leaves state as pending", () => {
     useCookieStore.getState().hydrate();
     expect(useCookieStore.getState().consentStatus).toBe("pending");
+    expect(useCookieStore.getState().hydrated).toBe(true);
   });
 
   it("hydrate falls back to false for missing preference fields", () => {
@@ -144,6 +147,7 @@ describe("cookieStore", () => {
     _storage[COOKIE_CONSENT_KEY] = "not-valid-json{{{";
     useCookieStore.getState().hydrate();
     expect(useCookieStore.getState().consentStatus).toBe("pending");
+    expect(useCookieStore.getState().hydrated).toBe(true);
   });
 
   it("hydrate with unknown status leaves state as pending", () => {

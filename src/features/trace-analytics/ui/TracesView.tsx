@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Trace Explorer — list/filter traces from the Zeno API and inspect a single
  * trace in detail (full conversation comes live from Langfuse). Supports deep
@@ -7,7 +5,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "@/app/lib/router";
+import { useSearchParams } from "@/src/shared/lib/router";
 import {
   Box,
   Button,

@@ -1,5 +1,3 @@
-"use client";
-
 import { Alert } from "@chakra-ui/react";
 
 interface InlineAlertProps {

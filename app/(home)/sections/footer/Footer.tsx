@@ -55,7 +55,10 @@ export default function FooterSection() {
             w={{ base: "full", md: "auto" }}
             flex={{ md: 2 }}
           >
-            <Text>{new Date().getFullYear()} Global Nature Watch</Text>
+            {/* Baked in at build time; the client's year may differ. */}
+            <Text suppressHydrationWarning>
+              {new Date().getFullYear()} Global Nature Watch
+            </Text>
             <ChakraLink
               textDecoration="underline"
               textDecorationStyle="dotted"

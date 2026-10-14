@@ -25,7 +25,7 @@ vi.mock("@/app/components/AreaCatalogThumbnail", () => ({
 }));
 
 const pushSpy = vi.fn();
-vi.mock("@/app/lib/router", async (importOriginal) => ({
+vi.mock("@/src/shared/lib/router", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useRouter: () => ({ push: pushSpy }),
 }));

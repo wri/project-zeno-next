@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Shared Recharts legend: compact swatch chips, top-aligned so chart heights
  * stay predictable. Pass as <Legend content={<ChartLegend />} … />.

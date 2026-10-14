@@ -1,5 +1,3 @@
-"use client";
-
 import { Menu } from "@chakra-ui/react";
 import { FloppyDiskIcon, XIcon } from "@phosphor-icons/react";
 import type { Polygon } from "geojson";

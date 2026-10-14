@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Button } from "@chakra-ui/react";
 import { CheckIcon, SquaresFourIcon } from "@phosphor-icons/react";

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import { motion, useAnimation, PanInfo } from "framer-motion";
 import { Box, Flex, chakra } from "@chakra-ui/react";
@@ -24,10 +22,6 @@ export default function DraggableBottomSheet({
   // 400px middle snap would exceed the 85% top snap; on typical portrait
   // heights they resolve to the original [200, 400, 85%].
   const computeSnapPoints = () => {
-    // Ensure this code runs only on the client where `window` is available.
-    if (typeof window === "undefined") {
-      return [200, 400, 700]; // Default SSR values
-    }
     const viewportHeight = window.innerHeight;
     return [
       Math.min(200, viewportHeight * 0.3),

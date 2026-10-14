@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Case-store coverage for a set: what the cases contain and which buckets
  * their implied checks reach — rendered from the committed coverage.json

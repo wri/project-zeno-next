@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect } from "react";
-import { usePathname, useRouter } from "@/app/lib/router";
+import { usePathname, useRouter } from "@/src/shared/lib/router";
 import { getToken } from "@/app/lib/api-client";
 import useAuthStore from "@/app/store/authStore";
 import { API_CONFIG } from "@/app/config/api";

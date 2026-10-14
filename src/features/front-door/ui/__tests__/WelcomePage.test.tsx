@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const router = { push: vi.fn(), replace: vi.fn() };
 const QUERY = "prompt=How+much+tree+cover+has+Par%C3%A1+lost%3F&utm_source=gfw";
 
-vi.mock("@/app/lib/router", () => ({
+vi.mock("@/src/shared/lib/router", () => ({
   useRouter: () => router,
   usePathname: () => "/welcome",
   useSearchParams: () => new URLSearchParams(QUERY),

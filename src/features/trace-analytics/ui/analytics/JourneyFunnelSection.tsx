@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Session-level journey funnel: where conversations stall on the way from a
  * question to a delivered insight. The strongest single view for spotting

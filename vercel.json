@@ -1,0 +1,10 @@
+{
+  "framework": "vite",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/amazonia", "destination": "/amazonia.html" },
+    { "source": "/(.*)", "destination": "/_spa.html" }
+  ]
+}

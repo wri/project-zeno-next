@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Composition root for the slice's data (ADR 0003): TanStack Query over the
  * gateway port, with the GitHub adapter as the default. The ledger only

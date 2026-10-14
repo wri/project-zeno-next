@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, Flex, Heading, Text } from "@chakra-ui/react";
 import { PlusIcon } from "@phosphor-icons/react";
 

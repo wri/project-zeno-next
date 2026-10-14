@@ -1,3 +1,9 @@
+import { DATASET_CARDS } from "@/app/constants/datasets";
+import type { DatasetParameter } from "@/app/types/chat";
+import {
+  legendParameters,
+  resolveContextTileUrl,
+} from "@/app/utils/datasetLayerContext";
 import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 
 /**
@@ -17,7 +23,7 @@ export interface MapWidgetLayer {
   contextLayerName?: string;
   // Dataset-kind fields that drive the widget's legend (DashboardMapLegend).
   datasetId?: number;
-  /** Display parameters as a record, e.g. `{ canopy_cover: 30 }`. */
+  /** The legend's parameter chips, settled by `legendParameters`. */
   parameters?: Record<string, unknown>;
   startDate?: string;
   endDate?: string;
@@ -26,24 +32,15 @@ export interface MapWidgetLayer {
 const str = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value : undefined;
 
-// Config parameters are `[{ name, values }]` (per the handoff); the legend
-// wants a `{ name: firstValue }` record — same reduction the explorer's
-// getDatasetLayerContextProps applies to DatasetInfo.parameters.
-function parametersRecord(
-  parameters: unknown
-): Record<string, unknown> | undefined {
-  if (!Array.isArray(parameters)) return undefined;
-  const entries = parameters
-    .filter(
-      (p): p is { name: string; values: unknown[] } =>
-        !!p &&
-        typeof p === "object" &&
-        typeof (p as { name?: unknown }).name === "string" &&
-        Array.isArray((p as { values?: unknown }).values) &&
-        (p as { values: unknown[] }).values.length > 0
-    )
-    .map((p) => [p.name, p.values[0]] as const);
-  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+// Config parameters are `[{ name, values }]` (per the handoff), unchecked.
+function configParameters(parameters: unknown): DatasetParameter[] {
+  return (Array.isArray(parameters) ? parameters : []).filter(
+    (p): p is DatasetParameter =>
+      !!p &&
+      typeof p === "object" &&
+      typeof (p as { name?: unknown }).name === "string" &&
+      Array.isArray((p as { values?: unknown }).values)
+  );
 }
 
 // Primary forest tiles ship black-background PNGs; the pf:// protocol
@@ -85,12 +82,19 @@ export function mapWidgetLayer(
       );
       const entryUrl = str(entry?.tile_url);
       if (entryUrl) {
-        contextTileUrl = patchPrimaryForest(entryUrl);
+        contextTileUrl = resolveContextTileUrl(activeName, entryUrl);
         contextLayerName = activeName;
       }
     }
 
-    const parameters = parametersRecord(d.parameters);
+    // Settled as the explorer settles them, keyed off the snapshot's context
+    // layer, not whether its tiles resolved: the main tile ignores canopy
+    // either way.
+    const parameters = legendParameters(
+      configParameters(d.parameters),
+      activeName,
+      DATASET_CARDS.find((card) => card.dataset_id === d.dataset_id)?.threshold
+    );
     const startDate = str(d.start_date);
     const endDate = str(d.end_date);
 

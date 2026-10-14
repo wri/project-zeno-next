@@ -14,7 +14,7 @@ export const EVALS_REPO_URL = "https://github.com/wri/gnw-gold-evals";
 const RAW_BASE = "https://raw.githubusercontent.com/wri/gnw-gold-evals";
 
 export const EVALS_DATA_BRANCH =
-  process.env.NEXT_PUBLIC_EVALS_DATA_BRANCH || "challenge-set";
+  import.meta.env.NEXT_PUBLIC_EVALS_DATA_BRANCH || "challenge-set";
 
 /** GOLD's working store is cases/v2; CHALLENGE has its own store. */
 const STORE_DIR: Record<EvalSet, string> = {

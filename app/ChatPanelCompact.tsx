@@ -1,11 +1,11 @@
-"use client";
-
 import { Flex, Box } from "@chakra-ui/react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import ChatInput from "./components/ChatInput";
 import ChatMessages from "./components/ChatMessages";
 import ChatPanelHeader from "./ChatPanelHeader";
+import ChatHistoryView from "./ChatHistoryView";
+import AvailablePromptsCard from "./components/AvailablePromptsCard";
 import ChatPanelDisclaimer from "./ChatPanelDisclaimer";
 import PromptQuotaNotice from "./PromptQuotaNotice";
 import { ProfileNudgeSlot } from "@/src/features/front-door";
@@ -15,10 +15,9 @@ import {
   getCompactChatLeftPx,
 } from "./explorationLayout";
 import { usePromptQuota } from "./hooks/usePromptQuota";
-import useChatStore from "./store/chatStore";
 import useSidebarStore from "./store/sidebarStore";
 import { isAppRoute, isDashboardDetailRoute } from "./utils/threadNavigation";
-import { usePathname } from "@/app/lib/router";
+import { usePathname } from "@/src/shared/lib/router";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // Intentionally narrower than the full-size panel (see FULLSIZE_CHAT_PANEL_WIDTH_PX).
@@ -42,9 +41,14 @@ interface ChatPanelCompactProps {
 
 function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
   const { promptsExhausted } = usePromptQuota();
-  const { messages } = useChatStore();
-  const { dataCatalogOpen, areasPanelOpen, insightsPanelOpen } =
-    useSidebarStore();
+  const {
+    dataCatalogOpen,
+    areasPanelOpen,
+    insightsPanelOpen,
+    isChatCollapsed: isCollapsed,
+    setChatCollapsed,
+    chatHistoryOpen,
+  } = useSidebarStore();
   const pathname = usePathname();
   // On the map, any of the three column panels shifts the compact chat aside.
   // On a dashboard's detail page only the Analyses (insights) pane renders, so
@@ -55,10 +59,6 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
       ? dataCatalogOpen || areasPanelOpen || insightsPanelOpen
       : isDashboardDetailRoute(pathname) && insightsPanelOpen
   );
-  const hasConversation = messages.some(
-    (m) => m.type === "user" || m.type === "assistant"
-  );
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const topCardRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -107,7 +107,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
       window.removeEventListener("gnw-disclaimer-shown", recomputeMaxH);
       window.removeEventListener("gnw-disclaimer-dismissed", recomputeMaxH);
     };
-  }, [recomputeMaxH, isCollapsed]);
+  }, [recomputeMaxH, isCollapsed, chatHistoryOpen]);
 
   return (
     <Flex
@@ -137,13 +137,7 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
           minH={0}
           {...cardStyle}
         >
-          <ChatPanelHeader
-            isFullSize={false}
-            hasConversation={hasConversation}
-            onToggleSize={onToggleSize}
-            isCollapsed={isCollapsed}
-            onToggleCollapse={() => setIsCollapsed((v) => !v)}
-          />
+          <ChatPanelHeader isFullSize={false} onToggleSize={onToggleSize} />
           {/* Animated collapse/expand of message content */}
           <AnimatePresence initial={false}>
             {!isCollapsed && (
@@ -165,37 +159,55 @@ function ChatPanelCompact({ onToggleSize }: ChatPanelCompactProps) {
                 <Box
                   ref={messagesRef}
                   overflowY="auto"
-                  px={4}
+                  // The history list carries its own inset.
+                  px={chatHistoryOpen ? 0 : 4}
                   pb={4}
                   minH={0}
                   maxH={{ base: "none", md: messagesMaxH }}
                 >
-                  <ChatMessages pt={4} />
+                  {chatHistoryOpen ? (
+                    <ChatHistoryView />
+                  ) : (
+                    <ChatMessages pt={4} />
+                  )}
                 </Box>
+                {/* History view: the prompt allowance takes the input's
+                    place, inside this card (the input card is hidden). */}
+                {chatHistoryOpen && (
+                  <Box px={4} pb={4} flexShrink={0}>
+                    <AvailablePromptsCard />
+                  </Box>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </Flex>
 
-        {/* Bottom card: input — always visible, never squeezed by the list */}
-        <Flex
-          ref={inputCardRef}
-          flexDir="column"
-          flexShrink={0}
-          {...cardStyle}
-          boxShadow="none"
-          overflow="hidden"
-        >
-          <PromptQuotaNotice px={3} pt={3} />
-          <ProfileNudgeSlot px={3} pt={3} />
-          <ChatInput
-            isChatDisabled={promptsExhausted}
-            onAfterSend={isCollapsed ? () => setIsCollapsed(false) : undefined}
-          />
-        </Flex>
+        {/* Bottom card: input — always visible in the chat view, never
+            squeezed by the list. The history view swaps it for the prompt
+            allowance card above. */}
+        {!chatHistoryOpen && (
+          <Flex
+            ref={inputCardRef}
+            flexDir="column"
+            flexShrink={0}
+            {...cardStyle}
+            boxShadow="none"
+            overflow="hidden"
+          >
+            <PromptQuotaNotice px={3} pt={3} />
+            <ProfileNudgeSlot px={3} pt={3} />
+            <ChatInput
+              isChatDisabled={promptsExhausted}
+              onAfterSend={
+                isCollapsed ? () => setChatCollapsed(false) : undefined
+              }
+            />
+          </Flex>
+        )}
       </Flex>
       {/* Frosted-glass disclaimer — sits just below the input card */}
-      <ChatPanelDisclaimer variant="frosted" />
+      {!chatHistoryOpen && <ChatPanelDisclaimer variant="frosted" />}
     </Flex>
   );
 }

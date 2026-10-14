@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { Box, Heading, Text } from "@chakra-ui/react";
 import { SERIF_STACK } from "../charts/palette";

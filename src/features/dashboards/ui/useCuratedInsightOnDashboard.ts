@@ -1,5 +1,3 @@
-"use client";
-
 import useViewContextStore from "@/app/store/viewContextStore";
 import { findCuratedWidgetForDataset } from "../lib/widgets";
 import { useDashboard } from "./dashboardQueries";

@@ -16,14 +16,19 @@ export const ANALYSIS_TEMPLATES_BLURB =
 
 /**
  * The template cards, in display order. Only the templates the backend
- * registers belong here; the design's other cards (tree cover loss, land
- * cover, …) wait for their registry entries.
+ * registers belong here; the design's other cards (land cover, …) wait for
+ * their registry entries.
  */
 export const ANALYSIS_TEMPLATE_CARDS: readonly AnalysisTemplateCard[] = [
   {
     name: "nrt-monitoring",
     label: "Near real-time monitoring",
     image: "/analysis_template_nrt_monitoring.jpg",
+  },
+  {
+    name: "post-2020-forest-loss",
+    label: "Post-2020 forest loss",
+    image: "/analysis_template_post_2020_forest_loss.jpg",
   },
 ];
 

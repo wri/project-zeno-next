@@ -1,5 +1,3 @@
-"use client";
-
 import { Box, SimpleGrid, Text } from "@chakra-ui/react";
 
 export interface StatItem {

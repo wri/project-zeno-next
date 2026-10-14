@@ -35,7 +35,6 @@ export const PERSONAS: Record<PersonaId, Persona> = {
     suggestion: {
       company_organization: "Secretaria de Meio Ambiente do Pará",
       sector_code: "government",
-      role_code: "analyst",
       country_code: "BRA",
       preferred_language_code: "pt",
       topics: ["deforestation", "fires"],

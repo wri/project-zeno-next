@@ -19,10 +19,10 @@ outputs = ['node_modules/.pnpm/lock.yaml']
 
 [tasks.dev]
 description = 'Calls your dev script in `package.json`'
-run = 'next dev'
+run = 'vite'
 depends = ['pnpm-install']
 
 [tasks.build]
 description = 'Build'
-run = 'next build --turbopack'
+run = 'vite build'
 depends = ['pnpm-install']

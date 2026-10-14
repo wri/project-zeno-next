@@ -26,7 +26,7 @@ interface DatasetInfoModalProps {
  * …) render in the body text colour with no underline, and follow in the same
  * tab — navigating the app away and losing chat state.
  */
-const markdownComponents: Components = {
+export const markdownComponents: Components = {
   a: ({ href, children }) => (
     <Link
       href={href}

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { Box, CloseButton, Flex, Icon, Link, Text } from "@chakra-ui/react";
 import { InfoIcon } from "@phosphor-icons/react";

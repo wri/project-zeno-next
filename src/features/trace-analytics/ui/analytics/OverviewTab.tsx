@@ -1,5 +1,3 @@
-"use client";
-
 /** Overview tab — headline KPIs with period-over-period deltas and trends. */
 
 import { useMemo } from "react";

@@ -1,4 +1,3 @@
-"use client";
 import { Flex, HoverCard, Portal, Text, chakra } from "@chakra-ui/react";
 import type { BlogArticle } from "@/app/schemas/api/blogs/get";
 import {

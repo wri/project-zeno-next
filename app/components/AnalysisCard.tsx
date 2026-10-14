@@ -1,4 +1,3 @@
-"use client";
 import { Flex, Text } from "@chakra-ui/react";
 import { SparkleIcon } from "@phosphor-icons/react";
 import { formatDistanceToNow } from "date-fns";

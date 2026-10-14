@@ -1,8 +1,6 @@
-"use client";
-
 import { useState } from "react";
-import { useSearchParams } from "@/app/lib/router";
-import { Link as NextLink } from "@/app/lib/router";
+import { useSearchParams } from "@/src/shared/lib/router";
+import { Link as NextLink } from "@/src/shared/lib/router";
 import { Box, Button, CloseButton, Link, Stack, Text } from "@chakra-ui/react";
 import {
   BugIcon,
@@ -100,7 +98,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
   const params = useSearchParams();
   const active =
     enabled ??
-    (process.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
+    (import.meta.env.NEXT_PUBLIC_ENABLE_DEBUG_TOOLS === "true" ||
       params?.get("debug") === "1");
   const [dismissed, setDismissed] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
@@ -305,7 +303,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
         {/* Offline gallery of the front door's components, no API/auth. */}
         <Link
           as={NextLink}
-          href="/onboarding-debug/front-door"
+          href="/onboarding-debug"
           fontSize="2xs"
           color="gray.500"
           _hover={{ color: "gray.800" }}

@@ -1,5 +1,3 @@
-"use client";
-
 import { Flex, Text } from "@chakra-ui/react";
 import type { AgentMessage } from "../../model/types";
 import { contentText, messageType, stripNoise } from "../../lib/parsing";
