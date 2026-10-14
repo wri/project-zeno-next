@@ -35,13 +35,13 @@ function buildViewport(mapRef: MapRef | null): Viewport | undefined {
     const bounds = map.getBounds();
     const rawWest = bounds.getWest();
     const rawEast = bounds.getEast();
-    let west = -180;
-    let east = 180;
-    if (rawEast - rawWest < 360) {
-      west = wrapLng(rawWest);
-      // Keep a box that ends on the antimeridian at 180, not -180.
-      east = wrapLng(rawEast) === -180 ? 180 : wrapLng(rawEast);
-    }
+    const wrappedEast = wrapLng(rawEast);
+    // A span of 360° or more is the whole world. Otherwise keep a box that
+    // ends on the antimeridian at 180, not -180.
+    const [west, east] =
+      rawEast - rawWest < 360
+        ? [wrapLng(rawWest), wrappedEast === -180 ? 180 : wrappedEast]
+        : [-180, 180];
     // A box crossing the antimeridian keeps west > east (RFC 7946 §5.2).
     return {
       bbox: [
@@ -58,21 +58,14 @@ function buildViewport(mapRef: MapRef | null): Viewport | undefined {
 }
 
 function buildVisibleInsights(insights: InsightWidget[]): string[] | undefined {
-  const ids = Array.from(
-    new Set(
-      insights
-        .map((widget) => widget.insightId)
-        .filter((id): id is string => Boolean(id))
-    )
-  );
+  const ids = [
+    ...new Set(insights.flatMap((w) => (w.insightId ? [w.insightId] : []))),
+  ];
   return ids.length > 0 ? ids : undefined;
 }
 
-// Extend the ambient `view_context` with map-only fields that are computed
-// live at send time rather than tracked reactively in viewContextStore — the
-// current map extent and which insights are shown on the map right now, read
-// fresh from mapStore/insightStore for every request (same approach as
-// `ui_context` in messageContext.ts).
+// Read fresh from mapStore/insightStore on every request, like `ui_context`
+// in messageContext.ts.
 export function enrichMapViewContext(
   base: ViewContext | null,
   mapRef: MapRef | null,

@@ -31,7 +31,6 @@ import type {
   AnalyseSuggestion,
   Nudge,
   ViewAnalysisSuggestion,
-  InsightWidget,
 } from "@/app/types/chat";
 
 // Error that mimics a fetch/stream abort: `name === "AbortError"` is what
@@ -196,7 +195,7 @@ describe("chatStore view_context", () => {
         xAxis: "x",
         yAxis: "y",
         insightId: "i1",
-      } as InsightWidget,
+      },
     ]);
     useMapStore.setState({
       mapRef: {

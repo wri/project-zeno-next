@@ -55,93 +55,43 @@ describe("enrichMapViewContext", () => {
     });
   });
 
-  it("adds a rounded viewport bbox + zoom from the live map", () => {
-    const mapRef = fakeMapRef({
-      west: -73.98764321,
-      south: 40.76614321,
-      east: -73.93974321,
-      north: 40.80024321,
-      zoom: 5.678,
-    });
-
-    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
-
-    expect(result).toEqual({
-      page: "map",
-      viewport: {
-        bbox: [-73.9876, 40.7661, -73.9397, 40.8002],
-        zoom: 5.68,
+  it.each([
+    [
+      "adds a rounded viewport bbox + zoom from the live map",
+      {
+        west: -73.98764321,
+        south: 40.76614321,
+        east: -73.93974321,
+        north: 40.80024321,
+        zoom: 5.678,
       },
-    });
-  });
-
-  it("wraps longitudes past the antimeridian into [-180, 180]", () => {
-    const mapRef = fakeMapRef({
-      west: 170,
-      south: -20,
-      east: 190,
-      north: -10,
-      zoom: 4,
-    });
-
-    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
-
+      { bbox: [-73.9876, 40.7661, -73.9397, 40.8002], zoom: 5.68 },
+    ],
     // Crossing boxes keep west > east (RFC 7946 §5.2).
-    expect(result).toEqual({
-      page: "map",
-      viewport: { bbox: [170, -20, -170, -10], zoom: 4 },
-    });
-  });
-
-  it("wraps a box panned a whole world away", () => {
-    const mapRef = fakeMapRef({
-      west: -400,
-      south: 0,
-      east: -380,
-      north: 10,
-      zoom: 4,
-    });
-
-    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
-
-    expect(result).toEqual({
-      page: "map",
-      viewport: { bbox: [-40, 0, -20, 10], zoom: 4 },
-    });
-  });
-
-  it("keeps a box ending on the antimeridian at 180", () => {
-    const mapRef = fakeMapRef({
-      west: 160,
-      south: 0,
-      east: 180,
-      north: 10,
-      zoom: 4,
-    });
-
-    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
-
-    expect(result).toEqual({
-      page: "map",
-      viewport: { bbox: [160, 0, 180, 10], zoom: 4 },
-    });
-  });
-
-  it("sends the whole world when the view spans 360° or more", () => {
-    const mapRef = fakeMapRef({
-      west: -337.5,
-      south: -85,
-      east: 337.5,
-      north: 85,
-      zoom: 0.5,
-    });
-
-    const result = enrichMapViewContext({ page: "map" }, mapRef, []);
-
-    expect(result).toEqual({
-      page: "map",
-      viewport: { bbox: [-180, -85, 180, 85], zoom: 0.5 },
-    });
+    [
+      "wraps longitudes past the antimeridian into [-180, 180]",
+      { west: 170, south: -20, east: 190, north: -10, zoom: 4 },
+      { bbox: [170, -20, -170, -10], zoom: 4 },
+    ],
+    [
+      "wraps a box panned a whole world away",
+      { west: -400, south: 0, east: -380, north: 10, zoom: 4 },
+      { bbox: [-40, 0, -20, 10], zoom: 4 },
+    ],
+    [
+      "keeps a box ending on the antimeridian at 180",
+      { west: 160, south: 0, east: 180, north: 10, zoom: 4 },
+      { bbox: [160, 0, 180, 10], zoom: 4 },
+    ],
+    [
+      "sends the whole world when the view spans 360° or more",
+      { west: -337.5, south: -85, east: 337.5, north: 85, zoom: 0.5 },
+      { bbox: [-180, -85, 180, 85], zoom: 0.5 },
+    ],
+  ])("%s", (_, bounds, viewport) => {
+    expect(
+      enrichMapViewContext({ page: "map" }, fakeMapRef(bounds), [])
+    ).toEqual({ page: "map", viewport });
   });
 
   it("omits the viewport when reading the map throws", () => {
