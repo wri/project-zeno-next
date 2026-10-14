@@ -312,7 +312,7 @@ function DebugToastsPanel({ enabled }: { enabled?: boolean }) {
           gap="1"
         >
           <UserPlusIcon size={10} />
-          Go to Front door components →
+          User onboarding and profile →
         </Link>
         <Link
           as={NextLink}
