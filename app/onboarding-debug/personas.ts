@@ -37,7 +37,7 @@ export const PERSONAS: Record<PersonaId, Persona> = {
       sector_code: "government",
       country_code: "BRA",
       preferred_language_code: "pt",
-      topics: ["deforestation", "fires"],
+      topics: ["combating_deforestation", "indigenous_land_rights"],
     },
   },
   "gfw-thin": {

@@ -31,10 +31,17 @@ export function TopicPills({
       {Object.entries(topics ?? {}).map(([code, label]) => {
         const isSelected = selected.includes(code);
         return (
+          // Some labels run to ~65 characters; buttons don't wrap by default,
+          // so they would spill out of the narrow in-chat profile card.
           <Button
             key={code}
             size="xs"
-            h={6}
+            h="auto"
+            minH={6}
+            maxW="full"
+            py={0.5}
+            whiteSpace="normal"
+            textAlign="start"
             rounded="full"
             colorPalette={isSelected ? "primary" : undefined}
             variant={isSelected ? "solid" : "outline"}
