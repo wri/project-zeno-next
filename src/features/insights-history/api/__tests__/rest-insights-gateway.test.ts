@@ -44,7 +44,7 @@ describe("RestInsightsGateway.list", () => {
     // The real payload has no insight-level title/source.
     expect(records[0].source).toBeUndefined();
     expect(records[0].charts[0]).toMatchObject({
-      id: "ch-1",
+      id: "ins-1-chart-0",
       type: "bar",
       title: "Annual tree cover loss",
       xAxis: "year",
@@ -102,12 +102,23 @@ describe("RestInsightsGateway.list", () => {
     warn.mockRestore();
   });
 
-  it("synthesises a chart id when the payload omits one", async () => {
+  it("ids charts by insight and position, not by the API's chart uuid", async () => {
+    // Matches the ids generate_insights streams and the direct analysis
+    // builds, so a stored insight and its live copy are the same card.
     const fetch = mockFetch([
-      { id: "ins-2", charts: [{ chart_type: "line" }] },
+      {
+        id: "ins-2",
+        charts: [
+          { id: "cb5498e0-5842-4344-8080-e68ccfa331ab", chart_type: "line" },
+          { chart_type: "bar" },
+        ],
+      },
     ]);
     const records = await new RestInsightsGateway(fetch).list();
-    expect(records[0].charts[0].id).toBe("ins-2-chart-0");
+    expect(records[0].charts.map((c) => c.id)).toEqual([
+      "ins-2-chart-0",
+      "ins-2-chart-1",
+    ]);
   });
 
   it("classifies an insight with empty provenance as verified (curated)", async () => {

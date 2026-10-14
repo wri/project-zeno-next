@@ -121,74 +121,82 @@ export function useAnalysis(
       // Drive the shared insight-workspace skeleton (the direct flow doesn't go
       // through chatStore, which owns this flag for the generative flow).
       useChatStore.getState().setGeneratingInsight(true);
+      // File the result under the open conversation, if there is one. Before
+      // the first chat message there is no thread, and it stays the user's.
+      const threadId = useChatStore.getState().currentThreadId;
 
-      service.run(selection, controller.signal).then(
-        (analysisResult) => {
-          setResult(analysisResult);
-          setStatus("done");
-          // Carry the dataset and date range through as well as the area, so
-          // the workspace renders the full AREA / DATA / YEARS chip row rather
-          // than an area-only one.
-          const rawWidgets = chartsToWidgets(
-            analysisResult.charts,
-            analysisResult.id,
-            analysisResult.params
-              ? {
-                  areas: [analysisResult.params.name],
-                  dataset: selection.dataset.name,
-                  startYear: isoYear(selection.startDate),
-                  endYear: isoYear(selection.endDate),
-                }
-              : undefined
-          );
-          // A curated chart takes the title the design names it. Everything
-          // else gets "{dataset} in {location}", when the dataset's name is
-          // known (it always is for this flow's real callers — only test
-          // fixtures may omit it). That name is resolved per chart, not per
-          // analysis: a TCL analysis returns a loss chart AND a GHG-emissions
-          // chart, which must not share one title.
-          //
-          // Either way `backendTitle` keeps the backend's own title — the LGMS
-          // time-series charts all collapse to a single display title, so the
-          // DETAIL pill needs the original to tell them apart.
-          const datasetName = selection.dataset.name;
-          const widgets = rawWidgets.map((widget) => {
-            const curatedTitle = CURATED_CHART_TITLES[widget.type];
-            if (curatedTitle) {
+      service
+        .run(
+          threadId ? { ...selection, threadId } : selection,
+          controller.signal
+        )
+        .then(
+          (analysisResult) => {
+            setResult(analysisResult);
+            setStatus("done");
+            // Carry the dataset and date range through as well as the area, so
+            // the workspace renders the full AREA / DATA / YEARS chip row rather
+            // than an area-only one.
+            const rawWidgets = chartsToWidgets(
+              analysisResult.charts,
+              analysisResult.id,
+              analysisResult.params
+                ? {
+                    areas: [analysisResult.params.name],
+                    dataset: selection.dataset.name,
+                    startYear: isoYear(selection.startDate),
+                    endYear: isoYear(selection.endDate),
+                  }
+                : undefined
+            );
+            // A curated chart takes the title the design names it. Everything
+            // else gets "{dataset} in {location}", when the dataset's name is
+            // known (it always is for this flow's real callers — only test
+            // fixtures may omit it). That name is resolved per chart, not per
+            // analysis: a TCL analysis returns a loss chart AND a GHG-emissions
+            // chart, which must not share one title.
+            //
+            // Either way `backendTitle` keeps the backend's own title — the LGMS
+            // time-series charts all collapse to a single display title, so the
+            // DETAIL pill needs the original to tell them apart.
+            const datasetName = selection.dataset.name;
+            const widgets = rawWidgets.map((widget) => {
+              const curatedTitle = CURATED_CHART_TITLES[widget.type];
+              if (curatedTitle) {
+                return {
+                  ...widget,
+                  backendTitle: widget.title,
+                  title: curatedTitle,
+                };
+              }
+              if (!datasetName) return widget;
               return {
                 ...widget,
                 backendTitle: widget.title,
-                title: curatedTitle,
+                title: generateInsightTitle({
+                  datasetName: chartDatasetName(widget, datasetName),
+                  locationName: selection.area.name,
+                  areaLabel: selection.area.name,
+                }),
               };
+            });
+            // Add the chart and drop the skeleton flag together so the workspace
+            // swaps skeleton → chart in one render (no empty flash).
+            sink.add(widgets);
+            useChatStore.getState().setGeneratingInsight(false);
+          },
+          (cause: unknown) => {
+            useChatStore.getState().setGeneratingInsight(false);
+            // An AbortError means the user cancelled or the component unmounted —
+            // not a failure. Silently return to idle so the UI stays clean.
+            if (cause instanceof Error && cause.name === "AbortError") {
+              setStatus("idle");
+              return;
             }
-            if (!datasetName) return widget;
-            return {
-              ...widget,
-              backendTitle: widget.title,
-              title: generateInsightTitle({
-                datasetName: chartDatasetName(widget, datasetName),
-                locationName: selection.area.name,
-                areaLabel: selection.area.name,
-              }),
-            };
-          });
-          // Add the chart and drop the skeleton flag together so the workspace
-          // swaps skeleton → chart in one render (no empty flash).
-          sink.add(widgets);
-          useChatStore.getState().setGeneratingInsight(false);
-        },
-        (cause: unknown) => {
-          useChatStore.getState().setGeneratingInsight(false);
-          // An AbortError means the user cancelled or the component unmounted —
-          // not a failure. Silently return to idle so the UI stays clean.
-          if (cause instanceof Error && cause.name === "AbortError") {
-            setStatus("idle");
-            return;
+            setError(cause instanceof Error ? cause : new Error(String(cause)));
+            setStatus("error");
           }
-          setError(cause instanceof Error ? cause : new Error(String(cause)));
-          setStatus("error");
-        }
-      );
+        );
     },
     [service, sink]
   );
