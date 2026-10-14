@@ -262,6 +262,8 @@ function sbtnSingleClassLayer({
   };
 }
 
+// The colour the UMD tiles actually paint (sampled from the published v201901
+// PNGs), so the legend matches the map.
 const PRIMARY_FOREST_COLOR = "#668636";
 
 export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
@@ -271,8 +273,6 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
     context_layer: null as string | null,
     description:
       "Primary forests are among the most biodiverse forests, providing a multitude of ecosystem services, making them crucial to monitor for national land use planning and carbon accounting. This dataset defines primary forests as mature natural humid tropical forest cover that has not been completely cleared and regrown in recent history. Researchers classified Landsat images into primary forest data using a separate algorithm for each region. The dataset maps the extent of primary forests in the global pan-tropical regions in 2001 at 30-meter resolution.",
-    // The colour the UMD tiles actually paint (sampled from the published
-    // v201901 PNGs), so the legend matches the map.
     legend: {
       title: "Primary Forests (2001)",
       color: PRIMARY_FOREST_COLOR,
@@ -348,11 +348,7 @@ export const CONTEXT_LAYER_METADATA: Record<string, ContextLayerMetadata> = {
  */
 export const NET_FLUX_FEATURE_FLAG = "net-flux";
 
-/**
- * Standalone Primary Forests raster tiles — the same URL the backend hands
- * back as the `primary_forest` context layer. The PNGs are opaque black where
- * there is no forest; buildDatasetLayers routes them through pf:// to fix that.
- */
+/** Same URL the backend hands back as the `primary_forest` context layer. */
 const PRIMARY_FOREST_TILE_URL =
   "https://tiles.globalforestwatch.org/umd_regional_primary_forest_2001/v201901/uint16/{z}/{x}/{y}.png";
 
