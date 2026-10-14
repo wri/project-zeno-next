@@ -2,8 +2,14 @@ import maplibregl from "maplibre-gl";
 
 const PRIMARY_FOREST_PROTOCOL = "pf";
 
-export function wrapPrimaryForestTileUrl(url: string): string {
-  return `${PRIMARY_FOREST_PROTOCOL}://${url}`;
+// Routes primary forest tile URLs through pf:// (see the protocol below);
+// any other URL is returned unchanged. Idempotent, since pf://pf:// never
+// resolves.
+export function patchPrimaryForestTileUrl(url: string): string {
+  const prefix = `${PRIMARY_FOREST_PROTOCOL}://`;
+  if (!url.includes("umd_regional_primary_forest") || url.startsWith(prefix))
+    return url;
+  return `${prefix}${url}`;
 }
 
 let registered = false;

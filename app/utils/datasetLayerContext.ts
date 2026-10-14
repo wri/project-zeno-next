@@ -4,7 +4,7 @@ import {
   CONTEXT_LAYER_METADATA,
 } from "@/app/constants/datasets";
 import type { Layer } from "@/app/store/layerManagerSlice";
-import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
+import { patchPrimaryForestTileUrl } from "./primaryForestTileProtocol";
 
 // One of a dataset's primary, mutually exclusive data layers (see
 // DatasetLayer in app/types/chat.ts).
@@ -152,7 +152,9 @@ export function buildDatasetLayers(spec: DatasetLayerSpec): Layer[] {
       name: selected.name,
       type: "raster",
       visible: true,
-      tileUrl: selected.tileUrl,
+      // Standalone Primary Forests card: same black-background PNGs as the
+      // context sub-layer, so it needs the same pf:// patch.
+      tileUrl: patchPrimaryForestTileUrl(selected.tileUrl),
       datasetId: spec.datasetId,
       parameters: spec.parameters,
       startDate: selected.startDate ?? spec.startDate,
@@ -212,13 +214,6 @@ export function legendParameters(
   return !ignoresCanopy && typeof defaultCanopyCover === "number"
     ? { canopy_cover: defaultCanopyCover }
     : undefined;
-}
-
-// Route primary forest tiles through the `pf://` protocol so the
-// black-background PNGs render with alpha — see primaryForestTileProtocol.
-function patchPrimaryForestTileUrl(url: string): string {
-  if (!url.includes("umd_regional_primary_forest")) return url;
-  return wrapPrimaryForestTileUrl(url);
 }
 
 /**

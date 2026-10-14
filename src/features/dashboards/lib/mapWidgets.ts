@@ -4,7 +4,7 @@ import {
   legendParameters,
   resolveContextTileUrl,
 } from "@/app/utils/datasetLayerContext";
-import { wrapPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
+import { patchPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
 
 /**
  * A renderable map-widget layer parsed from a `widget_type: "map"` config
@@ -41,14 +41,6 @@ function configParameters(parameters: unknown): DatasetParameter[] {
       typeof (p as { name?: unknown }).name === "string" &&
       Array.isArray((p as { values?: unknown }).values)
   );
-}
-
-// Primary forest tiles ship black-background PNGs; the pf:// protocol
-// rewrites black to alpha (same patch the explorer applies).
-function patchPrimaryForest(url: string): string {
-  return url.includes("umd_regional_primary_forest")
-    ? wrapPrimaryForestTileUrl(url)
-    : url;
 }
 
 /**
@@ -101,7 +93,7 @@ export function mapWidgetLayer(
     return {
       kind: "dataset",
       title: titleOverride ?? str(d.dataset_name) ?? "Map layer",
-      tileUrl: patchPrimaryForest(tileUrl),
+      tileUrl: patchPrimaryForestTileUrl(tileUrl),
       ...(contextTileUrl ? { contextTileUrl, contextLayerName } : {}),
       ...(typeof d.dataset_id === "number" ? { datasetId: d.dataset_id } : {}),
       ...(parameters ? { parameters } : {}),
