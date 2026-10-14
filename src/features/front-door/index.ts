@@ -17,7 +17,6 @@ export {
 } from "./ui/ProfileReminder";
 export { ProfilePromptMessage } from "./ui/ProfilePromptMessage";
 export { WelcomeConsent } from "./ui/WelcomeConsent";
-export { TermsConsentLabel } from "./ui/TermsConsentLabel";
 export { ProfilePromptCard } from "./ui/ProfilePromptCard";
 export { ProfileNudgeBanner } from "./ui/ProfileNudgeBanner";
 export { CompleteProfileMenuItem } from "./ui/CompleteProfileMenuItem";

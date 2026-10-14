@@ -1,6 +1,5 @@
 /** The sections of /onboarding-debug, in page order, for the jump links. */
 export const DEBUG_SECTIONS = {
-  form: { id: "onboarding-form", label: "Onboarding form" },
   terms: { id: "accept-terms", label: "Accept the terms" },
   profileCard: { id: "profile-card", label: "Profile card" },
   banner: { id: "nudge-banner", label: "Soft nudge banner" },

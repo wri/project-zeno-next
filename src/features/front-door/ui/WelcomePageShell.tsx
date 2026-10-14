@@ -15,15 +15,11 @@ function Loading() {
 }
 
 /**
- * The sign-up pages' shell (/onboarding, /welcome): a spinner until
+ * /welcome's shell: a spinner until
  * useAuthGuard allows the page, then the content inside Suspense, which
  * useSearchParams needs for the static build.
  */
-export function OnboardingPageShell({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function WelcomePageShell({ children }: { children: React.ReactNode }) {
   const isReady = useAuthGuard();
 
   if (!isReady) return <Loading />;

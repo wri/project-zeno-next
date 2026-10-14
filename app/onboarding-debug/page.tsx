@@ -5,9 +5,7 @@ import {
   Link as ChakraLink,
   Text,
 } from "@chakra-ui/react";
-import OnboardingForm from "@/app/onboarding/form";
 import FrontDoorSections from "./FrontDoorSections";
-import { MOCK_PROFILE_CONFIG } from "./mock-profile-config";
 import { DEBUG_NAV_OFFSET, DEBUG_SECTIONS } from "./sections";
 
 /** Sticky bar of in-page links to each section of this long page. */
@@ -39,15 +37,12 @@ function JumpLinks() {
   );
 }
 
-// Debug-only: the real /onboarding form and every front-door component on
-// one page, with mock data and no API/auth — for visual review offline.
+// Debug-only: every front-door component on one page, with mock data and no
+// API/auth — for visual review offline.
 export default function OnboardingDebugPage() {
   return (
     <Box minH="100vh" bg="bg.subtle">
       <JumpLinks />
-      <Box id={DEBUG_SECTIONS.form.id} scrollMarginTop={DEBUG_NAV_OFFSET}>
-        <OnboardingForm previewConfig={MOCK_PROFILE_CONFIG} />
-      </Box>
       <Container maxW="6xl" py={10}>
         <FrontDoorSections />
       </Container>

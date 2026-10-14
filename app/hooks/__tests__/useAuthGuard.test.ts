@@ -13,7 +13,6 @@ function decide(input: Partial<AuthGuardInput>) {
   return authGuardDecision({
     pathname: "/app",
     search: SEARCH,
-    hasProfile: false,
     termsAccepted: false,
     ...input,
   });
@@ -34,12 +33,6 @@ describe("authGuardDecision", () => {
     expect(decide({ pathname: "/app", termsAccepted: true })).toEqual(null);
   });
 
-  it("opens /app for a legacy profile (the server reports it as accepted)", () => {
-    expect(
-      decide({ pathname: "/app", hasProfile: true, termsAccepted: true })
-    ).toBeNull();
-  });
-
   it("shows /welcome until the terms are accepted", () => {
     expect(decide({ pathname: "/welcome" })).toEqual(null);
   });
@@ -58,14 +51,6 @@ describe("authGuardDecision", () => {
     expect(decide({ pathname: "/welcomes", termsAccepted: true })).toEqual(
       null
     );
-  });
-
-  it("keeps the /onboarding rule", () => {
-    expect(decide({ pathname: "/onboarding", hasProfile: true })).toEqual({
-      href: "/app",
-      mode: "hard",
-    });
-    expect(decide({ pathname: "/onboarding" })).toBeNull();
   });
 
   it("leaves every other route open, as today (only /app* is gated)", () => {

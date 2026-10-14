@@ -29,9 +29,9 @@ import type { ProfileConfig } from "@/app/schemas/api/profile/config";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
 import useAuthStore from "@/app/store/authStore";
 import SettingsShell from "@/app/components/SettingsShell";
-import { isOnboardingFieldRequired } from "@/app/config/onboarding";
+import { isProfileFieldRequired } from "@/app/config/profile-fields";
 import { getSettingsFormSchema } from "@/app/dashboard/schema";
-import RequirementHint from "@/app/onboarding/RequirementHint";
+import RequirementHint from "@/app/components/RequirementHint";
 import { TopicPills, toggleTopic } from "@/app/components/TopicPills";
 import { ACCOUNT_DELETION_URL } from "@/app/dashboard/account-deletion";
 
@@ -61,7 +61,7 @@ type ValueChangeDetails = { value: string[] };
 
 export default function UserProfilePage() {
   const isReady = useAuthGuard();
-  const fieldRequired = isOnboardingFieldRequired;
+  const fieldRequired = isProfileFieldRequired;
   const schema = useMemo(() => getSettingsFormSchema(), []);
   const [config, setConfig] = useState<ProfileConfig | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
@@ -187,7 +187,7 @@ export default function UserProfilePage() {
     if (!isValid || isSaving) return;
     setIsSaving(true);
     try {
-      // Same required-field contract as onboarding, minus the terms checkbox
+      // Validated against REQUIRED_PROFILE_FIELDS
       const validated = schema.parse(form);
       const payload = PatchProfileRequestSchema.parse({
         first_name: validated.firstName,

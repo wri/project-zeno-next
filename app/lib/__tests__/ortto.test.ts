@@ -37,7 +37,7 @@ describe("submitOrttoProfile", () => {
     expect(url).toBe(ORTTO_GNW_FORM_URL);
     expect(init.method).toBe("POST");
     expect(init.headers).toEqual({ "Content-Type": "application/json" });
-    // The exact string the inline fetch in app/onboarding/form.tsx sent.
+    // The exact string the old onboarding form's inline fetch sent.
     expect(init.body).toBe(
       '{"email":"maria@example.org","firstName":"Maria","lastName":"Silva",' +
         '"sector":"government","jobTitle":"","companyOrganization":"State environment agency",' +

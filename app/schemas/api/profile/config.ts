@@ -4,7 +4,7 @@ const Labels = z.record(z.string(), z.string());
 
 /**
  * GET /api/profile/config (public): the profile form's option lists, each a
- * map of code → label. Used by the onboarding form, the settings page and
+ * map of code → label. Used by the User Profile page and
  * the front door's profile card.
  */
 export const ProfileConfigSchema = z.object({

@@ -31,10 +31,8 @@ export function TermsAnchor({
 }
 
 /**
- * The consent sentence and its four links, for a Checkbox.Label on
- * /onboarding and /welcome, so both ask people to agree to exactly the same
- * documents. The text is split into the same pieces the onboarding form had
- * inline, so the form renders exactly as before.
+ * The consent sentence and its four links, for /welcome's Checkbox.Label:
+ * word for word what the old onboarding form asked people to agree to.
  */
 export function TermsConsentLabel() {
   return (
