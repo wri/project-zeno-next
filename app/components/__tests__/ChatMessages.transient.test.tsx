@@ -91,7 +91,7 @@ describe("ChatMessages and transient messages", () => {
     queryClient.setQueryData(profilePrefillQuery("").queryKey, {
       found: false,
     });
-    useChatStore.getState().upsertProfilePrompt();
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
     const { container } = renderMessages();
     await waitFor(() => expect(footerCount(container)).toBe(2));
     // And the card is really there, under the answer.

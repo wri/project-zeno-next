@@ -47,6 +47,7 @@ export interface ChatMessage {
     | "view-analysis-nudge"
     | "create-dashboard-nudge"
     | "profile-prompt"
+    | "profile-nudge"
     | "stopped";
   message: string;
   timestamp: string;

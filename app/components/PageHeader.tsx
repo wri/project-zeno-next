@@ -294,7 +294,7 @@ function PageHeader() {
                 w="12px"
                 h="12px"
                 borderRadius="full"
-                bg="#2495E0"
+                bg="notification"
                 border="2px solid white"
               />
             </IconButton>
@@ -337,13 +337,16 @@ function PageHeader() {
                   minW="220px"
                   css={{ "& a": { cursor: "pointer" } }}
                 >
-                  <ProfileReminderMenuItem />
-                  <Menu.Item value="dashboard" asChild>
-                    <Link href="/dashboard">
-                      <GearSixIcon />
-                      User Profile
-                    </Link>
-                  </Menu.Item>
+                  <ProfileReminderMenuItem
+                    fallback={
+                      <Menu.Item value="dashboard" asChild>
+                        <Link href="/dashboard">
+                          <GearSixIcon />
+                          User Profile
+                        </Link>
+                      </Menu.Item>
+                    }
+                  />
                   <Menu.Separator />
                   <Menu.Item
                     value="logout"

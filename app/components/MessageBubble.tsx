@@ -37,7 +37,10 @@ import ChatNudge from "./ChatNudge";
 import AnalyseNudge from "./AnalyseNudge";
 import { ViewAnalysisNudge } from "@/src/features/analysis";
 import { CreateDashboardNudge } from "@/src/features/dashboards";
-import { ProfilePromptMessage } from "@/src/features/front-door";
+import {
+  ProfileNudgeMessage,
+  ProfilePromptMessage,
+} from "@/src/features/front-door";
 import BlogCitation from "./BlogCitation";
 import BlogCitationsList from "./BlogCitationsList";
 import {
@@ -315,11 +318,20 @@ function MessageBubble({
     );
   }
 
-  // Front door: the in-chat profile card (client-only, never replayed).
+  // Front door: the in-chat profile card and the later banner leading to it
+  // (client-only, never replayed).
   if (message.type === "profile-prompt") {
     return (
       <Box my={2}>
         <ProfilePromptMessage messageId={message.id} />
+      </Box>
+    );
+  }
+
+  if (message.type === "profile-nudge") {
+    return (
+      <Box my={2}>
+        <ProfileNudgeMessage messageId={message.id} />
       </Box>
     );
   }

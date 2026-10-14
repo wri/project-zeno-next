@@ -95,7 +95,7 @@ interface ChatActions {
     message: Omit<ChatMessage, "id" | "timestamp"> & { timestamp?: string }
   ) => void;
   removeMessage: (messageId: string) => void;
-  upsertProfilePrompt: () => void;
+  upsertProfileAsk: (type: ProfileAskType) => void;
   upsertAnalyseNudge: (suggestion: AnalyseSuggestion) => void;
   acceptAnalyseNudge: (messageId: string) => void;
   upsertViewAnalysisNudge: (suggestion: ViewAnalysisSuggestion) => void;
@@ -236,6 +236,30 @@ function dashboardCardExistsThisTurn(dashboardId: string): boolean {
 
 function withoutTransient(messages: ChatMessage[]): ChatMessage[] {
   return messages.filter((m) => !m.transient);
+}
+
+const PROFILE_ASK_TYPES = ["profile-prompt", "profile-nudge"] as const;
+type ProfileAskType = (typeof PROFILE_ASK_TYPES)[number];
+
+function isProfileAsk(message: ChatMessage): boolean {
+  return (PROFILE_ASK_TYPES as readonly string[]).includes(message.type);
+}
+
+/** The messages with `type` as the one profile ask, at the end. */
+function withProfileAsk(
+  messages: ChatMessage[],
+  type: ProfileAskType
+): ChatMessage[] {
+  return [
+    ...messages.filter((m) => !isProfileAsk(m)),
+    {
+      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
+      type,
+      message: "",
+      transient: true,
+      timestamp: new Date().toISOString(),
+    },
+  ];
 }
 
 // Whether the messages a turn added amount to an answer. A turn that ends by
@@ -577,23 +601,14 @@ const useChatStore = create<ChatState & ChatActions>((set, get) => ({
     }));
   },
 
-  // Front door: the in-chat profile card. Transient and at most one at a
-  // time, so a new ask replaces any card still showing. It carries no data;
-  // the card reads its options and GFW prefill from the query cache.
-  upsertProfilePrompt: () => {
-    const newMessage: ChatMessage = {
-      id: Date.now().toString() + "-" + Math.random().toString(36).slice(2, 11),
-      type: "profile-prompt",
-      message: "",
-      transient: true,
-      timestamp: new Date().toISOString(),
-    };
-    set((state) => ({
-      messages: [
-        ...state.messages.filter((m) => m.type !== "profile-prompt"),
-        newMessage,
-      ],
-    }));
+  // Front door: the in-chat profile card ("profile-prompt"), or the lighter
+  // banner that leads to it in later conversations ("profile-nudge").
+  // Transient, and one profile ask at a time: a new ask replaces whichever is
+  // still showing, so the banner's "Add details" swaps it for the card.
+  // Neither carries data; the card reads its options and GFW prefill from the
+  // query cache.
+  upsertProfileAsk: (type) => {
+    set((state) => ({ messages: withProfileAsk(state.messages, type) }));
   },
 
   // The analyse nudge is client-side only (never replayed from thread

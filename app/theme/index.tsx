@@ -250,6 +250,11 @@ export const config = defineConfig({
             value: { _light: "#0049aa", _dark: "#0049aa" },
           },
         },
+        // The colour of the unread / needs-attention dots (What's new, an
+        // incomplete profile), so they read as the same signal.
+        notification: {
+          value: { _light: "#2495E0", _dark: "#2495E0" },
+        },
         border: {
           DEFAULT: {
             value: {
