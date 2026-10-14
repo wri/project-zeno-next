@@ -610,7 +610,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     resolution: "30 m",
     geographic_coverage: "pan-tropical",
     provider: "UMD/GLAD",
-    categories: ["forests", "land-use"],
+    categories: ["forests"],
     viewOnly: true,
     description: CONTEXT_LAYER_METADATA.primary_forest.description,
     tile_url: PRIMARY_FOREST_TILE_URL,
