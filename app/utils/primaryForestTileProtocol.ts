@@ -2,11 +2,14 @@ import maplibregl from "maplibre-gl";
 
 const PRIMARY_FOREST_PROTOCOL = "pf";
 
-// Idempotent: a layer's tileUrl can pass through more than one patch (e.g. a
-// map widget built from an explorer layer), and pf://pf:// never resolves.
-export function wrapPrimaryForestTileUrl(url: string): string {
+// Routes primary forest tile URLs through pf:// (see the protocol below);
+// any other URL is returned unchanged. Idempotent, since pf://pf:// never
+// resolves.
+export function patchPrimaryForestTileUrl(url: string): string {
   const prefix = `${PRIMARY_FOREST_PROTOCOL}://`;
-  return url.startsWith(prefix) ? url : `${prefix}${url}`;
+  if (!url.includes("umd_regional_primary_forest") || url.startsWith(prefix))
+    return url;
+  return `${prefix}${url}`;
 }
 
 let registered = false;

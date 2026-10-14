@@ -593,10 +593,7 @@ export const DATASET_CARDS: (DatasetCardConfig & { img?: string })[] = [
     legend: IFL_LEGEND,
   },
   {
-    // Contextual-only layer, like IFL above: no analytics endpoint, so it is
-    // `viewOnly`. Name, legend and description come from the context-layer
-    // metadata so the standalone layer matches the sub-layer under Tree Cover
-    // Loss.
+    // View-only context layer, same pattern as IFL above.
     dataset_id: CONTEXT_LAYER_METADATA.primary_forest.dataset_id,
     dataset_name: CONTEXT_LAYER_METADATA.primary_forest.dataset_name,
     shortName: "Primary forests",

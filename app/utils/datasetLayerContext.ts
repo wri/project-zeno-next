@@ -4,7 +4,7 @@ import {
   CONTEXT_LAYER_METADATA,
 } from "@/app/constants/datasets";
 import type { Layer } from "@/app/store/layerManagerSlice";
-import { wrapPrimaryForestTileUrl } from "./primaryForestTileProtocol";
+import { patchPrimaryForestTileUrl } from "./primaryForestTileProtocol";
 
 // One of a dataset's primary, mutually exclusive data layers (see
 // DatasetLayer in app/types/chat.ts).
@@ -214,13 +214,6 @@ export function legendParameters(
   return !ignoresCanopy && typeof defaultCanopyCover === "number"
     ? { canopy_cover: defaultCanopyCover }
     : undefined;
-}
-
-// Route primary forest tiles through the `pf://` protocol so the
-// black-background PNGs render with alpha — see primaryForestTileProtocol.
-function patchPrimaryForestTileUrl(url: string): string {
-  if (!url.includes("umd_regional_primary_forest")) return url;
-  return wrapPrimaryForestTileUrl(url);
 }
 
 /**
