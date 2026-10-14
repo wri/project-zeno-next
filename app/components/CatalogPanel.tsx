@@ -323,8 +323,7 @@ function CatalogCardRow({ card }: { card: DatasetCardConfig }) {
             </Flex>
           )
         }
-        typeLabel={card.viewOnly ? "VIEW ONLY" : "DATA"}
-        typeLabelColor={card.viewOnly ? "#656E7B" : "#1AA915"}
+        viewOnly={card.viewOnly}
         title={card.dataset_name}
         description={cardText}
         selected={isActive}
@@ -475,24 +474,7 @@ function SupportingLayerRow({
               </Flex>
             )
           }
-          typeLabel="DATA"
-          typeLabelColor="#1AA915"
-          badge={
-            <Box
-              bg={isSelected ? "#C2CCF2" : "#F4F5F6"}
-              borderRadius="4px"
-              px="5px"
-              py="2px"
-            >
-              <Text
-                fontFamily="mono"
-                fontSize="9px"
-                color={isSelected ? "#172B7A" : "#3A4048"}
-              >
-                VIEW ONLY
-              </Text>
-            </Box>
-          }
+          viewOnly
           title={title}
           description={layerText}
           selected={isSelected}
