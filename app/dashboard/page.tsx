@@ -15,24 +15,31 @@ import {
   createListCollection,
   Container,
 } from "@chakra-ui/react";
-import { FloppyDiskIcon, GearIcon } from "@phosphor-icons/react";
+import {
+  ArrowSquareOutIcon,
+  FloppyDiskIcon,
+  UserCircleIcon,
+} from "@phosphor-icons/react";
 import { PatchProfileRequestSchema } from "@/app/schemas/api/auth/profile/patch";
 import { toaster } from "@/app/components/ui/toaster";
 import { apiFetch } from "@/app/lib/api-client";
+import { orttoTopicLabels, submitOrttoProfile } from "@/app/lib/ortto";
+import { parseAuthMe } from "@/app/lib/auth-me";
+import type { ProfileConfig } from "@/app/schemas/api/profile/config";
 import { useAuthGuard } from "@/app/hooks/useAuthGuard";
+import useAuthStore from "@/app/store/authStore";
 import SettingsShell from "@/app/components/SettingsShell";
 import { isOnboardingFieldRequired } from "@/app/config/onboarding";
 import { getSettingsFormSchema } from "@/app/dashboard/schema";
 import RequirementHint from "@/app/onboarding/RequirementHint";
+import { TopicPills, toggleTopic } from "@/app/components/TopicPills";
+import { ACCOUNT_DELETION_URL } from "@/app/dashboard/account-deletion";
 
-type ProfileConfig = {
-  sectors: Record<string, string>;
-  sector_roles: Record<string, Record<string, string>>;
-  countries: Record<string, string>;
-  languages: Record<string, string>;
-  gis_expertise_levels: Record<string, string>;
-  topics?: Record<string, string>;
-};
+/**
+ * Every sector's "Other:" role. Choosing it relabels Job title as "Your role",
+ * so the free text lands in job_title (the profile has no field of its own).
+ */
+const OTHER_ROLE = "other";
 
 type ProfileFormState = {
   firstName: string;
@@ -52,7 +59,7 @@ type ProfileFormState = {
 
 type ValueChangeDetails = { value: string[] };
 
-export default function UserSettingsPage() {
+export default function UserProfilePage() {
   const isReady = useAuthGuard();
   const fieldRequired = isOnboardingFieldRequired;
   const schema = useMemo(() => getSettingsFormSchema(), []);
@@ -208,38 +215,23 @@ export default function UserSettingsPage() {
       if (!res.ok) {
         throw new Error("Failed to save profile");
       }
+      // This page is where "Complete your profile" leads, so the reminder
+      // (menu item, in-chat asks) must stop without a reload.
+      const { status } = parseAuthMe(await res.json());
+      if (status) useAuthStore.getState().setAuthStatus(status);
 
       // Submit to Ortto directly from client (no secrets needed)
-      const topicLabels = form.topics.map(
-        (code) => config?.topics?.[code] || code
-      );
-      try {
-        const orttoRes = await fetch(
-          "https://ortto.wri.org/custom-forms/gnw/",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: form.email,
-              firstName: form.firstName,
-              lastName: form.lastName,
-              sector: form.sector,
-              jobTitle: form.jobTitle,
-              companyOrganization: form.company,
-              countryCode: form.country,
-              Topics: topicLabels,
-              receiveNewsEmails: form.receiveNewsEmails,
-            }),
-          }
-        );
-        console.log(
-          "[Client] Ortto submission status:",
-          orttoRes.status,
-          orttoRes.ok ? "OK" : "FAILED"
-        );
-      } catch (e) {
-        console.error("[Client] Ortto submission error:", e);
-      }
+      await submitOrttoProfile({
+        email: form.email,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        sector: form.sector,
+        jobTitle: form.jobTitle,
+        companyOrganization: form.company,
+        countryCode: form.country,
+        Topics: orttoTopicLabels(form.topics, config?.topics),
+        receiveNewsEmails: form.receiveNewsEmails,
+      });
 
       toaster.create({
         title: "Profile saved",
@@ -273,9 +265,9 @@ export default function UserSettingsPage() {
           flexWrap="wrap"
         >
           <Flex alignItems="center" gap={2} color="fg.muted">
-            <GearIcon size={24} />
+            <UserCircleIcon size={24} />
             <Heading as="h1" size="2xl" fontWeight="normal">
-              User Settings
+              User Profile
             </Heading>
           </Flex>
           <Button
@@ -452,16 +444,21 @@ export default function UserSettingsPage() {
             </Field.Root>
           </GridItem>
 
-          {/* Job Title */}
+          {/* Job Title: asked as "Your role" when the role is Other */}
           <GridItem>
             <Field.Root id="job-title" required={fieldRequired("jobTitle")}>
               <Field.Label>
-                Job title
+                {form.role === OTHER_ROLE ? "Your role" : "Job title"}
                 <RequirementHint field="jobTitle" />
               </Field.Label>
               <Input
                 type="text"
                 width="320px"
+                placeholder={
+                  form.role === OTHER_ROLE
+                    ? "e.g. Community forest monitor"
+                    : undefined
+                }
                 value={form.jobTitle}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, jobTitle: e.target.value }))
@@ -627,31 +624,17 @@ export default function UserSettingsPage() {
                 What topic(s) are you most interested in?
                 <RequirementHint field="topics" />
               </Field.Label>
-              <Flex gap={2} flexWrap="wrap" pt={2}>
-                {Object.entries(config?.topics || {}).map(([code, label]) => {
-                  const selected = form.topics.includes(code);
-                  return (
-                    <Button
-                      key={code}
-                      size="xs"
-                      h={6}
-                      borderRadius="full"
-                      colorPalette={selected ? "primary" : undefined}
-                      variant={selected ? undefined : "outline"}
-                      onClick={() =>
-                        setForm((p) => ({
-                          ...p,
-                          topics: selected
-                            ? p.topics.filter((i) => i !== code)
-                            : [...p.topics, code],
-                        }))
-                      }
-                    >
-                      {label}
-                    </Button>
-                  );
-                })}
-              </Flex>
+              <TopicPills
+                pt={2}
+                topics={config?.topics}
+                selected={form.topics}
+                onToggle={(code) =>
+                  setForm((p) => ({
+                    ...p,
+                    topics: toggleTopic(p.topics, code),
+                  }))
+                }
+              />
             </Field.Root>
           </GridItem>
           {/* Opt-in Checkboxes */}
@@ -690,6 +673,31 @@ export default function UserSettingsPage() {
             </Flex>
           </GridItem>
         </Grid>
+
+        <Separator borderColor="border" my={8} />
+
+        {/* Account deletion: a help-centre request, handled by the team */}
+        <Flex direction="column" gap={3} alignItems="flex-start">
+          <Heading as="h2" size="md">
+            Delete your account
+          </Heading>
+          <Text color="fg.muted" fontSize="sm" maxW="60ch">
+            Ask us to remove your Horizon account and all of its data: profile,
+            conversations and dashboards. This opens a request form on the
+            Global Nature Watch help centre. We&apos;ll reply to confirm once
+            it&apos;s done.
+          </Text>
+          <Button asChild size="sm" variant="outline" colorPalette="red">
+            <a
+              href={ACCOUNT_DELETION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ArrowSquareOutIcon />
+              Request account deletion
+            </a>
+          </Button>
+        </Flex>
       </Container>
     </SettingsShell>
   );

@@ -1,55 +1,56 @@
-import OnboardingForm, { type ProfileConfig } from "@/app/onboarding/form";
+import {
+  Box,
+  Container,
+  Flex,
+  Link as ChakraLink,
+  Text,
+} from "@chakra-ui/react";
+import OnboardingForm from "@/app/onboarding/form";
+import FrontDoorSections from "./FrontDoorSections";
+import { MOCK_PROFILE_CONFIG } from "./mock-profile-config";
+import { DEBUG_NAV_OFFSET, DEBUG_SECTIONS } from "./sections";
 
-// Representative mock so every control renders populated without the API.
-// Kept here (not fetched) so this page stays fully offline.
-const MOCK_PROFILE_CONFIG: ProfileConfig = {
-  sectors: {
-    government: "Government",
-    ngo: "NGO / Non-profit",
-    academia: "Academia / Research",
-    private: "Private sector",
-    media: "Media",
-  },
-  sector_roles: {
-    government: { analyst: "Analyst", policy_maker: "Policy maker" },
-    ngo: { program_manager: "Program manager", field_officer: "Field officer" },
-    academia: { researcher: "Researcher", student: "Student" },
-    private: { consultant: "Consultant", executive: "Executive" },
-    media: { journalist: "Journalist", editor: "Editor" },
-  },
-  countries: {
-    BRA: "Brazil",
-    COD: "Democratic Republic of the Congo",
-    IDN: "Indonesia",
-    KEN: "Kenya",
-    GBR: "United Kingdom",
-    USA: "United States",
-  },
-  languages: {
-    en: "English",
-    fr: "Français",
-    es: "Español",
-    pt: "Português",
-    id: "Bahasa Indonesia",
-  },
-  gis_expertise_levels: {
-    none: "No experience",
-    basic: "Basic",
-    intermediate: "Intermediate",
-    advanced: "Advanced",
-  },
-  topics: {
-    deforestation: "Deforestation",
-    fires: "Fires",
-    biodiversity: "Biodiversity",
-    carbon: "Carbon emissions",
-    water: "Water",
-    restoration: "Restoration",
-  },
-};
+/** Sticky bar of in-page links to each section of this long page. */
+function JumpLinks() {
+  return (
+    <Box
+      as="nav"
+      aria-label="Page sections"
+      position="sticky"
+      top={0}
+      zIndex="sticky"
+      bg="bg"
+      borderBottomWidth="1px"
+      borderColor="border"
+    >
+      <Container maxW="6xl" py={3}>
+        <Flex gap={4} wrap="wrap" align="center" fontSize="sm">
+          <Text fontWeight="semibold" color="fg.muted">
+            Jump to
+          </Text>
+          {Object.values(DEBUG_SECTIONS).map(({ id, label }) => (
+            <ChakraLink key={id} href={`#${id}`} color="primary.fg">
+              {label}
+            </ChakraLink>
+          ))}
+        </Flex>
+      </Container>
+    </Box>
+  );
+}
 
-// Debug-only mirror of /onboarding that renders the real form with mock data
-// and no API/auth — for visual review of the page, content, and form offline.
+// Debug-only: the real /onboarding form and every front-door component on
+// one page, with mock data and no API/auth — for visual review offline.
 export default function OnboardingDebugPage() {
-  return <OnboardingForm previewConfig={MOCK_PROFILE_CONFIG} />;
+  return (
+    <Box minH="100vh" bg="bg.subtle">
+      <JumpLinks />
+      <Box id={DEBUG_SECTIONS.form.id} scrollMarginTop={DEBUG_NAV_OFFSET}>
+        <OnboardingForm previewConfig={MOCK_PROFILE_CONFIG} />
+      </Box>
+      <Container maxW="6xl" py={10}>
+        <FrontDoorSections />
+      </Container>
+    </Box>
+  );
 }
