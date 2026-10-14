@@ -24,6 +24,7 @@ import useViewContextStore from "../viewContextStore";
 import useAuthStore from "../authStore";
 import useAgentProfileStore from "../agentProfileStore";
 import useMapStore from "../mapStore";
+import useInsightStore from "../insightStore";
 import { apiFetch } from "@/app/lib/api-client";
 import { agentTextLine, humanLine, ndjsonResponse } from "./stream-fixtures";
 import { deriveContext } from "@/app/utils/messageContext";
@@ -136,6 +137,7 @@ describe("chatStore cancellation", () => {
 
 describe("chatStore view_context", () => {
   beforeEach(() => {
+    // reset() also clears insightStore.
     useChatStore.getState().reset();
     useViewContextStore.setState({ viewContext: null });
     vi.mocked(apiFetch).mockReset();
@@ -150,6 +152,9 @@ describe("chatStore view_context", () => {
 
   afterEach(() => {
     useViewContextStore.setState({ viewContext: null });
+    // Runs even when an assertion fails, so a fake map never leaks into later
+    // describes (mapStore.reset() would call flyTo on it).
+    useMapStore.setState({ mapRef: null });
     vi.clearAllMocks();
   });
 
@@ -178,6 +183,42 @@ describe("chatStore view_context", () => {
     await useChatStore.getState().sendMessage("hello");
 
     expect(sentBody()).not.toHaveProperty("view_context");
+  });
+
+  it("enriches the map surface with live viewport + visible insights", async () => {
+    useViewContextStore.getState().setViewContext({ page: "map" });
+    useInsightStore.getState().addInsights([
+      {
+        type: "bar",
+        title: "t",
+        description: "d",
+        data: [],
+        xAxis: "x",
+        yAxis: "y",
+        insightId: "i1",
+      },
+    ]);
+    useMapStore.setState({
+      mapRef: {
+        getMap: () => ({
+          getBounds: () => ({
+            getWest: () => -73.9876,
+            getSouth: () => 40.7661,
+            getEast: () => -73.9397,
+            getNorth: () => 40.8002,
+          }),
+          getZoom: () => 5,
+        }),
+      } as unknown as ReturnType<typeof useMapStore.getState>["mapRef"],
+    });
+
+    await useChatStore.getState().sendMessage("what's in this chart?");
+
+    expect(sentBody().view_context).toEqual({
+      page: "map",
+      viewport: { bbox: [-73.9876, 40.7661, -73.9397, 40.8002], zoom: 5 },
+      visible_insights: ["i1"],
+    });
   });
 });
 
