@@ -13,7 +13,7 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
-import { GearSixIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
+import { SignOutIcon, UserIcon } from "@phosphor-icons/react";
 import {
   CompleteProfileMenuItem,
   NUDGE_CONVERSATIONS,
@@ -256,7 +256,7 @@ function AccountMenuSection() {
       title={DEBUG_SECTIONS.accountMenu.label}
       rules={[
         "Whenever the profile is incomplete, including after the banners stop.",
-        "“Complete your profile” goes to User Profile (/dashboard).",
+        "“Complete your profile” replaces User Profile, and goes to the same page (/dashboard).",
       ]}
     >
       <Menu.Root positioning={{ placement: "bottom-start" }}>
@@ -271,10 +271,6 @@ function AccountMenuSection() {
           <Menu.Positioner>
             <Menu.Content>
               <CompleteProfileMenuItem onSelect={() => undefined} />
-              <Menu.Item value="profile" disabled>
-                <GearSixIcon />
-                User Profile
-              </Menu.Item>
               <Menu.Separator />
               <Menu.Item value="logout" disabled color="fg.error">
                 <SignOutIcon />

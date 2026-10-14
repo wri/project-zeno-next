@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Menu } from "@chakra-ui/react";
-import { UserCircleIcon } from "@phosphor-icons/react";
+import { GearSixIcon } from "@phosphor-icons/react";
 import { Link } from "@/src/shared/lib/router";
 import { ProfileIncompleteDot } from "./ProfileIncompleteDot";
 
@@ -14,7 +14,7 @@ export type CompleteProfileMenuItemProps =
 function Content() {
   return (
     <>
-      <UserCircleIcon />
+      <GearSixIcon />
       <Box flex="1">Complete your profile</Box>
       <ProfileIncompleteDot />
     </>
@@ -22,8 +22,9 @@ function Content() {
 }
 
 /**
- * The quiet, permanent reminder: an account-menu item that stays until the
- * profile is complete, after the in-chat asks have stopped.
+ * The quiet, permanent reminder: in the account menu it stands in for User
+ * Profile (same cog, same page) until the profile is complete, after the
+ * in-chat asks have stopped.
  */
 export function CompleteProfileMenuItem(props: CompleteProfileMenuItemProps) {
   if (props.href !== undefined) {

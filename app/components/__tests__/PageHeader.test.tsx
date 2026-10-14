@@ -264,12 +264,13 @@ describe("PageHeader profile reminder (front door)", () => {
     });
   }
 
-  /** Opens the account menu; resolves once its User Profile item is showing. */
+  /** Opens the account menu; resolves with its items' labels. */
   async function openAccountMenu() {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /user@example.com/ }));
     });
-    return screen.findByRole("menuitem", { name: /user profile/i });
+    const items = await screen.findAllByRole("menuitem");
+    return items.map((el) => el.textContent?.trim());
   }
   const menuItem = () =>
     screen.queryByRole("menuitem", { name: /complete your profile/i });
@@ -280,23 +281,22 @@ describe("PageHeader profile reminder (front door)", () => {
     useAuthStore.getState().setPromptUsage(0, 20);
   });
 
-  it("links to the settings page and marks the account button while the profile is incomplete", async () => {
+  it("replaces User Profile, linking to the same page, and marks the account button while the profile is incomplete", async () => {
     signIn(false);
     renderHeader("/app");
     expect(dot()).not.toBeNull();
 
-    const settings = await openAccountMenu();
-    const item = menuItem();
-    expect(item).not.toBeNull();
-    expect(item!.getAttribute("href")).toBe("/dashboard");
-    expect(precedes(item!, settings)).toBe(true);
+    expect(await openAccountMenu()).toEqual([
+      "Complete your profile",
+      "Logout",
+    ]);
+    expect(menuItem()!.getAttribute("href")).toBe("/dashboard");
   });
 
-  it("goes away once the profile is complete", async () => {
+  it("gives way to User Profile once the profile is complete", async () => {
     signIn(true);
     renderHeader("/app");
     expect(dot()).toBeNull();
-    await openAccountMenu();
-    expect(menuItem()).toBeNull();
+    expect(await openAccountMenu()).toEqual(["User Profile", "Logout"]);
   });
 });
