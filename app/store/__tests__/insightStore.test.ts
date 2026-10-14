@@ -33,6 +33,13 @@ describe("insightStore", () => {
     expect(useInsightStore.getState().insights).toHaveLength(3);
   });
 
+  it("clearInsights drops the focused widget along with the insights", () => {
+    useInsightStore.getState().addInsights([widget("A", "a")]);
+    useInsightStore.getState().setFocusedWidgetId("a");
+    useInsightStore.getState().clearInsights();
+    expect(useInsightStore.getState().focusedWidgetId).toBeNull();
+  });
+
   it("clearInsights resets to empty", () => {
     useInsightStore.getState().addInsights([widget("A")]);
     useInsightStore.getState().clearInsights();

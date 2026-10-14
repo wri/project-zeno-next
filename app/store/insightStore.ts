@@ -11,6 +11,16 @@ interface InsightState {
   removeInsight: (id: string) => void;
   consumePendingBatch: () => InsightWidget[];
   clearInsights: () => void;
+  /**
+   * Id of the widget the workspace card is showing, or null when it shows
+   * none. `InsightWorkspace` owns the pager order, so it publishes this; a
+   * chat request reads it to tell the agent which chart is on screen.
+   */
+  focusedWidgetId: string | null;
+  setFocusedWidgetId: (id: string | null) => void;
+  /** The workspace card is collapsed to its header, so no chart is on screen. */
+  isWorkspaceCollapsed: boolean;
+  setWorkspaceCollapsed: (collapsed: boolean) => void;
 }
 
 const useInsightStore = create<InsightState>((set, get) => ({
@@ -37,7 +47,13 @@ const useInsightStore = create<InsightState>((set, get) => ({
     set({ pendingBatch: [] });
     return batch;
   },
-  clearInsights: () => set({ insights: [], pendingBatch: [] }),
+  clearInsights: () =>
+    set({ insights: [], pendingBatch: [], focusedWidgetId: null }),
+  focusedWidgetId: null,
+  setFocusedWidgetId: (id) => set({ focusedWidgetId: id }),
+  isWorkspaceCollapsed: false,
+  setWorkspaceCollapsed: (collapsed) =>
+    set({ isWorkspaceCollapsed: collapsed }),
 }));
 
 export default useInsightStore;
