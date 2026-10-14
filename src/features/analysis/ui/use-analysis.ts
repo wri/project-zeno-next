@@ -131,6 +131,7 @@ export function useAnalysis(
           // than an area-only one.
           const rawWidgets = chartsToWidgets(
             analysisResult.charts,
+            analysisResult.id,
             analysisResult.params
               ? {
                   areas: [analysisResult.params.name],

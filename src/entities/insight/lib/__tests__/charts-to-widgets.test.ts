@@ -18,11 +18,11 @@ const baseChart: Chart = {
 
 describe("chartsToWidgets", () => {
   it("returns an empty array when there are no charts", () => {
-    expect(chartsToWidgets([])).toEqual([]);
+    expect(chartsToWidgets([], "ins-1")).toEqual([]);
   });
 
   it("maps a chart to an InsightWidget", () => {
-    const widgets = chartsToWidgets([baseChart]);
+    const widgets = chartsToWidgets([baseChart], "ins-1");
     expect(widgets).toHaveLength(1);
     expect(widgets[0]).toMatchObject({
       id: "c1",
@@ -35,20 +35,23 @@ describe("chartsToWidgets", () => {
   });
 
   it("pivots a long-format line chart into one series per color-field value", () => {
-    const [widget] = chartsToWidgets([
-      {
-        ...baseChart,
-        type: "line",
-        xAxis: "alert_date",
-        yAxis: "area_ha",
-        colorField: "alert_confidence",
-        seriesFields: [],
-        data: [
-          { alert_date: "2026-09-11", alert_confidence: "high", area_ha: 3 },
-          { alert_date: "2026-09-11", alert_confidence: "low", area_ha: 1 },
-        ],
-      },
-    ]);
+    const [widget] = chartsToWidgets(
+      [
+        {
+          ...baseChart,
+          type: "line",
+          xAxis: "alert_date",
+          yAxis: "area_ha",
+          colorField: "alert_confidence",
+          seriesFields: [],
+          data: [
+            { alert_date: "2026-09-11", alert_confidence: "high", area_ha: 3 },
+            { alert_date: "2026-09-11", alert_confidence: "low", area_ha: 1 },
+          ],
+        },
+      ],
+      "ins-1"
+    );
     expect(widget.seriesFields).toEqual(["high", "low"]);
     expect(widget.data).toEqual([
       { alert_date: "2026-09-11", high: 3, low: 1 },
@@ -58,20 +61,23 @@ describe("chartsToWidgets", () => {
   it("keeps a category that is absent on the first day through formatting", async () => {
     const { default: formatChartData } =
       await import("@/app/utils/formatCharts");
-    const [widget] = chartsToWidgets([
-      {
-        ...baseChart,
-        type: "line",
-        xAxis: "alert_date",
-        yAxis: "area_ha",
-        colorField: "alert_confidence",
-        seriesFields: [],
-        data: [
-          { alert_date: "2026-09-11", alert_confidence: "high", area_ha: 1 },
-          { alert_date: "2026-09-12", alert_confidence: "low", area_ha: 2 },
-        ],
-      },
-    ]);
+    const [widget] = chartsToWidgets(
+      [
+        {
+          ...baseChart,
+          type: "line",
+          xAxis: "alert_date",
+          yAxis: "area_ha",
+          colorField: "alert_confidence",
+          seriesFields: [],
+          data: [
+            { alert_date: "2026-09-11", alert_confidence: "high", area_ha: 1 },
+            { alert_date: "2026-09-12", alert_confidence: "low", area_ha: 2 },
+          ],
+        },
+      ],
+      "ins-1"
+    );
     const { series } = formatChartData(
       widget.data,
       widget.type,
@@ -84,13 +90,17 @@ describe("chartsToWidgets", () => {
   });
 
   it("falls back to 'bar' for an unknown chart type", () => {
-    const widgets = chartsToWidgets([{ ...baseChart, type: "nonsense" }]);
+    const widgets = chartsToWidgets(
+      [{ ...baseChart, type: "nonsense" }],
+      "ins-1"
+    );
     expect(widgets[0].type).toBe("bar");
   });
 
   it("attaches analysisParams to every widget when supplied", () => {
     const widgets = chartsToWidgets(
       [baseChart, { ...baseChart, id: "c2", position: 1 }],
+      "ins-1",
       { areas: ["Brazil"] }
     );
     expect(widgets.map((w) => w.analysisParams)).toEqual([
@@ -99,7 +109,20 @@ describe("chartsToWidgets", () => {
     ]);
   });
 
+  it("stamps the insight id and each chart's position on every widget", () => {
+    const widgets = chartsToWidgets(
+      [baseChart, { ...baseChart, id: "c2", position: 1 }],
+      "ins-1"
+    );
+    expect(widgets.map((w) => [w.insightId, w.chartPosition])).toEqual([
+      ["ins-1", 0],
+      ["ins-1", 1],
+    ]);
+  });
+
   it("omits analysisParams when none supplied", () => {
-    expect(chartsToWidgets([baseChart])[0].analysisParams).toBeUndefined();
+    expect(
+      chartsToWidgets([baseChart], "ins-1")[0].analysisParams
+    ).toBeUndefined();
   });
 });
