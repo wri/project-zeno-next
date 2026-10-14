@@ -38,10 +38,8 @@ import {
 } from "../../lib/profile-ask-storage";
 import type { ProfileAskRecord } from "../../model/profile-ask";
 import { profileOptionsQuery, profilePrefillQuery } from "../../api/queries";
-import useProfileNudgeStore from "../../model/profile-nudge-store";
 import {
   dismissProfileAsk,
-  dismissProfileBanner,
   handleAnswerCompleted,
   openProfileCardFromBanner,
   saveProfileFromCard,
@@ -128,6 +126,8 @@ const cachedPrefill = () =>
 
 const cards = () =>
   useChatStore.getState().messages.filter((m) => m.type === "profile-prompt");
+const nudges = () =>
+  useChatStore.getState().messages.filter((m) => m.type === "profile-nudge");
 const record = () => loadProfileAskRecord(storage, "u-1");
 const seed = (r: Partial<ProfileAskRecord>) =>
   saveProfileAskRecord(storage, "u-1", { ...record(), ...r });
@@ -155,7 +155,6 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   queryClient.clear();
   useChatStore.getState().reset();
-  useProfileNudgeStore.getState().closeBanner();
   useAuthStore.getState().clearAuth();
   signIn();
   storage = new MemoryStorage();
@@ -231,7 +230,7 @@ describe("the profile card after the first answer", () => {
     await useChatStore.getState().sendMessage("two");
     await settle();
     expect(cards()).toHaveLength(0);
-    expect(useProfileNudgeStore.getState().bannerOpen).toBe(false);
+    expect(nudges()).toHaveLength(0);
     expect(record().lifetimeAnswers).toBe(2);
   });
 
@@ -393,7 +392,6 @@ describe("Save", () => {
 // ── The later banner ──────────────────────────────────────────────────────
 
 describe("the banner in the next new conversations", () => {
-  const bannerOpen = () => useProfileNudgeStore.getState().bannerOpen;
   /** "New conversation", then a question in it. */
   const askInNewConversation = async (question: string) => {
     useChatStore.getState().reset();
@@ -405,63 +403,82 @@ describe("the banner in the next new conversations", () => {
     seed({ lifetimeAnswers: 1, cardShown: true });
   });
 
-  it("opens after the first answer of a new conversation and records it", async () => {
+  it("appears in the chat after the first answer of a new conversation, and is recorded", async () => {
     backend();
     await askInNewConversation("Second conversation");
-    await vi.waitFor(() => expect(bannerOpen()).toBe(true));
+    await vi.waitFor(() => expect(nudges()).toHaveLength(1));
+
+    const messages = useChatStore.getState().messages;
+    expect(messages.at(-2)?.type).toBe("assistant");
+    expect(messages.at(-1)).toMatchObject({
+      type: "profile-nudge",
+      transient: true,
+    });
     expect(cards()).toHaveLength(0);
     expect(record()).toMatchObject({ lifetimeAnswers: 2, bannersShown: 1 });
   });
 
-  it("doesn't open for later answers in the same conversation", async () => {
+  it("goes when the next question is sent, and doesn't come back in that conversation", async () => {
     backend();
     await askInNewConversation("Second conversation");
-    await vi.waitFor(() => expect(bannerOpen()).toBe(true));
-    dismissProfileBanner();
+    await vi.waitFor(() => expect(nudges()).toHaveLength(1));
 
     await useChatStore.getState().sendMessage("A follow-up");
     await settle();
-    expect(bannerOpen()).toBe(false);
+    expect(nudges()).toHaveLength(0);
     expect(record().bannersShown).toBe(1);
   });
 
-  it("closes when the conversation is left", async () => {
+  it("goes when the conversation is left", async () => {
     backend();
     await askInNewConversation("Second conversation");
-    await vi.waitFor(() => expect(bannerOpen()).toBe(true));
+    await vi.waitFor(() => expect(nudges()).toHaveLength(1));
     useChatStore.getState().reset();
-    expect(bannerOpen()).toBe(false);
+    expect(nudges()).toHaveLength(0);
+  });
+
+  it("Not now removes it", async () => {
+    backend();
+    await askInNewConversation("Second conversation");
+    await vi.waitFor(() => expect(nudges()).toHaveLength(1));
+    dismissProfileAsk(nudges()[0].id, "banner");
+    expect(nudges()).toHaveLength(0);
+    expect(record().bannersShown).toBe(1);
   });
 
   it("stops after two conversations", async () => {
     backend();
     await askInNewConversation("Second conversation");
-    await vi.waitFor(() => expect(bannerOpen()).toBe(true));
+    await vi.waitFor(() => expect(nudges()).toHaveLength(1));
     await askInNewConversation("Third conversation");
     await vi.waitFor(() => expect(record().bannersShown).toBe(2));
-    expect(bannerOpen()).toBe(true);
+    expect(nudges()).toHaveLength(1);
 
     await askInNewConversation("Fourth conversation");
     await settle();
-    expect(bannerOpen()).toBe(false);
+    expect(nudges()).toHaveLength(0);
     expect(record().bannersShown).toBe(2);
   });
 
-  it("Add details adds the card and closes the banner", async () => {
+  it("Add details replaces it with the card", async () => {
     backend();
-    useProfileNudgeStore.getState().openBanner();
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
     await openProfileCardFromBanner();
+    expect(nudges()).toHaveLength(0);
     expect(cards()).toHaveLength(1);
-    expect(bannerOpen()).toBe(false);
+    expect(useChatStore.getState().messages.at(-1)?.type).toBe(
+      "profile-prompt"
+    );
   });
 
-  it("Add details waits out an answer in progress, without an error", async () => {
+  it("Add details adds no card while an answer is in progress, without an error", async () => {
     backend();
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
     useChatStore.setState({ currentThreadId: "t-1", isLoading: true });
-    useProfileNudgeStore.getState().openBanner();
     await openProfileCardFromBanner();
     expect(cards()).toHaveLength(0);
-    expect(bannerOpen()).toBe(true);
+    expect(nudges()).toHaveLength(1);
     expect(showApiError).not.toHaveBeenCalled();
   });
 
@@ -475,20 +492,20 @@ describe("the banner in the next new conversations", () => {
     expect(showApiError).not.toHaveBeenCalled();
   });
 
-  it("Add details reports a card that couldn't load", async () => {
+  it("Add details reports a card that couldn't load, and keeps the banner", async () => {
     backend({ configStatus: 503 });
-    useProfileNudgeStore.getState().openBanner();
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
     await openProfileCardFromBanner();
     expect(cards()).toHaveLength(0);
+    expect(nudges()).toHaveLength(1);
     expect(showApiError).toHaveBeenCalledOnce();
   });
 
-  it("closes when the profile is saved from the card", async () => {
+  it("leaves no ask in the chat once the card it opened is saved", async () => {
     backend();
-    await showProfilePrompt();
-    useProfileNudgeStore.getState().openBanner();
-    const card = cards()[0];
-    await saveProfileFromCard(card.id, {
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
+    await openProfileCardFromBanner();
+    await saveProfileFromCard(cards()[0].id, {
       sector_code: "ngo",
       country_code: "KE",
       company_organization: "Kenya Forest Service",
@@ -496,7 +513,8 @@ describe("the banner in the next new conversations", () => {
       receive_news_emails: false,
       has_profile: true,
     });
-    expect(bannerOpen()).toBe(false);
+    expect(cards()).toHaveLength(0);
+    expect(nudges()).toHaveLength(0);
   });
 });
 
@@ -527,7 +545,8 @@ describe("analytics events", () => {
     await showProfilePrompt();
     vi.mocked(trackEvent).mockReset();
     dismissProfileAsk(cards()[0].id);
-    dismissProfileBanner();
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
+    dismissProfileAsk(nudges()[0].id, "banner");
     expect(events()).toEqual([
       { event: "profile_card_dismissed", surface: "card" },
       { event: "profile_card_dismissed", surface: "banner" },

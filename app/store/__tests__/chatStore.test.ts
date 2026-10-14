@@ -1270,9 +1270,9 @@ describe("chatStore transient messages and the profile card", () => {
   const cards = () =>
     useChatStore.getState().messages.filter((m) => m.type === "profile-prompt");
 
-  it("upsertProfilePrompt appends one transient card that carries no data", () => {
+  it("upsertProfileAsk appends one transient card that carries no data", () => {
     useChatStore.getState().addMessage({ type: "assistant", message: "A" });
-    useChatStore.getState().upsertProfilePrompt();
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
 
     const last = useChatStore.getState().messages.at(-1)!;
     expect(last).toMatchObject({
@@ -1286,10 +1286,10 @@ describe("chatStore transient messages and the profile card", () => {
   });
 
   it("keeps a single card: a new ask replaces the one still showing", () => {
-    useChatStore.getState().upsertProfilePrompt();
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
     const first = cards()[0].id;
     useChatStore.getState().addMessage({ type: "assistant", message: "A" });
-    useChatStore.getState().upsertProfilePrompt();
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
 
     expect(cards()).toHaveLength(1);
     expect(cards()[0].id).not.toBe(first);
@@ -1298,9 +1298,32 @@ describe("chatStore transient messages and the profile card", () => {
     );
   });
 
+  it("keeps one profile ask: the banner and the card replace each other", () => {
+    const types = () =>
+      useChatStore
+        .getState()
+        .messages.filter((m) => m.transient)
+        .map((m) => m.type);
+    useChatStore.getState().addMessage({ type: "assistant", message: "A" });
+
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
+    expect(types()).toEqual(["profile-nudge"]);
+    expect(useChatStore.getState().messages.at(-1)).toMatchObject({
+      type: "profile-nudge",
+      message: "",
+      transient: true,
+    });
+
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
+    expect(types()).toEqual(["profile-prompt"]);
+
+    useChatStore.getState().upsertProfileAsk("profile-nudge");
+    expect(types()).toEqual(["profile-nudge"]);
+  });
+
   it("removes one message by id and leaves the rest", () => {
     useChatStore.getState().addMessage({ type: "assistant", message: "A" });
-    useChatStore.getState().upsertProfilePrompt();
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
     const before = useChatStore.getState().messages;
     const cardId = before.at(-1)!.id;
 
@@ -1314,7 +1337,7 @@ describe("chatStore transient messages and the profile card", () => {
 
   it("drops transient messages, the unanswered card among them, when the next question is sent", async () => {
     useChatStore.getState().addMessage({ type: "assistant", message: "A" });
-    useChatStore.getState().upsertProfilePrompt();
+    useChatStore.getState().upsertProfileAsk("profile-prompt");
     useChatStore
       .getState()
       .addMessage({ type: "warning", message: "W", transient: true });

@@ -17,7 +17,6 @@ import {
 } from "../lib/profile-ask-storage";
 import { recordAnswer, recordAskShown } from "../model/profile-ask";
 import type { ProfileCardPatch } from "../model/profile-card";
-import useProfileNudgeStore from "../model/profile-nudge-store";
 
 /**
  * The front door's "ask for the profile later" flow, outside React (like
@@ -87,10 +86,11 @@ async function settlePromptData(): Promise<ProfilePrefill | null> {
 type ProfilePromptOutcome = "shown" | "unavailable" | "skipped";
 
 /**
- * Adds the profile card at the end of the conversation (one at a time).
- * With `threadId`, only if that thread is still current and idle once the
- * card's data has loaded, so a late card never lands in a new conversation
- * or in the middle of the next answer.
+ * Adds the profile card at the end of the conversation, in place of any
+ * banner still showing (one ask at a time). With `threadId`, only if that
+ * thread is still current and idle once the card's data has loaded, so a
+ * late card never lands in a new conversation or in the middle of the next
+ * answer.
  */
 export async function showProfilePrompt(
   options: {
@@ -109,8 +109,7 @@ export async function showProfilePrompt(
   ) {
     return "skipped";
   }
-  chat.upsertProfilePrompt();
-  useProfileNudgeStore.getState().closeBanner();
+  chat.upsertProfileAsk("profile-prompt");
   trackEvent({
     event: "profile_card_shown",
     trigger: options.trigger ?? "banner",
@@ -161,49 +160,42 @@ export async function handleAnswerCompleted(
 }
 
 /**
- * Subscribes to finished answers, and closes the banner when its
- * conversation is left (each new conversation earns its own). Returns the
- * unsubscribe.
+ * Subscribes to finished answers. Returns the unsubscribe. The asks are
+ * transient chat messages, so leaving the conversation or asking the next
+ * question takes them away.
  */
 export function watchAnswerCompletions(
   storage: ProfileAskStorage = browserStorage()
 ): () => void {
   return useChatStore.subscribe((state, prev) => {
-    if (
-      prev.currentThreadId !== null &&
-      state.currentThreadId !== prev.currentThreadId
-    ) {
-      useProfileNudgeStore.getState().closeBanner();
-    }
     if (state.completedAnswers > prev.completedAnswers) {
       void handleAnswerCompleted(storage);
     }
   });
 }
 
-/** "Not now" on the card. The banner policy doesn't depend on it. */
-export function dismissProfileAsk(messageId: string): void {
+/** "Not now" on the card, or the banner's close button. */
+export function dismissProfileAsk(
+  messageId: string,
+  surface: "card" | "banner" = "card"
+): void {
   useChatStore.getState().removeMessage(messageId);
-  trackEvent({ event: "profile_card_dismissed", surface: "card" });
-}
-
-/** Opens the lighter banner, loading the card it leads to meanwhile. */
-export function openProfileBanner(): void {
-  prefetchProfilePrompt();
-  useProfileNudgeStore.getState().openBanner();
-}
-
-/** The banner's close button. */
-export function dismissProfileBanner(): void {
-  useProfileNudgeStore.getState().closeBanner();
-  trackEvent({ event: "profile_card_dismissed", surface: "banner" });
+  trackEvent({ event: "profile_card_dismissed", surface });
 }
 
 /**
- * The banner's "Add details": the card, at the end of the banner's
- * conversation. Only a load failure is an error; a conversation that is
- * answering again keeps its banner for a later click, and one that was left
- * has already closed it.
+ * Adds the lighter banner at the end of the conversation, loading the card
+ * it leads to meanwhile.
+ */
+export function openProfileBanner(): void {
+  prefetchProfilePrompt();
+  useChatStore.getState().upsertProfileAsk("profile-nudge");
+}
+
+/**
+ * The banner's "Add details": the card, in the banner's place. Only a load
+ * failure is an error; a conversation that moved on while the card loaded
+ * (left, or answering again) gets no card.
  */
 export async function openProfileCardFromBanner(): Promise<void> {
   const threadId = useChatStore.getState().currentThreadId;
@@ -238,7 +230,6 @@ export async function saveProfileFromCard(
 
   const auth = useAuthStore.getState();
   useChatStore.getState().removeMessage(messageId);
-  useProfileNudgeStore.getState().closeBanner();
   trackEvent({
     event: "profile_card_saved",
     prefilled: prefill.suggestion !== undefined,

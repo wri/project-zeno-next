@@ -65,7 +65,7 @@ const GFW: ProfilePrefill = {
 function addCard(prefill: ProfilePrefill = GFW) {
   queryClient.setQueryData(profileOptionsQuery.queryKey, OPTIONS);
   queryClient.setQueryData(profilePrefillQuery("u-1").queryKey, prefill);
-  useChatStore.getState().upsertProfilePrompt();
+  useChatStore.getState().upsertProfileAsk("profile-prompt");
   return useChatStore.getState().messages.at(-1)!;
 }
 

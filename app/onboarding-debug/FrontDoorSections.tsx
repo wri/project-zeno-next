@@ -228,9 +228,9 @@ function BannerSection() {
       title={DEBUG_SECTIONS.banner.label}
       rules={[
         "The card was shown and the profile still isn't saved.",
-        `After the first answer of a new conversation, in the next ${NUDGE_CONVERSATIONS} new conversations only.`,
-        "Closes when the conversation is left; × closes it.",
-        "“Add details” opens the profile card, once any answer in progress has finished. No banner for the email list.",
+        `In the chat after the first answer of a new conversation, in the next ${NUDGE_CONVERSATIONS} new conversations only.`,
+        "Goes when the next question is sent or the conversation is left; × closes it.",
+        "“Add details” replaces it with the profile card. No banner for the email list.",
       ]}
     >
       <Stack gap={6} maxW="420px">

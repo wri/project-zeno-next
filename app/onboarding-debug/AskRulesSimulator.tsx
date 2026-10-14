@@ -35,7 +35,7 @@ const INITIAL: SimState = {
 
 const LABEL: Record<ProfileAskMoment, string> = {
   card: "Profile card in the chat",
-  banner: "Banner above the chat input",
+  banner: "Banner in the chat",
 };
 
 /** What the next answer would bring, from the policy itself. */
