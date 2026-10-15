@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { apiFetch } from "@/app/lib/api-client";
 import {
+  chartId,
   isCuratedInsight,
   type Chart,
   type InsightRecord,
@@ -11,7 +12,6 @@ import type { InsightQuery, InsightsGateway } from "../model/insights-gateway";
 // Tolerant by design: chart fields default so a sparse row still parses; only a
 // missing/!string `id` drops the row (it's unrenderable without one).
 
-// The chart's own uuid is deliberately not read: see `toInsightRecord`.
 const RawChartSchema = z.object({
   title: z.string().default(""),
   chart_type: z.string().default("bar"),
@@ -42,12 +42,10 @@ type RawInsight = z.infer<typeof RawInsightSchema>;
 
 function toInsightRecord(raw: RawInsight): InsightRecord {
   const charts: Chart[] = raw.charts.map((c, i) => ({
-    // Not the API's chart uuid: every other path ids a chart
-    // `{insightId}-chart-{n}` (generate_insights, the direct analysis), so a
-    // thread's stored insight must use it too or the Analyses pane lists the
-    // live copy and the stored copy as two cards. It is also what
-    // `chartBatchKey` groups an analysis's charts by.
-    id: `${raw.id}-chart-${i}`,
+    // Not the API's chart uuid: the id generate_insights streams (see
+    // `chartId`), or the Analyses pane lists the live copy and the stored copy
+    // as two cards.
+    id: chartId(raw.id, i),
     position: i,
     title: c.title,
     type: c.chart_type,

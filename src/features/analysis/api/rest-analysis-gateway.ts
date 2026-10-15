@@ -7,7 +7,7 @@ import type {
 } from "../model/analysis-gateway";
 import type { AnalysisSelection } from "../model/analysis-selection";
 import type { AnalysisResult } from "../model/analysis-result";
-import type { Chart } from "@/src/entities/insight";
+import { chartId, type Chart } from "@/src/entities/insight";
 import type { DivergentColors } from "@/app/types/chartColors";
 import { AnalysisError } from "../model/analysis-error";
 
@@ -211,10 +211,8 @@ export class RestAnalysisGateway implements AnalysisGateway {
       id: body.id,
       charts: body.charts.map(
         (c, i): Chart => ({
-          // Deliberately not `c.id`: the insight-scoped `{id}-chart-{n}`
-          // form is what `netFluxGroupKey` and `orderInsightsForPager` parse
-          // to group an analysis's charts. Changing it needs both consumers.
-          id: `${body.id}-chart-${i}`,
+          // Not `c.id`: the id generate_insights streams (see `chartId`).
+          id: chartId(body.id, i),
           position: i,
           title: c.title,
           type: c.chart_type,
