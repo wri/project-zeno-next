@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Box, Flex, Text } from "@chakra-ui/react";
+import { Box, Text } from "@chakra-ui/react";
 
 import {
   isImageryGroup,
@@ -126,37 +126,25 @@ export function concessionLegendEntry(
     title: style.title,
     opacity: opacity * 100,
     info: style.info,
-    // Sizes and colours from the GNW map's legend rows: a 12 px square
-    // swatch beside its label, and a dotted underline on the country note.
-    symbology: (
-      <Flex
-        alignItems="center"
-        gap="4px"
-        fontSize="12px"
-        lineHeight="14px"
-        color="#44505a"
-      >
-        <Box
-          w="12px"
-          h="12px"
-          flex="none"
-          borderRadius="2px"
-          border="1px solid rgba(0, 0, 0, 0.06)"
-          bg={style.fillColor}
-        />
-        <Text as="span" truncate>
-          {style.title}
-        </Text>
-      </Flex>
-    ),
+    // Drawn like a dataset layer's symbol legend (Grasslands), so the entry
+    // matches the other layers in the legend.
+    symbology: renderLegendSymbology({
+      title: style.title,
+      color: style.fillColor,
+      items: [{ label: style.title, color: style.fillColor }],
+      type: "symbol",
+      info: style.info,
+      note: "",
+    }),
     children: (
-      <Text fontSize="12px" lineHeight="14px" color="#44505a">
+      <Text fontSize="xs">
         This layer is only available{" "}
         <Tooltip
           content={style.countries.join(", ")}
           positioning={{ placement: "top" }}
           showArrow
         >
+          {/* The dotted underline of the GNW map's country note. */}
           <Box
             as="u"
             tabIndex={0}
