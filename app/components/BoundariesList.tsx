@@ -1,8 +1,13 @@
 import { Box, Flex, Text } from "@chakra-ui/react";
 import {
+  AxeIcon,
   BirdIcon,
+  LogIcon,
   MapTrifoldIcon,
+  SealCheckIcon,
   ShieldCheckIcon,
+  ShovelIcon,
+  TreePalmIcon,
   UsersThreeIcon,
   type Icon,
 } from "@phosphor-icons/react";
@@ -20,12 +25,18 @@ import { AREA_LABEL_COLOR } from "./AreaCardMenu";
 
 const BOUNDARY_SELECTED_BG = "rgba(45, 107, 228, 0.06)";
 
-// The concession layers show their commodity colour instead of an icon.
-const BOUNDARY_ICONS: Partial<Record<LayerId, Icon>> = {
+// Phosphor has no pickaxe or palm-oil icon: mining is a shovel, and RSPO
+// oil palm is a seal for its certification.
+const BOUNDARY_ICONS: Record<LayerId, Icon> = {
   GADM: MapTrifoldIcon,
   KBA: BirdIcon,
   WDPA: ShieldCheckIcon,
   LandMark: UsersThreeIcon,
+  LOGGING: AxeIcon,
+  MINING: ShovelIcon,
+  OIL_PALM: TreePalmIcon,
+  RSPO_OIL_PALM: SealCheckIcon,
+  WOOD_FIBER: LogIcon,
 };
 
 const boundaryOptions = selectLayerOptions.filter(
@@ -115,31 +126,10 @@ function BoundaryCard({
 }
 
 function BoundaryThumbnail({ id }: { id: LayerId }) {
-  const concession = CONCESSION_STYLES[id];
-  if (concession) {
-    // The layer's swatch, as in the GNW concessions menu: the full fill
-    // colour, with a hairline border so the pale colours hold their edge.
-    return (
-      <Flex
-        w="100%"
-        h="100%"
-        align="center"
-        justify="center"
-        bg="rgba(45, 107, 228, 0.06)"
-        aria-hidden
-      >
-        <Box
-          w="32px"
-          h="32px"
-          borderRadius="2px"
-          border="1px solid rgba(0, 0, 0, 0.06)"
-          bg={concession.fillColor}
-          data-swatch={concession.fillColor}
-        />
-      </Flex>
-    );
-  }
-  const IconComponent = BOUNDARY_ICONS[id] ?? MapTrifoldIcon;
+  const IconComponent = BOUNDARY_ICONS[id];
+  // A concession's icon takes its layer's accent, so the card matches the
+  // colour of the layer on the map.
+  const color = CONCESSION_STYLES[id]?.accent ?? AREA_LABEL_COLOR;
   return (
     <Flex
       w="100%"
@@ -149,7 +139,7 @@ function BoundaryThumbnail({ id }: { id: LayerId }) {
       bg="rgba(45, 107, 228, 0.06)"
       aria-hidden
     >
-      <IconComponent size={32} color={AREA_LABEL_COLOR} weight="light" />
+      <IconComponent size={32} color={color} weight="light" />
     </Flex>
   );
 }

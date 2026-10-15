@@ -104,13 +104,15 @@ export type LayerName = (typeof selectLayerOptions)[number]["name"];
  * Map style of a concession boundary layer, after the GNW concessions map:
  * a translucent fill in the commodity's colour, an outline where GNW draws
  * one (oil palm and wood fiber are fill only), and the colour of the picked
- * feature's outline. The same colour is the layer's swatch in the list.
+ * feature's outline. The list card shows the layer's icon in its accent.
  */
 export interface ConcessionStyle {
   fillColor: string;
   lineColor: string | null;
   lineWidth: number;
   selectColor: string;
+  /** The darker shade the GNW map uses for text and icons. */
+  accent: string;
   maxzoom: number;
   /** Name of a feature with no name, company or group. */
   unnamed: string;
@@ -123,6 +125,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       lineColor: "#dea035",
       lineWidth: 0.5,
       selectColor: "#dea035",
+      accent: "#C98208",
       maxzoom: 10,
       unnamed: "Logging concession",
     },
@@ -131,6 +134,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       lineColor: "#fbb685",
       lineWidth: 1,
       selectColor: "#e8873f",
+      accent: "#c4621f",
       maxzoom: 10,
       unnamed: "Mining concession",
     },
@@ -139,6 +143,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       lineColor: null,
       lineWidth: 0,
       selectColor: "#ee9587",
+      accent: "#c9604f",
       maxzoom: 9,
       unnamed: "Oil palm concession",
     },
@@ -147,6 +152,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       lineColor: "#ff6361",
       lineWidth: 1,
       selectColor: "#ff6361",
+      accent: "#d14340",
       maxzoom: 10,
       unnamed: "RSPO oil palm concession",
     },
@@ -155,6 +161,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       lineColor: null,
       lineWidth: 0,
       selectColor: "#c9573f",
+      accent: "#8A2F1D",
       maxzoom: 9,
       unnamed: "Wood fiber concession",
     },

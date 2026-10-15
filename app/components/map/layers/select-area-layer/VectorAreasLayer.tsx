@@ -262,10 +262,13 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         {concessionStyle ? (
           // A concession layer is drawn in its commodity's colour, with the
           // usual hover tint on top; the events bind to the coloured fill.
+          // <Source> passes its id only to direct <Layer> children, not
+          // through this fragment, so each layer names its source.
           <>
             <Layer
               id={fillLayerName}
               type="fill"
+              source={sourceId}
               source-layer={sourceLayer}
               paint={concessionFillPaint(concessionStyle)}
             />
@@ -273,6 +276,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               <Layer
                 id={`select-layer-line-${id}`}
                 type="line"
+                source={sourceId}
                 source-layer={sourceLayer}
                 paint={concessionLinePaint(concessionStyle)}
               />
@@ -280,6 +284,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             <Layer
               id={`select-layer-hover-${id}`}
               type="fill"
+              source={sourceId}
               source-layer={sourceLayer}
               paint={selectAreaFillPaint}
             />
@@ -289,12 +294,14 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             <Layer
               id={fillLayerName}
               type="fill"
+              source={sourceId}
               source-layer={sourceLayer}
               paint={selectAreaFillPaint}
             />
             <Layer
               id={`select-layer-line-${id}`}
               type="line"
+              source={sourceId}
               source-layer={sourceLayer}
               paint={selectAreaLinePaint}
             />
