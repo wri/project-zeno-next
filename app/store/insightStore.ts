@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { InsightWidget } from "@/app/types/chat";
 
-interface InsightState {
+export interface InsightState {
   insights: InsightWidget[];
   pendingBatch: InsightWidget[]; // widgets from the most recent generate_insights call
   addInsights: (widgets: InsightWidget[]) => void;
@@ -47,8 +47,7 @@ const useInsightStore = create<InsightState>((set, get) => ({
     set({ pendingBatch: [] });
     return batch;
   },
-  clearInsights: () =>
-    set({ insights: [], pendingBatch: [], focusedWidgetId: null }),
+  clearInsights: () => set({ insights: [], pendingBatch: [] }),
   focusedWidgetId: null,
   setFocusedWidgetId: (id) => set({ focusedWidgetId: id }),
   isWorkspaceCollapsed: false,

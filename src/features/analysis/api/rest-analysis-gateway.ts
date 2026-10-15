@@ -83,7 +83,7 @@ export class RestAnalysisGateway implements AnalysisGateway {
         dataset_id: selection.dataset.id,
         start_date: selection.startDate,
         end_date: selection.endDate,
-        ...(selection.threadId && { thread_id: selection.threadId }),
+        thread_id: selection.threadId,
       }),
       signal,
     });

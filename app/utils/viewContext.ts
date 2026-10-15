@@ -1,6 +1,7 @@
 import type { MapRef } from "react-map-gl/maplibre";
 
 import type { InsightWidget } from "@/app/types/chat";
+import type { InsightState } from "@/app/store/insightStore";
 import type { ViewContext } from "@/app/store/viewContextStore";
 
 // Keep the payload compact — the backend only echoes these back to the agent
@@ -21,11 +22,10 @@ type Viewport = { bbox: [number, number, number, number]; zoom: number };
 type FocusedInsight = { id: string; chart_position?: number };
 
 /** The parts of insightStore the map's view context is built from. */
-export type InsightWorkspaceState = {
-  insights: InsightWidget[];
-  focusedWidgetId: string | null;
-  isWorkspaceCollapsed: boolean;
-};
+export type InsightWorkspaceState = Pick<
+  InsightState,
+  "insights" | "focusedWidgetId" | "isWorkspaceCollapsed"
+>;
 
 /**
  * The `view_context` sent with a chat request: the surface registered in
@@ -91,9 +91,7 @@ function buildFocusedInsight({
   if (isWorkspaceCollapsed || !focusedWidgetId) return undefined;
   const widget = insights.find((w) => w.id === focusedWidgetId);
   if (!widget?.insightId) return undefined;
-  return widget.chartPosition === undefined
-    ? { id: widget.insightId }
-    : { id: widget.insightId, chart_position: widget.chartPosition };
+  return { id: widget.insightId, chart_position: widget.chartPosition };
 }
 
 // Read fresh from mapStore/insightStore on every request, like `ui_context`
