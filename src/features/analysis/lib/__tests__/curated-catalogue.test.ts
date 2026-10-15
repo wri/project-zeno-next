@@ -38,7 +38,7 @@ describe("CURATED_ANALYSES", () => {
 
   it("leaves every other entry ungated", () => {
     for (const entry of CURATED_ANALYSES) {
-      if (entry.datasetId === 12 || entry.datasetId === 5) continue;
+      if ([5, 7, 12].includes(entry.datasetId)) continue;
       expect(entry.featureFlag).toBeUndefined();
       expect(entry.aoiSources).toBeUndefined();
     }
@@ -150,10 +150,21 @@ describe("curatedCatalogue", () => {
       const unrestricted = UNGATED.filter((e) => !e.aoiSources).map(
         (e) => e.datasetId
       );
-      expect(ids({ aoiSource: "kba" })).toEqual(unrestricted);
-      expect(ids({ enabledFlags: netFlux, aoiSource: "wdpa" })).toEqual(
+      // A custom area falls outside every source restriction.
+      expect(ids({ aoiSource: "custom" })).toEqual(unrestricted);
+      expect(ids({ enabledFlags: netFlux, aoiSource: "custom" })).toEqual(
         unrestricted
       );
+    });
+
+    it("offers tree cover for every area the analytics API takes by id", () => {
+      for (const source of ["gadm", "kba", "wdpa", "landmark"]) {
+        expect(ids({ aoiSource: source })).toContain(7);
+      }
+      // Custom areas and concessions go upstream as raw geometry.
+      for (const source of ["custom", "oil_palm"]) {
+        expect(ids({ aoiSource: source })).not.toContain(7);
+      }
     });
 
     it("keeps display order when a gated entry is admitted", () => {
@@ -171,6 +182,13 @@ describe("isAnalysableForSource", () => {
     expect(isAnalysableForSource(5, "wdpa")).toBe(false);
     expect(isAnalysableForSource(5, "kba")).toBe(false);
     expect(isAnalysableForSource(12, "landmark")).toBe(false);
+  });
+
+  it("keeps tree cover off areas sent upstream as raw geometry", () => {
+    expect(isAnalysableForSource(7, "custom")).toBe(false);
+    expect(isAnalysableForSource(7, "oil_palm")).toBe(false);
+    expect(isAnalysableForSource(7, "gadm")).toBe(true);
+    expect(isAnalysableForSource(7, "wdpa")).toBe(true);
   });
 
   it("matches the source case-insensitively", () => {

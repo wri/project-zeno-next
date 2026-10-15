@@ -152,6 +152,24 @@ describe("showAnalysisCta", () => {
     expect(nudges[1].analyseSuggestion?.accepted).toBeUndefined();
   });
 
+  it("does not nudge for an area whose source the dataset's analysis doesn't cover", () => {
+    // Tree cover (7) refuses custom geometry upstream.
+    seedLayers([
+      datasetLayer({ id: "dataset-7", name: "Tree cover", datasetId: 7 }),
+    ]);
+    const drawn: AnalysisSelection = {
+      name: "My drawn area",
+      source: "custom",
+      srcId: "3f2b",
+      subtype: "custom-area",
+    };
+
+    expect(showAnalysisCta(drawn)).toBe(false);
+    expect(analyseNudges()).toHaveLength(0);
+    // ...while an administrative area still gets it.
+    expect(showAnalysisCta(selection)).toBe(true);
+  });
+
   it("does nothing when no dataset is active (analysis stays gated)", () => {
     expect(showAnalysisCta(selection)).toBe(false);
     expect(analyseNudges()).toHaveLength(0);

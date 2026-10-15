@@ -92,6 +92,11 @@ export const CURATED_ANALYSES: readonly CuratedAnalysisEntry[] = [
     datasetId: 7,
     description: "Tree cover extent for the area",
     chartCountHint: 1,
+    // The analytics API's tree cover endpoint has no custom-geometry area
+    // type (project-zeno-data-infra `tree_cover.py`), so it refuses a custom
+    // area, or a concession, which is sent as its geometry too. An allowlist
+    // so a new geometry-backed source stays excluded until upstream adds it.
+    aoiSources: ["gadm", "kba", "wdpa", "landmark"],
   },
   {
     datasetId: 8,

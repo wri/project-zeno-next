@@ -2,6 +2,7 @@ import useChatStore from "@/app/store/chatStore";
 import useMapStore from "@/app/store/mapStore";
 import { DATASET_BY_ID, isViewOnlyDataset } from "@/app/constants/datasets";
 import type { AnalysisSelection } from "@/app/store/selectAnalysisSlice";
+import { isAnalysableForSource } from "@/src/features/analysis";
 
 /**
  * Surfaces the analyse CTA for an area selection. Analysis is intentional:
@@ -31,6 +32,9 @@ export function showAnalysisCta(selection: AnalysisSelection): boolean {
   if (!datasetLayer) return false;
 
   const datasetId = datasetLayer.datasetId!;
+  // Same rule as the View Analysis nudge and the AOI menu: don't offer an
+  // analysis the backend can't compute for this kind of area.
+  if (!isAnalysableForSource(datasetId, selection.source)) return false;
   // Prefer the canonical catalogue name — it matches what sendMessage puts in
   // ui_context.dataset_selected — and fall back to the layer's display name.
   const datasetName =
