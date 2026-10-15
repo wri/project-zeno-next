@@ -259,53 +259,39 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         promoteId="gfw_fid"
         {...(concessionStyle ? { maxzoom: concessionStyle.maxzoom } : {})}
       >
-        {concessionStyle ? (
-          // A concession layer is drawn in its commodity's colour, with the
-          // usual hover tint on top; the events bind to the coloured fill.
-          // <Source> passes its id only to direct <Layer> children, not
-          // through this fragment, so each layer names its source.
-          <>
-            <Layer
-              id={fillLayerName}
-              type="fill"
-              source={sourceId}
-              source-layer={sourceLayer}
-              paint={concessionFillPaint(concessionStyle)}
-            />
-            {concessionStyle.lineColor && (
-              <Layer
-                id={`select-layer-line-${id}`}
-                type="line"
-                source={sourceId}
-                source-layer={sourceLayer}
-                paint={concessionLinePaint(concessionStyle)}
-              />
-            )}
-            <Layer
-              id={`select-layer-hover-${id}`}
-              type="fill"
-              source={sourceId}
-              source-layer={sourceLayer}
-              paint={selectAreaFillPaint}
-            />
-          </>
-        ) : (
-          <>
-            <Layer
-              id={fillLayerName}
-              type="fill"
-              source={sourceId}
-              source-layer={sourceLayer}
-              paint={selectAreaFillPaint}
-            />
-            <Layer
-              id={`select-layer-line-${id}`}
-              type="line"
-              source={sourceId}
-              source-layer={sourceLayer}
-              paint={selectAreaLinePaint}
-            />
-          </>
+        {/* Every <Layer> is a direct child: <Source> passes its id to each
+            child, and a fragment cannot take that prop. A concession layer
+            is drawn in its commodity's colour, with the usual hover tint on
+            top; the events bind to the fill either way. */}
+        <Layer
+          id={fillLayerName}
+          type="fill"
+          source-layer={sourceLayer}
+          paint={
+            concessionStyle
+              ? concessionFillPaint(concessionStyle)
+              : selectAreaFillPaint
+          }
+        />
+        {(!concessionStyle || concessionStyle.lineColor) && (
+          <Layer
+            id={`select-layer-line-${id}`}
+            type="line"
+            source-layer={sourceLayer}
+            paint={
+              concessionStyle
+                ? concessionLinePaint(concessionStyle)
+                : selectAreaLinePaint
+            }
+          />
+        )}
+        {concessionStyle && (
+          <Layer
+            id={`select-layer-hover-${id}`}
+            type="fill"
+            source-layer={sourceLayer}
+            paint={selectAreaFillPaint}
+          />
         )}
       </Source>
       {hoverInfo && <AreaTooltip hoverInfo={hoverInfo} />}
