@@ -9,17 +9,26 @@ import {
   Polygon,
 } from "geojson";
 
-import { LayerId, selectLayerOptions } from "@/app/types/map";
+import {
+  CONCESSION_STYLES,
+  LayerId,
+  selectLayerOptions,
+} from "@/app/types/map";
 import { API_CONFIG } from "@/app/config/api";
 
 import useMapStore from "@/app/store/mapStore";
 import { isAreaLayer } from "@/app/store/layerManagerSlice";
 
-import { getAoiName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
+import { getFeatureName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
 
 import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { getBoundaryFeatureDetails } from "@/app/utils/boundaryFeatureDetails";
-import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
+import {
+  concessionFillPaint,
+  concessionLinePaint,
+  selectAreaFillPaint,
+  selectAreaLinePaint,
+} from "./mapStyles";
 import "@/app/theme/popup.css";
 import { publishAreaSelection } from "./publishAreaSelection";
 
@@ -46,7 +55,8 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const selectAreaLayerConfig = selectLayerOptions.find(
     ({ id }) => id === layerId
   );
-  const { id, url, sourceLayer, nameKeys } = selectAreaLayerConfig!;
+  const { id, url, sourceLayer } = selectAreaLayerConfig!;
+  const concessionStyle = CONCESSION_STYLES[layerId];
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
@@ -86,7 +96,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             setHoverInfo({
               lat,
               lng,
-              name: getAoiName(nameKeys, properties),
+              name: getFeatureName(layerId, properties),
               details: getBoundaryFeatureDetails(layerId, properties),
             });
           }, TOOLTIP_DEBOUNCE_MS);
@@ -120,9 +130,12 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
       const onClick = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
-          // Depending on the layer, the name property has a different key.
-          // Using nameKeys of the layer config to find the right value.
-          const aoiName = getAoiName(nameKeys, e.features.at(-1)!.properties);
+          // Depending on the layer, the name property has a different key;
+          // getFeatureName reads the layer config's nameKeys.
+          const aoiName = getFeatureName(
+            layerId,
+            e.features.at(-1)!.properties
+          );
 
           const feature = e.features.at(-1);
 
@@ -229,7 +242,6 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
     fillLayerName,
     sourceId,
     sourceLayer,
-    nameKeys,
     metadata,
     addToRegistry,
     addLayer,
@@ -245,19 +257,49 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         type="vector"
         tiles={[url]}
         promoteId="gfw_fid"
+        {...(concessionStyle ? { maxzoom: concessionStyle.maxzoom } : {})}
       >
-        <Layer
-          id={fillLayerName}
-          type="fill"
-          source-layer={sourceLayer}
-          paint={selectAreaFillPaint}
-        />
-        <Layer
-          id={`select-layer-line-${id}`}
-          type="line"
-          source-layer={sourceLayer}
-          paint={selectAreaLinePaint}
-        />
+        {concessionStyle ? (
+          // A concession layer is drawn in its commodity's colour, with the
+          // usual hover tint on top; the events bind to the coloured fill.
+          <>
+            <Layer
+              id={fillLayerName}
+              type="fill"
+              source-layer={sourceLayer}
+              paint={concessionFillPaint(concessionStyle)}
+            />
+            {concessionStyle.lineColor && (
+              <Layer
+                id={`select-layer-line-${id}`}
+                type="line"
+                source-layer={sourceLayer}
+                paint={concessionLinePaint(concessionStyle)}
+              />
+            )}
+            <Layer
+              id={`select-layer-hover-${id}`}
+              type="fill"
+              source-layer={sourceLayer}
+              paint={selectAreaFillPaint}
+            />
+          </>
+        ) : (
+          <>
+            <Layer
+              id={fillLayerName}
+              type="fill"
+              source-layer={sourceLayer}
+              paint={selectAreaFillPaint}
+            />
+            <Layer
+              id={`select-layer-line-${id}`}
+              type="line"
+              source-layer={sourceLayer}
+              paint={selectAreaLinePaint}
+            />
+          </>
+        )}
       </Source>
       {hoverInfo && <AreaTooltip hoverInfo={hoverInfo} />}
     </>

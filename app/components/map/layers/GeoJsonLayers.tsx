@@ -4,6 +4,7 @@ import { Flex, Tag } from "@chakra-ui/react";
 import { ChatContextOptions } from "../../ContextButton";
 import { Feature, FeatureCollection } from "geojson";
 import useMapStore from "@/app/store/mapStore";
+import { CONCESSION_STYLES, type LayerId } from "@/app/types/map";
 import {
   Layer as ManagedLayer,
   GeoJsonEntry,
@@ -159,6 +160,12 @@ function GeoJsonLayerGroup({
         const fillLayerId = `geojson-fill-${groupId}-${entry.ref.source}-${entry.ref.name}`;
         const casingLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-casing`;
         const lineLayerId = `geojson-line-${groupId}-${entry.ref.source}-${entry.ref.name}-solid`;
+        // A picked concession is outlined in its commodity's colour, as on
+        // the GNW concessions map. A manual pick's source is the layer id,
+        // an agent pick's the backend key; both upper-case to the layer id.
+        const lineColor =
+          CONCESSION_STYLES[entry.ref.source.toUpperCase() as LayerId]
+            ?.selectColor ?? mainLineColor;
         return (
           <Source
             key={sourceId}
@@ -191,7 +198,7 @@ function GeoJsonLayerGroup({
             <MapLayer
               id={lineLayerId}
               type="line"
-              paint={aoiLinePaint(mainLineColor, lineOpacity)}
+              paint={aoiLinePaint(lineColor, lineOpacity)}
               filter={[
                 "any",
                 ["==", ["geometry-type"], "Polygon"],

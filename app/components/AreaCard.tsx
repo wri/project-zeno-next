@@ -23,6 +23,14 @@ function getAreaTypeLabel(aoiSelection: AOISelection): string {
       return "Indigenous Territories";
     case "oil_palm":
       return "Oil Palm Concessions";
+    case "rspo_oil_palm":
+      return "RSPO Oil Palm Concessions";
+    case "logging":
+      return "Logging Concessions";
+    case "mining":
+      return "Mining Concessions";
+    case "wood_fiber":
+      return "Wood Fiber Concessions";
     default:
       return aoi.source
         ? aoi.source.charAt(0).toUpperCase() + aoi.source.slice(1)
