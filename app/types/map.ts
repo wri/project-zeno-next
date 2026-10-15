@@ -117,8 +117,8 @@ export interface ConcessionStyle {
   /** The countries the source covers; the rest of the map is empty. */
   countries: readonly string[];
   fillColor: string;
-  lineColor: string | null;
-  lineWidth: number;
+  /** The outline, or null for the fill-only layers. */
+  line: { color: string; width: number } | null;
   selectColor: string;
   /** The darker shade the GNW map uses for text and icons. */
   accent: string;
@@ -148,8 +148,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
         "Suriname",
       ],
       fillColor: "#fecc5c",
-      lineColor: "#dea035",
-      lineWidth: 0.5,
+      line: { color: "#dea035", width: 0.5 },
       selectColor: "#dea035",
       accent: "#C98208",
       maxzoom: 10,
@@ -175,8 +174,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
         "Zambia",
       ],
       fillColor: "#fbb685",
-      lineColor: "#fbb685",
-      lineWidth: 1,
+      line: { color: "#fbb685", width: 1 },
       selectColor: "#e8873f",
       accent: "#c4621f",
       maxzoom: 10,
@@ -196,8 +194,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
         "Republic of Congo",
       ],
       fillColor: "#ee9587",
-      lineColor: null,
-      lineWidth: 0,
+      line: null,
       selectColor: "#ee9587",
       accent: "#c9604f",
       maxzoom: 9,
@@ -236,8 +233,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
         "Thailand",
       ],
       fillColor: "#ff6361",
-      lineColor: "#ff6361",
-      lineWidth: 1,
+      line: { color: "#ff6361", width: 1 },
       selectColor: "#ff6361",
       accent: "#d14340",
       maxzoom: 10,
@@ -248,8 +244,7 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       info: "Areas allocated for fast-growing tree plantations that supply pulp, paper and wood fiber, compiled by Global Forest Watch from national sources. Quality varies by source: a country's layer may be incomplete, and some boundaries may be out of date or inaccurate.",
       countries: ["Cambodia", "Indonesia", "Malaysia", "Republic of Congo"],
       fillColor: "#8A2F1D",
-      lineColor: null,
-      lineWidth: 0,
+      line: null,
       selectColor: "#c9573f",
       accent: "#8A2F1D",
       maxzoom: 9,

@@ -6,6 +6,7 @@ import {
   LayerActionHandler,
   LegendContextLayer,
   LegendEntry,
+  LegendLayer,
   LegendParam,
 } from "@/app/components/legend/types";
 import { LegendSequential } from "@/app/components/legend/LegendSequential";
@@ -120,7 +121,7 @@ export const BOUNDARY_LEGEND_ID = "boundary-layer";
 export function concessionLegendEntry(
   style: ConcessionStyle,
   opacity: number
-): LegendEntry {
+): LegendLayer {
   return {
     id: BOUNDARY_LEGEND_ID,
     title: style.title,
@@ -128,14 +129,11 @@ export function concessionLegendEntry(
     info: style.info,
     // Drawn like a dataset layer's symbol legend (Grasslands), so the entry
     // matches the other layers in the legend.
-    symbology: renderLegendSymbology({
-      title: style.title,
-      color: style.fillColor,
-      items: [{ label: style.title, color: style.fillColor }],
-      type: "symbol",
-      info: style.info,
-      note: "",
-    }),
+    symbology: (
+      <LegendSymbolList
+        items={[{ label: style.title, color: style.fillColor }]}
+      />
+    ),
     children: (
       <Text fontSize="xs">
         This layer is only available{" "}

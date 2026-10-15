@@ -25,7 +25,7 @@ export const selectAreaLinePaint: LineLayerSpecification["paint"] = {
 /** A concession layer's fill in its commodity colour (see CONCESSION_STYLES). */
 export function concessionFillPaint(
   style: ConcessionStyle,
-  opacity = 1
+  opacity: number
 ): FillLayerSpecification["paint"] {
   return {
     "fill-color": style.fillColor,
@@ -36,12 +36,12 @@ export function concessionFillPaint(
 
 /** A concession layer's outline, for the layers GNW draws one for. */
 export function concessionLinePaint(
-  style: ConcessionStyle,
-  opacity = 1
+  line: NonNullable<ConcessionStyle["line"]>,
+  opacity: number
 ): LineLayerSpecification["paint"] {
   return {
-    "line-color": style.lineColor ?? style.fillColor,
-    "line-width": style.lineWidth,
+    "line-color": line.color,
+    "line-width": line.width,
     "line-opacity": opacity,
   };
 }

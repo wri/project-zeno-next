@@ -8,7 +8,6 @@ import {
   concessionLegendEntry,
   useLegendHook,
 } from "../useLegendHook";
-import type { LegendLayer } from "../types";
 import { CONCESSION_STYLES } from "@/app/types/map";
 import useMapStore from "@/app/store/mapStore";
 import type { Layer } from "@/app/store/layerManagerSlice";
@@ -91,10 +90,7 @@ describe("useLegendHook concession layer", () => {
   it("names the countries the source covers", () => {
     render(
       <ChakraProvider value={defaultSystem}>
-        {
-          (concessionLegendEntry(CONCESSION_STYLES.OIL_PALM!, 1) as LegendLayer)
-            .children
-        }
+        {concessionLegendEntry(CONCESSION_STYLES.OIL_PALM!, 1).children}
       </ChakraProvider>
     );
 

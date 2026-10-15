@@ -54,21 +54,22 @@ const commodityOptions = selectLayerOptions.filter(
  */
 export function BoundariesList() {
   const selectAreaLayer = useMapStore((s) => s.selectAreaLayer);
+  const renderCard = (option: (typeof selectLayerOptions)[number]) => (
+    <BoundaryCard
+      key={option.id}
+      id={option.id}
+      name={option.name}
+      source={option.source}
+      isActive={selectAreaLayer === option.id}
+    />
+  );
 
   return (
     <>
       <Text fontSize="xs" color="fg.muted" flexShrink={0}>
         Show a boundary layer on the map, then click an area to select it.
       </Text>
-      {boundaryOptions.map((option) => (
-        <BoundaryCard
-          key={option.id}
-          id={option.id}
-          name={option.name}
-          source={option.source}
-          isActive={selectAreaLayer === option.id}
-        />
-      ))}
+      {boundaryOptions.map(renderCard)}
       {/* Grouped as on the GNW concessions map. */}
       <Text
         fontSize="xs"
@@ -81,15 +82,7 @@ export function BoundariesList() {
       >
         Commodities
       </Text>
-      {commodityOptions.map((option) => (
-        <BoundaryCard
-          key={option.id}
-          id={option.id}
-          name={option.name}
-          source={option.source}
-          isActive={selectAreaLayer === option.id}
-        />
-      ))}
+      {commodityOptions.map(renderCard)}
     </>
   );
 }

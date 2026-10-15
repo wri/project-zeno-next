@@ -58,6 +58,15 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   const { id, url, sourceLayer } = selectAreaLayerConfig!;
   const concessionStyle = CONCESSION_STYLES[layerId];
   const boundaryOpacity = useMapStore((s) => s.boundaryOpacity);
+  // A concession layer is drawn in its commodity's colour, outlined only
+  // where GNW draws an outline; every other layer keeps the usual paint.
+  const fillPaint = concessionStyle
+    ? concessionFillPaint(concessionStyle, boundaryOpacity)
+    : selectAreaFillPaint;
+  const linePaint = !concessionStyle
+    ? selectAreaLinePaint
+    : concessionStyle.line &&
+      concessionLinePaint(concessionStyle.line, boundaryOpacity);
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
@@ -131,17 +140,13 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
 
       const onClick = (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
-          // Depending on the layer, the name property has a different key;
-          // getFeatureName reads the layer config's nameKeys.
-          const aoiName = getFeatureName(
-            layerId,
-            e.features.at(-1)!.properties
-          );
-
           const feature = e.features.at(-1);
 
           if (feature) {
             const featureProps = feature.properties;
+            // Depending on the layer, the name property has a different key;
+            // getFeatureName reads the layer config's nameKeys.
+            const aoiName = getFeatureName(layerId, featureProps);
             // A click can land before /api/metadata resolves; the area still
             // draws, just without an id (publishAreaSelection then clears).
             const dynamicSrcId = metadata
@@ -258,32 +263,26 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
         type="vector"
         tiles={[url]}
         promoteId="gfw_fid"
+        // Spread, not maxzoom={…?.maxzoom}: MapLibre rejects a source with
+        // maxzoom: undefined, so the other boundary layers would not draw.
         {...(concessionStyle ? { maxzoom: concessionStyle.maxzoom } : {})}
       >
         {/* Every <Layer> is a direct child: <Source> passes its id to each
             child, and a fragment cannot take that prop. A concession layer
-            is drawn in its commodity's colour, with the usual hover tint on
-            top; the events bind to the fill either way. */}
+            gets the usual hover tint on top of its fill; the events bind to
+            the fill either way. */}
         <Layer
           id={fillLayerName}
           type="fill"
           source-layer={sourceLayer}
-          paint={
-            concessionStyle
-              ? concessionFillPaint(concessionStyle, boundaryOpacity)
-              : selectAreaFillPaint
-          }
+          paint={fillPaint}
         />
-        {(!concessionStyle || concessionStyle.lineColor) && (
+        {linePaint && (
           <Layer
             id={`select-layer-line-${id}`}
             type="line"
             source-layer={sourceLayer}
-            paint={
-              concessionStyle
-                ? concessionLinePaint(concessionStyle, boundaryOpacity)
-                : selectAreaLinePaint
-            }
+            paint={linePaint}
           />
         )}
         {concessionStyle && (

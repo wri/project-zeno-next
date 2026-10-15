@@ -18,9 +18,9 @@ interface Metadata {
   subregion_to_subtype_mapping?: Record<string, string>;
 }
 
-export function getAoiName(
+function getAoiName(
   nameKeys: readonly string[],
-  properties: { [key: string]: string }
+  properties: Record<string, unknown>
 ): string {
   // Later keys come first ("Lisboa, Portugal"). The separator goes in only
   // between two values, so a missing earlier key leaves no trailing comma.
@@ -42,10 +42,7 @@ export function getFeatureName(
   properties: Record<string, unknown>
 ): string {
   const config = selectLayerOptions.find((option) => option.id === layerId);
-  const name = getAoiName(
-    config?.nameKeys ?? [],
-    properties as Record<string, string>
-  );
+  const name = getAoiName(config?.nameKeys ?? [], properties);
   const unnamed = CONCESSION_STYLES[layerId]?.unnamed;
   if (name || !unnamed) return name;
   if (properties.comp_group) return String(properties.comp_group);
