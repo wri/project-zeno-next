@@ -24,20 +24,24 @@ export const selectAreaLinePaint: LineLayerSpecification["paint"] = {
 
 /** A concession layer's fill in its commodity colour (see CONCESSION_STYLES). */
 export function concessionFillPaint(
-  style: ConcessionStyle
+  style: ConcessionStyle,
+  opacity = 1
 ): FillLayerSpecification["paint"] {
   return {
     "fill-color": style.fillColor,
-    "fill-opacity": CONCESSION_FILL_OPACITY,
+    // The legend's opacity scales the GNW fill opacity.
+    "fill-opacity": CONCESSION_FILL_OPACITY * opacity,
   };
 }
 
 /** A concession layer's outline, for the layers GNW draws one for. */
 export function concessionLinePaint(
-  style: ConcessionStyle
+  style: ConcessionStyle,
+  opacity = 1
 ): LineLayerSpecification["paint"] {
   return {
     "line-color": style.lineColor ?? style.fillColor,
     "line-width": style.lineWidth,
+    "line-opacity": opacity,
   };
 }

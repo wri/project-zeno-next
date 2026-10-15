@@ -57,6 +57,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
   );
   const { id, url, sourceLayer } = selectAreaLayerConfig!;
   const concessionStyle = CONCESSION_STYLES[layerId];
+  const boundaryOpacity = useMapStore((s) => s.boundaryOpacity);
 
   const sourceId = `select-layer-source-${id}`;
   const fillLayerName = `select-layer-fill-${id}`;
@@ -269,7 +270,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
           source-layer={sourceLayer}
           paint={
             concessionStyle
-              ? concessionFillPaint(concessionStyle)
+              ? concessionFillPaint(concessionStyle, boundaryOpacity)
               : selectAreaFillPaint
           }
         />
@@ -280,7 +281,7 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
             source-layer={sourceLayer}
             paint={
               concessionStyle
-                ? concessionLinePaint(concessionStyle)
+                ? concessionLinePaint(concessionStyle, boundaryOpacity)
                 : selectAreaLinePaint
             }
           />

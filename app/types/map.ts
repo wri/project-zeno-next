@@ -101,12 +101,21 @@ export type LayerId = (typeof selectLayerOptions)[number]["id"];
 export type LayerName = (typeof selectLayerOptions)[number]["name"];
 
 /**
- * Map style of a concession boundary layer, after the GNW concessions map:
+ * Map style and legend of a concession boundary layer, after the GNW
+ * concessions map:
  * a translucent fill in the commodity's colour, an outline where GNW draws
  * one (oil palm and wood fiber are fill only), and the colour of the picked
  * feature's outline. The list card shows the layer's icon in its accent.
+ * When the layer is on, the legend shows it as a layer (not an AREA pill):
+ * its title, a swatch, and the countries the source covers.
  */
 export interface ConcessionStyle {
+  /** Legend title, in the legend's sentence case. */
+  title: string;
+  /** What the layer shows, for the legend's info popover. */
+  info: string;
+  /** The countries the source covers; the rest of the map is empty. */
+  countries: readonly string[];
   fillColor: string;
   lineColor: string | null;
   lineWidth: number;
@@ -121,6 +130,23 @@ export interface ConcessionStyle {
 export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
   Object.freeze({
     LOGGING: {
+      title: "Logging concessions",
+      info: "Areas where governments have granted rights to harvest timber, compiled by Global Forest Watch from national sources. Quality varies by source: a country's layer may be incomplete, and some boundaries may be out of date or inaccurate.",
+      countries: [
+        "Cambodia",
+        "Cameroon",
+        "Canada",
+        "Central African Republic",
+        "DR Congo",
+        "Equatorial Guinea",
+        "Gabon",
+        "Indonesia",
+        "Liberia",
+        "Malaysia",
+        "Peru",
+        "Republic of Congo",
+        "Suriname",
+      ],
       fillColor: "#fecc5c",
       lineColor: "#dea035",
       lineWidth: 0.5,
@@ -130,6 +156,24 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       unnamed: "Logging concession",
     },
     MINING: {
+      title: "Mining concessions",
+      info: "Areas where governments have granted rights to explore for or extract minerals, compiled by Global Forest Watch from national sources. Quality varies by source: a country's layer may be incomplete, and some boundaries may be out of date or inaccurate.",
+      countries: [
+        "Brazil",
+        "Cambodia",
+        "Cameroon",
+        "Canada",
+        "Colombia",
+        "DR Congo",
+        "Gabon",
+        "Indonesia",
+        "Malaysia",
+        "Mexico",
+        "Peru",
+        "Republic of Congo",
+        "Suriname",
+        "Zambia",
+      ],
       fillColor: "#fbb685",
       lineColor: "#fbb685",
       lineWidth: 1,
@@ -139,6 +183,18 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       unnamed: "Mining concession",
     },
     OIL_PALM: {
+      title: "Oil palm concessions",
+      info: "Areas allocated for industrial oil palm plantations, compiled by Global Forest Watch from national sources. Quality varies by source: a country's layer may be incomplete, and some boundaries may be out of date or inaccurate.",
+      countries: [
+        "Cambodia",
+        "Cameroon",
+        "DR Congo",
+        "Indonesia",
+        "Liberia",
+        "Malaysia",
+        "Peru",
+        "Republic of Congo",
+      ],
       fillColor: "#ee9587",
       lineColor: null,
       lineWidth: 0,
@@ -148,6 +204,37 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       unnamed: "Oil palm concession",
     },
     RSPO_OIL_PALM: {
+      title: "RSPO oil palm concessions",
+      info: "Oil palm concessions of members of the Roundtable on Sustainable Palm Oil (RSPO), from data the RSPO publishes, compiled by Global Forest Watch. Quality varies by source: a country's layer may be incomplete, and some boundaries may be out of date or inaccurate.",
+      countries: [
+        "Brazil",
+        "Cambodia",
+        "Cameroon",
+        "Colombia",
+        "Costa Rica",
+        "Côte d'Ivoire",
+        "DR Congo",
+        "Dominican Republic",
+        "Ecuador",
+        "Gabon",
+        "Ghana",
+        "Guatemala",
+        "Honduras",
+        "Liberia",
+        "Madagascar",
+        "Malaysia",
+        "Mexico",
+        "Nicaragua",
+        "Nigeria",
+        "Panama",
+        "Papua New Guinea",
+        "Peru",
+        "Sierra Leone",
+        "Solomon Islands",
+        "Sri Lanka",
+        "São Tomé and Príncipe",
+        "Thailand",
+      ],
       fillColor: "#ff6361",
       lineColor: "#ff6361",
       lineWidth: 1,
@@ -157,6 +244,9 @@ export const CONCESSION_STYLES: Partial<Record<LayerId, ConcessionStyle>> =
       unnamed: "RSPO oil palm concession",
     },
     WOOD_FIBER: {
+      title: "Wood fiber concessions",
+      info: "Areas allocated for fast-growing tree plantations that supply pulp, paper and wood fiber, compiled by Global Forest Watch from national sources. Quality varies by source: a country's layer may be incomplete, and some boundaries may be out of date or inaccurate.",
+      countries: ["Cambodia", "Indonesia", "Malaysia", "Republic of Congo"],
       fillColor: "#8A2F1D",
       lineColor: null,
       lineWidth: 0,
