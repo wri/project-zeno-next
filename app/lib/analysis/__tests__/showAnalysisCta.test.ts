@@ -22,6 +22,8 @@ const selection: AnalysisSelection = {
 
 // Tree cover loss in the dataset catalogue (DATASET_BY_ID)
 const TCL_ID = 4;
+// Tree cover — upstream takes its areas by id, so never a custom area.
+const TREE_COVER_ID = 7;
 // Intact Forest Landscapes — contextual, view-only, never analysable.
 const IFL_ID = 101;
 
@@ -153,9 +155,12 @@ describe("showAnalysisCta", () => {
   });
 
   it("does not nudge for an area whose source the dataset's analysis doesn't cover", () => {
-    // Tree cover (7) refuses custom geometry upstream.
     seedLayers([
-      datasetLayer({ id: "dataset-7", name: "Tree cover", datasetId: 7 }),
+      datasetLayer({
+        id: `dataset-${TREE_COVER_ID}`,
+        name: "Tree cover",
+        datasetId: TREE_COVER_ID,
+      }),
     ]);
     const drawn: AnalysisSelection = {
       name: "My drawn area",

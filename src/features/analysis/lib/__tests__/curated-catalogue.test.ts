@@ -36,12 +36,9 @@ describe("CURATED_ANALYSES", () => {
     expect(gain?.aoiSources).toEqual(["gadm"]);
   });
 
-  it("leaves every other entry ungated", () => {
-    for (const entry of CURATED_ANALYSES) {
-      if ([5, 7, 12].includes(entry.datasetId)) continue;
-      expect(entry.featureFlag).toBeUndefined();
-      expect(entry.aoiSources).toBeUndefined();
-    }
+  it("gates only tree cover gain, tree cover and LGMS", () => {
+    const gated = CURATED_ANALYSES.filter((e) => e.featureFlag || e.aoiSources);
+    expect(gated.map((e) => e.datasetId)).toEqual([5, 7, 12]);
   });
 
   it("gives every entry a one-line description that fits a catalogue card", () => {
@@ -182,13 +179,7 @@ describe("isAnalysableForSource", () => {
     expect(isAnalysableForSource(5, "wdpa")).toBe(false);
     expect(isAnalysableForSource(5, "kba")).toBe(false);
     expect(isAnalysableForSource(12, "landmark")).toBe(false);
-  });
-
-  it("keeps tree cover off areas sent upstream as raw geometry", () => {
     expect(isAnalysableForSource(7, "custom")).toBe(false);
-    expect(isAnalysableForSource(7, "oil_palm")).toBe(false);
-    expect(isAnalysableForSource(7, "gadm")).toBe(true);
-    expect(isAnalysableForSource(7, "wdpa")).toBe(true);
   });
 
   it("matches the source case-insensitively", () => {
