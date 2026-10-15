@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Text } from "@chakra-ui/react";
+import { Box, Flex, Text } from "@chakra-ui/react";
 
 import {
   isImageryGroup,
@@ -126,28 +126,49 @@ export function concessionLegendEntry(
     title: style.title,
     opacity: opacity * 100,
     info: style.info,
+    // Sizes and colours from the GNW map's legend rows: a 12 px square
+    // swatch beside its label, and a dotted underline on the country note.
     symbology: (
-      <LegendCategorical
-        items={[{ value: style.title, color: style.fillColor }]}
-      />
+      <Flex
+        alignItems="center"
+        gap="4px"
+        fontSize="12px"
+        lineHeight="14px"
+        color="#44505a"
+      >
+        <Box
+          w="12px"
+          h="12px"
+          flex="none"
+          borderRadius="2px"
+          border="1px solid rgba(0, 0, 0, 0.06)"
+          bg={style.fillColor}
+        />
+        <Text as="span" truncate>
+          {style.title}
+        </Text>
+      </Flex>
     ),
     children: (
-      <Text fontSize="xs">
+      <Text fontSize="12px" lineHeight="14px" color="#44505a">
         This layer is only available{" "}
         <Tooltip
           content={style.countries.join(", ")}
           positioning={{ placement: "top" }}
           showArrow
         >
-          <Text
-            as="span"
+          <Box
+            as="u"
             tabIndex={0}
-            textDecoration="underline dotted"
-            textUnderlineOffset="3px"
             cursor="help"
+            textDecorationLine="underline"
+            textDecorationStyle="dotted"
+            textDecorationColor="#b2b6bd"
+            textDecorationThickness="0.125em"
+            css={{ textDecorationSkipInk: "none" }}
           >
             for certain countries
-          </Text>
+          </Box>
         </Tooltip>
         .
       </Text>
