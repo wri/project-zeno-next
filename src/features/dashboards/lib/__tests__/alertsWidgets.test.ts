@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  alertsMapLayer,
   alertsWidgetSpec,
   chipRange,
+  landFilterOption,
+  pageNumbers,
   confidenceLabel,
   customStartMin,
   formatAlertDate,
@@ -13,8 +16,9 @@ import {
   newWeekHa,
   rowsInRange,
   rowsSummary,
+  rowArea,
+  rowTiers,
   shiftIsoDate,
-  tierColumns,
   todayIso,
   visibleRows,
   widenedWindow,
@@ -147,15 +151,98 @@ describe("date arithmetic", () => {
     expect(todayIso(Date.UTC(2026, 9, 16, 0, 5))).toBe("2026-10-16");
   });
 
-  it("builds the initial window as `days` days ending today", () => {
+  it("builds the initial window as the backend does, `end - days` to today", () => {
     expect(initialWindow(30, "2026-10-16")).toEqual({
-      start: "2026-09-17",
+      start: "2026-09-16",
       end: "2026-10-16",
     });
     expect(initialWindow(1, "2026-10-16")).toEqual({
-      start: "2026-10-16",
+      start: "2026-10-15",
       end: "2026-10-16",
     });
+  });
+});
+
+describe("land filters", () => {
+  it("knows each Intersects option's label and explainer phrase", () => {
+    expect(landFilterOption()).toEqual({ label: "Any" });
+    expect(landFilterOption("natural_lands")).toMatchObject({
+      label: "Natural lands",
+      phrase: "on natural lands",
+    });
+    expect(landFilterOption("natural_forests")).toMatchObject({
+      label: "Natural forests",
+      phrase: "on natural forests",
+    });
+  });
+
+  it("draws a land class beneath the alerts only when chosen and in the snapshot", () => {
+    const withEntries = alertsWidgetSpec(
+      config({
+        dataset: {
+          ...config().dataset,
+          context_layers: [
+            {
+              name: "natural_lands",
+              tile_url:
+                "https://eoapi.example.org/natural-lands/{z}/{x}/{y}.png",
+            },
+            {
+              name: "natural_forests",
+              tile_url:
+                "https://eoapi.example.org/natural-forests/{z}/{x}/{y}.png",
+            },
+          ],
+        },
+      })
+    )!;
+    expect(withEntries.layer.contextTileUrl).toBeUndefined();
+    expect(withEntries.overlays.natural_lands?.contextLayerName).toBe(
+      "natural_lands"
+    );
+    expect(withEntries.overlays.natural_forests?.contextLayerName).toBe(
+      "natural_forests"
+    );
+    expect(withEntries.overlays.natural_lands?.contextTileUrl).toBeTruthy();
+    expect(alertsMapLayer(withEntries)).toBe(withEntries.layer);
+    expect(alertsMapLayer(withEntries, "natural_lands")).toBe(
+      withEntries.overlays.natural_lands
+    );
+    expect(alertsMapLayer(withEntries, "natural_forests")).toBe(
+      withEntries.overlays.natural_forests
+    );
+
+    // A snapshot from before the backend carried the entries: no overlay.
+    const without = alertsWidgetSpec(config())!;
+    expect(without.overlays).toEqual({});
+    expect(alertsMapLayer(without, "natural_lands")).toBe(without.layer);
+
+    // The lands entry alone: forests narrows the list, the map stays as is.
+    const landsOnly = alertsWidgetSpec(
+      config({
+        dataset: {
+          ...config().dataset,
+          context_layers: [
+            { name: "natural_lands", tile_url: "https://eoapi.example.org/nl" },
+          ],
+        },
+      })
+    )!;
+    expect(alertsMapLayer(landsOnly, "natural_forests")).toBe(landsOnly.layer);
+  });
+});
+
+describe("pageNumbers", () => {
+  it("lists every page when there are few", () => {
+    expect(pageNumbers(1, 1)).toEqual([1]);
+    expect(pageNumbers(2, 6)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("keeps the first three, the current page's neighbours and the last", () => {
+    expect(pageNumbers(1, 22)).toEqual([1, 2, 3, "…", 22]);
+    expect(pageNumbers(10, 22)).toEqual([1, 2, 3, "…", 9, 10, 11, "…", 22]);
+    expect(pageNumbers(22, 22)).toEqual([1, 2, 3, "…", 21, 22]);
+    expect(pageNumbers(4, 7)).toEqual([1, 2, 3, 4, 5, "…", 7]);
   });
 });
 
@@ -383,14 +470,22 @@ describe("withTileDates", () => {
 });
 
 describe("tiers", () => {
-  it("shows both tiers and their total under All, one column for a single tier", () => {
-    expect(tierColumns("all").map((c) => c.label)).toEqual([
-      "High (ha)",
-      "Highest (ha)",
-      "Total (ha)",
-    ]);
-    expect(tierColumns("high").map((c) => c.field)).toEqual(["highHa"]);
-    expect(tierColumns("highest").map((c) => c.field)).toEqual(["highestHa"]);
+  const both = day({ highHa: 12.5, highestHa: 3, totalHa: 15.5 });
+  const highOnly = day({ highHa: 2.1, highestHa: 0, totalHa: 2.1 });
+  const highestOnly = day({ highHa: 0, highestHa: 1.6, totalHa: 1.6 });
+
+  it("names the tiers a day had alerts in, or the one tier on show", () => {
+    expect(rowTiers(both, "all")).toBe("High · Highest");
+    expect(rowTiers(highOnly, "all")).toBe("High");
+    expect(rowTiers(highestOnly, "all")).toBe("Highest");
+    expect(rowTiers(both, "high")).toBe("High");
+    expect(rowTiers(both, "highest")).toBe("Highest");
+  });
+
+  it("gives the day's area in the shown tier", () => {
+    expect(rowArea(both, "all")).toBe(15.5);
+    expect(rowArea(both, "high")).toBe(12.5);
+    expect(rowArea(both, "highest")).toBe(3);
   });
 
   it("names the tiers in the shown rows for the badge row", () => {

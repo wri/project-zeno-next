@@ -54,7 +54,7 @@ describe("toAlertsList", () => {
   it("normalises the wire shape and keeps rows newest first", () => {
     const list = toAlertsList(ALERTS_LIST_WIRE);
     expect(list.dataTo).toBe("2026-10-16");
-    expect(list.window).toEqual({ start: "2026-09-17", end: "2026-10-16" });
+    expect(list.window).toEqual({ start: "2026-09-16", end: "2026-10-16" });
     expect(list.newWeek).toEqual({ start: "2026-10-04", end: "2026-10-10" });
     expect(list.rows).toHaveLength(14);
     expect(list.rows[0]).toEqual({
@@ -96,6 +96,21 @@ describe("fetchAlertsList", () => {
       end_date: "2026-10-16",
     });
     expect(list.rows).toHaveLength(14);
+  });
+
+  it("sends the land filter only when one is chosen", async () => {
+    // A fresh Response per call: a body can be read once.
+    mockedFetch.mockImplementation(async () =>
+      jsonResponse(200, ALERTS_LIST_WIRE)
+    );
+    await fetchAlertsList(aoi, range, "natural_lands");
+    expect(
+      JSON.parse(mockedFetch.mock.calls[0][1]?.body as string)
+    ).toMatchObject({ land_filter: "natural_lands" });
+    await fetchAlertsList(aoi, range);
+    expect(
+      JSON.parse(mockedFetch.mock.calls[1][1]?.body as string)
+    ).not.toHaveProperty("land_filter");
   });
 
   it("turns a 502 into a retryable error carrying the backend's sentence", async () => {

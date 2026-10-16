@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import type { AlertsAoi, AlertsList, DateRange } from "../lib/alertsWidgets";
+import type {
+  AlertsAoi,
+  AlertsLandFilter,
+  AlertsList,
+  DateRange,
+} from "../lib/alertsWidgets";
 import { httpDetail, httpStatus, readJson } from "./http";
 
 /**
@@ -85,9 +90,14 @@ export function toAlertsListError(error: unknown): AlertsListError {
   return new AlertsListError(sentence ?? GENERIC_MESSAGE, status !== 422);
 }
 
+/**
+ * `landFilter` restricts the rows to alerts on that land class (the
+ * Intersects dropdown); the key is left out of the body for "Any".
+ */
 export async function fetchAlertsList(
   aoi: AlertsAoi,
-  range: DateRange
+  range: DateRange,
+  landFilter?: AlertsLandFilter
 ): Promise<AlertsList> {
   try {
     const data = await readJson<unknown>("/api/alerts/list", {
@@ -99,6 +109,7 @@ export async function fetchAlertsList(
         subtype: aoi.subtype,
         start_date: range.start,
         end_date: range.end,
+        ...(landFilter ? { land_filter: landFilter } : {}),
       }),
     });
     return toAlertsList(AlertsListResponseSchema.parse(data));

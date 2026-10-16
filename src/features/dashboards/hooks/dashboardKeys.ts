@@ -1,4 +1,8 @@
-import type { AlertsAoi, DateRange } from "../lib/alertsWidgets";
+import type {
+  AlertsAoi,
+  AlertsLandFilter,
+  DateRange,
+} from "../lib/alertsWidgets";
 
 export const dashboardKeys = {
   all: ["dashboards"] as const,
@@ -7,7 +11,7 @@ export const dashboardKeys = {
     ["dashboard-aois", query, source] as const,
   analysisTemplates: ["analysis-templates"] as const,
   // One live alerts list per area and fetched window (the alerts widget).
-  alerts: (aoi: AlertsAoi, range: DateRange) =>
+  alerts: (aoi: AlertsAoi, range: DateRange, landFilter?: AlertsLandFilter) =>
     [
       "dashboard-alerts",
       aoi.source,
@@ -15,6 +19,7 @@ export const dashboardKeys = {
       aoi.subtype,
       range.start,
       range.end,
+      landFilter ?? null,
     ] as const,
   // A mutation key, not a query key: lets any mounted card see a template
   // request that is still in flight for this dashboard.

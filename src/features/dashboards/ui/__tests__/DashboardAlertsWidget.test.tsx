@@ -2,6 +2,7 @@
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -15,21 +16,22 @@ vi.mock("../../api/alerts", async (importOriginal) => ({
   fetchAlertsList: vi.fn(),
 }));
 
-// The map pane's body is MapLibre's; a stub that exposes the period it was
-// given is what this test needs.
+// The map pane's body is MapLibre's; a stub that exposes the period and the
+// layer it was given is what this test needs.
 vi.mock("../DashboardMapWidget", () => ({
   default: ({
     dateRange,
     layer,
   }: {
     dateRange?: { start: string; end: string };
-    layer: { tileUrl: string };
+    layer: { tileUrl: string; contextLayerName?: string };
   }) => (
     <div
       data-testid="map-widget"
       data-start={dateRange?.start ?? ""}
       data-end={dateRange?.end ?? ""}
       data-tiles={layer.tileUrl}
+      data-context={layer.contextLayerName ?? ""}
     />
   ),
 }));
@@ -63,16 +65,18 @@ const areaAoi = {
   position: 0,
   source: "gadm",
   src_id: "BRA.16.137_2",
-  subtype: "district",
+  subtype: "district-county",
   name: "Guarapuava",
 };
 
 const aoi = {
   source: "gadm",
   srcId: "BRA.16.137_2",
-  subtype: "district",
+  subtype: "district-county",
   name: "Guarapuava",
 };
+
+const NEW_WEEK_FOOTER = "5 alert days · 50.8 ha in this period";
 
 function renderWidget(
   overrides: Partial<React.ComponentProps<typeof DashboardAlertsWidget>> = {}
@@ -101,6 +105,24 @@ function renderWidget(
 
 const mapPane = () => screen.getByTestId("map-widget");
 
+/** Opens the Custom dates and returns the start input. */
+async function openCustomStart() {
+  fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+  return screen.findByLabelText("Custom period start");
+}
+
+// The menu selects its highlighted item, so hover the item before clicking.
+async function chooseFromDropdown(trigger: string, option: string) {
+  fireEvent.click(screen.getByRole("button", { name: trigger }));
+  const item = await screen.findByRole("menuitem", { name: option });
+  await act(async () => {
+    fireEvent.pointerMove(item, { pointerType: "mouse" });
+  });
+  await act(async () => {
+    fireEvent.click(item);
+  });
+}
+
 describe("DashboardAlertsWidget", () => {
   // Block body on purpose: a function returned from `beforeEach` runs as the
   // teardown, and `mockReset()` returns the mock.
@@ -113,25 +135,48 @@ describe("DashboardAlertsWidget", () => {
     renderWidget();
 
     expect(screen.getByText("Integrated alerts in Guarapuava")).toBeTruthy();
-    await screen.findByText("5 alert days · 50.8 ha in this period");
+    await screen.findByText(NEW_WEEK_FOOTER);
 
     expect(mockedFetch).toHaveBeenCalledTimes(1);
     expect(mockedFetch).toHaveBeenCalledWith(
       aoi,
-      initialWindow(30, todayIso())
+      initialWindow(30, todayIso()),
+      undefined
     );
     expect(screen.getByText("DATA TO OCT 16, 2026")).toBeTruthy();
+    // No pane header: the map lines up with the list; its full-screen
+    // control is inside the map.
+    expect(screen.queryByText(/· map/)).toBeNull();
     expect(
-      screen.getByText("Integrated alerts in Guarapuava · map")
+      screen.getByRole("button", { name: "View map full screen" })
     ).toBeTruthy();
     expect(mapPane().dataset.start).toBe("2026-10-04");
     expect(mapPane().dataset.end).toBe("2026-10-10");
+    expect(mapPane().dataset.context).toBe("");
+  });
+
+  it("keeps the params badges behind the Show params toggle, with DATA TO always on", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    renderWidget();
+    await screen.findByText(NEW_WEEK_FOOTER);
+
+    expect(screen.queryByText("DATASET")).toBeNull();
+    expect(screen.queryByText("CONFIDENCE")).toBeNull();
+    expect(screen.getByText("DATA TO OCT 16, 2026")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show params" }));
+    expect(screen.getByText("DATASET")).toBeTruthy();
+    expect(screen.getByText("CONFIDENCE").parentElement?.textContent).toBe(
+      "CONFIDENCEHigh · Highest"
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Hide params" }));
+    expect(screen.queryByText("DATASET")).toBeNull();
   });
 
   it("filters the cached rows per chip and re-dates the map without fetching again", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
-    await screen.findByText("5 alert days · 50.8 ha in this period");
+    await screen.findByText(NEW_WEEK_FOOTER);
 
     fireEvent.click(screen.getByRole("button", { name: "Last day" }));
     expect(screen.getByText("1 alert day · 5 ha in this period")).toBeTruthy();
@@ -144,40 +189,70 @@ describe("DashboardAlertsWidget", () => {
     ).toBeTruthy();
     expect(mapPane().dataset.start).toBe("2026-10-10");
 
-    // The tier changes the chip's hectares and the badge row's label.
-    fireEvent.click(screen.getByRole("button", { name: "High" }));
+    // The tier changes the pill's hectares, the cells and the badge.
+    await chooseFromDropdown("Confidence: All", "High");
     expect(
       screen.getByText("4 alert days · 28.1 ha in this period")
     ).toBeTruthy();
     expect(
       screen.getByRole("button", { name: /New this week/ }).textContent
     ).toContain("41.4 ha");
-    const confidenceChip = screen.getByText("CONFIDENCE").parentElement;
-    expect(confidenceChip?.textContent).toBe("CONFIDENCEHigh");
+    expect(
+      screen.getByRole("button", { name: "Confidence: High" })
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show params" }));
+    expect(screen.getByText("CONFIDENCE").parentElement?.textContent).toBe(
+      "CONFIDENCEHigh"
+    );
 
     expect(mockedFetch).toHaveBeenCalledTimes(1);
   });
 
-  it("asks once for where a typed custom start ended up, not for each date on the way", async () => {
-    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+  it("asks again with the land filter, holding the rows meanwhile, and overlays natural lands", async () => {
+    const narrowed = toAlertsList({
+      ...ALERTS_LIST_WIRE,
+      rows: ALERTS_LIST_WIRE.rows.slice(4, 6),
+    });
+    let resolveNarrowed: (list: typeof narrowed) => void = () => {};
+    mockedFetch
+      .mockResolvedValueOnce(toAlertsList(ALERTS_LIST_WIRE))
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (resolveNarrowed = resolve))
+      );
     renderWidget();
-    await screen.findByText("5 alert days · 50.8 ha in this period");
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    await screen.findByText(NEW_WEEK_FOOTER);
 
-    // Typing "01/08/2026" over "10/10/2026" passes through a complete
-    // "01/10/2026" and "01/09/2026" first, both outside the window.
-    const start = screen.getByLabelText("Custom period start");
-    fireEvent.change(start, { target: { value: "2026-10-01" } });
-    fireEvent.change(start, { target: { value: "2026-09-01" } });
-    fireEvent.change(start, { target: { value: "2026-08-01" } });
+    await chooseFromDropdown("Intersects: Any", "Natural lands");
+    await waitFor(() => expect(mockedFetch).toHaveBeenCalledTimes(2));
+    expect(mockedFetch.mock.calls[1][2]).toBe("natural_lands");
+    // Held rows, dimmed, until the narrowed list lands; the map already
+    // draws natural lands beneath the alerts.
+    expect(screen.getByText(NEW_WEEK_FOOTER)).toBeTruthy();
     expect(
-      screen.getByText(/Alert days from 1 Aug 2026 to 16 Oct 2026/)
+      screen
+        .getByRole("table", { name: "Alert days" })
+        .closest("[aria-busy='true']")
+    ).toBeTruthy();
+    expect(mapPane().dataset.context).toBe("natural_lands");
+    expect(
+      screen.getByText(/to 10 Oct 2026, on natural lands, newest first/)
     ).toBeTruthy();
 
-    await waitFor(() => expect(mockedFetch).toHaveBeenCalledTimes(2));
-    expect(mockedFetch.mock.calls[1][1].start).toBe("2026-08-01");
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    expect(mockedFetch).toHaveBeenCalledTimes(2);
+    resolveNarrowed(narrowed);
+    await screen.findByText("2 alert days · 23 ha in this period");
+
+    // Natural forests: its own overlay, from the snapshot's entry.
+    mockedFetch.mockResolvedValueOnce(narrowed);
+    await chooseFromDropdown("Intersects: Natural lands", "Natural forests");
+    await waitFor(() => expect(mockedFetch).toHaveBeenCalledTimes(3));
+    expect(mockedFetch.mock.calls[2][2]).toBe("natural_forests");
+    expect(mapPane().dataset.context).toBe("natural_forests");
+    expect(screen.getByText(/on natural forests, newest first/)).toBeTruthy();
+
+    // Any clears the overlay and asks for the unfiltered list (cached).
+    await chooseFromDropdown("Intersects: Natural forests", "Any");
+    expect(mapPane().dataset.context).toBe("");
+    expect(mockedFetch).toHaveBeenCalledTimes(3);
   });
 
   it("fetches a wider window only when a custom range reaches outside, keeping the rows on show", async () => {
@@ -203,26 +278,20 @@ describe("DashboardAlertsWidget", () => {
         () => new Promise((resolve) => (resolveWider = resolve))
       );
     renderWidget();
-    await screen.findByText("5 alert days · 50.8 ha in this period");
+    await screen.findByText(NEW_WEEK_FOOTER);
 
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
     // Opens on the last week, inside the window: no fetch.
-    expect(
-      screen.getByLabelText("Custom period start").getAttribute("value")
-    ).toBe("2026-10-10");
+    const start = await openCustomStart();
+    expect(start.getAttribute("value")).toBe("2026-10-10");
     expect(mockedFetch).toHaveBeenCalledTimes(1);
 
-    fireEvent.change(screen.getByLabelText("Custom period start"), {
-      target: { value: "2026-10-01" },
-    });
+    fireEvent.change(start, { target: { value: "2026-10-01" } });
     expect(
       screen.getByText("10 alert days · 80.7 ha in this period")
     ).toBeTruthy();
     expect(mockedFetch).toHaveBeenCalledTimes(1);
 
-    fireEvent.change(screen.getByLabelText("Custom period start"), {
-      target: { value: "2026-08-01" },
-    });
+    fireEvent.change(start, { target: { value: "2026-08-01" } });
     await waitFor(() => expect(mockedFetch).toHaveBeenCalledTimes(2));
     expect(mockedFetch.mock.calls[1][1]).toEqual({
       start: "2026-08-01",
@@ -232,12 +301,16 @@ describe("DashboardAlertsWidget", () => {
     const table = screen.getByRole("table", { name: "Alert days" });
     expect(table.closest("[aria-busy='true']")).toBeTruthy();
     expect(
-      screen.getByText("14 alert days · 105.7 ha in this period")
+      screen.getByText(
+        "Showing 1–10 of 14 alert days · 105.7 ha in this period"
+      )
     ).toBeTruthy();
     expect(mapPane().dataset.start).toBe("2026-08-01");
 
     resolveWider(wider);
-    await screen.findByText("15 alert days · 108.7 ha in this period");
+    await screen.findByText(
+      "Showing 1–10 of 15 alert days · 108.7 ha in this period"
+    );
     expect(
       within(screen.getByRole("table", { name: "Alert days" })).getAllByRole(
         "row"
@@ -259,17 +332,37 @@ describe("DashboardAlertsWidget", () => {
     expect(mapPane().dataset.start).toBe("");
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    await screen.findByText("5 alert days · 50.8 ha in this period");
+    await screen.findByText(NEW_WEEK_FOOTER);
+    expect(mockedFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("asks once for where a typed custom start ended up, not for each date on the way", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    renderWidget();
+    await screen.findByText(NEW_WEEK_FOOTER);
+    const start = await openCustomStart();
+
+    // Typing "01/08/2026" over "10/10/2026" passes through a complete
+    // "01/10/2026" and "01/09/2026" first, both outside the window.
+    fireEvent.change(start, { target: { value: "2026-10-01" } });
+    fireEvent.change(start, { target: { value: "2026-09-01" } });
+    fireEvent.change(start, { target: { value: "2026-08-01" } });
+    expect(
+      screen.getByText(/Alert days from 1 Aug 2026 to 16 Oct 2026/)
+    ).toBeTruthy();
+
+    await waitFor(() => expect(mockedFetch).toHaveBeenCalledTimes(2));
+    expect(mockedFetch.mock.calls[1][1].start).toBe("2026-08-01");
+    await new Promise((resolve) => setTimeout(resolve, 600));
     expect(mockedFetch).toHaveBeenCalledTimes(2);
   });
 
   it("ignores a bound outside the data, as a date input reports mid-typing", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget();
-    await screen.findByText("5 alert days · 50.8 ha in this period");
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    await screen.findByText(NEW_WEEK_FOOTER);
+    const start = await openCustomStart();
 
-    const start = screen.getByLabelText("Custom period start");
     const explainer = /Alert days from 10 Oct 2026 to 16 Oct 2026/;
     // "2026" being typed into the year passes through "0002".
     fireEvent.change(start, { target: { value: "0002-08-01" } });
@@ -298,16 +391,16 @@ describe("DashboardAlertsWidget", () => {
         new AlertsListError("Couldn't load the alerts.", true)
       );
     renderWidget();
-    await screen.findByText("5 alert days · 50.8 ha in this period");
+    await screen.findByText(NEW_WEEK_FOOTER);
 
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
-    fireEvent.change(screen.getByLabelText("Custom period start"), {
-      target: { value: "2026-08-01" },
-    });
+    const start = await openCustomStart();
+    fireEvent.change(start, { target: { value: "2026-08-01" } });
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("Couldn't load the alerts.");
     expect(
-      screen.getByText("14 alert days · 105.7 ha in this period")
+      screen.getByText(
+        "Showing 1–10 of 14 alert days · 105.7 ha in this period"
+      )
     ).toBeTruthy();
     expect(mockedFetch).toHaveBeenCalledTimes(2);
   });
@@ -334,16 +427,16 @@ describe("DashboardAlertsWidget", () => {
       )
       .mockResolvedValueOnce(wider);
     renderWidget();
-    await screen.findByText("5 alert days · 50.8 ha in this period");
+    await screen.findByText(NEW_WEEK_FOOTER);
 
-    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
-    fireEvent.change(screen.getByLabelText("Custom period start"), {
-      target: { value: "2026-08-01" },
-    });
+    const start = await openCustomStart();
+    fireEvent.change(start, { target: { value: "2026-08-01" } });
     const alert = await screen.findByRole("alert");
     fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
 
-    await screen.findByText("15 alert days · 108.7 ha in this period");
+    await screen.findByText(
+      "Showing 1–10 of 15 alert days · 108.7 ha in this period"
+    );
     expect(screen.queryByRole("alert")).toBeNull();
     expect(mockedFetch).toHaveBeenCalledTimes(3);
     // Both the failed and the retried call asked for the widened window.
@@ -364,7 +457,7 @@ describe("DashboardAlertsWidget", () => {
   it("fetches for a viewer too", async () => {
     mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
     renderWidget({ isOwner: false });
-    await screen.findByText("5 alert days · 50.8 ha in this period");
+    await screen.findByText(NEW_WEEK_FOOTER);
     expect(screen.queryByLabelText("Remove from dashboard")).toBeNull();
   });
 

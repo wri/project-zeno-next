@@ -39,6 +39,13 @@ export interface AlertsWidgetSpec {
   days: number;
   /** The alerts tile layer of the map pane (`config.dataset`, as a map widget's). */
   layer: MapWidgetLayer;
+  /**
+   * The same layer with a land class drawn beneath it, per Intersects
+   * choice, from the snapshot's `context_layers` entries of the same names;
+   * a choice is absent when the snapshot carries no such entry (widgets
+   * built before the backend added them).
+   */
+  overlays: Partial<Record<AlertsLandFilter, MapWidgetLayer>>;
 }
 
 /** One alert day, as the list pane renders it. */
@@ -85,13 +92,68 @@ export const TIERS: Record<
   highest: { field: "highestHa", label: "Highest (ha)", name: "Highest" },
 };
 
-/** The area columns a confidence choice shows: a single tier is its own total. */
-export function tierColumns(
-  confidence: AlertsConfidence
-): (typeof TIERS)[AlertsConfidence][] {
-  return confidence === "all"
-    ? [TIERS.high, TIERS.highest, TIERS.all]
-    : [TIERS[confidence]];
+/**
+ * The table's CONFIDENCE cell: the tiers a day had alerts in, under "All",
+ * or the one tier on show.
+ */
+export function rowTiers(row: AlertDay, confidence: AlertsConfidence): string {
+  if (confidence !== "all") return TIERS[confidence].name;
+  return [TIERS.high, TIERS.highest]
+    .filter((tier) => row[tier.field] > 0)
+    .map((tier) => tier.name)
+    .join(" · ");
+}
+
+/** The table's TOTAL AREA cell: the day's area in the shown tier. */
+export function rowArea(row: AlertDay, confidence: AlertsConfidence): number {
+  return row[TIERS[confidence].field];
+}
+
+/** The analytics API's land filters the Intersects dropdown offers. */
+export type AlertsLandFilter = "natural_lands" | "natural_forests";
+
+/** The Intersects dropdown's options: the filter (none for "Any"), its label and how the explainer says it. */
+export const LAND_FILTERS: {
+  filter?: AlertsLandFilter;
+  label: string;
+  phrase?: string;
+}[] = [
+  { label: "Any" },
+  {
+    filter: "natural_lands",
+    label: "Natural lands",
+    phrase: "on natural lands",
+  },
+  {
+    filter: "natural_forests",
+    label: "Natural forests",
+    phrase: "on natural forests",
+  },
+];
+
+export function landFilterOption(filter?: AlertsLandFilter) {
+  return (
+    LAND_FILTERS.find((option) => option.filter === filter) ?? LAND_FILTERS[0]
+  );
+}
+
+/**
+ * The page numbers a pager shows for `total` pages: all of them when few,
+ * else the first three, the neighbourhood of the current page and the last,
+ * with `"…"` where pages are skipped.
+ */
+export function pageNumbers(current: number, total: number): (number | "…")[] {
+  if (total <= 6) return Array.from({ length: total }, (_, i) => i + 1);
+  const shown = new Set([1, 2, 3, current - 1, current, current + 1, total]);
+  const pages = [...shown]
+    .filter((page) => page >= 1 && page <= total)
+    .sort((a, b) => a - b);
+  const out: (number | "…")[] = [];
+  pages.forEach((page, index) => {
+    if (index > 0 && page - pages[index - 1] > 1) out.push("…");
+    out.push(page);
+  });
+  return out;
 }
 
 /** The badge row's CONFIDENCE value: the tiers in the shown rows. */
@@ -138,6 +200,16 @@ export function alertsWidgetSpec(
   if (!dataset || typeof dataset !== "object") return null;
   const layer = mapWidgetLayer({ dataset });
   if (!layer) return null;
+  // The snapshot's `context_layer` is null; an entry in its `context_layers`
+  // becomes the active one only for the matching Intersects choice.
+  const overlays: AlertsWidgetSpec["overlays"] = {};
+  for (const { filter } of LAND_FILTERS) {
+    if (!filter) continue;
+    const overlay = mapWidgetLayer({
+      dataset: { ...dataset, context_layer: filter },
+    });
+    if (overlay?.contextTileUrl) overlays[filter] = overlay;
+  }
 
   const days =
     typeof a.days === "number" && Number.isInteger(a.days) && a.days > 0
@@ -149,7 +221,16 @@ export function alertsWidgetSpec(
     aoi: { source, srcId, subtype, name },
     days,
     layer,
+    overlays,
   };
+}
+
+/** The map pane's layer for an Intersects choice: the land class drawn beneath the alerts when chosen and in the snapshot. */
+export function alertsMapLayer(
+  spec: AlertsWidgetSpec,
+  landFilter?: AlertsLandFilter
+): MapWidgetLayer {
+  return (landFilter && spec.overlays[landFilter]) || spec.layer;
 }
 
 // ── Dates ──────────────────────────────────────────────────────────────────
@@ -176,12 +257,13 @@ export function todayIso(now: number = Date.now()): string {
 }
 
 /**
- * The window the widget asks for before any response exists: `days` days
- * ending today. The backend clamps the end to its data; from then on the
- * response's own `window` is the truth.
+ * The window the widget asks for before any response exists: the backend's
+ * own arithmetic, `start = end - days` (31 inclusive days for 30, as the
+ * template builder's period), ending today. The backend clamps the end to
+ * its data; from then on the response's own `window` is the truth.
  */
 export function initialWindow(days: number, today: string): DateRange {
-  return { start: shiftIsoDate(today, -(days - 1)), end: today };
+  return { start: shiftIsoDate(today, -days), end: today };
 }
 
 /**

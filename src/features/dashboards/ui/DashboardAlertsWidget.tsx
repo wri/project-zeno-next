@@ -3,10 +3,12 @@ import { Box, Flex, Text } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 
 import { ParamChip } from "@/app/components/ui/ParamChip";
+import AnalysisParametersToggle from "@/app/components/widgets/AnalysisParameters";
 import { fetchAlertsList, type AlertsListError } from "../api/alerts";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { dashboardKeys } from "../hooks/dashboardKeys";
 import {
+  alertsMapLayer,
   alertsWidgetSpec,
   chipRange,
   confidenceLabel,
@@ -21,6 +23,7 @@ import {
   widenedWindow,
   type AlertsChip,
   type AlertsConfidence,
+  type AlertsLandFilter,
   type AlertsList,
   type AlertsWidgetSpec,
   type DateRange,
@@ -60,9 +63,10 @@ interface CardProps {
  * map's tiles — so both always show the same period.
  *
  * One fetch per view: the widget asks for its `days` window once, and the
- * chips filter the cached rows. Only a custom range reaching outside that
- * window asks for more, and then the rows on show stay while the wider
- * window loads. Chips and confidence are view state, never persisted.
+ * chips filter the cached rows. A custom range reaching outside that window
+ * or an Intersects land filter asks again, and then the rows on show stay
+ * while the new list loads. Chips, confidence, land filter and the params
+ * toggle are view state, never persisted.
  *
  * The config is parsed once (`alertsWidgetSpec`); a config that cannot be
  * rendered shows the shell with a placeholder, like a broken map widget.
@@ -107,12 +111,9 @@ function AlertsCard({
 }: { spec: AlertsWidgetSpec } & CardProps) {
   const [chip, setChip] = useState<AlertsChip>("new-week");
   const [confidence, setConfidence] = useState<AlertsConfidence>("all");
+  const [landFilter, setLandFilter] = useState<AlertsLandFilter>();
   const [custom, setCustom] = useState<DateRange>();
-  // Counts the times the Custom chip was opened: the date inputs are
-  // uncontrolled (a controlled one would snap a half-typed year back on
-  // every keystroke the handler ignores), so this key resets them to the
-  // committed range each time they open.
-  const [customSession, setCustomSession] = useState(0);
+  const [paramsShown, setParamsShown] = useState(false);
   // The window asked of the backend. It starts as the widget's `days` ending
   // today and only ever widens, for a custom range that reaches outside it.
   const [requestWindow, setRequestWindow] = useState<DateRange>(() =>
@@ -121,8 +122,8 @@ function AlertsCard({
 
   const { aoi } = spec;
   const query = useQuery<AlertsList, AlertsListError>({
-    queryKey: dashboardKeys.alerts(aoi, requestWindow),
-    queryFn: () => fetchAlertsList(aoi, requestWindow),
+    queryKey: dashboardKeys.alerts(aoi, requestWindow, landFilter),
+    queryFn: () => fetchAlertsList(aoi, requestWindow, landFilter),
     staleTime: ALERTS_STALE_MS,
     // A failed pull is a failed analytics job: retrying it blind would only
     // repeat the wait. The list offers a Retry button instead.
@@ -130,9 +131,9 @@ function AlertsCard({
   });
 
   // The last list that arrived, so the rows the user is reading stay on show
-  // while a wider window loads and when that load fails (the list then shows
-  // the failure above them). Reconciled during render, like the card's
-  // rename override.
+  // while another list loads (a wider window, a land filter) and when that
+  // load fails (the list then shows the failure above them). Reconciled
+  // during render, like the card's rename override.
   const [held, setHeld] = useState<AlertsList>();
   if (query.data && query.data !== held) setHeld(query.data);
   const list = query.data ?? held;
@@ -164,12 +165,9 @@ function AlertsCard({
 
   const selectChip = (next: AlertsChip) => {
     if (!list) return;
-    if (next === "custom") {
-      // The inputs open on the last week, the widest preset, so there is
-      // something to adjust from.
-      if (!custom) setCustom(chipRange("last-week", list));
-      setCustomSession((session) => session + 1);
-    }
+    // The custom dates open on the last week, the widest preset, so there
+    // is something to adjust from.
+    if (next === "custom" && !custom) setCustom(chipRange("last-week", list));
     setChip(next);
   };
 
@@ -214,29 +212,39 @@ function AlertsCard({
       onRemove={onRemove}
       body={
         <>
-          {/* Badge row, where an analysis card shows its params */}
+          {/* Badge row, as an analysis card's params row: the toggle, the
+              badges once shown, and the data's last day on the right. */}
           <Box px="8px" pb="8px">
             <Flex
               borderTopWidth="1px"
+              borderBottomWidth="1px"
               borderColor="rgba(19,22,25,0.05)"
-              pt="4px"
+              py="4px"
               align="center"
               gap="4px"
               wrap="wrap"
             >
-              <ParamChip
-                label="DATASET"
-                value="Integrated alerts"
-                colorScheme="blue"
-                bg="white"
-                maxValueWidth="20ch"
+              <AnalysisParametersToggle
+                expanded={paramsShown}
+                onToggle={() => setParamsShown((shown) => !shown)}
               />
-              <ParamChip
-                label="CONFIDENCE"
-                value={confidenceLabel(confidence)}
-                colorScheme="blue"
-                bg="white"
-              />
+              {paramsShown && (
+                <>
+                  <ParamChip
+                    label="DATASET"
+                    value="Integrated alerts"
+                    colorScheme="blue"
+                    bg="white"
+                    maxValueWidth="20ch"
+                  />
+                  <ParamChip
+                    label="CONFIDENCE"
+                    value={confidenceLabel(confidence)}
+                    colorScheme="blue"
+                    bg="white"
+                  />
+                </>
+              )}
               <Box flex="1" />
               {list && (
                 <Text
@@ -279,10 +287,11 @@ function AlertsCard({
                   newWeekHa={list ? newWeekHa(list.rows, confidence) : 0}
                   chip={chip}
                   confidence={confidence}
+                  landFilter={landFilter}
                   custom={custom}
-                  customKey={customSession}
                   onChip={selectChip}
                   onConfidence={setConfidence}
+                  onLandFilter={setLandFilter}
                   onCustomChange={changeCustom}
                   onRetry={() => query.refetch()}
                 />
@@ -290,7 +299,7 @@ function AlertsCard({
               <Box flex="1 1 0" minW={0}>
                 <DashboardAlertsMapPane
                   title={title}
-                  layer={spec.layer}
+                  layer={alertsMapLayer(spec, landFilter)}
                   aoi={areaAoi}
                   dateRange={range}
                   tall={isDouble}
