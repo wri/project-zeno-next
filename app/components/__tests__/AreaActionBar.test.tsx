@@ -4,12 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// layerManagerSlice lazily imports chatStore to fold layer changes into the
-// sent context; stub it so that import can't outlive the test environment.
-vi.mock("@/app/store/chatStore", () => ({
-  default: { getState: () => ({ includeLayerInContext: () => {} }) },
-}));
-
 import useMapStore from "@/app/store/mapStore";
 import type { PendingDrawnArea } from "@/app/store/drawAreaSlice";
 

@@ -12,11 +12,6 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/app/lib/api-client", () => ({ apiFetch: vi.fn() }));
-// layerManagerSlice lazily imports chatStore to fold layer changes into the
-// sent context; stub it so that import can't outlive the test environment.
-vi.mock("@/app/store/chatStore", () => ({
-  default: { getState: () => ({ includeLayerInContext: () => {} }) },
-}));
 
 import { apiFetch } from "@/app/lib/api-client";
 import useMapStore from "@/app/store/mapStore";
