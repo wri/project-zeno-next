@@ -2,12 +2,18 @@
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { useEffect } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Keep the geometry query off the network (the map widget fires it on mount).
 vi.mock("@/app/utils/geometryClient", () => ({
   fetchGeometry: vi.fn(() => new Promise(() => {})),
 }));
+
+// How many times each source mounted: a re-dated layer must be a fresh
+// source (MapLibre renders through a broken state when a live raster
+// source's tiles are swapped), so the test counts mounts per source id.
+const mounts = vi.hoisted(() => ({ byId: {} as Record<string, number> }));
 
 // Real MapLibre needs WebGL (unavailable in happy-dom): stub react-map-gl,
 // with a Source that exposes its tiles so the URL on the map can be read.
@@ -26,11 +32,16 @@ vi.mock("react-map-gl/maplibre", () => {
     id: string;
     tiles?: string[];
     children?: React.ReactNode;
-  }) => (
-    <div data-testid={`source-${id}`} data-tiles={tiles?.join("|")}>
-      {children}
-    </div>
-  );
+  }) => {
+    useEffect(() => {
+      mounts.byId[id] = (mounts.byId[id] ?? 0) + 1;
+    }, [id]);
+    return (
+      <div data-testid={`source-${id}`} data-tiles={tiles?.join("|")}>
+        {children}
+      </div>
+    );
+  };
   return {
     __esModule: true,
     default: MapGl,
@@ -71,6 +82,33 @@ const renderMap = (dateRange?: { start: string; end: string }) =>
   );
 
 describe("DashboardMapWidget dateRange", () => {
+  beforeEach(() => {
+    mounts.byId = {};
+  });
+
+  it("mounts a fresh tiles source for a new period, and keeps the context one", () => {
+    const { rerender } = renderMap({ start: "2026-10-04", end: "2026-10-10" });
+    expect(mounts.byId["widget-tiles"]).toBe(1);
+
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardMapWidget
+            layer={layer}
+            aoi={undefined}
+            bboxOverride={null}
+            dateRange={{ start: "2026-10-16", end: "2026-10-16" }}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+    expect(mounts.byId["widget-tiles"]).toBe(2);
+    expect(mounts.byId["widget-context"]).toBe(1);
+    expect(screen.getByTestId("source-widget-tiles").dataset.tiles).toContain(
+      "start_date=2026-10-16&end_date=2026-10-16"
+    );
+  });
+
   it("draws the snapshot's own period without a dateRange", () => {
     renderMap();
     expect(screen.getByTestId("source-widget-tiles").dataset.tiles).toBe(

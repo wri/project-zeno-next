@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 
 import {
   INTEGRATED_ALERTS_DATASET_ID,
-  alertsWidgetSize,
   chartTitleOverride,
   countIntegratedAlertsCharts,
   dashboardWidgetToInsightWidgets,
@@ -13,9 +12,9 @@ import {
   insightModule,
   isChartShown,
   isSummaryShown,
-  mapWidgetSize,
   moduleTitle,
   shownChartIds,
+  topLevelWidgetSize,
   widgetSize,
   widgetText,
   withChartHidden,
@@ -80,21 +79,25 @@ describe("widgetSize / withSize", () => {
   });
 });
 
-describe("mapWidgetSize", () => {
-  it("defaults to double and honours an explicit single", () => {
-    expect(mapWidgetSize({})).toBe("double");
-    expect(mapWidgetSize({ size: "double" })).toBe("double");
-    expect(mapWidgetSize({ size: "garbage" })).toBe("double");
-    expect(mapWidgetSize({ size: "single" })).toBe("single");
-  });
-});
+describe("topLevelWidgetSize", () => {
+  const size = (widget_type: string, config: Record<string, unknown> = {}) =>
+    topLevelWidgetSize({ widget_type, config });
 
-describe("alertsWidgetSize", () => {
-  it("defaults to double and honours an explicit single", () => {
-    expect(alertsWidgetSize({})).toBe("double");
-    expect(alertsWidgetSize({ size: "double" })).toBe("double");
-    expect(alertsWidgetSize({ size: "garbage" })).toBe("double");
-    expect(alertsWidgetSize({ size: "single" })).toBe("single");
+  it("spans both columns by default for insight, map and alerts widgets", () => {
+    for (const type of ["insight", "map", "alerts"]) {
+      expect(size(type)).toBe("double");
+      expect(size(type, { size: "garbage" })).toBe("double");
+    }
+  });
+
+  it("is a single column by default for every other kind", () => {
+    expect(size("text")).toBe("single");
+    expect(size("future")).toBe("single");
+  });
+
+  it("honours an explicit size either way", () => {
+    expect(size("map", { size: "single" })).toBe("single");
+    expect(size("text", { size: "double" })).toBe("double");
   });
 });
 

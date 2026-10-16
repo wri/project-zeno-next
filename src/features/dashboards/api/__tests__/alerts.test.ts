@@ -37,11 +37,10 @@ describe("AlertsListResponseSchema", () => {
     );
   });
 
-  it("defaults absent rows to none and rejects a missing data_to", () => {
-    expect(
+  it("rejects a response missing its rows or its data_to", () => {
+    expect(() =>
       AlertsListResponseSchema.parse({ ...ALERTS_LIST_WIRE, rows: undefined })
-        .rows
-    ).toEqual([]);
+    ).toThrow();
     expect(() =>
       AlertsListResponseSchema.parse({
         ...ALERTS_LIST_WIRE,
@@ -57,7 +56,6 @@ describe("toAlertsList", () => {
     expect(list.dataTo).toBe("2026-10-16");
     expect(list.window).toEqual({ start: "2026-09-17", end: "2026-10-16" });
     expect(list.newWeek).toEqual({ start: "2026-10-04", end: "2026-10-10" });
-    expect(list.totalHa).toBe(105.7);
     expect(list.rows).toHaveLength(14);
     expect(list.rows[0]).toEqual({
       date: "2026-10-16",
@@ -73,16 +71,6 @@ describe("toAlertsList", () => {
       "2026-10-05",
       "2026-10-04",
     ]);
-  });
-
-  it("sorts rows by date descending if the backend ever sends them otherwise", () => {
-    const shuffled = {
-      ...ALERTS_LIST_WIRE,
-      rows: [...ALERTS_LIST_WIRE.rows].reverse(),
-    };
-    expect(toAlertsList(shuffled).rows.map((r) => r.date)).toEqual(
-      ALERTS_LIST_WIRE.rows.map((r) => r.alert_date)
-    );
   });
 });
 
@@ -118,7 +106,6 @@ describe("fetchAlertsList", () => {
     expect(error).toBeInstanceOf(AlertsListError);
     expect(error.message).toBe(detail);
     expect(error.retryable).toBe(true);
-    expect(error.status).toBe(502);
   });
 
   it("shows a 422's reason, final, whether it is the area or the window", async () => {
@@ -129,7 +116,6 @@ describe("fetchAlertsList", () => {
     expect(window).toBeInstanceOf(AlertsListError);
     expect(window.message).toBe(tooLong);
     expect(window.retryable).toBe(false);
-    expect(window.status).toBe(422);
 
     mockedFetch.mockResolvedValue(
       jsonResponse(422, { detail: "Area type not supported" })
@@ -163,7 +149,14 @@ describe("fetchAlertsList", () => {
     expect(network).toBeInstanceOf(AlertsListError);
     expect(network.message).toBe("Couldn't load the alerts.");
     expect(network.retryable).toBe(true);
-    expect(network.status).toBeUndefined();
+  });
+
+  it("turns a 200 the schema rejects into the generic, retryable error", async () => {
+    mockedFetch.mockResolvedValue(jsonResponse(200, { rows: "not a list" }));
+    const error = await fetchAlertsList(aoi, range).catch((e) => e);
+    expect(error).toBeInstanceOf(AlertsListError);
+    expect(error.message).toBe("Couldn't load the alerts.");
+    expect(error.retryable).toBe(true);
   });
 
   it("maps a bodiless 502 to the generic copy and passes its own errors through", () => {
@@ -172,7 +165,7 @@ describe("fetchAlertsList", () => {
     });
     expect(toAlertsListError(bare).message).toBe("Couldn't load the alerts.");
     expect(toAlertsListError(bare).retryable).toBe(true);
-    const own = new AlertsListError("x", false, 422);
+    const own = new AlertsListError("x", false);
     expect(toAlertsListError(own)).toBe(own);
   });
 });

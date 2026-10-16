@@ -24,7 +24,7 @@ import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import { withTileDates, type DateRange } from "../lib/alertsWidgets";
-import type { MapWidgetLayer } from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapLegend, {
   type MapWidgetOpacity,
 } from "./DashboardMapLegend";
@@ -56,7 +56,7 @@ export default function DashboardMapWidget({
 }: {
   layer: MapWidgetLayer;
   /** The dashboard's (single) area — outline, label + default viewport fit. */
-  aoi: { source: string; src_id: string; name: string } | undefined;
+  aoi: MapAreaAoi | undefined;
   bboxOverride: [number, number, number, number] | null;
   /** The period to draw instead of the one the layer's snapshot was built for. */
   dateRange?: DateRange;

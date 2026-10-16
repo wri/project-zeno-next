@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   alertsWidgetSpec,
   chipRange,
+  confidenceLabel,
   customStartMin,
   formatAlertDate,
   formatDataTo,
@@ -13,6 +14,7 @@ import {
   rowsInRange,
   rowsSummary,
   shiftIsoDate,
+  tierColumns,
   todayIso,
   visibleRows,
   widenedWindow,
@@ -377,6 +379,24 @@ describe("withTileDates", () => {
     expect(dated.tileUrl).toContain("start_date=2026-10-04");
     expect(dated.contextTileUrl).toBe(withContext.contextTileUrl);
     expect(dated.contextLayerName).toBe("natural_lands");
+  });
+});
+
+describe("tiers", () => {
+  it("shows both tiers and their total under All, one column for a single tier", () => {
+    expect(tierColumns("all").map((c) => c.label)).toEqual([
+      "High (ha)",
+      "Highest (ha)",
+      "Total (ha)",
+    ]);
+    expect(tierColumns("high").map((c) => c.field)).toEqual(["highHa"]);
+    expect(tierColumns("highest").map((c) => c.field)).toEqual(["highestHa"]);
+  });
+
+  it("names the tiers in the shown rows for the badge row", () => {
+    expect(confidenceLabel("all")).toBe("High · Highest");
+    expect(confidenceLabel("high")).toBe("High");
+    expect(confidenceLabel("highest")).toBe("Highest");
   });
 });
 

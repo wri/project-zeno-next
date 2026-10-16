@@ -16,6 +16,8 @@ import {
   formatAlertDate,
   formatHa,
   rowsSummary,
+  TIERS,
+  tierColumns,
   type AlertDay,
   type AlertsChip,
   type AlertsConfidence,
@@ -25,37 +27,40 @@ import { paginate } from "../lib/pagination";
 
 const PAGE_SIZE = 10;
 
-const CHIPS: { chip: Exclude<AlertsChip, "custom">; label: string }[] = [
+const CHIPS: { chip: AlertsChip; label: string }[] = [
   { chip: "new-week", label: "New this week" },
   { chip: "last-day", label: "Last day" },
   { chip: "last-3-days", label: "Last 3 days" },
   { chip: "last-week", label: "Last week" },
+  { chip: "custom", label: "Custom" },
 ];
 
-const CONFIDENCES: { confidence: AlertsConfidence; label: string }[] = [
-  { confidence: "all", label: "All" },
-  { confidence: "high", label: "High" },
-  { confidence: "highest", label: "Highest" },
-];
+const CONFIDENCES: AlertsConfidence[] = ["all", "high", "highest"];
 
-/** The columns a confidence choice shows: a single tier is its own total. */
-function columnsFor(confidence: AlertsConfidence): {
-  key: "highHa" | "highestHa" | "totalHa";
-  label: string;
-}[] {
-  switch (confidence) {
-    case "high":
-      return [{ key: "highHa", label: "High (ha)" }];
-    case "highest":
-      return [{ key: "highestHa", label: "Highest (ha)" }];
-    case "all":
-      return [
-        { key: "highHa", label: "High (ha)" },
-        { key: "highestHa", label: "Highest (ha)" },
-        { key: "totalHa", label: "Total (ha)" },
-      ];
-  }
+/** A failed fetch, as the pane shows it. */
+export interface AlertsFailure {
+  message: string;
+  retryable: boolean;
 }
+
+/**
+ * What the pane has to show, settled once by the container: nothing yet,
+ * a failure with no rows behind it, or rows for a period — possibly with a
+ * failure above them (a wider window that did not load).
+ */
+export type AlertsListView =
+  | { kind: "loading" }
+  | { kind: "error"; failure: AlertsFailure }
+  | {
+      kind: "ready";
+      /** The period the rows cover. */
+      range: DateRange;
+      /** The data's last day; bounds the custom inputs. */
+      dataTo: string;
+      /** The earliest start a custom range may have. */
+      startMin: string;
+      failure?: AlertsFailure;
+    };
 
 function rangeLabel(range: DateRange): string {
   return range.start === range.end
@@ -85,6 +90,39 @@ function NewBadge() {
     >
       <Box as="span" boxSize="6px" rounded="full" bg="#B91C1C" aria-hidden />
       NEW
+    </Flex>
+  );
+}
+
+/** A failure and, when a retry can help, the button for it. */
+function FailureNotice({
+  failure,
+  onRetry,
+}: {
+  failure: AlertsFailure;
+  onRetry: () => void;
+}) {
+  return (
+    <Flex
+      role="alert"
+      align="center"
+      gap="8px"
+      wrap="wrap"
+      px="8px"
+      py="6px"
+      bg="#FEF2F2"
+      borderWidth="1px"
+      borderColor="#F8BABA"
+      borderRadius="sm"
+    >
+      <Text flex="1" minW={0} fontSize="12px" color="fg">
+        {failure.message}
+      </Text>
+      {failure.retryable && (
+        <Button size="xs" variant="outline" bg="white" onClick={onRetry}>
+          Retry
+        </Button>
+      )}
     </Flex>
   );
 }
@@ -128,44 +166,30 @@ function HeaderCell({
  * week · 15.5 ha" is the honest number.
  */
 export default function DashboardAlertsList({
-  status,
-  error,
+  view,
   isFetching,
   rows,
-  range,
-  dataTo,
   newWeekHa,
   chip,
   confidence,
   custom,
   customKey,
-  startMin,
   onChip,
   onConfidence,
   onCustomChange,
   onRetry,
 }: {
-  status: "loading" | "ready" | "error";
-  /**
-   * The latest failure. With `status` "error" it is the whole body; with
-   * "ready" it sits above rows already on show (a wider window that failed
-   * to load), so the list never looks complete when it is not.
-   */
-  error: { message: string; retryable: boolean } | null;
+  view: AlertsListView;
   /** A refetch in flight behind rows already on show (a widened window). */
   isFetching: boolean;
   /** The rows for the chosen period and confidence, newest first. */
   rows: readonly AlertDay[];
-  /** The period the rows cover; null until the first response. */
-  range: DateRange | null;
-  /** The data's last day; bounds the custom inputs. */
-  dataTo: string | null;
   /** The "New this week" chip's hectares in the shown tier. */
   newWeekHa: number;
   chip: AlertsChip;
   confidence: AlertsConfidence;
-  /** The committed custom range while the Custom chip is on. */
-  custom: DateRange | null;
+  /** The committed custom range, once the Custom chip has been opened. */
+  custom?: DateRange;
   /**
    * Changes each time the Custom chip opens. The date inputs are
    * uncontrolled, so the user can type a year digit by digit without the
@@ -173,13 +197,14 @@ export default function DashboardAlertsList({
    * committed range on each opening.
    */
   customKey: number;
-  /** The earliest start a custom range may have; null until the first response. */
-  startMin: string | null;
   onChip: (chip: AlertsChip) => void;
   onConfidence: (confidence: AlertsConfidence) => void;
   onCustomChange: (range: DateRange) => void;
   onRetry: () => void;
 }) {
+  const ready = view.kind === "ready";
+  const range = ready ? view.range : undefined;
+
   // The page resets whenever the rows it indexes change identity (a chip, a
   // tier, a new period). Reconciled during render, not in an effect, so the
   // table never paints a stale page first.
@@ -190,8 +215,7 @@ export default function DashboardAlertsList({
 
   const paged = paginate(rows, page, PAGE_SIZE);
   const summary = rowsSummary(rows, confidence);
-  const columns = columnsFor(confidence);
-  const ready = status === "ready";
+  const columns = tierColumns(confidence);
 
   return (
     <Flex
@@ -222,7 +246,7 @@ export default function DashboardAlertsList({
               variant={selected ? "solid" : "outline"}
               bg={selected ? undefined : "white"}
               aria-pressed={selected}
-              disabled={!ready && !rows.length}
+              disabled={!ready}
               onClick={() => onChip(value)}
             >
               {label}
@@ -240,27 +264,12 @@ export default function DashboardAlertsList({
             </Button>
           );
         })}
-        <Button
-          size="xs"
-          h="24px"
-          px="10px"
-          rounded="full"
-          fontSize="12px"
-          colorPalette={chip === "custom" ? "primary" : undefined}
-          variant={chip === "custom" ? "solid" : "outline"}
-          bg={chip === "custom" ? undefined : "white"}
-          aria-pressed={chip === "custom"}
-          disabled={!ready && !rows.length}
-          onClick={() => onChip("custom")}
-        >
-          Custom
-        </Button>
         <Box w="1px" h="20px" bg="#DDE2F5" mx="2px" aria-hidden />
         <Flex align="center" gap="2px" role="group" aria-label="Confidence">
           <Text fontSize="12px" color="#565E7B" pr="4px">
             Confidence:
           </Text>
-          {CONFIDENCES.map(({ confidence: value, label }) => {
+          {CONFIDENCES.map((value) => {
             const selected = confidence === value;
             return (
               <Button
@@ -275,14 +284,14 @@ export default function DashboardAlertsList({
                 aria-pressed={selected}
                 onClick={() => onConfidence(value)}
               >
-                {label}
+                {TIERS[value].name}
               </Button>
             );
           })}
         </Flex>
       </Flex>
 
-      {chip === "custom" && custom && (
+      {chip === "custom" && custom && view.kind === "ready" && (
         <Flex key={customKey} gap="8px" align="center" wrap="wrap">
           <Text as="label" fontSize="12px" color="#565E7B">
             From{" "}
@@ -293,8 +302,8 @@ export default function DashboardAlertsList({
               display="inline-block"
               bg="white"
               defaultValue={custom.start}
-              min={startMin ?? undefined}
-              max={dataTo ?? undefined}
+              min={view.startMin}
+              max={view.dataTo}
               aria-label="Custom period start"
               onChange={(e) =>
                 e.target.value &&
@@ -311,8 +320,8 @@ export default function DashboardAlertsList({
               display="inline-block"
               bg="white"
               defaultValue={custom.end}
-              min={startMin ?? undefined}
-              max={dataTo ?? undefined}
+              min={view.startMin}
+              max={view.dataTo}
               aria-label="Custom period end"
               onChange={(e) =>
                 e.target.value &&
@@ -330,47 +339,18 @@ export default function DashboardAlertsList({
         </Text>
       )}
 
-      {ready && error && (
-        <Flex
-          role="alert"
-          align="center"
-          gap="8px"
-          wrap="wrap"
-          px="8px"
-          py="6px"
-          bg="#FEF2F2"
-          borderWidth="1px"
-          borderColor="#F8BABA"
-          borderRadius="sm"
-        >
-          <Text flex="1" minW={0} fontSize="12px" color="fg">
-            {error.message}
-          </Text>
-          {error.retryable && (
-            <Button size="xs" variant="outline" bg="white" onClick={onRetry}>
-              Retry
-            </Button>
-          )}
-        </Flex>
+      {view.kind === "ready" && view.failure && (
+        <FailureNotice failure={view.failure} onRetry={onRetry} />
       )}
 
-      {status === "loading" ? (
+      {view.kind === "loading" ? (
         <Flex direction="column" gap="8px" aria-label="Loading alerts">
           <Skeleton h="14px" w="60%" />
           <Skeleton h="14px" w="90%" />
           <Skeleton h="14px" w="80%" />
         </Flex>
-      ) : status === "error" && error ? (
-        <Flex direction="column" gap="8px" align="flex-start" py="8px">
-          <Text fontSize="14px" color="fg">
-            {error.message}
-          </Text>
-          {error.retryable && (
-            <Button size="xs" variant="outline" onClick={onRetry}>
-              Retry
-            </Button>
-          )}
-        </Flex>
+      ) : view.kind === "error" ? (
+        <FailureNotice failure={view.failure} onRetry={onRetry} />
       ) : rows.length === 0 ? (
         <Text fontSize="14px" color="fg.muted" py="8px">
           No alerts in this period.
@@ -393,7 +373,7 @@ export default function DashboardAlertsList({
                 <HeaderCell />
                 <HeaderCell>Alert date</HeaderCell>
                 {columns.map((column) => (
-                  <HeaderCell key={column.key} numeric>
+                  <HeaderCell key={column.field} numeric>
                     {column.label}
                   </HeaderCell>
                 ))}
@@ -415,14 +395,14 @@ export default function DashboardAlertsList({
                   </Table.Cell>
                   {columns.map((column) => (
                     <Table.Cell
-                      key={column.key}
+                      key={column.field}
                       px="8px"
                       py="7px"
                       fontSize="12px"
                       textAlign="end"
                       css={{ fontVariantNumeric: "tabular-nums" }}
                     >
-                      {formatHa(row[column.key])}
+                      {formatHa(row[column.field])}
                     </Table.Cell>
                   ))}
                 </Table.Row>

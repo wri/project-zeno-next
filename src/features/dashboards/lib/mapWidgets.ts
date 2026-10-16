@@ -5,6 +5,10 @@ import {
   resolveContextTileUrl,
 } from "@/app/utils/datasetLayerContext";
 import { patchPrimaryForestTileUrl } from "@/app/utils/primaryForestTileProtocol";
+import type { DashboardAoi } from "../api/schemas";
+
+/** The dashboard's area as a map body needs it: outline, label and viewport fit. */
+export type MapAreaAoi = Pick<DashboardAoi, "source" | "src_id" | "name">;
 
 /**
  * A renderable map-widget layer parsed from a `widget_type: "map"` config
@@ -29,7 +33,8 @@ export interface MapWidgetLayer {
   endDate?: string;
 }
 
-const str = (value: unknown): string | undefined =>
+/** A non-blank string from an unchecked config value, else undefined. */
+export const str = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() ? value : undefined;
 
 // Config parameters are `[{ name, values }]` (per the handoff), unchecked.

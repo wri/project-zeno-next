@@ -13,33 +13,44 @@ import {
   visibleRows,
   type AlertsChip,
   type AlertsConfidence,
+  type DateRange,
 } from "../../lib/alertsWidgets";
-import DashboardAlertsList from "../DashboardAlertsList";
+import DashboardAlertsList, {
+  type AlertsFailure,
+  type AlertsListView,
+} from "../DashboardAlertsList";
 
 const list = toAlertsList(ALERTS_LIST_WIRE);
 
 type ListProps = React.ComponentProps<typeof DashboardAlertsList>;
 
+/** The container's `ready` view for a period, as it would really derive it. */
+function readyView(range: DateRange, failure?: AlertsFailure): AlertsListView {
+  return {
+    kind: "ready",
+    range,
+    dataTo: list.dataTo,
+    startMin: customStartMin(list.dataTo),
+    failure,
+  };
+}
+
 /** The container's derivation, so the pane is fed what it would really get. */
 function propsFor(
   chip: AlertsChip,
   confidence: AlertsConfidence = "all",
-  custom?: { start: string; end: string }
+  custom?: DateRange
 ): ListProps {
   const range = chipRange(chip, list, custom);
   return {
-    status: "ready",
-    error: null,
+    view: readyView(range),
     isFetching: false,
     rows: visibleRows(rowsInRange(list.rows, range), confidence),
-    range,
-    dataTo: list.dataTo,
     newWeekHa: newWeekHa(list.rows, confidence),
     chip,
     confidence,
-    custom: custom ?? null,
+    custom,
     customKey: 1,
-    startMin: customStartMin(list.dataTo),
     onChip: vi.fn<ListProps["onChip"]>(),
     onConfidence: vi.fn<ListProps["onConfidence"]>(),
     onCustomChange: vi.fn<ListProps["onCustomChange"]>(),
@@ -59,6 +70,9 @@ const renderList = (props: Partial<ListProps> = {}) => {
 
 const rowsOf = () =>
   within(screen.getByRole("table", { name: "Alert days" })).getAllByRole("row");
+
+const UNAVAILABLE =
+  "Integrated alerts data is unavailable right now. Please try again in a moment.";
 
 describe("DashboardAlertsList", () => {
   it("shows the new week's days with NEW badges, hectares on the chip and totals in the footer", () => {
@@ -91,6 +105,8 @@ describe("DashboardAlertsList", () => {
     const props = renderList();
     fireEvent.click(screen.getByRole("button", { name: "Last week" }));
     expect(props.onChip).toHaveBeenCalledWith("last-week");
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    expect(props.onChip).toHaveBeenCalledWith("custom");
     fireEvent.click(screen.getByRole("button", { name: "Highest" }));
     expect(props.onConfidence).toHaveBeenCalledWith("highest");
     // The rows are the container's; this pane did not change them.
@@ -157,53 +173,40 @@ describe("DashboardAlertsList", () => {
   });
 
   it("shows a loading state before the first response", () => {
-    renderList({
-      status: "loading",
-      rows: [],
-      range: null,
-      dataTo: null,
-      newWeekHa: 0,
-    });
+    renderList({ view: { kind: "loading" }, rows: [], newWeekHa: 0 });
     expect(screen.getByLabelText("Loading alerts")).toBeTruthy();
-    expect(
-      screen
-        .getByRole("button", { name: /New this week/ })
-        .hasAttribute("disabled")
-    ).toBe(true);
+    for (const name of [/New this week/, "Last day", "Custom"]) {
+      expect(
+        screen.getByRole("button", { name }).hasAttribute("disabled")
+      ).toBe(true);
+    }
     expect(screen.queryByText(/in this period/)).toBeNull();
   });
 
   it("shows the failure with a Retry only when it is worth one", () => {
     const retryable = renderList({
-      status: "error",
-      rows: [],
-      error: {
-        message:
-          "Integrated alerts data is unavailable right now. Please try again in a moment.",
-        retryable: true,
+      view: {
+        kind: "error",
+        failure: { message: UNAVAILABLE, retryable: true },
       },
+      rows: [],
     });
-    expect(
-      screen.getByText(
-        "Integrated alerts data is unavailable right now. Please try again in a moment."
-      )
-    ).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain(UNAVAILABLE);
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(retryable.onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("offers no Retry for an area the backend does not cover", () => {
+  it("offers no Retry for a reason a retry cannot change", () => {
     renderList({
-      status: "error",
-      rows: [],
-      error: {
-        message: "Alerts aren't available for this area.",
-        retryable: false,
+      view: {
+        kind: "error",
+        failure: { message: "Area type not supported", retryable: false },
       },
+      rows: [],
     });
-    expect(
-      screen.getByText("Alerts aren't available for this area.")
-    ).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Area type not supported"
+    );
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
   });
 
@@ -215,7 +218,10 @@ describe("DashboardAlertsList", () => {
 
   it("shows a failed wider fetch above the rows it still holds", () => {
     const props = renderList({
-      error: { message: "Couldn't load the alerts.", retryable: true },
+      view: readyView(chipRange("new-week", list), {
+        message: "Couldn't load the alerts.",
+        retryable: true,
+      }),
     });
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("Couldn't load the alerts.");

@@ -3,7 +3,7 @@ import { Flex, IconButton, Text } from "@chakra-ui/react";
 import { ArrowsOutIcon } from "@phosphor-icons/react";
 
 import type { DateRange } from "../lib/alertsWidgets";
-import type { MapWidgetLayer } from "../lib/mapWidgets";
+import type { MapAreaAoi, MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapFullscreenDialog from "./DashboardMapFullscreenDialog";
 import DashboardMapWidget from "./DashboardMapWidget";
 
@@ -22,7 +22,7 @@ export default function DashboardAlertsMapPane({
   /** The widget title; the pane reads "{title} · map". */
   title: string;
   layer: MapWidgetLayer;
-  aoi: { source: string; src_id: string; name: string } | undefined;
+  aoi: MapAreaAoi | undefined;
   /** The period on show; undefined before the first response (the snapshot's own). */
   dateRange: DateRange | undefined;
   tall: boolean;
