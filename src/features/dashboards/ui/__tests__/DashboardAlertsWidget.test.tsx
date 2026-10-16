@@ -158,6 +158,28 @@ describe("DashboardAlertsWidget", () => {
     expect(mockedFetch).toHaveBeenCalledTimes(1);
   });
 
+  it("asks once for where a typed custom start ended up, not for each date on the way", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    renderWidget();
+    await screen.findByText("5 alert days · 50.8 ha in this period");
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+
+    // Typing "01/08/2026" over "10/10/2026" passes through a complete
+    // "01/10/2026" and "01/09/2026" first, both outside the window.
+    const start = screen.getByLabelText("Custom period start");
+    fireEvent.change(start, { target: { value: "2026-10-01" } });
+    fireEvent.change(start, { target: { value: "2026-09-01" } });
+    fireEvent.change(start, { target: { value: "2026-08-01" } });
+    expect(
+      screen.getByText(/Alert days from 1 Aug 2026 to 16 Oct 2026/)
+    ).toBeTruthy();
+
+    await waitFor(() => expect(mockedFetch).toHaveBeenCalledTimes(2));
+    expect(mockedFetch.mock.calls[1][1].start).toBe("2026-08-01");
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(mockedFetch).toHaveBeenCalledTimes(2);
+  });
+
   it("fetches a wider window only when a custom range reaches outside, keeping the rows on show", async () => {
     const first = toAlertsList(ALERTS_LIST_WIRE);
     const wider = toAlertsList({

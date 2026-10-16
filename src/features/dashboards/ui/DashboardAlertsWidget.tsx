@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, Flex, Text } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -34,6 +34,14 @@ import { TWO_COLUMN_QUERY } from "./gridLayout";
 
 /** A list stays fresh for a few hours: the data moves once a day. */
 const ALERTS_STALE_MS = 3 * 60 * 60 * 1000;
+
+/**
+ * How long a custom range must stand before the backend is asked for a
+ * wider window. A date input commits on every keystroke, and the dates on
+ * the way to "01/08/2026" ("01/09/2026", with last month's digits still in
+ * place) are complete dates of their own; each would be an analytics job.
+ */
+const CUSTOM_FETCH_DEBOUNCE_MS = 400;
 
 interface CardProps {
   areaAoi?: Dashboard["aois"][number];
@@ -175,11 +183,20 @@ function AlertsCard({
     if (!inData(next.start) || !inData(next.end)) return;
     setCustom(next);
     setChip("custom");
-    const resolved = chipRange("custom", list, next);
-    if (needsWiderWindow(resolved, list.window)) {
-      setRequestWindow((window) => widenedWindow(resolved, window));
-    }
   };
+
+  // A custom range reaching outside the fetched window widens the request,
+  // once the typing has paused: the rows already held filter to the range at
+  // once, and the one fetch asks for where the user ended up.
+  useEffect(() => {
+    if (chip !== "custom" || !list || !range) return;
+    if (!needsWiderWindow(range, list.window)) return;
+    const timer = setTimeout(
+      () => setRequestWindow((window) => widenedWindow(range, window)),
+      CUSTOM_FETCH_DEBOUNCE_MS
+    );
+    return () => clearTimeout(timer);
+  }, [chip, list, range]);
 
   const title = spec.title;
 
