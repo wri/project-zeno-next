@@ -66,7 +66,7 @@ export default function DashboardLayout({
       overflow="hidden"
       display={{ base: "none", md: "block" }}
     >
-      <Map />
+      <Map showDatasetsButton />
       <Box
         position="absolute"
         top={0}

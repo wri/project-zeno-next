@@ -315,17 +315,13 @@ export default function ChatInput({
                     contextType="layer"
                     onClick={openLayerPicker}
                     disabled={disabled}
-                    borderColor={dataCatalogOpen ? "primary.solid" : "#E0E2E5"}
-                    color={dataCatalogOpen ? "primary.solid" : undefined}
-                    aria-expanded={dataCatalogOpen}
+                    active={dataCatalogOpen}
                   />
                   <ContextButton
                     contextType="area"
                     onClick={openAreaPicker}
                     disabled={disabled}
-                    borderColor={areasPanelOpen ? "primary.solid" : "#E0E2E5"}
-                    color={areasPanelOpen ? "primary.solid" : undefined}
-                    aria-expanded={areasPanelOpen}
+                    active={areasPanelOpen}
                   />
                 </>
               )}

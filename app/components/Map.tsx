@@ -34,6 +34,7 @@ import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import PendingDrawArea from "./map/layers/PendingDrawArea";
 import { Legend } from "@/app/components/legend/Legend";
+import { LegendDatasetsButton } from "@/app/components/legend/LegendDatasetsButton";
 import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
@@ -45,7 +46,14 @@ import { ImageryZoomHint } from "./map/ImageryZoomHint";
 
 const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
-function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
+function Map({
+  disableMapAreaControls,
+  showDatasetsButton,
+}: {
+  disableMapAreaControls?: boolean;
+  /** Legend gets a Datasets button toggling the Data Catalog (desktop chat layout only). */
+  showDatasetsButton?: boolean;
+}) {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
   const [showLegend, setShowLegend] = useState(false);
@@ -265,6 +273,7 @@ function Map({ disableMapAreaControls }: { disableMapAreaControls?: boolean }) {
               onRemoveAoi={handleRemoveAoi}
               boundary={boundary}
               onRemoveBoundary={handleRemoveBoundary}
+              headerAction={showDatasetsButton && <LegendDatasetsButton />}
             />
           </Box>
         </Flex>

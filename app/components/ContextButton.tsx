@@ -15,15 +15,23 @@ export type ChatContextType = keyof typeof ChatContextOptions;
 
 interface ContextButtonProps extends ButtonProps {
   contextType?: ChatContextType;
+  /** The panel this button opens is open: primary border/text, aria-expanded. */
+  active?: boolean;
 }
 
-function ContextButton({ contextType = "area", ...props }: ContextButtonProps) {
+function ContextButton({
+  contextType = "area",
+  active,
+  ...props
+}: ContextButtonProps) {
   return (
     <Button
       size="xs"
       variant="outline"
       borderRadius="sm"
-      borderColor="#E0E2E5"
+      borderColor={active ? "primary.solid" : "#E0E2E5"}
+      color={active ? "primary.solid" : undefined}
+      aria-expanded={active}
       borderWidth="1px"
       px="2"
       h="8"
