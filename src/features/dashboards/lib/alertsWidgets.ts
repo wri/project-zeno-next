@@ -183,6 +183,20 @@ export function chipRange(
   }
 }
 
+/** The backend refuses a window of more than this many days. */
+export const MAX_CUSTOM_DAYS = 365;
+
+/**
+ * The earliest start a custom range may have: the dataset's first day, or
+ * the day that makes the range ending on `dataTo` exactly `MAX_CUSTOM_DAYS`
+ * long, whichever is later. The inputs' `min` and the handler's check both
+ * read this, so the widget can never ask for a window the backend refuses.
+ */
+export function customStartMin(dataTo: string): string {
+  const yearBack = shiftIsoDate(dataTo, -(MAX_CUSTOM_DAYS - 1));
+  return yearBack > ALERTS_DATASET_START ? yearBack : ALERTS_DATASET_START;
+}
+
 /** Whether `range` reaches outside the window the rows were fetched for. */
 export function needsWiderWindow(range: DateRange, window: DateRange): boolean {
   return range.start < window.start || range.end > window.end;

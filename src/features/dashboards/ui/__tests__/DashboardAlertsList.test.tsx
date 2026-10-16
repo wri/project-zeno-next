@@ -7,6 +7,7 @@ import { toAlertsList } from "../../api/alerts";
 import { ALERTS_LIST_WIRE } from "../../api/__tests__/fixtures";
 import {
   chipRange,
+  customStartMin,
   newWeekHa,
   rowsInRange,
   visibleRows,
@@ -37,6 +38,8 @@ function propsFor(
     chip,
     confidence,
     custom: custom ?? null,
+    customKey: 1,
+    startMin: customStartMin(list.dataTo),
     onChip: vi.fn<ListProps["onChip"]>(),
     onConfidence: vi.fn<ListProps["onConfidence"]>(),
     onCustomChange: vi.fn<ListProps["onCustomChange"]>(),
@@ -138,7 +141,8 @@ describe("DashboardAlertsList", () => {
     const from = screen.getByLabelText("Custom period start");
     expect(from.getAttribute("value")).toBe("2026-10-10");
     expect(from.getAttribute("max")).toBe("2026-10-16");
-    expect(from.getAttribute("min")).toBe("2023-12-01");
+    // A year back from the data's last day: the longest window the backend takes.
+    expect(from.getAttribute("min")).toBe("2025-10-17");
     fireEvent.change(from, { target: { value: "2026-10-01" } });
     expect(props.onCustomChange).toHaveBeenCalledWith({
       start: "2026-10-01",

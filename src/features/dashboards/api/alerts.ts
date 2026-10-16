@@ -67,9 +67,10 @@ export function toAlertsList(wire: AlertsListWire): AlertsList {
 
 /**
  * A failed list fetch, with the copy the widget shows and whether a Retry
- * button makes sense. The backend's 502 carries a fixed user-facing sentence
- * in `detail`, which `readJson` already made the message; 422 (an area the
- * analytics API does not cover) and 401 are final for this view.
+ * button makes sense. A 422 (an area or a window the backend refuses) and a
+ * 502 (a failed analytics job) both carry a user-facing sentence in
+ * `detail`, which `readJson` already made the message; only the 502 is
+ * worth a retry, and a 401 is a sign-in prompt.
  */
 export class AlertsListError extends Error {
   constructor(
@@ -87,26 +88,19 @@ const GENERIC_MESSAGE = "Couldn't load the alerts.";
 export function toAlertsListError(error: unknown): AlertsListError {
   if (error instanceof AlertsListError) return error;
   const status = (error as { status?: unknown } | null)?.status;
-  const message =
-    error instanceof Error && error.message.trim() ? error.message : "";
-  switch (status) {
-    case 401:
-      return new AlertsListError("Sign in to see the alerts list.", false, 401);
-    case 422:
-      return new AlertsListError(
-        "Alerts aren't available for this area.",
-        false,
-        422
-      );
-    case 502:
-      return new AlertsListError(message || GENERIC_MESSAGE, true, 502);
-    default:
-      return new AlertsListError(
-        GENERIC_MESSAGE,
-        true,
-        typeof status === "number" ? status : undefined
-      );
+  const code = typeof status === "number" ? status : undefined;
+  if (code === 401) {
+    return new AlertsListError("Sign in to see the alerts list.", false, 401);
   }
+  const detail = (error as { detail?: unknown } | null)?.detail;
+  const sentence =
+    typeof detail === "string" && detail.trim() ? detail : undefined;
+  const explained = code === 422 || code === 502;
+  return new AlertsListError(
+    explained && sentence ? sentence : GENERIC_MESSAGE,
+    code !== 422,
+    code
+  );
 }
 
 export async function fetchAlertsList(

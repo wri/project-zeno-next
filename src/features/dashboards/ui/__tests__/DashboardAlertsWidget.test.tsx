@@ -248,16 +248,25 @@ describe("DashboardAlertsWidget", () => {
     fireEvent.click(screen.getByRole("button", { name: "Custom" }));
 
     const start = screen.getByLabelText("Custom period start");
+    const explainer = /Alert days from 10 Oct 2026 to 16 Oct 2026/;
     // "2026" being typed into the year passes through "0002".
     fireEvent.change(start, { target: { value: "0002-08-01" } });
-    expect(start.getAttribute("value")).toBe("2026-10-10");
+    expect(screen.getByText(explainer)).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Custom period end"), {
       target: { value: "2027-01-01" },
     });
-    expect(
-      screen.getByLabelText("Custom period end").getAttribute("value")
-    ).toBe("2026-10-16");
+    expect(screen.getByText(explainer)).toBeTruthy();
+    // A start more than 365 days before the data's last day is a window the
+    // backend refuses, so it is never asked for either.
+    expect(start.getAttribute("min")).toBe("2025-10-17");
+    fireEvent.change(start, { target: { value: "2025-10-16" } });
+    expect(screen.getByText(explainer)).toBeTruthy();
+    expect(mapPane().dataset.start).toBe("2026-10-10");
     expect(mockedFetch).toHaveBeenCalledTimes(1);
+    // The day the window allows is asked for.
+    fireEvent.change(start, { target: { value: "2025-10-17" } });
+    await waitFor(() => expect(mockedFetch).toHaveBeenCalledTimes(2));
+    expect(mockedFetch.mock.calls[1][1].start).toBe("2025-10-17");
   });
 
   it("keeps the rows on show when a wider window fails, with the failure above them", async () => {

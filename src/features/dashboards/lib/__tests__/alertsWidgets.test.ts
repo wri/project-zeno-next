@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   alertsWidgetSpec,
   chipRange,
+  customStartMin,
   formatAlertDate,
   formatDataTo,
   formatHa,
@@ -202,6 +203,18 @@ describe("chipRange", () => {
       start: "2026-10-16",
       end: "2026-10-16",
     });
+  });
+});
+
+describe("customStartMin", () => {
+  it("is a year back from the data's last day, inclusive of both ends", () => {
+    expect(customStartMin("2026-10-16")).toBe("2025-10-17");
+    expect(customStartMin("2024-12-01")).toBe("2023-12-03");
+  });
+
+  it("never reaches before the dataset's first day", () => {
+    expect(customStartMin("2024-06-01")).toBe("2023-12-01");
+    expect(customStartMin("2023-12-01")).toBe("2023-12-01");
   });
 });
 
