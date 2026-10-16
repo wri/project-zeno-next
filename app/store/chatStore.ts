@@ -19,6 +19,7 @@ import {
 import useMapStore from "./mapStore";
 import { setLayerContextListener } from "./layerManagerSlice";
 import {
+  aoiContextKey,
   datasetContextKey,
   deriveContext,
   diffUiContext,
@@ -486,10 +487,15 @@ async function processStreamMessage(
     ) {
       // The agent picked this AOI itself — fold it into the last-sent context
       // so it isn't echoed back as a "new" selection on the next user message.
-      const aoiName =
-        streamMessage.aoi_selection?.name ??
-        (streamMessage.aoi as { name?: string } | undefined)?.name;
-      if (aoiName) useChatStore.getState().foldSentContext({ aoi: aoiName });
+      const aoi = (streamMessage.aoi_selection?.aois?.[0] ??
+        streamMessage.aoi) as
+        | { name?: string; source?: string; src_id?: string }
+        | undefined;
+      const aoiName = streamMessage.aoi_selection?.name ?? aoi?.name;
+      if (aoiName)
+        useChatStore
+          .getState()
+          .foldSentContext({ aoi: aoiContextKey(aoiName, aoi) });
       // Non-blocking: geometry fetch can be slow; don't stall stream
       void Promise.resolve().then(() => pickAoiTool(streamMessage, addMessage));
       return;

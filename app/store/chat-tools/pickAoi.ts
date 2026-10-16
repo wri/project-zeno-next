@@ -34,6 +34,24 @@ export function isGlobalQuery(name: string): boolean {
 }
 
 /**
+ * The label of a picked selection: its layer id, name and context chip.
+ *
+ * A concession picked on the map is stored under its cleaned backend name;
+ * `display_name` keeps the label it was picked by, so a replayed selection
+ * named after that one area shows the same label as when it was picked.
+ */
+export function selectionLabel(
+  aoiSelection: AOISelection | undefined,
+  aois: AOI[]
+): string {
+  const first = aois[0];
+  if (first?.display_name && aoiSelection?.name === first.name) {
+    return first.display_name;
+  }
+  return aoiSelection?.name ?? (first?.name || "Unknown");
+}
+
+/**
  * Fetch geometry for a single AOI and add it to the layer manager
  * Returns the raw geometry data (FeatureCollection or Feature) for combined
  * bounds computation.
@@ -86,8 +104,7 @@ export async function pickAoiTool(
     const aois: AOI[] =
       aoiSelection?.aois ??
       (streamMessage.aoi ? [streamMessage.aoi as AOI] : []);
-    const selectionName: string =
-      aoiSelection?.name ?? (aois[0]?.name || "Unknown");
+    const selectionName = selectionLabel(aoiSelection, aois);
 
     // Global query: render a vector tile layer instead of fetching per-country GeoJSON
     if (isGlobalQuery(selectionName)) {
