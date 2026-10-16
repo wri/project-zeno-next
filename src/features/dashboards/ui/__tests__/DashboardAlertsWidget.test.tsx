@@ -16,6 +16,12 @@ vi.mock("../../api/alerts", async (importOriginal) => ({
   fetchAlertsList: vi.fn(),
 }));
 
+// The browser save is DOM glue; the test reads what would be saved.
+vi.mock("@/app/utils/csvExport", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/app/utils/csvExport")>()),
+  downloadCsv: vi.fn(),
+}));
+
 // The map pane's body is MapLibre's; a stub that exposes the period and the
 // layer it was given is what this test needs.
 vi.mock("../DashboardMapWidget", () => ({
@@ -46,10 +52,12 @@ import {
   ALERTS_WIDGET_CONFIG,
 } from "../../api/__tests__/fixtures";
 import type { DashboardWidget } from "../../api/schemas";
+import { downloadCsv } from "@/app/utils/csvExport";
 import { initialWindow, todayIso } from "../../lib/alertsWidgets";
 import DashboardAlertsWidget from "../DashboardAlertsWidget";
 
 const mockedFetch = vi.mocked(fetchAlertsList);
+const mockedDownload = vi.mocked(downloadCsv);
 
 const widget: DashboardWidget = {
   id: "w-alerts",
@@ -256,6 +264,30 @@ describe("DashboardAlertsWidget", () => {
     await chooseFromDropdown("Intersects: Natural forests", "Any");
     expect(mapPane().dataset.context).toBe("");
     expect(mockedFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("downloads the rows on show, with the period, tier and area in the file", async () => {
+    mockedFetch.mockResolvedValue(toAlertsList(ALERTS_LIST_WIRE));
+    mockedDownload.mockReset();
+    renderWidget();
+    await screen.findByText(NEW_WEEK_FOOTER);
+
+    fireEvent.click(screen.getByRole("button", { name: "Last week" }));
+    await chooseFromDropdown("Confidence: All", "Highest");
+    await chooseFromDropdown("Download", "Data (CSV)");
+
+    expect(mockedDownload).toHaveBeenCalledTimes(1);
+    const [csv, filename] = mockedDownload.mock.calls[0];
+    expect(filename).toBe(
+      "integrated-alerts-guarapuava-2026-10-10-2026-10-16.csv"
+    );
+    expect(csv.split("\n")).toEqual([
+      "alert_date,confidence,high_ha,highest_ha,total_ha,new",
+      "2026-10-16,Highest,4.2,0.8,5,false",
+      "2026-10-14,Highest,0,1.6,1.6,false",
+      "2026-10-12,Highest,9.3,2.2,11.5,false",
+      "2026-10-10,Highest,12.5,3,15.5,true",
+    ]);
   });
 
   it("hides LATEST and counts back from the window's end when the window has no alerts", async () => {

@@ -4,10 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 
 import { ParamChip } from "@/app/components/ui/ParamChip";
 import AnalysisParametersToggle from "@/app/components/widgets/AnalysisParameters";
+import { downloadCsv } from "@/app/utils/csvExport";
 import { fetchAlertsList, type AlertsListError } from "../api/alerts";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { dashboardKeys } from "../hooks/dashboardKeys";
 import {
+  alertsCsv,
+  alertsCsvFilename,
   alertsMapLayer,
   alertsWidgetSpec,
   chipRange,
@@ -196,6 +199,16 @@ function AlertsCard({
     return () => clearTimeout(timer);
   }, [chip, list, range]);
 
+  // The rows as the table shows them: the chip's period and the tier applied
+  // here, the land filter by the fetch.
+  const saveCsv = () => {
+    if (!range) return;
+    downloadCsv(
+      alertsCsv(rows, confidence),
+      alertsCsvFilename(spec.aoi.name, range)
+    );
+  };
+
   const title = spec.title;
 
   return (
@@ -214,11 +227,11 @@ function AlertsCard({
         <>
           {/* Badge row, as an analysis card's params row: the toggle, the
               badges once shown, and the latest alert day on the right (no
-              label when the window has no alerts). */}
+              label when the window has no alerts). A rule above it only:
+              the panes below carry their own borders. */}
           <Box px="8px" pb="8px">
             <Flex
               borderTopWidth="1px"
-              borderBottomWidth="1px"
               borderColor="rgba(19,22,25,0.05)"
               py="4px"
               align="center"
@@ -294,6 +307,7 @@ function AlertsCard({
                   onConfidence={setConfidence}
                   onLandFilter={setLandFilter}
                   onCustomChange={changeCustom}
+                  onDownloadCsv={saveCsv}
                   onRetry={() => query.refetch()}
                 />
               </Box>

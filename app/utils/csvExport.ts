@@ -25,3 +25,14 @@ export function rowsToCsv(
 export function csvFilename(title: string | undefined): string {
   return `${sanitizeFilenameBase(title, "data")}_${todayStamp()}.csv`;
 }
+
+/** Saves `csv` through the browser as `filename`. */
+export function downloadCsv(csv: string, filename: string): void {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
