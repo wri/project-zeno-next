@@ -19,6 +19,11 @@ vi.mock("@/app/components/WidgetMessage", () => ({
 vi.mock("../DashboardMapWidget", () => ({
   default: () => <div data-testid="map-widget" />,
 }));
+vi.mock("../DashboardAlertsWidget", () => ({
+  default: ({ isDouble }: { isDouble: boolean }) => (
+    <div data-testid="alerts-widget">{isDouble ? "double" : "single"}</div>
+  ),
+}));
 
 import DashboardWidgetsGrid from "../DashboardWidgetsGrid";
 import type { Dashboard, DashboardWidget } from "../../api/schemas";
@@ -188,5 +193,39 @@ describe("DashboardWidgetsGrid grouping", () => {
     expect(
       cell("w-imagery").getByLabelText("Expand to full width")
     ).toBeTruthy();
+  });
+
+  // The NRT template's alerts widget renders through its own component, full
+  // width by default, beside the other widgets.
+  it("renders an alerts widget through its own component at full width", () => {
+    const alertsWidget: DashboardWidget = {
+      id: "w-alerts",
+      position: 2,
+      widget_type: "alerts",
+      config: { alerts: { aoi: {}, days: 30 }, dataset: {} },
+      created_at: "2026-10-16T00:00:00Z",
+      insight: null,
+    };
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={defaultSystem}>
+          <DashboardWidgetsGrid
+            dashboard={{
+              ...dashboard,
+              widgets: [...dashboard.widgets, alertsWidget],
+            }}
+          />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    const alerts = screen.getByTestId("alerts-widget");
+    expect(alerts.textContent).toBe("double");
+    expect(alerts.closest('[data-widget-id="w-alerts"]')).toBeTruthy();
+    expect(screen.getByTestId("map-widget")).toBeTruthy();
+    expect(screen.queryByText(/isn't supported here yet/)).toBeNull();
   });
 });
