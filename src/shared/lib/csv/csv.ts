@@ -26,6 +26,12 @@ export function downloadCsv(csv: string, filename: string): void {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  // In the document for the click, as some browsers ignore a detached anchor.
+  document.body.appendChild(a);
+  try {
+    a.click();
+  } finally {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 }

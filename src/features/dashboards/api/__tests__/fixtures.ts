@@ -6,8 +6,7 @@ import type { AlertsListWire } from "../alerts";
  * (`data_to`, 16 Oct) is three days before the window's end (19 Oct, the
  * clamped request end), rows newest first, the latest full alert week flagged
  * `new`, one day with no high-confidence area. Shared by the API, list and
- * widget tests, and by the dev-time render of the widget before the backend
- * branch lands.
+ * widget tests.
  */
 export const ALERTS_LIST_WIRE: AlertsListWire = {
   data_to: "2026-10-16",
@@ -116,9 +115,6 @@ export const ALERTS_LIST_WIRE: AlertsListWire = {
     },
   ],
 };
-
-/** The hectares of the fixture's `new` rows, for chip assertions. */
-export const ALERTS_FIXTURE_NEW_WEEK_HA = 50.8;
 
 export const ALERTS_TILE_URL =
   "https://tiles.globalforestwatch.org/gfw_integrated_dist_alerts/latest/dynamic/{z}/{x}/{y}.png?render_type=true_color&start_date=2026-09-16&end_date=2026-10-16";

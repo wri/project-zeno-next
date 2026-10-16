@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import {
-  act,
   cleanup,
   fireEvent,
   render,
@@ -14,14 +13,14 @@ import { toAlertsList } from "../../api/alerts";
 import { ALERTS_LIST_WIRE } from "../../api/__tests__/fixtures";
 import {
   chipRange,
-  customStartMin,
   newWeekHa,
   rowsInRange,
   visibleRows,
   type AlertsChip,
   type AlertsConfidence,
-  type DateRange,
 } from "../../lib/alertsWidgets";
+import type { DateRange } from "@/src/shared/lib/iso-date";
+import { chooseFromMenu } from "./chakraMenu";
 import DashboardAlertsList, {
   type AlertsFailure,
   type AlertsListView,
@@ -37,7 +36,6 @@ function readyView(range: DateRange, failure?: AlertsFailure): AlertsListView {
     kind: "ready",
     range,
     anchor: list.anchor,
-    startMin: customStartMin(list.anchor),
     failure,
   };
 }
@@ -56,6 +54,7 @@ function propsFor(
     newWeekHa: newWeekHa(list.rows, confidence),
     chip,
     confidence,
+    landFilter: "any",
     custom,
     onChip: vi.fn<ListProps["onChip"]>(),
     onConfidence: vi.fn<ListProps["onConfidence"]>(),
@@ -86,18 +85,6 @@ const cellsOf = (row: HTMLElement) =>
 
 const UNAVAILABLE =
   "Integrated alerts data is unavailable right now. Please try again in a moment.";
-
-// The menu selects its highlighted item, so hover the item before clicking.
-async function chooseFromDropdown(trigger: HTMLElement, option: string) {
-  fireEvent.click(trigger);
-  const item = await screen.findByRole("menuitem", { name: option });
-  await act(async () => {
-    fireEvent.pointerMove(item, { pointerType: "mouse" });
-  });
-  await act(async () => {
-    fireEvent.click(item);
-  });
-}
 
 const dropdown = (name: string) => screen.getByRole("button", { name });
 
@@ -170,17 +157,17 @@ describe("DashboardAlertsList", () => {
 
   it("offers the confidence tiers in a dropdown and reports the choice", async () => {
     const props = renderList();
-    await chooseFromDropdown(dropdown("Confidence: All"), "Highest");
+    await chooseFromMenu(dropdown("Confidence: All"), "Highest");
     expect(props.onConfidence).toHaveBeenCalledWith("highest");
   });
 
   it("offers the land filters in a dropdown and reports the choice", async () => {
     const props = renderList();
-    await chooseFromDropdown(dropdown("Intersects: Any"), "Natural lands");
+    await chooseFromMenu(dropdown("Intersects: Any"), "Natural lands");
     expect(props.onLandFilter).toHaveBeenCalledWith("natural_lands");
 
-    await chooseFromDropdown(dropdown("Intersects: Any"), "Any");
-    expect(props.onLandFilter).toHaveBeenLastCalledWith(undefined);
+    await chooseFromMenu(dropdown("Intersects: Any"), "Any");
+    expect(props.onLandFilter).toHaveBeenLastCalledWith("any");
   });
 
   it("shows a single tier in the cells, dropping the days with none, and names the land filter", () => {
@@ -289,7 +276,7 @@ describe("DashboardAlertsList", () => {
     const retryable = renderList({
       view: {
         kind: "error",
-        failure: { kind: "unavailable", detail: UNAVAILABLE, retryable: true },
+        failure: { kind: "unavailable", detail: UNAVAILABLE },
       },
       rows: [],
     });
@@ -302,11 +289,7 @@ describe("DashboardAlertsList", () => {
     renderList({
       view: {
         kind: "error",
-        failure: {
-          kind: "rejected",
-          detail: "Area type not supported",
-          retryable: false,
-        },
+        failure: { kind: "rejected", detail: "Area type not supported" },
       },
       rows: [],
     });
@@ -324,7 +307,7 @@ describe("DashboardAlertsList", () => {
 
   it("offers the rows on show as a CSV download, nothing when there are none", async () => {
     const props = renderList(propsFor("last-week"));
-    await chooseFromDropdown(dropdown("Download"), "Data (CSV)");
+    await chooseFromMenu(dropdown("Download"), "Data (CSV)");
     expect(props.onDownloadCsv).toHaveBeenCalledTimes(1);
 
     cleanup();
@@ -337,7 +320,7 @@ describe("DashboardAlertsList", () => {
     // The full-width pills are still in the DOM: the width's CSS shows one set.
     expect(screen.getByRole("button", { name: "Last day" })).toBeTruthy();
     expect(morePill().textContent).toBe("More");
-    await chooseFromDropdown(morePill(), "Last 3 days");
+    await chooseFromMenu(morePill(), "Last 3 days");
     expect(props.onChip).toHaveBeenCalledWith("last-3-days");
 
     cleanup();
@@ -351,17 +334,14 @@ describe("DashboardAlertsList", () => {
     const props = renderList(
       propsFor("last-week", "all", chipRange("last-week", list))
     );
-    await chooseFromDropdown(morePill(), "Custom");
+    await chooseFromMenu(morePill(), "Custom");
     expect(props.onChip).toHaveBeenCalledWith("custom");
     expect(await screen.findByLabelText("Custom period start")).toBeTruthy();
   });
 
   it("shows a failed fetch above the rows it still holds", () => {
     const props = renderList({
-      view: readyView(chipRange("new-week", list), {
-        kind: "unknown",
-        retryable: true,
-      }),
+      view: readyView(chipRange("new-week", list), { kind: "unknown" }),
     });
     const alert = screen.getByRole("alert");
     expect(alert.textContent).toContain("Couldn't load the alerts.");

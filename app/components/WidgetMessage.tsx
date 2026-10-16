@@ -16,9 +16,6 @@ import {
   ArrowsOutIcon,
   ArrowSquareOutIcon,
   SparkleIcon,
-  DownloadSimpleIcon,
-  FileCsvIcon,
-  ImageIcon,
   TableIcon,
   ChartBarIcon,
   CaretDownIcon,
@@ -50,6 +47,7 @@ import VisualizationDisclaimer from "./VisualizationDisclaimer";
 import WidgetErrorBoundary from "./widgets/WidgetErrorBoundary";
 import ScrollableTableWrapper from "./widgets/ScrollableTableWrapper";
 import { AnalysisParamsChips } from "./widgets/AnalysisParameters";
+import DownloadMenu from "./widgets/DownloadMenu";
 import { buildChips } from "./widgets/analysis-params-utils";
 import { exportChartImage } from "@/app/utils/exportChartImage";
 import { csvFilename } from "@/app/utils/csvExport";
@@ -448,38 +446,13 @@ export default function WidgetMessage({
                 </Button>
               </Tooltip>
             )}
-            <Menu.Root positioning={{ placement: "bottom-start" }}>
-              <Menu.Trigger asChild>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  h={6}
-                  rounded="sm"
-                  color="neutral.500"
-                  loading={exportingImage}
-                >
-                  <DownloadSimpleIcon size={14} />
-                  Download
-                  <CaretDownIcon size={12} />
-                </Button>
-              </Menu.Trigger>
-              <Portal>
-                <Menu.Positioner>
-                  <Menu.Content minW="180px" zIndex={1400}>
-                    <Menu.Item value="csv" onClick={handleDownloadCsv}>
-                      <FileCsvIcon size={14} />
-                      Data (CSV)
-                    </Menu.Item>
-                    {isChartType && !showAsTable && (
-                      <Menu.Item value="png" onClick={handleDownloadImage}>
-                        <ImageIcon size={14} />
-                        Chart image (PNG)
-                      </Menu.Item>
-                    )}
-                  </Menu.Content>
-                </Menu.Positioner>
-              </Portal>
-            </Menu.Root>
+            <DownloadMenu
+              onCsv={handleDownloadCsv}
+              onImage={
+                isChartType && !showAsTable ? handleDownloadImage : undefined
+              }
+              loading={exportingImage}
+            />
             <Menu.Root positioning={{ strategy: "fixed" }}>
               <Menu.Trigger asChild>
                 <Button

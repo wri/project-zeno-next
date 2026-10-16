@@ -3,7 +3,7 @@ import { CaretDownIcon } from "@phosphor-icons/react";
 
 import { InfoTooltip } from "./InfoTooltip";
 
-export interface PillOption<T extends string | undefined = string> {
+export interface PillOption<T extends string = string> {
   value: T;
   label: string;
 }
@@ -13,9 +13,9 @@ export interface PillOption<T extends string | undefined = string> {
  * (DETAIL, MEASURE); `text` is a plain "Confidence:" in body text, as the
  * alerts widget's filter dropdowns.
  */
-export type PillVariant = "mono" | "text";
+type PillVariant = "mono" | "text";
 
-export interface PillProps<T extends string | undefined = string> {
+export interface PillProps<T extends string = string> {
   label: string;
   /** The chosen option's value; the pill shows that option's label. */
   value: T;
@@ -58,7 +58,7 @@ const VALUE_COLOR = { mono: "#656E7B", text: "#131619" } as const;
  * the menu trigger rather than a child of its `<button>`: hovering the icon
  * opens only the tooltip, with no click guards needed.
  */
-export function Pill<T extends string | undefined = string>({
+export function Pill<T extends string = string>({
   label,
   value,
   options,
@@ -117,8 +117,8 @@ export function Pill<T extends string | undefined = string>({
             <Menu.Content minW={minW} zIndex={1400}>
               {options.map((option) => (
                 <Menu.Item
-                  key={option.label}
-                  value={option.value ?? option.label}
+                  key={option.value}
+                  value={option.value}
                   onSelect={() => onSelect(option.value)}
                   fontSize="12px"
                 >

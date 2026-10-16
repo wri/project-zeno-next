@@ -6,7 +6,7 @@ import {
   alertsMapLayer,
   alertsWidgetSpec,
   chipRange,
-  landFilterOption,
+  LAND_FILTERS,
   confidenceLabel,
   customStartMin,
   formatAlertDate,
@@ -148,12 +148,12 @@ describe("date arithmetic", () => {
 
 describe("land filters", () => {
   it("knows each Intersects option's label and explainer phrase", () => {
-    expect(landFilterOption()).toEqual({ label: "Any" });
-    expect(landFilterOption("natural_lands")).toMatchObject({
+    expect(LAND_FILTERS.any).toEqual({ label: "Any" });
+    expect(LAND_FILTERS.natural_lands).toEqual({
       label: "Natural lands",
       phrase: "on natural lands",
     });
-    expect(landFilterOption("natural_forests")).toMatchObject({
+    expect(LAND_FILTERS.natural_forests).toEqual({
       label: "Natural forests",
       phrase: "on natural forests",
     });
@@ -187,7 +187,7 @@ describe("land filters", () => {
       "natural_forests"
     );
     expect(withEntries.overlays.natural_lands?.contextTileUrl).toBeTruthy();
-    expect(alertsMapLayer(withEntries)).toBe(withEntries.layer);
+    expect(alertsMapLayer(withEntries, "any")).toBe(withEntries.layer);
     expect(alertsMapLayer(withEntries, "natural_lands")).toBe(
       withEntries.overlays.natural_lands
     );
@@ -212,6 +212,18 @@ describe("land filters", () => {
       })
     )!;
     expect(alertsMapLayer(landsOnly, "natural_forests")).toBe(landsOnly.layer);
+  });
+
+  it("dates the chosen layer to the period on show", () => {
+    const spec = alertsWidgetSpec(config())!;
+    const range = { start: "2026-10-04", end: "2026-10-10" };
+    const dated = alertsMapLayer(spec, "any", range);
+    expect(dated.tileUrl).toContain(
+      "start_date=2026-10-04&end_date=2026-10-10"
+    );
+    expect(dated).toMatchObject({ startDate: range.start, endDate: range.end });
+    // Without a period yet, the snapshot's own.
+    expect(alertsMapLayer(spec, "any")).toBe(spec.layer);
   });
 });
 
@@ -305,6 +317,10 @@ describe("window widening", () => {
     expect(
       widenedWindow({ start: "2026-10-01", end: "2026-10-20" }, window)
     ).toEqual({ start: "2026-09-17", end: "2026-10-20" });
+    // Already covered: the same object, so a state setter sees no change.
+    expect(
+      widenedWindow({ start: "2026-10-01", end: "2026-10-10" }, window)
+    ).toBe(window);
   });
 });
 

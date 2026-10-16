@@ -54,7 +54,7 @@ vi.mock("react-map-gl/maplibre", () => {
 });
 
 import DashboardMapWidget from "../DashboardMapWidget";
-import type { MapWidgetLayer } from "../../lib/mapWidgets";
+import { withTileDates, type MapWidgetLayer } from "../../lib/mapWidgets";
 
 const layer: MapWidgetLayer = {
   kind: "dataset",
@@ -67,38 +67,33 @@ const layer: MapWidgetLayer = {
   endDate: "2026-10-16",
 };
 
-const renderMap = (dateRange?: { start: string; end: string }) =>
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <ChakraProvider value={defaultSystem}>
-        <DashboardMapWidget
-          layer={layer}
-          aoi={undefined}
-          dateRange={dateRange}
-        />
-      </ChakraProvider>
-    </QueryClientProvider>
-  );
+const mapFor = (shown: MapWidgetLayer) => (
+  <QueryClientProvider client={new QueryClient()}>
+    <ChakraProvider value={defaultSystem}>
+      <DashboardMapWidget layer={shown} aoi={undefined} />
+    </ChakraProvider>
+  </QueryClientProvider>
+);
 
-describe("DashboardMapWidget dateRange", () => {
+describe("DashboardMapWidget re-dated layers", () => {
   beforeEach(() => {
     mounts.byId = {};
   });
 
-  it("mounts a fresh tiles source for a new period, and keeps the context one", () => {
-    const { rerender } = renderMap({ start: "2026-10-04", end: "2026-10-10" });
+  it("mounts a fresh tiles source for a re-dated layer, and keeps the context one", () => {
+    const { rerender } = render(
+      mapFor(withTileDates(layer, { start: "2026-10-04", end: "2026-10-10" }))
+    );
     expect(mounts.byId["widget-tiles"]).toBe(1);
+    expect(screen.getByTestId("source-widget-tiles").dataset.tiles).toBe(
+      "https://tiles.example.org/alerts/{z}/{x}/{y}.png?render_type=true_color&start_date=2026-10-04&end_date=2026-10-10"
+    );
+    expect(screen.getByTestId("source-widget-context").dataset.tiles).toBe(
+      layer.contextTileUrl
+    );
 
     rerender(
-      <QueryClientProvider client={new QueryClient()}>
-        <ChakraProvider value={defaultSystem}>
-          <DashboardMapWidget
-            layer={layer}
-            aoi={undefined}
-            dateRange={{ start: "2026-10-16", end: "2026-10-16" }}
-          />
-        </ChakraProvider>
-      </QueryClientProvider>
+      mapFor(withTileDates(layer, { start: "2026-10-16", end: "2026-10-16" }))
     );
     expect(mounts.byId["widget-tiles"]).toBe(2);
     expect(mounts.byId["widget-context"]).toBe(1);
@@ -107,20 +102,12 @@ describe("DashboardMapWidget dateRange", () => {
     );
   });
 
-  it("draws the snapshot's own period without a dateRange", () => {
-    renderMap();
+  it("keeps the source when the layer is the same", () => {
+    const { rerender } = render(mapFor(layer));
+    rerender(mapFor({ ...layer }));
+    expect(mounts.byId["widget-tiles"]).toBe(1);
     expect(screen.getByTestId("source-widget-tiles").dataset.tiles).toBe(
       layer.tileUrl
-    );
-  });
-
-  it("re-dates the main tiles for the period and leaves the context tiles alone", () => {
-    renderMap({ start: "2026-10-04", end: "2026-10-10" });
-    expect(screen.getByTestId("source-widget-tiles").dataset.tiles).toBe(
-      "https://tiles.example.org/alerts/{z}/{x}/{y}.png?render_type=true_color&start_date=2026-10-04&end_date=2026-10-10"
-    );
-    expect(screen.getByTestId("source-widget-context").dataset.tiles).toBe(
-      layer.contextTileUrl
     );
   });
 });

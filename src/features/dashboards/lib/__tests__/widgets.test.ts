@@ -13,7 +13,6 @@ import {
   moduleTitle,
   shownChartIds,
   topLevelWidgetSize,
-  widgetSize,
   widgetText,
   withChartHidden,
   withChartShown,
@@ -61,13 +60,7 @@ function widget(overrides: Partial<DashboardWidget> = {}): DashboardWidget {
   };
 }
 
-describe("widgetSize / withSize", () => {
-  it("defaults to single and honours double", () => {
-    expect(widgetSize({})).toBe("single");
-    expect(widgetSize({ size: "double" })).toBe("double");
-    expect(widgetSize({ size: "garbage" })).toBe("single");
-  });
-
+describe("withSize", () => {
   it("withSize preserves the other config keys (config is replaced whole)", () => {
     expect(withSize({ default_view: "chart", title: "T" }, "double")).toEqual({
       default_view: "chart",

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ParamChip } from "@/app/components/ui/ParamChip";
 import AnalysisParametersToggle from "@/app/components/widgets/AnalysisParameters";
 import { downloadCsv } from "@/src/shared/lib/csv";
-import { todayIso } from "@/src/shared/lib/iso-date";
+import { todayIso, type DateRange } from "@/src/shared/lib/iso-date";
 import { fetchAlertsList, type AlertsListError } from "../api/alerts";
 import type { Dashboard, DashboardWidget } from "../api/schemas";
 import { dashboardKeys } from "../hooks/dashboardKeys";
@@ -29,7 +29,6 @@ import {
   type AlertsLandFilter,
   type AlertsList,
   type AlertsWidgetSpec,
-  type DateRange,
 } from "../lib/alertsWidgets";
 import DashboardAlertsList, {
   type AlertsListView,
@@ -42,12 +41,13 @@ import { TWO_COLUMN_QUERY } from "./gridLayout";
 const ALERTS_STALE_MS = 3 * 60 * 60 * 1000;
 
 /**
- * How long a custom range must stand before the backend is asked for a
- * wider window. A date input commits on every keystroke, and the dates on
- * the way to "01/08/2026" ("01/09/2026", with last month's digits still in
- * place) are complete dates of their own; each would be an analytics job.
+ * How long a custom range must stand before the map redraws for it and the
+ * backend is asked for a wider window. A date input commits on every
+ * keystroke, and the dates on the way to "01/08/2026" ("01/09/2026", with
+ * last month's digits still in place) are complete dates of their own; each
+ * would be a tile reload and an analytics job.
  */
-const CUSTOM_FETCH_DEBOUNCE_MS = 400;
+const CUSTOM_SETTLE_MS = 400;
 
 interface CardProps {
   areaAoi?: Dashboard["aois"][number];
@@ -113,8 +113,11 @@ function AlertsCard({
 }: { spec: AlertsWidgetSpec } & CardProps) {
   const [chip, setChip] = useState<AlertsChip>("new-week");
   const [confidence, setConfidence] = useState<AlertsConfidence>("all");
-  const [landFilter, setLandFilter] = useState<AlertsLandFilter>();
+  const [landFilter, setLandFilter] = useState<AlertsLandFilter>("any");
   const [custom, setCustom] = useState<DateRange>();
+  // The custom range once the typing has paused: the list filters off
+  // `custom` at once, the map and the wider fetch follow this one.
+  const [settledCustom, setSettledCustom] = useState<DateRange>();
   const [paramsShown, setParamsShown] = useState(false);
   // The window asked of the backend. It starts as the widget's `days` ending
   // today and only ever widens, for a custom range that reaches outside it.
@@ -141,26 +144,16 @@ function AlertsCard({
   const list = query.data ?? held;
   const failure = query.error ?? undefined;
 
-  const range = useMemo(
-    () => (list ? chipRange(chip, list, custom) : undefined),
-    [list, chip, custom]
+  const range = list ? chipRange(chip, list, custom) : undefined;
+  const settledRange = useMemo(
+    () => (list ? chipRange(chip, list, settledCustom) : undefined),
+    [list, chip, settledCustom]
   );
-  const rows = useMemo(
-    () =>
-      list && range
-        ? visibleRows(rowsInRange(list.rows, range), confidence)
-        : [],
-    [list, range, confidence]
-  );
+  const rows =
+    list && range ? visibleRows(rowsInRange(list.rows, range), confidence) : [];
   const view: AlertsListView =
     list && range
-      ? {
-          kind: "ready",
-          range,
-          anchor: list.anchor,
-          startMin: customStartMin(list.anchor),
-          failure,
-        }
+      ? { kind: "ready", range, anchor: list.anchor, failure }
       : failure
         ? { kind: "error", failure }
         : { kind: "loading" };
@@ -169,7 +162,11 @@ function AlertsCard({
     if (!list) return;
     // The custom dates open on the last week, the widest preset, so there
     // is something to adjust from.
-    if (next === "custom" && !custom) setCustom(chipRange("last-week", list));
+    if (next === "custom" && !custom) {
+      const opening = chipRange("last-week", list);
+      setCustom(opening);
+      setSettledCustom(opening);
+    }
     setChip(next);
   };
 
@@ -185,18 +182,22 @@ function AlertsCard({
     setChip("custom");
   };
 
-  // A custom range reaching outside the fetched window widens the request,
-  // once the typing has paused: the rows already held filter to the range at
-  // once, and the one fetch asks for where the user ended up.
+  // Once the typing has paused: the map follows the settled range, and a
+  // range reaching outside the fetched window widens the request (the rows
+  // already held filter to it at once; the one fetch asks for where the
+  // user ended up).
   useEffect(() => {
-    if (chip !== "custom" || !list || !range) return;
-    if (!needsWiderWindow(range, list.window)) return;
-    const timer = setTimeout(
-      () => setRequestWindow((window) => widenedWindow(range, window)),
-      CUSTOM_FETCH_DEBOUNCE_MS
-    );
+    if (custom === settledCustom) return;
+    const timer = setTimeout(() => {
+      setSettledCustom(custom);
+      if (!list || !custom) return;
+      const settled = chipRange("custom", list, custom);
+      if (needsWiderWindow(settled, list.window)) {
+        setRequestWindow((window) => widenedWindow(settled, window));
+      }
+    }, CUSTOM_SETTLE_MS);
     return () => clearTimeout(timer);
-  }, [chip, list, range]);
+  }, [custom, settledCustom, list]);
 
   // The rows as the table shows them: the chip's period and the tier applied
   // here, the land filter by the fetch.
@@ -204,15 +205,13 @@ function AlertsCard({
     if (!range) return;
     downloadCsv(
       alertsCsv(rows, confidence),
-      alertsCsvFilename(spec.aoi.name, range)
+      alertsCsvFilename(aoi.name, range)
     );
   };
 
-  const title = spec.title;
-
   return (
     <DashboardWidgetCard
-      title={title}
+      title={spec.title}
       removeMode="widget"
       isOwner={isOwner}
       isDouble={isDouble}
@@ -310,10 +309,9 @@ function AlertsCard({
               </Box>
               <Box flex="1 1 0" minW={0}>
                 <DashboardAlertsMapPane
-                  title={title}
-                  layer={alertsMapLayer(spec, landFilter)}
+                  title={spec.title}
+                  layer={alertsMapLayer(spec, landFilter, settledRange)}
                   aoi={areaAoi}
-                  dateRange={range}
                   tall={isDouble}
                 />
               </Box>

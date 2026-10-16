@@ -1,15 +1,13 @@
 import { format, parseISO } from "date-fns";
 
 import { rowsToCsv } from "@/src/shared/lib/csv";
-import { shiftIsoDate } from "@/src/shared/lib/iso-date";
+import { shiftIsoDate, type DateRange } from "@/src/shared/lib/iso-date";
 import {
   mapWidgetLayer,
   str,
-  type DateRange,
+  withTileDates,
   type MapWidgetLayer,
 } from "./mapWidgets";
-
-export type { DateRange } from "./mapWidgets";
 
 /**
  * The `widget_type: "alerts"` widget (PZB-1468): a live list of integrated
@@ -46,7 +44,7 @@ export interface AlertsWidgetSpec {
    * a choice is absent when the snapshot carries no such entry (widgets
    * built before the backend added them).
    */
-  overlays: Partial<Record<AlertsLandFilter, MapWidgetLayer>>;
+  overlays: Partial<Record<AlertsLandOverlay, MapWidgetLayer>>;
 }
 
 /** One alert day, as the list pane renders it. */
@@ -118,48 +116,40 @@ export function rowArea(row: AlertDay, confidence: AlertsConfidence): number {
   return row[TIERS[confidence].field];
 }
 
-/** The analytics API's land filters the Intersects dropdown offers. */
-export type AlertsLandFilter = "natural_lands" | "natural_forests";
+/** The land classes the analytics API can restrict the alerts to, and the snapshot can draw beneath them. */
+export const LAND_OVERLAYS = ["natural_lands", "natural_forests"] as const;
+export type AlertsLandOverlay = (typeof LAND_OVERLAYS)[number];
 
-/** The Intersects dropdown's options: the filter (none for "Any"), its label and how the explainer says it. */
-export const LAND_FILTERS: {
-  filter?: AlertsLandFilter;
-  label: string;
-  phrase?: string;
-}[] = [
-  { label: "Any" },
-  {
-    filter: "natural_lands",
-    label: "Natural lands",
-    phrase: "on natural lands",
-  },
-  {
-    filter: "natural_forests",
-    label: "Natural forests",
-    phrase: "on natural forests",
-  },
-];
+/** The Intersects choice: no restriction, or one of the land classes. */
+export type AlertsLandFilter = "any" | AlertsLandOverlay;
 
-export function landFilterOption(filter?: AlertsLandFilter) {
-  return (
-    LAND_FILTERS.find((option) => option.filter === filter) ?? LAND_FILTERS[0]
-  );
-}
+/** Each Intersects choice's label and how the explainer says it (nothing for "any"). */
+export const LAND_FILTERS: Record<
+  AlertsLandFilter,
+  { label: string; phrase?: string }
+> = {
+  any: { label: "Any" },
+  natural_lands: { label: "Natural lands", phrase: "on natural lands" },
+  natural_forests: { label: "Natural forests", phrase: "on natural forests" },
+};
+
+const tierNames = (tiers: { name: string }[]) =>
+  tiers.map((tier) => tier.name).join(" · ");
 
 /** The badge row's CONFIDENCE value: the tiers in the shown rows. */
 export function confidenceLabel(confidence: AlertsConfidence): string {
   return confidence === "all"
-    ? `${TIERS.high.name} · ${TIERS.highest.name}`
+    ? tierNames([TIERS.high, TIERS.highest])
     : TIERS[confidence].name;
 }
 
-export const DEFAULT_ALERTS_DAYS = 30;
+const DEFAULT_ALERTS_DAYS = 30;
 
 /** The integrated alerts catalogue entry's `start_date`: no alert is older. */
-export const ALERTS_DATASET_START = "2023-12-01";
+const ALERTS_DATASET_START = "2023-12-01";
 
 /** The backend refuses a window of more than this many days. */
-export const MAX_CUSTOM_DAYS = 365;
+const MAX_CUSTOM_DAYS = 365;
 
 /**
  * Parses an alerts widget's config into a renderable spec, or null when it
@@ -193,12 +183,11 @@ export function alertsWidgetSpec(
   // The snapshot's `context_layer` is null; an entry in its `context_layers`
   // becomes the active one only for the matching Intersects choice.
   const overlays: AlertsWidgetSpec["overlays"] = {};
-  for (const { filter } of LAND_FILTERS) {
-    if (!filter) continue;
+  for (const name of LAND_OVERLAYS) {
     const overlay = mapWidgetLayer({
-      dataset: { ...dataset, context_layer: filter },
+      dataset: { ...dataset, context_layer: name },
     });
-    if (overlay?.contextTileUrl) overlays[filter] = overlay;
+    if (overlay?.contextTileUrl) overlays[name] = overlay;
   }
 
   const days =
@@ -215,12 +204,19 @@ export function alertsWidgetSpec(
   };
 }
 
-/** The map pane's layer for an Intersects choice: the land class drawn beneath the alerts when chosen and in the snapshot. */
+/**
+ * The map pane's layer: the alerts, with the chosen land class drawn beneath
+ * them when the snapshot carries it, dated to the period on show (the
+ * snapshot's own period until there is one).
+ */
 export function alertsMapLayer(
   spec: AlertsWidgetSpec,
-  landFilter?: AlertsLandFilter
+  landFilter: AlertsLandFilter,
+  range?: DateRange
 ): MapWidgetLayer {
-  return (landFilter && spec.overlays[landFilter]) || spec.layer;
+  const layer =
+    (landFilter !== "any" && spec.overlays[landFilter]) || spec.layer;
+  return range ? withTileDates(layer, range) : layer;
 }
 
 // ── Dates ──────────────────────────────────────────────────────────────────
@@ -281,8 +277,13 @@ export function needsWiderWindow(range: DateRange, window: DateRange): boolean {
   return range.start < window.start || range.end > window.end;
 }
 
-/** The smallest window covering both — the next request when a custom range reaches outside. */
+/**
+ * The smallest window covering both — the next request when a custom range
+ * reaches outside. The same `window` object when it already covers the
+ * range, so a state setter sees no change.
+ */
 export function widenedWindow(range: DateRange, window: DateRange): DateRange {
+  if (!needsWiderWindow(range, window)) return window;
   return {
     start: range.start < window.start ? range.start : window.start,
     end: range.end > window.end ? range.end : window.end,
@@ -335,13 +336,6 @@ export function newWeekHa(
   ).ha;
 }
 
-// ── Tiles ──────────────────────────────────────────────────────────────────
-
-/**
- * Sets one query parameter on a tile URL template, in place when present and
- * appended otherwise. A string edit on purpose: `new URL()` would percent-
- * encode the `{z}/{x}/{y}` placeholders in the path.
- */
 // ── Formatting ─────────────────────────────────────────────────────────────
 
 /** "26 Sep 2026" — the table and explainer form. */
@@ -382,7 +376,7 @@ export function alertsCsv(
 export function alertsCsvFilename(areaName: string, range: DateRange): string {
   const area = areaName
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");

@@ -1,1 +1,1 @@
-export { shiftIsoDate, todayIso } from "./iso-date";
+export { shiftIsoDate, todayIso, type DateRange } from "./iso-date";

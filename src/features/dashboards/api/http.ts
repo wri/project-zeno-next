@@ -14,10 +14,10 @@ export async function readJson<T>(
       const candidate = body?.detail ?? body?.error;
       if (typeof candidate === "string") detail = candidate;
     } catch {}
-    const error = new Error(detail || `Request failed: ${res.statusText}`);
-    (error as Error & { status?: number; detail?: string }).status = res.status;
-    (error as Error & { status?: number; detail?: string }).detail = detail;
-    throw error;
+    throw Object.assign(
+      new Error(detail || `Request failed: ${res.statusText}`),
+      { status: res.status, detail }
+    );
   }
 
   return res.json() as Promise<T>;

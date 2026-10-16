@@ -28,11 +28,6 @@ const CHART_TYPES = new Set([
 
 export type WidgetSize = "single" | "double";
 
-/** The widget's persisted column span; anything but "double" is single. */
-export function widgetSize(config: Record<string, unknown>): WidgetSize {
-  return config.size === "double" ? "double" : "single";
-}
-
 /**
  * The widget kinds that span both columns until the owner shrinks them: a
  * map, an analysis card with its pager, the alerts list beside its map.
