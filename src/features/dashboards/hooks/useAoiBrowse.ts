@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
-import { browseAois } from "../api/aois";
+import { fetchAoiPage } from "@/src/entities/aoi";
 import type { ReferenceAoiSource } from "../model/dashboard-area";
 
 const PAGE_SIZE = 100;
@@ -14,7 +14,12 @@ export function useAoiBrowse(
   return useInfiniteQuery({
     queryKey: ["aoiBrowse", source, name],
     queryFn: ({ pageParam = 0 }) =>
-      browseAois({ source, name, limit: PAGE_SIZE, offset: pageParam }),
+      fetchAoiPage({
+        sources: [source],
+        name,
+        limit: PAGE_SIZE,
+        offset: pageParam,
+      }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
     enabled: options?.enabled ?? true,

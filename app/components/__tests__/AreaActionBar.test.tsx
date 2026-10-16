@@ -149,6 +149,29 @@ describe("AreaActionBar", () => {
     expect(actions.clearValidationError).toHaveBeenCalledOnce();
   });
 
+  // While the panel searches, Draw / Upload give way; a drawing still shows.
+  it("hides Draw and Upload when asked, but not a drawing", () => {
+    const { unmount } = render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChakraProvider value={defaultSystem}>
+          <AreaActionBar hideIdle />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+    expect(screen.queryByRole("button", { name: "Draw on map" })).toBeNull();
+    unmount();
+
+    useMapStore.setState({ isDrawingMode: true });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChakraProvider value={defaultSystem}>
+          <AreaActionBar hideIdle />
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+    expect(screen.getByRole("status")).toBeTruthy();
+  });
+
   it("redraws by starting a fresh drawing", () => {
     useMapStore.setState({
       isDrawingMode: true,

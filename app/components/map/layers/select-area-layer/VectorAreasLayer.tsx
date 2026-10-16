@@ -13,7 +13,6 @@ import { LayerId, selectLayerOptions } from "@/app/types/map";
 import { API_CONFIG } from "@/app/config/api";
 
 import useMapStore from "@/app/store/mapStore";
-import { isAreaLayer } from "@/app/store/layerManagerSlice";
 
 import { getAoiName, getSrcId, getSubtype } from "@/app/utils/areaHelpers";
 
@@ -21,6 +20,8 @@ import AreaTooltip, { HoverInfo } from "@/app/components/ui/AreaTooltip";
 import { getBoundaryFeatureDetails } from "@/app/utils/boundaryFeatureDetails";
 import { selectAreaFillPaint, selectAreaLinePaint } from "./mapStyles";
 import "@/app/theme/popup.css";
+import { removeOtherReferenceAreas } from "@/app/utils/referenceArea";
+
 import { publishAreaSelection } from "./publishAreaSelection";
 
 // The hover tooltip only appears once the pointer rests on a boundary, so it
@@ -184,26 +185,14 @@ function VectorAreasLayer({ layerId }: SourceLayerProps) {
               }
             }
 
-            // Only one vector-click AOI at a time: clicking a new boundary
-            // replaces any previous non-custom area selection (admin clicks +
-            // assistant picks), leaving custom (drawn/uploaded) areas — whose
-            // feature refs use source "custom" — untouched. The visible layer
-            // IS the scope, so we mutate layers directly instead of a context
-            // item. addLayer (above) is keyed by aoiName, so a double-click
-            // just replaces in place; we only need to drop the others.
-            const { layers: currentLayers, removeLayer } =
-              useMapStore.getState();
-            const justAdded = currentLayers.some((l) => l.id === aoiName);
-            if (justAdded) {
-              currentLayers
-                .filter(
-                  (l) =>
-                    l.id !== aoiName &&
-                    isAreaLayer(l) &&
-                    !(l.featureRefs ?? []).some((r) => r.source === "custom")
-                )
-                .forEach((l) => removeLayer(l.id));
-            }
+            // One reference area at a time: a new boundary click replaces the
+            // previous one (admin clicks, searched places, assistant picks).
+            // addLayer (above) is keyed by aoiName, so a double-click just
+            // replaces in place; we only need to drop the others.
+            const justAdded = useMapStore
+              .getState()
+              .layers.some((l) => l.id === aoiName);
+            if (justAdded) removeOtherReferenceAreas(aoiName);
 
             // Publish the clicked area as the analysis selection both nudges
             // consume (any source with a backend id; see publishAreaSelection).

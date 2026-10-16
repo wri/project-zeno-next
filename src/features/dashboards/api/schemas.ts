@@ -2,15 +2,13 @@ import { z } from "zod";
 
 import { DatasetDivergentColorsSchema } from "@/app/schemas/api/datasets/get";
 
-export const AoiSearchResultSchema = z.object({
-  source: z.string(),
-  src_id: z.string(),
-  name: z.string(),
-  subtype: z.string(),
-  bbox: z.array(z.number()).optional(),
-});
-
-export const AoiSearchResponseSchema = z.array(AoiSearchResultSchema);
+// The AOI search wire lives in the `aoi` entity, shared with the map's Areas
+// panel; re-exported here for this feature's existing imports.
+export {
+  AoiSearchResponseSchema,
+  AoiSearchResultSchema,
+} from "@/src/entities/aoi";
+export type { AoiSearchResult } from "@/src/entities/aoi";
 
 export const DashboardAoiSchema = z.object({
   source: z.string(),
@@ -142,7 +140,6 @@ export const DashboardCreateRequestSchema = z.object({
   aois: z.array(DashboardAoiSchema).min(1).max(1),
 });
 
-export type AoiSearchResult = z.infer<typeof AoiSearchResultSchema>;
 export type DashboardAoi = z.infer<typeof DashboardAoiSchema>;
 export type Dashboard = z.infer<typeof DashboardResponseSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetResponseSchema>;

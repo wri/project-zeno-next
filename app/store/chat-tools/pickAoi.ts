@@ -7,7 +7,7 @@ import {
 } from "@/app/types/chat";
 import useMapStore from "../mapStore";
 import { fetchGeometry } from "@/app/utils/geometryClient";
-import { unionAoiBboxes } from "@/app/utils/bboxUtils";
+import { aoiFlyBounds } from "@/app/utils/bboxUtils";
 import { GeoJsonEntry } from "../layerManagerSlice";
 import { selectLayerOptions } from "@/app/types/map";
 
@@ -39,7 +39,7 @@ export function isGlobalQuery(name: string): boolean {
  * bounds computation.
  * @param selectionName - The name of the selection of AOIs. Used in multi-area selection.
  */
-async function fetchAndRegisterAoi(
+export async function fetchAndRegisterAoi(
   aoi: AOI,
   addToRegistry: (entry: GeoJsonEntry) => void
 ): Promise<FeatureCollection | Feature> {
@@ -195,21 +195,9 @@ export async function pickAoiTool(
     // Fly to the combined bounds using backend-provided bbox values.
     // Using aoi.bbox directly preserves dateline-crossing extents (west > east),
     // which fitBounds handles natively. Turf bbox would wrap around the world instead.
-    const unionBbox = unionAoiBboxes(successfulAois);
-    if (unionBbox) {
-      const [west, south, north] = [unionBbox[0], unionBbox[1], unionBbox[3]];
-      let east = unionBbox[2];
-      // flyToBounds (and mapStore's fitBounds wrapper) expects east <= 180;
-      // subtract 360 to re-wrap when the union crossed the antimeridian.
-      if (east > 180) east -= 360;
-      console.log("[pickAoi] calling flyToBounds:", typeof flyToBounds, [
-        [west, south],
-        [east, north],
-      ]);
-      flyToBounds([
-        [west, south],
-        [east, north],
-      ]);
+    const bounds = aoiFlyBounds(successfulAois);
+    if (bounds) {
+      flyToBounds(bounds);
     } else if (allGeoData.length > 0) {
       flyToGeoJsonWithRetry(allGeoData[0]);
     }
