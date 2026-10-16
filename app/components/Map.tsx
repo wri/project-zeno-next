@@ -5,7 +5,7 @@ import MapGl, {
   Source,
   MapRef,
 } from "react-map-gl/maplibre";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
 import {
   AbsoluteCenter,
@@ -34,7 +34,6 @@ import { useLegendHook } from "@/app/components/legend/useLegendHook";
 import GeoJsonLayers from "./map/layers/GeoJsonLayers";
 import PendingDrawArea from "./map/layers/PendingDrawArea";
 import { Legend } from "@/app/components/legend/Legend";
-import { LegendDatasetsButton } from "@/app/components/legend/LegendDatasetsButton";
 import InsightWorkspace from "./InsightWorkspace";
 import DisclaimerPanel from "./DisclaimerPanel";
 import useInsightStore from "@/app/store/insightStore";
@@ -48,11 +47,11 @@ const MAPBOX_ACCESS_TOKEN = import.meta.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 function Map({
   disableMapAreaControls,
-  showDatasetsButton,
+  legendHeaderAction,
 }: {
   disableMapAreaControls?: boolean;
-  /** Legend gets a Datasets button toggling the Data Catalog (desktop chat layout only). */
-  showDatasetsButton?: boolean;
+  /** Rendered in the legend header beside the collapse caret. */
+  legendHeaderAction?: ReactNode;
 }) {
   const mapRef = useRef<MapRef>(null);
   const [mapCenter, setMapCenter] = useState([0, 0]);
@@ -273,7 +272,7 @@ function Map({
               onRemoveAoi={handleRemoveAoi}
               boundary={boundary}
               onRemoveBoundary={handleRemoveBoundary}
-              headerAction={showDatasetsButton && <LegendDatasetsButton />}
+              headerAction={legendHeaderAction}
             />
           </Box>
         </Flex>

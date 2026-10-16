@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import ChatPanel from "@/app/ChatPanel";
 import UploadAreaDialog from "@/app/components/UploadAreaDialog";
 import Map from "@/app/components/Map";
+import { LegendDatasetsButton } from "@/app/components/legend/LegendDatasetsButton";
 import CatalogPanel from "@/app/components/CatalogPanel";
 import AreasPanel from "@/app/components/AreasPanel";
 import { InsightsPanel } from "@/src/features/insights-history";
@@ -66,7 +67,9 @@ export default function DashboardLayout({
       overflow="hidden"
       display={{ base: "none", md: "block" }}
     >
-      <Map showDatasetsButton />
+      {/* Desktop only: classic has no catalogue, and on mobile the composer
+          opens the dataset picker dialog instead. */}
+      <Map legendHeaderAction={<LegendDatasetsButton />} />
       <Box
         position="absolute"
         top={0}

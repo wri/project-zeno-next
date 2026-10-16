@@ -17,7 +17,10 @@ import {
 } from "@phosphor-icons/react";
 import { format } from "date-fns";
 import useChatStore from "@/app/store/chatStore";
-import ContextButton, { ChatContextType } from "./ContextButton";
+import ContextButton, {
+  ChatContextType,
+  PanelToggleButton,
+} from "./ContextButton";
 import ContextTag from "./ContextTag";
 import ContextMenu from "./ContextMenu";
 import VoiceListeningPanel from "./voice/VoiceListeningPanel";
@@ -330,28 +333,13 @@ export default function ChatInput({
                   pickers above). */}
               {(isAppRoute(pathname) || isDashboardDetailRoute(pathname)) &&
                 !isMobile && (
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    borderRadius="sm"
-                    borderWidth="1px"
-                    px="2"
-                    h="8"
-                    gap="1"
-                    fontSize="xs"
-                    fontWeight="normal"
+                  <PanelToggleButton
+                    icon={<ChartLineIcon />}
+                    label="Analyses"
                     onClick={openInsightsPanel}
                     disabled={disabled}
-                    borderColor={
-                      insightsPanelOpen ? "primary.solid" : "#E0E2E5"
-                    }
-                    color={insightsPanelOpen ? "primary.solid" : undefined}
-                    aria-expanded={insightsPanelOpen}
-                    aria-label="Analyses"
-                  >
-                    <ChartLineIcon />
-                    Analyses
-                  </Button>
+                    active={insightsPanelOpen}
+                  />
                 )}
             </Flex>
             <Flex gap="2" ml="auto" alignItems="center">
@@ -477,7 +465,7 @@ export default function ChatInput({
                 openLayerPicker();
               }}
               disabled={disabled}
-              aria-expanded={
+              active={
                 isMobile
                   ? contextModalOpen && selectedContextType === "layer"
                   : dataCatalogOpen
@@ -490,7 +478,7 @@ export default function ChatInput({
                 openAreaPicker();
               }}
               disabled={disabled}
-              aria-expanded={
+              active={
                 isMobile
                   ? contextModalOpen && selectedContextType === "area"
                   : areasPanelOpen
