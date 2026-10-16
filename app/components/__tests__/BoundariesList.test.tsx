@@ -14,16 +14,21 @@ import useMapStore from "@/app/store/mapStore";
 import { BoundariesList } from "../BoundariesList";
 
 // Zag's switch ignores synthetic clicks under happy-dom, so stand the card in
-// with a plain toggle button that drives the same `onShowOnMapChange` contract.
-vi.mock("../CatalogCard", () => ({
-  CatalogCard: (props: {
+// with a plain toggle button that drives the same toggle `interaction`. The
+// rest of the module (ENTITY_KINDS, used by AreaCardMenu) stays real.
+vi.mock("@/src/shared/ui/entity-card", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/src/shared/ui/entity-card")>()),
+  EntityCard: (props: {
     title: string;
-    showOnMap: boolean;
-    onShowOnMapChange: (checked: boolean) => void;
+    interaction: {
+      mode: "toggle";
+      checked: boolean;
+      onChange: (checked: boolean) => void;
+    };
   }) => (
     <button
-      aria-pressed={props.showOnMap}
-      onClick={() => props.onShowOnMapChange(!props.showOnMap)}
+      aria-pressed={props.interaction.checked}
+      onClick={() => props.interaction.onChange(!props.interaction.checked)}
     >
       {props.title}
     </button>

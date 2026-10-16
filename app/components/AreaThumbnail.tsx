@@ -6,12 +6,12 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import useMapStore from "@/app/store/mapStore";
 import type { AOISelection } from "@/app/types/chat";
 import { buildStaticMapUrl } from "@/app/utils/areaStaticMapUrl";
+import { ENTITY_KINDS } from "@/src/shared/ui/entity-card";
 
-const AREA_LABEL_COLOR = "#2D6BE4";
 /** Matches the catalog card thumbnail column width. */
 const THUMBNAIL_SIZE_PX = 96;
 
-interface AreaCatalogThumbnailProps {
+interface AreaThumbnailProps {
   aoiSelection: AOISelection;
   alt: string;
   /** When geometry isn't in the map registry yet (e.g. monitored custom areas). */
@@ -47,17 +47,17 @@ function AreaThumbnailFallback() {
       alignItems="center"
       justifyContent="center"
     >
-      <PolygonIcon size={32} color={AREA_LABEL_COLOR} />
+      <PolygonIcon size={32} color={ENTITY_KINDS.area.color} />
     </Flex>
   );
 }
 
 /** Static map thumbnail for area catalog cards — same source as chat `AreaCard`. */
-export function AreaCatalogThumbnail({
+export function AreaThumbnail({
   aoiSelection,
   alt,
   geometry: geometryOverride,
-}: AreaCatalogThumbnailProps) {
+}: AreaThumbnailProps) {
   const geoJsonRegistry = useMapStore((s) => s.geoJsonRegistry);
   const [imgError, setImgError] = useState(false);
 

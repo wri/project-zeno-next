@@ -30,3 +30,8 @@ FSD **shared** layer — reusable, business-agnostic building blocks usable by e
   `@/src/shared/ui/FluxTooltip`.
 - `ui/Swatch.tsx` — the legend/tooltip colour swatch shared by the net-flux and flux-tree charts; renders
   SVG hatch-pattern fills too. Import from `@/src/shared/ui/Swatch`.
+- `ui/entity-card/` — `EntityCard`, the compact row behind every card in the app (chat, catalogue
+  panels, picker): thumbnail, optional kind or verification eyebrow, title, meta, badge, actions, (i)
+  and a `static` / `toggle` / `link` interaction. With `ENTITY_KINDS` (label, colour, glyph per kind),
+  `toggleAriaLabel` (the switch's accessible name, which analytics keys on). Import
+  from `@/src/shared/ui/entity-card`.
