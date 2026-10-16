@@ -27,7 +27,7 @@ export const areaActionIconProps = {
  * portalled content, and the z-index override in one place — Chakra's default
  * dropdown z-index (1000) paints behind the exploration panel column
  * (CATALOG_COLUMN_Z_INDEX = 1095), so menus opening over the panel must sit
- * above it (same workaround as AreaToolbarButtons).
+ * above it.
  */
 export function AreaCardMenu({
   label,
