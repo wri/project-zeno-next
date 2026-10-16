@@ -1,4 +1,5 @@
 import { fetchAndRegisterAoi } from "@/app/store/chat-tools/pickAoi";
+import type { Layer } from "@/app/store/layerManagerSlice";
 import useMapStore from "@/app/store/mapStore";
 import type { AOI } from "@/app/types/chat";
 import { aoiFlyBounds } from "@/app/utils/bboxUtils";
@@ -43,9 +44,9 @@ export async function addPlaceToMap(aoi: AOI): Promise<void> {
 
 /** The area layer showing `aoi` (matched by source and id), if it's on the map. */
 export function findPlaceLayer(
-  layers: ReturnType<typeof useMapStore.getState>["layers"],
+  layers: Layer[],
   aoi: Pick<AOI, "source" | "src_id">
-) {
+): Layer | undefined {
   return layers.find((l) =>
     (l.aoiSelection?.aois ?? []).some(
       (a) => a.source === aoi.source && a.src_id === aoi.src_id

@@ -1,11 +1,5 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { searchAois } from "../api/aois";
 import {
   addInsightWidget,
   addTextWidget,
@@ -20,7 +14,9 @@ import {
   updateSection,
   type WidgetUpdate,
 } from "../api/dashboards";
-import type { AoiSearchResult, Dashboard } from "../api/schemas";
+import type { AoiSearchResult } from "@/src/entities/aoi";
+
+import type { Dashboard } from "../api/schemas";
 import type { SectionMovePatch } from "../model/dashboard-sections";
 import type { WidgetMovePatch } from "../model/widget-move";
 import { dashboardKeys } from "../hooks/dashboardKeys";
@@ -47,24 +43,6 @@ export function useAnalysisTemplates(enabled = true) {
     queryFn: listAnalysisTemplates,
     staleTime: Infinity,
     enabled,
-  });
-}
-
-export function useAoiSearch(query: string, source: string | null) {
-  const trimmed = query.trim();
-  const enabled = trimmed.length >= 2;
-
-  return useQuery({
-    queryKey: dashboardKeys.aois(trimmed, source),
-    queryFn: () =>
-      searchAois({
-        name: trimmed,
-        source,
-        limit: 25,
-      }),
-    enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 10_000,
   });
 }
 

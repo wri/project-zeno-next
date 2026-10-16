@@ -6,7 +6,11 @@ export const AoiSearchResultSchema = z.object({
   src_id: z.string(),
   name: z.string(),
   subtype: z.string(),
-  bbox: z.array(z.number()).optional(),
+  // [west, south, east, north]; anything else is dropped, not a parse error.
+  bbox: z
+    .tuple([z.number(), z.number(), z.number(), z.number()])
+    .optional()
+    .catch(undefined),
 });
 
 export const AoiSearchResponseSchema = z.array(AoiSearchResultSchema);

@@ -2,14 +2,6 @@ import { z } from "zod";
 
 import { DatasetDivergentColorsSchema } from "@/app/schemas/api/datasets/get";
 
-// The AOI search wire lives in the `aoi` entity, shared with the map's Areas
-// panel; re-exported here for this feature's existing imports.
-export {
-  AoiSearchResponseSchema,
-  AoiSearchResultSchema,
-} from "@/src/entities/aoi";
-export type { AoiSearchResult } from "@/src/entities/aoi";
-
 export const DashboardAoiSchema = z.object({
   source: z.string(),
   src_id: z.string(),

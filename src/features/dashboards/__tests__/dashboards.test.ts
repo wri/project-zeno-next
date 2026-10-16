@@ -11,16 +11,15 @@ import {
   applyAnalysisTemplate,
 } from "../api/dashboards";
 import {
-  AoiSearchResponseSchema,
   DashboardListResponseSchema,
   DashboardSectionResponseSchema,
-  type AoiSearchResult,
 } from "../api/schemas";
 import {
-  aoiToDashboardCreateRequest,
-  sourceLabel,
+  AoiSearchResponseSchema,
   subtypeLabel,
-} from "../lib/aoi";
+  type AoiSearchResult,
+} from "@/src/entities/aoi";
+import { aoiToDashboardCreateRequest, sourceLabel } from "../lib/aoi";
 import { updatedLabel, wasJustCreated } from "../lib/dates";
 
 describe("dashboard schemas", () => {

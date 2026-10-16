@@ -15,6 +15,8 @@ export interface FetchAoiPageParams {
   sources?: readonly string[];
   limit?: number;
   offset?: number;
+  /** Aborts the request once its result is no longer wanted. */
+  signal?: AbortSignal;
 }
 
 export interface AoiPage {
@@ -50,6 +52,7 @@ export async function fetchAoiPage({
   sources = [],
   limit = 50,
   offset = 0,
+  signal,
 }: FetchAoiPageParams): Promise<AoiPage> {
   const params = new URLSearchParams({
     limit: String(limit),
@@ -62,6 +65,7 @@ export async function fetchAoiPage({
   const res = await apiFetch(`/api/aois?${params.toString()}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
+    signal,
   });
   if (!res.ok) throw await apiError(res);
 

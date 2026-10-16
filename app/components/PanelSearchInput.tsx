@@ -1,4 +1,4 @@
-import { Input, InputGroup } from "@chakra-ui/react";
+import { Input, InputGroup, useBreakpointValue } from "@chakra-ui/react";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 
 export interface PanelSearchInputProps {
@@ -9,6 +9,11 @@ export interface PanelSearchInputProps {
   onChange: (value: string) => void;
   /** Escape on an empty box: the caller closes the panel. */
   onEscapeEmpty: () => void;
+  /**
+   * Focus on open, desktop only — on mobile it would pop the keyboard over
+   * the bottom sheet.
+   */
+  autoFocusOnDesktop?: boolean;
 }
 
 /**
@@ -21,7 +26,10 @@ export function PanelSearchInput({
   value,
   onChange,
   onEscapeEmpty,
+  autoFocusOnDesktop = false,
 }: PanelSearchInputProps) {
+  const isDesktop = useBreakpointValue({ base: false, md: true }) ?? false;
+
   return (
     <InputGroup
       flexShrink={0}
@@ -32,6 +40,7 @@ export function PanelSearchInput({
         type="text"
         aria-label={label}
         placeholder={placeholder}
+        autoFocus={autoFocusOnDesktop && isDesktop}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {

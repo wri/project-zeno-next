@@ -18,4 +18,4 @@ export type { AoiSearchResult, ReferenceAoiSource } from "./model/aoi-search";
 export { fetchAoiPage } from "./api/fetch-aoi-page";
 export type { AoiPage, FetchAoiPageParams } from "./api/fetch-aoi-page";
 export { useAoiSearch } from "./api/use-aoi-search";
-export { placeMeta, placeToAoi } from "./lib/place";
+export { placeMeta, placeToAoi, subtypeLabel } from "./lib/place";

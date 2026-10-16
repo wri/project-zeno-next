@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { AoiSearchResultSchema } from "../../model/aoi-search";
 import { placeMeta, placeToAoi } from "../place";
 
 const hit = (over: Partial<Parameters<typeof placeMeta>[0]>) => ({
@@ -43,9 +44,21 @@ describe("placeMeta", () => {
 });
 
 describe("placeToAoi", () => {
-  it("keeps a four-number bbox and drops any other", () => {
+  it("keeps the bbox when the hit has one", () => {
     expect(placeToAoi(hit({ bbox: [1, 2, 3, 4] })).bbox).toEqual([1, 2, 3, 4]);
-    expect(placeToAoi(hit({ bbox: [1, 2] }))).not.toHaveProperty("bbox");
     expect(placeToAoi(hit({}))).not.toHaveProperty("bbox");
+  });
+});
+
+describe("AoiSearchResultSchema", () => {
+  it("drops a bbox that isn't four numbers instead of failing the parse", () => {
+    const parsed = AoiSearchResultSchema.parse({
+      source: "gadm",
+      src_id: "BRA",
+      name: "Brazil",
+      subtype: "country",
+      bbox: [1, 2],
+    });
+    expect(parsed.bbox).toBeUndefined();
   });
 });

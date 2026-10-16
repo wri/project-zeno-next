@@ -2,11 +2,11 @@ import { useMemo, type ReactNode } from "react";
 import { Flex, IconButton } from "@chakra-ui/react";
 import { CrosshairIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
-import type { Feature } from "geojson";
 
 import { useCustomAreasListSuspense } from "@/app/hooks/useCustomAreasList";
 import type { CustomArea } from "@/app/schemas/api/custom_areas/get";
 import {
+  findRegistryEntry,
   isAreaLayer,
   type Layer,
   type GeoJsonEntry,
@@ -32,7 +32,7 @@ import { Tooltip } from "./ui/tooltip";
  */
 
 /** Display name for an area layer. */
-export function getAreaTitle(layer: Layer): string {
+function getAreaTitle(layer: Layer): string {
   return layer.aoiSelection?.name ?? layer.name;
 }
 
@@ -51,9 +51,7 @@ function layerToAoiSelection(
   return {
     name: layer.name,
     aois: refs.map((ref) => {
-      const entry = registry.find(
-        (e) => e.ref.name === ref.name && e.ref.source === ref.source
-      );
+      const entry = findRegistryEntry(registry, ref);
       return {
         name: ref.name,
         src_id: entry?.srcId ?? ref.name,
@@ -87,7 +85,7 @@ export function ConversationAreasList() {
   );
 }
 
-export function ConversationAreaCard({ layer }: { layer: Layer }) {
+function ConversationAreaCard({ layer }: { layer: Layer }) {
   const setLayerVisibility = useMapStore((s) => s.setLayerVisibility);
   const flyToGeoJson = useMapStore((s) => s.flyToGeoJson);
   const flyToBounds = useMapStore((s) => s.flyToBounds);
@@ -115,9 +113,7 @@ export function ConversationAreaCard({ layer }: { layer: Layer }) {
     }
     // Fallback: fly to the first resolvable registry geometry.
     for (const ref of layer.featureRefs ?? []) {
-      const entry = geoJsonRegistry.find(
-        (e) => e.ref.name === ref.name && e.ref.source === ref.source
-      );
+      const entry = findRegistryEntry(geoJsonRegistry, ref);
       if (entry) {
         flyToGeoJson(entry.data);
         return;
@@ -193,10 +189,6 @@ export function MonitoredAreaCard({ area }: { area: CustomArea }) {
 
   const isVisible = layer?.visible ?? false;
 
-  function buildFeature(): Feature {
-    return customAreaToFeature(area);
-  }
-
   const feature = useMemo(() => customAreaToFeature(area), [area]);
   const aoiSelection = useMemo(
     (): AOISelection => ({
@@ -218,7 +210,6 @@ export function MonitoredAreaCard({ area }: { area: CustomArea }) {
       if (!layer) {
         // Register geometry and add a visible area layer — the layer IS the
         // scope, so there is no separate context item.
-        const feature = buildFeature();
         addToRegistry({
           ref: { name: area.name, source: "custom" },
           data: feature,
@@ -250,7 +241,6 @@ export function MonitoredAreaCard({ area }: { area: CustomArea }) {
   }
 
   function handleLocate() {
-    const feature = buildFeature();
     flyToGeoJsonWithRetry(feature);
   }
 

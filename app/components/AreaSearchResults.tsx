@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { Button, Stack, Text } from "@chakra-ui/react";
 
 import { toaster } from "@/app/components/ui/toaster";
@@ -16,6 +16,7 @@ import {
   type AoiSearchResult,
   type ReferenceAoiSource,
 } from "@/src/entities/aoi";
+import { useDebounced } from "@/src/shared/lib/use-debounced";
 import { EntityCard } from "@/src/shared/ui/entity-card";
 
 import { MonitoredAreaCard } from "./AreaLists";
@@ -35,15 +36,6 @@ const SCOPE_PILLS: { id: SearchScope; label: string }[] = [
   { id: "mine", label: "My areas" },
 ];
 
-function useDebounced(value: string, ms: number): string {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), ms);
-    return () => clearTimeout(timer);
-  }, [value, ms]);
-  return debounced;
-}
-
 /**
  * The Areas panel while a query is typed: the tabs give way to scope pills,
  * your saved areas that match come first, then the backend's ranked places
@@ -58,8 +50,9 @@ export function AreaSearchResults({ query }: { query: string }) {
     <>
       <PanelPills options={SCOPE_PILLS} value={scope} onChange={setScope} />
       <Stack gap={4} flex={1} minH={0} minW={0} pb={2} overflowY="auto">
-        {scope === "mine" && <SavedMatches term={term} showEmpty />}
-        {scope === "all" && <SavedMatches term={term} />}
+        {(scope === "all" || scope === "mine") && (
+          <SavedMatches term={term} showEmpty={scope === "mine"} />
+        )}
         {scope !== "mine" && (
           <PlaceMatches
             query={query}
@@ -184,6 +177,7 @@ function PlaceMatches({
 
 function PlaceRow({ place }: { place: AoiSearchResult }) {
   const aoi = useMemo(() => placeToAoi(place), [place]);
+  const aoiSelection = useMemo(() => ({ name: aoi.name, aois: [aoi] }), [aoi]);
   const layer = useMapStore((s) => findPlaceLayer(s.layers, place));
   const removeLayer = useMapStore((s) => s.removeLayer);
   const removeFromRegistry = useMapStore((s) => s.removeFromRegistry);
@@ -214,12 +208,7 @@ function PlaceRow({ place }: { place: AoiSearchResult }) {
   return (
     <EntityCard
       kind="area"
-      thumbnail={
-        <AreaThumbnail
-          aoiSelection={{ name: aoi.name, aois: [aoi] }}
-          alt={aoi.name}
-        />
-      }
+      thumbnail={<AreaThumbnail aoiSelection={aoiSelection} alt={aoi.name} />}
       title={aoi.name}
       meta={placeMeta(place)}
       interaction={{

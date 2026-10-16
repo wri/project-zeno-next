@@ -14,12 +14,13 @@ export function useAoiSearch(name: string, sources: readonly string[]) {
   const term = name.trim();
   return useInfiniteQuery({
     queryKey: ["aoiSearch", [...sources].sort(), term],
-    queryFn: ({ pageParam }) =>
+    queryFn: ({ pageParam, signal }) =>
       fetchAoiPage({
         name: term,
         sources,
         limit: PAGE_SIZE,
         offset: pageParam,
+        signal,
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => lastPage.nextOffset ?? undefined,
