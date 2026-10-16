@@ -11,6 +11,7 @@ import {
 import { computeWidgetMove } from "../model/widget-move";
 import type { PendingInsightWidget } from "../model/pending-insight-widgets-store";
 import {
+  alertsWidgetSize,
   insightWidgetSize,
   mapWidgetSize,
   unresolvedPendingInsightWidgets,
@@ -33,6 +34,7 @@ import {
   useUpdateWidget,
 } from "./dashboardQueries";
 import { GRID_GAP_PX, TWO_COLUMN_QUERY } from "./gridLayout";
+import DashboardAlertsWidget from "./DashboardAlertsWidget";
 import DashboardInsightModule from "./DashboardInsightModule";
 import DashboardPendingInsightCard from "./DashboardPendingInsightCard";
 import DashboardSection from "./DashboardSection";
@@ -88,6 +90,7 @@ function standaloneBody(widget: DashboardWidget): StandaloneBody {
 function topLevelSize(widget: DashboardWidget): WidgetSize {
   if (widget.widget_type === "insight") return insightWidgetSize(widget.config);
   if (widget.widget_type === "map") return mapWidgetSize(widget.config);
+  if (widget.widget_type === "alerts") return alertsWidgetSize(widget.config);
   return widgetSize(widget.config);
 }
 
@@ -251,8 +254,11 @@ function ContainerGrid({
 
   const renderWidget = (widget: DashboardWidget) => {
     const size = topLevelSize(widget);
+    // Insight and alerts widgets parse their own configs.
     const body =
-      widget.widget_type === "insight" ? null : standaloneBody(widget);
+      widget.widget_type === "insight" || widget.widget_type === "alerts"
+        ? null
+        : standaloneBody(widget);
     const title =
       body?.map?.title ??
       (typeof widget.config.title === "string" ? widget.config.title : "");
@@ -285,6 +291,22 @@ function ContainerGrid({
               onToggleSize={() => toggleSize(widget)}
               onUpdateConfig={(config) =>
                 updateWidget.mutate({ widgetId: widget.id, patch: { config } })
+              }
+              onRemove={() => deleteWidget.mutate(widget.id)}
+            />
+          ) : widget.widget_type === "alerts" ? (
+            <DashboardAlertsWidget
+              widget={widget}
+              areaAoi={areaAoi}
+              isOwner={isOwner}
+              isDouble={size === "double"}
+              onArmDrag={armDrag}
+              onToggleSize={() => toggleSize(widget)}
+              onRename={(name) =>
+                updateWidget.mutate({
+                  widgetId: widget.id,
+                  patch: { config: withWidgetTitle(widget.config, name) },
+                })
               }
               onRemove={() => deleteWidget.mutate(widget.id)}
             />

@@ -23,6 +23,7 @@ import { buildBasemapTileUrl } from "@/app/utils/basemapTileUrl";
 import { createBboxPolygon } from "@/app/utils/bboxUtils";
 import { fetchGeometry } from "@/app/utils/geometryClient";
 import { registerPrimaryForestProtocol } from "@/app/utils/primaryForestTileProtocol";
+import { withTileDates, type DateRange } from "../lib/alertsWidgets";
 import type { MapWidgetLayer } from "../lib/mapWidgets";
 import DashboardMapLegend, {
   type MapWidgetOpacity,
@@ -40,11 +41,16 @@ const AOI_COLORS = aoiBoundaryColors("light");
  * sub-layer beneath it), outlines the dashboard's area, and fits the
  * viewport to that area — or to the reserved `config.viewport` bbox
  * override, which wins when present.
+ *
+ * `dateRange` re-dates a dated layer (the alerts widget's map pane follows
+ * the period its list shows): the tile URL's date parameters and the
+ * legend's dates are rewritten, nothing else about the layer changes.
  */
 export default function DashboardMapWidget({
-  layer,
+  layer: snapshotLayer,
   aoi,
   bboxOverride,
+  dateRange,
   tall,
   fill,
 }: {
@@ -52,12 +58,19 @@ export default function DashboardMapWidget({
   /** The dashboard's (single) area — outline, label + default viewport fit. */
   aoi: { source: string; src_id: string; name: string } | undefined;
   bboxOverride: [number, number, number, number] | null;
+  /** The period to draw instead of the one the layer's snapshot was built for. */
+  dateRange?: DateRange;
   /** Full-width cards get a taller map. */
   tall?: boolean;
   /** Fills its container (the full-screen dialog) and allows scroll-zoom. */
   fill?: boolean;
 }) {
   const mapRef = useRef<MapRef>(null);
+
+  const layer = useMemo(
+    () => (dateRange ? withTileDates(snapshotLayer, dateRange) : snapshotLayer),
+    [snapshotLayer, dateRange]
+  );
 
   // Legend-controlled raster opacity (0–100). 80 matches the explorer's
   // default dataset opacity and the legend's default display value.
@@ -180,7 +193,11 @@ export default function DashboardMapWidget({
             />
           </Source>
         )}
+        {/* Keyed on the URL: a re-dated layer (the alerts widget's date
+            range) is a fresh source, not a `setTiles` on the live one, which
+            MapLibre renders through in a broken state. */}
         <Source
+          key={layer.tileUrl}
           id="widget-tiles"
           type="raster"
           tiles={[layer.tileUrl]}
