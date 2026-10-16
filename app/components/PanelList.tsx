@@ -29,3 +29,28 @@ export function PanelEmpty({ children }: { children: ReactNode }) {
     </Text>
   );
 }
+
+/** A labelled group of rows ("On map", "All datasets"); a landmark region. */
+export function PanelSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <Stack as="section" aria-label={label} gap="6px" flexShrink={0}>
+      <Text
+        fontFamily="mono"
+        fontSize="10px"
+        lineHeight="16px"
+        letterSpacing="0.03em"
+        textTransform="uppercase"
+        color="#656E7B"
+      >
+        {label}
+      </Text>
+      {children}
+    </Stack>
+  );
+}

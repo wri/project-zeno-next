@@ -15,6 +15,7 @@ import { useShallow } from "zustand/react/shallow";
 import {
   ORDERED_DATASET_CARDS,
   DATASET_CATEGORIES,
+  DATASET_CATEGORY_LABELS,
   type DatasetCardConfig,
   type DatasetCardLayer,
   type DatasetCategoryId,
@@ -34,10 +35,12 @@ import {
 import { datasetLayerId } from "@/app/utils/datasetLayerContext";
 import { filterDatasetsByCategory } from "@/app/utils/filterDatasetsByCategory";
 import { filterDatasetsByFeatureFlag } from "@/app/utils/filterDatasetsByFeatureFlag";
+import { searchDatasets } from "@/app/utils/searchDatasets";
 import { useEnabledFlags } from "@/src/shared/lib/feature-flags";
 
+import { CatalogSearchInput } from "./CatalogSearchInput";
 import { DatasetRow } from "./DatasetRow";
-import { PanelEmpty, PanelList } from "./PanelList";
+import { PanelEmpty, PanelList, PanelSection } from "./PanelList";
 
 /** Matches ChatPanel compact/full-size enter & exit (slide from the left). */
 const catalogPanelSlideTransition = {
@@ -65,39 +68,14 @@ const catalogListScrollStyle = {
  *  - Show-on-map switch ↔ `mapStore.addLayer` / `removeLayer` — the visible
  *    dataset layer IS the scope, so the layer manager is the source of truth.
  *
- * The existing legend reads from the same `mapStore.layers`, so any layer
- * toggled here automatically appears in the legend with full functionality.
+ * The legend reads from the same `mapStore.layers`, so any layer toggled here
+ * appears there with its visibility and opacity controls.
  */
 export default function DataCatalogPanel() {
   const [category, setCategory] = useState<DatasetCategoryId>("all");
   const { dataCatalogOpen, setDataCatalogOpen, isChatFullSize } =
     useSidebarStore();
   const leftPx = getCatalogLeftPx(isChatFullSize);
-
-  // Build the "in this conversation" set from the visible dataset layers — the
-  // layer manager is the source of truth. `useShallow` keeps re-renders stable
-  // across unrelated layer changes (e.g. AOI edits).
-  const activeDatasetIds = useMapStore(
-    useShallow((s) =>
-      s.layers
-        .filter((l) => typeof l.datasetId === "number" && !l.parentLayerId)
-        .map((l) => l.datasetId as number)
-    )
-  );
-
-  // Flag-gated cards are hidden from the catalogue until their flag is on.
-  // Safe to branch on here: the panel only renders once the user opens it, so
-  // the flagged list never differs between the server render and hydration.
-  const enabledFlags = useEnabledFlags();
-  const cards = useMemo(
-    () =>
-      filterDatasetsByCategory(
-        filterDatasetsByFeatureFlag(ORDERED_DATASET_CARDS, enabledFlags),
-        category,
-        activeDatasetIds
-      ),
-    [category, activeDatasetIds, enabledFlags]
-  );
 
   const compactSlide = !isChatFullSize;
 
@@ -152,64 +130,11 @@ export default function DataCatalogPanel() {
                 <XIcon size={12} />
               </IconButton>
             </Flex>
-            <Flex
-              flex={1}
-              minH={0}
-              minW={0}
-              flexDirection="column"
-              gap={4}
-              pt={4}
-              px={3}
-              pb={6}
-              overflow="hidden"
-            >
-              <Wrap gap={1} flexShrink={0} overflow="hidden">
-                {DATASET_CATEGORIES.map((cat) => {
-                  const isActive = category === cat.id;
-                  return (
-                    <Button
-                      key={cat.id}
-                      h="24px"
-                      minH="24px"
-                      py="4px"
-                      px="8px"
-                      borderRadius="full"
-                      fontSize="12px"
-                      fontWeight="400"
-                      lineHeight="16px"
-                      bg={isActive ? "fg.link" : "neutral.300"}
-                      color={isActive ? "white" : "fg"}
-                      border="1px solid"
-                      borderColor={isActive ? "fg.link" : "neutral.300"}
-                      _hover={{
-                        bg: isActive ? "fg.link" : "neutral.400",
-                      }}
-                      onClick={() => setCategory(cat.id)}
-                    >
-                      {cat.label}
-                    </Button>
-                  );
-                })}
-              </Wrap>
-              <Stack
-                gap={4}
-                flex={1}
-                minH={0}
-                minW={0}
-                pb={2}
-                css={catalogListScrollStyle}
-              >
-                {cards.length === 0 ? (
-                  <PanelEmpty>No datasets in this category yet.</PanelEmpty>
-                ) : (
-                  <PanelList>
-                    {cards.map((card) => (
-                      <CatalogDatasetRow key={card.dataset_id} card={card} />
-                    ))}
-                  </PanelList>
-                )}
-              </Stack>
-            </Flex>
+            <CatalogBody
+              category={category}
+              onCategoryChange={setCategory}
+              onClose={() => setDataCatalogOpen(false)}
+            />
           </Flex>
         </motion.div>
       )}
@@ -218,11 +143,196 @@ export default function DataCatalogPanel() {
 }
 
 /**
+ * Search, category chips and the dataset list. Mounted only while the panel is
+ * open, so the search query resets each time it opens (the chip persists).
+ */
+function CatalogBody({
+  category,
+  onCategoryChange,
+  onClose,
+}: {
+  category: DatasetCategoryId;
+  onCategoryChange: (category: DatasetCategoryId) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+
+  // Datasets with a layer on the map — the layer manager is the source of
+  // truth. `useShallow` keeps re-renders stable across unrelated layer changes
+  // (e.g. AOI edits).
+  const activeDatasetIds = useMapStore(
+    useShallow((s) =>
+      s.layers
+        .filter((l) => typeof l.datasetId === "number" && !l.parentLayerId)
+        .map((l) => l.datasetId as number)
+    )
+  );
+
+  // Flag-gated cards are hidden from the catalogue until their flag is on.
+  // Safe to branch on here: the panel only renders once the user opens it, so
+  // the flagged list never differs between the server render and hydration.
+  const enabledFlags = useEnabledFlags();
+  const searched = useMemo(
+    () =>
+      searchDatasets(
+        filterDatasetsByFeatureFlag(ORDERED_DATASET_CARDS, enabledFlags),
+        query
+      ),
+    [enabledFlags, query]
+  );
+  const visible = filterDatasetsByCategory(searched, category);
+  const active = new Set(activeDatasetIds);
+  const onMap = visible.filter((c) => active.has(c.dataset_id));
+  const rest = visible.filter((c) => !active.has(c.dataset_id));
+  const categoryLabel = DATASET_CATEGORY_LABELS[category];
+
+  return (
+    <Flex
+      flex={1}
+      minH={0}
+      minW={0}
+      flexDirection="column"
+      gap={3}
+      pt={4}
+      px={3}
+      pb={6}
+      overflow="hidden"
+    >
+      <CatalogSearchInput
+        value={query}
+        onChange={setQuery}
+        onEscapeEmpty={onClose}
+      />
+      <Wrap gap={1} flexShrink={0} overflow="hidden">
+        {DATASET_CATEGORIES.map((cat) => {
+          const isActive = category === cat.id;
+          return (
+            <Button
+              key={cat.id}
+              h="24px"
+              minH="24px"
+              py="4px"
+              px="8px"
+              borderRadius="full"
+              fontSize="12px"
+              fontWeight="400"
+              lineHeight="16px"
+              bg={isActive ? "fg.link" : "neutral.300"}
+              color={isActive ? "white" : "fg"}
+              border="1px solid"
+              borderColor={isActive ? "fg.link" : "neutral.300"}
+              _hover={{
+                bg: isActive ? "fg.link" : "neutral.400",
+              }}
+              onClick={() => onCategoryChange(cat.id)}
+            >
+              {cat.label}
+            </Button>
+          );
+        })}
+      </Wrap>
+      <Stack
+        gap={4}
+        flex={1}
+        minH={0}
+        minW={0}
+        pb={2}
+        css={catalogListScrollStyle}
+      >
+        {visible.length === 0 ? (
+          <CatalogEmptyState
+            query={query.trim()}
+            categoryLabel={categoryLabel}
+            hitsInAll={category === "all" ? 0 : searched.length}
+            onShowAll={() => onCategoryChange("all")}
+          />
+        ) : onMap.length === 0 ? (
+          <CardList cards={rest} />
+        ) : (
+          <>
+            <PanelSection label="On map">
+              <CardList cards={onMap} onMap />
+            </PanelSection>
+            {rest.length > 0 && (
+              <PanelSection label={categoryLabel}>
+                <CardList cards={rest} />
+              </PanelSection>
+            )}
+          </>
+        )}
+      </Stack>
+    </Flex>
+  );
+}
+
+function CardList({
+  cards,
+  onMap = false,
+}: {
+  cards: DatasetCardConfig[];
+  onMap?: boolean;
+}) {
+  return (
+    <PanelList>
+      {cards.map((card) => (
+        <CatalogDatasetRow key={card.dataset_id} card={card} onMap={onMap} />
+      ))}
+    </PanelList>
+  );
+}
+
+function CatalogEmptyState({
+  query,
+  categoryLabel,
+  hitsInAll,
+  onShowAll,
+}: {
+  query: string;
+  categoryLabel: string;
+  /** Matches outside the selected category; 0 hides the "show all" offer. */
+  hitsInAll: number;
+  onShowAll: () => void;
+}) {
+  if (hitsInAll > 0) {
+    return (
+      <Stack gap={1} mt={4} align="flex-start">
+        <Text fontSize="sm" color="fg.muted">
+          No matches in {categoryLabel}.
+        </Text>
+        <Button
+          variant="plain"
+          size="sm"
+          p={0}
+          color="fg.link"
+          onClick={onShowAll}
+        >
+          Show {hitsInAll} result{hitsInAll === 1 ? "" : "s"} in All datasets
+        </Button>
+      </Stack>
+    );
+  }
+  return (
+    <PanelEmpty>
+      {query
+        ? `No datasets match “${query}”.`
+        : "No datasets in this category yet."}
+    </PanelEmpty>
+  );
+}
+
+/**
  * One dataset in the catalogue, with its supporting layers (if any) indented
  * beneath it. Visibility and opacity live in the legend, which reads the same
  * `mapStore.layers`.
  */
-function CatalogDatasetRow({ card }: { card: DatasetCardConfig }) {
+function CatalogDatasetRow({
+  card,
+  onMap,
+}: {
+  card: DatasetCardConfig;
+  /** Decided once by the panel, which also files this row under On map. */
+  onMap: boolean;
+}) {
   // Ids of every layer this card can put on the map (a single-layer card
   // synthesizes its one), derived by datasetLayerId — the same formula
   // buildDatasetLayers uses — so they match the ids actually on the map.
@@ -230,8 +340,8 @@ function CatalogDatasetRow({ card }: { card: DatasetCardConfig }) {
     card.layers?.length ? card.layers : [{ name: card.dataset_name }]
   ).map((l, index) => datasetLayerId(card.dataset_id, index, l.name));
 
-  // The visible dataset layers IS the scope — the layer manager is the source
-  // of truth for "is this dataset active?". Active if any of its layers are on.
+  // Which of this card's layers are on — only needed to mark the selected
+  // supporting layer; whether the dataset is on at all is the `onMap` prop.
   const activeLayerIds = useMapStore(
     useShallow((s) => {
       const ids = new Set(layerIds);
@@ -267,7 +377,7 @@ function CatalogDatasetRow({ card }: { card: DatasetCardConfig }) {
         viewOnly={card.viewOnly}
         interaction={{
           mode: "toggle",
-          checked: activeLayerIds.length > 0,
+          checked: onMap,
           onChange: handleToggle,
           dataPanel: "datasets",
         }}
